@@ -91,5 +91,32 @@ def revoke_token():
 @gt_oauth.require_oauth()
 def authorize():
     user = request.oauth.user
+    role_name = request.args.get('role_name')
+    if role_name:
+        domain_role = DomainRole.get_by_name(role_name)
+        role_id = domain_role.id if domain_role else None
+        all_roles_of_user = UserScopedRoles.get_all_roles_of_user(user.id)['roles']
+        # User is not an admin(role_id = 1) nor it contains input role
+        if 1 not in all_roles_of_user and (not role_id or role_id not in all_roles_of_user):
+            return jsonify(user_id=None)
     logger.info('User %s has been authorized to access getTalent api', user.id)
     return jsonify(user_id=user.id)
+
+
+@app.route('/users/<int:user_id>/roles', methods=['POST', 'GET', 'DELETE'])
+@gt_oauth.require_oauth()
+def user_scoped_roles(user_id):
+    if request.method == 'GET':
+        return UserScopedRoles.get_all_roles_of_user(user_id)
+    else:
+        posted_data = request.get_json(silent=True)
+        if posted_data:
+            try:
+                if request.method == 'POST':
+                    UserScopedRoles.add_role(user_id, posted_data.get('roles'))
+                else:
+                    UserScopedRoles.delete_roles(user_id, posted_data.get('roles'))
+            except Exception as e:
+                return jsonify(error_message=e.message), 404
+        else:
+            return jsonify(error_message='Request data is corrupt'), 400

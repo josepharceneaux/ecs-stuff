@@ -14,10 +14,11 @@ if os.environ.get('GT_ENVIRONMENT') == 'dev':
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@localhost/talent_local'
     LOGGER = logging.getLogger("auth_service.web_dev")
     DEBUG = True
-elif os.environ.get('GT_ENVIRONMENT') == 'dev-2':
-    SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@192.168.99.1/talent_local'
-    LOGGER = logging.getLogger("auth_service.web_qa")
-    DEBUG = False
+elif os.environ.get('GT_ENVIRONMENT') == 'circle':
+     # CircleCI provides circle_test as default configured db.
+    SQLALCHEMY_DATABASE_URI = 'mysql://ubuntu@localhost/circle_test'
+    LOGGER = logging.getLogger("auth_service.web_ci")
+    DEBUG = True
 elif os.environ.get('GT_ENVIRONMENT') == 'qa':
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!web976892@devdb.gettalent.com/talent_staging'
     LOGGER = logging.getLogger("auth_service.web_qa")

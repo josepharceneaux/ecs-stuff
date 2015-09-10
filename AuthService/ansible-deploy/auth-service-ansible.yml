@@ -1,6 +1,6 @@
 # Ansible configuration file to deploy Oauth2.0 Flask microservice
 
-- name: Deploy secure-webdev.gettalent.com
+- name: Deploy {{host}}
   hosts: "{{host}}"
   remote_user: ubuntu
   vars:
