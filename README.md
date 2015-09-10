@@ -8,4 +8,4 @@ AuthService
 
 ResumeService
 -------------
-[README](AuthService/README.md)
+[README](ResumeService/README.md)
