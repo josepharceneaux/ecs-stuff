@@ -3,10 +3,10 @@ getTalent Flask Micro Services
 
 AuthService
 -----------
-[Project link](github.com/Veechi/Resume-Parser/tree/master/AuthService)
+[Project link](www.github.com/Veechi/Resume-Parser/tree/master/AuthService)
 
-[README](github.com/Veechi/Resume-Parser/tree/master/AuthService/README.md)
+[README](www.github.com/Veechi/Resume-Parser/tree/master/AuthService/README.md)
 
 ResumeService
 -------------
-[Project link](github.com/Veechi/Resume-Parser/tree/master/ResumeService)
+[Project link](www.github.com/Veechi/Resume-Parser/tree/master/ResumeService)
