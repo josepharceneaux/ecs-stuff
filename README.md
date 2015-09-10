@@ -3,7 +3,7 @@ getTalent Flask Micro Services
 
 AuthService
 -----------
-[Project link](/tree/master/AuthService)
+[Project link](AuthService/README.md)
 
 [README](www.github.com/Veechi/Resume-Parser/tree/master/AuthService/README.md)
 
