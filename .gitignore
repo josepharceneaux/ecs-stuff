@@ -1,5 +1,5 @@
 # PyCharm items to exclude
-.idea/
+.idea/workspace.xml
 
 # Project Specific Files to exclude
 ResumeService/Dockertest
