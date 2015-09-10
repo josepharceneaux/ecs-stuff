@@ -1,0 +1,8 @@
+Flask==0.10.1
+Flask-SQLAlchemy==2.0
+werkzeug==0.10.4
+Flask-OAuthlib==0.9.1
+loggly-handler==0.1.2
+loggly==0.1.5
+mysql-python==1.2.5
+IPython
