@@ -57,8 +57,10 @@ def save_token(token, request, *args, **kwargs):
     for t in tokens:
         db.session.delete(t)
 
-    expires_in = token.pop('expires_in')
-    expires = datetime.utcnow() + timedelta(seconds=2*expires_in)  # 2 hours expiration time
+    expires_in = token.get('expires_in')
+    expires = datetime.utcnow() + timedelta(seconds=expires_in)
+    token['expires_at'] = expires.strftime("%d/%m/%Y %H:%M:%S")
+    token['user_id'] = request.user.id
 
     tok = Token(
         access_token=token['access_token'],
@@ -91,16 +93,24 @@ def revoke_token():
 @gt_oauth.require_oauth()
 def authorize():
     user = request.oauth.user
-    role_name = request.args.get('role_name')
-    if role_name:
-        domain_role = DomainRole.get_by_name(role_name)
-        role_id = domain_role.id if domain_role else None
-        all_roles_of_user = UserScopedRoles.get_all_roles_of_user(user.id)['roles']
-        # User is not an admin(role_id = 1) nor it contains input role
-        if 1 not in all_roles_of_user and (not role_id or role_id not in all_roles_of_user):
-            return jsonify(user_id=None)
     logger.info('User %s has been authorized to access getTalent api', user.id)
     return jsonify(user_id=user.id)
+
+
+@app.route('/roles/verify')
+def verify_roles():
+    user_id = request.args.get('user_id')
+    role_name = request.args.get('role')
+    if role_name and user_id:
+        domain_role = DomainRole.get_by_name(role_name)
+        user = User.query.get(user_id)
+        if domain_role and user:
+            role_id = domain_role.id
+            all_roles_of_user = UserScopedRoles.get_all_roles_of_user(user.id)['roles']
+            # User is not an admin(role_id = 1) nor it contains input role
+            if DomainRole.all() == all_roles_of_user or role_id in all_roles_of_user:
+                return jsonify(success=True)
+    return jsonify(success=False)
 
 
 @app.route('/users/<int:user_id>/roles', methods=['POST', 'GET', 'DELETE'])

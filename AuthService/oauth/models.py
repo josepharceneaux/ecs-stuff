@@ -122,8 +122,9 @@ class DomainRole(db.Model):
 
     @staticmethod
     def all():
-        """ Get all roles in database """
-        return DomainRole.query.all()
+        """ Get all roles_ids in database """
+        all_roles = DomainRole.query.all() or []
+        return dict(roles=[all_role.id for all_role in all_roles])
 
 
 class UserScopedRoles(db.Model):
