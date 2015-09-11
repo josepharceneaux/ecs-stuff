@@ -13,6 +13,7 @@ An end to end test that does the following:
 import requests
 import unittest
 import sys, os
+
 file_path = os.path.realpath(__file__)
 dir_path, _ = os.path.split(file_path)
 PATH = os.path.abspath(os.path.join(dir_path, '../..'))
@@ -27,16 +28,16 @@ from gt_models.domain import Domain
 from gt_models.event import Event
 from gt_models.culture import Culture
 from gt_models.social_network import SocialNetwork
-init_db()
 
+init_db()
 
 from mixer.backend.sqlalchemy import Mixer
 
-class MeetupTests(unittest.TestCase):
 
+class MeetupTests(unittest.TestCase):
     def setUp(self):
         self.api_url = "https://api.meetup.com/2/"
-        self.auth_token = "6940527437f4b11d495176e81f13"
+        self.access_token = "6940527437f4b11d495176e81f13"
         self.group_id = "18837246"
         self.group_url = "QC-Python-Learning"
         self.member_id = '183366764'
@@ -44,8 +45,8 @@ class MeetupTests(unittest.TestCase):
         mixer = Mixer(session=db_session, commit=True)
         # we need better strategy to create 'culture' data
         self.culture = mixer.blend('gt_models.culture.Culture',
-                            description=self.now_timestamp,
-                            code='ttttt')
+                                   description=self.now_timestamp,
+                                   code='ttttt')
         organization = mixer.blend('gt_models.organization.Organization')
         self.domain = mixer.blend(Domain, organization=organization, culture=self.culture,
                                   defaultTrackingCode=self.now_timestamp)
@@ -53,8 +54,8 @@ class MeetupTests(unittest.TestCase):
         self.user = mixer.blend(User, domain=self.domain, culture=self.culture)
         self.user_id = self.user.id
         self.user_credential = mixer.blend(UserCredentials, userId=self.user_id,
-                                authToken=self.auth_token, memberId=self.member_id,
-                                socialNetworkId=meetup.id)
+                                           accessToken=self.access_token, memberId=self.member_id,
+                                           socialNetworkId=meetup.id)
         self.user_credential_id = self.user_credential.id
 
     def create_event(self):
@@ -70,10 +71,10 @@ class MeetupTests(unittest.TestCase):
         self.event_name = 'Test Event'
         params = {
             'description': self.event_description, 'rsvp_limit': rsvp_limit,
-            'time': time, 'key': self.auth_token, 'group_id': self.group_id,
+            'time': time, 'key': self.access_token, 'group_id': self.group_id,
             'group_urlname': self.group_url, 'name': self.event_name
         }
-        result = requests.post(self.api_url + "event/?sign=true&key=" + self.auth_token, \
+        result = requests.post(self.api_url + "event/?sign=true&key=" + self.access_token,
                                params=params).json()
         assert result['status'] == 'upcoming'
         assert result['name'] == self.event_name
@@ -85,8 +86,7 @@ class MeetupTests(unittest.TestCase):
         end_date = (datetime.now() + timedelta(days=11))
         meetup = Meetup(start_date=start_date, end_date=end_date,
                         alchemy_session_init=True)
-        meetup._process_events(self.user_credential)
-
+        meetup._process_events()
 
     def test_meetup_event(self):
         self.run_process_event()
@@ -99,11 +99,9 @@ class MeetupTests(unittest.TestCase):
         print User.delete(self.user_id)
         print UserCredentials.delete(self.user_credential_id)
         result = requests.delete(self.api_url + "event/" + self.vendor_event_id + \
-                               "?sign=true&key=" + self.auth_token)
+                                 "?sign=true&key=" + self.access_token)
         assert result.status_code == 200
+
 
 if __name__ == "__main__":
     unittest.main()
-
-
-

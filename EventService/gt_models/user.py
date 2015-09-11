@@ -37,7 +37,7 @@ class UserCredentials(Base):
     id = Column(Integer, primary_key=True)
     userId = Column(Integer, ForeignKey('user.id'), nullable=False)
     socialNetworkId = Column(Integer, ForeignKey('social_network.id'), nullable=False)
-    authToken = Column(String(1000))
+    accessToken = Column(String(1000))
     refreshToken = Column(String(1000))
     webhook = Column(String(100))
     memberId = Column(String(200))
@@ -78,11 +78,11 @@ class UserCredentials(Base):
         ).first()
 
     @classmethod
-    def update_auth_token(cls, user_id, social_network_id, auth_token):
+    def update_auth_token(cls, user_id, social_network_id, access_token):
         success = False
         user = cls.get_by_user_and_social_network(user_id, social_network_id)
         if user:
-            user.update(authToken=auth_token)
+            user.update(accessToken=access_token)
             success = True
         return success
 
