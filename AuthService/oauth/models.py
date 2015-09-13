@@ -87,7 +87,7 @@ class DomainRole(db.Model):
     roleName = db.Column(db.String(255), nullable=False, unique=True)
 
     domainId = db.Column(
-        db.BigInteger, db.ForeignKey('domain.id')
+        db.Integer, db.ForeignKey('domain.id')
     )
     domain = db.relationship('Domain')
 
