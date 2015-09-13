@@ -58,7 +58,7 @@ class Token(db.Model):
     client = db.relationship('Client')
 
     user_id = db.Column(
-        db.Integer, db.ForeignKey('user.id')
+        db.BigInteger, db.ForeignKey('user.id')
     )
     user = db.relationship('User')
 
@@ -122,15 +122,16 @@ class DomainRole(db.Model):
 
     @staticmethod
     def all():
-        """ Get all roles in database """
-        return DomainRole.query.all()
+        """ Get all roles_ids in database """
+        all_roles = DomainRole.query.all() or []
+        return dict(roles=[all_role.id for all_role in all_roles])
 
 
 class UserScopedRoles(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     userId = db.Column(
-        db.Integer, db.ForeignKey('user.id'), nullable=False
+        db.BigInteger, db.ForeignKey('user.id'), nullable=False
     )
     roleId = db.Column(
         db.Integer, db.ForeignKey('domain_role.id'), nullable=False

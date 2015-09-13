@@ -10,8 +10,8 @@
     # Get latest code from git
     - name: Get stuff from git
       git:
-        repo: git@github.com:Veechi/AuthService.git
-        dest: /home/ubuntu/AuthService/
+        repo: git@github.com:gettalent/talent-flask-services.git
+        dest: /home/ubuntu/talent-flask-services/
         version: "{{branch}}"
         accept_hostkey: yes
 
@@ -30,7 +30,7 @@
     # Build a new version of docker image
     - name: check or build image
       docker_image:
-        path: "/home/ubuntu/AuthService/"
+        path: "/home/ubuntu/talent-flask-services/AuthService/"
         name: "{{image}}"
         state: build
 
