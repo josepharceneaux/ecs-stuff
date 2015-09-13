@@ -58,7 +58,7 @@ class Token(db.Model):
     client = db.relationship('Client')
 
     user_id = db.Column(
-        db.Integer, db.ForeignKey('user.id')
+        db.BigInteger, db.ForeignKey('user.id')
     )
     user = db.relationship('User')
 
@@ -87,7 +87,7 @@ class DomainRole(db.Model):
     roleName = db.Column(db.String(255), nullable=False, unique=True)
 
     domainId = db.Column(
-        db.Integer, db.ForeignKey('domain.id')
+        db.BigInteger, db.ForeignKey('domain.id')
     )
     domain = db.relationship('Domain')
 
@@ -131,7 +131,7 @@ class UserScopedRoles(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     userId = db.Column(
-        db.Integer, db.ForeignKey('user.id'), nullable=False
+        db.BigInteger, db.ForeignKey('user.id'), nullable=False
     )
     roleId = db.Column(
         db.Integer, db.ForeignKey('domain_role.id'), nullable=False
