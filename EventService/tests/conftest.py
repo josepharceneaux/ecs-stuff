@@ -1,23 +1,14 @@
 import os
 import pytest
-import pytest
-import datetime
-import requests
-from app.app import app as _app
-from werkzeug.security import generate_password_hash, gen_salt
-from gt_models.config import init_db, db_session
 from gt_models.client import Client
-from gt_models.token import Token
-import locale
+from gt_models.client import Token
 import datetime
 import requests
-from sqlalchemy import text
-
-from werkzeug.security import generate_password_hash, gen_salt
-from gt_models.client import Client, Token
 
 from app import app as _app
 from gt_models.config import init_db, db_session
+from werkzeug.security import generate_password_hash
+from werkzeug.security import gen_salt
 from gt_models.event import Event
 from gt_models.user import User
 from gt_models.domain import Domain
@@ -31,14 +22,15 @@ init_db()
 TESTDB = 'test_project.db'
 TESTDB_PATH = "/tmp/{}".format(TESTDB)
 TEST_DATABASE_URI = 'sqlite:///' + TESTDB_PATH
-APP_URL = 'http://127.0.0.1:5006/'
-
-@pytest.fixture
-def base_url():
-    return APP_URL
+APP_URL = 'http://127.0.0.1:5000/'
 
 GET_TOKEN_URL = 'http://127.0.0.1:8888/oauth2/token'
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+
+
+@pytest.fixture(scope='session')
+def base_url():
+    return APP_URL
 
 
 @pytest.fixture(scope='session')
@@ -76,6 +68,7 @@ def client(request):
     # request.addfinalizer(delete_client)
     return test_client
 
+
 @pytest.fixture(scope='session')
 def culture():
     mixer = Mixer(session=db_session, commit=True)
@@ -87,24 +80,24 @@ def culture():
     return culture
 
 
-@pytest.fixture(scope='session')
-def user(request, client):
-    test_user = User(
-        email='test@gmail.com',
-        password=generate_password_hash('testuser', method='pbkdf2:sha512'),
-        domainId=1,
-        firstName='Test',
-        lastName='User',
-        expiration=None
-    )
-    User.save(test_user)
-
-    def delete_user():
-        Token.query.filter_by(user_id=test_user.id).delete()
-        Client.delete(text(client.client_id))
-        User.delete(test_user.id)
-    request.addfinalizer(delete_user)
-    return test_user
+# @pytest.fixture(scope='session')
+# def user(request, client):
+#     test_user = User(
+#         email='test@gmail.com',
+#         password=generate_password_hash('testuser', method='pbkdf2:sha512'),
+#         domainId=1,
+#         firstName='Test',
+#         lastName='User',
+#         expiration=None
+#     )
+#     User.save(test_user)
+#
+#     def delete_user():
+#         Token.query.filter_by(user_id=test_user.id).delete()
+#         Client.delete(client.client_id)
+#         User.delete(test_user.id)
+#     request.addfinalizer(delete_user)
+#     return test_user
 
 
 @pytest.fixture(scope='session')
@@ -170,9 +163,6 @@ def domain(request, organization, culture):
     domain = mixer.blend(Domain, organization=organization, culture=culture,
                          name=faker.nickname(), addedTime=now_timestamp)
 
-    def domain_teardown():
-        Domain.delete(domain.id)
-    request.addfinalizer(domain_teardown)
     return domain
 
 
@@ -184,19 +174,18 @@ def organization(request):
     return organization
 
 
-# @pytest.fixture(scope='session')
-# def user(request, culture, domain):
-#     mixer = Mixer(session=db_session, commit=True)
-#
-#     user = mixer.blend(User, domain=domain, culture=culture, firstName=faker.nickname(),
-#                        lastName=faker.nickname(), email=faker.email_address())
-#
-#     def user_teardown():
-#         User.delete(user.id)
-#     request.addfinalizer(user_teardown)
-#     return user
+@pytest.fixture(scope='session')
+def user(request, culture, domain):
+    mixer = Mixer(session=db_session, commit=True)
 
-@pytest.fixture()
+    user = mixer.blend(User, domain=domain, culture=culture, firstName=faker.nickname(),
+                       lastName=faker.nickname(), email=faker.email_address(),
+                       password=generate_password_hash('A123456', method='pbkdf2:sha512'))
+
+    return user
+
+
+@pytest.fixture(scope='session')
 def client_credentials(request, user):
     client_id = gen_salt(40)
     client_secret = gen_salt(50)
@@ -204,10 +193,11 @@ def client_credentials(request, user):
     Client.save(client)
     return client
 
-@pytest.fixture
+
+@pytest.fixture(scope='session')
 def auth_data(user, base_url, client_credentials):
     # TODO; make the URL constant, create client_id and client_secret on the fly
-    auth_service_url = "http://127.0.0.1:5005/oauth2/token"
+    auth_service_url = GET_TOKEN_URL
 
     data = dict(client_id=client_credentials.client_id,
                 client_secret=client_credentials.client_secret, username=user.email,
@@ -218,6 +208,7 @@ def auth_data(user, base_url, client_credentials):
     assert response.json().has_key('access_token')
     assert response.json().has_key('refresh_token')
     return response.json()
+
 
 def teardown_fixtures(user, client_credentials, domain, organization):
     tokens = Token.get_by_user_id(user.id)

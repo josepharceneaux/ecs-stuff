@@ -53,3 +53,10 @@ class Token(Base):
         if self._scopes:
             return self._scopes.split()
         return []
+
+    @classmethod
+    def get_by_id(cls, id):
+        assert id is not None
+        return cls.query.filter(
+            Token.id == id
+        ).one()

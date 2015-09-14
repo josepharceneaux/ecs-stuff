@@ -6,6 +6,7 @@ import json
 from gt_models.social_network import SocialNetwork
 from gt_models.user import UserCredentials
 
+
 def test_subscribed_social_network(user, client, base_url, auth_data):
     """
     Input: We have a user which is subscribed to Facebook and Eventbrite
@@ -29,19 +30,16 @@ def test_subscribed_social_network(user, client, base_url, auth_data):
                                    apiUrl='https://www.eventbriteapi.com/')
         SocialNetwork.save(eventbrite)
 
-def test_social_network(user):
-    print user.id, user.firstName
-
     facebook_creds = UserCredentials.get_by_user_and_social_network(user.id, facebook.id)
     if not facebook_creds:
         facebook_credentials = UserCredentials(userId=user.id, socialNetworkId=facebook.id,
-                            authToken='lorel ipsum', refreshToken='lorel ipsum')
+                            accessToken='lorel ipsum', refreshToken='lorel ipsum')
         UserCredentials.save(facebook_credentials)
 
     eventbrite_creds = UserCredentials.get_by_user_and_social_network(user.id, eventbrite.id)
     if not eventbrite_creds:
         eventbrite_credentials = UserCredentials(userId=user.id, socialNetworkId=eventbrite.id,
-                            authToken='lorel ipsum', refreshToken='lorel ipsum')
+                            accessToken='lorel ipsum', refreshToken='lorel ipsum')
         UserCredentials.save(eventbrite_credentials)
 
     response = requests.get(base_url + 'social_networks/',
