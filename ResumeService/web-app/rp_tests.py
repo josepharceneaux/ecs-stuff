@@ -6,12 +6,23 @@ from StringIO import StringIO
 import unittest
 
 from application import app
+from models import db, Client, Token
+db.init_app(app)
 
 APP = app.test_client()
 
 
 class TestSingleResumeCandidateDict(unittest.TestCase):
     """Test Cases for RP Service."""
+
+    @classmethod
+    def setUpClass(TestSingleResumeCandidateDict):
+        test_client = Client(client_id='fakeclient', client_secret='s00pers3kr37')
+        test_token = Token(client_id='fakeclient', user_id=1, token_type='bearer', access_token='fooz', refresh_token='barz')
+        db.session.add(test_client)
+        db.session.commit()
+        db.session.add(test_token)
+        db.session.commit()
 
     def setUp(self):
         self.doc_dict = dict(addressLine1=u'466 Tailor Way', addressLine2=u'', city=u'Lansdale',
@@ -100,10 +111,19 @@ class TestSingleResumeCandidateDict(unittest.TestCase):
     def test_invalid_token_fails(self):
         filepicker_key = '0169173d35beaf1053e79fdf1b5db864.docx'
         with APP as c:
-            test_response = c.post('/parse_resume', headers={'Authorization': 'Bearer bar'}, data=dict(filepicker_key=filepicker_key))
+            test_response = c.post('/parse_resume', headers={'Authorization': 'Bearer barz'}, data=dict(filepicker_key=filepicker_key))
         json_obj = json.loads(test_response.data)
         assert 'error' in json_obj
 
+
+    @classmethod
+    def tearDownClass(TestSingleResumeCandidateDict):
+        test_client = Client.query.filter_by(client_id='fakeclient').first()
+        test_token = Token.query.filter_by(client_id='fakeclient').first()
+        db.session.delete(test_token)
+        db.session.commit()
+        db.session.delete(test_client)
+        db.session.commit()
 
 def fetch_resume_post_response(file_name):
     """Posts file to local test auth server for json formatted resumes."""
