@@ -51,4 +51,6 @@ def init_db():
     import rsvp
     import event
     import activity
+    import client
+    import token
     Base.metadata.create_all(bind=engine)

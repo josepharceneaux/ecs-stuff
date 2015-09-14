@@ -9,6 +9,8 @@ from event_importer.base import logger
 from event_importer.eventbrite import Eventbrite
 from gt_models.event import Event
 from gt_models.user import UserCredentials
+from gt_models.social_network import SocialNetwork
+from gt_models.config import db_session
 from flask.ext.restful import Resource
 from flask.ext.restful import Api, abort
 from flask import Flask, request, session, g, redirect, url_for, \
@@ -217,15 +219,21 @@ def get_rsvp_id(url):
 def authenticate(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if not getattr(func, 'authenticated', True):
-            return func(*args, **kwargs)
-        bearer = flask.request.headers['Authorization']
-        oauth_request = OAuth2Session(token={'access_token': bearer.strip()})
-        # TODO: remove this URL and make it configurable
-        response = oauth_request.get('http://localhost:5005/oauth2/authorize', verify=False)
-        if response.status_code == 200 and response.json().has_key('user_id'):
-            kwargs['user_id'] = response.json()['user_id']
-            return func(*args, **kwargs)
+        try:
+            if not getattr(func, 'authenticated', True):
+                return func(*args, **kwargs)
+            bearer = flask.request.headers['Authorization']
+            oauth_request = OAuth2Session(token={'access_token': bearer.strip()})
+            # TODO: remove this URL and make it configurable
+            response = oauth_request.get('http://localhost:5005/oauth2/authorize', verify=False)
+            if response.status_code == 200 and response.json().has_key('user_id'):
+                kwargs['user_id'] = response.json()['user_id']
+                return func(*args, **kwargs)
+        except Exception as e:
+            import traceback
+            print traceback.format_exc()
+            print 'Error....'
+            print e.message
 
         abort(401)
     return wrapper
@@ -291,17 +299,52 @@ class SocialNetworks(Resource):
     """
         This resource returns a list of events or it can be used to create event using POST
     """
+
+    def set_is_subscribed(self, dicts, value=False):
+        for dict in dicts:
+            dict['is_subscribed'] = value
+        return dicts
+
     @authenticate
     def get(self, *args, **kwargs):
         """
         This action returns a list of user events.
         """
-        print "Printing Args"
         print args, kwargs
         user_id = kwargs.get('user_id') or None
         assert user_id
-        subscribed_social_networks = map(lambda ur: ur.to_json(), UserCredentials.get_by_user_id(user_id=user_id))
-        if subscribed_social_networks:
-            return {'social_networks': subscribed_social_networks}
+        # Get list of networks user is subscribed to from UserCredentials table
+        subscribed_networks = None
+        subscribed_data = UserCredentials.get_by_user_id(user_id=user_id)
+        if subscribed_data:
+            # Get list of social networks user is subscribed to
+            subscribed_networks = SocialNetwork.get_by_ids(
+                [data.socialNetworkId for data in subscribed_data]
+            )
+            # Convert it to JSON
+            subscribed_networks = map(lambda sn: sn.to_json(), subscribed_networks)
+            # Add 'is_subscribed' key in each object and set it to True because
+            # these are the social networks user is subscribed to
+            subscribed_networks = self.set_is_subscribed(subscribed_networks, value=True)
+        # Get list of social networks user is not subscribed to
+        unsubscribed_networks = SocialNetwork.get_all_except_ids(
+            [data.socialNetworkId for data in subscribed_data ]
+        )
+        if unsubscribed_networks:
+            unsubscribed_networks = map(lambda sn: sn.to_json(), unsubscribed_networks)
+            # Add 'is_subscribed' key in each object and set it to False
+            unsubscribed_networks = self.set_is_subscribed(unsubscribed_networks, value=False)
+        # Now merge both subscribed and unsubscribed networks
+        all_networks = []
+        if subscribed_networks:
+            all_networks.extend(subscribed_networks)
+        if unsubscribed_networks:
+            all_networks.extend(unsubscribed_networks)
+        if all_networks:
+            return {'social_networks': all_networks}
         else:
             return {'social_networks': []}
+
+@app.teardown_request
+def teardown_request(exception=None):
+    db_session.remove()
