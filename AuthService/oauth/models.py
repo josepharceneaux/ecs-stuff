@@ -147,7 +147,7 @@ class UserScopedRoles(db.Model):
         for role_id in roles_list:
             if not UserScopedRoles.query.filter(UserScopedRoles.userId == user_id and
                                                 UserScopedRoles.roleId == role_id).first():
-                if User.query.get(user_id).first() and DomainRole.query.get(role_id).first():
+                if User.query.get(user_id) and DomainRole.query.get(role_id):
                     user_scoped_role = UserScopedRoles(userId=user_id, roleId=role_id)
                     db.session.add(user_scoped_role)
                 else:
