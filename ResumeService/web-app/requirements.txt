@@ -15,7 +15,9 @@ oauthlib==1.0.3
 pdfminer==20110515
 phonenumbers==7.0.8
 Pillow==2.9.0
+py==1.4.30
 PyPDF2==1.25.1
+pytest==2.7.2
 python-magic==0.4.6
 reportlab==3.2.0
 requests==2.5.3
