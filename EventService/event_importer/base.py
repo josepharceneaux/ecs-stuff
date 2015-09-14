@@ -34,7 +34,7 @@ class Base(object):
         self.vendor = None
         self.user_credential = None
         self.api_url = None
-        self.auth_token = None
+        self.access_token = None
         self.member_id = None
         self.headers = None
         self.traceback_info = None
@@ -73,7 +73,7 @@ class Base(object):
         and Error message to be logged.
         In every function where exception is thrown, functionName is appended
         in the traceback_info.
-        If user credentials are not "None", we set api_url, auth_token,
+        If user credentials are not "None", we set api_url, access_token,
         member_id, gt_user_id, social_network_id and traceback_info as base
         class objects so any child class can use them. If any of them is
         missing, we log an error with missing items.
@@ -91,7 +91,7 @@ class Base(object):
                 'functionName': 'set_user_credential()',
                 'error': ''}
             data = {
-                "auth_token": self.user_credential.authToken,
+                "access_token": self.user_credential.accessToken,
                 "member_id": self.user_credential.memberId,
                 "gt_user_id": self.user_credential.userId,
                 "social_network_id": self.user_credential.social_network.id,
@@ -106,13 +106,13 @@ class Base(object):
                 self.social_network_id = data['social_network_id']
                 # token validity is checked here
                 # if token is expired, we refresh it here
-                if not self.token_validity(data['auth_token']):
+                if not self.token_validity(data['access_token']):
                     # token is expired, get fresh token from vendor
-                    self.auth_token = self.refresh_token()
+                    self.access_token = self.refresh_token()
                 else:
                     # token is valid, so proceed normally
-                    self.auth_token = data['auth_token']
-                self.headers = {'Authorization': 'Bearer ' + self.auth_token}
+                    self.access_token = data['access_token']
+                self.headers = {'Authorization': 'Bearer ' + self.access_token}
             else:
                 # gets fields which are missing
                 items = [key for key, value in data.iteritems()
@@ -150,10 +150,11 @@ class Base(object):
             self.all_user_credentials = filter(lambda user_creds: user_creds.userId == user_id,
                                                self.all_user_credentials)
 
-    def http_get(self, url, params=None, headers=None):
+    def http_get(self, url, params=None, data=None):
         """
         This code is used to make GET call on given url and handles exceptions
         """
+        headers = self.headers
         try:
             response = requests.get(url, params, headers=headers)
             # If we made a bad request (a 4XX client error or 5XX server error response),

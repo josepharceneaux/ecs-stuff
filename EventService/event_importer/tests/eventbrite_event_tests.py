@@ -36,7 +36,7 @@ from mixer.backend.sqlalchemy import Mixer
 class EventbriteTests(unittest.TestCase):
     def setUp(self):
         self.api_url = "https://www.eventbriteapi.com/v3"
-        self.auth_token = "URPBHL3JRF4SY3I43OM5"
+        self.access_token = "URPBHL3JRF4SY3I43OM5"
         self.member_id = '149509931459'
         # datetime pattern for eventbrite API call
         self.start_time = (datetime.now() + timedelta(days=9)).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -56,7 +56,7 @@ class EventbriteTests(unittest.TestCase):
         self.user = mixer.blend(User, domain=self.domain, culture=self.culture)
         self.user_id = self.user.id
         self.user_credential = mixer.blend(UserCredentials, userId=self.user_id,
-                                           authToken=self.auth_token, memberId=self.member_id,
+                                           accessToken=self.access_token, memberId=self.member_id,
                                            socialNetworkId=eventbrite.id)
         self.user_credential_id = self.user_credential.id
 
@@ -68,7 +68,7 @@ class EventbriteTests(unittest.TestCase):
         Lorel Ipsum. Lorel Ipsum. Lorel Ipsum. Lorel Ipsum. Lorel Ipsum.
         Lorel Ipsum."""
         self.event_name = 'Test Event'
-        params = {'token': self.auth_token,
+        params = {'token': self.access_token,
                   'event.start.utc': self.start_time,
                   'event.start.timezone': self.time_zone,
                   'event.end.utc': self.end_time,
@@ -88,7 +88,7 @@ class EventbriteTests(unittest.TestCase):
     def create_event_tickets(self, vendor_event_id):
         url = self.api_url + "/events/" + vendor_event_id + "/ticket_classes/"
         params = {
-            'token': self.auth_token,
+            'token': self.access_token,
             'ticket_class.name': 'Free Ticket',
             'ticket_class.quantity_total': 50,
             'ticket_class.free': True}
@@ -98,7 +98,7 @@ class EventbriteTests(unittest.TestCase):
     def publish_event(self, vendor_event_id):
         # create url to publish event/
         url = self.api_url + "/events/" + vendor_event_id + "/publish/"
-        params = {'token': self.auth_token}
+        params = {'token': self.access_token}
         result = requests.post(url, params=params)
         return result.ok
 
@@ -107,7 +107,7 @@ class EventbriteTests(unittest.TestCase):
         eventbrite = Eventbrite(start_date=self.start_time,
                                 end_date=self.end_time,
                                 alchemy_session_init=True)
-        eventbrite._process_events(self.user_credential)
+        eventbrite._process_events()
 
     def test_eventbrite_event(self):
         self.run_process_event()
@@ -121,7 +121,7 @@ class EventbriteTests(unittest.TestCase):
         print User.delete(self.user_id)
         print UserCredentials.delete(self.user_credential_id)
         result = requests.post(self.api_url + "/events/" + self.vendor_event_id
-                               + "/unpublish/" + "?token=" + self.auth_token)
+                               + "/unpublish/" + "?token=" + self.access_token)
         assert result.status_code == 200
 
 

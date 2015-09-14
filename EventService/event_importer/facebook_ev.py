@@ -33,7 +33,7 @@ class Facebook(Base):
         does that too.
         """
         self.traceback_info.update({"functionName": "get_events()"})
-        self.graph = facebook.GraphAPI(access_token=self.auth_token)
+        self.graph = facebook.GraphAPI(access_token=self.access_token)
         all_events = []
         user_events = []
         # https://developer.facebook.com to see detail on params
@@ -152,7 +152,7 @@ class Facebook(Base):
         self.traceback_info.update({"functionName": "get_rsvps()"})
         rsvps = []
         try:
-            self.graph = facebook.GraphAPI(access_token=self.auth_token)
+            self.graph = facebook.GraphAPI(access_token=self.access_token)
             url = 'v2.4/%s' % str(event.vendorEventId) + '/'
             # Get list of people surely attending
             confirm_attendees = self.graph.get_object(url + 'attending')

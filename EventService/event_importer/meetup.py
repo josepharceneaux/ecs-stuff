@@ -14,16 +14,16 @@ from gt_models.event import Event
 class Meetup(Base):
     def __init__(self, *args, **kwargs):
         super(Meetup, self).__init__(*args, **kwargs)
-        self.start_date = kwargs.get('start_date') or (datetime.now() - timedelta(days=60))
-        self.end_date = kwargs.get('end_date') or (datetime.now() + timedelta(days=60))
+        self.start_date = kwargs.get('start_date') or (datetime.now() - timedelta(days=90))
+        self.end_date = kwargs.get('end_date') or (datetime.now() + timedelta(days=90))
         self.start_time_since_epoch = milliseconds_since_epoch(self.start_date)
         self.end_time_since_epoch = milliseconds_since_epoch(self.end_date)
         self.start_date_dt = self.start_date
         self.end_date_dt = self.end_date
         self.vendor = 'Meetup'
 
-    def token_validity(self, auth_token):
-        header = {'Authorization': 'Bearer ' + auth_token}
+    def token_validity(self, access_token):
+        header = {'Authorization': 'Bearer ' + access_token}
         result = requests.post(self.api_url + "/member/self", headers=header)
         if result.ok:
             return True
@@ -77,8 +77,7 @@ class Meetup(Base):
                   'time': '%.0f, %.0f' %
                   (self.start_time_since_epoch,
                    self.end_time_since_epoch)}
-        response = self.http_get(events_url, params=params,
-                                 headers=self.headers)
+        response = self.http_get(events_url, params=params)
         if response.ok:
             try:
                 data = response.json()
@@ -94,7 +93,7 @@ class Meetup(Base):
                     events = []  # resetting events for next page
                     # attach the key before sending the request
                     url = next_url + '&sign=true'
-                    response = self.http_get(url, headers=self.headers)
+                    response = self.http_get(url)
                     if response.ok:
                         data = response.json()
                         events.extend(data['results'])
@@ -117,8 +116,7 @@ class Meetup(Base):
                 response = self.http_get(url,
                                          params=
                                          {'group_id':
-                                         event['group']['id']},
-                                         headers=self.headers)
+                                         event['group']['id']},)
                 if response.ok:
                     group = response.json()
                     group_organizer = group['results'][0]['organizer']
@@ -147,48 +145,52 @@ class Meetup(Base):
                 url = self.api_url + '/groups/?sign=true'
                 response = self.http_get(url,
                                          params={
-                                             'group_id': event['group']['id']},
-                                         headers=self.headers)
+                                             'group_id': event['group']['id']})
                 if response.ok:
                     group = response.json()
                     # contains a dict that has member_id and name
                     group_organizer = group['results'][0]['organizer']
                     url = self.api_url + '/member/' + \
                           str(group_organizer['member_id']) + '?sign=true'
-                    response = self.http_get(url, headers=self.headers)
+                    response = self.http_get(url)
                     if response.ok:
                         organizer = response.json()
-                    return Event(
-                        vendorEventId=event['id'],
-                        eventTitle=event['name'],
-                        eventDescription=event['description'] if event.has_key('description') else '',
-                        socialNetworkId=self.social_network_id,
-                        userId=self.gt_user_id,
+                start_time = milliseconds_since_epoch_to_dt(float(event['time']))
+                end_time = event['duration'] if event.has_key('duration') else None
+                if end_time:
+                    end_time = milliseconds_since_epoch_to_dt((float(event['time']))
+                                                              + (float(end_time) * 1000))
+                return Event(
+                    vendorEventId=event['id'],
+                    eventTitle=event['name'],
+                    eventDescription=event['description'] if event.has_key('description') else '',
+                    socialNetworkId=self.social_network_id,
+                    userId=self.gt_user_id,
 
-                        # group id and urlName are required fields to edit an event
-                        # So, should raise exception if Null
-                        groupId=event['group']['id'],
-                        groupUrlName=event['group']['urlname'],
-                        # Let's drop error logs if venue has no address, or if address
-                        # has no longitude/latitude
-                        eventAddressLine1=venue['address_1'],
-                        eventAddressLine2='',
-                        eventCity=venue['city'].title(),
-                        eventState='',
-                        eventZipCode='',
-                        eventCountry=venue['country'],
-                        eventLongitude=float(venue['lon']),
-                        eventLatitude=float(venue['lat']),
-                        eventStartDateTime=milliseconds_since_epoch_to_dt(float(event['created'])),
-                        eventEndDateTime=None,
-                        organizerName=group_organizer['name'] if group_organizer else '',
-                        organizerEmail='',
-                        aboutEventOrganizer=organizer['bio'] if organizer.has_key('bio') else '',
-                        registrationInstruction='',
-                        eventCost='',
-                        eventCurrency='',
-                        eventTimeZone='',
-                        maxAttendees=0)
+                    # group id and urlName are required fields to edit an event
+                    # So, should raise exception if Null
+                    groupId=event['group']['id'],
+                    groupUrlName=event['group']['urlname'],
+                    # Let's drop error logs if venue has no address, or if address
+                    # has no longitude/latitude
+                    eventAddressLine1=venue['address_1'],
+                    eventAddressLine2='',
+                    eventCity=venue['city'].title(),
+                    eventState=venue.get('state', ''),
+                    eventZipCode=venue.get('zip', ''),
+                    eventCountry=venue['country'],
+                    eventLongitude=float(venue['lon']),
+                    eventLatitude=float(venue['lat']),
+                    eventStartDateTime=start_time,
+                    eventEndDateTime=end_time,
+                    organizerName=group_organizer['name'] if group_organizer else '',
+                    organizerEmail='',
+                    aboutEventOrganizer=organizer['bio'] if organizer.has_key('bio') else '',
+                    registrationInstruction='',
+                    eventCost='',
+                    eventCurrency='',
+                    eventTimeZone='',
+                    maxAttendees=0)
             except Exception as e:
                 event['error_message'] = e.message
                 log_exception(self.traceback_info,
@@ -210,8 +212,7 @@ class Meetup(Base):
         assert social_network_id is not None
         events_url = self.api_url + '/rsvps/?sign=true&page=100'
         params = {'event_id': event.vendorEventId}
-        response = self.http_get(events_url, params=params,
-                                 headers=self.headers)
+        response = self.http_get(events_url, params=params)
         if response.ok:
             data = response.json()
             rsvps.extend(data['results'])
@@ -222,8 +223,7 @@ class Meetup(Base):
             next_url = data['meta']['next'] or None
             while next_url:
                 # attach the key before sending the request
-                response = self.http_get(next_url + '&sign=true',
-                                         headers=self.headers)
+                response = self.http_get(next_url + '&sign=true')
                 if response.ok:
                     data = response.json()
                     rsvps.extend(data['results'])
@@ -260,7 +260,7 @@ class Meetup(Base):
         events_url = self.api_url + '/member/' \
                      + str(rsvp['member']['member_id']) \
                      + '?sign=true'
-        response = self.http_get(events_url, headers=self.headers)
+        response = self.http_get(events_url)
         if response.ok:
             try:
                 data = response.json()
