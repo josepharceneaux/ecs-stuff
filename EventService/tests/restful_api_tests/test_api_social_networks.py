@@ -18,7 +18,7 @@ def test_subscribed_social_network(user, client, base_url, auth_data):
     """
     # Create Facebook and Eventbrite Social Networks if not already there.
     # Make sure the user has credentials in the user_credentials table for these two.
-
+    
     facebook = SocialNetwork.get_by_name('Facebook')
     eventbrite = SocialNetwork.get_by_name('Eventbrite')
     if not facebook:
@@ -28,6 +28,9 @@ def test_subscribed_social_network(user, client, base_url, auth_data):
         eventbrite = SocialNetwork(name='Eventbrite', url='www.eventbrite.com/',
                                    apiUrl='https://www.eventbriteapi.com/')
         SocialNetwork.save(eventbrite)
+
+def test_social_network(user):
+    print user.id, user.firstName
 
     facebook_creds = UserCredentials.get_by_user_and_social_network(user.id, facebook.id)
     if not facebook_creds:

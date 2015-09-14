@@ -17,8 +17,7 @@ from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash
 
 # configuration
-from event_importer.utilities import log_exception
-
+from event_importer.utilities import log_exception, authenticate_user
 
 DATABASE = '/tmp/flaskr.db'
 DEBUG = True
@@ -34,6 +33,7 @@ CLIENT_ID = 'o0nptnl4eet4c40suj9es52612'
 CLIENT_SECRET = 'ohtutvn34cvfucl26i5ele5ki2'
 REDIRECT_URL = 'http://127.0.0.1:5000/code'
 user_refresh_token = '73aac7b76040a33d5dda70d0190aa4e7'
+OAUTH_SERVER = 'http://127.0.0.1:8888/oauth2/authorize'
 
 
 def api_route(self, *args, **kwargs):
@@ -216,27 +216,52 @@ def get_rsvp_id(url):
     rsvp = {'rsvp_id': vendor_rsvp_id}
     return rsvp
 
+
 def authenticate(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
             if not getattr(func, 'authenticated', True):
                 return func(*args, **kwargs)
-            bearer = flask.request.headers['Authorization']
-            oauth_request = OAuth2Session(token={'access_token': bearer.strip()})
-            # TODO: remove this URL and make it configurable
-            response = oauth_request.get('http://localhost:5005/oauth2/authorize', verify=False)
-            if response.status_code == 200 and response.json().has_key('user_id'):
+            bearer = flask.request.headers.get('Authorization')
+            access_token = bearer.lower().replace('bearer ', '')
+            oauth = OAuth2Session(token={'access_token': access_token})
+            response = oauth.get(OAUTH_SERVER)
+            if response.status_code == 200 and response.json().get('user_id'):
                 kwargs['user_id'] = response.json()['user_id']
                 return func(*args, **kwargs)
+            else:
+                abort(401)
         except Exception as e:
             import traceback
             print traceback.format_exc()
             print 'Error....'
             print e.message
-
-        abort(401)
+            abort(401)
     return wrapper
+
+
+class InvalidUsage(Exception):
+    status_code = 400
+
+    def __init__(self, message, status_code=None, payload=None):
+        Exception.__init__(self)
+        self.message = message
+        if status_code is not None:
+            self.status_code = status_code
+        self.payload = payload
+
+    def to_dict(self):
+        rv = dict(self.payload or ())
+        rv['message'] = self.message
+        return rv
+
+
+@app.errorhandler(InvalidUsage)
+def handle_invalid_usage(error):
+    response = flask.jsonify(error.to_dict())
+    response.status_code = error.status_code
+    return response
 
 
 class Resource(Resource):
@@ -248,56 +273,61 @@ class Events(Resource):
     """
         This resource returns a list of events or it can be used to create event using POST
     """
-
-    def get(self):
+    @authenticate
+    def get(self, **kwargs):
         """
         This action returns a list of user events.
         """
-        events = map(lambda event: event.to_json(), Event.query.filter_by(userId=1).all())
+        # raise InvalidUsage('Not authorized', status_code=401)
+        events = map(lambda event: event.to_json(), Event.query.filter_by(userId=kwargs['user_id']).all())
         if events:
-            return {'events': events}
+            return {'events': events}, 200
         else:
-            return {'events': []}
+            return {'events': []}, 200
 
-    def post(self):
+    @authenticate
+    def post(self, **kwargs):
         """
         This method takes data to create event in local database as well as on corresponding social network.
         :return: id of created event
         """
-        data = request.values
-        return data
+        # data = request.values
+        return dict(id=1), 201
 
 
-@api.route('/events/{event_id}')
+@api.route('/events/<int:event_id>')
 class EventById(Resource):
-    def get(self, event_id):
+
+    @authenticate
+    def get(self, event_id, **kwargs):
         """
         Returns event object with required id
         :param id: integer, unique id representing event in GT database
         :return: json for required event
         """
-        pass
+        return dict(event={}), 200
 
-    def post(self, event_id):
+    @authenticate
+    def post(self, **kwargs):
         """
         Updates event in GT database and on corresponding social network
         :param id:
         """
-        pass
+        return None, 204
 
-    def delete(self, event_id):
+    @authenticate
+    def delete(self, **kwargs):
         """
         Removes event from GT database and from social network as well.
         :param id: (Integer) unique id in Event table on GT database.
         """
-        pass
-
+        return None, 200
 
 
 @api.route('/social_networks/')
 class SocialNetworks(Resource):
     """
-        This resource returns a list of events or it can be used to create event using POST
+        This resource returns a list of social networks
     """
 
     def set_is_subscribed(self, dicts, value=False):

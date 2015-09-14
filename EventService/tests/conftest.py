@@ -1,3 +1,5 @@
+import os
+import pytest
 import pytest
 import datetime
 import requests
@@ -6,6 +8,17 @@ from werkzeug.security import generate_password_hash, gen_salt
 from gt_models.config import init_db, db_session
 from gt_models.client import Client
 from gt_models.token import Token
+import locale
+import datetime
+import requests
+from sqlalchemy import text
+
+from werkzeug.security import generate_password_hash, gen_salt
+from gt_models.client import Client, Token
+
+from app import app as _app
+from gt_models.config import init_db, db_session
+from gt_models.event import Event
 from gt_models.user import User
 from gt_models.domain import Domain
 from gt_models.culture import Culture
@@ -24,28 +37,46 @@ APP_URL = 'http://127.0.0.1:5006/'
 def base_url():
     return APP_URL
 
+GET_TOKEN_URL = 'http://127.0.0.1:8888/oauth2/token'
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+
+
 @pytest.fixture(scope='session')
 def app(request):
     """
     Create a Flask app, and override settings, for the whole test session.
     """
 
-    _app.config.update(
+    _app.app.config.update(
         TESTING=True,
         # SQLALCHEMY_DATABASE_URI=TEST_DATABASE_URI,
+        LIVESERVER_PORT=6000
     )
 
-    return _app
+    return _app.app.test_client()
 
 
 @pytest.fixture(scope='session')
-def client(app, request):
+def client(request):
     """
     Get the test_client from the app, for the whole test session.
     """
-    return app.test_client()
+    # Add test client in Client DB
+    client_id = gen_salt(40)
+    client_secret = gen_salt(50)
+    test_client = Client(
+        client_id=client_id,
+        client_secret=client_secret
+    )
+    Client.save(test_client)
+    #
+    # def delete_client():
+    #     Client.delete(test_client.client_id)
+    #
+    # request.addfinalizer(delete_client)
+    return test_client
 
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def culture():
     mixer = Mixer(session=db_session, commit=True)
     culture = Culture.get_by_code('en-us')
@@ -55,30 +86,115 @@ def culture():
         culture = mixer.blend('gt_models.culture.Culture', code='en-us')
     return culture
 
-@pytest.fixture()
+
+@pytest.fixture(scope='session')
+def user(request, client):
+    test_user = User(
+        email='test@gmail.com',
+        password=generate_password_hash('testuser', method='pbkdf2:sha512'),
+        domainId=1,
+        firstName='Test',
+        lastName='User',
+        expiration=None
+    )
+    User.save(test_user)
+
+    def delete_user():
+        Token.query.filter_by(user_id=test_user.id).delete()
+        Client.delete(text(client.client_id))
+        User.delete(test_user.id)
+    request.addfinalizer(delete_user)
+    return test_user
+
+
+@pytest.fixture(scope='session')
+def events(request, user):
+    events = []
+    props = dict(
+        eventTitle='PyTest Event %s',
+        eventDescription='Event Description',
+        socialNetworkId=18,
+        userId=user.id,
+        groupId='',
+        groupUrlName='',
+        eventAddressLine1='New Muslim town, Lahore',
+        eventAddressLine2='H # 163, Block A',
+        eventCity='Lahore',
+        eventState='Punjab',
+        eventZipCode='54600',
+        eventCountry='Pakistan',
+        eventLongitude=34.33,
+        eventLatitude=72.33,
+        eventStartDateTime=datetime.datetime.now(),
+        eventEndDateTime=datetime.datetime.now(),
+        organizerName='Zohaib Ijaz',
+        organizerEmail='',
+        aboutEventOrganizer='I am a Software Engineer',
+        registrationInstruction='Just join',
+        eventCost='0',
+        eventCurrency='USD',
+        eventTimeZone='Asia/Karachi',
+        maxAttendees=10)
+    for index in range(1, 11):
+        event = props.copy()
+        event['eventTitle'] %= index
+        events.extend(Event.save(event))
+
+    def delete_events():
+        for event in events:
+            Event.delete(event.id)
+
+    request.addfinalizer(delete_events)
+    return events
+
+
+@pytest.fixture(scope='session')
+def token(app, user, client):
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded'
+    }
+    params = {'client_id': client.client_id, 'client_secret': client.client_secret, 'grant_type': 'password',
+              'username': user.email, 'password': 'testuser'}
+    response = requests.post(GET_TOKEN_URL, headers=headers, data=params)
+    token = ''
+    if response.ok:
+        token = response.json()['access_token']
+
+    return token
+
+
+@pytest.fixture(scope='session')
 def domain(request, organization, culture):
     now_timestamp = datetime.datetime.now().strftime("%Y:%m:%d %H:%M:%S")
     mixer = Mixer(session=db_session, commit=True)
     domain = mixer.blend(Domain, organization=organization, culture=culture,
                          name=faker.nickname(), addedTime=now_timestamp)
+
+    def domain_teardown():
+        Domain.delete(domain.id)
+    request.addfinalizer(domain_teardown)
     return domain
 
-@pytest.fixture()
+
+@pytest.fixture(scope='session')
 def organization(request):
     mixer = Mixer(session=db_session, commit=True)
     organization = mixer.blend('gt_models.organization.Organization')
 
     return organization
 
-@pytest.fixture()
-def user(request, culture, domain):
-    mixer = Mixer(session=db_session, commit=True)
 
-    user = mixer.blend(User, domain=domain, culture=culture, firstName=faker.nickname(),
-                       lastName=faker.nickname(), email=faker.email_address(),
-                       password=generate_password_hash('A123456', method='pbkdf2:sha512'))
-
-    return user
+# @pytest.fixture(scope='session')
+# def user(request, culture, domain):
+#     mixer = Mixer(session=db_session, commit=True)
+#
+#     user = mixer.blend(User, domain=domain, culture=culture, firstName=faker.nickname(),
+#                        lastName=faker.nickname(), email=faker.email_address())
+#
+#     def user_teardown():
+#         User.delete(user.id)
+#     request.addfinalizer(user_teardown)
+#     return user
 
 @pytest.fixture()
 def client_credentials(request, user):
