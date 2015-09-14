@@ -5,9 +5,9 @@ import os
 from StringIO import StringIO
 import unittest
 
-import application
+from application import app
 
-APP = application.app.test_client()
+APP = app.test_client()
 
 
 class TestSingleResumeCandidateDict(unittest.TestCase):
@@ -15,7 +15,7 @@ class TestSingleResumeCandidateDict(unittest.TestCase):
 
     def setUp(self):
         self.doc_dict = dict(addressLine1=u'466 Tailor Way', addressLine2=u'', city=u'Lansdale',
-                             coordinates=u'40.2427778,-75.285', country=None, state=u'Pennsylvania', zipCode=u'19446')
+                             coordinates=u'40.2414952,-75.2837862', country=None, state=u'Pennsylvania', zipCode=u'19446')
 
     def test_base_url(self):
         """Test that the application root lists the endpoint."""
