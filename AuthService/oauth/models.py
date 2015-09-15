@@ -2,6 +2,7 @@ __author__ = 'ufarooqi'
 
 from oauth import db
 from oauth import logger
+from sqlalchemy import create_engine
 
 
 class User(db.Model):
@@ -181,3 +182,64 @@ class UserScopedRoles(db.Model):
         """
         user_scoped_roles = UserScopedRoles.query.filter_by(userId=user_id).all() or []
         return dict(roles=[user_scoped_role.roleId for user_scoped_role in user_scoped_roles])
+
+
+
+
+def update_user_table_data_type_and_dependent_fks():
+    # Connect to database
+    engine = create_engine("mysql://talent_web:s!loc976892@localhost/talent_local")
+
+    _update_data_type(table='user', engine=engine)
+    return
+
+
+def _update_data_type(table, engine):
+    """ Function will:
+            1. Set foreign_key_checks to 0,
+            2. Change table's (from params) data type to INTEGER,
+            3. Change FK constraints data type to INTEGER,
+            4. Set foreign_key_checks to 1
+
+    :param table:   name of the primary table
+    :param engine:  local mysql database
+    """
+    # Turn off foreign key checks
+    engine.execute("SET FOREIGN_KEY_CHECKS=0;")
+
+    # Tables with column that reference user.id
+    dependent_tables_list = query_tables_fk_relationship(engine=engine, table=table)
+
+    # Update user-table's id column's data type to integer
+    engine.execute("ALTER TABLE user MODIFY id INTEGER;")
+
+    # Change FK data type to integer for each table in dependent_tables
+    for table in dependent_tables_list:
+        engine.execute(
+            "ALTER TABLE '%s' MODIFY '%s' INTEGER;" % (table[0], table[1])
+        )
+
+    # Turn foreign key checks back on
+    engine.execute("SET FOREIGN_KEY_CHECKS=1;")
+    return
+
+
+def query_tables_fk_relationship(engine, table):
+    dependent_tables_list = engine.execute(
+        "select TABLE_NAME, COLUMN_NAME, CONSTRAINT_NAME, "
+        "REFERENCED_TABLE_NAME,REFERENCED_COLUMN_NAME from "
+        "INFORMATION_SCHEMA.KEY_COLUMN_USAGE where "
+        "REFERENCED_TABLE_NAME = '%s';" % table
+    )
+    logger.info("Number of table-columns' data type updated: %s", len(dependent_tables_list))
+    return dependent_tables_list
+
+
+
+
+
+
+
+
+
+
