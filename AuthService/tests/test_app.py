@@ -21,7 +21,8 @@ class AuthServiceTestsContext:
         self.client_secret = ''
         self.access_token = ''
         self.test_domain = None
-        self.test_role = ""
+        self.test_role_first = ""
+        self.test_role_second = ""
 
     def set_up(self):
         # Add test user in user DB
@@ -60,8 +61,10 @@ class AuthServiceTestsContext:
         self.test_domain = test_domain.get_id()
 
         # Add two test roles
-        self.test_role = gen_salt(20)
-        DomainRole.save(test_domain.get_id(), self.test_role)
+        self.test_role_first = gen_salt(20)
+        DomainRole.save(test_domain.get_id(), self.test_role_first)
+        self.test_role_second = gen_salt(20)
+        DomainRole.save(test_domain.get_id(), self.test_role_second)
 
     def authorize_token(self):
         headers = {'Authorization': 'Bearer %s' % self.access_token}
@@ -99,27 +102,32 @@ class AuthServiceTestsContext:
     def test_roles_of_user(self, action="GET", false_case=False):
         headers = {'Authorization': 'Bearer %s' % self.access_token}
         if action == "GET":
-            response = json.loads(self.app.get('/users/%s/roles' % self.oauth._usergetter(self.email, self.password).get_id(),
-                                headers=headers).data)
+            response = json.loads(self.app.get('/users/%s/roles' % self.oauth._usergetter(self.email, self.password)
+                                               .get_id(), headers=headers).data)
             return response.get('roles')
         elif action == "POST":
             headers['content-type'] = 'application/json'
-            test_role = DomainRole.get_by_name(self.test_role)
-            data = {'roles': [int(test_role.id) + 1 if false_case else test_role.id]}
+            test_role_first = DomainRole.get_by_name(self.test_role_first)
+            test_role_second = DomainRole.get_by_name(self.test_role_second)
+            if false_case:
+                data = {'roles': [int(test_role_second.id) + 1]}
+            else:
+                data = {'roles': [test_role_first.id, test_role_second.id]}
             response = self.app.post('/users/%s/roles' % self.oauth._usergetter(self.email, self.password).get_id(),
                                      data=json.dumps(data), headers=headers)
             return response.status_code
         elif action == "DELETE":
             headers['content-type'] = 'application/json'
-            data = {'roles': [DomainRole.get_by_name(self.test_role).id]}
+            data = {'roles': [DomainRole.get_by_name(self.test_role_first).id,
+                              DomainRole.get_by_name(self.test_role_second).id]}
             response = self.app.delete('/users/%s/roles' % self.oauth._usergetter(self.email, self.password).get_id(),
                                        data=json.dumps(data), headers=headers)
             return response.status_code
 
-    def verify_user_scoped_role(self):
+    def verify_user_scoped_role(self, role):
         user_id = self.oauth._usergetter(self.email, self.password).get_id()
         import urllib
-        response = json.loads(self.app.get("/roles/verify", query_string=urllib.urlencode({"role": self.test_role,
+        response = json.loads(self.app.get("/roles/verify", query_string=urllib.urlencode({"role": role,
                                                                                            "user_id": user_id})).data)
         return response.get('success')
 
@@ -140,7 +148,8 @@ def app_context(request):
         token = context.oauth._tokengetter(access_token=context.access_token) or None
         client = context.oauth._clientgetter(context.client_id) or None
         user = context.oauth._usergetter(context.email, context.password) or None
-        test_role = DomainRole.get_by_name(context.test_role) or None
+        test_role_first = DomainRole.get_by_name(context.test_role_first) or None
+        test_role_second = DomainRole.get_by_name(context.test_role_second) or None
         test_domain = Domain.query.get(context.test_domain) or None
         if token:
             db.session.delete(token)
@@ -152,8 +161,10 @@ def app_context(request):
                 db.session.delete(user_scoped_role)
             db.session.commit()
             db.session.delete(user)
-        if test_role:
-            db.session.delete(test_role)
+        if test_role_first:
+            db.session.delete(test_role_first)
+        if test_role_second:
+            db.session.delete(test_role_second)
         if test_domain:
             db.session.delete(test_domain)
         db.session.commit()
@@ -186,13 +197,15 @@ def test_auth_service(app_context):
     assert app_context.test_roles_of_user(action="POST") == 200
 
     # Check if roles has been added successfully in existing user
-    assert app_context.test_roles_of_user() == [DomainRole.get_by_name(app_context.test_role).id]
+    assert app_context.test_roles_of_user() == [DomainRole.get_by_name(app_context.test_role_first).id,
+                                                DomainRole.get_by_name(app_context.test_role_second).id]
 
     # Add a false role to existing user
     assert app_context.test_roles_of_user(action="POST", false_case=True) != 200
 
-    assert app_context.verify_user_scoped_role()
     # verify a user role
+    assert app_context.verify_user_scoped_role(app_context.test_role_first)
+    assert app_context.verify_user_scoped_role(app_context.test_role_second)
 
     # Delete roles from a user
     assert app_context.test_roles_of_user(action="DELETE") == 200
