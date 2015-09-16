@@ -23,7 +23,7 @@ def database_connection():
 def update_user_table_data_type_and_dependent_fks():
     engine = database_connection()
 
-    _update_data_type(referenced_table_name='user', engine=engine)
+    return _update_data_type(referenced_table_name='user', engine=engine)
 
 
 def _update_data_type(referenced_table_name, engine):
@@ -49,7 +49,8 @@ def _update_data_type(referenced_table_name, engine):
     for dependent_table_tuple in dependent_tables_list:
         logger.info("ALTER TABLE `%s` DROP FOREIGN KEY `%s`", dependent_table_tuple[0], dependent_table_tuple[2])
         engine.execute(
-            "ALTER TABLE `%s` DROP FOREIGN KEY `%s`" % (dependent_table_tuple[0], dependent_table_tuple[2])
+            "ALTER TABLE `%s` DROP FOREIGN KEY `%s`" %
+            (dependent_table_tuple[0], dependent_table_tuple[2])
         )
 
     # Update table`s id column`s data type to integer
@@ -58,15 +59,17 @@ def _update_data_type(referenced_table_name, engine):
 
     # Change FK data type to integer for each table in dependent_tables
     for dependent_table_tuple in dependent_tables_list:
-        logger.info("ALTER TABLE `%s` MODIFY `%s` INTEGER;" % (dependent_table_tuple[0], dependent_table_tuple[1]))
+        logger.info("ALTER TABLE `%s` MODIFY `%s` INTEGER;" %
+                    (dependent_table_tuple[0], dependent_table_tuple[1]))
         engine.execute(
-            "ALTER TABLE `%s` MODIFY `%s` INTEGER;" % (dependent_table_tuple[0], dependent_table_tuple[1])
+            "ALTER TABLE `%s` MODIFY `%s` INTEGER;" %
+            (dependent_table_tuple[0], dependent_table_tuple[1])
         )
 
     # Create the foreign key now
     for dependent_table_tuple in dependent_tables_list:
         engine.execute(
-            "ALTER TABLE `%s` ADD CONSTRAINT fk_%s_%s FOREIGN KEY (`%s`) REFERENCES `%s`(id)",
+            "ALTER TABLE `%s` ADD CONSTRAINT fk_%s_%s FOREIGN KEY (`%s`) REFERENCES `%s`(id)" %
             (dependent_table_tuple[0],
              dependent_table_tuple[3], dependent_table_tuple[0],
              dependent_table_tuple[1],
