@@ -1,7 +1,8 @@
 import types
 from app.app_utils import api_route, authenticate
+from event_exporter.common import process_event
 from gt_models.event import Event
-from flask import Blueprint
+from flask import Blueprint, request
 from flask.ext.restful import Api, Resource
 
 events_blueprint = Blueprint('events_api', __name__)
@@ -12,8 +13,8 @@ api.init_app(events_blueprint)
 api.route = types.MethodType(api_route, api)
 
 
-class Resource(Resource):
-    method_decorators = [authenticate]
+# class Resource(Resource):
+#     method_decorators = [authenticate]
 
 
 @api.route('/events/')
@@ -39,7 +40,13 @@ class Events(Resource):
         This method takes data to create event in local database as well as on corresponding social network.
         :return: id of created event
         """
-        # data = request.values
+        event_data = request.get_json(force=True)
+        try:
+            event_data['user_id'] = kwargs['user_id']
+            # process_event(event_data, kwargs['user_id'])
+        except Exception as e:
+            print(e)
+            return dict(message='Error'), 500
         return dict(id=1), 201
 
 

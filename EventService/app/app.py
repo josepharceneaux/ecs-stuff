@@ -28,7 +28,6 @@ CLIENT_ID = 'o0nptnl4eet4c40suj9es52612'
 CLIENT_SECRET = 'ohtutvn34cvfucl26i5ele5ki2'
 REDIRECT_URL = 'http://127.0.0.1:5000/code'
 user_refresh_token = '73aac7b76040a33d5dda70d0190aa4e7'
-OAUTH_SERVER = 'http://127.0.0.1:8888/oauth2/authorize'
 
 app.register_blueprint(social_network_blueprint)
 app.register_blueprint(events_blueprint)
