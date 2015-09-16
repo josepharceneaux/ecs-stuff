@@ -3,7 +3,6 @@
 import json
 import os
 from StringIO import StringIO
-# import unittest
 
 import pytest
 
@@ -88,7 +87,8 @@ def test_v13_pdf_from_fp_key(db_fill):
 def test_v15_pdf_by_post(db_fill):
     """Test that v1.5 pdf files can be posted."""
     json_obj = json.loads(fetch_resume_post_response('test_bin.pdf'))
-    assert json_obj['full_name'], 'MARK GREENE'
+    assert json_obj['full_name'] == 'MARK GREENE'
+    assert json_obj['emails'][0]['address'] == 'techguymark@yahoo.com'
     assert len(json_obj['educations']) == 1
     assert len(json_obj['work_experiences']) == 15
 
@@ -96,12 +96,16 @@ def test_v15_pdf_by_post(db_fill):
 def test_v14_pdf_by_post(db_fill):
     """Test that v1.5 pdf files can be posted."""
     json_obj = json.loads(fetch_resume_post_response('test_bin_14.pdf'))
+    # Currently fails with email in footer of both pages.
+    assert json_obj['emails'][0]['address'] == 'jlchavez@telus.net'
     assert len(json_obj['work_experiences']) == 4
 
 
 def test_v13_pdf_by_post(db_fill):
     """Test that v1.5 pdf files can be posted."""
     json_obj = json.loads(fetch_resume_post_response('test_bin_13.pdf'))
+    assert json_obj['full_name'] == 'BRUCE PARKEY'
+    assert json_obj['emails'][0]['address'] == 'bparkey@sagamoreapps.com'
     assert len(json_obj['work_experiences']) == 3
 
 
