@@ -13,8 +13,8 @@ db.init_app(app)
 
 APP = app.test_client()
 
-DOC_DICT = dict(addressLine1=u'466 Tailor Way', addressLine2=u'', city=u'Lansdale',
-                coordinates=u'40.2414952,-75.2837862', country=None, state=u'Pennsylvania', zipCode=u'19446')
+DOC_DICT = dict(address_line_1=u'466 Tailor Way', address_line_2=u'', city=u'Lansdale', country=None,
+                state=u'Pennsylvania', zip_code=u'19446', po_box=u'', latitude=u'40.2414952', longitude=u'-75.2837862')
 
 
 @pytest.fixture

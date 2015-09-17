@@ -210,7 +210,7 @@ def parse_xml(json_text):
         formatted_name = first_name + " " + (middle_name + " " if middle_name else "") + last_name
 
     candidate = dict(
-        full_name=formatted_name or "Unknown",
+        full_name=formatted_name or "Unknown",#
         emails=[],
         phones=[],
         work_experiences=[],
@@ -232,12 +232,12 @@ def parse_xml(json_text):
     if home_phone:
         canonicalized_phonenumber = canonicalize_phonenumber(home_phone)
         if canonicalized_phonenumber:
-            candidate_phones.append({'value': canonicalized_phonenumber})
+            candidate_phones.append({'value': canonicalized_phonenumber, 'label': 'home'})
 
     if mobile_phone:
         canonicalized_phonenumber = canonicalize_phonenumber(mobile_phone)
         if canonicalized_phonenumber:
-            candidate_phones.append({'value': canonicalized_phonenumber})
+            candidate_phones.append({'value': canonicalized_phonenumber, 'label': 'mobile'})
 
     # Emails
     candidate_emails = candidate['emails']
@@ -247,10 +247,10 @@ def parse_xml(json_text):
 
     email = re.findall(r'[\w\.-]+@[\w\.-]+', email_to_parse)
     if email:
-        candidate_emails.append({'address': email[0]})
+        candidate_emails.append({'address': email[0], 'label': 'Primary'})
 
     if alternate_email:
-        candidate_emails.append({'address': email})
+        candidate_emails.append({'address': email, 'label': 'Other'})
 
     # TODO: if you cant get the email, try parsing it from the resume text
 
@@ -266,14 +266,18 @@ def parse_xml(json_text):
 
     zipcode = sanitize_zip_code(zipcode)
 
+    lat_lon = get_coordinates(zipcode, city, state)
+
     candidate_addresses.append(dict(
-        addressLine1=street_address,
-        addressLine2='',
         city=city,
-        state=state,
         country=country,
-        zipCode=zipcode,
-        coordinates=get_coordinates(zipcode, city, state),
+        state=state,
+        po_box='',
+        address_line_1=street_address,
+        address_line_2='',
+        zip_code=zipcode,
+        latitude=lat_lon[0],
+        longitude=lat_lon[1]
     ))
 
     # Resume experience
@@ -347,24 +351,19 @@ def parse_xml(json_text):
                     ))
                 else:
                     candidate_experience_bullets.append(dict(
-                        listOrder=i + 1,
-                        description=bullet_description + '\n'
+                        text=bullet_description + '\n'
                     ))
 
             if not existing_experience_list_order:
                 candidate_experiences.append(dict(
-                    organization=organization,
-                    position=position_title,
                     city=company_city,
-                    state=company_state,
-                    countryId=company_country_id,
-                    listOrder=employement_index + 1,  # listOrder starts from 1
-                    startMonth=start_month,
-                    endMonth=end_month,
-                    startYear=start_year,
-                    endYear=end_year,
-                    isCurrent=is_current_job,
-                    candidate_experience_bullet=candidate_experience_bullets
+                    end_date='{}-{}'.format(end_year, end_month),
+                    country=company_country_id,
+                    company=organization,
+                    role=position_title,
+                    is_current=is_current_job,
+                    start_date='{}-{}'.format(start_year, start_month),
+                    bullets=candidate_experience_bullets
                 ))
 
     # Education
@@ -394,51 +393,31 @@ def parse_xml(json_text):
                 end_year = end_date.year
                 end_month = end_date.month
 
-            gpa_num, gpa_denom = gpa_num_and_denom(school, 'gpa')
-
-            candidate_education_degrees = [
-                dict(
-                    listOrder=1,
-                    degreeType=None,
-                    degreeTitle=_tag_text(school, 'degree'),
-                    startMonth=start_month,
-                    endMonth=end_month,
-                    startYear=start_year,
-                    endYear=end_year,
-                    gpaNum=gpa_num,
-                    gpaDenom=gpa_denom,
-                    candidate_education_degree_bullet=[dict(
-                        listOrder=1,
-                        concentrationType=_tag_text(school, 'major'),
-                        comments=_tag_text(school, 'minor'),
-                    )]
-                )
-            ]
+            # No longer used in educations dict, save for later or elimate this and gpa_num_and_denom?
+            # gpa_num, gpa_denom = gpa_num_and_denom(school, 'gpa')
 
             candidate_educations.append(dict(
-                listOrder=school_index + 1,
-                schoolName=school_name,
-                schoolType=None,
                 city=school_city,
+                major=_tag_text(school, 'major'),
+                degree=_tag_text(school, 'degree'),
                 state=school_state,
-                countryId=country_id,
-                candidate_education_degree=candidate_education_degrees
+                graduation_date='{}-{}'.format(end_year, end_month),
+                country=country_id,
+                school_name=school_name,
+                start_date='{}-{}'.format(start_year, start_month),
             ))
 
     # Skills
     candidate_skills = candidate['skills']
     candidate_skill_text = rawxml.findAll('canonskill')
     if candidate_skill_text:
-        index = 0
         for candidate_skill_tag in candidate_skill_text:
             stripped_tag = ' '.join(candidate_skill_tag.variant.getText().split())
             if stripped_tag:
-                index += 1
                 candidate_skills.append(dict(
-                    listOrder=index,
-                    totalMonths=candidate_skill_tag.get('experience', '').strip(),
-                    lastUsed=candidate_skill_tag.get('lastused', '').strip(),
-                    description=stripped_tag
+                    months_used=candidate_skill_tag.get('experience', '').strip(),
+                    last_used_date=candidate_skill_tag.get('lastused', '').strip(),
+                    name=stripped_tag
                 ))
 
     candidate['summary'] = json_text.get('summary', '')
@@ -492,9 +471,8 @@ def get_date_from_date_tag(parent_tag, date_tag_name):
 
 def is_experience_already_exists(candidate_experiences, organization, position_title, start_date, end_date):
     for i, experience in enumerate(candidate_experiences):
-        if (experience['organization'] or '') == organization and (experience['position'] or '') == position_title and (
-                        str(experience['startMonth'] or '') + '/' + str(experience['startYear'] or '')) == start_date \
-                and (str(experience['endMonth'] or '') + '/' + str(experience['endYear'] or '')) == end_date:
+        if (experience['company'] or '') == organization and (experience['role'] or '') == position_title and (
+                        experience['start_date'] == start_date and experience['end_date'] == end_date):
             return i + 1
     return False
 
@@ -547,7 +525,7 @@ def get_coordinates(zipcode=None, city=None, state=None, address_line_1=None, lo
     :param location: if provided, overrides all other inputs
     :return: string of "lat,lon" in degrees, or None if nothing found
     """
-    coordinates = None
+    coordinates = (None, None)
 
     from GoogleGeoSearch import get_geocoordinates
     location = location or "%s%s%s%s" % (
@@ -558,6 +536,6 @@ def get_coordinates(zipcode=None, city=None, state=None, address_line_1=None, lo
     )
     latitude, longitude = get_geocoordinates(location)
     if latitude and longitude:
-        coordinates = "%s,%s" % (latitude, longitude)
+        coordinates = (str(latitude), str(longitude))
 
     return coordinates
