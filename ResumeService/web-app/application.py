@@ -5,10 +5,8 @@ import urllib2
 from flask import Flask, request
 from flask import jsonify
 from boto.s3.connection import S3Connection
-
 from resume_parser.app_constants import Constants as current
 from resume_parser.parse_lib import parse_resume
-
 
 app = Flask(__name__)
 app.config.from_object('config')
