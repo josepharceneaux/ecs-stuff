@@ -2,6 +2,7 @@ __author__ = 'ufarooqi'
 
 from oauth import db
 from oauth import logger
+from sqlalchemy import create_engine
 
 
 class User(db.Model):
@@ -58,7 +59,8 @@ class Token(db.Model):
     client = db.relationship('Client')
 
     user_id = db.Column(
-        db.BigInteger, db.ForeignKey('user.id')
+        # db.BigInteger, db.ForeignKey('user.id')
+        db.INTEGER, db.ForeignKey('user.id')
     )
     user = db.relationship('User')
 
@@ -131,7 +133,8 @@ class UserScopedRoles(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     userId = db.Column(
-        db.BigInteger, db.ForeignKey('user.id'), nullable=False
+        # db.BigInteger, db.ForeignKey('user.id'), nullable=False
+        db.INTEGER, db.ForeignKey('user.id'), nullable=False
     )
     roleId = db.Column(
         db.Integer, db.ForeignKey('domain_role.id'), nullable=False
@@ -181,3 +184,11 @@ class UserScopedRoles(db.Model):
         """
         user_scoped_roles = UserScopedRoles.query.filter_by(userId=user_id).all() or []
         return dict(roles=[user_scoped_role.roleId for user_scoped_role in user_scoped_roles])
+
+
+
+
+
+
+
+
