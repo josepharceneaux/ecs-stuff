@@ -117,15 +117,19 @@ def verify_roles():
 @gt_oauth.require_oauth()
 def user_scoped_roles(user_id):
     if request.method == 'GET':
-        return UserScopedRoles.get_all_roles_of_user(user_id)
+        return jsonify(UserScopedRoles.get_all_roles_of_user(user_id))
     else:
         posted_data = request.get_json(silent=True)
         if posted_data:
             try:
                 if request.method == 'POST':
-                    UserScopedRoles.add_role(user_id, posted_data.get('roles'))
-                else:
+                    UserScopedRoles.add_roles(user_id, posted_data.get('roles'))
+                    return jsonify(success=True)
+                elif request.method == 'DELETE':
                     UserScopedRoles.delete_roles(user_id, posted_data.get('roles'))
+                    return jsonify(success=True)
+                else:
+                    raise Exception("Invalid URL method %s" % request.method)
             except Exception as e:
                 return jsonify(error_message=e.message), 404
         else:

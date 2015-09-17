@@ -145,18 +145,18 @@ class UserScopedRoles(db.Model):
         :param roles_list: list of roleIds
         """
         for role_id in roles_list:
-            if not UserScopedRoles.query.filter(UserScopedRoles.userId == user_id and
-                                                UserScopedRoles.roleId == role_id).first():
-                if User.query.get(user_id).first() and DomainRole.query.get(role_id).first():
+            if not UserScopedRoles.query.filter((UserScopedRoles.userId == user_id) &
+                                                        (UserScopedRoles.roleId == role_id)).first():
+                if User.query.get(user_id) and DomainRole.query.get(role_id):
                     user_scoped_role = UserScopedRoles(userId=user_id, roleId=role_id)
                     db.session.add(user_scoped_role)
+                    db.session.commit()
                 else:
                     logger.info("Either user: %s or role_id: %s doesn't exist" % (user_id, role_id))
                     raise Exception("Either user: %s or role_id: %s doesn't exist" % (user_id, role_id))
             else:
                 logger.info("Role: %s already exists for user: %s" % (role_id, user_id))
                 raise Exception("Role: %s already exists for user: %s" % (role_id, user_id))
-        db.session.commit()
 
     @staticmethod
     def delete_roles(user_id, roles_list):
@@ -165,8 +165,8 @@ class UserScopedRoles(db.Model):
         :param roles_list: list of roleIds
         """
         for role_id in roles_list:
-            user_scoped_role = UserScopedRoles.query.filter(UserScopedRoles.userId == user_id
-                                                            and UserScopedRoles.roleId == role_id).first()
+            user_scoped_role = UserScopedRoles.query.filter((UserScopedRoles.userId == user_id)
+                                                            & (UserScopedRoles.roleId == role_id)).first()
             if user_scoped_role:
                 db.session.delete(user_scoped_role)
             else:
