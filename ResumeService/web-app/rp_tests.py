@@ -16,6 +16,18 @@ APP = app.test_client()
 DOC_DICT = dict(address_line_1=u'466 Tailor Way', address_line_2=u'', city=u'Lansdale', country=None,
                 state=u'Pennsylvania', zip_code=u'19446', po_box=u'', latitude=u'40.2414952', longitude=u'-75.2837862')
 
+ADDRESS_KEYS = ('city', 'country', 'state', 'po_box', 'address_line_1', 'address_line_2', 'zip_code', 'latitude',
+                'longitude')
+
+PHONES_KEYS = ('value', 'label')
+
+EDUCATIONS_KEYS = ('city', 'major', 'degree', 'state', 'graduation_date', 'country', 'school_name', 'start_date')
+
+EMAILS_KEYS = ('address', 'label')
+
+WORK_EXPERIENCES_KEYS = ('city', 'end_date', 'country', 'company', 'role', 'is_current', 'start_date', 'bullets')
+
+SKILLS_KEYS = ('name', 'months_used', 'last_used_date')
 
 @pytest.fixture
 def db_fill(request):
@@ -51,6 +63,7 @@ def test_doc_from_fp_key(db_fill):
     assert json_obj['addresses'][0] == DOC_DICT
     assert len(json_obj['educations']) == 3
     assert len(json_obj['work_experiences']) == 7
+    assert all(k in json_obj['work_experiences'][0] for k in WORK_EXPERIENCES_KEYS)
 
 
 def test_doc_by_post(db_fill):
@@ -61,11 +74,13 @@ def test_doc_by_post(db_fill):
     assert json_obj['addresses'][0] == DOC_DICT
     assert len(json_obj['educations']) == 3
     assert len(json_obj['work_experiences']) == 7
+    assert 'text' in json_obj['work_experiences'][0]['bullets'][0].keys()
 
 
 def test_v15_pdf_from_fp_key(db_fill):
     """Test that v1.5 pdf files from S3 can be parsed."""
     json_obj = fetch_resume_fp_key_response('e68b51ee1fd62db589d2669c4f63f381.pdf')
+    assert all(k in json_obj['addresses'][0] for k in ADDRESS_KEYS)
     assert json_obj['full_name'] == 'MARK GREENE'
     assert len(json_obj['educations']) == 1
     assert len(json_obj['work_experiences']) == 15
@@ -75,12 +90,14 @@ def test_v14_pdf_from_fp_key(db_fill):
     """Test that v1.5 pdf files from S3 can be parsed."""
     json_obj = fetch_resume_fp_key_response('test_bin_14.pdf')
     # doesnt get good name data back
+    assert all(k in json_obj['skills'][0] for k in SKILLS_KEYS)
     assert len(json_obj['work_experiences']) == 4
 
 
 def test_v13_pdf_from_fp_key(db_fill):
     """Test that v1.5 pdf files from S3 can be parsed."""
     json_obj = fetch_resume_fp_key_response('test_bin_13.pdf')
+    assert all(k in json_obj['emails'][0] for k in EMAILS_KEYS)
     assert json_obj['full_name'] == 'BRUCE PARKEY'
     assert len(json_obj['work_experiences']) == 3
 
@@ -88,6 +105,7 @@ def test_v13_pdf_from_fp_key(db_fill):
 def test_v15_pdf_by_post(db_fill):
     """Test that v1.5 pdf files can be posted."""
     json_obj = json.loads(fetch_resume_post_response('test_bin.pdf'))
+    assert all(k in json_obj['phones'][0] for k in PHONES_KEYS)
     assert json_obj['full_name'] == 'MARK GREENE'
     assert json_obj['emails'][0]['address'] == 'techguymark@yahoo.com'
     assert len(json_obj['educations']) == 1
@@ -97,6 +115,7 @@ def test_v15_pdf_by_post(db_fill):
 def test_v14_pdf_by_post(db_fill):
     """Test that v1.5 pdf files can be posted."""
     json_obj = json.loads(fetch_resume_post_response('test_bin_14.pdf'))
+    assert all(k in json_obj['educations'][0] for k in EDUCATIONS_KEYS)
     # Currently fails with email in footer of both pages.
     # assert json_obj['emails'][0]['address'] == 'jlchavez@telus.net'
     assert len(json_obj['work_experiences']) == 4
