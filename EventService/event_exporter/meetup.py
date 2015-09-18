@@ -1,7 +1,7 @@
 import json
 from event_manager import logger
-from event_exporter.publish.base import TalentEventBase
-from event_exporter.publish.common import _log_error, EventNotCreated, EventLocationNotCreated, EventNotPublished, \
+from event_exporter.base import TalentEventBase
+from event_exporter.common import _log_error, EventNotCreated, EventLocationNotCreated, EventNotPublished, \
     EventNotUnpublished, EventInputMissing
 
 MEETUP = 'Meetup'

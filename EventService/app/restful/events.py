@@ -1,5 +1,6 @@
 import types
 from app.app_utils import api_route, authenticate
+from custom_exections import ApiException
 from event_exporter.common import process_event
 from gt_models.event import Event
 from flask import Blueprint, request
@@ -11,10 +12,6 @@ api.init_app(events_blueprint)
 
 
 api.route = types.MethodType(api_route, api)
-
-
-# class Resource(Resource):
-#     method_decorators = [authenticate]
 
 
 @api.route('/events/')
@@ -42,8 +39,7 @@ class Events(Resource):
         """
         event_data = request.get_json(force=True)
         try:
-            event_data['user_id'] = kwargs['user_id']
-            # process_event(event_data, kwargs['user_id'])
+            process_event(event_data, kwargs['user_id'])
         except Exception as e:
             print(e)
             return dict(message='Error'), 500
@@ -60,7 +56,14 @@ class EventById(Resource):
         :param id: integer, unique id representing event in GT database
         :return: json for required event
         """
-        return dict(event={}), 200
+        event = Event.get_by_id(event_id)
+        if event:
+            try:
+                event = event.to_json()
+            except Exception as e:
+                raise ApiException('Unable to serialize event data', status_code=500)
+            return dict(event=event), 200
+        raise ApiException('Event does not exist with id %s' % event_id, status_code=400)
 
     @authenticate
     def post(self, **kwargs):

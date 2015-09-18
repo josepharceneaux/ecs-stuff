@@ -2,6 +2,7 @@ import json
 import re
 import flask
 import requests
+from custom_exections import InvalidUsage, ApiException
 from .restful.social_networks import social_network_blueprint
 from .restful.events import events_blueprint
 from event_importer.base import logger
@@ -31,7 +32,7 @@ user_refresh_token = '73aac7b76040a33d5dda70d0190aa4e7'
 
 app.register_blueprint(social_network_blueprint)
 app.register_blueprint(events_blueprint)
-
+myapp = app
 
 # @app.errorhandler(404)
 @app.route('/')
@@ -208,6 +209,27 @@ def get_rsvp_id(url):
     vendor_rsvp_id = match.groupdict()['rsvp_id']
     rsvp = {'rsvp_id': vendor_rsvp_id}
     return rsvp
+
+
+@app.errorhandler(InvalidUsage)
+def handle_invalid_usage(error):
+    response = json.dumps(error.to_dict())
+    response.status_code = error.status_code
+    return response
+
+
+@app.errorhandler(ApiException)
+def handle_invalid_usage(error):
+    response = json.dumps(error.to_dict())
+    response.status_code = error.status_code
+    return response
+
+
+@app.errorhandler(Exception)
+def handle_invalid_usage(error):
+    response = json.dumps(dict(message='Ooops! Internal server error occurred..'))
+    response.status_code = 500
+    return response
 
 
 @app.teardown_request

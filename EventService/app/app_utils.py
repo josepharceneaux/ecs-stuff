@@ -21,12 +21,13 @@ def authenticate(func):
                 return func(*args, **kwargs)
             else:
                 abort(401)
-        except Exception as e:
-            import traceback
-            print traceback.format_exc()
-            print 'Error....'
-            print e.message
-            abort(401)
+        except:
+            # import traceback
+            # print traceback.format_exc()
+            # print 'Error....'
+            # print e.message
+            # abort(401)
+            raise
     return wrapper
 
 
