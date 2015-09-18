@@ -166,7 +166,7 @@ def process_event(data, user_id):
             class_object = Eventbrite()
         elif social_network.name == MEETUP.name:
             from event_exporter.meetup import Meetup
-            class_object = Meetup()
+            class_object = Meetup(user_id=user_id)
         else:
             error_message = 'Social Network "%s" is not allowed for now, ' \
                             'please implement code for this social network.' \
@@ -237,3 +237,132 @@ def save_event(event_id, data):
     #     _log_error(message_to_log)
     #     raise EventNotSaveInDb
     # return inserted_record_id
+
+def validate_token(access_token, social_network):
+    """
+    This function is called from get_and_update_auth_info() inside RESTful
+    service social_networks() to check the validity of the access token
+    of current user for a specific social network. We take the access token,
+    make request to social network, and check if it didn't error'ed out.
+    :param access_token: access_token of current user.
+    :param social_network: social network model object for given access_token.
+    :return:
+    """
+    function_name = 'validate_token()'
+    message_to_log = _get_message_to_log(function_name=function_name)
+    status = False
+    payload = None
+    if social_network.id == EVENTBRITE.id:
+        relative_url = '/users/me/'
+    elif social_network.id == MEETUP.id:
+        relative_url = '/member/self'
+    elif social_network.id == FACEBOOK.id:
+        payload = {'access_token': access_token}
+        relative_url = '/me'
+    else:
+        relative_url = ''
+    url = social_network.apiUrl + relative_url
+    headers = {'Authorization': 'Bearer %s' % access_token}
+    try:
+        response = requests.get(url, headers=headers, params=payload)
+        if response.ok:
+            status = True
+        else:
+            error_message = "Access token has expired for %s" % social_network.name
+            message_to_log.update({'error': error_message})
+            _log_error(message_to_log)
+    except requests.RequestException as e:
+        error_message = e.message
+        message_to_log.update({'error': error_message})
+        _log_exception(message_to_log)
+    return status
+
+
+def refresh_access_token(user_credential, social_network):
+    """
+    When user authorize to Meetup account, we get a refresh token
+    and access token. Access token expires in one hour.
+    Here we refresh the access_token using refresh_token without user
+    involvement and save in user_credentials db table
+    :param user_credential:
+    :param social_network:
+    :return:
+    """
+    function_name = 'refresh_access_token()'
+    message_to_log = _get_message_to_log(function_name=function_name)
+    status = False
+    if social_network.name == MEETUP.name:
+        user_refresh_token = user_credential.refreshToken
+        member_id = user_credential.memberId
+        auth_url = social_network.authUrl + "/access?"
+        client_id = social_network.clientKey
+        client_secret = social_network.secretKey
+        payload_data = {'client_id': client_id,
+                        'client_secret': client_secret,
+                        'grant_type': 'refresh_token',
+                        'refresh_token': user_refresh_token}
+        response = http_request('POST', auth_url, data=payload_data,
+                             message_to_log=message_to_log)
+        try:
+            if response.ok:
+                access_token = response.json().get('access_token')
+                status = save_token_in_db(access_token,
+                                          user_refresh_token,
+                                          member_id,
+                                          social_network)
+                logger.info("Access Token has been refreshed")
+            else:
+                error_message = response.json().get('error')
+                message_to_log.update({'error': error_message})
+                _log_error(message_to_log)
+        except Exception as e:
+            error_message = "Error occurred while refreshing access token. Error is: " \
+                            + e.message
+            message_to_log.update({'error': error_message})
+            _log_exception(message_to_log)
+    return status
+
+
+def save_token_in_db(access_token, refresh_token, member_id, social_network):
+    """
+    It puts the access token against the clicked social_network and and the
+    logged in user of GT. It also calls create_webhook() class method of
+    Eventbrite to create webhook for user.
+    :return:
+    """
+    pass
+    # db = current.db
+    # user = current.auth.user
+    # db.user_credentials.update_or_insert((db.user_credentials.userId == user.id) &
+    #                                      (db.user_credentials.socialNetworkId == social_network.id),
+    #                                      userId=user.id,
+    #                                      socialNetworkId=social_network.id,
+    #                                      accessToken=access_token,
+    #                                      refreshToken=refresh_token,
+    #                                      memberId=member_id)
+    # db.commit()  # need to save refreshed access token immediately for subsequent API calls
+    # if social_network.name == EVENTBRITE.name:
+    #     # now we create webhook for eventbrite user for getting rsvp through webhook
+    #     # via EventService app
+    #     user_credentials = db(db.user_credentials.accessToken == access_token).select().first()
+    #     eventbrite_object = Eventbrite()
+    #     status = eventbrite_object.create_webhook(user_credentials)
+    # else:
+    #     # data has been inserted in db successfully. Social network is not eventbrite
+    #     # so no need to create webhook
+    #     status = True
+    # return status
+
+def validate_and_refresh_access_token(user_credential):
+    """
+    This function is called to validate access token. if access token has
+    expired, it also refreshes it and saves the fresh access token in database
+    :return:
+    """
+    refreshed_token_status = False
+    social_network = SocialNetwork.get_by_id(user_credential.socialNetworkId)
+    access_token = user_credential.accessToken
+    access_token_status = validate_token(access_token, social_network)
+    if not access_token_status:  # access token has expired, need to refresh it
+        refreshed_token_status = refresh_access_token(user_credential, social_network)
+    return access_token_status, refreshed_token_status

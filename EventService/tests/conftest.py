@@ -10,6 +10,7 @@ from gt_models.config import init_db, db_session
 from werkzeug.security import generate_password_hash
 from werkzeug.security import gen_salt
 from gt_models.event import Event
+from gt_models.social_network import SocialNetwork
 from gt_models.user import User
 from gt_models.domain import Domain
 from gt_models.culture import Culture
@@ -27,6 +28,30 @@ APP_URL = 'http://127.0.0.1:5000/'
 OAUTH_SERVER = 'http://127.0.0.1:8888/oauth2/authorize'
 GET_TOKEN_URL = 'http://127.0.0.1:8888/oauth2/token'
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+
+EVENT_DATA = {
+    'eventTitle': 'Test Event',
+    'aboutEventOrganizer': 'Zohaib Ijaz',
+    'registrationInstruction': 'Just Come',
+    'eventDescription': 'Test Event Description',
+    'organizerEmail': u'',
+    'eventEndDatetime': '15 Oct, 2015 04:51 pm',
+    'groupUrlName': 'QC-Python-Learning',
+    'eventCountry': 'us',
+    'organizerName': u'',
+    'socialNetworkId': 13,
+    'eventZipCode': '95014',
+    'eventAddressLine2': u'',
+    'eventAddressLine1': 'Infinite Loop',
+    'eventTimeZone': 'UTC',
+    'eventState': 'CA',
+    'eventCost': 0,
+    'eventCity': 'Cupertino',
+    'eventStartDatetime': '29 Sep, 2015 04:50 pm',
+    'eventCurrency': 'USD',
+    'groupId': 18837246,
+    'maxAttendees': 10
+    }
 
 
 @pytest.fixture(scope='session')
@@ -62,11 +87,11 @@ def client(request):
         client_secret=client_secret
     )
     Client.save(test_client)
-    #
-    # def delete_client():
-    #     Client.delete(test_client.client_id)
-    #
-    # request.addfinalizer(delete_client)
+
+    def delete_client():
+        Client.delete(test_client.client_id)
+
+    request.addfinalizer(delete_client)
     return test_client
 
 
@@ -79,82 +104,6 @@ def culture():
     else:
         culture = mixer.blend('gt_models.culture.Culture', code='en-us')
     return culture
-
-
-# @pytest.fixture(scope='session')
-# def user(request, client):
-#     test_user = User(
-#         email='test@gmail.com',
-#         password=generate_password_hash('testuser', method='pbkdf2:sha512'),
-#         domainId=1,
-#         firstName='Test',
-#         lastName='User',
-#         expiration=None
-#     )
-#     User.save(test_user)
-#
-#     def delete_user():
-#         Token.query.filter_by(user_id=test_user.id).delete()
-#         Client.delete(client.client_id)
-#         User.delete(test_user.id)
-#     request.addfinalizer(delete_user)
-#     return test_user
-
-
-@pytest.fixture(scope='session')
-def events(request, user):
-    events = []
-    props = dict(
-        eventTitle='PyTest Event %s',
-        eventDescription='Event Description',
-        socialNetworkId=18,
-        userId=user.id,
-        groupId='',
-        groupUrlName='',
-        eventAddressLine1='New Muslim town, Lahore',
-        eventAddressLine2='H # 163, Block A',
-        eventCity='Lahore',
-        eventState='Punjab',
-        eventZipCode='54600',
-        eventCountry='Pakistan',
-        eventLongitude=34.33,
-        eventLatitude=72.33,
-        eventStartDateTime=datetime.datetime.now(),
-        eventEndDateTime=datetime.datetime.now(),
-        organizerName='Zohaib Ijaz',
-        organizerEmail='',
-        aboutEventOrganizer='I am a Software Engineer',
-        registrationInstruction='Just join',
-        eventCost='0',
-        eventCurrency='USD',
-        eventTimeZone='Asia/Karachi',
-        maxAttendees=10)
-    for index in range(1, 11):
-        event = props.copy()
-        event['eventTitle'] %= index
-        events.extend(Event.save(event))
-
-    def delete_events():
-        for event in events:
-            Event.delete(event.id)
-
-    request.addfinalizer(delete_events)
-    return events
-
-
-@pytest.fixture(scope='session')
-def token(app, user, client):
-    headers = {
-        'Content-Type': 'application/x-www-form-urlencoded'
-    }
-    params = {'client_id': client.client_id, 'client_secret': client.client_secret, 'grant_type': 'password',
-              'username': user.email, 'password': 'testuser'}
-    response = requests.post(GET_TOKEN_URL, headers=headers, data=params)
-    token = ''
-    if response.ok:
-        token = response.json()['access_token']
-
-    return token
 
 
 @pytest.fixture(scope='session')
@@ -209,6 +158,84 @@ def auth_data(user, base_url, client_credentials):
     assert response.json().has_key('access_token')
     assert response.json().has_key('refresh_token')
     return response.json()
+
+
+@pytest.fixture(scope='session')
+def meetup():
+    return SocialNetwork.get_by_name('Meetup')
+
+
+@pytest.fixture(scope='session')
+def eventbrite():
+    return SocialNetwork.get_by_name('Eventbrite')
+
+
+@pytest.fixture(scope='session')
+def facebook():
+    return SocialNetwork.get_by_name('Facebook')
+
+
+@pytest.fixture(scope='session')
+def meetup_event_data(meetup):
+    data = EVENT_DATA.copy()
+    data['socialNetworkId'] = meetup.id
+    return data
+
+
+@pytest.fixture(scope='session')
+def eventbrite_event_data(eventbrite):
+    data = EVENT_DATA.copy()
+    data['socialNetworkId'] = eventbrite.id
+    return data
+
+
+@pytest.fixture(scope='session')
+def events(request, sample_event_data):
+    events = []
+    for index in range(1, 11):
+        event = sample_event_data.copy()
+        event['eventTitle'] %= index
+        event = Event(**event)
+        Event.save(event)
+        events.append(event)
+
+    def delete_events():
+        for event in events:
+            Event.delete(event.id)
+
+    request.addfinalizer(delete_events)
+    return events
+
+
+@pytest.fixture(scope='session')
+def get_test_events():
+
+    meetup_event = EVENT_DATA.copy()
+    eventbrite_event = EVENT_DATA.copy()
+    eventbrite_event['socialNetworkId'] = 18
+
+    return meetup_event, eventbrite_event
+
+
+@pytest.fixture(params=get_test_events())
+def test_event(request):
+    return request.param
+
+
+@pytest.fixture(params=['eventTitle', 'eventDescription',
+                        'eventEndDatetime', 'eventTimeZone',
+                        'eventStartDatetime', 'eventCurrency'])
+def eventbrite_missing_data(request, meetup_event_data):
+
+    return request.param, meetup_event_data
+
+
+@pytest.fixture(params=['eventTitle', 'eventDescription', 'groupId',
+                        'groupUrlName', 'eventStartDatetime', 'maxAttendees',
+                        'eventAddressLine1', 'eventCountry', 'eventState',
+                        'eventZipCode'])
+def meetup_missing_data(request, eventbrite_event_data):
+    return request.param, eventbrite_event_data
 
 
 def teardown_fixtures(user, client_credentials, domain, organization):
