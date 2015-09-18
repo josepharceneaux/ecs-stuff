@@ -1,1 +1,26 @@
-__author__ = 'zohaib'
+from SocialNetworkService.base import SocialNetworkBase
+
+
+class Facebook(SocialNetworkBase):
+
+    def __init__(self, *args, **kwargs):
+
+        super(Facebook, self).__init__(*args, **kwargs)
+        # token validity is checked here
+        # if token is expired, we refresh it here
+        self.validate_and_refresh_access_token()
+
+    @classmethod
+    def get_access_token(cls, code_to_get_access_token, relative_url=None):
+        """
+        This function is called from process_access_token() inside controller
+        user.py. Here we get the access token from provided user_credentials
+        and auth code for fetching access token by making API call.
+        :return:
+        """
+        pass
+
+    def validate_token(self):
+        self.api_relative_url = '/me'
+        payload = {'access_token': access_token}
+        super(Facebook, self).validate_token(payload=payload)
