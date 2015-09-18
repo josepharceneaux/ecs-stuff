@@ -210,7 +210,7 @@ def parse_xml(json_text):
         formatted_name = first_name + " " + (middle_name + " " if middle_name else "") + last_name
 
     candidate = dict(
-        full_name=formatted_name or "Unknown",#
+        full_name=formatted_name or "Unknown",
         emails=[],
         phones=[],
         work_experiences=[],
