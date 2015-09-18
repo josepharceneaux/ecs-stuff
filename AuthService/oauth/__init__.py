@@ -17,4 +17,3 @@ gt_oauth.init_app(app)
 db.create_all()
 db.session.commit()
 
-print "Creating DB connection"
