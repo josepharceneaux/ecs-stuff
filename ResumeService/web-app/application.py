@@ -5,8 +5,10 @@ import urllib2
 from flask import Flask, request
 from flask import jsonify
 from boto.s3.connection import S3Connection
+
 from resume_parser.app_constants import Constants as current
 from resume_parser.parse_lib import parse_resume
+from utils import create_candidate_from_parsed_resume
 
 app = Flask(__name__)
 app.config.from_object('config')
@@ -39,6 +41,7 @@ def parse_file_picker_resume():
     if not json_response.get('user_id'):
         return jsonify({'error': 'Invalid query params'}), 400
     filepicker_key = request.form.get('filepicker_key')
+    create_candidate = request.form.get('create_candidate')
     if filepicker_key:
         conn = S3Connection(current.AWS_ACCESS_KEY_ID, current.AWS_SECRET_ACCESS_KEY)
         bucket = conn.get_bucket(current.FILEPICKER_BUCKET_NAME)
@@ -53,7 +56,17 @@ def parse_file_picker_resume():
         return jsonify({'error': 'Invalid query params'}), 400
 
     result_dict = parse_resume(file_obj=resume_file, filename_str=filename_str)
-    return jsonify(**result_dict)
+    email_present = True if result_dict.get('emails') else False
+    if create_candidate:
+        if email_present:
+            candidate_response = create_candidate_from_parsed_resume(result_dict, oauth_token)
+            result_dict['id'] = candidate_response.get('candidates')[0]['id']
+        else:
+            return jsonify(**{'error': {'code': 3, 'message': 'Parsed resume did not have email',
+                                        'candidate': result_dict}}), 400
+
+
+    return jsonify(**{'candidate':result_dict})
 
 
 if __name__ == '__main__':
