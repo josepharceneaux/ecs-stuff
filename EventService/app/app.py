@@ -111,7 +111,7 @@ def token_validity(access_token):
         return False
 
 
-@app.route('/rsvp', methods=['GET'])
+@app.route('/rsvp', methods=['GET', 'POST'])
 def handle_rsvp():
     """
     This function Only receives data when a candidate rsvp to some event.
@@ -120,6 +120,10 @@ def handle_rsvp():
     of attendee. Then it inserts in rsvp table the required information.
     It will also insert an entry in DB tables candidate_event_rsvp and activity
     """
+    # hub_challenge = request.args['hub.challenge']
+    # verify_token = request.args['hub.verify_token']
+    # hub_mode = request.args['hub.mode']
+    # assert verify_token == 'token'
     if request.data:
         # creating object of Eventbrite class
         eventbrite_rsvp = Eventbrite()
@@ -184,6 +188,7 @@ def handle_rsvp():
                 'status_code': 200}
         return flask.jsonify(**data), 200
     else:
+        # return hub_challenge, 200
         logger.warn('No RSVP Data')
         data = {'message': 'No RSVP Data',
                 'status_code': 500}
