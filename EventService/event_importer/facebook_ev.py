@@ -26,6 +26,14 @@ class Facebook(Base):
         self.graph = None
         self.vendor = 'Facebook'
 
+    def validate_token(self):
+        url = self.api_url + '/me'
+        headers = {'Authorization': 'Bearer %s' % self.user_credential.access_token}
+        response = self.http_get(url, headers=headers)
+        if response.ok:
+            return True
+        return False
+
     def get_events(self):
         """
         We send GET requests to API URL and get data. We also

@@ -22,6 +22,13 @@ class Meetup(Base):
         self.end_date_dt = self.end_date
         self.vendor = 'Meetup'
 
+    def validate_token(self):
+        header = {'Authorization': 'Bearer ' + self.user_credential.access_token}
+        result = requests.post(self.api_url + "/member/self", headers=header)
+        if result.ok:
+            return True
+        return False
+
     def token_validity(self, access_token):
         header = {'Authorization': 'Bearer ' + access_token}
         result = requests.post(self.api_url + "/member/self", headers=header)
@@ -36,10 +43,12 @@ class Meetup(Base):
         auth_url = self.user_credential.social_network.authUrl + "/access?"
         client_id = self.user_credential.social_network.clientKey
         client_secret = self.user_credential.social_network.secretKey
-        payload_data = {'client_id': client_id,
-                        'client_secret': client_secret,
-                        'grant_type': 'refresh_token',
-                        'refresh_token': user_refresh_token}
+        payload_data = {
+            'client_id': client_id,
+            'client_secret': client_secret,
+            'grant_type': 'refresh_token',
+            'refresh_token': user_refresh_token
+        }
         response = requests.post(auth_url, data=payload_data)
         if response.ok:
             try:
@@ -73,10 +82,12 @@ class Meetup(Base):
         # 5 requests (using pagination where each response will contain
         # 100 records).
         events_url = self.api_url + '/events/?sign=true&page=100'
-        params = {'member_id': self.member_id,
-                  'time': '%.0f, %.0f' %
-                  (self.start_time_since_epoch,
-                   self.end_time_since_epoch)}
+        params = {
+            'member_id': self.member_id,
+            'time': '%.0f, %.0f' %
+            (self.start_time_since_epoch,
+            self.end_time_since_epoch)
+        }
         response = self.http_get(events_url, params=params)
         if response.ok:
             try:

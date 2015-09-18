@@ -150,20 +150,22 @@ class Base(object):
             self.all_user_credentials = filter(lambda user_creds: user_creds.userId == user_id,
                                                self.all_user_credentials)
 
-    def http_get(self, url, params=None, data=None):
+    def http_get(self, url, params=None, data=None, headers=None):
         """
         This code is used to make GET call on given url and handles exceptions
         """
-        headers = self.headers
         try:
-            response = requests.get(url, params, headers=headers)
-            # If we made a bad request (a 4XX client error or 5XX server error response),
-            # we can raise it with Response.raise_for_status():"""
+            print "URL", url
+            print headers
+            response = requests.get(url, data=data, params=params, headers=headers)
+            # We check if there is a bad response
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            log_exception(self.traceback_info, e.message)
+            print 'Error is ', e.message
+            #log_exception(self.traceback_info, e.message)
         except requests.RequestException as e:
-            log_exception(self.traceback_info, e.message)
+            #log_exception(self.traceback_info, e.message)
+            pass
         return response
 
     def get_events(self):
@@ -447,9 +449,11 @@ class Base(object):
             attendee.candidate_id,
             attendee.event.id,
             attendee.rsvp_id)
-        data = {'candidateId': attendee.candidate_id,
-                'eventId': attendee.event.id,
-                'rsvpId': attendee.rsvp_id}
+        data = {
+            'candidateId': attendee.candidate_id,
+            'eventId': attendee.event.id,
+            'rsvpId': attendee.rsvp_id
+        }
         if entity_in_db:
             entity_in_db.update(**data)
             entity_id = entity_in_db.id
@@ -478,23 +482,27 @@ class Base(object):
         type_of_rsvp = 23  # to show message on activity feed
         first_name = attendee.first_name
         last_name = attendee.last_name
-        params = {'firstName': first_name,
-                  'lastName': last_name,
-                  'eventTitle': event_title,
-                  'response': attendee.rsvp_status,
-                  'img': attendee.vendor_img_link,
-                  'creator': '%s' % gt_user_first_name + ' %s' % gt_user_last_name}
+        params = {
+            'firstName': first_name,
+            'lastName': last_name,
+            'eventTitle': event_title,
+            'response': attendee.rsvp_status,
+            'img': attendee.vendor_img_link,
+            'creator': '%s' % gt_user_first_name + ' %s' % gt_user_last_name
+        }
         activity_in_db = Activity.get_by_user_id_params_type_source_id(
             attendee.gt_user_id,
             json.dumps(params),
             type_of_rsvp,
-            attendee.candidate_event_rsvp_id)
-        data = {'sourceTable': 'candidate_event_rsvp',
-                'sourceId': attendee.candidate_event_rsvp_id,
-                'addedTime': attendee.added_time,
-                'type': type_of_rsvp,
-                'userId': attendee.gt_user_id,
-                'params': json.dumps(params)}
+            attendee.candidate_event_rsvp_id
+        )
+        data = {
+            'sourceTable': 'candidate_event_rsvp',
+            'sourceId': attendee.candidate_event_rsvp_id,
+            'addedTime': attendee.added_time,
+            'type': type_of_rsvp,
+            'userId': attendee.gt_user_id,
+            'params': json.dumps(params)}
         if activity_in_db:
             activity_in_db.update(**data)
         else:

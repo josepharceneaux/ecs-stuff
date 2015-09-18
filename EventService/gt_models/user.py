@@ -37,11 +37,10 @@ class UserCredentials(Base):
     id = Column(Integer, primary_key=True)
     userId = Column(Integer, ForeignKey('user.id'), nullable=False)
     socialNetworkId = Column(Integer, ForeignKey('social_network.id'), nullable=False)
-    accessToken = Column(String(1000))
     refreshToken = Column(String(1000))
-    webhook = Column(String(100))
-    memberId = Column(String(200))
-
+    webhook = Column(String(200))
+    memberId = Column(String(100))
+    accessToken = Column(String(1000))
     socialNetwork = relationship("SocialNetwork", primaryjoin='UserCredentials.socialNetworkId == SocialNetwork.id')
 
     @classmethod
