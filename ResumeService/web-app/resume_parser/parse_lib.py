@@ -295,46 +295,31 @@ def parse_xml(json_text):
             position_title = _tag_text(employement, 'title')
 
             # Start date
-            start_date = get_date_from_date_tag(employement, 'start')
-            if not start_date:
-                start_month, start_year, date_to_compare_start = None, None, None
-            else:
-                start_month, start_year = start_date.month, start_date.year
+            experience_start_date = get_date_from_date_tag(employement, 'start')
 
             is_current_job = 0
 
             # End date
-            end_date = get_date_from_date_tag(employement, 'end')
+            experience_end_date = get_date_from_date_tag(employement, 'end')
 
-            if not end_date:
-                end_month, end_year, date_to_compare_end = None, None, None
-            else:
-                try:
-                    end_month, end_year = end_date.month, end_date.year
-                    today_date = datetime.datetime.today().date()
-                    today_date = datetime.datetime.strptime(str(today_date), '%Y-%m-%d')
-                    is_current_job = 1 if today_date == end_date else 0
-                except ValueError:
-                    current_app.logger.error("parse_xml: Received exception getting date for candidate end_date %s",
-                                             end_date)
-                    end_month, end_year = None, None
-
-            if is_current_job:
-                end_month, end_year = None, None
+            try:
+                today_date = datetime.date.today().isoformat()
+                is_current_job = 1 if today_date == experience_end_date else 0
+            except ValueError:
+                current_app.logger.error("parse_xml: Received exception getting date for candidate end_date %s",
+                                         experience_end_date)
 
             # Company's address
             company_address = employement.find('address')
             company_city = _tag_text(company_address, 'city', capwords=True)
-            company_state = _tag_text(company_address, 'state')
+            # company_state = _tag_text(company_address, 'state')
             company_country_id = 1
 
             # Check if an experience already exists
             existing_experience_list_order = is_experience_already_exists(candidate_experiences, organization or '',
                                                                           position_title or '',
-                                                                          str(start_month or '') + '/' + str(
-                                                                              start_year or ''),
-                                                                          str(end_month or '') + '/' + str(
-                                                                              end_year or ''))
+                                                                          experience_start_date,
+                                                                          experience_end_date)
 
             # Get experience bullets
             candidate_experience_bullets = []
@@ -351,18 +336,18 @@ def parse_xml(json_text):
                     ))
                 else:
                     candidate_experience_bullets.append(dict(
-                        text=bullet_description + '\n'
+                        text=bullet_description
                     ))
 
             if not existing_experience_list_order:
                 candidate_experiences.append(dict(
                     city=company_city,
-                    end_date='{}-{}'.format(end_year, end_month),
+                    end_date=experience_end_date,
                     country=company_country_id,
                     company=organization,
                     role=position_title,
                     is_current=is_current_job,
-                    start_date='{}-{}'.format(start_year, start_month),
+                    start_date=experience_start_date,
                     bullets=candidate_experience_bullets
                 ))
 
@@ -376,22 +361,15 @@ def parse_xml(json_text):
             school_state = _tag_text(school_address, 'state')
             country_id = 1
 
-            start_year, start_month, end_year, end_month = None, None, None, None
-
-            start_date = get_date_from_date_tag(school, 'start')
+            education_start_date = get_date_from_date_tag(school, 'start')
+            education_end_date = None
             end_date = get_date_from_date_tag(school, 'end')
             completion_date = get_date_from_date_tag(school, 'completiondate')
 
-            if start_date:
-                start_year = start_date.year
-                start_month = start_date.month
-
             if completion_date:
-                end_year = completion_date.year
-                end_month = completion_date.month
+                education_end_date = completion_date
             elif end_date:
-                end_year = end_date.year
-                end_month = end_date.month
+                education_end_date = end_date
 
             # No longer used in educations dict, save for later or elimate this and gpa_num_and_denom?
             # gpa_num, gpa_denom = gpa_num_and_denom(school, 'gpa')
@@ -401,10 +379,10 @@ def parse_xml(json_text):
                 major=_tag_text(school, 'major'),
                 degree=_tag_text(school, 'degree'),
                 state=school_state,
-                graduation_date='{}-{}'.format(end_year, end_month),
+                graduation_date=education_end_date,
                 country=country_id,
                 school_name=school_name,
-                start_date='{}-{}'.format(start_year, start_month),
+                start_date=education_start_date,
             ))
 
     # Skills
@@ -460,10 +438,8 @@ def get_date_from_date_tag(parent_tag, date_tag_name):
     if date_tag:
         try:
             if date_tag_name == 'end' and ('current' in date_tag.text.lower() or 'present' in date_tag.text.lower()):
-                today_date_object = datetime.datetime.today().date()
-                today_date_object = datetime.datetime.strptime(str(today_date_object), '%Y-%m-%d')
-                return today_date_object
-            return datetime.datetime.strptime(str(date_tag['iso8601']), '%Y-%m-%d')
+                return datetime.date.isoformat()
+            return date_tag['iso8601']
         except:
             return None
     return None
