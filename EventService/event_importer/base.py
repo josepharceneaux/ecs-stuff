@@ -64,20 +64,20 @@ class Base(object):
 
     def set_user_credential(self, user_credential_obj):
         """
-        sets user's credentials as base class object so that it is
-        available in child classes.It also sets the traceback_info as base
+        This sets the user's credentials as base class object so that it is
+        available in child classes. It also sets the traceback_info as base
         class object to be used in logging purpose.
-        traceback_info is used while logging an exception or error.
-        traceback_info contains User's Name, MemberId of user on vendor,
-        Function name where exception occurs,Class Name of calling object
-        and Error message to be logged.
-        In every function where exception is thrown, functionName is appended
-        in the traceback_info.
+        "traceback_info" is used while logging an exception or error.
+        "traceback_info" contains User's Name, MemberId of user on vendor,
+        "functionName" where exception occurs, "class" name of calling object
+        and "error" message to be logged.
+        In every function where exception is thrown, "functionName" is appended
+        in the "traceback_info".
         If user credentials are not "None", we set api_url, access_token,
         member_id, gt_user_id, social_network_id and traceback_info as base
         class objects so any child class can use them. If any of them is
         missing, we log an error with missing items.
-        (api_url is not checked as for Facebook we don't have any api url)
+        (api_url is not checked as for Facebook we don't use API url)
         :param user_credential_obj:
         :return:
         """
