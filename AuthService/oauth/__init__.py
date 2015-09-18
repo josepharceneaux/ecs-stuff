@@ -14,6 +14,10 @@ db = SQLAlchemy(app)
 db.metadata.reflect(db.engine, only=['user'])
 
 gt_oauth.init_app(app)
+
+from oauth import models
+from oauth import views
+
 db.create_all()
 db.session.commit()
 
