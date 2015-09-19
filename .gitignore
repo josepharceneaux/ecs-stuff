@@ -3,7 +3,6 @@
 
 # Project Specific Files to exclude
 ResumeService/Dockertest
-ResumeService/ansible
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
