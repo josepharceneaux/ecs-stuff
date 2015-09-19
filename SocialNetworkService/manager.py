@@ -1,9 +1,23 @@
+import sys
+import logging
+import argparse
+import traceback
 from datetime import datetime
 from dateutil.parser import parse
-from SocialNetworkService.base import SocialNetworkBase
-from SocialNetworkService.custom_exections import SocialNetworkError, SocialNetworkNotImplemented, InvalidDatetime
+
+from gevent.pool import Pool
+from common.gt_models.config import init_db
+from common.gt_models.user import UserCredentials
 from common.gt_models.social_network import SocialNetwork
-from SocialNetworkService.utilities import get_class, get_message_to_log, log_error
+from utilities import get_class, get_message_to_log, log_error
+from SocialNetworkService.custom_exections import SocialNetworkError, SocialNetworkNotImplemented, InvalidDatetime
+
+init_db()
+
+
+logger = logging.getLogger('event_service.app')
+
+POOL_SIZE = 5
 
 
 def process_access_token(social_network_name, code_to_get_access_token, gt_user_id):
@@ -79,6 +93,48 @@ def process_event(data, user_id):
             log_error(message_to_log)
 
 
+def start():
+    parser = argparse.ArgumentParser()
+    logger.debug("Hey world...")
+    parser.add_argument("-m",
+                        action="store",
+                        type=str,
+                        dest="mode",
+                        help="specify mode e.g. '-m rsvp' or '-m event'")
+    parser.add_argument("-s",
+                        action="store",
+                        type=str,
+                        dest="social_network",
+                        help="specify social work name to process e.g. '-s facebook' or '-s meetup'")
+
+    name_space = parser.parse_args()
+    social_network_id = None
+    if name_space.social_network is not None:
+        social_network = name_space.social_network.lower()
+        social_network_obj = SocialNetwork.get_by_name(social_network)
+        social_network_id = social_network_obj.id
+    all_user_credentials = UserCredentials.get_all_credentials(social_network_id)
+    job_pool = Pool(POOL_SIZE)
+    for user_credential in all_user_credentials:
+        social_network = SocialNetwork.get_by_name(user_credential.social_network.name)
+        social_network_name = social_network.name.lower()
+        vendor_class = get_class(social_network_name, 'social_network')
+        # vendor_class = SocialNetworkBase
+        obj = vendor_class(user_id=user_credential.userId,
+                           social_network_id=user_credential.socialNetworkId,
+                           mode=name_space.mode)
+        if name_space.mode == 'event':
+            job_pool.spawn(obj._process_events)
+        elif name_space.mode == 'rsvp':
+            job_pool.spawn(obj._process_rsvps)
+    job_pool.join()
+
+if __name__ == '__main__':
+    try:
+        start()
+    except Exception:
+        logger.error(traceback.format_exc())
+        sys.exit(1)
 
 # def event_importer():
 #     member_id = get_member_id(social_network, access_token)

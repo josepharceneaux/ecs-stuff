@@ -1,5 +1,5 @@
 import json
-from SocialNetworkService.event.meetup import MeetupEvent
+from datetime import datetime, timedelta
 from base import SocialNetworkBase
 from utilities import http_request, logger, log_error, log_exception
 
@@ -12,6 +12,10 @@ class Meetup(SocialNetworkBase):
         # token validity is checked here
         # if token is expired, we refresh it here
         self.validate_and_refresh_access_token()
+        self.start_date = kwargs.get('start_date') or (datetime.now() - timedelta(days=90))
+        self.end_date = kwargs.get('end_date') or (datetime.now() + timedelta(days=90))
+        self.start_date_dt = self.start_date
+        self.end_date_dt = self.end_date
 
     @classmethod
     def get_access_token(cls, code_to_get_access_token, relative_url=None):
@@ -98,3 +102,24 @@ class Meetup(SocialNetworkBase):
             message_to_log.update({'error': error_message})
             log_exception(message_to_log)
         return status
+
+    def get_rsvps(self, event):
+        """
+        Here we call MeetupRsvp class method get_rsvps
+        :param event:
+        :return:
+        """
+        rsvp_object = self.helper_class(**self.dict_to_pass)
+        rsvps = rsvp_object.get_rsvps(event)
+        return rsvps
+
+    def get_attendee(self, rsvp):
+        """
+        Here we call MeetupRsvp class method get_attendee
+        :param rsvp:
+        :return:
+        """
+        rsvp_object = self.helper_class(**self.dict_to_pass)
+        attendee = rsvp_object.get_attendee(rsvp)
+        return attendee, rsvp_object
+

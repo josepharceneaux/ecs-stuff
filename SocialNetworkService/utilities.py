@@ -77,40 +77,6 @@ def milliseconds_since_epoch_to_dt(epoch):
     return datetime.datetime.fromtimestamp(epoch / 1000.0)
 
 
-def log_exception(traceback_info, message):
-    """
-    This function logs exception when it is called inside a catch block
-    where ever it is called, traceback_info and error message is passed
-    in arguments.
-    :param message:
-    :param traceback_info:
-    :return:
-    """
-    traceback_info['error'] = message
-    logger.exception("| Reason: %(error)s \n"
-                     "functionName: %(functionName)s, "
-                     "User: %(User)s, class: %(class)s, "
-                     "memberId: %(memberId)s, |"
-                     % traceback_info)
-
-
-def log_error(traceback_info, message):
-    """
-    This function logs error when it is called inside a catch block
-    where ever it is called, traceback_info and error message is passed
-    in arguments.
-    :param message:
-    :param traceback_info:
-    :return:
-    """
-    traceback_info['error'] = message
-    logger.error("| Reason: %(error)s |"
-                 "functionName: %(functionName)s, "
-                 "User: %(User)s, class: %(class)s, "
-                 "memberId: %(memberId)s, "
-                 % traceback_info)
-
-
 def authenticate_user(request):
     """
     :rtype: gluon.dal.objects.Row | None
@@ -132,7 +98,51 @@ def authenticate_user(request):
         return None
 
 
-def get_message_to_log(gt_user_id='', function_name='', error='', class_name=''):
+class EventInputMissing(Exception):
+    pass
+
+
+class EventNotSaved(Exception):
+    pass
+
+
+class EventNotCreated(Exception):
+    pass
+
+
+class EventNotPublished(Exception):
+    pass
+
+
+class EventNotUnpublished(Exception):
+    pass
+
+
+class EventLocationNotCreated(Exception):
+    pass
+
+
+class TicketsNotCreated(Exception):
+    pass
+
+
+class EventNotSaveInDb(Exception):
+    pass
+
+
+class UserCredentialsNotFound(Exception):
+    pass
+
+
+class SocialNetworkNotImplemented(Exception):
+    pass
+
+
+class InvalidAccessToken(Exception):
+    pass
+
+
+def get_message_to_log(gt_user_id='', function_name='', error='', class_name='', file_name=''):
     """
     Here we define descriptive message to be used for logging purposes
     :param function_name:
@@ -143,7 +153,7 @@ def get_message_to_log(gt_user_id='', function_name='', error='', class_name='')
     message_to_log = {
         'user': gt_user_id,  # TODO: replace it with actual user name
         'class': class_name,
-        'fileName': 'TalentEventsAPI.py',
+        'fileName': file_name,
         'functionName': function_name,
         'error': error}
     return message_to_log
@@ -221,13 +231,20 @@ def http_request(method_type, url, params=None, headers=None, data=None, message
 
 
 def get_class(social_network_name, category):
+    """
+    Here we pass following parameters
+    :param social_network_name:
+    :param category:
+    and we import the required class and return it
+    :return:
+    """
     function_name = 'process_event()'
     message_to_log = get_message_to_log(function_name=function_name)
-    _class = None
     if category == 'social_network':
         module_name = 'SocialNetworkService.' + social_network_name
     else:
         module_name = 'SocialNetworkService.' + category + '.' + social_network_name
+        # module_name = category + '.' + social_network_name.lower() + '_' + category
     try:
         module = importlib.import_module(module_name)
     except ImportError as e:
