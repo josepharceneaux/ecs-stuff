@@ -1,11 +1,10 @@
 from abc import ABCMeta, abstractmethod
 import requests
 
-from gt_models.social_network import SocialNetwork
-from gt_models.user import User, UserCredentials
-
 from SocialNetworkService.utilities import get_message_to_log, log_error,\
     log_exception, http_request
+from common.gt_models.social_network import SocialNetwork
+from common.gt_models.user import User, UserCredentials
 
 
 class SocialNetworkBase(object):
@@ -29,7 +28,7 @@ class SocialNetworkBase(object):
         self.user = User.get_by_id(user_id)
         self.social_network = SocialNetwork.get_by_id(social_network_id)
 
-        self.user_credentials = UserCredentials.get_by_user_and_social_network(
+        self.user_credentials = UserCredentials.get_by_user_and_social_network_id(
             user_id, social_network_id)
 
         if self.user_credentials:
@@ -202,3 +201,6 @@ class SocialNetworkBase(object):
             error_message = e.message
             message_to_log.update({'error': error_message})
             log_exception(message_to_log)
+
+    def process_event(self):
+        pass

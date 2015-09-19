@@ -1,3 +1,5 @@
+import json
+from SocialNetworkService.event.meetup import MeetupEvent
 from base import SocialNetworkBase
 from utilities import http_request, logger, log_error, log_exception
 
@@ -33,9 +35,26 @@ class Meetup(SocialNetworkBase):
         self.api_relative_url = '/member/self'
         super(Meetup, self).get_member_id()
 
+    def get_groups(self):
+        """
+        This function returns the groups of Meetup for which the current user
+        is an organizer to be shown in drop down while creating event on Meetup
+        through Event Creation Form.
+        """
+        self.message_to_log.update({'functionName': 'get_groups()'})
+        url = self.api_url + '/groups/'
+        params = {'member_id': 'self'}
+        response = self.get_data(url, params)
+        if response.ok:
+            meta_data = json.loads(response.text)['meta']
+            member_id = meta_data['url'].split('=')[1].split('&')[0]
+            data = json.loads(response.text)['results']
+            groups = filter(lambda item: item['organizer']['member_id'] == int(member_id), data)
+            return groups
+
     def validate_token(self, payload=None):
         self.api_relative_url = '/member/self'
-        super(Meetup, self).validate_token()
+        return super(Meetup, self).validate_token()
 
     def refresh_access_token(self):
         """
