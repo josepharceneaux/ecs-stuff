@@ -78,40 +78,6 @@ def milliseconds_since_epoch_to_dt(epoch):
     return datetime.datetime.fromtimestamp(epoch / 1000.0)
 
 
-def log_exception(traceback_info, message):
-    """
-    This function logs exception when it is called inside a catch block
-    where ever it is called, traceback_info and error message is passed
-    in arguments.
-    :param message:
-    :param traceback_info:
-    :return:
-    """
-    traceback_info['error'] = message
-    logger.exception("| Reason: %(error)s \n"
-                     "functionName: %(functionName)s, "
-                     "User: %(User)s, class: %(class)s, "
-                     "memberId: %(memberId)s, |"
-                     % traceback_info)
-
-
-def log_error(traceback_info, message):
-    """
-    This function logs error when it is called inside a catch block
-    where ever it is called, traceback_info and error message is passed
-    in arguments.
-    :param message:
-    :param traceback_info:
-    :return:
-    """
-    traceback_info['error'] = message
-    logger.error("| Reason: %(error)s |"
-                 "functionName: %(functionName)s, "
-                 "User: %(User)s, class: %(class)s, "
-                 "memberId: %(memberId)s, "
-                 % traceback_info)
-
-
 def authenticate_user(request):
     """
     :rtype: gluon.dal.objects.Row | None
@@ -177,7 +143,7 @@ class InvalidAccessToken(Exception):
     pass
 
 
-def get_message_to_log(gt_user_id='', function_name='', error='', class_name=''):
+def get_message_to_log(gt_user_id='', function_name='', error='', class_name='', file_name=''):
     """
     Here we define descriptive message to be used for logging purposes
     :param function_name:
@@ -188,7 +154,7 @@ def get_message_to_log(gt_user_id='', function_name='', error='', class_name='')
     message_to_log = {
         'user': gt_user_id,  # TODO: replace it with actual user name
         'class': class_name,
-        'fileName': 'TalentEventsAPI.py',
+        'fileName': file_name,
         'functionName': function_name,
         'error': error}
     return message_to_log
@@ -274,7 +240,7 @@ def process_event(data, user_id):
     user_id is the id of current logged in user (which we get from session).
     """
     function_name = 'process_event()'
-    message_to_log = _get_message_to_log(function_name=function_name)
+    message_to_log = get_message_to_log(function_name=function_name)
     if data:
         vendor_id = data['socialNetworkId']
         social_network = SocialNetwork.get_by_id(vendor_id)
@@ -319,7 +285,7 @@ def save_event(event_id, data):
     :return:
     """
     function_name = 'save_event()'
-    message_to_log = _get_message_to_log(function_name=function_name)
+    message_to_log = get_message_to_log(function_name=function_name)
     db_data = data
     # try:
     #     inserted_record_id = db.event.update_or_insert(
@@ -357,117 +323,24 @@ def save_event(event_id, data):
     # except Exception as e:
     #     error_message = 'Event was not saved in Database\nError: %s' % str(e)
     #     message_to_log.update({'error': error_message})
-    #     _log_error(message_to_log)
+    #     log_error(message_to_log)
     #     raise EventNotSaveInDb
     # return inserted_record_id
 
 
-def validate_token(access_token, social_network):
-    """
-    This function is called from get_and_update_auth_info() inside RESTful
-    service social_networks() to check the validity of the access token
-    of current user for a specific social network. We take the access token,
-    make request to social network, and check if it didn't error'ed out.
-    :param access_token: access_token of current user.
-    :param social_network: social network model object for given access_token.
-    :return:
-    """
-    function_name = 'validate_token()'
-    message_to_log = _get_message_to_log(function_name=function_name)
-    status = False
-    payload = None
-    if social_network.id == EVENTBRITE.id:
-        relative_url = '/users/me/'
-    elif social_network.id == MEETUP.id:
-        relative_url = '/member/self'
-    elif social_network.id == FACEBOOK.id:
-        payload = {'access_token': access_token}
-        relative_url = '/me'
-    else:
-        relative_url = ''
-    url = social_network.apiUrl + relative_url
-    headers = {'Authorization': 'Bearer %s' % access_token}
-    try:
-        response = requests.get(url, headers=headers, params=payload)
-        if response.ok:
-            status = True
-        else:
-            error_message = "Access token has expired for %s" % social_network.name
-            message_to_log.update({'error': error_message})
-            _log_error(message_to_log)
-    except requests.RequestException as e:
-        error_message = e.message
-        message_to_log.update({'error': error_message})
-        _log_exception(message_to_log)
-    return status
-
-
-def refresh_access_token(user_credential, social_network):
-    """
-    When user authorize to Meetup account, we get a refresh token
-    and access token. Access token expires in one hour.
-    Here we refresh the access_token using refresh_token without user
-    involvement and save in user_credentials db table
-    :param user_credential:
-    :param social_network:
-    :return:
-    """
-    function_name = 'refresh_access_token()'
-    message_to_log = _get_message_to_log(function_name=function_name)
-    status = False
-    if social_network.name == MEETUP.name:
-        user_refresh_token = user_credential.refreshToken
-        member_id = user_credential.memberId
-        auth_url = social_network.authUrl + "/access?"
-        client_id = social_network.clientKey
-        client_secret = social_network.secretKey
-        payload_data = {'client_id': client_id,
-                        'client_secret': client_secret,
-                        'grant_type': 'refresh_token',
-                        'refresh_token': user_refresh_token}
-        response = http_request('POST', auth_url, data=payload_data,
-                                message_to_log=message_to_log)
-        try:
-            if response.ok:
-                access_token = response.json().get('access_token')
-                status = save_token_in_db(access_token,
-                                          user_refresh_token,
-                                          member_id,
-                                          social_network)
-                logger.info("Access Token has been refreshed")
-            else:
-                error_message = response.json().get('error')
-                message_to_log.update({'error': error_message})
-                _log_error(message_to_log)
-        except Exception as e:
-            error_message = "Error occurred while refreshing access token. Error is: " \
-                            + e.message
-            message_to_log.update({'error': error_message})
-            _log_exception(message_to_log)
-    return status
-
-
-def validate_and_refresh_access_token(user_credential):
-    """
-    This function is called to validate access token. if access token has
-    expired, it also refreshes it and saves the fresh access token in database
-    :return:
-    """
-    refreshed_token_status = False
-    social_network = SocialNetwork.get_by_id(user_credential.socialNetworkId)
-    access_token = user_credential.accessToken
-    access_token_status = validate_token(access_token, social_network)
-    if not access_token_status:  # access token has expired, need to refresh it
-        refreshed_token_status = refresh_access_token(user_credential, social_network)
-    return access_token_status, refreshed_token_status
-
-
 def get_class(social_network_name, category):
+    """
+    Here we pass following parameters
+    :param social_network_name:
+    :param category:
+    and we import the required class and return it
+    :return:
+    """
     _class = None
     if category == 'social_network':
-        module_name = 'SocialNetworkService.' + social_network_name
+        module_name = social_network_name
     else:
-        module_name = 'SocialNetworkService.' + category + '.' + social_network_name + '_' + category
+        module_name = category + '.' + social_network_name.lower() + '_' + category
     try:
         module = importlib.import_module(module_name)
     except ImportError as ie:
