@@ -256,8 +256,10 @@ class SocialNetworkBase(object):
                     if rsvps:
                         # attendees is a utility object we share in calls that
                         # contains pertinent data
-                        attendees, rsvp_object = self.get_attendees(rsvps)
-                        rsvp_object.post_process_rsvp(attendees)
+                        attendees = self.get_attendees(rsvps)
+                        class_object = self.helper_class(**self.dict_to_pass)
+                        # shifted all the post_processing in the rsvp_base
+                        class_object.post_process_rsvp(attendees)
                     elif rsvps is None:
                         break
         else:
@@ -282,11 +284,11 @@ class SocialNetworkBase(object):
         :param rsvps:
         :return:
         """
-        result = map(self.get_attendee, rsvps)
+        attendees = map(self.get_attendee, rsvps)
         # only picks those attendees for which we are able to get data
         # rest attendees are logged and are not processed further
-        attendees = filter(lambda attendee: attendee is not None, result[0][0])
-        return attendees, result[0][1]
+        attendees = filter(lambda attendee: attendee is not None, attendees)
+        return attendees
 
     @abstractmethod
     def get_attendee(self, rsvp):
