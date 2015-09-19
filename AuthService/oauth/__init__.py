@@ -21,4 +21,3 @@ from oauth import views
 db.create_all()
 db.session.commit()
 
-print "Creating DB connection"
