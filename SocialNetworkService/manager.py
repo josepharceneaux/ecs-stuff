@@ -10,19 +10,24 @@ from common.gt_models.config import init_db
 from common.gt_models.user import UserCredentials
 from common.gt_models.social_network import SocialNetwork
 from utilities import get_class, get_message_to_log, log_error
-from SocialNetworkService.custom_exections import SocialNetworkError, SocialNetworkNotImplemented, InvalidDatetime
+from SocialNetworkService.custom_exections import SocialNetworkError, \
+    SocialNetworkNotImplemented, InvalidDatetime
 
 init_db()
 
-
+# TODO- rename in logger settings
 logger = logging.getLogger('event_service.app')
 
 POOL_SIZE = 5
 
 
 def process_access_token(social_network_name, code_to_get_access_token, gt_user_id):
-    message_to_log = get_message_to_log(function_name='process_access_token()',
-                                        gt_user_id=gt_user_id)
+    social_network = SocialNetwork.get_by_name(social_network_name)
+    user_credentials = UserCredentials.get_by_user_and_social_network_id(
+        gt_user_id, social_network.id)
+    message_to_log = get_message_to_log(
+        function_name='process_access_token()',
+        gt_user=user_credentials.user.firstName + ' ' + user_credentials.user.lastName)
     social_network = SocialNetwork.get_by_name(social_network_name)
     social_network_class = get_class(social_network_name, 'social_network')
     access_token, refresh_token = social_network_class.get_access_token(
@@ -66,7 +71,8 @@ def process_event(data, user_id):
             except SocialNetworkNotImplemented as e:
                 raise
             except  Exception as e:
-                raise SocialNetworkError('Unable to determine social network. Please verify your data (socialNetworkId)')
+                raise SocialNetworkError('Unable to determine social network. '
+                                         'Please verify your data (socialNetworkId)')
 
             data['userId'] = user_id
             # converting incoming Datetime object from Form submission into the
@@ -115,26 +121,33 @@ def start():
         social_network_id = social_network_obj.id
     all_user_credentials = UserCredentials.get_all_credentials(social_network_id)
     job_pool = Pool(POOL_SIZE)
-    for user_credential in all_user_credentials:
-        social_network = SocialNetwork.get_by_name(user_credential.social_network.name)
-        social_network_name = social_network.name.lower()
-        vendor_class = get_class(social_network_name, 'social_network')
-        # vendor_class = SocialNetworkBase
-        obj = vendor_class(user_id=user_credential.userId,
-                           social_network_id=user_credential.socialNetworkId,
-                           mode=name_space.mode)
+    for user_credentials in all_user_credentials:
+        social_network = SocialNetwork.get_by_name(user_credentials.social_network.name)
+        social_network_class = get_class(social_network.name.lower(), 'social_network')
+        event_or_rsvp_class = get_class(social_network.name.lower(), name_space.mode)
+        # we call social network class here for auth purpose, If token is expired
+        # access token is refreshed and we use fresh token
+        sn = social_network_class(user_id=user_credentials.userId,
+                                  social_network_id=social_network.id)
+        if not user_credentials.memberId:
+            # get an save the member Id of gt-user
+            sn.get_member_id(dict())
+        event_or_rsvp_obj = event_or_rsvp_class(api_url=social_network.apiUrl,
+                                                user_credentials=user_credentials,
+                                                social_network=social_network,
+                                                headers=sn.headers,
+                                                message_to_log=sn.message_to_log)
         if name_space.mode == 'event':
-            job_pool.spawn(obj._process_events)
+            job_pool.spawn(event_or_rsvp_obj._process_events)
         elif name_space.mode == 'rsvp':
-            job_pool.spawn(obj._process_rsvps)
+            job_pool.spawn(event_or_rsvp_obj._process_rsvps)
     job_pool.join()
 
 if __name__ == '__main__':
     try:
         start()
+    except TypeError:
+        logger.error('Please provide required parameters to run manager')
     except Exception:
         logger.error(traceback.format_exc())
         sys.exit(1)
-
-# def event_importer():
-#     member_id = get_member_id(social_network, access_token)

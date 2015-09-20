@@ -26,15 +26,15 @@ class Eventbrite(SocialNetworkBase):
         data = dict(api_relative_url="/token")
         super(Eventbrite, cls).get_access_token(data)
 
-    def get_member_id(self):
+    def get_member_id(self, data):
         """
         This function is called from process_access_token() inside controller
         user.py. Here we get the access token from provided user_credentials
         and auth code for fetching access token by making API call.
         :return:
         """
-        self.api_relative_url = "/users/me/"
-        super(Eventbrite, self).get_member_id()
+        data['api_relative_url'] = "/users/me/"
+        super(Eventbrite, self).get_member_id(data)
 
     def validate_token(self, payload=None):
         self.api_relative_url = '/users/me/'
@@ -45,7 +45,7 @@ class Eventbrite(SocialNetworkBase):
 
         # now we create webhook for eventbrite user for getting rsvp through webhook
         # via EventService app
-        super(Eventbrite, Eventbrite).save_token_in_db(user_credentials)
+        super(Eventbrite, Eventbrite).save_user_credentials_in_db(user_credentials)
         Eventbrite.create_webhook(user_credentials)
 
     @staticmethod
@@ -60,7 +60,6 @@ class Eventbrite(SocialNetworkBase):
         every user).
         :return: True if webhook creation is successful o/w False
         """
-
         message_to_log = get_message_to_log(function_name='create_webhook()')
         user_credentials_in_db = UserCredentials.get_by_user_and_social_network_id(
             user_credentials['userId'],

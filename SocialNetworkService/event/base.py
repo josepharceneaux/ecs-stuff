@@ -25,9 +25,6 @@ class EventBase(object):
     def get_events(self, *args, **kwargs):
         pass
 
-    def get_rsvp(self, *args, **kwargs):
-        pass
-
     def save_event(self, data):
         """
         This function serves the storage of event in database after it is

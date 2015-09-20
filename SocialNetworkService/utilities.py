@@ -142,7 +142,7 @@ class InvalidAccessToken(Exception):
     pass
 
 
-def get_message_to_log(gt_user_id='', function_name='', error='', class_name='', file_name=''):
+def get_message_to_log(gt_user='', function_name='', error='', class_name='', file_name=''):
     """
     Here we define descriptive message to be used for logging purposes
     :param function_name:
@@ -151,7 +151,7 @@ def get_message_to_log(gt_user_id='', function_name='', error='', class_name='',
     :return:
     """
     message_to_log = {
-        'user': gt_user_id,  # TODO: replace it with actual user name
+        'user': gt_user,  # TODO: replace it with actual user name
         'class': class_name,
         'fileName': file_name,
         'functionName': function_name,
@@ -238,19 +238,19 @@ def get_class(social_network_name, category):
     and we import the required class and return it
     :return:
     """
-    function_name = 'process_event()'
+    function_name = 'get_class()'
     message_to_log = get_message_to_log(function_name=function_name)
     if category == 'social_network':
         module_name = 'SocialNetworkService.' + social_network_name
     else:
-        module_name = 'SocialNetworkService.' + category + '.' + social_network_name
+        module_name = 'SocialNetworkService.' + category + '.' + social_network_name.lower()
         # module_name = category + '.' + social_network_name.lower() + '_' + category
     try:
         module = importlib.import_module(module_name)
     except ImportError as e:
         error_message = 'Social Network "%s" is not allowed for now, ' \
-                                'please implement code for this social network.' \
-                                % social_network_name
+                        'please implement code for this social network.' \
+                        % social_network_name
         message_to_log.update({'error': error_message})
         log_error(message_to_log)
         raise SocialNetworkNotImplemented

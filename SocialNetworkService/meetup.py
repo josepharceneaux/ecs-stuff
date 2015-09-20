@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta
+
 from base import SocialNetworkBase
 from utilities import http_request, logger, log_error, log_exception
 
@@ -12,32 +12,27 @@ class Meetup(SocialNetworkBase):
         # token validity is checked here
         # if token is expired, we refresh it here
         self.validate_and_refresh_access_token()
-        self.start_date = kwargs.get('start_date') or (datetime.now() - timedelta(days=90))
-        self.end_date = kwargs.get('end_date') or (datetime.now() + timedelta(days=90))
-        self.start_date_dt = self.start_date
-        self.end_date_dt = self.end_date
 
     @classmethod
-    def get_access_token(cls, code_to_get_access_token, relative_url=None):
+    def get_access_token(cls, data):
         """
         This function is called from process_access_token() inside controller
         user.py. Here we get the access token from provided user_credentials
         and auth code for fetching access token by making API call.
         :return:
         """
-        api_relative_url = "/access"
-        super(Meetup, cls).get_access_token(code_to_get_access_token,
-                                            relative_url=api_relative_url)
+        data['api_relative_url'] = "/access"
+        super(Meetup, cls).get_access_token(data)
 
-    def get_member_id(self):
+    def get_member_id(self, data):
         """
         This function is called from process_access_token() inside controller
         user.py. Here we get the access token from provided user_credentials
         and auth code for fetching access token by making API call.
         :return:
         """
-        self.api_relative_url = '/member/self'
-        super(Meetup, self).get_member_id()
+        data['api_relative_url'] = '/member/self'
+        super(Meetup, self).get_member_id(data)
 
     def get_groups(self):
         """
@@ -69,7 +64,7 @@ class Meetup(SocialNetworkBase):
         :return:
         """
         function_name = 'refresh_access_token()'
-        message_to_log = self.message_to_log.update({'function_name': function_name})
+        self.message_to_log.update({'function_name': function_name})
         status = False
         user_refresh_token = self.user_credentials.refreshToken
         auth_url = self.social_network.authUrl + "/access?"
@@ -80,46 +75,28 @@ class Meetup(SocialNetworkBase):
                         'grant_type': 'refresh_token',
                         'refresh_token': user_refresh_token}
         response = http_request('POST', auth_url, data=payload_data,
-                                message_to_log=message_to_log)
+                                message_to_log=self.message_to_log)
         try:
             if response.ok:
+                # access token has been refreshed successfully, need to update
+                # self.access_token and self.headers
                 self.access_token = response.json().get('access_token')
+                self.headers.update({'Authorization': 'Bearer ' + self.access_token})
                 refresh_token = response.json().get('refresh_token')
                 data = dict(userId=self.user_credentials.userId,
                             socialNetworkId=self.user_credentials.socialNetworkId,
                             accessToken=self.access_token,
                             refreshToken=refresh_token,
                             memberId=self.user_credentials.memberId)
-                status = self.save_token_in_db(data)
+                status = self.save_user_credentials_in_db(data)
                 logger.info("Access Token has been refreshed")
             else:
                 error_message = response.json().get('error')
-                message_to_log.update({'error': error_message})
-                log_error(message_to_log)
+                self.message_to_log.update({'error': error_message})
+                log_error(self.message_to_log)
         except Exception as e:
             error_message = "Error occurred while refreshing access token. Error is: " \
                             + e.message
-            message_to_log.update({'error': error_message})
-            log_exception(message_to_log)
+            self.message_to_log.update({'error': error_message})
+            log_exception(self.message_to_log)
         return status
-
-    def get_rsvps(self, event):
-        """
-        Here we call MeetupRsvp class method get_rsvps
-        :param event:
-        :return:
-        """
-        rsvp_object = self.helper_class(**self.dict_to_pass)
-        rsvps = rsvp_object.get_rsvps(event)
-        return rsvps
-
-    def get_attendee(self, rsvp):
-        """
-        Here we call MeetupRsvp class method get_attendee
-        :param rsvp:
-        :return:
-        """
-        rsvp_object = self.helper_class(**self.dict_to_pass)
-        attendee = rsvp_object.get_attendee(rsvp)
-        return attendee, rsvp_object
-
