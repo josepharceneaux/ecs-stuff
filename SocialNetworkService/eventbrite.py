@@ -1,5 +1,5 @@
-from gt_models.user import UserCredentials
 from base import SocialNetworkBase
+from common.gt_models.user import UserCredentials
 from utilities import get_message_to_log, http_request, log_exception, log_error
 
 # TODO: Will replace this ULR with actual webhook URL (Flask App)

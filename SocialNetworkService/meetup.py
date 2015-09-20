@@ -1,6 +1,7 @@
+import json
 from datetime import datetime, timedelta
 from base import SocialNetworkBase
-from utilities import http_request, logger, log_error, log_exception, get_class
+from utilities import http_request, logger, log_error, log_exception
 
 
 class Meetup(SocialNetworkBase):
@@ -37,6 +38,23 @@ class Meetup(SocialNetworkBase):
         """
         self.api_relative_url = '/member/self'
         super(Meetup, self).get_member_id()
+
+    def get_groups(self):
+        """
+        This function returns the groups of Meetup for which the current user
+        is an organizer to be shown in drop down while creating event on Meetup
+        through Event Creation Form.
+        """
+        self.message_to_log.update({'functionName': 'get_groups()'})
+        url = self.api_url + '/groups/'
+        params = {'member_id': 'self'}
+        response = self.get_data(url, params)
+        if response.ok:
+            meta_data = json.loads(response.text)['meta']
+            member_id = meta_data['url'].split('=')[1].split('&')[0]
+            data = json.loads(response.text)['results']
+            groups = filter(lambda item: item['organizer']['member_id'] == int(member_id), data)
+            return groups
 
     def validate_token(self, payload=None):
         self.api_relative_url = '/member/self'
@@ -104,3 +122,4 @@ class Meetup(SocialNetworkBase):
         rsvp_object = self.helper_class(**self.dict_to_pass)
         attendee = rsvp_object.get_attendee(rsvp)
         return attendee, rsvp_object
+

@@ -1,10 +1,9 @@
 from abc import ABCMeta, abstractmethod
 import requests
-from gt_models.event import Event
-from gt_models.product import Product
 
-from gt_models.social_network import SocialNetwork
-from gt_models.user import User, UserCredentials
+from common.gt_models.event import Event
+from common.gt_models.social_network import SocialNetwork
+from common.gt_models.user import User, UserCredentials
 
 from utilities import get_message_to_log, log_error,\
     log_exception, http_request, get_class
@@ -32,6 +31,7 @@ class SocialNetworkBase(object):
         self.api_relative_url = None
         self.user = User.get_by_id(user_id)
         self.social_network = SocialNetwork.get_by_id(social_network_id)
+
         self.user_credentials = UserCredentials.get_by_user_and_social_network_id(
             user_id, social_network_id)
 
