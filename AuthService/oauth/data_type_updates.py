@@ -59,6 +59,9 @@ def _update_data_type(engine, referenced_table_name, list_of_column_names, data_
     logger.info("ALTER TABLE `%s` MODIFY id %s" % (referenced_table_name, data_type_to_change_to))
     engine.execute("ALTER TABLE `%s` MODIFY id %s" % (referenced_table_name, data_type_to_change_to))
 
+    # Set Primary Key's column to auto-increment
+    engine.execute("ALTER TABLE %s MODIFY COLUMN id %s auto_increment" % (referenced_table_name, data_type_to_change_to))
+
     # Get all child tables
     dict_of_all_child_tables = query_all_child_tables(engine=engine, database_name=database_name,
                                                       column_names=list_of_column_names)
