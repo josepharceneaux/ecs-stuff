@@ -6,6 +6,7 @@ import os
 from StringIO import StringIO
 
 import pytest
+from common.models.candidate import Candidate
 
 from resume_service.resume_parsing_app import app
 from common.models.db import db
@@ -60,22 +61,25 @@ def test_token(test_client, request):
     except Exception:  # TODO This is to handle 'Duplicate entry' MySQL errors. We should instead check for existing Client/Token before inserting
        pass
 
-
     def fin():
-        try:
-            db.session.delete(test_token)
-            db.session.commit()
-        except Exception:
-            pass
-        # test_client = Client.query.filter_by(client_id='fakeclient').first()
-        # test_token = Token.query.filter_by(client_id='fakeclient').first()
-        # db.session.delete(test_token)
-        # db.session.commit()
-        # db.session.delete(test_client)
-        # db.session.commit()
-        # v15_pdf_candidate = Candidate.query.filter_by(formattedName='MARK GREENE').first()
-        # db.session.delete(v15_pdf_candidate)
-        # db.session.commit()
+        # try:
+        #     db.session.delete(test_token)
+        #     db.session.commit()
+        # except Exception:
+        #     pass
+        created_test_client = Client.query.filter_by(client_id='fakeclient').first()
+        created_test_token = Token.query.filter_by(client_id='fakeclient').first()
+        db.session.delete(created_test_token)
+        db.session.commit()
+        db.session.delete(created_test_client)
+        db.session.commit()
+        v13_pdf_candidate = Candidate.query.filter_by(formattedName='BRUCE PARKEY').first()
+        v15_pdf_candidate = Candidate.query.filter_by(formattedName='MARK GREENE').first()
+        large_jpg_candidate = Candidate.query.filter_by(formattedName='Marion Roberson').first()
+        if v15_pdf_candidate: db.session.delete(v15_pdf_candidate)
+        if v13_pdf_candidate: db.session.delete(v13_pdf_candidate)
+        if large_jpg_candidate: db.session.delete(large_jpg_candidate)
+        db.session.commit()
 
     request.addfinalizer(fin)
     return test_token
@@ -106,6 +110,8 @@ def test_doc_by_post():
     assert json_obj['addresses'][0] == DOC_DICT
     assert len(json_obj['educations']) == 3
     assert len(json_obj['work_experiences']) == 7
+    doc_db_record = Candidate.query.filter_by(formattedName='VEENA NITHOO').first()
+    assert not doc_db_record
     keys_formatted_test(json_obj)
 
 
@@ -141,6 +147,8 @@ def test_v15_pdf_by_post():
     assert json_obj['emails'][0]['address'] == 'techguymark@yahoo.com'
     assert len(json_obj['educations']) == 1
     assert len(json_obj['work_experiences']) == 15
+    v15_pdf_candidate = Candidate.query.filter_by(formattedName='MARK GREENE').first()
+    assert v15_pdf_candidate is not None
     keys_formatted_test(json_obj)
 
 
@@ -154,11 +162,13 @@ def test_v14_pdf_by_post():
 
 
 def test_v13_pdf_by_post():
-    """Test that v1.3 pdf files can be posted."""
+    """Test that v1.5 pdf files can be posted."""
     json_obj = fetch_resume_post_response('test_bin_13.pdf')['candidate']
     assert json_obj['full_name'] == 'BRUCE PARKEY'
     assert json_obj['emails'][0]['address'] == 'bparkey@sagamoreapps.com'
     assert len(json_obj['work_experiences']) == 3
+    v13_pdf_candidate = Candidate.query.filter_by(formattedName='BRUCE PARKEY').first()
+    assert v13_pdf_candidate is not None
     keys_formatted_test(json_obj)
 
 
@@ -181,13 +191,15 @@ def test_jpg_by_post():
 
 
 def test_2448_3264_jpg_by_post():
-    """Test that large jpgs files can be posted."""
-    json_obj = fetch_resume_post_response('2448_3264.jpg')['candidate']
+    """Test that img files can be posted."""
+    json_obj = fetch_resume_post_response('2448_3264.jpg', create_mode='True')['candidate']
     assert json_obj['full_name'] == 'Marion Roberson'
     assert json_obj['emails'][0]['address'] == 'MarionR3@Knology.net'
     assert len(json_obj['educations']) == 0
     # Parser incorrectly guesses 7, 4 + 3 of the bullet points.
     # assert len(json_obj['work_experiences']) == 4
+    large_jpg_candidate = Candidate.query.filter_by(formattedName='Marion Roberson').first()
+    assert large_jpg_candidate is not None
     keys_formatted_test(json_obj)
 
 
