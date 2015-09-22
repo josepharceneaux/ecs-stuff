@@ -212,23 +212,16 @@ def get_rsvp_id(url):
     return rsvp
 
 
-@app.errorhandler(InvalidUsage)
-def handle_invalid_usage(error):
-    response = json.dumps(error.to_dict())
-    response.status_code = error.status_code
-    return response
-
-
 @app.errorhandler(ApiException)
-def handle_invalid_usage(error):
+def handle_api_exception(error):
     response = json.dumps(error.to_dict())
     return ApiResponse(response, status=error.status_code)
 
 
 @app.errorhandler(Exception)
-def handle_invalid_usage(error):
+def handle_any_errors(error):
     response = json.dumps(dict(message='Ooops! Internal server error occurred..'))
-    return ApiResponse(response, status=error.status_code)
+    return ApiResponse(response, status=500)
 
 
 @app.teardown_request

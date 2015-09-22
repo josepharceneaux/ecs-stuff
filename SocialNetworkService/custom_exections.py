@@ -31,58 +31,50 @@ class ApiException(Exception):
         return rv
 
 
-class EventNotCreated(ApiException):
-    status_code = 441
-
-
 class SocialNetworkError(ApiException):
-    status_code = 441
-
-
-class EventInputMissing(ApiException):
-    status_code = 442
-
-
-class EventNotSaved(ApiException):
-    status_code = 443
-
-
-class EventNotCreated(ApiException):
-    status_code = 444
-
-
-class EventNotPublished(ApiException):
-    status_code = 445
-
-
-class EventNotUnpublished(ApiException):
-    status_code = 446
-
-
-class EventLocationNotCreated(Exception):
-    status_code = 447
-
-
-class TicketsNotCreated(Exception):
-    status_code = 448
-
-
-class EventNotSaveInDb(Exception):
-    status_code = 449
-
-
-class UserCredentialsNotFound(Exception):
-    status_code = 450
-
-
-class SocialNetworkNotImplemented(Exception):
-    status_code = 451
-
-
-class InvalidAccessToken(Exception):
     status_code = 452
 
 
-class InvalidDatetime(Exception):
+class EventInputMissing(ApiException):
     status_code = 453
+
+
+class EventNotSaveInDb(ApiException):
+    status_code = 460
+
+
+class EventNotCreated(ApiException):
+    status_code = 455
+
+
+class EventNotPublished(ApiException):
+    status_code = 456
+
+
+class EventNotUnpublished(ApiException):
+    status_code = 457
+
+
+class EventLocationNotCreated(ApiException):
+    status_code = 458
+
+
+class TicketsNotCreated(ApiException):
+    status_code = 459
+
+
+class UserCredentialsNotFound(ApiException):
+    status_code = 461
+
+
+class SocialNetworkNotImplemented(ApiException):
+    status_code = 462
+
+
+class InvalidAccessToken(ApiException):
+    status_code = 463
+
+
+class InvalidDatetime(ApiException):
+    status_code = 464
 

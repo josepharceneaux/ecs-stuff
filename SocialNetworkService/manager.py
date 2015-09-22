@@ -7,11 +7,12 @@ from dateutil.parser import parse
 
 from gevent.pool import Pool
 from common.gt_models.config import init_db
+from common.gt_models.event import Event
 from common.gt_models.user import UserCredentials
 from common.gt_models.social_network import SocialNetwork
 from utilities import get_class, get_message_to_log, log_error
 from SocialNetworkService.custom_exections import SocialNetworkError, \
-    SocialNetworkNotImplemented, InvalidDatetime
+    SocialNetworkNotImplemented, InvalidDatetime, EventInputMissing
 
 init_db()
 
@@ -70,7 +71,7 @@ def process_event(data, user_id):
                                         headers=sn.headers)
             except SocialNetworkNotImplemented as e:
                 raise
-            except  Exception as e:
+            except Exception as e:
                 raise SocialNetworkError('Unable to determine social network. '
                                          'Please verify your data (socialNetworkId)')
 
@@ -78,11 +79,20 @@ def process_event(data, user_id):
             # converting incoming Datetime object from Form submission into the
             # required format for API call
             try:
-                data['eventStartDatetime'] = parse(data['eventStartDatetime'])
-                data['eventEndDatetime'] = parse(data['eventEndDatetime'])
+                start = data['eventStartDatetime']
+                end = data['eventEndDatetime']
+                if not all([start, end]):
+                    raise
+            except Exception as e:
+                raise EventInputMissing("DateTimeError: Unable to find datetime inputs")
+            try:
+                data['eventStartDatetime'] = parse(start)
+                data['eventEndDatetime'] = parse(end)
                 if data['eventStartDatetime'] < datetime.now() or data['eventEndDatetime'] < datetime.now():
-                    raise InvalidDatetime('Invalid DateTime: eventStartDatetime and eventEndDatetime should '
-                                          'be in future.')
+                    raise InvalidDatetime('Invalid DateTime')
+            except InvalidDatetime as e:
+                raise InvalidDatetime('Invalid DateTime: eventStartDatetime and eventEndDatetime should '
+                                      'be in future.')
             except Exception as e:
                 raise InvalidDatetime('Invalid DateTime: Kindly specify datetime in ISO format')
             # posting event on social network
@@ -92,11 +102,43 @@ def process_event(data, user_id):
             if event_id:  # Event has been successfully published on vendor
                 # save event in database
                 data['vendorEventId'] = event_id
-                event_obj.save_event(data)
+                gt_event_id = event_obj.save_event(data)
+                return gt_event_id
         else:
             error_message = 'Data not received from Event Creation/Edit FORM'
             message_to_log.update({'error': error_message})
             log_error(message_to_log)
+
+
+def delete_events(user_id, event_ids):
+    assert len(event_ids) > 0, 'event_ids should contain at least one event id'
+    social_networks = {}
+    deleted, not_deleted = [], []
+    for event_id in event_ids:
+        event = Event.get_by_user_and_event_id(user_id, event_id)
+        if event:
+            social_network = event.socialNetwork
+            if social_network.id not in social_networks:
+                social_network_class = get_class(social_network.name.lower(), 'social_network')
+                event_class = get_class(social_network.name.lower(), 'event')
+                sn = social_network_class(user_id=user_id, social_network_id=social_network.id)
+                event_obj = event_class(user_id=user_id,
+                                        api_url=social_network.apiUrl,
+                                        headers=sn.headers)
+                social_networks[social_network.id] = dict(event_obj=event_obj,
+                                                          event_ids=[event_id])
+            else:
+                social_networks[social_network.id]['event_ids'].append(event_id)
+        else:
+            not_deleted.append(event_id)
+
+    for _, social_network in social_networks.items():
+        event_obj = social_network['event_obj']
+        dltd, nt_dltd = event_obj.delete_events(social_network['event_ids'])
+        deleted.extend(dltd)
+        not_deleted.extend(nt_dltd)
+
+    return deleted, not_deleted
 
 
 def start():

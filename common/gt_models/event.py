@@ -59,6 +59,14 @@ class Event(Base):
             )).first()
 
     @classmethod
+    def get_by_user_and_event_id(cls, user_id, event_id):
+        return cls.query.filter(
+            and_(
+                Event.userId == user_id,
+                Event.id == event_id
+            )).first()
+
+    @classmethod
     def get_by_user_id_vendor_id_start_date(cls, user_id, social_network_id, start_date):
         assert user_id is not None
         assert social_network_id is not None

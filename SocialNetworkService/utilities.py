@@ -6,6 +6,7 @@ import importlib
 import json
 import logging
 import datetime
+import re
 import requests
 from requests_oauthlib import OAuth2Session
 
@@ -253,10 +254,83 @@ def get_class(social_network_name, category):
                         % social_network_name
         message_to_log.update({'error': error_message})
         log_error(message_to_log)
-        raise SocialNetworkNotImplemented
+        raise SocialNetworkNotImplemented('Import Error: Unable to import module for required social network')
     else:
         if category == 'social_network':
             _class = getattr(module, social_network_name.title())
         else:
             _class = getattr(module, social_network_name.title() + category.title())
     return _class
+
+
+def camel_case_to_snake_case(name):
+    """ Convert camel case to underscore case
+        e.g. apptTypeId --> appt_type_id
+    """
+    name_ = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name_).lower()
+
+
+def camel_case_to_title_case(name):
+    """ Converts camel case to title case
+        e.g. apptTypeId --> Appt Type I
+    """
+    name_ = camel_case_to_snake_case(name)
+    return ' '.join(name_.split('_')).title()
+
+
+def snake_case_to_camel_case(name):
+    """ Convert string or unicode from lower-case underscore to camel-case
+        e.g. appt_type_id --> apptTypeId
+    """
+    splitted_string = name.split('_')
+    # use string's class to work on the string to keep its type
+    class_ = name.__class__
+    return splitted_string[0] + class_.join('', map(class_.capitalize, splitted_string[1:]))
+
+
+def convert_keys_to_camel_case(dictionary):
+    """
+    Convert a dictionary keys to camel case
+    e.g.
+    data = {'event_title': 'Test event',
+            'event_description': 'Test event description'
+            'event_start_datetime': '2015-12-12 12:00:00'
+            }
+    to
+
+    data = {'eventTitle': 'Test event',
+            'eventDescription': 'Test event description'
+            'eventStartDatetime': '2015-12-12 12:00:00'
+            }
+
+    """
+    data = {}
+    for key, val in dictionary.items():
+        data[snake_case_to_camel_case(str(key))] = val
+    return data
+
+
+def convert_keys_to_snake_case(dictionary):
+    """
+    Convert a dictionary keys to snake case
+    e.g.
+
+    data = {'eventTitle': 'Test event',
+            'eventDescription': 'Test event description'
+            'eventStartDatetime': '2015-12-12 12:00:00'
+            }
+
+    to
+
+    data = {'event_title': 'Test event',
+            'event_description': 'Test event description'
+            'event_start_datetime': '2015-12-12 12:00:00'
+    }
+
+    """
+    data = {}
+    for key, val in dictionary.items():
+        data[camel_case_to_snake_case(str(key))] = val
+    return data
+

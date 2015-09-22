@@ -29,12 +29,12 @@ class SocialNetworkBase(object):
 
         self.user_credentials = UserCredentials.get_by_user_and_social_network_id(
             user_id, social_network_id)
-
+        self.message_to_log = get_message_to_log(
+            function_name=function_name,
+            class_name=self.__class__.__name__)
         if self.user_credentials:
-            self.message_to_log = get_message_to_log(
-                function_name=function_name,
-                class_name=self.__class__.__name__,
-                gt_user=self.user_credentials.user.firstName + ' ' + self.user_credentials.user.lastName)
+            self.message_to_log.update(
+                {'gt_user': self.user_credentials.user.firstName + ' ' + self.user_credentials.user.lastName})
             data = {
                 "access_token": self.user_credentials.accessToken,
                 "gt_user_id": self.user_credentials.userId,

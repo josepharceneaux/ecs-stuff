@@ -1,5 +1,6 @@
 import os
 import pytest
+from SocialNetworkService.manager import process_event
 from common.gt_models.client import Client
 from common.gt_models.client import Token
 import datetime
@@ -35,7 +36,7 @@ EVENT_DATA = {
     'registrationInstruction': 'Just Come',
     'eventDescription': 'Test Event Description',
     'organizerEmail': u'',
-    'eventEndDatetime': '15 Oct, 2015 04:51 pm',
+    'eventEndDatetime': str(datetime.datetime.now() + datetime.timedelta(days=20)),
     'groupUrlName': 'QC-Python-Learning',
     'eventCountry': 'us',
     'organizerName': u'',
@@ -43,11 +44,14 @@ EVENT_DATA = {
     'eventZipCode': '95014',
     'eventAddressLine2': u'',
     'eventAddressLine1': 'Infinite Loop',
-    'eventTimeZone': 'UTC',
+    'eventLatitude': 0,
+    'eventLongitude': 0,
+    'eventTimeZone': 'Asia/Karachi',
     'eventState': 'CA',
     'eventCost': 0,
+    'ticketsId': 0,
     'eventCity': 'Cupertino',
-    'eventStartDatetime': '29 Sep, 2015 04:50 pm',
+    'eventStartDatetime': str(datetime.datetime.now() + datetime.timedelta(days=10)),
     'eventCurrency': 'USD',
     'groupId': 18837246,
     'maxAttendees': 10
@@ -73,6 +77,20 @@ def app(request):
 
     return _app.app.test_client()
 
+
+@pytest.fixture(scope='session')
+def meetup():
+    return SocialNetwork.get_by_name('Meetup')
+
+
+@pytest.fixture(scope='session')
+def eventbrite():
+    return SocialNetwork.get_by_name('Eventbrite')
+
+
+@pytest.fixture(scope='session')
+def facebook():
+    return SocialNetwork.get_by_name('Facebook')
 
 # @pytest.fixture(scope='session')
 # def client(request):
@@ -127,10 +145,10 @@ def organization(request):
 @pytest.fixture(scope='session')
 def user(request, culture, domain):
     mixer = Mixer(session=db_session, commit=True)
-
-    user = mixer.blend(User, domain=domain, culture=culture, firstName=faker.nickname(),
-                       lastName=faker.nickname(), email=faker.email_address(),
-                       password=generate_password_hash('A123456', method='pbkdf2:sha512'))
+    user = User.get_by_id(1)
+    # user = mixer.blend(User, domain=domain, culture=culture, firstName=faker.nickname(),
+    #                    lastName=faker.nickname(), email=faker.email_address(),
+    #                    password=generate_password_hash('A123456', method='pbkdf2:sha512'))
 
     return user
 
@@ -149,30 +167,17 @@ def auth_data(user, base_url, client_credentials):
     # TODO; make the URL constant, create client_id and client_secret on the fly
     auth_service_url = GET_TOKEN_URL
 
+    token = Token.get_by_user_id(user.id)
+    client_credentials = token.client
     data = dict(client_id=client_credentials.client_id,
                 client_secret=client_credentials.client_secret, username=user.email,
-                password='A123456', grant_type='password')
+                password='Iamzohaib123', grant_type='password')
     headers = {'content-type': 'application/x-www-form-urlencoded'}
     response = requests.post(auth_service_url, data=data, headers=headers)
     assert response.status_code == 200
     assert response.json().has_key('access_token')
     assert response.json().has_key('refresh_token')
     return response.json()
-
-
-@pytest.fixture(scope='session')
-def meetup():
-    return SocialNetwork.get_by_name('Meetup')
-
-
-@pytest.fixture(scope='session')
-def eventbrite():
-    return SocialNetwork.get_by_name('Eventbrite')
-
-
-@pytest.fixture(scope='session')
-def facebook():
-    return SocialNetwork.get_by_name('Facebook')
 
 
 @pytest.fixture(scope='session')
@@ -190,44 +195,63 @@ def eventbrite_event_data(eventbrite):
 
 
 @pytest.fixture(scope='session')
-def events(request, sample_event_data):
+def events(request, user,  meetup, eventbrite):
     events = []
-    for index in range(1, 11):
-        event = sample_event_data.copy()
-        event['eventTitle'] %= index
-        event = Event(**event)
-        Event.save(event)
-        events.append(event)
+    event = EVENT_DATA.copy()
+    event['eventTitle'] = 'Meetup ' + event['eventTitle']
+    event['socialNetworkId'] = meetup.id
+    event_id = process_event(event, user.id)
+    event = Event.get_by_id(event_id)
+    events.append(event)
+
+    event = EVENT_DATA.copy()
+    event['eventTitle'] = 'Eventbrite ' + event['eventTitle']
+    event['socialNetworkId'] = eventbrite.id
+    event_id = process_event(event, user.id)
+    event = Event.get_by_id(event_id)
+    events.append(event)
 
     def delete_events():
-        for event in events:
-            Event.delete(event.id)
+        event_ids = [event.id for event in events]
+        delete_events(user.id, event_ids)
 
     request.addfinalizer(delete_events)
     return events
 
 
+@pytest.fixture(params=['Meetup', 'Eventbrite'])
+def event_in_db(request, events):
+    if request.param == 'Meetup':
+        return events[0]
+    if request.param == 'Eventbrite':
+        return events[1]
+
+
 @pytest.fixture(scope='session')
-def get_test_events():
+def get_test_events(meetup, eventbrite):
 
     meetup_event = EVENT_DATA.copy()
+    meetup_event['socialNetworkId'] = meetup.id
     eventbrite_event = EVENT_DATA.copy()
-    eventbrite_event['socialNetworkId'] = 18
+    eventbrite_event['socialNetworkId'] = eventbrite.id
 
     return meetup_event, eventbrite_event
 
 
-@pytest.fixture(params=get_test_events())
-def test_event(request):
-    return request.param
+@pytest.fixture(params=['Meetup', 'Eventbrite'])
+def test_event(request, get_test_events):
+    if request.param == 'Meetup':
+        return get_test_events[0]
+    if request.param == 'Eventbrite':
+        return get_test_events[1]
 
 
 @pytest.fixture(params=['eventTitle', 'eventDescription',
                         'eventEndDatetime', 'eventTimeZone',
                         'eventStartDatetime', 'eventCurrency'])
-def eventbrite_missing_data(request, meetup_event_data):
+def eventbrite_missing_data(request, eventbrite_event_data):
 
-    return request.param, meetup_event_data
+    return request.param, eventbrite_event_data
 
 
 @pytest.fixture(params=['eventTitle', 'eventDescription', 'groupId',

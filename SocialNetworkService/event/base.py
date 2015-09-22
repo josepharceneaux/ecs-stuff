@@ -22,6 +22,23 @@ class EventBase(object):
     def create_event(self, *args, **kwargs):
         pass
 
+    def delete_events(self, event_ids):
+        deleted = []
+        not_deleted = []
+        if len(event_ids) > 0:
+            for event_id in event_ids:
+                event = Event.get_by_user_and_event_id(self.user_id, event_id)
+                if event:
+                    try:
+                        self.unpublish_event(event.vendorEventId)
+                        Event.delete(event_id)
+                        deleted.append(event_id)
+                    except Exception as e:     # some error while removing event
+                        not_deleted.append(event_id)
+                else:
+                    not_deleted.append(event_id)
+        return deleted, not_deleted
+
     def get_events(self, *args, **kwargs):
         pass
 

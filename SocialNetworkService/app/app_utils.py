@@ -11,8 +11,8 @@ class ApiResponse(Response):
     """
     Override default_mimetype to 'application/json' to return proper json api response
     """
-    def __init__(self, response, status=200, content_type='application/json'):
-        super(Response, self).__init__(response, status=status, content_type=content_type)
+    def __init__(self, response, status=200, content_type='application/json', headers=None):
+        super(Response, self).__init__(response, status=status, content_type=content_type, headers=headers)
 
 
 def authenticate(func):

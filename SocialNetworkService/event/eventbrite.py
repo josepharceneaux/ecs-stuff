@@ -8,7 +8,7 @@ from SocialNetworkService.custom_exections import EventInputMissing
 from SocialNetworkService.custom_exections import EventLocationNotCreated
 
 from SocialNetworkService.event.base import EventBase
-from SocialNetworkService.utilities import log_error, logger, log_exception
+from SocialNetworkService.utilities import log_error, logger, log_exception, http_request
 from common.gt_models.event import Event
 
 EVENTBRITE = 'Eventbrite'
@@ -34,7 +34,7 @@ class EventbriteEvent(EventBase):
         self.vendor_event_id = None
         self.ticket_payload = None
         self.venue_payload = None
-        self.message_to_log.update({'class': EVENTBRITE})
+        self.message_to_log.update({'class_name': EVENTBRITE})
 
     def create_event(self):
         """
@@ -50,7 +50,7 @@ class EventbriteEvent(EventBase):
             event_is_new = False
             url = self.api_url + "/events/" + self.vendor_event_id + '/'
             # need to fetch venue_id of provided event so that Venue can be updated
-            response = self.post_data(url, self.event_payload)
+            response = http_request('POST', url, params=self.event_payload, headers=self.headers)
             if response.ok:
                 venue_id = response.json()['venue_id']
         else:  # creating event
@@ -58,7 +58,7 @@ class EventbriteEvent(EventBase):
             event_is_new = True
         venue_id = self.add_location(venue_id=venue_id)  # adding venue for the event
         self.event_payload['event.venue_id'] = venue_id
-        response = self.post_data(url, self.event_payload)
+        response = http_request('POST', url, params=self.event_payload, headers=self.headers)
         if response.ok:  # event has been created on vendor and saved in draft there
             event_id = response.json()['id']
             # Ticket are going to be created/updated
@@ -75,9 +75,24 @@ class EventbriteEvent(EventBase):
             return event_id, ticket_id
         else:
             error_message = 'Event was not created Successfully as draft'
+            response = response.json()
+            error_detail = response.get('error', '') + ': ' + response.get('error_description', '')
+            if error_detail != ': ':
+                error_message += '\n%s' % error_detail
             self.message_to_log.update({'error': error_message})
             log_error(self.message_to_log)
-            raise EventNotCreated
+            raise EventNotCreated(error_message)
+
+    def delete_event(self, event_id):
+        event = Event.get_by_user_and_event_id(self.user_id, event_id)
+        if event:
+            try:
+                self.unpublish_event(event_id)
+                Event.delete(event_id)
+                return True
+            except:     # some error while removing event
+                return False
+        return False    # event not found in database
 
     def add_location(self, venue_id=None):
         """
@@ -96,8 +111,7 @@ class EventbriteEvent(EventBase):
         else:  # create venue for event
             url = self.api_url + "/venues/"
             status = 'Added'
-        payload = self.venue_payload
-        response = self.post_data(url, payload)
+        response = http_request('POST', url, params=self.venue_payload, headers=self.headers)
         if response.ok:
             logger.info('|  Venue has been %s  |' % status)
             return response.json().get('id')
@@ -109,7 +123,7 @@ class EventbriteEvent(EventBase):
             error_message += message
             self.message_to_log.update({'error': error_message})
             log_error(self.message_to_log)
-            raise EventLocationNotCreated(message)
+            raise EventLocationNotCreated('ApiError: Unable to create venue for event\n %s' % message)
 
     def manage_event_tickets(self, event_id, event_is_new):
         """
@@ -127,7 +141,7 @@ class EventbriteEvent(EventBase):
             else:
                 logger.info('Tickets ID is not available for event with id %s, %s'
                             % (event_id, self.message_to_log))
-        response = self.post_data(tickets_url, self.ticket_payload)
+        response = http_request('POST', tickets_url, params=self.ticket_payload, headers=self.headers)
         if response.ok:
             logger.info('|  %s Ticket(s) have been created  |'
                         % str(self.ticket_payload['ticket_class.quantity_total']))
@@ -136,7 +150,7 @@ class EventbriteEvent(EventBase):
             error_message = 'Tickets were not created successfully'
             self.message_to_log.update({'error': error_message})
             log_error(self.message_to_log)
-            raise TicketsNotCreated
+            raise TicketsNotCreated('ApiError: Unable to create event tickets on Eventbrite')
 
     def publish_event(self, event_id):
         """
@@ -148,7 +162,7 @@ class EventbriteEvent(EventBase):
         # create url to publish event
         url = self.api_url + "/events/" + event_id + "/publish/"
         # params are None. Access token is present in self.headers
-        response = self.post_data(url, None)
+        response = http_request('POST', url, headers=self.headers)
         if response.ok:
             logger.info('|  Event has been published  |')
         else:
@@ -156,7 +170,7 @@ class EventbriteEvent(EventBase):
                             "Details: %s  |" % response
             self.message_to_log.update({'error': error_message})
             log_error(self.message_to_log)
-            raise EventNotPublished
+            raise EventNotPublished('ApiError: Unable to publish event on specified social network')
 
     def unpublish_event(self, event_id):
         """
@@ -169,7 +183,7 @@ class EventbriteEvent(EventBase):
         # create url to publish event
         url = self.api_url + "/events/" + event_id + "/unpublish/"
         # params are None. Access token is present in self.headers
-        response = self.post_data(url, None)
+        response = http_request('POST', url, headers=self.headers)
         if response.ok:
             logger.info('|  Event has been unpublished  |')
         else:
@@ -177,7 +191,7 @@ class EventbriteEvent(EventBase):
                             "Response is %s  |" % response
             self.message_to_log.update({'error': error_message})
             log_error(self.message_to_log)
-            raise EventNotUnpublished
+            raise EventNotUnpublished('ApiError: Unable to remove event from specified social network')
 
     def validate_required_fields(self, data):
         """
@@ -187,8 +201,8 @@ class EventbriteEvent(EventBase):
         """
         mandatory_input_data = ['eventTitle', 'eventDescription', 'eventEndDatetime',
                                 'eventTimeZone', 'eventStartDatetime', 'eventCurrency']
-        if not all([input in data for input in mandatory_input_data]):
-            raise EventInputMissing("Mandatory parameter missing in Eventbrite call.")
+        if not all([input in data and data[input] for input in mandatory_input_data]):
+            raise EventInputMissing("Mandatory parameter missing in Eventbrite data.")
 
     def gt_to_sn_fields_mappings(self, data):
         """
@@ -283,7 +297,7 @@ class EventbriteEvent(EventBase):
                 and (user_credentials.webhook in [None, '']):
             url = self.api_url + "/webhooks/"
             payload = {'endpoint_url': WEBHOOK_REDIRECT_URL}
-            response = self.post_data(url, payload)
+            response = http_request('POST', url, params=payload, headers=self.headers)
             if response.ok:
                 try:
                     webhook_id = response.json()['id']

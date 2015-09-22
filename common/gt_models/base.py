@@ -138,3 +138,27 @@ class ModelBase(Base, object):
             else:
                 data[col.name] = value
         return data
+
+    def to_json_(self):
+        """
+        Converts SqlAlchemy object to serializable dictionary but keys are in snake_case
+        """
+        from SocialNetworkService.utilities import camel_case_to_snake_case as cc_to_sc
+        # add your coversions for things like datetime's
+        # and what-not that aren't serializable.
+        convert = dict(DATETIME=str)
+
+        data = dict()
+        for col in self.__class__.__table__.columns:
+            value = getattr(self, col.name)
+            typ = str(col.type)
+            if typ in convert.keys() and value is not None:
+                try:
+                    data[cc_to_sc(col.name)] = convert[typ](value)
+                except Exception as e:
+                    data[cc_to_sc(col.name)] = "Error:  Failed to covert using ", str(convert[typ])
+            elif value is None:
+                data[cc_to_sc(col.name)] = str()
+            else:
+                data[cc_to_sc(col.name)] = value
+        return data

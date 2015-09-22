@@ -8,6 +8,7 @@ from SocialNetworkService.custom_exections import EventLocationNotCreated
 
 from SocialNetworkService.event.base import EventBase
 from SocialNetworkService.utilities import log_error, logger, http_request
+from common.gt_models.event import Event
 
 MEETUP = 'Meetup'
 
@@ -63,7 +64,18 @@ class MeetupEvent(EventBase):
             error_message = 'Event was not Created. Error occurred during draft creation'
             self.message_to_log.update({'error': error_message})
             log_error(self.message_to_log)
-            raise EventNotCreated
+            raise EventNotCreated('ApiError: Unable to create event on social network')
+
+    def delete_event(self, event_id):
+        event = Event.get_by_user_and_event_id(self.user_id, event_id)
+        if event:
+            try:
+                self.unpublish_event(event_id)
+                Event.delete(event_id)
+                return True
+            except:     # some error while removing event
+                return False
+        return False    # event not found in database
 
     def add_location(self):
         """
@@ -98,7 +110,7 @@ class MeetupEvent(EventBase):
             error_message += message
             self.message_to_log.update({'error': error_message})
             log_error(self.message_to_log)
-            raise EventLocationNotCreated(message)
+            raise EventLocationNotCreated('ApiError: Unable to create venue for event\n %s' % message)
         return venue_id
 
     def publish_meetup(self, venue_id, event_id, event_is_new):
@@ -125,7 +137,7 @@ class MeetupEvent(EventBase):
             error_message = 'Event was not published'
             self.message_to_log.update({'error': error_message})
             log_error(self.message_to_log)
-            raise EventNotPublished
+            raise EventNotPublished('ApiError: Unable to publish event on specified social network')
 
     def unpublish_event(self, event_id):
         """
@@ -138,14 +150,14 @@ class MeetupEvent(EventBase):
         # create url to publish event
         url = self.api_url + "/event/" + event_id
         # params are None. Access token is present in self.headers
-        response = self.post_data(url, None)
+        response = http_request('POST', url, headers=self.headers)
         if response.ok:
             logger.info('|  Event has been unpublished (deleted)  |')
         else:
             error_message = "Event was not unpublished (deleted)."
             self.message_to_log.update({'error': error_message})
             log_error(self.message_to_log)
-            raise EventNotUnpublished
+            raise EventNotUnpublished('ApiError: Unable to remove event from specified social network')
 
     def validate_required_fields(self, data):
         """
@@ -158,7 +170,7 @@ class MeetupEvent(EventBase):
                                 'eventAddressLine1',
                                 'eventCountry', 'eventState', 'eventZipCode']
 
-        if not all([input in data for input in mandatory_input_data]):
+        if not all([input in data and data[input] for input in mandatory_input_data]):
             raise EventInputMissing("Mandatory parameter missing in Meetup event data.")
 
     def gt_to_sn_fields_mappings(self, data):
