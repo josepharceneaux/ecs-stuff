@@ -135,9 +135,9 @@ class EventbriteEvent(EventBase):
         self.message_to_log.update({'functionName': 'manage_event_tickets()'})
         tickets_url = self.api_url + "/events/" + event_id + "/ticket_classes/"
         if not event_is_new:
-            event = Event.get_by_user_and_vendor_id(self.user.id, event_id)
+            event = Event.get_by_user_and_vendor_id(self.user_id, event_id)
             if event.ticketsId:
-                tickets_url = tickets_url + event.ticketsId + '/'
+                tickets_url = tickets_url + str(event.ticketsId) + '/'
             else:
                 logger.info('Tickets ID is not available for event with id %s, %s'
                             % (event_id, self.message_to_log))

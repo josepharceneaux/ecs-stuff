@@ -43,7 +43,7 @@ class Meetup(SocialNetworkBase):
         self.message_to_log.update({'functionName': 'get_groups()'})
         url = self.api_url + '/groups/'
         params = {'member_id': 'self'}
-        response = self.get_data(url, params)
+        response = http_request('GET', url, params=params, headers=self.headers)
         if response.ok:
             meta_data = json.loads(response.text)['meta']
             member_id = meta_data['url'].split('=')[1].split('&')[0]

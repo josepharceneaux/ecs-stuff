@@ -59,7 +59,8 @@ class EventBase(object):
             sn_event_id)
         try:
             if event:
-                Event.update(**data)
+                event.update(**data)
+                Event.session.commit()
             else:
                 event = Event(**data)
                 Event.save(event)

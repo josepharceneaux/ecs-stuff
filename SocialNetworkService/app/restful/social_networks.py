@@ -1,7 +1,9 @@
+import json
 import types
 from flask import Blueprint
-from SocialNetworkService.app.app_utils import authenticate, api_route
+from SocialNetworkService.app.app_utils import authenticate, api_route, ApiResponse
 from flask.ext.restful import Resource, Api
+from SocialNetworkService.meetup import Meetup
 
 from common.gt_models.user import UserCredentials
 from common.gt_models.social_network import SocialNetwork
@@ -10,10 +12,6 @@ social_network_blueprint = Blueprint('social_network_api', __name__)
 api = Api()
 api.init_app(social_network_blueprint)
 api.route = types.MethodType(api_route, api)
-
-
-class Resource(Resource):
-    method_decorators = [authenticate]
 
 
 @api.route('/social_networks/')
@@ -67,3 +65,45 @@ class SocialNetworks(Resource):
         else:
             return {'social_networks': []}
 
+
+@api.route('/social_networks/groups/')
+class MeetupGroups(Resource):
+    """
+        This resource returns a list of user's admin groups for Meetup
+    """
+
+    @authenticate
+    def get(self, *args, **kwargs):
+        """
+        This action returns a list of user events.
+        """
+        user_id = kwargs['user_id']
+        try:
+            meetup_db = SocialNetwork.get_by_name('Meetup')
+            meetup = Meetup(user_id=user_id, social_network_id=meetup_db.id)
+            groups = meetup.get_groups()
+            resp = json.dumps(dict(groups=groups))
+        except Exception as e:
+            return ApiResponse(json.dums(dict(message='APIError: Internal Server Error')), status=500)
+        return ApiResponse(resp, status=200)
+
+
+# @api.route('/social_networks/authInfo')
+# class SocialNetworkGroups(Resource):
+#     """
+#         This resource returns a list of user auth info (validity of token)
+#     """
+#
+#     @authenticate
+#     def get(self, *args, **kwargs):
+#         """
+#         This action returns a list of user events.
+#         """
+#         user_id = kwargs['user_id']
+#         try:
+#             meetup_db = SocialNetwork.get_by_name('Meetup')
+#             meetup = Meetup(user_id=user_id, social_network_id=meetup_db.id)
+#             groups = meetup.get_groups()
+#         except Exception as e:
+#             return ApiResponse(json.dums(dict(message='APIError: Internal Server Error')), status=500)
+#         return ApiResponse(json.dums(dict(groups=groups)), status=200)

@@ -1,6 +1,6 @@
 import os
 import pytest
-from SocialNetworkService.manager import process_event
+from SocialNetworkService.manager import process_event, delete_events
 from common.gt_models.client import Client
 from common.gt_models.client import Token
 import datetime
@@ -31,30 +31,30 @@ GET_TOKEN_URL = 'http://127.0.0.1:8888/oauth2/token'
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 EVENT_DATA = {
-    'eventTitle': 'Test Event',
-    'aboutEventOrganizer': 'Zohaib Ijaz',
-    'registrationInstruction': 'Just Come',
-    'eventDescription': 'Test Event Description',
-    'organizerEmail': u'',
-    'eventEndDatetime': str(datetime.datetime.now() + datetime.timedelta(days=20)),
-    'groupUrlName': 'QC-Python-Learning',
-    'eventCountry': 'us',
-    'organizerName': u'',
-    'socialNetworkId': 13,
-    'eventZipCode': '95014',
-    'eventAddressLine2': u'',
-    'eventAddressLine1': 'Infinite Loop',
-    'eventLatitude': 0,
-    'eventLongitude': 0,
-    'eventTimeZone': 'Asia/Karachi',
-    'eventState': 'CA',
-    'eventCost': 0,
-    'ticketsId': 0,
-    'eventCity': 'Cupertino',
-    'eventStartDatetime': str(datetime.datetime.now() + datetime.timedelta(days=10)),
-    'eventCurrency': 'USD',
-    'groupId': 18837246,
-    'maxAttendees': 10
+    'event_title': 'Test Event',
+    'about_event_organizer': 'Zohaib Ijaz',
+    'registration_instruction': 'Just Come',
+    'event_description': 'Test Event Description',
+    'organizer_email': u'',
+    'event_end_datetime': (datetime.datetime.now() + datetime.timedelta(days=20)).strftime('%Y-%m-%d %H:%M:%S'),
+    'group_url_name': 'QC-Python-Learning',
+    'event_country': 'us',
+    'organizer_name': u'',
+    'social_network_id': 13,
+    'event_zip_code': '95014',
+    'event_address_line2': u'',
+    'event_address_line1': 'Infinite Loop',
+    'event_latitude': 0,
+    'event_longitude': 0,
+    'event_time_zone': 'Asia/Karachi',
+    'event_state': 'CA',
+    'event_cost': 0,
+    'tickets_id': 0,
+    'event_city': 'Cupertino',
+    'event_start_datetime': (datetime.datetime.now() + datetime.timedelta(days=10)).strftime('%Y-%m-%d %H:%M:%S'),
+    'event_currency': 'USD',
+    'group_id': 18837246,
+    'max_attendees': 10
     }
 
 
@@ -198,24 +198,24 @@ def eventbrite_event_data(eventbrite):
 def events(request, user,  meetup, eventbrite):
     events = []
     event = EVENT_DATA.copy()
-    event['eventTitle'] = 'Meetup ' + event['eventTitle']
-    event['socialNetworkId'] = meetup.id
+    event['event_title'] = 'Meetup ' + event['event_title']
+    event['social_network_id'] = meetup.id
     event_id = process_event(event, user.id)
     event = Event.get_by_id(event_id)
     events.append(event)
 
     event = EVENT_DATA.copy()
-    event['eventTitle'] = 'Eventbrite ' + event['eventTitle']
-    event['socialNetworkId'] = eventbrite.id
+    event['event_title'] = 'Eventbrite ' + event['event_title']
+    event['social_network_id'] = eventbrite.id
     event_id = process_event(event, user.id)
     event = Event.get_by_id(event_id)
     events.append(event)
 
-    def delete_events():
+    def delete_test_events():
         event_ids = [event.id for event in events]
         delete_events(user.id, event_ids)
 
-    request.addfinalizer(delete_events)
+    request.addfinalizer(delete_test_events)
     return events
 
 
@@ -231,9 +231,9 @@ def event_in_db(request, events):
 def get_test_events(meetup, eventbrite):
 
     meetup_event = EVENT_DATA.copy()
-    meetup_event['socialNetworkId'] = meetup.id
+    meetup_event['social_network_id'] = meetup.id
     eventbrite_event = EVENT_DATA.copy()
-    eventbrite_event['socialNetworkId'] = eventbrite.id
+    eventbrite_event['social_network_id'] = eventbrite.id
 
     return meetup_event, eventbrite_event
 
@@ -246,18 +246,18 @@ def test_event(request, get_test_events):
         return get_test_events[1]
 
 
-@pytest.fixture(params=['eventTitle', 'eventDescription',
-                        'eventEndDatetime', 'eventTimeZone',
-                        'eventStartDatetime', 'eventCurrency'])
+@pytest.fixture(params=['event_title', 'event_description',
+                        'event_end_datetime', 'event_time_zone',
+                        'event_start_datetime', 'event_currency'])
 def eventbrite_missing_data(request, eventbrite_event_data):
 
     return request.param, eventbrite_event_data
 
 
-@pytest.fixture(params=['eventTitle', 'eventDescription', 'groupId',
-                        'groupUrlName', 'eventStartDatetime', 'maxAttendees',
-                        'eventAddressLine1', 'eventCountry', 'eventState',
-                        'eventZipCode'])
+@pytest.fixture(params=['event_title', 'event_description', 'group_id',
+                        'group_url_name', 'event_start_datetime', 'max_attendees',
+                        'event_address_line1', 'event_country', 'event_state',
+                        'event_zip_code'])
 def meetup_missing_data(request, eventbrite_event_data):
     return request.param, eventbrite_event_data
 

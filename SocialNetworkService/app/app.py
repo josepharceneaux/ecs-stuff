@@ -4,6 +4,7 @@ import re
 import flask
 import requests
 from SocialNetworkService.app.app_utils import ApiResponse
+from SocialNetworkService.app.restful.data import data_blueprint
 from SocialNetworkService.custom_exections import InvalidUsage, ApiException
 from SocialNetworkService.eventbrite import Eventbrite
 from restful.social_networks import social_network_blueprint
@@ -15,7 +16,7 @@ from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash
 
 # configuration
-from SocialNetworkService.utilities import log_exception
+from SocialNetworkService.utilities import log_exception, logger
 
 DATABASE = '/tmp/flaskr.db'
 DEBUG = True
@@ -34,6 +35,14 @@ user_refresh_token = '73aac7b76040a33d5dda70d0190aa4e7'
 
 app.register_blueprint(social_network_blueprint)
 app.register_blueprint(events_blueprint)
+app.register_blueprint(data_blueprint)
+
+@app.after_request
+def after_request(response):
+  response.headers.add('Access-Control-Allow-Origin', '*')
+  response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+  response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
+  return response
 
 # @app.errorhandler(404)
 @app.route('/')
