@@ -7,9 +7,9 @@ from StringIO import StringIO
 
 import pytest
 
-from resume_service.common.models.db import db
-from resume_service.common.models.user import Client, Token
 from resume_service.resume_parsing_app import app
+from common.models.db import db
+from common.models.user import Client, Token
 
 db.init_app(app)
 
@@ -60,12 +60,23 @@ def test_token(test_client, request):
     except Exception:  # TODO This is to handle 'Duplicate entry' MySQL errors. We should instead check for existing Client/Token before inserting
        pass
 
+
     def fin():
         try:
             db.session.delete(test_token)
             db.session.commit()
         except Exception:
             pass
+        # test_client = Client.query.filter_by(client_id='fakeclient').first()
+        # test_token = Token.query.filter_by(client_id='fakeclient').first()
+        # db.session.delete(test_token)
+        # db.session.commit()
+        # db.session.delete(test_client)
+        # db.session.commit()
+        # v15_pdf_candidate = Candidate.query.filter_by(formattedName='MARK GREENE').first()
+        # db.session.delete(v15_pdf_candidate)
+        # db.session.commit()
+
     request.addfinalizer(fin)
     return test_token
 
@@ -125,7 +136,7 @@ def test_v13_pdf_from_fp_key():
 
 def test_v15_pdf_by_post():
     """Test that v1.5 pdf files can be posted."""
-    json_obj = fetch_resume_post_response('test_bin.pdf')['candidate']
+    json_obj = fetch_resume_post_response('test_bin.pdf', create_mode='True')['candidate']
     assert json_obj['full_name'] == 'MARK GREENE'
     assert json_obj['emails'][0]['address'] == 'techguymark@yahoo.com'
     assert len(json_obj['educations']) == 1
@@ -197,14 +208,15 @@ def test_invalid_token_fails():
     assert 'error' in json_obj
 
 
-def fetch_resume_post_response(file_name):
+def fetch_resume_post_response(file_name, create_mode=''):
     """Posts file to local test auth server for json formatted resumes."""
     current_dir = os.path.dirname(__file__)
     with open(os.path.join(current_dir, 'test_resumes/{}'.format(file_name))) as raw_file:
         resume_file = raw_file.read()
     response = APP.post('/parse_resume', headers={'Authorization': 'Bearer fooz'}, data=dict(
         resume_file=(StringIO(resume_file), file_name),
-        resume_file_name=file_name
+        resume_file_name=file_name,
+        create_candidate=create_mode,
     ), follow_redirects=True)
     return json.loads(response.data)
 
