@@ -123,6 +123,10 @@ def change_data_types(engine, tables, data_type_to_change_to):
 
 
 if __name__ == "__main__":
-    update_table_column_data_type(table_name='user',
-                                  list_of_column_names=['userId', 'user_id', 'OwnerUserId'],
+    # update_table_column_data_type(table_name='user',
+    #                               list_of_column_names=['userId', 'user_id', 'OwnerUserId'],
+    #                               data_type_to_change_to='INTEGER')
+
+    update_table_column_data_type(table_name='candidate',
+                                  list_of_column_names=['CandidateId'],
                                   data_type_to_change_to='INTEGER')
