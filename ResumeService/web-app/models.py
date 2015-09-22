@@ -18,3 +18,6 @@ class Client(db.Model):
 
 class Token(db.Model):
     __table__ = db.Model.metadata.tables['token']
+
+class Candidate(db.Model):
+    __table__ = db.Model.metadata.tables['candidate']
