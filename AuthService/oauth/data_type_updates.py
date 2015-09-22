@@ -34,6 +34,7 @@ def _update_data_type(engine, referenced_table_name, list_of_column_names, data_
     """
     # Name of database currently in use
     database_name = engine.execute("SELECT DATABASE();").fetchone()[0]
+    print "database in use: %s" % database_name
 
     # Turn on autocommit to prevent deadlock
     engine.execute("SET autocommit=1;")
@@ -45,26 +46,29 @@ def _update_data_type(engine, referenced_table_name, list_of_column_names, data_
     list_of_tables_with_fk_relation = query_tables_with_fk_relation(database_name=database_name,
                                                                     engine=engine,
                                                                     referenced_table_name=referenced_table_name)
+    print "list of tables with fk-relations: %s" % list_of_tables_with_fk_relation
 
     # Drop FKs on child tables
     for dependent_table_tuple in list_of_tables_with_fk_relation:
-        logger.info("ALTER TABLE `%s` DROP FOREIGN KEY `%s`",
-                    dependent_table_tuple[0], dependent_table_tuple[2])
         engine.execute(
             "ALTER TABLE `%s` DROP FOREIGN KEY `%s`" %
             (dependent_table_tuple[0], dependent_table_tuple[2])
         )
+        print "ALTER TABLE `%s` DROP FOREIGN KEY `%s`" % (dependent_table_tuple[0], dependent_table_tuple[2])
+
 
     # Change primary-table`s id-column's data type
-    logger.info("ALTER TABLE `%s` MODIFY id %s" % (referenced_table_name, data_type_to_change_to))
     engine.execute("ALTER TABLE `%s` MODIFY id %s" % (referenced_table_name, data_type_to_change_to))
+    print "ALTER TABLE `%s` MODIFY id %s" % (referenced_table_name, data_type_to_change_to)
 
     # Set Primary Key's column to auto-increment
     engine.execute("ALTER TABLE %s MODIFY COLUMN id %s auto_increment" % (referenced_table_name, data_type_to_change_to))
+    print "ALTER TABLE %s MODIFY COLUMN id %s auto_increment" % (referenced_table_name, data_type_to_change_to)
 
     # Get all child tables
     dict_of_all_child_tables = query_all_child_tables(engine=engine, database_name=database_name,
                                                       column_names=list_of_column_names)
+    print "all child tables: %s" % dict_of_all_child_tables
 
     # Change child table's data type to new data type
     change_data_types(engine=engine, tables=dict_of_all_child_tables,
@@ -80,6 +84,9 @@ def _update_data_type(engine, referenced_table_name, list_of_column_names, data_
                  child_table[1],
                  referenced_table_name)
             )
+
+            print "ALTER TABLE `%s` ADD CONSTRAINT fk_%s_%s FOREIGN KEY (`%s`) REFERENCES `%s`(id)" % \
+                  (child_table[0], referenced_table_name, child_table[0], child_table[1], referenced_table_name)
 
     # Turn foreign key checks back on
     engine.execute("SET FOREIGN_KEY_CHECKS=1;")
@@ -118,6 +125,7 @@ def change_data_types(engine, tables, data_type_to_change_to):
                 "ALTER TABLE `%s` MODIFY `%s` %s" %
                 (child_table_list[0], child_table_list[1], data_type_to_change_to)
             )
+            print "ALTER TABLE `%s` MODIFY `%s` %s" % (child_table_list[0], child_table_list[1], data_type_to_change_to)
 
     return
 
