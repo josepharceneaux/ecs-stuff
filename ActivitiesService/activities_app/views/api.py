@@ -1,26 +1,34 @@
 __author__ = 'erikfarmer'
 
-
+#stdlib
+from datetime import datetime
 import json
-import re
 from math import ceil
+import re
 import urllib2
 
+#framwork specific
 from flask import Blueprint
-from flask import request
-from flask import jsonify
 from flask import current_app as app
-# from models import db
-# from models import User
-# from models import Activity
+from flask import jsonify
+from flask import request
+
+#application specific
+from activities_app import db
+from activities_app.models import Activity
+
+ISO_FORMAT = '%Y-%m-%d %H:%M'
 
 mod = Blueprint('activities_api', __name__)
+
 
 @mod.route('/activities', methods=['GET', 'POST'])
 def get_activities():
     taAPI = TalentActivityAPI()
-    response = taAPI.get()
-    return response
+    request_startTime = request_endTime = None
+    if request.form.get('start'): request_startTime = datetime.strptime(request.form.get('start'), ISO_FORMAT)
+    if request.form.get('end'): request_startTime = datetime.strptime(request.form.get('end'), ISO_FORMAT)
+    return taAPI.get(start_datetime=request_startTime, end_datetime=request_endTime)
 
 # class TalentPagination(Pagination):
 #     def generate_links(self):
@@ -182,9 +190,13 @@ class TalentActivityAPI(object):
         json_response = json.loads(page)
         if not json_response.get('user_id'):
             return jsonify({'error': 'Invalid query params'}), 400
-        else:
-            # current_user = User.query.filter(id=json_response.get('user_id')).first()
-            return str(json_response.get('user_id'))
+
+        valid_user_id = json_response.get('user_id')
+        filters = [Activity.userId == valid_user_id]
+        if start_datetime: filters.append(Activity.addedTime > start_datetime)
+        if end_datetime: filters.append(Activity.addedTime <= end_datetime)
+        activities = db.session.query(Activity).filter(*filters)
+        return json.dumps([a.params for a in activities])
         # user_id_to_name_dict = self._user_id_to_name_dict(current_user.domainId)
         #
         # query = (db.activity.userId.belongs(user_ids))

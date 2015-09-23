@@ -11,6 +11,10 @@ class Activity(db.Model):
     __table__ = db.Model.metadata.tables['activity']
 
 
+class Candidate(db.Model):
+    __table__ = db.Model.metadata.tables['candidate']
+
+
 class Client(db.Model):
     __table__ = db.Model.metadata.tables['client']
 
