@@ -5,14 +5,12 @@ import flask
 import requests
 from SocialNetworkService.app.app_utils import ApiResponse
 from SocialNetworkService.app.restful.data import data_blueprint
-from SocialNetworkService.custom_exections import InvalidUsage, ApiException
-from SocialNetworkService.eventbrite import Eventbrite
+from SocialNetworkService.custom_exections import ApiException
 from SocialNetworkService.rsvp.eventbrite import EventbriteRsvp
 from restful.social_networks import social_network_blueprint
 from restful.events import events_blueprint
 from common.gt_models.config import db_session
 from flask.ext.restful import Api
-from flask import Response
 from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash
 
@@ -39,12 +37,14 @@ app.register_blueprint(social_network_blueprint)
 app.register_blueprint(events_blueprint)
 app.register_blueprint(data_blueprint)
 
+
 @app.after_request
 def after_request(response):
-  response.headers.add('Access-Control-Allow-Origin', '*')
-  response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-  response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
-  return response
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
+    return response
+
 
 # @app.errorhandler(404)
 @app.route('/')

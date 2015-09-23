@@ -26,10 +26,12 @@ class User(Base):
 
     user_credentials = relationship('UserCredentials', backref='user')
     candidate = relationship('Candidate', backref='user')
-    events = relationship('Event', backref='user')
+    events = relationship('Event', backref='user', lazy='dynamic')
+    organizers = relationship('Organizer', backref='user', lazy='dynamic')
+    venues = relationship('Venue', backref='user', lazy='dynamic')
 
     def __repr__(self):
-        return '<User %r>' % (self.email)
+        return '<User %r>' % self.email
 
 
 class UserCredentials(Base):
