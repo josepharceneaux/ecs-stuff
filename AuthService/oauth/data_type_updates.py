@@ -184,8 +184,10 @@ def change_data_types(engine, tables, data_type_to_change_to):
 
 
 if __name__ == "__main__":
-    # list_of_table_names_to_be_updated = select_all_tables_with_id_column()
-    list_of_table_names_to_be_updated = [('user',), ('candidate',)]
-    for table_tuple in list_of_table_names_to_be_updated:
-        print "#" * 50 + " " + "TABLE: " + str(table_tuple[0].upper()) + " " + "#" * 50
-        update_table_column_data_type(table_name=table_tuple[0], data_type_to_change_to='INT')
+
+    def run_script():
+        # list_of_table_names_to_be_updated = select_all_tables_with_id_column()
+        list_of_table_names_to_be_updated = [('user',), ('candidate',)]
+        for table_tuple in list_of_table_names_to_be_updated:
+            print "#" * 50 + " " + "TABLE: " + str(table_tuple[0].upper()) + " " + "#" * 50
+            update_table_column_data_type(table_name=table_tuple[0], data_type_to_change_to='INT')
