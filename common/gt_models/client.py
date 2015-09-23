@@ -60,3 +60,8 @@ class Token(Base):
         return cls.query.filter(
             Token.id == id
         ).one()
+
+    @classmethod
+    def get_by_user_id(cls, _id):
+        assert _id is not None
+        return cls.query.filter(Token.user_id == _id).one()

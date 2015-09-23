@@ -65,7 +65,7 @@ class UserCredentials(Base):
         ).all()
 
     @classmethod
-    def get_by_user_and_social_network(cls, user_id, social_network_id):
+    def get_by_user_and_social_network_id(cls, user_id, social_network_id):
         assert user_id is not None
         assert social_network_id is not None
         return cls.query.filter(

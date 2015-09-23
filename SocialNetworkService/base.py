@@ -4,8 +4,9 @@ from abc import ABCMeta, abstractmethod
 from gt_common.gt_models.social_network import SocialNetwork
 from gt_common.gt_models.user import User, UserCredentials
 
-from SocialNetworkService.utilities import get_message_to_log, log_error,\
-    log_exception, http_request
+
+from utilities import get_message_to_log, log_error,\
+    log_exception, http_request, get_class
 
 
 class SocialNetworkBase(object):
@@ -21,21 +22,23 @@ class SocialNetworkBase(object):
         :return:
         """
         function_name = '__init__()'
-        message_to_log = get_message_to_log(function_name=function_name,
-                                            class_name=self.__class__.__name__)
-        user_id = kwargs['user_id']
-        social_network_id = kwargs['social_network_id']
+        user_id = kwargs.get('user_id')
+        social_network_id = kwargs.get('social_network_id')
         self.api_relative_url = None
         self.user = User.get_by_id(user_id)
         self.social_network = SocialNetwork.get_by_id(social_network_id)
         self.events = None
-        self.user_credentials = UserCredentials.get_by_user_and_social_network(
-            user_id, social_network_id)
-
+        self.user_credentials = UserCredentials.get_by_user_and_social_network_id(
+            user_id, social_network_id
+        )
+        self.message_to_log = get_message_to_log(
+            function_name=function_name,
+            class_name=self.__class__.__name__)
         if self.user_credentials:
+            self.message_to_log.update(
+                {'user': self.user_credentials.user.firstName + ' ' + self.user_credentials.user.lastName})
             data = {
                 "access_token": self.user_credentials.accessToken,
-                "member_id": self.user_credentials.memberId,
                 "gt_user_id": self.user_credentials.userId,
                 "social_network_id": social_network_id,
                 "api_url": self.social_network.apiUrl
@@ -44,7 +47,6 @@ class SocialNetworkBase(object):
             items = [value for key, value in data.iteritems() if key is not "api_url"]
             if all(items):
                 self.api_url = data['api_url']
-                self.member_id = data['member_id']
                 self.gt_user_id = data['gt_user_id']
                 self.social_network_id = data['social_network_id']
                 self.access_token = data['access_token']
@@ -57,16 +59,17 @@ class SocialNetworkBase(object):
                 # Log those fields in error which are not present in Database
                 error_message = "Missing Item(s) in user's credential: " \
                                 "%(missing_items)s\n" % missing_items
-                message_to_log.update({'error': error_message})
-                log_error(message_to_log)
+                self.message_to_log.update({'error': error_message})
+                log_error(self.message_to_log)
         else:
             error_message = 'User Credentials are None'
-            message_to_log.update({'error': error_message})
-            log_error(message_to_log)
+            self.message_to_log.update({'error': error_message})
+            log_error(self.message_to_log)
         # Eventbrite and meetup social networks take access token in header
         # so here we generate authorization header to be used by both of them
-        # self.headers = {'Authorization': 'Bearer ' + self.access_token}
         self.message_to_log = get_message_to_log()
+        self.headers = {'Authorization': 'Bearer ' + self.access_token}
+        self.start_date_dt = None
 
     def process_events(self):
         """
@@ -87,7 +90,8 @@ class SocialNetworkBase(object):
             raise error
         # e.g. /socialnetworkservice/event/eventbrite.py
         event_class = getattr(sn_event_module, sn_name.title())
-        sn_event_obj = event_class(user=self.user, social_network=self.social_network)
+        sn_event_obj = event_class(user=self.user, social_network=self.social_network,
+                                   headers=self.headers)
         self.events = sn_event_obj.get_events()
         print 'Events', self.events
         sn_event_obj.process_events(self.events)
@@ -133,28 +137,34 @@ class SocialNetworkBase(object):
             log_exception(message_to_log)
         return access_token, refresh_token
 
-    # Todo Need to update
-    def get_member_id(self):
+    def get_member_id(self, data):
         """
         Once we have the access_token, we make API call on respective
-        social network to get member id of user on that social network.
+        social network to get member id of gt-user on that social network.
+        :param data contains api_relative_url.
         :return:
         """
         function_name = 'get_member_id()'
         message_to_log = get_message_to_log(function_name=function_name)
-        member_id = None
-        url = self.api_url + self.api_relative_url
-        # Now we have the URL, access token, and header is set too,
-        get_member_id_response = http_request('POST', url, headers=self.headers,
-                                              message_to_log=message_to_log)
         try:
+            user_credentials = self.user_credentials
+            url = self.api_url + data['api_relative_url']
+            # Now we have the URL, access token, and header is set too,
+            get_member_id_response = http_request('POST', url, headers=self.headers,
+                                                  message_to_log=message_to_log)
             if get_member_id_response.ok:
                 member_id = get_member_id_response.json().get('id')
+                data = dict(userId=user_credentials.userId,
+                            socialNetworkId=user_credentials.socialNetworkId,
+                            memberId=member_id)
+                self.save_user_credentials_in_db(data)
+            else:
+                # TODO log error
+                pass
         except Exception as e:
             error_message = e.message
             message_to_log.update({'error': error_message})
             log_exception(message_to_log)
-        return member_id
 
     def validate_token(self, payload=None):
         """
@@ -166,7 +176,7 @@ class SocialNetworkBase(object):
         :return:
         """
         function_name = 'validate_token()'
-        self.message_to_log.update({'function_name': function_name})
+        self.message_to_log.update({'functionName': function_name})
         status = False
         relative_url = self.api_relative_url
         url = self.api_url + relative_url
@@ -202,20 +212,19 @@ class SocialNetworkBase(object):
         refreshed_token_status = False
         access_token_status = self.validate_token()
         if not access_token_status:  # access token has expired, need to refresh it
-            refreshed_token_status = self.refresh_access_token()
-        return access_token_status, refreshed_token_status
+            self.refresh_access_token()
 
     @staticmethod
-    def save_token_in_db(user_credentials):
+    def save_user_credentials_in_db(user_credentials):
         """
         It puts the access token against the clicked social_network and and the
         logged in user of GT. It also calls create_webhook() class method of
         Eventbrite to create webhook for user.
         :return:
         """
-        function_name = 'save_token_in_db()'
+        function_name = 'save_user_credentials_in_db()'
         message_to_log = get_message_to_log(function_name=function_name,
-                                            gt_user_id=user_credentials['userId'])
+                                            gt_user=user_credentials['userId'])
         gt_user_in_db = UserCredentials.get_by_user_and_social_network_id(
             user_credentials['userId'], user_credentials['socialNetworkId'])
         try:
@@ -227,3 +236,4 @@ class SocialNetworkBase(object):
             error_message = e.message
             message_to_log.update({'error': error_message})
             log_exception(message_to_log)
+

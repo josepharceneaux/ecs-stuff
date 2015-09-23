@@ -11,6 +11,7 @@ def set_up():
     file_path = os.path.realpath(__file__)
     dir_path, _ = os.path.split(file_path)
     PATH = os.path.abspath(os.path.join(dir_path, '../'))
+    print PATH
     cfg_path = os.path.normpath(PATH + "/app.cfg")
     logfile = os.path.normpath(PATH + "/logging.conf")
     logging.config.fileConfig(logfile)

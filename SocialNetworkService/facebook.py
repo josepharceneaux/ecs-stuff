@@ -20,7 +20,7 @@ class Facebook(SocialNetworkBase):
         """
         pass
 
-    def validate_token(self):
+    def validate_token(self, payload=None):
         self.api_relative_url = '/me'
-        payload = {'access_token': access_token}
+        payload = {'access_token': self.access_token}
         super(Facebook, self).validate_token(payload=payload)

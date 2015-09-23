@@ -16,7 +16,7 @@ class Event(Base):
     userId = Column(Integer, ForeignKey('user.id'), nullable=False)
     groupId = Column(String(100))
     groupUrlName = Column(String(500))
-    eventURL = Column(String(500))
+    eventUrl = Column(String(500))
     eventAddressLine1 = Column(String(300))
     eventAddressLine2 = Column(String(300))
     eventCity = Column(String(100))
@@ -25,8 +25,8 @@ class Event(Base):
     eventCountry = Column(String(100))
     eventLongitude = Column(Float)
     eventLatitude = Column(Float)
-    eventStartDateTime = Column(DateTime)
-    eventEndDateTime = Column(DateTime)
+    eventStartDatetime = Column(DateTime)
+    eventEndDatetime = Column(DateTime)
     organizerName = Column(String(200))
     organizerEmail = Column(String(200))
     aboutEventOrganizer = Column(String(1000))
@@ -35,6 +35,9 @@ class Event(Base):
     eventCurrency = Column(String(20))
     eventTimeZone = Column(String(100))
     maxAttendees = Column(Integer)
+    ticketsId = Column(Integer)
+
+    socialNetwork = relationship("SocialNetwork", backref='social_network_event')
 
     def __ne__(self, other_event):
         return (self.vendorEventId != other_event.vendorEventId and
@@ -45,7 +48,7 @@ class Event(Base):
                 self.userId == other_event.userId and
                 self.organizerName == other_event.organizername and
                 self.eventAddressLine1 == other_event.eventAddressLine1 and
-                self.eventStartDateTime == other_event.eventStartDateTime)
+                self.eventStartDatetime == other_event.eventStartDatetime)
 
     @classmethod
     def get_by_user_and_vendor_id(cls, user_id, event_vendor_id):
@@ -56,6 +59,14 @@ class Event(Base):
             )).first()
 
     @classmethod
+    def get_by_user_and_event_id(cls, user_id, event_id):
+        return cls.query.filter(
+            and_(
+                Event.userId == user_id,
+                Event.id == event_id
+            )).first()
+
+    @classmethod
     def get_by_user_id_vendor_id_start_date(cls, user_id, social_network_id, start_date):
         assert user_id is not None
         assert social_network_id is not None
@@ -63,7 +74,7 @@ class Event(Base):
             and_(
                 Event.userId == user_id,
                 Event.socialNetworkId == social_network_id,
-                Event.eventStartDateTime >= start_date
+                Event.eventStartDatetime >= start_date
             )).all()
 
     @classmethod
