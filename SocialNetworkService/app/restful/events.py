@@ -5,7 +5,6 @@ from flask.ext.restful import Api, Resource
 from SocialNetworkService.app.app_utils import api_route, authenticate, ApiResponse
 from SocialNetworkService.custom_exections import ApiException
 from SocialNetworkService.manager import process_event, delete_events
-from SocialNetworkService.utilities import convert_keys_to_camel_case
 from common.gt_models.event import Event
 
 events_blueprint = Blueprint('events_api', __name__)
@@ -24,8 +23,10 @@ class Events(Resource):
         """
         This action returns a list of user events.
         """
-        # raise InvalidUsage('Not authorized', status_code=401)
-        events = map(lambda event: event.to_json_(), Event.query.filter_by(userId=kwargs['user_id']).all())
+        try:
+            events = map(lambda event: event.to_json_(), Event.query.filter_by(userId=kwargs['user_id']).all())
+        except Exception as e:
+            return ApiResponse(json.dumps(dict(messsage='APIError: Internal Server error while retrieving records')), status=500)
         if events:
             return {'events': events, 'events_cont': len(events)}, 200
         else:
@@ -38,7 +39,6 @@ class Events(Resource):
         :return: id of created event
         """
         event_data = request.get_json(force=True)
-        event_data = convert_keys_to_camel_case(event_data)
         try:
             gt_event_id = process_event(event_data, kwargs['user_id'])
         except ApiException as err:
@@ -104,7 +104,7 @@ class EventById(Resource):
                 raise
             except Exception as err:
                 raise ApiException('APIError: Internal Server error!', status_code=500)
-            return ApiResponse(json.dumps(message='Event updated successfully'), status=204)
+            return ApiResponse(json.dumps(dict(message='Event updated successfully')), status=204)
         return ApiResponse(json.dumps(dict(message='Forbidden: You can not edit event for given event_id')),
                            status=403)
 

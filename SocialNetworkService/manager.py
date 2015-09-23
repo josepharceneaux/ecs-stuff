@@ -10,7 +10,7 @@ from common.gt_models.config import init_db
 from common.gt_models.event import Event
 from common.gt_models.user import UserCredentials
 from common.gt_models.social_network import SocialNetwork
-from utilities import get_class, get_message_to_log, log_error
+from utilities import get_class, get_message_to_log, log_error, convert_keys_to_camel_case
 from SocialNetworkService.custom_exections import SocialNetworkError, \
     SocialNetworkNotImplemented, InvalidDatetime, EventInputMissing
 
@@ -58,6 +58,7 @@ def process_event(data, user_id):
         """
         function_name = 'process_event()'
         message_to_log = get_message_to_log(function_name=function_name)
+        data = convert_keys_to_camel_case(data)
         if data:
             try:
                 vendor_id = data['socialNetworkId']

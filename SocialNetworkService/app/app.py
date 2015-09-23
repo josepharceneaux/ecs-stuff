@@ -4,6 +4,7 @@ import re
 import flask
 import requests
 from SocialNetworkService.app.app_utils import ApiResponse
+from SocialNetworkService.app.restful.data import data_blueprint
 from SocialNetworkService.custom_exections import InvalidUsage, ApiException
 from SocialNetworkService.eventbrite import Eventbrite
 from SocialNetworkService.rsvp.eventbrite import EventbriteRsvp
@@ -36,6 +37,14 @@ EVENTBRITE = 'Eventbrite'
 
 app.register_blueprint(social_network_blueprint)
 app.register_blueprint(events_blueprint)
+app.register_blueprint(data_blueprint)
+
+@app.after_request
+def after_request(response):
+  response.headers.add('Access-Control-Allow-Origin', '*')
+  response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+  response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
+  return response
 
 # @app.errorhandler(404)
 @app.route('/')

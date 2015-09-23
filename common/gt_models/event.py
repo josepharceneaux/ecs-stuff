@@ -16,7 +16,7 @@ class Event(Base):
     userId = Column(Integer, ForeignKey('user.id'), nullable=False)
     groupId = Column(String(100))
     groupUrlName = Column(String(500))
-    eventURL = Column(String(500))
+    eventUrl = Column(String(500))
     eventAddressLine1 = Column(String(300))
     eventAddressLine2 = Column(String(300))
     eventCity = Column(String(100))
