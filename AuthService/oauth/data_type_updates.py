@@ -128,7 +128,7 @@ def generate_column_names(table_name):
         column_names.append('emailTemplateFolderId')
     elif table_name == 'culture':
         column_names.append('defaultCultureId')
-    elif table_name == 'prodcut':
+    elif table_name == 'product':
         column_names.append('sourceProductId')
 
     print "column_names: %s" % column_names
@@ -170,21 +170,22 @@ def change_data_types(engine, tables, data_type_to_change_to):
             engine.execute(query)
 
 
-def select_all_tables_with_id_column():
-    print "********** select_all_tables_with_column_id **********"
-    engine = database_connection()
-    database_name = engine.execute("SELECT DATABASE();").fetchone()[0]
-    list_of_tables = engine.execute(
-        """SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM
-           INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '%s'
-           AND COLUMN_NAME = 'id';
-        """ % database_name).fetchall()
-    print "list_of_tables: %s" % list_of_tables
-    return list_of_tables
+# def select_all_tables_with_id_column():
+#     print "********** select_all_tables_with_column_id **********"
+#     engine = database_connection()
+#     database_name = engine.execute("SELECT DATABASE();").fetchone()[0]
+#     list_of_tables = engine.execute(
+#         """SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM
+#            INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '%s'
+#            AND COLUMN_NAME = 'id';
+#         """ % database_name).fetchall()
+#     print "list_of_tables: %s" % list_of_tables
+#     return list_of_tables
 
 
 if __name__ == "__main__":
-    list_of_table_names_to_be_updated = select_all_tables_with_id_column()
+    # list_of_table_names_to_be_updated = select_all_tables_with_id_column()
+    list_of_table_names_to_be_updated = [('user',), ('candidate',)]
     for table_tuple in list_of_table_names_to_be_updated:
         print "#" * 50 + " " + "TABLE: " + str(table_tuple[0].upper()) + " " + "#" * 50
-        update_table_column_data_type(table_name=table_tuple[0], data_type_to_change_to='BIGINT')
+        update_table_column_data_type(table_name=table_tuple[0], data_type_to_change_to='INT')
