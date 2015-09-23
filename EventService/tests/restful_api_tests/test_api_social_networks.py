@@ -6,7 +6,7 @@ import json
 from gt_models.social_network import SocialNetwork
 from gt_models.user import UserCredentials
 
-def test_subscribed_social_network(user, base_url, auth_data):
+def test_subscribed_social_network(user, client, base_url, auth_data):
     """
     Input: We have a user who has subscribed to Facebook and Eventbrite
     Social networks.

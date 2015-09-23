@@ -54,6 +54,14 @@ class Facebook(Base):
                 since=self.start_date,
                 until=self.end_date
             )
+            # response = self.graph.get_object(
+            #     'v2.4/1709562552598022/subscriptions',
+            #     object='page',
+            #     fields='conversations', verify_token='token',
+            #     callback_url="http://localhost:8000/web/user/profile",
+            #     access_token='1709562552598022|R1S2eC2Btr9f06yiv3uOk4V2gx',
+            #
+            # )
         except facebook.GraphAPIError as error:
             info_to_log = dict(error_message=error.message)
             log_exception(self.traceback_info,
