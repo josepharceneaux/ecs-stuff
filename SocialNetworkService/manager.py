@@ -174,8 +174,7 @@ def start():
         if not user_credentials.memberId:
             # get an save the member Id of gt-user
             sn.get_member_id(dict())
-        event_or_rsvp_obj = event_or_rsvp_class(api_url=social_network.apiUrl,
-                                                user_credentials=user_credentials,
+        event_or_rsvp_obj = event_or_rsvp_class(user_credentials=user_credentials,
                                                 social_network=social_network,
                                                 headers=sn.headers,
                                                 message_to_log=sn.message_to_log)

@@ -11,6 +11,10 @@ class MeetupRsvp(RSVPBase):
     """
     def __init__(self, *args, **kwargs):
         super(MeetupRsvp, self).__init__(*args, **kwargs)
+        function_name = '__int__()'
+        self.message_to_log.update({'function_name': function_name,
+                                    'class_name': self.__class__.__name__,
+                                    'fileName': __file__})
         self.start_date = kwargs.get('start_date') or (datetime.now() - timedelta(days=90))
         self.end_date = kwargs.get('end_date') or (datetime.now() + timedelta(days=90))
         self.start_date_dt = self.start_date
@@ -122,7 +126,6 @@ class MeetupRsvp(RSVPBase):
                     self.gt_user_id, self.social_network_id, vendor_event_id)
                 if event:
                     attendee.event = event
-
                 else:
                     error_message = 'Event is not present in db, VendorEventId is %s' \
                                     % vendor_event_id

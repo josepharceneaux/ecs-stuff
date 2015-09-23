@@ -21,12 +21,11 @@ class SocialNetworkBase(object):
         :return:
         """
         function_name = '__init__()'
-        user_id = kwargs['user_id']
-        social_network_id = kwargs['social_network_id']
+        user_id = kwargs.get('user_id')
+        social_network_id = kwargs.get('social_network_id')
         self.api_relative_url = None
         self.user = User.get_by_id(user_id)
         self.social_network = SocialNetwork.get_by_id(social_network_id)
-
         self.user_credentials = UserCredentials.get_by_user_and_social_network_id(
             user_id, social_network_id)
         self.message_to_log = get_message_to_log(
@@ -34,7 +33,7 @@ class SocialNetworkBase(object):
             class_name=self.__class__.__name__)
         if self.user_credentials:
             self.message_to_log.update(
-                {'gt_user': self.user_credentials.user.firstName + ' ' + self.user_credentials.user.lastName})
+                {'user': self.user_credentials.user.firstName + ' ' + self.user_credentials.user.lastName})
             data = {
                 "access_token": self.user_credentials.accessToken,
                 "gt_user_id": self.user_credentials.userId,

@@ -2,12 +2,14 @@
 This file contains some (supposedly) common utility functions that may be used
 or consumed by various programs.
 """
+import re
+import imp
+import sys
+import requests
 import importlib
 import json
 import logging
 import datetime
-import re
-import requests
 from requests_oauthlib import OAuth2Session
 
 # TODO: remove global vars
@@ -152,7 +154,7 @@ def get_message_to_log(gt_user='', function_name='', error='', class_name='', fi
     :return:
     """
     message_to_log = {
-        'user': gt_user,  # TODO: replace it with actual user name
+        'user': gt_user,
         'class': class_name,
         'fileName': file_name,
         'functionName': function_name,
@@ -245,7 +247,6 @@ def get_class(social_network_name, category):
         module_name = 'SocialNetworkService.' + social_network_name
     else:
         module_name = 'SocialNetworkService.' + category + '.' + social_network_name.lower()
-        # module_name = category + '.' + social_network_name.lower() + '_' + category
     try:
         module = importlib.import_module(module_name)
     except ImportError as e:
@@ -333,4 +334,24 @@ def convert_keys_to_snake_case(dictionary):
     for key, val in dictionary.items():
         data[camel_case_to_snake_case(str(key))] = val
     return data
+
+
+def import_non_local(name, custom_name=None):
+    """
+    This function is used to import facebook-sdk module rather than local
+    module named as facebook
+    :param name:
+    :param custom_name:
+    :return:
+    """
+    paths_to_be_searched = []
+    custom_name = custom_name or name
+    for path in sys.path[1:]:
+        if 'site-packages' in path:
+            paths_to_be_searched.append(path)
+    f, pathname, desc = imp.find_module(name, paths_to_be_searched)
+    module = imp.load_module(custom_name, f, pathname, desc)
+    f.close()
+    return module
+
 

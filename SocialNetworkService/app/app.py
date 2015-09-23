@@ -6,6 +6,7 @@ import requests
 from SocialNetworkService.app.app_utils import ApiResponse
 from SocialNetworkService.custom_exections import InvalidUsage, ApiException
 from SocialNetworkService.eventbrite import Eventbrite
+from SocialNetworkService.rsvp.eventbrite import EventbriteRsvp
 from restful.social_networks import social_network_blueprint
 from restful.events import events_blueprint
 from common.gt_models.config import db_session
@@ -15,7 +16,7 @@ from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash
 
 # configuration
-from SocialNetworkService.utilities import log_exception
+from SocialNetworkService.utilities import log_exception, get_class, logger, get_message_to_log, log_error
 
 DATABASE = '/tmp/flaskr.db'
 DEBUG = True
@@ -31,6 +32,7 @@ CLIENT_ID = 'o0nptnl4eet4c40suj9es52612'
 CLIENT_SECRET = 'ohtutvn34cvfucl26i5ele5ki2'
 REDIRECT_URL = 'http://127.0.0.1:5000/code'
 user_refresh_token = '73aac7b76040a33d5dda70d0190aa4e7'
+EVENTBRITE = 'Eventbrite'
 
 app.register_blueprint(social_network_blueprint)
 app.register_blueprint(events_blueprint)
@@ -126,75 +128,56 @@ def handle_rsvp():
     # verify_token = request.args['hub.verify_token']
     # hub_mode = request.args['hub.mode']
     # assert verify_token == 'token'
-    if request.data:
-        # creating object of Eventbrite class
-        eventbrite_rsvp = Eventbrite()
-        try:
+    function_name = 'handle_rsvp()'
+    message_to_log = get_message_to_log(function_name=function_name,
+                                        file_name=__file__)
+    try:
+        if request.data:
             data = json.loads(request.data)
             action = data['config']['action']
             if action == 'order.placed':
-                webhook_id = data['config']['webhook_id']
                 url_of_rsvp = str(json.loads(request.data)['api_url'])
-
                 # gets dictionary object of vendor_rsvp_id
                 rsvp = get_rsvp_id(url_of_rsvp)
-
-                eventbrite_rsvp.webhook_id = webhook_id
-
-                # getting data of gt-user of Get Talent
-                # gets gt-user from given social_network_id and webhook_id
-                user_credential_obj = \
-                    eventbrite_rsvp.get_user_credentials_by_webhook()
-
-                # sets user credentials as a global variable
-                eventbrite_rsvp.set_user_credential(user_credential_obj)
-
-                # getting attendee data and appends vendor_rsvp_id in attendee
-                #  object
-                attendee = eventbrite_rsvp.get_attendee(rsvp)
-                if attendee:
-                    # base class method to pick the source product id for
-                    # attendee
-                    # and appends in attendee
-                    attendee = eventbrite_rsvp.pick_source_product(attendee)
-
-                    # base class method to store attendees's source event in
-                    # candidate_source DB table
-                    attendee = eventbrite_rsvp.save_attendee_source(attendee)
-
-                    # base class method to save attendee as candidate in DB
-                    # table candidate
-                    attendee = eventbrite_rsvp.save_attendee_as_candidate(attendee)
-
-                    # base class method to save rsvp data in DB table rsvp
-                    attendee = eventbrite_rsvp.save_rsvp(attendee)
-
-                    # base class method to save entry in candidate_event_rsvp
-                    # DB table
-                    attendee = eventbrite_rsvp.save_candidate_event_rsvp(attendee)
-
-                    # base class method to save rsvp data in DB table activity
-                    eventbrite_rsvp.save_rsvp_in_activity_table(attendee)
+                webhook_id = data['config']['webhook_id']
+                user_credentials = EventbriteRsvp.get_user_credentials_by_webhook(webhook_id)
+                social_network_class = get_class(user_credentials.social_network.name.lower(),
+                                                 'social_network')
+                rsvp_class = get_class(user_credentials.social_network.name.lower(), 'rsvp')
+                # we call social network class here for auth purpose, If token is expired
+                # access token is refreshed and we use fresh token
+                sn = social_network_class(user_id=user_credentials.userId,
+                                          social_network_id=user_credentials.social_network.id)
+                if not user_credentials.memberId:
+                    # get an save the member Id of gt-user
+                    sn.get_member_id(dict())
+                rsvp_obj = rsvp_class(user_credentials=user_credentials,
+                                      social_network=user_credentials.social_network,
+                                      headers=sn.headers,
+                                      message_to_log=sn.message_to_log)
+                # calls class method to process RSVP
+                rsvp_obj._process_rsvp_via_webhook(rsvp)
             elif action == 'test':
                 print 'Successful Webhook Connection'
-        except Exception as e:
-            info_to_log = dict(error_message=e.message)
-            log_exception(eventbrite_rsvp.traceback_info,
-                          "Error Occurred while saving RSVP through webhook."
-                          "%(error_message)s" % info_to_log)
-            data = {'message': e.message,
+        else:
+            # return hub_challenge, 200
+            error_message = 'No RSVP Data'
+            message_to_log.update({'error': error_message})
+            log_error(message_to_log)
+            data = {'message': 'No RSVP Data',
                     'status_code': 500}
             return flask.jsonify(**data), 500
-
-        data = {'message': 'RSVP Saved',
-                'status_code': 200}
-        return flask.jsonify(**data), 200
-    else:
-        # return hub_challenge, 200
-        logger.warn('No RSVP Data')
-        data = {'message': 'No RSVP Data',
+    except Exception as e:
+        error_message = e.message
+        message_to_log.update({'error': error_message})
+        log_exception(message_to_log)
+        data = {'message': e.message,
                 'status_code': 500}
         return flask.jsonify(**data), 500
+
+    data = {'message': 'RSVP Saved',
+            'status_code': 200}
+    return flask.jsonify(**data), 200
 
 
 def get_rsvp_id(url):

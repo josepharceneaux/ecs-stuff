@@ -14,16 +14,23 @@ class RSVPBase(object):
 
     def __init__(self, *args, **kwargs):
         function_name = '__init__()'
-        self.api_url = kwargs['api_url']
-        self.headers = kwargs['headers']
-        self.message_to_log = kwargs['message_to_log']
+
+        self.message_to_log = kwargs.get('message_to_log')
         self.message_to_log.update({'function_name': function_name,
                                     'class_name': self.__class__.__name__})
-        self.user_credentials = kwargs['user_credentials']
-        self.gt_user_id = self.user_credentials.userId
-        self.social_network_id = kwargs['social_network'].id
-        self.social_network_name = kwargs['social_network'].name
-        self.start_date_dt = None
+        try:
+            self.headers = kwargs.get('headers')
+            self.user_credentials = kwargs.get('user_credentials')
+            self.gt_user_id = self.user_credentials.userId
+            self.social_network_id = kwargs.get('social_network').id
+            self.social_network_name = kwargs.get('social_network').name
+            self.api_url = kwargs.get('social_network').apiUrl
+            self.access_token = self.user_credentials.accessToken
+            self.start_date_dt = None
+        except Exception as e:
+            error_message = e.message
+            self.message_to_log.update({'error': error_message})
+            log_exception(self.message_to_log)
 
     @abstractmethod
     def get_rsvps(self, event):
@@ -64,7 +71,7 @@ class RSVPBase(object):
                     rsvps = self.get_rsvps(event)
                     if rsvps:
                         self.post_process_rsvp(rsvps)
-                    elif rsvps is None:  # event has no rsvps
+                    elif rsvps is None:  # event has no RSVPs
                         break
                 except Exception as e:
                     # Shouldn't raise an exception, just log it and move to process

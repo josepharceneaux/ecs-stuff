@@ -96,3 +96,12 @@ class UserCredentials(Base):
                 UserCredentials.socialNetworkId == social_network_id
             )
         ).first()
+
+    @classmethod
+    def get_by_webhook_id(cls, webhook_id):
+        assert webhook_id is not None
+        return cls.query.filter(
+            and_(
+                UserCredentials.webhook == webhook_id,
+            )
+        ).one()
