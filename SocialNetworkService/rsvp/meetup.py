@@ -31,7 +31,8 @@ class MeetupRsvp(RSVPBase):
         assert social_network_id is not None
         events_url = self.api_url + '/rsvps/?sign=true&page=100'
         params = {'event_id': event.vendorEventId}
-        response = http_request('GET', events_url, params=params, headers=self.headers)
+        response = http_request('GET', events_url, params=params, headers=self.headers,
+                                message_to_log=self.message_to_log)
         if response.ok:
             data = response.json()
             rsvps.extend(data['results'])
@@ -42,7 +43,8 @@ class MeetupRsvp(RSVPBase):
             next_url = data['meta']['next'] or None
             while next_url:
                 # attach the key before sending the request
-                response = http_request('GET', next_url + '&sign=true')
+                response = http_request('GET', next_url + '&sign=true',
+                                        message_to_log=self.message_to_log)
                 if response.ok:
                     data = response.json()
                     rsvps.extend(data['results'])
@@ -91,7 +93,8 @@ class MeetupRsvp(RSVPBase):
         events_url = self.api_url + '/member/' \
                      + str(rsvp['member']['member_id']) \
                      + '?sign=true'
-        response = http_request('GET', events_url, headers=self.headers)
+        response = http_request('GET', events_url, headers=self.headers,
+                                message_to_log=self.message_to_log)
         attendee = None
         if response.ok:
             try:
