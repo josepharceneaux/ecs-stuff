@@ -20,20 +20,14 @@ def database_connection():
     return engine
 
 
-def update_table_column_data_type(table_name, data_type_to_change_to, list_of_column_names=[]):
-    """
-    :param table_name:
-    :param data_type_to_change_to:
-    :param list_of_column_names:
-    :return:
-    """
+def update_table_column_data_type(table_name, data_type_to_change_to):
+    print "********** update_table_column_data_type **********"
     engine = database_connection()
-    return _update_data_type(engine=engine, referenced_table_name=table_name,
-                             list_of_column_names=list_of_column_names,
-                             data_type_to_change_to=data_type_to_change_to)
+    print "database connection: %s" % engine
+    return _update_data_type(engine, table_name, data_type_to_change_to)
 
 
-def _update_data_type(engine, referenced_table_name, list_of_column_names, data_type_to_change_to):
+def _update_data_type(engine, referenced_table_name, data_type_to_change_to):
     """
     :param list_of_column_names:    list of columns that reference parent table, e.g. [userId, user_id, OwnerUserId]
     :param data_type_to_change_to:  e.g. INTEGER, LONGTEXT, etc.
@@ -49,18 +43,14 @@ def _update_data_type(engine, referenced_table_name, list_of_column_names, data_
     engine.execute("SET FOREIGN_KEY_CHECKS=0;")
 
     # Get all child tables with FK relationship
-    list_of_tables_with_fk_relation = query_tables_with_fk_relation(database_name=database_name,
-                                                                    engine=engine,
-                                                                    referenced_table_name=referenced_table_name)
+    list_of_tables_with_fk_relation = query_tables_with_fk_relation(database_name, engine, referenced_table_name)
     print "list of tables with fk-relations: %s" % list_of_tables_with_fk_relation
 
     # Drop FKs on child tables
     for dependent_table_tuple in list_of_tables_with_fk_relation:
-        print "ALTER TABLE `%s` DROP FOREIGN KEY `%s`" % (dependent_table_tuple[0], dependent_table_tuple[2])
-        engine.execute(
-            "ALTER TABLE `%s` DROP FOREIGN KEY `%s`" %
-            (dependent_table_tuple[0], dependent_table_tuple[2])
-        )
+        query = "ALTER TABLE `%s` DROP FOREIGN KEY `%s`" % (dependent_table_tuple[0], dependent_table_tuple[2])
+        print query
+        engine.execute(query)
 
     # Change primary-table`s id-column's data type
     print "ALTER TABLE `%s` MODIFY id %s" % (referenced_table_name, data_type_to_change_to)
@@ -70,27 +60,23 @@ def _update_data_type(engine, referenced_table_name, list_of_column_names, data_
     print "ALTER TABLE %s MODIFY COLUMN id %s auto_increment" % (referenced_table_name, data_type_to_change_to)
     engine.execute("ALTER TABLE %s MODIFY COLUMN id %s auto_increment" % (referenced_table_name, data_type_to_change_to))
 
+    # Generate columns names
+    list_of_column_names = generate_column_names(table_name=table_tuple[0])
+
     # Get all child tables
-    dict_of_all_child_tables = query_all_child_tables(engine=engine, database_name=database_name,
-                                                      column_names=list_of_column_names)
+    dict_of_all_child_tables = query_all_child_tables(engine, database_name, list_of_column_names)
     print "all child tables: %s" % dict_of_all_child_tables
 
     # Change child table's data type to new data type
-    change_data_types(engine=engine, tables=dict_of_all_child_tables,
-                      data_type_to_change_to=data_type_to_change_to)
+    change_data_types(engine, dict_of_all_child_tables, data_type_to_change_to)
 
     # Create new foreign key for dict_of_child_tables
     for child_table_list in dict_of_all_child_tables.values():
         for child_table in child_table_list:
-            print "ALTER TABLE `%s` ADD CONSTRAINT fk_%s_%s FOREIGN KEY (`%s`) REFERENCES `%s`(id)" % \
-                  (child_table[0], referenced_table_name, child_table[0], child_table[1], referenced_table_name)
-            engine.execute(
-                "ALTER TABLE `%s` ADD CONSTRAINT fk_%s_%s FOREIGN KEY (`%s`) REFERENCES `%s`(id)" %
-                (child_table[0],
-                 referenced_table_name, child_table[0],
-                 child_table[1],
-                 referenced_table_name)
-            )
+            query = "ALTER TABLE `%s` ADD CONSTRAINT fk_%s_%s FOREIGN KEY (`%s`) REFERENCES `%s`(id)" % \
+                    (child_table[0], referenced_table_name, child_table[0], child_table[1], referenced_table_name)
+            print query
+            engine.execute(query)
 
     # Turn foreign key checks back on
     engine.execute("SET FOREIGN_KEY_CHECKS=1;")
@@ -98,7 +84,59 @@ def _update_data_type(engine, referenced_table_name, list_of_column_names, data_
     return
 
 
+def generate_column_names(table_name):
+    """
+    :param  table_name: referenced_table_name, i.e. Parent table
+    :return list of column names associated with Primary-table's id;
+            e.g. user.id is referenced as such: ['userId', 'user_id', 'OwnerUserId']
+    """
+    print "********** generate_column_names **********"
+    column_names = ['%s_id' % table_name, '%sid' % table_name]
+    if table_name == 'user':
+        column_names.append('owneruserid')
+    elif table_name == 'area_of_interest':
+        column_names.append('areaOfInterestId')
+    elif table_name == 'custom_field':
+        column_names.append('customFieldId')
+    elif table_name == 'candidate_education':
+        column_names.append('candidateEducationId')
+    elif table_name == 'candidate_education_degree':
+        column_names.append('candidateEducationDegreeId')
+    elif table_name == 'email_label':
+        column_names.append('emailLabelId')
+    elif table_name == 'candidate_experience':
+        column_names.append('candidateExperienceId')
+    elif table_name == 'phone_label':
+        column_names.append('phoneLabelId')
+    elif table_name == 'rating_tag':
+        column_names.append('ratingTagId')
+    elif table_name == 'social_network':
+        column_names.append('socialNetworkId')
+    elif table_name == 'email_client':
+        column_names.append('emailClientId')
+    elif table_name == 'email_campaign':
+        column_names.append('emailCampaignId')
+    elif table_name == 'email_campaign_send':
+        column_names.append('emailCampaignSendId')
+    elif table_name == 'smart_list':
+        column_names.append('smartListId')
+    elif table_name == 'patent_detail':
+        column_names.append('patentDetailId')
+    elif table_name == 'candidate_source':
+        column_names.append('candidateSourceId')
+    elif table_name == 'email_template_folder':
+        column_names.append('emailTemplateFolderId')
+    elif table_name == 'culture':
+        column_names.append('defaultCultureId')
+    elif table_name == 'prodcut':
+        column_names.append('sourceProductId')
+
+    print "column_names: %s" % column_names
+    return column_names
+
+
 def query_tables_with_fk_relation(database_name, engine, referenced_table_name):
+    print "********** query_tables_with_fk_relation **********"
     dependent_tables_list = engine.execute(
         """SELECT TABLE_NAME, COLUMN_NAME, CONSTRAINT_NAME,
            REFERENCED_TABLE_NAME,REFERENCED_COLUMN_NAME FROM
@@ -111,6 +149,7 @@ def query_tables_with_fk_relation(database_name, engine, referenced_table_name):
 
 
 def query_all_child_tables(engine, database_name, column_names):
+    print "********** query_all_child_tables **********"
     dict_of_child_tables = {}
     for column_name in column_names:
         query = """SELECT TABLE_NAME , COLUMN_NAME , DATA_TYPE FROM
@@ -123,23 +162,29 @@ def query_all_child_tables(engine, database_name, column_names):
 
 
 def change_data_types(engine, tables, data_type_to_change_to):
+    print "********** change_data_types **********"
     for child_table_dicts in tables.values():
         for child_table_list in child_table_dicts:
-            print "ALTER TABLE `%s` MODIFY `%s` %s" % (child_table_list[0], child_table_list[1], data_type_to_change_to)
-            engine.execute(
-                "ALTER TABLE `%s` MODIFY `%s` %s" %
-                (child_table_list[0], child_table_list[1], data_type_to_change_to)
+            query = "ALTER TABLE `%s` MODIFY `%s` %s" % (child_table_list[0], child_table_list[1], data_type_to_change_to)
+            print query
+            engine.execute(query)
 
-            )
 
-    return
+def select_all_tables_with_id_column():
+    print "********** select_all_tables_with_column_id **********"
+    engine = database_connection()
+    database_name = engine.execute("SELECT DATABASE();").fetchone()[0]
+    list_of_tables = engine.execute(
+        """SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM
+           INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '%s'
+           AND COLUMN_NAME = 'id';
+        """ % database_name).fetchall()
+    print "list_of_tables: %s" % list_of_tables
+    return list_of_tables
 
 
 if __name__ == "__main__":
-    # update_table_column_data_type(table_name='user',
-    #                               data_type_to_change_to='INTEGER',
-    #                               list_of_column_names=['userId', 'user_id', 'OwnerUserId'])
-
-    update_table_column_data_type(table_name='candidate',
-                                  data_type_to_change_to='INTEGER',
-                                  list_of_column_names=['CandidateId'])
+    list_of_table_names_to_be_updated = select_all_tables_with_id_column()
+    for table_tuple in list_of_table_names_to_be_updated:
+        print "#" * 50 + " " + "TABLE: " + str(table_tuple[0].upper()) + " " + "#" * 50
+        update_table_column_data_type(table_name=table_tuple[0], data_type_to_change_to='BIGINT')
