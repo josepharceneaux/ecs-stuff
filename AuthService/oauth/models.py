@@ -169,13 +169,13 @@ class UserScopedRoles(db.Model):
                                                                 (UserScopedRoles.roleId == role_id)).first():
                         user_scoped_role = UserScopedRoles(userId=user_id, roleId=role_id)
                         db.session.add(user_scoped_role)
-                        db.session.commit()
                     else:
                         logger.info("Role: %s already exists for user: %s" % (role, user_id))
                         raise Exception("Role: %s already exists for user: %s" % (role, user_id))
                 else:
                     logger.info("Role: %s doesn't exist" % role)
                     raise Exception("Role: %s doesn't exist" % role)
+            db.session.commit()
         else:
             logger.info("User %s doesn't exist" % user_id)
             raise Exception("User %s doesn't exist" % user_id)
