@@ -15,19 +15,42 @@ from flask import request
 
 #application specific
 from activities_app.models import Activity
+from activities_app.models import db
 
 ISO_FORMAT = '%Y-%m-%d %H:%M'
 POSTS_PER_PAGE = 20
 mod = Blueprint('activities_api', __name__)
 
 
-@mod.route('/activities/<page>', methods=['GET', 'POST'])
+@mod.route('/activities/', defaults={'page': None}, methods=['POST'])
+@mod.route('/activities/<page>', methods=['GET'])
 def get_activities(page=None):
+    try:
+        oauth_token = request.headers['Authorization']
+    except KeyError:
+        return jsonify({'error': 'Invalid query params'}), 400
+    req = urllib2.Request(app.config['OAUTH_SERVER_URI'], headers={'Authorization': oauth_token})
+    try:
+        response = urllib2.urlopen(req)
+    except urllib2.HTTPError:
+        return jsonify({'error': 'Invalid query params'}), 400
+    auth_response = response.read()
+    json_response = json.loads(auth_response)
+    if not json_response.get('user_id'):
+        return jsonify({'error': 'Invalid query params'}), 400
+    valid_user_id = json_response.get('user_id')
     taAPI = TalentActivityAPI()
-    request_startTime = request_endTime = None
-    if request.form.get('start'): request_startTime = datetime.strptime(request.form.get('start'), ISO_FORMAT)
-    if request.form.get('end'): request_startTime = datetime.strptime(request.form.get('end'), ISO_FORMAT)
-    return taAPI.get(start_datetime=request_startTime, end_datetime=request_endTime, page=int(page))
+    if request.method == 'GET':
+        request_startTime = request_endTime = None
+        if request.form.get('start'): request_startTime = datetime.strptime(request.form.get('start'), ISO_FORMAT)
+        if request.form.get('end'): request_startTime = datetime.strptime(request.form.get('end'), ISO_FORMAT)
+        return taAPI.get(user_id=valid_user_id, start_datetime=request_startTime, end_datetime=request_endTime, page=int(page))
+    elif request.method == 'POST':
+        taAPI.create(valid_user_id, request.form.get('type'), request.form.get('sourceTable'),
+                     request.form.get('sourceId'), request.form.get('params'))
+        return 'Post Created', 200
+    else:
+        return 'Method not Allowed', 405
 
 
 class TalentActivityAPI(object):
@@ -127,23 +150,8 @@ class TalentActivityAPI(object):
     def __init__(self):
         self._check_format_string_regexp = re.compile(r'%\((\w+)\)s')
 
-    def get(self, start_datetime=None, end_datetime=None, page=1):
-        try:
-            oauth_token = request.headers['Authorization']
-        except KeyError:
-            return jsonify({'error': 'Invalid query params'}), 400
-        req = urllib2.Request(app.config['OAUTH_SERVER_URI'], headers={'Authorization': oauth_token})
-        try:
-            response = urllib2.urlopen(req)
-        except urllib2.HTTPError:
-            return jsonify({'error': 'Invalid query params'}), 400
-        auth_response = response.read()
-        json_response = json.loads(auth_response)
-        if not json_response.get('user_id'):
-            return jsonify({'error': 'Invalid query params'}), 400
-
-        valid_user_id = json_response.get('user_id')
-        filters = [Activity.userId == valid_user_id]
+    def get(self, user_id, start_datetime=None, end_datetime=None, page=1):
+        filters = [Activity.userId == user_id]
         if start_datetime: filters.append(Activity.addedTime > start_datetime)
         if end_datetime: filters.append(Activity.addedTime < end_datetime)
         # activities = db.session.query(Activity).filter(*filters)
@@ -160,13 +168,14 @@ class TalentActivityAPI(object):
         return json.dumps(activities_reponse)
 
 
-    # def create(self, user_id, type, source_table=None, source_id=None, params=dict()):
-    #     db = current.db
-    #
-    #     return db.activity.insert(
-    #         userId=user_id,
-    #         type=type,
-    #         sourceTable=source_table,
-    #         sourceId=source_id,
-    #         params=json.dumps(params) if params else None
-    #     )
+    def create(self, user_id, type, source_table=None, source_id=None, params=dict()):
+
+        activity = Activity(
+            userId=int(user_id),
+            type=type,
+            sourceTable=source_table,
+            sourceId=source_id,
+            params=json.dumps(params) if params else None
+        )
+        db.session.add(activity)
+        db.session.commit()
