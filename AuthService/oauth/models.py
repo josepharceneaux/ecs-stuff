@@ -184,7 +184,7 @@ class UserScopedRoles(db.Model):
     def delete_roles(user_id, roles_list):
         """ Delete a role for user
         :param user_id: Id of a user
-        :param roles_list: list of roleIds
+        :param roles_list: list of roleIds or roleNames
         """
         if User.query.get(user_id):
             for role in roles_list:
