@@ -1,13 +1,15 @@
+"""Activities API for getting activities for a user's domain or posting new activities
+   to the database.
+"""
 __author__ = 'erikfarmer'
 
 #stdlib
 from datetime import datetime
 import json
-from math import ceil
 import re
 import urllib2
 
-#framwork specific
+#framework specific
 from flask import Blueprint
 from flask import current_app as app
 from flask import jsonify
@@ -25,6 +27,11 @@ mod = Blueprint('activities_api', __name__)
 @mod.route('/activities/', defaults={'page': None}, methods=['POST'])
 @mod.route('/activities/<page>', methods=['GET'])
 def get_activities(page=None):
+    """Authenticate endpoint requests and then properly route then to the retrieve or creation
+       functions.
+    :param page: (int) Page used in paginiation for GET requests.
+    :return: JSON formatted pagination response or message notifying creation status.
+    """
     try:
         oauth_token = request.headers['Authorization']
     except KeyError:
@@ -39,21 +46,26 @@ def get_activities(page=None):
     if not json_response.get('user_id'):
         return jsonify({'error': 'Invalid query params'}), 400
     valid_user_id = json_response.get('user_id')
-    taAPI = TalentActivityAPI()
+    talent_activity_API = TalentActivityAPI()
     if request.method == 'GET':
-        request_startTime = request_endTime = None
-        if request.form.get('start'): request_startTime = datetime.strptime(request.form.get('start'), ISO_FORMAT)
-        if request.form.get('end'): request_startTime = datetime.strptime(request.form.get('end'), ISO_FORMAT)
-        return taAPI.get(user_id=valid_user_id, start_datetime=request_startTime, end_datetime=request_endTime, page=int(page))
+        request_start_time = request_end_time = None
+        if request.form.get('start'): request_start_time = datetime.strptime(
+            request.form.get('start'), ISO_FORMAT)
+        if request.form.get('end'): request_end_time = datetime.strptime(
+            request.form.get('end'), ISO_FORMAT)
+        return talent_activity_API.get(user_id=valid_user_id, start_datetime=request_start_time,
+                                       end_datetime=request_end_time, page=int(page))
     elif request.method == 'POST':
-        taAPI.create(valid_user_id, request.form.get('type'), request.form.get('sourceTable'),
-                     request.form.get('sourceId'), request.form.get('params'))
+        talent_activity_API.create(valid_user_id, request.form.get('type'),
+                                   request.form.get('sourceTable'), request.form.get('sourceId'),
+                                   request.form.get('params'))
         return 'Post Created', 200
     else:
         return 'Method not Allowed', 405
 
 
 class TalentActivityAPI(object):
+    """API class for ActivityService."""
     # params=dict(id, formattedName, sourceProductId, client_ip (if widget))
     CANDIDATE_CREATE_WEB = 1
     CANDIDATE_CREATE_CSV = 18
@@ -80,7 +92,8 @@ class TalentActivityAPI(object):
 
     WIDGET_VISIT = 13  # params=dict(client_ip)
 
-    NOTIFICATION_CREATE = 14  # when we want to show the users a message # TODO implement frontend + backend
+    # TODO implement frontend + backend
+    NOTIFICATION_CREATE = 14  # when we want to show the users a message
 
     # params=dict(candidateId, campaign_name, candidate_name)
     CAMPAIGN_EMAIL_SEND = 15
@@ -151,6 +164,14 @@ class TalentActivityAPI(object):
         self._check_format_string_regexp = re.compile(r'%\((\w+)\)s')
 
     def get(self, user_id, start_datetime=None, end_datetime=None, page=1):
+        """Method for retrieving activity logs based on a domain ID that is extraced via an
+           authenticated user ID.
+        :param user_id: (int) ID of the authenticated user.
+        :param start_datetime: (object) Optional datetime object for query filters.
+        :param end_datetime: (object) Optional datetime object for query filters.
+        :param page: (int) Pagination start.
+        :return: JSON encoded SQL-Alchemy.pagination response.
+        """
         user_domain_id = User.query.filter_by(id=user_id).value('domainId')
         user_ids = User.query.filter_by(domainId=user_domain_id).values('id')
         flattened_user_ids = [item for sublist in user_ids for item in sublist]
@@ -165,21 +186,31 @@ class TalentActivityAPI(object):
             'prev_page': prev_page,
             'has_next': activities.has_next,
             'next_page': next_page,
-            'items': [{'params': a.params,
-                      'sourceTable': a.sourceTable,
-                      'sourceId': a.sourceId,
-                      'type': a.type,
-                      'userId': a.userId}
-                       for a in activities.items]
+            'items': [{
+                'params': a.params,
+                'sourceTable': a.sourceTable,
+                'sourceId': a.sourceId,
+                'type': a.type,
+                'userId': a.userId
+                }
+                      for a in activities.items
+                     ]
         }
         return json.dumps(activities_reponse)
 
 
-    def create(self, user_id, type, source_table=None, source_id=None, params=dict()):
-
+    def create(self, user_id, type_, source_table=None, source_id=None, params=dict()):
+        """Method for creating a DB entry in the activity table.
+        :param user_id: (int) ID of the authenticated user.
+        :param type: (int) Integer corresponding to TalentActivityAPI attributes.
+        :param source_table: (string) String representing the DB table the activity relates to.
+        :param source_id: (int) Integer of the source_table's ID for entered specific activity.
+        :param params: (dict) Dictionary of created/updated source_table attributes.
+        :return: HTTP Response
+        """
         activity = Activity(
             userId=int(user_id),
-            type=type,
+            type=type_,
             sourceTable=source_table,
             sourceId=source_id,
             params=json.dumps(params) if params else None
@@ -187,6 +218,7 @@ class TalentActivityAPI(object):
         try:
             db.session.add(activity)
             db.session.commit()
+            return json.dumps({'status': 'Entry posted successfully'}), 200
         except:
             # TODO logging
             return json.dumps({'error': 'There was an error saving your log entry'}), 500

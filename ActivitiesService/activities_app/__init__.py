@@ -1,3 +1,4 @@
+"""Initializer for activities_app"""
 __author__ = 'Erik Farmer'
 
 from flask import Flask

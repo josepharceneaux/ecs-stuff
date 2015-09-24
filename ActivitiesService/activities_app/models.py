@@ -1,3 +1,5 @@
+"""Model definitions for tables used in ActivityService"""
+
 __author__ = 'Erik Farmer'
 
 from activities_app import db
@@ -25,4 +27,3 @@ class Token(db.Model):
 
 class User(db.Model):
     __table__ = db.Model.metadata.tables['user']
-
