@@ -2,8 +2,7 @@ __author__ = 'amirhb'
 
 import json
 from lib2to3.pgen2 import parse
-from flask import Flask, request
-from flask_restful import Resource, Api, reqparse, inputs
+from flask_restful import Api, reqparse, inputs
 from oauth import app
 
 api = Api(app=app)
