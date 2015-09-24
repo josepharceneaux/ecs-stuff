@@ -60,19 +60,31 @@ def auth_user_fill(request):
 
 
 def test_call_requires_auth(auth_user_fill):
-    response = APP.post('/activities/1', headers={'Authorization': 'Bearer good_token'}, data={}, follow_redirects=True)
+    response = APP.get('/activities/1', headers={'Authorization': 'Bearer good_token'}, data={}, follow_redirects=True)
     assert response.status_code == 200
-    response = APP.post('/activities/1', headers={'Authorization': 'Bearer bad_token'}, data={}, follow_redirects=True)
+    response = APP.get('/activities/1', headers={'Authorization': 'Bearer bad_token'}, data={}, follow_redirects=True)
     assert response.status_code == 400
 
 
 def test_reponse_is_user_filtered(auth_user_fill):
-    response = APP.post('/activities/1', headers={'Authorization': 'Bearer good_token'}, data={}, follow_redirects=True)
+    response = APP.get('/activities/1', headers={'Authorization': 'Bearer good_token'}, data={}, follow_redirects=True)
     assert len(json.loads(response.data)['items']) == 3
 
 
 def test_response_can_be_time_filtered(auth_user_fill):
-    response = APP.post('/activities/1', headers={'Authorization': 'Bearer good_token'}, data={
+    response = APP.get('/activities/1', headers={'Authorization': 'Bearer good_token'}, data={
         'start': datetime.strftime(datetime.today(), ISO_FORMAT)
     }, follow_redirects=True)
     assert len(json.loads(response.data)['items']) == 2
+
+
+def test_basic_post(auth_user_fill):
+    test_user_id = User.query.filter_by(firstName='Jamtry').first().id
+    response = APP.post('/activities/', headers={'Authorization': 'Bearer good_token'}, data=dict(
+        userId=test_user_id,
+        type=99,
+        sourceTable='test',
+        sourceId='1337',
+        params=json.dumps({'lastName': 'Larzzzzz', 'firstName': 'Griffon'})
+    ), follow_redirects=True)
+    assert response.status_code == 200
