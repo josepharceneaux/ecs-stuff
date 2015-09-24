@@ -32,10 +32,19 @@ class AuthServiceTestsContext:
         first_name = 'John'
         last_name = 'Sample'
 
+        # Add test domain
+        test_domain = Domain(
+            name=gen_salt(20),
+            expiration=None
+        )
+        db.session.add(test_domain)
+        db.session.commit()
+        self.test_domain = test_domain.get_id()
+
         test_user = User(
             email=self.email,
             password=generate_password_hash(self.password, method='pbkdf2:sha512'),
-            domainId=1,
+            domainId=self.test_domain,
             firstName=first_name,
             lastName=last_name,
             expiration=None
@@ -51,20 +60,11 @@ class AuthServiceTestsContext:
         )
         db.session.add(test_client)
 
-        # Add test domain
-        test_domain = Domain(
-            name=gen_salt(20),
-            expiration=None
-        )
-        db.session.add(test_domain)
-        db.session.commit()
-        self.test_domain = test_domain.get_id()
-
         # Add two test roles
         self.test_role_first = gen_salt(20)
-        DomainRole.save(test_domain.get_id(), self.test_role_first)
+        DomainRole.save(self.test_domain, self.test_role_first)
         self.test_role_second = gen_salt(20)
-        DomainRole.save(test_domain.get_id(), self.test_role_second)
+        DomainRole.save(self.test_domain, self.test_role_second)
 
     def authorize_token(self):
         headers = {'Authorization': 'Bearer %s' % self.access_token}
@@ -123,6 +123,12 @@ class AuthServiceTestsContext:
             response = self.app.delete('/users/%s/roles' % self.oauth._usergetter(self.email, self.password).get_id(),
                                        data=json.dumps(data), headers=headers)
             return response.status_code
+
+    def get_roles_of_domain(self):
+        headers = {'Authorization': 'Bearer %s' % self.access_token}
+        response = json.loads(self.app.get('/domain/%s/roles' % self.test_domain, headers=headers).data)
+        domain_roles = response.get('roles') or []
+        return [domain_role.get('name') for domain_role in domain_roles]
 
     def verify_user_scoped_role(self, role):
         user_id = self.oauth._usergetter(self.email, self.password).get_id()
@@ -206,6 +212,9 @@ def test_auth_service(app_context):
     # verify a user role
     assert app_context.verify_user_scoped_role(app_context.test_role_first)
     assert app_context.verify_user_scoped_role(app_context.test_role_second)
+
+    # Get all roles of a domain
+    assert app_context.get_roles_of_domain() == [app_context.test_role_first, app_context.test_role_second]
 
     # Delete roles from a user
     assert app_context.test_roles_of_user(action="DELETE") == 200

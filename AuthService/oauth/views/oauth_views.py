@@ -134,3 +134,11 @@ def user_scoped_roles(user_id):
                 return jsonify(error_message=e.message), 404
         else:
             return jsonify(error_message='Request data is corrupt'), 400
+
+
+@app.route('/domain/<int:domain_id>/roles', methods=['GET'])
+@gt_oauth.require_oauth()
+def get_all_roles_of_domain(domain_id):
+    if Domain.query.get(domain_id):
+        return jsonify(DomainRole.all_roles_of_domain(domain_id))
+
