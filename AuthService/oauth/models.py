@@ -2,7 +2,7 @@ __author__ = 'ufarooqi'
 
 from oauth import db
 from oauth import logger
-from sqlalchemy import create_engine
+from modules.handy_functions import is_number
 
 
 class User(db.Model):
@@ -151,21 +151,34 @@ class UserScopedRoles(db.Model):
     def add_roles(user_id, roles_list):
         """ Add a role for user
         :param user_id: Id of a user
-        :param roles_list: list of roleIds
+        :param roles_list: list of roleIds or roleNames
         """
-        for role_id in roles_list:
-            if not UserScopedRoles.query.filter((UserScopedRoles.userId == user_id) &
-                                                        (UserScopedRoles.roleId == role_id)).first():
-                if User.query.get(user_id) and DomainRole.query.get(role_id):
-                    user_scoped_role = UserScopedRoles(userId=user_id, roleId=role_id)
-                    db.session.add(user_scoped_role)
-                    db.session.commit()
+        if User.query.get(user_id):
+            for role in roles_list:
+                if is_number(role):
+                    role_id = role
                 else:
-                    logger.info("Either user: %s or role_id: %s doesn't exist" % (user_id, role_id))
-                    raise Exception("Either user: %s or role_id: %s doesn't exist" % (user_id, role_id))
-            else:
-                logger.info("Role: %s already exists for user: %s" % (role_id, user_id))
-                raise Exception("Role: %s already exists for user: %s" % (role_id, user_id))
+                    domain_role = DomainRole.get_by_name(role)
+                    if domain_role:
+                        role_id = domain_role.id
+                    else:
+                        role_id = None
+
+                if role_id and DomainRole.query.get(role_id):
+                    if not UserScopedRoles.query.filter((UserScopedRoles.userId == user_id) &
+                                                                (UserScopedRoles.roleId == role_id)).first():
+                        user_scoped_role = UserScopedRoles(userId=user_id, roleId=role_id)
+                        db.session.add(user_scoped_role)
+                        db.session.commit()
+                    else:
+                        logger.info("Role: %s already exists for user: %s" % (role, user_id))
+                        raise Exception("Role: %s already exists for user: %s" % (role, user_id))
+                else:
+                    logger.info("Role: %s doesn't exist" % role)
+                    raise Exception("Role: %s doesn't exist" % role)
+        else:
+            logger.info("User %s doesn't exist" % user_id)
+            raise Exception("User %s doesn't exist" % user_id)
 
     @staticmethod
     def delete_roles(user_id, roles_list):
@@ -173,15 +186,28 @@ class UserScopedRoles(db.Model):
         :param user_id: Id of a user
         :param roles_list: list of roleIds
         """
-        for role_id in roles_list:
-            user_scoped_role = UserScopedRoles.query.filter((UserScopedRoles.userId == user_id)
-                                                            & (UserScopedRoles.roleId == role_id)).first()
-            if user_scoped_role:
-                db.session.delete(user_scoped_role)
-            else:
-                logger.info("User %s doesn't have any role %s" % (user_id, role_id))
-                raise Exception("User %s doesn't have any role %s" % (user_id, role_id))
-        db.session.commit()
+        if User.query.get(user_id):
+            for role in roles_list:
+                if is_number(role):
+                    role_id = role
+                else:
+                    domain_role = DomainRole.get_by_name(role)
+                    if domain_role:
+                        role_id = domain_role.id
+                    else:
+                        role_id = None
+
+                user_scoped_role = UserScopedRoles.query.filter((UserScopedRoles.userId == user_id)
+                                                                & (UserScopedRoles.roleId == role_id)).first()
+                if user_scoped_role:
+                    db.session.delete(user_scoped_role)
+                else:
+                    logger.info("User %s doesn't have any role %s" % (user_id, role_id))
+                    raise Exception("User %s doesn't have any role %s" % (user_id, role_id))
+            db.session.commit()
+        else:
+            logger.info("User %s doesn't exist" % user_id)
+            raise Exception("User %s doesn't exist" % user_id)
 
     @staticmethod
     def get_all_roles_of_user(user_id):

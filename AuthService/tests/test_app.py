@@ -112,14 +112,13 @@ class AuthServiceTestsContext:
             if false_case:
                 data = {'roles': [int(test_role_second.id) + 1]}
             else:
-                data = {'roles': [test_role_first.id, test_role_second.id]}
+                data = {'roles': [self.test_role_first, test_role_second.id]}
             response = self.app.post('/users/%s/roles' % self.oauth._usergetter(self.email, self.password).get_id(),
                                      data=json.dumps(data), headers=headers)
             return response.status_code
         elif action == "DELETE":
             headers['content-type'] = 'application/json'
-            data = {'roles': [DomainRole.get_by_name(self.test_role_first).id,
-                              DomainRole.get_by_name(self.test_role_second).id]}
+            data = {'roles': [self.test_role_first, DomainRole.get_by_name(self.test_role_second).id]}
             response = self.app.delete('/users/%s/roles' % self.oauth._usergetter(self.email, self.password).get_id(),
                                        data=json.dumps(data), headers=headers)
             return response.status_code
