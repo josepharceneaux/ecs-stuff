@@ -14,7 +14,7 @@ from flask import jsonify
 from flask import request
 
 #application specific
-from activities_app.models import Activity
+from activities_app.models import Activity, User
 from activities_app.models import db
 
 ISO_FORMAT = '%Y-%m-%d %H:%M'
@@ -151,10 +151,12 @@ class TalentActivityAPI(object):
         self._check_format_string_regexp = re.compile(r'%\((\w+)\)s')
 
     def get(self, user_id, start_datetime=None, end_datetime=None, page=1):
-        filters = [Activity.userId == user_id]
+        user_domain_id = User.query.filter_by(id=user_id).value('domainId')
+        user_ids = User.query.filter_by(domainId=user_domain_id).values('id')
+        flattened_user_ids = [item for sublist in user_ids for item in sublist]
+        filters = [Activity.userId.in_(flattened_user_ids)]
         if start_datetime: filters.append(Activity.addedTime > start_datetime)
         if end_datetime: filters.append(Activity.addedTime < end_datetime)
-        # activities = db.session.query(Activity).filter(*filters)
         activities = Activity.query.filter(*filters).paginate(page, POSTS_PER_PAGE, False)
         next_page = page + 1 if activities.has_next else None
         prev_page = page - 1 if activities.has_prev else None
@@ -163,7 +165,12 @@ class TalentActivityAPI(object):
             'prev_page': prev_page,
             'has_next': activities.has_next,
             'next_page': next_page,
-            'items': [a.params for a in activities.items]
+            'items': [{'params': a.params,
+                      'sourceTable': a.sourceTable,
+                      'sourceId': a.sourceId,
+                      'type': a.type,
+                      'userId': a.userId}
+                       for a in activities.items]
         }
         return json.dumps(activities_reponse)
 
@@ -177,5 +184,9 @@ class TalentActivityAPI(object):
             sourceId=source_id,
             params=json.dumps(params) if params else None
         )
-        db.session.add(activity)
-        db.session.commit()
+        try:
+            db.session.add(activity)
+            db.session.commit()
+        except:
+            # TODO logging
+            return json.dumps({'error': 'There was an error saving your log entry'}), 500
