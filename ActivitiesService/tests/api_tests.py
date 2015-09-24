@@ -6,7 +6,7 @@ from datetime import timedelta
 import json
 
 from activities_app import app
-from activities_app.models import db, Client, Token, User, Candidate, Activity
+from activities_app.models import db, Activity, Candidate, Client, Domain, Token, User
 db.init_app(app)
 
 ISO_FORMAT = '%Y-%m-%d %H:%M'
@@ -17,7 +17,11 @@ def auth_user_fill(request):
     test_client = Client(client_id='fakeclient', client_secret='s00pers3kr37')
     db.session.add(test_client)
     db.session.commit()
-    test_user = User(domainId=1, firstName='Jamtry', lastName='Jonas',
+    test_domain = Domain(name='ThunderDome', usageLimitation=-1, addedTime=datetime.today(), organizationId=1,
+                         isFairCheckOn=0, isActive=1, defaultCultureId=1)
+    db.session.add(test_domain)
+    db.session.commit()
+    test_user = User(domainId=test_domain.id, firstName='Jamtry', lastName='Jonas',
                      password='pbkdf2(1000,64,sha512)$bd913bac5e55a39b$ea5a0a2a2d156003faaf7986ea4cba3f25607e43ecffb36e0d2b82381035bbeaded29642a1dd6673e922f162d322862459dd3beedda4501c90f7c14b3669cd72',
                      addedTime=datetime(2050, 4, 26))
     db.session.add(test_user)
@@ -48,11 +52,13 @@ def auth_user_fill(request):
         created_test_token = Token.query.filter_by(client_id='fakeclient').first()
         created_test_user = User.query.filter_by(firstName='Jamtry').first()
         created_test_candidate = Candidate.query.filter_by(formattedName='Griffon Larz').first()
+        created_test_domain = Domain.query.filter_by(name='ThunderDome').first()
         db.session.delete(created_test_token)
         db.session.commit()
         db.session.delete(created_test_client)
         db.session.delete(created_test_user)
         db.session.delete(created_test_candidate)
+        db.session.delete(created_test_domain)
         db.session.query(Activity).filter(Activity.userId == created_test_user.id).delete()
         db.session.commit()
 
