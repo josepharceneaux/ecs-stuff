@@ -48,7 +48,7 @@ RUN mkdir /root/talent-oauth-service/AuthService
 ADD . /root/talent-oauth-service/AuthService/
 
 # Install Requirements
-RUN pip install -r /root/talent-oauth-service/AuthService/requirements.txt
+RUN pip install -r /root/talent-oauth-service/requirements.txt
 
 # Set DB connection string
 ENV DB_STRING mysql://talent_web:s!web976892@livedb.gettalent.com/talent_core

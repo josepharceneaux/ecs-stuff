@@ -38,10 +38,10 @@ RUN pyenv global 2.7.9
 RUN pip install uwsgi==2.0.11.1
 
 ADD . /root/talent-resume-service/ResumeParser/
-RUN rm -f /root/talent-resume-service/ResumeParser/.python-version
+RUN rm -f /root/talent-resume-service/.python-version
 
 # Install Requirements
-RUN pip install -r /root/talent-resume-service/ResumeParser/requirements.txt
+RUN pip install -r /root/talent-resume-service/requirements.txt
 
 # Configure Nginx
 RUN rm /etc/nginx/sites-enabled/default

@@ -7,9 +7,11 @@ machine:
 
 dependencies:
    override:
-    - pip install -r AuthService/requirements.txt
+    - pip install -r requirements.txt
 
 test:
   override:
     - py.test AuthService/tests/:
+        parallel: true
+    - py.test ResumeService/tests/:
         parallel: true
