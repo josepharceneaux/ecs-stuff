@@ -78,7 +78,7 @@ def test_reponse_is_user_filtered(auth_user_fill):
 
 
 def test_response_can_be_time_filtered(auth_user_fill):
-    today = (datetime.today()+ timedelta(minutes=-1)).isoformat() 
+    today = (datetime.today()+ timedelta(minutes=-1)).isoformat()
     url_with_date = '/activities/1?start_time={}'.format(today)
     response = APP.get(url_with_date, headers={'Authorization': 'Bearer good_token'}, follow_redirects=True)
     assert json.loads(response.data)['total_count'] == 2
