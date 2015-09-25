@@ -29,6 +29,9 @@ class Candidate(db.Model):
     resume_text = db.Column(db.Text)
     culture_id = db.Column(db.Integer, db.ForeignKey('culture.id'), default=1)
 
+    def get_id(self):
+        return unicode(self.id)
+
     def __repr__(self):
         return "<Candidate(formatted_name=' %r')>" % (self.formatted_name)
 
@@ -220,7 +223,17 @@ class CandidatePreferredLocation(db.Model):
     zipcode = db.Column(db.String(10))
 
 
+########################################################################################
+#            TODO: WEB2py Code That Must Be Translated Into Flask Code
+########################################################################################
+class VoiceCommentUrlField(object):
+    def url(self):
+        import TalentS3
+        return TalentS3.get_s3_url("VoiceComments", self.voice_comment.fileName)
 
+
+db.voice_comment.candidateId.requires = IS_IN_DB(db, 'candidate.id', '%(formattedName)s')
+db.voice_comment.virtualfields.append(VoiceCommentUrlField())
 
 
 
