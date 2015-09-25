@@ -1,5 +1,4 @@
 import os
-from oauth import logger
 from sqlalchemy import create_engine
 
 

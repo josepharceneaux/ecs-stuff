@@ -1,8 +1,8 @@
 import pytest
 import json
-from oauth import app, db, gt_oauth
+from auth_service.oauth import app, db, gt_oauth
 from werkzeug.security import generate_password_hash, gen_salt
-from oauth.models import *
+from models.user import *
 import random, string
 from urllib import urlencode
 
