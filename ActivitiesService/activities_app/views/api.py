@@ -9,6 +9,9 @@ import json
 import re
 import urllib2
 
+#third party packages
+import requests
+
 #framework specific
 from flask import Blueprint
 from flask import current_app as app
@@ -19,52 +22,55 @@ from flask import request
 from activities_app.models import Activity, User
 from activities_app.models import db
 
-ISO_FORMAT = '%Y-%m-%d %H:%M'
+ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
 POSTS_PER_PAGE = 20
 mod = Blueprint('activities_api', __name__)
 
 
 @mod.route('/activities/', defaults={'page': None}, methods=['POST'])
 @mod.route('/activities/<page>', methods=['GET'])
-def get_activities(page=None):
+def activities(page=None):
     """Authenticate endpoint requests and then properly route then to the retrieve or creation
        functions.
-    :param page: (int) Page used in paginiation for GET requests.
+    :param page: (int) Page used in pagination for GET requests.
     :return: JSON formatted pagination response or message notifying creation status.
     """
     try:
         oauth_token = request.headers['Authorization']
     except KeyError:
-        return jsonify({'error': 'Invalid query params'}), 400
-    req = urllib2.Request(app.config['OAUTH_SERVER_URI'], headers={'Authorization': oauth_token})
-    try:
-        response = urllib2.urlopen(req)
-    except urllib2.HTTPError:
-        return jsonify({'error': 'Invalid query params'}), 400
-    auth_response = response.read()
-    json_response = json.loads(auth_response)
-    if not json_response.get('user_id'):
-        return jsonify({'error': 'Invalid query params'}), 400
-    valid_user_id = json_response.get('user_id')
-    talent_activity_API = TalentActivityAPI()
-    if request.method == 'GET':
+        return jsonify({'error': 'No Authorization set'}), 400
+    r = requests.get(app.config['OAUTH_SERVER_URI'], headers={'Authorization': oauth_token})
+    if r.status_code != 200:
+        return jsonify({'error': 'Invalid Authorization'}), 401
+    valid_user_id = json.loads(r.text).get('user_id')
+    if not valid_user_id:
+        return jsonify({'error': 'Response did not return a valid user_id'}), 400
+    is_aggregate_request = request.args.get('aggregate') == '1'
+    tam = TalentActivityManager()
+    if request.method == 'GET' and is_aggregate_request:
+        return jsonify({'activities': tam.get_recent_readable(valid_user_id)})
+    elif request.method == 'GET': # Checking for method again is to avoid nesting.
         request_start_time = request_end_time = None
-        if request.form.get('start'): request_start_time = datetime.strptime(
-            request.form.get('start'), ISO_FORMAT)
-        if request.form.get('end'): request_end_time = datetime.strptime(
-            request.form.get('end'), ISO_FORMAT)
-        return talent_activity_API.get(user_id=valid_user_id, start_datetime=request_start_time,
-                                       end_datetime=request_end_time, page=int(page))
+        if request.args.get('start_time'): request_start_time = datetime.strptime(
+            request.args.get('start_time'), ISO_FORMAT)
+        if request.args.get('end_time'): request_end_time = datetime.strptime(
+            request.args.get('end_time'), ISO_FORMAT)
+        post_qty = request.args.get('post_qty') if request.args.get('post_qty') else POSTS_PER_PAGE
+        try:
+            request_page = int(page)
+        except ValueError:
+            return jsonify({'error': 'page parameter must be an integer'}), 400
+        return json.dumps(tam.get_activities(user_id=valid_user_id, post_qty=post_qty, start_datetime=request_start_time,
+                                       end_datetime=request_end_time, page=request_page))
     elif request.method == 'POST':
-        talent_activity_API.create(valid_user_id, request.form.get('type'),
-                                   request.form.get('sourceTable'), request.form.get('sourceId'),
+        return tam.create_activity(valid_user_id, request.form.get('type'),
+                                   request.form.get('source_table'), request.form.get('source_id'),
                                    request.form.get('params'))
-        return 'Post Created', 200
     else:
-        return 'Method not Allowed', 405
+        return jsonify({'error': {'code': 21, 'message': 'Page not found'}}), 405
 
 
-class TalentActivityAPI(object):
+class TalentActivityManager(object):
     """API class for ActivityService."""
     # params=dict(id, formattedName, sourceProductId, client_ip (if widget))
     CANDIDATE_CREATE_WEB = 1
@@ -163,7 +169,7 @@ class TalentActivityAPI(object):
     def __init__(self):
         self._check_format_string_regexp = re.compile(r'%\((\w+)\)s')
 
-    def get(self, user_id, start_datetime=None, end_datetime=None, page=1):
+    def get_activities(self, user_id, post_qty, start_datetime=None, end_datetime=None, page=1):
         """Method for retrieving activity logs based on a domain ID that is extraced via an
            authenticated user ID.
         :param user_id: (int) ID of the authenticated user.
@@ -178,14 +184,9 @@ class TalentActivityAPI(object):
         filters = [Activity.userId.in_(flattened_user_ids)]
         if start_datetime: filters.append(Activity.addedTime > start_datetime)
         if end_datetime: filters.append(Activity.addedTime < end_datetime)
-        activities = Activity.query.filter(*filters).paginate(page, POSTS_PER_PAGE, False)
-        next_page = page + 1 if activities.has_next else None
-        prev_page = page - 1 if activities.has_prev else None
+        activities = Activity.query.filter(*filters).paginate(page, post_qty, False)
         activities_reponse = {
-            'has_prev': activities.has_prev,
-            'prev_page': prev_page,
-            'has_next': activities.has_next,
-            'next_page': next_page,
+            'total_count': activities.total,
             'items': [{
                 'params': a.params,
                 'sourceTable': a.sourceTable,
@@ -196,10 +197,79 @@ class TalentActivityAPI(object):
                       for a in activities.items
                      ]
         }
-        return json.dumps(activities_reponse)
+        return activities_reponse
 
 
-    def create(self, user_id, type_, source_table=None, source_id=None, params=dict()):
+
+    # Like 'get' but gets the last N consecutive activity types. can't use GROUP BY because it doesn't respect ordering.
+    def get_recent_readable(self, user_id, limit=3):
+        current_user = User.query.filter_by(id=user_id).first()
+        #
+        # # Get the last 25 activities and aggregate them by type, with order.
+        user_domain_id = current_user.domainId
+        user_ids = User.query.filter_by(domainId=user_domain_id).values('id')
+        flattened_user_ids = [item for sublist in user_ids for item in sublist]
+        filters = [Activity.userId.in_(flattened_user_ids)]
+        activities = Activity.query.filter(*filters) # TODO add limit.
+
+        aggregated_activities = []
+        current_activity_count = 0
+
+        # user_id_to_name_dict = self._user_id_to_name_dict(current_user.domainId)
+
+        for i, activity in enumerate(activities):
+            current_activity_count += 1
+            current_activity_type = activity.type
+            next_activity_type = activities[i + 1].type if (
+            i < activities.count() - 1) else None  # None means last activity
+
+            if current_activity_type != next_activity_type:  # next activity is new, or the very last one, so aggregate these ones
+                activity_aggregate = {}
+                activity_aggregate['count'] = current_activity_count
+                activity_aggregate['readable_text'] = self._activity_text(activity,
+                                  activity_aggregate['count'], current_user)
+                activity_aggregate['image'] = self.MESSAGES[activity.type][2]
+
+                aggregated_activities.append(activity_aggregate)
+                if len(aggregated_activities) == limit:  # if we've got enough activity groups, quit
+                    break
+
+                current_activity_count = 0
+
+        return aggregated_activities
+
+
+    def _activity_text(self, activity, count, current_user):
+        if activity.userId != current_user.id:
+            username = User.query.filter_by(id=activity.userId).value('firstName')
+        else:
+            username = "You"
+
+        params = json.loads(activity.params) if activity.params else dict()
+        params['username'] = username
+
+        format_strings = self.MESSAGES.get(activity.type)
+        if not format_strings:
+            format_string = "No message for activity type %s" % activity.type
+        elif not count or count == 1:  # one single activity
+            format_string = format_strings[0]
+            if 'You has' in format_string:
+                format_string = format_string.replace('you has', 'you have')  # To fix 'You has joined'
+            elif "You's" in format_string:  # To fix "You's recurring campaign has expired"
+                format_string = format_string.replace("You's", "Your")
+        else:  # many activities
+            format_string = format_strings[1]
+            params['count'] = count
+
+        # If format_string has a param not in params, set it to unknown
+        for param in re.findall(self._check_format_string_regexp, format_string):
+            if not params.get(param):
+                params[param] = 'unknown'
+
+        return format_string % params
+
+
+    def create_activity(self, user_id, type_, source_table=None, source_id=None, params=dict()):
         """Method for creating a DB entry in the activity table.
         :param user_id: (int) ID of the authenticated user.
         :param type: (int) Integer corresponding to TalentActivityAPI attributes.
@@ -218,7 +288,7 @@ class TalentActivityAPI(object):
         try:
             db.session.add(activity)
             db.session.commit()
-            return json.dumps({'status': 'Entry posted successfully'}), 200
+            return json.dumps({'activity': {'id':activity.id}}), 200
         except:
             # TODO logging
             return json.dumps({'error': 'There was an error saving your log entry'}), 500

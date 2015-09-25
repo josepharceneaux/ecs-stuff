@@ -42,6 +42,8 @@ def auth_user_fill(request):
         Activity(addedTime=today, sourceTable='user', sourceId=1, type=12, userId=test_user.id,
                      params=json.dumps({'lastName': 'Larzz', 'firstName': 'Griffon'})),
         Activity(addedTime=today, sourceTable='user', sourceId=1, type=12, userId=test_user.id,
+                     params=json.dumps({'lastName': 'Larzzz', 'firstName': 'Griffon'})),
+        Activity(addedTime=today, sourceTable='user', sourceId=1, type=12, userId=1,
                      params=json.dumps({'lastName': 'Larzzz', 'firstName': 'Griffon'}))
     ]
     for a in activities:
@@ -51,15 +53,13 @@ def auth_user_fill(request):
         created_test_client = Client.query.filter_by(client_id='fakeclient').first()
         created_test_token = Token.query.filter_by(client_id='fakeclient').first()
         created_test_user = User.query.filter_by(firstName='Jamtry').first()
-        created_test_candidate = Candidate.query.filter_by(formattedName='Griffon Larz').first()
         created_test_domain = Domain.query.filter_by(name='ThunderDome').first()
         db.session.delete(created_test_token)
         db.session.commit()
+        db.session.query(Activity).filter(Activity.userId == created_test_user.id).delete()
         db.session.delete(created_test_client)
         db.session.delete(created_test_user)
-        db.session.delete(created_test_candidate)
         db.session.delete(created_test_domain)
-        db.session.query(Activity).filter(Activity.userId == created_test_user.id).delete()
         db.session.commit()
 
     request.addfinalizer(fin)
@@ -69,19 +69,19 @@ def test_call_requires_auth(auth_user_fill):
     response = APP.get('/activities/1', headers={'Authorization': 'Bearer good_token'}, data={}, follow_redirects=True)
     assert response.status_code == 200
     response = APP.get('/activities/1', headers={'Authorization': 'Bearer bad_token'}, data={}, follow_redirects=True)
-    assert response.status_code == 400
+    assert response.status_code == 401
 
 
 def test_reponse_is_user_filtered(auth_user_fill):
     response = APP.get('/activities/1', headers={'Authorization': 'Bearer good_token'}, data={}, follow_redirects=True)
-    assert len(json.loads(response.data)['items']) == 3
+    assert json.loads(response.data)['total_count'] == 3
 
 
 def test_response_can_be_time_filtered(auth_user_fill):
-    response = APP.get('/activities/1', headers={'Authorization': 'Bearer good_token'}, data={
-        'start': datetime.strftime(datetime.today(), ISO_FORMAT)
-    }, follow_redirects=True)
-    assert len(json.loads(response.data)['items']) == 2
+    today = (datetime.today()+ timedelta(minutes=-1)).isoformat() 
+    url_with_date = '/activities/1?start_time={}'.format(today)
+    response = APP.get(url_with_date, headers={'Authorization': 'Bearer good_token'}, follow_redirects=True)
+    assert json.loads(response.data)['total_count'] == 2
 
 
 def test_basic_post(auth_user_fill):
@@ -94,3 +94,12 @@ def test_basic_post(auth_user_fill):
         params=json.dumps({'lastName': 'Larzzzzz', 'firstName': 'Griffon'})
     ), follow_redirects=True)
     assert response.status_code == 200
+
+
+def test_recent_readable(auth_user_fill):
+    response = APP.get('/activities/1?aggregate=1', headers={'Authorization': 'Bearer good_token'}, data={}, follow_redirects=True)
+    assert response.status_code == 200
+    assert len(json.loads(response.data)['activities']) == 1
+    assert json.loads(response.data)['activities'][0]['count'] == 3
+    assert json.loads(response.data)['activities'][0]['image'] == 'notification.png'
+    assert json.loads(response.data)['activities'][0]['readable_text'] == '3 users have joined'
