@@ -8,7 +8,7 @@ from StringIO import StringIO
 import pytest
 
 from application import app
-from models import db, Client, Token
+from models import db, Client, Token, Candidate
 db.init_app(app)
 
 APP = app.test_client()
@@ -40,12 +40,20 @@ def db_fill(request):
     db.session.commit()
 
     def fin():
-        test_client = Client.query.filter_by(client_id='fakeclient').first()
-        test_token = Token.query.filter_by(client_id='fakeclient').first()
-        db.session.delete(test_token)
+        created_test_client = Client.query.filter_by(client_id='fakeclient').first()
+        created_test_token = Token.query.filter_by(client_id='fakeclient').first()
+        db.session.delete(created_test_token)
         db.session.commit()
-        db.session.delete(test_client)
+        db.session.delete(created_test_client)
         db.session.commit()
+        v13_pdf_candidate = Candidate.query.filter_by(formattedName='BRUCE PARKEY').first()
+        v15_pdf_candidate = Candidate.query.filter_by(formattedName='MARK GREENE').first()
+        large_jpg_candidate = Candidate.query.filter_by(formattedName='Marion Roberson').first()
+        if v15_pdf_candidate: db.session.delete(v15_pdf_candidate)
+        if v13_pdf_candidate: db.session.delete(v13_pdf_candidate)
+        if large_jpg_candidate: db.session.delete(large_jpg_candidate)
+        db.session.commit()
+
     request.addfinalizer(fin)
 
 
@@ -74,6 +82,8 @@ def test_doc_by_post(db_fill):
     assert json_obj['addresses'][0] == DOC_DICT
     assert len(json_obj['educations']) == 3
     assert len(json_obj['work_experiences']) == 7
+    doc_db_record = Candidate.query.filter_by(formattedName='VEENA NITHOO').first()
+    assert not doc_db_record
     keys_formatted_test(json_obj)
 
 
@@ -104,11 +114,13 @@ def test_v13_pdf_from_fp_key(db_fill):
 
 def test_v15_pdf_by_post(db_fill):
     """Test that v1.5 pdf files can be posted."""
-    json_obj = json.loads(fetch_resume_post_response('test_bin.pdf'))['candidate']
+    json_obj = json.loads(fetch_resume_post_response('test_bin.pdf', create_mode='True'))['candidate']
     assert json_obj['full_name'] == 'MARK GREENE'
     assert json_obj['emails'][0]['address'] == 'techguymark@yahoo.com'
     assert len(json_obj['educations']) == 1
     assert len(json_obj['work_experiences']) == 15
+    v15_pdf_candidate = Candidate.query.filter_by(formattedName='MARK GREENE').first()
+    assert v15_pdf_candidate is not None
     keys_formatted_test(json_obj)
 
 
@@ -123,10 +135,12 @@ def test_v14_pdf_by_post(db_fill):
 
 def test_v13_pdf_by_post(db_fill):
     """Test that v1.5 pdf files can be posted."""
-    json_obj = json.loads(fetch_resume_post_response('test_bin_13.pdf'))['candidate']
+    json_obj = json.loads(fetch_resume_post_response('test_bin_13.pdf', create_mode='True'))['candidate']
     assert json_obj['full_name'] == 'BRUCE PARKEY'
     assert json_obj['emails'][0]['address'] == 'bparkey@sagamoreapps.com'
     assert len(json_obj['work_experiences']) == 3
+    v13_pdf_candidate = Candidate.query.filter_by(formattedName='BRUCE PARKEY').first()
+    assert v13_pdf_candidate is not None
     keys_formatted_test(json_obj)
 
 
@@ -150,12 +164,14 @@ def test_jpg_by_post(db_fill):
 
 def test_2448_3264_jpg_by_post(db_fill):
     """Test that img files can be posted."""
-    json_obj = json.loads(fetch_resume_post_response('2448_3264.jpg'))['candidate']
+    json_obj = json.loads(fetch_resume_post_response('2448_3264.jpg', create_mode='True'))['candidate']
     assert json_obj['full_name'] == 'Marion Roberson'
     assert json_obj['emails'][0]['address'] == 'MarionR3@Knology.net'
     assert len(json_obj['educations']) == 0
     # Parser incorrectly guesses 7, 4 + 3 of the bullet points.
     # assert len(json_obj['work_experiences']) == 4
+    large_jpg_candidate = Candidate.query.filter_by(formattedName='Marion Roberson').first()
+    assert large_jpg_candidate is not None
     keys_formatted_test(json_obj)
 
 
@@ -176,14 +192,15 @@ def test_invalid_token_fails(db_fill):
     assert 'error' in json_obj
 
 
-def fetch_resume_post_response(file_name):
+def fetch_resume_post_response(file_name, create_mode=''):
     """Posts file to local test auth server for json formatted resumes."""
     current_dir = os.path.dirname(__file__)
     with open(os.path.join(current_dir, 'test_resumes/{}'.format(file_name))) as raw_file:
         resume_file = raw_file.read()
     response = APP.post('/parse_resume', headers={'Authorization': 'Bearer fooz'}, data=dict(
         resume_file=(StringIO(resume_file), file_name),
-        resume_file_name=file_name
+        resume_file_name=file_name,
+        create_candidate=create_mode,
     ), follow_redirects=True)
     return response.data
 
