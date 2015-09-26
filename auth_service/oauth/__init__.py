@@ -13,7 +13,7 @@ logger = app.config['LOGGER']
 db.init_app(app)
 db.app = app
 
-db.metadata.reflect(db.engine, only=['user'])
+# db.metadata.reflect(db.engine, only=['user'])
 
 gt_oauth.init_app(app)
 
