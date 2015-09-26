@@ -34,10 +34,13 @@ def db_fill(request):
     test_client = Client(client_id='fakeclient', client_secret='s00pers3kr37')
     test_token = Token(client_id='fakeclient', user_id=1, token_type='bearer', access_token='fooz',
                        refresh_token='barz', expires=datetime.datetime(2050, 4, 26))
-    db.session.add(test_client)
-    db.session.commit()
-    db.session.add(test_token)
-    db.session.commit()
+    try:
+        db.session.add(test_client)
+        db.session.commit()
+        db.session.add(test_token)
+        db.session.commit()
+    except Exception:  # TODO This is to handle 'Duplicate entry' MySQL errors. We should instead check for existing Client/Token before inserting
+        pass
 
     def fin():
         test_client = Client.query.filter_by(client_id='fakeclient').first()
@@ -68,7 +71,7 @@ def test_doc_from_fp_key(db_fill):
 
 def test_doc_by_post(db_fill):
     """Test that .doc files that are posted to the end point can be parsed."""
-    json_obj = json.loads(fetch_resume_post_response('test_bin.docx'))['candidate']
+    json_obj = fetch_resume_post_response('test_bin.docx')['candidate']
     assert json_obj['full_name'] == 'VEENA NITHOO'
     assert len(json_obj['addresses']) == 1
     assert json_obj['addresses'][0] == DOC_DICT
@@ -104,7 +107,7 @@ def test_v13_pdf_from_fp_key(db_fill):
 
 def test_v15_pdf_by_post(db_fill):
     """Test that v1.5 pdf files can be posted."""
-    json_obj = json.loads(fetch_resume_post_response('test_bin.pdf'))['candidate']
+    json_obj = fetch_resume_post_response('test_bin.pdf')['candidate']
     assert json_obj['full_name'] == 'MARK GREENE'
     assert json_obj['emails'][0]['address'] == 'techguymark@yahoo.com'
     assert len(json_obj['educations']) == 1
@@ -114,7 +117,7 @@ def test_v15_pdf_by_post(db_fill):
 
 def test_v14_pdf_by_post(db_fill):
     """Test that v1.5 pdf files can be posted."""
-    json_obj = json.loads(fetch_resume_post_response('test_bin_14.pdf'))['candidate']
+    json_obj = fetch_resume_post_response('test_bin_14.pdf')['candidate']
     # Currently fails with email in footer of both pages.
     # assert json_obj['emails'][0]['address'] == 'jlchavez@telus.net'
     assert len(json_obj['work_experiences']) == 4
@@ -123,7 +126,7 @@ def test_v14_pdf_by_post(db_fill):
 
 def test_v13_pdf_by_post(db_fill):
     """Test that v1.5 pdf files can be posted."""
-    json_obj = json.loads(fetch_resume_post_response('test_bin_13.pdf'))['candidate']
+    json_obj = fetch_resume_post_response('test_bin_13.pdf')['candidate']
     assert json_obj['full_name'] == 'BRUCE PARKEY'
     assert json_obj['emails'][0]['address'] == 'bparkey@sagamoreapps.com'
     assert len(json_obj['work_experiences']) == 3
@@ -141,16 +144,25 @@ def test_jpg_from_fp_key(db_fill):
 
 def test_jpg_by_post(db_fill):
     """Test that img files can be posted."""
-    json_obj = json.loads(fetch_resume_post_response('test_bin.jpg'))['candidate']
+    json_obj = fetch_resume_post_response('test_bin.jpg')['candidate']
     assert json_obj['full_name'] == 'Erik D Farmer'
     assert len(json_obj['educations']) == 2
     assert len(json_obj['work_experiences']) == 2
     keys_formatted_test(json_obj)
 
 
+def test_pdf_14_of_image_alyson_peters(db_fill):
+    """Test that PDFs of image files can be posted."""
+    json_obj = fetch_resume_post_response('pdf_14_of_image_alyson_peters.pdf')['candidate']
+    assert json_obj.get('full_name') == 'Alyson Peters'
+    # assert len(json_obj['educations']) == 2
+    # assert len(json_obj['work_experiences']) == 2
+    keys_formatted_test(json_obj)
+
+
 def test_2448_3264_jpg_by_post(db_fill):
     """Test that img files can be posted."""
-    json_obj = json.loads(fetch_resume_post_response('2448_3264.jpg'))['candidate']
+    json_obj = fetch_resume_post_response('image_2448_3264_alyson_peters.jpg')['candidate']
     assert json_obj['full_name'] == 'Marion Roberson'
     assert json_obj['emails'][0]['address'] == 'MarionR3@Knology.net'
     assert len(json_obj['educations']) == 0
@@ -185,7 +197,9 @@ def fetch_resume_post_response(file_name):
         resume_file=(StringIO(resume_file), file_name),
         resume_file_name=file_name
     ), follow_redirects=True)
-    return response.data
+    json_response = json.loads(response.data)
+    print "POST /parse_resume (resume_file=..., resume_file_name=%s): \n%s" % (file_name, json.dumps(json_response, indent=4))
+    return json_response
 
 
 def fetch_resume_fp_key_response(fp_key):
@@ -193,7 +207,9 @@ def fetch_resume_fp_key_response(fp_key):
     with APP as c:
         test_response = c.post('/parse_resume', headers={'Authorization': 'Bearer fooz'},
                                data=dict(filepicker_key=fp_key))
-    return json.loads(test_response.data)
+    json_response = json.loads(test_response.data)
+    print "POST /parse_resume (filepicker_key=%s): \n%s" % (fp_key, json.dumps(json_response, indent=4))
+    return json_response
 
 
 def keys_formatted_test(json_obj):

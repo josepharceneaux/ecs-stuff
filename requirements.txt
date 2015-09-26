@@ -32,6 +32,7 @@ python-magic==0.4.6
 reportlab==3.2.0
 six==1.9.0
 xhtml2pdf==0.0.6
+libmagic
 
 loggly-handler==0.1.2
 loggly==0.1.5

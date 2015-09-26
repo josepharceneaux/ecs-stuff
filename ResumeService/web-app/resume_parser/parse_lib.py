@@ -40,9 +40,10 @@ def parse_resume(file_obj, filename_str, is_test_parser=False):
     file_ext = basename(splitext(filename_str.lower())[-1]) if filename_str else ""
 
     if not file_ext.startswith("."):
+        # Make sure file_ext begins with a .
         file_ext = ".{}".format(file_ext)
 
-    image_formats = ['pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
+    image_formats = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
                      '.pcx', '.jp2', '.jpc', '.jb2', '.djvu', '.djv']
     doc_formats = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
 
@@ -104,11 +105,11 @@ def parse_resume(file_obj, filename_str, is_test_parser=False):
         )
 
     encoded_resume = base64.b64encode(doc_content)
-    xml_text = parse_resume_with_bg(filename_str + final_file_ext, encoded_resume)
-    if xml_text:
-        candidate_data = parse_xml(xml_text)
+    bg_response_dict = parse_resume_with_bg(filename_str + final_file_ext, encoded_resume)
+    if bg_response_dict:
+        candidate_data = parse_xml_into_candidate_dict(bg_response_dict)
+        candidate_data['dice_api_response'] = bg_response_dict
         return candidate_data
-
     else:
         return dict(error='No XML text')
 
@@ -196,7 +197,7 @@ def convert_pdf_to_text(pdf_file_obj):
     return text
 
 
-def parse_xml(json_text):
+def parse_xml_into_candidate_dict(json_text):
     rawxml = bs4(json_text['rawXML'], 'lxml')
 
     first_name, middle_name, last_name = "Unknown", "", "Unknown"

@@ -1,3 +1,4 @@
+# coding=utf-8
 import requests
 
 from flask import current_app
@@ -6,6 +7,13 @@ from resume_parser.app_constants import Constants as current
 
 
 def parse_resume_with_bg(file_name, file_data):
+    """
+
+    :return: dict containing rawXML (the HR-XML from BurningGlass) as well as other fields provided by Dice Data Science™
+    :rtype: dict[str, T]
+    """
+
+
     # Call Dice API with cached BurningGlass access token
     url = 'https://api.dice.com/profiles/resume/parse'
     try:

@@ -56,6 +56,10 @@ def parse_file_picker_resume():
         return jsonify({'error': 'Invalid query params'}), 400
 
     result_dict = parse_resume(file_obj=resume_file, filename_str=filename_str)
+    dice_api_response = result_dict.get('dice_api_response')
+    if dice_api_response:
+        # dice_api_response should be a top-level response, not part of the Candidate object
+        del result_dict['dice_api_response']
     email_present = True if result_dict.get('emails') else False
     if create_candidate:
         if email_present:
@@ -65,8 +69,7 @@ def parse_file_picker_resume():
             return jsonify(**{'error': {'code': 3, 'message': 'Parsed resume did not have email',
                                         'candidate': result_dict}}), 400
 
-
-    return jsonify(**{'candidate':result_dict})
+    return jsonify(**{'candidate': result_dict, 'dice_api_response': dice_api_response})
 
 
 if __name__ == '__main__':
