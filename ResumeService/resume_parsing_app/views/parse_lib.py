@@ -1,3 +1,5 @@
+"""Main resume parsing logic & functions."""
+
 from cStringIO import StringIO
 from os.path import basename
 from os.path import splitext

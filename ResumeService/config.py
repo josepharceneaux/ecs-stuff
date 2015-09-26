@@ -1,3 +1,5 @@
+"""Application config file."""
+
 __author__ = 'erikfarmer'
 
 import os

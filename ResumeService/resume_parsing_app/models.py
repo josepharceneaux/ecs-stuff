@@ -1,7 +1,8 @@
 __author__ = 'erik-farmer'
 
-from application import app
 from flask.ext.sqlalchemy import SQLAlchemy
+
+from . import app
 
 db = SQLAlchemy(app)
 db.metadata.reflect(db.engine)

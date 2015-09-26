@@ -7,8 +7,8 @@ from StringIO import StringIO
 
 import pytest
 
-from application import app
-from models import db, Client, Token
+from resume_parsing_app import app
+from resume_parsing_app.models import db, Client, Token
 db.init_app(app)
 
 APP = app.test_client()
