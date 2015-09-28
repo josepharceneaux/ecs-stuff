@@ -11,7 +11,6 @@ Flask-SQLAlchemy==2.0
 mysql-python==1.2.5
 Jinja2==2.8
 Flask-Migrate
-werkzeug==0.10.4
 flask-restful
 IPython
 pytest
