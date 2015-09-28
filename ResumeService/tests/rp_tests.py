@@ -87,7 +87,7 @@ def test_v15_pdf_from_fp_key(db_fill):
 
 
 def test_v14_pdf_from_fp_key(db_fill):
-    """Test that v1.5 pdf files from S3 can be parsed."""
+    """Test that v1.4 pdf files from S3 can be parsed."""
     json_obj = fetch_resume_fp_key_response('test_bin_14.pdf')['candidate']
     # doesnt get good name data back
     assert len(json_obj['work_experiences']) == 4
@@ -95,7 +95,7 @@ def test_v14_pdf_from_fp_key(db_fill):
 
 
 def test_v13_pdf_from_fp_key(db_fill):
-    """Test that v1.5 pdf files from S3 can be parsed."""
+    """Test that v1.3 pdf files from S3 can be parsed."""
     json_obj = fetch_resume_fp_key_response('test_bin_13.pdf')['candidate']
     assert json_obj['full_name'] == 'BRUCE PARKEY'
     assert len(json_obj['work_experiences']) == 3
@@ -113,7 +113,7 @@ def test_v15_pdf_by_post(db_fill):
 
 
 def test_v14_pdf_by_post(db_fill):
-    """Test that v1.5 pdf files can be posted."""
+    """Test that v1.4 pdf files can be posted."""
     json_obj = json.loads(fetch_resume_post_response('test_bin_14.pdf'))['candidate']
     # Currently fails with email in footer of both pages.
     # assert json_obj['emails'][0]['address'] == 'jlchavez@telus.net'
@@ -122,7 +122,7 @@ def test_v14_pdf_by_post(db_fill):
 
 
 def test_v13_pdf_by_post(db_fill):
-    """Test that v1.5 pdf files can be posted."""
+    """Test that v1.3 pdf files can be posted."""
     json_obj = json.loads(fetch_resume_post_response('test_bin_13.pdf'))['candidate']
     assert json_obj['full_name'] == 'BRUCE PARKEY'
     assert json_obj['emails'][0]['address'] == 'bparkey@sagamoreapps.com'
@@ -131,7 +131,7 @@ def test_v13_pdf_by_post(db_fill):
 
 
 def test_jpg_from_fp_key(db_fill):
-    """Test that v1.5 pdf files from S3 can be parsed."""
+    """Test that jpg files from S3 can be parsed."""
     json_obj = fetch_resume_fp_key_response('test_bin.jpg')['candidate']
     assert json_obj['full_name'] == 'Erik D Farmer'
     assert len(json_obj['educations']) == 2
@@ -140,7 +140,7 @@ def test_jpg_from_fp_key(db_fill):
 
 
 def test_jpg_by_post(db_fill):
-    """Test that img files can be posted."""
+    """Test that jpg files can be posted."""
     json_obj = json.loads(fetch_resume_post_response('test_bin.jpg'))['candidate']
     assert json_obj['full_name'] == 'Erik D Farmer'
     assert len(json_obj['educations']) == 2
@@ -149,7 +149,7 @@ def test_jpg_by_post(db_fill):
 
 
 def test_2448_3264_jpg_by_post(db_fill):
-    """Test that img files can be posted."""
+    """Test that large jpgs files can be posted."""
     json_obj = json.loads(fetch_resume_post_response('2448_3264.jpg'))['candidate']
     assert json_obj['full_name'] == 'Marion Roberson'
     assert json_obj['emails'][0]['address'] == 'MarionR3@Knology.net'
