@@ -1,12 +1,34 @@
-__author__ = 'ufarooqi'
-
-from oauth import db
-from oauth import logger
-from modules.handy_functions import is_number
+from models import db
+from sqlalchemy.orm import relationship
+import datetime
+from auth_service.oauth import logger
+from auth_service.oauth.modules.handy_functions import is_number
+import datetime
 
 
 class User(db.Model):
-    __table__ = db.Model.metadata.tables['user']
+    __tablename__ = 'user'
+    id = db.Column(db.Integer, primary_key=True)
+    domain_id = db.Column('domainId', db.Integer, db.ForeignKey('domain.id')) #TODO: declare column names as displayed on local_staging
+    email = db.Column(db.String(60), unique=True, nullable=False)
+    password = db.Column(db.String(512))
+    device_token = db.Column('deviceToken', db.String(64))
+    expiration = db.Column(db.DateTime)
+    mobile_version = db.Column('mobileVersion', db.String(10))
+    default_culture_id = db.Column('defaultCultureId', db.Integer, db.ForeignKey('culture.id'))
+    phone = db.Column(db.String(50))
+    get_started_data = db.Column('getStartedData', db.String(127))
+    registration_key = db.Column(db.String(512))
+    reset_password_key = db.Column(db.String(512))
+    registration_id = db.Column(db.String(512))
+    name = db.Column(db.String(127))
+    first_name = db.Column('firstName', db.String(255))
+    last_name = db.Column('lastName', db.String(255))
+    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
+    updated_time = db.Column('updatedTime', db.DateTime)
+    dice_user_id = db.Column('diceUserId', db.Integer)
+
+    candidates = db.relationship('Candidate')
 
     def is_authenticated(self):
         return True
@@ -20,9 +42,29 @@ class User(db.Model):
     def get_id(self):
         return unicode(self.id)
 
+    def __repr__(self):
+        return "<email (email=' %r')>" % self.email
+
 
 class Domain(db.Model):
-    __table__ = db.Model.metadata.tables['domain']
+    __tablename__ = 'domain'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50))
+    usage_limitation = db.Column('usageLimitation', db.Integer)
+    expiration = db.Column(db.DateTime)
+    added_time = db.Column('addedTime', db.DateTime)
+    organization_id = db.Column('organizationId', db.Integer)
+    is_fair_check_on = db.Column('isFairCheckOn', db.Boolean, default=False)
+    is_active = db.Column('isActive', db.Boolean, default=True)  # TODO: store as 0 or 1
+    default_tracking_code = db.Column('defaultTrackingCode', db.SmallInteger)
+    default_culture_id = db.Column('defaultCultureId', db.Integer, default=1)
+    default_from_name = db.Column('defaultFromName', db.String(255))
+    settings_json = db.Column('settingsJson', db.Text)
+    updated_time = db.Column()
+
+    def __init__(self):
+        self.is_active = 1 if True else 0
+        self.is_fair_check_on = 1 if True else 0
 
     def get_id(self):
         return unicode(self.id)
@@ -216,11 +258,3 @@ class UserScopedRoles(db.Model):
         """
         user_scoped_roles = UserScopedRoles.query.filter_by(userId=user_id).all() or []
         return dict(roles=[user_scoped_role.roleId for user_scoped_role in user_scoped_roles])
-
-
-
-
-
-
-
-

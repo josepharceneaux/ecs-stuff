@@ -1,11 +1,16 @@
 getTalent Flask Micro Services
 ==============================
 
-AuthService
+Auth Service
 -----------
-[README](AuthService/README.md)
+[README](auth_service/README.md)
 
 
-ResumeService
+Resume Service
 -------------
-[README](ResumeService/README.md)
+[README](resume_service/README.md)
+
+
+Event Service
+-------------
+[README](event_service/README.md)

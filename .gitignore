@@ -48,7 +48,7 @@ crashlytics-build.properties
 
 
 ### talent-flask-services Specific Files to exclude
-ResumeService/Dockertest
+resume_service/Dockertest
 
 
 ### Python template
@@ -113,3 +113,9 @@ docs/_build/
 target/
 
 *.DS_STORE
+
+
+### Redis template
+# Ignore redis binary dump (dump.rdb) files
+
+*.rdb

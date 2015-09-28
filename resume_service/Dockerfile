@@ -3,8 +3,6 @@ MAINTAINER Erik Farmer <erik@gettalent.com>
 
 WORKDIR /root
 ADD . ResumeParser
-ADD requirements.txt ResumeParser/requirements.txt
-ADD ansible/talent-uwsgi.ini ResumeParser/talent-uwsgi.ini
 
 ADD ansible/container-bootstrap.yml /srv/ansible/container-bootstrap.yml
 WORKDIR /srv/ansible
