@@ -9,18 +9,19 @@
     - name: install basic packages
       apt: pkg={{ item }} update_cache=yes cache_valid_time=3600
       with_items:
-        - curl
-        - wget
         - build-essential
-        - libssl-dev
+        - curl
         - gcc
-        - make
-        - zlib1g-dev
         - libbz2-dev
+        - libmysqlclient-dev
         - libreadline-dev
+        - libssl-dev
         - libxml2-dev
         - libxslt-dev
+        - make
         - nginx
+        - wget
+        - zlib1g-dev
     - name: install Python and Basic Tools
       apt: pkg={{ item }} update_cache=yes cache_valid_time=3600
       with_items:
@@ -29,7 +30,7 @@
         - python-distribute
         - python-pip
         - python-setuptools
-        - software-properties-common
         - python-software-properties
+        - software-properties-common
     - name: install requirements.txt
       pip: requirements="{{ project_path }}/{{ project_requirements }}"
