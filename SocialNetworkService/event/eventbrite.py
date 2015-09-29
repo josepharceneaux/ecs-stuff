@@ -4,7 +4,7 @@ import json
 from base import EventBase
 from datetime import datetime
 from datetime import timedelta
-from gt_common.gt_models.event import Event
+from gt_common.models.event import Event
 
 from SocialNetworkService.custom_exections import EventNotCreated
 from SocialNetworkService.custom_exections import TicketsNotCreated

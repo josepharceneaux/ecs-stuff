@@ -12,8 +12,8 @@ import logging
 import datetime
 from requests_oauthlib import OAuth2Session
 
-from gt_common.gt_models.user import User
-from gt_common.gt_models.social_network import SocialNetwork
+from gt_common.models.user import User
+from gt_common.models.social_network import SocialNetwork
 
 
 logger = logging.getLogger('event_service.app')

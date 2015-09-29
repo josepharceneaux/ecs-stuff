@@ -2,7 +2,7 @@
 import json
 from datetime import datetime
 from datetime import timedelta
-from gt_common.gt_models.event import Event
+from gt_common.models.event import Event
 from SocialNetworkService.utilities import http_request
 from SocialNetworkService.utilities import milliseconds_since_epoch
 from SocialNetworkService.utilities import milliseconds_since_epoch_to_dt

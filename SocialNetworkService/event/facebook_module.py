@@ -2,7 +2,7 @@
 import requests
 from datetime import datetime, timedelta
 import facebook
-from gt_common.gt_models.event import Event
+from gt_common.models.event import Event
 from SocialNetworkService.event.base import EventBase
 
 class FacebookEvent(EventBase):
