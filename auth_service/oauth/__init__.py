@@ -13,11 +13,9 @@ logger = app.config['LOGGER']
 db.init_app(app)
 db.app = app
 
-# db.metadata.reflect(db.engine, only=['user'])
-
 gt_oauth.init_app(app)
 
-from auth_service.oauth import views
+import views
 
 db.create_all()
 db.session.commit()

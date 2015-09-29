@@ -1,15 +1,16 @@
 from models import db
 from sqlalchemy.orm import relationship
-import datetime
 from auth_service.oauth import logger
+from candidate import Candidate
 from auth_service.oauth.modules.handy_functions import is_number
+import time
 import datetime
 
 
 class User(db.Model):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
-    domain_id = db.Column('domainId', db.Integer, db.ForeignKey('domain.id')) #TODO: declare column names as displayed on local_staging
+    domain_id = db.Column('domainId', db.Integer, db.ForeignKey('domain.id'))
     email = db.Column(db.String(60), unique=True, nullable=False)
     password = db.Column(db.String(512))
     device_token = db.Column('deviceToken', db.String(64))
@@ -28,7 +29,9 @@ class User(db.Model):
     updated_time = db.Column('updatedTime', db.DateTime)
     dice_user_id = db.Column('diceUserId', db.Integer)
 
-    candidates = db.relationship('Candidate')
+    # One-to-many Relationships; i.e. User has many:
+    candidates = relationship('Candidate', backref='user')
+    public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
 
     def is_authenticated(self):
         return True
@@ -46,6 +49,49 @@ class User(db.Model):
         return "<email (email=' %r')>" % self.email
 
 
+class Culture(db.Model):
+    __tablename__ = 'culture'
+    id = db.Column(db.Integer, primary_key=True)
+    description = db.Column('Description', db.String(50))
+    code = db.Column(db.String(5), unique=True)
+
+    # One-to-many Relationships
+    candidates = db.relationship('Candidate')
+
+    def __repr__(self):
+        return "<Culture (description=' %r')>" % self.description
+
+
+class Organization(db.Model):
+    __tablename__ = 'organization'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column('Name', db.String(500), unique=True)
+    notes = db.Column('Notes', db.String(1000))
+
+    def __repr__(self):
+        return "<Organization (name=' %r')>" % self.name
+
+
+class Product(db.Model):
+    __tablename__ = 'product'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column('Name', db.String(100))
+    notes = db.Column('Notes', db.String(500))
+    updated_time = db.Column('UpdatedTime', db.DateTime, default=time.time())
+
+    def __repr__(self):
+        return "<Product (name=' %r')>" % self.name
+
+
+class Country(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column('Name', db.String(100), nullable=False)
+    code = db.Column('Code', db.String(20), nullable=False)
+
+    def __repr__(self):
+        return "<Country (name=' %r')>" % self.name
+
+
 class Domain(db.Model):
     __tablename__ = 'domain'
     id = db.Column(db.Integer, primary_key=True)
@@ -60,11 +106,10 @@ class Domain(db.Model):
     default_culture_id = db.Column('defaultCultureId', db.Integer, default=1)
     default_from_name = db.Column('defaultFromName', db.String(255))
     settings_json = db.Column('settingsJson', db.Text)
-    updated_time = db.Column()
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
-    def __init__(self):
-        self.is_active = 1 if True else 0
-        self.is_fair_check_on = 1 if True else 0
+    candidate_sources = db.relationship('CandidateSource')
+    users = db.relationship('User')
 
     def get_id(self):
         return unicode(self.id)

@@ -4,8 +4,6 @@ import datetime
 import time
 
 
-#TODO: set length for integer inputs for domain_can_read & is_web_hidden, etc.
-#TODO: or int(True) == 1, int(False) == 0, and int() == False == 0;
 class Candidate(db.Model):
     __tablename__ = 'candidate'
     id = db.Column(db.Integer, primary_key=True)
@@ -13,7 +11,7 @@ class Candidate(db.Model):
     middle_name = db.Column('MiddleName', db.String(50))
     last_name = db.Column('LastName', db.String(50))
     formatted_name = db.Column('FormattedName', db.String(150))
-    status_id = db.Column('StatusId', db.Integer, db.ForeignKey('candidate_status.id'))
+    candidate_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('candidate_status.id'))
     is_dirty = db.Column('IsDirty', db.Boolean)
     is_web_hidden = db.Column('IsWebHidden', db.Boolean, default=False)
     is_mobile_hidden = db.Column('IsMobileHidden', db.Boolean, default=False)
@@ -23,7 +21,7 @@ class Candidate(db.Model):
     domain_can_write = db.Column('DomainCanWrite', db.Boolean, default=False)
     dice_social_profile_id = db.Column('DiceSocialProfileId', db.String(128))
     dice_profile_id = db.Column('DiceProfileId', db.String(128))
-    source_id = db.Column('sourceId', db.Integer, db.ForeignKey('candidate_source.id'))
+    candidate_source_id = db.Column('sourceId', db.Integer, db.ForeignKey('candidate_source.id'))
     source_product_id = db.Column('sourceProductId', db.Integer, db.ForeignKey('product.id'), nullable=False, default=2) # Web = 2
     filename = db.Column(db.String(100))
     objective = db.Column(db.Text)
@@ -31,6 +29,21 @@ class Candidate(db.Model):
     total_months_experience = db.Column('totalMonthsExperience', db.Integer)
     resume_text = db.Column('resumeText', db.Text)
     culture_id = db.Column('cultureId', db.Integer, db.ForeignKey('culture.id'), default=1)
+
+    # One-to-many Relationships; i.e. Candidate has many:
+    candidate_achievements = relationship('CandidateAchievement', backref='candidate')
+    candidate_phones = relationship('CandidatePhone', backref='candidate')
+    candidate_emails = relationship('CandidateEmail', backref='candidate')
+    candidate_photos = relationship('CandidatePhoto', backref='candidate')
+    candidate_text_comments = relationship('CandidateTextComment', backref='candidate')
+    voice_comments = relationship('VoiceComment', backref='candidate')
+    candidate_documents = relationship('CandidateDocument', backref='candidate')
+    candidate_work_preferences = relationship('CandidateWorkPreference', backref='candidate')
+    candidate_preferred_locations = relationship('CandidatePreferredLocation', backref='candidate')
+    candidate_social_network = relationship('CandidateSocialNetwork', backref='candidate')
+
+    # Many-to-many Relationships
+    # rating_tags = relationship('RatingTag', secondary=candidate_rating)
 
     def get_id(self):
         return unicode(self.id)
@@ -46,7 +59,7 @@ class CandidateAchievement(db.Model):
     issuing_authority = db.Column('IssuingAuthority', db.String(150))
     description = db.Column('Description', db.String(10000))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-    candidate_id = db.Column('CandidateId', db.Integer)
+    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
 
     def __repr__(self):
         return "<CandidateAchievement (description=' %r')>" % self.description
@@ -59,7 +72,8 @@ class CandidateStatus(db.Model):
     notes = db.Column('Notes', db.String(500))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
-    candidate = relationship('Candidate')
+    # One-to-many Relationships
+    candidates = relationship('Candidate', backref='candidate_status')
 
     def __repr__(self):
         return "<CandidateStatus(description=' %r')>" % (self.description)
@@ -70,6 +84,9 @@ class PhoneLabel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column('Description', db.String(20))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+
+    # One-to-many Relationships
+    candidate_phones = relationship('CandidatePhone', backref='phone_label')
 
     def __repr__(self):
         return "<PhoneLabel (description=' %r')>" % (self.description)
@@ -83,7 +100,8 @@ class CandidateSource(db.Model):
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
-    candidate = relationship('Candidate')
+    # One-to-many Relationships
+    candidates = relationship('Candidate', backref='candidate_source')
 
     def __repr__(self):
         return "<CandidateSource (description= '%r')>" % (self.description)
@@ -122,6 +140,9 @@ class EmailLabel(db.Model):
     description = db.Column('Description', db.String(50))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
+    # One-to-many Relationships
+    candidate_emails = relationship('CandidateEmail', backref='email_label')
+
     def __repr__(self):
         return "<EmailLabel (description=' %r')>" % (self.description)
 
@@ -148,16 +169,6 @@ class CandidatePhoto(db.Model):
         return "<CandidatePhoto (filename=' %r')>" % self.filename
 
 
-class RatingTag(db.Model):
-    __tablename__ = 'rating_tag'
-    id = db.Column(db.Integer, primary_key=True)
-    description = db.Column('Description', db.String(100))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-
-    def __repr__(self):
-        return "<RatingTag (desctiption=' %r')>" % self.description
-
-
 class CandidateRating(db.Model):
     __tablename__ = 'candidate_rating'
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'), primary_key=True)
@@ -165,6 +176,19 @@ class CandidateRating(db.Model):
     value = db.Column('Value', db.Integer, default=0)
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+
+
+class RatingTag(db.Model):
+    __tablename__ = 'rating_tag'
+    id = db.Column(db.Integer, primary_key=True)
+    description = db.Column('Description', db.String(100))
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+
+    # Many-to-many Relationship
+    candidates = relationship('Candidate', secondary="candidate_rating")
+
+    def __repr__(self):
+        return "<RatingTag (desctiption=' %r')>" % self.description
 
 
 class RatingTagUser(db.Model):
@@ -215,6 +239,9 @@ class SocialNetwork(db.Model):
     auth_url = db.Column('authUrl', db.String(200))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
+    # Relationships
+    candidate_social_networks = relationship('CandidateSocialNetwork', backref='social_network')
+
     def __repr__(self):
         return "<SocialNetwork (url=' %r')>" % self.url
 
@@ -258,18 +285,6 @@ class CandidatePreferredLocation(db.Model):
     region = db.Column(db.String(255))
     zipcode = db.Column(db.String(10))
 
-
-########################################################################################
-#            TODO: WEB2py Code That Must Be Translated Into Flask Code
-########################################################################################
-# class VoiceCommentUrlField(object):
-#     def url(self):
-#         import TalentS3
-#         return TalentS3.get_s3_url("VoiceComments", self.voice_comment.fileName)
-#
-#
-# db.voice_comment.candidateId.requires = IS_IN_DB(db, 'candidate.id', '%(formattedName)s')
-# db.voice_comment.virtualfields.append(VoiceCommentUrlField())
 
 
 
