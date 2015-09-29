@@ -108,6 +108,9 @@ class Domain(db.Model):
     settings_json = db.Column('settingsJson', db.Text)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
+    candidate_sources = db.relationship('CandidateSource')
+    users = db.relationship('User')
+
     def get_id(self):
         return unicode(self.id)
 
