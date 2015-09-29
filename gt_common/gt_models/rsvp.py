@@ -1,28 +1,27 @@
 from sqlalchemy import Column, Integer, String, DateTime, \
     ForeignKey, and_
-from sqlalchemy.orm import relationship
 from base import ModelBase as Base
 
 
 class RSVP(Base):
     __tablename__ = 'rsvp'
     id = Column(Integer, primary_key=True)
-    vendor_rsvp_id = Column(String(500))
+    vendor_rsvp_id = Column('vendorRsvpId', String(500))
     candidate_id = Column(Integer, ForeignKey("candidate.id"), nullable=False)
     event_id = Column(Integer, ForeignKey("event.id"), nullable=False)
     social_network_id = Column(Integer, ForeignKey("social_network.id"), nullable=False)
-    rsvp_status = Column(String(20))
-    rsvp_datetime = Column(DateTime)
-    payment_status = Column(String(20))
+    rsvp_status = Column('rsvpStatus', String(20))
+    rsvp_datetime = Column('rsvpDatetime', DateTime)
+    payment_status = Column('paymentStatus', String(20))
 
     def __repr__(self):
-        return '<RSVP %s>' % (self.vendor_rsvp_id)
+        return '<RSVP %s>' % self.vendor_rsvp_id
 
     @classmethod
     def get_by_vendor_rsvp_id_candidate_id_vendor_id_time(cls, vendor_rsvp_id,
-                                                      candidate_id,
-                                                      social_network_id,
-                                                      added_time):
+                                                          candidate_id,
+                                                          social_network_id,
+                                                          added_time):
         assert vendor_rsvp_id is not None
         assert candidate_id is not None
         assert social_network_id is not None
