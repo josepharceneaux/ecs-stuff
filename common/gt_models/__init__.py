@@ -1,3 +1,5 @@
+from common.gt_models import venue
+from common.gt_models import organizer
 from common.gt_models import social_network
 from common.gt_models import event
 from common.gt_models import candidate

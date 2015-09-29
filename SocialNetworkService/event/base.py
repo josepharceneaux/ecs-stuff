@@ -1,16 +1,18 @@
 
 from abc import ABCMeta, abstractmethod
 from SocialNetworkService.custom_exections import EventNotSaveInDb
-from SocialNetworkService.utilities import log_error
-from gt_common.gt_models.event import Event
-from gt_common.gt_models.user import User
-from gt_common.gt_models.user import UserCredentials
-from gt_common.gt_models.social_network import SocialNetwork
+from SocialNetworkService.utilities import get_message_to_log, log_error
+from gt_common.models.event import Event
+from gt_common.models.user import User
+from gt_common.models.user import UserCredentials
+from gt_common.models.social_network import SocialNetwork
+
 
 class EventBase(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, *args, **kwargs):
+
         self.events = []
         self.rsvps = []
         self.headers = kwargs['headers']
@@ -147,7 +149,8 @@ class EventBase(object):
                             'fileName': __file__,
                             'User': self.user.id
                         })
-            raise
+            raise EventNotSaveInDb('Error occurred while saving event in databse')
+
         return event.id
 
     def event_sn_to_gt_mapping(self, *args, **kwargs):

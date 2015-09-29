@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
-from common.gt_models.event import Event
+from gt_common.models.event import Event
 from base import RSVPBase
 from SocialNetworkService.utilities import http_request, Attendee, \
-    milliseconds_since_epoch_to_dt, log_exception, log_error
+    milliseconds_since_epoch_to_dt, log_exception, log_error, get_message_to_log
 
 
 class MeetupRsvp(RSVPBase):
@@ -11,10 +11,6 @@ class MeetupRsvp(RSVPBase):
     """
     def __init__(self, *args, **kwargs):
         super(MeetupRsvp, self).__init__(*args, **kwargs)
-        function_name = '__int__()'
-        self.message_to_log.update({'function_name': function_name,
-                                    'class_name': self.__class__.__name__,
-                                    'fileName': __file__})
         self.start_date = kwargs.get('start_date') or (datetime.now() - timedelta(days=90))
         self.end_date = kwargs.get('end_date') or (datetime.now() + timedelta(days=90))
         self.start_date_dt = self.start_date
@@ -26,13 +22,18 @@ class MeetupRsvp(RSVPBase):
         :param event:
         :return:
         """
+        function_name = 'get_rsvps()'
+        message_to_log = get_message_to_log(function_name=function_name,
+                                            class_name=self.__class__.__name__,
+                                            gt_user=self.user.name,
+                                            file_name=__file__)
         rsvps = []
         social_network_id = event.socialNetworkId
         assert social_network_id is not None
         events_url = self.api_url + '/rsvps/?sign=true&page=100'
         params = {'event_id': event.vendorEventId}
         response = http_request('GET', events_url, params=params, headers=self.headers,
-                                message_to_log=self.message_to_log)
+                                message_to_log=message_to_log)
         if response.ok:
             data = response.json()
             rsvps.extend(data['results'])
@@ -44,7 +45,7 @@ class MeetupRsvp(RSVPBase):
             while next_url:
                 # attach the key before sending the request
                 response = http_request('GET', next_url + '&sign=true',
-                                        message_to_log=self.message_to_log)
+                                        message_to_log=message_to_log)
                 if response.ok:
                     data = response.json()
                     rsvps.extend(data['results'])
@@ -86,15 +87,16 @@ class MeetupRsvp(RSVPBase):
         :param rsvp:
         :return:
         """
-        self.message_to_log.update({"functionName": "get_attendee()",
-                                    'user': self.user_credentials.user.firstName
-                                            + ' '
-                                            + self.user_credentials.user.lastName})
+        function_name = 'get_attendee()'
+        message_to_log = get_message_to_log(function_name=function_name,
+                                            class_name=self.__class__.__name__,
+                                            gt_user=self.user.name,
+                                            file_name=__file__)
         events_url = self.api_url + '/member/' \
                      + str(rsvp['member']['member_id']) \
                      + '?sign=true'
         response = http_request('GET', events_url, headers=self.headers,
-                                message_to_log=self.message_to_log)
+                                message_to_log=message_to_log)
         attendee = None
         if response.ok:
             try:
@@ -111,7 +113,7 @@ class MeetupRsvp(RSVPBase):
                 attendee.country = data['country']
                 attendee.profile_url = data['link']
                 # attendee.picture_url = data['photo']['photo_link']
-                attendee.gt_user_id = self.gt_user_id
+                attendee.gt_user_id = self.user.id
                 attendee.social_network_id = self.social_network_id
                 attendee.rsvp_status = rsvp['response']
                 attendee.vendor_rsvp_id = rsvp['rsvp_id']
@@ -126,16 +128,16 @@ class MeetupRsvp(RSVPBase):
                 attendee.added_time = dt
                 assert vendor_event_id is not None
                 event = Event.get_by_user_id_social_network_id_vendor_event_id(
-                    self.gt_user_id, self.social_network_id, vendor_event_id)
+                    self.user.id, self.social_network_id, vendor_event_id)
                 if event:
                     attendee.event = event
                 else:
                     error_message = 'Event is not present in db, VendorEventId is %s' \
                                     % vendor_event_id
-                    self.message_to_log.update({'error': error_message})
-                    log_error(self.message_to_log)
+                    message_to_log.update({'error': error_message})
+                    log_error(message_to_log)
             except Exception as e:
                 error_message = e.message
-                self.message_to_log.update({'error': error_message})
-                log_exception(self.message_to_log)
+                message_to_log.update({'error': error_message})
+                log_exception(message_to_log)
             return attendee

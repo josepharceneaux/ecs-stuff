@@ -3,8 +3,8 @@
 """
 import requests
 import json
-from common.gt_models.social_network import SocialNetwork
-from common.gt_models.user import UserCredentials
+from gt_common.models.social_network import SocialNetwork
+from gt_common.models.user import UserCredentials
 
 
 def test_subscribed_social_network(user, client, base_url, auth_data):

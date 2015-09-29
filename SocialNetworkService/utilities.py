@@ -12,8 +12,8 @@ import logging
 import datetime
 from requests_oauthlib import OAuth2Session
 
-from gt_common.gt_models.user import User
-from gt_common.gt_models.social_network import SocialNetwork
+from gt_common.models.user import User
+from gt_common.models.social_network import SocialNetwork
 
 
 logger = logging.getLogger('event_service.app')
@@ -94,50 +94,6 @@ def authenticate_user(request):
             return None
     else:
         return None
-
-
-class EventInputMissing(Exception):
-    pass
-
-
-class EventNotSaved(Exception):
-    pass
-
-
-class EventNotCreated(Exception):
-    pass
-
-
-class EventNotPublished(Exception):
-    pass
-
-
-class EventNotUnpublished(Exception):
-    pass
-
-
-class EventLocationNotCreated(Exception):
-    pass
-
-
-class TicketsNotCreated(Exception):
-    pass
-
-
-class EventNotSaveInDb(Exception):
-    pass
-
-
-class UserCredentialsNotFound(Exception):
-    pass
-
-
-class SocialNetworkNotImplemented(Exception):
-    pass
-
-
-class InvalidAccessToken(Exception):
-    pass
 
 
 def get_message_to_log(gt_user='', function_name='', error='', class_name='', file_name=''):
@@ -331,7 +287,7 @@ def convert_keys_to_snake_case(dictionary):
     return data
 
 
-def import_non_local(name, custom_name=None):
+def import_from_dist_packages(name, custom_name=None):
     """
     This function is used to import facebook-sdk module rather than local
     module named as facebook

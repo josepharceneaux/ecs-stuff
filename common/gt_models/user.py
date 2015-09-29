@@ -26,10 +26,12 @@ class User(Base):
 
     user_credentials = relationship('UserCredentials', backref='user')
     candidate = relationship('Candidate', backref='user')
-    events = relationship('Event', backref='user')
+    events = relationship('Event', backref='user', lazy='dynamic')
+    organizers = relationship('Organizer', backref='user', lazy='dynamic')
+    venues = relationship('Venue', backref='user', lazy='dynamic')
 
     def __repr__(self):
-        return '<User %r>' % (self.email)
+        return '<User %r>' % self.email
 
 
 class UserCredentials(Base):
@@ -37,7 +39,7 @@ class UserCredentials(Base):
     id = Column(Integer, primary_key=True)
     userId = Column(Integer, ForeignKey('user.id'), nullable=False)
     socialNetworkId = Column(Integer, ForeignKey('social_network.id'), nullable=False)
-    accessToken = Column(String(1000))
+    access_token = Column('accessToken', String(1000))
     refreshToken = Column(String(1000))
     webhook = Column(String(100))
     memberId = Column(String(200))

@@ -1,21 +1,21 @@
 import os
 import pytest
 from SocialNetworkService.manager import process_event, delete_events
-from common.gt_models.client import Client
-from common.gt_models.client import Token
+from gt_common.models.client import Client
+from gt_common.models.client import Token
 import datetime
 import requests
 
 from SocialNetworkService.app import app as _app
-from common.gt_models.config import init_db, db_session
+from gt_common.models.config import init_db, db_session
 from werkzeug.security import generate_password_hash
 from werkzeug.security import gen_salt
-from common.gt_models.event import Event
-from common.gt_models.social_network import SocialNetwork
-from common.gt_models.user import User
-from common.gt_models.domain import Domain
-from common.gt_models.culture import Culture
-from common.gt_models.organization import Organization
+from gt_common.models.event import Event
+from gt_common.models.social_network import SocialNetwork
+from gt_common.models.user import User
+from gt_common.models.domain import Domain
+from gt_common.models.culture import Culture
+from gt_common.models.organization import Organization
 from mixer._faker import faker
 from mixer.backend.sqlalchemy import Mixer
 

@@ -1,10 +1,13 @@
 
 import requests
 from datetime import datetime, timedelta
+from SocialNetworkService.utilities import get_message_to_log, log_exception
 import facebook
-from gt_common.gt_models.event import Event
+
 from SocialNetworkService.utilities import log_error
+from gt_common.models.event import Event
 from SocialNetworkService.event.base import EventBase
+
 
 class FacebookEvent(EventBase):
     def __init__(self, *args, **kwargs):
@@ -43,11 +46,12 @@ class FacebookEvent(EventBase):
             #
             # )
         except facebook.GraphAPIError as error:
-            print error.message
-            # info_to_log = dict(error_message=error.message)
-        #   log_exception(self.traceback_info,
-        #                 "Couldn't get Facebook events. %(error_message)s"
-        #                 % info_to_log)
+            message_to_log = get_message_to_log(function_name='get_events',
+                                                class_name=self.__class__.__name__,
+                                                gt_user=self.user.name,
+                                                error=error.message,
+                                                file_name=__file__)
+            log_exception(message_to_log)
             raise
         if 'data' in response:
             user_events.extend(response['data'])
@@ -69,14 +73,12 @@ class FacebookEvent(EventBase):
             except KeyError:
                 break
             except requests.HTTPError as error:
-                print error.message
-                #TODO log exception
-            #   info_to_log = dict(url=response['paging']['next'],
-            #                       error_message=error.message)
-            #   log_exception(self.traceback_info,
-            #                 "Couldn't get data while paginating over "
-            #                 "Facebook records. URL: %(url)s, %(error_message)s"
-            #                 % info_to_log)
+                message_to_log = get_message_to_log(function_name='get_all_pages',
+                                                    class_name=self.__class__.__name__,
+                                                    gt_user=self.user.name,
+                                                    error=error.message,
+                                                    file_name=__file__)
+                log_exception(message_to_log)
                 raise
 
     def normalize_event(self, event):
@@ -101,7 +103,7 @@ class FacebookEvent(EventBase):
                 organizer = self.graph.get_object('v2.4/' + owner['id'])
                 organizer = organizer.get('data')
             except facebook.GraphAPIError as error:
-                log_error({
+                log_exception({
                             'Reason': error.message,
                             'functionName': 'normalize_event',
                             'fileName': __file__,
@@ -137,13 +139,12 @@ class FacebookEvent(EventBase):
                 else ''
             )
         except Exception as e:
-            print e.message
-            #log_exception(self.traceback_info,
-            #             "Couldn't normalize event. "
-            #             "eventName: %(name)s, "
-            #             "eventId on Vendor:%(id)s, "
-            #             "error_message: %(error_message)s, "
-            #             % event)
+            message_to_log = get_message_to_log(function_name='normalize_event',
+                                                class_name=self.__class__.__name__,
+                                                gt_user=self.user.name,
+                                                error=e.message,
+                                                file_name=__file__)
+            log_exception(message_to_log)
         else:
             return event
 

@@ -1,9 +1,9 @@
 from base import RSVPBase
 from datetime import datetime, timedelta
-from common.gt_models.event import Event
+from gt_common.models.event import Event
 from SocialNetworkService.utilities import http_request, Attendee, \
     log_exception, log_error, get_message_to_log
-from common.gt_models.user import UserCredentials
+from gt_common.models.user import UserCredentials
 
 
 class EventbriteRsvp(RSVPBase):
@@ -12,10 +12,6 @@ class EventbriteRsvp(RSVPBase):
     """
     def __init__(self, *args, **kwargs):
         super(EventbriteRsvp, self).__init__(*args, **kwargs)
-        function_name = '__init__()'
-        self.message_to_log.update({'function_name': function_name,
-                                    'class_name': self.__class__.__name__,
-                                    'fileName': __file__})
         self.start_date_in_utc = (datetime.now() -
                                   timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -31,7 +27,7 @@ class EventbriteRsvp(RSVPBase):
         function_name = 'get_user_credentials_by_webhook()'
         message_to_log = get_message_to_log(function_name=function_name,
                                             file_name=__file__,
-                                            class_name=cls.__class__.__name__)
+                                            class_name=cls.__class__.__name__,)
         if webhook_id:
             try:
                 # gets gt-user object
@@ -54,7 +50,16 @@ class EventbriteRsvp(RSVPBase):
             log_error(message_to_log)
 
     def _process_rsvp_via_webhook(self, rsvp):
-        self.message_to_log.update({'functionName': '_process_rsvp_via_webhook()'})
+        """
+        Here we handle the RSVP of an event through webhook
+        :param rsvp:
+        :return:
+        """
+        function_name = '_process_rsvp_via_webhook()'
+        message_to_log = get_message_to_log(function_name=function_name,
+                                            class_name=self.__class__.__name__,
+                                            gt_user=self.user.name,
+                                            file_name=__file__)
         try:
             attendee = self.get_attendee(rsvp)
             if attendee:
@@ -79,14 +84,22 @@ class EventbriteRsvp(RSVPBase):
             # Shouldn't raise an exception, just log it and move to process
             # process next RSVP
             error_message = e.message
-            self.message_to_log.update({'error': error_message})
-            log_exception(self.message_to_log)
+            message_to_log.update({'error': error_message})
+            log_exception(message_to_log)
 
     def _process_rsvps(self):
-        self.message_to_log.update({'functionName': '_process_rsvps()',
-                                    'error': NotImplementedError("Eventbrite RSVPs are "
-                                                                 "handled via webhook")})
-        log_exception(self.message_to_log)
+        """
+        Here we process the rsvp for rsvp importer
+        """
+        function_name = '_process_rsvps()'
+        message_to_log = get_message_to_log(
+            function_name=function_name,
+            class_name=self.__class__.__name__,
+            gt_user=self.user.name,
+            file_name=__file__,
+            error=NotImplementedError("Eventbrite RSVPs are "
+                                      "handled via webhook"))
+        log_exception(message_to_log)
         raise
 
     def get_rsvps(self, event):
@@ -98,11 +111,15 @@ class EventbriteRsvp(RSVPBase):
         :param rsvp: contains the id of rsvp for (eventbrite) in dictionary format
         :return: attendee object which contains data of the attendee
         """
-        self.message_to_log.update({"functionName": "get_attendee()"})
+        function_name = 'get_attendee()'
+        message_to_log = get_message_to_log(function_name=function_name,
+                                            class_name=self.__class__.__name__,
+                                            gt_user=self.user.name,
+                                            file_name=__file__)
         attendee = None
         url = self.api_url + "/orders/" + rsvp['rsvp_id']
         response = http_request('GET', url, headers=self.headers,
-                                message_to_log=self.message_to_log)
+                                message_to_log=message_to_log)
         if response.ok:
             try:
                 data = response.json()
@@ -116,7 +133,7 @@ class EventbriteRsvp(RSVPBase):
                 attendee.rsvp_status = 'yes' if data['status'] == 'placed' else data['status']
                 attendee.email = data['email']
                 attendee.vendor_rsvp_id = rsvp['rsvp_id']
-                attendee.gt_user_id = self.gt_user_id
+                attendee.gt_user_id = self.user.id
                 attendee.social_network_id = self.social_network_id
                 attendee.vendor_img_link = \
                     "<img class='pull-right'" \
@@ -125,16 +142,16 @@ class EventbriteRsvp(RSVPBase):
                 # get event_id
                 vendor_event_id = data['event_id']
                 event = Event.get_by_user_id_social_network_id_vendor_event_id(
-                    self.gt_user_id, self.social_network_id, vendor_event_id)
+                    self.user.id, self.social_network_id, vendor_event_id)
                 if event:
                     attendee.event = event
                 else:
                     error_message = 'Event is not present in db, VendorEventId is %s' \
                                     % vendor_event_id
-                    self.message_to_log.update({'error': error_message})
-                    log_error(self.message_to_log)
+                    message_to_log.update({'error': error_message})
+                    log_error(message_to_log)
             except Exception as e:
                 error_message = e.message
-                self.message_to_log.update({'error': error_message})
-                log_exception(self.message_to_log)
+                message_to_log.update({'error': error_message})
+                log_exception(message_to_log)
             return attendee

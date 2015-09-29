@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime, \
 from sqlalchemy.orm import relationship
 from base import ModelBase as Base
 
+
 class User(Base):
     __tablename__ = 'user'
     id = Column(Integer, primary_key=True)
@@ -24,11 +25,18 @@ class User(Base):
     dice_user_id = Column('diceUserId', Integer)
 
     user_credentials = relationship('UserCredentials', backref='user')
-    candidates = relationship('Candidate', backref='user')
-    events = relationship('Event', backref='user')
+    candidates = relationship('Candidate', backref='user', lazy='dynamic')
+    events = relationship('Event', backref='user', lazy='dynamic')
+    organizers = relationship('Organizer', backref='user', lazy='dynamic')
+    venues = relationship('Venue', backref='user', lazy='dynamic')
 
     def __repr__(self):
-        return '<User %r>' % (self.email)
+        return '<User %r>' % self.email
+
+    @property
+    def name(self):
+        return self.firstName + ' ' + self.lastName
+
 
 
 class UserCredentials(Base):

@@ -1,6 +1,5 @@
 import os
-import json
-from gt_common.gt_models.config import GTSQLAlchemy
+from gt_common.models.config import GTSQLAlchemy
 app_cfg = os.path.abspath('app.cfg')
 logging_cfg = os.path.abspath('logging.conf')
 

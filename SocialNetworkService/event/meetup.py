@@ -2,8 +2,8 @@
 import json
 from datetime import datetime
 from datetime import timedelta
-from gt_common.gt_models.event import Event
-from SocialNetworkService.utilities import http_request
+from gt_common.models.event import Event
+from SocialNetworkService.utilities import http_request, get_message_to_log
 from SocialNetworkService.utilities import milliseconds_since_epoch
 from SocialNetworkService.utilities import milliseconds_since_epoch_to_dt
 from SocialNetworkService.custom_exections import EventNotCreated
@@ -39,7 +39,6 @@ class Meetup(EventBase):
         self.location = None
         self.group_url_name = None
         self.vendor_event_id = None
-        self.message_to_log.update({'class': MEETUP})
         self.start_date = kwargs.get('start_date') or (datetime.now() - timedelta(days=2))
         self.end_date = kwargs.get('end_date') or (datetime.now() + timedelta(days=2))
         self.start_time_since_epoch = milliseconds_since_epoch(self.start_date)
@@ -195,6 +194,7 @@ class Meetup(EventBase):
             event_timezone='',
             max_attendees=0
         )
+
     def create_event(self):
         """
         This function is used to create meetup event using vendor's API.
@@ -203,7 +203,6 @@ class Meetup(EventBase):
         and publishes it (announce). It uses helper functions add_location()
         and publish_meetup().
         """
-        self.message_to_log.update({'functionName': 'create_event()'})
         if self.vendor_event_id is not None:
             url = self.api_url + "/event/" + str(self.vendor_event_id)
             event_is_new = False
@@ -221,8 +220,12 @@ class Meetup(EventBase):
             return event_id, ''
         else:
             error_message = 'Event was not Created. Error occurred during draft creation'
-            self.message_to_log.update({'error': error_message})
-            log_error(self.message_to_log)
+            message_to_log = get_message_to_log(function_name='create_event',
+                                                class_name=self.__class__.__name__,
+                                                gt_user=self.user.name,
+                                                error=error_message,
+                                                file_name=__file__)
+            log_error(message_to_log)
             raise EventNotCreated('ApiError: Unable to create event on social network')
 
     def delete_event(self, event_id):
@@ -244,7 +247,6 @@ class Meetup(EventBase):
         # For deleting an event, Meetup uses url which is different than
         # the url we use in other API calls of Meetup. So class variable 'api_url' is not
         # used here
-        self.message_to_log.update({'functionName': 'add_location()'})
         url = 'https://api.meetup.com/' + self.group_url_name + '/venues'
         payload = {
             'address_1': self.payload['address_1'],
@@ -267,8 +269,12 @@ class Meetup(EventBase):
             message = '\nErrors from the social network:\n'
             message += '\n'.join(error['message'] + ', ' + error['code'] for error in errors) if errors else ''
             error_message += message
-            self.message_to_log.update({'error': error_message})
-            log_error(self.message_to_log)
+            message_to_log = get_message_to_log(function_name='add_location',
+                                                class_name=self.__class__.__name__,
+                                                gt_user=self.user.name,
+                                                error=error_message,
+                                                file_name=__file__)
+            log_error(message_to_log)
             raise EventLocationNotCreated('ApiError: Unable to create venue for event\n %s' % message)
         return venue_id
 
@@ -281,7 +287,6 @@ class Meetup(EventBase):
         :return: True if event has updated and published successfully,
         False otherwise
         """
-        self.message_to_log.update({'functionName': 'publish_meetup()'})
         # create url to publish event
         url = self.api_url + "/event/" + event_id
         payload = {'venue_id': venue_id}
@@ -294,8 +299,12 @@ class Meetup(EventBase):
             return True
         else:
             error_message = 'Event was not published'
-            self.message_to_log.update({'error': error_message})
-            log_error(self.message_to_log)
+            message_to_log = get_message_to_log(function_name='publish_meetup',
+                                                class_name=self.__class__.__name__,
+                                                gt_user=self.user.name,
+                                                error=error_message,
+                                                file_name=__file__)
+            log_error(message_to_log)
             raise EventNotPublished('ApiError: Unable to publish event on specified social network')
 
     def unpublish_event(self, event_id):
@@ -305,7 +314,6 @@ class Meetup(EventBase):
         :param event_id:id of newly created event
         :return: True if event is deleted from vendor, False other wsie
         """
-        self.message_to_log.update({'functionName': 'unpublish_event()'})
         # create url to publish event
         url = self.api_url + "/event/" + event_id
         # params are None. Access token is present in self.headers
@@ -314,11 +322,16 @@ class Meetup(EventBase):
             logger.info('|  Event has been unpublished (deleted)  |')
         else:
             error_message = "Event was not unpublished (deleted)."
-            self.message_to_log.update({'error': error_message})
-            log_error(self.message_to_log)
+            message_to_log = get_message_to_log(function_name='unpublish_event',
+                                                class_name=self.__class__.__name__,
+                                                gt_user=self.user.name,
+                                                error=error_message,
+                                                file_name=__file__)
+            log_error(message_to_log)
             raise EventNotUnpublished('ApiError: Unable to remove event from specified social network')
 
-    def validate_required_fields(self, data):
+    @staticmethod
+    def validate_required_fields(data):
         """
         Here we validate that all the required fields for the event creation on
         meetup are filled. If any required filed is missing, raises exception
@@ -337,7 +350,6 @@ class Meetup(EventBase):
         This is actually the mapping of data from the from to the data required
         for API calls on Meetup.
         """
-        self.message_to_log.update({'functionName': 'gt_to_sn_fields_mappings()'})
         if data:
             self.validate_required_fields(data)
             # converting Datetime object to epoch for API call
@@ -363,14 +375,22 @@ class Meetup(EventBase):
                 self.group_url_name = data['groupUrlName']
             else:
                 error_message = 'Group UrlName is None for eventName: %s' % data['eventTitle']
-                self.message_to_log.update({'error': error_message})
-                log_error(self.message_to_log)
+                message_to_log = get_message_to_log(function_name='gt_to_sn_fields_mappings',
+                                                    class_name=self.__class__.__name__,
+                                                    gt_user=self.user.name,
+                                                    error=error_message,
+                                                    file_name=__file__)
+                log_error(message_to_log)
             self.vendor_event_id = data.get('vendorEventId')
             if self.vendor_event_id:
                 self.payload.update({'lat': data['eventLatitude'],
                                      'lon': data['eventLongitude']})
         else:
             error_message = 'Data is None'
-            self.message_to_log.update({'error': error_message})
-            log_error(self.message_to_log)
+            message_to_log = get_message_to_log(function_name='gt_to_sn_fields_mappings',
+                                                class_name=self.__class__.__name__,
+                                                gt_user=self.user.name,
+                                                error=error_message,
+                                                file_name=__file__)
+            log_error(message_to_log)
 

@@ -1,6 +1,6 @@
 import os
 import json
-from gt_common.gt_models.config import GTSQLAlchemy
+from gt_common.models.config import GTSQLAlchemy
 app_cfg = os.path.abspath('app.cfg')
 logging_cfg = os.path.abspath('logging.conf')
 
@@ -8,7 +8,8 @@ gt = GTSQLAlchemy(app_config_path=app_cfg,
                   logging_config_path=logging_cfg)
 
 from base import SocialNetworkBase
-from utilities import http_request, logger, log_error, log_exception
+from utilities import http_request, logger, log_error, log_exception,\
+    get_message_to_log
 
 
 class Meetup(SocialNetworkBase):
@@ -47,11 +48,15 @@ class Meetup(SocialNetworkBase):
         is an organizer to be shown in drop down while creating event on Meetup
         through Event Creation Form.
         """
-        self.message_to_log.update({'functionName': 'get_groups()'})
+        function_name = 'get_groups()'
+        message_to_log = get_message_to_log(function_name=function_name,
+                                            class_name=self.__class__.__name__,
+                                            gt_user=self.user.name,
+                                            file_name=__file__)
         url = self.api_url + '/groups/'
         params = {'member_id': 'self'}
         response = http_request('GET', url, params=params, headers=self.headers,
-                                message_to_log=self.message_to_log)
+                                message_to_log=message_to_log)
         if response.ok:
             meta_data = json.loads(response.text)['meta']
             member_id = meta_data['url'].split('=')[1].split('&')[0]
@@ -72,7 +77,10 @@ class Meetup(SocialNetworkBase):
         :return:
         """
         function_name = 'refresh_access_token()'
-        self.message_to_log.update({'function_name': function_name})
+        message_to_log = get_message_to_log(function_name=function_name,
+                                            class_name=self.__class__.__name__,
+                                            gt_user=self.user.name,
+                                            file_name=__file__)
         status = False
         user_refresh_token = self.user_credentials.refreshToken
         auth_url = self.social_network.authUrl + "/access?"
@@ -83,7 +91,7 @@ class Meetup(SocialNetworkBase):
                         'grant_type': 'refresh_token',
                         'refresh_token': user_refresh_token}
         response = http_request('POST', auth_url, data=payload_data,
-                                message_to_log=self.message_to_log)
+                                message_to_log=message_to_log)
         try:
             if response.ok:
                 # access token has been refreshed successfully, need to update
@@ -100,13 +108,13 @@ class Meetup(SocialNetworkBase):
                 logger.info("Access Token has been refreshed")
             else:
                 error_message = response.json().get('error')
-                self.message_to_log.update({'error': error_message})
-                log_error(self.message_to_log)
+                message_to_log.update({'error': error_message})
+                log_error(message_to_log)
         except Exception as e:
             error_message = "Error occurred while refreshing access token. Error is: " \
                             + e.message
-            self.message_to_log.update({'error': error_message})
-            log_exception(self.message_to_log)
+            message_to_log.update({'error': error_message})
+            log_exception(message_to_log)
         return status
 
 if __name__ == "__main__":
