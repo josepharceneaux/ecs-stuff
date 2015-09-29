@@ -82,14 +82,20 @@ class SocialNetworkBase(object):
         self.events = eventbrite.get_events(self.social_network)
         :return:
         """
-        sn_name = self.social_network.name
-        module_path = 'event.%s' % sn_name.lower()
+        sn_name = self.social_network.name.strip()
+        module_path = None
+        if sn_name.lower() == 'facebook':
+            module_path = 'event.%s_module' % sn_name.lower()
+        else:
+            module_path = 'event.%s' % sn_name.lower()
+        print 'Module path', module_path
         try:
             sn_event_module = importlib.import_module(module_path)
         except ImportError as error:
             raise error
         # e.g. /socialnetworkservice/event/eventbrite.py
-        event_class = getattr(sn_event_module, sn_name.title())
+        class_name = sn_name.title() + "Event"
+        event_class = getattr(sn_event_module, class_name)
         sn_event_obj = event_class(user=self.user, social_network=self.social_network,
                                    headers=self.headers)
         self.events = sn_event_obj.get_events()

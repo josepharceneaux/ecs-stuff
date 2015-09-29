@@ -1,3 +1,12 @@
+import os
+import json
+from gt_common.gt_models.config import GTSQLAlchemy
+app_cfg = os.path.abspath('app.cfg')
+logging_cfg = os.path.abspath('logging.conf')
+
+gt = GTSQLAlchemy(app_config_path=app_cfg,
+                  logging_config_path=logging_cfg)
+
 from SocialNetworkService.base import SocialNetworkBase
 
 
@@ -23,4 +32,8 @@ class Facebook(SocialNetworkBase):
     def validate_token(self, payload=None):
         self.api_relative_url = '/me'
         payload = {'access_token': self.access_token}
+
         super(Facebook, self).validate_token(payload=payload)
+if __name__ == "__main__":
+    eb = Facebook(user_id=1, social_network_id=2)
+    eb.process_events()
