@@ -2,19 +2,20 @@ from sqlalchemy import Column, Integer, String, not_
 from sqlalchemy.orm import relationship
 from base import ModelBase as Base
 
+
 class SocialNetwork(Base):
     __tablename__ = 'social_network'
     id = Column(Integer, primary_key=True)
     name = Column(String(100))
     url = Column(String(255))
-    apiUrl = Column(String(255))
-    clientKey = Column(String(500))
-    secretKey = Column(String(500))
-    redirectUri = Column(String(255))
-    authUrl = Column(String(200))
+    api_url = Column(String(255))
+    client_key = Column(String(500))
+    secret_key = Column(String(500))
+    redirect_uri = Column(String(255))
+    auth_url = Column(String(200))
 
-    events = relationship("Event", backref='social_network_event')
-    user_credentials = relationship("UserCredentials", backref='social_network')
+    events = relationship("Event", backref='social_network', lazy='dynamic')
+    user_credentials = relationship("UserCredentials", backref='social_network', lazy='dynamic')
 
     def __repr__(self):
         return '<SocialNetwork %r>' % self.name

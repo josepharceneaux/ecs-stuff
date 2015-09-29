@@ -7,6 +7,7 @@ class Venue(Base):
     __tablename__ = 'venue'
 
     id = Column(Integer, primary_key=True)
+    social_network_venue_id = Column(String(200))
     userId = Column(Integer, ForeignKey('user.id'), nullable=False)
     addressLine1 = Column(String(300))
     addressLine2 = Column(String(300))

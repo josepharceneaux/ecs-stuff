@@ -2,10 +2,10 @@
 from abc import ABCMeta, abstractmethod
 from SocialNetworkService.custom_exections import EventNotSaveInDb
 from SocialNetworkService.utilities import get_message_to_log, log_error
-from gt_common.gt_models.event import Event
-from gt_common.gt_models.user import User
-from gt_common.gt_models.user import UserCredentials
-from gt_common.gt_models.social_network import SocialNetwork
+from gt_common.models.event import Event
+from gt_common.models.user import User
+from gt_common.models.user import UserCredentials
+from gt_common.models.social_network import SocialNetwork
 
 class EventBase(object):
     __metaclass__ = ABCMeta

@@ -5,7 +5,7 @@ from base import ModelBase as Base
 
 class Domain(Base):
     __tablename__ = 'domain'
-    id = Column(Integer, primary_key=True)
+    id = Column('id', Integer, primary_key=True)
     name = Column(String(50), unique=True, default=0)
     usageLimitation = Column(Integer)
     expiration = Column(DateTime)
