@@ -5,8 +5,8 @@ from flask.ext.restful import Api, Resource
 from SocialNetworkService.app.app_utils import api_route, authenticate, ApiResponse
 from SocialNetworkService.custom_exections import ApiException
 from SocialNetworkService.manager import process_event, delete_events
-from common_.gt_models.event import Event
-from common_.gt_models.user import User
+from gt_common.models.event import Event
+from gt_common.models.user import User
 
 events_blueprint = Blueprint('events_api', __name__)
 api = Api()

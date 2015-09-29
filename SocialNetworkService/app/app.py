@@ -9,7 +9,7 @@ from SocialNetworkService.custom_exections import ApiException
 from SocialNetworkService.rsvp.eventbrite import EventbriteRsvp
 from restful.social_networks import social_network_blueprint
 from restful.events import events_blueprint
-from common_.gt_models.config import db_session
+from gt_common.models.config import db_session
 from flask.ext.restful import Api
 from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash

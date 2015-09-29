@@ -1,10 +1,8 @@
 
 import pytz
 import json
-from base import EventBase
 from datetime import datetime
 from datetime import timedelta
-from gt_common.models.event import Event
 
 from SocialNetworkService.custom_exections import EventNotCreated
 from SocialNetworkService.custom_exections import TicketsNotCreated
@@ -14,7 +12,8 @@ from SocialNetworkService.custom_exections import EventInputMissing
 from SocialNetworkService.custom_exections import EventLocationNotCreated
 
 from SocialNetworkService.event.base import EventBase
-from SocialNetworkService.utilities import log_error, logger, log_exception, http_request, get_message_to_log
+from SocialNetworkService.utilities import log_error, logger, log_exception, \
+    http_request, get_message_to_log
 from gt_common.models.event import Event
 
 EVENTBRITE = 'Eventbrite'

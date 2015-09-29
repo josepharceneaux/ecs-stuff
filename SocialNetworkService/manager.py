@@ -180,8 +180,7 @@ def start():
             sn.get_member_id(dict())
         event_or_rsvp_obj = event_or_rsvp_class(user_credentials=user_credentials,
                                                 social_network=social_network,
-                                                headers=sn.headers,
-                                                message_to_log=sn.message_to_log)
+                                                headers=sn.headers)
         if name_space.mode == 'event':
             job_pool.spawn(event_or_rsvp_obj._process_events)
         elif name_space.mode == 'rsvp':

@@ -1,10 +1,10 @@
 import requests
 
 from datetime import datetime, timedelta
-from common_.gt_models.event import Event
+from gt_common.models.event import Event
 from SocialNetworkService.rsvp.base import RSVPBase
 from SocialNetworkService.utilities import Attendee, log_exception, \
-    import_from_dist_packages, log_error
+    import_from_dist_packages, log_error, get_message_to_log
 
 # Here we import facebook-sdk python module making sure it doesn't import
 # our local facebook.py modules
@@ -19,10 +19,6 @@ class FacebookRsvp(RSVPBase):
 
     def __init__(self, *args, **kwargs):
         super(FacebookRsvp, self).__init__(*args, **kwargs)
-        function_name = '__int__()'
-        self.message_to_log.update({'function_name': function_name,
-                                    'class_name': self.__class__.__name__,
-                                    'fileName': __file__})
         self.start_date = (datetime.now() - timedelta(days=3000)).strftime("%Y-%m-%d")
         self.end_date = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
         self.start_date_dt = datetime.strptime(self.start_date, "%Y-%m-%d")
@@ -33,7 +29,11 @@ class FacebookRsvp(RSVPBase):
         """
         This method retrieves RSPVs for user's events on Facebook.
         """
-        self.message_to_log.update({"functionName": "get_rsvps()"})
+        function_name = "get_rsvps()"
+        message_to_log = get_message_to_log(function_name=function_name,
+                                            class_name=self.__class__.__name__,
+                                            gt_user=self.user.name,
+                                            file_name=__file__)
         rsvps = []
         try:
             self.graph = facebook.GraphAPI(access_token=self.access_token)
@@ -42,8 +42,8 @@ class FacebookRsvp(RSVPBase):
             confirm_attendees = self.graph.get_object(url + 'attending')
         except facebook.GraphAPIError as error:
             error_message = "Couldn't get 'attending' RSVPs (Facebook). %s" % error.message
-            self.message_to_log.update({'error': error_message})
-            log_exception(self.message_to_log)
+            message_to_log.update({'error': error_message})
+            log_exception(message_to_log)
             raise
         rsvps += confirm_attendees['data']
         self.get_all_pages(confirm_attendees, rsvps)
@@ -52,8 +52,8 @@ class FacebookRsvp(RSVPBase):
             expected_attendees = self.graph.get_object(url + 'maybe')
         except facebook.GraphAPIError as error:
             error_message = "Couldn't get 'maybe' RSVPs (Facebook). %s" % error.message
-            self.message_to_log.update({'error': error_message})
-            log_exception(self.message_to_log)
+            message_to_log.update({'error': error_message})
+            log_exception(message_to_log)
             raise
         rsvps += expected_attendees['data']
         self.get_all_pages(expected_attendees, rsvps)
@@ -62,8 +62,8 @@ class FacebookRsvp(RSVPBase):
             declined_attendees = self.graph.get_object(url + 'declined')
         except facebook.GraphAPIError as error:
             error_message = "Couldn't get 'Declined' RSVPs (Facebook). %s" % error.message
-            self.message_to_log.update({'error': error_message})
-            log_exception(self.message_to_log)
+            message_to_log.update({'error': error_message})
+            log_exception(message_to_log)
             raise
         rsvps += declined_attendees['data']
         self.get_all_pages(declined_attendees, rsvps)
@@ -72,7 +72,11 @@ class FacebookRsvp(RSVPBase):
         return rsvps
 
     def get_all_pages(self, response, target_list):
-        self.message_to_log.update({"functionName": "get_all_pages()"})
+        function_name = "get_all_pages()"
+        message_to_log = get_message_to_log(function_name=function_name,
+                                            class_name=self.__class__.__name__,
+                                            gt_user=self.user.name,
+                                            file_name=__file__)
         while True:
             try:
                 response = requests.get(response['paging']['next'])
@@ -87,8 +91,8 @@ class FacebookRsvp(RSVPBase):
                                           error_message=error.message)
                 error_message = "Couldn't get data while paginating over Facebook records. " \
                                 "URL: %(url)s, %(error_message)s" % error_message_dict
-                self.message_to_log.update({'error': error_message})
-                log_exception(self.message_to_log)
+                message_to_log.update({'error': error_message})
+                log_exception(message_to_log)
                 raise
 
     def get_attendee(self, rsvp):
@@ -99,15 +103,19 @@ class FacebookRsvp(RSVPBase):
         :param rsvp:
         :return:
         """
-        self.message_to_log.update({"functionName": "get_attendee()"})
+        function_name = "get_attendee()"
+        message_to_log = get_message_to_log(function_name=function_name,
+                                            class_name=self.__class__.__name__,
+                                            gt_user=self.user.name,
+                                            file_name=__file__)
         try:
             data = self.graph.get_object('v2.4/' + rsvp['id'],
                                          fields='first_name, last_name, name, '
                                                 'email, location, address, link, picture')
         except facebook.GraphAPIError as error:
             error_message = "Couldn't get Facebook's attendee info. %s" % error.message
-            self.message_to_log.update({'error': error_message})
-            log_exception(self.message_to_log)
+            message_to_log.update({'error': error_message})
+            log_exception(message_to_log)
             raise
         if 'location' in data:
             try:
@@ -116,8 +124,8 @@ class FacebookRsvp(RSVPBase):
                                                  fields='location')
             except facebook.GraphAPIError as error:
                 error_message = " Couldn't get location info (Facebook). %s" % error.message
-                self.message_to_log.update({'error': error_message})
-                log_exception(self.message_to_log)
+                message_to_log.update({'error': error_message})
+                log_exception(message_to_log)
                 raise
             if 'location' in location:
                 location = location['location']
@@ -138,7 +146,7 @@ class FacebookRsvp(RSVPBase):
                 attendee.zip = location.get('zip')
                 attendee.profile_url = data.get('link', '')
                 attendee.picture_url = data['picture']['data']['url'] if 'picture' in data else ''
-                attendee.gt_user_id = self.gt_user_id
+                attendee.gt_user_id = self.user.id
                 attendee.social_network_id = self.social_network_id
                 attendee.vendor_rsvp_id = rsvp['id']  # we are using profile_id
                 # here as we do not have any rsvp_id for this vendor
@@ -154,16 +162,16 @@ class FacebookRsvp(RSVPBase):
                     attendee.rsvp_status = 'no'
 
                 event = Event.get_by_user_id_social_network_id_vendor_event_id(
-                    self.gt_user_id, self.social_network_id, vendor_event_id)
+                    self.user.id, self.social_network_id, vendor_event_id)
                 if event:
                     attendee.event = event
                 else:
                     error_message = 'Event is not present in db, VendorEventId is %s' \
                                     % vendor_event_id
-                    self.message_to_log.update({'error': error_message})
-                    log_error(self.message_to_log)
+                    message_to_log.update({'error': error_message})
+                    log_error(message_to_log)
             except Exception as e:
                 error_message = e.message
-                self.message_to_log.update({'error': error_message})
-                log_exception(self.message_to_log)
+                message_to_log.update({'error': error_message})
+                log_exception(message_to_log)
             return attendee
