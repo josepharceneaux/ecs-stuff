@@ -8,9 +8,9 @@ class Organizer(Base):
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
-    name = Column(String(200))
-    email = Column(String(200))
-    about = Column(String(1000))
+    name = Column('name', String(200))
+    email = Column('email', String(200))
+    about = Column('about', String(1000))
 
     event = relationship('Event', backref='organizer', lazy='dynamic')
 
