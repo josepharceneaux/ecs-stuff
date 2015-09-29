@@ -102,12 +102,12 @@ class FacebookEvent(EventBase):
                 organizer = self.graph.get_object('v2.4/' + owner['id'])
                 organizer = organizer.get('data')
             except facebook.GraphAPIError as error:
-                message_to_log = get_message_to_log(function_name='normalize_event',
-                                                    class_name=self.__class__.__name__,
-                                                    gt_user=self.user.name,
-                                                    error=error.message,
-                                                    file_name=__file__)
-                log_exception(message_to_log)
+                log_exception({
+                            'Reason': error.message,
+                            'functionName': 'normalize_event',
+                            'fileName': __file__,
+                            'User': self.user.id
+                        })
                 raise
         try:
             event = Event(

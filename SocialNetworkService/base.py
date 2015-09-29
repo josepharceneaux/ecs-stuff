@@ -38,8 +38,8 @@ class SocialNetworkBase(object):
         if self.user_credentials:
             message_to_log.update({})
             data = {
-                "access_token": self.user_credentials.accessToken,
-                "gt_user_id": self.user_credentials.userId,
+                "access_token": self.user_credentials.access_token,
+                "gt_user_id": self.user_credentials.user_id,
                 "social_network_id": social_network_id,
                 "api_url": self.social_network.apiUrl
             }
@@ -83,11 +83,7 @@ class SocialNetworkBase(object):
         """
         sn_name = self.social_network.name.strip()
         module_path = None
-        if sn_name.lower() == 'facebook':
-            module_path = 'event.%s_module' % sn_name.lower()
-        else:
-            module_path = 'event.%s' % sn_name.lower()
-        print 'Module path', module_path
+        module_path = 'event.%s' % sn_name.lower()
         try:
             sn_event_module = importlib.import_module(module_path)
         except ImportError as error:
@@ -159,8 +155,8 @@ class SocialNetworkBase(object):
                                                   message_to_log=message_to_log)
             if get_member_id_response.ok:
                 member_id = get_member_id_response.json().get('id')
-                data = dict(userId=user_credentials.userId,
-                            socialNetworkId=user_credentials.socialNetworkId,
+                data = dict(userId=user_credentials.user_id,
+                            socialNetworkId=user_credentials.social_network_id,
                             memberId=member_id)
                 self.save_user_credentials_in_db(data)
             else:
