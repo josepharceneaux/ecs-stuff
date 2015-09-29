@@ -8,7 +8,11 @@ from resume_parsing_app.views.app_constants import Constants as current
 
 
 def parse_resume_with_bg(file_name, file_data):
-    # Call Dice API with cached BurningGlass access token
+    """
+
+    :return: dict containing rawXML (the HR-XML from BurningGlass) as well as other fields provided by Dice Data Science™
+    :rtype: dict[str, T]
+    """
     url = 'https://api.dice.com/profiles/resume/parse'
     try:
         payload = {'fileName': file_name, 'resumeData': file_data}

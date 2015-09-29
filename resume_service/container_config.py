@@ -2,6 +2,7 @@ __author__ = 'erikfarmer'
 
 
 import argparse
+import os
 import shutil
 from subprocess import call
 
@@ -16,3 +17,4 @@ if args.copy:
 if args.build:
     print 'Building Docker file'
     call('docker build .', shell=True)
+    os.remove('requirements.txt')

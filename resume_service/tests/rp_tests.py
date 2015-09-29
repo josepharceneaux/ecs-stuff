@@ -68,7 +68,7 @@ def test_doc_from_fp_key(db_fill):
 
 def test_doc_by_post(db_fill):
     """Test that .doc files that are posted to the end point can be parsed."""
-    json_obj = json.loads(fetch_resume_post_response('test_bin.docx'))['candidate']
+    json_obj = fetch_resume_post_response('test_bin.docx')['candidate']
     assert json_obj['full_name'] == 'VEENA NITHOO'
     assert len(json_obj['addresses']) == 1
     assert json_obj['addresses'][0] == DOC_DICT
@@ -104,7 +104,7 @@ def test_v13_pdf_from_fp_key(db_fill):
 
 def test_v15_pdf_by_post(db_fill):
     """Test that v1.5 pdf files can be posted."""
-    json_obj = json.loads(fetch_resume_post_response('test_bin.pdf'))['candidate']
+    json_obj = fetch_resume_post_response('test_bin.pdf')['candidate']
     assert json_obj['full_name'] == 'MARK GREENE'
     assert json_obj['emails'][0]['address'] == 'techguymark@yahoo.com'
     assert len(json_obj['educations']) == 1
@@ -114,7 +114,7 @@ def test_v15_pdf_by_post(db_fill):
 
 def test_v14_pdf_by_post(db_fill):
     """Test that v1.4 pdf files can be posted."""
-    json_obj = json.loads(fetch_resume_post_response('test_bin_14.pdf'))['candidate']
+    json_obj = fetch_resume_post_response('test_bin_14.pdf')['candidate']
     # Currently fails with email in footer of both pages.
     # assert json_obj['emails'][0]['address'] == 'jlchavez@telus.net'
     assert len(json_obj['work_experiences']) == 4
@@ -123,7 +123,7 @@ def test_v14_pdf_by_post(db_fill):
 
 def test_v13_pdf_by_post(db_fill):
     """Test that v1.3 pdf files can be posted."""
-    json_obj = json.loads(fetch_resume_post_response('test_bin_13.pdf'))['candidate']
+    json_obj = fetch_resume_post_response('test_bin_13.pdf')['candidate']
     assert json_obj['full_name'] == 'BRUCE PARKEY'
     assert json_obj['emails'][0]['address'] == 'bparkey@sagamoreapps.com'
     assert len(json_obj['work_experiences']) == 3
@@ -141,7 +141,7 @@ def test_jpg_from_fp_key(db_fill):
 
 def test_jpg_by_post(db_fill):
     """Test that jpg files can be posted."""
-    json_obj = json.loads(fetch_resume_post_response('test_bin.jpg'))['candidate']
+    json_obj = fetch_resume_post_response('test_bin.jpg')['candidate']
     assert json_obj['full_name'] == 'Erik D Farmer'
     assert len(json_obj['educations']) == 2
     assert len(json_obj['work_experiences']) == 2
@@ -150,7 +150,7 @@ def test_jpg_by_post(db_fill):
 
 def test_2448_3264_jpg_by_post(db_fill):
     """Test that large jpgs files can be posted."""
-    json_obj = json.loads(fetch_resume_post_response('2448_3264.jpg'))['candidate']
+    json_obj = fetch_resume_post_response('2448_3264.jpg')['candidate']
     assert json_obj['full_name'] == 'Marion Roberson'
     assert json_obj['emails'][0]['address'] == 'MarionR3@Knology.net'
     assert len(json_obj['educations']) == 0
@@ -185,7 +185,7 @@ def fetch_resume_post_response(file_name):
         resume_file=(StringIO(resume_file), file_name),
         resume_file_name=file_name
     ), follow_redirects=True)
-    return response.data
+    return json.loads(response.data)
 
 
 def fetch_resume_fp_key_response(fp_key):
