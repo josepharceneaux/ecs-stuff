@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Module for interacting with the Dice/BG API."""
 
 import requests

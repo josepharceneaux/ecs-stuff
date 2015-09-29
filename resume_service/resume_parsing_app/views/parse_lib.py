@@ -110,6 +110,7 @@ def parse_resume(file_obj, filename_str, is_test_parser=False):
     if bg_response_dict:
         candidate_data = parse_xml_into_candidate_dict(bg_response_dict)
         candidate_data['dice_api_response'] = bg_response_dict
+        return candidate_data
 
     else:
         return dict(error='No XML text')

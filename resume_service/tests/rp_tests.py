@@ -29,24 +29,38 @@ WORK_EXPERIENCES_KEYS = ('city', 'end_date', 'country', 'company', 'role', 'is_c
 
 SKILLS_KEYS = ('name', 'months_used', 'last_used_date')
 
-@pytest.fixture
-def db_fill(request):
+
+@pytest.fixture(autouse=True)
+def test_client(request):
     test_client = Client(client_id='fakeclient', client_secret='s00pers3kr37')
-    test_token = Token(client_id='fakeclient', user_id=1, token_type='bearer', access_token='fooz',
-                       refresh_token='barz', expires=datetime.datetime(2050, 4, 26))
-    db.session.add(test_client)
-    db.session.commit()
-    db.session.add(test_token)
-    db.session.commit()
+    try:
+       db.session.add(test_client)
+       db.session.commit()
+    except Exception:  # TODO This is to handle 'Duplicate entry' MySQL errors. We should instead check for existing Client/Token before inserting
+       pass
 
     def fin():
-        test_client = Client.query.filter_by(client_id='fakeclient').first()
-        test_token = Token.query.filter_by(client_id='fakeclient').first()
-        db.session.delete(test_token)
-        db.session.commit()
         db.session.delete(test_client)
         db.session.commit()
     request.addfinalizer(fin)
+    return test_client
+
+
+@pytest.fixture(autouse=True)
+def test_token(test_client, request):
+    test_token = Token(client_id=test_client.client_id, user_id=1, token_type='bearer', access_token='fooz',
+                       refresh_token='barz', expires=datetime.datetime(2050, 4, 26))
+    try:
+       db.session.add(test_token)
+       db.session.commit()
+    except Exception:  # TODO This is to handle 'Duplicate entry' MySQL errors. We should instead check for existing Client/Token before inserting
+       pass
+
+    def fin():
+        db.session.delete(test_token)
+        db.session.commit()
+    request.addfinalizer(fin)
+    return test_token
 
 
 def test_base_url():
@@ -55,7 +69,7 @@ def test_base_url():
     assert '/parse_resume' in base_response.data
 
 
-def test_doc_from_fp_key(db_fill):
+def test_doc_from_fp_key():
     """Test that .doc files from S3 can be parsed."""
     json_obj = fetch_resume_fp_key_response('0169173d35beaf1053e79fdf1b5db864.docx')['candidate']
     assert json_obj['full_name'] == 'VEENA NITHOO'
@@ -66,7 +80,7 @@ def test_doc_from_fp_key(db_fill):
     keys_formatted_test(json_obj)
 
 
-def test_doc_by_post(db_fill):
+def test_doc_by_post():
     """Test that .doc files that are posted to the end point can be parsed."""
     json_obj = fetch_resume_post_response('test_bin.docx')['candidate']
     assert json_obj['full_name'] == 'VEENA NITHOO'
@@ -77,7 +91,7 @@ def test_doc_by_post(db_fill):
     keys_formatted_test(json_obj)
 
 
-def test_v15_pdf_from_fp_key(db_fill):
+def test_v15_pdf_from_fp_key():
     """Test that v1.5 pdf files from S3 can be parsed."""
     json_obj = fetch_resume_fp_key_response('e68b51ee1fd62db589d2669c4f63f381.pdf')['candidate']
     assert json_obj['full_name'] == 'MARK GREENE'
@@ -86,7 +100,7 @@ def test_v15_pdf_from_fp_key(db_fill):
     keys_formatted_test(json_obj)
 
 
-def test_v14_pdf_from_fp_key(db_fill):
+def test_v14_pdf_from_fp_key():
     """Test that v1.4 pdf files from S3 can be parsed."""
     json_obj = fetch_resume_fp_key_response('test_bin_14.pdf')['candidate']
     # doesnt get good name data back
@@ -94,7 +108,7 @@ def test_v14_pdf_from_fp_key(db_fill):
     keys_formatted_test(json_obj)
 
 
-def test_v13_pdf_from_fp_key(db_fill):
+def test_v13_pdf_from_fp_key():
     """Test that v1.3 pdf files from S3 can be parsed."""
     json_obj = fetch_resume_fp_key_response('test_bin_13.pdf')['candidate']
     assert json_obj['full_name'] == 'BRUCE PARKEY'
@@ -102,7 +116,7 @@ def test_v13_pdf_from_fp_key(db_fill):
     keys_formatted_test(json_obj)
 
 
-def test_v15_pdf_by_post(db_fill):
+def test_v15_pdf_by_post():
     """Test that v1.5 pdf files can be posted."""
     json_obj = fetch_resume_post_response('test_bin.pdf')['candidate']
     assert json_obj['full_name'] == 'MARK GREENE'
@@ -112,7 +126,7 @@ def test_v15_pdf_by_post(db_fill):
     keys_formatted_test(json_obj)
 
 
-def test_v14_pdf_by_post(db_fill):
+def test_v14_pdf_by_post():
     """Test that v1.4 pdf files can be posted."""
     json_obj = fetch_resume_post_response('test_bin_14.pdf')['candidate']
     # Currently fails with email in footer of both pages.
@@ -121,7 +135,7 @@ def test_v14_pdf_by_post(db_fill):
     keys_formatted_test(json_obj)
 
 
-def test_v13_pdf_by_post(db_fill):
+def test_v13_pdf_by_post():
     """Test that v1.3 pdf files can be posted."""
     json_obj = fetch_resume_post_response('test_bin_13.pdf')['candidate']
     assert json_obj['full_name'] == 'BRUCE PARKEY'
@@ -130,7 +144,7 @@ def test_v13_pdf_by_post(db_fill):
     keys_formatted_test(json_obj)
 
 
-def test_jpg_from_fp_key(db_fill):
+def test_jpg_from_fp_key():
     """Test that jpg files from S3 can be parsed."""
     json_obj = fetch_resume_fp_key_response('test_bin.jpg')['candidate']
     assert json_obj['full_name'] == 'Erik D Farmer'
@@ -139,7 +153,7 @@ def test_jpg_from_fp_key(db_fill):
     keys_formatted_test(json_obj)
 
 
-def test_jpg_by_post(db_fill):
+def test_jpg_by_post():
     """Test that jpg files can be posted."""
     json_obj = fetch_resume_post_response('test_bin.jpg')['candidate']
     assert json_obj['full_name'] == 'Erik D Farmer'
@@ -148,7 +162,7 @@ def test_jpg_by_post(db_fill):
     keys_formatted_test(json_obj)
 
 
-def test_2448_3264_jpg_by_post(db_fill):
+def test_2448_3264_jpg_by_post():
     """Test that large jpgs files can be posted."""
     json_obj = fetch_resume_post_response('2448_3264.jpg')['candidate']
     assert json_obj['full_name'] == 'Marion Roberson'
@@ -159,7 +173,7 @@ def test_2448_3264_jpg_by_post(db_fill):
     keys_formatted_test(json_obj)
 
 
-def test_no_token_fails(db_fill):
+def test_no_token_fails():
     filepicker_key = '0169173d35beaf1053e79fdf1b5db864.docx'
     with APP as c:
         test_response = c.post('/parse_resume', data=dict(filepicker_key=filepicker_key))
@@ -167,7 +181,7 @@ def test_no_token_fails(db_fill):
     assert 'error' in json_obj
 
 
-def test_invalid_token_fails(db_fill):
+def test_invalid_token_fails():
     filepicker_key = '0169173d35beaf1053e79fdf1b5db864.docx'
     with APP as c:
         test_response = c.post('/parse_resume', headers={'Authorization': 'Bearer barz'},
