@@ -1,7 +1,6 @@
 """
 A base class from which all models will inherit.
 """
-import json
 
 from config import GTSQLAlchemy
 from sqlalchemy import exc

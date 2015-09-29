@@ -33,9 +33,9 @@ class EventBase(object):
             self.user.id, self.social_network.id
         )
         assert user_credentials is not None
-        member_id = user_credentials.memberId
-        access_token = user_credentials.accessToken
-        refresh_token = user_credentials.refreshToken
+        member_id = user_credentials.member_id
+        access_token = user_credentials.access_token
+        refresh_token = user_credentials.refresh_token
         webhook = user_credentials.webhook
         return member_id, access_token, refresh_token, webhook
 
@@ -62,15 +62,15 @@ class EventBase(object):
             print 'Normalized'
             print event
             if event:
-                event_in_db = Event.get_by_user_and_vendor_id(event.userId,
-                                                              event.vendorEventId)
+                event_in_db = Event.get_by_user_and_vendor_id(event.user_id,
+                                                              event.vendor_event_id)
                 print 'Event in db', event_in_db
                 if event_in_db:
-                    data = dict(eventTitle=event.eventTitle,
-                                eventDescription=event.eventDescription,
+                    data = dict(event_title=event.event_title,
+                                event_description=event.event_description,
                                 eventAddressLine1=event.eventAddressLine1,
-                                eventStartDatetime=event.eventStartDatetime,
-                                eventEndDatetime=event.eventEndDatetime)
+                                event_start_datetime=event.event_start_datetime,
+                                event_end_datetime=event.event_end_datetime)
                     event_in_db.update(**data)
                 else:
                     Event.save(event)
@@ -91,7 +91,7 @@ class EventBase(object):
                 event = Event.get_by_user_and_event_id(self.user_id, event_id)
                 if event:
                     try:
-                        self.unpublish_event(event.vendorEventId)
+                        self.unpublish_event(event.vendor_event_id)
                         Event.delete(event_id)
                         deleted.append(event_id)
                     except Exception as e:     # some error while removing event
@@ -112,11 +112,11 @@ class EventBase(object):
         """
         function_name = 'save_event()'
         self.message_to_log.update({'function_name': function_name})
-        sn_event_id = data['vendorEventId']
-        socail_network_id = data['socialNetworkId']
+        sn_event_id = data['vendor_event_id']
+        social_network_id = data['social_network_id']
         event = Event.get_by_user_id_social_network_id_vendor_event_id(
             self.user_id,
-            socail_network_id,
+            social_network_id,
             sn_event_id)
         try:
             if event:
