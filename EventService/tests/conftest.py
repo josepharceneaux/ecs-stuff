@@ -1,7 +1,7 @@
 import os
 import pytest
 from gt_models.client import Client
-from gt_models.client import Token
+from gt_models.token import Token
 import datetime
 import requests
 
@@ -25,8 +25,8 @@ TESTDB_PATH = "/tmp/{}".format(TESTDB)
 TEST_DATABASE_URI = 'sqlite:///' + TESTDB_PATH
 APP_URL = 'http://127.0.0.1:5000/'
 
-OAUTH_SERVER = 'http://127.0.0.1:8888/oauth2/authorize'
-GET_TOKEN_URL = 'http://127.0.0.1:8888/oauth2/token'
+OAUTH_SERVER = 'http://127.0.0.1:5005/oauth2/authorize'
+GET_TOKEN_URL = 'http://127.0.0.1:5005/oauth2/token'
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 EVENT_DATA = {

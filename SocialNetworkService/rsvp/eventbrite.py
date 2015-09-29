@@ -101,7 +101,8 @@ class EventbriteRsvp(RSVPBase):
         self.message_to_log.update({"functionName": "get_attendee()"})
         attendee = None
         url = self.api_url + "/orders/" + rsvp['rsvp_id']
-        response = http_request('GET', url, headers=self.headers)
+        response = http_request('GET', url, headers=self.headers,
+                                message_to_log=self.message_to_log)
         if response.ok:
             try:
                 data = response.json()

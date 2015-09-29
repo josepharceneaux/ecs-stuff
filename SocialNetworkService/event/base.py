@@ -1,8 +1,11 @@
+
 from abc import ABCMeta, abstractmethod
 from SocialNetworkService.custom_exections import EventNotSaveInDb
 from SocialNetworkService.utilities import get_message_to_log, log_error
-from common.gt_models.event import Event
-
+from gt_common.gt_models.event import Event
+from gt_common.gt_models.user import User
+from gt_common.gt_models.user import UserCredentials
+from gt_common.gt_models.social_network import SocialNetwork
 
 class EventBase(object):
     __metaclass__ = ABCMeta
@@ -14,9 +17,67 @@ class EventBase(object):
 
         self.events = []
         self.rsvps = []
-        self.user_id = kwargs['user_id']
-        self.api_url = kwargs['api_url']
         self.headers = kwargs['headers']
+        self.user = kwargs.get('user') or None
+        self.social_network = kwargs.get('social_network') or None
+        # TODO We should get the user & social network in Social network base
+        assert isinstance(self.user, User)
+        assert isinstance(self.social_network, SocialNetwork)
+        self.user_id = self.user.id # TODO find a better way
+        self.api_url = self.social_network.apiUrl
+        self.member_id, self.access_token, self.refresh_token, self.webhook = \
+            self._get_user_credentials()
+
+    def _get_user_credentials(self):
+        user_credentials = UserCredentials.get_by_user_and_social_network_id(
+            self.user.id, self.social_network.id
+        )
+        assert user_credentials is not None
+        member_id = user_credentials.member_id
+        access_token = user_credentials.access_token
+        refresh_token = user_credentials.refresh_token
+        webhook = user_credentials.webhook
+        return member_id, access_token, refresh_token, webhook
+
+    def get_events(self, social_network):
+        return self.get_events(social_network)
+
+    def get_event(self, id):
+        pass
+
+    def create_event(self):
+        pass
+
+    def normalize_event(self, event):
+        pass
+
+    def pre_process_events(self, events):
+        pass
+
+    def process_events(self, events):
+        self.pre_process_events(events)
+        for event in events:
+            print 'Normalize'
+            event = self.normalize_event(event)
+            print 'Normalized'
+            print event
+            if event:
+                event_in_db = Event.get_by_user_and_vendor_id(event.user_id,
+                                                              event.vendor_event_id)
+                print 'Event in db', event_in_db
+                if event_in_db:
+                    data = dict(event_title=event.event_title,
+                                event_description=event.event_description,
+                                eventAddressLine1=event.eventAddressLine1,
+                                event_start_datetime=event.event_start_datetime,
+                                event_end_datetime=event.event_end_datetime)
+                    event_in_db.update(**data)
+                else:
+                    Event.save(event)
+        self.post_process_events(events)
+
+    def post_process_events(self, events):
+        pass
 
     @abstractmethod
     def create_event(self, *args, **kwargs):
@@ -30,7 +91,7 @@ class EventBase(object):
                 event = Event.get_by_user_and_event_id(self.user_id, event_id)
                 if event:
                     try:
-                        self.unpublish_event(event.vendorEventId)
+                        self.unpublish_event(event.vendor_event_id)
                         Event.delete(event_id)
                         deleted.append(event_id)
                     except Exception as e:     # some error while removing event
@@ -51,11 +112,11 @@ class EventBase(object):
         """
         function_name = 'save_event()'
         self.message_to_log.update({'function_name': function_name})
-        sn_event_id = data['vendorEventId']
-        socail_network_id = data['socialNetworkId']
+        sn_event_id = data['vendor_event_id']
+        social_network_id = data['social_network_id']
         event = Event.get_by_user_id_social_network_id_vendor_event_id(
             self.user_id,
-            socail_network_id,
+            social_network_id,
             sn_event_id)
         try:
             if event:

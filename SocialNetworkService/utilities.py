@@ -12,14 +12,9 @@ import logging
 import datetime
 from requests_oauthlib import OAuth2Session
 
-# TODO: remove global vars
-from SocialNetworkService.custom_exections import SocialNetworkNotImplemented
-from common.gt_models.social_network import SocialNetwork
-from common.gt_models.user import User
+from gt_common.gt_models.user import User
+from gt_common.gt_models.social_network import SocialNetwork
 
-EVENTBRITE = SocialNetwork.get_by_name('Eventbrite')
-MEETUP = SocialNetwork.get_by_name('Meetup')
-FACEBOOK = SocialNetwork.get_by_name('Facebook')
 
 logger = logging.getLogger('event_service.app')
 OAUTH_SERVER = 'http://127.0.0.1:8888/oauth2/authorize'

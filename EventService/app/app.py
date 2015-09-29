@@ -2,11 +2,17 @@ import json
 import re
 import flask
 import requests
+from flask_restful import Resource
 from custom_exections import InvalidUsage, ApiException
-from .restful.social_networks import social_network_blueprint
+from restful.social_networks import social_network_blueprint
 from .restful.events import events_blueprint
 from event_importer.base import logger
 from event_importer.eventbrite import Eventbrite
+from event_importer.meetup import Meetup
+from event_importer.facebook_ev import Facebook
+from gt_models.event import Event
+from gt_models.user import UserCredentials
+from gt_models.social_network import SocialNetwork
 from gt_models.config import db_session
 from flask.ext.restful import Api
 from flask import Flask, request, session, g, redirect, url_for, \
@@ -223,7 +229,6 @@ def handle_invalid_usage(error):
     response = json.dumps(error.to_dict())
     response.status_code = error.status_code
     return response
-
 
 @app.errorhandler(Exception)
 def handle_invalid_usage(error):

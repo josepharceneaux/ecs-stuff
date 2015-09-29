@@ -1,4 +1,10 @@
+
 import pytz
+import json
+from base import EventBase
+from datetime import datetime
+from datetime import timedelta
+from gt_common.gt_models.event import Event
 
 from SocialNetworkService.custom_exections import EventNotCreated
 from SocialNetworkService.custom_exections import TicketsNotCreated
@@ -35,7 +41,103 @@ class EventbriteEvent(EventBase):
         self.ticket_payload = None
         self.venue_payload = None
         self.message_to_log.update({'class_name': EVENTBRITE})
+        self.start_date_in_utc = kwargs.get('start_date') or \
+            (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
+    def get_events(self):
+        """
+        We send GET requests to API URL and get data. We also
+        have to handle pagination because Eventbrite's API
+        does that too.
+        :return:
+        """
+        events_url = self.api_url + '/events/search/'
+        params = {'user.id': self.member_id,
+                  'date_created.range_start': self.start_date_in_utc
+                  }
+        all_events = []
+        response = http_request('GET', events_url, params=params,
+                                headers=self.headers)
+        if response.ok:
+            data = response.json()
+            page_size = data['pagination']['page_size']
+            total_records = data['pagination']['object_count']
+            all_events.extend(data['events'])
+            current_page = 1
+            total_pages = total_records / page_size
+            for page in range(1, total_pages):
+                params_copy = params.copy()
+                current_page += 1
+                params_copy['page'] = current_page
+                response = http_request('GET', events_url, params=params_copy,
+                                        headers=self.headers)
+                if response.ok:
+                    data = response.json()
+                all_events.extend(data['events'])
+            return all_events
+        return all_events
+
+    def normalize_event(self, event):
+        """
+        Basically we take event's data from Eventbrite's end
+        and map their fields to ours and finally we return
+        Event's object. We also issue some calls to get updated
+        venue and organizer information.
+        :param event:
+        :return:
+        """
+        organizer = None
+        organizer_email = None
+        # Get information about event's venue
+        if event['venue_id']:
+            response = http_request('GET', self.api_url + '/venues/' + event['venue_id'],
+                                    headers=self.headers)
+            if response.ok:
+                venue = response.json()
+                # Now let's try to get the information about the event's organizer
+                if event['organizer_id']:
+                    response = http_request('GET', self.api_url +
+                                             '/organizers/' + event['organizer_id'],
+                                            headers=self.headers)
+                    if response.ok:
+                        organizer = json.loads(response.text)
+                    if organizer:
+                        response = http_request('GET', self.api_url + '/users/'
+                                                 + self.member_id,
+                                                headers=self.headers)
+                        if response.ok:
+                            organizer_info = json.loads(response.text)
+                            organizer_email = organizer_info['emails'][0]['email']
+                event_db = Event(
+                    vendor_event_id=event['id'],
+                    event_title=event['name']['text'],
+                    event_description=event['description']['text'],
+                    social_network_id=self.social_network.id,
+                    user_id=self.user.id,
+                    group_id=0,
+                    group_url_name='',
+                    event_address_line_1=venue['address']['address_1'],
+                    event_address_line_2=venue['address']['address_2'] if venue else '',
+                    event_city=venue['address']['city'],
+                    event_state=venue['address']['region'],
+                    event_zipcode='',
+                    event_country=venue['address']['country'],
+                    event_longitude=float(venue['address']['longitude']),
+                    event_latitude=float(venue['address']['latitude']),
+                    event_start_datetime=event['start']['local'],
+                    event_end_datetime=event['end']['local'],
+                    organizer_name=organizer['name'] if organizer else '',
+                    organizer_email=organizer_email,
+                    about_event_organizer=organizer['description'] if organizer else '',
+                    registration_instruction='',
+                    event_cost='',
+                    event_currency=event['currency'],
+                    event_timezone=event['start']['timezone'],
+                    max_attendees=event['capacity'])
+                return event_db
+        else:
+            # TODO log exception here
+            pass # log exception
     def create_event(self):
         """
         This function is used to post event on eventbrite.

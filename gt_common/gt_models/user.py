@@ -3,7 +3,6 @@ from sqlalchemy import Column, Integer, String, DateTime, \
 from sqlalchemy.orm import relationship
 from base import ModelBase as Base
 
-
 class User(Base):
     __tablename__ = 'user'
     id = Column(Integer, primary_key=True)
@@ -25,7 +24,7 @@ class User(Base):
     diceUserId = Column(Integer)
 
     user_credentials = relationship('UserCredentials', backref='user')
-    candidate = relationship('Candidate', backref='user')
+    candidates = relationship('Candidate', backref='user')
     events = relationship('Event', backref='user')
 
     def __repr__(self):
@@ -35,13 +34,13 @@ class User(Base):
 class UserCredentials(Base):
     __tablename__ = 'user_credentials'
     id = Column(Integer, primary_key=True)
-    userId = Column(Integer, ForeignKey('user.id'), nullable=False)
-    socialNetworkId = Column(Integer, ForeignKey('social_network.id'), nullable=False)
-    refreshToken = Column(String(1000))
+    user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
+    social_network_id = Column(Integer, ForeignKey('social_network.id'), nullable=False)
+    refresh_token = Column(String(1000))
     webhook = Column(String(200))
-    memberId = Column(String(100))
-    accessToken = Column(String(1000))
-    socialNetwork = relationship("SocialNetwork", primaryjoin='UserCredentials.socialNetworkId == SocialNetwork.id')
+    member_id = Column(String(100))
+    access_token = Column(String(1000))
+    social_network = relationship("SocialNetwork", primaryjoin='UserCredentials.social_network_id == SocialNetwork.id')
 
     @classmethod
     def get_all_credentials(cls, social_network_id=None):
@@ -55,33 +54,34 @@ class UserCredentials(Base):
         assert social_network_id is not None
 
         return cls.query.filter(
-            UserCredentials.socialNetworkId == social_network_id
+            UserCredentials.social_network_id == social_network_id
         ).all()
 
     @classmethod
     def get_by_user_id(cls, user_id):
         assert user_id is not None
         return cls.query.filter(
-            UserCredentials.userId == user_id
+            UserCredentials.user_id == user_id
         ).all()
 
     @classmethod
-    def get_by_user_and_social_network(cls, user_id, social_network_id):
+    def get_by_user_and_social_network_id(cls, user_id, social_network_id):
         assert user_id is not None
         assert social_network_id is not None
         return cls.query.filter(
             and_(
-                UserCredentials.userId == user_id,
-                UserCredentials.socialNetworkId == social_network_id
+                UserCredentials.user_id == user_id,
+                UserCredentials.social_network_id == social_network_id
             )
         ).first()
 
     @classmethod
     def update_auth_token(cls, user_id, social_network_id, access_token):
+        # TODO improve this method
         success = False
         user = cls.get_by_user_and_social_network(user_id, social_network_id)
         if user:
-            user.update(accessToken=access_token)
+            user.update(access_token=access_token)
             success = True
         return success
 
@@ -92,6 +92,6 @@ class UserCredentials(Base):
         return cls.query.filter(
             and_(
                 UserCredentials.webhook == webhook_id,
-                UserCredentials.socialNetworkId == social_network_id
+                UserCredentials.social_network_id == social_network_id
             )
         ).first()

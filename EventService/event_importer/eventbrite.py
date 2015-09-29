@@ -23,8 +23,8 @@ class Eventbrite(Base):
     def get_user_credentials_by_webhook(self):
         """
         This gives the Owner user's data using following class variables
-        webhook_id: is the id of webhook of the Get Talent user
-        social_network_id: is the id of social network of Get Talent user
+        webhook_id: is the id of webhook of the getTalent user
+        social_network_id: is the id of social network of getTalent user
         """
         assert self.webhook_id is not None
 
@@ -39,6 +39,16 @@ class Eventbrite(Base):
         else:
             logger.error("No User found in database corresponding to webhook id "
                          "%(webhook_id)s" % webhook)
+
+    def validate_token(self):
+        eb = SocialNetwork.get_by_name(self.vendor)
+        url = eb.apiUrl + '/users/me'
+        headers = {'Authorization': 'Bearer %s' % self.user_credential.accessToken}
+        response = self.http_get(url, headers=headers)
+        if response.ok:
+            return True
+        return False
+
 
     def get_events(self):
         """

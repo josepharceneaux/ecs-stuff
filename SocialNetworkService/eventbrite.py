@@ -1,3 +1,11 @@
+import os
+from gt_common.gt_models.config import GTSQLAlchemy
+app_cfg = os.path.abspath('app.cfg')
+logging_cfg = os.path.abspath('logging.conf')
+
+gt = GTSQLAlchemy(app_config_path=app_cfg,
+                  logging_config_path=logging_cfg)
+from gt_common.gt_models.user import UserCredentials
 from base import SocialNetworkBase
 from common.gt_models.user import UserCredentials
 from utilities import get_message_to_log, http_request, log_exception, log_error
@@ -13,7 +21,7 @@ class Eventbrite(SocialNetworkBase):
         super(Eventbrite, self).__init__(*args, **kwargs)
         # token validity is checked here
         # if token is expired, we refresh it here
-        self.validate_and_refresh_access_token()
+        # self.validate_and_refresh_access_token()
 
     @classmethod
     def get_access_token(cls, data, relative_url=None):
@@ -80,3 +88,7 @@ class Eventbrite(SocialNetworkBase):
                 error_message = "Webhook was not created successfully."
                 message_to_log.update({'error': error_message})
                 log_error(message_to_log)
+
+if __name__ == "__main__":
+    eb = Eventbrite(user_id=1, social_network_id=18)
+    eb.process_events()

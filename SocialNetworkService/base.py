@@ -1,8 +1,9 @@
-from abc import ABCMeta, abstractmethod
+import importlib
 import requests
+from abc import ABCMeta, abstractmethod
+from gt_common.gt_models.social_network import SocialNetwork
+from gt_common.gt_models.user import User, UserCredentials
 
-from common.gt_models.social_network import SocialNetwork
-from common.gt_models.user import User, UserCredentials
 
 from utilities import get_message_to_log, log_error,\
     log_exception, http_request, get_class
@@ -26,8 +27,10 @@ class SocialNetworkBase(object):
         self.api_relative_url = None
         self.user = User.get_by_id(user_id)
         self.social_network = SocialNetwork.get_by_id(social_network_id)
+        self.events = None
         self.user_credentials = UserCredentials.get_by_user_and_social_network_id(
-            user_id, social_network_id)
+            user_id, social_network_id
+        )
         self.message_to_log = get_message_to_log(
             function_name=function_name,
             class_name=self.__class__.__name__)
@@ -64,8 +67,41 @@ class SocialNetworkBase(object):
             log_error(self.message_to_log)
         # Eventbrite and meetup social networks take access token in header
         # so here we generate authorization header to be used by both of them
+        self.message_to_log = get_message_to_log()
         self.headers = {'Authorization': 'Bearer ' + self.access_token}
         self.start_date_dt = None
+
+    def process_events(self):
+        """
+        This method gets events by calling the respective event's
+        class in the SocialNetworkService/event directory. So if
+        we want to retrieve events for Eventbrite then we're basically
+        doing this.
+        from event import eventbrite
+        eventbrite = eventbrite.Eventbrite(self.user, self.social_network)
+        self.events = eventbrite.get_events(self.social_network)
+        :return:
+        """
+        sn_name = self.social_network.name.strip()
+        module_path = None
+        if sn_name.lower() == 'facebook':
+            module_path = 'event.%s_module' % sn_name.lower()
+        else:
+            module_path = 'event.%s' % sn_name.lower()
+        print 'Module path', module_path
+        try:
+            sn_event_module = importlib.import_module(module_path)
+        except ImportError as error:
+            raise error
+        # e.g. /socialnetworkservice/event/eventbrite.py
+        class_name = sn_name.title() + "Event"
+        event_class = getattr(sn_event_module, class_name)
+        sn_event_obj = event_class(user=self.user, social_network=self.social_network,
+                                   headers=self.headers)
+        self.events = sn_event_obj.get_events()
+        print 'Events', self.events
+        sn_event_obj.process_events(self.events)
+
 
     @classmethod
     def get_access_token(cls, data):  # data contains social_network,

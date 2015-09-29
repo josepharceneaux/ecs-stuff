@@ -1,4 +1,11 @@
+import os
 import json
+from gt_common.gt_models.config import GTSQLAlchemy
+app_cfg = os.path.abspath('app.cfg')
+logging_cfg = os.path.abspath('logging.conf')
+
+gt = GTSQLAlchemy(app_config_path=app_cfg,
+                  logging_config_path=logging_cfg)
 
 from base import SocialNetworkBase
 from utilities import http_request, logger, log_error, log_exception
@@ -11,7 +18,7 @@ class Meetup(SocialNetworkBase):
         super(Meetup, self).__init__(*args, **kwargs)
         # token validity is checked here
         # if token is expired, we refresh it here
-        self.validate_and_refresh_access_token()
+        # self.validate_and_refresh_access_token()
 
     @classmethod
     def get_access_token(cls, data):
@@ -43,7 +50,8 @@ class Meetup(SocialNetworkBase):
         self.message_to_log.update({'functionName': 'get_groups()'})
         url = self.api_url + '/groups/'
         params = {'member_id': 'self'}
-        response = http_request('GET', url, params=params, headers=self.headers)
+        response = http_request('GET', url, params=params, headers=self.headers,
+                                message_to_log=self.message_to_log)
         if response.ok:
             meta_data = json.loads(response.text)['meta']
             member_id = meta_data['url'].split('=')[1].split('&')[0]
@@ -100,3 +108,7 @@ class Meetup(SocialNetworkBase):
             self.message_to_log.update({'error': error_message})
             log_exception(self.message_to_log)
         return status
+
+if __name__ == "__main__":
+    eb = Meetup(user_id=1, social_network_id=13)
+    eb.process_events()
