@@ -32,18 +32,17 @@ class GTSQLAlchemy(object):
     db_session = None
 
     def __init__(self, *args, **kwargs):
-        self.app_config_path = kwargs.get('app_config_path') or None
-        self.logging_config_path = kwargs.get('logging_config_path') or None
+        self.app_config_path = kwargs.get('app_config_path')
+        self.logging_config_path = kwargs.get('logging_config_path')
         self.db_conn = None
-        self.logger_name = kwargs.get('logger_name') or None
+        self.logger_name = kwargs.get('logger_name')
         self.logger = None
         self.engine = None
-        self.convert_unicode = kwargs.get('convert_unicode') or True
-        self.auto_commit = kwargs.get("auto_commit") or False
-        self.auto_flush = kwargs.get('auto_flush') or False
+        self.convert_unicode = kwargs.get('convert_unicode', True)
+        self.auto_commit = kwargs.get('auto_commit', False)
+        self.auto_flush = kwargs.get('auto_flush', False)
 
         self.setup(self.app_config_path, self.logging_config_path)
-
 
     def setup(self, app_config_path, logging_config_path):
         app_config_path = os.path.normpath(app_config_path)

@@ -287,7 +287,7 @@ def convert_keys_to_snake_case(dictionary):
     return data
 
 
-def import_non_local(name, custom_name=None):
+def import_from_dist_packages(name, custom_name=None):
     """
     This function is used to import facebook-sdk module rather than local
     module named as facebook

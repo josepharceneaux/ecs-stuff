@@ -4,11 +4,11 @@ from datetime import datetime, timedelta
 from common_.gt_models.event import Event
 from SocialNetworkService.rsvp.base import RSVPBase
 from SocialNetworkService.utilities import Attendee, log_exception, \
-    import_non_local, log_error
+    import_from_dist_packages, log_error
 
 # Here we import facebook-sdk python module making sure it doesn't import
 # our local facebook.py modules
-facebook = import_non_local('facebook')
+facebook = import_from_dist_packages('facebook')
 
 
 class FacebookRsvp(RSVPBase):

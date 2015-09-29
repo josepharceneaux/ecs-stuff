@@ -5,14 +5,14 @@ from base import ModelBase as Base
 
 class SocialNetwork(Base):
     __tablename__ = 'social_network'
-    id = Column(Integer, primary_key=True)
-    name = Column(String(100))
-    url = Column(String(255))
-    api_url = Column(String(255))
-    client_key = Column(String(500))
-    secret_key = Column(String(500))
-    redirect_uri = Column(String(255))
-    auth_url = Column(String(200))
+    id = Column('id', Integer, primary_key=True)
+    name = Column('name', String(100))
+    url = Column('url', String(255))
+    api_url = Column('apiUrl', String(255))
+    client_key = Column('clientKey', String(500))
+    secret_key = Column('secretKey', String(500))
+    redirect_uri = Column('redirectUri', String(255))
+    auth_url = Column('authUrl', String(200))
 
     events = relationship("Event", backref='social_network', lazy='dynamic')
     user_credentials = relationship("UserCredentials", backref='social_network', lazy='dynamic')
@@ -58,9 +58,7 @@ class SocialNetwork(Base):
     def get_by_ids(cls, ids):
         assert isinstance(ids, list)
         return cls.query.filter(
-                SocialNetwork.id.in_(
-                    ids
-                )
+            SocialNetwork.id.in_(
+                ids
+            )
         ).all()
-
-

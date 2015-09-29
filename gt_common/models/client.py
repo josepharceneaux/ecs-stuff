@@ -6,6 +6,5 @@ from base import ModelBase as Base
 
 class Client(Base):
     __tablename__ = 'client'
-    client_id = Column(String(40), primary_key=True)
-    client_secret = Column(String(55), nullable=False)
-
+    client_id = Column('client_id', String(40), primary_key=True)
+    client_secret = Column('client_secret', String(55), nullable=False)
