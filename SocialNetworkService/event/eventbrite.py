@@ -14,8 +14,8 @@ from SocialNetworkService.custom_exections import EventInputMissing
 from SocialNetworkService.custom_exections import EventLocationNotCreated
 
 from SocialNetworkService.event.base import EventBase
-from SocialNetworkService.utilities import log_error, logger, log_exception, http_request
-from common_.gt_models.event import Event
+from SocialNetworkService.utilities import log_error, logger, log_exception, http_request, get_message_to_log
+from gt_common.models.event import Event
 
 EVENTBRITE = 'Eventbrite'
 # TODO: Will replace this ULR with actual webhook URL (Flask App)
@@ -40,7 +40,6 @@ class EventbriteEvent(EventBase):
         self.vendor_event_id = None
         self.ticket_payload = None
         self.venue_payload = None
-        self.message_to_log.update({'class_name': EVENTBRITE})
         self.start_date_in_utc = kwargs.get('start_date') or \
             (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -138,6 +137,7 @@ class EventbriteEvent(EventBase):
         else:
             # TODO log exception here
             pass # log exception
+
     def create_event(self):
         """
         This function is used to post event on eventbrite.
@@ -145,7 +145,6 @@ class EventbriteEvent(EventBase):
         If event is published successfully, returns True
         :return:
         """
-        self.message_to_log.update({'functionName': 'create_event()'})
         venue_id = None
         # create url to post event
         if self.vendor_event_id is not None:  # updating event
@@ -181,8 +180,12 @@ class EventbriteEvent(EventBase):
             error_detail = response.get('error', '') + ': ' + response.get('error_description', '')
             if error_detail != ': ':
                 error_message += '\n%s' % error_detail
-            self.message_to_log.update({'error': error_message})
-            log_error(self.message_to_log)
+            message_to_log = get_message_to_log(function_name='create_event',
+                                                class_name=self.__class__.__name__,
+                                                gt_user=self.user.name,
+                                                error=error_detail,
+                                                file_name=__file__)
+            log_error(message_to_log)
             raise EventNotCreated(error_message)
 
     def delete_event(self, event_id):
@@ -203,7 +206,6 @@ class EventbriteEvent(EventBase):
         :param venue_id:
         :return:
         """
-        self.message_to_log.update({'functionName': 'add_location()'})
         if venue_id:  # update event address
             url = self.api_url + "/venues/" + venue_id + "/"
             payload = self.venue_payload
@@ -223,8 +225,12 @@ class EventbriteEvent(EventBase):
             message = '\nErrors from the vendor:\n'
             message += ''.join(response.json().get('error') + ',' + response.json().get('error_description'))
             error_message += message
-            self.message_to_log.update({'error': error_message})
-            log_error(self.message_to_log)
+            message_to_log = get_message_to_log(function_name='add_location',
+                                                class_name=self.__class__.__name__,
+                                                gt_user=self.user.name,
+                                                error=error_message,
+                                                file_name=__file__)
+            log_error(message_to_log)
             raise EventLocationNotCreated('ApiError: Unable to create venue for event\n %s' % message)
 
     def manage_event_tickets(self, event_id, event_is_new):
@@ -234,15 +240,14 @@ class EventbriteEvent(EventBase):
         :param event_is_new: Status of new/old event
         :return: tickets_id
         """
-        self.message_to_log.update({'functionName': 'manage_event_tickets()'})
         tickets_url = self.api_url + "/events/" + event_id + "/ticket_classes/"
         if not event_is_new:
             event = Event.get_by_user_and_vendor_id(self.user_id, event_id)
             if event.ticketsId:
                 tickets_url = tickets_url + str(event.ticketsId) + '/'
             else:
-                logger.info('Tickets ID is not available for event with id %s, %s'
-                            % (event_id, self.message_to_log))
+                logger.info('Tickets ID is not available for event with id %s, User:  %s'
+                            % (event_id, self.user.name))
         response = http_request('POST', tickets_url, params=self.ticket_payload, headers=self.headers)
         if response.ok:
             logger.info('|  %s Ticket(s) have been created  |'
@@ -250,8 +255,12 @@ class EventbriteEvent(EventBase):
             return response.json().get('id')
         else:
             error_message = 'Tickets were not created successfully'
-            self.message_to_log.update({'error': error_message})
-            log_error(self.message_to_log)
+            message_to_log = get_message_to_log(function_name='manage_event_tickets',
+                                                class_name=self.__class__.__name__,
+                                                gt_user=self.user.name,
+                                                error=error_message,
+                                                file_name=__file__)
+            log_error(message_to_log)
             raise TicketsNotCreated('ApiError: Unable to create event tickets on Eventbrite')
 
     def publish_event(self, event_id):
@@ -260,7 +269,6 @@ class EventbriteEvent(EventBase):
         :param event_id:
         :return:
         """
-        self.message_to_log.update({'functionName': 'publish_event()'})
         # create url to publish event
         url = self.api_url + "/events/" + event_id + "/publish/"
         # params are None. Access token is present in self.headers
@@ -270,8 +278,12 @@ class EventbriteEvent(EventBase):
         else:
             error_message = "Event was not Published. There are some errors: " \
                             "Details: %s  |" % response
-            self.message_to_log.update({'error': error_message})
-            log_error(self.message_to_log)
+            message_to_log = get_message_to_log(function_name='publish_event',
+                                                class_name=self.__class__.__name__,
+                                                gt_user=self.user.name,
+                                                error=error_message,
+                                                file_name=__file__)
+            log_error(message_to_log)
             raise EventNotPublished('ApiError: Unable to publish event on specified social network')
 
     def unpublish_event(self, event_id):
@@ -281,7 +293,6 @@ class EventbriteEvent(EventBase):
         :param event_id:
         :return:
         """
-        self.message_to_log.update({'functionName': 'unpublish_event()'})
         # create url to publish event
         url = self.api_url + "/events/" + event_id + "/unpublish/"
         # params are None. Access token is present in self.headers
@@ -291,11 +302,16 @@ class EventbriteEvent(EventBase):
         else:
             error_message = "Event was not unpublished. There are some errors. " \
                             "Response is %s  |" % response
-            self.message_to_log.update({'error': error_message})
-            log_error(self.message_to_log)
+            message_to_log = get_message_to_log(function_name='unpublish_event',
+                                                class_name=self.__class__.__name__,
+                                                gt_user=self.user.name,
+                                                error=error_message,
+                                                file_name=__file__)
+            log_error(message_to_log)
             raise EventNotUnpublished('ApiError: Unable to remove event from specified social network')
 
-    def validate_required_fields(self, data):
+    @staticmethod
+    def validate_required_fields(data):
         """
         Here we validate that all the required fields for the event creation on
         Eventbrite are filled. If any required filed is missing, raises exception
@@ -311,7 +327,6 @@ class EventbriteEvent(EventBase):
         This is actually the mapping of data from the input data from
         EventCreationForm to the data required for API calls on Eventbrite.
         """
-        self.message_to_log.update({'functionName': 'gt_to_sn_fields_mappings()'})
         if data:
             self.validate_required_fields(data)
             #  filling required fields for Eventbrite
@@ -334,8 +349,12 @@ class EventbriteEvent(EventBase):
                 end_time = utc_dts[1]
             else:
                 error_message = 'Time Zone is None for Event %s ' % event_name
-                self.message_to_log.update({'error': error_message})
-                log_error(self.message_to_log)
+                message_to_log = get_message_to_log(function_name='gt_to_sn_fields_mappings',
+                                                    class_name=self.__class__.__name__,
+                                                    gt_user=self.user.name,
+                                                    error=error_message,
+                                                    file_name=__file__)
+                log_error(message_to_log)
             currency = data['eventCurrency']
             time_zone = data['eventTimeZone']
 
@@ -378,8 +397,12 @@ class EventbriteEvent(EventBase):
             self.vendor_event_id = data.get('vendorEventId')
         else:
             error_message = 'Data is None'
-            self.message_to_log.update({'error': error_message})
-            log_error(self.message_to_log)
+            message_to_log = get_message_to_log(function_name='gt_to_sn_fields_mappings',
+                                                class_name=self.__class__.__name__,
+                                                gt_user=self.user.name,
+                                                error=error_message,
+                                                file_name=__file__)
+            log_error(message_to_log)
 
     def create_webhook(self, user_credentials):
         """
@@ -407,12 +430,20 @@ class EventbriteEvent(EventBase):
                     status = True
                 except Exception as e:
                     error_message = e.message
-                    self.message_to_log.update({'error': error_message})
-                    log_exception(self.message_to_log)
+                    message_to_log = get_message_to_log(function_name='create_webhook',
+                                                        class_name=self.__class__.__name__,
+                                                        gt_user=self.user.name,
+                                                        error=error_message,
+                                                        file_name=__file__)
+                    log_exception(message_to_log)
             else:
                 error_message = "Webhook was not created successfully."
-                self.message_to_log.update({'error': error_message})
-                log_error(self.message_to_log)
+                message_to_log = get_message_to_log(function_name='create_webhook',
+                                                    class_name=self.__class__.__name__,
+                                                    gt_user=self.user.name,
+                                                    error=error_message,
+                                                    file_name=__file__)
+                log_error(message_to_log)
         else:
             # webhook has already been created for this user
             status = True

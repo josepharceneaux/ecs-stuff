@@ -7,13 +7,12 @@ from gt_common.models.user import User
 from gt_common.models.user import UserCredentials
 from gt_common.models.social_network import SocialNetwork
 
+
 class EventBase(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, *args, **kwargs):
         function_name = '__init__()'
-        self.message_to_log = get_message_to_log(function_name=function_name,
-                                                 class_name=self.__class__.__name__)
 
         self.events = []
         self.rsvps = []
@@ -111,7 +110,6 @@ class EventBase(object):
         :return:
         """
         function_name = 'save_event()'
-        self.message_to_log.update({'function_name': function_name})
         sn_event_id = data['vendor_event_id']
         social_network_id = data['social_network_id']
         event = Event.get_by_user_id_social_network_id_vendor_event_id(
@@ -127,8 +125,12 @@ class EventBase(object):
                 Event.save(event)
         except Exception as e:
             error_message = 'Event was not saved in Database\nError: %s' % str(e)
-            self.message_to_log.update({'error': error_message})
-            log_error(self.message_to_log)
+            message_to_log = get_message_to_log(function_name='gt_to_sn_fields_mappings',
+                                                class_name=self.__class__.__name__,
+                                                gt_user=self.user.name,
+                                                error=error_message,
+                                                file_name=__file__)
+            log_error(message_to_log)
             raise EventNotSaveInDb('Error occurred while saving event in databse')
         return event.id
 
