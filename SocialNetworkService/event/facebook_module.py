@@ -3,6 +3,7 @@ import requests
 from datetime import datetime, timedelta
 import facebook
 from gt_common.gt_models.event import Event
+from SocialNetworkService.utilities import log_error
 from SocialNetworkService.event.base import EventBase
 
 class FacebookEvent(EventBase):
@@ -100,12 +101,12 @@ class FacebookEvent(EventBase):
                 organizer = self.graph.get_object('v2.4/' + owner['id'])
                 organizer = organizer.get('data')
             except facebook.GraphAPIError as error:
-                # TODO log exception
-                print error.message
-            #   log_exception(self.traceback_info,
-            #                 "Couldn't get events's organizer info(Facebook )."
-            #                 " %(error_message)s"
-            #                 % info_to_log)
+                log_error({
+                            'Reason': error.message,
+                            'functionName': 'normalize_event',
+                            'fileName': __file__,
+                            'User': self.user.id
+                        })
                 raise
         try:
             event = Event(

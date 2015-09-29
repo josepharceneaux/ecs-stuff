@@ -1,11 +1,8 @@
 
 import pytz
 import json
-from base import EventBase
 from datetime import datetime
 from datetime import timedelta
-from gt_common.gt_models.event import Event
-
 from SocialNetworkService.custom_exections import EventNotCreated
 from SocialNetworkService.custom_exections import TicketsNotCreated
 from SocialNetworkService.custom_exections import EventNotPublished
@@ -40,7 +37,6 @@ class EventbriteEvent(EventBase):
         self.vendor_event_id = None
         self.ticket_payload = None
         self.venue_payload = None
-        self.message_to_log.update({'class_name': EVENTBRITE})
         self.start_date_in_utc = kwargs.get('start_date') or \
             (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -56,8 +52,17 @@ class EventbriteEvent(EventBase):
                   'date_created.range_start': self.start_date_in_utc
                   }
         all_events = []
-        response = http_request('GET', events_url, params=params,
+        try:
+            response = http_request('GET', events_url, params=params,
                                 headers=self.headers)
+        except Exception as error:
+            log_error({
+                            'Reason': error.message,
+                            'functionName': 'get_events',
+                            'fileName': __file__,
+                            'User': self.user.id
+                        })
+            raise
         if response.ok:
             data = response.json()
             page_size = data['pagination']['page_size']
@@ -69,8 +74,17 @@ class EventbriteEvent(EventBase):
                 params_copy = params.copy()
                 current_page += 1
                 params_copy['page'] = current_page
-                response = http_request('GET', events_url, params=params_copy,
+                try:
+                    response = http_request('GET', events_url, params=params_copy,
                                         headers=self.headers)
+                except Exception as error:
+                    log_error({
+                            'Reason': error.message,
+                            'functionName': 'get_events',
+                            'fileName': __file__,
+                            'User': self.user.id
+                        })
+                    raise
                 if response.ok:
                     data = response.json()
                 all_events.extend(data['events'])
@@ -88,56 +102,83 @@ class EventbriteEvent(EventBase):
         """
         organizer = None
         organizer_email = None
+        assert event is not None
+
         # Get information about event's venue
         if event['venue_id']:
-            response = http_request('GET', self.api_url + '/venues/' + event['venue_id'],
+            try:
+                response = http_request('GET', self.api_url + '/venues/' + event['venue_id'],
                                     headers=self.headers)
+            except Exception as error:
+                log_error({
+                            'Reason': error.message,
+                            'functionName': 'normalize_event',
+                            'fileName': __file__,
+                            'User': self.user.id
+                        })
+                raise
             if response.ok:
                 venue = response.json()
                 # Now let's try to get the information about the event's organizer
                 if event['organizer_id']:
-                    response = http_request('GET', self.api_url +
+                    try:
+                        response = http_request('GET', self.api_url +
                                              '/organizers/' + event['organizer_id'],
                                             headers=self.headers)
+                    except Exception as error:
+                        log_error({
+                            'Reason': error.message,
+                            'functionName': 'normalize_event',
+                            'fileName': __file__,
+                            'User': self.user.id
+                        })
+                        raise
                     if response.ok:
                         organizer = json.loads(response.text)
                     if organizer:
-                        response = http_request('GET', self.api_url + '/users/'
+                        try:
+                            response = http_request('GET', self.api_url + '/users/'
                                                  + self.member_id,
                                                 headers=self.headers)
+                        except Exception as error:
+                            log_error({
+                                'Reason': error.message,
+                                'functionName': 'normalize_event',
+                                'fileName': __file__,
+                                'User': self.user.id
+                            })
+                            raise
                         if response.ok:
                             organizer_info = json.loads(response.text)
                             organizer_email = organizer_info['emails'][0]['email']
-                event_db = Event(
-                    vendor_event_id=event['id'],
-                    event_title=event['name']['text'],
-                    event_description=event['description']['text'],
-                    social_network_id=self.social_network.id,
-                    user_id=self.user.id,
-                    group_id=0,
-                    group_url_name='',
-                    event_address_line_1=venue['address']['address_1'],
-                    event_address_line_2=venue['address']['address_2'] if venue else '',
-                    event_city=venue['address']['city'],
-                    event_state=venue['address']['region'],
-                    event_zipcode='',
-                    event_country=venue['address']['country'],
-                    event_longitude=float(venue['address']['longitude']),
-                    event_latitude=float(venue['address']['latitude']),
-                    event_start_datetime=event['start']['local'],
-                    event_end_datetime=event['end']['local'],
-                    organizer_name=organizer['name'] if organizer else '',
-                    organizer_email=organizer_email,
-                    about_event_organizer=organizer['description'] if organizer else '',
-                    registration_instruction='',
-                    event_cost='',
-                    event_currency=event['currency'],
-                    event_timezone=event['start']['timezone'],
-                    max_attendees=event['capacity'])
-                return event_db
-        else:
-            # TODO log exception here
-            pass # log exception
+        event_db = Event(
+            vendor_event_id=event['id'],
+            event_title=event['name']['text'],
+            event_description=event['description']['text'],
+            social_network_id=self.social_network.id,
+            user_id=self.user.id,
+            group_id=0,
+            group_url_name='',
+            event_address_line_1=venue['address']['address_1'] if venue else '',
+            event_address_line_2=venue['address']['address_2'] if venue else '',
+            event_city=venue['address']['city'] if venue else '',
+            event_state=venue['address']['region'] if venue else '',
+            event_zipcode='',
+            event_country=venue['address']['country'] if venue else '',
+            event_longitude=float(venue['address']['longitude']) if venue else 0,
+            event_latitude=float(venue['address']['latitude']) if venue else 0,
+            event_start_datetime=event['start']['local'],
+            event_end_datetime=event['end']['local'],
+            organizer_name=organizer['name'] if organizer else '',
+            organizer_email=organizer_email if organizer_email else '',
+            about_event_organizer=organizer['description'] if organizer else '',
+            registration_instruction='',
+            event_cost='',
+            event_currency=event['currency'],
+            event_timezone=event['start']['timezone'],
+            max_attendees=event['capacity'])
+        return event_db
+
     def create_event(self):
         """
         This function is used to post event on eventbrite.
@@ -192,7 +233,7 @@ class EventbriteEvent(EventBase):
                 self.unpublish_event(event_id)
                 Event.delete(event_id)
                 return True
-            except:     # some error while removing event
+            except Exception as error:     # some error while removing event
                 return False
         return False    # event not found in database
 

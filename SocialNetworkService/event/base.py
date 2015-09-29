@@ -1,7 +1,7 @@
 
 from abc import ABCMeta, abstractmethod
 from SocialNetworkService.custom_exections import EventNotSaveInDb
-from SocialNetworkService.utilities import get_message_to_log, log_error
+from SocialNetworkService.utilities import log_error
 from gt_common.gt_models.event import Event
 from gt_common.gt_models.user import User
 from gt_common.gt_models.user import UserCredentials
@@ -11,10 +11,6 @@ class EventBase(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, *args, **kwargs):
-        function_name = '__init__()'
-        self.message_to_log = get_message_to_log(function_name=function_name,
-                                                 class_name=self.__class__.__name__)
-
         self.events = []
         self.rsvps = []
         self.headers = kwargs['headers']
@@ -24,7 +20,7 @@ class EventBase(object):
         assert isinstance(self.user, User)
         assert isinstance(self.social_network, SocialNetwork)
         self.user_id = self.user.id # TODO find a better way
-        self.api_url = self.social_network.apiUrl
+        self.api_url = self.social_network.api_url
         self.member_id, self.access_token, self.refresh_token, self.webhook = \
             self._get_user_credentials()
 
@@ -55,26 +51,36 @@ class EventBase(object):
         pass
 
     def process_events(self, events):
-        self.pre_process_events(events)
+        if events:
+            self.pre_process_events(events)
         for event in events:
-            print 'Normalize'
             event = self.normalize_event(event)
-            print 'Normalized'
-            print event
             if event:
                 event_in_db = Event.get_by_user_and_vendor_id(event.user_id,
                                                               event.vendor_event_id)
-                print 'Event in db', event_in_db
-                if event_in_db:
-                    data = dict(event_title=event.event_title,
-                                event_description=event.event_description,
-                                eventAddressLine1=event.eventAddressLine1,
-                                event_start_datetime=event.event_start_datetime,
-                                event_end_datetime=event.event_end_datetime)
-                    event_in_db.update(**data)
-                else:
-                    Event.save(event)
-        self.post_process_events(events)
+                try:
+                    if event_in_db:
+                        data = dict(event_title=event.event_title,
+                                    event_description=event.event_description,
+                                    event_address_line_1=event.event_address_line_1,
+                                    event_start_datetime=event.event_start_datetime,
+                                    event_end_datetime=event.event_end_datetime)
+                        event_in_db.update(**data)
+                    else:
+                        Event.save(event)
+                except Exception as error:
+                    error_message = 'Cannot process an event. Social network: %s. Details: %s' % (
+                                    self.social_network.id, error.message
+                    )
+                    log_error({
+                            'Reason' : error_message,
+                            'functionName': 'process_events',
+                            'fileName': __file__,
+                            'User': self.user.id
+                    })
+                    # Now let's try to process the next event
+        if events:
+            self.post_process_events(events)
 
     def post_process_events(self, events):
         pass
@@ -84,6 +90,7 @@ class EventBase(object):
         pass
 
     def delete_events(self, event_ids):
+        #TODO why we are not passing list of 'events' here?
         deleted = []
         not_deleted = []
         if len(event_ids) > 0:
@@ -95,7 +102,14 @@ class EventBase(object):
                         Event.delete(event_id)
                         deleted.append(event_id)
                     except Exception as e:     # some error while removing event
+                        log_error({
+                            'Reason':e.message,
+                            'functionName': 'delete_events',
+                            'fileName': __file__,
+                            'User': self.user.id
+                        })
                         not_deleted.append(event_id)
+                        # TODO I think we shouldn't use not_deleted
                 else:
                     not_deleted.append(event_id)
         return deleted, not_deleted
@@ -110,26 +124,30 @@ class EventBase(object):
         :param data:
         :return:
         """
-        function_name = 'save_event()'
-        self.message_to_log.update({'function_name': function_name})
         sn_event_id = data['vendor_event_id']
         social_network_id = data['social_network_id']
         event = Event.get_by_user_id_social_network_id_vendor_event_id(
             self.user_id,
             social_network_id,
-            sn_event_id)
+            sn_event_id
+        )
         try:
             if event:
                 event.update(**data)
+                # TODO we shouldn't commit here
                 Event.session.commit()
             else:
                 event = Event(**data)
                 Event.save(event)
         except Exception as e:
-            error_message = 'Event was not saved in Database\nError: %s' % str(e)
-            self.message_to_log.update({'error': error_message})
-            log_error(self.message_to_log)
-            raise EventNotSaveInDb('Error occurred while saving event in databse')
+            error_message = 'Event was not saved in Database\nError: %s' % e.message
+            log_error({
+                            'Reason':error_message,
+                            'functionName': 'save_event',
+                            'fileName': __file__,
+                            'User': self.user.id
+                        })
+            raise
         return event.id
 
     def event_sn_to_gt_mapping(self, *args, **kwargs):
