@@ -5,8 +5,8 @@ from SocialNetworkService.app.app_utils import authenticate, api_route, ApiRespo
 from flask.ext.restful import Resource, Api
 from SocialNetworkService.meetup import Meetup
 
-from common_.gt_models.user import UserCredentials
-from common_.gt_models.social_network import SocialNetwork
+from gt_common.models.user import UserCredentials
+from gt_common.models.social_network import SocialNetwork
 
 social_network_blueprint = Blueprint('social_network_api', __name__)
 api = Api()

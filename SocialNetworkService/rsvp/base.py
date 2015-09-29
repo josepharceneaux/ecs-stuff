@@ -1,12 +1,13 @@
 import json
 
 from abc import ABCMeta, abstractmethod
-from common_.gt_models.event import Event
-from common_.gt_models.product import Product
-from common_.gt_models.activity import Activity
-from common_.gt_models.rsvp import RSVP, CandidateEventRSVP
-from common_.gt_models.candidate import CandidateSource, Candidate
-from SocialNetworkService.utilities import log_exception, log_error
+from gt_common.models.event import Event
+from gt_common.models.product import Product
+from gt_common.models.activity import Activity
+from gt_common.models.rsvp import RSVP, CandidateEventRSVP
+from gt_common.models.candidate import CandidateSource, Candidate
+from SocialNetworkService.utilities import log_exception, log_error, get_message_to_log
+from gt_common.models.user import User
 
 
 class RSVPBase(object):
@@ -14,14 +15,19 @@ class RSVPBase(object):
 
     def __init__(self, *args, **kwargs):
         function_name = '__init__()'
-
-        self.message_to_log = kwargs.get('message_to_log')
-        self.message_to_log.update({'function_name': function_name,
-                                    'class_name': self.__class__.__name__})
+        message_to_log = get_message_to_log(function_name=function_name,
+                                            class_name=self.__class__.__name__,
+                                            file_name=__file__)
+        self.user_credentials = kwargs.get('user_credentials')
+        if self.user_credentials:
+            self.user = User.get_by_id(self.user_credentials.user_id)
+            message_to_log.update({'user': self.user.name})
+        else:
+            error_message = 'User Credentials are None'
+            message_to_log.update({'error': error_message})
+            log_error(message_to_log)
         try:
             self.headers = kwargs.get('headers')
-            self.user_credentials = kwargs.get('user_credentials')
-            self.gt_user_id = self.user_credentials.userId
             self.social_network_id = kwargs.get('social_network').id
             self.social_network_name = kwargs.get('social_network').name
             self.api_url = kwargs.get('social_network').apiUrl
@@ -29,8 +35,8 @@ class RSVPBase(object):
             self.start_date_dt = None
         except Exception as e:
             error_message = e.message
-            self.message_to_log.update({'error': error_message})
-            log_exception(self.message_to_log)
+            message_to_log.update({'error': error_message})
+            log_exception(message_to_log)
 
     @abstractmethod
     def get_rsvps(self, event):
@@ -53,9 +59,13 @@ class RSVPBase(object):
 
         :return:
         """
-        self.message_to_log.update({"functionName": "_process_rsvps()"})
+        function_name = '_process_rsvps()'
+        message_to_log = get_message_to_log(function_name=function_name,
+                                            class_name=self.__class__.__name__,
+                                            gt_user=self.user.name,
+                                            file_name=__file__)
         # get events from database where eventStartDate is greater than
-        events = Event.get_by_user_id_vendor_id_start_date(self.gt_user_id,
+        events = Event.get_by_user_id_vendor_id_start_date(self.user.id,
                                                            self.social_network_id,
                                                            self.start_date_dt,
                                                            )
@@ -77,12 +87,12 @@ class RSVPBase(object):
                     # Shouldn't raise an exception, just log it and move to process
                     # process next RSVP
                     error_message = e.message
-                    self.message_to_log.update({'error': error_message})
-                    log_exception(self.message_to_log)
+                    message_to_log.update({'error': error_message})
+                    log_exception(message_to_log)
         else:
             error_message = "There are no events for User in the Database"
-            self.message_to_log.update({'error': error_message})
-            log_error(self.message_to_log)
+            message_to_log.update({'error': error_message})
+            log_error(message_to_log)
 
     def post_process_rsvp(self, rsvps):
         """

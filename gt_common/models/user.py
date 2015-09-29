@@ -31,7 +31,12 @@ class User(Base):
     venues = relationship('Venue', backref='user', lazy='dynamic')
 
     def __repr__(self):
-        return '<User %r>' % (self.email)
+        return '<User %r>' % self.email
+
+    @property
+    def name(self):
+        return self.firstName + ' ' + self.lastName
+
 
 
 class UserCredentials(Base):
