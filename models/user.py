@@ -1,6 +1,7 @@
 from models import db
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship
 from auth_service.oauth import logger
+from candidate import Candidate
 from auth_service.oauth.modules.handy_functions import is_number
 import time
 import datetime
@@ -29,8 +30,8 @@ class User(db.Model):
     dice_user_id = db.Column('diceUserId', db.Integer)
 
     # One-to-many Relationships; i.e. User has many:
-    candidates = relationship('Candidate', backref('user'))
-    public_candidate_sharings = relationship('PublicCandidateSharing', backref('user'))
+    candidates = relationship('Candidate', backref='user')
+    public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
 
     def is_authenticated(self):
         return True
@@ -106,9 +107,6 @@ class Domain(db.Model):
     default_from_name = db.Column('defaultFromName', db.String(255))
     settings_json = db.Column('settingsJson', db.Text)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-
-    candidate_sources = db.relationship('CandidateSource')
-    users = db.relationship('User')
 
     def get_id(self):
         return unicode(self.id)
