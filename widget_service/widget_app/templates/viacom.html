@@ -1,0 +1,377 @@
+{{ if not request.user_agent().is_mobile and not request.vars.mobile: }}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="{{=URL('static','css/bootstrap.min.css')}}" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="{{=URL('static','css/viacom.css')}}">
+    <title>Join the Viacom Talent Community</title>
+    <meta name="description" content="Join the Viacom Talent Community - recruiting software by getTalent" />
+    <meta name="keywords" content="Viacom, Recruiting, Software, Cloud, Talent, Community" />
+</head>
+<body style="padding-top:50px;padding-bottom:50px;">
+
+<div style="margin:auto;width:{{= width }}px;">
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <div class="gettalent_container {{ if not isWide: }}expanding{{ pass }}" style="display:none;">
+
+        <header>
+            <section class="headerLogo"><h1>Viacom: Make Connections</h1></section>
+            <section class="subhead"><p>Do you have what it takes to join the Viacom community? Sign up here to receive must-know info about career opportunities, events and more.</p></section>
+        </header>
+
+        <div class="gettalent_tabs">
+            {{ if mode == 'form': }}
+            <div id="gettalent_welcome">
+                <form method="post" enctype="multipart/form-data" action="{{= URL('widget', 'submit', args=request.args, vars=request.vars) }}">
+                    <div class="gettalent_col1">
+                        <label for="firstName" >First Name*</label>
+                        <input type="text" class="requiredInput" name="firstName" value="{{= form_fields.get('firstName') or '' }}" />
+                        <label for="lastName" class="">Last Name*</label>
+                        <input type="text" class="requiredInput" name="lastName" value="{{= form_fields.get('lastName') or '' }}" />
+                        <label for="emailAdd" class="">Email*</label>
+                        <input type="email" class="requiredInput" name="emailAdd" value="{{= form_fields.get('emailAdd') or '' }}">
+                        <label for="currTitle">Current Title</label>
+                        <input type="text" class="" name="currTitle" class="" value="{{= form_fields.get('currTitle') or '' }}">
+                        <label for="currComp">Current Company</label>
+                        <input type="text" name="currComp" class="" value="{{= form_fields.get('currComp') or '' }}">
+                        <label for="gettalent_interest">Areas of Interest*</label>
+
+                        <select name="interestId" class="" id="gettalent_interest">
+                            <option value=""></option>
+                            {{ for interest in areas_of_interest: }}
+                            <option value="{{= interest.id }}" {{= XML('selected="selected"') if form_fields.get('interestId') == interest.id else ''}} >{{= interest.description }}</option>
+                            {{ pass }}
+                        </select>
+                        {{ otherinterest_attr = ("value='%s'" % form_fields.get('interestInfo')) if form_fields.get('interestInfo') else 'style="display:none;"' }}
+                        <input type="text" name="interestInfo" id="interestInfo" {{= XML(otherinterest_attr) }} />
+
+                        <div id="gettalent_resume" class="well">
+                            <div id="gettalent_upload" class="">
+                                <p>Upload Your Resume <em>optional</em></p>
+                                <!-- <button id="btn-upload" class="btn">
+                                 Browse
+                               </button> -->
+                                <input type="file" name="file" id="file_upload" style="padding:0px 4px;"/> <!-- until we get stylized upload button, padding removed -->
+                            </div>
+
+                            <div id="gettalent_attachment" class="" style="display:none;">
+                                <div>
+                                    <button class="close">x</button>
+                                    <p>Attached file:</p>
+                                    <p class="docIcon"><a href="#">Resume.pdf</a></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="btn-submit" class="btn" type="submit">
+                        Join
+                    </button>
+                    <input type="hidden" name="wide" value="{{= isWide or '' }}" />
+                </form>
+            </div>
+            {{ elif mode == 'success': }}
+            <div id="gettalent_successful">
+                <p class="alert alert-success" >Your information has successfully been submitted.</p>
+                <p>Thank you for your interest in our talent community. Please check your email for further instructions.</p>
+            </div>
+            {{ elif mode == 'error': }}
+            <div id="gettalent_error" class="alert alert-error">
+                <p>An error occurred while sending your information. Please refresh your browser and try again.</p>
+            </div>
+            {{ pass }}
+        </div> <!-- /tabs -->
+
+        <footer>
+            <section class="viewJobs">
+                <p>To view currently available jobs, <a href="http://www.viacomcareers.com">click here</a>.</p>
+            </section>
+            <section class="poweredBy">
+                <a target="_blank" href="http://gettalent.com">Recruiting Software</a> by getTalent
+            </section>
+            <section class="disclaimer">
+                <p>Viacom is an equal opportunity employer. We recruit, employ, train, compensate and promote regardless of race, color, ethnicity, national origin, religion, creed, sex, sexual orientation, gender identity, gender expression, age, marital status, disability, veteran status, citizenship status, genetic identity, or any other basis proscribed by applicable law.</p>
+            </section>
+        </footer>
+
+    </div> <!-- /container -->
+    <!-- javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    {{
+    response.files = []
+    response.files.append(URL('static', 'js/jquery-1.7.2.min.js'))
+    response.files.append(URL('static', 'js/jquery-ui-1.8.21.min.js'))
+    response.files.append(URL('static', 'js/gettalent_widget.js'))
+    response.include_files()
+    }}
+
+    <script type="text/javascript">
+
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-33209718-1']);
+        _gaq.push(['_trackPageview']);
+
+        (function() {
+            var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+        })();
+
+    </script>
+
+</div>
+
+</body>
+</html>
+
+
+
+{{ else: }}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Join the Viacom Talent Community</title>
+    <meta name="description" content="Join the Viacom Talent Community - recruiting software by getTalent" />
+    <meta name="keywords" content="Viacom, Recruiting, Software, Cloud, Talent, Community" />
+
+    <link href="{{=URL('static','css/bootstrap-no-text-input.css')}}" rel="stylesheet">
+
+    <link rel="stylesheet" type="text/css" href="{{=URL('static','css/viacom-no-text-input.css')}}">
+    <!-- Mobile viewport optimized: h5bp.com/viewport -->
+    <meta name="viewport" content="width=device-width, initial-scale = 1.0">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="MobileOptimized" content="320">
+</head>
+<body style="padding:0;">
+
+<div style="margin:auto;width:{{= width }}px;">
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <div class="gettalent_container {{ if not isWide: }}expanding{{ pass }}" style="display:none;">
+
+        <header>
+            <section class="headerLogo"><h1>Viacom: Make Connections</h1></section>
+            <section class="subhead"><p>Do you have what it takes to join the Viacom community? Sign up here to receive must-know info about career opportunities, events and more.</p></section>
+        </header>
+
+        <div class="gettalent_tabs">
+            {{ if mode == 'form': }}
+            <div id="gettalent_welcome">
+                <form method="post" enctype="multipart/form-data">
+                    <div class="gettalent_col1">
+                        <label for="firstName" >First Name*</label>
+                        <input type="text" class="requiredInput" id="firstName" name="firstName" value="{{= form_fields.get('firstName') or '' }}" />
+                        <label for="lastName" class="">Last Name*</label>
+                        <input type="text" class="requiredInput" id="lastName" name="lastName" value="{{= form_fields.get('lastName') or '' }}" />
+                        <label for="emailAdd" class="">Email*</label>
+                        <input type="email" class="requiredInput" id="emailAdd" name="emailAdd" value="{{= form_fields.get('emailAdd') or '' }}">
+                        <label for="currTitle">Current Title</label>
+                        <input type="text" class="" name="currTitle" id="currTitle" class="" value="{{= form_fields.get('currTitle') or '' }}">
+                        <label for="currComp">Current Company</label>
+                        <input type="text" name="currComp" id="currComp" class="" value="{{= form_fields.get('currComp') or '' }}">
+                        <label for="gettalent_interest">Areas of Interest*</label>
+
+                        <select name="interestId" class="" id="gettalent_interest">
+                            <option value=""></option>
+                            {{ for interest in areas_of_interest: }}
+                            <option value="{{= interest.id }}" {{= XML('selected="selected"') if form_fields.get('interestId') == interest.id else ''}} >{{= interest.description }}</option>
+                            {{ pass }}
+                        </select>
+                        {{ otherinterest_attr = ("value='%s'" % form_fields.get('interestInfo')) if form_fields.get('interestInfo') else 'style="display:none;"' }}
+                        <input type="text" name="interestInfo" id="interestInfo" {{= XML(otherinterest_attr) }} />
+                    </div>
+                    <button id="btn-submit" class="btn" type="submit">
+                        Join
+                    </button>
+                    <input type="hidden" name="wide" value="{{= isWide or '' }}" />
+                </form>
+            </div>
+            {{ elif mode == 'success': }}
+            <div id="gettalent_successful">
+                <p class="alert alert-success" >Your information has successfully been submitted.</p>
+                <p>Thank you for your interest in our talent community. Please check your email for further instructions.</p>
+            </div>
+            {{ elif mode == 'error': }}
+            <div id="gettalent_error" class="alert alert-error">
+                <p>An error occurred while sending your information. Please refresh your browser and try again.</p>
+            </div>
+            {{ pass }}
+        </div> <!-- /tabs -->
+
+        <footer>
+            <section class="viewJobs">
+                <p>To view currently available jobs, <a href="http://www.viacomcareers.com">click here</a>.</p>
+            </section>
+            <section class="poweredBy">
+                <a href="http://gettalent.com">Recruiting Software</a> by getTalent
+            </section>
+            <section class="disclaimer">
+                <p>Viacom is an equal opportunity employer. We recruit, employ, train, compensate and promote regardless of race, color, ethnicity, national origin, religion, creed, sex, sexual orientation, gender identity, gender expression, age, marital status, disability, veteran status, citizenship status, genetic identity, or any other basis proscribed by applicable law.</p>
+            </section>
+        </footer>
+
+    </div> <!-- /container -->
+    <!-- javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+
+    {{
+    response.files = []
+    response.files.append(URL('static', 'js/jquery-1.7.2.min.js'))
+    response.files.append(URL('static', 'js/jquery-ui-1.8.21.min.js'))
+    response.files.append(URL('static', 'js/gettalent_widget.js'))
+    response.files.append(URL('static', 'js/talent-widget.js'))
+    response.include_files()
+    }}
+
+    <script type="text/javascript">
+
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-33209718-1']);
+        _gaq.push(['_trackPageview']);
+
+        (function() {
+            var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+        })();
+
+        $(document).ready(function() {
+
+//        $('input[type=text][placeholder]').simplePlaceholder();
+//        $('input[type=email][placeholder]').simplePlaceholder();
+            if (! Modernizr.input.placeholder) {
+                placeholderNotSupported = true;
+                $('[placeholder]').focus(function() {
+                    var input = $(this);
+                    if (input.val() == input.attr('placeholder')) {
+                        input.val('');
+                        input.removeClass('placeholder');
+                    }
+                }).blur(function() {
+                            var input = $(this);
+                            if (input.val() == '' || input.val() == input.attr('placeholder')) {
+                                input.addClass('placeholder');
+                                input.val(input.attr('placeholder'));
+                            }
+                        }).blur();
+            }
+
+            // Spouse functionality
+            $(".checkbox-spouse").click(function(e) {
+//            if ($(this).is(':checked')) {
+//
+//            }
+                $("input[required], select[required]").change();
+                return true;
+            });
+
+            $("#militaryToDate").datepicker();
+
+            // "Other" dropdowns functionality
+            $("select").change(function(e) {
+                if ($(this).find("option:selected").text() === "Other") {
+                    $(this).removeClass("span6").addClass("span4");
+                    $(this).siblings('input').hide().slideDown();
+                }
+                else if ($(this).siblings('input.other').is(':visible')) {
+                    var $select = $(this);
+                    $(this).siblings('input').show().slideUp(400, function() {
+                        $select.removeClass("span4").addClass("span6");
+                    });
+                }
+            });
+            // Input verification
+            $("input[required], select[required]").blur(function(e) {
+                checkRequired(this);
+            });
+            $("input[required], select[required]").change(function(e) {
+                checkRequired(this);
+            });
+
+            // Tooltips/
+            $("input[required], select[required]").each(function(i) {
+                $(this).tooltip({
+                    placement: 'top',
+                    title: $(this).data('validation-message') || 'Required',
+                    trigger: 'manual'
+                });
+            });
+            $(".checkbox-spouse").parent().tooltip({
+                placement: 'right',
+                title: 'Certain fields not required for spouses'
+            });
+
+            $("form").submit(function(e) {
+                var validInputs = true;
+                $("input[required], select[required]").each(function(index) {
+                    var isValid = checkRequired(this);
+                    validInputs = validInputs && isValid;
+                });
+                // If inputs are all valid, and placeholder attribute is not supported, then blank out all inputs set to their placeholder
+                if (placeholderNotSupported && validInputs ) {
+                    $("[placeholder]").each(function(e) {
+                        var input = $(this);
+                        if (input.val() == input.attr('placeholder')) {
+                            input.val('');
+                        }
+                    });
+                }
+
+                if (! validInputs) e.preventDefault();
+                return validInputs;
+            });
+
+            $(window).resize();
+        });
+        function checkRequired(input) {
+            var $input = $(input);
+            var isValid;
+
+            // If input is email field, assume valid until ajax response returns
+            if ($input.attr('type') === 'email' && $input.val()) {
+                isValid = isEmailValid($input.val());
+                if (isValid) {
+                    markInputValid($input);
+                } else {
+                    markInputInvalid($input);
+                }
+            }
+            /* invalid if:
+             - (input is required if spouse) OR (user is not spouse)
+             -   AND
+             - (there is no input) OR (it is invalid) OR (placeholder is not supported and current value is placeholder)
+             */
+            else if ((! $input.data('not-required-if-spouse') || ! $('.checkbox-spouse').is(':checked'))
+                    &&
+                    (! $input.val() || $input.hasClass('invalid') || (placeholderNotSupported && $input.val() == $input.attr('placeholder')))
+
+                    ) {
+                markInputInvalid($input);
+                isValid = false;
+            } else {
+                markInputValid($input);
+                isValid = true;
+            }
+
+            return isValid;
+        }
+    </script>
+
+</div>
+
+</body>
+</html>
+
+
+
+{{ pass }}

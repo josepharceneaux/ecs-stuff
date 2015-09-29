@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en" xlmns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Join our Military Community</title>
+    <meta name="description" content="Join the Walmart Talent Community - recruiting software by getTalent" />
+    <meta name="keywords" content="Walmart, Recruiting, Software, Cloud, Talent, Community" />
+    <meta charset="utf-8" />
+    {{ if mode != 'form': }}
+    <style>
+        body{ background-color:white }
+    </style>
+    {{ pass }}
+    <!--
+    <link href="{{=URL('static','bootstrap_2_2_2/css/bootstrap.min.css')}}" rel="stylesheet">
+    <link href="{{=URL('static','css/walmart.css')}}" rel="stylesheet">
+    <link href="{{=URL('static','css/jquery-ui-1.8.21.css')}}" rel="stylesheet">
+    -->
+
+    {{
+    response.files.append(URL('static','bootstrap_2_2_2/css/bootstrap.min.css'))
+    response.files.append(URL('static','css/walmart.css'))
+    response.files.append(URL('static','css/jquery-ui-1.8.21.css'))
+    response.include_files()
+    }}
+
+    <script src="{{= URL('static','js/modernizr-2-6-2-custom.js') }}"></script>
+</head>
+
+
+<body id="body">
+
+<div class="container">
+    {{ if mode == 'form': }}
+    <div class="row">
+        <div class="span5" style="margin-left:30px">
+            <h1><img src="{{= URL('static', 'images/walmart/logo.png') }}" /></h1>
+            <p style="color: #FEFEFF">Join our military community and learn how you can put your military skills to work for Walmart.</p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="span6" style="margin-left:30px">
+            <div class="well form-container-well">
+            <form method="post" novalidate autocomplete="on" enctype="multipart/form-data" action="{{= URL('widget', 'submit', args=request.args, vars=request.vars) }}">
+                <input type="hidden" name="is_special" value="1" />
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <input rel="tooltip" class="span5" type="text" required id="firstName" name="firstName" placeholder="First name" value="{{= form_fields.get('firstName') or '' }}" />
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <input rel="tooltip" class="span5" type="text" required id="lastName" name="lastName" placeholder="Last name" value="{{= form_fields.get('lastName') or '' }}" />
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls">
+                        <input class="span5" type="email" data-validation-message="Must be valid email" required id="emailAdd" name="emailAdd" placeholder="Email" value="{{= form_fields.get('emailAdd') or '' }}" />
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <input class="span3" type="text" required id="city" name="city" placeholder="City" value="{{= form_fields.get('city') or '' }}" />
+                        <input class="span2" type="text" required id="state" name="state" placeholder="State" value="{{= form_fields.get('state') or '' }}" />
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls">
+                        <select data-not-required-if-spouse="1" class="span5" name="militaryBranch" id="militaryBranch" required>
+                            <option value="">Branch of Service</option>
+                            {{ branches = ['Army', 'Navy', 'Air Force', 'Marine Corps', 'Coast Guard'] }}
+                            {{ for branch in branches: }}
+                            <option value="{{= branch }}">{{= branch }}</option>
+                            {{ pass }}
+                        </select>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls">
+                        <select data-not-required-if-spouse="1" class="span5" name="militaryGrade" id="militaryGrade" required>
+                            <option value="">Grade</option>
+                            {{ grades = [] }}
+                            {{ for max_number, letter in [(10, 'E'), (5, 'W'), (10, 'O')]:
+                                for current_number in range(1, max_number + 1):
+                                    grades.append("%s-%s" % (letter, current_number))
+                                pass
+                            pass
+                            }}
+
+                            {{ for grade in grades: }}
+                            <option value="{{= grade }}">{{= grade }}</option>
+                            {{ pass }}
+                        </select>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <select data-not-required-if-spouse="1" class="span5" name="militaryStatus" id="militaryStatus" required>
+                            <option value="">Service Status</option>
+                            {{ statuses = ['Active', 'Reserve', 'Guard', 'Retired', 'Veteran'] }}
+                            {{ for status in statuses: }}
+                            <option value="{{= status }}">{{= status }}</option>
+                            {{ pass }}
+                        </select>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <input data-not-required-if-spouse="1" class="span5" type="text" required id="militaryToDate" name="militaryToDate" placeholder="Date of separation (Format: MM/DD/YYYY)" value="{{= form_fields.get('militaryToDate') or '' }}" />
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <select class="span5" name="interestId" id="interestId">
+                            <option value="">Areas of Interest</option>
+                            {{ for interest in areas_of_interest: }}
+                            <option value="{{= interest.id }}" {{= XML('selected="selected"') if form_fields.get('interestId') == interest.id else ''}} >{{= interest.description }}</option>
+                            {{ pass }}
+                        </select>
+                    </div>
+                </div>
+                <!--
+                <div id="gettalent_resume" class="well" style="width:340px">
+                    <div id="gettalent_upload" class="">
+                        <p>Upload Your Resume <em>optional</em></p>
+                        <input type="file" name="file" id="file_upload" style="padding:0px 4px;"/>
+                    </div>
+                </div>
+                -->
+                <div class="control-group">
+                    <div class="controls">
+                        <label class="checkbox" style="width:95px;">
+                            <input class="checkbox-spouse" type="checkbox"> I am a Spouse
+                        </label>
+                        <button type="submit" class="btn btn-warning">Submit</button>
+                    </div>
+                </div>
+                <p style="margin-left:112px">
+                    <small>
+                        <a target="_blank" href="http://gettalent.com">Recruiting software</a> by getTalent
+                    </small>
+                </p>
+            </form>
+            </div>
+        </div>
+    </div>
+    {{ elif mode == 'success': }}
+    <div class="row" style="background-color:white">
+        <div class="span6" style="margin-left:30px;margin-top:30px;">
+            <p class="alert alert-success" >Your information has successfully been submitted.</p>
+            <p>Thank you for joining our military community. </p>
+        </div>
+    </div>
+    {{ elif mode == 'error': }}
+    <div class="row" style="background-color:white">
+        <div class="span6" style="margin-left:30px;margin-top:30px">
+            <div class="alert alert-error">
+                <p>An error occurred while sending your information. Please refresh the page and try again.</p>
+            </div>
+        </div>
+    </div>
+    {{ pass }}
+</div> <!-- /container -->
+
+{{
+response.files = []
+response.files.append(URL('static','js/jquery-1.7.2.min.js'))
+response.files.append(URL('static','bootstrap_2_2_2/js/bootstrap.min.js'))
+response.files.append(URL('static','jquery-ui/js/jquery-ui-1.8.23.custom.min.js'))
+response.files.append(URL('static','js/talent-widget.js'))
+response.include_files()
+}}
+<!--
+<script src="/web/static/js/jquery-1.7.2.min.js"></script>
+<script src="/web/static/bootstrap_2_2_2/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="/web/static/jquery-ui/js/jquery-ui-1.8.23.custom.min.js"></script>
+<script type="text/javascript" src="/web/static/js/talent-widget.js"></script>
+-->
+<script type="text/javascript">
+    // window.resizeTo(461, document.getElementById("body").offsetHeight + 50);
+
+    var _gaq = _gaq || [];
+    var universitiesList = [];
+
+    _gaq.push(['_setAccount', 'UA-33209718-1']);
+    _gaq.push(['_trackPageview']);
+    var placeholderNotSupported = false;
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+
+    $(document).ready(function() {
+
+//        $('input[type=text][placeholder]').simplePlaceholder();
+//        $('input[type=email][placeholder]').simplePlaceholder();
+        if (! Modernizr.input.placeholder) {
+            placeholderNotSupported = true;
+            $('[placeholder]').focus(function() {
+                var input = $(this);
+                if (input.val() == input.attr('placeholder')) {
+                    input.val('');
+                    input.removeClass('placeholder');
+                }
+            }).blur(function() {
+                        var input = $(this);
+                        if (input.val() == '' || input.val() == input.attr('placeholder')) {
+                            input.addClass('placeholder');
+                            input.val(input.attr('placeholder'));
+                        }
+            }).blur();
+        }
+
+        // Spouse functionality
+        $(".checkbox-spouse").click(function(e) {
+//            if ($(this).is(':checked')) {
+//
+//            }
+            $("input[required], select[required]").change();
+            return true;
+        });
+
+        $("#militaryToDate").datepicker();
+
+        // "Other" dropdowns functionality
+        $("select").change(function(e) {
+            if ($(this).find("option:selected").text() === "Other") {
+                $(this).removeClass("span6").addClass("span4");
+                $(this).siblings('input').hide().slideDown();
+            }
+            else if ($(this).siblings('input.other').is(':visible')) {
+                var $select = $(this);
+                $(this).siblings('input').show().slideUp(400, function() {
+                    $select.removeClass("span4").addClass("span6");
+                });
+            }
+        });
+        // Input verification
+        $("input[required], select[required]").blur(function(e) {
+            checkRequired(this);
+        });
+        $("input[required], select[required]").change(function(e) {
+            checkRequired(this);
+        });
+
+        // Tooltips/
+        $("input[required], select[required]").each(function(i) {
+            $(this).tooltip({
+                placement: 'top',
+                title: $(this).data('validation-message') || 'Required',
+                trigger: 'manual'
+            });
+        });
+        $(".checkbox-spouse").parent().tooltip({
+            placement: 'right',
+            title: 'Certain fields not required for spouses'
+        });
+
+        $("form").submit(function(e) {
+            var validInputs = true;
+            $("input[required], select[required]").each(function(index) {
+                var isValid = checkRequired(this);
+                validInputs = validInputs && isValid;
+            });
+            // If inputs are all valid, and placeholder attribute is not supported, then blank out all inputs set to their placeholder
+            if (placeholderNotSupported && validInputs ) {
+                $("[placeholder]").each(function(e) {
+                    var input = $(this);
+                    if (input.val() == input.attr('placeholder')) {
+                        input.val('');
+                    }
+                });
+            }
+
+            if (! validInputs) e.preventDefault();
+            return validInputs;
+        });
+
+        $(window).resize();
+    });
+    function checkRequired(input) {
+        var $input = $(input);
+        var isValid;
+
+        // Validate email
+        if ($input.attr('type') === 'email' && $input.val()) {
+            isValid = isEmailValid($input.val());
+            if (isValid) {
+                markInputValid($input);
+            } else {
+                markInputInvalid($input);
+            }
+        }
+        /* invalid if:
+         - (input is required if spouse) OR (user is not spouse)
+         -   AND
+         - (there is no input) OR (it is invalid) OR (placeholder is not supported and current value is placeholder)
+         */
+        else if ((! $input.data('not-required-if-spouse') || ! $('.checkbox-spouse').is(':checked'))
+            &&
+            (! $input.val() || $input.hasClass('invalid') || (placeholderNotSupported && $input.val() == $input.attr('placeholder')))
+        ) {
+            markInputInvalid($input);
+            isValid = false;
+        } else {
+            markInputValid($input);
+            isValid = true;
+        }
+
+        return isValid;
+    }
+</script>
+
+</body>
+</html>

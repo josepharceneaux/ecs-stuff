@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- <iframe width="435px" height="430px" frameborder="0" marginheight="0" marginwidth="0" src="http://www.gettalent.com/web/widget/show/kaiser-military"></iframe> -->
+<!-- <iframe width="435px" height="430px" frameborder="0" marginheight="0" marginwidth="0" src="http://localhost:8000/web/widget/show/kaiser/kaiser-military"></iframe> -->
+<head>
+    <title>Join the Kaiser Permanente Military Talent Community</title>
+    <meta name="description" content="Join the Kaiser Military Talent Community - recruiting software by getTalent" />
+    <meta name="keywords" content="Kaiser, Recruiting, Military, Software, Cloud, Talent, Community" />
+    <meta name = "viewport" content = "width = device-width">
+    <meta name = "viewport" content = "width = 320">
+    <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+    <script src="https://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <style type="text/css">
+        #subInterestSelect {
+            margin-left: 0 !important;
+            width: 394px;
+        }
+
+        #interestSelect {
+            width: 394px;
+        }
+    </style>
+    <![endif]-->
+
+    {{
+    response.files.append(URL('static', 'bootstrap_2_3_2/css/bootstrap.min.css'))
+    response.files.append(URL('static', 'bootstrap-tagmanager/tagmanager.css'))
+    response.files.append(URL('static', 'css/kaiser_3.css'))
+    response.include_files()
+    }}
+    <script type="text/javascript" src="{{= URL('static','js/modernizr-2-6-2-custom.js')}}"></script>
+    <script type="text/javascript">
+        /** SUPPORT FOR .map() FOR IE8 **/
+        // Production steps of ECMA-262, Edition 5, 15.4.4.19
+        // Reference: http://es5.github.com/#x15.4.4.19
+        if (!Array.prototype.map) {
+          Array.prototype.map = function(callback, thisArg) {
+            var T, A, k;
+            if (this == null) {
+              throw new TypeError(" this is null or not defined");
+            }
+            var O = Object(this);
+            var len = O.length >>> 0;
+            if (typeof callback !== "function") {
+              throw new TypeError(callback + " is not a function");
+            }
+            if (thisArg) {
+              T = thisArg;
+            }
+            A = new Array(len);
+            k = 0;
+            while(k < len) {
+              var kValue, mappedValue;
+              if (k in O) {
+                kValue = O[ k ];
+                mappedValue = callback.call(T, kValue, k, O);
+                A[ k ] = mappedValue;
+              }
+              k++;
+            }
+            return A;
+          };
+        }
+    </script>
+
+    <style type="text/css">
+        /* h1, h2 are used here for better ADA compliance */
+        h1, h2 {
+            font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+            font-size: 14px;
+            line-height: 20px;
+            color: #333;
+            font-weight: normal;
+        }
+
+        /* Increasing contrast for ADA compliance: http://webaim.org/resources/contrastchecker/ */
+        .tm-tag.tm-tag-success {
+            color: #3d5315;
+            background-color: #ecf7d3;
+            border-color: #a5d24a;
+        }
+    </style>
+
+</head>
+
+
+<body style="background-color: transparent;">
+
+<div class="container">
+    {{ if mode == 'form': }}
+    <div class="row">
+        <div class="" style="margin-left:30px;">
+            <form name="widget" method="post" novalidate autocomplete="on" enctype="multipart/form-data" action="{{= URL('widget', 'submit', args=request.args, vars=request.vars) }}">
+                <div class="control-group">
+                    <div class="controls">
+                        <h1>
+                            Please fill out the fields below and click “submit” to receive information about opportunities that relate to your selections.
+                        </h1>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <label id="firstNameLabel" class="hide">First name</label>
+                        <label id="lastNameLabel" class="hide">Last name</label>
+                        <input style="" class="span3" type="text" required id="firstName" name="firstName" aria-labelledby="firstNameLabel" placeholder="First name" value="{{= form_fields.get('firstName') or '' }}" />
+                        <input style="float: none" class="span3" type="text" required id="lastName" name="lastName" aria-labelledby="lastNameLabel" placeholder="Last name" value="{{= form_fields.get('lastName') or '' }}" />
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <label id="emailLabel" class="hide">Email address</label>
+                        <input style="" class="span6" type="email" data-validation-message="Must be valid email" required id="emailAdd" name="emailAdd" aria-labelledby="emailLabel" placeholder="E-mail address" value="{{= form_fields.get('emailAdd') or '' }}" />
+                    </div>
+                </div>
+
+                <div class="control-group" style="margin-bottom:5px">
+                    <div class="controls controls-row">
+                        <label id="aoiLabel" class="hide">Area of Interest</label>
+                        <label id="subAoiLabel" class="hide">Sub Area of Interest</label>
+                        <select required class="span3" id="interestSelect" aria-labelledby="aoiLabel">
+                            <option title="Area of Interest" value="">Area of Interest</option>
+                            {{ for aoi in areas_of_interest: }}
+                            <option title="{{= aoi.description }}" value="{{= aoi.id }}">{{= aoi.description }}</option>
+                            {{ pass }}
+                        </select>
+                        <select required style="display:none;" class="span3" id="subInterestSelect" aria-labelledby="subAoiLabel">
+                            <option></option>
+                        </select>
+                        <div class="scrollable-tab-container">
+                            <input type="hidden" id="hidden-tags-aoi" name="hidden-tags-aoi" class="tm-input-aoi tm-input-success" />
+                        </div>
+                    </div>
+
+                    {{ for aoi in areas_of_interest: }}
+                    <select title="Sub area of interest" class="aoiIdToSubAoi" data-aoi-id="{{= aoi.id }}" style="display: none" aria-hidden="true">
+                        {{ sub_aois = area_of_interest_id_to_sub_areas_of_interest.get(aoi.id) }}
+                        {{ if sub_aois: }}
+                        {{ for sub_aoi in sub_aois: }}
+                        <option label="{{= sub_aoi.description }}" value="{{= sub_aoi.id }}">{{= sub_aoi.description }}</option>
+                        {{ pass }}
+                        {{ pass }}
+                    </select>
+                    {{ pass }}
+                </div>
+
+
+                <div class="control-group">
+                    <div class="controls">
+                        <h2>
+                            Identify the location(s) you are interested in.
+                        </h2>
+                    </div>
+                </div>
+                <div class="control-group" style="margin-bottom:5px">
+                    <div class="controls controls-row">
+                        <!--<label id="stateLabel" class="hide">State</label>-->
+                        <!--<label id="cityLabel" class="hide">City</label>-->
+                        <select aria-labelledby="stateLabel" required class="span3" id="locationSelect">
+                            <option value="" title="State">State</option>
+                            <option value="California" title="Northern CA">Northern CA</option>
+                            <option value="California" title="Southern CA">Southern CA</option>
+                            <option value="Colorado" title="Colorado">Colorado</option>
+                            <option value="Washington, D.C." title="Washington, D.C.">Washington, D.C.</option>
+                            <option value="Georgia" title="Georgia">Georgia</option>
+                            <option value="Hawaii" title="Hawaii">Hawaii</option>
+                            <option value="Maryland" title="Maryland">Maryland</option>
+                            <!-- <option value="Ohio">Ohio</option> -->
+                            <option value="Oregon" title="Oregon">Oregon</option>
+                            <option value="Virginia" title="Virginia">Virginia</option>
+                            <option value="Washington" title="Washington">Washington</option>
+                        </select>
+                        <select aria-labelledby="cityLabel" required style="margin-left:14px; display:none;" class="span3" id="citySelect">
+                            <option></option>
+                        </select>
+                        <div class="scrollable-tab-container">
+                            <input type="hidden" id="hidden-tags-location" name="hidden-tags-location" class="tm-input-location tm-input-success" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="controls">
+                        <h2>
+                            Please provide your military background.
+                        </h2>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <label id="militaryBranchLabel" class="hide">Military branch</label>
+                        <label id="militaryGradeLabel" class="hide">Military rank</label>
+                        <select aria-labelledby="militaryBranchLabel" title="Military branch" class="span6" name="militaryBranch" id="militaryBranch">
+                            <option label="Branch of Service" value="">Branch of Service</option>
+                            {{ branches = ['Army', 'Navy', 'Air Force', 'Marine Corps', 'Coast Guard'] }}
+                            {{ for branch in branches: }}
+                            <option label="{{= branch }}">{{= branch }}</option>
+                            {{ pass }}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <label id="militaryServiceLabel" class="hide">Military service status</label>
+                        <label id="militaryMonthLabel" class="hide">Month of separation</label>
+                        <label id="militaryDateLabel" class="hide">Date of separation</label>
+                        <label id="militaryYearLabel" class="hide">Year of separation</label>
+                        <select title="Military status" aria-labelledby="militaryServiceLabel" class="span6" name="militaryStatus" id="militaryStatus">
+                            <option label="Veteran Status" value="">Veteran Status</option>
+                            {{ statuses = ['Active', 'Reserve', 'Guard', 'Retired', 'Veteran'] }}
+                            {{ for status in statuses: }}
+                            <option label="{{= status }}" value="{{= status }}">{{= status }}</option>
+                            {{ pass }}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <select aria-labelledby="militaryGradeLabel" title="Military grade" class="span6" name="militaryGrade" id="militaryGrade">
+                            <option label="Rank" value="">Rank</option>
+                            {{ grades = [] }}
+                            {{ for max_number, letter in [(10, 'E'), (5, 'W'), (10, 'O')]:
+                                for current_number in range(1, max_number + 1):
+                                    grades.append("%s-%s" % (letter, current_number))
+                                pass
+                            pass
+                            }}
+
+                            {{ for grade in grades: }}
+                            <option value="{{= grade }}">{{= grade }}</option>
+                            {{ pass }}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <div class="span6" style="margin-left: 0;">
+                            If on active duty, please indicate your anticipated future date of separation/retirement:
+                            <input style="width: 68px;text-align: center" type="text" data-widget-optional="1" data-widget-tooltip-placement="right" data-widget-must-be-future="true" id="militaryToMonthYear" aria-labelledby="militaryMonthLabel" data-validation-message="Needs to be a future date" title="Needs to be a future date" placeholder="MM/YYYY" value="" />
+                            <input type="hidden" id="militaryToDateNumber" value="1" />
+                            <input type="hidden" id="militaryToDate" name="militaryToDate" value="{{= form_fields.get('militaryToDate') or '' }}" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- JOB ALERTS -->
+                <div class="control-group" style="margin-bottom: 10px">
+                    <div class="controls">
+                        <label class="checkbox" style="margin-bottom: 0">
+                            <input class="checkbox-job-alerts" id="job-alerts" type="checkbox" checked="checked"> Send me job alerts&#42;:
+                        </label>
+                        <label class="checkbox inline">
+                            <input type="radio" name="jobFrequency" value="Daily"> Daily
+                        </label>
+                        <label class="checkbox inline">
+                            <input type="radio" name="jobFrequency" value="Weekly" checked="checked"> Weekly
+                        </label>
+                        <label class="checkbox inline">
+                            <input type="radio" name="jobFrequency" value="Monthly"> Monthly
+                        </label>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="controls">
+                        <p>
+                            <small style="line-height: 0">
+                                &#42;You will receive job alerts for opportunities within a 20-mile radius of your selected location(s).
+                            </small>
+                        </p>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls" style="text-align: center; margin-bottom: 5px">
+                        <button type="submit" class="btn btn-warning">Submit</button>
+                    </div>
+                </div>
+
+                <div class="control-group" style="text-align: center">
+                    <div class="controls">
+                        <p style="margin-bottom: 0px;margin-top: 12px;">
+                            Interested in internships or early career opportunities?
+                        </p>
+                        <p>
+                            <a target="_blank" href="http://kaiserpermanentejobs.org/university-connection/university-talent-network.aspx">Join our University Talent Network</a>.
+                        </p>
+                    </div>
+                </div>
+
+                <p style="text-align: center">
+                    <small>
+                        <a target="_blank" href="http://gettalent.com">Recruiting software</a> by getTalent
+                    </small>
+                </p>
+            </form>
+        </div>
+    </div>
+    {{ elif mode == 'success': }}
+    <div class="row">
+        <div class="span6" style="margin-left:30px;margin-top:200px;">
+            <p id="submit_result" class="alert alert-success" >Your information has successfully been submitted.</p>
+            <p>Thank you for joining the Kaiser Permanente talent community.</p>
+        </div>
+    </div>
+    {{ elif mode == 'error': }}
+    <div class="row">
+        <div class="span6" style="margin-left:30px;margin-top:30px">
+            <div class="alert alert-error">
+                <p id="submit_result">An error occurred while sending your information. Please refresh the page and try again.</p>
+            </div>
+        </div>
+    </div>
+    {{ pass }}
+</div> <!-- /container -->
+
+{{
+response.files = []
+response.files.append(URL('static', 'js/jquery-1.7.2.min.js'))
+response.files.append(URL('static', 'bootstrap_2_2_2/js/bootstrap.min.js'))
+response.files.append(URL('static', 'js/jquery.simpleplaceholder.js'))
+response.files.append(URL('static', 'bootstrap-tagmanager/tagmanager.js'))
+response.files.append(URL('static', 'js/talent-widget.js'))
+response.include_files()
+}}
+<!--[if lt IE 9]>
+    <script type="text/javascript">
+        $(function(){
+            $('#interestSelect').removeClass('span3');
+            $('#interestSelect').addClass('span6');
+
+            $('#subInterestSelect').removeClass('span3');
+            $('#subInterestSelect').addClass('span6');
+        });
+    </script>
+<![endif]-->
+<script type="text/javascript">
+    var stateToCities = {
+        'Northern CA': ['Alameda', 'Antioch', 'Berkeley', 'Bolinas', 'Campbell', 'Clovis', 'Concord', 'Cupertino', 'Daly City', 'Davis', 'Elk Grove', 'Emeryville', 'Fairfield', 'Folsom', 'Fremont', 'Fresno', 'Gilroy', 'Greenbrae', 'Hayward', 'Lafayette', 'Lincoln', 'Livermore', 'Lodi', 'Manteca', 'Martinez', 'Mill Valley', 'Milpitas', 'Modesto', 'Moraga', 'Mountain View', 'Napa', 'Novato', 'Oakhurst', 'Oakland', 'Petaluma', 'Pinole', 'Pittsburg', 'Pleasant Hill', 'Pleasanton', 'Point Reyes Station', 'Rancho Cordova', 'Redwood City', 'Richmond', 'Rohnert Park', 'Roseville', 'Sacramento', 'San Bruno', 'San Francisco', 'San Jose', 'San Leandro', 'San Mateo', 'San Rafael', 'San Ramon', 'Santa Clara', 'Santa Rosa', 'Sebastolpol', 'Selma', 'South San Francisco', 'Stinson Beach', 'Stockton', 'Sunnyvale', 'Tracy', 'Turlock', 'Union City', 'Vacaville', 'Vallejo', 'Walnut Creek'],
+        'Southern CA': ['Aliso Viejo', 'Anaheim', 'Anaheim Hills', 'Bakersfield', 'Baldwin Park', 'Bell Gardens', 'Bellflower', 'Brea', 'Burbank', 'Camarillo', 'Carlsbad', 'Carson', 'Chatsworth', 'Chino', 'Chino Hills', 'Chula Vista', 'City of Industry', 'Claremont', 'Colton', 'Corona', 'Costa Mesa', 'Cudahy', 'Culver City', 'Cypress', 'Diamond Bar', 'Downey', 'Duarte', 'El Cajon', 'El Monte', 'Encinitas', 'Escondido', 'Fontana', 'Fountain Valley', 'Fullerton', 'Garden Grove', 'Gardena', 'Glendale', 'Glendora', 'Granada Hills', 'Harbor City', 'Hawaiin Gardens', 'Hemet', 'Huntington Beach', 'Indio', 'Inglewood', 'Irvine', 'Irwindale', 'La Mesa', 'La Palma', 'La Puente', 'La Quinta', 'La Verne', 'Laguna Hills', 'Lake Forest', 'Lancaster', 'Lomita', 'Long Beach', 'Los Angeles', 'Lynwood', 'Mission Hills,', 'Mission Viejo', 'Montclair', 'Montebello', 'Moreno Valley', 'North Hills', 'North Hollywood', 'Northridge', 'Norwalk', 'Oceanside', 'Ontario', 'Orange', 'Oxnard', 'Pacoima', 'Palm Desert', 'Palm Springs', 'Palmdale', 'Panorama City', 'Paramount', 'Pasadena', 'Placentia', 'Pomona', 'Poway', 'Rancho Cucamonga', 'Redlands', 'Reseda', 'Riverside', 'San Bernardino', 'San Diego', 'San Dimas', 'San Fernando', 'San Juan Capistrano', 'San Marcos', 'San Pedro', 'Santa Ana', 'Santa Clarita', 'Santa Fe Springs', 'Santee', 'Semi Valley', 'Sylmar', 'Tarzana', 'Temecula', 'Thousand Oaks', 'Torrance', 'Tustin', 'Upland', 'Van Nuys', 'Ventura', 'Vernon', 'Victorville', 'Vista', 'West Covina', 'Whittier', 'Wildomar', 'Woodland Hills', 'Yorba Linda'],
+        'Colorado': ['Aurora', 'Boulder', 'Brighton', 'Castle Rock', 'Centennial', 'Colorado Springs', 'Denver', 'Englewood', 'Evergreen', 'Fort Collins', 'Greeley', 'Greenwood Village', 'Highlands Ranch', 'Johnstown', 'Lafayette', 'Lakewood', 'Littleton', 'Lone Tree', 'Longmont', 'Loveland', 'Parker', 'Pueblo West', 'Sheridan', 'Westminster', 'Wheat Ridge'],
+        'Washington, D.C.': ['Washington, D.C.'],
+        'Georgia': ['Alpharetta', 'Athens', 'Atlanta', 'Austell', 'Chamblee', 'Cumming', 'Decatur', 'Douglasville', 'Duluth', 'Fairburn', 'Fayetteville', 'Forest Park', 'Holly Springs', 'Jonesboro', 'Kennesaw', 'Lawrenceville', 'Lithonia', 'Marietta', 'McDonough', 'Newnan', 'Norcross', 'Peachtree City', 'Sandy Springs', 'Snellville', 'Sugar Hill', 'Tucker'],
+        'Hawaii': ['Aiea', 'Hilo', 'Honolulu', 'Kahuku', 'Kailua', 'Kamuela', 'Kaneohe', 'Kapolei', 'Kealakeua', 'Kihei', 'Lahaina', 'Lihue', 'Mililani', 'Waianae', 'Wailuku', 'Waipahu'],
+        'Maryland': ['Annapolis', 'Baltimore', 'Beltsville', 'Bethesda', 'Burtonsville', 'Catonsville', 'Colesville', 'Columbia', 'Frederick', 'Fulton', 'Gaithersburg', 'Germantown', 'Glen Burnie', 'Halethorpe', 'Hyattsville', 'Kensington', 'Largo', 'Linthicum Heights', 'Lutherville', 'Odenton', 'Pasadena', 'Riverdale', 'Rockville', 'Silver Spring', 'Suitland', 'Temple Hills', 'Timonium', 'Towson', 'Upper Marlboro', 'Wheaton', 'White Marsh'],
+        // 'Ohio': ['Akron', 'Avon', 'Bedford', 'Brecksville', 'Brooklyn Heights', 'Cleveland', 'Cleveland Heights', 'Fairlawn', 'Kent', 'Lakewood', 'Mayfield Heights', 'Mentor', 'North Canton', 'Painesville', 'Parma', 'Rocky River', 'Strongsville', 'Twinsburg', 'Willoughby'],
+        'Oregon': ['Aloha', 'Beaverton', 'Clackamas', 'Gresham', 'Hillsboro', 'Keizer', 'Lake Oswego', 'Milwaukie', 'Mt. Angel', 'Oregon City', 'Portland', 'Salem', 'Tigard', 'Tualatin'],
+        'Virginia': ['Alexandria', 'Arlington', 'Ashburn', 'Burke', 'Chantilly', 'Dulles', 'Fair Oaks', 'Fairfax', 'Falls Church', 'Fredericksburg', 'Lansdowne', 'Manassas', 'McLean', 'Reston', 'Springfield', 'Sterling', 'Woodbridge'],
+        'Washington': ['Longview', 'Orchards', 'Seattle', 'Vancouver']
+    };
+
+    var _gaq = _gaq || [];
+    var universitiesList = [];
+
+    _gaq.push(['_setAccount', 'UA-33209718-1']);
+    _gaq.push(['_trackPageview']);
+
+    var placeholderNotSupported = false;
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+
+    $(document).ready(function() {
+        // Modernizr detection for placeholder (ie8)
+        if (! Modernizr.input.placeholder) {
+            placeholderNotSupported = true;
+            $('[placeholder]').focus(function() {
+                var input = $(this);
+                if (input.val() == input.attr('placeholder')) {
+                    input.val('');
+                    input.removeClass('placeholder');
+                }
+            }).blur(function() {
+                        var input = $(this);
+                        if (input.val() == '' || input.val() == input.attr('placeholder')) {
+                            input.addClass('placeholder');
+                            input.val(input.attr('placeholder'));
+                        }
+                    }).blur();
+        }
+
+        // Load up university list
+        $.ajax({
+            type: "post",
+            dataType: "json",
+            url: "{{= URL('widget', 'get_universities_list.json') }}",
+            success: function(response) {
+                universitiesList = response['universities_list'];
+                $("#university").typeahead({
+                    items: 10,
+                    source: universitiesList
+                });
+            }
+        });
+
+        // Interest tags
+        $(".tm-input-aoi").tagsManager({
+            hiddenTagListId: 'hidden-tags-aoi',
+            hiddenTagListName: 'interestTags',
+            delimiters: [124]
+        });
+        $("#interestSelect").change(function (e) {
+            // Populate & show sub AOI dropdown
+            $("#subInterestSelect").empty();
+            var aoiId = $(this).find(':selected').val();
+            var subAOIList = aoiIdToSubAois(aoiId);
+
+            $("#subInterestSelect").append("<option value=''>Select Subcategory</option>");
+            $("#subInterestSelect").append("<option value='All'>All Subcategories</option>");
+            for (var i = 0; i < subAOIList.length; i++) {
+                $("#subInterestSelect").append("<option value='" + subAOIList[i]['id'] + "'>" + subAOIList[i]['description'] + "</option>");
+            }
+            if (subAOIList.length < 1){
+                $("#subInterestSelect").val('All');
+                $("#subInterestSelect").trigger('change');
+            }
+
+            $("#subInterestSelect").show();
+            return true;
+        });
+        $("#subInterestSelect").change(function (e) {
+            // Add a tag if not the default one
+            var subAoiName = $("#subInterestSelect").find(':selected').text();
+            if (subAoiName !== $("#subInterestSelect").find("option").first().text()) {
+                $("#hidden-tags-aoi").tagsManager('pushTag', $("#interestSelect").find(":selected").text() + ": " + subAoiName);
+            }
+        });
+
+        // Location tags
+        $(".tm-input-location").tagsManager({
+            hiddenTagListId: 'hidden-tags-location',
+            hiddenTagListName: 'locationOfInterestTags',
+            delimiters: [124]
+        });
+        $("#locationSelect").change(function (e) {
+            // Populate & show cities dropdown
+            $("#citySelect").empty();
+            var stateName = $(this).find(':selected').html();
+            var citiesList = stateToCities[stateName];
+            $("#citySelect").append("<option value=''>Select City</option>");
+            $("#citySelect").append("<option value='All'>All Cities</option>");
+            for (var i = 0; i < citiesList.length; i++) {
+                $("#citySelect").append("<option value='" + citiesList[i] + "'>" + citiesList[i] + "</option>");
+            }
+            $("#citySelect").show();
+            return true;
+        });
+        $("#citySelect").change(function (e) {
+            // Add a tag if not the default one
+            var city = $("#citySelect").find(':selected').text();
+            if (city !== $("#citySelect").find("option").first().text()) {
+                $("#hidden-tags-location").tagsManager('pushTag', $("#locationSelect").find(":selected").html() + ": " + $("#citySelect").find(':selected').html());
+            }
+        });
+
+        // "Other" dropdowns functionality
+        $("select").change(function(e) {
+            $("#militaryToMonthYear").tooltip('hide');  // TODO hack: should redraw (hide & show) all tooltips when input field changes
+
+            if ($(this).find("option:selected").text() === "Other") {
+                $(this).removeClass("span6").addClass("span4");
+                $(this).siblings('input').hide().slideDown();
+            }
+            else if ($(this).siblings('input.other').is(':visible')) {
+                var $select = $(this);
+                $(this).siblings('input').show().slideUp(400, function() {
+                    $select.removeClass("span4").addClass("span6");
+                });
+            }
+        });
+        // Input verification
+        $("input[required], select[required], [data-widget-optional]").blur(function(e) {
+            checkRequired(this);
+        });
+
+        $("input[required], select[required], [data-widget-optional]").change(function(e) {
+            checkRequired(this);
+        });
+
+        // Tooltips
+        $("input[required], select[required], [data-widget-optional]").each(function(i) {
+            $(this).tooltip({
+                placement: $(this).data('widget-tooltip-placement') || 'bottom',
+                title: $(this).data('validation-message') || 'Required',
+                trigger: 'manual'
+            });
+        });
+
+        /* Job Alerts */
+        $("#job-alerts").click(function(e) {
+            $("input[name='jobFrequency']").parent().toggle();
+
+            // If job alerts is unchecked, then uncheck all job alerts
+            if (! $("input[name='jobFrequency']").parent().is(":visible")) {
+                $("input[name=jobFrequency]").removeAttr("checked");
+            }
+        });
+
+        /* NUID */
+        $(".checkbox-nuid").click(function(e) {
+            $("#nuid").toggle();
+        });
+
+        /* Recent Graduate */
+        $(".education-group").hide();
+        $(".checkbox-recent-graduate").click(function(e) {
+            $(".education-group").toggle();
+        });
+
+        /* Set the militaryToDate input field to the format mm/dd/yyyy */
+        $("#militaryToMonthYear").change(function(e) {
+
+            var dateNumber = null, year = null, month = null;
+
+            dateNumber = parseInt($("#militaryToDateNumber").val());
+
+            var monthYearString = $(this).val();
+            var split = monthYearString.split("/");
+            month = parseInt(split[0]);
+            year = parseInt(split[1]);
+            setMilitaryToDate(month, dateNumber, year);
+        });
+
+        $("form").submit(function(e) {
+            var validInputs = true;
+            $("input[required], select[required], [data-widget-optional]").each(function(index) {
+                var isValid = checkRequired(this);
+                validInputs = validInputs && isValid;
+            });
+
+            // If inputs are all valid, and placeholder attribute is not supported, then blank out all inputs set to their placeholder
+            if (placeholderNotSupported && validInputs ) {
+                $("[placeholder]").each(function(e) {
+                    var input = $(this);
+                    if (input.val() == input.attr('placeholder')) {
+                        input.val('');
+                    }
+                });
+            }
+            if (! validInputs) e.preventDefault();
+            return validInputs;
+        });
+    });
+
+    function setMilitaryToDate(monthNumber, dateNumber, year) {
+        var $militaryToDate = $("#militaryToDate");
+        if (! $militaryToDate.val()) {
+            $militaryToDate.val("//");
+        }
+        var monthDateYearArray = $militaryToDate.val().split("/");
+        if (monthNumber) {
+            monthDateYearArray[0] = monthNumber;
+        }
+        if (dateNumber) {
+            monthDateYearArray[1] = dateNumber;
+        }
+        if (year) {
+            monthDateYearArray[2] = year;
+        }
+        $militaryToDate.val(
+                monthDateYearArray[0] + "/" + monthDateYearArray[1] + "/" + monthDateYearArray[2]
+        );
+    }
+
+    function checkRequired(input) {
+        var $input = $(input);
+        var isValid;
+//        console.log("checkRequired: " + $(input).attr("id"));
+        // Validate email
+        if ($input.data("widget-optional") && !$input.val()) {  // optional widget field
+            markInputValid($input);
+            isValid = true;
+        }
+        else if ($input.attr('type') === 'email' && $input.val()) {
+            isValid = isEmailValid($input.val());
+            if (isValid) {
+                markInputValid($input);
+            } else {
+                markInputInvalid($input);
+            }
+        }
+        else if ($input.data('widget-must-be-future')) {
+            var monthYearRegexp = /\d?\d\/\d\d\d\d/;
+//            console.log("in widget-must-be-future");
+            isValid = monthYearRegexp.test($input.val());
+            if (isValid) {
+                var split = $input.val().split("/");
+                var month = parseInt(split[0]);
+                var year = parseInt(split[1]);
+                var enteredDate = new Date(year, month, 1);
+                var currentDate = new Date();
+                if (enteredDate > currentDate) {
+                    markInputValid($input);
+                } else {
+                    isValid = false;
+                    markInputInvalid($input);
+                }
+            } else {
+                markInputInvalid($input);
+            }
+//            console.log("isValid: ", isValid);
+        }
+        else if ($input.data('widget-minimum-value')) {
+            isValid = parseInt($input.val()) >= $input.data('widget-minimum-value');
+            if (isValid) {
+                markInputValid($input);
+            } else {
+                markInputInvalid($input);
+            }
+        }
+        else if ($input.data('widget-maximum-value')) {
+            isValid = parseInt($input.val()) <= $input.data('widget-maximum-value');
+            if (isValid) {
+                markInputValid($input);
+            } else {
+                markInputInvalid($input);
+            }
+        }
+        else if (! $input.val() || $input.hasClass('invalid') || (placeholderNotSupported && $input.val() === $input.attr('placeholder'))) {
+            markInputInvalid($input);
+            isValid = false;
+        }
+        else {
+            markInputValid($input);
+            isValid = true;
+        }
+        return isValid;
+    }
+
+    // Returns array of {'id', 'description'}
+    function aoiIdToSubAois(aoiId) {
+        // Make list of all sub AOIs
+        var subAOIs = [];
+        $("select[data-aoi-id=" + aoiId + "] option").each(function(index) {
+            var value = $(this).attr('value');
+            if (value && value != '') {
+                subAOIs.push({
+                    'description' : $(this).text(),
+                    'id' : value
+                });
+            }
+        });
+        return subAOIs;
+    }
+</script>
+
+</body>
+</html>

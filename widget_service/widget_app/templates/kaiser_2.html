@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="{{=URL('static','bootstrap_2_2_2/css/bootstrap.min.css')}}" rel="stylesheet">
+    <title>Join our University Talent Community</title>
+    <meta name="description" content="Join the Kaiser Talent Community - recruiting software by getTalent" />
+    <meta name="keywords" content="Kaiser, Recruiting, Software, Cloud, Talent, Community" />
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <style type="text/css">
+        body {
+            width: 430px;
+            /*height: 439px;*/
+        }
+        #gettalent_resume {
+            text-align: center;
+            padding: 10px 0;
+            margin-left: 0;
+        }
+        #file_upload {
+            margin-left: 70px;
+        }
+        .container {
+            width:inherit;
+            background-repeat: no-repeat;
+            /*height: 587px;*/
+        }
+
+        input.span3, textarea.span3, .uneditable-input.span3 {
+            width: 185px;
+        }
+        select, textarea, input[type="text"], input[type="email"] {
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+        input.span6, textarea.span6, .uneditable-input.span6 {
+            width: 394px;
+        }
+        input.span4, textarea.span4, .uneditable-input.span4 {
+            width: 286px;
+        }
+        .span7 {
+            width: 420px;
+        }
+        .span6 {
+            width: 400px;
+        }
+        input.span2, textarea.span2, .uneditable-input.span2 {
+            width: 84px;
+        }
+        .span4 {
+            width: 300px;
+        }
+        #state {
+            margin-left: 10px;
+        }
+
+        .control-group {
+            margin-bottom: 2px;
+        }
+
+        .tm-tag {
+            font-size: 11px !important;
+        }
+        .hide{
+            display:none;
+        }
+
+    </style>
+    <script type="text/javascript" src="{{= URL('static','js/modernizr-2-6-2-custom.js')}}"></script>
+    <link href="{{=URL('static', 'bootstrap-tagmanager/tagmanager.css')}}" rel="stylesheet"/>
+</head>
+
+<body style="overflow-x: hidden">
+
+<div class="container" >
+    {{ if mode == 'form': }}
+    <div class="row">
+        <div class="span7" style="margin-left:30px">
+            <form name="widget" style="margin-bottom:0" novalidate method="post" autocomplete="off" enctype="multipart/form-data" action="{{= URL('widget', 'submit', args=request.args, vars=request.vars) }}">
+                <input type="hidden" name="is_special" value="1" />
+                <p style="margin-left:64px">
+                    <strong>
+                        Join our University Talent Community
+                    </strong>
+                </p>
+
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <label class="hide" id="nameLabel" >Name</label>
+                        <label class="hide" id="emailLabel" >Email</label>
+                        <input aria-labelledby="nameLabel" class="span3" type="text" required id="name" name="name" placeholder="Name" value="{{= form_fields.get('name') or '' }}" />
+                        <input aria-labelledby="emailLabel" style="margin-left:10px; width: 175px;" rel="tooltip" class="span3" data-validation-message="Must be valid email" type="email" required id="emailAdd" name="emailAdd" placeholder="Email" value="{{= form_fields.get('emailAdd') or '' }}" />
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <label class="hide" id="cityLabel" >City</label>
+                        <label class="hide" id="stateLabel" >State</label>
+                        <input aria-labelledby="cityLabel" style="width: 280px" class="span4" type="text" required id="city" name="city" placeholder="City" value="{{= form_fields.get('city') or '' }}" />
+                        <input aria-labelledby="stateLabel" style="width: 80px" class="span2" type="text" required id="state" name="state" placeholder="State" value="{{= form_fields.get('state') or '' }}" />
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls">
+                        <label class="hide" id="universityLabel">University</label>
+                        <input aria-labelledby="universityLabel" style="width: 385px" class="span6"  autocomplete="off" type="text" required id="university" name="university" placeholder="University" value="{{= form_fields.get('university') or '' }}" />
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <label class="hide" id="degreeLabel" >Degree</label>
+                        <select aria-labelledby="degreeLabel" class="span6" name="degree" id="degree" required>
+                            <option value="" title="degree">Degree</option>
+                            {{ degrees = ['Associates', 'Bachelors', 'Masters', 'Doctorate', 'Professional', 'Other'] }}
+                            {{ for degree in degrees: }}
+                            <option title="{{= degree}}" value="{{= degree }}">{{= degree }}</option>
+                            {{ pass }}
+                        </select>
+                        <input  type="text" class="span2 other" style="display:none" id="degreeOther" name="degreeOther" placeholder="Other degree" value="{{= form_fields.get('degreeOther') or '' }}" />
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <label class="hide" id="majorLabel" >Major</label>
+                        <select aria-labelledby="majorLabel" class="span6" name="major" id="major" required>
+                            <option value="" title="Major">Major</option>
+                            {{ for major in majors: }}
+                            <option title="{{= major.name }}" value="{{= major.name }}">{{= major.name }}</option>
+                            {{ pass }}
+                            <option title="Other" value="Other">Other</option>
+                        </select>
+                        <input type="text" class="span2 other" style="display:none" id="majorOther" name="majorOther" placeholder="Other major" value="{{= form_fields.get('majorOther') or '' }}" />
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls">
+                        {{ graduations = [] }}
+                        {{ for year in range(2011, 2020): }}
+                        {{ for semester in ['Spring', 'Fall/Winter', 'Summer']: }}
+                        {{ graduations.append("%s %s" % (semester, year)) }}
+                        {{ pass }}
+                        {{ pass }}
+                        <label class="hide" id="graduationLabel" >Major</label>
+                        <select aria-labelledby="graduationLabel" class="span6" name="graduation" id="graduation" required>
+                            <option value="" title="Graduation Year">Graduation Year</option>
+                            {{ current_year = graduations[0].split(' ')[1] }}
+                            <optgroup label="{{= current_year }}" >
+
+                                {{ for i, graduation in enumerate(graduations): }}
+                                {{ this_year = graduations[i].split(' ')[1] }}
+                                {{ if current_year != this_year: }}
+                                {{ current_year = this_year }}
+                            </optgroup>
+                            <optgroup label="{{= this_year }}" >
+                                {{ pass }}
+                                <option title="{{= graduation }}" value="{{= graduation }}">{{= graduation }}</option>
+                                {{ pass }}
+
+                            </optgroup>
+                        </select>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <label class="hide" id="interestLabel" >Major</label>
+                        <select aria-labelledby="interestLabel" class="span6" name="interestId" id="interestId">
+                            <option value="" title="Areas of Interest">Areas of Interest</option>
+                            {{ for interest in areas_of_interest: }}
+                            <option title="{{= interest.description }}" value="{{= interest.id }}" {{= XML('selected="selected"') if form_fields.get('interestId') == interest.id else ''}} >{{= interest.description }}</option>
+                            {{ pass }}
+                        </select>
+                        <div class="scrollable-tab-container" style="float: left;max-height: 67px;padding: 3px;overflow: auto;">
+                            <input type="hidden" id="hidden-tags-aoi" name="hidden-tags-aoi" class="tm-input-aoi tm-input-success" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <label>
+                            <input class="checkbox-nuid" type="checkbox" > Current or Previous KP Intern
+                        </label>
+                        <input required class="span3" data-validation-message="Must be valid NUID"  style="display:none;margin-right: 10px;" type="text" id="nuid" name="nuid" placeholder="Enter your NUID" />
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="controls">
+                        <button type="submit" class="offset2 btn btn-warning">Submit</button>
+                    </div>
+                </div>
+                <p style="margin-left:134px">
+                    <small>
+                        <a target="_blank" href="http://gettalent.com">Recruiting software</a> by getTalent
+                    </small>
+                </p>
+            </form>
+        </div>
+    </div>
+    {{ elif mode == 'success': }}
+    <div class="row">
+        <div class="span6" style="margin-left:30px;margin-top:30px;">
+            <p class="alert alert-success" >Your information has successfully been submitted.</p>
+            <p>Thank you for your interest in our talent community. </p>
+        </div>
+    </div>
+    {{ elif mode == 'error': }}
+    <div class="row">
+        <div class="span6" style="margin-left:30px;margin-top:30px">
+            <div class="alert alert-error">
+                <p>An error occurred while sending your information. Please refresh the page and try again.</p>
+            </div>
+        </div>
+    </div>
+    {{ pass }}
+</div> <!-- /container -->
+
+{{
+response.files.append(URL('static', 'js/jquery-1.7.2.min.js'))
+response.files.append(URL('static', 'bootstrap_2_2_2/js/bootstrap.min.js'))
+response.files.append(URL('static', 'js/jquery.simpleplaceholder.js'))
+response.files.append(URL('static', 'bootstrap-tagmanager/tagmanager.js'))
+response.files.append(URL('static', 'js/talent-widget.js'))
+response.include_files()
+}}
+
+<script type="text/javascript">
+
+    var _gaq = _gaq || [];
+    var universitiesList = [];
+
+    _gaq.push(['_setAccount', 'UA-33209718-1']);
+    _gaq.push(['_trackPageview']);
+
+    var placeholderNotSupported = false;
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+
+    $(document).ready(function() {
+        // $('input[type=text][placeholder], input[type=email][placeholder]').simplePlaceholder();
+
+        if (! Modernizr.input.placeholder) {
+            placeholderNotSupported = true;
+            $('[placeholder]').focus(function() {
+                var input = $(this);
+                if (input.val() == input.attr('placeholder')) {
+                    input.val('');
+                    input.removeClass('placeholder');
+                }
+            }).blur(function() {
+                        var input = $(this);
+                        if (input.val() == '' || input.val() == input.attr('placeholder')) {
+                            input.addClass('placeholder');
+                            input.val(input.attr('placeholder'));
+                        }
+                    }).blur();
+        }
+
+        // Load up university list
+        $.ajax({
+            type: "post",
+            dataType: "json",
+            url: "{{= URL('widget', 'get_universities_list.json') }}",
+            success: function(response) {
+                universitiesList = response['universities_list'];
+                $("#university").typeahead({
+                    items: 10,
+                    source: universitiesList
+                });
+            }
+        });
+
+        $(".tm-input-aoi").tagsManager({
+            hiddenTagListId: 'hidden-tags-aoi',
+            hiddenTagListName: 'interestTags',
+            delimiters: [124]
+        });
+        $('#interestId').change(function(){
+            if ( ! $("#interestId").find(":selected").val())
+                return false;
+            $("#hidden-tags-aoi").tagsManager('pushTag', $("#interestId").find(":selected").text());
+            $(this).find(":first-child").text("Select another interest...");
+            $(this).val("");
+            $(this).focus();
+        });
+
+        // "Other" dropdowns functionality
+        $("select").change(function(e) {
+            if ($(this).find("option:selected").text() === "Other") {
+                $(this).removeClass("span6").addClass("span4");
+                $(this).siblings('input').hide().slideDown();
+            }
+            else if ($(this).siblings('input.other').is(':visible')) {
+                var $select = $(this);
+                $(this).siblings('input').show().slideUp(400, function() {
+                    $select.removeClass("span4").addClass("span6");
+                });
+            }
+        });
+        // Input verification
+        $("input[required], select[required]").blur(function(e) {
+            checkRequired(this);
+        });
+
+        // Tooltips
+        $("input[required], select[required]").each(function(i) {
+            $(this).tooltip({
+                placement: 'bottom',
+                title: $(this).data('validation-message') || 'Required',
+                trigger: 'manual'
+            });
+        });
+
+        /* NUID */
+        $(".checkbox-nuid").click(function(e) {
+            $("#nuid").toggle();
+        });
+
+        $("form").submit(function(e) {
+            var validInputs = true;
+            $("input[required], select[required]").each(function(index) {
+                var isValid = checkRequired(this);
+                validInputs = validInputs && isValid;
+            });
+
+            // If inputs are all valid, and placeholder attribute is not supported, then blank out all inputs set to their placeholder
+            if (placeholderNotSupported && validInputs ) {
+                $("[placeholder]").each(function(e) {
+                    var input = $(this);
+                    if (input.val() == input.attr('placeholder')) {
+                        input.val('');
+                    }
+                });
+            }
+
+            if (! validInputs) e.preventDefault();
+            return validInputs;
+        });
+    });
+    function checkRequired(input) {
+        var $input = $(input);
+        var isValid;
+
+        // Validate email
+        if ($input.attr('type') === 'email' && $input.val()) {
+            isValid = isEmailValid($input.val());
+            if (isValid) {
+                markInputValid($input);
+            } else {
+                markInputInvalid($input);
+            }
+        }
+        // Validate NUID
+        else if ($input.attr('name') === 'nuid') {
+            isValid = (! $input.val()) || /^[a-zA-Z]\d{6}$/g.test($input.val());
+            if (isValid) {
+                markInputValid($input);
+            } else {
+                markInputInvalid($input);
+            }
+        }
+        else if (! $input.val() || $input.hasClass('invalid') || (placeholderNotSupported && $input.val() === $input.attr('placeholder'))) {
+            markInputInvalid($input);
+            isValid = false;
+        } else {
+            markInputValid($input);
+            isValid = true;
+        }
+
+        return isValid;
+    }
+</script>
+
+</body>
+</html>
