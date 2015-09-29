@@ -24,6 +24,8 @@ class SocialNetworkBase(object):
         function_name = '__init__()'
         user_id = kwargs.get('user_id')
         social_network_id = kwargs.get('social_network_id')
+        message_to_log = get_message_to_log(function_name=function_name,
+                                            class_name=self.__class__.__name__)
         self.api_relative_url = None
         self.user = User.get_by_id(user_id)
         self.social_network = SocialNetwork.get_by_id(social_network_id)
@@ -31,12 +33,9 @@ class SocialNetworkBase(object):
         self.user_credentials = UserCredentials.get_by_user_and_social_network_id(
             user_id, social_network_id
         )
-        self.message_to_log = get_message_to_log(
-            function_name=function_name,
-            class_name=self.__class__.__name__)
         if self.user_credentials:
-            self.message_to_log.update(
-                {'user': self.user_credentials.user.firstName + ' ' + self.user_credentials.user.lastName})
+            self.user_name = self.user_credentials.user.firstName + ' ' + self.user_credentials.user.lastName
+            message_to_log.update({'user': self.user_name})
             data = {
                 "access_token": self.user_credentials.accessToken,
                 "gt_user_id": self.user_credentials.userId,
@@ -59,15 +58,14 @@ class SocialNetworkBase(object):
                 # Log those fields in error which are not present in Database
                 error_message = "Missing Item(s) in user's credential: " \
                                 "%(missing_items)s\n" % missing_items
-                self.message_to_log.update({'error': error_message})
-                log_error(self.message_to_log)
+                message_to_log.update({'error': error_message})
+                log_error(message_to_log)
         else:
             error_message = 'User Credentials are None'
-            self.message_to_log.update({'error': error_message})
-            log_error(self.message_to_log)
+            message_to_log.update({'error': error_message})
+            log_error(message_to_log)
         # Eventbrite and meetup social networks take access token in header
         # so here we generate authorization header to be used by both of them
-        self.message_to_log = get_message_to_log()
         self.headers = {'Authorization': 'Bearer ' + self.access_token}
         self.start_date_dt = None
 
@@ -182,7 +180,9 @@ class SocialNetworkBase(object):
         :return:
         """
         function_name = 'validate_token()'
-        self.message_to_log.update({'functionName': function_name})
+        message_to_log = get_message_to_log(function_name=function_name,
+                                            class_name=self.__class__.__name__,
+                                            gt_user=self.user_name)
         status = False
         relative_url = self.api_relative_url
         url = self.api_url + relative_url
@@ -192,12 +192,12 @@ class SocialNetworkBase(object):
                 status = True
             else:
                 error_message = "Access token has expired for %s" % self.social_network.name
-                self.message_to_log.update({'error': error_message})
-                log_error(self.message_to_log)
+                message_to_log.update({'error': error_message})
+                log_error(message_to_log)
         except requests.RequestException as e:
             error_message = e.message
-            self.message_to_log.update({'error': error_message})
-            log_exception(self.message_to_log)
+            message_to_log.update({'error': error_message})
+            log_exception(message_to_log)
         return status
 
     def refresh_access_token(self):
@@ -229,6 +229,7 @@ class SocialNetworkBase(object):
         :return:
         """
         function_name = 'save_user_credentials_in_db()'
+        #  TODO- pass user name in place of user name
         message_to_log = get_message_to_log(function_name=function_name,
                                             gt_user=user_credentials['userId'])
         gt_user_in_db = UserCredentials.get_by_user_and_social_network_id(
