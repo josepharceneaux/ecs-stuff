@@ -96,50 +96,6 @@ def authenticate_user(request):
         return None
 
 
-class EventInputMissing(Exception):
-    pass
-
-
-class EventNotSaved(Exception):
-    pass
-
-
-class EventNotCreated(Exception):
-    pass
-
-
-class EventNotPublished(Exception):
-    pass
-
-
-class EventNotUnpublished(Exception):
-    pass
-
-
-class EventLocationNotCreated(Exception):
-    pass
-
-
-class TicketsNotCreated(Exception):
-    pass
-
-
-class EventNotSaveInDb(Exception):
-    pass
-
-
-class UserCredentialsNotFound(Exception):
-    pass
-
-
-class SocialNetworkNotImplemented(Exception):
-    pass
-
-
-class InvalidAccessToken(Exception):
-    pass
-
-
 def get_message_to_log(gt_user='', function_name='', error='', class_name='', file_name=''):
     """
     Here we define descriptive message to be used for logging purposes

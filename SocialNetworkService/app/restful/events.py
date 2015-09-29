@@ -5,7 +5,8 @@ from flask.ext.restful import Api, Resource
 from SocialNetworkService.app.app_utils import api_route, authenticate, ApiResponse
 from SocialNetworkService.custom_exections import ApiException
 from SocialNetworkService.manager import process_event, delete_events
-from common.gt_models.event import Event
+from common_.gt_models.event import Event
+from common_.gt_models.user import User
 
 events_blueprint = Blueprint('events_api', __name__)
 api = Api()
@@ -28,9 +29,9 @@ class Events(Resource):
         except Exception as e:
             return ApiResponse(json.dumps(dict(messsage='APIError: Internal Server error while retrieving records')), status=500)
         if events:
-            return {'events': events, 'events_cont': len(events)}, 200
+            return {'events': events, 'count': len(events)}, 200
         else:
-            return {'events': [], 'events_cont': 0}, 200
+            return {'events': [], 'count': 0}, 200
 
     @authenticate
     def post(self, **kwargs):
@@ -119,5 +120,39 @@ class EventById(Resource):
         if len(deleted) == 1:
             return ApiResponse(json.dumps(dict(message='Event deleted successfully')), status=200)
         return ApiResponse(json.dumps(dict(message='Forbidden: Unable to delete event')), status=403)
+
+
+@api.route('/venues/')
+class Venues(Resource):
+
+    @authenticate
+    def get(self, **kwargs):
+        """
+        Returns venues owned by current user
+        :return: json for venues
+        """
+        user_id = kwargs['user_id']
+        user = User.get_by_id(user_id)
+        venues = user.venues.all()
+        venues = map(lambda venue: venue.to_json(), venues)
+        resp = json.dumps(dict(venues=venues, count=len(venues)))
+        return ApiResponse(resp, status=200)
+
+
+@api.route('/organizers/')
+class Organizers(Resource):
+
+    @authenticate
+    def get(self, **kwargs):
+        """
+        Returns organizers created by current user
+        :return: json for organizers
+        """
+        user_id = kwargs['user_id']
+        user = User.get_by_id(user_id)
+        organizers = user.organizers.all()
+        organizers = map(lambda organizer: organizer.to_json(), organizers)
+        resp = json.dumps(dict(organizers=organizers, count=len(organizers)))
+        return ApiResponse(resp, status=200)
 
 

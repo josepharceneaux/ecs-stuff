@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from common.gt_models.event import Event
+from common_.gt_models.event import Event
 from base import RSVPBase
 from SocialNetworkService.utilities import http_request, Attendee, \
     milliseconds_since_epoch_to_dt, log_exception, log_error

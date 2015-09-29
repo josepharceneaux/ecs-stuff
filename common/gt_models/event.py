@@ -1,7 +1,5 @@
-from datetime import datetime
 from sqlalchemy import Column, Integer, String, Float, DateTime, \
     ForeignKey, and_
-from sqlalchemy.orm import relationship
 from base import ModelBase as Base
 
 
@@ -9,53 +7,42 @@ class Event(Base):
     __tablename__ = 'event'
 
     id = Column(Integer, primary_key=True)
-    vendorEventId = Column(String(1000))
-    eventTitle = Column(String(500))
-    eventDescription = Column(String(1000))
+    socialNetworkEventId = Column(String(1000))
+    title = Column(String(500))
+    description = Column(String(1000))
     socialNetworkId = Column(Integer, ForeignKey('social_network.id'), nullable=False)
     userId = Column(Integer, ForeignKey('user.id'), nullable=False)
+    organizerId = Column(Integer, ForeignKey('organizer.id'), nullable=False)
+    venueId = Column(Integer, ForeignKey('venue.id'), nullable=False)
     groupId = Column(String(100))
     groupUrlName = Column(String(500))
     eventUrl = Column(String(500))
-    eventAddressLine1 = Column(String(300))
-    eventAddressLine2 = Column(String(300))
-    eventCity = Column(String(100))
-    eventState = Column(String(100))
-    eventZipCode = Column(Integer)
-    eventCountry = Column(String(100))
-    eventLongitude = Column(Float)
-    eventLatitude = Column(Float)
-    eventStartDatetime = Column(DateTime)
-    eventEndDatetime = Column(DateTime)
-    organizerName = Column(String(200))
-    organizerEmail = Column(String(200))
-    aboutEventOrganizer = Column(String(1000))
+    startDatetime = Column(DateTime)
+    endDatetime = Column(DateTime)
     registrationInstruction = Column(String(1000))
-    eventCost = Column(String(20))
-    eventCurrency = Column(String(20))
-    eventTimeZone = Column(String(100))
+    cost = Column(Float)
+    currency = Column(String(20))
+    timezone = Column(String(100))
     maxAttendees = Column(Integer)
-    ticketsId = Column(Integer)
-
-    socialNetwork = relationship("SocialNetwork", backref='social_network_event')
+    ticketsId = Column(Integer, nullable=True)
 
     def __ne__(self, other_event):
-        return (self.vendorEventId != other_event.vendorEventId and
+        return (self.socialNetworkEventId != other_event.socialNetworkEventId and
                 self.userId != other_event.userId)
 
     def __eq__(self, other_event):
-        return (self.vendorEventId == other_event.vendorEventId and
+        return (self.socialNetworkEventId == other_event.socialNetworkEventId and
                 self.userId == other_event.userId and
-                self.organizerName == other_event.organizername and
-                self.eventAddressLine1 == other_event.eventAddressLine1 and
-                self.eventStartDatetime == other_event.eventStartDatetime)
+                self.organizerId == other_event.organizerId and
+                self.addressLine1 == other_event.addressLine1 and
+                self.startDatetime == other_event.startDatetime)
 
     @classmethod
-    def get_by_user_and_vendor_id(cls, user_id, event_vendor_id):
+    def get_by_user_and_vendor_id(cls, user_id, social_network_event_id):
         return cls.query.filter(
             and_(
                 Event.userId == user_id,
-                Event.vendorEventId == event_vendor_id
+                Event.socialNetworkEventId == social_network_event_id
             )).first()
 
     @classmethod
@@ -74,20 +61,23 @@ class Event(Base):
             and_(
                 Event.userId == user_id,
                 Event.socialNetworkId == social_network_id,
-                Event.eventStartDatetime >= start_date
+                Event.startDatetime >= start_date
             )).all()
 
     @classmethod
     def get_by_user_id_social_network_id_vendor_event_id(cls, user_id,
-                                                         social_network_id, vendor_event_id):
+                                                         social_network_id, social_network_event_id):
         assert social_network_id is not None
-        assert vendor_event_id is not None
+        assert social_network_event_id is not None
         assert user_id is not None
         return cls.query.filter(
             and_(
                 Event.userId == user_id,
                 Event.socialNetworkId == social_network_id,
-                Event.vendorEventId == vendor_event_id
+                Event.socialNetworkEventId == social_network_event_id
             )
         ).first()
+
+
+
 

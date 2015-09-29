@@ -6,31 +6,31 @@ from base import ModelBase as Base
 
 class Candidate(Base):
     __tablename__ = 'candidate'
-    id = Column(Integer, primary_key=True)
-    firstName = Column(String(50))
-    middleName = Column(String(50))
-    lastName = Column(String(50))
-    formattedName = Column(String(150))
-    statusId = Column(Integer, ForeignKey('candidate_status.id'))
-    isWebHidden = Column(Integer)
-    isMobileHidden = Column(Integer)
-    addedTime = Column(DateTime)
-    ownerUserId = Column(Integer, ForeignKey('user.id'))
-    domainCanRead = Column(Integer)
-    domainCanWrite = Column(Integer)
-    diceSocialProfileId = Column(String(128))
-    diceProfileId = Column(String(128))
-    sourceId = Column(Integer, ForeignKey('candidate_source.id'))
-    sourceProductId = Column(Integer, ForeignKey('product.id'), default=2, nullable=False)
-    filename = Column(String(512))
-    objective = Column(String(1000))
-    summary = Column(String(1000))
-    totalMonthsExperience = Column(Integer)
-    resumeText = Column(String(1000))
-    cultureId = Column(Integer, ForeignKey('culture.id'), default=1)
+    id = Column('id', Integer, primary_key=True)
+    first_name = Column('firstName', String(50))
+    middle_name = Column('middleName', String(50))
+    last_name = Column('lastName', String(50))
+    formatted_name = Column('formattedName', String(150))
+    status_id = Column(Integer, ForeignKey('candidate_status.id'))
+    is_web_hidden = Column('isWebHidden', Integer)
+    is_mobile_hidden = Column('isMobileHidden', Integer)
+    added_time = Column('addedTime', DateTime)
+    owner_user_id = Column(Integer, ForeignKey('user.id'))
+    domain_can_read = Column('domainCanRead', Integer)
+    domain_can_write = Column('domainCanWrite', Integer)
+    dice_social_profile_id = Column('diceSocialProfileId', String(128))
+    dice_profile_id = Column('diceProfileId', String(128))
+    source_id = Column(Integer, ForeignKey('candidate_source.id'))
+    source_product_id = Column(Integer, ForeignKey('product.id'), default=2, nullable=False)
+    filename = Column('filename', String(512))
+    objective = Column('objective', String(1000))
+    summary = Column('summary', String(1000))
+    total_months_experience = Column('totalMonthsExperience', Integer)
+    resume_text = Column('resumeText', String(1000))
+    culture_id = Column(Integer, ForeignKey('culture.id'), default=1)
 
     def __repr__(self):
-        return '<Candidate %r %r>' % self.firstName, self.lastName
+        return '<Candidate %r %r>' % self.first_name, self.last_name
 
     @classmethod
     def get_by_first_last_name_owner_user_id_source_id_product(cls, first_name,
@@ -41,20 +41,20 @@ class Candidate(Base):
         assert owner_user_id is not None
         return cls.query.filter(
             and_(
-                Candidate.firstName == first_name,
-                Candidate.lastName == last_name,
-                Candidate.ownerUserId == owner_user_id,
-                Candidate.sourceId == source_id,
-                Candidate.sourceProductId == product_id
+                Candidate.first_name == first_name,
+                Candidate.last_name == last_name,
+                Candidate.owner_user_id == owner_user_id,
+                Candidate.source_id == source_id,
+                Candidate.source_product_id == product_id
             )
         ).first()
 
 
 class CandidateStatus(Base):
     __tablename__ = 'candidate_status'
-    id = Column(Integer, primary_key=True)
-    description = Column(String(100))
-    notes = Column(String(500))
+    id = Column('id', Integer, primary_key=True)
+    description = Column('description', String(100))
+    notes = Column('notes', String(500))
 
     def __repr__(self):
         return '<CandidateStatus %r>' % self.description
@@ -62,10 +62,10 @@ class CandidateStatus(Base):
 
 class CandidateSource(Base):
     __tablename__ = 'candidate_source'
-    id = Column(Integer, primary_key=True)
-    description = Column(String(100))
-    notes = Column(String(500))
-    domainId = Column(Integer, ForeignKey('domain.id'))
+    id = Column('id', Integer, primary_key=True)
+    description = Column('description', String(100))
+    notes = Column('notes', String(500))
+    domain_id = Column(Integer, ForeignKey('domain.id'))
 
     def __repr__(self):
         return '<CandidateSource %r>' % self.description

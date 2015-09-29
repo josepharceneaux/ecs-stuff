@@ -1,11 +1,11 @@
 import json
 
 from abc import ABCMeta, abstractmethod
-from common.gt_models.event import Event
-from common.gt_models.product import Product
-from common.gt_models.activity import Activity
-from common.gt_models.rsvp import RSVP, CandidateEventRSVP
-from common.gt_models.candidate import CandidateSource, Candidate
+from common_.gt_models.event import Event
+from common_.gt_models.product import Product
+from common_.gt_models.activity import Activity
+from common_.gt_models.rsvp import RSVP, CandidateEventRSVP
+from common_.gt_models.candidate import CandidateSource, Candidate
 from SocialNetworkService.utilities import log_exception, log_error
 
 
