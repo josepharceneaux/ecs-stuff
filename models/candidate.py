@@ -1,6 +1,5 @@
 from models import db
-from sqlalchemy.orm import relationship, backref
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 import datetime
 import time
 
@@ -32,16 +31,16 @@ class Candidate(db.Model):
     culture_id = db.Column('cultureId', db.Integer, db.ForeignKey('culture.id'), default=1)
 
     # One-to-many Relationships; i.e. Candidate has many:
-    candidate_achievements = relationship('CandidateAchievement', backref('candidate'))
-    candidate_phones = relationship('CandidatePhone', backref('candidate'))
-    candidate_emails = relationship('CandidateEmail', backref('candidate'))
-    candidate_photos = relationship('CandidatePhoto', backref('candidate'))
-    candidate_text_comments = relationship('CandidateTextComment', backref('candidate'))
-    voice_comments = relationship('VoiceComment', backref('candidate'))
-    candidate_documents = relationship('CandidateDocument', backref('candidate'))
-    candidate_work_preferences = relationship('CandidateWorkPreference', backref('candidate'))
-    candidate_preferred_locations = relationship('CandidatePreferredLocation', backref('candidate'))
-    candidate_social_network = relationship('CandidateSocialNetwork', backref('candidate'))
+    candidate_achievements = relationship('CandidateAchievement', backref='candidate')
+    candidate_phones = relationship('CandidatePhone', backref='candidate')
+    candidate_emails = relationship('CandidateEmail', backref='candidate')
+    candidate_photos = relationship('CandidatePhoto', backref='candidate')
+    candidate_text_comments = relationship('CandidateTextComment', backref='candidate')
+    voice_comments = relationship('VoiceComment', backref='candidate')
+    candidate_documents = relationship('CandidateDocument', backref='candidate')
+    candidate_work_preferences = relationship('CandidateWorkPreference', backref='candidate')
+    candidate_preferred_locations = relationship('CandidatePreferredLocation', backref='candidate')
+    candidate_social_network = relationship('CandidateSocialNetwork', backref='candidate')
 
     # Many-to-many Relationships
     # rating_tags = relationship('RatingTag', secondary=candidate_rating)
@@ -60,7 +59,7 @@ class CandidateAchievement(db.Model):
     issuing_authority = db.Column('IssuingAuthority', db.String(150))
     description = db.Column('Description', db.String(10000))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-    candidate_id = db.Column('CandidateId', db.Integer)
+    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
 
     def __repr__(self):
         return "<CandidateAchievement (description=' %r')>" % self.description
@@ -74,7 +73,7 @@ class CandidateStatus(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
     # One-to-many Relationships
-    candidates = relationship('Candidate', backref('candidate_status'))
+    candidates = relationship('Candidate', backref='candidate_status')
 
     def __repr__(self):
         return "<CandidateStatus(description=' %r')>" % (self.description)
@@ -87,7 +86,7 @@ class PhoneLabel(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
     # One-to-many Relationships
-    candidate_phones = relationship('CandidatePhone', backref('phone_label'))
+    candidate_phones = relationship('CandidatePhone', backref='phone_label')
 
     def __repr__(self):
         return "<PhoneLabel (description=' %r')>" % (self.description)
@@ -102,7 +101,7 @@ class CandidateSource(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
     # One-to-many Relationships
-    candidates = relationship('Candidate', backref('candidate_source'))
+    candidates = relationship('Candidate', backref='candidate_source')
 
     def __repr__(self):
         return "<CandidateSource (description= '%r')>" % (self.description)
@@ -142,7 +141,7 @@ class EmailLabel(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
     # One-to-many Relationships
-    candidate_emails = relationship('CandidateEmail', backref('email_label'))
+    candidate_emails = relationship('CandidateEmail', backref='email_label')
 
     def __repr__(self):
         return "<EmailLabel (description=' %r')>" % (self.description)
@@ -170,6 +169,15 @@ class CandidatePhoto(db.Model):
         return "<CandidatePhoto (filename=' %r')>" % self.filename
 
 
+class CandidateRating(db.Model):
+    __tablename__ = 'candidate_rating'
+    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'), primary_key=True)
+    rating_tag_id = db.Column('RatingTagId', db.Integer, db.ForeignKey('rating_tag.id'), primary_key=True)
+    value = db.Column('Value', db.Integer, default=0)
+    added_time = db.Column('AddedTime', db.DateTime)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+
+
 class RatingTag(db.Model):
     __tablename__ = 'rating_tag'
     id = db.Column(db.Integer, primary_key=True)
@@ -177,27 +185,10 @@ class RatingTag(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
     # Many-to-many Relationship
-    candidates = relationship('Candidate', secondary=candidate_rating)
+    candidates = relationship('Candidate', secondary="candidate_rating")
 
     def __repr__(self):
         return "<RatingTag (desctiption=' %r')>" % self.description
-
-
-candidate_rating = db.Table('CandidateRating',
-                            db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id')),
-                            db.Column('RatingTagId', db.Integer, db.ForeignKey('rating_tag.id')),
-                            value = db.Column('Value', db.Integer, default=0),
-                            added_time = db.Column('AddedTime', db.DateTime),
-                            updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-                            )
-
-# class CandidateRating(db.Model):
-#     __tablename__ = 'candidate_rating'
-#     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'), primary_key=True)
-#     rating_tag_id = db.Column('RatingTagId', db.Integer, db.ForeignKey('rating_tag.id'), primary_key=True)
-#     value = db.Column('Value', db.Integer, default=0)
-#     added_time = db.Column('AddedTime', db.DateTime)
-#     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
 
 class RatingTagUser(db.Model):
@@ -249,7 +240,7 @@ class SocialNetwork(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
     # Relationships
-    candidate_social_networks = relationship('CandidateSocialNetwork', backref('social_network'))
+    candidate_social_networks = relationship('CandidateSocialNetwork', backref='social_network')
 
     def __repr__(self):
         return "<SocialNetwork (url=' %r')>" % self.url

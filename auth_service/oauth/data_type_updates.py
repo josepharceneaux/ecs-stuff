@@ -8,7 +8,7 @@ def database_connection():
         engine = create_engine('mysql://talent_web:s!loc976892@localhost/talent_local')
     elif os.environ.get('GT_ENVIRONMENT') == 'circle':
          # CircleCI provides circle_test as default configured db.
-        engine = create_engine('mysql://ubuntu@localhost/circle_test')
+        engine = create_engine('mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_ci')
     elif os.environ.get('GT_ENVIRONMENT') == 'qa':
         engine = create_engine('mysql://talent_web:s!web976892@devdb.gettalent.com/talent_staging')
     elif os.environ.get('GT_ENVIRONMENT') == 'prod':

@@ -34,8 +34,7 @@ class AuthServiceTestsContext:
 
         # Add test domain
         test_domain = Domain(
-            name=gen_salt(20),
-            expiration=None
+            name=gen_salt(20)
         )
         db.session.add(test_domain)
         db.session.commit()
@@ -44,9 +43,9 @@ class AuthServiceTestsContext:
         test_user = User(
             email=self.email,
             password=generate_password_hash(self.password, method='pbkdf2:sha512'),
-            domainId=self.test_domain,
-            firstName=first_name,
-            lastName=last_name,
+            domain_id=self.test_domain,
+            first_name=first_name,
+            last_name=last_name,
             expiration=None
         )
         db.session.add(test_user)
