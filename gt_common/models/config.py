@@ -71,6 +71,7 @@ class GTSQLAlchemy(object):
     def create_all(self):
         import candidate
         import event
+        import social_network
         import user
         import domain
         import organization
@@ -80,8 +81,9 @@ class GTSQLAlchemy(object):
         import candidate
         import event
         import client
-        import social_network
         import token
+        import organizer
+        import venue
         GTSQLAlchemy.BASE.metadata.create_all(bind=self.engine)
 
 # def set_up(app_config_path, logging_conf_path):

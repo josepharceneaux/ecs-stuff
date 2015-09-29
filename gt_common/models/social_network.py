@@ -15,7 +15,7 @@ class SocialNetwork(Base):
     auth_url = Column('authUrl', String(200))
 
     events = relationship("Event", backref='social_network', lazy='dynamic')
-    user_credentials = relationship("UserCredentials", backref='social_network', lazy='dynamic')
+    user_credentials = relationship("UserCredentials")
 
     def __repr__(self):
         return '<SocialNetwork %r>' % self.name

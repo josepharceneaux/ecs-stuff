@@ -1,10 +1,11 @@
-
 import requests
+
 from datetime import datetime, timedelta
-from SocialNetworkService.utilities import get_message_to_log, log_exception
-import facebook
+from SocialNetworkService.utilities import get_message_to_log, log_exception, import_from_dist_packages
 from gt_common.models.event import Event
 from SocialNetworkService.event.base import EventBase
+
+facebook = import_from_dist_packages('facebook')
 
 
 class FacebookEvent(EventBase):

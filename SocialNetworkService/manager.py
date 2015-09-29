@@ -1,25 +1,25 @@
-from SocialNetworkService.base import SocialNetworkBase
-from SocialNetworkService.utilities import get_class, get_message_to_log, log_error
-from gt_common.models.social_network import SocialNetwork
 import sys
+import os
+from gt_common.models.config import GTSQLAlchemy
+app_cfg = os.path.abspath('app.cfg')
+logging_cfg = os.path.abspath('logging.conf')
+
+GTSQLAlchemy(app_config_path=app_cfg,
+             logging_config_path=logging_cfg)
+
 import logging
 import argparse
 import traceback
+
+from gevent.pool import Pool
 from datetime import datetime
 from dateutil.parser import parse
-# TODO , fix the init_db as it has changed
-from gevent.pool import Pool
-from gt_common.models.config import init_db
 from gt_common.models.event import Event
 from gt_common.models.user import UserCredentials
 from gt_common.models.social_network import SocialNetwork
 from utilities import get_class, get_message_to_log, log_error, convert_keys_to_camel_case
 from SocialNetworkService.custom_exections import SocialNetworkError, \
     SocialNetworkNotImplemented, InvalidDatetime, EventInputMissing
-
-init_db()
-
-# TODO- rename in logger settings
 logger = logging.getLogger('event_service.app')
 
 POOL_SIZE = 5

@@ -42,13 +42,13 @@ class User(Base):
 class UserCredentials(Base):
     __tablename__ = 'user_credentials'
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
-    social_network_id = Column(Integer, ForeignKey('social_network.id'), nullable=False)
-    refresh_token = Column(String(1000))
+    user_id = Column('userId', Integer, ForeignKey('user.id'), nullable=False)
+    social_network_id = Column('socialNetworkId', Integer, ForeignKey('social_network.id'), nullable=False)
+    refresh_token = Column('refreshToken', String(1000))
     webhook = Column(String(200))
-    member_id = Column(String(100))
-    access_token = Column(String(1000))
-    social_network = relationship("SocialNetwork", primaryjoin='UserCredentials.social_network_id == SocialNetwork.id')
+    member_id = Column('memberId', String(100))
+    access_token = Column('accessToken', String(1000))
+    social_network = relationship("SocialNetwork")
 
     @classmethod
     def get_all_credentials(cls, social_network_id=None):
