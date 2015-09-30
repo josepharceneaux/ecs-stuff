@@ -61,28 +61,11 @@ def test_token(test_client, request):
        pass
 
     def fin():
-<<<<<<< HEAD:resume_service/web-app/rp_tests.py
-        created_test_client = Client.query.filter_by(client_id='fakeclient').first()
-        created_test_token = Token.query.filter_by(client_id='fakeclient').first()
-        db.session.delete(created_test_token)
-        db.session.commit()
-        db.session.delete(created_test_client)
-        db.session.commit()
-        v13_pdf_candidate = Candidate.query.filter_by(formattedName='BRUCE PARKEY').first()
-        v15_pdf_candidate = Candidate.query.filter_by(formattedName='MARK GREENE').first()
-        large_jpg_candidate = Candidate.query.filter_by(formattedName='Marion Roberson').first()
-        if v15_pdf_candidate: db.session.delete(v15_pdf_candidate)
-        if v13_pdf_candidate: db.session.delete(v13_pdf_candidate)
-        if large_jpg_candidate: db.session.delete(large_jpg_candidate)
-        db.session.commit()
-
-=======
         try:
             db.session.delete(test_token)
             db.session.commit()
         except Exception:
             pass
->>>>>>> bdec32473c5975bc3d35ffa55f1275edf7ff9f83:resume_service/tests/rp_tests.py
     request.addfinalizer(fin)
     return test_token
 
@@ -163,15 +146,9 @@ def test_v14_pdf_by_post():
     keys_formatted_test(json_obj)
 
 
-<<<<<<< HEAD:resume_service/web-app/rp_tests.py
-def test_v13_pdf_by_post(db_fill):
-    """Test that v1.5 pdf files can be posted."""
-    json_obj = json.loads(fetch_resume_post_response('test_bin_13.pdf', create_mode='True'))['candidate']
-=======
 def test_v13_pdf_by_post():
     """Test that v1.3 pdf files can be posted."""
     json_obj = fetch_resume_post_response('test_bin_13.pdf')['candidate']
->>>>>>> bdec32473c5975bc3d35ffa55f1275edf7ff9f83:resume_service/tests/rp_tests.py
     assert json_obj['full_name'] == 'BRUCE PARKEY'
     assert json_obj['emails'][0]['address'] == 'bparkey@sagamoreapps.com'
     assert len(json_obj['work_experiences']) == 3
@@ -198,7 +175,6 @@ def test_jpg_by_post():
     keys_formatted_test(json_obj)
 
 
-<<<<<<< HEAD:resume_service/web-app/rp_tests.py
 def test_pdf_14_of_image_alyson_peters(db_fill):
     """Test that PDFs of image files can be posted."""
     json_obj = fetch_resume_post_response('pdf_14_of_image_alyson_peters.pdf')['candidate']
@@ -208,14 +184,9 @@ def test_pdf_14_of_image_alyson_peters(db_fill):
     keys_formatted_test(json_obj)
 
 
-def test_2448_3264_jpg_by_post(db_fill):
-    """Test that img files can be posted."""
-    json_obj = json.loads(fetch_resume_post_response('2448_3264.jpg', create_mode='True'))['candidate']
-=======
 def test_2448_3264_jpg_by_post():
     """Test that large jpgs files can be posted."""
     json_obj = fetch_resume_post_response('2448_3264.jpg')['candidate']
->>>>>>> bdec32473c5975bc3d35ffa55f1275edf7ff9f83:resume_service/tests/rp_tests.py
     assert json_obj['full_name'] == 'Marion Roberson'
     assert json_obj['emails'][0]['address'] == 'MarionR3@Knology.net'
     assert len(json_obj['educations']) == 0
