@@ -13,7 +13,7 @@ MAINTAINER Maintaner ufarooqi
 RUN apt-get update
 
 # Install basic applications
-RUN apt-get install -y curl git nano wget build-essential libssl-dev gcc make zlib1g-dev python-lxml libbz2-dev libreadline-dev libsqlite3-dev
+RUN apt-get install -y curl git nano wget build-essential libssl-dev gcc make zlib1g-dev libxml2-dev libxslt1-dev libbz2-dev libreadline-dev libsqlite3-dev
 
 # Install Python and Basic Python Tools
 RUN apt-get install -y python python-dev python-distribute python-pip python-setuptools
