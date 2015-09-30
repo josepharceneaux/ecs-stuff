@@ -141,7 +141,7 @@ def handle_rsvp():
                 webhook_id = data['config']['webhook_id']
                 url_of_rsvp = str(json.loads(request.data)['api_url'])
 
-                # gets dictionary object of vendor_rsvp_id
+                # gets dictionary object of social_network_rsvp_id
                 rsvp = get_rsvp_id(url_of_rsvp)
 
                 eventbrite_rsvp.webhook_id = webhook_id
@@ -154,7 +154,7 @@ def handle_rsvp():
                 # sets user credentials as a global variable
                 eventbrite_rsvp.set_user_credential(user_credential_obj)
 
-                # getting attendee data and appends vendor_rsvp_id in attendee
+                # getting attendee data and appends social_network_rsvp_id in attendee
                 #  object
                 attendee = eventbrite_rsvp.get_attendee(rsvp)
                 if attendee:
@@ -204,7 +204,7 @@ def handle_rsvp():
 
 def get_rsvp_id(url):
     """
-    This gets the vendor_rsvp_id by comparing url of response of rsvp
+    This gets the social_network_rsvp_id by comparing url of response of rsvp
     and defined regular expression
     :return:
     """

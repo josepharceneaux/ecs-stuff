@@ -228,10 +228,10 @@ class SocialNetworkBase(object):
         function_name = 'save_user_credentials_in_db()'
         #  TODO- pass user name in place of user name
         message_to_log = get_message_to_log(function_name=function_name,
-                                            gt_user=user_credentials['userId'],
+                                            gt_user=user_credentials['user_id'],
                                             file_name=__file__)
         gt_user_in_db = UserCredentials.get_by_user_and_social_network_id(
-            user_credentials['userId'], user_credentials['socialNetworkId'])
+            user_credentials['user_id'], user_credentials['social_network_id'])
         try:
             if gt_user_in_db:
                 gt_user_in_db.update(**user_credentials)

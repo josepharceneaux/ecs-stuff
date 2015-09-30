@@ -19,7 +19,7 @@ class Meetup(SocialNetworkBase):
         super(Meetup, self).__init__(*args, **kwargs)
         # token validity is checked here
         # if token is expired, we refresh it here
-        # self.validate_and_refresh_access_token()
+        self.validate_and_refresh_access_token()
 
     @classmethod
     def get_access_token(cls, data):
@@ -82,10 +82,10 @@ class Meetup(SocialNetworkBase):
                                             gt_user=self.user.name,
                                             file_name=__file__)
         status = False
-        user_refresh_token = self.user_credentials.refreshToken
-        auth_url = self.social_network.authUrl + "/access?"
-        client_id = self.social_network.clientKey
-        client_secret = self.social_network.secretKey
+        user_refresh_token = self.user_credentials.refresh_token
+        auth_url = self.social_network.auth_url + "/access?"
+        client_id = self.social_network.client_key
+        client_secret = self.social_network.secret_key
         payload_data = {'client_id': client_id,
                         'client_secret': client_secret,
                         'grant_type': 'refresh_token',
@@ -99,11 +99,11 @@ class Meetup(SocialNetworkBase):
                 self.access_token = response.json().get('access_token')
                 self.headers.update({'Authorization': 'Bearer ' + self.access_token})
                 refresh_token = response.json().get('refresh_token')
-                data = dict(userId=self.user_credentials.userId,
-                            socialNetworkId=self.user_credentials.socialNetworkId,
-                            accessToken=self.access_token,
-                            refreshToken=refresh_token,
-                            memberId=self.user_credentials.memberId)
+                data = dict(user_id=self.user_credentials.user_id,
+                            social_network_id=self.user_credentials.social_network_id,
+                            access_token=self.access_token,
+                            refresh_token=refresh_token,
+                            member_id=self.user_credentials.member_id)
                 status = self.save_user_credentials_in_db(data)
                 logger.info("Access Token has been refreshed")
             else:

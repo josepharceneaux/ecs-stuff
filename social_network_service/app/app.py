@@ -146,7 +146,7 @@ def handle_rsvp():
             action = data['config']['action']
             if action == 'order.placed':
                 url_of_rsvp = str(json.loads(request.data)['api_url'])
-                # gets dictionary object of vendor_rsvp_id
+                # gets dictionary object of social_network_rsvp_id
                 rsvp = get_rsvp_id(url_of_rsvp)
                 webhook_id = data['config']['webhook_id']
                 user_credentials = EventbriteRsvp.get_user_credentials_by_webhook(webhook_id)
@@ -191,7 +191,7 @@ def handle_rsvp():
 
 def get_rsvp_id(url):
     """
-    This gets the vendor_rsvp_id by comparing url of response of rsvp
+    This gets the social_network_rsvp_id by comparing url of response of rsvp
     and defined regular expression
     :return:
     """

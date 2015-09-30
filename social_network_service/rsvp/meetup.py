@@ -31,7 +31,7 @@ class MeetupRsvp(RSVPBase):
         social_network_id = event.social_network_id
         assert social_network_id is not None
         events_url = self.api_url + '/rsvps/?sign=true&page=100'
-        params = {'event_id': event.vendorEventId}
+        params = {'event_id': event.social_network_event_id}
         response = http_request('GET', events_url, params=params, headers=self.headers,
                                 message_to_log=message_to_log)
         if response.ok:
@@ -122,18 +122,18 @@ class MeetupRsvp(RSVPBase):
                                            " src='/web/static/images" \
                                            "/activities/meetup_logo.png'/>"
                 # get event from database
-                vendor_event_id = rsvp['event']['id']
+                social_network_event_id = rsvp['event']['id']
                 epoch_time = rsvp['created']
                 dt = milliseconds_since_epoch_to_dt(epoch_time)
                 attendee.added_time = dt
-                assert vendor_event_id is not None
+                assert social_network_event_id is not None
                 event = Event.get_by_user_id_social_network_id_vendor_event_id(
-                    self.user.id, self.social_network_id, vendor_event_id)
+                    self.user.id, self.social_network_id, social_network_event_id)
                 if event:
                     attendee.event = event
                 else:
                     error_message = 'Event is not present in db, VendorEventId is %s' \
-                                    % vendor_event_id
+                                    % social_network_event_id
                     message_to_log.update({'error': error_message})
                     log_error(message_to_log)
             except Exception as e:

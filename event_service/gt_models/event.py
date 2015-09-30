@@ -9,50 +9,43 @@ class Event(Base):
     __tablename__ = 'event'
 
     id = Column(Integer, primary_key=True)
-    vendorEventId = Column(String(1000))
-    eventTitle = Column(String(500))
-    eventDescription = Column(String(1000))
-    socialNetworkId = Column(Integer, ForeignKey('social_network.id'), nullable=False)
-    userId = Column(Integer, ForeignKey('user.id'), nullable=False)
-    groupId = Column(String(100))
-    groupUrlName = Column(String(500))
-    eventURL = Column(String(500))
-    eventAddressLine1 = Column(String(300))
-    eventAddressLine2 = Column(String(300))
-    eventCity = Column(String(100))
-    eventState = Column(String(100))
-    eventZipCode = Column(Integer)
-    eventCountry = Column(String(100))
-    eventLongitude = Column(Float)
-    eventLatitude = Column(Float)
-    eventStartDateTime = Column(DateTime)
-    eventEndDateTime = Column(DateTime)
-    organizerName = Column(String(200))
-    organizerEmail = Column(String(200))
-    aboutEventOrganizer = Column(String(1000))
-    registrationInstruction = Column(String(1000))
-    eventCost = Column(String(20))
-    eventCurrency = Column(String(20))
-    eventTimeZone = Column(String(100))
-    maxAttendees = Column(Integer)
+    social_network_event_id = Column('socialNetworkEventId', String(1000))
+    title = Column('title', String(500))
+    description = Column('description', String(1000))
+    social_network_id = Column('socialNetworkId', Integer, ForeignKey('social_network.id'), nullable=False)
+    user_id = Column('userId', Integer, ForeignKey('user.id'), nullable=False)
+    organizer_id = Column('organizerId', Integer, ForeignKey('organizer.id'), nullable=False)
+    venue_id = Column('venueId', Integer, ForeignKey('venue.id'), nullable=False)
+    group_id = Column('groupId', String(100))
+    group_url_name = Column('groupUrlName', String(500))
+    url = Column('url', String(500))
+    start_datetime = Column('startDatetime', DateTime)
+    end_datetime = Column('endDatetime', DateTime)
+    registration_instruction = Column('registrationInstruction', String(1000))
+    cost = Column('cost', Float)
+    currency = Column('currency', String(20))
+    timezone = Column('timezone', String(100))
+    max_attendees = Column('maxAttendees', Integer)
+    #TODO comment why do we need ticket_id. Also, why is it not a relation?
+    tickets_id = Column('ticketsId', Integer, nullable=True)
 
     def __ne__(self, other_event):
-        return (self.vendorEventId != other_event.vendorEventId and
-                self.userId != other_event.userId)
+        return (self.social_network_event_id != other_event.social_network_event_id and
+                self.user_id != other_event.user_id)
 
     def __eq__(self, other_event):
-        return (self.vendorEventId == other_event.vendorEventId and
-                self.userId == other_event.userId and
-                self.organizerName == other_event.organizername and
-                self.eventAddressLine1 == other_event.eventAddressLine1 and
-                self.eventStartDateTime == other_event.eventStartDateTime)
+        return (self.social_network_event_id == other_event.social_network_event_id and
+                self.user_id == other_event.user_id and
+                self.organizer_id == other_event.organizer_id and
+                self.venue_id == other_event.venue_id and
+                self.start_datetime == other_event.start_datetime)
 
     @classmethod
-    def get_by_user_and_vendor_id(cls, user_id, event_vendor_id):
+    def get_by_user_and_vendor_id(cls, user_id, social_network_event_id):
         return cls.query.filter(
             and_(
-                Event.userId == user_id,
-                Event.vendorEventId == event_vendor_id
+                Event.user_id == user_id,
+                Event.social_network_event_id == social_network_event_id
             )).first()
 
     @classmethod
@@ -61,22 +54,30 @@ class Event(Base):
         assert social_network_id is not None
         return cls.query.filter(
             and_(
-                Event.userId == user_id,
-                Event.socialNetworkId == social_network_id,
-                Event.eventStartDateTime >= start_date
+                Event.user_id == user_id,
+                Event.social_network_id == social_network_id,
+                Event.start_datetime >= start_date
             )).all()
 
     @classmethod
     def get_by_user_id_social_network_id_vendor_event_id(cls, user_id,
-                                                         social_network_id, vendor_event_id):
+                                                         social_network_id, social_network_event_id):
         assert social_network_id is not None
-        assert vendor_event_id is not None
+        assert social_network_event_id is not None
         assert user_id is not None
         return cls.query.filter(
             and_(
-                Event.userId == user_id,
-                Event.socialNetworkId == social_network_id,
-                Event.vendorEventId == vendor_event_id
+                Event.user_id == user_id,
+                Event.social_network_id == social_network_id,
+                Event.social_network_event_id == social_network_event_id
             )
         ).first()
+
+    @classmethod
+    def get_by_user_and_event_id(cls, user_id, event_id):
+        return cls.query.filter(
+            and_(
+                Event.userId == user_id,
+                Event.id == event_id
+            )).first()
 

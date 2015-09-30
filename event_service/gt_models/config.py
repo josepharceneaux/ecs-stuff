@@ -53,4 +53,6 @@ def init_db():
     import activity
     import client
     import token
+    import venue
+    import organizer
     Base.metadata.create_all(bind=engine)
