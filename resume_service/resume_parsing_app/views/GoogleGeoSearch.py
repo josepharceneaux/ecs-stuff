@@ -1,3 +1,5 @@
+"""Google location (lat/lon) service."""
+
 import requests
 
 

@@ -1,3 +1,5 @@
+"""Main resume parsing logic & functions."""
+
 from cStringIO import StringIO
 from os.path import basename
 from os.path import splitext
@@ -40,7 +42,6 @@ def parse_resume(file_obj, filename_str, is_test_parser=False):
     file_ext = basename(splitext(filename_str.lower())[-1]) if filename_str else ""
 
     if not file_ext.startswith("."):
-        # Make sure file_ext begins with a .
         file_ext = ".{}".format(file_ext)
 
     image_formats = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
@@ -110,6 +111,7 @@ def parse_resume(file_obj, filename_str, is_test_parser=False):
         candidate_data = parse_xml_into_candidate_dict(bg_response_dict)
         candidate_data['dice_api_response'] = bg_response_dict
         return candidate_data
+
     else:
         return dict(error='No XML text')
 

@@ -1,3 +1,5 @@
+"""Utilities related to the parsing of resumes."""
+
 __author__ = 'erikfarmer'
 
 import json

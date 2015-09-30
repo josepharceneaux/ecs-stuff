@@ -1,3 +1,6 @@
+"""Constants for application use. Should eventually get replaced with os level vars."""
+
+
 class Constants(object):
     FILEPICKER_BUCKET_NAME = 'tcs-local-erik'
     AWS_ACCESS_KEY_ID = 'AKIAIGH6HAYCTNUBYE3A'

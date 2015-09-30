@@ -1,25 +1,32 @@
+"""API for the Resume Parsing App"""
+__author__ = 'erikfarmer'
+
+# Standard lib
 from StringIO import StringIO
 import json
-import urllib2
 
-from flask import Flask, request
+# Framework specific
+from flask import Blueprint
+from flask import current_app as app
+from flask import request
 from flask import jsonify
+
+# Application specific/third party libs
+from .app_constants import Constants as current
+from .parse_lib import parse_resume
+from .utils import create_candidate_from_parsed_resume
 from boto.s3.connection import S3Connection
+import requests
 
-from resume_parser.app_constants import Constants as current
-from resume_parser.parse_lib import parse_resume
-from utils import create_candidate_from_parsed_resume
-
-app = Flask(__name__)
-app.config.from_object('config')
+mod = Blueprint('activities_api', __name__)
 
 
-@app.route('/')
+@mod.route('/')
 def hello_world():
     return '/parse_resume'
 
 
-@app.route('/parse_resume', methods=['POST'])
+@mod.route('/parse_resume', methods=['POST'])
 def parse_file_picker_resume():
     """Parses resume uploaded on S3
 
@@ -30,16 +37,13 @@ def parse_file_picker_resume():
     try:
         oauth_token = request.headers['Authorization']
     except KeyError:
-        return jsonify({'error': 'Invalid query params'}), 400
-    req = urllib2.Request(app.config['OAUTH_SERVER_URI'], headers={'Authorization': oauth_token})
-    try:
-        response = urllib2.urlopen(req)
-    except urllib2.HTTPError:
-        return jsonify({'error': 'Invalid query params'}), 400
-    page = response.read()
-    json_response = json.loads(page)
-    if not json_response.get('user_id'):
-        return jsonify({'error': 'Invalid query params'}), 400
+        return jsonify({'error': {'message': 'No Auth header set'}}), 400
+    r = requests.get(app.config['OAUTH_SERVER_URI'], headers={'Authorization': oauth_token})
+    if r.status_code != 200:
+        return jsonify({'error': {'message': 'Invalid Authorization'}}), 401
+    valid_user_id = json.loads(r.text).get('user_id')
+    if not valid_user_id:
+        return jsonify({'error': {'message': 'Oauth did not provide a valid user_id'}}), 400
     filepicker_key = request.form.get('filepicker_key')
     create_candidate = request.form.get('create_candidate')
     if filepicker_key:
@@ -56,10 +60,9 @@ def parse_file_picker_resume():
         return jsonify({'error': 'Invalid query params'}), 400
 
     result_dict = parse_resume(file_obj=resume_file, filename_str=filename_str)
-    dice_api_response = result_dict.get('dice_api_response')
-    if dice_api_response:
-        # dice_api_response should be a top-level response, not part of the Candidate object
-        del result_dict['dice_api_response']
+    processed_data = result_dict.get('processed_data')
+    if processed_data:
+        del result_dict['processed_data']
     email_present = True if result_dict.get('emails') else False
     if create_candidate:
         if email_present:
@@ -69,8 +72,4 @@ def parse_file_picker_resume():
             return jsonify(**{'error': {'code': 3, 'message': 'Parsed resume did not have email',
                                         'candidate': result_dict}}), 400
 
-    return jsonify(**{'candidate': result_dict, 'dice_api_response': dice_api_response})
-
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000, debug=True)
+    return jsonify(**{'candidate': result_dict, 'dice_api_response': result_dict['dice_api_response']})
