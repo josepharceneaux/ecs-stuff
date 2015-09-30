@@ -1,5 +1,5 @@
 from db import db
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from auth_service.oauth import logger
 from candidate import Candidate
 from auth_service.oauth.modules.handy_functions import is_number
@@ -55,8 +55,9 @@ class Culture(db.Model):
     description = db.Column('Description', db.String(50))
     code = db.Column(db.String(5), unique=True)
 
-    # One-to-many Relationships
-    candidates = db.relationship('Candidate')
+    # Relationships
+    candidates = relationship('Candidate', backref='culture')
+    resumes = relationship('Resume', backref='culture')
 
     def __repr__(self):
         return "<Culture (description=' %r')>" % self.description
@@ -87,6 +88,13 @@ class Country(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Name', db.String(100), nullable=False)
     code = db.Column('Code', db.String(20), nullable=False)
+
+    # Relationships
+    candidate_military_services = relationship('CandidateMilitartyService', backref='country')
+    patent_details = relationship('PatentDetail', backref='country')
+    candidate_addresses = relationship('CandidateAddress', backref='country')
+    candidate_educations = relationship('CandidateEducation', backref='country')
+    candidate_experience = relationship('CandidateExperience', backref='country')
 
     def __repr__(self):
         return "<Country (name=' %r')>" % self.name

@@ -1,5 +1,5 @@
-from sqlalchemy.orm import relationship
 from db import db
+from sqlalchemy.orm import relationship, backref
 import datetime
 import time
 
@@ -31,7 +31,6 @@ class Candidate(db.Model):
     culture_id = db.Column('cultureId', db.Integer, db.ForeignKey('culture.id'), default=1)
 
     # One-to-many Relationships; i.e. Candidate has many:
-    candidate_achievements = relationship('CandidateAchievement', backref='candidate')
     candidate_phones = relationship('CandidatePhone', backref='candidate')
     candidate_emails = relationship('CandidateEmail', backref='candidate')
     candidate_photos = relationship('CandidatePhoto', backref='candidate')
@@ -41,6 +40,19 @@ class Candidate(db.Model):
     candidate_work_preferences = relationship('CandidateWorkPreference', backref='candidate')
     candidate_preferred_locations = relationship('CandidatePreferredLocation', backref='candidate')
     candidate_social_network = relationship('CandidateSocialNetwork', backref='candidate')
+    resumes = relationship('Resume', backref='candidate')
+    candidate_languages = relationship('CandidateLanguage', backref='candidate')
+    candidate_license_certifications = relationship('CandidateLicenseCertification', backref='candidate')
+    candidate_references = relationship('CandidateReference', backref='candidate')
+    candidate_associations = relationship('CandidateAssociation', backref='candidate')
+    candidate_achievements = relationship('CandidateAchievement', backref='candidate')
+    candidate_military_services = relationship('CandidateMilitaryService', backref='candidate')
+    candidate_patent_histories = relationship('CandidatePatentHistory', backref='candidate')
+    candidate_publications = relationship('CandidatePublication', backref='candidate')
+    candidate_addresses = relationship('CandidateAddress', backref='candidate')
+    candidate_educations = relationship('CandidateEducation', backref='candidate')
+    candidate_skills = relationship('CandidateSkill', backref='candidate')
+    candidate_unidentifieds = relationship('CandidateUnidentified', backref='candidate')
 
     # Many-to-many Relationships
     # rating_tags = relationship('RatingTag', secondary=candidate_rating)
@@ -50,19 +62,6 @@ class Candidate(db.Model):
 
     def __repr__(self):
         return "<Candidate(formatted_name=' %r')>" % self.formatted_name
-
-
-class CandidateAchievement(db.Model):
-    __tablename__ = 'candidate_achievement'
-    id = db.Column(db.Integer, primary_key=True)
-    date = db.Column('Date', db.DateTime)
-    issuing_authority = db.Column('IssuingAuthority', db.String(150))
-    description = db.Column('Description', db.String(10000))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
-
-    def __repr__(self):
-        return "<CandidateAchievement (description=' %r')>" % self.description
 
 
 class CandidateStatus(db.Model):
@@ -87,6 +86,7 @@ class PhoneLabel(db.Model):
 
     # One-to-many Relationships
     candidate_phones = relationship('CandidatePhone', backref='phone_label')
+    reference_phones = relationship('ReferencePhone', backref='phone_label')
 
     def __repr__(self):
         return "<PhoneLabel (description=' %r')>" % self.description
@@ -100,8 +100,9 @@ class CandidateSource(db.Model):
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
-    # One-to-many Relationships
+    # Relationships
     candidates = relationship('Candidate', backref='candidate_source')
+    resumes = relationship('Resume', backref='candidate_source')
 
     def __repr__(self):
         return "<CandidateSource (description= '%r')>" % self.description
@@ -142,6 +143,7 @@ class EmailLabel(db.Model):
 
     # One-to-many Relationships
     candidate_emails = relationship('CandidateEmail', backref='email_label')
+    reference_emails = relationship('ReferenceEmail', backref='email_label')
 
     def __repr__(self):
         return "<EmailLabel (description=' %r')>" % self.description
