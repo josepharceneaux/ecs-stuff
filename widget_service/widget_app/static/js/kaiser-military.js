@@ -46,19 +46,18 @@ $(document).ready(function() {
     }
 
     // Load up university list
-    $.ajax({
-        type: "post",
-        dataType: "json",
-{#            url: "{{= URL('widget', 'get_universities_list.json') }}",#}
-        url: '',
-        success: function(response) {
-            universitiesList = response['universities_list'];
-            $("#university").typeahead({
-                items: 10,
-                source: universitiesList
-            });
-        }
-    });
+    //$.ajax({
+    //    type: "post",
+    //    dataType: "json",
+    //    url: 'TODO',
+    //    success: function(response) {
+    //        universitiesList = response['universities_list'];
+    //        $("#university").typeahead({
+    //            items: 10,
+    //            source: universitiesList
+    //        });
+    //    }
+    //});
 
     // Interest tags
     $(".tm-input-aoi").tagsManager({
@@ -306,3 +305,44 @@ function aoiIdToSubAois(aoiId) {
     });
     return subAOIs;
 }
+
+function createVeteranStatusOptions() {
+    var statuses = ['Active', 'Reserve', 'Guard', 'Retired', 'Veteran'];
+    var veteranSelector = document.getElementById("militaryStatus");
+    var option;
+    for (var i=0; i < statuses.length; i++){
+        option = document.createElement("option");
+        option.label = statuses[i];
+        option.value = statuses[i];
+        option.text = statuses[i];
+        veteranSelector.add(option);
+    }
+}
+
+function createMilitaryGrades(){
+    var current_pair;
+    var max_number;
+    var current_letter;
+    var grade;
+    var option;
+    var gradeSelector = document.getElementById("militaryGrade");
+    var grade_params = [[10, 'E'], [5, 'W'], [10, 'O']];
+    for (var i=0; i < grade_params.length; i++){
+        current_pair = grade_params[i];
+        max_number = current_pair[0];
+        current_letter = current_pair[1];
+        for (var n=1; n <= max_number; n++){
+            grade = current_letter + '-' + n;
+            option = document.createElement("option")
+            option.label = grade;
+            option.value = grade;
+            option.text = grade;
+            gradeSelector.add(option);
+        }
+    }
+    return true;
+}
+
+
+createVeteranStatusOptions();
+createMilitaryGrades();

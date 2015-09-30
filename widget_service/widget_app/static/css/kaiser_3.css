@@ -69,3 +69,18 @@ input.span3, textarea.span3, .uneditable-input.span3 {  width: 123px;}
 input.span6, textarea.span6, .uneditable-input.span6 {  width: 280px;}
 .span6 { width: 300px;}
 }
+
+h1, h2 {
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size: 14px;
+    line-height: 20px;
+    color: #333;
+    font-weight: normal;
+}
+
+/* Increasing contrast for ADA compliance: http://webaim.org/resources/contrastchecker/ */
+.tm-tag.tm-tag-success {
+    color: #3d5315;
+    background-color: #ecf7d3;
+    border-color: #a5d24a;
+}

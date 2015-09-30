@@ -6,9 +6,9 @@
     <meta name="keywords" content="Kaiser, Recruiting, Military, Software, Cloud, Talent, Community" />
     <meta name = "viewport" content = "width = device-width">
     <meta name = "viewport" content = "width = 320">
-    <link rel="stylesheet" href="/static/css/kaiser_3.css">
     <link rel="stylesheet" href="/static/css/bootstrap_3_3_5/bootstrap.min.css">
     <link rel="stylesheet" href="/static/css/bootstrap_3_3_5/bootstrap-tagmanager.css">
+    <link rel="stylesheet" href="/static/css/kaiser_3.css">
 
     <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>
@@ -58,25 +58,6 @@
           };
         }
     </script>
-
-    <style type="text/css">
-        /* h1, h2 are used here for better ADA compliance */
-        h1, h2 {
-            font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
-            font-size: 14px;
-            line-height: 20px;
-            color: #333;
-            font-weight: normal;
-        }
-
-        /* Increasing contrast for ADA compliance: http://webaim.org/resources/contrastchecker/ */
-        .tm-tag.tm-tag-success {
-            color: #3d5315;
-            background-color: #ecf7d3;
-            border-color: #a5d24a;
-        }
-    </style>
-
 </head>
 
 
@@ -194,10 +175,6 @@
                         <label id="militaryYearLabel" class="hide">Year of separation</label>
                         <select title="Military status" aria-labelledby="militaryServiceLabel" class="span6" name="militaryStatus" id="militaryStatus">
                             <option label="Veteran Status" value="">Veteran Status</option>
-{#                            {{ statuses = ['Active', 'Reserve', 'Guard', 'Retired', 'Veteran'] }}#}
-{#                            {{ for status in statuses: }}#}
-{#                            <option label="{{= status }}" value="{{= status }}">{{= status }}</option>#}
-{#                            {{ pass }}#}
                         </select>
                     </div>
                 </div>
