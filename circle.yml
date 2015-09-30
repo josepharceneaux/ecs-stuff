@@ -1,0 +1,17 @@
+machine:
+  python:
+    version: 2.7.9
+  environment:
+    PYENV_VERSION: 2.7.9
+    GT_ENVIRONMENT: circle
+
+dependencies:
+   override:
+    - pip install -r requirements.txt
+
+test:
+  override:
+    - py.test AuthService/tests/:
+        parallel: true
+    - py.test ResumeService/tests/:
+        parallel: true

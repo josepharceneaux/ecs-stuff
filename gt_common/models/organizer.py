@@ -7,7 +7,7 @@ class Organizer(Base):
     __tablename__ = 'organizer'
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
+    user_id = Column('userId', Integer, ForeignKey('user.id'), nullable=False)
     name = Column('name', String(200))
     email = Column('email', String(200))
     about = Column('about', String(1000))
