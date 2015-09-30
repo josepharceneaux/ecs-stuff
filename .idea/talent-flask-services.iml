@@ -2,7 +2,7 @@
 <module type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$" />
-    <orderEntry type="jdk" jdkName="Python 2.7.2 virtualenv at ~/dev/gettalent/talent-flask-services/SocialNetworkService/venv" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 2.7.9 (~/.pyenv/versions/2.7.9/bin/python2.7)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="TemplatesService">
@@ -11,5 +11,9 @@
         <option value="$MODULE_DIR$/EventService/app/templates" />
       </list>
     </option>
+  </component>
+  <component name="TestRunnerService">
+    <option name="projectConfiguration" value="py.test" />
+    <option name="PROJECT_TEST_RUNNER" value="py.test" />
   </component>
 </module>

@@ -19,8 +19,7 @@ from flask import jsonify
 from flask import request
 
 #application specific
-from activities_app.models import Activity, User
-from activities_app.models import db
+from activities_service.activities_app.models import Activity, db, User
 
 ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
 POSTS_PER_PAGE = 20
