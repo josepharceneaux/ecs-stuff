@@ -2,12 +2,12 @@
 # Dockerfile to build GetTalent Oauth2.0 Flask Service
 ############################################################
 
-# File Author / Maintainer
-MAINTAINER Maintaner ufarooqi
-
 # Set the base image to Ubuntu
 from ubuntu:14.04
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
+
+# File Author / Maintainer
+MAINTAINER Maintaner ufarooqi
 
 # Update software resources repository
 RUN apt-get update
