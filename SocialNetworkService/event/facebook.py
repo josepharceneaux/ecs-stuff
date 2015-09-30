@@ -7,6 +7,9 @@ from gt_common.models.organizer import Organizer
 from gt_common.models.venue import Venue
 from SocialNetworkService.event.base import EventBase
 
+# We have to import the Facebook page in the following way because we
+# want to avoid name conflicts that arise due to name of the package and
+# name of the files in which package is being used.
 facebook = import_from_dist_packages('facebook')
 
 
@@ -41,11 +44,10 @@ class FacebookEvent(EventBase):
         except facebook.GraphAPIError as error:
             log_exception(
                 dict(
-                    function_name='get_events',
-                    class_name=self.__class__.__name__,
-                    gt_user=self.user.name,
+                    functionName='get_events',
+                    user=self.user.name,
                     error=error.message,
-                    file_name=__file__
+                    fileName=__file__
                 )
             )
             raise
