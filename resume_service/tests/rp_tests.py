@@ -190,9 +190,18 @@ def test_jpg_by_post():
     keys_formatted_test(json_obj)
 
 
+def test_pdf_14_of_image_alyson_peters(db_fill):
+    """Test that PDFs of image files can be posted."""
+    json_obj = fetch_resume_post_response('pdf_14_of_image_alyson_peters.pdf')['candidate']
+    assert json_obj.get('full_name') == 'Alyson Peters'
+    # assert len(json_obj['educations']) == 2
+    # assert len(json_obj['work_experiences']) == 2
+    keys_formatted_test(json_obj)
+
+
 def test_2448_3264_jpg_by_post():
-    """Test that img files can be posted."""
-    json_obj = fetch_resume_post_response('2448_3264.jpg', create_mode='True')['candidate']
+    """Test that large jpgs files can be posted."""
+    json_obj = fetch_resume_post_response('2448_3264.jpg')['candidate']
     assert json_obj['full_name'] == 'Marion Roberson'
     assert json_obj['emails'][0]['address'] == 'MarionR3@Knology.net'
     assert len(json_obj['educations']) == 0
