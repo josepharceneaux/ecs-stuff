@@ -11,7 +11,7 @@ class Candidate(Base):
     middle_name = Column('middleName', String(50))
     last_name = Column('lastName', String(50))
     formatted_name = Column('formattedName', String(150))
-    status_id = Column(Integer, ForeignKey('candidate_status.id'))
+    status_id = Column('statusId', Integer, ForeignKey('candidate_status.id'))
     is_web_hidden = Column('isWebHidden', Integer)
     is_mobile_hidden = Column('isMobileHidden', Integer)
     added_time = Column('addedTime', DateTime)
@@ -21,13 +21,13 @@ class Candidate(Base):
     dice_social_profile_id = Column('diceSocialProfileId', String(128))
     dice_profile_id = Column('diceProfileId', String(128))
     source_id = Column(Integer, ForeignKey('candidate_source.id'))
-    source_product_id = Column(Integer, ForeignKey('product.id'), default=2, nullable=False)
+    source_product_id = Column('sourceProductId', Integer, ForeignKey('product.id'), default=2, nullable=False)
     filename = Column('filename', String(512))
     objective = Column('objective', String(1000))
     summary = Column('summary', String(1000))
     total_months_experience = Column('totalMonthsExperience', Integer)
     resume_text = Column('resumeText', String(1000))
-    culture_id = Column(Integer, ForeignKey('culture.id'), default=1)
+    culture_id = Column('cultureId', Integer, ForeignKey('culture.id'), default=1)
 
     def __repr__(self):
         return '<Candidate %r %r>' % self.first_name, self.last_name
@@ -65,7 +65,7 @@ class CandidateSource(Base):
     id = Column('id', Integer, primary_key=True)
     description = Column('description', String(100))
     notes = Column('notes', String(500))
-    domain_id = Column(Integer, ForeignKey('domain.id'))
+    domain_id = Column('domainId', Integer, ForeignKey('domain.id'))
 
     def __repr__(self):
         return '<CandidateSource %r>' % self.description

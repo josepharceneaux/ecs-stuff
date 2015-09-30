@@ -1,11 +1,12 @@
 import sys
 import os
 from gt_common.models.config import GTSQLAlchemy
-app_cfg = os.path.abspath('app.cfg')
-logging_cfg = os.path.abspath('logging.conf')
+if not GTSQLAlchemy.db_session:
+    app_cfg = os.path.abspath('app.cfg')
+    logging_cfg = os.path.abspath('logging.conf')
 
-GTSQLAlchemy(app_config_path=app_cfg,
-             logging_config_path=logging_cfg)
+    GTSQLAlchemy(app_config_path=app_cfg,
+                 logging_config_path=logging_cfg)
 
 import logging
 import argparse
@@ -38,11 +39,11 @@ def process_access_token(social_network_name, code_to_get_access_token, gt_user_
         social_network,
         code_to_get_access_token)
     if access_token:
-        user_credentials = dict(userId=gt_user_id,
-                                socialNetworkId=social_network.id,
-                                accessToken=access_token,
-                                refreshToken=refresh_token,
-                                memberId=None)
+        user_credentials = dict(user_id=gt_user_id,
+                                social_network_id=social_network.id,
+                                access_token=access_token,
+                                refresh_token=refresh_token,
+                                member_id=None)
         # we have access token, lets save in db
         social_network_class.save_token_in_db(user_credentials)
     else:
@@ -61,51 +62,51 @@ def process_event(data, user_id):
         """
         function_name = 'process_event()'
         message_to_log = get_message_to_log(function_name=function_name)
-        data = convert_keys_to_camel_case(data)
+        # data = convert_keys_to_camel_case(data)
         if data:
             try:
-                vendor_id = data['socialNetworkId']
-                social_network = SocialNetwork.get_by_id(vendor_id)
+                social_network_id = data['social_network_id']
+                social_network = SocialNetwork.get_by_id(social_network_id)
                 # creating class object for respective social network
                 social_network_class = get_class(social_network.name.lower(), 'social_network')
                 event_class = get_class(social_network.name.lower(), 'event')
                 sn = social_network_class(user_id=user_id, social_network_id=social_network.id)
-                event_obj = event_class(user_id=user_id,
-                                        api_url=social_network.apiUrl,
-                                        headers=sn.headers)
+                event_obj = event_class(user=sn.user,
+                                        headers=sn.headers,
+                                        social_network=social_network)
             except SocialNetworkNotImplemented as e:
                 raise
             except Exception as e:
                 raise SocialNetworkError('Unable to determine social network. '
                                          'Please verify your data (socialNetworkId)')
 
-            data['userId'] = user_id
+            data['user_id'] = user_id
             # converting incoming Datetime object from Form submission into the
             # required format for API call
             try:
-                start = data['eventStartDatetime']
-                end = data['eventEndDatetime']
+                start = data['start_datetime']
+                end = data['end_datetime']
                 if not all([start, end]):
                     raise
             except Exception as e:
                 raise EventInputMissing("DateTimeError: Unable to find datetime inputs")
             try:
-                data['eventStartDatetime'] = parse(start)
-                data['eventEndDatetime'] = parse(end)
-                if data['eventStartDatetime'] < datetime.now() or data['eventEndDatetime'] < datetime.now():
+                data['start_datetime'] = parse(start)
+                data['end_datetime'] = parse(end)
+                if data['start_datetime'] < datetime.now() or data['end_datetime'] < datetime.now():
                     raise InvalidDatetime('Invalid DateTime')
             except InvalidDatetime as e:
-                raise InvalidDatetime('Invalid DateTime: eventStartDatetime and eventEndDatetime should '
+                raise InvalidDatetime('Invalid DateTime: start_datetime and end_datetime should '
                                       'be in future.')
             except Exception as e:
                 raise InvalidDatetime('Invalid DateTime: Kindly specify datetime in ISO format')
             # posting event on social network
             event_obj.gt_to_sn_fields_mappings(data)
             event_id, tickets_id = event_obj.create_event()
-            data['ticketsId'] = tickets_id
+            data['tickets_id'] = tickets_id
             if event_id:  # Event has been successfully published on vendor
                 # save event in database
-                data['vendorEventId'] = event_id
+                data['social_network_event_id'] = event_id
                 gt_event_id = event_obj.save_event(data)
                 return gt_event_id
         else:
@@ -173,7 +174,7 @@ def start():
         event_or_rsvp_class = get_class(social_network.name.lower(), name_space.mode)
         # we call social network class here for auth purpose, If token is expired
         # access token is refreshed and we use fresh token
-        sn = social_network_class(user_id=user_credentials.userId,
+        sn = social_network_class(user_id=user_credentials.user_id,
                                   social_network_id=social_network.id)
         if not user_credentials.memberId:
             # get an save the member Id of gt-user

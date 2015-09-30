@@ -1,7 +1,5 @@
-from datetime import datetime
 from sqlalchemy import Column, Integer, String, Float, DateTime, \
     ForeignKey, and_
-from sqlalchemy.orm import relationship
 from base import ModelBase as Base
 
 
@@ -12,10 +10,10 @@ class Event(Base):
     social_network_event_id = Column('socialNetworkEventId', String(1000))
     title = Column('title', String(500))
     description = Column('description', String(1000))
-    social_network_id = Column(Integer, ForeignKey('social_network.id'), nullable=False)
-    user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
-    organizer_id = Column(Integer, ForeignKey('organizer.id'), nullable=False)
-    venue_id = Column(Integer, ForeignKey('venue.id'), nullable=False)
+    social_network_id = Column('socialNetworkId', Integer, ForeignKey('social_network.id'), nullable=False)
+    user_id = Column('userId', Integer, ForeignKey('user.id'), nullable=False)
+    organizer_id = Column('organizerId', Integer, ForeignKey('organizer.id'), nullable=False)
+    venue_id = Column('venueId', Integer, ForeignKey('venue.id'), nullable=False)
     group_id = Column('groupId', String(100))
     group_url_name = Column('groupUrlName', String(500))
     url = Column('url', String(500))
@@ -26,7 +24,7 @@ class Event(Base):
     currency = Column('currency', String(20))
     timezone = Column('timezone', String(100))
     max_attendees = Column('maxAttendees', Integer)
-    #TODO comment why do we need ticket_id. Also, why is it not a relation?
+    # TODO comment why do we need ticket_id. Also, why is it not a relation?
     tickets_id = Column('ticketsId', Integer, nullable=True)
 
     def __ne__(self, other_event):
@@ -74,10 +72,24 @@ class Event(Base):
         ).first()
 
     @classmethod
+    def get_by_user_id_event_id_social_network_event_id(cls, user_id,
+                                                         _id, social_network_event_id):
+        assert _id is not None
+        assert social_network_event_id is not None
+        assert user_id is not None
+        return cls.query.filter(
+            and_(
+                Event.user_id == user_id,
+                Event.id == _id,
+                Event.social_network_event_id == social_network_event_id
+            )
+        ).first()
+
+    @classmethod
     def get_by_user_and_event_id(cls, user_id, event_id):
         return cls.query.filter(
             and_(
-                Event.userId == user_id,
+                Event.user_id == user_id,
                 Event.id == event_id
             )).first()
 

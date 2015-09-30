@@ -18,10 +18,8 @@ class EventBase(object):
         self.headers = kwargs['headers']
         self.user = kwargs.get('user') or None
         self.social_network = kwargs.get('social_network') or None
-        # TODO We should get the user & social network in Social network base
         assert isinstance(self.user, User)
         assert isinstance(self.social_network, SocialNetwork)
-        self.user_id = self.user.id # TODO find a better way
         self.api_url = self.social_network.api_url
         self.member_id, self.access_token, self.refresh_token, self.webhook = \
             self._get_user_credentials()
@@ -59,7 +57,7 @@ class EventBase(object):
             event = self.normalize_event(event)
             if event:
                 event_in_db = Event.get_by_user_and_vendor_id(event.user_id,
-                                                              event.vendor_event_id)
+                                                              event.social_network_event_id)
                 try:
                     if event_in_db:
                         data = dict(event_title=event.event_title,
@@ -100,7 +98,7 @@ class EventBase(object):
                 event = Event.get_by_user_and_event_id(self.user_id, event_id)
                 if event:
                     try:
-                        self.unpublish_event(event.vendor_event_id)
+                        self.unpublish_event(event.social_network_event_id)
                         Event.delete(event_id)
                         deleted.append(event_id)
                     except Exception as e:     # some error while removing event
@@ -126,15 +124,16 @@ class EventBase(object):
         :param data:
         :return:
         """
-        sn_event_id = data['vendor_event_id']
+        sn_event_id = data['social_network_event_id']
         social_network_id = data['social_network_id']
         event = Event.get_by_user_id_social_network_id_vendor_event_id(
-            self.user_id,
+            self.user.id,
             social_network_id,
             sn_event_id
         )
         try:
             if event:
+                del data['id']
                 event.update(**data)
                 # TODO we shouldn't commit here
                 Event.session.commit()

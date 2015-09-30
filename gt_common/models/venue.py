@@ -8,7 +8,7 @@ class Venue(Base):
 
     id = Column('id', Integer, primary_key=True)
     social_network_venue_id = Column('socialNetworkVenueId', String(200))
-    user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
+    user_id = Column('userId', Integer, ForeignKey('user.id'), nullable=False)
     address_line1 = Column('addressLine1', String(300))
     address_line2 = Column('addressLine2', String(300))
     city = Column('city', String(100))

@@ -21,12 +21,11 @@ class SocialNetworkBase(object):
         :param kwargs:
         :return:
         """
-        function_name = '__init__()'
         user_id = kwargs.get('user_id')
         social_network_id = kwargs.get('social_network_id')
         self.api_relative_url = None
         self.user = User.get_by_id(user_id)
-        message_to_log = get_message_to_log(function_name=function_name,
+        message_to_log = get_message_to_log(function_name='__init__()',
                                             class_name=self.__class__.__name__,
                                             gt_user=self.user.name,
                                             file_name=__file__)
@@ -41,7 +40,7 @@ class SocialNetworkBase(object):
                 "access_token": self.user_credentials.access_token,
                 "gt_user_id": self.user_credentials.user_id,
                 "social_network_id": social_network_id,
-                "api_url": self.social_network.apiUrl
+                "api_url": self.social_network.api_url
             }
             # checks if any field is missing for given user credentials
             items = [value for key, value in data.iteritems() if key is not "api_url"]

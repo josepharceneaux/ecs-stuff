@@ -21,7 +21,7 @@ EVENTBRITE = 'Eventbrite'
 WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
 
 
-class EventbriteEvent(EventBase):
+class Eventbrite(EventBase):
     """
     This class is inherited from TalentEventBase class.
     This implements the abstract methods defined in interface.
@@ -33,10 +33,10 @@ class EventbriteEvent(EventBase):
         :param kwargs:
         :return:
         """
-        super(EventbriteEvent, self).__init__(EVENTBRITE, *args, **kwargs)
+        super(Eventbrite, self).__init__(EVENTBRITE, *args, **kwargs)
         # calling super constructor sets the api_url and access_token
         self.event_payload = None
-        self.vendor_event_id = None
+        self.social_network_event_id = None
         self.ticket_payload = None
         self.venue_payload = None
         self.start_date_in_utc = kwargs.get('start_date') or \
@@ -210,9 +210,9 @@ class EventbriteEvent(EventBase):
         """
         venue_id = None
         # create url to post event
-        if self.vendor_event_id is not None:  # updating event
+        if self.social_network_event_id is not None:  # updating event
             event_is_new = False
-            url = self.api_url + "/events/" + self.vendor_event_id + '/'
+            url = self.api_url + "/events/" + self.social_network_event_id + '/'
             # need to fetch venue_id of provided event so that Venue can be updated
             response = http_request('POST', url, params=self.event_payload, headers=self.headers)
             if response.ok:
@@ -232,7 +232,7 @@ class EventbriteEvent(EventBase):
                 self.publish_event(event_id)
             else:
                 logger.info("|  Event is already published  |")
-            create_update = 'Created' if not self.vendor_event_id else 'Updated'
+            create_update = 'Created' if not self.social_network_event_id else 'Updated'
             logger.info('|  Event %s %s Successfully  |'
                         % (self.event_payload['event.name.html'],
                            create_update))
@@ -317,9 +317,9 @@ class EventbriteEvent(EventBase):
         """
         tickets_url = self.api_url + "/events/" + event_id + "/ticket_classes/"
         if not event_is_new:
-            event = Event.get_by_user_and_vendor_id(self.user_id, event_id)
-            if event.ticketsId:
-                tickets_url = tickets_url + str(event.ticketsId) + '/'
+            event = Event.get_by_user_and_vendor_id(self.user.id, event_id)
+            if event.tickets_id:
+                tickets_url = tickets_url + str(event.tickets_id) + '/'
             else:
                 logger.info('Tickets ID is not available for event with id %s, User:  %s'
                             % (event_id, self.user.name))
@@ -397,8 +397,8 @@ class EventbriteEvent(EventBase):
         Eventbrite are filled. If any required filed is missing, raises exception
         named  EventInputMissing.
         """
-        mandatory_input_data = ['eventTitle', 'eventDescription', 'eventEndDatetime',
-                                'eventTimeZone', 'eventStartDatetime', 'eventCurrency']
+        mandatory_input_data = ['title', 'description', 'end_datetime',
+                                'timezone', 'start_datetime', 'currency']
         if not all([input in data and data[input] for input in mandatory_input_data]):
             log_error(
                 dict(
@@ -418,17 +418,17 @@ class EventbriteEvent(EventBase):
         if data:
             self.validate_required_fields(data)
             #  filling required fields for Eventbrite
-            event_name = data['eventTitle']
-            description = data['eventDescription']
+            event_name = data['title']
+            description = data['description']
             # Eventbrite assumes that provided start and end DateTime is in UTC
             # So, form given Timezone, (eventTimeZone in our case), It changes the
             # provided DateTime accordingly.
             # Here we are converting DateTime into UTC format to be sent to vendor
             utc_dts = []
             start_time = end_time = ''
-            naive_dts = [data['eventStartDatetime'], data['eventEndDatetime']]
-            if data['eventTimeZone']:
-                local_timezone = pytz.timezone(data['eventTimeZone'])
+            naive_dts = [data['start_datetime'], data['start_datetime']]
+            if data['timezone']:
+                local_timezone = pytz.timezone(data['timezone'])
                 for naive_dt in naive_dts:
                     local_dt = local_timezone.localize(naive_dt, is_dst=None)
                     utc_dt = local_dt.astimezone(pytz.utc)
@@ -445,13 +445,13 @@ class EventbriteEvent(EventBase):
                         user=self.user.name
                     )
                 )
-            currency = data['eventCurrency']
-            time_zone = data['eventTimeZone']
+            currency = data['currency']
+            time_zone = data['timezone']
 
             # Creating ticket data as Eventbrite wants us to associate tickets
             # with events
             venue_name = 'Event Address'
-            number_of_tickets = data['maxAttendees']
+            number_of_tickets = data['max_attendees']
             free_tickets = True
             ticket_type = 'Event Ticket'
 
@@ -466,17 +466,18 @@ class EventbriteEvent(EventBase):
                 'event.description.html': description
             }
 
+            venue = Venue.get_by_id(data['venue_id'])
             # This dict is used to create venue for a specified event
             self.venue_payload = {
                 'venue.name': venue_name,
-                'venue.address.address_1': data['eventAddressLine1'],
-                'venue.address.address_2': data['eventAddressLine2'],
-                'venue.address.region': data['eventState'],
-                'venue.address.city': data['eventCity'],
-                # 'venue.address.country': data['eventCountry'],
-                'venue.address.postal_code': data['eventZipCode'],
-                'venue.address.latitude': data['eventLatitude'],
-                'venue.address.longitude': data['eventLongitude'],
+                'venue.address.address_1': venue.address_line1,
+                'venue.address.address_2': venue.address_line2,
+                'venue.address.region': venue.state,
+                'venue.address.city': venue.city,
+                # 'venue.address.country': venue.country,
+                'venue.address.postal_code': venue.zipcode,
+                'venue.address.latitude': venue.latitude,
+                'venue.address.longitude': venue.longitude,
             }
             # This dict is used to create tickets for a specified event
             self.ticket_payload = {
@@ -484,7 +485,7 @@ class EventbriteEvent(EventBase):
                 'ticket_class.quantity_total': number_of_tickets,
                 'ticket_class.free': free_tickets,
             }
-            self.vendor_event_id = data.get('vendorEventId')
+            self.social_network_event_id = data.get('social_network_event_id')
         else:
             log_error(
                 dict(
@@ -508,8 +509,8 @@ class EventbriteEvent(EventBase):
         """
         self.message_to_log.update({'functionName': 'create_webhook()'})
         status = False
-        if (user_credentials.userId == user_credentials.userId) \
-                and (user_credentials.socialNetworkId == user_credentials.socialNetworkId) \
+        if (user_credentials.user_id == user_credentials.user_id) \
+                and (user_credentials.social_network_id == user_credentials.social_network_id) \
                 and (user_credentials.webhook in [None, '']):
             url = self.api_url + "/webhooks/"
             payload = {'endpoint_url': WEBHOOK_REDIRECT_URL}

@@ -1,6 +1,12 @@
-import json
 import os
+from gt_common.models.config import GTSQLAlchemy
+if not GTSQLAlchemy.db_session:
+    app_cfg = os.path.abspath('../app.cfg')
+    logging_cfg = os.path.abspath('../logging.conf')
+    GTSQLAlchemy(app_config_path=app_cfg,
+                 logging_config_path=logging_cfg)
 import re
+import json
 import flask
 import requests
 from social_network_service.app.app_utils import ApiResponse
@@ -9,7 +15,7 @@ from social_network_service.custom_exections import ApiException
 from social_network_service.rsvp.eventbrite import EventbriteRsvp
 from restful.social_networks import social_network_blueprint
 from restful.events import events_blueprint
-from gt_common.models.config import db_session
+
 from flask.ext.restful import Api
 from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash
@@ -216,11 +222,11 @@ def handle_any_errors(error):
     return ApiResponse(response, status=500)
 
 
-@app.teardown_request
-def teardown_request(exception=None):
-    db_session.remove()
+# @app.teardown_request
+# def teardown_request(exception=None):
+#     db_session.remove()
 
 if __name__ == '__main__':
     # TODO Have to remove this, only here for testing purposes
     os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-    app.run(port=5000)
+    app.run(port=5000, debug=True)

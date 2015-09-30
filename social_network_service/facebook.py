@@ -1,10 +1,10 @@
-import os
-from gt_common.models.config import GTSQLAlchemy
-app_cfg = os.path.abspath('app.cfg')
-logging_cfg = os.path.abspath('logging.conf')
-
-gt = GTSQLAlchemy(app_config_path=app_cfg,
-                  logging_config_path=logging_cfg)
+# import os
+# from gt_common.models.config import GTSQLAlchemy
+# app_cfg = os.path.abspath('app.cfg')
+# logging_cfg = os.path.abspath('logging.conf')
+#
+# gt = GTSQLAlchemy(app_config_path=app_cfg,
+#                   logging_config_path=logging_cfg)
 
 from social_network_service.base import SocialNetworkBase
 
