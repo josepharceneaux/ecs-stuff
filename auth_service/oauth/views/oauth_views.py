@@ -2,7 +2,7 @@ __author__ = 'ufarooqi'
 
 from auth_service.oauth import app
 from werkzeug.security import check_password_hash
-from models.user import *
+from auth_service.models.user import *
 from auth_service.oauth import gt_oauth
 from auth_service.oauth import logger
 from flask import request, jsonify
