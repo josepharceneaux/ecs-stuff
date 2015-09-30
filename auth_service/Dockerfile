@@ -9,21 +9,17 @@ RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 # File Author / Maintainer
 MAINTAINER Maintaner ufarooqi
 
-# Add the application resources URL
+# Install Nginx
+RUN apt-get install -y software-properties-common python-software-properties
+RUN add-apt-repository -y ppa:nginx/stable
 RUN apt-get update
+RUN apt-get install -y nginx
 
 # Install basic applications
 RUN apt-get install -y curl git nano wget build-essential libssl-dev gcc make zlib1g-dev python-lxml libbz2-dev libreadline-dev libsqlite3-dev
 
 # Install Python and Basic Python Tools
 RUN apt-get install -y python python-dev python-distribute python-pip python-setuptools
-
-# Install Nginx
-RUN apt-get install -y software-properties-common python-software-properties
-RUN add-apt-repository -y ppa:nginx/stable
-RUN apt-get update
-RUN apt-get -y upgrade
-RUN apt-get install -y nginx
 
 # Install python pyenv
 RUN curl -L https://raw.github.com/yyuu/pyenv-installer/master/bin/pyenv-installer | bash
