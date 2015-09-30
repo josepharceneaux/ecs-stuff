@@ -160,9 +160,6 @@
                         <label id="militaryGradeLabel" class="hide">Military rank</label>
                         <select aria-labelledby="militaryBranchLabel" title="Military branch" class="span6" name="militaryBranch" id="militaryBranch">
                             <option label="Branch of Service" value="">Branch of Service</option>
-                            {% for branch in ['Army', 'Navy', 'Air Force', 'Marine Corps', 'Coast Guard']: %}
-                            <option label="{{ branch }}">{{ branch }}</option>
-                            {% endfor %}
                         </select>
                     </div>
                 </div>
@@ -183,17 +180,6 @@
                     <div class="controls controls-row">
                         <select aria-labelledby="militaryGradeLabel" title="Military grade" class="span6" name="militaryGrade" id="militaryGrade">
                             <option label="Rank" value="">Rank</option>
-{#                            {{ grades = [] }}#}
-{#                            {{ for max_number, letter in [(10, 'E'), (5, 'W'), (10, 'O')]:#}
-{#                                for current_number in range(1, max_number + 1):#}
-{#                                    grades.append("%s-%s" % (letter, current_number))#}
-{#                                pass#}
-{#                            pass#}
-{#                            }}#}
-{##}
-{#                            {{ for grade in grades: }}#}
-{#                            <option value="{{= grade }}">{{= grade }}</option>#}
-{#                            {{ pass }}#}
                         </select>
                     </div>
                 </div>
@@ -276,7 +262,6 @@
     </div>
 </div> <!-- /container -->
 
-{#    <script type="text/javascript" src="{{ url_for('static','js/modernizr-2-6-2-custom.js')}}"></script>#}
 <script src="/static/js/modernizr-2-6-2-custom.js"></script>
 <script src="/static/js/jquery-1.11.3.min.js"></script>
 <script src="/static/js/bootstrap.min.js"></script>

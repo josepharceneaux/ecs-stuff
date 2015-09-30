@@ -306,6 +306,19 @@ function aoiIdToSubAois(aoiId) {
     return subAOIs;
 }
 
+function createBranchOptions() {
+    var branches = ['Army', 'Navy', 'Air Force', 'Marine Corps', 'Coast Guard'];
+    var branchSelector = document.getElementById("militaryBranch");
+    var option;
+    for (var i=0; i < branches.length; i++){
+        option = document.createElement("option");
+        option.label = branches[i];
+        option.value = branches[i];
+        option.text = branches[i];
+        branchSelector.add(option);
+    }
+}
+
 function createVeteranStatusOptions() {
     var statuses = ['Active', 'Reserve', 'Guard', 'Retired', 'Veteran'];
     var veteranSelector = document.getElementById("militaryStatus");
@@ -344,5 +357,6 @@ function createMilitaryGrades(){
 }
 
 
+createBranchOptions()
 createVeteranStatusOptions();
 createMilitaryGrades();

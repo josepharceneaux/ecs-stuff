@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link href="{{=URL('static','bootstrap_2_2_2/css/bootstrap.min.css')}}" rel="stylesheet">
+    <link href="/static/cssbootstrap_2_3_2/bootstrap.min.css')" rel="stylesheet">
     <title>Join our University Talent Community</title>
     <meta name="description" content="Join the Kaiser Talent Community - recruiting software by getTalent" />
     <meta name="keywords" content="Kaiser, Recruiting, Software, Cloud, Talent, Community" />
@@ -70,17 +70,16 @@
         }
 
     </style>
-    <script type="text/javascript" src="{{= URL('static','js/modernizr-2-6-2-custom.js')}}"></script>
-    <link href="{{=URL('static', 'bootstrap-tagmanager/tagmanager.css')}}" rel="stylesheet"/>
+    <script type="text/javascript" src="/static/js/modernizr-2-6-2-custom.js"></script>
+    <link href="/static/css/bootstrap_3_3_5/tagmanager.css" rel="stylesheet"/>
 </head>
 
 <body style="overflow-x: hidden">
 
 <div class="container" >
-    {{ if mode == 'form': }}
     <div class="row">
         <div class="span7" style="margin-left:30px">
-            <form name="widget" style="margin-bottom:0" novalidate method="post" autocomplete="off" enctype="multipart/form-data" action="{{= URL('widget', 'submit', args=request.args, vars=request.vars) }}">
+            <form name="widget" style="margin-bottom:0" novalidate method="post" autocomplete="off" enctype="multipart/form-data" action="">
                 <input type="hidden" name="is_special" value="1" />
                 <p style="margin-left:64px">
                     <strong>
@@ -92,8 +91,8 @@
                     <div class="controls controls-row">
                         <label class="hide" id="nameLabel" >Name</label>
                         <label class="hide" id="emailLabel" >Email</label>
-                        <input aria-labelledby="nameLabel" class="span3" type="text" required id="name" name="name" placeholder="Name" value="{{= form_fields.get('name') or '' }}" />
-                        <input aria-labelledby="emailLabel" style="margin-left:10px; width: 175px;" rel="tooltip" class="span3" data-validation-message="Must be valid email" type="email" required id="emailAdd" name="emailAdd" placeholder="Email" value="{{= form_fields.get('emailAdd') or '' }}" />
+                        <input aria-labelledby="nameLabel" class="span3" type="text" required id="name" name="name" placeholder="Name" value="" />
+                        <input aria-labelledby="emailLabel" style="margin-left:10px; width: 175px;" rel="tooltip" class="span3" data-validation-message="Must be valid email" type="email" required id="emailAdd" name="emailAdd" placeholder="Email" value="" />
                     </div>
                 </div>
 
@@ -101,14 +100,14 @@
                     <div class="controls controls-row">
                         <label class="hide" id="cityLabel" >City</label>
                         <label class="hide" id="stateLabel" >State</label>
-                        <input aria-labelledby="cityLabel" style="width: 280px" class="span4" type="text" required id="city" name="city" placeholder="City" value="{{= form_fields.get('city') or '' }}" />
-                        <input aria-labelledby="stateLabel" style="width: 80px" class="span2" type="text" required id="state" name="state" placeholder="State" value="{{= form_fields.get('state') or '' }}" />
+                        <input aria-labelledby="cityLabel" style="width: 280px" class="span4" type="text" required id="city" name="city" placeholder="City" value="" />
+                        <input aria-labelledby="stateLabel" style="width: 80px" class="span2" type="text" required id="state" name="state" placeholder="State" value="" />
                     </div>
                 </div>
                 <div class="control-group">
                     <div class="controls">
                         <label class="hide" id="universityLabel">University</label>
-                        <input aria-labelledby="universityLabel" style="width: 385px" class="span6"  autocomplete="off" type="text" required id="university" name="university" placeholder="University" value="{{= form_fields.get('university') or '' }}" />
+                        <input aria-labelledby="universityLabel" style="width: 385px" class="span6"  autocomplete="off" type="text" required id="university" name="university" placeholder="University" value="" />
                     </div>
                 </div>
                 <div class="control-group">
@@ -116,10 +115,10 @@
                         <label class="hide" id="degreeLabel" >Degree</label>
                         <select aria-labelledby="degreeLabel" class="span6" name="degree" id="degree" required>
                             <option value="" title="degree">Degree</option>
-                            {{ degrees = ['Associates', 'Bachelors', 'Masters', 'Doctorate', 'Professional', 'Other'] }}
-                            {{ for degree in degrees: }}
-                            <option title="{{= degree}}" value="{{= degree }}">{{= degree }}</option>
-                            {{ pass }}
+{#                            {{ degrees = ['Associates', 'Bachelors', 'Masters', 'Doctorate', 'Professional', 'Other'] }}#}
+{#                            {{ for degree in degrees: }}#}
+{#                            <option title="{{= degree}}" value="{{= degree }}">{{= degree }}</option>#}
+{#                            {{ pass }}#}
                         </select>
                         <input  type="text" class="span2 other" style="display:none" id="degreeOther" name="degreeOther" placeholder="Other degree" value="{{= form_fields.get('degreeOther') or '' }}" />
                     </div>
