@@ -155,8 +155,7 @@ class Base(object):
         This code is used to make GET call on given url and handles exceptions
         """
         try:
-            print "URL", url
-            print headers
+            headers=self.headers
             response = requests.get(url, data=data, params=params, headers=headers)
             # We check if there is a bad response
             response.raise_for_status()
@@ -205,14 +204,11 @@ class Base(object):
         for event in events:
             event = self.normalize_event(event)
             if event:
-                event_in_db = Event.get_by_user_and_vendor_id(event.userId,
-                                                              event.vendorEventId)
+                event_in_db = Event.get_by_user_and_vendor_id(event.user_id,
+                                                              event.social_network_event_id)
                 if event_in_db:
-                    data = dict(eventTitle=event.eventTitle,
-                                eventDescription=event.eventDescription,
-                                eventAddressLine1=event.eventAddressLine1,
-                                eventStartDateTime=event.eventStartDateTime,
-                                eventEndDateTime=event.eventEndDateTime)
+                    data = dict(title=event.title,
+                                description=event.description)
                     event_in_db.update(**data)
                 else:
                     Event.save(event)

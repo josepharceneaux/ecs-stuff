@@ -21,7 +21,7 @@ class Candidate(db.Model):
     domain_can_write = db.Column('DomainCanWrite', db.Boolean, default=False)
     dice_social_profile_id = db.Column('DiceSocialProfileId', db.String(128))
     dice_profile_id = db.Column('DiceProfileId', db.String(128))
-    candidate_source_id = db.Column('sourceId', db.Integer, db.ForeignKey('candidate_source.id'))
+    source_id = db.Column('sourceId', db.Integer, db.ForeignKey('candidate_source.id'))
     source_product_id = db.Column('sourceProductId', db.Integer, db.ForeignKey('product.id'), nullable=False, default=2) # Web = 2
     filename = db.Column(db.String(100))
     objective = db.Column(db.Text)

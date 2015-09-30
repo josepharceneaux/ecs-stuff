@@ -118,22 +118,23 @@ class ModelBase(GTSQLAlchemy.BASE):
         """
         Converts SqlAlchemy object to serializable dictionary
         """
-
+        from social_network_service.utilities import camel_case_to_snake_case
         # add your coversions for things like datetime's
         # and what-not that aren't serializable.
         convert = dict(DATETIME=str)
 
         data = dict()
         for col in self.__class__.__table__.columns:
-            value = getattr(self, col.name)
+            name = camel_case_to_snake_case(col.name)
+            value = getattr(self, name)
             typ = str(col.type)
             if typ in convert.keys() and value is not None:
                 try:
-                    data[col.name] = convert[typ](value)
+                    data[name] = convert[typ](value)
                 except Exception as e:
-                    data[col.name] = "Error:  Failed to covert using ", str(convert[typ])
+                    data[name] = "Error:  Failed to covert using ", str(convert[typ])
             elif value is None:
-                data[col.name] = str()
+                data[name] = str()
             else:
-                data[col.name] = value
+                data[name] = value
         return data

@@ -1,15 +1,21 @@
-import json
 import os
+from gt_common.models.config import GTSQLAlchemy
+if not GTSQLAlchemy.db_session:
+    app_cfg = os.path.abspath('../app.cfg')
+    logging_cfg = os.path.abspath('../logging.conf')
+    GTSQLAlchemy(app_config_path=app_cfg,
+                 logging_config_path=logging_cfg)
 import re
+import json
 import flask
 import requests
 from social_network_service.app.app_utils import ApiResponse
 from social_network_service.app.restful.data import data_blueprint
 from social_network_service.custom_exections import ApiException
-from social_network_service.rsvp.eventbrite import EventbriteRsvp
+from social_network_service.rsvp.eventbrite import Eventbrite as EventbriteRsvp
 from restful.social_networks import social_network_blueprint
 from restful.events import events_blueprint
-from gt_common.models.config import db_session
+
 from flask.ext.restful import Api
 from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash
@@ -146,7 +152,7 @@ def handle_rsvp():
             action = data['config']['action']
             if action == 'order.placed':
                 url_of_rsvp = str(json.loads(request.data)['api_url'])
-                # gets dictionary object of vendor_rsvp_id
+                # gets dictionary object of social_network_rsvp_id
                 rsvp = get_rsvp_id(url_of_rsvp)
                 webhook_id = data['config']['webhook_id']
                 user_credentials = EventbriteRsvp.get_user_credentials_by_webhook(webhook_id)
@@ -191,7 +197,7 @@ def handle_rsvp():
 
 def get_rsvp_id(url):
     """
-    This gets the vendor_rsvp_id by comparing url of response of rsvp
+    This gets the social_network_rsvp_id by comparing url of response of rsvp
     and defined regular expression
     :return:
     """
@@ -216,11 +222,11 @@ def handle_any_errors(error):
     return ApiResponse(response, status=500)
 
 
-@app.teardown_request
-def teardown_request(exception=None):
-    db_session.remove()
+# @app.teardown_request
+# def teardown_request(exception=None):
+#     db_session.remove()
 
 if __name__ == '__main__':
     # TODO Have to remove this, only here for testing purposes
     os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-    app.run(port=5000)
+    app.run(port=5000, debug=True)

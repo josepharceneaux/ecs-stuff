@@ -208,10 +208,7 @@ def get_class(social_network_name, category):
         log_error(message_to_log)
         raise SocialNetworkNotImplemented('Import Error: Unable to import module for required social network')
     else:
-        if category == 'social_network':
-            _class = getattr(module, social_network_name.title())
-        else:
-            _class = getattr(module, social_network_name.title() + category.title())
+        _class = getattr(module, social_network_name.title())
     return _class
 
 

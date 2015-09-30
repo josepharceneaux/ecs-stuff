@@ -37,10 +37,11 @@ class MeetupEvent(EventBase):
         super(MeetupEvent, self).__init__(*args, **kwargs)
         # calling super constructor sets the api_url and access_token
         self.data = None
+        self.venue_id = None
         self.payload = None
         self.location = None
         self.group_url_name = None
-        self.vendor_event_id = None
+        self.social_network_event_id = None
         self.start_date = kwargs.get('start_date') or (datetime.now() - timedelta(days=2))
         self.end_date = kwargs.get('end_date') or (datetime.now() + timedelta(days=2))
         self.start_time_since_epoch = milliseconds_since_epoch(self.start_date)
@@ -192,7 +193,11 @@ class MeetupEvent(EventBase):
             Venue.save(venue_instance)
 
         return Event(
+<<<<<<< HEAD
             social_network_event_id=event['id'],
+=======
+            id=event['id'],
+>>>>>>> 0774d2b3242d0ae975f49c99c0b0b53b8994cef5
             title=event['name'],
             description=event['description'] if event.has_key('description') else '',
             social_network_id=self.social_network.id,
@@ -223,8 +228,8 @@ class MeetupEvent(EventBase):
         and publishes it (announce). It uses helper functions add_location()
         and publish_meetup().
         """
-        if self.vendor_event_id is not None:
-            url = self.api_url + "/event/" + str(self.vendor_event_id)
+        if self.social_network_event_id is not None:
+            url = self.api_url + "/event/" + str(self.social_network_event_id)
             event_is_new = False
         else:
             url = self.api_url + "/event"
@@ -232,7 +237,7 @@ class MeetupEvent(EventBase):
         response = http_request('POST', url, params=self.payload, headers=self.headers)
         if response.ok:
             event_id = response.json().get('id')
-            create_update = 'Created' if not self.vendor_event_id else 'Updated'
+            create_update = 'Created' if not self.social_network_event_id else 'Updated'
             venue_id = self.add_location()
             self.publish_meetup(venue_id, event_id, event_is_new)
             logger.info('|  Event %s %s Successfully  |'
@@ -240,6 +245,7 @@ class MeetupEvent(EventBase):
             return event_id, ''
         else:
             error_message = 'Event was not Created. Error occurred during draft creation'
+
             message_to_log = get_message_to_log(function_name='create_event',
                                                 class_name=self.__class__.__name__,
                                                 gt_user=self.user.name,
@@ -267,13 +273,15 @@ class MeetupEvent(EventBase):
         # For deleting an event, Meetup uses url which is different than
         # the url we use in other API calls of Meetup. So class variable 'api_url' is not
         # used here
+        venue = Venue.get_by_id(self.venue_id)
+        assert venue is not None, 'Unable to found venue for given id'
         url = 'https://api.meetup.com/' + self.group_url_name + '/venues'
         payload = {
-            'address_1': self.payload['address_1'],
-            'address_2': self.payload['address_2'],
-            'city': self.payload['city'],
-            'country': self.payload['country'],
-            'state': self.payload['state'],
+            'address_1': venue.address_line1,
+            'address_2': venue.address_line2,
+            'city': venue.city,
+            'country': venue.country,
+            'state': venue.state,
             'name': "Meetup Address"
         }
         response = http_request('POST', url, params=payload, headers=self.headers)
@@ -357,10 +365,9 @@ class MeetupEvent(EventBase):
         meetup are filled. If any required filed is missing, raises exception
         named  EventInputMissing.
         """
-        mandatory_input_data = ['eventTitle', 'eventDescription', 'groupId',
-                                'groupUrlName', 'eventStartDatetime', 'maxAttendees',
-                                'eventAddressLine1',
-                                'eventCountry', 'eventState', 'eventZipCode']
+        mandatory_input_data = ['title', 'description', 'group_id',
+                                'group_url_name', 'start_datetime', 'max_attendees',
+                                'venue_id']
 
         if not all([input in data and data[input] for input in mandatory_input_data]):
             raise EventInputMissing("Mandatory parameter missing in Meetup event data.")
@@ -373,38 +380,34 @@ class MeetupEvent(EventBase):
         if data:
             self.validate_required_fields(data)
             # converting Datetime object to epoch for API call
-            start_time = int(data['eventStartDatetime'].strftime("%s")) * 1000
+            start_time = int(data['start_datetime'].strftime("%s")) * 1000
             self.payload = {
-                'name': data['eventTitle'],
-                'group_id': data['groupId'],
-                'group_urlname': data['groupUrlName'],
-                'description': data['eventDescription'],
+                'name': data['title'],
+                'group_id': data['group_id'],
+                'group_url_name': data['group_url_name'],
+                'description': data['description'],
                 'time': start_time,
-                'guest_limit': data['maxAttendees'],
-                'address_1': data['eventAddressLine1'],
-                'address_2': data['eventAddressLine2'],
-                'city': data['eventCity'],
-                'country': data['eventCountry'],
-                'state': data['eventState']
+                'guest_limit': data['max_attendees']
             }
-            if data['eventEndDatetime']:
-                duration = int((data['eventEndDatetime'] -
-                                data['eventStartDatetime']).total_seconds())
+            self.venue_id = data['venue_id']
+            if data['end_datetime']:
+                duration = int((data['end_datetime'] -
+                                data['start_datetime']).total_seconds())
                 self.payload.update({'duration': duration})
-            if data['groupUrlName']:
-                self.group_url_name = data['groupUrlName']
+            if data['group_url_name']:
+                self.group_url_name = data['group_url_name']
             else:
-                error_message = 'Group UrlName is None for eventName: %s' % data['eventTitle']
+                error_message = 'Group UrlName is None for eventName: %s' % data['title']
                 message_to_log = get_message_to_log(function_name='gt_to_sn_fields_mappings',
                                                     class_name=self.__class__.__name__,
                                                     gt_user=self.user.name,
                                                     error=error_message,
                                                     file_name=__file__)
                 log_error(message_to_log)
-            self.vendor_event_id = data.get('vendorEventId')
-            if self.vendor_event_id:
-                self.payload.update({'lat': data['eventLatitude'],
-                                     'lon': data['eventLongitude']})
+            self.social_network_event_id = data.get('social_network_event_id')
+            # if self.social_network_event_id:
+            #     self.payload.update({'lat': data['latitude'],
+            #                          'lon': data['longitude']})
         else:
             error_message = 'Data is None'
             message_to_log = get_message_to_log(function_name='gt_to_sn_fields_mappings',

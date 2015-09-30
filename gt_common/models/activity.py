@@ -11,7 +11,7 @@ class Activity(Base):
     source_table = Column('sourceTable', String(127))
     source_id = Column('sourceId', Integer)
     type = Column('type', Integer)
-    user_id = Column(Integer, ForeignKey('user.id'))
+    user_id = Column('userId', Integer, ForeignKey('user.id'))
     params = Column('params', String(1000))
 
     @classmethod

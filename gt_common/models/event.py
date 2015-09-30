@@ -1,7 +1,5 @@
-from datetime import datetime
 from sqlalchemy import Column, Integer, String, Float, DateTime, \
     ForeignKey, and_
-from sqlalchemy.orm import relationship
 from base import ModelBase as Base
 
 
@@ -26,7 +24,7 @@ class Event(Base):
     currency = Column('currency', String(20))
     timezone = Column('timezone', String(100))
     max_attendees = Column('maxAttendees', Integer)
-    #TODO comment why do we need ticket_id. Also, why is it not a relation?
+    # TODO comment why do we need ticket_id. Also, why is it not a relation?
     tickets_id = Column('ticketsId', Integer, nullable=True)
 
     def __ne__(self, other_event):
@@ -74,10 +72,24 @@ class Event(Base):
         ).first()
 
     @classmethod
+    def get_by_user_id_event_id_social_network_event_id(cls, user_id,
+                                                         _id, social_network_event_id):
+        assert _id is not None
+        assert social_network_event_id is not None
+        assert user_id is not None
+        return cls.query.filter(
+            and_(
+                Event.user_id == user_id,
+                Event.id == _id,
+                Event.social_network_event_id == social_network_event_id
+            )
+        ).first()
+
+    @classmethod
     def get_by_user_and_event_id(cls, user_id, event_id):
         return cls.query.filter(
             and_(
-                Event.userId == user_id,
+                Event.user_id == user_id,
                 Event.id == event_id
             )).first()
 

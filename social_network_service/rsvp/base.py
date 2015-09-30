@@ -176,11 +176,11 @@ class RSVPBase(object):
         :return:attendee
         """
         entry_in_db = CandidateSource.get_by_description_and_notes(
-            attendee.event.eventTitle,
-            attendee.event.eventDescription)
-        data = {'description': attendee.event.eventTitle,
-                'notes': attendee.event.eventDescription[:495],  # field is 500 chars
-                'domainId': 1}
+            attendee.event.title,
+            attendee.event.description)
+        data = {'description': attendee.event.title,
+                'notes': attendee.event.description[:495],  # field is 500 chars
+                'domain_id': 1}
         if entry_in_db:
             entry_in_db.update(**data)
             entry_id = entry_in_db.id
@@ -210,13 +210,13 @@ class RSVPBase(object):
                 attendee.gt_user_id,
                 attendee.candidate_source_id,
                 attendee.source_product_id)
-        data = {'firstName': attendee.first_name,
-                'lastName': attendee.last_name,
-                'addedTime': attendee.added_time,
-                'ownerUserId': attendee.gt_user_id,
-                'statusId': newly_added_candidate,
-                'sourceId': attendee.candidate_source_id,
-                'sourceProductId': attendee.source_product_id}
+        data = {'first_name': attendee.first_name,
+                'last_name': attendee.last_name,
+                'added_time': attendee.added_time,
+                'owner_user_id': attendee.gt_user_id,
+                'status_id': newly_added_candidate,
+                'source_id': attendee.candidate_source_id,
+                'source_product_id': attendee.source_product_id}
         if candidate_in_db:
             candidate_in_db.update(**data)
             candidate_id = candidate_in_db.id
@@ -243,12 +243,12 @@ class RSVPBase(object):
             attendee.social_network_id,
             attendee.event.id)
         data = {
-            'candidateId': attendee.candidate_id,
-            'eventId': attendee.event.id,
-            'socialNetworkId': attendee.social_network_id,
-            'rsvpStatus': attendee.rsvp_status,
-            'vendorRsvpId': attendee.vendor_rsvp_id,
-            'rsvpDateTime': attendee.added_time
+            'candidate_id': attendee.candidate_id,
+            'event_id': attendee.event.id,
+            'social_network_rsvp_id': attendee.vendor_rsvp_id,
+            'social_network_id': attendee.social_network_id,
+            'rsvp_status': attendee.rsvp_status,
+            'rsvp_datetime': attendee.added_time
         }
         if rsvp_in_db:
             rsvp_in_db.update(**data)
@@ -276,9 +276,11 @@ class RSVPBase(object):
             attendee.candidate_id,
             attendee.event.id,
             attendee.rsvp_id)
-        data = {'candidateId': attendee.candidate_id,
-                'eventId': attendee.event.id,
-                'rsvpId': attendee.rsvp_id}
+        data = {
+            'candidate_id': attendee.candidate_id,
+            'event_id': attendee.event.id,
+            'rsvp_id': attendee.rsvp_id
+        }
         if entity_in_db:
             entity_in_db.update(**data)
             entity_id = entity_in_db.id
@@ -300,10 +302,10 @@ class RSVPBase(object):
         :param attendee:
         :return:
         """
-        assert attendee.event.eventTitle is not None
-        event_title = attendee.event.eventTitle
-        gt_user_first_name = self.user_credentials.user.firstName
-        gt_user_last_name = self.user_credentials.user.lastName
+        assert attendee.event.title is not None
+        event_title = attendee.event.title
+        gt_user_first_name = self.user_credentials.user.first_name
+        gt_user_last_name = self.user_credentials.user.last_name
         type_of_rsvp = 23  # to show message on activity feed
         first_name = attendee.first_name
         last_name = attendee.last_name
@@ -318,11 +320,11 @@ class RSVPBase(object):
             json.dumps(params),
             type_of_rsvp,
             attendee.candidate_event_rsvp_id)
-        data = {'sourceTable': 'candidate_event_rsvp',
-                'sourceId': attendee.candidate_event_rsvp_id,
-                'addedTime': attendee.added_time,
+        data = {'source_table': 'candidate_event_rsvp',
+                'source_id': attendee.candidate_event_rsvp_id,
+                'added_time': attendee.added_time,
                 'type': type_of_rsvp,
-                'userId': attendee.gt_user_id,
+                'user_id': attendee.gt_user_id,
                 'params': json.dumps(params)}
         if activity_in_db:
             activity_in_db.update(**data)

@@ -6,16 +6,16 @@ from base import ModelBase as Base
 class RSVP(Base):
     __tablename__ = 'rsvp'
     id = Column(Integer, primary_key=True)
-    vendor_rsvp_id = Column('vendorRsvpId', String(500))
-    candidate_id = Column(Integer, ForeignKey("candidate.id"), nullable=False)
-    event_id = Column(Integer, ForeignKey("event.id"), nullable=False)
-    social_network_id = Column(Integer, ForeignKey("social_network.id"), nullable=False)
-    rsvp_status = Column('rsvpStatus', String(20))
-    rsvp_datetime = Column('rsvpDatetime', DateTime)
+    social_network_rsvp_id = Column('socialNetworkRsvpId', String(500))
+    candidate_id = Column('candidateId', Integer, ForeignKey("candidate.id"), nullable=False)
+    event_id = Column('eventId', Integer, ForeignKey("event.id"), nullable=False)
+    social_network_id = Column('socialNetworkId', Integer, ForeignKey("social_network.id"), nullable=False)
+    rsvp_status = Column('status', String(20))
+    rsvp_datetime = Column('datetime', DateTime)
     payment_status = Column('paymentStatus', String(20))
 
     def __repr__(self):
-        return '<RSVP %s>' % self.vendor_rsvp_id
+        return '<RSVP %s>' % self.social_network_rsvp_id
 
     @classmethod
     def get_by_vendor_rsvp_id_candidate_id_vendor_id_time(cls, vendor_rsvp_id,
@@ -28,7 +28,7 @@ class RSVP(Base):
 
         return cls.query.filter(
             and_(
-                RSVP.vendor_rsvp_id == vendor_rsvp_id,
+                RSVP.social_network_rsvp_id == vendor_rsvp_id,
                 RSVP.candidate_id == candidate_id,
                 RSVP.social_network_id == social_network_id,
                 RSVP.rsvp_datetime == added_time,
@@ -48,7 +48,7 @@ class RSVP(Base):
 
         return cls.query.filter(
             and_(
-                RSVP.vendor_rsvp_id == vendor_rsvp_id,
+                RSVP.social_network_rsvp_id == vendor_rsvp_id,
                 RSVP.candidate_id == candidate_id,
                 RSVP.social_network_id == social_network_id,
                 RSVP.event_id == event_id
@@ -60,9 +60,9 @@ class CandidateEventRSVP(Base):
     __tablename__ = 'candidate_event_rsvp'
 
     id = Column(Integer, primary_key=True)
-    candidate_id = Column(Integer, ForeignKey('candidate.id'), nullable=False)
-    event_id = Column(Integer, ForeignKey('event.id'), nullable=False)
-    rsvp_id = Column(Integer, ForeignKey('rsvp.id'), nullable=False)
+    candidate_id = Column('candidateId', Integer, ForeignKey('candidate.id'), nullable=False)
+    event_id = Column('eventId', Integer, ForeignKey('event.id'), nullable=False)
+    rsvp_id = Column('rsvpId', Integer, ForeignKey('rsvp.id'), nullable=False)
 
     def __repr__(self):
         return '<CandidateEventRSVP %r %r %r>' % (self.candidate_id, self.event_id, self.rsvpStatus)

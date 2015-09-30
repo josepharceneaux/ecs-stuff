@@ -21,12 +21,11 @@ class SocialNetworkBase(object):
         :param kwargs:
         :return:
         """
-        function_name = '__init__()'
         user_id = kwargs.get('user_id')
         social_network_id = kwargs.get('social_network_id')
         self.api_relative_url = None
         self.user = User.get_by_id(user_id)
-        message_to_log = get_message_to_log(function_name=function_name,
+        message_to_log = get_message_to_log(function_name='__init__()',
                                             class_name=self.__class__.__name__,
                                             gt_user=self.user.name,
                                             file_name=__file__)
@@ -228,10 +227,10 @@ class SocialNetworkBase(object):
         function_name = 'save_user_credentials_in_db()'
         #  TODO- pass user name in place of user name
         message_to_log = get_message_to_log(function_name=function_name,
-                                            gt_user=user_credentials['userId'],
+                                            gt_user=user_credentials['user_id'],
                                             file_name=__file__)
         gt_user_in_db = UserCredentials.get_by_user_and_social_network_id(
-            user_credentials['userId'], user_credentials['socialNetworkId'])
+            user_credentials['user_id'], user_credentials['social_network_id'])
         try:
             if gt_user_in_db:
                 gt_user_in_db.update(**user_credentials)
