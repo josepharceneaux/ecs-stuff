@@ -28,7 +28,7 @@ class MeetupRsvp(RSVPBase):
                                             gt_user=self.user.name,
                                             file_name=__file__)
         rsvps = []
-        social_network_id = event.socialNetworkId
+        social_network_id = event.social_network_id
         assert social_network_id is not None
         events_url = self.api_url + '/rsvps/?sign=true&page=100'
         params = {'event_id': event.vendorEventId}

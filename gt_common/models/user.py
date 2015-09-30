@@ -7,7 +7,7 @@ from base import ModelBase as Base
 class User(Base):
     __tablename__ = 'user'
     id = Column(Integer, primary_key=True)
-    domain_id = Column(Integer, ForeignKey('domain.id'), nullable=False)
+    domain_id = Column('domainId',Integer, ForeignKey('domain.id'), nullable=False)
     email = Column(String(60), unique=True)
     first_name = Column('firstName', String(255))
     last_name = Column('lastName', String(255))
@@ -35,7 +35,7 @@ class User(Base):
 
     @property
     def name(self):
-        return self.firstName + ' ' + self.lastName
+        return self.first_name + ' ' + self.last_name
 
 
 

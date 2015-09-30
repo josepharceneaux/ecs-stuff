@@ -41,7 +41,7 @@ class SocialNetworkBase(object):
                 "access_token": self.user_credentials.access_token,
                 "gt_user_id": self.user_credentials.user_id,
                 "social_network_id": social_network_id,
-                "api_url": self.social_network.apiUrl
+                "api_url": self.social_network.api_url
             }
             # checks if any field is missing for given user credentials
             items = [value for key, value in data.iteritems() if key is not "api_url"]

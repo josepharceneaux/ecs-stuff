@@ -30,8 +30,8 @@ class RSVPBase(object):
             self.headers = kwargs.get('headers')
             self.social_network_id = kwargs.get('social_network').id
             self.social_network_name = kwargs.get('social_network').name
-            self.api_url = kwargs.get('social_network').apiUrl
-            self.access_token = self.user_credentials.accessToken
+            self.api_url = kwargs.get('social_network').api_url
+            self.access_token = self.user_credentials.access_token
             self.start_date_dt = None
         except Exception as e:
             error_message = e.message
