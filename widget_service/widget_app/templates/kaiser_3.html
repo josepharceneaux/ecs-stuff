@@ -79,7 +79,7 @@
     {{ if mode == 'form': }}
     <div class="row">
         <div class="" style="margin-left:30px;">
-            <form name="widget" method="post" novalidate autocomplete="on" enctype="multipart/form-data" action="{{= URL('widget', 'submit', args=request.args, vars=request.vars) }}">
+            <form name="widget" method="post" novalidate autocomplete="on" enctype="multipart/form-data" action="">
                 <div class="control-group">
                     <div class="controls">
                         <label>
@@ -107,9 +107,9 @@
                         <label id="subAoiLabel" class="hide">Sub Area of Interest</label>
                         <select required class="span3" id="interestSelect" aria-labelledby="aoiLabel">
                             <option title="Area of Interest" value="">Area of Interest</option>
-                            {{ for aoi in areas_of_interest: }}
-                            <option title="{{= aoi.description }}" value="{{= aoi.id }}">{{= aoi.description }}</option>
-                            {{ pass }}
+{#                            {{ for aoi in areas_of_interest: }}#}
+{#                            <option title="{{= aoi.description }}" value="{{= aoi.id }}">{{= aoi.description }}</option>#}
+{#                            {{ pass }}#}
                         </select>
                         <select required style="display:none;" class="span3" id="subInterestSelect" aria-labelledby="subAoiLabel">
                             <option></option>
