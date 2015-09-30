@@ -9,7 +9,8 @@ from SocialNetworkService.custom_exections import EventNotPublished
 from SocialNetworkService.custom_exections import EventNotUnpublished
 from SocialNetworkService.custom_exections import EventInputMissing
 from SocialNetworkService.custom_exections import EventLocationNotCreated
-
+from gt_common.models.organizer import Organizer
+from gt_common.models.venue import Venue
 from SocialNetworkService.event.base import EventBase
 from SocialNetworkService.utilities import log_error, logger, log_exception, \
     http_request, get_message_to_log
@@ -57,7 +58,7 @@ class EventbriteEvent(EventBase):
             response = http_request('GET', events_url, params=params,
                                 headers=self.headers)
         except Exception as error:
-            log_error({
+            log_exception({
                             'Reason': error.message,
                             'functionName': 'get_events',
                             'fileName': __file__,
@@ -79,7 +80,7 @@ class EventbriteEvent(EventBase):
                     response = http_request('GET', events_url, params=params_copy,
                                         headers=self.headers)
                 except Exception as error:
-                    log_error({
+                    log_exception({
                             'Reason': error.message,
                             'functionName': 'get_events',
                             'fileName': __file__,
@@ -103,6 +104,9 @@ class EventbriteEvent(EventBase):
         """
         organizer = None
         organizer_email = None
+        venue = None
+        organizer_instance = None
+        venue_instance = None
         assert event is not None
 
         # Get information about event's venue
@@ -111,7 +115,7 @@ class EventbriteEvent(EventBase):
                 response = http_request('GET', self.api_url + '/venues/' + event['venue_id'],
                                     headers=self.headers)
             except Exception as error:
-                log_error({
+                log_exception({
                             'Reason': error.message,
                             'functionName': 'normalize_event',
                             'fileName': __file__,
@@ -127,7 +131,7 @@ class EventbriteEvent(EventBase):
                                              '/organizers/' + event['organizer_id'],
                                             headers=self.headers)
                     except Exception as error:
-                        log_error({
+                        log_exception({
                             'Reason': error.message,
                             'functionName': 'normalize_event',
                             'fileName': __file__,
@@ -142,7 +146,7 @@ class EventbriteEvent(EventBase):
                                                  + self.member_id,
                                                 headers=self.headers)
                         except Exception as error:
-                            log_error({
+                            log_exception({
                                 'Reason': error.message,
                                 'functionName': 'normalize_event',
                                 'fileName': __file__,
@@ -152,33 +156,50 @@ class EventbriteEvent(EventBase):
                         if response.ok:
                             organizer_info = json.loads(response.text)
                             organizer_email = organizer_info['emails'][0]['email']
-        event_db = Event(
-            vendor_event_id=event['id'],
-            event_title=event['name']['text'],
-            event_description=event['description']['text'],
+
+        if organizer:
+            organizer_instance = Organizer(
+                user_id=self.user.id,
+                name=organizer['name'] if organizer.has_key('name') else '',
+                email=organizer_email if organizer_email else '',
+                about=organizer['description'] if organizer.has_key('description') else ''
+
+            )
+            Organizer.save(organizer_instance)
+        if venue:
+            venue_instance = Venue(
+                social_network_venue_id=event['venue_id'],
+                user_id=self.user.id,
+                address_line1=venue['address']['address_1'] if venue else '',
+                address_line2=venue['address']['address_2'] if venue else '',
+                city=venue['address']['city'] if venue else '',
+                state=venue['address']['region'] if venue else '',
+                zipcode='',
+                country=venue['address']['country'] if venue else '',
+                longitude=float(venue['address']['longitude']) if venue else 0,
+                latitude=float(venue['address']['latitude']) if venue else 0,
+            )
+            Venue.save(venue_instance)
+
+        return Event(
+            social_network_event_id=event['id'],
+            title=event['name']['text'],
+            description=event['description']['text'],
             social_network_id=self.social_network.id,
+            organizer_id = organizer_instance.id if organizer_instance else None,
             user_id=self.user.id,
             group_id=0,
+            url='',
             group_url_name='',
-            event_address_line_1=venue['address']['address_1'] if venue else '',
-            event_address_line_2=venue['address']['address_2'] if venue else '',
-            event_city=venue['address']['city'] if venue else '',
-            event_state=venue['address']['region'] if venue else '',
-            event_zipcode='',
-            event_country=venue['address']['country'] if venue else '',
-            event_longitude=float(venue['address']['longitude']) if venue else 0,
-            event_latitude=float(venue['address']['latitude']) if venue else 0,
-            event_start_datetime=event['start']['local'],
-            event_end_datetime=event['end']['local'],
-            organizer_name=organizer['name'] if organizer else '',
-            organizer_email=organizer_email if organizer_email else '',
-            about_event_organizer=organizer['description'] if organizer else '',
+            venue_id=venue_instance.id if venue_instance.id else None,
+            start_datetime=event['start']['local'],
+            end_datetime=event['end']['local'],
             registration_instruction='',
-            event_cost='',
-            event_currency=event['currency'],
-            event_timezone=event['start']['timezone'],
-            max_attendees=event['capacity'])
-        return event_db
+            cost=0,
+            currency=event['currency'],
+            timezone=event['start']['timezone'],
+            max_attendees=event['capacity']
+        )
 
     def create_event(self):
         """
@@ -222,12 +243,14 @@ class EventbriteEvent(EventBase):
             error_detail = response.get('error', '') + ': ' + response.get('error_description', '')
             if error_detail != ': ':
                 error_message += '\n%s' % error_detail
-            message_to_log = get_message_to_log(function_name='create_event',
-                                                class_name=self.__class__.__name__,
-                                                gt_user=self.user.name,
-                                                error=error_detail,
-                                                file_name=__file__)
-            log_error(message_to_log)
+            log_exception(
+                dict(
+                    functionName='create_event',
+                    user=self.user.name,
+                    error=error_detail,
+                    fileName=__file__
+                )
+            )
             raise EventNotCreated(error_message)
 
     def delete_event(self, event_id):
@@ -238,6 +261,14 @@ class EventbriteEvent(EventBase):
                 Event.delete(event_id)
                 return True
             except Exception as error:     # some error while removing event
+                log_exception(
+                    dict(
+                        functionName='delete_event',
+                        error=error.message,
+                        user=self.user.name,
+                        fileName=__file__
+                    )
+                )
                 return False
         return False    # event not found in database
 
@@ -267,12 +298,14 @@ class EventbriteEvent(EventBase):
             message = '\nErrors from the vendor:\n'
             message += ''.join(response.json().get('error') + ',' + response.json().get('error_description'))
             error_message += message
-            message_to_log = get_message_to_log(function_name='add_location',
-                                                class_name=self.__class__.__name__,
-                                                gt_user=self.user.name,
-                                                error=error_message,
-                                                file_name=__file__)
-            log_error(message_to_log)
+            log_error(
+                dict(
+                    error=error_message,
+                    functionName='add_location',
+                    fileName=__file__,
+                    user=self.user.name
+                )
+            )
             raise EventLocationNotCreated('ApiError: Unable to create venue for event\n %s' % message)
 
     def manage_event_tickets(self, event_id, event_is_new):
@@ -296,13 +329,14 @@ class EventbriteEvent(EventBase):
                         % str(self.ticket_payload['ticket_class.quantity_total']))
             return response.json().get('id')
         else:
-            error_message = 'Tickets were not created successfully'
-            message_to_log = get_message_to_log(function_name='manage_event_tickets',
-                                                class_name=self.__class__.__name__,
-                                                gt_user=self.user.name,
-                                                error=error_message,
-                                                file_name=__file__)
-            log_error(message_to_log)
+            log_error(
+                dict(
+                    error='Event tickets were not created successfully',
+                    functionName='manage_event_tickets',
+                    fileName=__file__,
+                    user=self.user.name
+                )
+            )
             raise TicketsNotCreated('ApiError: Unable to create event tickets on Eventbrite')
 
     def publish_event(self, event_id):
@@ -320,12 +354,14 @@ class EventbriteEvent(EventBase):
         else:
             error_message = "Event was not Published. There are some errors: " \
                             "Details: %s  |" % response
-            message_to_log = get_message_to_log(function_name='publish_event',
-                                                class_name=self.__class__.__name__,
-                                                gt_user=self.user.name,
-                                                error=error_message,
-                                                file_name=__file__)
-            log_error(message_to_log)
+            log_error(
+                dict(
+                    error=error_message,
+                    functionName='publish_event',
+                    fileName=__file__,
+                    user=self.user.name
+                )
+            )
             raise EventNotPublished('ApiError: Unable to publish event on specified social network')
 
     def unpublish_event(self, event_id):
@@ -344,12 +380,14 @@ class EventbriteEvent(EventBase):
         else:
             error_message = "Event was not unpublished. There are some errors. " \
                             "Response is %s  |" % response
-            message_to_log = get_message_to_log(function_name='unpublish_event',
-                                                class_name=self.__class__.__name__,
-                                                gt_user=self.user.name,
-                                                error=error_message,
-                                                file_name=__file__)
-            log_error(message_to_log)
+            log_error(
+                dict(
+                    error=error_message,
+                    functionName='unpublish_event',
+                    fileName=__file__,
+                    user=self.user.name
+                )
+            )
             raise EventNotUnpublished('ApiError: Unable to remove event from specified social network')
 
     @staticmethod
@@ -362,6 +400,14 @@ class EventbriteEvent(EventBase):
         mandatory_input_data = ['eventTitle', 'eventDescription', 'eventEndDatetime',
                                 'eventTimeZone', 'eventStartDatetime', 'eventCurrency']
         if not all([input in data and data[input] for input in mandatory_input_data]):
+            log_error(
+                dict(
+                    error='Mandatory parameters missing in Eventbrite data',
+                    functionName='validate_required_files',
+                    fileName=__file__,
+                    user=''
+                )
+            )
             raise EventInputMissing("Mandatory parameter missing in Eventbrite data.")
 
     def gt_to_sn_fields_mappings(self, data):
@@ -391,12 +437,14 @@ class EventbriteEvent(EventBase):
                 end_time = utc_dts[1]
             else:
                 error_message = 'Time Zone is None for Event %s ' % event_name
-                message_to_log = get_message_to_log(function_name='gt_to_sn_fields_mappings',
-                                                    class_name=self.__class__.__name__,
-                                                    gt_user=self.user.name,
-                                                    error=error_message,
-                                                    file_name=__file__)
-                log_error(message_to_log)
+                log_error(
+                    dict(
+                        error=error_message,
+                        functionName='gt_to_sn_fields_mapping',
+                        fileName=__file__,
+                        user=self.user.name
+                    )
+                )
             currency = data['eventCurrency']
             time_zone = data['eventTimeZone']
 
@@ -438,13 +486,14 @@ class EventbriteEvent(EventBase):
             }
             self.vendor_event_id = data.get('vendorEventId')
         else:
-            error_message = 'Data is None'
-            message_to_log = get_message_to_log(function_name='gt_to_sn_fields_mappings',
-                                                class_name=self.__class__.__name__,
-                                                gt_user=self.user.name,
-                                                error=error_message,
-                                                file_name=__file__)
-            log_error(message_to_log)
+            log_error(
+                dict(
+                    error='Data is None',
+                    functionName='gt_to_sn_fields_mapping',
+                    fileName=__file__,
+                    user=self.user.name
+                )
+            )
 
     def create_webhook(self, user_credentials):
         """
@@ -471,21 +520,23 @@ class EventbriteEvent(EventBase):
                     user_credentials.update_record(webhook=webhook_id)
                     status = True
                 except Exception as e:
-                    error_message = e.message
-                    message_to_log = get_message_to_log(function_name='create_webhook',
-                                                        class_name=self.__class__.__name__,
-                                                        gt_user=self.user.name,
-                                                        error=error_message,
-                                                        file_name=__file__)
-                    log_exception(message_to_log)
+                    log_exception(
+                        dict(
+                            error=e.message,
+                            functionName='create_webhook',
+                            fileName=__file__,
+                            user=self.user.name
+                        )
+                    )
             else:
-                error_message = "Webhook was not created successfully."
-                message_to_log = get_message_to_log(function_name='create_webhook',
-                                                    class_name=self.__class__.__name__,
-                                                    gt_user=self.user.name,
-                                                    error=error_message,
-                                                    file_name=__file__)
-                log_error(message_to_log)
+                log_error(
+                    dict(
+                        error="Eventbrite Webhook wasn't created successfully",
+                        functionName='create_webhook',
+                        fileName=__file__,
+                        user=self.user.name
+                    )
+                )
         else:
             # webhook has already been created for this user
             status = True

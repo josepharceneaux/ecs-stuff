@@ -3,6 +3,8 @@ import json
 from datetime import datetime
 from datetime import timedelta
 from gt_common.models.event import Event
+from gt_common.models.organizer import Organizer
+from gt_common.models.venue import Venue
 from SocialNetworkService.utilities import http_request, get_message_to_log
 from SocialNetworkService.utilities import milliseconds_since_epoch
 from SocialNetworkService.utilities import milliseconds_since_epoch_to_dt
@@ -162,36 +164,52 @@ class Meetup(EventBase):
             if end_time:
                 end_time = milliseconds_since_epoch_to_dt((float(event['time']))
                                                           + (float(end_time) * 1000))
+
+        if group_organizer:
+            organizer_instance = Organizer(
+                user_id=self.user.id,
+                name=group_organizer['name'] if group_organizer.has_key('name') else '',
+                email='',
+                about=organizer['bio'] if organizer and organizer.has_key('bio') else ''
+
+            )
+            Organizer.save(organizer_instance)
+        if venue:
+            venue_instance = Venue(
+                social_network_venue_id=venue['id'],
+                user_id=self.user.id,
+                address_line1=venue['address_1'] if venue else '',
+                address_line2='',
+                city=venue['city'].title().strip() if venue and venue.has_key('city') else '',
+                state=venue['state'].title().strip() if venue and venue.has_key('state') else '',
+                zipcode=venue['zip'] if venue and venue.has_key('zip') else None,
+                country=venue['country'].title().strip() if venue and venue.has_key('country') else '',
+                longitude=float(venue['lon']) if venue and venue.has_key('lon') else 0,
+                latitude=float(venue['lat']) if venue and venue.has_key('lat') else 0,
+            )
+            Venue.save(venue_instance)
+
         return Event(
-            vendor_event_id=event['id'],
-            event_title=event['name'],
-            event_description=event['description'] if event.has_key('description') else '',
+            social_network_id=event['id'],
+            title=event['name'],
+            description=event['description'] if event.has_key('description') else '',
             social_network_id=self.social_network.id,
             user_id=self.user.id,
-
+            organizer_id = organizer_instance.id if organizer_instance else None,
+            venue_id = venue_instance.id if venue_instance else None,
             # group id and urlName are required fields to edit an event
             # So, should raise exception if Null
-            group_id=event['group']['id'],
+            group_id=event['group']['id'] if event.has_key('group') else '',
             group_url_name=event['group']['urlname'],
             # Let's drop error logs if venue has no address, or if address
             # has no longitude/latitude
-            event_address_line_1=venue['address_1'] if venue else '',
-            event_address_line_2='',
-            event_city=venue['city'].title() if venue else '',
-            event_state=venue['state'] if venue and venue.has_key('state') else '',
-            event_zipcode=venue['zip'] if venue and venue.has_key('zip') else '',
-            event_country=venue['country'] if venue and venue.has_key('country') else '',
-            event_longitude=float(venue['lon']) if venue and venue.has_key('lon') else 0,
-            event_latitude=float(venue['lat']) if venue and venue.has_key('lat') else 0,
-            event_start_datetime=start_time,
-            event_end_datetime=end_time,
-            organizer_name=group_organizer['name'] if group_organizer and group_organizer.has_key('name') else '',
-            organizer_email='',
-            aboutEvent_organizer=organizer['bio'] if organizer and organizer.has_key('bio') else '',
+            url='',
+            start_datetime=start_time,
+            end_datetime=end_time,
             registration_instruction='',
-            event_cost='',
-            event_currency='',
-            event_timezone='',
+            cost=0,
+            currency='',
+            timezone='',
             max_attendees=0
         )
 

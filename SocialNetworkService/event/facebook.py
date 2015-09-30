@@ -3,6 +3,8 @@ import requests
 from datetime import datetime, timedelta
 from SocialNetworkService.utilities import get_message_to_log, log_exception, import_from_dist_packages
 from gt_common.models.event import Event
+from gt_common.models.organizer import Organizer
+from gt_common.models.venue import Venue
 from SocialNetworkService.event.base import EventBase
 
 facebook = import_from_dist_packages('facebook')
@@ -36,21 +38,16 @@ class FacebookEvent(EventBase):
                 since=self.start_date,
                 until=self.end_date
             )
-            # response = self.graph.get_object(
-            #     'v2.4/1709562552598022/subscriptions',
-            #     object='page',
-            #     fields='conversations', verify_token='token',
-            #     callback_url="http://localhost:8000/web/user/profile",
-            #     access_token='1709562552598022|R1S2eC2Btr9f06yiv3uOk4V2gx',
-            #
-            # )
         except facebook.GraphAPIError as error:
-            message_to_log = get_message_to_log(function_name='get_events',
-                                                class_name=self.__class__.__name__,
-                                                gt_user=self.user.name,
-                                                error=error.message,
-                                                file_name=__file__)
-            log_exception(message_to_log)
+            log_exception(
+                dict(
+                    function_name='get_events',
+                    class_name=self.__class__.__name__,
+                    gt_user=self.user.name,
+                    error=error.message,
+                    file_name=__file__
+                )
+            )
             raise
         if 'data' in response:
             user_events.extend(response['data'])
@@ -61,7 +58,13 @@ class FacebookEvent(EventBase):
         return all_events
 
     def get_all_pages(self, response, target_list):
-        # self.traceback_info.update({"functionName": "get_all_pages()"})
+        """
+        We keep iterating over pages as long as keep finding the URL
+        in response['paging']['next'], when we don't we stop.
+        :param response:
+        :param target_list:
+        :return:
+        """
         while True:
             try:
                 response = requests.get(response['paging']['next'])
@@ -72,12 +75,15 @@ class FacebookEvent(EventBase):
             except KeyError:
                 break
             except requests.HTTPError as error:
-                message_to_log = get_message_to_log(function_name='get_all_pages',
-                                                    class_name=self.__class__.__name__,
-                                                    gt_user=self.user.name,
-                                                    error=error.message,
-                                                    file_name=__file__)
-                log_exception(message_to_log)
+                log_exception(
+                    dict(
+                        function_name='get_all_pages',
+                        class_name=self.__class__.__name__,
+                        gt_user=self.user.name,
+                        error=error.message,
+                        file_name=__file__
+                    )
+                )
                 raise
 
     def normalize_event(self, event):
@@ -90,6 +96,8 @@ class FacebookEvent(EventBase):
         """
         # self.traceback_info.update({"functionName": "normalize_event()"})
         venue = None
+        venue_instance = None
+        organizer_instance = None
         owner = None
         organizer = None
         location = None
@@ -109,41 +117,59 @@ class FacebookEvent(EventBase):
                             'User': self.user.id
                         })
                 raise
+        if owner or organizer:
+            organizer_instance = Organizer(
+                user_id=self.user.id,
+                name=owner['name'] if owner and owner.has_key('name') else '',
+                email=organizer['email'] if organizer and organizer.has_key('email') else '',
+                about=''
+
+            )
+            Organizer.save(organizer_instance)
+        if location:
+            venue_instance = Venue(
+                social_network_venue_id=event['venue_id'],
+                user_id=self.user.id,
+                address_line1=location['street'] if location.has_key('street') else '',
+                address_line2='',
+                city=location['city'].title() if location.has_key('city') else '',
+                state='',
+                zipcode=location['zip'] if location.has_key('zip') else '',
+                country=location['country'].title() if location.has_key('country') else '',
+                longitude=float(location['longitude']) if location.has_key('longitude') else 0,
+                latitude=float(location['latitude']) if location.has_key('latitude') else 0,
+            )
+            Venue.save(venue_instance)
         try:
             event = Event(
-                vendor_event_id=event['id'],
-                event_title=event['name'],
-                event_description=event.get('description', ''),
+                social_network_event_id=event['id'],
+                title=event['name'],
+                description=event.get('description', ''),
                 social_network_id=self.social_network.id,
                 user_id=self.user.id,
+                organizer_id=organizer_instance.id if organizer_instance else None,
+                venue_id=venue_instance.id if venue_instance else None,
                 group_id=0,
-                event_address_line_1=location['street'] if location and location.has_key('street') else '',
-                event_address_line_2='',
-                event_city=location['city'].title() if location and location.has_key('city') else '',
-                event_state='',
-                event_zipcode=location['zip'] if location and location.has_key('zip') else '',
-                event_country=location['country'].title() if location and location.has_key('country') else '',
-                event_longitude=float(location['longitude']) if location and location.has_key('longitude') else 0,
-                event_latitude=float(location['latitude']) if location and location.has_key('latitude') else 0,
-                event_start_datetime=event['start_time'] if event and event.has_key('start_time') else None,
-                event_end_datetime=event['end_time'] if event and event.has_key('end_time') else None,
-                organizer_name=owner['name'] if owner and owner.has_key('name') else '',
-                organizer_email=organizer['email'] if organizer and organizer.has_key('email') else '',
+                start_datetime=event['start_time'] if event and event.has_key('start_time') else None,
+                end_datetime=event['end_time'] if event and event.has_key('end_time') else None,
                 about_event_organizer='',
                 registration_instruction='',
-                event_cost='',
+                cost='',
                 event_currency='',
                 max_attendees=event['attending_count'] + event['maybe_count'] + event['noreply_count'] if (event and \
                     event.has_key('attending_count') and event.has_key('maybe_count') and event.has_key('noreply_count'))\
                 else ''
             )
-        except Exception as e:
-            message_to_log = get_message_to_log(function_name='normalize_event',
-                                                class_name=self.__class__.__name__,
-                                                gt_user=self.user.name,
-                                                error=e.message,
-                                                file_name=__file__)
-            log_exception(message_to_log)
+        except Exception as error:
+            log_exception(
+                dict(
+                    function_name='normalize_event',
+                    class_name=self.__class__.__name__,
+                    gt_user=self.user.name,
+                    error=error.message,
+                    file_name=__file__
+                )
+            )
         else:
             return event
 

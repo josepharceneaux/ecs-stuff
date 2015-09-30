@@ -12,9 +12,9 @@ class Event(Base):
     social_network_event_id = Column('socialNetworkEventId', String(1000))
     title = Column('title', String(500))
     description = Column('description', String(1000))
-    socialNetworkId = Column(Integer, ForeignKey('social_network.id'), nullable=False)
-    userId = Column(Integer, ForeignKey('user.id'), nullable=False)
-    organizerId = Column(Integer, ForeignKey('organizer.id'), nullable=False)
+    social_network_id = Column(Integer, ForeignKey('social_network.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
+    organizer_id = Column(Integer, ForeignKey('organizer.id'), nullable=False)
     venue_id = Column(Integer, ForeignKey('venue.id'), nullable=False)
     group_id = Column('groupId', String(100))
     group_url_name = Column('groupUrlName', String(500))
@@ -26,6 +26,7 @@ class Event(Base):
     currency = Column('currency', String(20))
     timezone = Column('timezone', String(100))
     max_attendees = Column('maxAttendees', Integer)
+    #TODO comment why do we need ticket_id. Also, why is it not a relation?
     tickets_id = Column('ticketsId', Integer, nullable=True)
 
     def __ne__(self, other_event):
