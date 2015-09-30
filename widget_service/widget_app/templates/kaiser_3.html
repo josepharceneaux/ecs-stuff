@@ -1,12 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-<!-- <iframe width="435px" height="430px" frameborder="0" marginheight="0" marginwidth="0" src="http://www.gettalent.com/web/widget/show/kaiser-corporate"></iframe> -->
-<!-- <iframe width="435px" height="430px" frameborder="0" marginheight="0" marginwidth="0" src="http://localhost:8000/web/widget/show/kaiser?is_special_3=1"></iframe> -->
 <head>
     <title>Join the Kaiser Permanente Talent Community</title>
     <meta name="description" content="Join the Kaiser Talent Community - recruiting software by getTalent" />
     <meta name="keywords" content="Kaiser, Recruiting, Software, Cloud, Talent, Community" />
-    <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
 
     <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>
@@ -29,14 +26,10 @@
 
     </style>
     <![endif]-->
-
-    {{
-    response.files.append(URL('static', 'bootstrap_2_3_2/css/bootstrap.min.css'))
-    response.files.append(URL('static', 'bootstrap-tagmanager/tagmanager.css'))
-    response.files.append(URL('static', 'css/kaiser_3.css'))
-    response.include_files()
-    }}
-    <script type="text/javascript" src="{{= URL('static','js/modernizr-2-6-2-custom.js')}}"></script>
+    <link rel="stylesheet" href="/static/css/bootstrap_2_3_2/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/bootstrap_3_3_5/bootstrap-tagmanager.css">
+    <link rel="stylesheet" href="/static/css/kaiser_3.css">
+    <script type="text/javascript" src="/static/js/modernizr-2-6-2-custom.js"></script>
     <script type="text/javascript">
         /** SUPPORT FOR .map() FOR IE8 **/
         // Production steps of ECMA-262, Edition 5, 15.4.4.19
@@ -76,7 +69,7 @@
 <body style="background-color: transparent;">
 
 <div class="container">
-    {{ if mode == 'form': }}
+
     <div class="row">
         <div class="" style="margin-left:30px;">
             <form name="widget" method="post" novalidate autocomplete="on" enctype="multipart/form-data" action="">
@@ -91,14 +84,14 @@
                     <div class="controls controls-row">
                         <label id="firstNameLabel" class="hide">First name</label>
                         <label id="lastNameLabel" class="hide">Last name</label>
-                        <input aria-labelledby="firstNameLabel" style="width: 175px;" class="span3" type="text" required id="firstName" name="firstName" placeholder="First name" value="{{= form_fields.get('firstName') or '' }}" />
-                        <input aria-labelledby="lastNameLabel" style="float: none; margin-left: 15px; width:175px" class="span3" type="text" required id="lastName" name="lastName" placeholder="Last name" value="{{= form_fields.get('lastName') or '' }}" />
+                        <input aria-labelledby="firstNameLabel" style="width: 175px;" class="span3" type="text" required id="firstName" name="firstName" placeholder="First name" value="" />
+                        <input aria-labelledby="lastNameLabel" style="float: none; margin-left: 15px; width:175px" class="span3" type="text" required id="lastName" name="lastName" placeholder="Last name" value="" />
                     </div>
                 </div>
                 <div class="control-group">
                     <div class="controls controls-row">
                         <label class="hide" id="emailIDLabel">Email Address</label>
-                        <input aria-labelledby="emailIDLabel" style="width: 379px;" class="span6" type="email" data-validation-message="Must be valid email" required id="emailAdd" name="emailAdd" placeholder="E-mail address" value="{{= form_fields.get('emailAdd') or '' }}" />
+                        <input aria-labelledby="emailIDLabel" style="width: 379px;" class="span6" type="email" data-validation-message="Must be valid email" required id="emailAdd" name="emailAdd" placeholder="E-mail address" value="" />
                     </div>
                 </div>
                 <div class="control-group" style="margin-bottom:5px">
@@ -119,16 +112,16 @@
                         </div>
                     </div>
 
-                    {{ for aoi in areas_of_interest: }}
-                    <select title="Sub area of interest" class="aoiIdToSubAoi" data-aoi-id="{{= aoi.id }}" style="display: none" aria-hidden="true">
-                        {{ sub_aois = area_of_interest_id_to_sub_areas_of_interest.get(aoi.id) }}
-                        {{ if sub_aois: }}
-                        {{ for sub_aoi in sub_aois: }}
-                        <option label="{{= sub_aoi.description }}" value="{{= sub_aoi.id }}">{{= sub_aoi.description }}</option>
-                        {{ pass }}
-                        {{ pass }}
+{#                    {{ for aoi in areas_of_interest: }}#}
+                    <select title="Sub area of interest" class="aoiIdToSubAoi" data-aoi-id="" style="display: none" aria-hidden="true">
+{#                        {{ sub_aois = area_of_interest_id_to_sub_areas_of_interest.get(aoi.id) }}#}
+{#                        {{ if sub_aois: }}#}
+{#                        {{ for sub_aoi in sub_aois: }}#}
+                        <option label="sub_aoi.description" value="sub_aoi.id">sub_aoi.description</option>
+{#                        {{ pass }}#}
+{#                        {{ pass }}#}
                     </select>
-                    {{ pass }}
+{#                    {{ pass }}#}
                 </div>
 
                 <div class="control-group">
@@ -140,8 +133,6 @@
                 </div>
                 <div class="control-group" style="margin-bottom:5px">
                     <div class="controls controls-row">
-                         <!--<label id="stateLabel" class="hide">State</label>-->
- 			             <!--<label id="cityLabel" class="hide">City</label>-->
                         <select aria-labelledby="stateLabel" required class="span3" id="stateOfInterest">
                             <option value="" title="State">State</option>
                             <option value="California" title="Northern CA">Northern CA</option>
@@ -151,7 +142,6 @@
                             <option value="Georgia" title="Georgia">Georgia</option>
                             <option value="Hawaii" title="Hawaii">Hawaii</option>
                             <option value="Maryland" title="Maryland">Maryland</option>
-                            <!-- <option value="Ohio">Ohio</option> -->
                             <option value="Oregon" title="Oregon">Oregon</option>
                             <option value="Virginia" title="Virginia">Virginia</option>
                             <option value="Washington" title="Washington">Washington</option>
@@ -215,14 +205,14 @@
             </form>
         </div>
     </div>
-    {{ elif mode == 'success': }}
+
     <div class="row">
         <div class="span6" style="margin-left:30px;margin-top:200px;">
             <p id="submit_result" class="alert alert-success" >Your information has successfully been submitted.</p>
             <p>Thank you for your interest in our talent community and bringing your career to Kaiser Permanente. </p>
         </div>
     </div>
-    {{ elif mode == 'error': }}
+
     <div class="row">
         <div class="span6" style="margin-left:30px;margin-top:30px">
             <div class="alert alert-error">
@@ -230,18 +220,13 @@
             </div>
         </div>
     </div>
-    {{ pass }}
 </div> <!-- /container -->
 
-{{
-response.files = []
-response.files.append(URL('static', 'js/jquery-1.7.2.min.js'))
-response.files.append(URL('static', 'bootstrap_2_2_2/js/bootstrap.min.js'))
-response.files.append(URL('static', 'js/jquery.simpleplaceholder.js'))
-response.files.append(URL('static', 'bootstrap-tagmanager/tagmanager.js'))
-response.files.append(URL('static', 'js/talent-widget.js'))
-response.include_files()
-}}
+<script src="/static/js/jquery-1.11.3.min.js"></script>
+<script src="/static/js/bootstrap.min.js"></script>
+<script src="/static/js/jquery.simpleplaceholder.js"></script>
+<script src="/static/js/bootstrap-tagmanager.js"></script>
+<script src="/static/js/talent-widget.js"></script>
 <!--[if lt IE 9]>
     <script type="text/javascript">
         $(function(){

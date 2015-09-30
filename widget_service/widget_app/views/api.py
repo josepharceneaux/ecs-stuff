@@ -16,5 +16,7 @@ def widget(domain):
             return render_template('kaiser_military.html', domain=domain)
         elif domain == 'kaiser-university':
             return render_template('kaiser_2.html', domain=domain)
+        elif domain == 'kaiser-corp':
+            return render_template('kaiser_3.html', domain=domain)
         else:
             return 'Return error message or awesome 404 page', 404
