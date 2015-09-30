@@ -1,14 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
-<!-- <iframe width="435px" height="430px" frameborder="0" marginheight="0" marginwidth="0" src="http://www.gettalent.com/web/widget/show/kaiser-military"></iframe> -->
-<!-- <iframe width="435px" height="430px" frameborder="0" marginheight="0" marginwidth="0" src="http://localhost:8000/web/widget/show/kaiser/kaiser-military"></iframe> -->
 <head>
     <title>Join the Kaiser Permanente Military Talent Community</title>
     <meta name="description" content="Join the Kaiser Military Talent Community - recruiting software by getTalent" />
     <meta name="keywords" content="Kaiser, Recruiting, Military, Software, Cloud, Talent, Community" />
     <meta name = "viewport" content = "width = device-width">
     <meta name = "viewport" content = "width = 320">
-    <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
 
     <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>
@@ -25,13 +22,13 @@
     </style>
     <![endif]-->
 
-    {{
-    response.files.append(URL('static', 'bootstrap_2_3_2/css/bootstrap.min.css'))
-    response.files.append(URL('static', 'bootstrap-tagmanager/tagmanager.css'))
-    response.files.append(URL('static', 'css/kaiser_3.css'))
-    response.include_files()
-    }}
-    <script type="text/javascript" src="{{= URL('static','js/modernizr-2-6-2-custom.js')}}"></script>
+{#    {{#}
+{#    response.files.append(URL('static', 'bootstrap_2_3_2/css/bootstrap.min.css'))#}
+{#    response.files.append(URL('static', 'bootstrap-tagmanager/tagmanager.css'))#}
+{#    response.files.append(URL('static', 'css/kaiser_3.css'))#}
+{#    response.include_files()#}
+{#    }}#}
+    <script type="text/javascript" src="{{ url_for('static','js/modernizr-2-6-2-custom.js')}}"></script>
     <script type="text/javascript">
         /** SUPPORT FOR .map() FOR IE8 **/
         // Production steps of ECMA-262, Edition 5, 15.4.4.19
@@ -90,10 +87,9 @@
 <body style="background-color: transparent;">
 
 <div class="container">
-    {{ if mode == 'form': }}
     <div class="row">
         <div class="" style="margin-left:30px;">
-            <form name="widget" method="post" novalidate autocomplete="on" enctype="multipart/form-data" action="{{= URL('widget', 'submit', args=request.args, vars=request.vars) }}">
+            <form name="widget" method="post" novalidate autocomplete="on" enctype="multipart/form-data" action="/kaiser_military">
                 <div class="control-group">
                     <div class="controls">
                         <h1>
@@ -105,14 +101,14 @@
                     <div class="controls controls-row">
                         <label id="firstNameLabel" class="hide">First name</label>
                         <label id="lastNameLabel" class="hide">Last name</label>
-                        <input style="" class="span3" type="text" required id="firstName" name="firstName" aria-labelledby="firstNameLabel" placeholder="First name" value="{{= form_fields.get('firstName') or '' }}" />
-                        <input style="float: none" class="span3" type="text" required id="lastName" name="lastName" aria-labelledby="lastNameLabel" placeholder="Last name" value="{{= form_fields.get('lastName') or '' }}" />
+                        <input style="" class="span3" type="text" required id="firstName" name="firstName" aria-labelledby="firstNameLabel" placeholder="First name" value="" />
+                        <input style="float: none" class="span3" type="text" required id="lastName" name="lastName" aria-labelledby="lastNameLabel" placeholder="Last name" value="" />
                     </div>
                 </div>
                 <div class="control-group">
                     <div class="controls controls-row">
                         <label id="emailLabel" class="hide">Email address</label>
-                        <input style="" class="span6" type="email" data-validation-message="Must be valid email" required id="emailAdd" name="emailAdd" aria-labelledby="emailLabel" placeholder="E-mail address" value="{{= form_fields.get('emailAdd') or '' }}" />
+                        <input style="" class="span6" type="email" data-validation-message="Must be valid email" required id="emailAdd" name="emailAdd" aria-labelledby="emailLabel" placeholder="E-mail address" value="" />
                     </div>
                 </div>
 
@@ -122,9 +118,10 @@
                         <label id="subAoiLabel" class="hide">Sub Area of Interest</label>
                         <select required class="span3" id="interestSelect" aria-labelledby="aoiLabel">
                             <option title="Area of Interest" value="">Area of Interest</option>
-                            {{ for aoi in areas_of_interest: }}
-                            <option title="{{= aoi.description }}" value="{{= aoi.id }}">{{= aoi.description }}</option>
-                            {{ pass }}
+{#                            TODO needs dynamic aois#}
+{#                            {{ for aoi in areas_of_interest: }}#}
+{#                            <option title="{{= aoi.description }}" value="{{= aoi.id }}">{{= aoi.description }}</option>#}
+{#                            {{ pass }}#}
                         </select>
                         <select required style="display:none;" class="span3" id="subInterestSelect" aria-labelledby="subAoiLabel">
                             <option></option>
@@ -134,16 +131,11 @@
                         </div>
                     </div>
 
-                    {{ for aoi in areas_of_interest: }}
-                    <select title="Sub area of interest" class="aoiIdToSubAoi" data-aoi-id="{{= aoi.id }}" style="display: none" aria-hidden="true">
-                        {{ sub_aois = area_of_interest_id_to_sub_areas_of_interest.get(aoi.id) }}
-                        {{ if sub_aois: }}
-                        {{ for sub_aoi in sub_aois: }}
-                        <option label="{{= sub_aoi.description }}" value="{{= sub_aoi.id }}">{{= sub_aoi.description }}</option>
-                        {{ pass }}
-                        {{ pass }}
+{#                    {{ for aoi in areas_of_interest: }}#}
+                    <select title="Sub area of interest" class="aoiIdToSubAoi" data-aoi-id="" style="display: none" aria-hidden="true">
+{#                        TODO needs dynamic sub AOIs#}
+{#                        <option label="{{= sub_aoi.description }}" value="{{= sub_aoi.id }}">{{= sub_aoi.description }}</option>#}
                     </select>
-                    {{ pass }}
                 </div>
 
 
@@ -156,8 +148,6 @@
                 </div>
                 <div class="control-group" style="margin-bottom:5px">
                     <div class="controls controls-row">
-                        <!--<label id="stateLabel" class="hide">State</label>-->
-                        <!--<label id="cityLabel" class="hide">City</label>-->
                         <select aria-labelledby="stateLabel" required class="span3" id="locationSelect">
                             <option value="" title="State">State</option>
                             <option value="California" title="Northern CA">Northern CA</option>
@@ -167,7 +157,6 @@
                             <option value="Georgia" title="Georgia">Georgia</option>
                             <option value="Hawaii" title="Hawaii">Hawaii</option>
                             <option value="Maryland" title="Maryland">Maryland</option>
-                            <!-- <option value="Ohio">Ohio</option> -->
                             <option value="Oregon" title="Oregon">Oregon</option>
                             <option value="Virginia" title="Virginia">Virginia</option>
                             <option value="Washington" title="Washington">Washington</option>
@@ -194,10 +183,9 @@
                         <label id="militaryGradeLabel" class="hide">Military rank</label>
                         <select aria-labelledby="militaryBranchLabel" title="Military branch" class="span6" name="militaryBranch" id="militaryBranch">
                             <option label="Branch of Service" value="">Branch of Service</option>
-                            {{ branches = ['Army', 'Navy', 'Air Force', 'Marine Corps', 'Coast Guard'] }}
-                            {{ for branch in branches: }}
-                            <option label="{{= branch }}">{{= branch }}</option>
-                            {{ pass }}
+                            {% for branch in ['Army', 'Navy', 'Air Force', 'Marine Corps', 'Coast Guard']: %}
+                            <option label="{{ branch }}">{{ branch }}</option>
+                            {% endfor %}
                         </select>
                     </div>
                 </div>
@@ -300,14 +288,12 @@
             </form>
         </div>
     </div>
-    {{ elif mode == 'success': }}
     <div class="row">
         <div class="span6" style="margin-left:30px;margin-top:200px;">
             <p id="submit_result" class="alert alert-success" >Your information has successfully been submitted.</p>
             <p>Thank you for joining the Kaiser Permanente talent community.</p>
         </div>
     </div>
-    {{ elif mode == 'error': }}
     <div class="row">
         <div class="span6" style="margin-left:30px;margin-top:30px">
             <div class="alert alert-error">
@@ -315,18 +301,15 @@
             </div>
         </div>
     </div>
-    {{ pass }}
 </div> <!-- /container -->
 
-{{
-response.files = []
-response.files.append(URL('static', 'js/jquery-1.7.2.min.js'))
-response.files.append(URL('static', 'bootstrap_2_2_2/js/bootstrap.min.js'))
-response.files.append(URL('static', 'js/jquery.simpleplaceholder.js'))
-response.files.append(URL('static', 'bootstrap-tagmanager/tagmanager.js'))
-response.files.append(URL('static', 'js/talent-widget.js'))
-response.include_files()
-}}
+{#TODO add these files#}
+{#response.files.append(URL('static', 'js/jquery-1.7.2.min.js'))#}
+{#response.files.append(URL('static', 'bootstrap_2_2_2/js/bootstrap.min.js'))#}
+{#response.files.append(URL('static', 'js/jquery.simpleplaceholder.js'))#}
+{#response.files.append(URL('static', 'bootstrap-tagmanager/tagmanager.js'))#}
+{#response.files.append(URL('static', 'js/talent-widget.js'))#}
+
 <!--[if lt IE 9]>
     <script type="text/javascript">
         $(function(){
@@ -338,6 +321,7 @@ response.include_files()
         });
     </script>
 <![endif]-->
+{#TODO put these in their own JS file#}
 <script type="text/javascript">
     var stateToCities = {
         'Northern CA': ['Alameda', 'Antioch', 'Berkeley', 'Bolinas', 'Campbell', 'Clovis', 'Concord', 'Cupertino', 'Daly City', 'Davis', 'Elk Grove', 'Emeryville', 'Fairfield', 'Folsom', 'Fremont', 'Fresno', 'Gilroy', 'Greenbrae', 'Hayward', 'Lafayette', 'Lincoln', 'Livermore', 'Lodi', 'Manteca', 'Martinez', 'Mill Valley', 'Milpitas', 'Modesto', 'Moraga', 'Mountain View', 'Napa', 'Novato', 'Oakhurst', 'Oakland', 'Petaluma', 'Pinole', 'Pittsburg', 'Pleasant Hill', 'Pleasanton', 'Point Reyes Station', 'Rancho Cordova', 'Redwood City', 'Richmond', 'Rohnert Park', 'Roseville', 'Sacramento', 'San Bruno', 'San Francisco', 'San Jose', 'San Leandro', 'San Mateo', 'San Rafael', 'San Ramon', 'Santa Clara', 'Santa Rosa', 'Sebastolpol', 'Selma', 'South San Francisco', 'Stinson Beach', 'Stockton', 'Sunnyvale', 'Tracy', 'Turlock', 'Union City', 'Vacaville', 'Vallejo', 'Walnut Creek'],
@@ -572,7 +556,6 @@ response.include_files()
     function checkRequired(input) {
         var $input = $(input);
         var isValid;
-//        console.log("checkRequired: " + $(input).attr("id"));
         // Validate email
         if ($input.data("widget-optional") && !$input.val()) {  // optional widget field
             markInputValid($input);
@@ -588,7 +571,6 @@ response.include_files()
         }
         else if ($input.data('widget-must-be-future')) {
             var monthYearRegexp = /\d?\d\/\d\d\d\d/;
-//            console.log("in widget-must-be-future");
             isValid = monthYearRegexp.test($input.val());
             if (isValid) {
                 var split = $input.val().split("/");
@@ -605,7 +587,6 @@ response.include_files()
             } else {
                 markInputInvalid($input);
             }
-//            console.log("isValid: ", isValid);
         }
         else if ($input.data('widget-minimum-value')) {
             isValid = parseInt($input.val()) >= $input.data('widget-minimum-value');

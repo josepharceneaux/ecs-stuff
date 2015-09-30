@@ -1,0 +1,71 @@
+
+body{width:405px;height:439px}#gettalent_resume{text-align:center;padding:10px 0;margin-left:0}#file_upload{margin-left:70px}.container{width:inherit;background-repeat:no-repeat;height:auto}.scrollable-tab-container{float:left;max-height:100px;padding:3px;overflow:auto}select.span3{width:190px}#subInterestSelect{margin-left:14px}input.span3,textarea.span3,.uneditable-input.span3{width:173px}select,textarea,input[type="text"],input[type="email"]{font-size:12px;margin-bottom:6px}input.span6,textarea.span6,.uneditable-input.span6{width:405px}input.span4,textarea.span4,.uneditable-input.span4{width:286px}.span7{width:420px}.span6{width:420px}input.span2,textarea.span2,.uneditable-input.span2{width:84px}.span4{width:300px}#state{margin-left:14px}.control-group{margin-bottom:2px;width: 100%;}.tm-tag{font-size:11px}
+
+/* Smartphones (portrait and landscape) ----------- */
+@media only screen
+and (min-device-width : 320px)
+and (max-device-width : 480px) {
+/* Styles */
+body {  width: auto;}
+input.span3, textarea.span3, .uneditable-input.span3 {  width: 123px;}
+input.span6, textarea.span6, .uneditable-input.span6 {  width: 280px;}
+.span6 { width: 300px;}
+}
+
+/* Smartphones (landscape) ----------- */
+@media only screen
+and (min-width : 321px) {
+/* Styles */
+}
+
+/* Smartphones (portrait) ----------- */
+@media only screen
+and (max-width : 320px) {
+/* Styles */
+}
+
+/* iPads (portrait and landscape) ----------- */
+@media only screen
+and (min-device-width : 768px)
+and (max-device-width : 1024px) {
+/* Styles */
+}
+
+/* iPads (landscape) ----------- */
+@media only screen
+and (min-device-width : 768px)
+and (max-device-width : 1024px)
+and (orientation : landscape) {
+/* Styles */
+}
+
+/* iPads (portrait) ----------- */
+@media only screen
+and (min-device-width : 768px)
+and (max-device-width : 1024px)
+and (orientation : portrait) {
+/* Styles */
+}
+
+/* Desktops and laptops ----------- */
+@media only screen
+and (min-width : 1224px) {
+/* Styles */
+}
+
+/* Large screens ----------- */
+@media only screen
+and (min-width : 1824px) {
+/* Styles */
+}
+
+/* iPhone 4 ----------- */
+@media
+only screen and (-webkit-min-device-pixel-ratio : 1.5),
+only screen and (min-device-pixel-ratio : 1.5) {
+/* Styles */
+body {  width: auto;}
+input.span3, textarea.span3, .uneditable-input.span3 {  width: 123px;}
+input.span6, textarea.span6, .uneditable-input.span6 {  width: 280px;}
+.span6 { width: 300px;}
+}
