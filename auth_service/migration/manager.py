@@ -1,7 +1,7 @@
 __author__ = 'ufarooqi'
 
 from flask import Flask
-from oauth.models import *
+from models.user import *
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.script import Manager
 from flask.ext.migrate import Migrate

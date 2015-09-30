@@ -26,6 +26,14 @@ class Facebook(Base):
         self.graph = None
         self.vendor = 'Facebook'
 
+    def validate_token(self):
+        url = self.api_url + '/me'
+        headers = {'Authorization': 'Bearer %s' % self.user_credential.access_token}
+        response = self.http_get(url, headers=headers)
+        if response.ok:
+            return True
+        return False
+
     def get_events(self):
         """
         We send GET requests to API URL and get data. We also
@@ -33,7 +41,7 @@ class Facebook(Base):
         does that too.
         """
         self.traceback_info.update({"functionName": "get_events()"})
-        self.graph = facebook.GraphAPI(access_token=self.auth_token)
+        self.graph = facebook.GraphAPI(access_token=self.access_token)
         all_events = []
         user_events = []
         # https://developer.facebook.com to see detail on params
@@ -46,6 +54,14 @@ class Facebook(Base):
                 since=self.start_date,
                 until=self.end_date
             )
+            # response = self.graph.get_object(
+            #     'v2.4/1709562552598022/subscriptions',
+            #     object='page',
+            #     fields='conversations', verify_token='token',
+            #     callback_url="http://localhost:8000/web/user/profile",
+            #     access_token='1709562552598022|R1S2eC2Btr9f06yiv3uOk4V2gx',
+            #
+            # )
         except facebook.GraphAPIError as error:
             info_to_log = dict(error_message=error.message)
             log_exception(self.traceback_info,
@@ -105,29 +121,15 @@ class Facebook(Base):
             location = venue['location']
             try:
                 event_db = Event(
-                    vendorEventId=event['id'],
-                    eventTitle=event['name'],
-                    eventDescription=event.get('description', ''),
-                    socialNetworkId=self.social_network_id,
-                    userId=self.gt_user_id,
-                    groupId=0,
-                    eventAddressLine1=location['street'],
-                    eventAddressLine2='',
-                    eventCity=location['city'].title(),
-                    eventState='',
-                    eventZipCode=location['zip'],
-                    eventCountry=location['country'].title(),
-                    eventLongitude=float(location['longitude']),
-                    eventLatitude=float(location['latitude']),
-                    eventStartDateTime=event['start_time'] if 'start_time' in event else None,
-                    eventEndDateTime=event['end_time'] if event.has_key('end_time') else None,
-                    organizerName=owner['name'] if owner and 'name' in owner else '',
-                    organizerEmail=organizer['email'] if organizer else '',
-                    aboutEventOrganizer='',
-                    registrationInstruction='',
-                    eventCost='',
-                    eventCurrency='',
-                    maxAttendees=event['attending_count'] + event['maybe_count'] + event['noreply_count']
+                    social_network_event_id=event['id'],
+                    title=event['name'],
+                    description=event.get('description', ''),
+                    social_network_id=self.social_network_id,
+                    user_id=self.gt_user_id,
+                    group_id=0,
+                    start_datetime=event['start_time'] if 'start_time' in event else None,
+                    end_datetime=event['end_time'] if event.has_key('end_time') else None,
+                    max_attendees=event['attending_count'] + event['maybe_count'] + event['noreply_count']
                 )
             except Exception as e:
                 event['error_message'] = e.message
@@ -152,7 +154,7 @@ class Facebook(Base):
         self.traceback_info.update({"functionName": "get_rsvps()"})
         rsvps = []
         try:
-            self.graph = facebook.GraphAPI(access_token=self.auth_token)
+            self.graph = facebook.GraphAPI(access_token=self.access_token)
             url = 'v2.4/%s' % str(event.vendorEventId) + '/'
             # Get list of people surely attending
             confirm_attendees = self.graph.get_object(url + 'attending')

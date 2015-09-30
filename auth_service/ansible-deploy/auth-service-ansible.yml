@@ -14,6 +14,11 @@
         dest: /home/ubuntu/talent-flask-services/
         version: "{{branch}}"
         accept_hostkey: yes
+        force: yes
+
+    # Move requirement.txt file in service folder
+    - name: Move requirement.txt file to auth_service folder
+      command: mv /home/ubuntu/talent-flask-services/requirements.txt /home/ubuntu/talent-flask-services/auth_service
 
     # Stop and remove a oauth2.0 flask microservice docker container
     - name: Oauth2.0 flask service stop and remove docker container
@@ -30,7 +35,7 @@
     # Build a new version of docker image
     - name: check or build image
       docker_image:
-        path: "/home/ubuntu/talent-flask-services/AuthService/"
+        path: "/home/ubuntu/talent-flask-services/auth_service/"
         name: "{{image}}"
         state: build
 
@@ -46,3 +51,4 @@
             GT_ENVIRONMENT: "{{GT_ENVIRONMENT}}"
         volumes:
           - "/usr/local/etc/ssl:/etc/nginx/ssl"
+          - "/home/ubuntu/talent-flask-services:/root/talent-flask-services"
