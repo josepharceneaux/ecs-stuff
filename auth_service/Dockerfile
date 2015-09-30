@@ -2,12 +2,12 @@
 # Dockerfile to build GetTalent Oauth2.0 Flask Service
 ############################################################
 
+# File Author / Maintainer
+MAINTAINER Maintaner ufarooqi
+
 # Set the base image to Ubuntu
 from ubuntu:14.04
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
-
-# File Author / Maintainer
-MAINTAINER Maintaner ufarooqi
 
 # Update software resources repository
 RUN apt-get update
@@ -50,6 +50,10 @@ ENV DB_STRING mysql://talent_web:s!web976892@livedb.gettalent.com/talent_core
 RUN rm /etc/nginx/sites-enabled/default
 RUN mkdir /etc/nginx/ssl
 
+# Install project requirements
+ADD requirements.txt /root/talent-flask-services
+RUN pip install -r /root/talent-flask-services/requirements.txt
+
 # Expose ports
 EXPOSE 80
 EXPOSE 443
@@ -61,6 +65,5 @@ WORKDIR /root/talent-flask-services
 CMD\
     eval "$(pyenv init -)" && \
     ln -s /root/talent-flask-services/auth_service/talent-nginx.conf /etc/nginx/conf.d/ && \
-    pip install -r /root/talent-flask-services/requirements.txt && \
     /etc/init.d/nginx restart && \
     uwsgi --env GT_ENVIRONMENT=$GT_ENVIRONMENT --env DB_STRING=$DB_STRING --ini auth_service/talent-uwsgi.ini

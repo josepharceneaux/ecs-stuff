@@ -15,6 +15,10 @@
         version: "{{branch}}"
         accept_hostkey: yes
 
+    # Move requirement.txt file in service folder
+    - name: Move requirement.txt file in service folder
+      command: mv /home/ubuntu/talent-flask-services/ /home/ubuntu/talent-flask-services/auth_service
+
     # Stop and remove a oauth2.0 flask microservice docker container
     - name: Oauth2.0 flask service stop and remove docker container
       docker:
