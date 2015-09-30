@@ -12,7 +12,7 @@ class Candidate(db.Model):
     last_name = db.Column('LastName', db.String(50))
     formatted_name = db.Column('FormattedName', db.String(150))
     candidate_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('candidate_status.id'))
-    # is_dirty = db.Column('IsDirty', db.Boolean)
+    is_dirty = db.Column('IsDirty', db.Boolean)
     is_web_hidden = db.Column('IsWebHidden', db.Boolean, default=False)
     is_mobile_hidden = db.Column('IsMobileHidden', db.Boolean, default=False)
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
@@ -40,7 +40,6 @@ class Candidate(db.Model):
     candidate_work_preferences = relationship('CandidateWorkPreference', backref='candidate')
     candidate_preferred_locations = relationship('CandidatePreferredLocation', backref='candidate')
     candidate_social_network = relationship('CandidateSocialNetwork', backref='candidate')
-    resumes = relationship('Resume', backref='candidate')
     candidate_languages = relationship('CandidateLanguage', backref='candidate')
     candidate_license_certifications = relationship('CandidateLicenseCertification', backref='candidate')
     candidate_references = relationship('CandidateReference', backref='candidate')
@@ -71,7 +70,7 @@ class CandidateStatus(db.Model):
     notes = db.Column('Notes', db.String(500))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
-    # One-to-many Relationships
+    # Relationships
     candidates = relationship('Candidate', backref='candidate_status')
 
     def __repr__(self):
@@ -84,7 +83,7 @@ class PhoneLabel(db.Model):
     description = db.Column('Description', db.String(20))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
-    # One-to-many Relationships
+    # Relationships
     candidate_phones = relationship('CandidatePhone', backref='phone_label')
     reference_phones = relationship('ReferencePhone', backref='phone_label')
 
@@ -141,7 +140,7 @@ class EmailLabel(db.Model):
     description = db.Column('Description', db.String(50))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
-    # One-to-many Relationships
+    # Relationships
     candidate_emails = relationship('CandidateEmail', backref='email_label')
     reference_emails = relationship('ReferenceEmail', backref='email_label')
 
@@ -186,7 +185,7 @@ class RatingTag(db.Model):
     description = db.Column('Description', db.String(100))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
-    # Many-to-many Relationship
+    # Relationships
     candidates = relationship('Candidate', secondary="candidate_rating")
 
     def __repr__(self):
@@ -286,6 +285,9 @@ class CandidatePreferredLocation(db.Model):
     city = db.Column(db.String(255))
     region = db.Column(db.String(255))
     zipcode = db.Column(db.String(10))
+
+    def __repr__(self):
+        return "<CandidatePreferredLocation (candidate_id=' %r')>" % self.candidate_id
 
 
 

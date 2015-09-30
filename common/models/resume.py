@@ -1,55 +1,51 @@
-from models import db
-from user import Culture
-from candidate import *
-from product import Product
-from job import JobOpening
-from sqlalchemy.orm import relationship, backref
-from auth_service.oauth import logger
 import time
+
+from sqlalchemy.orm import relationship
+
 
 # TODO: Update joint tables for many-to-many relationships
 
-class Resume(db.Model):
-    __tablename__ = 'resume'
-    id = db.Column(db.BigInteger, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
-    job_opening_id = db.Column('JobOpeningId', db.BigInteger, db.ForeignKey('job_opening.id'))
-    candidate_source_id = db.Column('SourceId', db.Integer, db.ForeignKey('source.id'))
-    source_product_id = db.Column('SourceProductId', db.Integer, db.ForeignKey('source_product.id'))
-    culture_id = db.Column('CultureId', db.Integer, db.ForeignKey('culture.id'))
-    resume_xml_directory_tag_id = db.Column('ResumeXmlDirectoryTagId', db.Integer)
-    filename = db.Column('Filename', db.String(260))
-    filename_directory_tag_id = db.Column('FilenameDirectoryTagId', db.Integer)
-    search_flag = db.Column('SearchFlag', db.SmallInteger)
-    objective = db.Column('Objective', db.Text)
-    current_job_title = db.Column('CurrentJobTitle', db.String(200))
-    summary = db.Column('Summary', db.Text)
-    total_months_experience = db.Column('TotalMonthsExperience', db.SmallInteger)
-    current_employer = db.Column('CurrentEmployer', db.String(100))
-    highest_education = db.Column('HighestEducation', db.String(200))
-    current_salary = db.Column('CurrentSalary', db.String(100))
-    expected_salary = db.Column('ExpectedSalary', db.String(100))
-    resume_text = db.Column('ResumeText', db.Text)
-    availability = db.Column('Availability', db.DateTime)
-    added_time = db.Column('AddedTime', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-
-    # Relationships
-    candidate_languages = relationship('CandidateLanguage', backref='resume')
-    candidate_license_certifications = relationship('CandidateLicenseCertification', backref='resume')
-    candidate_references = relationship('CandidateReference', backref='resume')
-    candidate_associations = relationship('CandidateAssociation', backref='resume')
-    candidate_achievements = relationship('CandidateAchievement', backref='resume')
-    candidate_military_services = relationship('CandidateMilitaryService', backref='resume')
-    candidate_patent_histories = relationship('CandidatePatentHistory', backref='resume')
-    candidate_publications = relationship('CandidatePublicationsd', backref='resume')
-    candidate_addresses = relationship('CandidateAddress', backref='resume')
-    candidate_educations = relationship('CandidateEducation', backref='resume')
-    candidate_skills = relationship('CandidateSkill', backref='resume')
-    candidate_unidentifieds = relationship('CandidateUnidentified', backref='resume')
-
-    def __repr__(self):
-        return "<Resume (CandidateId=' %r')>" % self.candidate_id
+# class Resume(db.Model):
+#     __tablename__ = 'resume'
+#     id = db.Column(db.BigInteger, primary_key=True)
+#     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
+#     job_opening_id = db.Column('JobOpeningId', db.BigInteger, db.ForeignKey('job_opening.id'))
+#     candidate_source_id = db.Column('SourceId', db.Integer, db.ForeignKey('source.id'))
+#     source_product_id = db.Column('SourceProductId', db.Integer, db.ForeignKey('source_product.id'))
+#     culture_id = db.Column('CultureId', db.Integer, db.ForeignKey('culture.id'))
+#     resume_xml_directory_tag_id = db.Column('ResumeXmlDirectoryTagId', db.Integer)
+#     filename = db.Column('Filename', db.String(260))
+#     filename_directory_tag_id = db.Column('FilenameDirectoryTagId', db.Integer)
+#     search_flag = db.Column('SearchFlag', db.SmallInteger)
+#     objective = db.Column('Objective', db.Text)
+#     current_job_title = db.Column('CurrentJobTitle', db.String(200))
+#     summary = db.Column('Summary', db.Text)
+#     total_months_experience = db.Column('TotalMonthsExperience', db.SmallInteger)
+#     current_employer = db.Column('CurrentEmployer', db.String(100))
+#     highest_education = db.Column('HighestEducation', db.String(200))
+#     current_salary = db.Column('CurrentSalary', db.String(100))
+#     expected_salary = db.Column('ExpectedSalary', db.String(100))
+#     resume_text = db.Column('ResumeText', db.Text)
+#     availability = db.Column('Availability', db.DateTime)
+#     added_time = db.Column('AddedTime', db.DateTime)
+#     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+#
+#     # Relationships
+#     candidate_languages = relationship('CandidateLanguage', backref='resume')
+#     candidate_license_certifications = relationship('CandidateLicenseCertification', backref='resume')
+#     candidate_references = relationship('CandidateReference', backref='resume')
+#     candidate_associations = relationship('CandidateAssociation', backref='resume')
+#     candidate_achievements = relationship('CandidateAchievement', backref='resume')
+#     candidate_military_services = relationship('CandidateMilitaryService', backref='resume')
+#     candidate_patent_histories = relationship('CandidatePatentHistory', backref='resume')
+#     candidate_publications = relationship('CandidatePublicationsd', backref='resume')
+#     candidate_addresses = relationship('CandidateAddress', backref='resume')
+#     candidate_educations = relationship('CandidateEducation', backref='resume')
+#     candidate_skills = relationship('CandidateSkill', backref='resume')
+#     candidate_unidentifieds = relationship('CandidateUnidentified', backref='resume')
+#
+#     def __repr__(self):
+#         return "<Resume (CandidateId=' %r')>" % self.candidate_id
 
 
 class Language(db.Model):
