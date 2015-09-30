@@ -5,7 +5,7 @@ import requests
 
 from flask import current_app
 
-from resume_parsing_app.views.app_constants import Constants as current
+from app_constants import Constants as current
 
 
 def parse_resume_with_bg(file_name, file_data):

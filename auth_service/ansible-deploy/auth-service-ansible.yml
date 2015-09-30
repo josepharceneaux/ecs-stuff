@@ -14,6 +14,7 @@
         dest: /home/ubuntu/talent-flask-services/
         version: "{{branch}}"
         accept_hostkey: yes
+        force: yes
 
     # Move requirement.txt file in service folder
     - name: Move requirement.txt file to auth_service folder

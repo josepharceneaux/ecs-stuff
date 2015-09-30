@@ -1,5 +1,5 @@
-from models import db
 from sqlalchemy.orm import relationship
+from db import db
 import datetime
 import time
 
@@ -12,7 +12,7 @@ class Candidate(db.Model):
     last_name = db.Column('LastName', db.String(50))
     formatted_name = db.Column('FormattedName', db.String(150))
     candidate_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('candidate_status.id'))
-    is_dirty = db.Column('IsDirty', db.Boolean)
+    # is_dirty = db.Column('IsDirty', db.Boolean)
     is_web_hidden = db.Column('IsWebHidden', db.Boolean, default=False)
     is_mobile_hidden = db.Column('IsMobileHidden', db.Boolean, default=False)
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
@@ -49,7 +49,7 @@ class Candidate(db.Model):
         return unicode(self.id)
 
     def __repr__(self):
-        return "<Candidate(formatted_name=' %r')>" % (self.formatted_name)
+        return "<Candidate(formatted_name=' %r')>" % self.formatted_name
 
 
 class CandidateAchievement(db.Model):
@@ -76,7 +76,7 @@ class CandidateStatus(db.Model):
     candidates = relationship('Candidate', backref='candidate_status')
 
     def __repr__(self):
-        return "<CandidateStatus(description=' %r')>" % (self.description)
+        return "<CandidateStatus(description=' %r')>" % self.description
 
 
 class PhoneLabel(db.Model):
@@ -89,7 +89,7 @@ class PhoneLabel(db.Model):
     candidate_phones = relationship('CandidatePhone', backref='phone_label')
 
     def __repr__(self):
-        return "<PhoneLabel (description=' %r')>" % (self.description)
+        return "<PhoneLabel (description=' %r')>" % self.description
 
 
 class CandidateSource(db.Model):
@@ -104,7 +104,7 @@ class CandidateSource(db.Model):
     candidates = relationship('Candidate', backref='candidate_source')
 
     def __repr__(self):
-        return "<CandidateSource (description= '%r')>" % (self.description)
+        return "<CandidateSource (description= '%r')>" % self.description
 
 
 class PublicCandidateSharing(db.Model):
@@ -144,7 +144,7 @@ class EmailLabel(db.Model):
     candidate_emails = relationship('CandidateEmail', backref='email_label')
 
     def __repr__(self):
-        return "<EmailLabel (description=' %r')>" % (self.description)
+        return "<EmailLabel (description=' %r')>" % self.description
 
 
 class CandidateEmail(db.Model):
