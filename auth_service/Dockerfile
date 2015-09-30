@@ -63,6 +63,6 @@ WORKDIR /root/talent-flask-services
 CMD\
     eval "$(pyenv init -)" && \
     ln -s /root/talent-flask-services/auth_service/talent-nginx.conf /etc/nginx/conf.d/ && \
-    pip install -r /root/talent-flask-services/requirements.txt
+    pip install -r /root/talent-flask-services/requirements.txt && \
     /etc/init.d/nginx restart && \
     uwsgi --env GT_ENVIRONMENT=$GT_ENVIRONMENT --env DB_STRING=$DB_STRING --ini auth_service/talent-uwsgi.ini
