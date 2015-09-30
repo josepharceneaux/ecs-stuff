@@ -10,7 +10,6 @@ RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 MAINTAINER Maintaner ufarooqi
 
 # Update software resources repository
-RUN add-apt-repository -y ppa:nginx/stable
 RUN apt-get update
 
 # Install basic applications
@@ -21,6 +20,8 @@ RUN apt-get install -y python python-dev python-distribute python-pip python-set
 
 # Install Nginx
 RUN apt-get install -y software-properties-common python-software-properties
+RUN add-apt-repository -y ppa:nginx/stable
+RUN apt-get update
 RUN apt-get install -y nginx
 
 # Install python pyenv
