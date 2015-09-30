@@ -3,7 +3,7 @@
 ############################################################
 
 # Set the base image to Ubuntu
-from ubuntu:14.04
+from ubuntu
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
 # File Author / Maintainer
