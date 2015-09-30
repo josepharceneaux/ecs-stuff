@@ -60,11 +60,10 @@ class EventBase(object):
                                                               event.social_network_event_id)
                 try:
                     if event_in_db:
-                        data = dict(event_title=event.event_title,
-                                    event_description=event.event_description,
-                                    event_address_line_1=event.event_address_line_1,
-                                    event_start_datetime=event.event_start_datetime,
-                                    event_end_datetime=event.event_end_datetime)
+                        data = dict(title=event.title,
+                                    description=event.description,
+                                    start_datetime=event.start_datetime,
+                                    end_datetime=event.end_datetime)
                         event_in_db.update(**data)
                     else:
                         Event.save(event)
@@ -73,10 +72,10 @@ class EventBase(object):
                                     self.social_network.id, error.message
                     )
                     log_error({
-                            'Reason' : error_message,
+                            'error' : error_message,
                             'functionName': 'process_events',
                             'fileName': __file__,
-                            'User': self.user.id
+                            'user': self.user.id,
                     })
                     # Now let's try to process the next event
         if events:

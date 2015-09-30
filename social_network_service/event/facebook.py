@@ -7,6 +7,9 @@ from gt_common.models.organizer import Organizer
 from gt_common.models.venue import Venue
 from social_network_service.event.base import EventBase
 
+# We have to import the Facebook page in the following way because we
+# want to avoid name conflicts that arise due to name of the package and
+# name of the files in which package is being used.
 facebook = import_from_dist_packages('facebook')
 
 
@@ -41,11 +44,10 @@ class Facebook(EventBase):
         except facebook.GraphAPIError as error:
             log_exception(
                 dict(
-                    function_name='get_events',
-                    class_name=self.__class__.__name__,
-                    gt_user=self.user.name,
+                    functionName='get_events',
+                    user=self.user.name,
                     error=error.message,
-                    file_name=__file__
+                    fileName=__file__
                 )
             )
             raise
@@ -134,7 +136,7 @@ class Facebook(EventBase):
                 address_line2='',
                 city=location['city'].title() if location.has_key('city') else '',
                 state='',
-                zipcode=location['zip'] if location.has_key('zip') else '',
+                zipcode=location['zip'] if location.has_key('zip') else None,
                 country=location['country'].title() if location.has_key('country') else '',
                 longitude=float(location['longitude']) if location.has_key('longitude') else 0,
                 latitude=float(location['latitude']) if location.has_key('latitude') else 0,
@@ -152,10 +154,9 @@ class Facebook(EventBase):
                 group_id=0,
                 start_datetime=event['start_time'] if event and event.has_key('start_time') else None,
                 end_datetime=event['end_time'] if event and event.has_key('end_time') else None,
-                about_event_organizer='',
                 registration_instruction='',
-                cost='',
-                event_currency='',
+                cost=0,
+                currency='',
                 max_attendees=event['attending_count'] + event['maybe_count'] + event['noreply_count'] if (event and \
                     event.has_key('attending_count') and event.has_key('maybe_count') and event.has_key('noreply_count'))\
                 else ''
@@ -163,11 +164,10 @@ class Facebook(EventBase):
         except Exception as error:
             log_exception(
                 dict(
-                    function_name='normalize_event',
-                    class_name=self.__class__.__name__,
-                    gt_user=self.user.name,
+                    functionName='normalize_event',
+                    user=self.user.name,
                     error=error.message,
-                    file_name=__file__
+                    fileName=__file__
                 )
             )
         else:

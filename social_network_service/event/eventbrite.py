@@ -174,7 +174,7 @@ class Eventbrite(EventBase):
                 address_line2=venue['address']['address_2'] if venue else '',
                 city=venue['address']['city'] if venue else '',
                 state=venue['address']['region'] if venue else '',
-                zipcode='',
+                zipcode=None,
                 country=venue['address']['country'] if venue else '',
                 longitude=float(venue['address']['longitude']) if venue else 0,
                 latitude=float(venue['address']['latitude']) if venue else 0,
