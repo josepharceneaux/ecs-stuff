@@ -1,5 +1,5 @@
 from db import db
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship
 import datetime
 import time
 
@@ -101,7 +101,6 @@ class CandidateSource(db.Model):
 
     # Relationships
     candidates = relationship('Candidate', backref='candidate_source')
-    resumes = relationship('Resume', backref='candidate_source')
 
     def __repr__(self):
         return "<CandidateSource (description= '%r')>" % self.description

@@ -1,7 +1,6 @@
 from db import db
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship
 from auth_service.oauth import logger
-from candidate import Candidate
 from auth_service.oauth.modules.handy_functions import is_number
 import time
 import datetime
@@ -57,7 +56,6 @@ class Culture(db.Model):
 
     # Relationships
     candidates = relationship('Candidate', backref='culture')
-    resumes = relationship('Resume', backref='culture')
 
     def __repr__(self):
         return "<Culture (description=' %r')>" % self.description
@@ -121,6 +119,20 @@ class Domain(db.Model):
 
     def get_id(self):
         return unicode(self.id)
+
+
+class JobOpening(db.Model):
+    __tablename__ = 'job_opening'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column('UserId', db.Integer, db.ForeignKey('user.id'))
+    job_code = db.Column('JobCode', db.String(100))
+    description = db.Column('Description', db.String(500))
+    title = db.Column('Title', db.String(150))
+    added_time = db.Column('AddedTime', db.TIMESTAMP, default=time.time())
+
+
+    def __repr__(self):
+        return "<JobOpening (title=' %r')>" % self.title
 
 
 class Client(db.Model):

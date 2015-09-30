@@ -1,6 +1,6 @@
-import time
-
+from db import db
 from sqlalchemy.orm import relationship
+import time
 
 
 # TODO: Update joint tables for many-to-many relationships
@@ -65,7 +65,7 @@ class CandidateLanguage(db.Model):
     __tablename__ = 'candidate_language'
     id = db.Column(db.BigInteger, primary_key=True)
     language_id = db.Column('LanguageId', db.Integer, db.ForeignKey('language.id'))
-    resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
+    # resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     can_read = db.Column('CanRead', db.Boolean)
     can_write = db.Column('CanWrite', db.Boolean)
@@ -76,13 +76,13 @@ class CandidateLanguage(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
     def __repr__(self):
-        return "<CandidateLanguage (resume_id=' %r')>" % self.resume_id
+        return "<CandidateLanguage (candidate_id=' %r')>" % self.candidate_id
 
 
 class CandidateLicenseCertification(db.Model):
     __tablename__ = 'candidate_license_certification'
     id = db.Column(db.Integer, primary_key=True)
-    resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
+    # resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     name = db.Column('Name', db.String(500))
     description = db.Column('Description', db.String(10000))
@@ -99,7 +99,7 @@ class CandidateLicenseCertification(db.Model):
 class CandidateReference(db.Model):
     __tablename__ = 'candidate_reference'
     id = db.Column(db.BigInteger, primary_key=True)
-    resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
+    # resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     person_name = db.Column('PersonName', db.String(150))
     position_title = db.Column('PositionTitle', db.String(150))
@@ -112,7 +112,7 @@ class CandidateReference(db.Model):
     reference_web_addresses = relationship('ReferenceWebAddress', backref='candidate_reference')
 
     def __repr__(self):
-        return "<CandidateReference (resume_id=' %r')>" % self.resume_id
+        return "<CandidateReference (candidate_id=' %r')>" % self.candidate_id
 
 
 class ReferenceEmail(db.Model):
@@ -157,7 +157,7 @@ class ReferenceWebAddress(db.Model):
 class CandidateAssociation(db.Model):
     __tablename__ = 'candidate_association'
     id = db.Column(db.Integer, primary_key=True)
-    resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
+    # resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     title = db.Column('Title', db.String(255))
     description = db.Column('Description', db.String(5000))
@@ -168,7 +168,7 @@ class CandidateAssociation(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
     def __repr__(self):
-        return "<CandidateAssociation (resume_id=' %r')>" % self.resume_id
+        return "<CandidateAssociation (candidate_id=' %r')>" % self.candidate_id
 
 
 class CandidateAchievement(db.Model):
@@ -179,16 +179,16 @@ class CandidateAchievement(db.Model):
     description = db.Column('Description', db.String(10000))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
-    resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
+    # resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
 
     def __repr__(self):
-        return "<CandidateAchievement (resume_id=' %r')>" % self.resume_id
+        return "<CandidateAchievement (candidate_id=' %r')>" % self.candidate_id
 
 
 class CandidateMilitaryService(db.Model):
     __tablename__ = 'candidate_military_service'
     id = db.Column(db.BigInteger, primary_key=True)
-    resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
+    # resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
     service_status = db.Column('ServiceStatus', db.String(200))
@@ -201,13 +201,13 @@ class CandidateMilitaryService(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
     def __repr__(self):
-        return "<CandidateMilitaryService (resume_id=' %r')>" % self.resume_id
+        return "<CandidateMilitaryService (candidate_id=' %r')>" % self.candidate_id
 
 
 class CandidatePatentHistory(db.Model):
     __tablename__ = 'candidate_patent_history'
     id = db.Column(db.BigInteger, primary_key=True)
-    resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
+    # resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     title = db.Column('Title', db.String(255))
     description = db.Column('Description', db.String(10000))
@@ -269,7 +269,7 @@ class PatentMilestone(db.Model):
 class CandidatePublication(db.Model):
     __tablename__ = 'candidate_publication'
     id = db.Column(db.BigInteger, primary_key=True)
-    resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
+    # resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     title = db.Column('Title', db.String(200))
     start_year = db.Column('StartYear', db.Year)    # todo: accpet Year format only or create a function to validate
@@ -288,7 +288,7 @@ class CandidatePublication(db.Model):
 class CandidateAddress(db.Model):
     __tablename__ = 'candidate_address'
     id = db.Column(db.Integer, primary_key=True)
-    resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
+    # resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     address_line_1 = db.Column('AddressLine1', db.String(255))
     address_line_2 = db.Column('AddressLine2', db.String(255))
@@ -302,13 +302,13 @@ class CandidateAddress(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
     def __repr__(self):
-        return "<CandidateAddress (resume_id=' %r')>" % self.resume_id
+        return "<CandidateAddress (candidate_id=' %r')>" % self.candidate_id
 
 
 class CandidateEducation(db.Model):
     __tablename__ = 'candidate_education'
     id = db.Column(db.Integer, primary_key=True)
-    resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
+    # resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     list_order = db.Column('ListOrder', db.SmallInteger)    # todo: ascertain smallinteger == tinyint; also check all list_order columns in db
     school_name = db.Column('SchoolName', db.String(200))
@@ -324,7 +324,7 @@ class CandidateEducation(db.Model):
     candidate_education_degrees = relationship('CandidateEducationDegree', backref='candidate_education')
 
     def __repr__(self):
-        return "<CandidateEducation (resume_id=' %r')>" % self.resume_id
+        return "<CandidateEducation (candidate_id=' %r')>" % self.candidate_id
 
 
 class CandidateEducationDegree(db.Model):
@@ -370,7 +370,7 @@ class CandidateEducationDegreeBullet(db.Model):
 class CandidateExperience(db.Model):
     __tablename__ = 'candidate_experience'
     id = db.Column(db.BigInteger, primary_key=True)
-    resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
+    # resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     list_order = db.Column('ListOrder', db.SmallInteger)
     organization = db.Column('Organization', db.String(150))
@@ -390,7 +390,7 @@ class CandidateExperience(db.Model):
     candidate_experience_bullets = relationship('CandidateExperienceBullet', backref='candidate_experience')
 
     def __repr__(self):
-        return "<CandidateExperience (resume_id=' %r)>" % self.resume_id
+        return "<CandidateExperience (candidate_id=' %r)>" % self.candidate_id
 
 
 class CandidateExperienceBullet(db.Model):
@@ -409,7 +409,7 @@ class CandidateExperienceBullet(db.Model):
 class CandidateSkill(db.Model):
     __tablename__ = 'candidate_skill'
     id = db.Column(db.BigInteger, primary_key=True)
-    resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
+    # resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     list_order = db.Column('ListOrder', db.SmallInteger)
     description = db.Column('Description', db.String(10000))
@@ -419,13 +419,13 @@ class CandidateSkill(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
     def __repr__(self):
-        return "<CandidateSkill (resume_id=' %r')>" % self.resume_id
+        return "<CandidateSkill (candidate_id=' %r')>" % self.candidate_id
 
 
 class CandidateUnidentified(db.Model):
     __tablename__ = 'candidate_unidentified'
     id = db.Column(db.BigInteger, primary_key=True)
-    resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
+    # resume_id = db.Column('ResumeId', db.BigInteger, db.ForeignKey('resume.id'))
     candidate_Id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     title = db.Column('Title', db.String(100))
     description = db.Column('Description', db.Text)

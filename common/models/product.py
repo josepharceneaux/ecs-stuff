@@ -1,5 +1,4 @@
-from models import db
-from sqlalchemy.orm import relationship, backref
+from db import db
 import time
 
 
@@ -9,9 +8,6 @@ class Product(db.Model):
     name = db.Column('Name', db.String(100))
     notes = db.Column('Notes', db.String(500))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-
-    # Relationships
-    resumes = relationship('Resume', backref='product')
 
     def __repr__(self):
         return "<Product (Name)=' %r>'" % self.name
