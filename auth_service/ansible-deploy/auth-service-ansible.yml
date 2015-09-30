@@ -30,7 +30,7 @@
     # Build a new version of docker image
     - name: check or build image
       docker_image:
-        path: "/home/ubuntu/talent-flask-services/AuthService/"
+        path: "/home/ubuntu/talent-flask-services/auth_service/"
         name: "{{image}}"
         state: build
 
@@ -46,3 +46,4 @@
             GT_ENVIRONMENT: "{{GT_ENVIRONMENT}}"
         volumes:
           - "/usr/local/etc/ssl:/etc/nginx/ssl"
+          - "/home/ubuntu/talent-flask-services:/root/talent-flask-services"
