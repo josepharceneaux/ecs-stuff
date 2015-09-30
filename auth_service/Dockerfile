@@ -9,6 +9,9 @@ RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 # File Author / Maintainer
 MAINTAINER Maintaner ufarooqi
 
+# Add the application resources URL
+RUN apt-get update
+
 # Install basic applications
 RUN apt-get install -y curl git nano wget build-essential libssl-dev gcc make zlib1g-dev python-lxml libbz2-dev libreadline-dev libsqlite3-dev
 
