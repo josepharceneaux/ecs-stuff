@@ -51,8 +51,9 @@ RUN rm /etc/nginx/sites-enabled/default
 RUN mkdir /etc/nginx/ssl
 
 # Install project requirements
-ADD requirements.txt /root/talent-flask-services
+ADD . /root/talent-flask-services
 RUN pip install -r /root/talent-flask-services/requirements.txt
+RUN rm -r /root/talent-flask-services/*
 
 # Expose ports
 EXPOSE 80
