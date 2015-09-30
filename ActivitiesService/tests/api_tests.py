@@ -5,8 +5,8 @@ from datetime import datetime
 from datetime import timedelta
 import json
 
-from activities_app import app
-from activities_app.models import db, Activity, Candidate, Client, Domain, Token, User
+from activities_service.activities_app import app
+from activities_service.activities_app.models import db, Activity, Candidate, Client, Domain, Token, User
 db.init_app(app)
 
 ISO_FORMAT = '%Y-%m-%d %H:%M'

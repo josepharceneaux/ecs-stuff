@@ -2,7 +2,7 @@
 
 __author__ = 'Erik Farmer'
 
-from activities_app import db
+from activities_service.activities_app import db
 
 
 class Activity(db.Model):
