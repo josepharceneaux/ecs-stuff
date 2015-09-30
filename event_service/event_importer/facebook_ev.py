@@ -121,29 +121,15 @@ class Facebook(Base):
             location = venue['location']
             try:
                 event_db = Event(
-                    vendorEventId=event['id'],
-                    eventTitle=event['name'],
-                    eventDescription=event.get('description', ''),
-                    socialNetworkId=self.social_network_id,
-                    userId=self.gt_user_id,
-                    groupId=0,
-                    eventAddressLine1=location['street'],
-                    eventAddressLine2='',
-                    eventCity=location['city'].title(),
-                    eventState='',
-                    eventZipCode=location['zip'],
-                    eventCountry=location['country'].title(),
-                    eventLongitude=float(location['longitude']),
-                    eventLatitude=float(location['latitude']),
-                    eventStartDateTime=event['start_time'] if 'start_time' in event else None,
-                    eventEndDateTime=event['end_time'] if event.has_key('end_time') else None,
-                    organizerName=owner['name'] if owner and 'name' in owner else '',
-                    organizerEmail=organizer['email'] if organizer else '',
-                    aboutEventOrganizer='',
-                    registrationInstruction='',
-                    eventCost='',
-                    eventCurrency='',
-                    maxAttendees=event['attending_count'] + event['maybe_count'] + event['noreply_count']
+                    social_network_event_id=event['id'],
+                    title=event['name'],
+                    description=event.get('description', ''),
+                    social_network_id=self.social_network_id,
+                    user_id=self.gt_user_id,
+                    group_id=0,
+                    start_datetime=event['start_time'] if 'start_time' in event else None,
+                    end_datetime=event['end_time'] if event.has_key('end_time') else None,
+                    max_attendees=event['attending_count'] + event['maybe_count'] + event['noreply_count']
                 )
             except Exception as e:
                 event['error_message'] = e.message

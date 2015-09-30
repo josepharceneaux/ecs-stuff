@@ -6,12 +6,12 @@ from social_network_service.utilities import http_request, Attendee, \
 from gt_common.models.user import UserCredentials
 
 
-class EventbriteRsvp(RSVPBase):
+class Eventbrite(RSVPBase):
     """
     Here we implement the code related to RSVPs of meetup event
     """
     def __init__(self, *args, **kwargs):
-        super(EventbriteRsvp, self).__init__(*args, **kwargs)
+        super(Eventbrite, self).__init__(*args, **kwargs)
         self.start_date_in_utc = (datetime.now() -
                                   timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
 

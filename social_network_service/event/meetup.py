@@ -37,6 +37,7 @@ class Meetup(EventBase):
         super(Meetup, self).__init__(*args, **kwargs)
         # calling super constructor sets the api_url and access_token
         self.data = None
+        self.venue_id = None
         self.payload = None
         self.location = None
         self.group_url_name = None
@@ -266,7 +267,7 @@ class Meetup(EventBase):
         # For deleting an event, Meetup uses url which is different than
         # the url we use in other API calls of Meetup. So class variable 'api_url' is not
         # used here
-        venue = Venue.get_by_id(self.payload['venue_id'])
+        venue = Venue.get_by_id(self.venue_id)
         assert venue is not None, 'Unable to found venue for given id'
         url = 'https://api.meetup.com/' + self.group_url_name + '/venues'
         payload = {
@@ -380,9 +381,9 @@ class Meetup(EventBase):
                 'group_url_name': data['group_url_name'],
                 'description': data['description'],
                 'time': start_time,
-                'guest_limit': data['max_attendees'],
-                'venue_id': data['venue_id']
+                'guest_limit': data['max_attendees']
             }
+            self.venue_id = data['venue_id']
             if data['end_datetime']:
                 duration = int((data['end_datetime'] -
                                 data['start_datetime']).total_seconds())

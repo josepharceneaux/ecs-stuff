@@ -14,8 +14,8 @@ from gt_models.event import Event
 class Meetup(Base):
     def __init__(self, *args, **kwargs):
         super(Meetup, self).__init__(*args, **kwargs)
-        self.start_date = kwargs.get('start_date') or (datetime.now() - timedelta(days=90))
-        self.end_date = kwargs.get('end_date') or (datetime.now() + timedelta(days=90))
+        self.start_date = kwargs.get('start_date') or (datetime.now() - timedelta(days=30))
+        self.end_date = kwargs.get('end_date') or (datetime.now() + timedelta(days=30))
         self.start_time_since_epoch = milliseconds_since_epoch(self.start_date)
         self.end_time_since_epoch = milliseconds_since_epoch(self.end_date)
         self.start_date_dt = self.start_date
@@ -127,7 +127,7 @@ class Meetup(Base):
                 response = self.http_get(url,
                                          params=
                                          {'group_id':
-                                         event['group']['id']},)
+                                         event['group']['id']},headers=self.headers)
                 if response.ok:
                     group = response.json()
                     group_organizer = group['results'][0]['organizer']
@@ -156,14 +156,14 @@ class Meetup(Base):
                 url = self.api_url + '/groups/?sign=true'
                 response = self.http_get(url,
                                          params={
-                                             'group_id': event['group']['id']})
+                                             'group_id': event['group']['id']}, headers=self.headers)
                 if response.ok:
                     group = response.json()
                     # contains a dict that has member_id and name
                     group_organizer = group['results'][0]['organizer']
                     url = self.api_url + '/member/' + \
                           str(group_organizer['member_id']) + '?sign=true'
-                    response = self.http_get(url)
+                    response = self.http_get(url, headers=self.headers)
                     if response.ok:
                         organizer = response.json()
                 start_time = milliseconds_since_epoch_to_dt(float(event['time']))
@@ -172,36 +172,27 @@ class Meetup(Base):
                     end_time = milliseconds_since_epoch_to_dt((float(event['time']))
                                                               + (float(end_time) * 1000))
                 return Event(
-                    vendorEventId=event['id'],
-                    eventTitle=event['name'],
-                    eventDescription=event['description'] if event.has_key('description') else '',
-                    socialNetworkId=self.social_network_id,
-                    userId=self.gt_user_id,
+                    social_network_event_id=event['id'],
+                    title=event['name'],
+                    description=event['description'] if event.has_key('description') else '',
+                    social_network_id=self.social_network_id,
+                    user_id=self.gt_user_id,
 
                     # group id and urlName are required fields to edit an event
                     # So, should raise exception if Null
-                    groupId=event['group']['id'],
-                    groupUrlName=event['group']['urlname'],
+                    group_id=event['group']['id'],
+                    group_url_name=event['group']['urlname'],
+                    venue_id=1,
+                    organizer_id=1,
                     # Let's drop error logs if venue has no address, or if address
                     # has no longitude/latitude
-                    eventAddressLine1=venue['address_1'],
-                    eventAddressLine2='',
-                    eventCity=venue['city'].title(),
-                    eventState=venue.get('state', ''),
-                    eventZipCode=venue.get('zip', ''),
-                    eventCountry=venue['country'],
-                    eventLongitude=float(venue['lon']),
-                    eventLatitude=float(venue['lat']),
-                    eventStartDateTime=start_time,
-                    eventEndDateTime=end_time,
-                    organizerName=group_organizer['name'] if group_organizer else '',
-                    organizerEmail='',
-                    aboutEventOrganizer=organizer['bio'] if organizer.has_key('bio') else '',
-                    registrationInstruction='',
-                    eventCost='',
-                    eventCurrency='',
-                    eventTimeZone='',
-                    maxAttendees=0)
+                    start_datetime=start_time,
+                    end_datetime=end_time,
+                    registration_instruction='',
+                    cost='',
+                    currency='',
+                    timezone='',
+                    max_attendees=0)
             except Exception as e:
                 event['error_message'] = e.message
                 log_exception(self.traceback_info,

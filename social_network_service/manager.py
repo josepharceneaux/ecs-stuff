@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 from gt_common.models.config import GTSQLAlchemy
 if not GTSQLAlchemy.db_session:
     app_cfg = os.path.abspath('app.cfg')
@@ -7,7 +7,6 @@ if not GTSQLAlchemy.db_session:
 
     GTSQLAlchemy(app_config_path=app_cfg,
                  logging_config_path=logging_cfg)
-
 import logging
 import argparse
 import traceback
@@ -18,7 +17,8 @@ from dateutil.parser import parse
 from gt_common.models.event import Event
 from gt_common.models.user import UserCredentials
 from gt_common.models.social_network import SocialNetwork
-from utilities import get_class, get_message_to_log, log_error, convert_keys_to_camel_case
+from utilities import get_class, get_message_to_log, log_error, \
+    convert_keys_to_camel_case
 from social_network_service.custom_exections import SocialNetworkError, \
     SocialNetworkNotImplemented, InvalidDatetime, EventInputMissing
 logger = logging.getLogger('event_service.app')
@@ -176,7 +176,7 @@ def start():
         # access token is refreshed and we use fresh token
         sn = social_network_class(user_id=user_credentials.user_id,
                                   social_network_id=social_network.id)
-        if not user_credentials.memberId:
+        if not user_credentials.member_id:
             # get an save the member Id of gt-user
             sn.get_member_id(dict())
         event_or_rsvp_obj = event_or_rsvp_class(user_credentials=user_credentials,

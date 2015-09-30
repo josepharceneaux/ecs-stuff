@@ -11,14 +11,14 @@ from social_network_service.utilities import Attendee, log_exception, \
 facebook = import_from_dist_packages('facebook')
 
 
-class FacebookRsvp(RSVPBase):
+class Facebook(RSVPBase):
     """
     This class implements all functions required to import
     users' events from facebook and their RSVPs.
     """
 
     def __init__(self, *args, **kwargs):
-        super(FacebookRsvp, self).__init__(*args, **kwargs)
+        super(Facebook, self).__init__(*args, **kwargs)
         self.start_date = (datetime.now() - timedelta(days=3000)).strftime("%Y-%m-%d")
         self.end_date = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
         self.start_date_dt = datetime.strptime(self.start_date, "%Y-%m-%d")
@@ -37,7 +37,7 @@ class FacebookRsvp(RSVPBase):
         rsvps = []
         try:
             self.graph = facebook.GraphAPI(access_token=self.access_token)
-            url = 'v2.4/%s' % str(event.vendorEventId) + '/'
+            url = 'v2.4/%s' % str(event.social_network_event_id) + '/'
             # Get list of people surely attending
             confirm_attendees = self.graph.get_object(url + 'attending')
         except facebook.GraphAPIError as error:
@@ -68,7 +68,7 @@ class FacebookRsvp(RSVPBase):
         rsvps += declined_attendees['data']
         self.get_all_pages(declined_attendees, rsvps)
         for rsvp in rsvps:
-            rsvp.update({'vendor_event_id': str(event.vendorEventId)})
+            rsvp.update({'vendor_event_id': str(event.social_network_event_id)})
         return rsvps
 
     def get_all_pages(self, response, target_list):
@@ -160,7 +160,6 @@ class FacebookRsvp(RSVPBase):
                     attendee.rsvp_status = 'yes'
                 else:
                     attendee.rsvp_status = 'no'
-
                 event = Event.get_by_user_id_social_network_id_vendor_event_id(
                     self.user.id, self.social_network_id, vendor_event_id)
                 if event:
