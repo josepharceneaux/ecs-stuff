@@ -1,7 +1,6 @@
 from db import db
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from auth_service.oauth import logger
-from candidate import Candidate
 from auth_service.oauth.modules.handy_functions import is_number
 import time
 import datetime
@@ -29,7 +28,7 @@ class User(db.Model):
     updated_time = db.Column('updatedTime', db.DateTime)
     dice_user_id = db.Column('diceUserId', db.Integer)
 
-    # One-to-many Relationships; i.e. User has many:
+    # Relationships
     candidates = relationship('Candidate', backref='user')
     public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
 
@@ -49,49 +48,6 @@ class User(db.Model):
         return "<email (email=' %r')>" % self.email
 
 
-class Culture(db.Model):
-    __tablename__ = 'culture'
-    id = db.Column(db.Integer, primary_key=True)
-    description = db.Column('Description', db.String(50))
-    code = db.Column(db.String(5), unique=True)
-
-    # One-to-many Relationships
-    candidates = db.relationship('Candidate')
-
-    def __repr__(self):
-        return "<Culture (description=' %r')>" % self.description
-
-
-class Organization(db.Model):
-    __tablename__ = 'organization'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(500), unique=True)
-    notes = db.Column('Notes', db.String(1000))
-
-    def __repr__(self):
-        return "<Organization (name=' %r')>" % self.name
-
-
-class Product(db.Model):
-    __tablename__ = 'product'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(100))
-    notes = db.Column('Notes', db.String(500))
-    updated_time = db.Column('UpdatedTime', db.DateTime, default=time.time())
-
-    def __repr__(self):
-        return "<Product (name=' %r')>" % self.name
-
-
-class Country(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(100), nullable=False)
-    code = db.Column('Code', db.String(20), nullable=False)
-
-    def __repr__(self):
-        return "<Country (name=' %r')>" % self.name
-
-
 class Domain(db.Model):
     __tablename__ = 'domain'
     id = db.Column(db.Integer, primary_key=True)
@@ -108,11 +64,26 @@ class Domain(db.Model):
     settings_json = db.Column('settingsJson', db.Text)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
-    candidate_sources = db.relationship('CandidateSource')
-    users = db.relationship('User')
+    # Relationships
+    users = relationship('User', backref='domain')
+    candidate_sources = relationship('CandidateSource', backref='domain')
+    areas_of_interest = relationship('AreaOfInterest', backref='domain')
 
     def get_id(self):
         return unicode(self.id)
+
+
+class JobOpening(db.Model):
+    __tablename__ = 'job_opening'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column('UserId', db.Integer, db.ForeignKey('user.id'))
+    job_code = db.Column('JobCode', db.String(100))
+    description = db.Column('Description', db.String(500))
+    title = db.Column('Title', db.String(150))
+    added_time = db.Column('AddedTime', db.TIMESTAMP, default=time.time())
+
+    def __repr__(self):
+        return "<JobOpening (title=' %r')>" % self.title
 
 
 class Client(db.Model):
