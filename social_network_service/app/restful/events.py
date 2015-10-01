@@ -25,7 +25,7 @@ class Events(Resource):
         This action returns a list of user events.
         """
         try:
-            events = map(lambda event: event.to_json_(), Event.query.filter_by(user_id=kwargs['user_id']).all())
+            events = map(lambda event: event.to_json(), Event.query.filter_by(user_id=kwargs['user_id']).all())
         except Exception as e:
             return ApiResponse(json.dumps(dict(messsage='APIError: Internal Server error while retrieving records')), status=500)
         if events:

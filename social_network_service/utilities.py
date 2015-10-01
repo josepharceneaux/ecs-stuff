@@ -17,7 +17,7 @@ from gt_common.models.social_network import SocialNetwork
 from social_network_service.custom_exections import SocialNetworkNotImplemented
 
 logger = logging.getLogger('event_service.app')
-OAUTH_SERVER = 'http://127.0.0.1:8888/oauth2/authorize'
+OAUTH_SERVER = 'http://127.0.0.1:8081/oauth2/authorize'
 
 
 class Attendee(object):
