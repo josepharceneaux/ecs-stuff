@@ -53,9 +53,6 @@ class Candidate(db.Model):
     candidate_skills = relationship('CandidateSkill', backref='candidate')
     candidate_unidentifieds = relationship('CandidateUnidentified', backref='candidate')
 
-    # Many-to-many Relationships
-    # rating_tags = relationship('RatingTag', secondary=candidate_rating)
-
     def get_id(self):
         return unicode(self.id)
 
@@ -289,7 +286,6 @@ class CandidatePreferredLocation(db.Model):
         return "<CandidatePreferredLocation (candidate_id=' %r')>" % self.candidate_id
 
 
-# TODO: Update joint tables for many-to-many relationships
 class Language(db.Model):
     __tablename__ = 'language'
     id = db.Column(db.Integer, primary_key=True)
@@ -352,33 +348,6 @@ class CandidateReference(db.Model):
 
     def __repr__(self):
         return "<CandidateReference (candidate_id=' %r')>" % self.candidate_id
-
-
-class ReferenceEmail(db.Model):
-    # TODO: JOINT TABLE
-    __tablename__ = 'reference_email'
-    candidate_reference_id = db.Column('ReferenceId', db.BigInteger, db.ForeignKey('candidate_reference.id'))
-    email_label_id = db.Column('EmailLabelId', db.Integer, db.ForeignKey('email_label.id'))
-    is_default = db.Column('IsDefault', db.Boolean)
-    value = db.Column('Value', db.String(100))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-
-    def __repr__(self):
-        return "<ReferenceEmail (reference_id=' %r')>" % self.candidate_reference_id
-
-
-class ReferencePhone(db.Model):
-    # TODO: JOINT TABLE
-    __tablename__ = 'reference_phone'
-    candidate_reference_id = db.Column('ReferenceId', db.BigInteger, db.ForeignKey('reference.id'), primary_key=True)
-    phone_label_id = db.Column('PhoneLabelId', db.Integer)
-    is_default = db.Column('IsDefault', db.Boolean)
-    value = db.Column('Value', db.String(50))
-    extension = db.Column('Extension', db.String(10))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-
-    def __repr__(self):
-        return "<ReferencePhone (reference_id=' %r')>" % self.candidate_reference_id
 
 
 class ReferenceWebAddress(db.Model):
@@ -664,6 +633,16 @@ class CandidateUnidentified(db.Model):
     def __repr__(self):
         return "<CandidateUnidentified (title=' %r')>" % self.title
 
+
+class University(db.Model):
+    __tablename__ = 'university'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column('Name', db.String(255))
+    state_id = db.Column('StateId', db.Integer, db.ForeignKey('state.id'))
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+
+    def __repr__(self):
+        return "<University (name=' %r')>" % self.name
 
 
 
