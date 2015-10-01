@@ -14,7 +14,7 @@ from requests_oauthlib import OAuth2Session
 
 from gt_common.models.user import User
 from gt_common.models.social_network import SocialNetwork
-from social_network_service.custom_exections import SocialNetworkNotImplemented
+from social_network_service.custom_exections import SocialNetworkNotImplemented, ApiException
 
 logger = logging.getLogger('event_service.app')
 OAUTH_SERVER = 'http://127.0.0.1:8081/oauth2/authorize'
@@ -193,13 +193,15 @@ def get_class(social_network_name, category):
     :return:
     """
     function_name = 'get_class()'
-    message_to_log = get_message_to_log(function_name=function_name)
+    message_to_log = get_message_to_log(function_name=function_name,
+                                        file_name=__file__)
     if category == 'social_network':
         module_name = 'social_network_service.' + social_network_name
     else:
         module_name = 'social_network_service.' + category + '.' + social_network_name.lower()
     try:
         module = importlib.import_module(module_name)
+        _class = getattr(module, social_network_name.title())
     except ImportError as e:
         error_message = 'Social Network "%s" is not allowed for now, ' \
                         'please implement code for this social network.' \
@@ -207,8 +209,8 @@ def get_class(social_network_name, category):
         message_to_log.update({'error': error_message})
         log_error(message_to_log)
         raise SocialNetworkNotImplemented('Import Error: Unable to import module for required social network')
-    else:
-        _class = getattr(module, social_network_name.title())
+    except AttributeError:
+        raise ApiException('APIError: Unable to import module for required social network', status_code=500)
     return _class
 
 

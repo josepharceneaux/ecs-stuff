@@ -1,6 +1,7 @@
 import importlib
 import requests
 from abc import ABCMeta, abstractmethod
+from gt_common.models.event import Event
 from gt_common.models.social_network import SocialNetwork
 from gt_common.models.user import User, UserCredentials
 
@@ -69,33 +70,72 @@ class SocialNetworkBase(object):
         self.headers = {'Authorization': 'Bearer ' + self.access_token}
         self.start_date_dt = None
 
-    def process_events(self):
+    def process(self, mode, user_credentials=None):
         """
-        This method gets events by calling the respective event's
-        class in the SocialNetworkService/event directory. So if
-        we want to retrieve events for Eventbrite then we're basically
-        doing this.
-        from event import eventbrite
-        eventbrite = eventbrite.Eventbrite(self.user, self.social_network)
-        self.events = eventbrite.get_events(self.social_network)
-        :return:
+        Depending upon the mode, here we make the objects of required
+        classes and call required methods on those objects for importing
+        events or rsvps.
         """
         sn_name = self.social_network.name.strip()
-        module_path = None
-        module_path = 'event.%s' % sn_name.lower()
-        try:
-            sn_event_module = importlib.import_module(module_path)
-        except ImportError as error:
-            raise error
-        # e.g. /socialnetworkservice/event/eventbrite.py
-        class_name = sn_name.title() + "Event"
-        event_class = getattr(sn_event_module, class_name)
-        sn_event_obj = event_class(user=self.user, social_network=self.social_network,
+        # get_required class under event/ to process events
+        event_class = get_class(sn_name, 'event')
+        # create object of selected event class
+        sn_event_obj = event_class(user=self.user,
+                                   social_network=self.social_network,
                                    headers=self.headers)
-        self.events = sn_event_obj.get_events()
-        print 'Events', self.events
-        sn_event_obj.process_events(self.events)
+        if mode == 'event':
+            # gets events using respective API of Social Network
+            self.events = sn_event_obj.get_events()
+            # process events to save in database
+            sn_event_obj.process_events(self.events)
+        elif mode == 'rsvp':
+            sn_event_obj.get_rsvps(user_credentials)
 
+    # def process_events(self):
+    #     """
+    #     This method gets events by calling the respective event's
+    #     class in the SocialNetworkService/event directory. So if
+    #     we want to retrieve events for Eventbrite then we're basically
+    #     doing this.
+    #     from event import eventbrite
+    #     eventbrite = eventbrite.Eventbrite(self.user, self.social_network)
+    #     self.events = eventbrite.get_events(self.social_network)
+    #     :return:
+    #     """
+    #     sn_name = self.social_network.name.strip()
+    #     event_class = get_class(sn_name, 'event')
+    #     sn_event_obj = event_class(user=self.user,
+    #                                social_network=self.social_network,
+    #                                headers=self.headers)
+    #     self.events = sn_event_obj.get_events()
+    #     sn_event_obj.process_events(self.events)
+    #
+    # def process_rsvps(self, user_credentials=None):
+    #     """
+    #     This method gets events by calling the respective event's
+    #     class in the SocialNetworkService/event directory. So if
+    #     we want to retrieve events for Eventbrite then we're basically
+    #     doing this.
+    #     from event import eventbrite
+    #     eventbrite = eventbrite.Eventbrite(self.user, self.social_network)
+    #     self.events = eventbrite.get_events(self.social_network)
+    #     :return:
+    #     """
+    #
+    #     sn_name = self.social_network.name.strip()
+    #     event_class = get_class(sn_name, 'event')
+    #     sn_event_obj = event_class(user=self.user,
+    #                                social_network=self.social_network,
+    #                                headers=self.headers)
+    #
+    #     sn_rsvp_class = get_class(sn_name, 'rsvp')
+    #     sn_rsvp_obj = sn_rsvp_class(social_network=self.social_network,
+    #                                 headers=self.headers,
+    #                                 user_credentials=user_credentials)
+    #
+    #     self.events = sn_event_obj.get_events_from_db(sn_rsvp_obj.start_date_dt)
+    #
+    #     sn_rsvp_obj.process_rsvps(self.events)
 
     @classmethod
     def get_access_token(cls, data):  # data contains social_network,

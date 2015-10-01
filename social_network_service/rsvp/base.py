@@ -37,6 +37,7 @@ class RSVPBase(object):
             error_message = e.message
             message_to_log.update({'error': error_message})
             log_exception(message_to_log)
+        self.rsvps = []
 
     @abstractmethod
     def get_rsvps(self, event):
@@ -48,7 +49,7 @@ class RSVPBase(object):
         """
         pass
 
-    def _process_rsvps(self):
+    def process_rsvps(self, events):
         """
         We get events against a particular user_credential and then we go over
         each event one by one and do the following:
@@ -65,10 +66,10 @@ class RSVPBase(object):
                                             gt_user=self.user.name,
                                             file_name=__file__)
         # get events from database where eventStartDate is greater than
-        events = Event.get_by_user_id_vendor_id_start_date(self.user.id,
-                                                           self.social_network_id,
-                                                           self.start_date_dt,
-                                                           )
+        # events = Event.get_by_user_id_vendor_id_start_date(self.user.id,
+        #                                                    self.social_network_id,
+        #                                                    self.start_date_dt,
+        #                                                    )
         if events:
             for event in events:
                 # events is a list of dicts. where each dict is likely a
@@ -81,6 +82,7 @@ class RSVPBase(object):
                     rsvps = self.get_rsvps(event)
                     if rsvps:
                         self.post_process_rsvp(rsvps)
+                        self.rsvps += rsvps
                     elif rsvps is None:  # event has no RSVPs
                         break
                 except Exception as e:
