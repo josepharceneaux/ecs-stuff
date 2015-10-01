@@ -19,7 +19,9 @@ from flask import jsonify
 from flask import request
 
 #application specific
-from activities_service.activities_app.models import Activity, db, User
+from activities_service.models.db import db
+from activities_service.models.user import User
+from activities_service.utils.auth_utils import authenticate_oauth_user
 
 ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
 POSTS_PER_PAGE = 20
@@ -34,16 +36,22 @@ def activities(page=None):
     :param page: (int) Page used in pagination for GET requests.
     :return: JSON formatted pagination response or message notifying creation status.
     """
-    try:
-        oauth_token = request.headers['Authorization']
-    except KeyError:
-        return jsonify({'error': 'No Authorization set'}), 400
-    r = requests.get(app.config['OAUTH_SERVER_URI'], headers={'Authorization': oauth_token})
-    if r.status_code != 200:
-        return jsonify({'error': 'Invalid Authorization'}), 401
-    valid_user_id = json.loads(r.text).get('user_id')
-    if not valid_user_id:
-        return jsonify({'error': 'Response did not return a valid user_id'}), 400
+    # try:
+    #     oauth_token = request.headers['Authorization']
+    # except KeyError:
+    #     return jsonify({'error': {'message':'No Authorization set'}}), 400
+    # r = requests.get(app.config['OAUTH_SERVER_URI'], headers={'Authorization': oauth_token})
+    # if r.status_code != 200:
+    #     return jsonify({'error': {'code': 3, 'message': 'Not authorized'}}), 401
+    # valid_user_id = json.loads(r.text).get('user_id')
+    # if not valid_user_id:
+    #     return jsonify({'error': {'code': 25,
+    #                               'message': "Access token is invalid. Please refresh your token"}}), 400
+    authentication_result = authenticate_oauth_user(request)
+    error_result = authentication_result.get('error')
+    if error_result:
+        return jsonify({'error': {'code':error_result.get('code'),
+                                  'message': error_result.get('message')}}), error_result.get('http_code', 400)
     is_aggregate_request = request.args.get('aggregate') == '1'
     tam = TalentActivityManager()
     if request.method == 'GET' and is_aggregate_request:
@@ -58,9 +66,10 @@ def activities(page=None):
         try:
             request_page = int(page)
         except ValueError:
-            return jsonify({'error': 'page parameter must be an integer'}), 400
-        return json.dumps(tam.get_activities(user_id=valid_user_id, post_qty=post_qty, start_datetime=request_start_time,
-                                       end_datetime=request_end_time, page=request_page))
+            return jsonify({'error': {'message': 'page parameter must be an integer'}}), 400
+        return json.dumps(tam.get_activities(user_id=valid_user_id, post_qty=post_qty,
+                                             start_datetime=request_start_time,
+                                             end_datetime=request_end_time, page=request_page))
     elif request.method == 'POST':
         return tam.create_activity(valid_user_id, request.form.get('type'),
                                    request.form.get('source_table'), request.form.get('source_id'),
@@ -188,10 +197,10 @@ class TalentActivityManager(object):
             'total_count': activities.total,
             'items': [{
                 'params': a.params,
-                'sourceTable': a.sourceTable,
-                'sourceId': a.sourceId,
+                'source_table': a.sourceTable,
+                'source_id': a.sourceId,
                 'type': a.type,
-                'userId': a.userId
+                'user_id': a.userId
                 }
                       for a in activities.items
                      ]

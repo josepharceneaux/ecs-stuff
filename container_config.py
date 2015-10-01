@@ -7,8 +7,9 @@ import shutil
 from subprocess import call
 
 
-services = ['auth_service', 'candidate_service', 'resume_service']
-service_name_to_repo = {'auth_service': 'authservice',
+services = ['activities_service', 'auth_service', 'candidate_service', 'resume_service']
+service_name_to_dockerhub_repo = {'activities_service': 'activities-service',
+                        'auth_service': 'authservice',
                         'resume_service': 'resume-parsing-service',
                         'candidate_service': 'candidate-service'}
 
@@ -39,9 +40,18 @@ if args.copy:
             print "Creating symlink %s in %s" % (models_symlink, service_symlink)
             os.symlink(models_symlink, service_symlink)
 
+        # Symlink utils
+        utils_symlink = "../common/utils"
+        service_symlink = "./%s/utils" % service
+        if os.path.islink(service_symlink):
+            print "Symlink %s already exists" % service_symlink
+        else:
+            print "Creating symlink %s in %s" % (utils_symlink, service_symlink)
+            os.symlink(utils_symlink, service_symlink)
+
 if args.build:
     service_name = args.build[0]
-    repo_name = "gettalent/%s" % service_name_to_repo[service_name]
+    repo_name = "gettalent/%s" % service_name_to_dockerhub_repo[service_name]
     os.chdir(service_name)
     print 'Resolving symlinks and building Docker file for service %(service_name)s, repo %(repo_name)s:' % locals()
     command = 'tar -czh . | docker build -t %(repo_name)s:latest -' % locals()
