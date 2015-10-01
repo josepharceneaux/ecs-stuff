@@ -7,8 +7,9 @@ from subprocess import call, check_output
 from sys import exit, platform as _platform
 
 VM_NOT_RUNNING_ERROR_MESSAGE = 'Virtual Machine is not running. Please start it with docker-machine start VM_NAME'
-SERVICES = ['auth_service', 'candidate_service', 'resume_service']
-SERVICE_TO_DOCKERHUB_REPO = {'auth_service': 'authservice',
+SERVICES = ['activities_service', 'auth_service', 'candidate_service', 'resume_service']
+SERVICE_TO_DOCKERHUB_REPO = {'activities_service': 'activities-service',
+                             'auth_service': 'authservice',
                              'resume_service': 'resume-parsing-service',
                              'candidate_service': 'candidate-service'}
 
@@ -31,6 +32,15 @@ def set_environment_variables_from_env_output(env_output=''):
         else:
             exit(VM_NOT_RUNNING_ERROR_MESSAGE)
 
+
+        # Symlink utils
+        utils_symlink = "../common/utils"
+        service_symlink = "./%s/utils" % service
+        if os.path.islink(service_symlink):
+            print "Symlink %s already exists" % service_symlink
+        else:
+            print "Creating symlink %s in %s" % (utils_symlink, service_symlink)
+            os.symlink(utils_symlink, service_symlink)
 
 if args.build:
     service_name = args.build[0]
