@@ -41,30 +41,30 @@ RUN pip install uwsgi==2.0.11.1
 RUN apt-get install -y mysql-server libmysqlclient-dev
 
 # Copy source code to Dock Container
-RUN mkdir /root/talent-flask-services
+RUN mkdir /root/auth_service
+ADD . /root/auth_service/
+
+# Install Requirements
+RUN pip install -r /root/auth_service/requirements.txt
 
 # Set DB connection string
 ENV DB_STRING mysql://talent_web:s!web976892@livedb.gettalent.com/talent_core
 
 # Configure Nginx
 RUN rm /etc/nginx/sites-enabled/default
+RUN ln -s /root/auth_service/talent-nginx.conf /etc/nginx/conf.d/
 RUN mkdir /etc/nginx/ssl
-
-# Install project requirements
-ADD . /root/talent-flask-services
-RUN pip install -r /root/talent-flask-services/requirements.txt
-RUN rm -r /root/talent-flask-services/*
 
 # Expose ports
 EXPOSE 80
 EXPOSE 443
 
 # Set the default directory where CMD will execute
-WORKDIR /root/talent-flask-services
+WORKDIR /root/auth_service/
 
 # Set the default command to execute
 CMD\
     eval "$(pyenv init -)" && \
-    ln -s /root/talent-flask-services/auth_service/talent-nginx.conf /etc/nginx/conf.d/ && \
     /etc/init.d/nginx restart && \
-    uwsgi --env GT_ENVIRONMENT=$GT_ENVIRONMENT --env DB_STRING=$DB_STRING --ini auth_service/talent-uwsgi.ini
+    export PYTHONPATH=../ && \
+    uwsgi --env GT_ENVIRONMENT=$GT_ENVIRONMENT --env DB_STRING=$DB_STRING --ini talent-uwsgi.ini
