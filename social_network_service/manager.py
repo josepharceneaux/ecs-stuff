@@ -192,7 +192,7 @@ def start():
             sn.get_member_id(dict())
         job_pool.spawn(sn.process(name_space.mode,
                                   user_credentials=user_credentials))
-    job_pool.join()
+    # job_pool.join()
 
 if __name__ == '__main__':
     try:

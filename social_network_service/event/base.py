@@ -208,10 +208,11 @@ class EventBase(object):
         :param start_date:
         :return:
         """
-        return Event.get_by_user_id_vendor_id_start_date(self.user.id,
-                                                         self.social_network.id,
-                                                         start_date
-                                                         )
+        if start_date:
+            return Event.get_by_user_id_vendor_id_start_date(self.user.id,
+                                                             self.social_network.id,
+                                                             start_date
+                                                             )
 
     def get_rsvps(self, user_credentials):
         """
