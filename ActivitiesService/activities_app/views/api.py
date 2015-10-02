@@ -24,35 +24,26 @@ POSTS_PER_PAGE = 20
 mod = Blueprint('activities_api', __name__)
 
 
-@mod.route('/activities/', defaults={'page': None}, methods=['POST'])
 @mod.route('/activities/<page>', methods=['GET'])
-def activities(page=None):
+def get_activities(page):
     """Authenticate endpoint requests and then properly route then to the retrieve or creation
        functions.
     :param page: (int) Page used in pagination for GET requests.
     :return: JSON formatted pagination response or message notifying creation status.
     """
-    # try:
-    #     oauth_token = request.headers['Authorization']
-    # except KeyError:
-    #     return jsonify({'error': {'message':'No Authorization set'}}), 400
-    # r = requests.get(app.config['OAUTH_SERVER_URI'], headers={'Authorization': oauth_token})
-    # if r.status_code != 200:
-    #     return jsonify({'error': {'code': 3, 'message': 'Not authorized'}}), 401
-    # valid_user_id = json.loads(r.text).get('user_id')
-    # if not valid_user_id:
-    #     return jsonify({'error': {'code': 25,
-    #                               'message': "Access token is invalid. Please refresh your token"}}), 400
+    valid_user_id = None
     authentication_result = authenticate_oauth_user(request)
     error_result = authentication_result.get('error')
     if error_result:
         return jsonify({'error': {'code':error_result.get('code'),
                                   'message': error_result.get('message')}}), error_result.get('http_code', 400)
+    else:
+        valid_user_id = authentication_result.get('user_id')
     is_aggregate_request = request.args.get('aggregate') == '1'
     tam = TalentActivityManager()
-    if request.method == 'GET' and is_aggregate_request:
+    if is_aggregate_request:
         return jsonify({'activities': tam.get_recent_readable(valid_user_id)})
-    elif request.method == 'GET': # Checking for method again is to avoid nesting.
+    else:
         request_start_time = request_end_time = None
         if request.args.get('start_time'): request_start_time = datetime.strptime(
             request.args.get('start_time'), ISO_FORMAT)
@@ -66,12 +57,21 @@ def activities(page=None):
         return json.dumps(tam.get_activities(user_id=valid_user_id, post_qty=post_qty,
                                              start_datetime=request_start_time,
                                              end_datetime=request_end_time, page=request_page))
-    elif request.method == 'POST':
-        return tam.create_activity(valid_user_id, request.form.get('type'),
-                                   request.form.get('source_table'), request.form.get('source_id'),
-                                   request.form.get('params'))
+
+
+@mod.route('/activities/', methods=['POST'])
+def post_activity():
+    authentication_result = authenticate_oauth_user(request)
+    error_result = authentication_result.get('error')
+    if error_result:
+        return jsonify({'error': {'code':error_result.get('code'),
+                                  'message': error_result.get('message')}}), error_result.get('http_code', 400)
     else:
-        return jsonify({'error': {'code': 21, 'message': 'Page not found'}}), 405
+        valid_user_id = authentication_result.get('user_id')
+    tam = TalentActivityManager()
+    return tam.create_activity(valid_user_id, request.form.get('type'),
+                               request.form.get('source_table'), request.form.get('source_id'),
+                               request.form.get('params'))
 
 
 class TalentActivityManager(object):
@@ -183,20 +183,20 @@ class TalentActivityManager(object):
         :return: JSON encoded SQL-Alchemy.pagination response.
         """
         user_domain_id = User.query.filter_by(id=user_id).value('domainId')
-        user_ids = User.query.filter_by(domainId=user_domain_id).values('id')
+        user_ids = User.query.filter_by(domain_id=user_domain_id).values('id')
         flattened_user_ids = [item for sublist in user_ids for item in sublist]
-        filters = [Activity.userId.in_(flattened_user_ids)]
-        if start_datetime: filters.append(Activity.addedTime > start_datetime)
-        if end_datetime: filters.append(Activity.addedTime < end_datetime)
+        filters = [Activity.user_id.in_(flattened_user_ids)]
+        if start_datetime: filters.append(Activity.added_time > start_datetime)
+        if end_datetime: filters.append(Activity.added_time < end_datetime)
         activities = Activity.query.filter(*filters).paginate(page, post_qty, False)
         activities_reponse = {
             'total_count': activities.total,
             'items': [{
                 'params': a.params,
-                'source_table': a.sourceTable,
-                'source_id': a.sourceId,
+                'source_table': a.source_table,
+                'source_id': a.source_id,
                 'type': a.type,
-                'user_id': a.userId
+                'user_id': a.user_id
                 }
                       for a in activities.items
                      ]
@@ -210,16 +210,14 @@ class TalentActivityManager(object):
         current_user = User.query.filter_by(id=user_id).first()
         #
         # # Get the last 25 activities and aggregate them by type, with order.
-        user_domain_id = current_user.domainId
-        user_ids = User.query.filter_by(domainId=user_domain_id).values('id')
+        user_domain_id = current_user.domain_id
+        user_ids = User.query.filter_by(domain_id=user_domain_id).values('id')
         flattened_user_ids = [item for sublist in user_ids for item in sublist]
-        filters = [Activity.userId.in_(flattened_user_ids)]
+        filters = [Activity.user_id.in_(flattened_user_ids)]
         activities = Activity.query.filter(*filters) # TODO add limit.
 
         aggregated_activities = []
         current_activity_count = 0
-
-        # user_id_to_name_dict = self._user_id_to_name_dict(current_user.domainId)
 
         for i, activity in enumerate(activities):
             current_activity_count += 1
@@ -244,8 +242,8 @@ class TalentActivityManager(object):
 
 
     def _activity_text(self, activity, count, current_user):
-        if activity.userId != current_user.id:
-            username = User.query.filter_by(id=activity.userId).value('firstName')
+        if activity.user_id != current_user.id:
+            username = User.query.filter_by(id=activity.user_id).value('firstName')
         else:
             username = "You"
 
@@ -283,10 +281,10 @@ class TalentActivityManager(object):
         :return: HTTP Response
         """
         activity = Activity(
-            userId=int(user_id),
+            user_id=int(user_id),
             type=type_,
-            sourceTable=source_table,
-            sourceId=source_id,
+            source_table=source_table,
+            source_id=source_id,
             params=json.dumps(params) if params else None
         )
         try:

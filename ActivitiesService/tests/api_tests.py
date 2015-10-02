@@ -4,14 +4,19 @@ __author__ = 'Erik Farmer'
 from datetime import datetime
 from datetime import timedelta
 import json
+import random
+import string
 
 # Third Party
 import pytest
+from sqlalchemy.sql.expression import ClauseElement
 
 # Application Specific
 from activities_service.activities_app import app
 from activities_service.models.db import db
 from activities_service.models.misc import Activity
+from activities_service.models.misc import Culture
+from activities_service.models.misc import Organization
 from activities_service.models.candidate import Candidate
 from activities_service.models.user import Client
 from activities_service.models.user import Domain
@@ -24,94 +29,17 @@ APP = app.test_client()
 
 
 @pytest.fixture(autouse=True)
-def test_domain(request):
-    test_domain = Domain(name='ThunderDome', usage_limitation=-1, added_time=datetime.today(), organization_id=1,
-                         is_fair_check_on=0, is_active=1, default_culture_id=1)
-    try:
-       db.session.add(test_domain)
-       db.session.commit()
-    except Exception:  # TODO This is to handle 'Duplicate entry' MySQL errors. We should instead check for existing Client/Token before inserting
-       pass
-    def fin():
-        try:
-            db.session.delete(test_domain)
-            db.session.commit()
-        except Exception:
-            pass
-    request.addfinalizer(fin)
-    return test_domain
-
-
-@pytest.fixture(autouse=True)
-def test_client(request):
-    test_client = Client(client_id='fakeclient', client_secret='s00pers3kr37')
-    try:
-        db.session.add(test_client)
-        db.session.commit()
-    except Exception:
-        pass
-
-    def fin():
-        try:
-            db.session.delete(test_client)
-            db.session.commit()
-        except Exception:
-            pass
-    request.addfinalizer(fin)
-    return test_client
-
-
-@pytest.fixture(autouse=True)
-def test_token(test_client, request):
-    test_token = Token(client_id=test_client.client_id, user_id=1, token_type='bearer', access_token='good_token',
-                       refresh_token='barz', expires=datetime(2050, 4, 26))
-    try:
-       db.session.add(test_token)
-       db.session.commit()
-    except Exception:  # TODO This is to handle 'Duplicate entry' MySQL errors. We should instead check for existing Client/Token before inserting
-       pass
-
-    def fin():
-        try:
-            db.session.delete(test_token)
-            db.session.commit()
-        except Exception:
-            pass
-    request.addfinalizer(fin)
-    return test_token
-
-
-@pytest.fixture(autouse=True)
-def test_user(test_domain, request):
-    test_user = User(domain_id=test_domain.id, first_name='Jamtry', last_name='Jonas',
-                     password='pbkdf2(1000,64,sha512)$bd913bac5e55a39b$ea5a0a2a2d156003faaf7986ea4cba3f25607e43ecffb36e0d2b82381035bbeaded29642a1dd6673e922f162d322862459dd3beedda4501c90f7c14b3669cd72',
-                     email='jamtry@gmail.com',added_time=datetime(2050, 4, 26))
-    try:
-       db.session.add(test_user)
-       db.session.commit()
-    except Exception:  # TODO This is to handle 'Duplicate entry' MySQL errors. We should instead check for existing Client/Token before inserting
-       pass
-
-    def fin():
-        try:
-            db.session.delete(test_user)
-            db.session.commit()
-        except Exception:
-            pass
-    request.addfinalizer(fin)
-    return test_user
-
-
-@pytest.fixture(autouse=True)
-def test_candidate(test_user, request):
-    test_candidate = Candidate(first_name='Griffon', last_name='Larz', formatted_name='Griffon Larz', is_web_hidden=0,
-              is_mobile_hidden=0, added_time=datetime.today(), user_id=test_user.id, domain_can_read=1,
-              domain_can_write=1, source_id=23, source_product_id=2, objective='Fix broken code', culture_id=1)
-    try:
+def test_candidate(test_user, test_culture, request):
+    candidate_attrs = dict(
+        first_name='Griffon', last_name='Larz', formatted_name='Griffon Larz', is_web_hidden=0,
+        is_mobile_hidden=0, added_time=datetime.today(), user_id=test_user.id,
+        domain_can_read=1, domain_can_write=1, source_id=23, source_product_id=2,
+        objective='Fix broken code', culture_id=test_culture.id, is_dirty=0
+    )
+    test_candidate, created = get_or_create(db.session, Candidate, defaults=None, **candidate_attrs)
+    if created:
        db.session.add(test_candidate)
        db.session.commit()
-    except Exception:  # TODO This is to handle 'Duplicate entry' MySQL errors. We should instead check for existing Client/Token before inserting
-       pass
 
     def fin():
         try:
@@ -133,7 +61,7 @@ def test_activities(test_user, request):
                      params=json.dumps({'lastName': 'Larzz', 'firstName': 'Griffon'})),
         Activity(added_time=today, source_table='user', source_id=1, type=12, user_id=test_user.id,
                      params=json.dumps({'lastName': 'Larzzz', 'firstName': 'Griffon'})),
-        Activity(added_time=today, source_table='user', source_id=1, type=12, user_id=1,
+        Activity(added_time=today, source_table='user', source_id=1, type=12, user_id=test_user.id,
                      params=json.dumps({'lastName': 'Larzzz', 'firstName': 'Griffon'}))
     ]
     try:
@@ -151,6 +79,127 @@ def test_activities(test_user, request):
     return True
 
 
+
+@pytest.fixture(autouse=True)
+def test_user(test_domain, request):
+    user_attrs = dict(
+        domain_id=test_domain.id, first_name='Jamtry', last_name='Jonas',
+        password='pbkdf2(1000,64,sha512)$bd913bac5e55a39b$ea5a0a2a2d156003faaf7986ea4cba3f25607e43ecffb36e0d2b82381035bbeaded29642a1dd6673e922f162d322862459dd3beedda4501c90f7c14b3669cd72',
+        email='jamtry@{}.com'.format(randomword(7)),added_time=datetime(2050, 4, 26)
+    )
+    test_user, created = get_or_create(db.session, User, defaults=None, **user_attrs)
+    if created:
+       db.session.add(test_user)
+       db.session.commit()
+
+    def fin():
+        try:
+            db.session.delete(test_user)
+            db.session.commit()
+        except Exception:
+            pass
+    request.addfinalizer(fin)
+    return test_user
+
+
+@pytest.fixture(autouse=True)
+def test_domain(test_org, test_culture, request):
+    domain_attrs = dict(
+        name=randomword(10).format(), usage_limitation=-1, added_time=datetime.today(),
+        organization_id=test_org.id, is_fair_check_on=0, is_active=1,
+        default_culture_id=test_culture.id, expiration=datetime(2050, 4, 26)
+    )
+    test_domain, created = get_or_create(db.session, Domain, defaults=None, **domain_attrs)
+    if created:
+       db.session.add(test_domain)
+       db.session.commit()
+
+    def fin():
+        try:
+            db.session.delete(test_domain)
+            db.session.commit()
+        except Exception:
+            pass
+    request.addfinalizer(fin)
+    return test_domain
+
+
+@pytest.fixture(autouse=True)
+def test_culture(request):
+    culture_attrs = dict(description='Foo {}'.format(randomword(12)), code=randomword(5))
+    test_culture, created = get_or_create(db.session, Culture, defaults=None, **culture_attrs)
+    if created:
+       db.session.add(test_culture)
+       db.session.commit()
+
+    def fin():
+        try:
+            db.session.delete(test_culture)
+            db.session.commit()
+        except Exception:
+            pass
+    request.addfinalizer(fin)
+    return test_culture
+
+
+@pytest.fixture(autouse=True)
+def test_org(request):
+    org_attrs = dict(name='Rocket League All Stars - {}'.format(randomword(8)))
+    test_org, created = get_or_create(db.session, Organization, defaults=None, **org_attrs)
+    if created:
+       db.session.add(test_org)
+       db.session.commit()
+
+    def fin():
+        try:
+            db.session.delete(test_org)
+            db.session.commit()
+        except Exception:
+            pass
+    request.addfinalizer(fin)
+    return test_org
+
+
+@pytest.fixture(autouse=True)
+def test_client(request):
+    client_attrs = dict(client_id=randomword(30), client_secret='s00pers3kr37_{}'.format(randomword(12)))
+    test_client, created = get_or_create(db.session, Client, defaults=None, **client_attrs)
+    if created:
+        db.session.add(test_client)
+        db.session.commit()
+
+    def fin():
+        try:
+            db.session.delete(test_client)
+            db.session.commit()
+        except Exception:
+            pass
+    request.addfinalizer(fin)
+    return test_client
+
+
+@pytest.fixture(autouse=True)
+def test_token(test_client, test_user, request):
+    # test_token = Token(client_id=test_client.client_id, user_id=test_user.id, token_type='bearer', access_token='good_token',
+    #                    refresh_token='barz', expires=datetime(2050, 4, 26))
+    token_attrs = dict(client_id=test_client.client_id, user_id=test_user.id,
+                       token_type='bearer', access_token='good_token', refresh_token='barz',
+                       expires=datetime(2050, 4, 26))
+    test_token, created = get_or_create(db.session, Token, defaults=None, **token_attrs)
+    if created:
+       db.session.add(test_token)
+       db.session.commit()
+
+    def fin():
+        try:
+            db.session.delete(test_token)
+            db.session.commit()
+        except Exception:
+            pass
+    request.addfinalizer(fin)
+    return test_token
+
+
 def test_call_requires_auth():
     response = APP.get('/activities/1', headers={'Authorization': 'Bearer good_token'}, data={}, follow_redirects=True)
     assert response.status_code == 200
@@ -160,24 +209,23 @@ def test_call_requires_auth():
 
 def test_reponse_is_user_filtered():
     response = APP.get('/activities/1', headers={'Authorization': 'Bearer good_token'}, data={}, follow_redirects=True)
-    assert json.loads(response.data)['total_count'] == 3
+    assert json.loads(response.data)['total_count'] == 4
 
 
 def test_response_can_be_time_filtered():
     today = (datetime.today()+ timedelta(minutes=-1)).isoformat()
     url_with_date = '/activities/1?start_time={}'.format(today)
     response = APP.get(url_with_date, headers={'Authorization': 'Bearer good_token'}, follow_redirects=True)
-    assert json.loads(response.data)['total_count'] == 2
+    assert json.loads(response.data)['total_count'] == 3
 
 
-def test_basic_post():
-    test_user_id = User.query.filter_by(firstName='Jamtry').first().id
+def test_basic_post(test_user):
     response = APP.post('/activities/', headers={'Authorization': 'Bearer good_token'}, data=dict(
-        userId=test_user_id,
+        user_id=test_user.id,
         type=99,
-        sourceTable='test',
-        sourceId='1337',
-        params=json.dumps({'lastName': 'Larzzzzz', 'firstName': 'Griffon'})
+        source_table='test',
+        source_id='1337',
+        params=str({'lastName': randomword(6), 'firstName': randomword(12)})
     ), follow_redirects=True)
     assert response.status_code == 200
 
@@ -186,6 +234,22 @@ def test_recent_readable():
     response = APP.get('/activities/1?aggregate=1', headers={'Authorization': 'Bearer good_token'}, data={}, follow_redirects=True)
     assert response.status_code == 200
     assert len(json.loads(response.data)['activities']) == 1
-    assert json.loads(response.data)['activities'][0]['count'] == 3
+    assert json.loads(response.data)['activities'][0]['count'] == 4
     assert json.loads(response.data)['activities'][0]['image'] == 'notification.png'
-    assert json.loads(response.data)['activities'][0]['readable_text'] == '3 users have joined'
+    assert json.loads(response.data)['activities'][0]['readable_text'] == '4 users have joined'
+
+
+def get_or_create(session, model, defaults=None, **kwargs):
+    instance = session.query(model).filter_by(**kwargs).first()
+    if instance:
+        return instance, False
+    else:
+        params = dict((k, v) for k, v in kwargs.iteritems() if not isinstance(v, ClauseElement))
+        params.update(defaults or {})
+        instance = model(**params)
+        session.add(instance)
+        return instance, True
+
+
+def randomword(length):
+   return ''.join(random.choice(string.lowercase) for i in xrange(length))
