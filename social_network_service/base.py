@@ -185,7 +185,10 @@ class SocialNetworkBase(object):
         :return:
         """
         function_name = 'get_member_id()'
-        message_to_log = get_message_to_log(function_name=function_name)
+        message_to_log = get_message_to_log(function_name=function_name,
+                                            file_name=__file__,
+                                            class_name=self.__class__.__name__,
+                                            gt_user=self.user.name)
         try:
             user_credentials = self.user_credentials
             url = self.api_url + data['api_relative_url']
@@ -199,10 +202,10 @@ class SocialNetworkBase(object):
                             memberId=member_id)
                 self.save_user_credentials_in_db(data)
             else:
-                # TODO log error
+                # Error has been logged inside http_request()
                 pass
-        except Exception as e:
-            error_message = e.message
+        except Exception as error:
+            error_message = error.message
             message_to_log.update({'error': error_message})
             log_exception(message_to_log)
 
@@ -251,7 +254,6 @@ class SocialNetworkBase(object):
         expired, it also refreshes it and saves the fresh access token in database
         :return:
         """
-        refreshed_token_status = False
         access_token_status = self.validate_token()
         if not access_token_status:  # access token has expired, need to refresh it
             self.refresh_access_token()
@@ -260,15 +262,11 @@ class SocialNetworkBase(object):
     def save_user_credentials_in_db(user_credentials):
         """
         It puts the access token against the clicked social_network and and the
-        logged in user of GT. It also calls create_webhook() class method of
+        logged in user of gt. It also calls create_webhook() class method of
         Eventbrite to create webhook for user.
         :return:
         """
-        function_name = 'save_user_credentials_in_db()'
-        #  TODO- pass user name in place of user name
-        message_to_log = get_message_to_log(function_name=function_name,
-                                            gt_user=user_credentials['user_id'],
-                                            file_name=__file__)
+        gt_user = User.get_by_id(user_credentials['user_id'])
         gt_user_in_db = UserCredentials.get_by_user_and_social_network_id(
             user_credentials['user_id'], user_credentials['social_network_id'])
         try:
@@ -276,8 +274,12 @@ class SocialNetworkBase(object):
                 gt_user_in_db.update(**user_credentials)
             else:
                 UserCredentials.save(**user_credentials)
-        except Exception as e:
-            error_message = e.message
-            message_to_log.update({'error': error_message})
-            log_exception(message_to_log)
-
+        except Exception as error:
+            log_exception(
+                dict(
+                    functionName='save_user_credentials_in_db()',
+                    error=error.message,
+                    user=gt_user.name,
+                    fileName=__file__
+                )
+            )

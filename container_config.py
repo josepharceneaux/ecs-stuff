@@ -3,67 +3,76 @@ __author__ = 'erikfarmer'
 
 import argparse
 import os
-import shutil
-from subprocess import call
+from subprocess import call, check_output
+from sys import exit, platform as _platform
 
-
-services = ['auth_service', 'candidate_service', 'resume_service']
-service_name_to_repo = {'auth_service': 'authservice',
-                        'resume_service': 'resume-parsing-service',
-                        'candidate_service': 'candidate-service'}
+VM_NOT_RUNNING_ERROR_MESSAGE = 'Virtual Machine is not running. Please start it with docker-machine start VM_NAME'
+SERVICES = ['auth_service', 'candidate_service', 'resume_service']
+SERVICE_TO_DOCKERHUB_REPO = {'auth_service': 'authservice',
+                             'resume_service': 'resume-parsing-service',
+                             'candidate_service': 'candidate-service'}
 
 parser = argparse.ArgumentParser(description='Common files administrator for Docker building.')
-parser.add_argument('--copy', help='Copies the common files', action="store_true")
-parser.add_argument('--build', nargs=1, choices=services, help='Invokes the Docker build action for given service')
-parser.add_argument('--clean', help='Invokes the clean action (removes common files from each service directory)', action="store_true")
+parser.add_argument('--build', nargs=1, choices=SERVICES, help='Invokes the Docker build action for given service')
 args = parser.parse_args()
 
-if args.copy:
-    print 'Symlinking common requirements and models into services directories: %s' % services
-    for service in services:
-        # Symlink requirements
-        requirements_symlink = '../requirements.txt'
-        service_symlink = "./%s/requirements.txt" % service
-        if os.path.islink(service_symlink):
-            print "Symlink %s already exists" % service_symlink
-        else:
-            print "Creating symlink %s in %s" % (requirements_symlink, service_symlink)
-            os.symlink(requirements_symlink, service_symlink)
 
-        # Symlink models
-        models_symlink = "../common/models"
-        service_symlink = "./%s/models" % service
-        if os.path.islink(service_symlink):
-            print "Symlink %s already exists" % service_symlink
+def set_environment_variables_from_env_output(env_output=''):
+    print env_output
+    # We ignore env variables that start with DOCKER_, those are Docker ones
+    env_output_lines = filter(None,
+                              filter(lambda line: not line.startswith(("DOCKER_", "#")),
+                                     env_output.split('\n')))
+    print 'output lines %s' % env_output_lines
+    for variable in env_output_lines:
+        environment_variable_name_value = variable.strip('export').strip().split('=')
+        if len(environment_variable_name_value) == 2:
+            os.environ[environment_variable_name_value[0]] = environment_variable_name_value[1].strip('"')
         else:
-            print "Creating symlink %s in %s" % (models_symlink, service_symlink)
-            os.symlink(models_symlink, service_symlink)
+            exit(VM_NOT_RUNNING_ERROR_MESSAGE)
+
 
 if args.build:
     service_name = args.build[0]
-    repo_name = "gettalent/%s" % service_name_to_repo[service_name]
+
+    # If on OS X, use docker-machine to run Docker client
+    repo_name = "gettalent/%s" % SERVICE_TO_DOCKERHUB_REPO[service_name]
     os.chdir(service_name)
-    print 'Resolving symlinks and building Docker file for service %(service_name)s, repo %(repo_name)s:' % locals()
+
+    if _platform == "darwin" or _platform == "win32":  # Host machine is not linux based
+        print 'OS X or Windows detected. Attaching bash shell to Virtual Machine'
+
+        # Configure Docker env for this process
+        try:
+            check_output('eval "$(docker-machine env default)"', shell=True)
+        except Exception as e:
+            exit(e.message)
+
+        # Set the environment variables from the Docker env
+        try:
+            command = 'docker-machine env default'
+            print command
+            set_environment_variables_from_env_output(check_output(command, shell=True))
+        except Exception as e:
+            exit(e.message)
+
+    # Build Dockerfile & push to DockerHub
+    print 'Building Docker file for service %(service_name)s, repo %(repo_name)s:' % locals()
     command = 'tar -czh . | docker build -t %(repo_name)s:latest -' % locals()
     print command
     call(command, shell=True)
 
+    print 'Pushing %(repo_name)s:latest to docker-hub registry' % locals()
+    command = 'docker push %(repo_name)s:latest' % locals()
+    print command
+    call(command, shell=True)
 
-if args.clean:
-    print 'Deleting common requirements and models from services directories: %s' % services
-    for service in services:
-        # Symlink requirements
-        service_symlink = "./%s/requirements.txt" % service
-        try:
-            print "Removing %s" % service_symlink
-            os.remove(service_symlink)
-        except Exception:
-            print "Couldn't remove %s" % service_symlink
+    # TODO: Running and testing docker container locally
 
-        # Symlink models
-        service_symlink = "./%s/models" % service
-        try:
-            print "Removing %s" % service_symlink
-            os.remove(service_symlink)
-        except Exception:
-            print "Couldn't remove %s" % service_symlink
+    # Deploy to webdev via Ansible
+    print 'Deploying docker container to staging'
+    os.chdir('../ansible-deploy')
+    command = 'ansible-playbook -i hosts --extra-vars "host=staging" --extra-vars ' \
+              '"service=%s" ansible-deploy.yml' % SERVICE_TO_DOCKERHUB_REPO[service_name]
+    print command
+    call(command, shell=True)

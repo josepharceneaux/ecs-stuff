@@ -1,4 +1,3 @@
-
 import json
 from datetime import datetime
 from datetime import timedelta
@@ -62,16 +61,12 @@ class Meetup(EventBase):
         params = {
             'member_id': self.member_id,
             'time': '%.0f, %.0f' %
-            (self.start_time_since_epoch,
-            self.end_time_since_epoch)
+                    (self.start_time_since_epoch,
+                     self.end_time_since_epoch)
         }
-        print 'Params', params
         response = http_request('GET', events_url, params=params, headers=self.headers)
-        print 'Response', response
         if response.ok:
             data = response.json()
-            print 'Data retrieved'
-            print data
             events = []  # contains events on one page
             events.extend(data['results'])
             all_events.extend([event for event in events if
@@ -101,11 +96,11 @@ class Meetup(EventBase):
         if event['group']['id']:
             url = self.api_url + '/groups/?sign=true'
             response = http_request('GET', url,
-                                     params={
-                                     'group_id':
-                                     event['group']['id']
-                                     },
-                                     headers=self.headers)
+                                    params={
+                                        'group_id':
+                                            event['group']['id']
+                                    },
+                                    headers=self.headers)
             if response.ok:
                 group = response.json()
                 group_organizer = group['results'][0]['organizer']
@@ -114,7 +109,7 @@ class Meetup(EventBase):
                     return True
         return False
 
-    def normalize_event(self, event):
+    def event_sn_to_gt_mapping(self, event):
         """
         Basically we take event's data from Meetup's end
         and map their fields to ours and finally we return
@@ -128,29 +123,28 @@ class Meetup(EventBase):
         group_organizer = None
         organizer_instance = None
         venue_instance = None
+        start_time = None
+        end_time = None
         if event.get('venue'):
             # venue data looks like
             # {u'city': u'Cupertino', u'name': u'Meetup Address', u'country': u'US', u'lon': -122.030754,
-                #  u'address_1': u'Infinite Loop', u'repinned': False, u'lat': 37.33167, u'id': 24062708}
+            #  u'address_1': u'Infinite Loop', u'repinned': False, u'lat': 37.33167, u'id': 24062708}
             venue = event['venue']
-
-        print 'Venue', venue
         # Get organizer info. First get the organizer from group info and
         # then get organizer's information which will be used to store
         # in the event.
         if event.has_key('group') and \
-            event['group'].has_key('id'):
+                event['group'].has_key('id'):
 
             url = self.api_url + '/groups/?sign=true'
             response = http_request('GET', url,
-                         params={
-                             'group_id': event['group']['id']
-                             },
-                         headers=self.headers
-            )
+                                    params={
+                                        'group_id': event['group']['id']
+                                    },
+                                    headers=self.headers
+                                    )
             if response.ok:
                 group = response.json()
-                print 'Group', group
                 if group.has_key('results'):
                     # contains a dict that has member_id and name
                     # Organizer data looks like
@@ -161,7 +155,6 @@ class Meetup(EventBase):
                     response = http_request('GET', url, headers=self.headers)
                     if response.ok:
                         organizer = response.json()
-                    print "organizer", organizer
             start_time = milliseconds_since_epoch_to_dt(float(event['time']))
             end_time = event['duration'] if event.has_key('duration') else None
             if end_time:
@@ -198,8 +191,8 @@ class Meetup(EventBase):
             description=event['description'] if event.has_key('description') else '',
             social_network_id=self.social_network.id,
             user_id=self.user.id,
-            organizer_id = organizer_instance.id if organizer_instance else None,
-            venue_id = venue_instance.id if venue_instance else None,
+            organizer_id=organizer_instance.id if organizer_instance else None,
+            venue_id=venue_instance.id if venue_instance else None,
             # group id and urlName are required fields to edit an event
             # So, should raise exception if Null
             group_id=event['group']['id'] if event.has_key('group') else '',
@@ -250,17 +243,6 @@ class Meetup(EventBase):
             log_error(message_to_log)
             raise EventNotCreated('ApiError: Unable to create event on social network')
 
-    def delete_event(self, event_id):
-        event = Event.get_by_user_and_event_id(self.user_id, event_id)
-        if event:
-            try:
-                self.unpublish_event(event_id)
-                Event.delete(event_id)
-                return True
-            except:     # some error while removing event
-                return False
-        return False    # event not found in database
-
     def add_location(self):
         """
         This function adds the location of event for meetup.
@@ -270,37 +252,43 @@ class Meetup(EventBase):
         # the url we use in other API calls of Meetup. So class variable 'api_url' is not
         # used here
         venue = Venue.get_by_id(self.venue_id)
-        assert venue is not None, 'Unable to found venue for given id'
-        url = 'https://api.meetup.com/' + self.group_url_name + '/venues'
-        payload = {
-            'address_1': venue.address_line1,
-            'address_2': venue.address_line2,
-            'city': venue.city,
-            'country': venue.country,
-            'state': venue.state,
-            'name': "Meetup Address"
-        }
-        response = http_request('POST', url, params=payload, headers=self.headers)
-        if response.ok:
-            venue_id = json.loads(response.text)['id']
-            logger.info('|  Venue has been Added  |')
-        elif response.status_code == 409:
-            venue_id = json.loads(response.text)['errors'][0]['potential_matches'][0]['id']
-            logger.info('|  Venue was picked from matched records  |')
+        if venue:
+            url = 'https://api.meetup.com/' + self.group_url_name + '/venues'
+            payload = {
+                'address_1': venue.address_line1,
+                'address_2': venue.address_line2,
+                'city': venue.city,
+                'country': venue.country,
+                'state': venue.state,
+                'name': "Meetup Address"
+            }
+            response = http_request('POST', url, params=payload, headers=self.headers)
+            if response.ok:
+                venue_id = json.loads(response.text)['id']
+                logger.info('|  Venue has been Added  |')
+            elif response.status_code == 409:
+                venue_id = json.loads(response.text)['errors'][0]['potential_matches'][0]['id']
+                logger.info('|  Venue was picked from matched records  |')
+            else:
+                error_message = 'Venue was not Added. There are some errors'
+                errors = response.json().get('errors')
+                message = '\nErrors from the social network:\n'
+                message += '\n'.join(error['message'] + ', ' + error['code'] for error in errors) if errors else ''
+                error_message += message
+                log_error(dict(function_name='add_location',
+                               class_name=self.__class__.__name__,
+                               gt_user=self.user.name,
+                               error=error_message,
+                               file_name=__file__))
+                raise EventLocationNotCreated('ApiError: Unable to create venue for event\n %s' % message)
+            return venue_id
         else:
-            error_message = 'Venue was not Added. There are some errors'
-            errors = response.json().get('errors')
-            message = '\nErrors from the social network:\n'
-            message += '\n'.join(error['message'] + ', ' + error['code'] for error in errors) if errors else ''
-            error_message += message
-            message_to_log = get_message_to_log(function_name='add_location',
-                                                class_name=self.__class__.__name__,
-                                                gt_user=self.user.name,
-                                                error=error_message,
-                                                file_name=__file__)
-            log_error(message_to_log)
-            raise EventLocationNotCreated('ApiError: Unable to create venue for event\n %s' % message)
-        return venue_id
+            error_message = 'Venue does not exist in db. Venue id is %s' % self.venue_id
+            log_error(dict(function_name='add_location',
+                           class_name=self.__class__.__name__,
+                           gt_user=self.user.name,
+                           error=error_message,
+                           file_name=__file__))
 
     def publish_meetup(self, venue_id, event_id, event_is_new):
         """
@@ -333,26 +321,14 @@ class Meetup(EventBase):
 
     def unpublish_event(self, event_id):
         """
-        This function is used when run unit test. It deletes the Event from
-        meetup which was created in the unit testing.
+        This function is used when run unit test. It sets the api_relative_url
+        and calls base class method to delete the Event from meetup which was
+        created in the unit testing.
         :param event_id:id of newly created event
         :return: True if event is deleted from vendor, False other wsie
         """
-        # create url to publish event
-        url = self.api_url + "/event/" + event_id
-        # params are None. Access token is present in self.headers
-        response = http_request('POST', url, headers=self.headers)
-        if response.ok:
-            logger.info('|  Event has been unpublished (deleted)  |')
-        else:
-            error_message = "Event was not unpublished (deleted)."
-            message_to_log = get_message_to_log(function_name='unpublish_event',
-                                                class_name=self.__class__.__name__,
-                                                gt_user=self.user.name,
-                                                error=error_message,
-                                                file_name=__file__)
-            log_error(message_to_log)
-            raise EventNotUnpublished('ApiError: Unable to remove event from specified social network')
+        self.url_to_delete_event = self.api_url + "/event/" + event_id
+        super(Meetup, self).unpublish_event(event_id)
 
     @staticmethod
     def validate_required_fields(data):
@@ -368,7 +344,7 @@ class Meetup(EventBase):
         if not all([input in data and data[input] for input in mandatory_input_data]):
             raise EventInputMissing("Mandatory parameter missing in Meetup event data.")
 
-    def gt_to_sn_fields_mappings(self, data):
+    def event_gt_to_sn_mapping(self, data):
         """
         This is actually the mapping of data from the from to the data required
         for API calls on Meetup.
@@ -394,7 +370,7 @@ class Meetup(EventBase):
                 self.group_url_name = data['group_url_name']
             else:
                 error_message = 'Group UrlName is None for eventName: %s' % data['title']
-                message_to_log = get_message_to_log(function_name='gt_to_sn_fields_mappings',
+                message_to_log = get_message_to_log(function_name='event_gt_to_sn_mapping',
                                                     class_name=self.__class__.__name__,
                                                     gt_user=self.user.name,
                                                     error=error_message,
@@ -406,10 +382,9 @@ class Meetup(EventBase):
             #                          'lon': data['longitude']})
         else:
             error_message = 'Data is None'
-            message_to_log = get_message_to_log(function_name='gt_to_sn_fields_mappings',
+            message_to_log = get_message_to_log(function_name='event_gt_to_sn_mapping',
                                                 class_name=self.__class__.__name__,
                                                 gt_user=self.user.name,
                                                 error=error_message,
                                                 file_name=__file__)
             log_error(message_to_log)
-

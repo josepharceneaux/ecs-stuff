@@ -15,7 +15,7 @@ from gevent.pool import Pool
 from datetime import datetime
 from dateutil.parser import parse
 from gt_common.models.event import Event
-from gt_common.models.user import UserCredentials
+from gt_common.models.user import UserCredentials, User
 from gt_common.models.social_network import SocialNetwork
 from utilities import get_class, get_message_to_log, log_error
 from social_network_service.custom_exections import SocialNetworkError, \
@@ -26,12 +26,9 @@ POOL_SIZE = 5
 
 
 def process_access_token(social_network_name, code_to_get_access_token, gt_user_id):
-    social_network = SocialNetwork.get_by_name(social_network_name)
-    user_credentials = UserCredentials.get_by_user_and_social_network_id(
-        gt_user_id, social_network.id)
     message_to_log = get_message_to_log(
         function_name='process_access_token()',
-        gt_user=user_credentials.user.firstName + ' ' + user_credentials.user.lastName)
+        gt_user=User.get_by_id(gt_user_id).name)
     social_network = SocialNetwork.get_by_name(social_network_name)
     social_network_class = get_class(social_network_name, 'social_network')
     access_token, refresh_token = social_network_class.get_access_token(
@@ -115,34 +112,42 @@ def process_event(data, user_id):
 
 
 def delete_events(user_id, event_ids):
-    assert len(event_ids) > 0, 'event_ids should contain at least one event id'
-    social_networks = {}
-    deleted, not_deleted = [], []
-    for event_id in event_ids:
-        event = Event.get_by_user_and_event_id(user_id, event_id)
-        if event:
-            social_network = event.socialNetwork
-            if social_network.id not in social_networks:
-                social_network_class = get_class(social_network.name.lower(), 'social_network')
-                event_class = get_class(social_network.name.lower(), 'event')
-                sn = social_network_class(user_id=user_id, social_network_id=social_network.id)
-                event_obj = event_class(user_id=user_id,
-                                        api_url=social_network.apiUrl,
-                                        headers=sn.headers)
-                social_networks[social_network.id] = dict(event_obj=event_obj,
-                                                          event_ids=[event_id])
+    if event_ids:
+        social_networks = {}
+        deleted, not_deleted = [], []
+        for event_id in event_ids:
+            event = Event.get_by_user_and_event_id(user_id, event_id)
+            if event:
+                social_network = event.socialNetwork
+                if social_network.id not in social_networks:
+                    social_network_class = get_class(social_network.name.lower(), 'social_network')
+                    event_class = get_class(social_network.name.lower(), 'event')
+                    sn = social_network_class(user_id=user_id, social_network_id=social_network.id)
+                    event_obj = event_class(user_id=user_id,
+                                            api_url=social_network.apiUrl,
+                                            headers=sn.headers)
+                    social_networks[social_network.id] = dict(event_obj=event_obj,
+                                                              event_ids=[event_id])
+                else:
+                    social_networks[social_network.id]['event_ids'].append(event_id)
             else:
-                social_networks[social_network.id]['event_ids'].append(event_id)
-        else:
-            not_deleted.append(event_id)
-
-    for _, social_network in social_networks.items():
-        event_obj = social_network['event_obj']
-        dltd, nt_dltd = event_obj.delete_events(social_network['event_ids'])
-        deleted.extend(dltd)
-        not_deleted.extend(nt_dltd)
-
-    return deleted, not_deleted
+                not_deleted.append(event_id)
+        for _, social_network in social_networks.items():
+            event_obj = social_network['event_obj']
+            dltd, nt_dltd = event_obj.delete_events(social_network['event_ids'])
+            deleted.extend(dltd)
+            not_deleted.extend(nt_dltd)
+        return deleted, not_deleted
+    else:
+        error_message = 'event_ids should contain at least one event id'
+        log_error(
+            dict(
+                functionName='delete_events()',
+                error=error_message,
+                user=User.get_by_id(user_id).name,
+                fileName=__file__
+            )
+        )
 
 
 def start():
@@ -187,7 +192,7 @@ def start():
             sn.get_member_id(dict())
         job_pool.spawn(sn.process(name_space.mode,
                                   user_credentials=user_credentials))
-    job_pool.join()
+    # job_pool.join()
 
 if __name__ == '__main__':
     try:
