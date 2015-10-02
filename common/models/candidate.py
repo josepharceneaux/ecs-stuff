@@ -121,11 +121,11 @@ class PublicCandidateSharing(db.Model):
 class CandidatePhone(db.Model):
     __tablename__ = 'candidate_phone'
     id = db.Column(db.Integer, primary_key=True)
-    candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.id'))
-    phone_label_id = db.Column(db.Integer, db.ForeignKey('phone_label.id'))
+    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
+    phone_label_id = db.Column('PhoneLabelId', db.Integer, db.ForeignKey('phone_label.id'))
     value = db.Column(db.String(50), nullable=False)
     extension = db.Column(db.String(5))
-    is_default = db.Column(db.Boolean)
+    is_default = db.Column('IsDefault', db.Boolean)
 
     def __repr__(self):
         return "<CandidatePhone (value=' %r', extention= ' %r')>" % (self.value, self.extension)
@@ -161,7 +161,7 @@ class CandidatePhoto(db.Model):
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     list_order = db.Column('ListOrder', db.Integer)
     filename = db.Column(db.String(260))
-    is_default = db.Column(db.Boolean)
+    is_default = db.Column('IsDefault', db.Boolean)
 
     def __repr__(self):
         return "<CandidatePhoto (filename=' %r')>" % self.filename
@@ -209,7 +209,7 @@ class CandidateTextComment(db.Model):
 class VoiceComment(db.Model):
     __tablename__ = 'voice_comment'
     id = db.Column(db.Integer, primary_key=True)
-    candidate_id = db.Column('CandidatedId', db.Integer, db.ForeignKey('candidate.id'))
+    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     list_order = db.Column('ListOrder', db.Integer)
     filename = db.Column('Filename', db.String(260))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
