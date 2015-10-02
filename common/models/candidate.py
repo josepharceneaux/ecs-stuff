@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 import datetime
 import time
 
+from associations import ReferenceEmail
 
 class Candidate(db.Model):
     __tablename__ = 'candidate'
@@ -462,7 +463,7 @@ class PatentInventor(db.Model):
 class PatentMilestone(db.Model):
     __tabelname__ = 'patent_milestone'
     id = db.Column(db.BigInteger, primary_key=True)
-    patent_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('status.id'))
+    patent_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('patent_status.id'))
     issued_date = db.Column('IssuedDate', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
@@ -475,9 +476,9 @@ class CandidatePublication(db.Model):
     id = db.Column(db.BigInteger, primary_key=True)
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     title = db.Column('Title', db.String(200))
-    start_year = db.Column('StartYear', db.Year)    # todo: accpet Year format only or create a function to validate
+    start_year = db.Column('StartYear', db.Integer)    # todo: accept Year format only or create a function to validate
     start_month = db.Column('StartMonth', db.Integer)
-    end_year = db.Column('EndYear', db.Year)        # todo: accept Year format only or create a function to validate
+    end_year = db.Column('EndYear', db.Integer)        # todo: accept Year format only or create a function to validate
     end_month = db.Column('EndMonth', db.Integer)
     description = db.Column('Description', db.String(10000))
     added_time = db.Column('AddedTime', db.DateTime)
@@ -535,9 +536,9 @@ class CandidateEducationDegree(db.Model):
     list_order = db.Column('ListOrder', db.SmallInteger)
     degree_type = db.Column('DegreeType', db.String(100))
     degree_title = db.Column('DegreeTitle', db.String(100))
-    start_year = db.Column('StartYear', db.Year)
+    start_year = db.Column('StartYear', db.Integer)  # todo: accept Year format only or create a function to validate
     start_month = db.Column('StartMonth', db.SmallInteger)
-    EndYear = db.Column('EndYear', db.Year)
+    end_year = db.Column('EndYear', db.Integer)  # todo: accept Year format only or create a function to validate
     end_month = db.Column('EndMonth', db.SmallInteger)
     gpa_num = db.Column('GpaNum', db.DECIMAL)
     gpa_denom = db.Column('GpaDenom', db.DECIMAL)
@@ -578,10 +579,10 @@ class CandidateExperience(db.Model):
     city = db.Column('City', db.String(50))
     state = db.Column('State', db.String(50))
     end_month = db.Column('EndMonth', db.SmallInteger)
-    start_year = db.Column('StartYear', db.Year)
+    start_year = db.Column('StartYear', db.Integer)  # todo: accept Year format only or create a function to validate
     country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
     start_month = db.Column('StartMonth', db.SmallInteger)
-    end_year = db.Column('EndYear', db.Year)
+    end_year = db.Column('EndYear', db.Integer)  # todo: accept Year format only or create a function to validate
     is_current = db.Column('IsCurrent', db.Boolean, default=False)
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
