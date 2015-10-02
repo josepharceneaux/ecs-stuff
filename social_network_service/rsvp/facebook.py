@@ -1,7 +1,7 @@
 import requests
 
 from datetime import datetime, timedelta
-from gt_common.models.event import Event
+from common.models.event import Event
 from social_network_service.rsvp.base import RSVPBase
 from social_network_service.utilities import Attendee, log_exception, \
     import_from_dist_packages, log_error, get_message_to_log

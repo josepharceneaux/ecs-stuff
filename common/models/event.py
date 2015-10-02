@@ -1,6 +1,5 @@
 from db import db
-from sqlalchemy import ForeignKey
-from sqlalchemy.orgm import relationship
+from sqlalchemy import ForeignKey, DateTime, Float, and_
 
 
 class Event(db.Model):

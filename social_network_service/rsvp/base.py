@@ -1,13 +1,12 @@
 import json
 
 from abc import ABCMeta, abstractmethod
-from gt_common.models.event import Event
-from gt_common.models.product import Product
-from gt_common.models.activity import Activity
-from gt_common.models.rsvp import RSVP, CandidateEventRSVP
-from gt_common.models.candidate import CandidateSource, Candidate
+from common.models.product import Product
+from common.models.activity import Activity
+from common.models.rsvp import RSVP, CandidateEventRSVP
+from common.models.candidate import CandidateSource, Candidate
 from social_network_service.utilities import log_exception, log_error, get_message_to_log
-from gt_common.models.user import User
+from common.models.user import User
 
 
 class RSVPBase(object):

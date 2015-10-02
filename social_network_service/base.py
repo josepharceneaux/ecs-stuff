@@ -1,9 +1,7 @@
-import importlib
 import requests
-from abc import ABCMeta, abstractmethod
-from gt_common.models.event import Event
-from gt_common.models.social_network import SocialNetwork
-from gt_common.models.user import User, UserCredentials
+from abc import ABCMeta
+from common.models.social_network import SocialNetwork
+from common.models.user import User, UserCredentials
 
 
 from utilities import get_message_to_log, log_error,\
