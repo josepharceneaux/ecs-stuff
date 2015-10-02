@@ -7,20 +7,16 @@ __author__ = 'erikfarmer'
 from datetime import datetime
 import json
 import re
-import urllib2
-
-#third party packages
-import requests
 
 #framework specific
 from flask import Blueprint
-from flask import current_app as app
 from flask import jsonify
 from flask import request
 
 #application specific
 from activities_service.models.db import db
 from activities_service.models.user import User
+from activities_service.models.misc import Activity
 from activities_service.utils.auth_utils import authenticate_oauth_user
 
 ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'

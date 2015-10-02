@@ -16,6 +16,7 @@ class CandidateAreaOfInterest(db.Model):
 
 class ReferenceEmail(db.Model):
     __tablename__ = 'reference_email'
+    id = db.Column(db.Integer, primary_key=True)
     candidate_reference_id = db.Column('ReferenceId', db.BigInteger, db.ForeignKey('candidate_reference.id'))
     email_label_id = db.Column('EmailLabelId', db.Integer, db.ForeignKey('email_label.id'))
     is_default = db.Column('IsDefault', db.Boolean)
@@ -28,8 +29,9 @@ class ReferenceEmail(db.Model):
 
 class ReferencePhone(db.Model):
     __tablename__ = 'reference_phone'
-    candidate_reference_id = db.Column('ReferenceId', db.BigInteger, db.ForeignKey('reference.id'), primary_key=True)
-    phone_label_id = db.Column('PhoneLabelId', db.Integer)
+    id = db.Column(db.Integer, primary_key=True)
+    candidate_reference_id = db.Column('ReferenceId', db.BigInteger, db.ForeignKey('candidate_reference.id'), primary_key=True) # Multi key?
+    phone_label_id = db.Column('PhoneLabelId', db.Integer, db.ForeignKey('phone_label.id'))
     is_default = db.Column('IsDefault', db.Boolean)
     value = db.Column('Value', db.String(50))
     extension = db.Column('Extension', db.String(10))
