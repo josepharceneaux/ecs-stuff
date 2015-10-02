@@ -27,7 +27,6 @@ class Facebook(EventBase):
         does that too.
         """
         # self.traceback_info.update({"functionName": "get_events()"})
-        print 'Facebook dir', dir(facebook)
         self.graph = facebook.GraphAPI(access_token=self.access_token)
         all_events = []
         user_events = []
@@ -88,7 +87,7 @@ class Facebook(EventBase):
                 )
                 raise
 
-    def normalize_event(self, event):
+    def event_sn_to_gt_mapping(self, event):
         """
         Basically we take event's data from Facebook's end
         and map their fields to getTalent db and finally we return
@@ -113,11 +112,11 @@ class Facebook(EventBase):
                 organizer = organizer.get('data')
             except facebook.GraphAPIError as error:
                 log_exception({
-                            'Reason': error.message,
-                            'functionName': 'normalize_event',
-                            'fileName': __file__,
-                            'User': self.user.id
-                        })
+                    'error': error.message,
+                    'functionName': 'normalize_event',
+                    'fileName': __file__,
+                    'user': self.user.name
+                })
                 raise
         if owner or organizer:
             organizer_instance = Organizer(
@@ -157,8 +156,12 @@ class Facebook(EventBase):
                 registration_instruction='',
                 cost=0,
                 currency='',
-                max_attendees=event['attending_count'] + event['maybe_count'] + event['noreply_count'] if (event and \
-                    event.has_key('attending_count') and event.has_key('maybe_count') and event.has_key('noreply_count'))\
+                max_attendees=event['attending_count'] + event['maybe_count']
+                              + event['noreply_count']
+                if (event
+                    and event.has_key('attending_count')
+                    and event.has_key('maybe_count')
+                    and event.has_key('noreply_count'))
                 else ''
             )
         except Exception as error:
@@ -174,4 +177,16 @@ class Facebook(EventBase):
             return event
 
     def create_event(self):
+        """
+        Event creation via API is not alloewd on Facebook
+        :return:
+        """
+        pass
+
+    def event_gt_to_sn_mapping(self, data):
+        """
+        Event creation via API is not alloewd on Facebook.
+        So ther will be no maapping of fields
+        :return:
+        """
         pass

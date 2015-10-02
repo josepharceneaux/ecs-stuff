@@ -1,4 +1,3 @@
-
 import pytz
 import json
 from datetime import datetime
@@ -27,6 +26,7 @@ class Eventbrite(EventBase):
     This implements the abstract methods defined in interface.
     It also implements functions to create event on Eventbrite website.
     """
+
     def __init__(self, *args, **kwargs):
         """
         :param args:
@@ -40,7 +40,7 @@ class Eventbrite(EventBase):
         self.ticket_payload = None
         self.venue_payload = None
         self.start_date_in_utc = kwargs.get('start_date') or \
-            (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+                                 (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     def get_events(self):
         """
@@ -56,14 +56,14 @@ class Eventbrite(EventBase):
         all_events = []
         try:
             response = http_request('GET', events_url, params=params,
-                                headers=self.headers)
+                                    headers=self.headers)
         except Exception as error:
             log_exception({
-                            'Reason': error.message,
-                            'functionName': 'get_events',
-                            'fileName': __file__,
-                            'User': self.user.id
-                        })
+                'error': error.message,
+                'functionName': 'get_events()',
+                'fileName': __file__,
+                'user': self.user.name
+            })
             raise
         if response.ok:
             data = response.json()
@@ -78,14 +78,14 @@ class Eventbrite(EventBase):
                 params_copy['page'] = current_page
                 try:
                     response = http_request('GET', events_url, params=params_copy,
-                                        headers=self.headers)
+                                            headers=self.headers)
                 except Exception as error:
                     log_exception({
-                            'Reason': error.message,
-                            'functionName': 'get_events',
-                            'fileName': __file__,
-                            'User': self.user.id
-                        })
+                        'error': error.message,
+                        'functionName': 'get_events()',
+                        'fileName': __file__,
+                        'user': self.user.name
+                    })
                     raise
                 if response.ok:
                     data = response.json()
@@ -93,7 +93,7 @@ class Eventbrite(EventBase):
             return all_events
         return all_events
 
-    def normalize_event(self, event):
+    def event_sn_to_gt_mapping(self, event):
         """
         Basically we take event's data from Eventbrite's end
         and map their fields to ours and finally we return
@@ -113,14 +113,14 @@ class Eventbrite(EventBase):
         if event['venue_id']:
             try:
                 response = http_request('GET', self.api_url + '/venues/' + event['venue_id'],
-                                    headers=self.headers)
+                                        headers=self.headers)
             except Exception as error:
                 log_exception({
-                            'Reason': error.message,
-                            'functionName': 'normalize_event',
-                            'fileName': __file__,
-                            'User': self.user.id
-                        })
+                    'error': error.message,
+                    'functionName': 'event_sn_to_gt_mapping()',
+                    'fileName': __file__,
+                    'user': self.user.name
+                })
                 raise
             if response.ok:
                 venue = response.json()
@@ -128,14 +128,14 @@ class Eventbrite(EventBase):
                 if event['organizer_id']:
                     try:
                         response = http_request('GET', self.api_url +
-                                             '/organizers/' + event['organizer_id'],
-                                            headers=self.headers)
+                                                '/organizers/' + event['organizer_id'],
+                                                headers=self.headers)
                     except Exception as error:
                         log_exception({
-                            'Reason': error.message,
-                            'functionName': 'normalize_event',
+                            'error': error.message,
+                            'functionName': 'event_sn_to_gt_mapping()',
                             'fileName': __file__,
-                            'User': self.user.id
+                            'user': self.user.name
                         })
                         raise
                     if response.ok:
@@ -143,14 +143,14 @@ class Eventbrite(EventBase):
                     if organizer:
                         try:
                             response = http_request('GET', self.api_url + '/users/'
-                                                 + self.member_id,
-                                                headers=self.headers)
+                                                    + self.member_id,
+                                                    headers=self.headers)
                         except Exception as error:
                             log_exception({
-                                'Reason': error.message,
-                                'functionName': 'normalize_event',
+                                'error': error.message,
+                                'functionName': 'event_sn_to_gt_mapping()',
                                 'fileName': __file__,
-                                'User': self.user.id
+                                'user': self.user.name
                             })
                             raise
                         if response.ok:
@@ -186,7 +186,7 @@ class Eventbrite(EventBase):
             title=event['name']['text'],
             description=event['description']['text'],
             social_network_id=self.social_network.id,
-            organizer_id = organizer_instance.id if organizer_instance else None,
+            organizer_id=organizer_instance.id if organizer_instance else None,
             user_id=self.user.id,
             group_id=0,
             url='',
@@ -243,34 +243,13 @@ class Eventbrite(EventBase):
             error_detail = response.get('error', '') + ': ' + response.get('error_description', '')
             if error_detail != ': ':
                 error_message += '\n%s' % error_detail
-            log_exception(
-                dict(
-                    functionName='create_event',
-                    user=self.user.name,
-                    error=error_detail,
-                    fileName=__file__
-                )
-            )
+            log_error({'error': error_detail,
+                       'functionName': 'create_event()',
+                       'fileName': __file__,
+                       'user': self.user.name,
+                       'class': self.__class__.__name__
+                       })
             raise EventNotCreated(error_message)
-
-    def delete_event(self, event_id):
-        event = Event.get_by_user_and_event_id(self.user_id, event_id)
-        if event:
-            try:
-                self.unpublish_event(event_id)
-                Event.delete(event_id)
-                return True
-            except Exception as error:     # some error while removing event
-                log_exception(
-                    dict(
-                        functionName='delete_event',
-                        error=error.message,
-                        user=self.user.name,
-                        fileName=__file__
-                    )
-                )
-                return False
-        return False    # event not found in database
 
     def add_location(self, venue_id=None):
         """
@@ -298,14 +277,12 @@ class Eventbrite(EventBase):
             message = '\nErrors from the vendor:\n'
             message += ''.join(response.json().get('error') + ',' + response.json().get('error_description'))
             error_message += message
-            log_error(
-                dict(
-                    error=error_message,
-                    functionName='add_location',
-                    fileName=__file__,
-                    user=self.user.name
-                )
-            )
+            log_error({'error': error_message,
+                       'functionName': 'add_location()',
+                       'fileName': __file__,
+                       'user': self.user.name,
+                       'class': self.__class__.__name__
+                       })
             raise EventLocationNotCreated('ApiError: Unable to create venue for event\n %s' % message)
 
     def manage_event_tickets(self, event_id, event_is_new):
@@ -329,14 +306,12 @@ class Eventbrite(EventBase):
                         % str(self.ticket_payload['ticket_class.quantity_total']))
             return response.json().get('id')
         else:
-            log_error(
-                dict(
-                    error='Event tickets were not created successfully',
-                    functionName='manage_event_tickets',
-                    fileName=__file__,
-                    user=self.user.name
-                )
-            )
+            log_error({'error': 'Event tickets were not created successfully',
+                       'functionName': 'manage_event_tickets()',
+                       'fileName': __file__,
+                       'user': self.user.name,
+                       'class': self.__class__.__name__
+                       })
             raise TicketsNotCreated('ApiError: Unable to create event tickets on Eventbrite')
 
     def publish_event(self, event_id):
@@ -354,41 +329,24 @@ class Eventbrite(EventBase):
         else:
             error_message = "Event was not Published. There are some errors: " \
                             "Details: %s  |" % response
-            log_error(
-                dict(
-                    error=error_message,
-                    functionName='publish_event',
-                    fileName=__file__,
-                    user=self.user.name
-                )
-            )
+            log_error({'error': error_message,
+                       'functionName': 'publish_event()',
+                       'fileName': __file__,
+                       'user': self.user.name,
+                       'class': self.__class__.__name__
+                       })
             raise EventNotPublished('ApiError: Unable to publish event on specified social network')
 
     def unpublish_event(self, event_id):
         """
-        This function is used to un publish the event from website of
-        Eventbrite.
-        :param event_id:
-        :return:
+        This function is used when run unit test. It sets the api_relative_url
+        and calls base class method to delete the Event from meetup which was
+        created in the unit testing.
+        :param event_id:id of newly created event
+        :return: True if event is deleted from vendor, False other wsie
         """
-        # create url to publish event
-        url = self.api_url + "/events/" + event_id + "/unpublish/"
-        # params are None. Access token is present in self.headers
-        response = http_request('POST', url, headers=self.headers)
-        if response.ok:
-            logger.info('|  Event has been unpublished  |')
-        else:
-            error_message = "Event was not unpublished. There are some errors. " \
-                            "Response is %s  |" % response
-            log_error(
-                dict(
-                    error=error_message,
-                    functionName='unpublish_event',
-                    fileName=__file__,
-                    user=self.user.name
-                )
-            )
-            raise EventNotUnpublished('ApiError: Unable to remove event from specified social network')
+        self.url_to_delete_event = self.api_url + "/events/" + event_id + "/unpublish/"
+        super(Eventbrite, self).unpublish_event(event_id)
 
     @staticmethod
     def validate_required_fields(data):
@@ -403,18 +361,19 @@ class Eventbrite(EventBase):
             log_error(
                 dict(
                     error='Mandatory parameters missing in Eventbrite data',
-                    functionName='validate_required_files',
+                    functionName='validate_required_files()',
                     fileName=__file__,
                     user=''
                 )
             )
             raise EventInputMissing("Mandatory parameter missing in Eventbrite data.")
 
-    def gt_to_sn_fields_mappings(self, data):
+    def event_gt_to_sn_mapping(self, data):
         """
         This is actually the mapping of data from the input data from
         EventCreationForm to the data required for API calls on Eventbrite.
         """
+        function_name = 'event_gt_to_sn_mapping()'
         if data:
             self.validate_required_fields(data)
             #  filling required fields for Eventbrite
@@ -437,14 +396,12 @@ class Eventbrite(EventBase):
                 end_time = utc_dts[1]
             else:
                 error_message = 'Time Zone is None for Event %s ' % event_name
-                log_error(
-                    dict(
-                        error=error_message,
-                        functionName='gt_to_sn_fields_mapping',
-                        fileName=__file__,
-                        user=self.user.name
-                    )
-                )
+                log_error({'error': error_message,
+                           'functionName': function_name,
+                           'fileName': __file__,
+                           'user': self.user.name,
+                           'class': self.__class__.__name__
+                           })
             currency = data['currency']
             time_zone = data['timezone']
 
@@ -487,14 +444,13 @@ class Eventbrite(EventBase):
             }
             self.social_network_event_id = data.get('social_network_event_id')
         else:
-            log_error(
-                dict(
-                    error='Data is None',
-                    functionName='gt_to_sn_fields_mapping',
-                    fileName=__file__,
-                    user=self.user.name
-                )
-            )
+            error_message = 'Data is None'
+            log_error({'error': error_message,
+                       'functionName': function_name,
+                       'fileName': __file__,
+                       'user': self.user.name,
+                       'class': self.__class__.__name__
+                       })
 
     def create_webhook(self, user_credentials):
         """
@@ -507,7 +463,6 @@ class Eventbrite(EventBase):
         every user).
         :return: True if webhook creation is successful o/w False
         """
-        self.message_to_log.update({'functionName': 'create_webhook()'})
         status = False
         if (user_credentials.user_id == user_credentials.user_id) \
                 and (user_credentials.social_network_id == user_credentials.social_network_id) \
@@ -521,23 +476,20 @@ class Eventbrite(EventBase):
                     user_credentials.update_record(webhook=webhook_id)
                     status = True
                 except Exception as e:
-                    log_exception(
-                        dict(
-                            error=e.message,
-                            functionName='create_webhook',
-                            fileName=__file__,
-                            user=self.user.name
-                        )
-                    )
+                    log_exception({'error': e.message,
+                                   'functionName': 'create_webhook()',
+                                   'fileName': __file__,
+                                   'user': self.user.name,
+                                   'class': self.__class__.__name__
+                                   })
             else:
-                log_error(
-                    dict(
-                        error="Eventbrite Webhook wasn't created successfully",
-                        functionName='create_webhook',
-                        fileName=__file__,
-                        user=self.user.name
-                    )
-                )
+                error_message = "Eventbrite Webhook wasn't created successfully"
+                log_error({'error': error_message,
+                           'functionName': 'create_webhook()',
+                           'fileName': __file__,
+                           'user': self.user.name,
+                           'class': self.__class__.__name__
+                           })
         else:
             # webhook has already been created for this user
             status = True
