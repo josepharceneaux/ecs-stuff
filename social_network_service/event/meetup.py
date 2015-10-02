@@ -193,11 +193,7 @@ class MeetupEvent(EventBase):
             Venue.save(venue_instance)
 
         return Event(
-<<<<<<< HEAD
             social_network_event_id=event['id'],
-=======
-            id=event['id'],
->>>>>>> 0774d2b3242d0ae975f49c99c0b0b53b8994cef5
             title=event['name'],
             description=event['description'] if event.has_key('description') else '',
             social_network_id=self.social_network.id,
