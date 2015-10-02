@@ -3,7 +3,6 @@ import re
 import flask
 import requests
 from flask_restful import Resource
-from custom_exections import InvalidUsage, ApiException
 from restful.social_networks import social_network_blueprint
 from .restful.events import events_blueprint
 from event_importer.base import logger

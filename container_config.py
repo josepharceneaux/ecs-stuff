@@ -6,45 +6,57 @@ import os
 from subprocess import call, check_output
 from sys import exit, platform as _platform
 
-virtual_machine_error_message = 'Virtual Machine is not running. Please start it with docker-machine start VM_NAME'
-services = ['auth_service', 'candidate_service', 'resume_service']
-service_name_to_repo = {'auth_service': 'authservice',
-                        'resume_service': 'resume-parsing-service',
-                        'candidate_service': 'candidate-service'}
+VM_NOT_RUNNING_ERROR_MESSAGE = 'Virtual Machine is not running. Please start it with docker-machine start VM_NAME'
+SERVICES = ['auth_service', 'candidate_service', 'resume_service']
+SERVICE_TO_DOCKERHUB_REPO = {'auth_service': 'authservice',
+                             'resume_service': 'resume-parsing-service',
+                             'candidate_service': 'candidate-service'}
 
 parser = argparse.ArgumentParser(description='Common files administrator for Docker building.')
-parser.add_argument('--build', nargs=1, choices=services, help='Invokes the Docker build action for given service')
+parser.add_argument('--build', nargs=1, choices=SERVICES, help='Invokes the Docker build action for given service')
 args = parser.parse_args()
 
 
-def set_environment(variables=''):
-    variables = variables.split('\n')
-    if variables and len(variables) >= 4:
-        variables = variables[:4]
-        for variable in variables:
-            environment_variable = variable.strip('export').strip().split('=')
-            if len(environment_variable) == 2:
-                os.environ[environment_variable[0]] = environment_variable[1].strip('"')
-            else:
-                exit(virtual_machine_error_message)
-    else:
-        exit(virtual_machine_error_message)
+def set_environment_variables_from_env_output(env_output=''):
+    print env_output
+    # We ignore env variables that start with DOCKER_, those are Docker ones
+    env_output_lines = filter(None,
+                              filter(lambda line: not line.startswith(("DOCKER_", "#")),
+                                     env_output.split('\n')))
+    print 'output lines %s' % env_output_lines
+    for variable in env_output_lines:
+        environment_variable_name_value = variable.strip('export').strip().split('=')
+        if len(environment_variable_name_value) == 2:
+            os.environ[environment_variable_name_value[0]] = environment_variable_name_value[1].strip('"')
+        else:
+            exit(VM_NOT_RUNNING_ERROR_MESSAGE)
+
 
 if args.build:
     service_name = args.build[0]
-    repo_name = "gettalent/%s" % service_name_to_repo[service_name]
+
+    # If on OS X, use docker-machine to run Docker client
+    repo_name = "gettalent/%s" % SERVICE_TO_DOCKERHUB_REPO[service_name]
     os.chdir(service_name)
 
     if _platform == "darwin" or _platform == "win32":  # Host machine is not linux based
-        print 'Attaching bash shell to Virtual Machine'
-        command = 'docker-machine env default'
-        print 'Command: ' + command
+        print 'OS X or Windows detected. Attaching bash shell to Virtual Machine'
 
+        # Configure Docker env for this process
         try:
-            set_environment(check_output('docker-machine env default', shell=True))
+            check_output('eval "$(docker-machine env default)"', shell=True)
         except Exception as e:
             exit(e.message)
 
+        # Set the environment variables from the Docker env
+        try:
+            command = 'docker-machine env default'
+            print command
+            set_environment_variables_from_env_output(check_output(command, shell=True))
+        except Exception as e:
+            exit(e.message)
+
+    # Build Dockerfile & push to DockerHub
     print 'Building Docker file for service %(service_name)s, repo %(repo_name)s:' % locals()
     command = 'tar -czh . | docker build -t %(repo_name)s:latest -' % locals()
     print command
@@ -57,9 +69,10 @@ if args.build:
 
     # TODO: Running and testing docker container locally
 
+    # Deploy to webdev via Ansible
+    print 'Deploying docker container to staging'
     os.chdir('../ansible-deploy')
-    print 'Deployed docker container to staging'
     command = 'ansible-playbook -i hosts --extra-vars "host=staging" --extra-vars ' \
-              '"service=%s" ansible-deploy.yml' % service_name_to_repo[service_name]
+              '"service=%s" ansible-deploy.yml' % SERVICE_TO_DOCKERHUB_REPO[service_name]
     print command
     call(command, shell=True)
