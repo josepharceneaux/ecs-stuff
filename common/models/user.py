@@ -274,3 +274,73 @@ class UserScopedRoles(db.Model):
         """
         user_scoped_roles = UserScopedRoles.query.filter_by(userId=user_id).all() or []
         return dict(roles=[user_scoped_role.roleId for user_scoped_role in user_scoped_roles])
+
+
+class UserCredentials(db.Model):
+    """
+    This represents database table that holds user's credentials of a
+    social network.
+    """
+    __tablename__ = 'user_credentials'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column('userId', db.Integer, ForeignKey('user.id'), nullable=False)
+    social_network_id = db.Column('socialNetworkId', db.Integer, ForeignKey('social_network.id'), nullable=False)
+    refresh_token = db.Column('refreshToken', db.String(1000))
+    webhook = db.Column(db.String(200))
+    member_id = db.Column('memberId', db.String(100))
+    access_token = db.Column('accessToken', db.String(1000))
+    social_network = relationship("SocialNetwork")
+
+    @classmethod
+    def get_all_credentials(cls, social_network_id=None):
+        if social_network_id is None:
+            return cls.query.all()
+        else:
+            return cls.get_user_credentials_of_social_network(social_network_id)
+
+    @classmethod
+    def get_user_credentials_of_social_network(cls, social_network_id):
+        assert social_network_id is not None
+
+        return cls.query.filter(
+            UserCredentials.social_network_id == social_network_id
+        ).all()
+
+    @classmethod
+    def get_by_user_id(cls, user_id):
+        assert user_id is not None
+        return cls.query.filter(
+            UserCredentials.user_id == user_id
+        ).all()
+
+    @classmethod
+    def get_by_user_and_social_network_id(cls, user_id, social_network_id):
+        assert user_id is not None
+        assert social_network_id is not None
+        return cls.query.filter(
+            and_(
+                UserCredentials.user_id == user_id,
+                UserCredentials.social_network_id == social_network_id
+            )
+        ).first()
+
+    @classmethod
+    def update_auth_token(cls, user_id, social_network_id, access_token):
+        # TODO improve this method
+        success = False
+        user = cls.get_by_user_and_social_network(user_id, social_network_id)
+        if user:
+            user.update(access_token=access_token)
+            success = True
+        return success
+
+    @classmethod
+    def get_by_webhook_id_and_social_network(cls, webhook_id, social_network_id):
+        assert webhook_id is not None
+        assert social_network_id is not None
+        return cls.query.filter(
+            and_(
+                UserCredentials.webhook == webhook_id,
+                UserCredentials.social_network_id == social_network_id
+            )
+        ).first()

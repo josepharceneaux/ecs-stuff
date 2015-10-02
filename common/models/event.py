@@ -1,31 +1,31 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, \
-    ForeignKey, and_
-from base import ModelBase as Base
+from db import db
+from sqlalchemy import ForeignKey
+from sqlalchemy.orgm import relationship
 
 
-class Event(Base):
+class Event(db.Model):
     __tablename__ = 'event'
 
-    id = Column(Integer, primary_key=True)
-    social_network_event_id = Column('socialNetworkEventId', String(1000))
-    title = Column('title', String(500))
-    description = Column('description', String(1000))
-    social_network_id = Column('socialNetworkId', Integer, ForeignKey('social_network.id'), nullable=False)
-    user_id = Column('userId', Integer, ForeignKey('user.id'), nullable=False)
-    organizer_id = Column('organizerId', Integer, ForeignKey('organizer.id'), nullable=False)
-    venue_id = Column('venueId', Integer, ForeignKey('venue.id'), nullable=False)
-    group_id = Column('groupId', String(100))
-    group_url_name = Column('groupUrlName', String(500))
-    url = Column('url', String(500))
-    start_datetime = Column('startDatetime', DateTime)
-    end_datetime = Column('endDatetime', DateTime)
-    registration_instruction = Column('registrationInstruction', String(1000))
-    cost = Column('cost', Float)
-    currency = Column('currency', String(20))
-    timezone = Column('timezone', String(100))
-    max_attendees = Column('maxAttendees', Integer)
+    id = db.Column(db.Integer, primary_key=True)
+    social_network_event_id = db.Column('socialNetworkEventId', db.String(1000))
+    title = db.Column('title', db.String(500))
+    description = db.Column('description', db.String(1000))
+    social_network_id = db.Column('socialNetworkId', db.Integer, ForeignKey('social_network.id'), nullable=False)
+    user_id = db.Column('userId', db.Integer, ForeignKey('user.id'), nullable=False)
+    organizer_id = db.Column('organizerId', db.Integer, ForeignKey('organizer.id'), nullable=False)
+    venue_id = db.Column('venueId', db.Integer, ForeignKey('venue.id'), nullable=False)
+    group_id = db.Column('groupId', db.String(100))
+    group_url_name = db.Column('groupUrlName', db.String(500))
+    url = db.Column('url', db.String(500))
+    start_datetime = db.Column('startDatetime', DateTime)
+    end_datetime = db.Column('endDatetime', DateTime)
+    registration_instruction = db.Column('registrationInstruction', db.String(1000))
+    cost = db.Column('cost', Float)
+    currency = db.Column('currency', db.String(20))
+    timezone = db.Column('timezone', db.String(100))
+    max_attendees = db.Column('maxAttendees', db.Integer)
     # TODO comment why do we need ticket_id. Also, why is it not a relation?
-    tickets_id = Column('ticketsId', Integer, nullable=True)
+    tickets_id = db.Column('ticketsId', db.Integer, nullable=True)
 
     def __ne__(self, other_event):
         return (self.social_network_event_id != other_event.social_network_event_id and

@@ -1,18 +1,18 @@
-from sqlalchemy import Column, Integer, String, not_
+from db import db
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
-from base import ModelBase as Base
 
 
-class SocialNetwork(Base):
+class SocialNetwork(db.Model):
     __tablename__ = 'social_network'
-    id = Column('id', Integer, primary_key=True)
-    name = Column('name', String(100))
-    url = Column('url', String(255))
-    api_url = Column('apiUrl', String(255))
-    client_key = Column('clientKey', String(500))
-    secret_key = Column('secretKey', String(500))
-    redirect_uri = Column('redirectUri', String(255))
-    auth_url = Column('authUrl', String(200))
+    id = db.Column('id', db.Integer, primary_key=True)
+    name = db.Column('name', db.String(100))
+    url = db.Column('url', db.String(255))
+    api_url = db.Column('apiUrl', db.String(255))
+    client_key = db.Column('clientKey', db.String(500))
+    secret_key = db.Column('secretKey', db.String(500))
+    redirect_uri = db.Column('redirectUri', db.String(255))
+    auth_url = db.Column('authUrl', db.String(200))
 
     events = relationship("Event", backref='social_network', lazy='dynamic')
     user_credentials = relationship("UserCredentials")
