@@ -24,4 +24,4 @@ def authenticate_oauth_user(request):
         return {'error': {'code': 25,
                           'message': "Access token is invalid. Please refresh your token"},
                           'http_code': 400}
-    return valid_user_id
+    return {'user_id': valid_user_id}
