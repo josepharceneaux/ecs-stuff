@@ -7,8 +7,10 @@ from StringIO import StringIO
 
 import pytest
 
-from resume_parsing_app import app
-from resume_parsing_app.models import db, Client, Token
+from resume_service.models.db import db
+from resume_service.models.user import Client, Token
+from resume_service.resume_parsing_app import app
+
 db.init_app(app)
 
 APP = app.test_client()
@@ -32,17 +34,19 @@ SKILLS_KEYS = ('name', 'months_used', 'last_used_date')
 
 @pytest.fixture(autouse=True)
 def test_client(request):
-    test_client = Client(client_id='fakeclient', client_secret='s00pers3kr37')
-    try:
-       db.session.add(test_client)
-       db.session.commit()
-    except Exception:  # TODO This is to handle 'Duplicate entry' MySQL errors. We should instead check for existing Client/Token before inserting
-       pass
-
-    def fin():
-        db.session.delete(test_client)
+    test_client = Client.query.filter_by(client_id='fakeclient', client_secret='s00pers3kr37').first()
+    if not test_client:
+        test_client = Client(client_id='fakeclient', client_secret='s00pers3kr37')
+        db.session.add(test_client)
         db.session.commit()
-    request.addfinalizer(fin)
+
+        def fin():
+            try:
+                db.session.delete(test_client)
+                db.session.commit()
+            except Exception:
+                pass
+        request.addfinalizer(fin)
     return test_client
 
 
@@ -57,8 +61,11 @@ def test_token(test_client, request):
        pass
 
     def fin():
-        db.session.delete(test_token)
-        db.session.commit()
+        try:
+            db.session.delete(test_token)
+            db.session.commit()
+        except Exception:
+            pass
     request.addfinalizer(fin)
     return test_token
 
@@ -207,6 +214,7 @@ def fetch_resume_fp_key_response(fp_key):
     with APP as c:
         test_response = c.post('/parse_resume', headers={'Authorization': 'Bearer fooz'},
                                data=dict(filepicker_key=fp_key))
+        print "Response to POST /parse_resume with filepicker_key=%s: \n%s" % (fp_key, test_response.data)
     return json.loads(test_response.data)
 
 

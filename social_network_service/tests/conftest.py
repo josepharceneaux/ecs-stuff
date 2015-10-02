@@ -1,25 +1,32 @@
 import os
+from gt_common.models.config import GTSQLAlchemy
+if not GTSQLAlchemy.db_session:
+    folder = os.path.dirname(__file__)
+    app_cfg = os.path.abspath(os.path.join(folder, '../app.cfg'))
+    logging_cfg = os.path.abspath(os.path.join(folder, '../logging.conf'))
+    GTSQLAlchemy(app_config_path=app_cfg,
+                 logging_config_path=logging_cfg)
 import pytest
-from social_network_service.manager import process_event, delete_events
-from gt_common.models.client import Client
-from gt_common.models.client import Token
 import datetime
 import requests
 
-from social_network_service.app import app as _app
-from gt_common.models.config import init_db, db_session
-from werkzeug.security import generate_password_hash
-from werkzeug.security import gen_salt
-from gt_common.models.event import Event
-from gt_common.models.social_network import SocialNetwork
 from gt_common.models.user import User
+from gt_common.models.token import Token
+from gt_common.models.event import Event
+from gt_common.models.client import Client
 from gt_common.models.domain import Domain
 from gt_common.models.culture import Culture
 from gt_common.models.organization import Organization
+from gt_common.models.social_network import SocialNetwork
+from social_network_service.manager import process_event, delete_events
+from social_network_service.app import app as _app
+
+from werkzeug.security import gen_salt
 from mixer._faker import faker
 from mixer.backend.sqlalchemy import Mixer
 
-init_db()
+
+db_session = GTSQLAlchemy.db_session
 
 TESTDB = 'test_project.db'
 TESTDB_PATH = "/tmp/{}".format(TESTDB)

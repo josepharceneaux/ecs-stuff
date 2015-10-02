@@ -1,4 +1,4 @@
-from models import db
+from db import db
 from sqlalchemy.orm import relationship
 from auth_service.oauth import logger
 from candidate import Candidate
@@ -22,7 +22,7 @@ class User(db.Model):
     registration_key = db.Column(db.String(512))
     reset_password_key = db.Column(db.String(512))
     registration_id = db.Column(db.String(512))
-    name = db.Column(db.String(127))
+    # name = db.Column(db.String(127))
     first_name = db.Column('firstName', db.String(255))
     last_name = db.Column('lastName', db.String(255))
     added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())

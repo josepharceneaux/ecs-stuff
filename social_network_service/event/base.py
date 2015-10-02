@@ -1,7 +1,7 @@
 
 from abc import ABCMeta, abstractmethod
 from social_network_service.custom_exections import EventNotSaveInDb
-from social_network_service.utilities import get_message_to_log, log_error
+from social_network_service.utilities import get_message_to_log, log_error, get_class
 from gt_common.models.event import Event
 from gt_common.models.user import User
 from gt_common.models.user import UserCredentials
@@ -15,9 +15,10 @@ class EventBase(object):
 
         self.events = []
         self.rsvps = []
-        self.headers = kwargs['headers']
-        self.user = kwargs.get('user') or None
-        self.social_network = kwargs.get('social_network') or None
+        self.headers = kwargs.get('headers')
+        self.user_credentials = kwargs.get('user_credentials')
+        self.user = kwargs.get('user') or User.get_by_id(self.user_credentials.user_id)
+        self.social_network = kwargs.get('social_network')
         assert isinstance(self.user, User)
         assert isinstance(self.social_network, SocialNetwork)
         self.api_url = self.social_network.api_url
@@ -35,8 +36,8 @@ class EventBase(object):
         webhook = user_credentials.webhook
         return member_id, access_token, refresh_token, webhook
 
-    def get_events(self, social_network):
-        return self.get_events(social_network)
+    # def get_events(self, social_network):
+    #     return self.get_events(social_network)
 
     def get_event(self, id):
         pass
@@ -72,10 +73,10 @@ class EventBase(object):
                                     self.social_network.id, error.message
                     )
                     log_error({
-                            'error' : error_message,
-                            'functionName': 'process_events',
-                            'fileName': __file__,
-                            'user': self.user.id,
+                        'error': error_message,
+                        'functionName': 'process_events',
+                        'fileName': __file__,
+                        'user': self.user.id,
                     })
                     # Now let's try to process the next event
         if events:
@@ -115,6 +116,36 @@ class EventBase(object):
 
     def get_events(self, *args, **kwargs):
         pass
+
+    def get_events_from_db(self, start_date):
+        """
+        This gets the events from database which starts after the specified start_date
+        :param start_date:
+        :return:
+        """
+        return Event.get_by_user_id_vendor_id_start_date(self.user.id,
+                                                         self.social_network.id,
+                                                         start_date
+                                                         )
+
+    def get_rsvps(self, user_credentials):
+        """
+        This gets the rsvps of events present in database and process
+        them to save in database
+        :param user_credentials:
+        :return:
+        """
+        # get_required class under rsvp/ to process rsvps
+        sn_rsvp_class = get_class(self.social_network.name, 'rsvp')
+        # create object of selected rsvp class
+        sn_rsvp_obj = sn_rsvp_class(social_network=self.social_network,
+                                    headers=self.headers,
+                                    user_credentials=user_credentials)
+        # gets events of given Social Network from database
+        self.events = self.get_events_from_db(sn_rsvp_obj.start_date_dt)
+        # process rsvps to save in database
+        sn_rsvp_obj.process_rsvps(self.events)
+        self.rsvps = sn_rsvp_obj.rsvps
 
     def save_event(self, data):
         """

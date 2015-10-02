@@ -17,8 +17,7 @@ from dateutil.parser import parse
 from gt_common.models.event import Event
 from gt_common.models.user import UserCredentials
 from gt_common.models.social_network import SocialNetwork
-from utilities import get_class, get_message_to_log, log_error, \
-    convert_keys_to_camel_case
+from utilities import get_class, get_message_to_log, log_error
 from social_network_service.custom_exections import SocialNetworkError, \
     SocialNetworkNotImplemented, InvalidDatetime, EventInputMissing
 logger = logging.getLogger('event_service.app')
@@ -147,6 +146,14 @@ def delete_events(user_id, event_ids):
 
 
 def start():
+    """
+    This function is called by manager to process events or rsvps from given
+    social network. It first gets the user_credentials of all the users in
+    database and does the processing for each user. Then it instantiates
+    respective social network class for auth process. Then we call the
+    class socialNetworkBase class method process() to proceed further
+    :return:
+    """
     parser = argparse.ArgumentParser()
     logger.debug("Hey world...")
     parser.add_argument("-m",
@@ -171,21 +178,15 @@ def start():
     for user_credentials in all_user_credentials:
         social_network = SocialNetwork.get_by_name(user_credentials.social_network.name)
         social_network_class = get_class(social_network.name.lower(), 'social_network')
-        event_or_rsvp_class = get_class(social_network.name.lower(), name_space.mode)
         # we call social network class here for auth purpose, If token is expired
         # access token is refreshed and we use fresh token
         sn = social_network_class(user_id=user_credentials.user_id,
                                   social_network_id=social_network.id)
         if not user_credentials.member_id:
-            # get an save the member Id of gt-user
+            # gets an save the member Id of gt-user
             sn.get_member_id(dict())
-        event_or_rsvp_obj = event_or_rsvp_class(user_credentials=user_credentials,
-                                                social_network=social_network,
-                                                headers=sn.headers)
-        if name_space.mode == 'event':
-            job_pool.spawn(event_or_rsvp_obj._process_events)
-        elif name_space.mode == 'rsvp':
-            job_pool.spawn(event_or_rsvp_obj._process_rsvps)
+        job_pool.spawn(sn.process(name_space.mode,
+                                  user_credentials=user_credentials))
     job_pool.join()
 
 if __name__ == '__main__':
