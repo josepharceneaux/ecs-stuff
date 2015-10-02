@@ -20,7 +20,7 @@ from social_network_service.utilities import log_error, logger
 MEETUP = 'Meetup'
 
 
-class MeetupEvent(EventBase):
+class Meetup(EventBase):
     """
     This class is inherited from TalentEventBase class
     This implements the abstract methods defined in interface
@@ -34,7 +34,7 @@ class MeetupEvent(EventBase):
         :param kwargs:
         :return:
         """
-        super(MeetupEvent, self).__init__(*args, **kwargs)
+        super(Meetup, self).__init__(*args, **kwargs)
         # calling super constructor sets the api_url and access_token
         self.data = None
         self.venue_id = None

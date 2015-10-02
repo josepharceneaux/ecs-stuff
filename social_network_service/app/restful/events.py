@@ -25,7 +25,8 @@ class Events(Resource):
         This action returns a list of user events.
         """
         try:
-            events = map(lambda event: event.to_json_(), Event.query.filter_by(user_id=kwargs['user_id']).all())
+            Event.session.commit()
+            events = map(lambda event: event.to_json(), Event.query.filter_by(user_id=kwargs['user_id']).all())
         except Exception as e:
             return ApiResponse(json.dumps(dict(messsage='APIError: Internal Server error while retrieving records')), status=500)
         if events:
@@ -79,10 +80,11 @@ class EventById(Resource):
         :return: json for required event
         """
         user_id = kwargs['user_id']
+        Event.session.commit()
         event = Event.get_by_user_and_event_id(user_id, event_id)
         if event:
             try:
-                event = event.to_json_()
+                event = event.to_json()
             except Exception as e:
                 raise ApiException('Unable to serialize event data', status_code=500)
             return dict(event=event), 200
@@ -94,6 +96,7 @@ class EventById(Resource):
         Updates event in GT database and on corresponding social network
         :param id:
         """
+        Event.session.commit()
         user_id = kwargs['user_id']
         event_data = request.get_json(force=True)
         # check whether given event_id exists for this user

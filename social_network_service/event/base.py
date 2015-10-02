@@ -94,7 +94,7 @@ class EventBase(object):
         not_deleted = []
         if len(event_ids) > 0:
             for event_id in event_ids:
-                event = Event.get_by_user_and_event_id(self.user_id, event_id)
+                event = Event.get_by_user_and_event_id(self.user.id, event_id)
                 if event:
                     try:
                         self.unpublish_event(event.social_network_event_id)

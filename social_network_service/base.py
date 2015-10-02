@@ -236,8 +236,10 @@ class SocialNetworkBase(object):
                 gt_user_in_db.update(**user_credentials)
             else:
                 UserCredentials.save(**user_credentials)
+            return True
         except Exception as e:
             error_message = e.message
             message_to_log.update({'error': error_message})
             log_exception(message_to_log)
+        return False
 

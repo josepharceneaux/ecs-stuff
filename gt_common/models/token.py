@@ -7,9 +7,9 @@ from base import ModelBase as Base
 class Token(Base):
     __tablename__ = 'token'
     id = Column(Integer, primary_key=True)
-    client_id = Column('candidateId', String(40), ForeignKey('client.client_id'), nullable=False)
+    client_id = Column('client_id', String(40), ForeignKey('client.client_id'), nullable=False)
     client = relationship('Client')
-    user_id = Column('userId', Integer, ForeignKey('user.id'))
+    user_id = Column('user_id', Integer, ForeignKey('user.id'))
     user = relationship('User')
 
     # currently only bearer is supported

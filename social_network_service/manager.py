@@ -17,8 +17,7 @@ from dateutil.parser import parse
 from gt_common.models.event import Event
 from gt_common.models.user import UserCredentials
 from gt_common.models.social_network import SocialNetwork
-from utilities import get_class, get_message_to_log, log_error, \
-    convert_keys_to_camel_case
+from utilities import get_class, get_message_to_log, log_error
 from social_network_service.custom_exections import SocialNetworkError, \
     SocialNetworkNotImplemented, InvalidDatetime, EventInputMissing
 logger = logging.getLogger('event_service.app')
@@ -62,7 +61,6 @@ def process_event(data, user_id):
         """
         function_name = 'process_event()'
         message_to_log = get_message_to_log(function_name=function_name)
-        # data = convert_keys_to_camel_case(data)
         if data:
             try:
                 social_network_id = data['social_network_id']
@@ -119,16 +117,17 @@ def delete_events(user_id, event_ids):
     assert len(event_ids) > 0, 'event_ids should contain at least one event id'
     social_networks = {}
     deleted, not_deleted = [], []
+    Event.session.commit()  # refresh session to get updated data
     for event_id in event_ids:
         event = Event.get_by_user_and_event_id(user_id, event_id)
         if event:
-            social_network = event.socialNetwork
+            social_network = event.social_network
             if social_network.id not in social_networks:
                 social_network_class = get_class(social_network.name.lower(), 'social_network')
                 event_class = get_class(social_network.name.lower(), 'event')
                 sn = social_network_class(user_id=user_id, social_network_id=social_network.id)
-                event_obj = event_class(user_id=user_id,
-                                        api_url=social_network.apiUrl,
+                event_obj = event_class(user=sn.user,
+                                        social_network=social_network,
                                         headers=sn.headers)
                 social_networks[social_network.id] = dict(event_obj=event_obj,
                                                           event_ids=[event_id])

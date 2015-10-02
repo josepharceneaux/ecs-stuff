@@ -16,6 +16,7 @@ class SocialNetwork(Base):
 
     events = relationship("Event", backref='social_network', lazy='dynamic')
     user_credentials = relationship("UserCredentials")
+    venues = relationship('Venue', backref='social_network', lazy='dynamic')
 
     def __repr__(self):
         return '<SocialNetwork %r>' % self.name

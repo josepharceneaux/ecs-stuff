@@ -177,13 +177,40 @@ class Venues(Resource):
             Venue.save(venue)
         except Exception as e:
             return ApiResponse(json.dumps(dict(messsage='APIError: Internal Server error..')), status=500)
-        return ApiResponse(json.dumps(dict(messsage='Venue created successfully')), status=200)
+        return ApiResponse(json.dumps(dict(messsage='Venue created successfully', id=venue.id)), status=201)
+
+    @authenticate
+    def delete(self, **kwargs):
+        Venue.session.commit()
+        user_id = kwargs['user_id']
+        deleted, not_deleted = [], []
+        req_data = request.get_json(force=True)
+        venue_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else []
+        if venue_ids:
+            for _id in venue_ids:
+                venue = Venue.get_by_user_id_venue_id(user_id, _id)
+                if venue:
+                    Venue.delete(_id)
+                    deleted.append(_id)
+                else:
+                    not_deleted.append(_id)
+
+                if len(not_deleted) == 0:
+                    return ApiResponse(json.dumps(dict(
+                        message='%s Venue/s deleted successfully' % len(deleted))),
+                        status=200)
+
+                return ApiResponse(json.dumps(dict(message='Unable to delete %s venue/s' % len(not_deleted),
+                                                   deleted=deleted,
+                                                   not_deleted=not_deleted)), status=207)
+        else:
+            return ApiResponse(json.dumps(dict(message='Bad request, include ids as list data')), status=400)
 
 
 @api.route('/organizers/')
 class Organizers(Resource):
     """
-        This resource returns a list of user's created organizers
+        This resource handles organizer CRUD operations
     """
 
     @authenticate
@@ -213,4 +240,31 @@ class Organizers(Resource):
             Organizer.save(organizer)
         except Exception as e:
             return ApiResponse(json.dumps(dict(messsage='APIError: Internal Server error..')), status=500)
-        return ApiResponse(json.dumps(dict(messsage='Organizer created successfully')), status=200)
+        return ApiResponse(json.dumps(dict(messsage='Organizer created successfully', id=organizer.id)), status=201)
+
+    @authenticate
+    def delete(self, **kwargs):
+        Organizer.session.commit()
+        user_id = kwargs['user_id']
+        deleted, not_deleted = [], []
+        req_data = request.get_json(force=True)
+        organizer_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else []
+        if organizer_ids:
+            for _id in organizer_ids:
+                organizer = Organizer.get_by_user_id_organizer_id(user_id, _id)
+                if organizer:
+                    Organizer.delete(_id)
+                    deleted.append(_id)
+                else:
+                    not_deleted.append(_id)
+
+                if len(not_deleted) == 0:
+                    return ApiResponse(json.dumps(dict(
+                        message='%s Organizer/s deleted successfully' % len(deleted))),
+                        status=200)
+
+                return ApiResponse(json.dumps(dict(message='Unable to delete %s organizer/s' % len(not_deleted),
+                                                   deleted=deleted,
+                                                   not_deleted=not_deleted)), status=207)
+        else:
+            return ApiResponse(json.dumps(dict(message='Bad request, include ids as list data')), status=400)

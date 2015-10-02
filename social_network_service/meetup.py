@@ -76,8 +76,7 @@ class Meetup(SocialNetworkBase):
         involvement and save in user_credentials db table
         :return:
         """
-        function_name = 'refresh_access_token()'
-        message_to_log = get_message_to_log(function_name=function_name,
+        message_to_log = get_message_to_log(function_name='refresh_access_token()',
                                             class_name=self.__class__.__name__,
                                             gt_user=self.user.name,
                                             file_name=__file__)
