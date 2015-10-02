@@ -7,8 +7,8 @@ from StringIO import StringIO
 
 import pytest
 
-from resume_service.models.db import db
-from resume_service.models.user import Client, Token
+from resume_service.common.models.db import db
+from resume_service.common.models.user import Client, Token
 from resume_service.resume_parsing_app import app
 
 db.init_app(app)
