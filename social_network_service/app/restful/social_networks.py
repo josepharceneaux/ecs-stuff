@@ -42,7 +42,7 @@ class SocialNetworks(Resource):
         if subscribed_data:
             # Get list of social networks user is subscribed to
             subscribed_networks = SocialNetwork.get_by_ids(
-                [data.socialNetworkId for data in subscribed_data]
+                [data.social_network_id for data in subscribed_data]
             )
             # Convert it to JSON
             subscribed_networks = map(lambda sn: sn.to_json(), subscribed_networks)
@@ -51,7 +51,7 @@ class SocialNetworks(Resource):
             subscribed_networks = self.set_is_subscribed(subscribed_networks, value=True)
         # Get list of social networks user is not subscribed to
         unsubscribed_networks = SocialNetwork.get_all_except_ids(
-            [data.socialNetworkId for data in subscribed_data ]
+            [data.social_network_id for data in subscribed_data ]
         )
         if unsubscribed_networks:
             unsubscribed_networks = map(lambda sn: sn.to_json(), unsubscribed_networks)
@@ -87,7 +87,7 @@ class MeetupGroups(Resource):
             groups = meetup.get_groups()
             resp = json.dumps(dict(groups=groups))
         except Exception as e:
-            return ApiResponse(json.dums(dict(message='APIError: Internal Server Error')), status=500)
+            return ApiResponse(json.dumps(dict(message='APIError: Internal Server Error')), status=500)
         return ApiResponse(resp, status=200)
 
 
@@ -126,13 +126,13 @@ class RefreshToken(Resource):
 # @api.route('/social_networks/authInfo')
 # class SocialNetworkGroups(Resource):
 #     """
-#         This resource returns a list of user auth info (validity of token)
+#         This resource returns a list of user admin group list on Meetup.com
 #     """
 #
 #     @authenticate
 #     def get(self, *args, **kwargs):
 #         """
-#         This action returns a list of user events.
+#         This action returns a list of user groups.
 #         """
 #         user_id = kwargs['user_id']
 #         try:
@@ -141,7 +141,7 @@ class RefreshToken(Resource):
 #             groups = meetup.get_groups()
 #         except Exception as e:
 #             return ApiResponse(json.dums(dict(message='APIError: Internal Server Error')), status=500)
-#         return ApiResponse(json.dums(dict(groups=groups)), status=200)
+#         return ApiResponse(json.dumps(dict(groups=groups)), status=200)
 
 
 @api.route('/venues/')

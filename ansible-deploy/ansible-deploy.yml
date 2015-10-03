@@ -1,0 +1,28 @@
+# Ansible configuration file to deploy Flask services
+
+- name: Deploy {{host}}
+  hosts: "{{host}}"
+  remote_user: ubuntu
+  vars:
+    image: gettalent/{{service}}
+  sudo: no
+  tasks:
+    - name: Pull latest image from dockerhub registery
+      command: docker pull {{image}}
+
+    - name: Stop and remove flask service docker container
+      docker:
+        image: "{{image}}"
+        state: absent
+
+    - name: Start flask service docker container
+      docker:
+        image: "{{image}}"
+        state: reloaded
+        ports:
+          - "80:80"
+          - "443:443"
+        env:
+            GT_ENVIRONMENT: "{{GT_ENVIRONMENT}}"
+        volumes:
+          - "/usr/local/etc/ssl:/etc/nginx/ssl"

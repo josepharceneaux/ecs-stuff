@@ -2,6 +2,7 @@ import json
 import types
 from flask import Blueprint, request
 from flask.ext.restful import Api, Resource
+from gt_common.models.venue import Venue
 from social_network_service.app.app_utils import api_route, authenticate, ApiResponse
 from social_network_service.custom_exections import ApiException
 from social_network_service.manager import process_event, delete_events
@@ -25,6 +26,7 @@ class Events(Resource):
         This action returns a list of user events.
         """
         try:
+            # Refresh Session before fetching events from db
             Event.session.commit()
             events = map(lambda event: event.to_json(), Event.query.filter_by(user_id=kwargs['user_id']).all())
         except Exception as e:
@@ -40,6 +42,9 @@ class Events(Resource):
         This method takes data to create event in local database as well as on corresponding social network.
         :return: id of created event
         """
+        Event.session.commit()
+        Venue.session.commit()
+
         event_data = request.get_json(force=True)
         try:
             gt_event_id = process_event(event_data, kwargs['user_id'])
@@ -120,6 +125,7 @@ class EventById(Resource):
         :param id: (Integer) unique id in Event table on GT database.
         """
         user_id = kwargs['user_id']
+        Event.session.commit()
         deleted, not_deleted = delete_events(user_id, [event_id])
         if len(deleted) == 1:
             return ApiResponse(json.dumps(dict(message='Event deleted successfully')), status=200)

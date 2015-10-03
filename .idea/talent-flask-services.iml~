@@ -2,14 +2,14 @@
 <module type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$" />
-    <orderEntry type="jdk" jdkName="Python 2.7.9 (~/.pyenv/versions/2.7.9/bin/python2.7)" jdkType="Python SDK" />
+<<<<<<< HEAD
+    <orderEntry type="inheritedJdk" />
+=======
+    <orderEntry type="jdk" jdkName="Python 2.7.9 (~/.pyenv/versions/2.7.9/bin/python)" jdkType="Python SDK" />
+>>>>>>> a69f6da9f00aa8de7c80606cf012e77792a5f8e3
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="TemplatesService">
-    <option name="TEMPLATE_FOLDERS">
-      <list>
-        <option value="$MODULE_DIR$/EventService/app/templates" />
-      </list>
-    </option>
+    <option name="TEMPLATE_CONFIGURATION" value="Jinja2" />
   </component>
 </module>

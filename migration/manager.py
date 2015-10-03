@@ -1,7 +1,7 @@
 from flask_migrate import Migrate, MigrateCommand
 from flask_script import Manager
 from auth_service.oauth import app
-from auth_service.models.db import db
+from auth_service.common.models.db import db
 
 
 migrate = Migrate(app=app, db=db)

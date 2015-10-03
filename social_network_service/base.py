@@ -1,6 +1,7 @@
 import importlib
 import requests
 from abc import ABCMeta, abstractmethod
+from gt_common.models.event import Event
 from gt_common.models.social_network import SocialNetwork
 from gt_common.models.user import User, UserCredentials
 
@@ -69,33 +70,72 @@ class SocialNetworkBase(object):
         self.headers = {'Authorization': 'Bearer ' + self.access_token}
         self.start_date_dt = None
 
-    def process_events(self):
+    def process(self, mode, user_credentials=None):
         """
-        This method gets events by calling the respective event's
-        class in the SocialNetworkService/event directory. So if
-        we want to retrieve events for Eventbrite then we're basically
-        doing this.
-        from event import eventbrite
-        eventbrite = eventbrite.Eventbrite(self.user, self.social_network)
-        self.events = eventbrite.get_events(self.social_network)
-        :return:
+        Depending upon the mode, here we make the objects of required
+        classes and call required methods on those objects for importing
+        events or rsvps.
         """
         sn_name = self.social_network.name.strip()
-        module_path = None
-        module_path = 'event.%s' % sn_name.lower()
-        try:
-            sn_event_module = importlib.import_module(module_path)
-        except ImportError as error:
-            raise error
-        # e.g. /socialnetworkservice/event/eventbrite.py
-        class_name = sn_name.title() + "Event"
-        event_class = getattr(sn_event_module, class_name)
-        sn_event_obj = event_class(user=self.user, social_network=self.social_network,
+        # get_required class under event/ to process events
+        event_class = get_class(sn_name, 'event')
+        # create object of selected event class
+        sn_event_obj = event_class(user=self.user,
+                                   social_network=self.social_network,
                                    headers=self.headers)
-        self.events = sn_event_obj.get_events()
-        print 'Events', self.events
-        sn_event_obj.process_events(self.events)
+        if mode == 'event':
+            # gets events using respective API of Social Network
+            self.events = sn_event_obj.get_events()
+            # process events to save in database
+            sn_event_obj.process_events(self.events)
+        elif mode == 'rsvp':
+            sn_event_obj.get_rsvps(user_credentials)
 
+    # def process_events(self):
+    #     """
+    #     This method gets events by calling the respective event's
+    #     class in the SocialNetworkService/event directory. So if
+    #     we want to retrieve events for Eventbrite then we're basically
+    #     doing this.
+    #     from event import eventbrite
+    #     eventbrite = eventbrite.Eventbrite(self.user, self.social_network)
+    #     self.events = eventbrite.get_events(self.social_network)
+    #     :return:
+    #     """
+    #     sn_name = self.social_network.name.strip()
+    #     event_class = get_class(sn_name, 'event')
+    #     sn_event_obj = event_class(user=self.user,
+    #                                social_network=self.social_network,
+    #                                headers=self.headers)
+    #     self.events = sn_event_obj.get_events()
+    #     sn_event_obj.process_events(self.events)
+    #
+    # def process_rsvps(self, user_credentials=None):
+    #     """
+    #     This method gets events by calling the respective event's
+    #     class in the SocialNetworkService/event directory. So if
+    #     we want to retrieve events for Eventbrite then we're basically
+    #     doing this.
+    #     from event import eventbrite
+    #     eventbrite = eventbrite.Eventbrite(self.user, self.social_network)
+    #     self.events = eventbrite.get_events(self.social_network)
+    #     :return:
+    #     """
+    #
+    #     sn_name = self.social_network.name.strip()
+    #     event_class = get_class(sn_name, 'event')
+    #     sn_event_obj = event_class(user=self.user,
+    #                                social_network=self.social_network,
+    #                                headers=self.headers)
+    #
+    #     sn_rsvp_class = get_class(sn_name, 'rsvp')
+    #     sn_rsvp_obj = sn_rsvp_class(social_network=self.social_network,
+    #                                 headers=self.headers,
+    #                                 user_credentials=user_credentials)
+    #
+    #     self.events = sn_event_obj.get_events_from_db(sn_rsvp_obj.start_date_dt)
+    #
+    #     sn_rsvp_obj.process_rsvps(self.events)
 
     @classmethod
     def get_access_token(cls, data):  # data contains social_network,
@@ -145,7 +185,10 @@ class SocialNetworkBase(object):
         :return:
         """
         function_name = 'get_member_id()'
-        message_to_log = get_message_to_log(function_name=function_name)
+        message_to_log = get_message_to_log(function_name=function_name,
+                                            file_name=__file__,
+                                            class_name=self.__class__.__name__,
+                                            gt_user=self.user.name)
         try:
             user_credentials = self.user_credentials
             url = self.api_url + data['api_relative_url']
@@ -154,15 +197,15 @@ class SocialNetworkBase(object):
                                                   message_to_log=message_to_log)
             if get_member_id_response.ok:
                 member_id = get_member_id_response.json().get('id')
-                data = dict(userId=user_credentials.user_id,
-                            socialNetworkId=user_credentials.social_network_id,
-                            memberId=member_id)
+                data = dict(user_id=user_credentials.user_id,
+                            social_network_id=user_credentials.social_network_id,
+                            member_id=member_id)
                 self.save_user_credentials_in_db(data)
             else:
-                # TODO log error
+                # Error has been logged inside http_request()
                 pass
-        except Exception as e:
-            error_message = e.message
+        except Exception as error:
+            error_message = error.message
             message_to_log.update({'error': error_message})
             log_exception(message_to_log)
 
@@ -211,7 +254,6 @@ class SocialNetworkBase(object):
         expired, it also refreshes it and saves the fresh access token in database
         :return:
         """
-        refreshed_token_status = False
         access_token_status = self.validate_token()
         if not access_token_status:  # access token has expired, need to refresh it
             self.refresh_access_token()
@@ -220,15 +262,11 @@ class SocialNetworkBase(object):
     def save_user_credentials_in_db(user_credentials):
         """
         It puts the access token against the clicked social_network and and the
-        logged in user of GT. It also calls create_webhook() class method of
+        logged in user of gt. It also calls create_webhook() class method of
         Eventbrite to create webhook for user.
         :return:
         """
-        function_name = 'save_user_credentials_in_db()'
-        #  TODO- pass user name in place of user name
-        message_to_log = get_message_to_log(function_name=function_name,
-                                            gt_user=user_credentials['user_id'],
-                                            file_name=__file__)
+        gt_user = User.get_by_id(user_credentials['user_id'])
         gt_user_in_db = UserCredentials.get_by_user_and_social_network_id(
             user_credentials['user_id'], user_credentials['social_network_id'])
         try:

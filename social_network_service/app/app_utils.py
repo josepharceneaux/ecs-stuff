@@ -3,8 +3,7 @@ import flask
 from flask import Response
 from flask.ext.restful import abort
 from requests_oauthlib import OAuth2Session
-
-OAUTH_SERVER = 'http://127.0.0.1:8888/oauth2/authorize'
+from social_network_service.utilities import OAUTH_SERVER
 
 
 class ApiResponse(Response):

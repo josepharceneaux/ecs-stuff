@@ -87,11 +87,11 @@ class Eventbrite(RSVPBase):
             message_to_log.update({'error': error_message})
             log_exception(message_to_log)
 
-    def _process_rsvps(self):
+    def process_rsvps(self, events):
         """
         Here we process the rsvp for rsvp importer
         """
-        function_name = '_process_rsvps()'
+        function_name = 'process_rsvps()'
         message_to_log = get_message_to_log(
             function_name=function_name,
             class_name=self.__class__.__name__,
@@ -99,8 +99,7 @@ class Eventbrite(RSVPBase):
             file_name=__file__,
             error=NotImplementedError("Eventbrite RSVPs are "
                                       "handled via webhook"))
-        log_exception(message_to_log)
-        raise
+        log_error(message_to_log)
 
     def get_rsvps(self, event):
         pass

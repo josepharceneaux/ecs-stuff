@@ -31,3 +31,12 @@ class Venue(Base):
         assert user_id is not None
         assert venue_id is not None
         return cls.query.filter(Venue.user_id == user_id, Venue.id == venue_id).first()
+
+    @classmethod
+    def get_by_user_id_social_network_id_venue_id(cls, user_id, social_network_id, venue_id):
+        assert user_id is not None
+        assert venue_id is not None
+        assert social_network_id is not None
+        return cls.query.filter(Venue.user_id == user_id,
+                                Venue.id == venue_id,
+                                Venue.social_network_id == social_network_id).first()

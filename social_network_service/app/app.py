@@ -226,7 +226,3 @@ def handle_any_errors(error):
 # def teardown_request(exception=None):
 #     db_session.remove()
 
-if __name__ == '__main__':
-    # TODO Have to remove this, only here for testing purposes
-    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-    app.run(port=5000, debug=True)

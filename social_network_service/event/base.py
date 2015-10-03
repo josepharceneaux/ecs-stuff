@@ -1,7 +1,8 @@
 
 from abc import ABCMeta, abstractmethod
-from social_network_service.custom_exections import EventNotSaveInDb
-from social_network_service.utilities import get_message_to_log, log_error
+from social_network_service.custom_exections import EventNotSaveInDb, EventNotUnpublished
+from social_network_service.utilities import get_message_to_log, log_error, get_class, http_request, logger, \
+    log_exception
 from gt_common.models.event import Event
 from gt_common.models.user import User
 from gt_common.models.user import UserCredentials
@@ -15,14 +16,17 @@ class EventBase(object):
 
         self.events = []
         self.rsvps = []
-        self.headers = kwargs['headers']
-        self.user = kwargs.get('user') or None
-        self.social_network = kwargs.get('social_network') or None
+        self.headers = kwargs.get('headers')
+        self.user_credentials = kwargs.get('user_credentials')
+        self.user = kwargs.get('user') or User.get_by_id(self.user_credentials.user_id)
+        self.social_network = kwargs.get('social_network')
         assert isinstance(self.user, User)
         assert isinstance(self.social_network, SocialNetwork)
         self.api_url = self.social_network.api_url
         self.member_id, self.access_token, self.refresh_token, self.webhook = \
             self._get_user_credentials()
+        self.url_to_delete_event = None
+        self.venue_id = None
 
     def _get_user_credentials(self):
         user_credentials = UserCredentials.get_by_user_and_social_network_id(
@@ -35,26 +39,59 @@ class EventBase(object):
         webhook = user_credentials.webhook
         return member_id, access_token, refresh_token, webhook
 
-    def get_events(self, social_network):
-        return self.get_events(social_network)
+    # def get_events(self, social_network):
+    #     return self.get_events(social_network)
+
+    @abstractmethod
+    def create_event(self, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def event_sn_to_gt_mapping(self, event):
+        """
+        While importing events, we need to map social network fields according
+        to gt-database fields. Child classes will implement this.
+        :param event:
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    def event_gt_to_sn_mapping(self, data):
+        """
+        This function is used to map gt-fields to required social network fields
+        for API calls. Child classes will implement this.
+        :param data:
+        :return:
+        """
+        pass
 
     def get_event(self, id):
         pass
 
-    def create_event(self):
-        pass
-
-    def normalize_event(self, event):
-        pass
-
     def pre_process_events(self, events):
+        """
+        If we need any pre processing of events, we will implement the
+        functionality here. For now, we don't do any pre processing.
+        :param events:
+        :return:
+        """
         pass
 
     def process_events(self, events):
+        """
+        This is the function to process events once we have the events of
+        some social network. It first maps the social network fields to
+        gt-db fields. Then it checks if the event is present is db or not.
+        If event is already in db, it updates the event fields otherwise
+        it stores the event in db.
+        :param events:
+        :return:
+        """
         if events:
             self.pre_process_events(events)
         for event in events:
-            event = self.normalize_event(event)
+            event = self.event_sn_to_gt_mapping(event)
             if event:
                 event_in_db = Event.get_by_user_and_vendor_id(event.user_id,
                                                               event.social_network_event_id)
@@ -68,53 +105,134 @@ class EventBase(object):
                     else:
                         Event.save(event)
                 except Exception as error:
-                    error_message = 'Cannot process an event. Social network: %s. Details: %s' % (
-                                    self.social_network.id, error.message
-                    )
-                    log_error({
-                            'error' : error_message,
-                            'functionName': 'process_events',
-                            'fileName': __file__,
-                            'user': self.user.id,
+                    error_message = 'Cannot process an event. Social network: ' \
+                                    '%s. Details: %s' \
+                                    % (self.social_network.id, error.message)
+                    log_exception({
+                        'error': error_message,
+                        'functionName': 'process_events',
+                        'fileName': __file__,
+                        'user': self.user.name,
+                        'class': self.__class__.__name__
                     })
                     # Now let's try to process the next event
         if events:
             self.post_process_events(events)
 
     def post_process_events(self, events):
+        """
+        Once the event is stored in database after importing from social
+        network, this function can be used to some post processing.
+        For now, we don't do any post processing
+        :param events:
+        :return:
+        """
         pass
 
-    @abstractmethod
-    def create_event(self, *args, **kwargs):
-        pass
+    def delete_event(self, event_id):
+        """
+        Here we pass an event id, picks it from db, and try to delete
+        it both from social network and database. If successfully deleted
+        from both sources, returns True, otherwise returns False
+        :param event_id:
+        :return:
+        """
+        event = Event.get_by_user_and_event_id(self.user.id, event_id)
+        if event:
+            try:
+                self.unpublish_event(event.social_network_event_id)
+                Event.delete(event_id)
+                return True
+            except Exception as error:  # some error while removing event
+                log_exception({
+                    'error': error.message,
+                    'functionName': 'delete_event()',
+                    'fileName': __file__,
+                    'user': self.user.name,
+                    'class': self.__class__.__name__
+                })
+                return False
+        return False  # event not found in database
 
     def delete_events(self, event_ids):
-        #TODO why we are not passing list of 'events' here?
+        #  TODO why we are not passing list of 'events' here?
         deleted = []
         not_deleted = []
-        if len(event_ids) > 0:
+        if event_ids:
             for event_id in event_ids:
-                event = Event.get_by_user_and_event_id(self.user.id, event_id)
-                if event:
-                    try:
-                        self.unpublish_event(event.social_network_event_id)
-                        Event.delete(event_id)
-                        deleted.append(event_id)
-                    except Exception as e:     # some error while removing event
-                        log_error({
-                            'Reason':e.message,
-                            'functionName': 'delete_events',
-                            'fileName': __file__,
-                            'User': self.user.id
-                        })
-                        not_deleted.append(event_id)
-                        # TODO I think we shouldn't use not_deleted
+                if self.delete_event(event_id):
+                    deleted.append(event_id)
                 else:
                     not_deleted.append(event_id)
+                    # TODO I think we shouldn't use not_deleted
         return deleted, not_deleted
 
+    def unpublish_event(self, event_id):
+        """
+        This function is used when run unit test. It deletes the Event from
+        meetup which was created in the unit testing.
+        :param event_id:id of newly created event
+        :return: True if event is deleted from vendor, False other wsie
+        """
+        message_to_log = get_message_to_log(function_name='unpublish_event()',
+                                            class_name=self.__class__.__name__,
+                                            gt_user=self.user.name,
+                                            file_name=__file__)
+        # create url to publish event
+        url = self.url_to_delete_event
+        # params are None. Access token is present in self.headers
+        response = http_request('POST', url, headers=self.headers,
+                                message_to_log=message_to_log)
+        if response.ok:
+            logger.info('|  Event has been unpublished (deleted)  |')
+        else:
+            error_message = "Event was not unpublished (deleted)."
+            message_to_log.update({'error': error_message})
+            log_error(message_to_log)
+            raise EventNotUnpublished('ApiError: '
+                                      'Unable to remove event from %s'
+                                      % self.social_network.name)
+
     def get_events(self, *args, **kwargs):
+        """
+        This is used to get events from social_network. Child classes will
+        implement this.
+        :param args:
+        :param kwargs:
+        :return:
+        """
         pass
+
+    def get_events_from_db(self, start_date):
+        """
+        This gets the events from database which starts after the specified start_date
+        :param start_date:
+        :return:
+        """
+        if start_date:
+            return Event.get_by_user_id_vendor_id_start_date(self.user.id,
+                                                             self.social_network.id,
+                                                             start_date
+                                                             )
+
+    def get_rsvps(self, user_credentials):
+        """
+        This gets the rsvps of events present in database and process
+        them to save in database
+        :param user_credentials:
+        :return:
+        """
+        # get_required class under rsvp/ to process rsvps
+        sn_rsvp_class = get_class(self.social_network.name, 'rsvp')
+        # create object of selected rsvp class
+        sn_rsvp_obj = sn_rsvp_class(social_network=self.social_network,
+                                    headers=self.headers,
+                                    user_credentials=user_credentials)
+        # gets events of given Social Network from database
+        self.events = self.get_events_from_db(sn_rsvp_obj.start_date_dt)
+        # process rsvps to save in database
+        sn_rsvp_obj.process_rsvps(self.events)
+        self.rsvps = sn_rsvp_obj.rsvps
 
     def save_event(self, data):
         """
@@ -141,18 +259,12 @@ class EventBase(object):
                 Event.save(event)
         except Exception as e:
             error_message = 'Event was not saved in Database\nError: %s' % e.message
-            log_error({
-                            'Reason':error_message,
-                            'functionName': 'save_event',
-                            'fileName': __file__,
-                            'User': self.user.id
-                        })
-            raise EventNotSaveInDb('Error occurred while saving event in databse')
-
+            log_exception({
+                'error': error_message,
+                'functionName': 'save_event',
+                'fileName': __file__,
+                'user': self.user.name,
+                'class': self.__class__.__name__
+            })
+            raise EventNotSaveInDb('Error occurred while saving event in database')
         return event.id
-
-    def event_sn_to_gt_mapping(self, *args, **kwargs):
-        pass
-
-    def event_gt_to_sn_mapping(self, *args, **kwargs):
-        pass

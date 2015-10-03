@@ -1,19 +1,14 @@
 import os
 from gt_common.models.config import GTSQLAlchemy
-
 if not GTSQLAlchemy.db_session:
     folder = os.path.dirname(__file__)
     app_cfg = os.path.abspath(os.path.join(folder, '../app.cfg'))
     logging_cfg = os.path.abspath(os.path.join(folder, '../logging.conf'))
-
     GTSQLAlchemy(app_config_path=app_cfg,
                  logging_config_path=logging_cfg)
 import pytest
 import datetime
-
 from gt_common.models.venue import Venue
-from gt_common.models.token import Token
-from gt_common.models.client import Client
 from gt_common.models.organizer import Organizer
 from social_network_service.manager import process_event, delete_events
 from social_network_service.app import app as _app
@@ -21,9 +16,17 @@ from werkzeug.security import gen_salt
 from gt_common.models.event import Event
 from gt_common.models.social_network import SocialNetwork
 from gt_common.models.user import User
+from gt_common.models.token import Token
+from gt_common.models.event import Event
+from gt_common.models.client import Client
 from gt_common.models.domain import Domain
 from gt_common.models.culture import Culture
 from gt_common.models.organization import Organization
+from gt_common.models.social_network import SocialNetwork
+from social_network_service.manager import process_event, delete_events
+from social_network_service.app import app as _app
+
+from werkzeug.security import gen_salt
 from mixer._faker import faker
 from mixer.backend.sqlalchemy import Mixer
 
@@ -217,6 +220,7 @@ def events(request, user,  meetup, eventbrite):
     event = EVENT_DATA.copy()
     event['title'] = 'Meetup ' + event['title']
     event['social_network_id'] = meetup.id
+    event['venue_id'] = 1
     event_id = process_event(event, user.id)
     event = Event.get_by_id(event_id)
     events.append(event)
@@ -224,6 +228,7 @@ def events(request, user,  meetup, eventbrite):
     event = EVENT_DATA.copy()
     event['title'] = 'Eventbrite ' + event['title']
     event['social_network_id'] = eventbrite.id
+    event['venue_id'] = 2
     event_id = process_event(event, user.id)
     event = Event.get_by_id(event_id)
     events.append(event)
@@ -263,7 +268,6 @@ def venues(request, user, meetup, eventbrite):
     meetup_venue = Venue(**meetup_venue)
     Venue.save(meetup_venue)
     venues.append(meetup_venue)
-    Venue.session.commit()
 
     eventbrite_venue = {
         "social_network_id": eventbrite.id,
@@ -280,6 +284,7 @@ def venues(request, user, meetup, eventbrite):
 
     eventbrite_venue = Venue(**eventbrite_venue)
     Venue.save(eventbrite_venue)
+    Venue.session.commit()
     venues.append(eventbrite_venue)
     return venues
 
@@ -307,12 +312,14 @@ def organizer_in_db(request, user):
 
 
 @pytest.fixture(scope='session')
-def get_test_events(request, user, meetup, eventbrite):
+def get_test_events(request, user, meetup, eventbrite, venues):
 
     meetup_event_data = EVENT_DATA.copy()
     meetup_event_data['social_network_id'] = meetup.id
+    meetup_event_data['venue_id'] = venues[0].id
     eventbrite_event_data = EVENT_DATA.copy()
     eventbrite_event_data['social_network_id'] = eventbrite.id
+    eventbrite_event_data['venue_id'] = venues[1].id
 
     def delete_test_event():
         # delete event if it was created by API. In that case, data contains id of that event
