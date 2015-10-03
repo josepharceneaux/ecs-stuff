@@ -1,13 +1,13 @@
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
-from base import ModelBase as Base
+from db import db
 
 
-class Culture(Base):
+class Culture(db.Model):
     __tablename__ = 'culture'
     id = Column(Integer, primary_key=True)
-    description = Column(String(50))
-    code = Column(String(5), unique=True, nullable=False)
+    description = Column('description', String(50))
+    code = Column('code', String(5), unique=True, nullable=False)
     domain = relationship('Domain', backref='culture')
     user = relationship('User', backref='culture')
 
@@ -16,7 +16,7 @@ class Culture(Base):
         self.code = code
 
     def __repr__(self):
-        return '<Culture %r>' % (self.description)
+        return '<Culture %r>' % self.description
 
     @classmethod
     def get_by_code(cls, code):

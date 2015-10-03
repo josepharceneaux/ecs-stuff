@@ -1,9 +1,9 @@
-from sqlalchemy import Column, Integer, String, not_
+from sqlalchemy import Column, String, Integer
 from sqlalchemy.orm import relationship
-from base import ModelBase as Base
+from db import db
 
 
-class SocialNetwork(Base):
+class SocialNetwork(db.Model):
     __tablename__ = 'social_network'
     id = Column('id', Integer, primary_key=True)
     name = Column('name', String(100))
@@ -44,7 +44,7 @@ class SocialNetwork(Base):
         assert isinstance(ids, list)
         if ids:
             return cls.query.filter(
-                not_(
+                db.not_(
                     SocialNetwork.id.in_(
                         ids
                     )

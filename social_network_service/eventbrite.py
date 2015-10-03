@@ -7,7 +7,7 @@
 #                   logging_config_path=logging_cfg)
 
 from base import SocialNetworkBase
-from gt_common.models.user import UserCredentials
+from common.models.user import UserCredentials
 from utilities import get_message_to_log, http_request, log_exception, log_error
 
 # TODO: Will replace this ULR with actual webhook URL (Flask App)

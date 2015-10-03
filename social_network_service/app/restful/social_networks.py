@@ -1,14 +1,14 @@
 import json
 import types
 from flask import Blueprint, request
-from gt_common.models.organizer import Organizer
-from gt_common.models.venue import Venue
+from common.models.organizer import Organizer
+from common.models.venue import Venue
 from social_network_service.app.app_utils import authenticate, api_route, ApiResponse
 from flask.ext.restful import Resource, Api
 from social_network_service.meetup import Meetup
 
-from gt_common.models.user import UserCredentials
-from gt_common.models.social_network import SocialNetwork
+from common.models.user import UserCredentials
+from common.models.social_network import SocialNetwork
 from social_network_service.utilities import get_class
 
 social_network_blueprint = Blueprint('social_network_api', __name__)

@@ -1,9 +1,9 @@
 import json
 from datetime import datetime
 from datetime import timedelta
-from gt_common.models.event import Event
-from gt_common.models.organizer import Organizer
-from gt_common.models.venue import Venue
+from common.models.event import Event
+from common.models.organizer import Organizer
+from common.models.venue import Venue
 from social_network_service.utilities import http_request, get_message_to_log
 from social_network_service.utilities import milliseconds_since_epoch
 from social_network_service.utilities import milliseconds_since_epoch_to_dt

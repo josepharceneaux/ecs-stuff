@@ -1,12 +1,12 @@
 from sqlalchemy import Column, Integer, String, and_
-from base import ModelBase as Base
+from db import db
 
 
-class Product(Base):
+class Product(db.Model):
     __tablename__ = 'product'
     id = Column(Integer, primary_key=True)
-    name = Column(String(100))
-    notes = Column(String(500))
+    name = Column('name', String(100))
+    notes = Column('notes', String(500))
 
     def __repr__(self):
         return '<Name %r>' % self.name

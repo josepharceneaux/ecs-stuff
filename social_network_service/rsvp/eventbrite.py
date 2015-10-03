@@ -1,9 +1,9 @@
 from base import RSVPBase
 from datetime import datetime, timedelta
-from gt_common.models.event import Event
+from common.models.event import Event
 from social_network_service.utilities import http_request, Attendee, \
     log_exception, log_error, get_message_to_log
-from gt_common.models.user import UserCredentials
+from common.models.user import UserCredentials
 
 
 class Eventbrite(RSVPBase):
