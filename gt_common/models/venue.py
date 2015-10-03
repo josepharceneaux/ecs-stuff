@@ -40,3 +40,4 @@ class Venue(Base):
         return cls.query.filter(Venue.user_id == user_id,
                                 Venue.id == venue_id,
                                 Venue.social_network_id == social_network_id).first()
+

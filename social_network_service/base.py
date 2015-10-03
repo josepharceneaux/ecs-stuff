@@ -23,7 +23,7 @@ class SocialNetworkBase(object):
         user_id = kwargs.get('user_id')
         social_network_id = kwargs.get('social_network_id')
         self.api_relative_url = None
-        self.user = User.get_by_id(user_id)
+        self.user = User.query.get(user_id)
         message_to_log = get_message_to_log(function_name='__init__()',
                                             class_name=self.__class__.__name__,
                                             gt_user=self.user.name,

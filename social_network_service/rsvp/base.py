@@ -1,10 +1,10 @@
 import json
 
 from abc import ABCMeta, abstractmethod
-from common.models.product import Product
+# from common.models.misc import Product
 from common.models.activity import Activity
 from common.models.rsvp import RSVP, CandidateEventRSVP
-from common.models.candidate import CandidateSource, Candidate
+# from common.models.candidate import CandidateSource, Candidate
 from social_network_service.utilities import log_exception, log_error, get_message_to_log
 from common.models.user import User
 
@@ -36,6 +36,7 @@ class RSVPBase(object):
             error_message = e.message
             message_to_log.update({'error': error_message})
             log_exception(message_to_log)
+            # TODO Raise the error
         self.rsvps = []
 
     @abstractmethod
@@ -179,6 +180,8 @@ class RSVPBase(object):
         entry_in_db = CandidateSource.get_by_description_and_notes(
             attendee.event.title,
             attendee.event.description)
+
+        # TODO double check with Osman, may be we should pass the user's domain here
         data = {'description': attendee.event.title,
                 'notes': attendee.event.description[:495],  # field is 500 chars
                 'domain_id': 1}

@@ -82,7 +82,7 @@ class PhoneLabel(db.Model):
 
     # Relationships
     candidate_phones = relationship('CandidatePhone', backref='phone_label')
-    reference_phones = relationship('ReferencePhone', backref='phone_label')
+    # reference_phones = relationship('ReferencePhone', backref='phone_label')
 
     def __repr__(self):
         return "<PhoneLabel (description=' %r')>" % self.description
@@ -343,7 +343,7 @@ class CandidateReference(db.Model):
 
     # Relationships
     reference_emails = relationship('ReferenceEmail', backref='candidate_reference')
-    reference_phones = relationship('ReferencePhone', backref='candidate_reference')
+    # reference_phones = relationship('ReferencePhone', backref='candidate_reference')
     reference_web_addresses = relationship('ReferenceWebAddress', backref='candidate_reference')
 
     def __repr__(self):
@@ -442,7 +442,7 @@ class PatentStatus(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
     # Relationships
-    patent_milestones = relationship('PatentMilestone', backref='patent_status')
+    # patent_milestones = relationship('PatentMilestone', backref='patent_status')
 
     def __repr__(self):
         return "<PatentStatus (id=' %r')>" % self.id
@@ -475,9 +475,9 @@ class CandidatePublication(db.Model):
     id = db.Column(db.BigInteger, primary_key=True)
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     title = db.Column('Title', db.String(200))
-    start_year = db.Column('StartYear', db.Year)    # todo: accpet Year format only or create a function to validate
+    # start_year = db.Column('StartYear', db.Year)    # todo: accpet Year format only or create a function to validate
     start_month = db.Column('StartMonth', db.Integer)
-    end_year = db.Column('EndYear', db.Year)        # todo: accept Year format only or create a function to validate
+    # end_year = db.Column('EndYear', db.Year)        # todo: accept Year format only or create a function to validate
     end_month = db.Column('EndMonth', db.Integer)
     description = db.Column('Description', db.String(10000))
     added_time = db.Column('AddedTime', db.DateTime)
@@ -535,9 +535,9 @@ class CandidateEducationDegree(db.Model):
     list_order = db.Column('ListOrder', db.SmallInteger)
     degree_type = db.Column('DegreeType', db.String(100))
     degree_title = db.Column('DegreeTitle', db.String(100))
-    start_year = db.Column('StartYear', db.Year)
+    # start_year = db.Column('StartYear', db.Year)
     start_month = db.Column('StartMonth', db.SmallInteger)
-    EndYear = db.Column('EndYear', db.Year)
+    # EndYear = db.Column('EndYear', db.Year)
     end_month = db.Column('EndMonth', db.SmallInteger)
     gpa_num = db.Column('GpaNum', db.DECIMAL)
     gpa_denom = db.Column('GpaDenom', db.DECIMAL)
@@ -578,10 +578,10 @@ class CandidateExperience(db.Model):
     city = db.Column('City', db.String(50))
     state = db.Column('State', db.String(50))
     end_month = db.Column('EndMonth', db.SmallInteger)
-    start_year = db.Column('StartYear', db.Year)
+    # start_year = db.Column('StartYear', db.Year)
     country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
     start_month = db.Column('StartMonth', db.SmallInteger)
-    end_year = db.Column('EndYear', db.Year)
+    # end_year = db.Column('EndYear', db.Year)
     is_current = db.Column('IsCurrent', db.Boolean, default=False)
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())

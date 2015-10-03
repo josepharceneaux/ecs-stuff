@@ -252,7 +252,8 @@ class Meetup(EventBase):
         # used here
         venue = Venue.get_by_user_id_social_network_id_venue_id(self.user.id,
                                                                 self.social_network.id,
-                                                                self.venue_id)
+                                                          self.venue_id)
+        #change venue to venue_in_db
         if venue:
             if venue.social_network_venue_id:
                 return venue.social_network_venue_id
@@ -269,7 +270,8 @@ class Meetup(EventBase):
             if response.ok:
                 venue_id = json.loads(response.text)['id']
                 logger.info('|  Venue has been Added  |')
-            elif response.status_code == 409:
+            elif response.status_code == 409: # comment what is 409
+                # TODO raise KeyError and IndexError
                 venue_id = json.loads(response.text)['errors'][0]['potential_matches'][0]['id']
                 logger.info('|  Venue was picked from matched records  |')
             else:
@@ -306,6 +308,7 @@ class Meetup(EventBase):
         """
         # create url to publish event
         url = self.api_url + "/event/" + event_id
+        #TODO venue_id should be cast into str
         payload = {'venue_id': venue_id}
         # if we are Creating the event, then announce this event
         # else assuming event is already announced, just updating data
@@ -356,6 +359,7 @@ class Meetup(EventBase):
         """
         if data:
             self.validate_required_fields(data)
+            # assert whether data['start_datetime'] is instnace of dt
             # converting Datetime object to epoch for API call
             start_time = int(data['start_datetime'].strftime("%s")) * 1000
             self.payload = {

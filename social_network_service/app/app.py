@@ -1,10 +1,3 @@
-import os
-from common.models.config import GTSQLAlchemy
-if not GTSQLAlchemy.db_session:
-    app_cfg = os.path.abspath('../app.cfg')
-    logging_cfg = os.path.abspath('../logging.conf')
-    GTSQLAlchemy(app_config_path=app_cfg,
-                 logging_config_path=logging_cfg)
 import re
 import json
 import flask
@@ -19,6 +12,7 @@ from restful.events import events_blueprint
 from flask.ext.restful import Api
 from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash
+from social_network_service.app import app
 
 # configuration
 from social_network_service.utilities import log_exception, get_class, logger, get_message_to_log, log_error
@@ -29,10 +23,6 @@ SECRET_KEY = 'development key'
 USERNAME = 'admin'
 PASSWORD = 'default'
 
-app = Flask(__name__)
-api = Api(app)
-app.config.from_object(__name__)
-
 CLIENT_ID = 'o0nptnl4eet4c40suj9es52612'
 CLIENT_SECRET = 'ohtutvn34cvfucl26i5ele5ki2'
 REDIRECT_URL = 'http://127.0.0.1:5000/code'
@@ -42,6 +32,7 @@ EVENTBRITE = 'Eventbrite'
 app.register_blueprint(social_network_blueprint)
 app.register_blueprint(events_blueprint)
 app.register_blueprint(data_blueprint)
+api = Api(app)
 
 
 @app.after_request
@@ -221,6 +212,16 @@ def handle_any_errors(error):
     response = json.dumps(dict(message='Ooops! Internal server error occurred..'))
     return ApiResponse(response, status=500)
 
+
+
+# app = Flask(__name__)
+# app.config.from_object('social_network_service.config')
+
+# db.init_app(app)
+# db.app = app
+#
+# from common.error_handling import register_error_handlers
+# register_error_handlers(app, logger)
 
 # @app.teardown_request
 # def teardown_request(exception=None):

@@ -1,12 +1,4 @@
-import os
 import sys
-from common.models.config import GTSQLAlchemy
-if not GTSQLAlchemy.db_session:
-    app_cfg = os.path.abspath('app.cfg')
-    logging_cfg = os.path.abspath('logging.conf')
-
-    GTSQLAlchemy(app_config_path=app_cfg,
-                 logging_config_path=logging_cfg)
 import logging
 import argparse
 import traceback
@@ -113,7 +105,6 @@ def process_event(data, user_id):
 def delete_events(user_id, event_ids):
     assert len(event_ids) > 0, 'event_ids should contain at least one event id'
     if event_ids:
-        Event.session.commit()  # refresh session to get updated data
         social_networks = {}
         deleted, not_deleted = [], []
         for event_id in event_ids:

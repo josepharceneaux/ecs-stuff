@@ -155,7 +155,7 @@ class EventBase(object):
         return False  # event not found in database
 
     def delete_events(self, event_ids):
-        #  TODO why we are not passing list of 'events' here?
+
         deleted = []
         not_deleted = []
         if event_ids:
@@ -164,7 +164,7 @@ class EventBase(object):
                     deleted.append(event_id)
                 else:
                     not_deleted.append(event_id)
-                    # TODO I think we shouldn't use not_deleted
+
         return deleted, not_deleted
 
     def unpublish_event(self, event_id):
@@ -252,8 +252,6 @@ class EventBase(object):
             if event:
                 del data['id']
                 event.update(**data)
-                # TODO we shouldn't commit here
-                Event.session.commit()
             else:
                 event = Event(**data)
                 Event.save(event)

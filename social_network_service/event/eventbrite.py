@@ -77,6 +77,7 @@ class Eventbrite(EventBase):
                 current_page += 1
                 params_copy['page'] = current_page
                 try:
+                    # TODo pass callee_data (aka message_to_log)
                     response = http_request('GET', events_url, params=params_copy,
                                             headers=self.headers)
                 except Exception as error:
@@ -85,6 +86,7 @@ class Eventbrite(EventBase):
                         'functionName': 'get_events()',
                         'fileName': __file__,
                         'user': self.user.name
+                        #TODO 'stack_trace'
                     })
                     raise
                 if response.ok:
@@ -206,8 +208,11 @@ class Eventbrite(EventBase):
         This function is used to post event on eventbrite.
         It uses helper functions create_event_tickets(), event_publish().
         If event is published successfully, returns True
+
+        TODO; write sperate methods for create / update
         :return:
         """
+        # TODO write serpate methods for create / update
         venue_id = None
         # create url to post event
         if self.social_network_event_id is not None:  # updating event
@@ -258,6 +263,7 @@ class Eventbrite(EventBase):
         :param venue_id:
         :return:
         """
+        # Venue.get_by(user_id, social_networ.id, venue.id)
         venue = Venue.get_by_user_id_social_network_id_venue_id(self.user.id,
                                                                 self.social_network.id,
                                                                 self.venue_id)

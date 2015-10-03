@@ -92,11 +92,12 @@ class Facebook(EventBase):
         Basically we take event's data from Facebook's end
         and map their fields to getTalent db and finally we return
         Event's object (instance of SQLAlchemy model).
+        TODO; document like Sphinx
         :param event:
         :return:
         """
         # self.traceback_info.update({"functionName": "normalize_event()"})
-        venue = None
+
         venue_instance = None
         organizer_instance = None
         owner = None
@@ -113,7 +114,7 @@ class Facebook(EventBase):
             except facebook.GraphAPIError as error:
                 log_exception({
                     'error': error.message,
-                    'functionName': 'normalize_event',
+                    'functionName': 'event_sn_to_gt_mapping',
                     'fileName': __file__,
                     'user': self.user.name
                 })
@@ -164,7 +165,7 @@ class Facebook(EventBase):
                     and event.has_key('noreply_count'))
                 else ''
             )
-        except Exception as error:
+        except KeyError as error:
             log_exception(
                 dict(
                     functionName='normalize_event',

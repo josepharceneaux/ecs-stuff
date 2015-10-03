@@ -1,15 +1,13 @@
 import json
-import datetime
 import requests
-from gt_common.models.organizer import Organizer
-from gt_common.models.venue import Venue
-from social_network_service.manager import delete_events
-from social_network_service.utilities import convert_keys_to_camel_case
-from common.models.event import Event
+from common.models.organizer import Organizer
+from common.models.venue import Venue
 
 API_URL = 'http://127.0.0.1:5000'
 GET_TOKEN = 'http://127.0.0.1:8888/oauth2/token'
 
+# TODO comment all tests , on the top and each method
+# TODO Delete all data crrearted or used by tests
 
 class TestResourceEvents:
 
@@ -167,7 +165,6 @@ class TestVenues:
         assert response.status_code == 201, 'Status should be Ok, Resource created (201)'
         response = response.json()
         assert response['id'] > 0
-        Venue.session.commit()
         venue = Venue.get_by_id(response['id'])
         assert venue, 'Venue created successfully in db'
         Venue.delete(venue.id)
@@ -222,7 +219,6 @@ class TestOrganizers:
         assert response.status_code == 201, 'Status should be Ok, Resource created (201)'
         response = response.json()
         assert response['id'] > 0
-        Organizer.session.commit()
         organizer = Organizer.get_by_id(response['id'])
         assert organizer, 'Organizer created successfully in db'
         Organizer.delete(organizer.id)

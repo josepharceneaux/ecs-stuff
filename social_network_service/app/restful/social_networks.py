@@ -181,7 +181,6 @@ class Venues(Resource):
 
     @authenticate
     def delete(self, **kwargs):
-        Venue.session.commit()
         user_id = kwargs['user_id']
         deleted, not_deleted = [], []
         req_data = request.get_json(force=True)
@@ -244,7 +243,6 @@ class Organizers(Resource):
 
     @authenticate
     def delete(self, **kwargs):
-        Organizer.session.commit()
         user_id = kwargs['user_id']
         deleted, not_deleted = [], []
         req_data = request.get_json(force=True)

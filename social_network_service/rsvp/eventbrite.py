@@ -37,7 +37,10 @@ class Eventbrite(RSVPBase):
                 error_message = e.message
                 message_to_log.update({'error': error_message})
                 log_exception(message_to_log)
+                # raise the error TODO
         else:
+            # TODO may be following is redudant, we should just assert on
+            # webhook_id at the top and remove this else
             error_message = 'Webhook Id is None. Can not Process RSVP'
             message_to_log.update({'error': error_message})
             log_error(message_to_log)
@@ -60,6 +63,7 @@ class Eventbrite(RSVPBase):
                                             class_name=self.__class__.__name__,
                                             gt_user=self.user.name,
                                             file_name=__file__)
+        # TODO assert on rsvp i.e. chekc it is the correct type
         try:
             attendee = self.get_attendee(rsvp)
             if attendee:
@@ -86,11 +90,13 @@ class Eventbrite(RSVPBase):
             error_message = e.message
             message_to_log.update({'error': error_message})
             log_exception(message_to_log)
+            #TODO should we raise, if so raise it
 
     def process_rsvps(self, events):
         """
         Here we process the rsvp for rsvp importer
         """
+        #TODO double check this paproach and logging will change throughout
         function_name = 'process_rsvps()'
         message_to_log = get_message_to_log(
             function_name=function_name,
@@ -110,6 +116,7 @@ class Eventbrite(RSVPBase):
         :param rsvp: contains the id of rsvp for (eventbrite) in dictionary format
         :return: attendee object which contains data of the attendee
         """
+        # TODO assert on rsvp
         function_name = 'get_attendee()'
         message_to_log = get_message_to_log(function_name=function_name,
                                             class_name=self.__class__.__name__,
@@ -153,4 +160,5 @@ class Eventbrite(RSVPBase):
                 error_message = e.message
                 message_to_log.update({'error': error_message})
                 log_exception(message_to_log)
+                # TODO I think we should raise here.
             return attendee

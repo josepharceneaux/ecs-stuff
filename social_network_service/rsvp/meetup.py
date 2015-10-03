@@ -23,6 +23,7 @@ class Meetup(RSVPBase):
         :return:
         """
         function_name = 'get_rsvps()'
+        # TODO assert on event
         message_to_log = get_message_to_log(function_name=function_name,
                                             class_name=self.__class__.__name__,
                                             gt_user=self.user.name,
@@ -53,6 +54,7 @@ class Meetup(RSVPBase):
                     if not next_url:
                         break
             return rsvps
+        # TODO why not check for other status
         elif response.status_code == 401:
             # This is the error code for Not Authorized user(Expired Token)
             # if this error code occurs, we return None and RSVPs are not
@@ -87,6 +89,7 @@ class Meetup(RSVPBase):
         :param rsvp:
         :return:
         """
+        #TODO assert on rsvp
         function_name = 'get_attendee()'
         message_to_log = get_message_to_log(function_name=function_name,
                                             class_name=self.__class__.__name__,
@@ -140,4 +143,5 @@ class Meetup(RSVPBase):
                 error_message = e.message
                 message_to_log.update({'error': error_message})
                 log_exception(message_to_log)
+                # TODO should we not raise
             return attendee

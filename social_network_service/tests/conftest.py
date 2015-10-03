@@ -8,8 +8,8 @@ if not GTSQLAlchemy.db_session:
                  logging_config_path=logging_cfg)
 import pytest
 import datetime
-from gt_common.models.venue import Venue
-from gt_common.models.organizer import Organizer
+from common.models.venue import Venue
+from common.models.organizer import Organizer
 
 from common.models.user import User
 from common.models.token import Token
@@ -228,7 +228,6 @@ def events(request, user,  meetup, eventbrite):
     event_id = process_event(event, user.id)
     event = Event.get_by_id(event_id)
     events.append(event)
-    Event.session.commit()
 
     # def delete_test_events():
     #     event_ids = [event.id for event in events]
@@ -280,7 +279,6 @@ def venues(request, user, meetup, eventbrite):
 
     eventbrite_venue = Venue(**eventbrite_venue)
     Venue.save(eventbrite_venue)
-    Venue.session.commit()
     venues.append(eventbrite_venue)
     return venues
 
@@ -303,7 +301,6 @@ def organizer_in_db(request, user):
     }
     organizer = Organizer(**organizer)
     Organizer.save(organizer)
-    Organizer.session.commit()
     return organizer
 
 

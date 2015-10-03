@@ -82,6 +82,7 @@ class Facebook(RSVPBase):
                 response = requests.get(response['paging']['next'])
                 if response.ok:
                     response = response.json()
+                # #TODO following if sohuld be removed
                 if response and response['data']:
                     target_list.extend(response['data'])
             except KeyError:
@@ -104,6 +105,7 @@ class Facebook(RSVPBase):
         :return:
         """
         function_name = "get_attendee()"
+        # TODO assert on RSVP
         message_to_log = get_message_to_log(function_name=function_name,
                                             class_name=self.__class__.__name__,
                                             gt_user=self.user.name,
@@ -145,11 +147,13 @@ class Facebook(RSVPBase):
                 attendee.longitude = location.get('longitude')
                 attendee.zip = location.get('zip')
                 attendee.profile_url = data.get('link', '')
+                # TODO also check in following if 'data' and 'url' keys are there as well
                 attendee.picture_url = data['picture']['data']['url'] if 'picture' in data else ''
                 attendee.gt_user_id = self.user.id
                 attendee.social_network_id = self.social_network_id
                 attendee.vendor_rsvp_id = rsvp['id']  # we are using profile_id
                 # here as we do not have any rsvp_id for this vendor
+                #TODO cannot we do datetime.now() for added_time
                 attendee.added_time = ' '
                 attendee.vendor_img_link = "<img class='pull-right' " \
                                            "style='width:60px;height:30px' " \
@@ -173,4 +177,5 @@ class Facebook(RSVPBase):
                 error_message = e.message
                 message_to_log.update({'error': error_message})
                 log_exception(message_to_log)
+                #TODO we should raise, no?
             return attendee
