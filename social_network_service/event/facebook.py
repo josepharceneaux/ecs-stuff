@@ -2,9 +2,9 @@ import requests
 
 from datetime import datetime, timedelta
 from social_network_service.utilities import get_message_to_log, log_exception, import_from_dist_packages
-from gt_common.models.event import Event
-from gt_common.models.organizer import Organizer
-from gt_common.models.venue import Venue
+from common.models.event import Event
+from common.models.organizer import Organizer
+from common.models.venue import Venue
 from social_network_service.event.base import EventBase
 
 # We have to import the Facebook page in the following way because we

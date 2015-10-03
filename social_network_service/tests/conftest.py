@@ -1,5 +1,5 @@
 import os
-from gt_common.models.config import GTSQLAlchemy
+from common.models.config import GTSQLAlchemy
 if not GTSQLAlchemy.db_session:
     folder = os.path.dirname(__file__)
     app_cfg = os.path.abspath(os.path.join(folder, '../app.cfg'))
@@ -10,14 +10,14 @@ import pytest
 import datetime
 import requests
 
-from gt_common.models.user import User
-from gt_common.models.token import Token
-from gt_common.models.event import Event
-from gt_common.models.client import Client
-from gt_common.models.domain import Domain
-from gt_common.models.culture import Culture
-from gt_common.models.organization import Organization
-from gt_common.models.social_network import SocialNetwork
+from common.models.user import User
+from common.models.token import Token
+from common.models.event import Event
+from common.models.client import Client
+from common.models.domain import Domain
+from common.models.culture import Culture
+from common.models.organization import Organization
+from common.models.social_network import SocialNetwork
 from social_network_service.manager import process_event, delete_events
 from social_network_service.app import app as _app
 

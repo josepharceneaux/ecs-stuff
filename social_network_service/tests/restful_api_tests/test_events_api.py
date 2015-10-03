@@ -2,7 +2,7 @@ import json
 import datetime
 import requests
 from social_network_service.utilities import convert_keys_to_camel_case
-from gt_common.models.event import Event
+from common.models.event import Event
 
 API_URL = 'http://127.0.0.1:5000'
 GET_TOKEN = 'http://127.0.0.1:8888/oauth2/token'

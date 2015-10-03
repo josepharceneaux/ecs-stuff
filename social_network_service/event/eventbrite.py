@@ -8,12 +8,12 @@ from social_network_service.custom_exections import EventNotPublished
 from social_network_service.custom_exections import EventNotUnpublished
 from social_network_service.custom_exections import EventInputMissing
 from social_network_service.custom_exections import EventLocationNotCreated
-from gt_common.models.organizer import Organizer
-from gt_common.models.venue import Venue
+from common.models.organizer import Organizer
+from common.models.venue import Venue
 from social_network_service.event.base import EventBase
 from social_network_service.utilities import log_error, logger, log_exception, \
     http_request, get_message_to_log
-from gt_common.models.event import Event
+from common.models.event import Event
 
 EVENTBRITE = 'Eventbrite'
 # TODO: Will replace this ULR with actual webhook URL (Flask App)

@@ -12,8 +12,8 @@ import logging
 import datetime
 from requests_oauthlib import OAuth2Session
 
-from gt_common.models.user import User
-from gt_common.models.social_network import SocialNetwork
+from common.models.user import User
+from common.models.social_network import SocialNetwork
 from social_network_service.custom_exections import SocialNetworkNotImplemented, ApiException
 
 logger = logging.getLogger('event_service.app')

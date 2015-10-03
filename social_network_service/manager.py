@@ -1,6 +1,6 @@
 import os
 import sys
-from gt_common.models.config import GTSQLAlchemy
+from common.models.config import GTSQLAlchemy
 if not GTSQLAlchemy.db_session:
     app_cfg = os.path.abspath('app.cfg')
     logging_cfg = os.path.abspath('logging.conf')
@@ -14,9 +14,9 @@ import traceback
 from gevent.pool import Pool
 from datetime import datetime
 from dateutil.parser import parse
-from gt_common.models.event import Event
-from gt_common.models.user import UserCredentials, User
-from gt_common.models.social_network import SocialNetwork
+from common.models.event import Event
+from common.models.user import UserCredentials, User
+from common.models.social_network import SocialNetwork
 from utilities import get_class, get_message_to_log, log_error
 from social_network_service.custom_exections import SocialNetworkError, \
     SocialNetworkNotImplemented, InvalidDatetime, EventInputMissing

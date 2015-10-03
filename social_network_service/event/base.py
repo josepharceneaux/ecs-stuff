@@ -3,10 +3,10 @@ from abc import ABCMeta, abstractmethod
 from social_network_service.custom_exections import EventNotSaveInDb, EventNotUnpublished
 from social_network_service.utilities import get_message_to_log, log_error, get_class, http_request, logger, \
     log_exception
-from gt_common.models.event import Event
-from gt_common.models.user import User
-from gt_common.models.user import UserCredentials
-from gt_common.models.social_network import SocialNetwork
+from common.models.event import Event
+from common.models.user import User
+from common.models.user import UserCredentials
+from common.models.social_network import SocialNetwork
 
 
 class EventBase(object):
