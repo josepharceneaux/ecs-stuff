@@ -1,6 +1,4 @@
 from db import db
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import relationship
 
 
 class SocialNetwork(db.Model):
@@ -14,8 +12,8 @@ class SocialNetwork(db.Model):
     redirect_uri = db.Column('redirectUri', db.String(255))
     auth_url = db.Column('authUrl', db.String(200))
 
-    events = relationship("Event", backref='social_network', lazy='dynamic')
-    user_credentials = relationship("UserCredentials")
+    events = db.relationship("Event", backref='social_network', lazy='dynamic')
+    user_credentials = db.relationship("UserCredentials")
 
     def __repr__(self):
         return '<SocialNetwork %r>' % self.name
@@ -43,7 +41,7 @@ class SocialNetwork(db.Model):
         assert isinstance(ids, list)
         if ids:
             return cls.query.filter(
-                not_(
+                db.not_(
                     SocialNetwork.id.in_(
                         ids
                     )

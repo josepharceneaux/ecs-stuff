@@ -1,6 +1,4 @@
 from db import db
-from sqlalchemy import ForeignKey
-from sqlalchemy.orgm import relationship
 
 
 class Event(db.Model):
@@ -10,17 +8,17 @@ class Event(db.Model):
     social_network_event_id = db.Column('socialNetworkEventId', db.String(1000))
     title = db.Column('title', db.String(500))
     description = db.Column('description', db.String(1000))
-    social_network_id = db.Column('socialNetworkId', db.Integer, ForeignKey('social_network.id'), nullable=False)
-    user_id = db.Column('userId', db.Integer, ForeignKey('user.id'), nullable=False)
-    organizer_id = db.Column('organizerId', db.Integer, ForeignKey('organizer.id'), nullable=False)
-    venue_id = db.Column('venueId', db.Integer, ForeignKey('venue.id'), nullable=False)
+    social_network_id = db.Column('socialNetworkId', db.Integer, db.ForeignKey('social_network.id'), nullable=False)
+    user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id'), nullable=False)
+    organizer_id = db.Column('organizerId', db.Integer, db.ForeignKey('organizer.id'), nullable=False)
+    venue_id = db.Column('venueId', db.Integer, db.ForeignKey('venue.id'), nullable=False)
     group_id = db.Column('groupId', db.String(100))
     group_url_name = db.Column('groupUrlName', db.String(500))
     url = db.Column('url', db.String(500))
-    start_datetime = db.Column('startDatetime', DateTime)
-    end_datetime = db.Column('endDatetime', DateTime)
+    start_datetime = db.Column('startDatetime', db.DateTime)
+    end_datetime = db.Column('endDatetime', db.DateTime)
     registration_instruction = db.Column('registrationInstruction', db.String(1000))
-    cost = db.Column('cost', Float)
+    cost = db.Column('cost', db.Float)
     currency = db.Column('currency', db.String(20))
     timezone = db.Column('timezone', db.String(100))
     max_attendees = db.Column('maxAttendees', db.Integer)
@@ -41,7 +39,7 @@ class Event(db.Model):
     @classmethod
     def get_by_user_and_vendor_id(cls, user_id, social_network_event_id):
         return cls.query.filter(
-            and_(
+            db.and_(
                 Event.user_id == user_id,
                 Event.social_network_event_id == social_network_event_id
             )).first()
@@ -51,7 +49,7 @@ class Event(db.Model):
         assert user_id is not None
         assert social_network_id is not None
         return cls.query.filter(
-            and_(
+            db.and_(
                 Event.user_id == user_id,
                 Event.social_network_id == social_network_id,
                 Event.start_datetime >= start_date
@@ -64,7 +62,7 @@ class Event(db.Model):
         assert social_network_event_id is not None
         assert user_id is not None
         return cls.query.filter(
-            and_(
+            db.and_(
                 Event.user_id == user_id,
                 Event.social_network_id == social_network_id,
                 Event.social_network_event_id == social_network_event_id
@@ -78,7 +76,7 @@ class Event(db.Model):
         assert social_network_event_id is not None
         assert user_id is not None
         return cls.query.filter(
-            and_(
+            db.and_(
                 Event.user_id == user_id,
                 Event.id == _id,
                 Event.social_network_event_id == social_network_event_id
@@ -88,7 +86,7 @@ class Event(db.Model):
     @classmethod
     def get_by_user_and_event_id(cls, user_id, event_id):
         return cls.query.filter(
-            and_(
+            db.and_(
                 Event.user_id == user_id,
                 Event.id == event_id
             )).first()
