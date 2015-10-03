@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from common.models.event import Event
 from base import RSVPBase
 from social_network_service.utilities import http_request, Attendee, \
-    milliseconds_since_epoch_to_dt, log_exception, log_error, get_message_to_log
+    milliseconds_since_epoch_to_dt, log_exception, log_error
 
 
 class Meetup(RSVPBase):
@@ -22,11 +22,7 @@ class Meetup(RSVPBase):
         :param event:
         :return:
         """
-        function_name = 'get_rsvps()'
-        message_to_log = get_message_to_log(function_name=function_name,
-                                            class_name=self.__class__.__name__,
-                                            gt_user=self.user.name,
-                                            file_name=__file__)
+        message_to_log = {'user_id': self.user.id}
         rsvps = []
         social_network_id = event.social_network_id
         assert social_network_id is not None
@@ -87,11 +83,7 @@ class Meetup(RSVPBase):
         :param rsvp:
         :return:
         """
-        function_name = 'get_attendee()'
-        message_to_log = get_message_to_log(function_name=function_name,
-                                            class_name=self.__class__.__name__,
-                                            gt_user=self.user.name,
-                                            file_name=__file__)
+        message_to_log = {'user_id': self.user.id}
         events_url = self.api_url + '/member/' \
                      + str(rsvp['member']['member_id']) \
                      + '?sign=true'

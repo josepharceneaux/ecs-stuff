@@ -1,15 +1,7 @@
-import os
 import json
-from common.models.config import GTSQLAlchemy
-# app_cfg = os.path.abspath('app.cfg')
-# logging_cfg = os.path.abspath('logging.conf')
-#
-# gt = GTSQLAlchemy(app_config_path=app_cfg,
-#                   logging_config_path=logging_cfg)
 
 from base import SocialNetworkBase
-from utilities import http_request, logger, log_error, log_exception,\
-    get_message_to_log
+from utilities import http_request, logger, log_error, log_exception
 
 
 class Meetup(SocialNetworkBase):
@@ -48,11 +40,7 @@ class Meetup(SocialNetworkBase):
         is an organizer to be shown in drop down while creating event on Meetup
         through Event Creation Form.
         """
-        function_name = 'get_groups()'
-        message_to_log = get_message_to_log(function_name=function_name,
-                                            class_name=self.__class__.__name__,
-                                            gt_user=self.user.name,
-                                            file_name=__file__)
+        message_to_log = {'user_id': self.user.id}
         url = self.api_url + '/groups/'
         params = {'member_id': 'self'}
         response = http_request('GET', url, params=params, headers=self.headers,
@@ -76,10 +64,7 @@ class Meetup(SocialNetworkBase):
         involvement and save in user_credentials db table
         :return:
         """
-        message_to_log = get_message_to_log(function_name='refresh_access_token()',
-                                            class_name=self.__class__.__name__,
-                                            gt_user=self.user.name,
-                                            file_name=__file__)
+        message_to_log = {'user_id': self.user.id}
         status = False
         user_refresh_token = self.user_credentials.refresh_token
         auth_url = self.social_network.auth_url + "/access?"
@@ -116,6 +101,6 @@ class Meetup(SocialNetworkBase):
             log_exception(message_to_log)
         return status
 
-if __name__ == "__main__":
-    eb = Meetup(user_id=1, social_network_id=13)
-    eb.process_events()
+# if __name__ == "__main__":
+#     eb = Meetup(user_id=1, social_network_id=13)
+#     eb.process_events()

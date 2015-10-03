@@ -21,7 +21,7 @@ from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash
 
 # configuration
-from social_network_service.utilities import log_exception, get_class, logger, get_message_to_log, log_error
+from social_network_service.utilities import log_exception, get_class, log_error
 
 DATABASE = '/tmp/flaskr.db'
 DEBUG = True
@@ -143,9 +143,7 @@ def handle_rsvp():
     # verify_token = request.args['hub.verify_token']
     # hub_mode = request.args['hub.mode']
     # assert verify_token == 'token'
-    function_name = 'handle_rsvp()'
-    message_to_log = get_message_to_log(function_name=function_name,
-                                        file_name=__file__)
+    message_to_log = {'user_id': ''}
     try:
         if request.data:
             data = json.loads(request.data)
@@ -156,6 +154,7 @@ def handle_rsvp():
                 rsvp = get_rsvp_id(url_of_rsvp)
                 webhook_id = data['config']['webhook_id']
                 user_credentials = EventbriteRsvp.get_user_credentials_by_webhook(webhook_id)
+                message_to_log.update({'user_id': user_credentials.user_id})
                 social_network_class = get_class(user_credentials.social_network.name.lower(),
                                                  'social_network')
                 rsvp_class = get_class(user_credentials.social_network.name.lower(), 'rsvp')
@@ -171,7 +170,7 @@ def handle_rsvp():
                                       headers=sn.headers,
                                       message_to_log=sn.message_to_log)
                 # calls class method to process RSVP
-                rsvp_obj._process_rsvp_via_webhook(rsvp)
+                rsvp_obj.process_rsvp_via_webhook(rsvp)
             elif action == 'test':
                 print 'Successful Webhook Connection'
         else:

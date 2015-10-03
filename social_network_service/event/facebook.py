@@ -1,7 +1,7 @@
 import requests
 
 from datetime import datetime, timedelta
-from social_network_service.utilities import get_message_to_log, log_exception, import_from_dist_packages
+from social_network_service.utilities import log_exception, import_from_dist_packages
 from common.models.event import Event
 from common.models.organizer import Organizer
 from common.models.venue import Venue
@@ -41,14 +41,8 @@ class Facebook(EventBase):
                 until=self.end_date
             )
         except facebook.GraphAPIError as error:
-            log_exception(
-                dict(
-                    functionName='get_events',
-                    user=self.user.name,
-                    error=error.message,
-                    fileName=__file__
-                )
-            )
+            log_exception({'user_id': self.user.id,
+                           'error': error.message})
             raise
         if 'data' in response:
             user_events.extend(response['data'])
@@ -76,15 +70,8 @@ class Facebook(EventBase):
             except KeyError:
                 break
             except requests.HTTPError as error:
-                log_exception(
-                    dict(
-                        function_name='get_all_pages',
-                        class_name=self.__class__.__name__,
-                        gt_user=self.user.name,
-                        error=error.message,
-                        file_name=__file__
-                    )
-                )
+                log_exception({'user_id': self.user.id,
+                               'error': error.message})
                 raise
 
     def event_sn_to_gt_mapping(self, event):
@@ -111,12 +98,8 @@ class Facebook(EventBase):
                 organizer = self.graph.get_object('v2.4/' + owner['id'])
                 organizer = organizer.get('data')
             except facebook.GraphAPIError as error:
-                log_exception({
-                    'error': error.message,
-                    'functionName': 'normalize_event',
-                    'fileName': __file__,
-                    'user': self.user.name
-                })
+                log_exception({'user_id': self.user.id,
+                               'error': error.message})
                 raise
         if owner or organizer:
             organizer_instance = Organizer(
@@ -165,14 +148,8 @@ class Facebook(EventBase):
                 else ''
             )
         except Exception as error:
-            log_exception(
-                dict(
-                    functionName='normalize_event',
-                    user=self.user.name,
-                    error=error.message,
-                    fileName=__file__
-                )
-            )
+            log_exception({'user_id': self.user.id,
+                           'error': error.message})
         else:
             return event
 
