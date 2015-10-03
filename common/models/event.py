@@ -1,8 +1,4 @@
 from db import db
-<<<<<<< HEAD
-=======
-from sqlalchemy import ForeignKey, DateTime, Float, and_
->>>>>>> b8a3e5441ff941435977852f935e08b0b13443be
 
 
 class Event(db.Model):

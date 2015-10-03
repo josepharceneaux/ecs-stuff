@@ -48,6 +48,15 @@ class Product(db.Model):
     def __repr__(self):
         return "<Product (name=' %r')>" % self.name
 
+    @classmethod
+    def get_by_name(cls, vendor_name):
+        assert vendor_name is not None
+        return cls.query.filter(
+            db.and_(
+                Product.name == vendor_name
+            )
+        ).first()
+
 
 class Country(db.Model):
     __tablename__ = 'country'
