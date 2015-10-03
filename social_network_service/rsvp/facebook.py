@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from common.models.event import Event
 from social_network_service.rsvp.base import RSVPBase
 from social_network_service.utilities import Attendee, log_exception, \
-    import_from_dist_packages, log_error, get_message_to_log
+    import_from_dist_packages, log_error
 
 # Here we import facebook-sdk python module making sure it doesn't import
 # our local facebook.py modules
@@ -29,11 +29,7 @@ class Facebook(RSVPBase):
         """
         This method retrieves RSPVs for user's events on Facebook.
         """
-        function_name = "get_rsvps()"
-        message_to_log = get_message_to_log(function_name=function_name,
-                                            class_name=self.__class__.__name__,
-                                            gt_user=self.user.name,
-                                            file_name=__file__)
+        message_to_log = {'user_id': self.user.id}
         rsvps = []
         try:
             self.graph = facebook.GraphAPI(access_token=self.access_token)
@@ -72,11 +68,6 @@ class Facebook(RSVPBase):
         return rsvps
 
     def get_all_pages(self, response, target_list):
-        function_name = "get_all_pages()"
-        message_to_log = get_message_to_log(function_name=function_name,
-                                            class_name=self.__class__.__name__,
-                                            gt_user=self.user.name,
-                                            file_name=__file__)
         while True:
             try:
                 response = requests.get(response['paging']['next'])
@@ -92,7 +83,8 @@ class Facebook(RSVPBase):
                                           error_message=error.message)
                 error_message = "Couldn't get data while paginating over Facebook records. " \
                                 "URL: %(url)s, %(error_message)s" % error_message_dict
-                message_to_log.update({'error': error_message})
+                message_to_log = {'user_id': self.user.id,
+                                  'error': error_message}
                 log_exception(message_to_log)
                 raise
 
@@ -104,12 +96,7 @@ class Facebook(RSVPBase):
         :param rsvp:
         :return:
         """
-        function_name = "get_attendee()"
-        # TODO assert on RSVP
-        message_to_log = get_message_to_log(function_name=function_name,
-                                            class_name=self.__class__.__name__,
-                                            gt_user=self.user.name,
-                                            file_name=__file__)
+        message_to_log = {'user_id': self.user.id}
         try:
             data = self.graph.get_object('v2.4/' + rsvp['id'],
                                          fields='first_name, last_name, name, '

@@ -1,14 +1,6 @@
-# import os
-# from gt_common.models.config import GTSQLAlchemy
-# app_cfg = os.path.abspath('app.cfg')
-# logging_cfg = os.path.abspath('logging.conf')
-#
-# gt = GTSQLAlchemy(app_config_path=app_cfg,
-#                   logging_config_path=logging_cfg)
-
 from base import SocialNetworkBase
 from common.models.user import UserCredentials
-from utilities import get_message_to_log, http_request, log_exception, log_error
+from utilities import http_request, log_exception, log_error
 
 # TODO: Will replace this ULR with actual webhook URL (Flask App)
 WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
@@ -68,7 +60,7 @@ class Eventbrite(SocialNetworkBase):
         every user).
         :return: True if webhook creation is successful o/w False
         """
-        message_to_log = get_message_to_log(function_name='create_webhook()')
+        message_to_log = {'user_id': user_credentials['userId']}
         user_credentials_in_db = UserCredentials.get_by_user_and_social_network_id(
             user_credentials['userId'],
             user_credentials['socialNetworkId'])
@@ -89,6 +81,6 @@ class Eventbrite(SocialNetworkBase):
                 message_to_log.update({'error': error_message})
                 log_error(message_to_log)
 
-if __name__ == "__main__":
-    eb = Eventbrite(user_id=1, social_network_id=18)
-    eb.process_events()
+# if __name__ == "__main__":
+#     eb = Eventbrite(user_id=1, social_network_id=18)
+#     eb.process_events()

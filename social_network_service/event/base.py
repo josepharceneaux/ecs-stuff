@@ -1,7 +1,6 @@
-
 from abc import ABCMeta, abstractmethod
 from social_network_service.custom_exections import EventNotSaveInDb, EventNotUnpublished
-from social_network_service.utilities import get_message_to_log, log_error, get_class, http_request, logger, \
+from social_network_service.utilities import log_error, get_class, http_request, logger, \
     log_exception
 from common.models.event import Event
 from common.models.user import User
@@ -109,11 +108,8 @@ class EventBase(object):
                                     '%s. Details: %s' \
                                     % (self.social_network.id, error.message)
                     log_exception({
+                        'user_id': self.user.id,
                         'error': error_message,
-                        'functionName': 'process_events',
-                        'fileName': __file__,
-                        'user': self.user.name,
-                        'class': self.__class__.__name__
                     })
                     # Now let's try to process the next event
         if events:
@@ -145,11 +141,8 @@ class EventBase(object):
                 return True
             except Exception as error:  # some error while removing event
                 log_exception({
+                    'user_id': self.user.id,
                     'error': error.message,
-                    'functionName': 'delete_event()',
-                    'fileName': __file__,
-                    'user': self.user.name,
-                    'class': self.__class__.__name__
                 })
                 return False
         return False  # event not found in database
@@ -174,10 +167,7 @@ class EventBase(object):
         :param event_id:id of newly created event
         :return: True if event is deleted from vendor, False other wsie
         """
-        message_to_log = get_message_to_log(function_name='unpublish_event()',
-                                            class_name=self.__class__.__name__,
-                                            gt_user=self.user.name,
-                                            file_name=__file__)
+        message_to_log = {'user_id': self.user.id}
         # create url to publish event
         url = self.url_to_delete_event
         # params are None. Access token is present in self.headers
@@ -258,11 +248,8 @@ class EventBase(object):
         except Exception as e:
             error_message = 'Event was not saved in Database\nError: %s' % e.message
             log_exception({
+                'user_id': self.user.id,
                 'error': error_message,
-                'functionName': 'save_event',
-                'fileName': __file__,
-                'user': self.user.name,
-                'class': self.__class__.__name__
             })
             raise EventNotSaveInDb('Error occurred while saving event in database')
         return event.id

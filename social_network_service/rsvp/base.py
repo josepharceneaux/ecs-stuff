@@ -13,15 +13,12 @@ class RSVPBase(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, *args, **kwargs):
-        function_name = '__init__()'
-        message_to_log = get_message_to_log(function_name=function_name,
-                                            class_name=self.__class__.__name__,
-                                            file_name=__file__)
-        self.user_credentials = kwargs.get('user_credentials')
-        if self.user_credentials:
+        if kwargs.get('user_credentials'):
+            self.user_credentials = kwargs.get('user_credentials')
             self.user = User.get_by_id(self.user_credentials.user_id)
-            message_to_log.update({'user': self.user.name})
+            message_to_log = {'user_id': self.user.id}
         else:
+            message_to_log = {'user_id': 'Not Available'}
             error_message = 'User Credentials are None'
             message_to_log.update({'error': error_message})
             log_error(message_to_log)
@@ -60,16 +57,7 @@ class RSVPBase(object):
 
         :return:
         """
-        function_name = '_process_rsvps()'
-        message_to_log = get_message_to_log(function_name=function_name,
-                                            class_name=self.__class__.__name__,
-                                            gt_user=self.user.name,
-                                            file_name=__file__)
-        # get events from database where eventStartDate is greater than
-        # events = Event.get_by_user_id_vendor_id_start_date(self.user.id,
-        #                                                    self.social_network_id,
-        #                                                    self.start_date_dt,
-        #                                                    )
+        message_to_log = {'user_id': self.user.id}
         if events:
             for event in events:
                 # events is a list of dicts. where each dict is likely a
