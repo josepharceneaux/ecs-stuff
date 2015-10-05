@@ -20,6 +20,7 @@ class Domain(db.Model):
     dice_company_id = Column('diceCompanyId', Integer)
 
     user = relationship('User', backref='domain')
+    # TODO there was a duplicate definition of domain, removed the other one
 
     def __init__(self, name=None):
         self.name = name

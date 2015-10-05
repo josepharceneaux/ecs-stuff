@@ -5,6 +5,15 @@ from sqlalchemy.orm import relationship, backref
 # from auth_service.oauth.modules.handy_functions import is_number
 import time
 import datetime
+import logging
+import candidate
+import domain
+from candidate import CandidateSource
+from candidate import CandidateAreaOfInterest
+from misc import AreaOfInterest
+
+logger = logging.getLogger(__file__)
+
 
 
 class User(db.Model):
@@ -52,30 +61,6 @@ class User(db.Model):
     def __repr__(self):
         return "<email (email=' %r')>" % self.email
 
-
-class Domain(db.Model):
-    __tablename__ = 'domain'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50))
-    usage_limitation = db.Column('usageLimitation', db.Integer)
-    expiration = db.Column(db.DateTime)
-    added_time = db.Column('addedTime', db.DateTime)
-    organization_id = db.Column('organizationId', db.Integer)
-    is_fair_check_on = db.Column('isFairCheckOn', db.Boolean, default=False)
-    is_active = db.Column('isActive', db.Boolean, default=True)  # TODO: store as 0 or 1
-    default_tracking_code = db.Column('defaultTrackingCode', db.SmallInteger)
-    default_culture_id = db.Column('defaultCultureId', db.Integer, default=1)
-    default_from_name = db.Column('defaultFromName', db.String(255))
-    settings_json = db.Column('settingsJson', db.Text)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-
-    # Relationships
-    users = relationship('User', backref='domain')
-    candidate_sources = relationship('CandidateSource', backref='domain')
-    areas_of_interest = relationship('AreaOfInterest', backref='domain')
-
-    def get_id(self):
-        return unicode(self.id)
 
 
 class JobOpening(db.Model):
@@ -323,7 +308,7 @@ class UserCredentials(db.Model):
         assert user_id is not None
         assert social_network_id is not None
         return cls.query.filter(
-            and_(
+            db.and_(
                 UserCredentials.user_id == user_id,
                 UserCredentials.social_network_id == social_network_id
             )
@@ -344,7 +329,7 @@ class UserCredentials(db.Model):
         assert webhook_id is not None
         assert social_network_id is not None
         return cls.query.filter(
-            and_(
+            db.and_(
                 UserCredentials.webhook == webhook_id,
                 UserCredentials.social_network_id == social_network_id
             )

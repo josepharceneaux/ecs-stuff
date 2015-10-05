@@ -1,8 +1,6 @@
 """Run Social Network Service APP"""
 from social_network_service.app.app import app
 
-__author__ = 'zohaib'
-
 import os
 
 if __name__ == '__main__':

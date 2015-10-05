@@ -67,7 +67,8 @@ def parse_file_picker_resume():
     if create_candidate:
         if email_present:
             candidate_response = create_candidate_from_parsed_resume(result_dict, oauth_token)
-            result_dict['id'] = candidate_response.get('candidates')[0]['id']
+            candidate_id = json.loads(candidate_response).get('candidates')
+            result_dict['id'] = candidate_id[0]['id'] if candidate_id else None
         else:
             return jsonify(**{'error': {'code': 3, 'message': 'Parsed resume did not have email',
                                         'candidate': result_dict}}), 400

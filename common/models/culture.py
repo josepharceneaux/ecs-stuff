@@ -1,7 +1,8 @@
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 from db import db
-
+import domain
+import user
 
 class Culture(db.Model):
     __tablename__ = 'culture'

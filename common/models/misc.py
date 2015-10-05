@@ -1,6 +1,10 @@
 from db import db
+import datetime
 from sqlalchemy.orm import relationship
 import time
+import domain
+import patent
+from candidate import CandidateMilitaryService
 
 
 class AreaOfInterest(db.Model):
@@ -38,26 +42,6 @@ class Organization(db.Model):
         return "<Organization (name=' %r')>" % self.name
 
 
-class Product(db.Model):
-    __tablename__ = 'product'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(100))
-    notes = db.Column('Notes', db.String(500))
-    updated_time = db.Column('UpdatedTime', db.DateTime, default=time.time())
-
-    def __repr__(self):
-        return "<Product (name=' %r')>" % self.name
-
-    @classmethod
-    def get_by_name(cls, vendor_name):
-        assert vendor_name is not None
-        return cls.query.filter(
-            db.and_(
-                Product.name == vendor_name
-            )
-        ).first()
-
-
 class Country(db.Model):
     __tablename__ = 'country'
     id = db.Column(db.Integer, primary_key=True)
@@ -65,7 +49,7 @@ class Country(db.Model):
     code = db.Column('Code', db.String(20), nullable=False)
 
     # Relationships
-    # candidate_military_services = relationship('CandidateMilitartyService', backref='country')
+    candidate_military_services = relationship('CandidateMilitaryService', backref='country')
     patent_details = relationship('PatentDetail', backref='country')
     candidate_addresses = relationship('CandidateAddress', backref='country')
     candidate_educations = relationship('CandidateEducation', backref='country')

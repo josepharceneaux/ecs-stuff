@@ -11,7 +11,9 @@ dependencies:
 
 test:
   override:
-    - py.test AuthService/tests/:
+    - py.test auth_service/tests/:
         parallel: true
-    - py.test ResumeService/tests/:
+    - py.test resume_service/tests/:
+        parallel: true
+    - py.test activity_service/tests/:
         parallel: true
