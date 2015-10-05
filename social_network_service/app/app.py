@@ -49,11 +49,13 @@ def hello_world():
     # return 'Hello World!', 404
     try:
         from common.models.candidate_ import Candidate
+        from common.models.event import Event
         candidate = Candidate.query.all()[0]
+        event = Event.query.get(1)
     except Exception as error:
         import traceback
         return traceback.format_exc()
-    return 'Hello World! %s' % candidate.first_name
+    return 'Hello World! %s, %s' % (candidate.first_name, event.title)
 
 
 @app.route('/test/<access_token>')

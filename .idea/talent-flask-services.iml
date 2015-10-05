@@ -12,4 +12,8 @@
       </list>
     </option>
   </component>
+  <component name="TestRunnerService">
+    <option name="projectConfiguration" value="py.test" />
+    <option name="PROJECT_TEST_RUNNER" value="py.test" />
+  </component>
 </module>
