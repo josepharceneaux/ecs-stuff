@@ -12,17 +12,16 @@ import pytest
 from sqlalchemy.sql.expression import ClauseElement
 
 # Application Specific
-from activities_service.activities_app import app
-from activities_service.models.db import db
-from activities_service.models.misc import Activity
-from activities_service.models.misc import Culture
-from activities_service.models.misc import Organization
-from activities_service.models.candidate import Candidate
-from activities_service.models.user import Client
-from activities_service.models.user import Domain
-from activities_service.models.user import Token
-from activities_service.models.user import User
-
+from activity_service.activities_app import app
+from activity_service.common.models.db import db
+from activity_service.common.models.misc import Activity
+from activity_service.common.models.misc import Culture
+from activity_service.common.models.misc import Organization
+from activity_service.common.models.candidate import Candidate
+from activity_service.common.models.user import Client
+from activity_service.common.models.user import Domain
+from activity_service.common.models.user import Token
+from activity_service.common.models.user import User
 
 ISO_FORMAT = '%Y-%m-%d %H:%M'
 APP = app.test_client()
@@ -38,8 +37,8 @@ def test_candidate(test_user, test_culture, request):
     )
     test_candidate, created = get_or_create(db.session, Candidate, defaults=None, **candidate_attrs)
     if created:
-       db.session.add(test_candidate)
-       db.session.commit()
+        db.session.add(test_candidate)
+        db.session.commit()
 
     def fin():
         try:
@@ -47,6 +46,7 @@ def test_candidate(test_user, test_culture, request):
             db.session.commit()
         except Exception:
             pass
+
     request.addfinalizer(fin)
     return test_candidate
 
@@ -58,16 +58,16 @@ def test_activities(test_user, request):
         Activity(added_time=today + timedelta(hours=-2), source_table='user', source_id=1, type=12,
                  user_id=test_user.id, params=json.dumps({'lastName': 'Larz', 'firstName': 'Griffon'})),
         Activity(added_time=today, source_table='user', source_id=1, type=12, user_id=test_user.id,
-                     params=json.dumps({'lastName': 'Larzz', 'firstName': 'Griffon'})),
+                 params=json.dumps({'lastName': 'Larzz', 'firstName': 'Griffon'})),
         Activity(added_time=today, source_table='user', source_id=1, type=12, user_id=test_user.id,
-                     params=json.dumps({'lastName': 'Larzzz', 'firstName': 'Griffon'})),
+                 params=json.dumps({'lastName': 'Larzzz', 'firstName': 'Griffon'})),
         Activity(added_time=today, source_table='user', source_id=1, type=12, user_id=test_user.id,
-                     params=json.dumps({'lastName': 'Larzzz', 'firstName': 'Griffon'}))
+                 params=json.dumps({'lastName': 'Larzzz', 'firstName': 'Griffon'}))
     ]
     try:
-       db.session.bulk_save_objects(activities)
+        db.session.bulk_save_objects(activities)
     except Exception:  # TODO This is to handle 'Duplicate entry' MySQL errors. We should instead check for existing Client/Token before inserting
-       pass
+        pass
 
     def fin():
         try:
@@ -75,9 +75,9 @@ def test_activities(test_user, request):
             db.session.commit()
         except Exception:
             pass
+
     request.addfinalizer(fin)
     return True
-
 
 
 @pytest.fixture(autouse=True)
@@ -85,12 +85,12 @@ def test_user(test_domain, request):
     user_attrs = dict(
         domain_id=test_domain.id, first_name='Jamtry', last_name='Jonas',
         password='pbkdf2(1000,64,sha512)$bd913bac5e55a39b$ea5a0a2a2d156003faaf7986ea4cba3f25607e43ecffb36e0d2b82381035bbeaded29642a1dd6673e922f162d322862459dd3beedda4501c90f7c14b3669cd72',
-        email='jamtry@{}.com'.format(randomword(7)),added_time=datetime(2050, 4, 26)
+        email='jamtry@{}.com'.format(randomword(7)), added_time=datetime(2050, 4, 26)
     )
     test_user, created = get_or_create(db.session, User, defaults=None, **user_attrs)
     if created:
-       db.session.add(test_user)
-       db.session.commit()
+        db.session.add(test_user)
+        db.session.commit()
 
     def fin():
         try:
@@ -98,6 +98,7 @@ def test_user(test_domain, request):
             db.session.commit()
         except Exception:
             pass
+
     request.addfinalizer(fin)
     return test_user
 
@@ -111,8 +112,8 @@ def test_domain(test_org, test_culture, request):
     )
     test_domain, created = get_or_create(db.session, Domain, defaults=None, **domain_attrs)
     if created:
-       db.session.add(test_domain)
-       db.session.commit()
+        db.session.add(test_domain)
+        db.session.commit()
 
     def fin():
         try:
@@ -120,6 +121,7 @@ def test_domain(test_org, test_culture, request):
             db.session.commit()
         except Exception:
             pass
+
     request.addfinalizer(fin)
     return test_domain
 
@@ -129,8 +131,8 @@ def test_culture(request):
     culture_attrs = dict(description='Foo {}'.format(randomword(12)), code=randomword(5))
     test_culture, created = get_or_create(db.session, Culture, defaults=None, **culture_attrs)
     if created:
-       db.session.add(test_culture)
-       db.session.commit()
+        db.session.add(test_culture)
+        db.session.commit()
 
     def fin():
         try:
@@ -138,6 +140,7 @@ def test_culture(request):
             db.session.commit()
         except Exception:
             pass
+
     request.addfinalizer(fin)
     return test_culture
 
@@ -147,8 +150,8 @@ def test_org(request):
     org_attrs = dict(name='Rocket League All Stars - {}'.format(randomword(8)))
     test_org, created = get_or_create(db.session, Organization, defaults=None, **org_attrs)
     if created:
-       db.session.add(test_org)
-       db.session.commit()
+        db.session.add(test_org)
+        db.session.commit()
 
     def fin():
         try:
@@ -156,6 +159,7 @@ def test_org(request):
             db.session.commit()
         except Exception:
             pass
+
     request.addfinalizer(fin)
     return test_org
 
@@ -174,6 +178,7 @@ def test_client(request):
             db.session.commit()
         except Exception:
             pass
+
     request.addfinalizer(fin)
     return test_client
 
@@ -187,8 +192,8 @@ def test_token(test_client, test_user, request):
                        expires=datetime(2050, 4, 26))
     test_token, created = get_or_create(db.session, Token, defaults=None, **token_attrs)
     if created:
-       db.session.add(test_token)
-       db.session.commit()
+        db.session.add(test_token)
+        db.session.commit()
 
     def fin():
         try:
@@ -196,6 +201,7 @@ def test_token(test_client, test_user, request):
             db.session.commit()
         except Exception:
             pass
+
     request.addfinalizer(fin)
     return test_token
 
@@ -213,7 +219,7 @@ def test_reponse_is_user_filtered():
 
 
 def test_response_can_be_time_filtered():
-    today = (datetime.today()+ timedelta(minutes=-1)).isoformat()
+    today = (datetime.today() + timedelta(minutes=-1)).isoformat()
     url_with_date = '/activities/1?start_time={}'.format(today)
     response = APP.get(url_with_date, headers={'Authorization': 'Bearer good_token'}, follow_redirects=True)
     assert json.loads(response.data)['total_count'] == 3
@@ -231,7 +237,8 @@ def test_basic_post(test_user):
 
 
 def test_recent_readable():
-    response = APP.get('/activities/1?aggregate=1', headers={'Authorization': 'Bearer good_token'}, data={}, follow_redirects=True)
+    response = APP.get('/activities/1?aggregate=1', headers={'Authorization': 'Bearer good_token'}, data={},
+                       follow_redirects=True)
     assert response.status_code == 200
     assert len(json.loads(response.data)['activities']) == 1
     assert json.loads(response.data)['activities'][0]['count'] == 4
@@ -252,4 +259,4 @@ def get_or_create(session, model, defaults=None, **kwargs):
 
 
 def randomword(length):
-   return ''.join(random.choice(string.lowercase) for i in xrange(length))
+    return ''.join(random.choice(string.lowercase) for i in xrange(length))

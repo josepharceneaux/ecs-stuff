@@ -24,23 +24,13 @@ def set_environment_variables_from_env_output(env_output=''):
     env_output_lines = filter(None,
                               filter(lambda line: not line.startswith(("DOCKER_", "#")),
                                      env_output.split('\n')))
-    print 'output lines %s' % env_output_lines
+    # print 'output lines %s' % env_output_lines
     for variable in env_output_lines:
         environment_variable_name_value = variable.strip('export').strip().split('=')
         if len(environment_variable_name_value) == 2:
             os.environ[environment_variable_name_value[0]] = environment_variable_name_value[1].strip('"')
         else:
             exit(VM_NOT_RUNNING_ERROR_MESSAGE)
-
-
-        # Symlink utils
-        utils_symlink = "../common/utils"
-        service_symlink = "./%s/utils" % service
-        if os.path.islink(service_symlink):
-            print "Symlink %s already exists" % service_symlink
-        else:
-            print "Creating symlink %s in %s" % (utils_symlink, service_symlink)
-            os.symlink(utils_symlink, service_symlink)
 
 if args.build:
     service_name = args.build[0]

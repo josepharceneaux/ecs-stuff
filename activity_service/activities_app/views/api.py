@@ -3,21 +3,21 @@
 """
 __author__ = 'erikfarmer'
 
-#stdlib
+# stdlib
 from datetime import datetime
 import json
 import re
 
-#framework specific
+# framework specific
 from flask import Blueprint
 from flask import jsonify
 from flask import request
 
-#application specific
-from activities_service.models.db import db
-from activities_service.models.user import User
-from activities_service.models.misc import Activity
-from activities_service.utils.auth_utils import authenticate_oauth_user
+# application specific
+from common.models.db import db
+from common.models.user import User
+from common.models.misc import Activity
+from common.utils.auth_utils import authenticate_oauth_user
 
 ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
 POSTS_PER_PAGE = 20
@@ -28,14 +28,14 @@ mod = Blueprint('activities_api', __name__)
 def get_activities(page):
     """Authenticate endpoint requests and then properly route then to the retrieve or creation
        functions.
-    :param page: (int) Page used in pagination for GET requests.
+    :param int page: Page used in pagination for GET requests.
     :return: JSON formatted pagination response or message notifying creation status.
     """
     valid_user_id = None
     authentication_result = authenticate_oauth_user(request)
     error_result = authentication_result.get('error')
     if error_result:
-        return jsonify({'error': {'code':error_result.get('code'),
+        return jsonify({'error': {'code': error_result.get('code'),
                                   'message': error_result.get('message')}}), error_result.get('http_code', 400)
     else:
         valid_user_id = authentication_result.get('user_id')
@@ -64,14 +64,39 @@ def post_activity():
     authentication_result = authenticate_oauth_user(request)
     error_result = authentication_result.get('error')
     if error_result:
-        return jsonify({'error': {'code':error_result.get('code'),
+        return jsonify({'error': {'code': error_result.get('code'),
                                   'message': error_result.get('message')}}), error_result.get('http_code', 400)
     else:
         valid_user_id = authentication_result.get('user_id')
     tam = TalentActivityManager()
-    return tam.create_activity(valid_user_id, request.form.get('type'),
+    return create_activity(valid_user_id, request.form.get('type'),
                                request.form.get('source_table'), request.form.get('source_id'),
                                request.form.get('params'))
+
+
+def create_activity(user_id, type_, source_table=None, source_id=None, params=None):
+    """Method for creating a DB entry in the activity table.
+    :param int user_id: ID of the authenticated user.
+    :param int type_: Integer corresponding to TalentActivityAPI attributes.
+    :param str|None source_table: String representing the DB table the activity relates to.
+    :param int|None source_id: Integer of the source_table's ID for entered specific activity.
+    :param dict|None params: Dictionary of created/updated source_table attributes.
+    :return: HTTP Response
+    """
+    activity = Activity(
+        user_id=int(user_id),
+        type=type_,
+        source_table=source_table,
+        source_id=source_id,
+        params=json.dumps(params) if params else None
+    )
+    try:
+        db.session.add(activity)
+        db.session.commit()
+        return json.dumps({'activity': {'id': activity.id}}), 200
+    except:
+        # TODO logging
+        return json.dumps({'error': 'There was an error saving your log entry'}), 500
 
 
 class TalentActivityManager(object):
@@ -123,44 +148,44 @@ class TalentActivityManager(object):
         CANDIDATE_CREATE_CSV: ("%(username)s imported candidate %(formattedName)s via spreadsheet",
                                "%(username)s imported %(count)s candidates via spreadsheet", "candidate.png"),
         CANDIDATE_CREATE_WIDGET: (
-        "Candidate %(formattedName)s joined via widget", "%(count)s candidates joined via widget", "widget.png"),
+            "Candidate %(formattedName)s joined via widget", "%(count)s candidates joined via widget", "widget.png"),
         CANDIDATE_CREATE_MOBILE: ("%(username)s added candidate %(formattedName)s via mobile",
                                   "%(username)s added %(count)s candidates via mobile", "candidate.png"),
         CANDIDATE_UPDATE: (
-        "%(username)s updated candidate %(formattedName)s", "%(username)s updated %(count)s candidates",
-        "candidate.png"),
+            "%(username)s updated candidate %(formattedName)s", "%(username)s updated %(count)s candidates",
+            "candidate.png"),
         CANDIDATE_DELETE: (
-        "%(username)s deleted candidate %(formattedName)s", "%(username)s deleted %(count)s candidates",
-        "candidate.png"),
+            "%(username)s deleted candidate %(formattedName)s", "%(username)s deleted %(count)s candidates",
+            "candidate.png"),
 
         CAMPAIGN_CREATE: (
-        "%(username)s created a campaign: %(name)s", "%(username)s created %(count)s campaigns", "campaign.png"),
+            "%(username)s created a campaign: %(name)s", "%(username)s created %(count)s campaigns", "campaign.png"),
         CAMPAIGN_DELETE: (
-        "%(username)s deleted a campaign: %(name)s", "%(username)s deleted %(count)s campaigns", "campaign.png"),
+            "%(username)s deleted a campaign: %(name)s", "%(username)s deleted %(count)s campaigns", "campaign.png"),
         CAMPAIGN_SEND: (
-        "Campaign %(name)s was sent to %(num_candidates)s candidates", "%(count)s campaigns were sent out",
-        "campaign.png"),
+            "Campaign %(name)s was sent to %(num_candidates)s candidates", "%(count)s campaigns were sent out",
+            "campaign.png"),
         CAMPAIGN_EXPIRE: ("%(username)s's recurring campaign %(name)s has expired",
                           "%(count)s recurring campaigns of %(username)s have expired", "campaign.png"),  # TODO
         CAMPAIGN_PAUSE: (
-        "%(username)s paused campaign %(name)s", "%(username)s paused %(count)s campaigns", "campaign.png"),
+            "%(username)s paused campaign %(name)s", "%(username)s paused %(count)s campaigns", "campaign.png"),
         CAMPAIGN_RESUME: (
-        "%(username)s resumed campaign %(name)s", "%(username)s resumed %(count)s campaigns", "campaign.png"),
+            "%(username)s resumed campaign %(name)s", "%(username)s resumed %(count)s campaigns", "campaign.png"),
 
         SMARTLIST_CREATE: (
-        "%(username)s created list %(name)s", "%(username)s created %(count)s lists", "smartlist.png"),
+            "%(username)s created list %(name)s", "%(username)s created %(count)s lists", "smartlist.png"),
         SMARTLIST_DELETE: (
-        "%(username)s deleted list %(name)s", "%(username)s deleted %(count)s lists", "smartlist.png"),
+            "%(username)s deleted list %(name)s", "%(username)s deleted %(count)s lists", "smartlist.png"),
         SMARTLIST_ADD_CANDIDATE: (
-        "%(formattedName)s was added to list %(name)s", "%(count)s candidates were added to list %(name)s",
-        "smartlist.png"),
+            "%(formattedName)s was added to list %(name)s", "%(count)s candidates were added to list %(name)s",
+            "smartlist.png"),
         SMARTLIST_REMOVE_CANDIDATE: (
-        "%(formattedName)s was removed from list %(name)s", "%(count)s candidates were removed from list %(name)s",
-        "smartlist.png"),
+            "%(formattedName)s was removed from list %(name)s", "%(count)s candidates were removed from list %(name)s",
+            "smartlist.png"),
         USER_CREATE: ("%(username)s has joined", "%(count)s users have joined", "notification.png"),
         WIDGET_VISIT: ("Widget was visited", "Widget was visited %(count)s times", "widget.png"),
         NOTIFICATION_CREATE: (
-        "You received an update notification", "You received %(count)s update notifications", "notification.png"),
+            "You received an update notification", "You received %(count)s update notifications", "notification.png"),
 
         CAMPAIGN_EMAIL_SEND: ("%(candidate_name)s received email of campaign %(campaign_name)s",
                               "%(count)s candidates received email of campaign %(campaign_name)s", "campaign.png"),
@@ -176,10 +201,10 @@ class TalentActivityManager(object):
     def get_activities(self, user_id, post_qty, start_datetime=None, end_datetime=None, page=1):
         """Method for retrieving activity logs based on a domain ID that is extraced via an
            authenticated user ID.
-        :param user_id: (int) ID of the authenticated user.
-        :param start_datetime: (object) Optional datetime object for query filters.
-        :param end_datetime: (object) Optional datetime object for query filters.
-        :param page: (int) Pagination start.
+        :param int user_id: ID of the authenticated user.
+        :param datetime|None start_datetime: Optional datetime object for query filters.
+        :param datetime|None end_datetime: Optional datetime object for query filters.
+        :param int page: Pagination start.
         :return: JSON encoded SQL-Alchemy.pagination response.
         """
         user_domain_id = User.query.filter_by(id=user_id).value('domainId')
@@ -192,18 +217,16 @@ class TalentActivityManager(object):
         activities_reponse = {
             'total_count': activities.total,
             'items': [{
-                'params': a.params,
-                'source_table': a.source_table,
-                'source_id': a.source_id,
-                'type': a.type,
-                'user_id': a.user_id
-                }
+                          'params': a.params,
+                          'source_table': a.source_table,
+                          'source_id': a.source_id,
+                          'type': a.type,
+                          'user_id': a.user_id
+                      }
                       for a in activities.items
-                     ]
+                      ]
         }
         return activities_reponse
-
-
 
     # Like 'get' but gets the last N consecutive activity types. can't use GROUP BY because it doesn't respect ordering.
     def get_recent_readable(self, user_id, limit=3):
@@ -214,7 +237,7 @@ class TalentActivityManager(object):
         user_ids = User.query.filter_by(domain_id=user_domain_id).values('id')
         flattened_user_ids = [item for sublist in user_ids for item in sublist]
         filters = [Activity.user_id.in_(flattened_user_ids)]
-        activities = Activity.query.filter(*filters) # TODO add limit.
+        activities = Activity.query.filter(*filters)  # TODO add limit.
 
         aggregated_activities = []
         current_activity_count = 0
@@ -223,13 +246,13 @@ class TalentActivityManager(object):
             current_activity_count += 1
             current_activity_type = activity.type
             next_activity_type = activities[i + 1].type if (
-            i < activities.count() - 1) else None  # None means last activity
+                i < activities.count() - 1) else None  # None means last activity
 
             if current_activity_type != next_activity_type:  # next activity is new, or the very last one, so aggregate these ones
                 activity_aggregate = {}
                 activity_aggregate['count'] = current_activity_count
                 activity_aggregate['readable_text'] = self._activity_text(activity,
-                                  activity_aggregate['count'], current_user)
+                                                                          activity_aggregate['count'], current_user)
                 activity_aggregate['image'] = self.MESSAGES[activity.type][2]
 
                 aggregated_activities.append(activity_aggregate)
@@ -239,7 +262,6 @@ class TalentActivityManager(object):
                 current_activity_count = 0
 
         return aggregated_activities
-
 
     def _activity_text(self, activity, count, current_user):
         if activity.user_id != current_user.id:
@@ -256,7 +278,7 @@ class TalentActivityManager(object):
         elif not count or count == 1:  # one single activity
             format_string = format_strings[0]
             if 'You has' in format_string:
-                format_string = format_string.replace('you has', 'you have')  # To fix 'You has joined'
+                format_string = format_string.replace('You has', 'You have')  # To fix 'You has joined'
             elif "You's" in format_string:  # To fix "You's recurring campaign has expired"
                 format_string = format_string.replace("You's", "Your")
         else:  # many activities
@@ -269,28 +291,3 @@ class TalentActivityManager(object):
                 params[param] = 'unknown'
 
         return format_string % params
-
-
-    def create_activity(self, user_id, type_, source_table=None, source_id=None, params=dict()):
-        """Method for creating a DB entry in the activity table.
-        :param user_id: (int) ID of the authenticated user.
-        :param type: (int) Integer corresponding to TalentActivityAPI attributes.
-        :param source_table: (string) String representing the DB table the activity relates to.
-        :param source_id: (int) Integer of the source_table's ID for entered specific activity.
-        :param params: (dict) Dictionary of created/updated source_table attributes.
-        :return: HTTP Response
-        """
-        activity = Activity(
-            user_id=int(user_id),
-            type=type_,
-            source_table=source_table,
-            source_id=source_id,
-            params=json.dumps(params) if params else None
-        )
-        try:
-            db.session.add(activity)
-            db.session.commit()
-            return json.dumps({'activity': {'id':activity.id}}), 200
-        except:
-            # TODO logging
-            return json.dumps({'error': 'There was an error saving your log entry'}), 500
