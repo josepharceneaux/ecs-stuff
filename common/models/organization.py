@@ -5,11 +5,11 @@ import domain
 
 class Organization(db.Model):
     __tablename__ = 'organization'
-    id = Column(Integer, primary_key=True)
-    name = Column('name', String(255), unique=True)
-    notes = Column('notes', String(1000))
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column('name', db.String(255), unique=True)
+    notes = db.Column('notes', db.String(1000))
 
-    domain = relationship('Domain', backref='organization')
+    domain = db.relationship('Domain', backref='organization')
 
     def __init__(self, name=None, notes=None):
         self.name = name
