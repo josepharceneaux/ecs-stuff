@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 import datetime
 import time
 import voice
-from associations import ReferenceEmail
+
 class CandidateAreaOfInterest(db.Model):
     __tablename__ = 'candidate_area_of_interest'
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'), primary_key=True)

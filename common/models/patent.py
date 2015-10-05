@@ -42,7 +42,7 @@ class PatentInventor(db.Model):
 class PatentMilestone(db.Model):
     __tabelname__ = 'patent_milestone'
     id = db.Column(db.BigInteger, primary_key=True)
-    patent_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('status.id'))
+    patent_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('patent_status.id'))
     issued_date = db.Column('IssuedDate', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 

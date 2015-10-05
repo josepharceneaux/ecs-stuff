@@ -8,7 +8,7 @@ import logging
 import candidate
 import domain
 from candidate import CandidateSource
-from associations import CandidateAreaOfInterest
+from candidate import CandidateAreaOfInterest
 from misc import AreaOfInterest
 
 logger = logging.getLogger(__file__)

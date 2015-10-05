@@ -3,6 +3,7 @@ import datetime
 from sqlalchemy.orm import relationship
 import time
 import domain
+import patent
 from candidate import CandidateMilitaryService
 
 
