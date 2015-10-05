@@ -1,5 +1,6 @@
 from db import db
 
+
 class Organizer(db.Model):
     __tablename__ = 'organizer'
 

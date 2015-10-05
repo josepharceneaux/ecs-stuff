@@ -1,10 +1,10 @@
 from sqlalchemy import Column, Integer, String, DateTime, \
     ForeignKey, Text
 from sqlalchemy.orm import relationship
-from base import ModelBase as Base
+from db import db
 
 
-class Token(Base):
+class Token(db.Model):
     __tablename__ = 'token'
     id = Column(Integer, primary_key=True)
     client_id = Column('client_id', String(40), ForeignKey('client.client_id'), nullable=False)

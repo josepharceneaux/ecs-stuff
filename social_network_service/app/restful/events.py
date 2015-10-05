@@ -2,6 +2,7 @@ import json
 import types
 from flask import Blueprint, request
 from flask.ext.restful import Api, Resource
+from common.models.venue import Venue
 from social_network_service.app.app_utils import api_route, authenticate, ApiResponse
 from social_network_service.custom_exections import ApiException
 from social_network_service.manager import process_event, delete_events
@@ -25,6 +26,7 @@ class Events(Resource):
         This action returns a list of user events.
         """
         try:
+            # Refresh Session before fetching events from db
             events = map(lambda event: event.to_json(), Event.query.filter_by(user_id=kwargs['user_id']).all())
         except Exception as e:
             return ApiResponse(json.dumps(dict(messsage='APIError: Internal Server error while retrieving records')), status=500)
@@ -39,6 +41,7 @@ class Events(Resource):
         This method takes data to create event in local database as well as on corresponding social network.
         :return: id of created event
         """
+
         event_data = request.get_json(force=True)
         try:
             gt_event_id = process_event(event_data, kwargs['user_id'])
@@ -82,7 +85,7 @@ class EventById(Resource):
         event = Event.get_by_user_and_event_id(user_id, event_id)
         if event:
             try:
-                event = event.to_json_()
+                event = event.to_json()
             except Exception as e:
                 raise ApiException('Unable to serialize event data', status_code=500)
             return dict(event=event), 200

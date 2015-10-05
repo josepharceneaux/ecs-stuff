@@ -2,8 +2,40 @@ from db import db
 from sqlalchemy.orm import relationship
 import datetime
 import time
+import voice
+
+class CandidateAreaOfInterest(db.Model):
+    __tablename__ = 'candidate_area_of_interest'
+    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'), primary_key=True)
+    area_of_interest_id = db.Column('AreaOfInterestId', db.Integer, db.ForeignKey('area_of_interest.id'), primary_key=True)
+    additional_notes = db.Column('AdditionalNotes', db.Text)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
 
+class ReferenceEmail(db.Model):
+    __tablename__ = 'reference_email'
+    id = db.Column('id', db.BigInteger, primary_key=True)
+    candidate_reference_id = db.Column('ReferenceId', db.BigInteger, db.ForeignKey('candidate_reference.id'))
+    email_label_id = db.Column('EmailLabelId', db.Integer, db.ForeignKey('email_label.id'))
+    is_default = db.Column('IsDefault', db.Boolean)
+    value = db.Column('Value', db.String(100))
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+
+    def __repr__(self):
+        return "<ReferenceEmail (reference_id=' %r')>" % self.candidate_reference_id
+
+
+class ReferencePhone(db.Model):
+    __tablename__ = 'reference_phone'
+    candidate_reference_id = db.Column('ReferenceId', db.BigInteger, db.ForeignKey('reference.id'), primary_key=True)
+    phone_label_id = db.Column('PhoneLabelId', db.Integer)
+    is_default = db.Column('IsDefault', db.Boolean)
+    value = db.Column('Value', db.String(50))
+    extension = db.Column('Extension', db.String(10))
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+
+    def __repr__(self):
+        return "<ReferencePhone (reference_id=' %r')>" % self.candidate_reference_id
 
 class Candidate(db.Model):
     __tablename__ = 'candidate'
@@ -13,7 +45,8 @@ class Candidate(db.Model):
     last_name = db.Column('LastName', db.String(50))
     formatted_name = db.Column('FormattedName', db.String(150))
     candidate_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('candidate_status.id'))
-    is_dirty = db.Column('IsDirty', db.Boolean)
+    # TODO following not defined in my schema at least
+    # is_dirty = db.Column('IsDirty', db.Boolean)
     is_web_hidden = db.Column('IsWebHidden', db.Boolean, default=False)
     is_mobile_hidden = db.Column('IsMobileHidden', db.Boolean, default=False)
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
@@ -73,6 +106,7 @@ class CandidateStatus(db.Model):
 
     def __repr__(self):
         return "<CandidateStatus(description=' %r')>" % self.description
+
 
 
 
@@ -264,7 +298,7 @@ class CandidateReference(db.Model):
 
     # Relationships
     reference_emails = relationship('ReferenceEmail', backref='candidate_reference')
-    reference_phones = relationship('ReferencePhone', backref='candidate_reference')
+    # reference_phones = relationship('ReferencePhone', backref='candidate_reference')
     reference_web_addresses = relationship('ReferenceWebAddress', backref='candidate_reference')
 
     def __repr__(self):
@@ -343,15 +377,14 @@ class CandidatePatentHistory(db.Model):
         return "<CandidatePatentHistory (title=' %r')>" % self.title
 
 
-
 class CandidatePublication(db.Model):
     __tablename__ = 'candidate_publication'
     id = db.Column(db.BigInteger, primary_key=True)
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     title = db.Column('Title', db.String(200))
-    start_year = db.Column('StartYear', db.Year)    # todo: accpet Year format only or create a function to validate
+    # start_year = db.Column('StartYear', db.Year)    # todo: accpet Year format only or create a function to validate
     start_month = db.Column('StartMonth', db.Integer)
-    end_year = db.Column('EndYear', db.Year)        # todo: accept Year format only or create a function to validate
+    # end_year = db.Column('EndYear', db.Year)        # todo: accept Year format only or create a function to validate
     end_month = db.Column('EndMonth', db.Integer)
     description = db.Column('Description', db.String(10000))
     added_time = db.Column('AddedTime', db.DateTime)
@@ -409,9 +442,9 @@ class CandidateEducationDegree(db.Model):
     list_order = db.Column('ListOrder', db.SmallInteger)
     degree_type = db.Column('DegreeType', db.String(100))
     degree_title = db.Column('DegreeTitle', db.String(100))
-    start_year = db.Column('StartYear', db.Year)
+    # start_year = db.Column('StartYear', db.Year)
     start_month = db.Column('StartMonth', db.SmallInteger)
-    EndYear = db.Column('EndYear', db.Year)
+    # EndYear = db.Column('EndYear', db.Year)
     end_month = db.Column('EndMonth', db.SmallInteger)
     gpa_num = db.Column('GpaNum', db.DECIMAL)
     gpa_denom = db.Column('GpaDenom', db.DECIMAL)
@@ -452,10 +485,10 @@ class CandidateExperience(db.Model):
     city = db.Column('City', db.String(50))
     state = db.Column('State', db.String(50))
     end_month = db.Column('EndMonth', db.SmallInteger)
-    start_year = db.Column('StartYear', db.Year)
+    # start_year = db.Column('StartYear', db.Year)
     country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
     start_month = db.Column('StartMonth', db.SmallInteger)
-    end_year = db.Column('EndYear', db.Year)
+    # end_year = db.Column('EndYear', db.Year)
     is_current = db.Column('IsCurrent', db.Boolean, default=False)
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())

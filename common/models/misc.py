@@ -1,7 +1,7 @@
 from db import db
 from sqlalchemy.orm import relationship
 import time
-
+import domain
 
 class AreaOfInterest(db.Model):
     __tablename__ = 'area_of_interest'

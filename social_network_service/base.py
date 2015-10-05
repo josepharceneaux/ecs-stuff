@@ -4,7 +4,7 @@ from common.models.social_network import SocialNetwork
 from common.models.user import User, UserCredentials
 
 
-from utilities import get_message_to_log, log_error,\
+from utilities import log_error,\
     log_exception, http_request, get_class
 
 
@@ -23,11 +23,8 @@ class SocialNetworkBase(object):
         user_id = kwargs.get('user_id')
         social_network_id = kwargs.get('social_network_id')
         self.api_relative_url = None
-        self.user = User.get_by_id(user_id)
-        message_to_log = get_message_to_log(function_name='__init__()',
-                                            class_name=self.__class__.__name__,
-                                            gt_user=self.user.name,
-                                            file_name=__file__)
+        self.user = User.query.get(user_id)
+        message_to_log = {'user_id': self.user.id}
         self.social_network = SocialNetwork.get_by_id(social_network_id)
         self.events = None
         self.user_credentials = UserCredentials.get_by_user_and_social_network_id(
@@ -145,8 +142,8 @@ class SocialNetworkBase(object):
 
         :return:
         """
-        function_name = 'get_access_token()'
-        message_to_log = get_message_to_log(function_name=function_name)
+
+        message_to_log = {'user_id': ''}
         access_token = None
         refresh_token = None
         auth_url = data['social_network'].authUrl + data['relative_url']
@@ -182,11 +179,7 @@ class SocialNetworkBase(object):
         :param data contains api_relative_url.
         :return:
         """
-        function_name = 'get_member_id()'
-        message_to_log = get_message_to_log(function_name=function_name,
-                                            file_name=__file__,
-                                            class_name=self.__class__.__name__,
-                                            gt_user=self.user.name)
+        message_to_log = {'user_id': self.user.id}
         try:
             user_credentials = self.user_credentials
             url = self.api_url + data['api_relative_url']
@@ -195,9 +188,9 @@ class SocialNetworkBase(object):
                                                   message_to_log=message_to_log)
             if get_member_id_response.ok:
                 member_id = get_member_id_response.json().get('id')
-                data = dict(userId=user_credentials.user_id,
-                            socialNetworkId=user_credentials.social_network_id,
-                            memberId=member_id)
+                data = dict(user_id=user_credentials.user_id,
+                            social_network_id=user_credentials.social_network_id,
+                            member_id=member_id)
                 self.save_user_credentials_in_db(data)
             else:
                 # Error has been logged inside http_request()
@@ -216,10 +209,7 @@ class SocialNetworkBase(object):
         :param payload
         :return:
         """
-        function_name = 'validate_token()'
-        message_to_log = get_message_to_log(function_name=function_name,
-                                            class_name=self.__class__.__name__,
-                                            gt_user=self.user.name)
+        message_to_log = {'user_id': self.user.id}
         status = False
         relative_url = self.api_relative_url
         url = self.api_url + relative_url
@@ -264,7 +254,6 @@ class SocialNetworkBase(object):
         Eventbrite to create webhook for user.
         :return:
         """
-        gt_user = User.get_by_id(user_credentials['user_id'])
         gt_user_in_db = UserCredentials.get_by_user_and_social_network_id(
             user_credentials['user_id'], user_credentials['social_network_id'])
         try:
@@ -272,12 +261,10 @@ class SocialNetworkBase(object):
                 gt_user_in_db.update(**user_credentials)
             else:
                 UserCredentials.save(**user_credentials)
-        except Exception as error:
-            log_exception(
-                dict(
-                    functionName='save_user_credentials_in_db()',
-                    error=error.message,
-                    user=gt_user.name,
-                    fileName=__file__
-                )
-            )
+            return True
+        except Exception as e:
+            error_message = e.message
+            message_to_log = {'user_id': user_credentials['user_id']}
+            message_to_log.update({'error': error_message})
+            log_exception(message_to_log)
+        return False

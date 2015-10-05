@@ -42,7 +42,7 @@ class SocialNetworks(Resource):
         if subscribed_data:
             # Get list of social networks user is subscribed to
             subscribed_networks = SocialNetwork.get_by_ids(
-                [data.socialNetworkId for data in subscribed_data]
+                [data.social_network_id for data in subscribed_data]
             )
             # Convert it to JSON
             subscribed_networks = map(lambda sn: sn.to_json(), subscribed_networks)
@@ -51,7 +51,7 @@ class SocialNetworks(Resource):
             subscribed_networks = self.set_is_subscribed(subscribed_networks, value=True)
         # Get list of social networks user is not subscribed to
         unsubscribed_networks = SocialNetwork.get_all_except_ids(
-            [data.socialNetworkId for data in subscribed_data ]
+            [data.social_network_id for data in subscribed_data ]
         )
         if unsubscribed_networks:
             unsubscribed_networks = map(lambda sn: sn.to_json(), unsubscribed_networks)
@@ -87,7 +87,7 @@ class MeetupGroups(Resource):
             groups = meetup.get_groups()
             resp = json.dumps(dict(groups=groups))
         except Exception as e:
-            return ApiResponse(json.dums(dict(message='APIError: Internal Server Error')), status=500)
+            return ApiResponse(json.dumps(dict(message='APIError: Internal Server Error')), status=500)
         return ApiResponse(resp, status=200)
 
 
@@ -126,13 +126,13 @@ class RefreshToken(Resource):
 # @api.route('/social_networks/authInfo')
 # class SocialNetworkGroups(Resource):
 #     """
-#         This resource returns a list of user auth info (validity of token)
+#         This resource returns a list of user admin group list on Meetup.com
 #     """
 #
 #     @authenticate
 #     def get(self, *args, **kwargs):
 #         """
-#         This action returns a list of user events.
+#         This action returns a list of user groups.
 #         """
 #         user_id = kwargs['user_id']
 #         try:
@@ -141,7 +141,7 @@ class RefreshToken(Resource):
 #             groups = meetup.get_groups()
 #         except Exception as e:
 #             return ApiResponse(json.dums(dict(message='APIError: Internal Server Error')), status=500)
-#         return ApiResponse(json.dums(dict(groups=groups)), status=200)
+#         return ApiResponse(json.dumps(dict(groups=groups)), status=200)
 
 
 @api.route('/venues/')
@@ -177,13 +177,39 @@ class Venues(Resource):
             Venue.save(venue)
         except Exception as e:
             return ApiResponse(json.dumps(dict(messsage='APIError: Internal Server error..')), status=500)
-        return ApiResponse(json.dumps(dict(messsage='Venue created successfully')), status=200)
+        return ApiResponse(json.dumps(dict(messsage='Venue created successfully', id=venue.id)), status=201)
+
+    @authenticate
+    def delete(self, **kwargs):
+        user_id = kwargs['user_id']
+        deleted, not_deleted = [], []
+        req_data = request.get_json(force=True)
+        venue_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else []
+        if venue_ids:
+            for _id in venue_ids:
+                venue = Venue.get_by_user_id_venue_id(user_id, _id)
+                if venue:
+                    Venue.delete(_id)
+                    deleted.append(_id)
+                else:
+                    not_deleted.append(_id)
+
+                if len(not_deleted) == 0:
+                    return ApiResponse(json.dumps(dict(
+                        message='%s Venue/s deleted successfully' % len(deleted))),
+                        status=200)
+
+                return ApiResponse(json.dumps(dict(message='Unable to delete %s venue/s' % len(not_deleted),
+                                                   deleted=deleted,
+                                                   not_deleted=not_deleted)), status=207)
+        else:
+            return ApiResponse(json.dumps(dict(message='Bad request, include ids as list data')), status=400)
 
 
 @api.route('/organizers/')
 class Organizers(Resource):
     """
-        This resource returns a list of user's created organizers
+        This resource handles organizer CRUD operations
     """
 
     @authenticate
@@ -213,4 +239,30 @@ class Organizers(Resource):
             Organizer.save(organizer)
         except Exception as e:
             return ApiResponse(json.dumps(dict(messsage='APIError: Internal Server error..')), status=500)
-        return ApiResponse(json.dumps(dict(messsage='Organizer created successfully')), status=200)
+        return ApiResponse(json.dumps(dict(messsage='Organizer created successfully', id=organizer.id)), status=201)
+
+    @authenticate
+    def delete(self, **kwargs):
+        user_id = kwargs['user_id']
+        deleted, not_deleted = [], []
+        req_data = request.get_json(force=True)
+        organizer_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else []
+        if organizer_ids:
+            for _id in organizer_ids:
+                organizer = Organizer.get_by_user_id_organizer_id(user_id, _id)
+                if organizer:
+                    Organizer.delete(_id)
+                    deleted.append(_id)
+                else:
+                    not_deleted.append(_id)
+
+                if len(not_deleted) == 0:
+                    return ApiResponse(json.dumps(dict(
+                        message='%s Organizer/s deleted successfully' % len(deleted))),
+                        status=200)
+
+                return ApiResponse(json.dumps(dict(message='Unable to delete %s organizer/s' % len(not_deleted),
+                                                   deleted=deleted,
+                                                   not_deleted=not_deleted)), status=207)
+        else:
+            return ApiResponse(json.dumps(dict(message='Bad request, include ids as list data')), status=400)

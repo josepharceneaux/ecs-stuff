@@ -2,7 +2,7 @@ from base import RSVPBase
 from datetime import datetime, timedelta
 from common.models.event import Event
 from social_network_service.utilities import http_request, Attendee, \
-    log_exception, log_error, get_message_to_log
+    log_exception, log_error
 from common.models.user import UserCredentials
 
 
@@ -24,10 +24,7 @@ class Eventbrite(RSVPBase):
         """
         user = None
         webhook = None
-        function_name = 'get_user_credentials_by_webhook()'
-        message_to_log = get_message_to_log(function_name=function_name,
-                                            file_name=__file__,
-                                            class_name=cls.__class__.__name__,)
+        message_to_log = {'user_id': ''}
         if webhook_id:
             try:
                 # gets gt-user object
@@ -37,7 +34,10 @@ class Eventbrite(RSVPBase):
                 error_message = e.message
                 message_to_log.update({'error': error_message})
                 log_exception(message_to_log)
+                # raise the error TODO
         else:
+            # TODO may be following is redudant, we should just assert on
+            # webhook_id at the top and remove this else
             error_message = 'Webhook Id is None. Can not Process RSVP'
             message_to_log.update({'error': error_message})
             log_error(message_to_log)
@@ -49,17 +49,12 @@ class Eventbrite(RSVPBase):
             message_to_log.update({'error': error_message})
             log_error(message_to_log)
 
-    def _process_rsvp_via_webhook(self, rsvp):
+    def process_rsvp_via_webhook(self, rsvp):
         """
         Here we handle the RSVP of an event through webhook
         :param rsvp:
         :return:
         """
-        function_name = '_process_rsvp_via_webhook()'
-        message_to_log = get_message_to_log(function_name=function_name,
-                                            class_name=self.__class__.__name__,
-                                            gt_user=self.user.name,
-                                            file_name=__file__)
         try:
             attendee = self.get_attendee(rsvp)
             if attendee:
@@ -84,22 +79,20 @@ class Eventbrite(RSVPBase):
             # Shouldn't raise an exception, just log it and move to process
             # process next RSVP
             error_message = e.message
-            message_to_log.update({'error': error_message})
+            message_to_log = {'user_id': self.user.id,
+                              'error': error_message}
             log_exception(message_to_log)
+            #TODO should we raise, if so raise it
 
     def process_rsvps(self, events):
         """
-        Here we process the rsvp for rsvp importer
+        We do not import RSVPs for eventbrite via rsvp importer rather we do
+        this via webhook. So, log error if someone tries to run rsvp importer
+        for eventbrite
         """
-        function_name = 'process_rsvps()'
-        message_to_log = get_message_to_log(
-            function_name=function_name,
-            class_name=self.__class__.__name__,
-            gt_user=self.user.name,
-            file_name=__file__,
-            error=NotImplementedError("Eventbrite RSVPs are "
-                                      "handled via webhook"))
-        log_exception(message_to_log)
+        message_to_log = {'user_id': self.user.id,
+                          'error': NotImplementedError("Eventbrite RSVPs are handled via webhook")}
+        log_error(message_to_log)
 
     def get_rsvps(self, event):
         pass
@@ -110,11 +103,7 @@ class Eventbrite(RSVPBase):
         :param rsvp: contains the id of rsvp for (eventbrite) in dictionary format
         :return: attendee object which contains data of the attendee
         """
-        function_name = 'get_attendee()'
-        message_to_log = get_message_to_log(function_name=function_name,
-                                            class_name=self.__class__.__name__,
-                                            gt_user=self.user.name,
-                                            file_name=__file__)
+        message_to_log = {'user_id': self.user.id}
         attendee = None
         url = self.api_url + "/orders/" + rsvp['rsvp_id']
         response = http_request('GET', url, headers=self.headers,
@@ -153,4 +142,5 @@ class Eventbrite(RSVPBase):
                 error_message = e.message
                 message_to_log.update({'error': error_message})
                 log_exception(message_to_log)
+                # TODO I think we should raise here.
             return attendee

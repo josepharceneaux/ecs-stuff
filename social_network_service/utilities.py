@@ -5,15 +5,18 @@ or consumed by various programs.
 import re
 import imp
 import sys
-import requests
-import importlib
 import json
 import logging
+import inspect
+import requests
 import datetime
+import traceback
+import importlib
+
+
 from requests_oauthlib import OAuth2Session
 
 from common.models.user import User
-from common.models.social_network import SocialNetwork
 from social_network_service.custom_exections import SocialNetworkNotImplemented, ApiException
 
 logger = logging.getLogger('event_service.app')
@@ -96,52 +99,80 @@ def authenticate_user(request):
         return None
 
 
-def get_message_to_log(gt_user='', function_name='', error='', class_name='', file_name=''):
-    """
-    Here we define descriptive message to be used for logging purposes
-    :param function_name:
-    :param error:
-    :param class_name:
-    :return:
-    """
-    message_to_log = {
-        'user': gt_user,
-        'class': class_name,
-        'fileName': file_name,
-        'functionName': function_name,
-        'error': error}
-    return message_to_log
-
-
-def log_exception(message_dict):
-    """
-    This function logs exception when it is called inside a catch block
-    where ever it is called using message_dict as descriptive message to log.
-    :param message_dict:
-    :return:
-    """
-    message_to_log = ("Reason: %(error)s \n"
-                      "functionName: %(functionName)s, "
-                      "fileName: %(fileName)s, "
-                      "User: %(user)s" % message_dict)
-    if message_dict.get('class'):
-        message_to_log += ", class: %(class)s" % message_dict
-    logger.exception(message_to_log)
+def get_callee_data():
+    current_frame = inspect.currentframe()
+    callee_frame = inspect.getouterframes(current_frame, 2)
+    length_of_frame = len(callee_frame)
+    no_of_items = list(range(0, length_of_frame-1))
+    no_of_item = None
+    for item in no_of_items:
+        if length_of_frame - item == 4:
+            no_of_item = item
+    if no_of_item:
+        try:
+            callee_data = {
+                'file_name': callee_frame[no_of_item][1],
+                'line_no': callee_frame[no_of_item][2],
+                'class_name': callee_frame[no_of_item][0].f_locals['self'].__class__.__name__
+                if hasattr(callee_frame[no_of_item][0].f_locals, 'self') else '',
+                'function_name': callee_frame[no_of_item][3]}
+        except Exception as e:
+            callee_data = {'traceback_info': traceback.format_exc()}
+        return callee_data
 
 
 def log_error(message_dict):
     """
-    This function logs error using message_dict as descriptive message to log.
+    Here we do the descriptive logging. 'message_dict' is passed in parameters
+    which contains error details in 'error' and User Id in 'user_id'. We first
+    get the information of callee using get_callee_data(), and append message_dict
+    in it. Finally we log the descriptive error using logger.error()
     :param message_dict:
     :return:
     """
-    message_to_log = ("Reason: %(error)s \n"
-                      "functionName: %(functionName)s, "
-                      "fileName: %(fileName)s, "
-                      "User: %(user)s" % message_dict)
-    if message_dict.get('class'):
-        message_to_log += ", class: %(class)s" % message_dict
-    logger.error(message_to_log)
+    # get_callee_data() returns the dictionary of callee data
+    callee_data_dict = get_callee_data()
+    # appends message_dict in callee_data_dict
+    callee_data_dict.update(message_dict)
+    if get_callee_data().has_key('traceback_info'):
+        callee_data = ("Reason: %(traceback_info)s \n"
+                       "User Id: %(user_id)s" % callee_data_dict)
+    else:
+        callee_data = ("Reason: %(error)s"
+                       "function Name: %(function_name)s, "
+                       "file Name: %(file_name)s, "
+                       "line No: %(line_no)s",
+                       "User Id: %(user_id)s" % callee_data_dict)
+        if callee_data_dict.get('class_name'):
+            callee_data += ", class: %(class_name)s" % callee_data_dict
+    logger.error(callee_data)
+
+
+def log_exception(message_dict):
+    """
+    Here we do the descriptive logging. 'message_dict' is passed in parameters
+    which contains exception details in 'error' and User Id in 'user_id'. We first
+    get the information of callee using get_callee_data(), and append message_dict
+    in it. Finally we log the descriptive error using logger.exception()
+    :param message_dict:
+    :return:
+    """
+    # get_callee_data() returns the dictionary of callee data
+    callee_data_dict = get_callee_data()
+    # appends message_dict in callee_data_dict
+    callee_data_dict.update(message_dict)
+    if get_callee_data().has_key('traceback_info'):
+        callee_data = ("Reason: %(traceback_info)s \n"
+                       "User Id: %(user_id)s" % callee_data_dict)
+    else:
+        callee_data = ("Reason: %(error)s"
+                       "function Name: %(function_name)s, "
+                       "file Name: %(file_name)s, "
+                       "line No: %(line_no)s",
+                       "User Id: %(user_id)s" % callee_data_dict)
+        if callee_data_dict.get('class_name'):
+            callee_data += ", class: %(class_name)s" % callee_data_dict
+    logger.exception(callee_data)
 
 
 def http_request(method_type, url, params=None, headers=None, data=None, message_to_log=None):
@@ -156,6 +187,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, message
     :param message_to_log: descriptive message to log when exception occurs.
     :return:
     """
+    response = None
     if method_type in ['GET', 'POST']:
         method = getattr(requests, method_type.lower())
         error_message = None
@@ -173,28 +205,28 @@ def http_request(method_type, url, params=None, headers=None, data=None, message
                     error_message = e.message
             except requests.RequestException as e:
                 error_message = e.message
-            if error_message and message_to_log:
+            if error_message:
                 message_to_log.update({'error': error_message})
                 log_exception(message_to_log)
             return response
         else:
             error_message = 'URL is None. Unable to make %s Call' % method_type
-            logger.error(error_message)
+            message_to_log.update({'error': error_message})
+            log_error(message_to_log)
     else:
         logger.error('Unknown Method type %s ' % method_type)
 
 
-def get_class(social_network_name, category):
+def get_class(social_network_name, category, user_credentials=None):
     """
+    This function is used to import module from given parameters.
     Here we pass following parameters
     :param social_network_name:
     :param category:
     and we import the required class and return it
     :return:
     """
-    function_name = 'get_class()'
-    message_to_log = get_message_to_log(function_name=function_name,
-                                        file_name=__file__)
+    message_to_log = {'user_id': user_credentials.user_id if user_credentials else ''}
     if category == 'social_network':
         module_name = 'social_network_service.' + social_network_name
     else:
@@ -304,4 +336,18 @@ def import_from_dist_packages(name, custom_name=None):
     f.close()
     return module
 
-
+# def get_message_to_log(gt_user='', function_name='', error='', class_name='', file_name=''):
+#     """
+#     Here we define descriptive message to be used for logging purposes
+#     :param function_name:
+#     :param error:
+#     :param class_name:
+#     :return:
+#     """
+#     message_to_log = {
+#         'user': gt_user,
+#         'class': class_name,
+#         'fileName': file_name,
+#         'functionName': function_name,
+#         'error': error}
+#     return message_to_log

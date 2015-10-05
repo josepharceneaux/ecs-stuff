@@ -1,10 +1,3 @@
-import os
-from common.models.config import GTSQLAlchemy
-if not GTSQLAlchemy.db_session:
-    app_cfg = os.path.abspath('../app.cfg')
-    logging_cfg = os.path.abspath('../logging.conf')
-    GTSQLAlchemy(app_config_path=app_cfg,
-                 logging_config_path=logging_cfg)
 import re
 import json
 import flask
@@ -19,19 +12,16 @@ from restful.events import events_blueprint
 from flask.ext.restful import Api
 from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash
+from social_network_service.app import app
 
 # configuration
-from social_network_service.utilities import log_exception, get_class, logger, get_message_to_log, log_error
+from social_network_service.utilities import log_exception, get_class, log_error
 
 DATABASE = '/tmp/flaskr.db'
 DEBUG = True
 SECRET_KEY = 'development key'
 USERNAME = 'admin'
 PASSWORD = 'default'
-
-app = Flask(__name__)
-api = Api(app)
-app.config.from_object(__name__)
 
 CLIENT_ID = 'o0nptnl4eet4c40suj9es52612'
 CLIENT_SECRET = 'ohtutvn34cvfucl26i5ele5ki2'
@@ -42,6 +32,7 @@ EVENTBRITE = 'Eventbrite'
 app.register_blueprint(social_network_blueprint)
 app.register_blueprint(events_blueprint)
 app.register_blueprint(data_blueprint)
+api = Api(app)
 
 
 @app.after_request
@@ -56,7 +47,13 @@ def after_request(response):
 @app.route('/')
 def hello_world():
     # return 'Hello World!', 404
-    return 'Hello World!'
+    try:
+        from common.models.candidate_ import Candidate
+        candidate = Candidate.query.all()[0]
+    except Exception as error:
+        import traceback
+        return traceback.format_exc()
+    return 'Hello World! %s' % candidate.first_name
 
 
 @app.route('/test/<access_token>')
@@ -143,9 +140,7 @@ def handle_rsvp():
     # verify_token = request.args['hub.verify_token']
     # hub_mode = request.args['hub.mode']
     # assert verify_token == 'token'
-    function_name = 'handle_rsvp()'
-    message_to_log = get_message_to_log(function_name=function_name,
-                                        file_name=__file__)
+    message_to_log = {'user_id': ''}
     try:
         if request.data:
             data = json.loads(request.data)
@@ -156,6 +151,7 @@ def handle_rsvp():
                 rsvp = get_rsvp_id(url_of_rsvp)
                 webhook_id = data['config']['webhook_id']
                 user_credentials = EventbriteRsvp.get_user_credentials_by_webhook(webhook_id)
+                message_to_log.update({'user_id': user_credentials.user_id})
                 social_network_class = get_class(user_credentials.social_network.name.lower(),
                                                  'social_network')
                 rsvp_class = get_class(user_credentials.social_network.name.lower(), 'rsvp')
@@ -171,7 +167,7 @@ def handle_rsvp():
                                       headers=sn.headers,
                                       message_to_log=sn.message_to_log)
                 # calls class method to process RSVP
-                rsvp_obj._process_rsvp_via_webhook(rsvp)
+                rsvp_obj.process_rsvp_via_webhook(rsvp)
             elif action == 'test':
                 print 'Successful Webhook Connection'
         else:
@@ -221,6 +217,16 @@ def handle_any_errors(error):
     response = json.dumps(dict(message='Ooops! Internal server error occurred..'))
     return ApiResponse(response, status=500)
 
+
+
+# app = Flask(__name__)
+# app.config.from_object('social_network_service.config')
+
+# db.init_app(app)
+# db.app = app
+#
+# from common.error_handling import register_error_handlers
+# register_error_handlers(app, logger)
 
 # @app.teardown_request
 # def teardown_request(exception=None):

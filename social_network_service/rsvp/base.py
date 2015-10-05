@@ -1,11 +1,11 @@
 import json
 
 from abc import ABCMeta, abstractmethod
-from common.models.product import Product
+# from common.models.misc import Product
 from common.models.activity import Activity
 from common.models.rsvp import RSVP, CandidateEventRSVP
-from common.models.candidate import CandidateSource, Candidate
-from social_network_service.utilities import log_exception, log_error, get_message_to_log
+# from common.models.candidate import CandidateSource, Candidate
+from social_network_service.utilities import log_exception, log_error
 from common.models.user import User
 
 
@@ -13,15 +13,12 @@ class RSVPBase(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, *args, **kwargs):
-        function_name = '__init__()'
-        message_to_log = get_message_to_log(function_name=function_name,
-                                            class_name=self.__class__.__name__,
-                                            file_name=__file__)
-        self.user_credentials = kwargs.get('user_credentials')
-        if self.user_credentials:
+        if kwargs.get('user_credentials'):
+            self.user_credentials = kwargs.get('user_credentials')
             self.user = User.get_by_id(self.user_credentials.user_id)
-            message_to_log.update({'user': self.user.name})
+            message_to_log = {'user_id': self.user.id}
         else:
+            message_to_log = {'user_id': 'Not Available'}
             error_message = 'User Credentials are None'
             message_to_log.update({'error': error_message})
             log_error(message_to_log)
@@ -36,6 +33,7 @@ class RSVPBase(object):
             error_message = e.message
             message_to_log.update({'error': error_message})
             log_exception(message_to_log)
+            # TODO Raise the error
         self.rsvps = []
 
     @abstractmethod
@@ -59,16 +57,7 @@ class RSVPBase(object):
 
         :return:
         """
-        function_name = '_process_rsvps()'
-        message_to_log = get_message_to_log(function_name=function_name,
-                                            class_name=self.__class__.__name__,
-                                            gt_user=self.user.name,
-                                            file_name=__file__)
-        # get events from database where eventStartDate is greater than
-        # events = Event.get_by_user_id_vendor_id_start_date(self.user.id,
-        #                                                    self.social_network_id,
-        #                                                    self.start_date_dt,
-        #                                                    )
+        message_to_log = {'user_id': self.user.id}
         if events:
             for event in events:
                 # events is a list of dicts. where each dict is likely a
@@ -179,6 +168,8 @@ class RSVPBase(object):
         entry_in_db = CandidateSource.get_by_description_and_notes(
             attendee.event.title,
             attendee.event.description)
+
+        # TODO double check with Osman, may be we should pass the user's domain here
         data = {'description': attendee.event.title,
                 'notes': attendee.event.description[:495],  # field is 500 chars
                 'domain_id': 1}
