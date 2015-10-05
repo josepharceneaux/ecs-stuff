@@ -9,12 +9,11 @@ RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 # File Author / Maintainer
 MAINTAINER Maintaner ufarooqi
 
-# Add the application resources URL
-RUN echo "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc) main" >> /etc/apt/sources.list
+# Update software resources repository
 RUN apt-get update
 
 # Install basic applications
-RUN apt-get install -y curl git nano wget build-essential libssl-dev gcc make zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev
+RUN apt-get install -y curl git nano wget build-essential libssl-dev gcc make zlib1g-dev libxml2-dev libxslt1-dev libbz2-dev libreadline-dev libsqlite3-dev
 
 # Install Python and Basic Python Tools
 RUN apt-get install -y python python-dev python-distribute python-pip python-setuptools
@@ -23,7 +22,6 @@ RUN apt-get install -y python python-dev python-distribute python-pip python-set
 RUN apt-get install -y software-properties-common python-software-properties
 RUN add-apt-repository -y ppa:nginx/stable
 RUN apt-get update
-RUN apt-get -y upgrade
 RUN apt-get install -y nginx
 
 # Install python pyenv
@@ -43,19 +41,18 @@ RUN pip install uwsgi==2.0.11.1
 RUN apt-get install -y mysql-server libmysqlclient-dev
 
 # Copy source code to Dock Container
-RUN mkdir /root/talent-oauth-service
-RUN mkdir /root/talent-oauth-service/AuthService
-ADD . /root/talent-oauth-service/AuthService/
+RUN mkdir /root/auth_service
+ADD . /root/auth_service/
 
 # Install Requirements
-RUN pip install -r /root/talent-oauth-service/requirements.txt
+RUN pip install -r /root/auth_service/requirements.txt
 
 # Set DB connection string
 ENV DB_STRING mysql://talent_web:s!web976892@livedb.gettalent.com/talent_core
 
 # Configure Nginx
 RUN rm /etc/nginx/sites-enabled/default
-RUN ln -s /root/talent-oauth-service/AuthService/talent-nginx.conf /etc/nginx/conf.d/
+RUN ln -s /root/auth_service/talent-nginx.conf /etc/nginx/conf.d/
 RUN mkdir /etc/nginx/ssl
 
 # Expose ports
@@ -63,10 +60,11 @@ EXPOSE 80
 EXPOSE 443
 
 # Set the default directory where CMD will execute
-WORKDIR /root/talent-oauth-service/AuthService/
+WORKDIR /root/auth_service/
 
 # Set the default command to execute
 CMD\
     eval "$(pyenv init -)" && \
     /etc/init.d/nginx restart && \
+    export PYTHONPATH=../ && \
     uwsgi --env GT_ENVIRONMENT=$GT_ENVIRONMENT --env DB_STRING=$DB_STRING --ini talent-uwsgi.ini

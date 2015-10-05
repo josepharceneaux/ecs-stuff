@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, not_
 from sqlalchemy.orm import relationship
 from base import ModelBase as Base
 
@@ -33,3 +33,34 @@ class SocialNetwork(Base):
         return cls.query.filter(
             SocialNetwork.id == id
         ).one()
+
+    @classmethod
+    def get_all(cls):
+        return cls.query.all()
+
+    @classmethod
+    def get_all_except_ids(cls, ids):
+        assert isinstance(ids, list)
+        if ids:
+            return cls.query.filter(
+                not_(
+                    SocialNetwork.id.in_(
+                        ids
+                    )
+                )
+            ).all()
+        else:
+            # Didn't input 'ids' it means we we need list of all, the following
+            # probably help us avoid the expensive in_ with empty sequence
+            SocialNetwork.get_all()
+
+    @classmethod
+    def get_by_ids(cls, ids):
+        assert isinstance(ids, list)
+        return cls.query.filter(
+                SocialNetwork.id.in_(
+                    ids
+                )
+        ).all()
+
+

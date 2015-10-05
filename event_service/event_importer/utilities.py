@@ -5,8 +5,11 @@ or consumed by various programs.
 
 import datetime
 import logging
+from gt_models.user import User
+from requests_oauthlib import OAuth2Session
 
 logger = logging.getLogger('event_service.app')
+OAUTH_SERVER = 'http://127.0.0.1:8888/oauth2/authorize'
 
 
 class Attendee(object):
@@ -97,3 +100,24 @@ def log_error(traceback_info, message):
                  "User: %(User)s, class: %(class)s, "
                  "memberId: %(memberId)s, "
                  % traceback_info)
+
+
+def authenticate_user(request):
+    """
+    :rtype: gluon.dal.objects.Row | None
+    """
+    auth_token = request.headers.get('Authorization')
+    if auth_token and isinstance(auth_token, basestring):
+        auth_token = auth_token.lower().replace('bearer ', '')
+        try:
+            remote = OAuth2Session(token={'access_token': auth_token})
+            response = remote.get(OAUTH_SERVER)
+            if response.status_code == 200:
+                user_id = response.json().get('user_id') or ''
+                return User.get_by_id(user_id) if user_id else None
+            else:
+                return None
+        except Exception as e:
+            return None
+    else:
+        return None

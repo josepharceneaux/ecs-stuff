@@ -19,13 +19,12 @@ class Eventbrite(Base):
         self.start_date_in_utc = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
         self.vendor = 'Eventbrite'
         self.webhook_id = None
-        self.headers = None
 
     def get_user_credentials_by_webhook(self):
         """
         This gives the Owner user's data using following class variables
-        webhook_id: is the id of webhook of the Get Talent user
-        social_network_id: is the id of social network of Get Talent user
+        webhook_id: is the id of webhook of the getTalent user
+        social_network_id: is the id of social network of getTalent user
         """
         assert self.webhook_id is not None
 
@@ -41,6 +40,16 @@ class Eventbrite(Base):
             logger.error("No User found in database corresponding to webhook id "
                          "%(webhook_id)s" % webhook)
 
+    def validate_token(self):
+        eb = SocialNetwork.get_by_name(self.vendor)
+        url = eb.apiUrl + '/users/me'
+        headers = {'Authorization': 'Bearer %s' % self.user_credential.accessToken}
+        response = self.http_get(url, headers=headers)
+        if response.ok:
+            return True
+        return False
+
+
     def get_events(self):
         """
         We send GET requests to API URL and get data. We also
@@ -49,7 +58,7 @@ class Eventbrite(Base):
         :return:
         """
         self.traceback_info.update({"functionName": "get_events()"})
-        events_url = self.api_url + '/events/search/?token=' + self.auth_token
+        events_url = self.api_url + '/events/search/'
         params = {'user.id': self.member_id,
                   'date_created.range_start': self.start_date_in_utc
                   }
@@ -67,7 +76,7 @@ class Eventbrite(Base):
                     params_copy = params.copy()
                     current_page += 1
                     params_copy['page'] = current_page
-                    response = self.http_get(events_url, params_copy)
+                    response = self.http_get(events_url, params=params_copy)
                     if response.ok:
                         data = response.json()
                     all_events.extend(data['events'])
@@ -93,23 +102,19 @@ class Eventbrite(Base):
             'name': event['name']['text'],
             'id': event['id']}
         if event['venue_id']:
-            response = self.http_get(self.api_url +
-                                     '/venues/' + event['venue_id'] +
-                                     '/?token=' + self.auth_token)
+            response = self.http_get(self.api_url + '/venues/' + event['venue_id'])
             if response.ok:
                 try:
                     venue = response.json()
                     # Now let's try to get the information about the event's organizer
                     if event['organizer_id']:
                         response = self.http_get(self.api_url +
-                                                 '/organizers/' + event['organizer_id']
-                                                 + '/?token=' + self.auth_token)
+                                                 '/organizers/' + event['organizer_id'])
                         if response.ok:
                             organizer = json.loads(response.text)
                         if organizer:
                             response = self.http_get(self.api_url + '/users/'
-                                                     + self.member_id
-                                                     + '/?token=' + self.auth_token)
+                                                     + self.member_id)
                             if response.ok:
                                 organizer_info = json.loads(response.text)
                                 organizer_email = organizer_info['emails'][0]['email']
@@ -171,8 +176,7 @@ class Eventbrite(Base):
         """
         self.traceback_info.update({"functionName": "get_attendee()"})
         url = self.api_url + "/orders/" + rsvp['rsvp_id']
-        payload = {'token': self.auth_token}
-        response = self.http_get(url, params=payload)
+        response = self.http_get(url)
         if response.ok:
             try:
                 data = response.json()

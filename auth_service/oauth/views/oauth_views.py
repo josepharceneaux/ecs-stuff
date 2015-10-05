@@ -2,11 +2,12 @@ __author__ = 'ufarooqi'
 
 from auth_service.oauth import app
 from werkzeug.security import check_password_hash
-from models.user import *
+from auth_service.common.models.user import *
 from auth_service.oauth import gt_oauth
 from auth_service.oauth import logger
 from flask import request, jsonify
 from datetime import datetime, timedelta
+
 
 @gt_oauth.clientgetter
 def load_client(client_id):
@@ -15,11 +16,11 @@ def load_client(client_id):
 
 # Format of PBKDF hashed passwords in web2py is different than that of flask
 def change_hashing_format(password):
-        if password is None:
-            return ''
-        elif password.count('$') == 2:
-            (digest_alg, salt, hash) = password.split('$')
-            return 'pbkdf2:sha512:1000$%s$%s' % (salt, hash)
+    if password is None:
+        return ''
+    elif password.count('$') == 2:
+        (digest_alg, salt, hash) = password.split('$')
+        return 'pbkdf2:sha512:1000$%s$%s' % (salt, hash)
 
 
 gt_oauth.grantgetter(lambda *args, **kwargs: None)
@@ -139,4 +140,3 @@ def user_scoped_roles(user_id):
 def get_all_roles_of_domain(domain_id):
     if Domain.query.get(domain_id):
         return jsonify(DomainRole.all_roles_of_domain(domain_id))
-

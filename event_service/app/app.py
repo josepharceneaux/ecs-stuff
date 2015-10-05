@@ -1,22 +1,24 @@
 import json
 import re
 import flask
-import types
 import requests
-from functools import wraps
-from requests_oauthlib import OAuth2Session
+from flask_restful import Resource
+from restful.social_networks import social_network_blueprint
+from .restful.events import events_blueprint
 from event_importer.base import logger
 from event_importer.eventbrite import Eventbrite
+from event_importer.meetup import Meetup
+from event_importer.facebook_ev import Facebook
 from gt_models.event import Event
 from gt_models.user import UserCredentials
-from flask.ext.restful import Resource
-from flask.ext.restful import Api, abort
+from gt_models.social_network import SocialNetwork
+from gt_models.config import db_session
+from flask.ext.restful import Api
 from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash
 
 # configuration
 from event_importer.utilities import log_exception
-
 
 DATABASE = '/tmp/flaskr.db'
 DEBUG = True
@@ -33,15 +35,9 @@ CLIENT_SECRET = 'ohtutvn34cvfucl26i5ele5ki2'
 REDIRECT_URL = 'http://127.0.0.1:5000/code'
 user_refresh_token = '73aac7b76040a33d5dda70d0190aa4e7'
 
-
-def api_route(self, *args, **kwargs):
-    def wrapper(cls):
-        self.add_resource(cls, *args, **kwargs)
-        return cls
-    return wrapper
-
-api.route = types.MethodType(api_route, api)
-
+app.register_blueprint(social_network_blueprint)
+app.register_blueprint(events_blueprint)
+myapp = app
 
 # @app.errorhandler(404)
 @app.route('/')
@@ -121,7 +117,7 @@ def token_validity(access_token):
         return False
 
 
-@app.route('/rsvp', methods=['GET'])
+@app.route('/rsvp', methods=['GET', 'POST'])
 def handle_rsvp():
     """
     This function Only receives data when a candidate rsvp to some event.
@@ -130,6 +126,10 @@ def handle_rsvp():
     of attendee. Then it inserts in rsvp table the required information.
     It will also insert an entry in DB tables candidate_event_rsvp and activity
     """
+    # hub_challenge = request.args['hub.challenge']
+    # verify_token = request.args['hub.verify_token']
+    # hub_mode = request.args['hub.mode']
+    # assert verify_token == 'token'
     if request.data:
         # creating object of Eventbrite class
         eventbrite_rsvp = Eventbrite()
@@ -140,7 +140,7 @@ def handle_rsvp():
                 webhook_id = data['config']['webhook_id']
                 url_of_rsvp = str(json.loads(request.data)['api_url'])
 
-                # gets dictionary object of vendor_rsvp_id
+                # gets dictionary object of social_network_rsvp_id
                 rsvp = get_rsvp_id(url_of_rsvp)
 
                 eventbrite_rsvp.webhook_id = webhook_id
@@ -153,7 +153,7 @@ def handle_rsvp():
                 # sets user credentials as a global variable
                 eventbrite_rsvp.set_user_credential(user_credential_obj)
 
-                # getting attendee data and appends vendor_rsvp_id in attendee
+                # getting attendee data and appends social_network_rsvp_id in attendee
                 #  object
                 attendee = eventbrite_rsvp.get_attendee(rsvp)
                 if attendee:
@@ -194,6 +194,7 @@ def handle_rsvp():
                 'status_code': 200}
         return flask.jsonify(**data), 200
     else:
+        # return hub_challenge, 200
         logger.warn('No RSVP Data')
         data = {'message': 'No RSVP Data',
                 'status_code': 500}
@@ -202,7 +203,7 @@ def handle_rsvp():
 
 def get_rsvp_id(url):
     """
-    This gets the vendor_rsvp_id by comparing url of response of rsvp
+    This gets the social_network_rsvp_id by comparing url of response of rsvp
     and defined regular expression
     :return:
     """
@@ -214,94 +215,27 @@ def get_rsvp_id(url):
     rsvp = {'rsvp_id': vendor_rsvp_id}
     return rsvp
 
-def authenticate(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        if not getattr(func, 'authenticated', True):
-            return func(*args, **kwargs)
-        bearer = flask.request.headers['Authorization']
-        oauth_request = OAuth2Session(token={'access_token': bearer.strip()})
-        # TODO: remove this URL and make it configurable
-        response = oauth_request.get('http://localhost:5005/oauth2/authorize', verify=False)
-        if response.status_code == 200 and response.json().has_key('user_id'):
-            kwargs['user_id'] = response.json()['user_id']
-            return func(*args, **kwargs)
 
-        abort(401)
-    return wrapper
+@app.errorhandler(InvalidUsage)
+def handle_invalid_usage(error):
+    response = json.dumps(error.to_dict())
+    response.status_code = error.status_code
+    return response
 
 
-class Resource(Resource):
-    method_decorators = [authenticate]
+@app.errorhandler(ApiException)
+def handle_invalid_usage(error):
+    response = json.dumps(error.to_dict())
+    response.status_code = error.status_code
+    return response
+
+@app.errorhandler(Exception)
+def handle_invalid_usage(error):
+    response = json.dumps(dict(message='Ooops! Internal server error occurred..'))
+    response.status_code = 500
+    return response
 
 
-@api.route('/events/')
-class Events(Resource):
-    """
-        This resource returns a list of events or it can be used to create event using POST
-    """
-
-    def get(self):
-        """
-        This action returns a list of user events.
-        """
-        events = map(lambda event: event.to_json(), Event.query.filter_by(userId=1).all())
-        if events:
-            return {'events': events}
-        else:
-            return {'events': []}
-
-    def post(self):
-        """
-        This method takes data to create event in local database as well as on corresponding social network.
-        :return: id of created event
-        """
-        data = request.values
-        return data
-
-
-@api.route('/events/{event_id}')
-class EventById(Resource):
-    def get(self, event_id):
-        """
-        Returns event object with required id
-        :param id: integer, unique id representing event in GT database
-        :return: json for required event
-        """
-        pass
-
-    def post(self, event_id):
-        """
-        Updates event in GT database and on corresponding social network
-        :param id:
-        """
-        pass
-
-    def delete(self, event_id):
-        """
-        Removes event from GT database and from social network as well.
-        :param id: (Integer) unique id in Event table on GT database.
-        """
-        pass
-
-
-
-@api.route('/social_networks/')
-class SocialNetworks(Resource):
-    """
-        This resource returns a list of events or it can be used to create event using POST
-    """
-    @authenticate
-    def get(self, *args, **kwargs):
-        """
-        This action returns a list of user events.
-        """
-        print "Printing Args"
-        print args, kwargs
-        user_id = kwargs.get('user_id') or None
-        assert user_id
-        subscribed_social_networks = map(lambda ur: ur.to_json(), UserCredentials.get_by_user_id(user_id=user_id))
-        if subscribed_social_networks:
-            return {'social_networks': subscribed_social_networks}
-        else:
-            return {'social_networks': []}
+@app.teardown_request
+def teardown_request(exception=None):
+    db_session.remove()

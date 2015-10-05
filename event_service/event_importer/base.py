@@ -34,7 +34,7 @@ class Base(object):
         self.vendor = None
         self.user_credential = None
         self.api_url = None
-        self.auth_token = None
+        self.access_token = None
         self.member_id = None
         self.headers = None
         self.traceback_info = None
@@ -64,20 +64,20 @@ class Base(object):
 
     def set_user_credential(self, user_credential_obj):
         """
-        sets user's credentials as base class object so that it is
-        available in child classes.It also sets the traceback_info as base
+        This sets the user's credentials as base class object so that it is
+        available in child classes. It also sets the traceback_info as base
         class object to be used in logging purpose.
-        traceback_info is used while logging an exception or error.
-        traceback_info contains User's Name, MemberId of user on vendor,
-        Function name where exception occurs,Class Name of calling object
-        and Error message to be logged.
-        In every function where exception is thrown, functionName is appended
-        in the traceback_info.
-        If user credentials are not "None", we set api_url, auth_token,
+        "traceback_info" is used while logging an exception or error.
+        "traceback_info" contains User's Name, MemberId of user on vendor,
+        "functionName" where exception occurs, "class" name of calling object
+        and "error" message to be logged.
+        In every function where exception is thrown, "functionName" is appended
+        in the "traceback_info".
+        If user credentials are not "None", we set api_url, access_token,
         member_id, gt_user_id, social_network_id and traceback_info as base
         class objects so any child class can use them. If any of them is
         missing, we log an error with missing items.
-        (api_url is not checked as for Facebook we don't have any api url)
+        (api_url is not checked as for Facebook we don't use API url)
         :param user_credential_obj:
         :return:
         """
@@ -91,7 +91,7 @@ class Base(object):
                 'functionName': 'set_user_credential()',
                 'error': ''}
             data = {
-                "auth_token": self.user_credential.authToken,
+                "access_token": self.user_credential.accessToken,
                 "member_id": self.user_credential.memberId,
                 "gt_user_id": self.user_credential.userId,
                 "social_network_id": self.user_credential.social_network.id,
@@ -106,13 +106,13 @@ class Base(object):
                 self.social_network_id = data['social_network_id']
                 # token validity is checked here
                 # if token is expired, we refresh it here
-                if not self.token_validity(data['auth_token']):
+                if not self.token_validity(data['access_token']):
                     # token is expired, get fresh token from vendor
-                    self.auth_token = self.refresh_token()
+                    self.access_token = self.refresh_token()
                 else:
                     # token is valid, so proceed normally
-                    self.auth_token = data['auth_token']
-                self.headers = {'Authorization': 'Bearer ' + self.auth_token}
+                    self.access_token = data['access_token']
+                self.headers = {'Authorization': 'Bearer ' + self.access_token}
             else:
                 # gets fields which are missing
                 items = [key for key, value in data.iteritems()
@@ -150,19 +150,21 @@ class Base(object):
             self.all_user_credentials = filter(lambda user_creds: user_creds.userId == user_id,
                                                self.all_user_credentials)
 
-    def http_get(self, url, params=None, headers=None):
+    def http_get(self, url, params=None, data=None, headers=None):
         """
         This code is used to make GET call on given url and handles exceptions
         """
         try:
-            response = requests.get(url, params, headers=headers)
-            # If we made a bad request (a 4XX client error or 5XX server error response),
-            # we can raise it with Response.raise_for_status():"""
+            headers=self.headers
+            response = requests.get(url, data=data, params=params, headers=headers)
+            # We check if there is a bad response
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            log_exception(self.traceback_info, e.message)
+            print 'Error is ', e.message
+            #log_exception(self.traceback_info, e.message)
         except requests.RequestException as e:
-            log_exception(self.traceback_info, e.message)
+            #log_exception(self.traceback_info, e.message)
+            pass
         return response
 
     def get_events(self):
@@ -202,14 +204,11 @@ class Base(object):
         for event in events:
             event = self.normalize_event(event)
             if event:
-                event_in_db = Event.get_by_user_and_vendor_id(event.userId,
-                                                              event.vendorEventId)
+                event_in_db = Event.get_by_user_and_vendor_id(event.user_id,
+                                                              event.social_network_event_id)
                 if event_in_db:
-                    data = dict(eventTitle=event.eventTitle,
-                                eventDescription=event.eventDescription,
-                                eventAddressLine1=event.eventAddressLine1,
-                                eventStartDateTime=event.eventStartDateTime,
-                                eventEndDateTime=event.eventEndDateTime)
+                    data = dict(title=event.title,
+                                description=event.description)
                     event_in_db.update(**data)
                 else:
                     Event.save(event)
@@ -446,9 +445,11 @@ class Base(object):
             attendee.candidate_id,
             attendee.event.id,
             attendee.rsvp_id)
-        data = {'candidateId': attendee.candidate_id,
-                'eventId': attendee.event.id,
-                'rsvpId': attendee.rsvp_id}
+        data = {
+            'candidateId': attendee.candidate_id,
+            'eventId': attendee.event.id,
+            'rsvpId': attendee.rsvp_id
+        }
         if entity_in_db:
             entity_in_db.update(**data)
             entity_id = entity_in_db.id
@@ -477,23 +478,27 @@ class Base(object):
         type_of_rsvp = 23  # to show message on activity feed
         first_name = attendee.first_name
         last_name = attendee.last_name
-        params = {'firstName': first_name,
-                  'lastName': last_name,
-                  'eventTitle': event_title,
-                  'response': attendee.rsvp_status,
-                  'img': attendee.vendor_img_link,
-                  'creator': '%s' % gt_user_first_name + ' %s' % gt_user_last_name}
+        params = {
+            'firstName': first_name,
+            'lastName': last_name,
+            'eventTitle': event_title,
+            'response': attendee.rsvp_status,
+            'img': attendee.vendor_img_link,
+            'creator': '%s' % gt_user_first_name + ' %s' % gt_user_last_name
+        }
         activity_in_db = Activity.get_by_user_id_params_type_source_id(
             attendee.gt_user_id,
             json.dumps(params),
             type_of_rsvp,
-            attendee.candidate_event_rsvp_id)
-        data = {'sourceTable': 'candidate_event_rsvp',
-                'sourceId': attendee.candidate_event_rsvp_id,
-                'addedTime': attendee.added_time,
-                'type': type_of_rsvp,
-                'userId': attendee.gt_user_id,
-                'params': json.dumps(params)}
+            attendee.candidate_event_rsvp_id
+        )
+        data = {
+            'sourceTable': 'candidate_event_rsvp',
+            'sourceId': attendee.candidate_event_rsvp_id,
+            'addedTime': attendee.added_time,
+            'type': type_of_rsvp,
+            'userId': attendee.gt_user_id,
+            'params': json.dumps(params)}
         if activity_in_db:
             activity_in_db.update(**data)
         else:

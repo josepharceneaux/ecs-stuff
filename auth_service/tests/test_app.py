@@ -1,10 +1,14 @@
-import pytest
 import json
-from auth_service.oauth import app, db, gt_oauth
-from werkzeug.security import generate_password_hash, gen_salt
-from models.user import *
-import random, string
+import random
+import string
 from urllib import urlencode
+
+import pytest
+from werkzeug.security import generate_password_hash, gen_salt
+
+from auth_service.oauth import app, gt_oauth
+from auth_service.common.models.user import *
+from auth_service.common.models.candidate import *
 
 TOKEN_URL = '/oauth2/token'
 REVOKE_URL = '/oauth2/revoke'
