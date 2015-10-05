@@ -54,6 +54,18 @@ def save(self):
     return self
 
 
+def update(self, data):
+    """
+    This method allows a model instance to save itself in database by calling save
+    e.g.
+    event = Event(**kwargs)
+    event.save()
+    :return: same model instance
+    """
+    self.query.update(data)
+    db.session.commit()
+    return self
+
 @classmethod
 def get_by_id(cls, _id):
     try:
@@ -65,6 +77,7 @@ def get_by_id(cls, _id):
 
 db.Model.to_json = MethodType(to_json, None, db.Model)
 db.Model.save = MethodType(save, None, db.Model)
+db.Model.update = MethodType(update, None, db.Model)
 db.Model.get_by_id = get_by_id
 
 # from common.error_handling import register_error_handlers

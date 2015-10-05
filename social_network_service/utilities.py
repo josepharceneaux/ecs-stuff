@@ -114,7 +114,7 @@ def get_callee_data():
                 'file_name': callee_frame[no_of_item][1],
                 'line_no': callee_frame[no_of_item][2],
                 'class_name': callee_frame[no_of_item][0].f_locals['self'].__class__.__name__
-                if hasattr(callee_frame[no_of_item][0].f_locals, 'self') else '',
+                if callee_frame[no_of_item][0].f_locals.has_key('self') else '',
                 'function_name': callee_frame[no_of_item][3]}
         except Exception as e:
             callee_data = {'traceback_info': traceback.format_exc()}
@@ -136,16 +136,16 @@ def log_error(user_id_and_error_message):
     # appends user_id_and_error_message in callee_data_dict
     callee_data_dict.update(user_id_and_error_message)
     if get_callee_data().has_key('traceback_info'):
-        callee_data = ("Reason: %(traceback_info)s \n"
+        callee_data = ("\nReason: %(traceback_info)s\n"
                        "User Id: %(user_id)s" % callee_data_dict)
     else:
-        callee_data = ("Reason: %(error)s"
-                       "function Name: %(function_name)s, "
-                       "file Name: %(file_name)s, "
-                       "line No: %(line_no)s",
+        callee_data = ("\nReason: %(error)s,\n"
+                       "function Name: %(function_name)s,\n"
+                       "file Name: %(file_name)s,\n"
+                       "line No: %(line_no)s,\n"
                        "User Id: %(user_id)s" % callee_data_dict)
         if callee_data_dict.get('class_name'):
-            callee_data += ", class: %(class_name)s" % callee_data_dict
+            callee_data += ",\nclass: %(class_name)s" % callee_data_dict
     logger.error(callee_data)
 
 
@@ -164,16 +164,16 @@ def log_exception(user_id_and_error_message):
     # appends user_id_and_error_message in callee_data_dict
     callee_data_dict.update(user_id_and_error_message)
     if get_callee_data().has_key('traceback_info'):
-        callee_data = ("Reason: %(traceback_info)s \n"
+        callee_data = ("\nReason: %(traceback_info)s \n"
                        "User Id: %(user_id)s" % callee_data_dict)
     else:
-        callee_data = ("Reason: %(error)s"
-                       "function Name: %(function_name)s, "
-                       "file Name: %(file_name)s, "
-                       "line No: %(line_no)s",
+        callee_data = ("\nReason: %(error)s,\n"
+                       "function Name: %(function_name)s,\n"
+                       "file Name: %(file_name)s,\n"
+                       "line No: %(line_no)s,\n"
                        "User Id: %(user_id)s" % callee_data_dict)
         if callee_data_dict.get('class_name'):
-            callee_data += ", class: %(class_name)s" % callee_data_dict
+            callee_data += ",\nclass: %(class_name)s" % callee_data_dict
     logger.exception(callee_data)
 
 

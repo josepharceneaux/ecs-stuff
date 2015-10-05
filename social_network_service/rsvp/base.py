@@ -173,7 +173,7 @@ class RSVPBase(object):
                 'notes': attendee.event.description[:495],  # field is 500 chars
                 'domain_id': 1}
         if entry_in_db:
-            entry_in_db.update(**data)
+            entry_in_db.update(data)
             entry_id = entry_in_db.id
         else:
             entry = CandidateSource(**data)
