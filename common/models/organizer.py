@@ -16,3 +16,11 @@ class Organizer(db.Model):
     def get_by_user_id(cls, user_id):
         assert user_id is not None
         return cls.query.filter(Organizer.user_id == user_id).all()
+
+
+    @classmethod
+    def get_by_user_id_and_name(cls, user_id, name):
+        assert user_id is not None
+        assert name is not None
+        return cls.query.filter(Organizer.user_id == user_id,
+                                Organizer.name == name).first()

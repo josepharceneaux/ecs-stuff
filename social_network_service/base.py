@@ -251,7 +251,7 @@ class SocialNetworkBase(object):
             user_credentials['user_id'], user_credentials['social_network_id'])
         try:
             if gt_user_in_db:
-                gt_user_in_db.update(user_credentials)
+                gt_user_in_db.update(**user_credentials)
             else:
                 UserCredentials.save(**user_credentials)
             return True

@@ -167,21 +167,23 @@ def start():
         social_network_id = social_network_obj.id
     all_user_credentials = UserCredentials.get_all_credentials(social_network_id)
     job_pool = Pool(POOL_SIZE)
-    for user_credentials in all_user_credentials:
-        social_network = SocialNetwork.get_by_name(user_credentials.social_network.name)
-        social_network_class = get_class(social_network.name.lower(), 'social_network',
-                                         user_credentials=user_credentials)
-        # we call social network class here for auth purpose, If token is expired
-        # access token is refreshed and we use fresh token
-        sn = social_network_class(user_id=user_credentials.user_id,
-                                  social_network_id=social_network.id)
-        if not user_credentials.member_id:
-            # gets an save the member Id of gt-user
-            sn.get_member_id(dict())
-        job_pool.spawn(sn.process, name_space.mode, user_credentials=user_credentials)
-    job_pool.join()
-
-
+    if all_user_credentials:
+        for user_credentials in all_user_credentials:
+            social_network = SocialNetwork.get_by_name(user_credentials.social_network.name)
+            social_network_class = get_class(social_network.name.lower(), 'social_network',
+                                             user_credentials=user_credentials)
+            # we call social network class here for auth purpose, If token is expired
+            # access token is refreshed and we use fresh token
+            sn = social_network_class(user_id=user_credentials.user_id,
+                                      social_network_id=social_network.id)
+            if not user_credentials.member_id:
+                # gets an save the member Id of gt-user
+                sn.get_member_id(dict())
+            job_pool.spawn(sn.process, name_space.mode,
+                           user_credentials=user_credentials)
+        job_pool.join()
+    else:
+        logger.error('There is no User in db for social network %s' % name_space.social_network)
 if __name__ == '__main__':
     try:
         start()

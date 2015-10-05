@@ -39,7 +39,7 @@ class Meetup(EventBase):
         self.location = None
         self.group_url_name = None
         self.social_network_event_id = None
-        self.start_date = kwargs.get('start_date') or (datetime.now() - timedelta(days=30))
+        self.start_date = kwargs.get('start_date') or (datetime.now() - timedelta(days=10))
         self.end_date = kwargs.get('end_date') or (datetime.now() + timedelta(days=30))
         self.start_time_since_epoch = milliseconds_since_epoch(self.start_date)
         self.end_time_since_epoch = milliseconds_since_epoch(self.end_date)
@@ -78,7 +78,8 @@ class Meetup(EventBase):
                 events = []  # resetting events for next page
                 # attach the key before sending the request
                 url = next_url + '&sign=true'
-                response = http_request('GET', url, user_id=self.user.id)
+                response = http_request('GET', url, headers=self.headers,
+                                        user_id=self.user.id)
                 if response.ok:
                     data = response.json()
                     events.extend(data['results'])
@@ -121,8 +122,8 @@ class Meetup(EventBase):
         organizer = None
         venue = None
         group_organizer = None
-        organizer_instance = None
-        venue_instance = None
+        organizer_id = None
+        venue_id = None
         start_time = None
         end_time = None
         if event.get('venue'):
@@ -165,16 +166,26 @@ class Meetup(EventBase):
                                                           + (float(end_time) * 1000))
 
         if group_organizer:
-            organizer_instance = Organizer(
+            organizer_data = dict(
                 user_id=self.user.id,
                 name=group_organizer['name'] if group_organizer.has_key('name') else '',
                 email='',
                 about=organizer['bio'] if organizer and organizer.has_key('bio') else ''
 
             )
-            Organizer.save(organizer_instance)
+            organizer_in_db = Organizer.get_by_user_id_and_name(
+                self.user.id,
+                group_organizer['name'] if group_organizer.has_key('name') else ''
+                                                              )
+            if organizer_in_db:
+                organizer_in_db.update(**organizer_data)
+                organizer_id = organizer_in_db.id
+            else:
+                organizer_instance = Organizer(**organizer_data)
+                Organizer.save(organizer_instance)
+                organizer_id = organizer_instance.id
         if venue:
-            venue_instance = Venue(
+            venue_data = dict(
                 social_network_venue_id=venue['id'],
                 user_id=self.user.id,
                 address_line1=venue['address_1'] if venue else '',
@@ -186,7 +197,15 @@ class Meetup(EventBase):
                 longitude=float(venue['lon']) if venue and venue.has_key('lon') else 0,
                 latitude=float(venue['lat']) if venue and venue.has_key('lat') else 0,
             )
-            Venue.save(venue_instance)
+            venue_in_db = Venue.get_by_user_id_and_social_network_venue_id(self.user.id,
+                                                                       venue['id'])
+            if venue_in_db:
+                venue_in_db.update(**venue_data)
+                venue_id = venue_in_db.id
+            else:
+                venue = Venue(**venue_data)
+                Venue.save(venue)
+                venue_id = venue.id
 
         return Event(
             social_network_event_id=event['id'],
@@ -194,8 +213,8 @@ class Meetup(EventBase):
             description=event['description'] if event.has_key('description') else '',
             social_network_id=self.social_network.id,
             user_id=self.user.id,
-            organizer_id=organizer_instance.id if organizer_instance else None,
-            venue_id=venue_instance.id if venue_instance else None,
+            organizer_id=organizer_id,
+            venue_id=venue_id,
             # group id and urlName are required fields to edit an event
             # So, should raise exception if Null
             group_id=event['group']['id'] if event.has_key('group') else '',

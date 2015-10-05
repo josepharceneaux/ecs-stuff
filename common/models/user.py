@@ -8,6 +8,7 @@ import datetime
 import logging
 import candidate
 import domain
+import organizer
 from candidate import CandidateSource
 from candidate import CandidateAreaOfInterest
 from misc import AreaOfInterest

@@ -89,29 +89,34 @@ class EventBase(object):
         """
         if events:
             self.pre_process_events(events)
-        for event in events:
-            event = self.event_sn_to_gt_mapping(event)
-            if event:
-                event_in_db = Event.get_by_user_and_vendor_id(event.user_id,
-                                                              event.social_network_event_id)
-                try:
-                    if event_in_db:
-                        data = dict(title=event.title,
-                                    description=event.description,
-                                    start_datetime=event.start_datetime,
-                                    end_datetime=event.end_datetime)
-                        event_in_db.update(**data)
-                    else:
-                        Event.save(event)
-                except Exception as error:
-                    error_message = 'Cannot process an event. Social network: ' \
-                                    '%s. Details: %s' \
-                                    % (self.social_network.id, error.message)
-                    log_exception({
-                        'user_id': self.user.id,
-                        'error': error_message,
-                    })
-                    # Now let's try to process the next event
+        if events:
+            for event in events:
+                event = self.event_sn_to_gt_mapping(event)
+                if event:
+                    event_in_db = Event.get_by_user_and_vendor_id(event.user_id,
+                                                                  event.social_network_event_id)
+                    try:
+                        if event_in_db:
+                            data = dict(title=event.title,
+                                        description=event.description,
+                                        start_datetime=event.start_datetime,
+                                        end_datetime=event.end_datetime)
+                            event_in_db.update(**data)
+                        else:
+                            Event.save(event)
+                    except Exception as error:
+                        error_message = 'Cannot process an event. Social network: ' \
+                                        '%s. Details: %s' \
+                                        % (self.social_network.id, error.message)
+                        log_exception({
+                            'user_id': self.user.id,
+                            'error': error_message,
+                        })
+                        # Now let's try to process the next event
+        else:
+            log_error({'user_id': self.user.id,
+                       'error': 'There is No event to import for user '
+                                'in provided time range'})
         if events:
             self.post_process_events(events)
 

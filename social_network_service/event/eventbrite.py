@@ -97,8 +97,8 @@ class Eventbrite(EventBase):
         organizer = None
         organizer_email = None
         venue = None
-        organizer_instance = None
-        venue_instance = None
+        organizer_id = None
+        venue_id = None
         assert event is not None
         # Get information about event's venue
         if event['venue_id']:
@@ -140,16 +140,26 @@ class Eventbrite(EventBase):
                             organizer_email = organizer_info['emails'][0]['email']
 
         if organizer:
-            organizer_instance = Organizer(
+            organizer_data = dict(
                 user_id=self.user.id,
                 name=organizer['name'] if organizer.has_key('name') else '',
                 email=organizer_email if organizer_email else '',
                 about=organizer['description'] if organizer.has_key('description') else ''
 
             )
-            Organizer.save(organizer_instance)
+            organizer_in_db = Organizer.get_by_user_id_and_name(
+                self.user.id,
+                organizer['name'] if organizer.has_key('name') else ''
+                                                              )
+            if organizer_in_db:
+                organizer_in_db.update(**organizer_data)
+                organizer_id = organizer_in_db.id
+            else:
+                organizer_instance = Organizer(**organizer_data)
+                Organizer.save(organizer_instance)
+                organizer_id = organizer_instance.id
         if venue:
-            venue_instance = Venue(
+            venue_data = dict(
                 social_network_venue_id=event['venue_id'],
                 user_id=self.user.id,
                 address_line1=venue['address']['address_1'] if venue else '',
@@ -161,19 +171,27 @@ class Eventbrite(EventBase):
                 longitude=float(venue['address']['longitude']) if venue else 0,
                 latitude=float(venue['address']['latitude']) if venue else 0,
             )
-            Venue.save(venue_instance)
+            venue_in_db = Venue.get_by_user_id_and_social_network_venue_id(self.user.id,
+                                                                           venue['id'])
+            if venue_in_db:
+                venue_in_db.update(**venue_data)
+                venue_id = venue_in_db.id
+            else:
+                venue = Venue(**venue_data)
+                Venue.save(venue)
+                venue_id = venue.id
 
         return Event(
             social_network_event_id=event['id'],
             title=event['name']['text'],
             description=event['description']['text'],
             social_network_id=self.social_network.id,
-            organizer_id=organizer_instance.id if organizer_instance else None,
             user_id=self.user.id,
             group_id=0,
             url='',
             group_url_name='',
-            venue_id=venue_instance.id if venue_instance.id else None,
+            organizer_id=organizer_id,
+            venue_id=venue_id,
             start_datetime=event['start']['local'],
             end_datetime=event['end']['local'],
             registration_instruction='',

@@ -54,7 +54,7 @@ def save(self):
     return self
 
 
-def update(self, data):
+def update(self, **data):
     """
     This method allows a model instance to save itself in database by calling save
     e.g.
@@ -62,7 +62,7 @@ def update(self, data):
     event.save()
     :return: same model instance
     """
-    self.query.update(data)
+    self.query.filter_by(id=self.id).update(data)
     db.session.commit()
     return self
 
