@@ -220,24 +220,41 @@ class Meetup(EventBase):
         and publishes it (announce). It uses helper functions add_location()
         and publish_meetup().
         """
-        if self.social_network_event_id is not None:
-            url = self.api_url + "/event/" + str(self.social_network_event_id)
-            event_is_new = False
-        else:
-            url = self.api_url + "/event"
-            event_is_new = True
+        url = self.api_url + "/event"
+        venue_id = self.add_location()
+        self.payload.update({'venue_id': venue_id,
+                             'publish_status': 'published'})
         response = http_request('POST', url, params=self.payload, headers=self.headers,
                                 user_id=self.user.id)
         if response.ok:
             event_id = response.json().get('id')
-            create_update = 'Created' if not self.social_network_event_id else 'Updated'
-            venue_id = self.add_location()
-            self.publish_meetup(venue_id, event_id, event_is_new)
-            logger.info('|  Event %s %s Successfully  |'
-                        % (self.payload['name'], create_update))
+            logger.info('|  Event %s created Successfully  |' % self.payload['name'])
             return event_id, ''
         else:
             error_message = 'Event was not Created. Error occurred during draft creation'
+            log_error({'user_id': self.user.id,
+                       'error': error_message})
+            raise EventNotCreated('ApiError: Unable to create event on social network')
+
+    def update_event(self):
+        """
+        This function is used to create meetup event using vendor's API.
+        It first creates a draft for event on vendor, then by given address,
+        generates venue_id.It then gets the draft, updates the location
+        and publishes it (announce). It uses helper functions add_location()
+        and publish_meetup().
+        """
+        url = self.api_url + "/event/" + str(self.social_network_event_id)
+        venue_id = self.add_location()
+        self.payload.update({'venue_id': venue_id})
+        response = http_request('POST', url, params=self.payload, headers=self.headers,
+                                user_id=self.user.id)
+        if response.ok:
+            event_id = response.json().get('id')
+            logger.info('|  Event %s updated Successfully  |' % self.payload['name'])
+            return event_id, ''
+        else:
+            error_message = 'Event was not Created. Error occurred during event creation on Meetup'
             log_error({'user_id': self.user.id,
                        'error': error_message})
             raise EventNotCreated('ApiError: Unable to create event on social network')
@@ -247,15 +264,16 @@ class Meetup(EventBase):
         This function adds the location of event for meetup.
         :return: id of venue created if creation is successful.
         """
-        # For deleting an event, Meetup uses url which is different than
-        # the url we use in other API calls of Meetup. So class variable 'api_url' is not
-        # used here
         venue_in_db = Venue.get_by_user_id_social_network_id_venue_id(self.user.id,
                                                                       self.social_network.id,
                                                                       self.venue_id)
         if venue_in_db:
             if venue_in_db.social_network_venue_id:
                 return venue_in_db.social_network_venue_id
+
+            # For creating venue for event, Meetup uses url which is different than
+            # the url we use in other API calls of Meetup. So class variable 'api_url' is not
+            # used here
             url = 'https://api.meetup.com/' + self.group_url_name + '/venues'
             payload = {
                 'address_1': venue_in_db.address_line1,
@@ -270,10 +288,16 @@ class Meetup(EventBase):
             if response.ok:
                 venue_id = json.loads(response.text)['id']
                 logger.info('|  Venue has been Added  |')
-            elif response.status_code == 409: # comment what is 409
-                # TODO raise KeyError and IndexError
-                venue_id = json.loads(response.text)['errors'][0]['potential_matches'][0]['id']
-                logger.info('|  Venue was picked from matched records  |')
+            elif response.status_code == 409:
+                # 409 is returned when our venue is matching existing venue/venues
+                # so we will pick first one in potential matches
+                try:
+                    venue_id = json.loads(response.text)['errors'][0]['potential_matches'][0]['id']
+                    logger.info('|  Venue was picked from matched records  |')
+                except Exception as e:
+                    raise EventLocationNotCreated('ApiError: Unable to create venue for event',
+                                                  detail=str(e))
+
             else:
                 error_message = 'Venue was not Added. There are some errors'
                 errors = response.json().get('errors')
@@ -289,36 +313,9 @@ class Meetup(EventBase):
             error_message = 'Venue does not exist in db. Venue id is %s' % self.venue_id
             log_error({'user_id': self.user.id,
                        'error': error_message})
-            raise VenueNotFound('Venue not found.')
+            raise VenueNotFound('Venue not found in database. Kindly specify a valid venue.')
 
-    def publish_meetup(self, venue_id, event_id, event_is_new):
-        """
-        Here we publish the event on Meetup website.
-        :param venue_id: id of venue to update location of event
-        :param event_id: id of newly created event
-        :param event_is_new: determines if creating, editing the event
-        :return: True if event has updated and published successfully,
-        False otherwise
-        """
-        # create url to publish event
-        url = self.api_url + "/event/" + event_id
-        # TODO venue_id should be cast into str
-        payload = {'venue_id': venue_id}
-        # if we are Creating the event, then announce this event
-        # else assuming event is already announced, just updating data
-        payload.update({'announce': True}) if event_is_new else ''
-        response = http_request('POST', url, params=payload, headers=self.headers,
-                                user_id=self.user.id)
-        if response.ok:
-            logger.info('|  Event has been published  |')
-            return True
-        else:
-            error_message = 'Event was not published'
-            log_error({'user_id': self.user.id,
-                       'error': error_message})
-            raise EventNotPublished('ApiError: Unable to publish event on specified social network')
-
-    def unpublish_event(self, event_id):
+    def unpublish_event(self, event_id, method='DELETE'):
         """
         This function is used when run unit test. It sets the api_relative_url
         and calls base class method to delete the Event from meetup which was
@@ -327,7 +324,7 @@ class Meetup(EventBase):
         :return: True if event is deleted from vendor, False other wsie
         """
         self.url_to_delete_event = self.api_url + "/event/" + str(event_id)
-        super(Meetup, self).unpublish_event(event_id)
+        super(Meetup, self).unpublish_event(event_id, method=method)
 
     @staticmethod
     def validate_required_fields(data):

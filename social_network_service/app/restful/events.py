@@ -1,4 +1,5 @@
 import json
+import traceback
 import types
 from flask import Blueprint, request
 from flask.ext.restful import Api, Resource
@@ -104,10 +105,11 @@ class EventById(Resource):
             user_id, event_id, event_data['social_network_event_id'])
         if event:
             try:
-                process_event(event_data, user_id)
+                process_event(event_data, user_id, method='Update')
             except ApiException as err:
                 raise
             except Exception as err:
+                print(traceback.format_exc())
                 raise ApiException('APIError: Internal Server error!', status_code=500)
             return ApiResponse(json.dumps(dict(message='Event updated successfully')), status=204)
         return ApiResponse(json.dumps(dict(message='Forbidden: You can not edit event for given event_id')),

@@ -37,7 +37,7 @@ class Event(db.Model):
                 self.start_datetime == other_event.start_datetime)
 
     @classmethod
-    def get_by_user_and_vendor_id(cls, user_id, social_network_event_id):
+    def get_by_user_and_social_network_event_id(cls, user_id, social_network_event_id):
         return cls.query.filter(
             db.and_(
                 Event.user_id == user_id,
