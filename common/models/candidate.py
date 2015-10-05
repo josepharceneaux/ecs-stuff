@@ -4,6 +4,7 @@ import datetime
 import time
 
 
+
 class Candidate(db.Model):
     __tablename__ = 'candidate'
     id = db.Column(db.Integer, primary_key=True)
@@ -74,19 +75,6 @@ class CandidateStatus(db.Model):
         return "<CandidateStatus(description=' %r')>" % self.description
 
 
-class PhoneLabel(db.Model):
-    __tablename__ = 'phone_label'
-    id = db.Column(db.Integer, primary_key=True)
-    description = db.Column('Description', db.String(20))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-
-    # Relationships
-    candidate_phones = relationship('CandidatePhone', backref='phone_label')
-    reference_phones = relationship('ReferencePhone', backref='phone_label')
-
-    def __repr__(self):
-        return "<PhoneLabel (description=' %r')>" % self.description
-
 
 class CandidateSource(db.Model):
     __tablename__ = 'candidate_source'
@@ -130,19 +118,6 @@ class CandidatePhone(db.Model):
         return "<CandidatePhone (value=' %r', extention= ' %r')>" % (self.value, self.extension)
 
 
-class EmailLabel(db.Model):
-    __tablename__ = 'email_label'
-    id = db.Column(db.Integer, primary_key=True)
-    description = db.Column('Description', db.String(50))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-
-    # Relationships
-    candidate_emails = relationship('CandidateEmail', backref='email_label')
-    reference_emails = relationship('ReferenceEmail', backref='email_label')
-
-    def __repr__(self):
-        return "<EmailLabel (description=' %r')>" % self.description
-
 
 class CandidateEmail(db.Model):
     __tablename__ = 'candidate_email'
@@ -175,25 +150,6 @@ class CandidateRating(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
 
-class RatingTag(db.Model):
-    __tablename__ = 'rating_tag'
-    id = db.Column(db.Integer, primary_key=True)
-    description = db.Column('Description', db.String(100))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-
-    # Relationships
-    candidates = relationship('Candidate', secondary="candidate_rating")
-
-    def __repr__(self):
-        return "<RatingTag (desctiption=' %r')>" % self.description
-
-
-class RatingTagUser(db.Model):
-    __tabelname__ = 'rating_tag_user'
-    rating_tag_id = db.Column('RatingTagId', db.Integer, db.ForeignKey('rating_tag.id'), primary_key=True)
-    user_id = db.Column('UserId', db.Integer, db.ForeignKey('user.id'), primary_key=True)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-
 
 class CandidateTextComment(db.Model):
     __tablename__ = 'candidate_text_comment'
@@ -205,14 +161,7 @@ class CandidateTextComment(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
 
-class VoiceComment(db.Model):
-    __tablename__ = 'voice_comment'
-    id = db.Column(db.Integer, primary_key=True)
-    candidate_id = db.Column('CandidatedId', db.Integer, db.ForeignKey('candidate.id'))
-    list_order = db.Column('ListOrder', db.Integer)
-    filename = db.Column('Filename', db.String(260))
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+
 
 
 class CandidateDocument(db.Model):
@@ -223,24 +172,6 @@ class CandidateDocument(db.Model):
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
-
-class SocialNetwork(db.Model):
-    __tablename__ = 'social_network'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(100), nullable=False)
-    url = db.Column('Url', db.String(255))
-    api_url = db.Column('apiUrl', db.String(255))
-    client_key = db.Column('clientKey', db.String(500))
-    secret_key = db.Column('secretKey', db.String(500))
-    redirect_uri = db.Column('redirectUri', db.String(255))
-    auth_url = db.Column('authUrl', db.String(200))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-
-    # Relationships
-    candidate_social_networks = relationship('CandidateSocialNetwork', backref='social_network')
-
-    def __repr__(self):
-        return "<SocialNetwork (url=' %r')>" % self.url
 
 
 class CandidateSocialNetwork(db.Model):
@@ -286,17 +217,7 @@ class CandidatePreferredLocation(db.Model):
         return "<CandidatePreferredLocation (candidate_id=' %r')>" % self.candidate_id
 
 
-class Language(db.Model):
-    __tablename__ = 'language'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(200))
-    code = db.Column('Code', db.String(3), unique=True)
 
-    # Relationships
-    candidate_languages = relationship('CandidateLanguage', backref='language')
-
-    def __repr__(self):
-        return "<Language (code=' %r')>" % self.code
 
 
 class CandidateLanguage(db.Model):
@@ -421,53 +342,6 @@ class CandidatePatentHistory(db.Model):
     def __repr__(self):
         return "<CandidatePatentHistory (title=' %r')>" % self.title
 
-
-class PatentDetail(db.Model):
-    __tabelname__ = 'patent_detail'
-    id = db.Column(db.BigInteger, primary_key=True)
-    patent_id = db.Column('PatentId', db.BigInteger, db.ForeignKey('patent.id')) # TODO: add relationship
-    issuing_authority = db.Column('IssuingAuthority', db.String(255))
-    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-
-    def __repr__(self):
-        return "<PatentDetail (patent_id=' %r')>" % self.patent_id
-
-
-class PatentStatus(db.Model):
-    __tablename__ = 'patent_status'
-    id = db.Column(db.BigInteger, primary_key=True)
-    description = db.Column('Description', db.String(1000))
-    notes = db.Column('Notes', db.String(1000))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-
-    # Relationships
-    patent_milestones = relationship('PatentMilestone', backref='patent_status')
-
-    def __repr__(self):
-        return "<PatentStatus (id=' %r')>" % self.id
-
-
-class PatentInventor(db.Model):
-    __tablename__ = 'patent_inventor'
-    id = db.Column(db.BigInteger, primary_key=True)
-    patent_id = db.Column('PatentId', db.BigInteger, db.ForeignKey('patent.id')) # TODO: add relationship
-    name = db.Column('Name', db.String(500))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-
-    def __repr__(self):
-        return "<PatentInventor (patent_id=' %r')>" % self.patent_id
-
-
-class PatentMilestone(db.Model):
-    __tabelname__ = 'patent_milestone'
-    id = db.Column(db.BigInteger, primary_key=True)
-    patent_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('status.id'))
-    issued_date = db.Column('IssuedDate', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-
-    def __repr__(self):
-        return "<PatentMilestone (patent_status_id=' %r')>" % self.patent_status_id
 
 
 class CandidatePublication(db.Model):
@@ -634,15 +508,7 @@ class CandidateUnidentified(db.Model):
         return "<CandidateUnidentified (title=' %r')>" % self.title
 
 
-class University(db.Model):
-    __tablename__ = 'university'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(255))
-    state_id = db.Column('StateId', db.Integer, db.ForeignKey('state.id'))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
-    def __repr__(self):
-        return "<University (name=' %r')>" % self.name
 
 
 
