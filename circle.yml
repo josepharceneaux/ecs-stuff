@@ -15,5 +15,5 @@ test:
         parallel: true
     - py.test resume_service/tests/:
         parallel: true
-    - py.test activities_service/tests/:
+    - py.test activity_service/tests/:
         parallel: true
