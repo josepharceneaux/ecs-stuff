@@ -65,7 +65,7 @@ class Country(db.Model):
     code = db.Column('Code', db.String(20), nullable=False)
 
     # Relationships
-    candidate_military_services = relationship('CandidateMilitartyService', backref='country')
+    # candidate_military_services = relationship('CandidateMilitartyService', backref='country')
     patent_details = relationship('PatentDetail', backref='country')
     candidate_addresses = relationship('CandidateAddress', backref='country')
     candidate_educations = relationship('CandidateEducation', backref='country')

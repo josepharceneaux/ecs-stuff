@@ -60,6 +60,23 @@ class Candidate(db.Model):
         return "<Candidate(formatted_name=' %r')>" % self.formatted_name
 
 
+class CandidateMilitaryService(db.Model):
+    __tablename__ = 'candidate_military_service'
+    id = db.Column(db.BigInteger, primary_key=True)
+    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
+    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
+    service_status = db.Column('ServiceStatus', db.String(200))
+    highest_rank = db.Column('HighestRank', db.String(255))
+    highest_grade = db.Column('HighestGrade', db.String(7))
+    branch = db.Column('Branch', db.String(200))
+    comments = db.Column('Comments', db.String(5000))
+    from_date = db.Column('FromDate', db.DateTime)
+    to_date = db.Column('ToDate', db.DateTime)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+
+    def __repr__(self):
+        return "<CandidateMilitaryService (candidate_id=' %r')>" % self.candidate_id
+
 class CandidateStatus(db.Model):
     __tablename = 'candidate_status'
     id = db.Column(db.Integer, primary_key=True)
@@ -138,7 +155,8 @@ class EmailLabel(db.Model):
 
     # Relationships
     candidate_emails = relationship('CandidateEmail', backref='email_label')
-    reference_emails = relationship('ReferenceEmail', backref='email_label')
+    reference_emails = relationship('ReferenceEmail',
+                                    primaryjoin="EmailLabel.id==ReferenceEmail.email_label_id")
 
     def __repr__(self):
         return "<EmailLabel (description=' %r')>" % self.description
@@ -222,25 +240,6 @@ class CandidateDocument(db.Model):
     filename = db.Column('Filename', db.String(260))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-
-
-class SocialNetwork(db.Model):
-    __tablename__ = 'social_network'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(100), nullable=False)
-    url = db.Column('Url', db.String(255))
-    api_url = db.Column('apiUrl', db.String(255))
-    client_key = db.Column('clientKey', db.String(500))
-    secret_key = db.Column('secretKey', db.String(500))
-    redirect_uri = db.Column('redirectUri', db.String(255))
-    auth_url = db.Column('authUrl', db.String(200))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-
-    # Relationships
-    candidate_social_networks = relationship('CandidateSocialNetwork', backref='social_network')
-
-    def __repr__(self):
-        return "<SocialNetwork (url=' %r')>" % self.url
 
 
 class CandidateSocialNetwork(db.Model):
@@ -391,22 +390,7 @@ class CandidateAchievement(db.Model):
         return "<CandidateAchievement (candidate_id=' %r')>" % self.candidate_id
 
 
-class CandidateMilitaryService(db.Model):
-    __tablename__ = 'candidate_military_service'
-    id = db.Column(db.BigInteger, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
-    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
-    service_status = db.Column('ServiceStatus', db.String(200))
-    highest_rank = db.Column('HighestRank', db.String(255))
-    highest_grade = db.Column('HighestGrade', db.String(7))
-    branch = db.Column('Branch', db.String(200))
-    comments = db.Column('Comments', db.String(5000))
-    from_date = db.Column('FromDate', db.DateTime)
-    to_date = db.Column('ToDate', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
-    def __repr__(self):
-        return "<CandidateMilitaryService (candidate_id=' %r')>" % self.candidate_id
 
 
 class CandidatePatentHistory(db.Model):

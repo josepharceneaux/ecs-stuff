@@ -1,3 +1,4 @@
+from sqlalchemy import PrimaryKeyConstraint
 from db import db
 import time
 
@@ -21,6 +22,7 @@ class ReferenceEmail(db.Model):
     is_default = db.Column('IsDefault', db.Boolean)
     value = db.Column('Value', db.String(100))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    __table_args__ = (PrimaryKeyConstraint(candidate_reference_id, email_label_id),)
 
     def __repr__(self):
         return "<ReferenceEmail (reference_id=' %r')>" % self.candidate_reference_id

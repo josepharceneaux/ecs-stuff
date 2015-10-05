@@ -5,6 +5,8 @@ class Venue(db.Model):
     __tablename__ = 'venue'
 
     id = db.Column('id', db.Integer, primary_key=True)
+    social_network_id = db.Column('socialNetworkId', db.Integer,
+                                  db.ForeignKey('social_network.id'), nullable=False)
     social_network_venue_id = db.Column('socialNetworkVenueId', db.String(200))
     user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id'), nullable=False)
     address_line1 = db.Column('addressLine1', db.String(300))

@@ -12,7 +12,7 @@ from restful.events import events_blueprint
 from flask.ext.restful import Api
 from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash
-from social_network_service.app import app
+from social_network_service import flask_app as app
 
 # configuration
 from social_network_service.utilities import log_exception, get_class, log_error

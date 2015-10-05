@@ -1,7 +1,8 @@
+from sqlalchemy import and_
 from db import db
 from sqlalchemy.orm import relationship, backref
-from auth_service.oauth import logger
-from auth_service.oauth.modules.handy_functions import is_number
+# from auth_service.oauth import logger
+# from auth_service.oauth.modules.handy_functions import is_number
 import time
 import datetime
 
@@ -31,6 +32,10 @@ class User(db.Model):
     # Relationships
     candidates = relationship('Candidate', backref='user')
     public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
+    user_credentials = relationship('UserCredentials', backref='user')
+    events = relationship('Event', backref='user', lazy='dynamic')
+    organizers = relationship('Organizer', backref='user', lazy='dynamic')
+    venues = relationship('Venue', backref='user', lazy='dynamic')
 
     def is_authenticated(self):
         return True
@@ -283,8 +288,8 @@ class UserCredentials(db.Model):
     """
     __tablename__ = 'user_credentials'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column('userId', db.Integer, ForeignKey('user.id'), nullable=False)
-    social_network_id = db.Column('socialNetworkId', db.Integer, ForeignKey('social_network.id'), nullable=False)
+    user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id'), nullable=False)
+    social_network_id = db.Column('socialNetworkId', db.Integer, db.ForeignKey('social_network.id'), nullable=False)
     refresh_token = db.Column('refreshToken', db.String(1000))
     webhook = db.Column(db.String(200))
     member_id = db.Column('memberId', db.String(100))

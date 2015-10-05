@@ -3,9 +3,11 @@ import json
 from abc import ABCMeta, abstractmethod
 # from common.models.misc import Product
 from common.models.activity import Activity
+from common.models.candidate import CandidateSource, Candidate
+from common.models.misc import Product
 from common.models.rsvp import RSVP, CandidateEventRSVP
 # from common.models.candidate import CandidateSource, Candidate
-from social_network_service.utilities import log_exception, log_error, get_message_to_log
+from social_network_service.utilities import log_exception, log_error
 from common.models.user import User
 
 

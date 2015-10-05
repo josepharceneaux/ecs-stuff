@@ -2,6 +2,7 @@ import sys
 import logging
 import argparse
 import traceback
+from social_network_service import flask_app
 
 from gevent.pool import Pool
 from datetime import datetime

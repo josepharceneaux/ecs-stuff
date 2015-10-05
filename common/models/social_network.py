@@ -1,5 +1,6 @@
 from sqlalchemy import Column, String, Integer
 from sqlalchemy.orm import relationship
+import time
 from db import db
 
 
@@ -13,7 +14,10 @@ class SocialNetwork(db.Model):
     secret_key = Column('secretKey', String(500))
     redirect_uri = Column('redirectUri', String(255))
     auth_url = Column('authUrl', String(200))
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
+    # Relationships
+    candidate_social_networks = relationship('CandidateSocialNetwork', backref='social_network')
     events = relationship("Event", backref='social_network', lazy='dynamic')
     user_credentials = relationship("UserCredentials")
     venues = relationship('Venue', backref='social_network', lazy='dynamic')
