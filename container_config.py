@@ -7,8 +7,9 @@ from subprocess import call, check_output
 from sys import exit, platform as _platform
 
 VM_NOT_RUNNING_ERROR_MESSAGE = 'Virtual Machine is not running. Please start it with docker-machine start VM_NAME'
-SERVICES = ['auth_service', 'candidate_service', 'resume_service']
-SERVICE_TO_DOCKERHUB_REPO = {'auth_service': 'authservice',
+SERVICES = ['activities_service', 'auth_service', 'candidate_service', 'resume_service']
+SERVICE_TO_DOCKERHUB_REPO = {'activities_service': 'activities-service',
+                             'auth_service': 'authservice',
                              'resume_service': 'resume-parsing-service',
                              'candidate_service': 'candidate-service'}
 
@@ -23,14 +24,13 @@ def set_environment_variables_from_env_output(env_output=''):
     env_output_lines = filter(None,
                               filter(lambda line: not line.startswith(("DOCKER_", "#")),
                                      env_output.split('\n')))
-    print 'output lines %s' % env_output_lines
+    # print 'output lines %s' % env_output_lines
     for variable in env_output_lines:
         environment_variable_name_value = variable.strip('export').strip().split('=')
         if len(environment_variable_name_value) == 2:
             os.environ[environment_variable_name_value[0]] = environment_variable_name_value[1].strip('"')
         else:
             exit(VM_NOT_RUNNING_ERROR_MESSAGE)
-
 
 if args.build:
     service_name = args.build[0]
