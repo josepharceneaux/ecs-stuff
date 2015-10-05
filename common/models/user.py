@@ -1,12 +1,14 @@
+from sqlalchemy import and_
 from db import db
 from sqlalchemy.orm import relationship, backref
-#from auth_service.oauth import logger
+# from auth_service.oauth import logger
 # from auth_service.oauth.modules.handy_functions import is_number
 import time
 import datetime
 import logging
 import candidate
 import domain
+import organizer
 from candidate import CandidateSource
 from candidate import CandidateAreaOfInterest
 from misc import AreaOfInterest
@@ -40,6 +42,10 @@ class User(db.Model):
     # Relationships
     candidates = relationship('Candidate', backref='user')
     public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
+    user_credentials = relationship('UserCredentials', backref='user')
+    events = relationship('Event', backref='user', lazy='dynamic')
+    organizers = relationship('Organizer', backref='user', lazy='dynamic')
+    venues = relationship('Venue', backref='user', lazy='dynamic')
 
     def is_authenticated(self):
         return True

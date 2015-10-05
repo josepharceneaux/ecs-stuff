@@ -1,3 +1,4 @@
+from sqlalchemy import and_
 from db import db
 from sqlalchemy.orm import relationship
 import datetime
@@ -45,9 +46,8 @@ class Candidate(db.Model):
     middle_name = db.Column('MiddleName', db.String(50))
     last_name = db.Column('LastName', db.String(50))
     formatted_name = db.Column('FormattedName', db.String(150))
-    candidate_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('candidate_status.id'))
-    # TODO following not defined in my schema at least
-    # is_dirty = db.Column('IsDirty', db.Boolean)
+    status_id = db.Column('StatusId', db.Integer, db.ForeignKey('candidate_status.id'))
+    is_dirty = db.Column('IsDirty', db.Boolean)
     is_web_hidden = db.Column('IsWebHidden', db.Boolean, default=False)
     is_mobile_hidden = db.Column('IsMobileHidden', db.Boolean, default=False)
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
@@ -91,9 +91,44 @@ class Candidate(db.Model):
     def get_id(self):
         return unicode(self.id)
 
+    @classmethod
+    def get_by_first_last_name_owner_user_id_source_id_product(cls, first_name,
+                                                               last_name,
+                                                               user_id,
+                                                               source_id,
+                                                               product_id):
+        assert user_id is not None
+        return cls.query.filter(
+            and_(
+                Candidate.first_name == first_name,
+                Candidate.last_name == last_name,
+                Candidate.user_id == user_id,
+                Candidate.source_id == source_id,
+                Candidate.source_product_id == product_id
+            )
+        ).first()
+
+
     def __repr__(self):
         return "<Candidate(formatted_name=' %r')>" % self.formatted_name
 
+
+class CandidateMilitaryService(db.Model):
+    __tablename__ = 'candidate_military_service'
+    id = db.Column(db.BigInteger, primary_key=True)
+    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
+    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
+    service_status = db.Column('ServiceStatus', db.String(200))
+    highest_rank = db.Column('HighestRank', db.String(255))
+    highest_grade = db.Column('HighestGrade', db.String(7))
+    branch = db.Column('Branch', db.String(200))
+    comments = db.Column('Comments', db.String(5000))
+    from_date = db.Column('FromDate', db.DateTime)
+    to_date = db.Column('ToDate', db.DateTime)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+
+    def __repr__(self):
+        return "<CandidateMilitaryService (candidate_id=' %r')>" % self.candidate_id
 
 class CandidateStatus(db.Model):
     __tablename = 'candidate_status'
@@ -125,6 +160,16 @@ class CandidateSource(db.Model):
     def __repr__(self):
         return "<CandidateSource (description= '%r')>" % self.description
 
+    @classmethod
+    def get_by_description_and_notes(cls, event_name, event_description):
+        assert event_name is not None
+        return cls.query.filter(
+            and_(
+                CandidateSource.description == event_name,
+                CandidateSource.notes == event_description,
+            )
+        ).first()
+
 
 class PublicCandidateSharing(db.Model):
     __tablename__ = 'public_candidate_sharing'
@@ -151,8 +196,6 @@ class CandidatePhone(db.Model):
 
     def __repr__(self):
         return "<CandidatePhone (value=' %r', extention= ' %r')>" % (self.value, self.extension)
-
-
 
 class CandidateEmail(db.Model):
     __tablename__ = 'candidate_email'
@@ -203,7 +246,6 @@ class CandidateDocument(db.Model):
     filename = db.Column('Filename', db.String(260))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-
 
 
 class CandidateSocialNetwork(db.Model):
@@ -344,22 +386,7 @@ class CandidateAchievement(db.Model):
         return "<CandidateAchievement (candidate_id=' %r')>" % self.candidate_id
 
 
-class CandidateMilitaryService(db.Model):
-    __tablename__ = 'candidate_military_service'
-    id = db.Column(db.BigInteger, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
-    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
-    service_status = db.Column('ServiceStatus', db.String(200))
-    highest_rank = db.Column('HighestRank', db.String(255))
-    highest_grade = db.Column('HighestGrade', db.String(7))
-    branch = db.Column('Branch', db.String(200))
-    comments = db.Column('Comments', db.String(5000))
-    from_date = db.Column('FromDate', db.DateTime)
-    to_date = db.Column('ToDate', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
-    def __repr__(self):
-        return "<CandidateMilitaryService (candidate_id=' %r')>" % self.candidate_id
 
 
 class CandidatePatentHistory(db.Model):

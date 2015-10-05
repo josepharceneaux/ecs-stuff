@@ -1,5 +1,5 @@
+import time
 from db import db
-
 
 
 class Product(db.Model):
@@ -20,4 +20,3 @@ class Product(db.Model):
                 Product.name == vendor_name
             )
         ).first()
-

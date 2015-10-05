@@ -26,7 +26,6 @@ class Facebook(EventBase):
         have to handle pagination because Facebook's API
         does that too.
         """
-        # self.traceback_info.update({"functionName": "get_events()"})
         self.graph = facebook.GraphAPI(access_token=self.access_token)
         all_events = []
         user_events = []
@@ -85,8 +84,8 @@ class Facebook(EventBase):
         """
         # self.traceback_info.update({"functionName": "normalize_event()"})
 
-        venue_instance = None
-        organizer_instance = None
+        venue_id = None
+        organizer_id = None
         owner = None
         organizer = None
         location = None
@@ -103,16 +102,26 @@ class Facebook(EventBase):
                                'error': error.message})
                 raise
         if owner or organizer:
-            organizer_instance = Organizer(
+            organizer_data = dict(
                 user_id=self.user.id,
                 name=owner['name'] if owner and owner.has_key('name') else '',
                 email=organizer['email'] if organizer and organizer.has_key('email') else '',
                 about=''
-
             )
-            Organizer.save(organizer_instance)
+            organizer_in_db = Organizer.get_by_user_id_and_name(
+                self.user.id,
+                owner['name'] if owner and owner.has_key('name') else '')
+
+            if organizer_in_db:
+                organizer_in_db.update(**organizer_data)
+                organizer_id = organizer_in_db.id
+            else:
+                organizer_instance = Organizer(**organizer_data)
+                Organizer.save(organizer_instance)
+                organizer_id = organizer_instance.id
+
         if location:
-            venue_instance = Venue(
+            venue_data = dict(
                 social_network_venue_id=event['venue_id'],
                 user_id=self.user.id,
                 address_line1=location['street'] if location.has_key('street') else '',
@@ -124,7 +133,15 @@ class Facebook(EventBase):
                 longitude=float(location['longitude']) if location.has_key('longitude') else 0,
                 latitude=float(location['latitude']) if location.has_key('latitude') else 0,
             )
-            Venue.save(venue_instance)
+            venue_in_db = Venue.get_by_user_id_and_social_network_venue_id(self.user.id,
+                                                                           event['venue_id'])
+            if venue_in_db:
+                venue_in_db.update(**venue_data)
+                venue_id = venue_in_db.id
+            else:
+                venue = Venue(**venue_data)
+                Venue.save(venue)
+                venue_id = venue.id
         try:
             event = Event(
                 social_network_event_id=event['id'],
@@ -132,8 +149,8 @@ class Facebook(EventBase):
                 description=event.get('description', ''),
                 social_network_id=self.social_network.id,
                 user_id=self.user.id,
-                organizer_id=organizer_instance.id if organizer_instance else None,
-                venue_id=venue_instance.id if venue_instance else None,
+                organizer_id=organizer_id,
+                venue_id=venue_id,
                 group_id=0,
                 start_datetime=event['start_time'] if event and event.has_key('start_time') else None,
                 end_datetime=event['end_time'] if event and event.has_key('end_time') else None,

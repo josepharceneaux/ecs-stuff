@@ -2,7 +2,7 @@ __author__ = 'ufarooqi'
 
 from flask import Flask
 from flask_oauthlib.provider import OAuth2Provider
-from auth_service.common.models.db import db
+from common.models.db import db
 
 app = Flask(__name__)
 app.config.from_object('auth_service.config')

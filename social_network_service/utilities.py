@@ -121,20 +121,20 @@ def get_callee_data():
         return callee_data
 
 
-def log_error(user_id_and_error_message):
+def log_error(log_data):
     """
-    Here we do the descriptive logging. 'user_id_and_error_message' is passed
+    Here we do the descriptive logging. 'log_data' dict is passed
     in parameters which contains error details in 'error' and User Id in
     'user_id'. We first get the information of callee using get_callee_data(),
     and append user_id_and_error_message in it. Finally we log the descriptive
     error using logger.error().
-    :param user_id_and_error_message:
+    :param log_data:
     :return:
     """
     # get_callee_data() returns the dictionary of callee data
     callee_data_dict = get_callee_data()
     # appends user_id_and_error_message in callee_data_dict
-    callee_data_dict.update(user_id_and_error_message)
+    callee_data_dict.update(log_data)
     if get_callee_data().has_key('traceback_info'):
         callee_data = ("\nReason: %(traceback_info)s\n"
                        "User Id: %(user_id)s" % callee_data_dict)
@@ -149,20 +149,20 @@ def log_error(user_id_and_error_message):
     logger.error(callee_data)
 
 
-def log_exception(user_id_and_error_message):
+def log_exception(log_data):
     """
-    Here we do the descriptive logging. 'user_id_and_error_message' is passed
+    Here we do the descriptive logging. 'log_data' dict is passed
     in parameters which contains exception details in 'error' and User Id in
     'user_id'. We first get the information of callee using get_callee_data(),
     and append user_id_and_error_message in it. Finally we log the descriptive
     error using logger.exception()
-    :param user_id_and_error_message:
+    :param log_data:
     :return:
     """
     # get_callee_data() returns the dictionary of callee data
     callee_data_dict = get_callee_data()
     # appends user_id_and_error_message in callee_data_dict
-    callee_data_dict.update(user_id_and_error_message)
+    callee_data_dict.update(log_data)
     if get_callee_data().has_key('traceback_info'):
         callee_data = ("\nReason: %(traceback_info)s \n"
                        "User Id: %(user_id)s" % callee_data_dict)
@@ -191,7 +191,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     :return:
     """
     response = None
-    if method_type in ['GET', 'POST']:
+    if method_type in ['GET', 'POST', 'PUT', 'DELETE']:
         method = getattr(requests, method_type.lower())
         error_message = None
         if url:
@@ -243,7 +243,7 @@ def get_class(social_network_name, category, user_credentials=None):
         log_error({'user_id': user_credentials.user_id if user_credentials else '',
                    'error': error_message})
         raise SocialNetworkNotImplemented('Import Error: Unable to import module for required social network')
-    except AttributeError:
+    except AttributeError as e:
         raise ApiException('APIError: Unable to import module for required social network', status_code=500)
     return _class
 

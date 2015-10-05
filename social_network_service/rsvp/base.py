@@ -3,6 +3,8 @@ import json
 from abc import ABCMeta, abstractmethod
 # from common.models.misc import Product
 from common.models.activity import Activity
+from common.models.candidate import CandidateSource, Candidate
+from common.models.product import Product
 from common.models.rsvp import RSVP, CandidateEventRSVP
 # from common.models.candidate import CandidateSource, Candidate
 from social_network_service.utilities import log_exception, log_error
@@ -202,7 +204,7 @@ class RSVPBase(object):
         data = {'first_name': attendee.first_name,
                 'last_name': attendee.last_name,
                 'added_time': attendee.added_time,
-                'owner_user_id': attendee.gt_user_id,
+                'user_id': attendee.gt_user_id,
                 'status_id': newly_added_candidate,
                 'source_id': attendee.candidate_source_id,
                 'source_product_id': attendee.source_product_id}
