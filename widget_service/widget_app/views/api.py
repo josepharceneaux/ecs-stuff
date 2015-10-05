@@ -28,15 +28,21 @@ def widget(domain):
             return 'Return error message or awesome 404 page', 404
 
 
-@mod.route('/interests', methods=['GET'])
+@mod.route('/interests/<domain_id>', methods=['GET'])
 def get_areas_of_interest(domain_id):
     interests = db.session.query(AreaOfInterest).filter(AreaOfInterest.domain_id== domain_id)
     primary_interests = []
     secondary_interests = []
     for interest in interests:
         if interest.parent_id:
-            secondary_interests.append(interest)
+            secondary_interests.append({
+                'description': interest.description,
+                'parent_id': interest.parent_id
+            })
         else:
-            primary_interests.append(interest)
+            primary_interests.append({
+                'description': interest.description,
+                'parent_id': interest.parent_id
+            })
     return jsonify({'primary_interests': primary_interests,
                     'secondary_interests': secondary_interests})
