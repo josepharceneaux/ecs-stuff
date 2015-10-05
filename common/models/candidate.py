@@ -1,3 +1,4 @@
+from sqlalchemy import and_
 from db import db
 from sqlalchemy.orm import relationship
 import datetime
@@ -55,6 +56,24 @@ class Candidate(db.Model):
 
     def get_id(self):
         return unicode(self.id)
+
+    @classmethod
+    def get_by_first_last_name_owner_user_id_source_id_product(cls, first_name,
+                                                               last_name,
+                                                               user_id,
+                                                               source_id,
+                                                               product_id):
+        assert user_id is not None
+        return cls.query.filter(
+            and_(
+                Candidate.first_name == first_name,
+                Candidate.last_name == last_name,
+                Candidate.user_id == user_id,
+                Candidate.source_id == source_id,
+                Candidate.source_product_id == product_id
+            )
+        ).first()
+
 
     def __repr__(self):
         return "<Candidate(formatted_name=' %r')>" % self.formatted_name
@@ -118,6 +137,16 @@ class CandidateSource(db.Model):
 
     def __repr__(self):
         return "<CandidateSource (description= '%r')>" % self.description
+
+    @classmethod
+    def get_by_description_and_notes(cls, event_name, event_description):
+        assert event_name is not None
+        return cls.query.filter(
+            and_(
+                CandidateSource.description == event_name,
+                CandidateSource.notes == event_description,
+            )
+        ).first()
 
 
 class PublicCandidateSharing(db.Model):

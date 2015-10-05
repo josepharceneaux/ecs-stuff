@@ -182,9 +182,8 @@ def start():
         if not user_credentials.member_id:
             # gets an save the member Id of gt-user
             sn.get_member_id(dict())
-        job_pool.spawn(sn.process(name_space.mode,
-                                  user_credentials=user_credentials))
-        # job_pool.join()
+        job_pool.spawn(sn.process, name_space.mode, user_credentials=user_credentials)
+    job_pool.join()
 
 
 if __name__ == '__main__':
