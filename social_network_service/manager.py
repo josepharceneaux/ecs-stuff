@@ -2,7 +2,7 @@ import sys
 import logging
 import argparse
 import traceback
-from social_network_service import flask_app
+from social_network_service import init_app
 
 from gevent.pool import Pool
 from datetime import datetime
@@ -39,7 +39,7 @@ def process_access_token(social_network_name, code_to_get_access_token, gt_user_
                    'error': error_message})
 
 
-def process_event(data, user_id):
+def process_event(data, user_id, method='Create'):
     """
     This functions is called from restful POST service (which gets data from
     Event Create Form submission).
@@ -86,8 +86,12 @@ def process_event(data, user_id):
             raise InvalidDatetime('Invalid DateTime: Kindly specify datetime in ISO format')
         # posting event on social network
         event_obj.event_gt_to_sn_mapping(data)
-        event_id, tickets_id = event_obj.create_event()
-        data['tickets_id'] = tickets_id
+        if method == 'Create':
+            event_id, tickets_id = event_obj.create_event()
+            data['tickets_id'] = tickets_id
+        else:
+            event_id, tickets_id = event_obj.update_event()
+
         if event_id:  # Event has been successfully published on vendor
             # save event in database
             data['social_network_event_id'] = event_id

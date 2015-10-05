@@ -190,7 +190,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     :return:
     """
     response = None
-    if method_type in ['GET', 'POST']:
+    if method_type in ['GET', 'POST', 'PUT', 'DELETE']:
         method = getattr(requests, method_type.lower())
         error_message = None
         if url:
@@ -242,7 +242,7 @@ def get_class(social_network_name, category, user_credentials=None):
         log_error({'user_id': user_credentials.user_id if user_credentials else '',
                    'error': error_message})
         raise SocialNetworkNotImplemented('Import Error: Unable to import module for required social network')
-    except AttributeError:
+    except AttributeError as e:
         raise ApiException('APIError: Unable to import module for required social network', status_code=500)
     return _class
 

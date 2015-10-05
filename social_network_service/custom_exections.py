@@ -18,9 +18,10 @@ class InvalidUsage(Exception):
 class ApiException(Exception):
     status_code = 500
 
-    def __init__(self, message, status_code=None, payload=None):
+    def __init__(self, message, detail=None, status_code=None, payload=None):
         Exception.__init__(self)
         self.message = message
+        self.detail = detail
         if status_code:
             self.status_code = status_code
         self.payload = payload
@@ -28,6 +29,8 @@ class ApiException(Exception):
     def to_dict(self):
         rv = dict(self.payload or ())
         rv['message'] = self.message
+        if self.detail:
+            rv['detail'] = self.detail
         return rv
 
 

@@ -11,10 +11,6 @@ flask_app.config.from_object('social_network_service.config')
 logger = flask_app.config['LOGGER']
 
 
-db.init_app(flask_app)
-db.app = flask_app
-
-
 def to_json(self):
     """
     Converts SqlAlchemy object to serializable dictionary
@@ -56,7 +52,7 @@ def save(self):
 
 def update(self, **data):
     """
-    This method allows a model instance to save itself in database by calling save
+    This method allows a model instance to update itself in database by calling update
     e.g.
     event = Event(**kwargs)
     event.save()
@@ -65,6 +61,7 @@ def update(self, **data):
     self.query.filter_by(id=self.id).update(data)
     db.session.commit()
     return self
+
 
 @classmethod
 def get_by_id(cls, _id):
@@ -75,10 +72,29 @@ def get_by_id(cls, _id):
     return obj
 
 
+@classmethod
+def delete(cls, _id):
+    try:
+        obj = cls.query.get(_id)
+        db.session.delete(obj)
+        db.session.commit()
+    except:
+        return False
+    return True
+
+
 db.Model.to_json = MethodType(to_json, None, db.Model)
 db.Model.save = MethodType(save, None, db.Model)
 db.Model.update = MethodType(update, None, db.Model)
 db.Model.get_by_id = get_by_id
+db.Model.delete = delete
 
-# from common.error_handling import register_error_handlers
-# register_error_handlers(app, logger)
+
+def init_app():
+    """
+    Call this method at the start of app or manager for Events/RSVPs
+    :return:
+    """
+    db.init_app(flask_app)
+    db.app = flask_app
+    return flask_app

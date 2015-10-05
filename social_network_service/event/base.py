@@ -165,7 +165,7 @@ class EventBase(object):
 
         return deleted, not_deleted
 
-    def unpublish_event(self, event_id):
+    def unpublish_event(self, event_id, method='POST'):
         """
         This function is used when run unit test. It deletes the Event from
         meetup which was created in the unit testing.
@@ -175,7 +175,7 @@ class EventBase(object):
         # create url to publish event
         url = self.url_to_delete_event
         # params are None. Access token is present in self.headers
-        response = http_request('POST', url, headers=self.headers,
+        response = http_request(method, url, headers=self.headers,
                                 user_id=self.user.id)
         if response.ok:
             logger.info('|  Event has been unpublished (deleted)  |')
