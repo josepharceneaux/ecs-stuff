@@ -5,6 +5,10 @@ from auth_service.oauth.modules.handy_functions import is_number
 import time
 import datetime
 
+from candidate import CandidateSource
+from associations import CandidateAreaOfInterest
+from misc import AreaOfInterest
+
 
 class User(db.Model):
     __tablename__ = 'user'
@@ -62,7 +66,7 @@ class Domain(db.Model):
     default_culture_id = db.Column('defaultCultureId', db.Integer, default=1)
     default_from_name = db.Column('defaultFromName', db.String(255))
     settings_json = db.Column('settingsJson', db.Text)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('updatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
     users = relationship('User', backref='domain')

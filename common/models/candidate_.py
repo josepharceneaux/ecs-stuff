@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 import datetime
 import time
 
+from associations import ReferenceEmail
 
 class Candidate(db.Model):
     __tablename__ = 'candidate'
@@ -12,7 +13,6 @@ class Candidate(db.Model):
     last_name = db.Column('LastName', db.String(50))
     formatted_name = db.Column('FormattedName', db.String(150))
     candidate_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('candidate_status.id'))
-    is_dirty = db.Column('IsDirty', db.Boolean)
     is_web_hidden = db.Column('IsWebHidden', db.Boolean, default=False)
     is_mobile_hidden = db.Column('IsMobileHidden', db.Boolean, default=False)
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
@@ -120,11 +120,11 @@ class PublicCandidateSharing(db.Model):
 class CandidatePhone(db.Model):
     __tablename__ = 'candidate_phone'
     id = db.Column(db.Integer, primary_key=True)
-    candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.id'))
-    phone_label_id = db.Column(db.Integer, db.ForeignKey('phone_label.id'))
+    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
+    phone_label_id = db.Column('PhoneLabelId', db.Integer, db.ForeignKey('phone_label.id'))
     value = db.Column(db.String(50), nullable=False)
     extension = db.Column(db.String(5))
-    is_default = db.Column(db.Boolean)
+    is_default = db.Column('IsDefault', db.Boolean)
 
     def __repr__(self):
         return "<CandidatePhone (value=' %r', extention= ' %r')>" % (self.value, self.extension)
@@ -160,7 +160,7 @@ class CandidatePhoto(db.Model):
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     list_order = db.Column('ListOrder', db.Integer)
     filename = db.Column(db.String(260))
-    is_default = db.Column(db.Boolean)
+    is_default = db.Column('IsDefault', db.Boolean)
 
     def __repr__(self):
         return "<CandidatePhoto (filename=' %r')>" % self.filename
@@ -208,7 +208,7 @@ class CandidateTextComment(db.Model):
 class VoiceComment(db.Model):
     __tablename__ = 'voice_comment'
     id = db.Column(db.Integer, primary_key=True)
-    candidate_id = db.Column('CandidatedId', db.Integer, db.ForeignKey('candidate.id'))
+    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     list_order = db.Column('ListOrder', db.Integer)
     filename = db.Column('Filename', db.String(260))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
@@ -462,7 +462,7 @@ class PatentInventor(db.Model):
 class PatentMilestone(db.Model):
     __tabelname__ = 'patent_milestone'
     id = db.Column(db.BigInteger, primary_key=True)
-    patent_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('status.id'))
+    patent_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('patent_status.id'))
     issued_date = db.Column('IssuedDate', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
@@ -475,9 +475,9 @@ class CandidatePublication(db.Model):
     id = db.Column(db.BigInteger, primary_key=True)
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     title = db.Column('Title', db.String(200))
-    # start_year = db.Column('StartYear', db.Year)    # todo: accpet Year format only or create a function to validate
+    start_year = db.Column('StartYear', db.Integer)    # todo: accept Year format only or create a function to validate
     start_month = db.Column('StartMonth', db.Integer)
-    # end_year = db.Column('EndYear', db.Year)        # todo: accept Year format only or create a function to validate
+    end_year = db.Column('EndYear', db.Integer)        # todo: accept Year format only or create a function to validate
     end_month = db.Column('EndMonth', db.Integer)
     description = db.Column('Description', db.String(10000))
     added_time = db.Column('AddedTime', db.DateTime)
@@ -535,9 +535,15 @@ class CandidateEducationDegree(db.Model):
     list_order = db.Column('ListOrder', db.SmallInteger)
     degree_type = db.Column('DegreeType', db.String(100))
     degree_title = db.Column('DegreeTitle', db.String(100))
+<<<<<<< HEAD:common/models/candidate_.py
     # start_year = db.Column('StartYear', db.Year)
     start_month = db.Column('StartMonth', db.SmallInteger)
     # EndYear = db.Column('EndYear', db.Year)
+=======
+    start_year = db.Column('StartYear', db.Integer)  # todo: accept Year format only or create a function to validate
+    start_month = db.Column('StartMonth', db.SmallInteger)
+    end_year = db.Column('EndYear', db.Integer)  # todo: accept Year format only or create a function to validate
+>>>>>>> 65798b3f9d65ab8ed3a30fc9769c4ee3295b861b:common/models/candidate.py
     end_month = db.Column('EndMonth', db.SmallInteger)
     gpa_num = db.Column('GpaNum', db.DECIMAL)
     gpa_denom = db.Column('GpaDenom', db.DECIMAL)
@@ -578,10 +584,17 @@ class CandidateExperience(db.Model):
     city = db.Column('City', db.String(50))
     state = db.Column('State', db.String(50))
     end_month = db.Column('EndMonth', db.SmallInteger)
+<<<<<<< HEAD:common/models/candidate_.py
     # start_year = db.Column('StartYear', db.Year)
     country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
     start_month = db.Column('StartMonth', db.SmallInteger)
     # end_year = db.Column('EndYear', db.Year)
+=======
+    start_year = db.Column('StartYear', db.Integer)  # todo: accept Year format only or create a function to validate
+    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
+    start_month = db.Column('StartMonth', db.SmallInteger)
+    end_year = db.Column('EndYear', db.Integer)  # todo: accept Year format only or create a function to validate
+>>>>>>> 65798b3f9d65ab8ed3a30fc9769c4ee3295b861b:common/models/candidate.py
     is_current = db.Column('IsCurrent', db.Boolean, default=False)
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())

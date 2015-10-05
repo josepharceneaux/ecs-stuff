@@ -1,6 +1,20 @@
 from db import db
+import datetime
 from sqlalchemy.orm import relationship
 import time
+
+from candidate import CandidateMilitaryService
+
+
+class Activity(db.Model):
+    __tablename__ = 'activity'
+    id = db.Column(db.Integer, primary_key=True)
+    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
+    source_table = db.Column('sourceTable', db.String(127))
+    source_id = db.Column('sourceID', db.Integer)
+    type = db.Column('type', db.Integer)
+    user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id'))
+    params = db.Column(db.Text)
 
 
 class AreaOfInterest(db.Model):
@@ -65,7 +79,7 @@ class Country(db.Model):
     code = db.Column('Code', db.String(20), nullable=False)
 
     # Relationships
-    candidate_military_services = relationship('CandidateMilitartyService', backref='country')
+    candidate_military_services = relationship('CandidateMilitaryService', backref='country')
     patent_details = relationship('PatentDetail', backref='country')
     candidate_addresses = relationship('CandidateAddress', backref='country')
     candidate_educations = relationship('CandidateEducation', backref='country')
