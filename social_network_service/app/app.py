@@ -47,7 +47,15 @@ def after_request(response):
 @app.route('/')
 def hello_world():
     # return 'Hello World!', 404
-    return 'Hello World!'
+    try:
+        from common.models.candidate import Candidate
+        from common.models.event import Event
+        candidate = Candidate.query.all()[0]
+        event = Event.query.get(1)
+    except Exception as error:
+        import traceback
+        return traceback.format_exc()
+    return 'Hello World! %s, %s' % (candidate.first_name, event.title)
 
 
 @app.route('/test/<access_token>')

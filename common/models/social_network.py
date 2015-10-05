@@ -1,7 +1,8 @@
 from sqlalchemy import Column, String, Integer
 from sqlalchemy.orm import relationship
 from db import db
-
+import event
+import venue
 
 class SocialNetwork(db.Model):
     __tablename__ = 'social_network'
@@ -16,7 +17,7 @@ class SocialNetwork(db.Model):
 
     events = relationship("Event", backref='social_network', lazy='dynamic')
     user_credentials = relationship("UserCredentials")
-    venues = relationship('Venue', backref='social_network', lazy='dynamic')
+    # venues = relationship('Venue', backref='social_network', lazy='dynamic')
 
     def __repr__(self):
         return '<SocialNetwork %r>' % self.name
