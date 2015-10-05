@@ -24,7 +24,6 @@ class Eventbrite(RSVPBase):
         """
         user = None
         webhook = None
-        message_to_log = {'user_id': ''}
         if webhook_id:
             try:
                 # gets gt-user object
@@ -32,22 +31,22 @@ class Eventbrite(RSVPBase):
                 webhook = {'webhook_id': webhook_id}
             except Exception as e:
                 error_message = e.message
-                message_to_log.update({'error': error_message})
-                log_exception(message_to_log)
+                log_exception({'user_id': '',
+                               'error': error_message})
                 # raise the error TODO
         else:
             # TODO may be following is redudant, we should just assert on
             # webhook_id at the top and remove this else
             error_message = 'Webhook Id is None. Can not Process RSVP'
-            message_to_log.update({'error': error_message})
-            log_error(message_to_log)
+            log_error({'user_id': '',
+                       'error': error_message})
         if user:
             return user
         else:
             error_message = "No User found in database corresponding to webhook id " \
                             "%(webhook_id)s" % webhook
-            message_to_log.update({'error': error_message})
-            log_error(message_to_log)
+            log_error({'user_id': '',
+                       'error': error_message})
 
     def process_rsvp_via_webhook(self, rsvp):
         """
@@ -79,9 +78,8 @@ class Eventbrite(RSVPBase):
             # Shouldn't raise an exception, just log it and move to process
             # process next RSVP
             error_message = e.message
-            message_to_log = {'user_id': self.user.id,
-                              'error': error_message}
-            log_exception(message_to_log)
+            log_exception({'user_id': self.user.id,
+                           'error': error_message})
             #TODO should we raise, if so raise it
 
     def process_rsvps(self, events):
@@ -90,9 +88,8 @@ class Eventbrite(RSVPBase):
         this via webhook. So, log error if someone tries to run rsvp importer
         for eventbrite
         """
-        message_to_log = {'user_id': self.user.id,
-                          'error': NotImplementedError("Eventbrite RSVPs are handled via webhook")}
-        log_error(message_to_log)
+        log_error({'user_id': self.user.id,
+                   'error': NotImplementedError("Eventbrite RSVPs are handled via webhook")})
 
     def get_rsvps(self, event):
         pass
@@ -103,11 +100,10 @@ class Eventbrite(RSVPBase):
         :param rsvp: contains the id of rsvp for (eventbrite) in dictionary format
         :return: attendee object which contains data of the attendee
         """
-        message_to_log = {'user_id': self.user.id}
         attendee = None
         url = self.api_url + "/orders/" + rsvp['rsvp_id']
         response = http_request('GET', url, headers=self.headers,
-                                message_to_log=message_to_log)
+                                user_id=self.user.id)
         if response.ok:
             try:
                 data = response.json()
@@ -136,11 +132,11 @@ class Eventbrite(RSVPBase):
                 else:
                     error_message = 'Event is not present in db, VendorEventId is %s' \
                                     % vendor_event_id
-                    message_to_log.update({'error': error_message})
-                    log_error(message_to_log)
+                    log_error({'user_id': self.user.id,
+                               'error': error_message})
             except Exception as e:
                 error_message = e.message
-                message_to_log.update({'error': error_message})
-                log_exception(message_to_log)
+                log_exception({'user_id': self.user.id,
+                               'error': error_message})
                 # TODO I think we should raise here.
             return attendee

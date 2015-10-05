@@ -167,18 +167,17 @@ class EventBase(object):
         :param event_id:id of newly created event
         :return: True if event is deleted from vendor, False other wsie
         """
-        message_to_log = {'user_id': self.user.id}
         # create url to publish event
         url = self.url_to_delete_event
         # params are None. Access token is present in self.headers
         response = http_request('POST', url, headers=self.headers,
-                                message_to_log=message_to_log)
+                                user_id=self.user.id)
         if response.ok:
             logger.info('|  Event has been unpublished (deleted)  |')
         else:
             error_message = "Event was not unpublished (deleted)."
-            message_to_log.update({'error': error_message})
-            log_error(message_to_log)
+            log_error({'user_id': self.user.id,
+                       'error': error_message})
             raise EventNotUnpublished('ApiError: '
                                       'Unable to remove event from %s'
                                       % self.social_network.name)

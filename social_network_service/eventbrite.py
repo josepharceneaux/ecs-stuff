@@ -60,26 +60,25 @@ class Eventbrite(SocialNetworkBase):
         every user).
         :return: True if webhook creation is successful o/w False
         """
-        message_to_log = {'user_id': user_credentials['userId']}
         user_credentials_in_db = UserCredentials.get_by_user_and_social_network_id(
             user_credentials['userId'],
             user_credentials['socialNetworkId'])
         if user_credentials_in_db.webhook in [None, '']:
             url = user_credentials_in_db.socialNetwork.apiUrl + "/webhooks/"
             payload = {'endpoint_url': WEBHOOK_REDIRECT_URL}
-            response = http_request('POST', url, payload, message_to_log=message_to_log)
+            response = http_request('POST', url, payload, user_id=user_credentials['userId'])
             if response.ok:
                 try:
                     webhook_id = response.json()['id']
                     user_credentials_in_db.update(webhook=webhook_id)
                 except Exception as e:
                     error_message = e.message
-                    message_to_log.update({'error': error_message})
-                    log_exception(message_to_log)
+                    log_exception({'user_id':user_credentials['userId'],
+                                   'error': error_message})
             else:
                 error_message = "Webhook was not created successfully."
-                message_to_log.update({'error': error_message})
-                log_error(message_to_log)
+                log_error({'user_id':user_credentials['userId'],
+                           'error': error_message})
 
 # if __name__ == "__main__":
 #     eb = Eventbrite(user_id=1, social_network_id=18)

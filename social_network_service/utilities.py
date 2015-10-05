@@ -121,19 +121,20 @@ def get_callee_data():
         return callee_data
 
 
-def log_error(message_dict):
+def log_error(user_id_and_error_message):
     """
-    Here we do the descriptive logging. 'message_dict' is passed in parameters
-    which contains error details in 'error' and User Id in 'user_id'. We first
-    get the information of callee using get_callee_data(), and append message_dict
-    in it. Finally we log the descriptive error using logger.error()
-    :param message_dict:
+    Here we do the descriptive logging. 'user_id_and_error_message' is passed
+    in parameters which contains error details in 'error' and User Id in
+    'user_id'. We first get the information of callee using get_callee_data(),
+    and append user_id_and_error_message in it. Finally we log the descriptive
+    error using logger.error().
+    :param user_id_and_error_message:
     :return:
     """
     # get_callee_data() returns the dictionary of callee data
     callee_data_dict = get_callee_data()
-    # appends message_dict in callee_data_dict
-    callee_data_dict.update(message_dict)
+    # appends user_id_and_error_message in callee_data_dict
+    callee_data_dict.update(user_id_and_error_message)
     if get_callee_data().has_key('traceback_info'):
         callee_data = ("Reason: %(traceback_info)s \n"
                        "User Id: %(user_id)s" % callee_data_dict)
@@ -148,19 +149,20 @@ def log_error(message_dict):
     logger.error(callee_data)
 
 
-def log_exception(message_dict):
+def log_exception(user_id_and_error_message):
     """
-    Here we do the descriptive logging. 'message_dict' is passed in parameters
-    which contains exception details in 'error' and User Id in 'user_id'. We first
-    get the information of callee using get_callee_data(), and append message_dict
-    in it. Finally we log the descriptive error using logger.exception()
-    :param message_dict:
+    Here we do the descriptive logging. 'user_id_and_error_message' is passed
+    in parameters which contains exception details in 'error' and User Id in
+    'user_id'. We first get the information of callee using get_callee_data(),
+    and append user_id_and_error_message in it. Finally we log the descriptive
+    error using logger.exception()
+    :param user_id_and_error_message:
     :return:
     """
     # get_callee_data() returns the dictionary of callee data
     callee_data_dict = get_callee_data()
-    # appends message_dict in callee_data_dict
-    callee_data_dict.update(message_dict)
+    # appends user_id_and_error_message in callee_data_dict
+    callee_data_dict.update(user_id_and_error_message)
     if get_callee_data().has_key('traceback_info'):
         callee_data = ("Reason: %(traceback_info)s \n"
                        "User Id: %(user_id)s" % callee_data_dict)
@@ -175,7 +177,7 @@ def log_exception(message_dict):
     logger.exception(callee_data)
 
 
-def http_request(method_type, url, params=None, headers=None, data=None, message_to_log=None):
+def http_request(method_type, url, params=None, headers=None, data=None, user_id=None):
     """
     This is common function to make HTTP Requests. It takes method_type (GET or POST)
     and makes call on given URL. It also handles/logs exception.
@@ -184,7 +186,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, message
     :param params: params to be sent in URL.
     :param headers: headers for Authorization.
     :param data: data to be sent.
-    :param message_to_log: descriptive message to log when exception occurs.
+    :param user_id: Id of logged in user.
     :return:
     """
     response = None
@@ -206,13 +208,13 @@ def http_request(method_type, url, params=None, headers=None, data=None, message
             except requests.RequestException as e:
                 error_message = e.message
             if error_message:
-                message_to_log.update({'error': error_message})
-                log_exception(message_to_log)
+                log_exception({'user_id': user_id,
+                               'error': error_message})
             return response
         else:
             error_message = 'URL is None. Unable to make %s Call' % method_type
-            message_to_log.update({'error': error_message})
-            log_error(message_to_log)
+            log_error({'user_id': user_id,
+                       'error': error_message})
     else:
         logger.error('Unknown Method type %s ' % method_type)
 
@@ -226,7 +228,6 @@ def get_class(social_network_name, category, user_credentials=None):
     and we import the required class and return it
     :return:
     """
-    message_to_log = {'user_id': user_credentials.user_id if user_credentials else ''}
     if category == 'social_network':
         module_name = 'social_network_service.' + social_network_name
     else:
@@ -238,8 +239,8 @@ def get_class(social_network_name, category, user_credentials=None):
         error_message = 'Social Network "%s" is not allowed for now, ' \
                         'please implement code for this social network.' \
                         % social_network_name
-        message_to_log.update({'error': error_message})
-        log_error(message_to_log)
+        log_error({'user_id': user_credentials.user_id if user_credentials else '',
+                   'error': error_message})
         raise SocialNetworkNotImplemented('Import Error: Unable to import module for required social network')
     except AttributeError:
         raise ApiException('APIError: Unable to import module for required social network', status_code=500)
@@ -336,18 +337,3 @@ def import_from_dist_packages(name, custom_name=None):
     f.close()
     return module
 
-# def get_message_to_log(gt_user='', function_name='', error='', class_name='', file_name=''):
-#     """
-#     Here we define descriptive message to be used for logging purposes
-#     :param function_name:
-#     :param error:
-#     :param class_name:
-#     :return:
-#     """
-#     message_to_log = {
-#         'user': gt_user,
-#         'class': class_name,
-#         'fileName': file_name,
-#         'functionName': function_name,
-#         'error': error}
-#     return message_to_log
