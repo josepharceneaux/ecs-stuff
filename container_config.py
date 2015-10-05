@@ -7,8 +7,8 @@ from subprocess import call, check_output
 from sys import exit, platform as _platform
 
 VM_NOT_RUNNING_ERROR_MESSAGE = 'Virtual Machine is not running. Please start it with docker-machine start VM_NAME'
-SERVICES = ['activities_service', 'auth_service', 'candidate_service', 'resume_service']
-SERVICE_TO_DOCKERHUB_REPO = {'activities_service': 'activities-service',
+SERVICES = ['activity_service', 'auth_service', 'candidate_service', 'resume_service']
+SERVICE_TO_DOCKERHUB_REPO = {'activity_service': 'activities-service',
                              'auth_service': 'authservice',
                              'resume_service': 'resume-parsing-service',
                              'candidate_service': 'candidate-service'}
