@@ -5,7 +5,7 @@ from abc import ABCMeta, abstractmethod
 from common.models.activity import Activity
 from common.models.rsvp import RSVP, CandidateEventRSVP
 # from common.models.candidate import CandidateSource, Candidate
-from social_network_service.utilities import log_exception, log_error, get_message_to_log
+from social_network_service.utilities import log_exception, log_error
 from common.models.user import User
 
 
@@ -16,12 +16,10 @@ class RSVPBase(object):
         if kwargs.get('user_credentials'):
             self.user_credentials = kwargs.get('user_credentials')
             self.user = User.get_by_id(self.user_credentials.user_id)
-            message_to_log = {'user_id': self.user.id}
         else:
-            message_to_log = {'user_id': 'Not Available'}
             error_message = 'User Credentials are None'
-            message_to_log.update({'error': error_message})
-            log_error(message_to_log)
+            log_error({'user_id': 'Not Available',
+                       'error': error_message})
         try:
             self.headers = kwargs.get('headers')
             self.social_network_id = kwargs.get('social_network').id
@@ -31,8 +29,8 @@ class RSVPBase(object):
             self.start_date_dt = None
         except Exception as e:
             error_message = e.message
-            message_to_log.update({'error': error_message})
-            log_exception(message_to_log)
+            log_exception({'user_id': self.user.id,
+                           'error': error_message})
             # TODO Raise the error
         self.rsvps = []
 
@@ -57,7 +55,6 @@ class RSVPBase(object):
 
         :return:
         """
-        message_to_log = {'user_id': self.user.id}
         if events:
             for event in events:
                 # events is a list of dicts. where each dict is likely a
@@ -77,12 +74,12 @@ class RSVPBase(object):
                     # Shouldn't raise an exception, just log it and move to process
                     # process next RSVP
                     error_message = e.message
-                    message_to_log.update({'error': error_message})
-                    log_exception(message_to_log)
+                    log_exception({'user_id': self.user.id,
+                                   'error': error_message})
         else:
             error_message = "There are no events for User in the Database"
-            message_to_log.update({'error': error_message})
-            log_error(message_to_log)
+            log_error({'user_id': self.user.id,
+                       'error': error_message})
 
     def post_process_rsvp(self, rsvps):
         """

@@ -19,7 +19,6 @@ POOL_SIZE = 5
 
 
 def process_access_token(social_network_name, code_to_get_access_token, gt_user_id):
-    message_to_log = {'user_id': gt_user_id}
     social_network = SocialNetwork.get_by_name(social_network_name)
     social_network_class = get_class(social_network_name, 'social_network')
     access_token, refresh_token = social_network_class.get_access_token(
@@ -35,8 +34,8 @@ def process_access_token(social_network_name, code_to_get_access_token, gt_user_
         social_network_class.save_token_in_db(user_credentials)
     else:
         error_message = "Couldn't get access token for %s " % social_network_name
-        message_to_log.update({'error': error_message})
-        log_error(message_to_log)
+        log_error({'user_id': gt_user_id,
+                   'error': error_message})
 
 
 def process_event(data, user_id):
@@ -47,7 +46,6 @@ def process_event(data, user_id):
     Data in the arguments is the Data coming from Event creation form submission
     user_id is the id of current logged in user (which we get from session).
     """
-    message_to_log = {'user_id': user_id}
     if data:
         try:
             social_network_id = data['social_network_id']
@@ -96,8 +94,8 @@ def process_event(data, user_id):
             return gt_event_id
     else:
         error_message = 'Data not received from Event Creation/Edit FORM'
-        message_to_log.update({'error': error_message})
-        log_error(message_to_log)
+        log_error({'user_id': user_id,
+                   'error': error_message})
 
 
 def delete_events(user_id, event_ids):

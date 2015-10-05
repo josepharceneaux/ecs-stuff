@@ -22,14 +22,13 @@ class Meetup(RSVPBase):
         :param event:
         :return:
         """
-        message_to_log = {'user_id': self.user.id}
         rsvps = []
         social_network_id = event.social_network_id
         assert social_network_id is not None
         events_url = self.api_url + '/rsvps/?sign=true&page=100'
         params = {'event_id': event.social_network_event_id}
         response = http_request('GET', events_url, params=params, headers=self.headers,
-                                message_to_log=message_to_log)
+                                user_id=self.user.id)
         if response.ok:
             data = response.json()
             rsvps.extend(data['results'])
@@ -41,7 +40,7 @@ class Meetup(RSVPBase):
             while next_url:
                 # attach the key before sending the request
                 response = http_request('GET', next_url + '&sign=true',
-                                        message_to_log=message_to_log)
+                                        user_id=self.user.id)
                 if response.ok:
                     data = response.json()
                     rsvps.extend(data['results'])
@@ -84,12 +83,11 @@ class Meetup(RSVPBase):
         :param rsvp:
         :return:
         """
-        message_to_log = {'user_id': self.user.id}
         events_url = self.api_url + '/member/' \
                      + str(rsvp['member']['member_id']) \
                      + '?sign=true'
         response = http_request('GET', events_url, headers=self.headers,
-                                message_to_log=message_to_log)
+                                user_id=self.user.id)
         attendee = None
         if response.ok:
             try:
@@ -127,11 +125,11 @@ class Meetup(RSVPBase):
                 else:
                     error_message = 'Event is not present in db, VendorEventId is %s' \
                                     % social_network_event_id
-                    message_to_log.update({'error': error_message})
-                    log_error(message_to_log)
+                    log_error({'user_id': self.user.id,
+                               'error': error_message})
             except Exception as e:
                 error_message = e.message
-                message_to_log.update({'error': error_message})
-                log_exception(message_to_log)
+                log_exception({'user_id': self.user.id,
+                               'error': error_message})
                 # TODO should we not raise
             return attendee

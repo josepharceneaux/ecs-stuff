@@ -134,7 +134,7 @@ def handle_rsvp():
     # verify_token = request.args['hub.verify_token']
     # hub_mode = request.args['hub.mode']
     # assert verify_token == 'token'
-    message_to_log = {'user_id': ''}
+    user_id = ''
     try:
         if request.data:
             data = json.loads(request.data)
@@ -145,7 +145,7 @@ def handle_rsvp():
                 rsvp = get_rsvp_id(url_of_rsvp)
                 webhook_id = data['config']['webhook_id']
                 user_credentials = EventbriteRsvp.get_user_credentials_by_webhook(webhook_id)
-                message_to_log.update({'user_id': user_credentials.user_id})
+                user_id = user_credentials.user_id
                 social_network_class = get_class(user_credentials.social_network.name.lower(),
                                                  'social_network')
                 rsvp_class = get_class(user_credentials.social_network.name.lower(), 'rsvp')
@@ -158,8 +158,7 @@ def handle_rsvp():
                     sn.get_member_id(dict())
                 rsvp_obj = rsvp_class(user_credentials=user_credentials,
                                       social_network=user_credentials.social_network,
-                                      headers=sn.headers,
-                                      message_to_log=sn.message_to_log)
+                                      headers=sn.headers)
                 # calls class method to process RSVP
                 rsvp_obj.process_rsvp_via_webhook(rsvp)
             elif action == 'test':
@@ -167,15 +166,15 @@ def handle_rsvp():
         else:
             # return hub_challenge, 200
             error_message = 'No RSVP Data'
-            message_to_log.update({'error': error_message})
-            log_error(message_to_log)
+            log_error({'user_id': user_id,
+                       'error': error_message})
             data = {'message': 'No RSVP Data',
                     'status_code': 500}
             return flask.jsonify(**data), 500
     except Exception as e:
         error_message = e.message
-        message_to_log.update({'error': error_message})
-        log_exception(message_to_log)
+        log_exception({'user_id': user_id,
+                       'error': error_message})
         data = {'message': e.message,
                 'status_code': 500}
         return flask.jsonify(**data), 500

@@ -40,11 +40,10 @@ class Meetup(SocialNetworkBase):
         is an organizer to be shown in drop down while creating event on Meetup
         through Event Creation Form.
         """
-        message_to_log = {'user_id': self.user.id}
         url = self.api_url + '/groups/'
         params = {'member_id': 'self'}
         response = http_request('GET', url, params=params, headers=self.headers,
-                                message_to_log=message_to_log)
+                                user_id=self.user.id)
         if response.ok:
             meta_data = json.loads(response.text)['meta']
             member_id = meta_data['url'].split('=')[1].split('&')[0]
@@ -64,7 +63,6 @@ class Meetup(SocialNetworkBase):
         involvement and save in user_credentials db table
         :return:
         """
-        message_to_log = {'user_id': self.user.id}
         status = False
         user_refresh_token = self.user_credentials.refresh_token
         auth_url = self.social_network.auth_url + "/access?"
@@ -75,7 +73,7 @@ class Meetup(SocialNetworkBase):
                         'grant_type': 'refresh_token',
                         'refresh_token': user_refresh_token}
         response = http_request('POST', auth_url, data=payload_data,
-                                message_to_log=message_to_log)
+                                user_id=self.user.id)
         try:
             if response.ok:
                 # access token has been refreshed successfully, need to update
@@ -92,13 +90,13 @@ class Meetup(SocialNetworkBase):
                 logger.info("Access Token has been refreshed")
             else:
                 error_message = response.json().get('error')
-                message_to_log.update({'error': error_message})
-                log_error(message_to_log)
+                log_error({'user_id': self.user.id,
+                           'error': error_message})
         except Exception as e:
             error_message = "Error occurred while refreshing access token. Error is: " \
                             + e.message
-            message_to_log.update({'error': error_message})
-            log_exception(message_to_log)
+            log_exception({'user_id': self.user.id,
+                           'error': error_message})
         return status
 
 # if __name__ == "__main__":

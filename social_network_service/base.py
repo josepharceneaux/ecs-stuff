@@ -24,14 +24,12 @@ class SocialNetworkBase(object):
         social_network_id = kwargs.get('social_network_id')
         self.api_relative_url = None
         self.user = User.query.get(user_id)
-        message_to_log = {'user_id': self.user.id}
         self.social_network = SocialNetwork.get_by_id(social_network_id)
         self.events = None
         self.user_credentials = UserCredentials.get_by_user_and_social_network_id(
             user_id, social_network_id
         )
         if self.user_credentials:
-            message_to_log.update({})
             data = {
                 "access_token": self.user_credentials.access_token,
                 "gt_user_id": self.user_credentials.user_id,
@@ -54,12 +52,12 @@ class SocialNetworkBase(object):
                 # Log those fields in error which are not present in Database
                 error_message = "Missing Item(s) in user's credential: " \
                                 "%(missing_items)s\n" % missing_items
-                message_to_log.update({'error': error_message})
-                log_error(message_to_log)
+                log_error({'user_id': self.user.id,
+                           'error': error_message})
         else:
             error_message = 'User Credentials are None'
-            message_to_log.update({'error': error_message})
-            log_error(message_to_log)
+            log_error({'user_id': self.user.id,
+                       'error': error_message})
         # Eventbrite and meetup social networks take access token in header
         # so here we generate authorization header to be used by both of them
         self.headers = {'Authorization': 'Bearer ' + self.access_token}
@@ -142,18 +140,15 @@ class SocialNetworkBase(object):
 
         :return:
         """
-
-        message_to_log = {'user_id': ''}
         access_token = None
         refresh_token = None
-        auth_url = data['social_network'].authUrl + data['relative_url']
-        payload_data = {'client_id': data['social_network'].clientKey,
-                        'client_secret': data['social_network'].secretKey,
+        auth_url = data['social_network'].auth_url + data['relative_url']
+        payload_data = {'client_id': data['social_network'].client_key,
+                        'client_secret': data['social_network'].secret_key,
                         'grant_type': 'authorization_code',
-                        'redirect_uri': data['social_network'].redirectUri,
+                        'redirect_uri': data['social_network'].redirect_uri,
                         'code': data['code']}
-        get_token_response = http_request('POST', auth_url, data=payload_data,
-                                          message_to_log=message_to_log)
+        get_token_response = http_request('POST', auth_url, data=payload_data)
         try:
             if get_token_response.ok:
                 # access token is used to make API calls, this is what we need
@@ -164,12 +159,12 @@ class SocialNetworkBase(object):
                 refresh_token = response.get('refresh_token')
             else:
                 error_message = get_token_response.json().get('error')
-                message_to_log.update({'error': error_message})
-                log_error(message_to_log)
+                log_error({'user_id': '',
+                           'error': error_message})
         except Exception as e:
             error_message = e.message
-            message_to_log.update({'error': error_message})
-            log_exception(message_to_log)
+            log_exception({'user_id': '',
+                           'error': error_message})
         return access_token, refresh_token
 
     def get_member_id(self, data):
@@ -179,13 +174,12 @@ class SocialNetworkBase(object):
         :param data contains api_relative_url.
         :return:
         """
-        message_to_log = {'user_id': self.user.id}
         try:
             user_credentials = self.user_credentials
             url = self.api_url + data['api_relative_url']
             # Now we have the URL, access token, and header is set too,
             get_member_id_response = http_request('POST', url, headers=self.headers,
-                                                  message_to_log=message_to_log)
+                                                  user_id=self.user.id)
             if get_member_id_response.ok:
                 member_id = get_member_id_response.json().get('id')
                 data = dict(user_id=user_credentials.user_id,
@@ -197,8 +191,8 @@ class SocialNetworkBase(object):
                 pass
         except Exception as error:
             error_message = error.message
-            message_to_log.update({'error': error_message})
-            log_exception(message_to_log)
+            log_exception({'user_id': self.user.id,
+                           'error': error_message})
 
     def validate_token(self, payload=None):
         """
@@ -209,7 +203,6 @@ class SocialNetworkBase(object):
         :param payload
         :return:
         """
-        message_to_log = {'user_id': self.user.id}
         status = False
         relative_url = self.api_relative_url
         url = self.api_url + relative_url
@@ -219,12 +212,12 @@ class SocialNetworkBase(object):
                 status = True
             else:
                 error_message = "Access token has expired for %s" % self.social_network.name
-                message_to_log.update({'error': error_message})
-                log_error(message_to_log)
+                log_error({'user_id': self.user.id,
+                           'error': error_message})
         except requests.RequestException as e:
             error_message = e.message
-            message_to_log.update({'error': error_message})
-            log_exception(message_to_log)
+            log_exception({'user_id': self.user.id,
+                           'error': error_message})
         return status
 
     def refresh_access_token(self):
@@ -264,7 +257,6 @@ class SocialNetworkBase(object):
             return True
         except Exception as e:
             error_message = e.message
-            message_to_log = {'user_id': user_credentials['user_id']}
-            message_to_log.update({'error': error_message})
-            log_exception(message_to_log)
+            log_exception({'user_id': user_credentials['user_id'],
+                           'error': error_message})
         return False

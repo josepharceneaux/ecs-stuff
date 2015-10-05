@@ -52,15 +52,14 @@ class Eventbrite(EventBase):
                   'date_created.range_start': self.start_date_in_utc
                   }
         all_events = []
-        message_to_log = {'user_id': self.user.id}
         try:
             response = http_request('GET', events_url,
                                     params=params,
                                     headers=self.headers,
-                                    message_to_log=message_to_log)
+                                    user_id=self.user.id)
         except Exception as error:
-            message_to_log.update({'error': error.message})
-            log_exception(message_to_log)
+            log_exception({'user_id': self.user.id,
+                           'error': error.message})
             raise
         if response.ok:
             data = response.json()
@@ -74,12 +73,11 @@ class Eventbrite(EventBase):
                 current_page += 1
                 params_copy['page'] = current_page
                 try:
-                    # TODo pass callee_data (aka message_to_log)
                     response = http_request('GET', events_url, params=params_copy,
-                                            headers=self.headers)
+                                            headers=self.headers, user_id=self.user.id)
                 except Exception as error:
-                    message_to_log.update({'error': error.message})
-                    log_exception(message_to_log)
+                    log_exception({'user_id': self.user.id,
+                                   'error': error.message})
                     raise
                 if response.ok:
                     data = response.json()
@@ -102,16 +100,15 @@ class Eventbrite(EventBase):
         organizer_instance = None
         venue_instance = None
         assert event is not None
-        message_to_log = {'user_id': self.user.id}
         # Get information about event's venue
         if event['venue_id']:
             try:
                 response = http_request('GET', self.api_url + '/venues/' + event['venue_id'],
                                         headers=self.headers,
-                                        message_to_log=message_to_log)
+                                        user_id=self.user.id)
             except Exception as error:
-                message_to_log.update({'error': error.message})
-                log_exception(message_to_log)
+                log_exception({'user_id': self.user.id,
+                               'error': error.message})
                 raise
             if response.ok:
                 venue = response.json()
@@ -120,10 +117,11 @@ class Eventbrite(EventBase):
                     try:
                         response = http_request('GET', self.api_url +
                                                 '/organizers/' + event['organizer_id'],
-                                                headers=self.headers)
+                                                headers=self.headers,
+                                                user_id=self.user.id)
                     except Exception as error:
-                        message_to_log.update({'error': error.message})
-                        log_exception(message_to_log)
+                        log_exception({'user_id': self.user.id,
+                                       'error': error.message})
                         raise
                     if response.ok:
                         organizer = json.loads(response.text)
@@ -131,10 +129,11 @@ class Eventbrite(EventBase):
                         try:
                             response = http_request('GET', self.api_url + '/users/'
                                                     + self.member_id,
-                                                    headers=self.headers)
+                                                    headers=self.headers,
+                                                    user_id=self.user.id)
                         except Exception as error:
-                            message_to_log.update({'error': error.message})
-                            log_exception(message_to_log)
+                            log_exception({'user_id': self.user.id,
+                                           'error': error.message})
                             raise
                         if response.ok:
                             organizer_info = json.loads(response.text)
@@ -200,7 +199,8 @@ class Eventbrite(EventBase):
             event_is_new = False
             url = self.api_url + "/events/" + self.social_network_event_id + '/'
             # need to fetch venue_id of provided event so that Venue can be updated
-            response = http_request('POST', url, params=self.event_payload, headers=self.headers)
+            response = http_request('POST', url, params=self.event_payload, headers=self.headers,
+                                    user_id=self.user.id)
             if response.ok:
                 venue_id = response.json()['venue_id']
         else:  # creating event
@@ -208,7 +208,8 @@ class Eventbrite(EventBase):
             event_is_new = True
         venue_id = self.add_location(venue_id=venue_id)  # adding venue for the event
         self.event_payload['event.venue_id'] = venue_id
-        response = http_request('POST', url, params=self.event_payload, headers=self.headers)
+        response = http_request('POST', url, params=self.event_payload, headers=self.headers,
+                                user_id=self.user.id)
         if response.ok:  # event has been created on vendor and saved in draft there
             event_id = response.json()['id']
             # Ticket are going to be created/updated
@@ -269,7 +270,8 @@ class Eventbrite(EventBase):
             else:  # create venue for event
                 url = self.api_url + "/venues/"
                 status = 'Added'
-            response = http_request('POST', url, params=payload, headers=self.headers)
+            response = http_request('POST', url, params=payload, headers=self.headers,
+                                    user_id=self.user.id)
             if response.ok:
                 logger.info('|  Venue has been %s  |' % status)
                 venue_id = response.json().get('id')
@@ -308,7 +310,8 @@ class Eventbrite(EventBase):
             else:
                 logger.info('Tickets ID is not available for event with id %s, User:  %s'
                             % (event_id, self.user.name))
-        response = http_request('POST', tickets_url, params=self.ticket_payload, headers=self.headers)
+        response = http_request('POST', tickets_url, params=self.ticket_payload,
+                                headers=self.headers, user_id=self.user.id)
         if response.ok:
             logger.info('|  %s Ticket(s) have been created  |'
                         % str(self.ticket_payload['ticket_class.quantity_total']))
@@ -330,7 +333,7 @@ class Eventbrite(EventBase):
         # create url to publish event
         url = self.api_url + "/events/" + event_id + "/publish/"
         # params are None. Access token is present in self.headers
-        response = http_request('POST', url, headers=self.headers)
+        response = http_request('POST', url, headers=self.headers, user_id=self.user.id)
         if response.ok:
             logger.info('|  Event has been published  |')
         else:
@@ -452,7 +455,8 @@ class Eventbrite(EventBase):
                 and (user_credentials.webhook in [None, '']):
             url = self.api_url + "/webhooks/"
             payload = {'endpoint_url': WEBHOOK_REDIRECT_URL}
-            response = http_request('POST', url, params=payload, headers=self.headers)
+            response = http_request('POST', url, params=payload, headers=self.headers,
+                                    user_id=self.user.id)
             if response.ok:
                 try:
                     webhook_id = response.json()['id']
