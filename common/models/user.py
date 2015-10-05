@@ -5,10 +5,15 @@ from sqlalchemy.orm import relationship, backref
 import time
 import datetime
 import logging
-import candidate_
+import candidate
 import domain
+from candidate import CandidateSource
+from associations import CandidateAreaOfInterest
+from misc import AreaOfInterest
 
 logger = logging.getLogger(__file__)
+
+
 
 class User(db.Model):
     __tablename__ = 'user'
@@ -50,8 +55,6 @@ class User(db.Model):
 
     def __repr__(self):
         return "<email (email=' %r')>" % self.email
-
-
 
 
 
@@ -300,7 +303,7 @@ class UserCredentials(db.Model):
         assert user_id is not None
         assert social_network_id is not None
         return cls.query.filter(
-            and_(
+            db.and_(
                 UserCredentials.user_id == user_id,
                 UserCredentials.social_network_id == social_network_id
             )
@@ -321,7 +324,7 @@ class UserCredentials(db.Model):
         assert webhook_id is not None
         assert social_network_id is not None
         return cls.query.filter(
-            and_(
+            db.and_(
                 UserCredentials.webhook == webhook_id,
                 UserCredentials.social_network_id == social_network_id
             )
