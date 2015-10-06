@@ -16,4 +16,7 @@ db.init_app(app)
 db.app = app
 
 from common.error_handling import register_error_handlers
+
 register_error_handlers(app, logger)
+
+logger.info("Starting resume_service in %s environment", app.config['GT_ENVIRONMENT'])

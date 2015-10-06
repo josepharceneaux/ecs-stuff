@@ -21,3 +21,5 @@ import views
 
 db.create_all()
 db.session.commit()
+
+logger.info("Starting auth_service in %s environment", app.config['GT_ENVIRONMENT'])
