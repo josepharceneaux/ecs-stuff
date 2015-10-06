@@ -237,8 +237,8 @@ def create_test_widget_page(create_test_user, create_test_candidate_source, requ
     return test_widget_page
 
 
-def test_api_returns_domain_filtered_aois(create_test_domain, request):
-    response = APP.get('/widgetV1/interests/{}'.format(create_test_domain.id))
+def test_api_returns_domain_filtered_aois(create_test_widget_page, request):
+    response = APP.get('/widgetV1/interests/{}'.format(create_test_widget_page.widget_name))
     assert response.status_code == 200
     assert len(json.loads(response.data)['primary_interests']) == 10
     assert len(json.loads(response.data)['secondary_interests']) == 2

@@ -23,22 +23,22 @@ function markInputValid($input) {
     $input.closest(".control-group").removeClass('error').addClass('success');
 }
 
-function getInterestsJSON() {
-    var interests;
-    var request = $.ajax({
-        url: "/widget/interests/1",
-        type: "GET",
-        dataType: "json"
-    });
-    request.done(function(interests) {
-        if (interests.primary_interests.length == 0) {
-            console.log('Assuming DEMO mode');
-            interests = getDemoInterests();
-        }
-        SUB_AOIS = interests.secondary_interests;
-        renderInterests(interests);
-    });
-}
+//function getInterestsJSON() {
+//    var interests;
+//    var request = $.ajax({
+//        url: "/widgetV1/interests/1", // TODO hardcode change interests url
+//        type: "GET",
+//        dataType: "json"
+//    });
+//    request.done(function(interests) {
+//        if (interests.primary_interests.length == 0) {
+//            console.log('Assuming DEMO mode');
+//            interests = getDemoInterests();
+//        }
+//        SUB_AOIS = interests.secondary_interests;
+//        renderInterests(interests);
+//    });
+//}
 
 
 function getDemoInterests(){
@@ -68,5 +68,3 @@ function renderInterests(interests) {
         interestSelector.add(option);
     }
 }
-
-getInterestsJSON();

@@ -11,6 +11,8 @@ from flask import render_template
 # Module specific
 from common.models.misc import AreaOfInterest
 from common.models.db import db
+from common.models.user import Domain
+from common.models.user import User
 from common.models.candidate import University
 from common.models.widget import WidgetPage
 
@@ -18,9 +20,9 @@ from common.models.widget import WidgetPage
 mod = Blueprint('widget_api', __name__)
 
 
-@mod.route('test/<domain>', methods=['GET'])
+@mod.route('/test/<domain>', methods=['GET'])
 def widget(domain):
-    if app.config['GT_ENVIRONMENT'] == 'dev':
+    if app.config['ENVIRONMENT'] != 'dev':
         return 'Error', 400
     if domain == 'kaiser-military':
         return render_template('kaiser_military.html', domain=domain)
@@ -45,9 +47,12 @@ def process_widget_submission(domain):
     return jsonify(domain=domain)
 
 
-@mod.route('/interests/<domain_id>', methods=['GET'])
-def get_areas_of_interest(domain_id):
-    interests = db.session.query(AreaOfInterest).filter(AreaOfInterest.domain_id== domain_id)
+@mod.route('/interests/<widget_name>', methods=['GET'])
+def get_areas_of_interest(widget_name):
+    current_widget = WidgetPage.query.filter_by(widget_name=widget_name).first()
+    widget_user = User.query.get(current_widget.user_id)
+    interests = db.session.query(AreaOfInterest).filter(
+        AreaOfInterest.domain_id == widget_user.domain_id)
     primary_interests = []
     secondary_interests = []
     for interest in interests:

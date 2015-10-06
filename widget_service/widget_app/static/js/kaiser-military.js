@@ -352,7 +352,25 @@ function createMilitaryGrades(){
     return true;
 }
 
+function getInterestsJSON() {
+    var interests;
+    var request = $.ajax({
+        url: "/widgetV1/interests/kaiser_military",
+        type: "GET",
+        dataType: "json"
+    });
+    request.done(function(interests) {
+        if (interests.primary_interests.length == 0) {
+            console.log('Assuming DEMO mode');
+            interests = getDemoInterests();
+        }
+        SUB_AOIS = interests.secondary_interests;
+        renderInterests(interests);
+    });
+}
+
 
 createBranchOptions()
 createVeteranStatusOptions();
 createMilitaryGrades();
+getInterestsJSON();
