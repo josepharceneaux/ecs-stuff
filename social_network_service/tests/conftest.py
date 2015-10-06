@@ -1,11 +1,6 @@
 import os
-from common.models.config import GTSQLAlchemy
-if not GTSQLAlchemy.db_session:
-    folder = os.path.dirname(__file__)
-    app_cfg = os.path.abspath(os.path.join(folder, '../app.cfg'))
-    logging_cfg = os.path.abspath(os.path.join(folder, '../logging.conf'))
-    GTSQLAlchemy(app_config_path=app_cfg,
-                 logging_config_path=logging_cfg)
+from common.models.db import db
+from social_network_service import flask_app
 import pytest
 import datetime
 from common.models.venue import Venue
@@ -20,21 +15,20 @@ from common.models.culture import Culture
 from common.models.organization import Organization
 from common.models.social_network import SocialNetwork
 from social_network_service.manager import process_event, delete_events
-from social_network_service.app import app as _app
+from social_network_service import flask_app as app
 
 from werkzeug.security import gen_salt
 from mixer._faker import faker
 from mixer.backend.sqlalchemy import Mixer
 
-db_session = GTSQLAlchemy.db_session
+db_session = db.session
 
 TESTDB = 'test_project.db'
 TESTDB_PATH = "/tmp/{}".format(TESTDB)
 TEST_DATABASE_URI = 'sqlite:///' + TESTDB_PATH
-APP_URL = 'http://127.0.0.1:5000/'
+APP_URL = app.config['APP_URL']
 
-OAUTH_SERVER = 'http://127.0.0.1:8888/oauth2/authorize'
-GET_TOKEN_URL = 'http://127.0.0.1:8888/oauth2/token'
+OAUTH_SERVER = app.config['OAUTH_SERVER_URI']
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 EVENT_DATA = {
@@ -66,7 +60,7 @@ def app(request):
     Create a Flask app, and override settings, for the whole test session.
     """
 
-    _app.app.config.update(
+    flask_app.config.update(
         TESTING=True,
         # SQLALCHEMY_DATABASE_URI=TEST_DATABASE_URI,
         LIVESERVER_PORT=6000

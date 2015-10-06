@@ -3,7 +3,6 @@ import traceback
 import types
 from flask import Blueprint, request
 from flask.ext.restful import Api, Resource
-from common.models.venue import Venue
 from social_network_service.app.app_utils import api_route, authenticate, ApiResponse
 from social_network_service.custom_exections import ApiException
 from social_network_service.manager import process_event, delete_events

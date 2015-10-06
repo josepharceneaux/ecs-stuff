@@ -1,3 +1,8 @@
+"""
+This module contains EventBase class which provides common methods for
+all social networks that have event related functionality like save_event, delete_event, get_rsvps etc.
+
+"""
 from abc import ABCMeta, abstractmethod
 from social_network_service.custom_exections import EventNotSaveInDb, EventNotUnpublished
 from social_network_service.utilities import log_error, get_class, http_request, logger, \
@@ -9,9 +14,77 @@ from common.models.social_network import SocialNetwork
 
 
 class EventBase(object):
+    """
+    This class is base for all Social Network Specific Event classes and handles common
+    functionality for event related tasks.
+
+    It contains following methods:
+
+    * __init__():
+        This method is called by creating any child event class object.
+        It sets initial values for event object e.g.
+            It sets user, user_credentials, headers (authentication headers)
+            It initializes event and rsvp list to empty list.
+
+    * create_event() : abstract
+        All child classes need to implement this method to create event on
+        respective social network and in getTalent database
+
+    * event_sn_to_gt_mapping(): abstract
+        This method maps/serializes event data from social network to getTalent specific data.
+        Every child class has its own implementation for its event data.
+
+    * event_gt_to_sn_mapping(): abstract
+        This method maps/serializes event data from getTalent event data social network specific data.
+        Every child class has its own implementation for its event data.
+
+    * pre_process_events():
+        This method does not contain any implementation yet. But maybe in future it
+        will contain some pre processing code for events.
+
+    * process_events():
+        Call this method after fetching events from social network.
+        It maps social network event data to getTalent database specific data.
+        It saves events in getTalent database after processing.
+
+    * delete_event(event_id):
+        This method calls 'unpublish_event() method of respective class to remove event
+        from social network and then deletes this event from getTalent database.
+        How it works:
+        It takes integer id for event in getTalent database. It retrieves that  event from database.
+        If it finds any event with given id, it tries to unpublish that event otherwise returns False.
+
+    * delete_events(array of ids):
+        This method takes list or tuple of ids of events to be deleted.
+        It then calls delete_event() method and returns two list of ids.
+        One list for deleted events and other list contains ids of events that were not deleted.
+        : returns deleted, not_deleted
+
+    * get_events():
+        Each child class has its own get_events() method to import/ extract events from respective
+        social network.
+
+    * get_events_from_db(start_date):
+        This method returns all events for which event.start_date is after given date.
+
+    * get_rsvps():
+        This method imports RSVPs of all events for a specific user.
+
+    * save_event(data):
+        This method takes dictionary containing event data. It first checks if any event is there
+        with given info (user_id, social_network_id, social_network_event_id), then it updates
+        the existing event otherwise creates a new event in getTalent database.
+
+    """
     __metaclass__ = ABCMeta
 
     def __init__(self, *args, **kwargs):
+        """
+
+        :param args:
+        :param kwargs:
+        :return:
+        """
 
         self.events = []
         self.rsvps = []
@@ -28,6 +101,11 @@ class EventBase(object):
         self.venue_id = None
 
     def _get_user_credentials(self):
+        """
+        This method get user_credentials for given user and returns a tuple containing
+        member_id, access_token and refresh_token for user.
+        :return:
+        """
         user_credentials = UserCredentials.get_by_user_and_social_network_id(
             self.user.id, self.social_network.id
         )
@@ -43,6 +121,12 @@ class EventBase(object):
 
     @abstractmethod
     def create_event(self, *args, **kwargs):
+        """
+        Each child class implements its own social network specific event creation code.
+        :param args:
+        :param kwargs:
+        :return:
+        """
         pass
 
     @abstractmethod
@@ -63,9 +147,6 @@ class EventBase(object):
         :param data:
         :return:
         """
-        pass
-
-    def get_event(self, id):
         pass
 
     def pre_process_events(self, events):
@@ -230,10 +311,16 @@ class EventBase(object):
 
     def save_event(self, data):
         """
-        This function serves the storage of event in database after it is
-        successfully published.
-        :param data:
-        :return:
+        This method takes dictionary containing event data. It first checks if any event is there
+        with given info (user_id, social_network_id, social_network_event_id), then it updates
+        the existing event otherwise creates a new event in getTalent database.
+
+        Call this method after successfully publishing event on social network.
+
+        :param data: dictionary containing data for event to be saved
+        :type data: dictionary
+        :return event.id: id for event that was created or updated
+        :rtype event.id : int
         """
         sn_event_id = data['social_network_event_id']
         social_network_id = data['social_network_id']
@@ -243,10 +330,12 @@ class EventBase(object):
             sn_event_id
         )
         try:
+            # if event exists in database, then update existing one.
             if event:
                 del data['id']
                 event.update(**data)
             else:
+                # event not found in database, create a new one
                 event = Event(**data)
                 Event.save(event)
         except Exception as e:

@@ -3,7 +3,7 @@ import flask
 from flask import Response
 from flask.ext.restful import abort
 from requests_oauthlib import OAuth2Session
-from social_network_service.utilities import OAUTH_SERVER
+from flask import current_app as app
 
 
 class ApiResponse(Response):
@@ -23,7 +23,7 @@ def authenticate(func):
             bearer = flask.request.headers.get('Authorization')
             access_token = bearer.lower().replace('bearer ', '')
             oauth = OAuth2Session(token={'access_token': access_token})
-            response = oauth.get(OAUTH_SERVER)
+            response = oauth.get(app.config['OAUTH_SERVER_URI'])
             if response.status_code == 200 and response.json().get('user_id'):
                 kwargs['user_id'] = response.json()['user_id']
                 return func(*args, **kwargs)

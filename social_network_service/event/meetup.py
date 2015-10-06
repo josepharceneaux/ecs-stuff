@@ -49,7 +49,8 @@ class Meetup(EventBase):
         We send GET requests to API URL and get data. We also
         have to handle pagination because Meetup's API
         does that too.
-        :return:
+        :return: all_events: list of events retrieved from Meetup.com
+        :rtype all_events: list
         """
         all_events = []  # contains all events of gt-users
         # page size is 100 so if we have 500 records we will make
@@ -234,10 +235,10 @@ class Meetup(EventBase):
     def create_event(self):
         """
         This function is used to create meetup event using vendor's API.
-        It first creates a draft for event on vendor, then by given address,
-        generates venue_id.It then gets the draft, updates the location
-        and publishes it (announce). It uses helper functions add_location()
-        and publish_meetup().
+        It first creates a venue for event. Then venue_id is passed to event_payload,
+        and then a post request to Meetup API create event on Meetup.com
+
+        :exception EventNotCreated: raises exception if unable to publish/create event on Meetup.com
         """
         url = self.api_url + "/event"
         venue_id = self.add_location()
@@ -257,14 +258,16 @@ class Meetup(EventBase):
 
     def update_event(self):
         """
-        This function is used to create meetup event using vendor's API.
-        It first creates a draft for event on vendor, then by given address,
-        generates venue_id.It then gets the draft, updates the location
-        and publishes it (announce). It uses helper functions add_location()
-        and publish_meetup().
+        It first creates/ updates a venue on Meetup.com and then passes that venue's id in event payload
+        to update event location along with event data.
+        :exception EventNotCreated: raises exception if unable to update event on Meetup.com
+        :return
         """
+        # create url to update event
         url = self.api_url + "/event/" + str(self.social_network_event_id)
+        # create or update venue for event
         venue_id = self.add_location()
+        # add venue id in event payload to update event venue on Meetup.com
         self.payload.update({'venue_id': venue_id})
         response = http_request('POST', url, params=self.payload, headers=self.headers,
                                 user_id=self.user.id)
@@ -281,7 +284,7 @@ class Meetup(EventBase):
     def add_location(self):
         """
         This function adds the location of event for meetup.
-        :return: id of venue created if creation is successful.
+        :return id: of venue created if creation is successful.
         """
         venue_in_db = Venue.get_by_user_id_social_network_id_venue_id(self.user.id,
                                                                       self.social_network.id,

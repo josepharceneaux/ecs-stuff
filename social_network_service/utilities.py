@@ -13,14 +13,13 @@ import datetime
 import traceback
 import importlib
 
-
 from requests_oauthlib import OAuth2Session
+from flask import current_app as app
 
 from common.models.user import User
 from social_network_service.custom_exections import SocialNetworkNotImplemented, ApiException
 
-logger = logging.getLogger('event_service.app')
-OAUTH_SERVER = 'http://127.0.0.1:8081/oauth2/authorize'
+logger = logging.getLogger('social_network_service.app')
 
 
 class Attendee(object):
@@ -87,7 +86,7 @@ def authenticate_user(request):
         auth_token = auth_token.lower().replace('bearer ', '')
         try:
             remote = OAuth2Session(token={'access_token': auth_token})
-            response = remote.get(OAUTH_SERVER)
+            response = remote.get(app.config['OAUTH_SERVER_URI'])
             if response.status_code == 200:
                 user_id = response.json().get('user_id') or ''
                 return User.get_by_id(user_id) if user_id else None
@@ -175,7 +174,6 @@ def log_exception(log_data):
         if callee_data_dict.get('class_name'):
             callee_data += ",\nclass: %(class_name)s" % callee_data_dict
     logger.exception(callee_data)
-
 
 
 def http_request(method_type, url, params=None, headers=None, data=None, user_id=None):
