@@ -1,4 +1,4 @@
-import time
+import datetime
 from db import db
 from candidate import CandidateEmail
 
@@ -7,7 +7,7 @@ class EmailLabel(db.Model):
     __tablename__ = 'email_label'
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column('Description', db.String(50))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
     candidate_emails = db.relationship('CandidateEmail', backref='email_label')

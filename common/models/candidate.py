@@ -2,7 +2,6 @@ from sqlalchemy import and_
 from db import db
 from sqlalchemy.orm import relationship
 import datetime
-import time
 import voice
 
 class CandidateAreaOfInterest(db.Model):
@@ -10,7 +9,7 @@ class CandidateAreaOfInterest(db.Model):
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'), primary_key=True)
     area_of_interest_id = db.Column('AreaOfInterestId', db.Integer, db.ForeignKey('area_of_interest.id'), primary_key=True)
     additional_notes = db.Column('AdditionalNotes', db.Text)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
 
 class ReferenceEmail(db.Model):
@@ -20,7 +19,7 @@ class ReferenceEmail(db.Model):
     email_label_id = db.Column('EmailLabelId', db.Integer, db.ForeignKey('email_label.id'))
     is_default = db.Column('IsDefault', db.Boolean)
     value = db.Column('Value', db.String(100))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<ReferenceEmail (reference_id=' %r')>" % self.candidate_reference_id
@@ -33,7 +32,7 @@ class ReferencePhone(db.Model):
     is_default = db.Column('IsDefault', db.Boolean)
     value = db.Column('Value', db.String(50))
     extension = db.Column('Extension', db.String(10))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<ReferencePhone (reference_id=' %r')>" % self.candidate_reference_id
@@ -108,34 +107,16 @@ class Candidate(db.Model):
             )
         ).first()
 
-
     def __repr__(self):
         return "<Candidate(formatted_name=' %r')>" % self.formatted_name
 
-
-class CandidateMilitaryService(db.Model):
-    __tablename__ = 'candidate_military_service'
-    id = db.Column(db.BigInteger, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
-    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
-    service_status = db.Column('ServiceStatus', db.String(200))
-    highest_rank = db.Column('HighestRank', db.String(255))
-    highest_grade = db.Column('HighestGrade', db.String(7))
-    branch = db.Column('Branch', db.String(200))
-    comments = db.Column('Comments', db.String(5000))
-    from_date = db.Column('FromDate', db.DateTime)
-    to_date = db.Column('ToDate', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
-
-    def __repr__(self):
-        return "<CandidateMilitaryService (candidate_id=' %r')>" % self.candidate_id
 
 class CandidateStatus(db.Model):
     __tablename = 'candidate_status'
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column('Description', db.String(100))
     notes = db.Column('Notes', db.String(500))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
     candidates = relationship('Candidate', backref='candidate_status')
@@ -152,7 +133,7 @@ class CandidateSource(db.Model):
     description = db.Column('Description', db.String(100))
     notes = db.Column('Notes', db.String(500))
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
     candidates = relationship('Candidate', backref='candidate_source')
@@ -179,7 +160,7 @@ class PublicCandidateSharing(db.Model):
     title = db.Column('Title', db.String(100))
     candidate_id_list = db.Column('CandidateIdList', db.Text, nullable=False)
     hash_key = db.Column('HashKey', db.String(50))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<PublicCandidateSharing (title=' %r')>" % self.title
@@ -204,7 +185,7 @@ class CandidateEmail(db.Model):
     email_label_id = db.Column('EmailLabelId', db.Integer, db.ForeignKey('email_label.id')) # 1 = Primary
     address = db.Column('Address', db.String(100))
     is_default = db.Column('IsDefault', db.Boolean)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
 
 class CandidatePhoto(db.Model):
@@ -225,7 +206,7 @@ class CandidateRating(db.Model):
     rating_tag_id = db.Column('RatingTagId', db.Integer, db.ForeignKey('rating_tag.id'), primary_key=True)
     value = db.Column('Value', db.Integer, default=0)
     added_time = db.Column('AddedTime', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
 
 
@@ -236,7 +217,7 @@ class CandidateTextComment(db.Model):
     list_order = db.Column('ListOrder', db.Integer)
     comment = db.Column(db.String(5000))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
 
 class CandidateDocument(db.Model):
@@ -245,7 +226,7 @@ class CandidateDocument(db.Model):
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     filename = db.Column('Filename', db.String(260))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
 
 class CandidateSocialNetwork(db.Model):
@@ -305,7 +286,7 @@ class CandidateLanguage(db.Model):
     read = db.Column('Read', db.Boolean)
     write = db.Column('Write', db.Boolean)
     speak = db.Column('Speak', db.Boolean)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<CandidateLanguage (candidate_id=' %r')>" % self.candidate_id
@@ -321,7 +302,7 @@ class CandidateLicenseCertification(db.Model):
     valid_from = db.Column('ValidFrom', db.String(30))
     valid_to = db.Column('ValidTo', db.String(30))
     first_issued_date = db.Column('FirstIssuedDate', db.String(30))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<CandidateLicenseCertification (name=' %r')>" % self.name
@@ -334,7 +315,7 @@ class CandidateReference(db.Model):
     person_name = db.Column('PersonName', db.String(150))
     position_title = db.Column('PositionTitle', db.String(150))
     comments = db.Column('Comments', db.String(5000))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
     reference_emails = relationship('ReferenceEmail', backref='candidate_reference')
@@ -351,7 +332,7 @@ class ReferenceWebAddress(db.Model):
     candidate_reference_id = db.Column('ReferenceId', db.BigInteger, db.ForeignKey('candidate_reference.id'))
     url = db.Column('Url', db.String(200))
     description = db.Column('Description', db.String(1000))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<ReferenceWebAddress (url=' %r')>" % self.url
@@ -367,7 +348,7 @@ class CandidateAssociation(db.Model):
     start_date = db.Column('StartDate', db.DateTime)
     end_date = db.Column('EndDate', db.DateTime)
     comments = db.Column('Comments', db.String(10000))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<CandidateAssociation (candidate_id=' %r')>" % self.candidate_id
@@ -379,14 +360,29 @@ class CandidateAchievement(db.Model):
     date = db.Column('Date', db.DateTime)
     issuing_authority = db.Column('IssuingAuthority', db.String(150))
     description = db.Column('Description', db.String(10000))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
 
     def __repr__(self):
         return "<CandidateAchievement (candidate_id=' %r')>" % self.candidate_id
 
 
+class CandidateMilitaryService(db.Model):
+    __tablename__ = 'candidate_military_service'
+    id = db.Column(db.BigInteger, primary_key=True)
+    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
+    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
+    service_status = db.Column('ServiceStatus', db.String(200))
+    highest_rank = db.Column('HighestRank', db.String(255))
+    highest_grade = db.Column('HighestGrade', db.String(7))
+    branch = db.Column('Branch', db.String(200))
+    comments = db.Column('Comments', db.String(5000))
+    from_date = db.Column('FromDate', db.DateTime)
+    to_date = db.Column('ToDate', db.DateTime)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
+    def __repr__(self):
+        return "<CandidateMilitaryService (candidate_id=' %r')>" % self.candidate_id
 
 
 class CandidatePatentHistory(db.Model):
@@ -396,7 +392,7 @@ class CandidatePatentHistory(db.Model):
     title = db.Column('Title', db.String(255))
     description = db.Column('Description', db.String(10000))
     link = db.Column('Link', db.String(150))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<CandidatePatentHistory (title=' %r')>" % self.title
@@ -414,7 +410,7 @@ class CandidatePublication(db.Model):
     description = db.Column('Description', db.String(10000))
     added_time = db.Column('AddedTime', db.DateTime)
     link = db.Column('Link', db.String(200))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<CandidatePublication (title=' %r')>" % self.title
@@ -433,7 +429,7 @@ class CandidateAddress(db.Model):
     po_box = db.Column('POBox', db.String(20))
     is_default = db.Column('IsDefault', db.Boolean, default=False)  # todo: check other is_default fields for their default values
     coordinates = db.Column('Coordinates', db.String(100))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<CandidateAddress (candidate_id=' %r')>" % self.candidate_id
@@ -451,7 +447,7 @@ class CandidateEducation(db.Model):
     country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
     is_current = db.Column('IsCurrent', db.Boolean)
     added_time = db.Column('AddedTime', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
     candidate_education_degrees = relationship('CandidateEducationDegree', backref='candidate_education')
@@ -475,7 +471,7 @@ class CandidateEducationDegree(db.Model):
     gpa_denom = db.Column('GpaDenom', db.DECIMAL)
     added_time = db.Column('AddedTime', db.DateTime)
     classification_type_id = db.Column('ClassificationTypeId', db.Integer, db.ForeignKey('classification_type.id')) # todo: create parent table
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
     start_time = db.Column('StartTime', db.DateTime)
     end_time = db.Column('EndTime', db.DateTime)
 
@@ -494,7 +490,7 @@ class CandidateEducationDegreeBullet(db.Model):
     concentration_type = db.Column('ConcentrationType', db.String(200))
     comments = db.Column('Comments', db.String(5000))
     added_time = db.Column('AddedTime', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<CandidateEducationDegreeBullet (candidate_education_degree_id=' %r')>" % self.candidate_education_degree_id
@@ -516,7 +512,7 @@ class CandidateExperience(db.Model):
     end_year = db.Column('EndYear', db.Integer)  # todo: accept Year format only or create a function to validate
     is_current = db.Column('IsCurrent', db.Boolean, default=False)
     added_time = db.Column('AddedTime', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
     candidate_experience_bullets = relationship('CandidateExperienceBullet', backref='candidate_experience')
@@ -532,7 +528,7 @@ class CandidateExperienceBullet(db.Model):
     list_order = db.Column('ListOrder', db.SmallInteger)
     description = db.Column('Description', db.String(10000))
     added_time = db.Column('AddedTime', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<CandidateExperienceBullet (candidate_experience_id=' %r')>" % self.candidate_experience_id
@@ -547,7 +543,7 @@ class CandidateSkill(db.Model):
     added_time = db.Column('AddedTime', db.DateTime)
     totla_months = db.Column('TotalMonths', db.Integer)
     last_used = db.Column('LastUsed', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<CandidateSkill (candidate_id=' %r')>" % self.candidate_id
@@ -560,7 +556,7 @@ class CandidateUnidentified(db.Model):
     title = db.Column('Title', db.String(100))
     description = db.Column('Description', db.Text)
     added_time = db.Column('AddedTime', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<CandidateUnidentified (title=' %r')>" % self.title

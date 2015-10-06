@@ -1,7 +1,6 @@
 from db import db
-from sqlalchemy.orm import relationship, backref
-from sqlalchemy import and_
-import time
+#from auth_service.oauth import logger
+# from auth_service.oauth.modules.handy_functions import is_number
 import datetime
 import logging
 import candidate
@@ -12,7 +11,6 @@ from candidate import CandidateAreaOfInterest
 from misc import AreaOfInterest
 
 logger = logging.getLogger(__file__)
-
 
 
 class User(db.Model):
@@ -38,12 +36,12 @@ class User(db.Model):
     dice_user_id = db.Column('diceUserId', db.Integer)
 
     # Relationships
-    candidates = relationship('Candidate', backref='user')
-    public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
-    user_credentials = relationship('UserCredentials', backref='user')
-    events = relationship('Event', backref='user', lazy='dynamic')
-    organizers = relationship('Organizer', backref='user', lazy='dynamic')
-    venues = relationship('Venue', backref='user', lazy='dynamic')
+    candidates = db.relationship('Candidate', backref='user')
+    public_candidate_sharings = db.relationship('PublicCandidateSharing', backref='user')
+    user_credentials = db.relationship('UserCredentials', backref='user')
+    events = db.relationship('Event', backref='user', lazy='dynamic')
+    organizers = db.relationship('Organizer', backref='user', lazy='dynamic')
+    venues = db.relationship('Venue', backref='user', lazy='dynamic')
 
     def is_authenticated(self):
         return True
@@ -73,7 +71,7 @@ class JobOpening(db.Model):
     job_code = db.Column('JobCode', db.String(100))
     description = db.Column('Description', db.String(500))
     title = db.Column('Title', db.String(150))
-    added_time = db.Column('AddedTime', db.TIMESTAMP, default=time.time())
+    added_time = db.Column('AddedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<JobOpening (title=' %r')>" % self.title
@@ -282,7 +280,7 @@ class UserCredentials(db.Model):
     webhook = db.Column(db.String(200))
     member_id = db.Column('memberId', db.String(100))
     access_token = db.Column('accessToken', db.String(1000))
-    social_network = relationship("SocialNetwork")
+    social_network = db.relationship("SocialNetwork")
 
     @classmethod
     def get_all_credentials(cls, social_network_id=None):
