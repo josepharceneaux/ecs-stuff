@@ -157,9 +157,10 @@ class Facebook(RSVPBase):
                                     % vendor_event_id
                     log_error({'user_id': self.user.id,
                                'error': error_message})
+                return attendee
             except Exception as e:
                 error_message = e.message
                 log_exception({'user_id': self.user.id,
                                'error': error_message})
-                #TODO we should raise, no?
-            return attendee
+                raise
+

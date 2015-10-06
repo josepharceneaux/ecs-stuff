@@ -13,7 +13,7 @@ os.environ['GT_ENVIRONMENT'] = 'dev'
 # SQL ALCHEMY DB URL
 if os.environ.get('GT_ENVIRONMENT') == 'dev':
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@localhost/talent_local'
-    LOGGER = logging.getLogger("auth_service.web_dev")
+    LOGGER = logging.getLogger('event_service.app.dev')
     DEBUG = True
 elif os.environ.get('GT_ENVIRONMENT') == 'circle':
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_ci'

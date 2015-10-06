@@ -7,6 +7,8 @@ from common.models.candidate import CandidateSource, Candidate
 from common.models.product import Product
 from common.models.rsvp import RSVP, CandidateEventRSVP
 # from common.models.candidate import CandidateSource, Candidate
+from social_network_service import logger
+from social_network_service.custom_exections import AccessTokenHasExpired
 from social_network_service.utilities import log_exception, log_error
 from common.models.user import User
 
@@ -58,63 +60,116 @@ class RSVPBase(object):
         :return:
         """
         if events:
+            logger.debug('Going to get RSVPs for events '
+                         'of %s(UserId: %s) from %s.'
+                         % (self.user.name, self.user.id,
+                            self.social_network_name))
             for event in events:
                 # events is a list of dicts. where each dict is likely a
-                # response return from the database
-                # we pick one event from events_list, start doing rsvp
-                # processing.
-                # rsvps is a list of dicts, where each dict is likely a response
-                # return from the vendor's side.
+                # response return from the database.
+                # We pick one event from events_list, and get its rsvps
+                # from respective social network.
                 try:
                     rsvps = self.get_rsvps(event)
+                    # rsvps is a list of dicts, where each dict is likely a
+                    # response return from the social network side.
                     if rsvps:
-                        self.post_process_rsvp(rsvps)
+                        # appends rsvps of all events in self.rsvps
                         self.rsvps += rsvps
-                    elif rsvps is None:  # event has no RSVPs
-                        break
                 except Exception as e:
-                    # Shouldn't raise an exception, just log it and move to process
+                    # Shouldn't raise an exception, just log it and move to
+                    # get RSVPs of next event
+                    error_message = e.message
+                    log_exception({'user_id': self.user.id,
+                                   'error': error_message})
+            logger.debug('There are %s RSVPs to process for events of '
+                         '%s(UserId: %s).' % (len(self.rsvps), self.user.name,
+                                              self.user.id))
+            for rsvp in self.rsvps:
+                # Here we pick one RSVP from self.rsvps and start doing
+                # processing on it. If we get an error during process of
+                # one RSVP, we simply log the error and move to process
+                # next RSVP.
+                try:
+                    self.post_process_rsvp(rsvp)
+                except Exception as e:
+                    # Shouldn't raise an exception, just log it and move to
                     # process next RSVP
                     error_message = e.message
                     log_exception({'user_id': self.user.id,
                                    'error': error_message})
-        else:
-            error_message = "There are no events for User in the Database"
-            log_error({'user_id': self.user.id,
-                       'error': error_message})
+        if self.rsvps:
+            logger.debug('RSVPs for events of %s(UserId: %s) have been'
+                         ' processed and saved successfully'
+                         ' in database.'
+                         % (self.user.name, self.user.id))
 
-    def post_process_rsvp(self, rsvps):
+    def post_process_rsvp(self, rsvp):
         """
-        This is the post processing once we get the rsvps of an event
+        This is the post processing for an rsvp of an event
         Here we do the followings
-        a)- We move on to getting attendees using the given
-            RSVPs (and those are in rsvps). get_attendees() call
-            get_attendee() which should be implemented by a child.
+        a)- We move on to getting attendee using the given
+            RSVPs by get_attendees() call.
+            get_attendee() should be implemented by a child.
         b)- We pick the source product of rsvp (e.g. meetup or eventbrite).
         c)- We store the source of candidate in candidate_source db table.
-        d)- Once we have the list of attendees we call
-            save_attendees_as_candidate() which take attendees (as
-            given in self.attendees) and store each attendee as
-            a candidate.
-        e)- Finally we save the rsvp in rsvp and candiate_event_rsvp db tables.
-        :param rsvps:
+        d)- Once we have the attendees we call save_attendee_as_candidate()
+            which store each attendee as a candidate.
+        e)- Finally we save the rsvp in rsvp and candidate_event_rsvp db
+            tables.
+        :param rsvp:
         :return:
         """
         # attendees is a utility object we share in calls that
         # contains pertinent data
-        attendees = self.get_attendees(rsvps)
-        # following picks the source product id for attendee
-        attendees = self.pick_source_products(attendees)
-        # following will store candidate info in attendees
-        attendees = self.save_attendees_source(attendees)
-        # following will store candidate info in attendees
-        attendees = self.save_attendees_as_candidates(attendees)
-        # following call will store rsvp info in attendees
-        attendees = self.save_rsvps(attendees)
-        # finally we store info in candidate_event_rsvp table for
-        # attendee
-        attendees = self.save_candidates_events_rsvps(attendees)
-        self.save_rsvps_in_activity_table(attendees)
+        attendee = self.get_attendee(rsvp)
+        if attendee:
+            # following picks the source product id for attendee
+            attendee = self.pick_source_product(attendee)
+            # following will store candidate info in attendees
+            attendee = self.save_attendee_source(attendee)
+            # following will store candidate info in attendees
+            attendee = self.save_attendee_as_candidate(attendee)
+            # following call will store rsvp info in attendees
+            attendee = self.save_rsvp(attendee)
+            # finally we store info in candidate_event_rsvp table for
+            # attendee
+            attendee = self.save_candidate_event_rsvp(attendee)
+            attendee = self.save_rsvp_in_activity_table(attendee)
+
+    # def post_process_rsvps(self, rsvps):
+    #     """
+    #     This is the post processing once we get the rsvps of an event
+    #     Here we do the followings
+    #     a)- We move on to getting attendees using the given
+    #         RSVPs (and those are in rsvps). get_attendees() call
+    #         get_attendee() which should be implemented by a child.
+    #     b)- We pick the source product of rsvp (e.g. meetup or eventbrite).
+    #     c)- We store the source of candidate in candidate_source db table.
+    #     d)- Once we have the list of attendees we call
+    #         save_attendees_as_candidate() which take attendees (as
+    #         given in self.attendees) and store each attendee as
+    #         a candidate.
+    #     e)- Finally we save the rsvp in rsvp and candidate_event_rsvp db
+    #         tables.
+    #     :param rsvps:
+    #     :return:
+    #     """
+    #     # attendees is a utility object we share in calls that
+    #     # contains pertinent data
+    #     attendees = self.get_attendees(rsvps)
+    #     # following picks the source product id for attendee
+    #     attendees = self.pick_source_products(attendees)
+    #     # following will store candidate info in attendees
+    #     attendees = self.save_attendees_source(attendees)
+    #     # following will store candidate info in attendees
+    #     attendees = self.save_attendees_as_candidates(attendees)
+    #     # following call will store rsvp info in attendees
+    #     attendees = self.save_rsvps(attendees)
+    #     # finally we store info in candidate_event_rsvp table for
+    #     # attendee
+    #     attendees = self.save_candidates_events_rsvps(attendees)
+    #     self.save_rsvps_in_activity_table(attendees)
 
     def get_attendees(self, rsvps):
         """
@@ -168,10 +223,9 @@ class RSVPBase(object):
             attendee.event.title,
             attendee.event.description)
 
-        # TODO double check with Osman, may be we should pass the user's domain here
         data = {'description': attendee.event.title,
                 'notes': attendee.event.description[:495],  # field is 500 chars
-                'domain_id': 1}
+                'domain_id': self.user.domain_id}
         if entry_in_db:
             entry_in_db.update(**data)
             entry_id = entry_in_db.id

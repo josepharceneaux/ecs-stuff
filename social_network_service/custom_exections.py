@@ -84,3 +84,7 @@ class InvalidDatetime(ApiException):
 
 class VenueNotFound(ApiException):
     status_code = 465
+
+
+class AccessTokenHasExpired(ApiException):
+    status_code = 466

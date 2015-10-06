@@ -1,11 +1,10 @@
 import requests
+
 from abc import ABCMeta
-from common.models.social_network import SocialNetwork
+from social_network_service import logger
 from common.models.user import User, UserCredentials
-
-
-from utilities import log_error,\
-    log_exception, http_request, get_class
+from common.models.social_network import SocialNetwork
+from utilities import log_error, log_exception, http_request, get_class
 
 
 class SocialNetworkBase(object):
@@ -78,7 +77,13 @@ class SocialNetworkBase(object):
                                    headers=self.headers)
         if mode == 'event':
             # gets events using respective API of Social Network
+            logger.debug('Getting events of %s(UserId: %s) from %s.'
+                         % (self.user.name, self.user.id,
+                            self.social_network.name))
             self.events = sn_event_obj.get_events()
+            logger.debug('Got %s events of %s(UserId: %s) on %s in provided time range.'
+                         % (len(self.events), self.user.name, self.user.id,
+                            self.social_network.name))
             # process events to save in database
             sn_event_obj.process_events(self.events)
         elif mode == 'rsvp':
@@ -211,9 +216,10 @@ class SocialNetworkBase(object):
             if response.ok:
                 status = True
             else:
-                error_message = "Access token has expired for %s" % self.social_network.name
-                log_error({'user_id': self.user.id,
-                           'error': error_message})
+                logger.debug("Access token has expired for %s(UserId:%s)."
+                             " Social Network is %s"
+                             % (self.user.name, self.user.id,
+                                self.social_network.name))
         except requests.RequestException as e:
             error_message = e.message
             log_exception({'user_id': self.user.id,

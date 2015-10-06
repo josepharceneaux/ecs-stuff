@@ -6,7 +6,6 @@ import re
 import imp
 import sys
 import json
-import logging
 import inspect
 import requests
 import datetime
@@ -17,9 +16,9 @@ import importlib
 from requests_oauthlib import OAuth2Session
 
 from common.models.user import User
-from social_network_service.custom_exections import SocialNetworkNotImplemented, ApiException
+from social_network_service import logger
+from social_network_service.custom_exections import SocialNetworkNotImplemented, ApiException, AccessTokenHasExpired
 
-logger = logging.getLogger('event_service.app')
 OAUTH_SERVER = 'http://127.0.0.1:8081/oauth2/authorize'
 
 
@@ -177,7 +176,6 @@ def log_exception(log_data):
     logger.exception(callee_data)
 
 
-
 def http_request(method_type, url, params=None, headers=None, data=None, user_id=None):
     """
     This is common function to make HTTP Requests. It takes method_type (GET or POST)
@@ -201,7 +199,14 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                 # we can raise it with Response.raise_for_status():"""
                 response.raise_for_status()
             except requests.exceptions.HTTPError as e:
-                if 'errors' in e.response.json():
+                if e.response.status_code == 401:
+                    # This is the error code for Not Authorized user(Expired Token)
+                    # if this error code occurs, we raise exception
+                    # AccessTokenHasExpired
+                    raise AccessTokenHasExpired('API Error: Access token has expired.'
+                                                ' User Id: %s' % user_id)
+                # checks if error occurred on "Server" or is it a bad request
+                elif e.response.status_code < 500 and 'errors' in e.response.json():
                     error_message = e.message + ' , Details: ' \
                                     + json.dumps(e.response.json().get('errors'))
                 else:
