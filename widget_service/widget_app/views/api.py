@@ -10,6 +10,7 @@ from flask import render_template
 # Module specific
 from common.models.misc import AreaOfInterest
 from common.models.db import db
+from common.models.candidate import University
 
 
 mod = Blueprint('widget_api', __name__)
@@ -52,3 +53,6 @@ def get_areas_of_interest(domain_id):
 
 
 @mod.route('/universities', methods=['GET'])
+def get_university_names():
+    university_names = db.session.query(University.name)
+    return jsonify(universities=[uni for uni in university_names])

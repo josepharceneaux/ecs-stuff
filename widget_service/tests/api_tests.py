@@ -5,12 +5,15 @@ import datetime
 import json
 import pytest
 
-from widget_service.widget_app import app
+from widget_service.common.models.candidate import University
 from widget_service.common.models.misc import AreaOfInterest
-from activity_service.common.models.misc import Culture
-from activity_service.common.models.misc import Organization
-from widget_service.widget_app import db
+from widget_service.common.models.misc import Country
+from widget_service.common.models.misc import Culture
+from widget_service.common.models.misc import Organization
+from widget_service.common.models.misc import State
 from widget_service.common.models.user import Domain
+from widget_service.widget_app import app
+from widget_service.widget_app import db
 
 from widget_service.common.utils.handy_functions import randomword
 from widget_service.common.utils.db_utils import get_or_create
@@ -114,10 +117,56 @@ def create_test_AOIs(create_test_domain, request):
     db.session.bulk_save_objects(sub_aois)
 
     def fin():
-        db.session.query(AreaOfInterest).filter(AreaOfInterest.domain_id == create_test_domain.id).delete()
+        db.session.query(AreaOfInterest).delete()
         db.session.commit()
     request.addfinalizer(fin)
     return aois
+
+
+@pytest.fixture(autouse=True)
+def create_test_country(request):
+    test_country = Country(name='United States', code='U.S.A')
+    db.session.add(test_country)
+    db.session.commit()
+    def fin():
+        try:
+            db.session.delete(test_country)
+            db.session.commit()
+        except Exception:
+            pass
+    request.addfinalizer(fin)
+    return test_country
+
+
+@pytest.fixture(autouse=True)
+def create_test_state(create_test_country, request):
+    test_state = State(name='California', alpha_code='potato', country_id=create_test_country.id,
+                       abbreviation='CA')
+    db.session.add(test_state)
+    db.session.commit()
+    def fin():
+        try:
+            db.session.delete(test_state)
+            db.session.commit()
+        except Exception:
+            pass
+    request.addfinalizer(fin)
+    return test_state
+
+
+@pytest.fixture(autouse=True)
+def create_test_universities(create_test_state, request):
+    universities = []
+    for i in xrange(5):
+        universities.append(
+            University(name=randomword(35), state_id=create_test_state.id)
+        )
+    db.session.bulk_save_objects(universities)
+    def fin():
+        db.session.query(University).delete()
+        db.session.commit()
+    request.addfinalizer(fin)
+    return universities
 
 
 def test_api_returns_domain_filtered_aois(create_test_domain, request):
@@ -125,3 +174,9 @@ def test_api_returns_domain_filtered_aois(create_test_domain, request):
     assert response.status_code == 200
     assert len(json.loads(response.data)['primary_interests']) == 10
     assert len(json.loads(response.data)['secondary_interests']) == 2
+
+
+def test_api_returns_university_name_list(request):
+    response = APP.get('/widget/universities')
+    assert response.status_code == 200
+    assert len(json.loads(response.data)['universities']) == 5
