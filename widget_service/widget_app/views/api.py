@@ -26,6 +26,9 @@ def widget(domain):
             return render_template('kaiser_3.html', domain=domain)
         else:
             return 'Return error message or awesome 404 page', 404
+    else:
+        # Post receiver func goes here.
+        True
 
 
 @mod.route('/interests/<domain_id>', methods=['GET'])
@@ -46,3 +49,6 @@ def get_areas_of_interest(domain_id):
             })
     return jsonify({'primary_interests': primary_interests,
                     'secondary_interests': secondary_interests})
+
+
+@mod.route('/universities', methods=['GET'])

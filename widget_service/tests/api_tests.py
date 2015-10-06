@@ -80,6 +80,7 @@ def create_test_domain(test_culture, test_org, request):
     def fin():
         try:
             db.session.delete(test_domain)
+            db.session.delete(test_domain2)
             db.session.commit()
         except Exception:
             pass
@@ -90,9 +91,11 @@ def create_test_domain(test_culture, test_org, request):
 @pytest.fixture(autouse=True)
 def create_test_AOIs(create_test_domain, request):
     aois = []
+    sub_aois = []
+    # Create our parent categories.
     for i in xrange(10):
         aois.append(
-            AreaOfInterest(domain_id=create_test_domain.id, description=randomword(150),
+            AreaOfInterest(id=i+1, domain_id=create_test_domain.id, description=randomword(150),
                            parent_id=None)
         )
     for i in xrange(2):
@@ -101,15 +104,24 @@ def create_test_AOIs(create_test_domain, request):
                                parent_id=None)
             )
     db.session.bulk_save_objects(aois)
+    # Create our sub-categories.
+    parent_id = aois[0].id
+    for i in xrange(2):
+            sub_aois.append(
+                AreaOfInterest(domain_id=create_test_domain.id, description=randomword(150),
+                               parent_id=parent_id)
+            )
+    db.session.bulk_save_objects(sub_aois)
 
     def fin():
         db.session.query(AreaOfInterest).filter(AreaOfInterest.domain_id == create_test_domain.id).delete()
         db.session.commit()
     request.addfinalizer(fin)
-    return True
+    return aois
 
 
 def test_api_returns_domain_filtered_aois(create_test_domain, request):
     response = APP.get('/widget/interests/{}'.format(create_test_domain.id))
     assert response.status_code == 200
     assert len(json.loads(response.data)['primary_interests']) == 10
+    assert len(json.loads(response.data)['secondary_interests']) == 2

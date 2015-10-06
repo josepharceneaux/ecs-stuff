@@ -70,6 +70,7 @@ $(document).ready(function() {
         $("#subInterestSelect").empty();
         var aoiId = $(this).find(':selected').val();
         var subAOIList = aoiIdToSubAois(aoiId);
+        console.log(subAOIList);
 
         $("#subInterestSelect").append("<option value=''>Select Subcategory</option>");
         $("#subInterestSelect").append("<option value='All'>All Subcategories</option>");
@@ -294,15 +295,11 @@ function checkRequired(input) {
 function aoiIdToSubAois(aoiId) {
     // Make list of all sub AOIs
     var subAOIs = [];
-    $("select[data-aoi-id=" + aoiId + "] option").each(function(index) {
-        var value = $(this).attr('value');
-        if (value && value != '') {
-            subAOIs.push({
-                'description' : $(this).text(),
-                'id' : value
-            });
+    for (var i=0; i < SUB_AOIS.length; i++) {
+        if (SUB_AOIS[i].parent_id == aoiId) {
+            subAOIs.push(SUB_AOIS[i])
         }
-    });
+    }
     return subAOIs;
 }
 

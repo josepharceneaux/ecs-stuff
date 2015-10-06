@@ -1,3 +1,5 @@
+var SUB_AOIS;
+
 function isEmailValid(email) {
     var re = /^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$/i;
     return email && re.test(email);
@@ -17,3 +19,53 @@ function markInputValid($input) {
 
     $input.closest(".control-group").removeClass('error').addClass('success');
 }
+
+function getInterestsJSON() {
+    var interests;
+    var request = $.ajax({
+        url: "/widget/interests/1",
+        type: "GET",
+        dataType: "json"
+    });
+    request.done(function(data) {
+        console.log(data)
+        interests = data;
+        if (interests.primary_interests.length == 0) {
+            console.log('Assuming DEMO mode');
+            interests = getDemoInterests();
+        }
+        SUB_AOIS = interests.secondary_interests;
+        renderInterests(interests);
+    });
+}
+
+
+function getDemoInterests(){
+    return {
+        primary_interests: [
+            {id: 1, description: 'foo', parent_id: null},
+            {id: 2, description: 'bar', parent_id: null},
+            {id: 3, description: 'baz', parent_id: null},
+        ],
+        secondary_interests: [
+            {id: 4, description: 'oof', parent_id: 1},
+            {id: 5, description: 'rab', parent_id: 2},
+            {id: 6, description: 'zab', parent_id: 3},
+        ]
+    }
+}
+
+
+function renderInterests(interests) {
+    var option;
+    var interestSelector = document.getElementById("interestSelect");
+    for (var i=0; i < interests.primary_interests.length; i++) {
+        option = document.createElement("option");
+        option.label = interests.primary_interests[i].description;
+        option.value = interests.primary_interests[i].id;
+        option.text = interests.primary_interests[i].description;
+        interestSelector.add(option);
+    }
+}
+
+getInterestsJSON();
