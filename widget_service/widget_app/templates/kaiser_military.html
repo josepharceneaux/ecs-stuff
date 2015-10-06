@@ -66,7 +66,7 @@
 <div class="container">
     <div class="row">
         <div class="" style="margin-left:30px;">
-            <form name="widget" method="post" novalidate autocomplete="on" enctype="multipart/form-data" action="/kaiser_military">
+            <form name="widget" method="post" novalidate autocomplete="on" enctype="multipart/form-data" action="/widget/<domain-ID>">
                 <div class="control-group">
                     <div class="controls">
                         <h1>
@@ -243,13 +243,13 @@
             </form>
         </div>
     </div>
-    <div class="row">
+    <div class="row" id="form-success">
         <div class="span6" style="margin-left:30px;margin-top:200px;">
             <p id="submit_result" class="alert alert-success" >Your information has successfully been submitted.</p>
             <p>Thank you for joining the Kaiser Permanente talent community.</p>
         </div>
     </div>
-    <div class="row">
+    <div class="row" id="form-error">
         <div class="span6" style="margin-left:30px;margin-top:30px">
             <div class="alert alert-error">
                 <p id="submit_result">An error occurred while sending your information. Please refresh the page and try again.</p>

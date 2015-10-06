@@ -70,7 +70,6 @@ $(document).ready(function() {
         $("#subInterestSelect").empty();
         var aoiId = $(this).find(':selected').val();
         var subAOIList = aoiIdToSubAois(aoiId);
-        console.log(subAOIList);
 
         $("#subInterestSelect").append("<option value=''>Select Subcategory</option>");
         $("#subInterestSelect").append("<option value='All'>All Subcategories</option>");

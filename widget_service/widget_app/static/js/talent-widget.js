@@ -1,4 +1,7 @@
 var SUB_AOIS;
+var status = 'form'
+$('#form-success').hide();
+$('#form-error').hide();
 
 function isEmailValid(email) {
     var re = /^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$/i;
@@ -27,9 +30,7 @@ function getInterestsJSON() {
         type: "GET",
         dataType: "json"
     });
-    request.done(function(data) {
-        console.log(data)
-        interests = data;
+    request.done(function(interests) {
         if (interests.primary_interests.length == 0) {
             console.log('Assuming DEMO mode');
             interests = getDemoInterests();

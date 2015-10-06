@@ -16,20 +16,23 @@ from common.models.candidate import University
 mod = Blueprint('widget_api', __name__)
 
 
-@mod.route('/<domain>', methods=['GET', 'POST'])
+@mod.route('test/<domain>', methods=['GET'])
 def widget(domain):
-    if request.method == 'GET':
-        if domain == 'kaiser-military':
-            return render_template('kaiser_military.html', domain=domain)
-        elif domain == 'kaiser-university':
-            return render_template('kaiser_2.html', domain=domain)
-        elif domain == 'kaiser-corp':
-            return render_template('kaiser_3.html', domain=domain)
-        else:
-            return 'Return error message or awesome 404 page', 404
-    else:
-        # Post receiver func goes here.
-        True
+    if domain == 'kaiser-military':
+        return render_template('kaiser_military.html', domain=domain)
+    elif domain == 'kaiser-university':
+        return render_template('kaiser_2.html', domain=domain)
+    elif domain == 'kaiser-corp':
+        return render_template('kaiser_3.html', domain=domain)
+
+
+@mod.route('/<widget_name>', methods=['GET', 'POST'])
+def process_widget(widget_name):
+    widget_html =
+
+
+def process_widget_submission(domain):
+    return jsonify(domain=domain)
 
 
 @mod.route('/interests/<domain_id>', methods=['GET'])
