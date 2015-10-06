@@ -8,7 +8,7 @@ from common.models.db import db
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 app.config.from_object('widget_service.config')
-app.register_blueprint(api.mod, url_prefix='/widget')
+app.register_blueprint(api.mod, url_prefix='/widgetV1')
 
 db.init_app(app)
 db.app = app

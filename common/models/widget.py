@@ -20,3 +20,5 @@ class WidgetPage(db.Model):
     welcome_email_text = db.Column('WelcomeEmailText', db.String())
     welcome_email_html = db.Column('WelcomeEmailHtml', db.String())
     welcome_email_subject = db.Column('WelcomeEmailSubject', db.String())
+    widget_html = db.Column('widget_html', db.String())
+    s3_location = db.Column('s3_location', db.String())

@@ -3,6 +3,7 @@ __author = 'erikfarmer'
 
 # Framework specific
 from flask import Blueprint
+from flask import current_app as app
 from flask import jsonify
 from flask import request
 from flask import render_template
@@ -11,6 +12,7 @@ from flask import render_template
 from common.models.misc import AreaOfInterest
 from common.models.db import db
 from common.models.candidate import University
+from common.models.widget import WidgetPage
 
 
 mod = Blueprint('widget_api', __name__)
@@ -18,6 +20,8 @@ mod = Blueprint('widget_api', __name__)
 
 @mod.route('test/<domain>', methods=['GET'])
 def widget(domain):
+    if app.config['GT_ENVIRONMENT'] == 'dev':
+        return 'Error', 400
     if domain == 'kaiser-military':
         return render_template('kaiser_military.html', domain=domain)
     elif domain == 'kaiser-university':
@@ -28,7 +32,13 @@ def widget(domain):
 
 @mod.route('/<widget_name>', methods=['GET', 'POST'])
 def process_widget(widget_name):
-    pass
+    if request.method == 'GET':
+        return render_widget_via_name(widget_name)
+
+
+def render_widget_via_name(widget_name):
+    widget = WidgetPage.query.filter_by(widget_name=widget_name).first()
+    return widget.widget_html, 200
 
 
 def process_widget_submission(domain):

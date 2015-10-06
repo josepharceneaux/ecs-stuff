@@ -223,6 +223,7 @@ def create_test_widget_page(create_test_user, create_test_candidate_source, requ
                                   request_email_html=randomword(40),
                                   request_email_subject=randomword(40),
                                   email_source=randomword(40), reply_address=randomword(40),
+                                  widget_html=randomword(200), s3_location=randomword(12)
                                   )
     db.session.add(test_widget_page)
     db.session.commit()
@@ -235,14 +236,21 @@ def create_test_widget_page(create_test_user, create_test_candidate_source, requ
     request.addfinalizer(fin)
     return test_widget_page
 
+
 def test_api_returns_domain_filtered_aois(create_test_domain, request):
-    response = APP.get('/widget/interests/{}'.format(create_test_domain.id))
+    response = APP.get('/widgetV1/interests/{}'.format(create_test_domain.id))
     assert response.status_code == 200
     assert len(json.loads(response.data)['primary_interests']) == 10
     assert len(json.loads(response.data)['secondary_interests']) == 2
 
 
 def test_api_returns_university_name_list(request):
-    response = APP.get('/widget/universities')
+    response = APP.get('/widgetV1/universities')
     assert response.status_code == 200
     assert len(json.loads(response.data)['universities']) == 5
+
+
+def test_get_call_returns_widget_page_html(create_test_widget_page, request):
+    response = APP.get('/widgetV1/{}'.format(create_test_widget_page.widget_name))
+    assert response.status_code == 200
+    assert response.data == create_test_widget_page.widget_html
