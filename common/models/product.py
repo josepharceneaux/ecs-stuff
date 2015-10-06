@@ -1,3 +1,4 @@
+import datetime
 from db import db
 
 
@@ -7,7 +8,7 @@ class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Name', db.String(100))
     notes = db.Column('Notes', db.String(500))
-    updated_time = db.Column('UpdatedTime', db.DateTime, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<Product (name=' %r')>" % self.name

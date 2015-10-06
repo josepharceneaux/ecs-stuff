@@ -2,7 +2,6 @@ from db import db
 from sqlalchemy.orm import relationship, backref
 #from auth_service.oauth import logger
 # from auth_service.oauth.modules.handy_functions import is_number
-import time
 import datetime
 import logging
 import candidate
@@ -65,7 +64,7 @@ class JobOpening(db.Model):
     job_code = db.Column('JobCode', db.String(100))
     description = db.Column('Description', db.String(500))
     title = db.Column('Title', db.String(150))
-    added_time = db.Column('AddedTime', db.TIMESTAMP, default=time.time())
+    added_time = db.Column('AddedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<JobOpening (title=' %r')>" % self.title
