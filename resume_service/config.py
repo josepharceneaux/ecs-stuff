@@ -25,7 +25,7 @@ elif GT_ENVIRONMENT == 'circle':
     DEBUG = True
 elif GT_ENVIRONMENT == 'qa':
     OAUTH_SERVER_URI = 'https://secure-webdev.gettalent.com/oauth2/authorize'
-    CANDIDATE_CREATION_URI = 'https://www.gettalent-webdev.com/web/api/candidates.json'
+    CANDIDATE_CREATION_URI = 'https://webdev.gettalent.com/web/api/candidates.json'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!web976892@devdb.gettalent.com/talent_staging'
     LOGGER = logging.getLogger("resume_service.qa")
     DEBUG = False

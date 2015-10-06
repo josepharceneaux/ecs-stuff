@@ -13,7 +13,7 @@ from common.models.db import db
 from common.models.user import Client, Token
 
 db.init_app(app)
-
+db.app = app
 APP = app.test_client()
 
 DOC_DICT = dict(address_line_1=u'466 Tailor Way', address_line_2=u'', city=u'Lansdale', country=None,
@@ -79,9 +79,9 @@ def test_token(test_client, request):
         db.session.commit()
         db.session.delete(created_test_client)
         db.session.commit()
-        v13_pdf_candidate = Candidate.query.filter_by(formattedName='BRUCE PARKEY').first()
-        v15_pdf_candidate = Candidate.query.filter_by(formattedName='MARK GREENE').first()
-        large_jpg_candidate = Candidate.query.filter_by(formattedName='Marion Roberson').first()
+        v13_pdf_candidate = Candidate.query.filter_by(formatted_name='BRUCE PARKEY').first()
+        v15_pdf_candidate = Candidate.query.filter_by(formatted_name='MARK GREENE').first()
+        large_jpg_candidate = Candidate.query.filter_by(formatted_name='Marion Roberson').first()
         if v15_pdf_candidate: db.session.delete(v15_pdf_candidate)
         if v13_pdf_candidate: db.session.delete(v13_pdf_candidate)
         if large_jpg_candidate: db.session.delete(large_jpg_candidate)
@@ -116,7 +116,7 @@ def test_doc_by_post():
     assert json_obj['addresses'][0] == DOC_DICT
     assert len(json_obj['educations']) == 3
     assert len(json_obj['work_experiences']) == 7
-    doc_db_record = Candidate.query.filter_by(formattedName='VEENA NITHOO').first()
+    doc_db_record = Candidate.query.filter_by(formatted_name='VEENA NITHOO').first()
     assert not doc_db_record
     keys_formatted_test(json_obj)
 
@@ -153,7 +153,7 @@ def test_v15_pdf_by_post():
     assert json_obj['emails'][0]['address'] == 'techguymark@yahoo.com'
     assert len(json_obj['educations']) == 1
     assert len(json_obj['work_experiences']) == 15
-    v15_pdf_candidate = Candidate.query.filter_by(formattedName='MARK GREENE').first()
+    v15_pdf_candidate = Candidate.query.filter_by(formatted_name='MARK GREENE').first()
     assert v15_pdf_candidate is not None
     keys_formatted_test(json_obj)
 
@@ -173,7 +173,7 @@ def test_v13_pdf_by_post():
     assert json_obj['full_name'] == 'BRUCE PARKEY'
     assert json_obj['emails'][0]['address'] == 'bparkey@sagamoreapps.com'
     assert len(json_obj['work_experiences']) == 3
-    v13_pdf_candidate = Candidate.query.filter_by(formattedName='BRUCE PARKEY').first()
+    v13_pdf_candidate = Candidate.query.filter_by(formatted_name='BRUCE PARKEY').first()
     assert v13_pdf_candidate is not None
     keys_formatted_test(json_obj)
 
@@ -213,7 +213,7 @@ def test_2448_3264_jpg_by_post():
     assert len(json_obj['educations']) == 0
     # Parser incorrectly guesses 7, 4 + 3 of the bullet points.
     # assert len(json_obj['work_experiences']) == 4
-    large_jpg_candidate = Candidate.query.filter_by(formattedName='Marion Roberson').first()
+    large_jpg_candidate = Candidate.query.filter_by(formatted_name='Marion Roberson').first()
     assert large_jpg_candidate is not None
     keys_formatted_test(json_obj)
 
