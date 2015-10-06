@@ -52,16 +52,27 @@ def register_error_handlers(app, logger):
     :type logger: logging.Logger
     """
 
+    @app.errorhandler(405)
+    def handle_method_not_allowed(ignored):
+        return jsonify({'error': {'message': 'Given HTTP method is not allowed on this endpoint'}}), 405
+
     @app.errorhandler(InvalidUsage)
     def handle_invalid_usage(error):
         response = jsonify(error.to_dict())
-        response.status_code = error.http_status_code
         logger.warn("Invalid API usage for app %s: %s", app.import_name, response)
-        return response
+        return response, error.http_status_code
 
     @app.errorhandler(500)
     def handle_internal_server_errors(exc):
-        logger.error("Internal server error for app %s: %s", app.import_name, exc)
-        return {'error': {'message': "Internal server error. We're looking into it!"}}
-
+        if exc.__class__.__name__ == InternalServerError.__name__:  # Why doesn't instanceof() work here?
+            # If an InternalServerError is raised by the server code, return its to_dict
+            response = exc.to_dict()
+        elif isinstance(exc, Exception):
+            # If any other Exception is thrown, return its message
+            response = {'error': {'message': "Internal server error: %s" % exc.message}}
+        else:
+            # This really shouldn't happen -- exc should be an exception
+            response = {'error': {'message': "Internal server error"}}
+        logger.exception("Internal server error for app %s: %s", app.import_name, exc)
+        return jsonify(response), 500
 
