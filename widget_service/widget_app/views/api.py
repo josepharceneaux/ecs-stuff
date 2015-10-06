@@ -28,7 +28,7 @@ def widget(domain):
 
 @mod.route('/<widget_name>', methods=['GET', 'POST'])
 def process_widget(widget_name):
-    widget_html =
+    pass
 
 
 def process_widget_submission(domain):

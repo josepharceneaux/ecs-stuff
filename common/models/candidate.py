@@ -94,7 +94,7 @@ class CandidateSource(db.Model):
     description = db.Column('Description', db.String(100))
     notes = db.Column('Notes', db.String(500))
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
     candidates = relationship('Candidate', backref='candidate_source')

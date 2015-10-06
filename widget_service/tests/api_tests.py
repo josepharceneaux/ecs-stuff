@@ -5,6 +5,7 @@ import datetime
 import json
 import pytest
 
+from widget_service.common.models.candidate import CandidateSource
 from widget_service.common.models.candidate import University
 from widget_service.common.models.misc import AreaOfInterest
 from widget_service.common.models.misc import Country
@@ -12,6 +13,8 @@ from widget_service.common.models.misc import Culture
 from widget_service.common.models.misc import Organization
 from widget_service.common.models.misc import State
 from widget_service.common.models.user import Domain
+from widget_service.common.models.user import User
+from widget_service.common.models.widget import WidgetPage
 from widget_service.widget_app import app
 from widget_service.widget_app import db
 
@@ -168,6 +171,69 @@ def create_test_universities(create_test_state, request):
     request.addfinalizer(fin)
     return universities
 
+
+@pytest.fixture(autouse=True)
+def create_test_user(create_test_domain, request):
+    user_attrs = dict(
+        domain_id=create_test_domain.id, first_name='Jamtry', last_name='Jonas',
+        password='pbkdf2(1000,64,sha512)$bd913bac5e55a39b$ea5a0a2a2d156003faaf7986ea4cba3f25607e43ecffb36e0d2b82381035bbeaded29642a1dd6673e922f162d322862459dd3beedda4501c90f7c14b3669cd72',
+        email='jamtry@{}.com'.format(randomword(7)), added_time=datetime.datetime(2050, 4, 26)
+    )
+    test_user, created = get_or_create(db.session, User, defaults=None, **user_attrs)
+    if created:
+        db.session.add(test_user)
+        db.session.commit()
+
+    def fin():
+        try:
+            db.session.delete(test_user)
+            db.session.commit()
+        except Exception:
+            pass
+
+    request.addfinalizer(fin)
+    return test_user
+
+
+@pytest.fixture(autouse=True)
+def create_test_candidate_source(create_test_domain, request):
+    test_source = CandidateSource(description=randomword(40), notes=randomword(40),
+                                  domain_id=create_test_domain.id)
+    db.session.add(test_source)
+    db.session.commit()
+    def fin():
+        try:
+            db.session.delete(test_source)
+            db.session.commit()
+        except Exception:
+            pass
+    request.addfinalizer(fin)
+    return test_source
+
+
+@pytest.fixture(autouse=True)
+def create_test_widget_page(create_test_user, create_test_candidate_source, request):
+    test_widget_page = WidgetPage(url=randomword(20), page_views=0, sign_ups=0,
+                                  widget_name=randomword(20), user_id=create_test_user.id,
+                                  candidate_source_id=create_test_candidate_source.id,
+                                  welcome_email_text=randomword(40),
+                                  welcome_email_html=randomword(40),
+                                  welcome_email_subject=randomword(40),
+                                  request_email_text=randomword(40),
+                                  request_email_html=randomword(40),
+                                  request_email_subject=randomword(40),
+                                  email_source=randomword(40), reply_address=randomword(40),
+                                  )
+    db.session.add(test_widget_page)
+    db.session.commit()
+    def fin():
+        try:
+            db.session.delete(test_widget_page)
+            db.session.commit()
+        except Exception:
+            pass
+    request.addfinalizer(fin)
+    return test_widget_page
 
 def test_api_returns_domain_filtered_aois(create_test_domain, request):
     response = APP.get('/widget/interests/{}'.format(create_test_domain.id))

@@ -2,7 +2,7 @@ __author__ = 'erikfarmer'
 from db import db
 
 
-class WidgetPage(db.model):
+class WidgetPage(db.Model):
     __tablename__ = 'widget_page'
     id = db.Column('Id', db.Integer, primary_key=True)
     candidate_source_id = db.Column('CandidateSourceId', db.Integer, db.ForeignKey('candidate_source.id'))
@@ -17,6 +17,6 @@ class WidgetPage(db.model):
     url = db.Column('Url', db.String(500))
     user_id = db.Column('UserId', db.Integer, db.ForeignKey('user.id'))
     widget_name = db.Column('WidgetName', db.String(63))
-    widget_email_text = db.Column('WidgetEmailText', db.String())
-    widget_email_html = db.Column('WidgetEmailHtml', db.String())
-    widget_email_subject = db.Column('WidgetEmailSubject', db.String())
+    welcome_email_text = db.Column('WelcomeEmailText', db.String())
+    welcome_email_html = db.Column('WelcomeEmailHtml', db.String())
+    welcome_email_subject = db.Column('WelcomeEmailSubject', db.String())
