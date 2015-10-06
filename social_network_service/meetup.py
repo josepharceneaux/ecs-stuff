@@ -87,7 +87,8 @@ class Meetup(SocialNetworkBase):
                             refresh_token=refresh_token,
                             member_id=self.user_credentials.member_id)
                 status = self.save_user_credentials_in_db(data)
-                logger.info("Access Token has been refreshed")
+                logger.debug("Access token has been refreshed for %s(UserId:%s)."
+                             % (self.user.name, self.user.id))
             else:
                 error_message = response.json().get('error')
                 log_error({'user_id': self.user.id,

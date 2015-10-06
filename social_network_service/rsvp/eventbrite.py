@@ -76,11 +76,10 @@ class Eventbrite(RSVPBase):
                 self.save_rsvp_in_activity_table(attendee)
         except Exception as e:
             # Shouldn't raise an exception, just log it and move to process
-            # process next RSVP
+            # next RSVP
             error_message = e.message
             log_exception({'user_id': self.user.id,
                            'error': error_message})
-            #TODO should we raise, if so raise it
 
     def process_rsvps(self, events):
         """
@@ -134,9 +133,10 @@ class Eventbrite(RSVPBase):
                                     % vendor_event_id
                     log_error({'user_id': self.user.id,
                                'error': error_message})
+                return attendee
             except Exception as e:
                 error_message = e.message
                 log_exception({'user_id': self.user.id,
                                'error': error_message})
-                # TODO I think we should raise here.
-            return attendee
+                raise
+

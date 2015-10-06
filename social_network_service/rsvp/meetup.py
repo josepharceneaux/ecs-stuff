@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from common.models.event import Event
 from base import RSVPBase
+from social_network_service.custom_exections import AccessTokenHasExpired
 from social_network_service.utilities import http_request, Attendee, \
     milliseconds_since_epoch_to_dt, log_exception, log_error
 
@@ -48,12 +49,6 @@ class Meetup(RSVPBase):
                     if not next_url:
                         break
             return rsvps
-        # TODO why not check for other status
-        elif response.status_code == 401:
-            # This is the error code for Not Authorized user(Expired Token)
-            # if this error code occurs, we return None and RSVPs are not
-            # processed further
-            return None
 
     def get_attendee(self, rsvp):
         """
@@ -127,9 +122,9 @@ class Meetup(RSVPBase):
                                     % social_network_event_id
                     log_error({'user_id': self.user.id,
                                'error': error_message})
+                return attendee
             except Exception as e:
                 error_message = e.message
                 log_exception({'user_id': self.user.id,
                                'error': error_message})
-                # TODO should we not raise
-            return attendee
+                raise

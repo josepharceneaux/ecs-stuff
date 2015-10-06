@@ -1,8 +1,6 @@
-from sqlalchemy import and_
 from db import db
 from sqlalchemy.orm import relationship, backref
-# from auth_service.oauth import logger
-# from auth_service.oauth.modules.handy_functions import is_number
+from sqlalchemy import and_
 import time
 import datetime
 import logging
@@ -58,6 +56,10 @@ class User(db.Model):
 
     def get_id(self):
         return unicode(self.id)
+
+    @property
+    def name(self):
+        return self.first_name + ' ' + self.last_name
 
     def __repr__(self):
         return "<email (email=' %r')>" % self.email

@@ -1,19 +1,22 @@
 import json
+
 from datetime import datetime
 from datetime import timedelta
+
+from common.models.venue import Venue
 from common.models.event import Event
 from common.models.organizer import Organizer
-from common.models.venue import Venue
+
 from social_network_service.utilities import http_request
 from social_network_service.utilities import milliseconds_since_epoch
 from social_network_service.utilities import milliseconds_since_epoch_to_dt
-from social_network_service.custom_exections import EventNotCreated, VenueNotFound
-from social_network_service.custom_exections import EventNotPublished
+from social_network_service.custom_exections import VenueNotFound
+from social_network_service.custom_exections import EventNotCreated
 from social_network_service.custom_exections import EventInputMissing
 from social_network_service.custom_exections import EventLocationNotCreated
-
 from social_network_service.event.base import EventBase
-from social_network_service.utilities import log_error, logger
+from social_network_service.utilities import log_error
+from social_network_service import logger
 
 MEETUP = 'Meetup'
 
@@ -39,8 +42,8 @@ class Meetup(EventBase):
         self.location = None
         self.group_url_name = None
         self.social_network_event_id = None
-        self.start_date = kwargs.get('start_date') or (datetime.now() - timedelta(days=10))
-        self.end_date = kwargs.get('end_date') or (datetime.now() + timedelta(days=30))
+        self.start_date = kwargs.get('start_date') or (datetime.now() - timedelta(days=5))
+        self.end_date = kwargs.get('end_date') or (datetime.now() + timedelta(days=5))
         self.start_time_since_epoch = milliseconds_since_epoch(self.start_date)
         self.end_time_since_epoch = milliseconds_since_epoch(self.end_date)
 
@@ -56,7 +59,7 @@ class Meetup(EventBase):
         # page size is 100 so if we have 500 records we will make
         # 5 requests (using pagination where each response will contain
         # 100 records).
-        events_url = self.api_url + '/events/?sign=true&page=100'
+        events_url = self.api_url + '/events/?sign=true&page=100&fields=timezone'
         params = {
             'member_id': self.member_id,
             'time': '%.0f, %.0f' %
@@ -222,14 +225,15 @@ class Meetup(EventBase):
             group_url_name=event['group']['urlname'],
             # Let's drop error logs if venue has no address, or if address
             # has no longitude/latitude
-            url='',
+            url=event['event_url'],
             start_datetime=start_time,
             end_datetime=end_time,
             registration_instruction='',
             cost=0,
             currency='',
-            timezone='',
-            max_attendees=0
+            timezone=event.get('timezone'),
+            max_attendees=event.get('maybe_rsvp_count', 0) +
+                          event.get('yes_rsvp_count', 0) + event.get('waitlist_count', 0)
         )
 
     def create_event(self):

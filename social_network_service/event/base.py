@@ -4,11 +4,15 @@ all social networks that have event related functionality like save_event, delet
 
 """
 from abc import ABCMeta, abstractmethod
-from social_network_service.custom_exections import EventNotSaveInDb, EventNotUnpublished
-from social_network_service.utilities import log_error, get_class, http_request, logger, \
-    log_exception
-from common.models.event import Event
+
+from social_network_service import logger
+from social_network_service.custom_exections import EventNotSaveInDb, \
+    EventNotUnpublished
+from social_network_service.utilities import log_error, get_class, \
+    http_request, log_exception
+
 from common.models.user import User
+from common.models.event import Event
 from common.models.user import UserCredentials
 from common.models.social_network import SocialNetwork
 
@@ -171,33 +175,40 @@ class EventBase(object):
         if events:
             self.pre_process_events(events)
         if events:
+            logger.debug('Events of %s(UserId: %s) are being processed '
+                         'to save in database.'
+                         % (self.user.name, self.user.id))
             for event in events:
                 event = self.event_sn_to_gt_mapping(event)
                 if event:
-                    event_in_db = Event.get_by_user_and_vendor_id(event.user_id,
-                                                                  event.social_network_event_id)
+                    event_in_db = \
+                        Event.get_by_user_and_social_network_event_id(
+                            event.user_id,
+                            event.social_network_event_id)
                     try:
                         if event_in_db:
                             data = dict(title=event.title,
                                         description=event.description,
                                         start_datetime=event.start_datetime,
-                                        end_datetime=event.end_datetime)
+                                        end_datetime=event.end_datetime,
+                                        url=event.url,
+                                        timezone=event.timezone,
+                                        max_attendees=event.max_attendees)
                             event_in_db.update(**data)
                         else:
                             Event.save(event)
                     except Exception as error:
-                        error_message = 'Cannot process an event. Social network: ' \
-                                        '%s. Details: %s' \
-                                        % (self.social_network.id, error.message)
+                        error_message = 'Cannot process an event. Social ' \
+                                        'network: %s. Details: %s' \
+                                        % (self.social_network.id,
+                                           error.message)
                         log_exception({
                             'user_id': self.user.id,
                             'error': error_message,
                         })
-                        # Now let's try to process the next event
-        else:
-            log_error({'user_id': self.user.id,
-                       'error': 'There is No event to import for user '
-                                'in provided time range'})
+            logger.debug('%s Event(s) of %s(UserId: %s) has/have been '
+                         'saved/updated in database.'
+                         % (len(events), self.user.name, self.user.id))
         if events:
             self.post_process_events(events)
 
@@ -305,6 +316,11 @@ class EventBase(object):
                                     user_credentials=user_credentials)
         # gets events of given Social Network from database
         self.events = self.get_events_from_db(sn_rsvp_obj.start_date_dt)
+        if self.events:
+            logger.debug('There are %s events of %s(UserId: %s) in database for '
+                         'provided time range.\nSocial Network is %s'
+                         % (len(self.events), self.user.name, self.user.id,
+                            self.social_network.name))
         # process rsvps to save in database
         sn_rsvp_obj.process_rsvps(self.events)
         self.rsvps = sn_rsvp_obj.rsvps

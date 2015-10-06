@@ -6,7 +6,6 @@ import re
 import imp
 import sys
 import json
-import logging
 import inspect
 import requests
 import datetime
@@ -17,9 +16,10 @@ from requests_oauthlib import OAuth2Session
 from flask import current_app as app
 
 from common.models.user import User
-from social_network_service.custom_exections import SocialNetworkNotImplemented, ApiException
+from social_network_service import logger
+from social_network_service.custom_exections import SocialNetworkNotImplemented, ApiException, AccessTokenHasExpired
 
-logger = logging.getLogger('social_network_service.app')
+OAUTH_SERVER = app.config['OAUTH_SERVER_URI']
 
 
 class Attendee(object):
@@ -86,7 +86,7 @@ def authenticate_user(request):
         auth_token = auth_token.lower().replace('bearer ', '')
         try:
             remote = OAuth2Session(token={'access_token': auth_token})
-            response = remote.get(app.config['OAUTH_SERVER_URI'])
+            response = remote.get(OAUTH_SERVER)
             if response.status_code == 200:
                 user_id = response.json().get('user_id') or ''
                 return User.get_by_id(user_id) if user_id else None
@@ -199,7 +199,14 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                 # we can raise it with Response.raise_for_status():"""
                 response.raise_for_status()
             except requests.exceptions.HTTPError as e:
-                if 'errors' in e.response.json():
+                if e.response.status_code == 401:
+                    # This is the error code for Not Authorized user(Expired Token)
+                    # if this error code occurs, we raise exception
+                    # AccessTokenHasExpired
+                    raise AccessTokenHasExpired('API Error: Access token has expired.'
+                                                ' User Id: %s' % user_id)
+                # checks if error occurred on "Server" or is it a bad request
+                elif e.response.status_code < 500 and 'errors' in e.response.json():
                     error_message = e.message + ' , Details: ' \
                                     + json.dumps(e.response.json().get('errors'))
                 else:

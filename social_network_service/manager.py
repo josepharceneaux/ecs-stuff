@@ -1,20 +1,22 @@
 import sys
-import logging
 import argparse
 import traceback
 from social_network_service import init_app
+init_app()
 
 from gevent.pool import Pool
 from datetime import datetime
 from dateutil.parser import parse
-from common.models.event import Event
-from common.models.user import UserCredentials, User
-from common.models.social_network import SocialNetwork
+
+from social_network_service import logger
 from utilities import get_class, log_error
+
+from common.models.event import Event
+from common.models.user import UserCredentials
+from common.models.social_network import SocialNetwork
+
 from social_network_service.custom_exections import SocialNetworkError, \
     SocialNetworkNotImplemented, InvalidDatetime, EventInputMissing
-
-logger = logging.getLogger('event_service.app')
 
 POOL_SIZE = 5
 
@@ -151,7 +153,6 @@ def start():
     :return:
     """
     parser = argparse.ArgumentParser()
-    logger.debug("Hey world...")
     parser.add_argument("-m",
                         action="store",
                         type=str,
@@ -183,6 +184,10 @@ def start():
             if not user_credentials.member_id:
                 # gets an save the member Id of gt-user
                 sn.get_member_id(dict())
+            logger.debug('%s Importer has started for %s(UserId: %s).'
+                         ' Social Network is %s.'
+                         % (name_space.mode.title(), sn.user.name, sn.user.id,
+                            social_network.name))
             job_pool.spawn(sn.process, name_space.mode,
                            user_credentials=user_credentials)
         job_pool.join()
