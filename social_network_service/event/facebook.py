@@ -16,7 +16,7 @@ facebook = import_from_dist_packages('facebook')
 class Facebook(EventBase):
     def __init__(self, *args, **kwargs):
         super(Facebook, self).__init__(*args, **kwargs)
-        self.start_date = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+        self.start_date = (datetime.now() - timedelta(days=3000)).strftime("%Y-%m-%d")
         self.end_date = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
         self.graph = None
 
@@ -35,7 +35,7 @@ class Facebook(EventBase):
                 'v2.4/me/events',
                 fields='is_viewer_admin, description, name, category, owner, '
                        'place, start_time, ticket_uri, end_time, parent_group, '
-                       'attending_count, maybe_count, noreply_count',
+                       'attending_count, maybe_count, noreply_count, timezone',
                 since=self.start_date,
                 until=self.end_date
             )
@@ -82,13 +82,12 @@ class Facebook(EventBase):
         :param event:
         :return:
         """
-        # self.traceback_info.update({"functionName": "normalize_event()"})
-
-        venue_id = None
-        organizer_id = None
+        venue = None
         owner = None
-        organizer = None
         location = None
+        venue_id = None
+        organizer = None
+        organizer_id = None
         assert event is not None
         if event.get('place'):
             venue = event.get('place')
@@ -120,9 +119,9 @@ class Facebook(EventBase):
                 Organizer.save(organizer_instance)
                 organizer_id = organizer_instance.id
 
-        if location:
+        if venue:
             venue_data = dict(
-                social_network_venue_id=event['venue_id'],
+                social_network_venue_id=venue['id'],
                 user_id=self.user.id,
                 address_line1=location['street'] if location.has_key('street') else '',
                 address_line2='',
@@ -134,7 +133,7 @@ class Facebook(EventBase):
                 latitude=float(location['latitude']) if location.has_key('latitude') else 0,
             )
             venue_in_db = Venue.get_by_user_id_and_social_network_venue_id(self.user.id,
-                                                                           event['venue_id'])
+                                                                           venue['id'])
             if venue_in_db:
                 venue_in_db.update(**venue_data)
                 venue_id = venue_in_db.id
@@ -152,8 +151,9 @@ class Facebook(EventBase):
                 organizer_id=organizer_id,
                 venue_id=venue_id,
                 group_id=0,
-                start_datetime=event['start_time'] if event and event.has_key('start_time') else None,
-                end_datetime=event['end_time'] if event and event.has_key('end_time') else None,
+                start_datetime=event.get('start_time'),
+                end_datetime=event.get('end_time'),
+                timezone=event.get('timezone'),
                 registration_instruction='',
                 cost=0,
                 currency='',

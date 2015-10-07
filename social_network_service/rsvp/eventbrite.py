@@ -54,7 +54,7 @@ class Eventbrite(RSVPBase):
 
         **See Also**
             .. seealso:: handle_rsvp() function in social_network_service/app/app.py
-                         for more understanding.
+                         for more insight.
 
         .. note::
             You can learn more about webhook and eventbrite API from following link
@@ -194,8 +194,8 @@ class Eventbrite(RSVPBase):
 
     def get_attendee(self, rsvp):
         """
-        :param rsvp: rsvp is the dict which we got from the response
-            of specific social network.
+        :param rsvp: rsvp is likely the dict we get from the response
+            of social network API.
 
         - This function is used to get the data of candidate related
           to given rsvp. It attaches all the information in attendee object.
@@ -213,8 +213,11 @@ class Eventbrite(RSVPBase):
             attendee = self.get_attendee(rsvp)
 
         **See Also**
-            .. seealso:: process_rsvps() method in EventBase class
-            .. seealso:: process_rsvps_via_webhook() method in EventBase class
+            .. seealso:: process_rsvps() method in RSVPBase class inside
+                social_network_service/rsvp/base.py
+
+            .. seealso:: process_rsvps_via_webhook() method in class Eventbrite
+                inside social_network_service/rsvp/eventbrite.py
 
         :return: attendee object which contains data about the candidate
         """

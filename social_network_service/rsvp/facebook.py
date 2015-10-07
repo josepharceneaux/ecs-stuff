@@ -13,21 +13,85 @@ facebook = import_from_dist_packages('facebook')
 
 class Facebook(RSVPBase):
     """
-    This class implements all functions required to import
-    users' events from facebook and their RSVPs.
+    - This class is inherited from RSVPBase class.
+    - This implements the following abstract methods
+
+        1- get_rsvps() and
+        2- get_attendee() defined in interface.
+
+    :Example:
+
+        - To process rsvp of an facebook event (via social network manager) you
+            have to do following steps:
+
+        1- Crete the object of this class by providing required parameters.
+            sn_rsvp_obj = sn_rsvp_class(social_network=self.social_network,
+                                        headers=self.headers,
+                                        user_credentials=user_credentials)
+
+        2. Get events of user from db within specified date range
+            self.events = self.get_events_from_db(sn_rsvp_obj.start_date_dt)
+
+        3. Get rsvps of all events using API of meetup
+            self.rsvps = sn_rsvp_obj.get_all_rsvps(self.events)
+
+        4. Call method process_rsvp() on rsvp object to process RSVPs
+            sn_rsvp_obj.process_rsvps(self.rsvps)
+
+        **See Also**
+            .. seealso:: process_events_rsvps() method in
+            social_network_service/event/base.py for more insight.
+
+        .. note::
+            You can learn more about meetup API from following link
+            - https://developers.facebook.com/docs/graph-api
     """
 
     def __init__(self, *args, **kwargs):
+        """
+        - Here we set the date range to get events from database.
+        :param args:
+        :param kwargs:
+        :return:
+        """
         super(Facebook, self).__init__(*args, **kwargs)
         self.start_date = (datetime.now() - timedelta(days=3000)).strftime("%Y-%m-%d")
-        self.end_date = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
+        self.end_date = (datetime.now() + timedelta(days=60)).strftime("%Y-%m-%d")
         self.start_date_dt = datetime.strptime(self.start_date, "%Y-%m-%d")
         self.end_date_dt = datetime.strptime(self.end_date, "%Y-%m-%d")
         self.graph = None
 
     def get_rsvps(self, event):
         """
-        This method retrieves RSPVs for user's events on Facebook.
+        :param event: event is a db model object of model "Event".
+
+        - We get RSVPs of given event from Graph API of Facebook
+
+        - We use this method while importing RSVPs through social network
+            manager.
+
+        :Example:
+
+        - Create RSVP class object as
+
+        sn_rsvp_obj = sn_rsvp_class(social_network=self.social_network,
+                                    headers=self.headers,
+                                    user_credentials=user_credentials)
+
+        - Then call get_all_rsvps() on sn_rsvp_obj by passing events in
+        parameters as follow
+
+            self.rsvps = sn_rsvp_obj.get_all_rsvps(self.events)
+
+        - Inside get_all_rsvps(), we call get_rsvps() on class object.
+
+        - It appends rsvps of an events in a list and returns it
+
+        **See Also**
+            .. seealso:: get_all_rsvps() method in RSVPBase class
+            inside social_network_service/rsvp/base.py for more insight.
+
+        :return: list of rsvps
         """
         rsvps = []
         try:
@@ -67,6 +131,31 @@ class Facebook(RSVPBase):
         return rsvps
 
     def get_all_pages(self, response, target_list):
+        """
+         :param response: rsvp is likely the dict we get from the response
+            of Graph API of Facebook.
+
+        - This function is used to get the data of candidate related
+          to given rsvp. It attaches all the information in attendee object.
+          attendees is a utility object we share in calls that contains
+          pertinent data.
+
+        - This method is called from process_rsvps() present in
+          RSVPBase class.
+
+        :Example:
+
+            attendee = self.get_attendee(rsvp)
+
+        **See Also**
+            .. seealso:: process_rsvps() method in RSVPBase class inside
+            social_network_service/rsvp/base.py for more insight.
+
+        :return: attendee object which contains data about the candidate
+        :param response:
+        :param target_list:
+        :return:
+        """
         while True:
             try:
                 response = requests.get(response['paging']['next'])
@@ -88,11 +177,26 @@ class Facebook(RSVPBase):
 
     def get_attendee(self, rsvp):
         """
-        RSVP data returned from Facebook API looks like
-        So we will get the member data and issue a member call to get more info
-        about member so we can later save him as a candidate
-        :param rsvp:
-        :return:
+        :param rsvp: rsvp is likely the dict we get from the response
+            of Graph API of Facebook.
+
+        - This function is used to get the data of candidate related
+          to given rsvp. It attaches all the information in attendee object.
+          attendees is a utility object we share in calls that contains
+          pertinent data.
+
+        - This method is called from process_rsvps() present in
+          RSVPBase class.
+
+        :Example:
+
+            attendee = self.get_attendee(rsvp)
+
+        **See Also**
+            .. seealso:: process_rsvps() method in RSVPBase class inside
+            social_network_service/rsvp/base.py for more insight.
+
+        :return: attendee object which contains data about the candidate
         """
         try:
             data = self.graph.get_object('v2.4/' + rsvp['id'],
@@ -117,7 +221,6 @@ class Facebook(RSVPBase):
                 location = location['location']
         else:
             location = {}
-        attendee = None
         if data:
             try:
                 attendee = Attendee()

@@ -95,8 +95,8 @@ class RSVPBase(object):
         sn_rsvp_obj.process_rsvps(self.events)
 
     **See Also**
-        .. seealso:: get_rsvp() method in EventBase class for more
-                     understanding.
+        .. seealso:: get_rsvp() method in EventBase class inside
+                    social_network_service/event/base.py for more insight.
     """
     __metaclass__ = ABCMeta
 
@@ -141,6 +141,7 @@ class RSVPBase(object):
 
         **See Also**
         .. seealso:: get_all_rsvps() method in RSVPBase class
+        inside social_network_service/rsvp/base.py
 
         :return: It returns the list of rsvps for a particular event where
         each rsvp is likely the response from social network in dict format.
@@ -156,7 +157,7 @@ class RSVPBase(object):
             - Get RSVPs of that event. This is done in the get_rsvps()
                 method which gets RSVPs and attach them to rsvps list of dicts.
 
-        - We use this method while importing RSVPs both through manager.
+        - We use this method while importing RSVPs through manager.
 
         :Example:
 
@@ -177,6 +178,7 @@ class RSVPBase(object):
 
         **See Also**
             .. seealso:: process_events_rsvps() method in EventBase class
+            inside social_network_service/event/base.py
         """
         if events:
             logger.debug('Going to get RSVPs for events '
@@ -237,6 +239,7 @@ class RSVPBase(object):
 
         **See Also**
         .. seealso:: process_events_rsvps() method in EventBase class
+            social_network_service/event/base.py
         """
         for rsvp in rsvps:
             # Here we pick one RSVP from self.rsvps and start doing
@@ -334,7 +337,8 @@ class RSVPBase(object):
             attendee = self.get_attendee(rsvp)
 
         **See Also**
-            .. seealso:: process_rsvps() method in EventBase class
+            .. seealso:: process_rsvps() method in RSVPBase class inside
+            social_network_service/rsvp/base.py
         :return attendee:
         """
         pass
