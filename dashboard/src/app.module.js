@@ -8,6 +8,7 @@
         // Features (listed alphabetically)
         'app.approot',
         'app.dashboard',
+        'app.footer',
         'app.sidenav',
         'app.topnav'
     ]);
