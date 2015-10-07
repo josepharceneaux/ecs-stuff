@@ -1,6 +1,6 @@
 import json
 import requests
-from flask import current_app as app
+from social_network_service import flask_app as app
 from common.models.organizer import Organizer
 from common.models.venue import Venue
 

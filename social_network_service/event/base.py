@@ -92,6 +92,7 @@ class EventBase(object):
 
         self.events = []
         self.rsvps = []
+        self.data = None
         self.headers = kwargs.get('headers')
         self.user_credentials = kwargs.get('user_credentials')
         self.user = kwargs.get('user') or User.get_by_id(self.user_credentials.user_id)
@@ -327,7 +328,7 @@ class EventBase(object):
         # process RSVPs and save in database
         sn_rsvp_obj.process_rsvps(self.rsvps)
 
-    def save_event(self, data):
+    def save_event(self):
         """
         This method takes dictionary containing event data. It first checks if any event is there
         with given info (user_id, social_network_id, social_network_event_id), then it updates
@@ -340,6 +341,7 @@ class EventBase(object):
         :return event.id: id for event that was created or updated
         :rtype event.id : int
         """
+        data = self.data
         sn_event_id = data['social_network_event_id']
         social_network_id = data['social_network_id']
         event = Event.get_by_user_id_social_network_id_vendor_event_id(

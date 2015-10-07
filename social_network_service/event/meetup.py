@@ -26,6 +26,27 @@ class Meetup(EventBase):
     This class is inherited from TalentEventBase class
     This implements the abstract methods defined in interface
     It also implements functions to create event on Meetup website
+
+    :Example:
+
+        To create a meetup event you have to do tha following:
+        1. Create Meetup instance
+            meetup = Meetup(user=user_obj,
+                            social_network=social_network_obj,
+                            headers=authentication_headers
+                            )
+        2. Then first create Meetup specific event data by calling event_gt_to_sn_mapping()
+            meetup.event_gt_to_sn_mapping(data)
+
+            it will add parsed data to 'self.payload' dictionary
+
+        3. Now call create_event() which will
+                get venue from db given by venue_id (local db venue id) in self.payload.
+                if venue in db contains 'social_network_venue_id', it means that venues has already
+                been created on Meetup so no need to create again on Meetup, just return that id to be passed
+                in self.payload.
+                And if 'social_network_venue_id' in none, creates venue on Meetup and returns Meetup venue id
+                It now sends a POST request to Meetup API to create event and returns event
     """
 
     def __init__(self, *args, **kwargs):
@@ -253,7 +274,7 @@ class Meetup(EventBase):
         if response.ok:
             event_id = response.json().get('id')
             logger.info('|  Event %s created Successfully  |' % self.payload['name'])
-            return event_id, ''
+            self.data['social_network_event_id'] = event_id
         else:
             error_message = 'Event was not Created. Error occurred during draft creation'
             log_error({'user_id': self.user.id,
@@ -278,7 +299,7 @@ class Meetup(EventBase):
         if response.ok:
             event_id = response.json().get('id')
             logger.info('|  Event %s updated Successfully  |' % self.payload['name'])
-            return event_id, ''
+            self.data['social_network_event_id'] = event_id
         else:
             error_message = 'Event was not Created. Error occurred during event creation on Meetup'
             log_error({'user_id': self.user.id,
@@ -287,8 +308,11 @@ class Meetup(EventBase):
 
     def add_location(self):
         """
-        This function adds the location of event for meetup.
-        :return id: of venue created if creation is successful.
+        This function adds the location of event for on Meetup.com.
+        :exception EventLocationNotCreated: raises exception if unable to create venue on Meetup.com
+        :exception VenueNotFound: raises exception if unable to find venue in getTalent database
+        :return id: id of venue created if creation is successful.
+        :rtype id: int
         """
         venue_in_db = Venue.get_by_user_id_social_network_id_venue_id(self.user.id,
                                                                       self.social_network.id,
@@ -348,6 +372,7 @@ class Meetup(EventBase):
         created in the unit testing.
         :param event_id:id of newly created event
         :return: True if event is deleted from vendor, False other wsie
+        :rtype Boolean
         """
         self.url_to_delete_event = self.api_url + "/event/" + str(event_id)
         super(Meetup, self).unpublish_event(event_id, method=method)
@@ -358,11 +383,15 @@ class Meetup(EventBase):
         Here we validate that all the required fields for the event creation on
         meetup are filled. If any required filed is missing, raises exception
         named  EventInputMissing.
+        :param data: dictionary containing event data
+        :type data: dict
+        :exception EventInputMissing: raises exception if all required fields are not found in data dictionary
         """
+        # these are required fields for Meetup event
         mandatory_input_data = ['title', 'description', 'group_id',
                                 'group_url_name', 'start_datetime', 'max_attendees',
                                 'venue_id']
-
+        # all required fields must be given in data dictionary otherwise raise exception
         if not all([input in data and data[input] for input in mandatory_input_data]):
             log_error({
                 'user_id': '',
@@ -372,10 +401,14 @@ class Meetup(EventBase):
 
     def event_gt_to_sn_mapping(self, data):
         """
-        This is actually the mapping of data from the from to the data required
-        for API calls on Meetup.
+        This is actually the mapping of data from the input data from
+        EventCreationForm to the data required for API calls on Meetup.com.
+        :param data: dictionary containing event data
+        :type data: dict
+        :exception KeyError: can raise KeyError if some key not found in event data
         """
         if data:
+            self.data = data
             self.validate_required_fields(data)
             # assert whether data['start_datetime'] is instance of dt
             # converting Datetime object to epoch for API call

@@ -1,6 +1,5 @@
 import os
 from common.models.db import db
-from social_network_service import flask_app
 import pytest
 import datetime
 from common.models.venue import Venue
@@ -60,13 +59,13 @@ def app(request):
     Create a Flask app, and override settings, for the whole test session.
     """
 
-    flask_app.config.update(
+    app.config.update(
         TESTING=True,
         # SQLALCHEMY_DATABASE_URI=TEST_DATABASE_URI,
         LIVESERVER_PORT=6000
     )
 
-    return _app.app.test_client()
+    return app.test_client()
 
 
 @pytest.fixture(scope='session')

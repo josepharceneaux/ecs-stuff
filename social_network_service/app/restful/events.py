@@ -23,7 +23,48 @@ class Events(Resource):
     @authenticate
     def get(self, **kwargs):
         """
-        This action returns a list of user events.
+        This action returns a list of user events and their count
+
+        :Example:
+            headers = {'Authorization': 'Bearer <access_token>'}
+            response = requests.get(API_URL + '/events/', headers=headers)
+
+        .. Response::
+
+            {
+              "count": 1,
+              "events": [
+                {
+                  "cost": 0,
+                  "currency": "USD",
+                  "description": "Test Event Description",
+                  "end_datetime": "2015-10-30 16:51:00",
+                  "group_id": "18837246",
+                  "group_url_name": "QC-Python-Learning",
+                  "id": 189,
+                  "max_attendees": 10,
+                  "organizer_id": 1,
+                  "registration_instruction": "Just Come",
+                  "social_network_event_id": "18970807195",
+                  "social_network_id": 18,
+                  "start_datetime": "2015-10-25 16:50:00",
+                  "tickets_id": "39836307",
+                  "timezone": "Asia/Karachi",
+                  "title": "Test Event",
+                  "url": "",
+                  "user_id": 1,
+                  "venue_id": 2
+                }
+              ]
+            }
+
+        .. Status:: 200 (OK)
+                    500 (Internal Server Error)
+
+        :keyword user_id: user_id of events owner
+        :type user_id: int
+        :return events_data: a dictionary containing list of events and their count
+        :rtype json
         """
         try:
             # Refresh Session before fetching events from db
@@ -39,11 +80,65 @@ class Events(Resource):
     def post(self, **kwargs):
         """
         This method takes data to create event in local database as well as on corresponding social network.
+
+        :Example:
+            event_data = {
+                            "organizer_id": 1,
+                            "venue_id": 2,
+                            "title": "Test Event",
+                            "description": "Test Event Description",
+                            "registration_instruction": "Just Come",
+                            "end_datetime": "30 Oct, 2015 04:51 pm",
+                            "group_url_name": "QC-Python-Learning",
+                            "social_network_id": 18,
+                            "timezone": "Asia/Karachi",
+                            "cost": 0,
+                            "start_datetime": "25 Oct, 2015 04:50 pm",
+                            "currency": "USD",
+                            "group_id": 18837246,
+                            "max_attendees": 10
+            }
+
+            headers = {
+                            'Authorization': 'Bearer <access_token>',
+                            'Content-Type': 'application/json'
+                       }
+            data = json.dumps(event_data)
+            response = requests.get(API_URL + '/events/', headers=headers)
+            response = requests.post(
+                                        API_URL + '/events/',
+                                        data=data,
+                                        headers=headers,
+                                    )
+
+        .. Response::
+
+            {
+                id: 123232
+            }
+        .. Status:: 201 (Resource Created)
+                    500 (Internal Server Error)
+                    401 (Unauthorized to access getTalent)
+                    452 (Unable to determine Social Network)
+                    453 (Some Required event fields are missing)
+                    455 (Event not created)
+                    456 (Event not Published on Social Network)
+                    458 (Event venue not created on Social Network)
+                    459 (Tickets for event not created)
+                    460 (Event was not save in getTalent database)
+                    461 (User credentials of user for Social Network not found)
+                    462 (No implementation for specified Social Network)
+                    464 (Invalid datetime for event)
+                    465 (Specified Venue not found in database)
+                    466 (Access token for Social Network has expired)
+
+
         :return: id of created event
         """
-
+        # get json post request data
         event_data = request.get_json(force=True)
         try:
+            # create event on social network and local database
             gt_event_id = process_event(event_data, kwargs['user_id'])
         except ApiException as err:
             raise
@@ -55,6 +150,11 @@ class Events(Resource):
 
     @authenticate
     def delete(self, **kwargs):
+        """
+        Deletes multiple event whose ids are given in list in request data
+        :param kwargs:
+        :return:
+        """
         user_id = kwargs['user_id']
         req_data = request.get_json(force=True)
         event_ids = req_data['event_ids'] if 'event_ids' in req_data and isinstance(req_data['event_ids'], list) else []

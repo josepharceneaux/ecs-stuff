@@ -87,17 +87,16 @@ def process_event(data, user_id, method='Create'):
         except Exception as e:
             raise InvalidDatetime('Invalid DateTime: Kindly specify datetime in ISO format')
         # posting event on social network
+
         event_obj.event_gt_to_sn_mapping(data)
         if method == 'Create':
-            event_id, tickets_id = event_obj.create_event()
-            data['tickets_id'] = tickets_id
+            event_obj.create_event()
         else:
-            event_id, tickets_id = event_obj.update_event()
+            event_obj.update_event()
 
-        if event_id:  # Event has been successfully published on vendor
+        if event_obj.data['social_network_event_id']:  # Event has been successfully published on vendor
             # save event in database
-            data['social_network_event_id'] = event_id
-            gt_event_id = event_obj.save_event(data)
+            gt_event_id = event_obj.save_event()
             return gt_event_id
     else:
         error_message = 'Data not received from Event Creation/Edit FORM'
