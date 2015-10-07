@@ -152,13 +152,12 @@ def handle_rsvp():
             if action == 'order.placed':
                 url_of_rsvp = str(json.loads(request.data)['api_url'])
                 # gets dictionary object of social_network_rsvp_id
-                rsvp = get_rsvp_id(url_of_rsvp)
+                social_network_rsvp_id = get_rsvp_id(url_of_rsvp)
                 webhook_id = data['config']['webhook_id']
                 user_credentials = EventbriteRsvp.get_user_credentials_by_webhook(webhook_id)
                 user_id = user_credentials.user_id
                 social_network_class = get_class(user_credentials.social_network.name.lower(),
                                                  'social_network')
-                rsvp_class = get_class(user_credentials.social_network.name.lower(), 'rsvp')
                 # we call social network class here for auth purpose, If token is expired
                 # access token is refreshed and we use fresh token
                 sn = social_network_class(user_id=user_credentials.userId,
@@ -166,11 +165,12 @@ def handle_rsvp():
                 if not user_credentials.memberId:
                     # get an save the member Id of gt-user
                     sn.get_member_id(dict())
+                rsvp_class = get_class(user_credentials.social_network.name.lower(), 'rsvp')
                 rsvp_obj = rsvp_class(user_credentials=user_credentials,
                                       social_network=user_credentials.social_network,
                                       headers=sn.headers)
                 # calls class method to process RSVP
-                rsvp_obj.process_rsvp_via_webhook(rsvp)
+                rsvp_obj.process_rsvp_via_webhook(social_network_rsvp_id)
             elif action == 'test':
                 print 'Successful Webhook Connection'
         else:

@@ -302,10 +302,11 @@ class EventBase(object):
                                                              start_date
                                                              )
 
-    def get_rsvps(self, user_credentials):
+    def process_events_rsvps(self, user_credentials):
         """
-        This gets the rsvps of events present in database and process
-        them to save in database
+        We get events against a particular user_credential.
+        Then we get the rsvps of all events present in database and process
+        them to save in database.
         :param user_credentials:
         :return:
         """
@@ -318,13 +319,14 @@ class EventBase(object):
         # gets events of given Social Network from database
         self.events = self.get_events_from_db(sn_rsvp_obj.start_date_dt)
         if self.events:
-            logger.debug('There are %s events of %s(UserId: %s) in database for '
-                         'provided time range.\nSocial Network is %s'
-                         % (len(self.events), self.user.name, self.user.id,
-                            self.social_network.name))
-        # process rsvps to save in database
-        sn_rsvp_obj.process_rsvps(self.events)
-        self.rsvps = sn_rsvp_obj.rsvps
+            logger.debug('There are %s events of %s(UserId: %s) in database '
+                         'within provided time range.'
+                         % (len(self.events), self.user.name, self.user.id))
+        # get RSVPs of all events present in self.events using API of
+        # respective social network
+        self.rsvps = sn_rsvp_obj.get_all_rsvps(self.events)
+        # process RSVPs and save in database
+        sn_rsvp_obj.process_rsvps(self.rsvps)
 
     def save_event(self):
         """

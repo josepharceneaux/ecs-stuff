@@ -8,16 +8,19 @@ import json
 
 from datetime import datetime
 from datetime import timedelta
+
+from common.models.venue import Venue
+from common.models.organizer import Organizer
+
+from social_network_service import flask_app as app
+from social_network_service.event.base import EventBase
 from social_network_service.custom_exections import EventNotCreated, \
     VenueNotFound, TicketsNotCreated, EventNotPublished, EventInputMissing, \
     EventLocationNotCreated
-from common.models.organizer import Organizer
-from common.models.venue import Venue
-from social_network_service.event.base import EventBase
 from social_network_service.utilities import log_error, logger, log_exception, \
     http_request
+
 from common.models.event import Event
-from social_network_service import flask_app as app
 EVENTBRITE = 'Eventbrite'
 WEBHOOK_REDIRECT_URL = app.config['WEBHOOK_REDIRECT_URL']
 
@@ -43,7 +46,7 @@ class Eventbrite(EventBase):
         self.ticket_payload = None
         self.venue_payload = None
         self.start_date_in_utc = kwargs.get('start_date') or \
-                                 (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+                                 (datetime.now() - timedelta(days=60)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     def get_events(self):
         """
