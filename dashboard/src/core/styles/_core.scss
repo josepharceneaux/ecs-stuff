@@ -9,6 +9,30 @@ body {
   cursor: pointer;
 }
 
-#app-content {
-  margin-left: $sidenav-width;
+#app-root {
+  position: relative;
+
+  .navbar-brand {
+    width: $sidenav-width;
+    border-right: 1px solid $navbar-default-border;
+  }
+
+  #app-sidenav {
+    position: absolute;
+    width: $sidenav-width;
+    left: 0;
+    top: $topnav-height;
+    bottom: $footer-height;
+    background-color: $color-sidenav;
+    border-right: 1px solid #000;
+  }
+
+  #app-content {
+    margin-left: $sidenav-width;
+    min-height: 600px;
+  }
+
+  #app-footer {
+    height: $footer-height;
+  }
 }

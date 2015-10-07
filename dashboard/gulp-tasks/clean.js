@@ -29,6 +29,8 @@ module.exports = function (config) {
 
     gulp.task('clean-styles', function () {
         var files = [].concat(
+            config.sourceDir + '*.css',
+            config.sourceDir + '*.css.map',
             config.tempDir + '**/*.css',
             config.buildDir + '**/*.css'
         );
