@@ -8,3 +8,7 @@ body {
 .nav, .pagination, .carousel, .panel-title a {
   cursor: pointer;
 }
+
+#app-content {
+  margin-left: $sidenav-width;
+}
