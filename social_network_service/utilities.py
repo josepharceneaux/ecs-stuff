@@ -13,11 +13,14 @@ import traceback
 import importlib
 
 from requests_oauthlib import OAuth2Session
+
+from social_network_service import logger
 from social_network_service import flask_app as app
+from social_network_service.custom_exections import SocialNetworkNotImplemented,\
+    ApiException, AccessTokenHasExpired
 
 from common.models.user import User
-from social_network_service import logger
-from social_network_service.custom_exections import SocialNetworkNotImplemented, ApiException, AccessTokenHasExpired
+
 
 OAUTH_SERVER = app.config['OAUTH_SERVER_URI']
 

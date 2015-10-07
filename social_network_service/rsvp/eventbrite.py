@@ -117,7 +117,7 @@ class Eventbrite(RSVPBase):
                 attendee.email = data['email']
                 attendee.vendor_rsvp_id = rsvp['rsvp_id']
                 attendee.gt_user_id = self.user.id
-                attendee.social_network_id = self.social_network_id
+                attendee.social_network_id = self.social_network.id
                 attendee.vendor_img_link = \
                     "<img class='pull-right'" \
                     " style='width:60px;height:30px' " \
@@ -125,7 +125,7 @@ class Eventbrite(RSVPBase):
                 # get event_id
                 vendor_event_id = data['event_id']
                 event = Event.get_by_user_id_social_network_id_vendor_event_id(
-                    self.user.id, self.social_network_id, vendor_event_id)
+                    self.user.id, self.social_network.id, vendor_event_id)
                 if event:
                     attendee.event = event
                 else:

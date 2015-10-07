@@ -19,20 +19,19 @@ class SocialNetworkBase(object):
         :param kwargs:
         :return:
         """
-        user_id = kwargs.get('user_id')
-        social_network_id = kwargs.get('social_network_id')
+        self.events = []
         self.api_relative_url = None
+        user_id = kwargs.get('user_id')
         self.user = User.query.get(user_id)
-        self.social_network = SocialNetwork.get_by_id(social_network_id)
-        self.events = None
+        self.social_network = SocialNetwork.get_by_name(self.__class__.__name__)
         self.user_credentials = UserCredentials.get_by_user_and_social_network_id(
-            user_id, social_network_id
+            user_id, self.social_network.id
         )
         if self.user_credentials:
             data = {
                 "access_token": self.user_credentials.access_token,
                 "gt_user_id": self.user_credentials.user_id,
-                "social_network_id": social_network_id,
+                "social_network_id": self.social_network.id,
                 "api_url": self.social_network.api_url
             }
             # checks if any field is missing for given user credentials
@@ -73,7 +72,6 @@ class SocialNetworkBase(object):
         event_class = get_class(sn_name, 'event')
         # create object of selected event class
         sn_event_obj = event_class(user=self.user,
-                                   social_network=self.social_network,
                                    headers=self.headers)
         if mode == 'event':
             # gets events using respective API of Social Network

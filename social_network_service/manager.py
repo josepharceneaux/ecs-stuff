@@ -166,8 +166,8 @@ def start():
     name_space = parser.parse_args()
     social_network_id = None
     if name_space.social_network is not None:
-        social_network = name_space.social_network.lower()
-        social_network_obj = SocialNetwork.get_by_name(social_network)
+        social_network_name = name_space.social_network.lower()
+        social_network_obj = SocialNetwork.get_by_name(social_network_name)
         social_network_id = social_network_obj.id
     all_user_credentials = UserCredentials.get_all_credentials(social_network_id)
     job_pool = Pool(POOL_SIZE)
@@ -178,8 +178,7 @@ def start():
                                              user_credentials=user_credentials)
             # we call social network class here for auth purpose, If token is expired
             # access token is refreshed and we use fresh token
-            sn = social_network_class(user_id=user_credentials.user_id,
-                                      social_network_id=social_network.id)
+            sn = social_network_class(user_id=user_credentials.user_id)
             if not user_credentials.member_id:
                 # gets an save the member Id of gt-user
                 sn.get_member_id(dict())

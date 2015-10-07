@@ -100,7 +100,7 @@ class Meetup(RSVPBase):
                 attendee.profile_url = data['link']
                 # attendee.picture_url = data['photo']['photo_link']
                 attendee.gt_user_id = self.user.id
-                attendee.social_network_id = self.social_network_id
+                attendee.social_network_id = self.social_network.id
                 attendee.rsvp_status = rsvp['response']
                 attendee.vendor_rsvp_id = rsvp['rsvp_id']
                 attendee.vendor_img_link = "<img class='pull-right' " \
@@ -114,7 +114,7 @@ class Meetup(RSVPBase):
                 attendee.added_time = dt
                 assert social_network_event_id is not None
                 event = Event.get_by_user_id_social_network_id_vendor_event_id(
-                    self.user.id, self.social_network_id, social_network_event_id)
+                    self.user.id, self.social_network.id, social_network_event_id)
                 if event:
                     attendee.event = event
                 else:

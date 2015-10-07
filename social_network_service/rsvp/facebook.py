@@ -134,7 +134,7 @@ class Facebook(RSVPBase):
                 # TODO also check in following if 'data' and 'url' keys are there as well
                 attendee.picture_url = data['picture']['data']['url'] if 'picture' in data else ''
                 attendee.gt_user_id = self.user.id
-                attendee.social_network_id = self.social_network_id
+                attendee.social_network_id = self.social_network.id
                 attendee.vendor_rsvp_id = rsvp['id']  # we are using profile_id
                 # here as we do not have any rsvp_id for this vendor
                 #TODO cannot we do datetime.now() for added_time
@@ -149,7 +149,7 @@ class Facebook(RSVPBase):
                 else:
                     attendee.rsvp_status = 'no'
                 event = Event.get_by_user_id_social_network_id_vendor_event_id(
-                    self.user.id, self.social_network_id, vendor_event_id)
+                    self.user.id, self.social_network.id, vendor_event_id)
                 if event:
                     attendee.event = event
                 else:

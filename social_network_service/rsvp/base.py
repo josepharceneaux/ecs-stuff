@@ -1,19 +1,121 @@
 import json
 
 from abc import ABCMeta, abstractmethod
-# from common.models.misc import Product
-from common.models.activity import Activity
-from common.models.candidate import CandidateSource, Candidate
-from common.models.product import Product
-from common.models.rsvp import RSVP, CandidateEventRSVP
-# from common.models.candidate import CandidateSource, Candidate
-from social_network_service import logger
-from social_network_service.custom_exections import AccessTokenHasExpired
-from social_network_service.utilities import log_exception, log_error
+
 from common.models.user import User
+from common.models.product import Product
+from common.models.activity import Activity
+from common.models.rsvp import RSVP, CandidateEventRSVP
+from common.models.candidate import CandidateSource, Candidate
+
+from social_network_service import logger
+from social_network_service.utilities import log_exception, log_error
 
 
 class RSVPBase(object):
+    """This class is the base class for handling RSVPs related to all three
+     social networks 1-Meetup, 2-Eventbrite, 3-Facebook for now.
+     It contains the common functionality and some abstract methods, which
+     are implemented by child classes.
+
+    It contains following methods:
+
+    * __init__():
+        This method is called by creating any child RSVP class object.
+        It sets initial values for RSVP object e.g.
+            It sets user, user_credentials, , social network and
+            headers (authentication headers)
+            It also initializes rsvp list to empty list.
+
+    * get_rsvps(self, event) : abstract
+        All child classes need to implement this method to get RVSPs of a
+        particular event from respective social network.
+
+    * process_rsvps(self, events):
+        This method loops over the list of events. It picks one event and call
+        get_rsvps(event) on it to get RSVPs of that event. It appends RSVPs
+        of all events in self,rsvps. Once all the events have been
+        traversed, it picks one rsvp from list self.rsvps and call
+        post_process_rsvp(self, rsvp) to process and save it in database.
+
+    * post_process_rsvp(self, rsvp):
+        This method do the required processing on one rsvp.
+
+    * get_attendee(self, rsvp): abstract
+        This method creates and returns the attendee object by getting data
+        about the candidate using respective API calls. (attendee object
+        contains the information about candidate like name, city, country etc.)
+
+    * pick_source_product(self, attendee):
+        In this method, we get the source_product_id of the candidate and
+        appends it in attendee object. Then we return the attendee object.
+
+    * save_attendee_source(self, attendee):
+        This method calls 'unpublish_event() method of respective class to remove event
+        from social network and then deletes this event from getTalent database.
+        How it works:
+        It takes integer id for event in getTalent database. It retrieves that  event from database.
+        If it finds any event with given id, it tries to unpublish that event otherwise returns False.
+
+    * delete_events(array of ids):
+        This method takes list or tuple of ids of events to be deleted.
+        It then calls delete_event() method and returns two list of ids.
+        One list for deleted events and other list contains ids of events that were not deleted.
+        : returns deleted, not_deleted
+
+    * get_events():
+        Each child class has its own get_events() method to import/ extract events from respective
+        social network.
+
+    * get_events_from_db(start_date):
+        This method returns all events for which event.start_date is after given date.
+
+    * get_rsvps():
+        This method imports RSVPs of all events for a specific user.
+
+    * save_event(data):
+        This method takes dictionary containing event data. It first checks if any event is there
+        with given info (user_id, social_network_id, social_network_event_id), then it updates
+        the existing event otherwise creates a new event in getTalent database.
+
+
+    - and to provide sections such as **Example** using the double commas syntax::
+
+          :Example:
+
+          followed by a blank line !
+
+      which appears as follow:
+
+      :Example:
+
+      followed by a blank line
+
+    - Finally special sections such as **See Also**, **Warnings**, **Notes**
+      use the sphinx syntax (*paragraph directives*)::
+
+          .. seealso:: blabla
+          .. warnings also:: blabla
+          .. note:: blabla
+          .. todo:: blabla
+
+    .. note::
+        There are many other Info fields but they may be redundant:
+            * param, parameter, arg, argument, key, keyword: Description of a
+              parameter.
+            * type: Type of a parameter.
+            * raises, raise, except, exception: That (and when) a specific
+              exception is raised.
+            * var, ivar, cvar: Description of a variable.
+            * returns, return: Description of the return value.
+            * rtype: Return type.
+
+    .. note::
+        There are many other directives such as versionadded, versionchanged,
+        rubric, centered, ... See the sphinx documentation for more details.
+
+    Here below is the results of the :func:`function1` docstring.
+    """
     __metaclass__ = ABCMeta
 
     def __init__(self, *args, **kwargs):
@@ -26,8 +128,7 @@ class RSVPBase(object):
                        'error': error_message})
         try:
             self.headers = kwargs.get('headers')
-            self.social_network_id = kwargs.get('social_network').id
-            self.social_network_name = kwargs.get('social_network').name
+            self.social_network = kwargs.get('social_network')
             self.api_url = kwargs.get('social_network').api_url
             self.access_token = self.user_credentials.access_token
             self.start_date_dt = None
@@ -63,7 +164,7 @@ class RSVPBase(object):
             logger.debug('Going to get RSVPs for events '
                          'of %s(UserId: %s) from %s.'
                          % (self.user.name, self.user.id,
-                            self.social_network_name))
+                            self.social_network.name))
             for event in events:
                 # events is a list of dicts. where each dict is likely a
                 # response return from the database.
@@ -123,19 +224,18 @@ class RSVPBase(object):
         # attendees is a utility object we share in calls that
         # contains pertinent data
         attendee = self.get_attendee(rsvp)
-        if attendee:
-            # following picks the source product id for attendee
-            attendee = self.pick_source_product(attendee)
-            # following will store candidate info in attendees
-            attendee = self.save_attendee_source(attendee)
-            # following will store candidate info in attendees
-            attendee = self.save_attendee_as_candidate(attendee)
-            # following call will store rsvp info in attendees
-            attendee = self.save_rsvp(attendee)
-            # finally we store info in candidate_event_rsvp table for
-            # attendee
-            attendee = self.save_candidate_event_rsvp(attendee)
-            attendee = self.save_rsvp_in_activity_table(attendee)
+        # following picks the source product id for attendee
+        attendee = self.pick_source_product(attendee)
+        # following will store candidate info in attendees
+        attendee = self.save_attendee_source(attendee)
+        # following will store candidate info in attendees
+        attendee = self.save_attendee_as_candidate(attendee)
+        # following call will store rsvp info in attendees
+        attendee = self.save_rsvp(attendee)
+        # finally we store info in candidate_event_rsvp table for
+        # attendee
+        attendee = self.save_candidate_event_rsvp(attendee)
+        attendee = self.save_rsvp_in_activity_table(attendee)
 
     # def post_process_rsvps(self, rsvps):
     #     """
@@ -204,7 +304,7 @@ class RSVPBase(object):
         :param attendee:
         :return:attendee
         """
-        source_product = Product.get_by_name(self.social_network_name)
+        source_product = Product.get_by_name(self.social_network.name)
         attendee.source_product_id = source_product.id
         return attendee
 
