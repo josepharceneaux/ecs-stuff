@@ -1,4 +1,5 @@
-# Angular Template
+# GetTalent Dashboard
+This app is the dashboard of GetTalent made using AngularJS.
 This app has been built from [Angular Template](https://github.com/archfirst/angular-template) 
 This template provides a starter project that implements best practices in coding, building and testing AngularJS applications. Features include:
 - A well-organized component hierarchy starting from `approot`. Components are implemented using directives (no dangling controllers). This provides a good architectural direction until Angular 2.0 becomes available.
