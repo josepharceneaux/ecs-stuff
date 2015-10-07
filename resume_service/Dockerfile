@@ -6,7 +6,7 @@ ADD . ResumeParser
 
 ADD ansible/container-bootstrap.yml /srv/ansible/container-bootstrap.yml
 WORKDIR /srv/ansible
-RUN ansible-playbook container-bootstrap.yml -c local
+RUN ansible-playbook -v container-bootstrap.yml -c local
 
 RUN rm /etc/nginx/sites-enabled/default
 ADD ansible/talent-nginx.conf /etc/nginx/conf.d/
