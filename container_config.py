@@ -19,7 +19,6 @@ args = parser.parse_args()
 
 
 def set_environment_variables_from_env_output(env_output=''):
-    print env_output
     # We ignore env variables that start with DOCKER_, those are Docker ones
     env_output_lines = filter(None,
                               filter(lambda line: not line.startswith(("DOCKER_", "#")),
@@ -51,7 +50,7 @@ if args.build:
         # Set the environment variables from the Docker env
         try:
             command = 'docker-machine env default'
-            print command
+            print ' > ', command
             set_environment_variables_from_env_output(check_output(command, shell=True))
         except Exception as e:
             exit(e.message)
@@ -59,12 +58,12 @@ if args.build:
     # Build Dockerfile & push to DockerHub
     print 'Building Docker file for service %(service_name)s, repo %(repo_name)s:' % locals()
     command = 'tar -czh . | docker build -t %(repo_name)s:latest -' % locals()
-    print command
+    print ' > ', command
     call(command, shell=True)
 
     print 'Pushing %(repo_name)s:latest to docker-hub registry' % locals()
     command = 'docker push %(repo_name)s:latest' % locals()
-    print command
+    print ' > ', command
     call(command, shell=True)
 
     # TODO: Running and testing docker container locally
@@ -72,7 +71,7 @@ if args.build:
     # Deploy to webdev via Ansible
     print 'Deploying docker container to staging'
     os.chdir('../ansible-deploy')
-    command = 'ansible-playbook -i hosts --extra-vars "host=staging" --extra-vars ' \
-              '"service=%s" ansible-deploy.yml' % SERVICE_TO_DOCKERHUB_REPO[service_name]
-    print command
+    command = 'ansible-playbook -i hosts --extra-vars "host=staging-%s" --extra-vars ' \
+              '"service=%s" ansible-deploy.yml' % (SERVICE_TO_DOCKERHUB_REPO[service_name], SERVICE_TO_DOCKERHUB_REPO[service_name])
+    print ' > ', command
     call(command, shell=True)

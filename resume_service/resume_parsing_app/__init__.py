@@ -3,17 +3,20 @@ __author__ = 'erikfarmer'
 
 from flask import Flask
 from views import api
-from resume_service.common.models.db import db
-from resume_service.common.models.candidate import *
-from resume_service.common.models.user import *
+from common.models.db import db
+from common.models.candidate import *
+from common.models.user import *
 
 app = Flask(__name__)
-app.config.from_object('resume_service.config')
+app.config.from_object('config')
 app.register_blueprint(api.mod)
-# logger = app.config['LOGGER']
+logger = app.config['LOGGER']
 
 db.init_app(app)
 db.app = app
 
-# from common.error_handling import register_error_handlers
-# register_error_handlers(app, logger)
+from common.error_handling import register_error_handlers
+
+register_error_handlers(app, logger)
+
+logger.info("Starting resume_service in %s environment", app.config['GT_ENVIRONMENT'])

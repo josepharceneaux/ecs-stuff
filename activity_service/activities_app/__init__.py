@@ -17,3 +17,5 @@ db.init_app(app)
 db.app = app
 
 register_error_handlers(app, logger)
+
+logger.info("Starting activity_service in %s environment", app.config['GT_ENVIRONMENT'])

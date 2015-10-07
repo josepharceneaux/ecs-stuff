@@ -1,7 +1,5 @@
 from db import db
 from sqlalchemy.orm import relationship, backref
-from auth_service.oauth import logger
-from auth_service.oauth.modules.handy_functions import is_number
 import time
 import datetime
 
@@ -210,6 +208,14 @@ class UserScopedRoles(db.Model):
     domainRole = db.relationship('DomainRole')
 
     @staticmethod
+    def is_role_number(s):
+        try:
+            float(s)
+            return True
+        except ValueError:
+            return False
+
+    @staticmethod
     def add_roles(user_id, roles_list):
         """ Add a role for user
         :param user_id: Id of a user
@@ -217,7 +223,7 @@ class UserScopedRoles(db.Model):
         """
         if User.query.get(user_id):
             for role in roles_list:
-                if is_number(role):
+                if UserScopedRoles.is_number(role):
                     role_id = role
                 else:
                     domain_role = DomainRole.get_by_name(role)
@@ -232,14 +238,11 @@ class UserScopedRoles(db.Model):
                         user_scoped_role = UserScopedRoles(userId=user_id, roleId=role_id)
                         db.session.add(user_scoped_role)
                     else:
-                        logger.info("Role: %s already exists for user: %s" % (role, user_id))
                         raise Exception("Role: %s already exists for user: %s" % (role, user_id))
                 else:
-                    logger.info("Role: %s doesn't exist" % role)
                     raise Exception("Role: %s doesn't exist" % role)
             db.session.commit()
         else:
-            logger.info("User %s doesn't exist" % user_id)
             raise Exception("User %s doesn't exist" % user_id)
 
     @staticmethod
@@ -250,7 +253,7 @@ class UserScopedRoles(db.Model):
         """
         if User.query.get(user_id):
             for role in roles_list:
-                if is_number(role):
+                if UserScopedRoles.is_number(role):
                     role_id = role
                 else:
                     domain_role = DomainRole.get_by_name(role)
@@ -264,11 +267,9 @@ class UserScopedRoles(db.Model):
                 if user_scoped_role:
                     db.session.delete(user_scoped_role)
                 else:
-                    logger.info("User %s doesn't have any role %s" % (user_id, role_id))
                     raise Exception("User %s doesn't have any role %s" % (user_id, role_id))
             db.session.commit()
         else:
-            logger.info("User %s doesn't exist" % user_id)
             raise Exception("User %s doesn't exist" % user_id)
 
     @staticmethod
