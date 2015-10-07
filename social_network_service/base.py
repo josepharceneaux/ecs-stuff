@@ -72,20 +72,22 @@ class SocialNetworkBase(object):
         event_class = get_class(sn_name, 'event')
         # create object of selected event class
         sn_event_obj = event_class(user=self.user,
+                                   social_network=self.social_network,
                                    headers=self.headers)
         if mode == 'event':
             # gets events using respective API of Social Network
-            logger.debug('Getting events of %s(UserId: %s) from %s.'
+            logger.debug('Getting events of %s(UserId: %s) from %s website.'
                          % (self.user.name, self.user.id,
                             self.social_network.name))
             self.events = sn_event_obj.get_events()
-            logger.debug('Got %s events of %s(UserId: %s) on %s in provided time range.'
+            logger.debug('Got %s events of %s(UserId: %s) on %s within '
+                         'provided time range.'
                          % (len(self.events), self.user.name, self.user.id,
                             self.social_network.name))
             # process events to save in database
             sn_event_obj.process_events(self.events)
         elif mode == 'rsvp':
-            sn_event_obj.get_rsvps(user_credentials)
+            sn_event_obj.process_events_rsvps(user_credentials)
 
     # def process_events(self):
     #     """
