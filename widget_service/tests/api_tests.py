@@ -1,6 +1,7 @@
 """Tests for the Widget Service API"""
 __author__ = 'erikfarmer'
 
+from collections import deque
 import datetime
 import json
 import pytest
@@ -98,23 +99,24 @@ def create_test_domain(test_culture, test_org, request):
 @pytest.fixture(autouse=True)
 def create_test_AOIs(create_test_domain, request):
     aois = []
+    sub_aois = []
     # Create our parent categories.
     for i in xrange(10):
         aois.append(
-            AreaOfInterest(id=i+1, domain_id=create_test_domain.id, description=randomword(150),
+            AreaOfInterest(id=i+1, domain_id=create_test_domain.id, description=randomword(16),
                            parent_id=None)
         )
     for i in xrange(2):
             aois.append(
-                AreaOfInterest(domain_id=create_test_domain.id + 1, description=randomword(150),
+                AreaOfInterest(domain_id=create_test_domain.id + 1, description=randomword(16),
                                parent_id=None)
             )
     db.session.bulk_save_objects(aois)
     # Create our sub-categories.
     parent_id = aois[0].id
     for i in xrange(2):
-            aois.append(
-                AreaOfInterest(domain_id=create_test_domain.id, description=randomword(150),
+            sub_aois.append(
+                AreaOfInterest(domain_id=create_test_domain.id, description=randomword(16),
                                parent_id=parent_id)
             )
     db.session.bulk_save_objects(sub_aois)
@@ -123,6 +125,7 @@ def create_test_AOIs(create_test_domain, request):
         db.session.query(AreaOfInterest).delete()
         db.session.commit()
     request.addfinalizer(fin)
+    aois.extend(sub_aois)
     return aois
 
 
@@ -269,6 +272,18 @@ def test_post_call_creates_candidate_object(create_test_widget_page, create_test
     assert post_response.status_code == 200
 
 
-def test_parse_interest_ids_from_form(create_test_AOIs, request):
+def test_parse_interest_ids_from_form(request):
     # test_string = "Communications: Copywriter|Communications: Marketing Communications|Construction: All Subcategories"
-    assert True
+    subcategory = db.session.query(AreaOfInterest).filter(AreaOfInterest.parent_id!=None).first()
+    parent_category_1 = db.session.query(AreaOfInterest).get(subcategory.parent_id)
+    parent_category_2 = db.session.query(AreaOfInterest).filter(
+        AreaOfInterest.id!=parent_category_1.id).filter(
+        AreaOfInterest.parent_id==None).first()
+    test_string = "{parent_category_without_sub}: All Subcategories|{parent_category_with_sub}: {subcategory}".format(
+        parent_category_without_sub=parent_category_2.description,
+        parent_category_with_sub=parent_category_1.description,
+        subcategory=subcategory.description)
+    processed_ids = parse_interest_ids_from_form(test_string)
+    assert processed_ids == [
+        {'id': parent_category_2.id}, {'id': subcategory.id}
+    ]
