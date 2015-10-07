@@ -42,10 +42,6 @@ class EventInputMissing(ApiException):
     status_code = 453
 
 
-class EventNotSaveInDb(ApiException):
-    status_code = 460
-
-
 class EventNotCreated(ApiException):
     status_code = 455
 
@@ -64,6 +60,10 @@ class EventLocationNotCreated(ApiException):
 
 class TicketsNotCreated(ApiException):
     status_code = 459
+
+
+class EventNotSaveInDb(ApiException):
+    status_code = 460
 
 
 class UserCredentialsNotFound(ApiException):

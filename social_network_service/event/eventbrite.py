@@ -245,7 +245,8 @@ class Eventbrite(EventBase):
             self.publish_event(event_id)
             logger.info('|  Event %s created Successfully  |'
                         % self.event_payload['event.name.html'])
-            return event_id, ticket_id
+            self.data['social_network_event_id'] = event_id
+            self.data['tickets_id'] = ticket_id
         else:
             error_message = 'Event was not created Successfully as draft'
             response = response.json()
@@ -278,7 +279,8 @@ class Eventbrite(EventBase):
             ticket_id = self.update_tickets(event_id)
             logger.info('|  Event %s updated Successfully  |'
                         % self.event_payload['event.name.html'])
-            return event_id, ticket_id
+            self.data['social_network_event_id'] = event_id
+            self.data['tickets_id'] = ticket_id
         else:
             error_message = 'Event was not updated Successfully'
             response = response.json()
@@ -468,6 +470,7 @@ class Eventbrite(EventBase):
         :exception KeyError: can raise KeyError if some key not found in event data
         """
         if data:
+            self.data = data
             self.validate_required_fields(data)
             #  filling required fields for Eventbrite
             event_name = data['title']
