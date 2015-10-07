@@ -322,9 +322,9 @@ class RSVPBase(object):
             of specific social network.
 
         - This function is used to get the data of candidate related
-          to given rsvp. It attached all the information in attendee object.
+          to given rsvp. It attaches all the information in attendee object.
           attendees is a utility object we share in calls that contains
-          pertinent data.Child classes will implement the functionality.
+          pertinent data. Child classes will implement the functionality.
 
         - This method is called from process_rsvps() present in
           RSVPBase class.
