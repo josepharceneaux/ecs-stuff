@@ -17,7 +17,7 @@ from social_network_service.event.base import EventBase
 from social_network_service.utilities import log_error, logger, log_exception, \
     http_request
 from common.models.event import Event
-from flask import current_app as app
+from social_network_service import flask_app as app
 EVENTBRITE = 'Eventbrite'
 WEBHOOK_REDIRECT_URL = app.config['WEBHOOK_REDIRECT_URL']
 

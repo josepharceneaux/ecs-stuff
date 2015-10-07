@@ -4,6 +4,7 @@ from db import db
 import domain
 import user
 
+
 class Culture(db.Model):
     __tablename__ = 'culture'
     id = Column(Integer, primary_key=True)

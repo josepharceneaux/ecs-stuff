@@ -1,20 +1,23 @@
 import os
 from common.models.db import db
+from social_network_service import init_app
+app = init_app()
 import pytest
 import datetime
+from social_network_service.manager import process_event, delete_events
 from common.models.venue import Venue
 from common.models.organizer import Organizer
 
-from common.models.user import User
-from common.models.token import Token
+from common.models.user import User, UserCredentials
+from common.models.user import Token
 from common.models.event import Event
-from common.models.client import Client
+from common.models.user import Client
 from common.models.domain import Domain
 from common.models.culture import Culture
 from common.models.organization import Organization
 from common.models.social_network import SocialNetwork
-from social_network_service.manager import process_event, delete_events
-from social_network_service import flask_app as app
+
+
 
 from werkzeug.security import gen_salt
 from mixer._faker import faker
@@ -103,15 +106,15 @@ def facebook():
 #     return test_client
 
 
-@pytest.fixture(scope='session')
-def culture():
-    mixer = Mixer(session=db_session, commit=True)
-    culture = Culture.get_by_code('en-us')
-    if culture:
-        return culture
-    else:
-        culture = mixer.blend('common.gt_models.culture.Culture', code='en-us')
-    return culture
+# @pytest.fixture(scope='session')
+# def culture():
+#     mixer = Mixer(session=db_session, commit=True)
+#     culture = Culture.get_by_code('en-us')
+#     if culture:
+#         return culture
+#     else:
+#         culture = mixer.blend('common.gt_models.culture.Culture', code='en-us')
+#     return culture
 
 
 @pytest.fixture(scope='session')
@@ -141,7 +144,7 @@ def organization(request):
 
 
 @pytest.fixture(scope='session')
-def user(request, culture):
+def user(request):
     mixer = Mixer(session=db_session, commit=True)
     user = User.get_by_id(1)
     # user = mixer.blend(User, domain=domain, culture=culture, firstName=faker.nickname(),
@@ -165,8 +168,8 @@ def auth_data(user):
     # TODO; make the URL constant, create client_id and client_secret on the fly
     # auth_service_url = GET_TOKEN_URL
 
-    token = Token.get_by_user_id(user.id)[0]
-
+    # token = Token.get_by_user_id(user.id)[0]
+    token = user.tokens[0]
     # client_credentials = token.client
     # data = dict(client_id=client_credentials.client_id,
     #             client_secret=client_credentials.client_secret, username=user.email,
@@ -344,6 +347,28 @@ def eventbrite_missing_data(request, eventbrite_event_data):
                         'group_url_name', 'start_datetime', 'max_attendees'])
 def meetup_missing_data(request, eventbrite_event_data):
     return request.param, eventbrite_event_data
+
+
+@pytest.fixture(scope='session')
+def is_subscribed_test_data(request, user):
+    test_social_network1 = SocialNetwork(name='SN1', url='www.SN1.com')
+    SocialNetwork.save(test_social_network1)
+    test_social_network2 = SocialNetwork(name='SN2', url='www.SN1.com')
+    SocialNetwork.save(test_social_network2)
+
+    test_social_network1_credentials = UserCredentials(user_id=user.id,
+                                                       social_network_id=test_social_network1.id,
+                                                       access_token='lorel ipsum',
+                                                       refresh_token='lorel ipsum')
+    UserCredentials.save(test_social_network1_credentials)
+
+    def fin():
+        UserCredentials.delete(test_social_network1_credentials.id)
+        SocialNetwork.delete(test_social_network1.id)
+        SocialNetwork.delete(test_social_network2.id)
+
+    request.addfinalizer(fin)
+    return test_social_network1, test_social_network2, test_social_network1_credentials
 
 
 def teardown_fixtures(user, client_credentials, domain, organization):

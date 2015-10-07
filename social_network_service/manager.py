@@ -1,8 +1,8 @@
 import sys
 import argparse
 import traceback
-from social_network_service import init_app
-init_app()
+# from social_network_service import init_app
+# init_app()
 
 from gevent.pool import Pool
 from datetime import datetime
@@ -56,7 +56,7 @@ def process_event(data, user_id, method='Create'):
             # creating class object for respective social network
             social_network_class = get_class(social_network.name.lower(), 'social_network')
             event_class = get_class(social_network.name.lower(), 'event')
-            sn = social_network_class(user_id=user_id, social_network_id=social_network.id)
+            sn = social_network_class(user_id=user_id)
             event_obj = event_class(user=sn.user,
                                     headers=sn.headers,
                                     social_network=social_network)

@@ -1,6 +1,7 @@
 """Initializer for Social Network Service App"""
 from types import MethodType
 
+
 __author__ = 'zohaib'
 
 from flask import Flask
@@ -88,6 +89,7 @@ db.Model.save = MethodType(save, None, db.Model)
 db.Model.update = MethodType(update, None, db.Model)
 db.Model.get_by_id = get_by_id
 db.Model.delete = delete
+db.Model.session = db.session
 
 
 def init_app():
@@ -95,6 +97,8 @@ def init_app():
     Call this method at the start of app or manager for Events/RSVPs
     :return:
     """
+    from social_network_service.utilities import get_callee_data
+    print(get_callee_data())
     db.init_app(flask_app)
     db.app = flask_app
     return flask_app

@@ -2,6 +2,8 @@ import re
 import json
 import flask
 import requests
+from social_network_service import init_app
+app = init_app()
 from social_network_service.app.app_utils import ApiResponse
 from social_network_service.app.restful.data import data_blueprint
 from social_network_service.custom_exections import ApiException
@@ -12,7 +14,7 @@ from restful.events import events_blueprint
 from flask.ext.restful import Api
 from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash
-from social_network_service import init_app
+
 
 # configuration
 from social_network_service.utilities import log_exception, get_class, log_error
@@ -29,7 +31,6 @@ REDIRECT_URL = 'http://127.0.0.1:5000/code'
 user_refresh_token = '73aac7b76040a33d5dda70d0190aa4e7'
 EVENTBRITE = 'Eventbrite'
 
-app = init_app()
 app.register_blueprint(social_network_blueprint)
 app.register_blueprint(events_blueprint)
 app.register_blueprint(data_blueprint)

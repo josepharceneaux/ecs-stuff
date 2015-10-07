@@ -15,7 +15,14 @@ class Organizer(db.Model):
     @classmethod
     def get_by_user_id(cls, user_id):
         assert user_id is not None
-        return cls.query.filter(Organizer.user_id == user_id).all()
+        return cls.query.filter(Organizer.user_id == user_id).all()\
+
+
+    @classmethod
+    def get_by_user_id_organizer_id(cls, user_id, organizer_id):
+        assert user_id is not None
+        return cls.query.filter(Organizer.user_id == user_id,
+                                Organizer.id == organizer_id).all()
 
 
     @classmethod

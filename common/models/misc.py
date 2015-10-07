@@ -19,29 +19,6 @@ class AreaOfInterest(db.Model):
         return "<AreaOfInterest (parent_id=' %r')>" % self.parent_id
 
 
-class Culture(db.Model):
-    __tablename__ = 'culture'
-    id = db.Column(db.Integer, primary_key=True)
-    description = db.Column('Description', db.String(50))
-    code = db.Column(db.String(5), unique=True)
-
-    # Relationships
-    candidates = relationship('Candidate', backref='culture')
-
-    def __repr__(self):
-        return "<Culture (description=' %r')>" % self.description
-
-
-class Organization(db.Model):
-    __tablename__ = 'organization'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(500), unique=True)
-    notes = db.Column('Notes', db.String(1000))
-
-    def __repr__(self):
-        return "<Organization (name=' %r')>" % self.name
-
-
 class Country(db.Model):
     __tablename__ = 'country'
     id = db.Column(db.Integer, primary_key=True)

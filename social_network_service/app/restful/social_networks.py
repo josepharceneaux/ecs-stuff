@@ -7,7 +7,7 @@ from social_network_service.app.app_utils import authenticate, api_route, ApiRes
 from flask.ext.restful import Resource, Api
 from social_network_service.meetup import Meetup
 
-from common.models.user import UserCredentials
+from common.models.user import UserCredentials, User
 from common.models.social_network import SocialNetwork
 from social_network_service.utilities import get_class
 
@@ -31,10 +31,57 @@ class SocialNetworks(Resource):
     @authenticate
     def get(self, *args, **kwargs):
         """
-        This action returns a list of user events.
+        This action returns a list of user social networks.
+
+        :Example:
+            headers = {'Authorization': 'Bearer <access_token>'}
+            response = requests.get(API_URL + '/venues/', headers=headers)
+
+        .. Response::
+
+            {
+              "count": 3,
+              "social_networks": [
+                    {
+                      "api_url": "https://api.meetup.com/2",
+                      "auth_url": "https://secure.meetup.com/oauth2",
+                      "client_key": "jgjvi3gsvrgjcp2mu9r6nb3kb0",
+                      "id": 13,
+                      "is_subscribed": true,
+                      "name": "Meetup",
+                      "redirect_uri": "http://127.0.0.1:8000/web/user/get_token",
+                      "updated_time": "",
+                      "url": "www.meetup.com/"
+                    },
+                    {
+                      "api_url": "https://www.eventbriteapi.com/v3",
+                      "auth_url": "https://www.eventbrite.com/oauth",
+                      "client_key": "MSF5F2NUE35NQTLRLB",
+                      "id": 18,
+                      "is_subscribed": true,
+                      "name": "Eventbrite",
+                      "redirect_uri": "http://127.0.0.1:8000/web/user/get_token",
+                      "updated_time": "",
+                      "url": "www.eventbrite.com"
+                    },
+                    {
+                      "api_url": "https://graph.facebook.com/v2.4",
+                      "auth_url": "https://graph.facebook.com/oauth",
+                      "client_key": "1709873329233611",
+                      "id": 2,
+                      "is_subscribed": false,
+                      "name": "Facebook",
+                      "redirect_uri": "",
+                      "updated_time": "",
+                      "url": "www.facebook.com/"
+                    }
+              ]
+            }
+
+        .. Status:: 200 (OK)
+                    500 (Internal Server Error)
         """
-        print args, kwargs
-        user_id = kwargs.get('user_id') or None
+        user_id = kwargs.get('user_id')
         assert user_id
         # Get list of networks user is subscribed to from UserCredentials table
         subscribed_networks = None
@@ -51,7 +98,7 @@ class SocialNetworks(Resource):
             subscribed_networks = self.set_is_subscribed(subscribed_networks, value=True)
         # Get list of social networks user is not subscribed to
         unsubscribed_networks = SocialNetwork.get_all_except_ids(
-            [data.social_network_id for data in subscribed_data ]
+            [data.social_network_id for data in subscribed_data]
         )
         if unsubscribed_networks:
             unsubscribed_networks = map(lambda sn: sn.to_json(), unsubscribed_networks)
@@ -64,9 +111,12 @@ class SocialNetworks(Resource):
         if unsubscribed_networks:
             all_networks.extend(unsubscribed_networks)
         if all_networks:
-            return {'social_networks': all_networks}
+            for sn in all_networks:
+                del sn['secret_key']
+            return {'social_networks': all_networks,
+                    'count': len(all_networks)}
         else:
-            return {'social_networks': []}
+            return {'social_networks': [], 'count': 0}
 
 
 @api.route('/social_networks/groups/')
@@ -79,13 +129,83 @@ class MeetupGroups(Resource):
     def get(self, *args, **kwargs):
         """
         This action returns a list of user events.
+
+        :Example:
+            headers = {'Authorization': 'Bearer <access_token>'}
+            response = requests.get(API_URL + '/venues/', headers=headers)
+
+        .. Response::
+
+            {
+              "count": 1,
+              "groups": [
+                {
+                  "category": {
+                    "shortname": "tech",
+                    "name": "tech",
+                    "id": 34
+                  },
+                  "city": "Lahore",
+                  "utc_offset": 18000000,
+                  "who": "Python Lovers",
+                  "rating": 0,
+                  "description": "This group is for anyone interested in computer programming. Python is one of the top ranking programming languages. All skill levels are welcome. Basic purpose is to get exposure about python from smart people all over the world. We can also meet at some restaurant for some food and drink afterward. Let's meetup and share knowledge.",
+                  "created": 1439705650000,
+                  "country": "PK",
+                  "topics": [
+                    {
+                      "name": "Python",
+                      "urlkey": "python",
+                      "id": 1064
+                    },
+                    {
+                      "name": "Web Development",
+                      "urlkey": "web-development",
+                      "id": 15582
+                    },
+                    {
+                      "name": "Programming Languages",
+                      "urlkey": "programming-languages",
+                      "id": 17628
+                    },
+                    {
+                      "name": "Computer programming",
+                      "urlkey": "computer-programming",
+                      "id": 48471
+                    },
+                    {
+                      "name": "Python web development",
+                      "urlkey": "python-web-development",
+                      "id": 917242
+                    }
+                  ],
+                  "join_mode": "open",
+                  "lon": 74.3499984741211,
+                  "visibility": "public",
+                  "link": "http://www.meetup.com/QC-Python-Learning/",
+                  "members": 59,
+                  "urlname": "QC-Python-Learning",
+                  "lat": 31.559999465942383,
+                  "timezone": "Asia/Karachi",
+                  "organizer": {
+                    "name": "Waqas Younas",
+                    "member_id": 183366764
+                  },
+                  "id": 18837246,
+                  "name": "QC - Python Learning"
+                }
+              ]
+            }
+
+        .. Status:: 200 (OK)
+                    500 (Internal Server Error)
         """
         user_id = kwargs['user_id']
         try:
-            meetup_db = SocialNetwork.get_by_name('Meetup')
-            meetup = Meetup(user_id=user_id, social_network_id=meetup_db.id)
+            meetup = Meetup(user_id=user_id)
             groups = meetup.get_groups()
-            resp = json.dumps(dict(groups=groups))
+            resp = json.dumps(dict(groups=groups,
+                                   count=len(groups)))
         except Exception as e:
             return ApiResponse(json.dumps(dict(message='APIError: Internal Server Error')), status=500)
         return ApiResponse(resp, status=200)
@@ -100,8 +220,36 @@ class RefreshToken(Resource):
     @authenticate
     def post(self, *args, **kwargs):
         """
-        Creates a venue for this user
+        Gets a fresh token for specified user and social network
         :return:
+
+        :Example:
+            data = {
+                "social_network_id": 13
+            }
+
+
+            headers = {
+                        'Authorization': 'Bearer <access_token>',
+                        'Content-Type': 'application/json'
+                       }
+            data = json.dumps(data)
+            response = requests.post(
+                                        API_URL + '/social_network/refresh_token/',
+                                        data=data,
+                                        headers=headers,
+                                    )
+
+        .. Response::
+
+            {
+                "message" : 'Access token has been refreshed'
+                'status' : true
+            }
+
+        .. Status:: 201 (Resource Created)
+                    403 (Failed to refresh token)
+                    500 (Internal Server Error)
         """
         user_id = kwargs['user_id']
         try:
@@ -111,7 +259,7 @@ class RefreshToken(Resource):
             social_network = SocialNetwork.get_by_id(social_network_id)
             # creating class object for respective social network
             social_network_class = get_class(social_network.name.lower(), 'social_network')
-            sn = social_network_class(user_id=user_id, social_network_id=social_network.id)
+            sn = social_network_class(user_id=user_id)
             status = sn.refresh_access_token()
         except Exception as e:
             return ApiResponse(json.dumps(dict(messsage='APIError: Internal Server error..')), status=500)
@@ -120,28 +268,7 @@ class RefreshToken(Resource):
                                                status=True)), status=200)
         else:
             return ApiResponse(json.dumps(dict(messsage='Unable to refresh access_token',
-                                               status=False)), status=200)
-
-
-# @api.route('/social_networks/authInfo')
-# class SocialNetworkGroups(Resource):
-#     """
-#         This resource returns a list of user admin group list on Meetup.com
-#     """
-#
-#     @authenticate
-#     def get(self, *args, **kwargs):
-#         """
-#         This action returns a list of user groups.
-#         """
-#         user_id = kwargs['user_id']
-#         try:
-#             meetup_db = SocialNetwork.get_by_name('Meetup')
-#             meetup = Meetup(user_id=user_id, social_network_id=meetup_db.id)
-#             groups = meetup.get_groups()
-#         except Exception as e:
-#             return ApiResponse(json.dums(dict(message='APIError: Internal Server Error')), status=500)
-#         return ApiResponse(json.dumps(dict(groups=groups)), status=200)
+                                               status=False)), status=403)
 
 
 @api.route('/venues/')
@@ -154,13 +281,42 @@ class Venues(Resource):
     def get(self, *args, **kwargs):
         """
         This action returns a list of user venues.
+        :return: json for venues
+
+        :Example:
+            headers = {'Authorization': 'Bearer <access_token>'}
+            response = requests.get(API_URL + '/venues/', headers=headers)
+
+        .. Response::
+
+            {
+              "count": 1,
+              "venues": [
+                {
+                    "user_id": 1,
+                    "zipcode": "95014",
+                    "social_network_id": 13,
+                    "address_line2": "",
+                    "address_line1": "Infinite Loop",
+                    "latitude": 0,
+                    "longitude": 0,
+                    "state": "CA",
+                    "city": "Cupertino",
+                    "country": "us"
+                }
+
+              ]
+            }
+
+        .. Status:: 200 (OK)
+                    500 (Internal Server Error)
+
         """
         user_id = kwargs['user_id']
-        try:
-            venues = map(lambda venue: venue.to_json(), Venue.get_by_user_id(user_id=user_id))
-            resp = json.dumps({'venues': venues, 'count': len(venues)})
-        except Exception as e:
-            return ApiResponse(json.dumps(dict(messsage='APIError: Internal Server error..')), status=500)
+        user = User.get_by_id(user_id)
+        venues = user.venues.all()
+        venues = map(lambda venue: venue.to_json(), venues)
+        resp = json.dumps(dict(venues=venues, count=len(venues)))
         return ApiResponse(resp, status=200)
 
     @authenticate
@@ -168,19 +324,81 @@ class Venues(Resource):
         """
         Creates a venue for this user
         :return:
+
+        :Example:
+            venue_data = {
+                "zipcode": "95014",
+                "social_network_id": 13,
+                "address_line2": "",
+                "address_line1": "Infinite Loop",
+                "latitude": 0,
+                "longitude": 0,
+                "state": "CA",
+                "city": "Cupertino",
+                "country": "us"
+            }
+
+
+            headers = {
+                        'Authorization': 'Bearer <access_token>',
+                        'Content-Type': 'application/json'
+                       }
+            data = json.dumps(venue_data)
+            response = requests.post(
+                                        API_URL + '/venues/',
+                                        data=data,
+                                        headers=headers,
+                                    )
+
+        .. Response::
+
+            {
+                "message" : 'Venue created successfully'
+                'id' : 123
+            }
+
+        .. Status:: 201 (Resource Created)
+                    500 (Internal Server Error)
+
         """
         user_id = kwargs['user_id']
-        try:
-            venue_data = request.get_json(force=True)
-            venue_data['user_id'] = user_id
-            venue = Venue(**venue_data)
-            Venue.save(venue)
-        except Exception as e:
-            return ApiResponse(json.dumps(dict(messsage='APIError: Internal Server error..')), status=500)
-        return ApiResponse(json.dumps(dict(messsage='Venue created successfully', id=venue.id)), status=201)
+        venue_data = request.get_json(force=True)
+        venue_data['user_id'] = user_id
+        venue = Venue(**venue_data)
+        Venue.save(venue)
+        return ApiResponse(json.dumps(dict(message='Venue created successfully', id=venue.id)), status=201)
 
     @authenticate
     def delete(self, **kwargs):
+        """
+        This endpoint deletes venues specified in list in request data
+
+        :Example:
+            venue_ids = {
+                'ids': [1,2,3]
+            }
+            headers = {
+                        'Authorization': 'Bearer <access_token>',
+                        'Content-Type': 'application/json'
+                       }
+            data = json.dumps(venue_ids)
+            response = requests.post(
+                                        API_URL + '/venues/',
+                                        data=data,
+                                        headers=headers,
+                                    )
+
+        .. Response::
+
+            {
+                'message': '3 Venues have been deleted successfully'
+            }
+        .. Status:: 200 (Resource Deleted)
+                    207 (Not all deleted)
+                    400 (Bad request)
+                    500 (Internal Server Error)
+
+        """
         user_id = kwargs['user_id']
         deleted, not_deleted = [], []
         req_data = request.get_json(force=True)
@@ -215,7 +433,30 @@ class Organizers(Resource):
     @authenticate
     def get(self, *args, **kwargs):
         """
-        This action returns a list of user organizer.
+        This action returns a list of organizers created by current user.
+        :keyword user_id: id of organizer owner (user who created organizer)
+
+        :Example:
+            headers = {'Authorization': 'Bearer <access_token>'}
+            response = requests.get(API_URL + '/organizers/', headers=headers)
+
+        .. Response::
+
+            {
+              "count": 1,
+              "organizers": [
+                {
+                    "user_id": 1,
+                    "name": "Zohaib Ijaz",
+                    "email": "mzohaib.qc@gmail.com",
+                    "about": "I am a software engineer"
+                }
+
+              ]
+            }
+
+        .. Status:: 200 (OK)
+                    500 (Internal Server Error)
         """
         user_id = kwargs['user_id']
         try:
@@ -230,6 +471,36 @@ class Organizers(Resource):
         """
         Creates a organizer for this user
         :return:
+
+        :Example:
+            organizer_data = {
+                    "name": "Zohaib Ijaz",
+                    "email": "mzohaib.qc@gmail.com",
+                    "about": "I am a software engineer"
+                }
+
+
+            headers = {
+                        'Authorization': 'Bearer <access_token>',
+                        'Content-Type': 'application/json'
+                       }
+            data = json.dumps(organizer_data)
+            response = requests.post(
+                                        API_URL + '/organizers/',
+                                        data=data,
+                                        headers=headers,
+                                    )
+
+        .. Response::
+
+            {
+                "message" : 'Organizer created successfully'
+                'id' : 123
+            }
+
+        .. Status:: 201 (Resource Created)
+                    500 (Internal Server Error)
+
         """
         user_id = kwargs['user_id']
         try:
@@ -243,10 +514,44 @@ class Organizers(Resource):
 
     @authenticate
     def delete(self, **kwargs):
+        """
+        This endpoint deletes one or more organizer owned by this user
+        :param kwargs:
+        :return:
+
+        :Example:
+            organizers_ids = {
+                'ids': [1,2,3]
+            }
+            headers = {
+                        'Authorization': 'Bearer <access_token>',
+                        'Content-Type': 'application/json'
+                       }
+            data = json.dumps(organizers_ids)
+            response = requests.post(
+                                        API_URL + '/organizers/',
+                                        data=data,
+                                        headers=headers,
+                                    )
+
+        .. Response::
+
+            {
+                'message': '3 Organizers have been deleted successfully'
+            }
+        .. Status:: 200 (Resource Deleted)
+                    207 (Not all deleted)
+                    400 (Bad request)
+                    500 (Internal Server Error)
+
+        """
+        # Get user_id
         user_id = kwargs['user_id']
         deleted, not_deleted = [], []
+        # Get json data from request
         req_data = request.get_json(force=True)
         organizer_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else []
+        # If no organizer id is given, return 400 (Bad request)
         if organizer_ids:
             for _id in organizer_ids:
                 organizer = Organizer.get_by_user_id_organizer_id(user_id, _id)

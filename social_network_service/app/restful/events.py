@@ -24,6 +24,10 @@ class Events(Resource):
     def get(self, **kwargs):
         """
         This action returns a list of user events and their count
+        :keyword user_id: user_id of events owner
+        :type user_id: int
+        :return events_data: a dictionary containing list of events and their count
+        :rtype json
 
         :Example:
             headers = {'Authorization': 'Bearer <access_token>'}
@@ -61,10 +65,6 @@ class Events(Resource):
         .. Status:: 200 (OK)
                     500 (Internal Server Error)
 
-        :keyword user_id: user_id of events owner
-        :type user_id: int
-        :return events_data: a dictionary containing list of events and their count
-        :rtype json
         """
         try:
             # Refresh Session before fetching events from db
@@ -83,28 +83,27 @@ class Events(Resource):
 
         :Example:
             event_data = {
-                            "organizer_id": 1,
-                            "venue_id": 2,
-                            "title": "Test Event",
-                            "description": "Test Event Description",
-                            "registration_instruction": "Just Come",
-                            "end_datetime": "30 Oct, 2015 04:51 pm",
-                            "group_url_name": "QC-Python-Learning",
-                            "social_network_id": 18,
-                            "timezone": "Asia/Karachi",
-                            "cost": 0,
-                            "start_datetime": "25 Oct, 2015 04:50 pm",
-                            "currency": "USD",
-                            "group_id": 18837246,
-                            "max_attendees": 10
+                    "organizer_id": 1,
+                    "venue_id": 2,
+                    "title": "Test Event",
+                    "description": "Test Event Description",
+                    "registration_instruction": "Just Come",
+                    "end_datetime": "30 Oct, 2015 04:51 pm",
+                    "group_url_name": "QC-Python-Learning",
+                    "social_network_id": 18,
+                    "timezone": "Asia/Karachi",
+                    "cost": 0,
+                    "start_datetime": "25 Oct, 2015 04:50 pm",
+                    "currency": "USD",
+                    "group_id": 18837246,
+                    "max_attendees": 10
             }
 
             headers = {
-                            'Authorization': 'Bearer <access_token>',
-                            'Content-Type': 'application/json'
+                        'Authorization': 'Bearer <access_token>',
+                        'Content-Type': 'application/json'
                        }
             data = json.dumps(event_data)
-            response = requests.get(API_URL + '/events/', headers=headers)
             response = requests.post(
                                         API_URL + '/events/',
                                         data=data,
@@ -154,10 +153,38 @@ class Events(Resource):
         Deletes multiple event whose ids are given in list in request data
         :param kwargs:
         :return:
+
+        :Example:
+            event_ids = {
+                'ids': [1,2,3]
+            }
+            headers = {
+                        'Authorization': 'Bearer <access_token>',
+                        'Content-Type': 'application/json'
+                       }
+            data = json.dumps(event_ids)
+            response = requests.post(
+                                        API_URL + '/events/',
+                                        data=data,
+                                        headers=headers,
+                                    )
+
+        .. Response::
+
+            {
+                'message': '3 Events have been deleted successfully'
+            }
+        .. Status:: 200 (Resource Deleted)
+                    207 (Not all deleted)
+                    400 (Bad request)
+                    500 (Internal Server Error)
+
         """
         user_id = kwargs['user_id']
+        # get event_ids for events to be deleted
         req_data = request.get_json(force=True)
         event_ids = req_data['event_ids'] if 'event_ids' in req_data and isinstance(req_data['event_ids'], list) else []
+        # check if event_ids list is not empty
         if event_ids:
             deleted, not_deleted = delete_events(user_id, event_ids)
             if len(not_deleted) == 0:
@@ -173,11 +200,51 @@ class Events(Resource):
 
 @api.route('/events/<int:event_id>')
 class EventById(Resource):
+    """
+    This resource handles event related task for a specific event specified by id
+    """
 
     @authenticate
     def get(self, event_id, **kwargs):
         """
         Returns event object with required id
+
+
+        :Example:
+            headers = {'Authorization': 'Bearer <access_token>'}
+            event_id = 1
+            response = requests.get(API_URL + '/events/' + str(event_id), headers=headers)
+
+        .. Response::
+
+            {
+              "event": {
+                          "cost": 0,
+                          "currency": "USD",
+                          "description": "Test Event Description",
+                          "end_datetime": "2015-10-30 16:51:00",
+                          "group_id": "18837246",
+                          "group_url_name": "QC-Python-Learning",
+                          "id": 1,
+                          "max_attendees": 10,
+                          "organizer_id": 1,
+                          "registration_instruction": "Just Come",
+                          "social_network_event_id": "18970807195",
+                          "social_network_id": 18,
+                          "start_datetime": "2015-10-25 16:50:00",
+                          "tickets_id": "39836307",
+                          "timezone": "Asia/Karachi",
+                          "title": "Test Event",
+                          "url": "",
+                          "user_id": 1,
+                          "venue_id": 2
+                        }
+
+            }
+
+        .. Status:: 200 (OK)
+                    400 (Event not found)
+                    500 (Internal Server Error)
         :param id: integer, unique id representing event in GT database
         :return: json for required event
         """
@@ -195,7 +262,60 @@ class EventById(Resource):
     def post(self, event_id, **kwargs):
         """
         Updates event in GT database and on corresponding social network
-        :param id:
+        :param event_id: id of event on getTalent database
+
+        :Example:
+
+            event_data = {
+                    "organizer_id": 1,
+                    "venue_id": 2,
+                    "title": "Test Event",
+                    "description": "Test Event Description",
+                    "registration_instruction": "Just Come",
+                    "end_datetime": "30 Oct, 2015 04:51 pm",
+                    "group_url_name": "QC-Python-Learning",
+                    "social_network_id": 18,
+                    "timezone": "Asia/Karachi",
+                    "cost": 0,
+                    "start_datetime": "25 Oct, 2015 04:50 pm",
+                    "currency": "USD",
+                    "group_id": 18837246,
+                    "max_attendees": 10
+            }
+
+            headers = {
+                        'Authorization': 'Bearer <access_token>',
+                        'Content-Type': 'application/json'
+                       }
+            data = json.dumps(event_data)
+            event_id = event_data['id']
+            response = requests.post(
+                                        API_URL + '/events/' + str(event_id)',
+                                        data=data,
+                                        headers=headers,
+                                    )
+
+        .. Response::
+
+            No Content
+
+        .. Status:: 204 (Resource Modified)
+                    500 (Internal Server Error)
+                    401 (Unauthorized to access getTalent)
+                    403 (Forbidden: Can not update specified event)
+                    452 (Unable to determine Social Network)
+                    453 (Some Required event fields are missing)
+                    455 (Event not created)
+                    456 (Event not Published on Social Network)
+                    458 (Event venue not created on Social Network)
+                    459 (Tickets for event not created)
+                    460 (Event was not save in getTalent database)
+                    461 (User credentials of user for Social Network not found)
+                    462 (No implementation for specified Social Network)
+                    464 (Invalid datetime for event)
+                    465 (Specified Venue not found in database)
+                    466 (Access token for Social Network has expired)
+
         """
         user_id = kwargs['user_id']
         event_data = request.get_json(force=True)
@@ -219,6 +339,26 @@ class EventById(Resource):
         """
         Removes a single event from GT database and from social network as well.
         :param id: (Integer) unique id in Event table on GT database.
+
+        :Example:
+            headers = {
+                        'Authorization': 'Bearer <access_token>',
+                        'Content-Type': 'application/json'
+                       }
+            event_id = 1
+            response = requests.post(
+                                        API_URL + '/events/' + str(event_id),
+                                        headers=headers,
+                                    )
+
+        .. Response::
+
+            {
+                'message': 'Event has been deleted successfully'
+            }
+        .. Status:: 200 (Resource Deleted)
+                    403 (Forbidden: event not found for this user)
+                    500 (Internal Server Error)
         """
         user_id = kwargs['user_id']
         deleted, not_deleted = delete_events(user_id, [event_id])
@@ -227,37 +367,64 @@ class EventById(Resource):
         return ApiResponse(json.dumps(dict(message='Forbidden: Unable to delete event')), status=403)
 
 
-@api.route('/venues/')
-class Venues(Resource):
-
-    @authenticate
-    def get(self, **kwargs):
-        """
-        Returns venues owned by current user
-        :return: json for venues
-        """
-        user_id = kwargs['user_id']
-        user = User.get_by_id(user_id)
-        venues = user.venues.all()
-        venues = map(lambda venue: venue.to_json(), venues)
-        resp = json.dumps(dict(venues=venues, count=len(venues)))
-        return ApiResponse(resp, status=200)
-
-
-@api.route('/organizers/')
-class Organizers(Resource):
-
-    @authenticate
-    def get(self, **kwargs):
-        """
-        Returns organizers created by current user
-        :return: json for organizers
-        """
-        user_id = kwargs['user_id']
-        user = User.get_by_id(user_id)
-        organizers = user.organizers.all()
-        organizers = map(lambda organizer: organizer.to_json(), organizers)
-        resp = json.dumps(dict(organizers=organizers, count=len(organizers)))
-        return ApiResponse(resp, status=200)
+# @api.route('/venues/')
+# class Venues(Resource):
+#
+#     @authenticate
+#     def get(self, **kwargs):
+#         """
+#         Returns venues owned by current user
+#         :return: json for venues
+#
+#         :Example:
+#             headers = {'Authorization': 'Bearer <access_token>'}
+#             response = requests.get(API_URL + '/events/', headers=headers)
+#
+#         .. Response::
+#
+#             {
+#               "count": 1,
+#               "venues": [
+#                 {
+#                     "zipcode": "95014",
+#                     "social_network_id": 13,
+#                     "address_line2": "",
+#                     "address_line1": "Infinite Loop",
+#                     "latitude": 0,
+#                     "longitude": 0,
+#                     "state": "CA",
+#                     "city": "Cupertino",
+#                     "country": "us"
+#                 }
+#
+#               ]
+#             }
+#
+#         .. Status:: 200 (OK)
+#                     500 (Internal Server Error)
+#         """
+#         user_id = kwargs['user_id']
+#         user = User.get_by_id(user_id)
+#         venues = user.venues.all()
+#         venues = map(lambda venue: venue.to_json(), venues)
+#         resp = json.dumps(dict(venues=venues, count=len(venues)))
+#         return ApiResponse(resp, status=200)
+#
+#
+# @api.route('/organizers/')
+# class Organizers(Resource):
+#
+#     @authenticate
+#     def get(self, **kwargs):
+#         """
+#         Returns organizers created by current user
+#         :return: json for organizers
+#         """
+#         user_id = kwargs['user_id']
+#         user = User.get_by_id(user_id)
+#         organizers = user.organizers.all()
+#         organizers = map(lambda organizer: organizer.to_json(), organizers)
+#         resp = json.dumps(dict(organizers=organizers, count=len(organizers)))
+#         return ApiResponse(resp, status=200)
 
 

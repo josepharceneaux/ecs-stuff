@@ -111,7 +111,7 @@ class Token(db.Model):
         # db.BigInteger, db.ForeignKey('user.id')
         db.INTEGER, db.ForeignKey('user.id')
     )
-    user = db.relationship('User')
+    user = db.relationship('User', backref='tokens')
 
     # currently only bearer is supported
     token_type = db.Column(db.String(40))
