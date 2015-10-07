@@ -1,4 +1,15 @@
 <!-- body consists of a topnav and a ui-view for content -->
-<gt-topnav></gt-topnav>
-<gt-sidenav></gt-sidenav>
-<div ui-view></div>
+<div id="main-app-wrapper" class="clearfix">
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+                <div id="app-root">
+                    <gt-topnav></gt-topnav>
+                    <gt-sidenav></gt-sidenav>
+                    <div ui-view></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

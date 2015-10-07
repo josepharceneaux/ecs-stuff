@@ -3,8 +3,12 @@
  * -------------------------------------------------------------------------- */
 
 /* ----- Colors ----- */
-$color-sample1:                  #EEEEEE;
-$color-sample2:                  #AAAAAA;
+$color-sample1:                   #EEEEEE;
+$color-sample2:                   #AAAAAA;
+$color-sidenav:                   #EEEEEE;
+
+/* ----- Widths ----- */
+$sidenav-width:                   150px;
 
 // -------------------------
 // Bootstrap Overrides
@@ -12,3 +16,6 @@ $color-sample2:                  #AAAAAA;
 
 /* ----- Typography ----- */
 $font-family-sans-serif: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif !default;
+
+/* ----- Navbar ----- */
+$navbar-default-border: #000000;
