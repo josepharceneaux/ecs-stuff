@@ -20,6 +20,7 @@ from widget_service.widget_app import db
 
 from widget_service.common.utils.handy_functions import randomword
 from widget_service.common.utils.db_utils import get_or_create
+from widget_service.widget_app.views.utils import parse_interest_ids_from_form
 
 APP = app.test_client()
 
@@ -97,7 +98,6 @@ def create_test_domain(test_culture, test_org, request):
 @pytest.fixture(autouse=True)
 def create_test_AOIs(create_test_domain, request):
     aois = []
-    sub_aois = []
     # Create our parent categories.
     for i in xrange(10):
         aois.append(
@@ -113,7 +113,7 @@ def create_test_AOIs(create_test_domain, request):
     # Create our sub-categories.
     parent_id = aois[0].id
     for i in xrange(2):
-            sub_aois.append(
+            aois.append(
                 AreaOfInterest(domain_id=create_test_domain.id, description=randomword(150),
                                parent_id=parent_id)
             )
@@ -254,3 +254,21 @@ def test_get_call_returns_widget_page_html(create_test_widget_page, request):
     response = APP.get('/widgetV1/{}'.format(create_test_widget_page.widget_name))
     assert response.status_code == 200
     assert response.data == create_test_widget_page.widget_html
+
+
+def test_post_call_creates_candidate_object(create_test_widget_page, create_test_AOIs, request):
+    candidate_dict = {
+        'firstName': randomword(12),
+        'lastName': randomword(12),
+        'emailAdd': '{}@gmail.com'.format(randomword(12)),
+        'hidden-tags-aoi': [{'id': aoi.id} for aoi in create_test_AOIs],
+        # 'hidden-tags-location': [{'id': aoi.id} for aoi in create_test_AOIs]
+    }
+    with APP as c:
+        post_response = c.post('/widgetV1/{}'.format(create_test_widget_page.widget_name))
+    assert post_response.status_code == 200
+
+
+def test_parse_interest_ids_from_form(create_test_AOIs, request):
+    # test_string = "Communications: Copywriter|Communications: Marketing Communications|Construction: All Subcategories"
+    assert True

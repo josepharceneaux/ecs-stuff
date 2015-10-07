@@ -36,6 +36,8 @@ def widget(domain):
 def process_widget(widget_name):
     if request.method == 'GET':
         return render_widget_via_name(widget_name)
+    if request.method == 'POST':
+        return process_widget_submission(widget_name)
 
 
 def render_widget_via_name(widget_name):
@@ -43,8 +45,8 @@ def render_widget_via_name(widget_name):
     return widget.widget_html, 200
 
 
-def process_widget_submission(domain):
-    return jsonify(domain=domain)
+def process_widget_submission(widget_name):
+    return jsonify(widget_name=widget_name)
 
 
 @mod.route('/interests/<widget_name>', methods=['GET'])

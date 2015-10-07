@@ -1,5 +1,4 @@
 var SUB_AOIS;
-var status = 'form'
 $('#form-success').hide();
 $('#form-error').hide();
 
@@ -21,39 +20,6 @@ function markInputValid($input) {
     $input.tooltip('hide');
 
     $input.closest(".control-group").removeClass('error').addClass('success');
-}
-
-//function getInterestsJSON() {
-//    var interests;
-//    var request = $.ajax({
-//        url: "/widgetV1/interests/1", // TODO hardcode change interests url
-//        type: "GET",
-//        dataType: "json"
-//    });
-//    request.done(function(interests) {
-//        if (interests.primary_interests.length == 0) {
-//            console.log('Assuming DEMO mode');
-//            interests = getDemoInterests();
-//        }
-//        SUB_AOIS = interests.secondary_interests;
-//        renderInterests(interests);
-//    });
-//}
-
-
-function getDemoInterests(){
-    return {
-        primary_interests: [
-            {id: 1, description: 'foo', parent_id: null},
-            {id: 2, description: 'bar', parent_id: null},
-            {id: 3, description: 'baz', parent_id: null},
-        ],
-        secondary_interests: [
-            {id: 4, description: 'oof', parent_id: 1},
-            {id: 5, description: 'rab', parent_id: 2},
-            {id: 6, description: 'zab', parent_id: 3},
-        ]
-    }
 }
 
 

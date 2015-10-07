@@ -13,7 +13,6 @@ var stateToCities = {
 };
 
 var _gaq = _gaq || [];
-var universitiesList = [];
 
 _gaq.push(['_setAccount', 'UA-33209718-1']);
 _gaq.push(['_trackPageview']);
@@ -27,6 +26,7 @@ var placeholderNotSupported = false;
 })();
 
 $(document).ready(function() {
+
     // Modernizr detection for placeholder (ie8)
     if (! Modernizr.input.placeholder) {
         placeholderNotSupported = true;
@@ -70,6 +70,7 @@ $(document).ready(function() {
         $("#subInterestSelect").show();
         return true;
     });
+
     $("#subInterestSelect").change(function (e) {
         // Add a tag if not the default one
         var subAoiName = $("#subInterestSelect").find(':selected').text();
@@ -84,31 +85,32 @@ $(document).ready(function() {
         hiddenTagListName: 'locationOfInterestTags',
         delimiters: [124]
     });
-    $("#locationSelect").change(function (e) {
+
+    $("#stateOfInterest").change(function (e) {
         // Populate & show cities dropdown
-        $("#citySelect").empty();
+        $("#cityOfInterest").empty();
         var stateName = $(this).find(':selected').html();
         var citiesList = stateToCities[stateName];
-        $("#citySelect").append("<option value=''>Select City</option>");
-        $("#citySelect").append("<option value='All'>All Cities</option>");
+        $("#cityOfInterest").append("<option value=''>Select City</option>");
+        $("#cityOfInterest").append("<option value='All'>All Cities</option>");
         for (var i = 0; i < citiesList.length; i++) {
-            $("#citySelect").append("<option value='" + citiesList[i] + "'>" + citiesList[i] + "</option>");
+            $("#cityOfInterest").append("<option value='" + citiesList[i] + "'>" + citiesList[i] + "</option>");
         }
-        $("#citySelect").show();
+        $("#cityOfInterest").show();
         return true;
     });
-    $("#citySelect").change(function (e) {
+    $("#cityOfInterest").change(function (e) {
         // Add a tag if not the default one
-        var city = $("#citySelect").find(':selected').text();
-        if (city !== $("#citySelect").find("option").first().text()) {
-            $("#hidden-tags-location").tagsManager('pushTag', $("#locationSelect").find(":selected").html() + ": " + $("#citySelect").find(':selected').html());
+        var city = $("#cityOfInterest").find(':selected').text();
+        if (city !== $("#cityOfInterest").find("option").first().text()) {
+            if ($("#stateOfInterest").val() == '') return;
+
+            $("#hidden-tags-location").tagsManager('pushTag', $("#stateOfInterest").find(":selected").html() + ": " + $("#cityOfInterest").find(':selected').html());
         }
     });
 
     // "Other" dropdowns functionality
     $("select").change(function(e) {
-        $("#militaryToMonthYear").tooltip('hide');  // TODO hack: should redraw (hide & show) all tooltips when input field changes
-
         if ($(this).find("option:selected").text() === "Other") {
             $(this).removeClass("span6").addClass("span4");
             $(this).siblings('input').hide().slideDown();
@@ -121,18 +123,18 @@ $(document).ready(function() {
         }
     });
     // Input verification
-    $("input[required], select[required], [data-widget-optional]").blur(function(e) {
+    $("input[required], select[required]").blur(function(e) {
         checkRequired(this);
     });
 
-    $("input[required], select[required], [data-widget-optional]").change(function(e) {
+    $("input[required], select[required]").change(function(e) {
         checkRequired(this);
     });
 
     // Tooltips
-    $("input[required], select[required], [data-widget-optional]").each(function(i) {
+    $("input[required], select[required]").each(function(i) {
         $(this).tooltip({
-            placement: $(this).data('widget-tooltip-placement') || 'bottom',
+            placement: 'bottom',
             title: $(this).data('validation-message') || 'Required',
             trigger: 'manual'
         });
@@ -159,23 +161,9 @@ $(document).ready(function() {
         $(".education-group").toggle();
     });
 
-    /* Set the militaryToDate input field to the format mm/dd/yyyy */
-    $("#militaryToMonthYear").change(function(e) {
-
-        var dateNumber = null, year = null, month = null;
-
-        dateNumber = parseInt($("#militaryToDateNumber").val());
-
-        var monthYearString = $(this).val();
-        var split = monthYearString.split("/");
-        month = parseInt(split[0]);
-        year = parseInt(split[1]);
-        setMilitaryToDate(month, dateNumber, year);
-    });
-
     $("form").submit(function(e) {
         var validInputs = true;
-        $("input[required], select[required], [data-widget-optional]").each(function(index) {
+        $("input[required], select[required]").each(function(index) {
             var isValid = checkRequired(this);
             validInputs = validInputs && isValid;
         });
@@ -189,76 +177,20 @@ $(document).ready(function() {
                 }
             });
         }
+
         if (! validInputs) e.preventDefault();
         return validInputs;
     });
+
+
 });
-
-function setMilitaryToDate(monthNumber, dateNumber, year) {
-    var $militaryToDate = $("#militaryToDate");
-    if (! $militaryToDate.val()) {
-        $militaryToDate.val("//");
-    }
-    var monthDateYearArray = $militaryToDate.val().split("/");
-    if (monthNumber) {
-        monthDateYearArray[0] = monthNumber;
-    }
-    if (dateNumber) {
-        monthDateYearArray[1] = dateNumber;
-    }
-    if (year) {
-        monthDateYearArray[2] = year;
-    }
-    $militaryToDate.val(
-            monthDateYearArray[0] + "/" + monthDateYearArray[1] + "/" + monthDateYearArray[2]
-    );
-}
-
 function checkRequired(input) {
     var $input = $(input);
     var isValid;
+
     // Validate email
-    if ($input.data("widget-optional") && !$input.val()) {  // optional widget field
-        markInputValid($input);
-        isValid = true;
-    }
-    else if ($input.attr('type') === 'email' && $input.val()) {
+    if ($input.attr('type') === 'email' && $input.val()) {
         isValid = isEmailValid($input.val());
-        if (isValid) {
-            markInputValid($input);
-        } else {
-            markInputInvalid($input);
-        }
-    }
-    else if ($input.data('widget-must-be-future')) {
-        var monthYearRegexp = /\d?\d\/\d\d\d\d/;
-        isValid = monthYearRegexp.test($input.val());
-        if (isValid) {
-            var split = $input.val().split("/");
-            var month = parseInt(split[0]);
-            var year = parseInt(split[1]);
-            var enteredDate = new Date(year, month, 1);
-            var currentDate = new Date();
-            if (enteredDate > currentDate) {
-                markInputValid($input);
-            } else {
-                isValid = false;
-                markInputInvalid($input);
-            }
-        } else {
-            markInputInvalid($input);
-        }
-    }
-    else if ($input.data('widget-minimum-value')) {
-        isValid = parseInt($input.val()) >= $input.data('widget-minimum-value');
-        if (isValid) {
-            markInputValid($input);
-        } else {
-            markInputInvalid($input);
-        }
-    }
-    else if ($input.data('widget-maximum-value')) {
-        isValid = parseInt($input.val()) <= $input.data('widget-maximum-value');
         if (isValid) {
             markInputValid($input);
         } else {
@@ -268,11 +200,11 @@ function checkRequired(input) {
     else if (! $input.val() || $input.hasClass('invalid') || (placeholderNotSupported && $input.val() === $input.attr('placeholder'))) {
         markInputInvalid($input);
         isValid = false;
-    }
-    else {
+    } else {
         markInputValid($input);
         isValid = true;
     }
+
     return isValid;
 }
 
@@ -288,60 +220,43 @@ function aoiIdToSubAois(aoiId) {
     return subAOIs;
 }
 
-function createBranchOptions() {
-    var branches = ['Army', 'Navy', 'Air Force', 'Marine Corps', 'Coast Guard'];
-    var branchSelector = document.getElementById("militaryBranch");
-    var option;
-    for (var i=0; i < branches.length; i++){
-        option = document.createElement("option");
-        option.label = branches[i];
-        option.value = branches[i];
-        option.text = branches[i];
-        branchSelector.add(option);
-    }
-}
 
-function createVeteranStatusOptions() {
-    var statuses = ['Active', 'Reserve', 'Guard', 'Retired', 'Veteran'];
-    var veteranSelector = document.getElementById("militaryStatus");
-    var option;
-    for (var i=0; i < statuses.length; i++){
-        option = document.createElement("option");
-        option.label = statuses[i];
-        option.value = statuses[i];
-        option.text = statuses[i];
-        veteranSelector.add(option);
-    }
-}
+var protoCounter = {
 
-function createMilitaryGrades(){
-    var current_pair;
-    var max_number;
-    var current_letter;
-    var grade;
-    var option;
-    var gradeSelector = document.getElementById("militaryGrade");
-    var grade_params = [[10, 'E'], [5, 'W'], [10, 'O']];
-    for (var i=0; i < grade_params.length; i++){
-        current_pair = grade_params[i];
-        max_number = current_pair[0];
-        current_letter = current_pair[1];
-        for (var n=1; n <= max_number; n++){
-            grade = current_letter + '-' + n;
-            option = document.createElement("option")
-            option.label = grade;
-            option.value = grade;
-            option.text = grade;
-            gradeSelector.add(option);
-        }
+
+    setUp: function(max, min){
+        this._max = max
+        this._min = min || 1
+        this._current = this._min
+    },
+
+    next: function(){
+        if (++this._current > this._max)
+            throw new Error("Current counter is already at the max value")
+        return this
+    },
+
+    previous: function(){
+        if (--this._current < this._min)
+            throw new Error("Current counter is already at the min value")
+        return this
+    },
+
+    rewind: function(){
+        this._current = this._min
+        return this
+    },
+
+    value: function(){
+        return this._current
     }
-    return true;
-}
+
+};
 
 function getInterestsJSON() {
     var interests;
     var request = $.ajax({
-        url: "/widgetV1/interests/kaiser_military",
+        url: "/widgetV1/interests/kaiser_corporate",
         type: "GET",
         dataType: "json"
     });
@@ -351,8 +266,4 @@ function getInterestsJSON() {
     });
 }
 
-
-createBranchOptions()
-createVeteranStatusOptions();
-createMilitaryGrades();
 getInterestsJSON();
