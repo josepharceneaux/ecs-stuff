@@ -71,7 +71,7 @@ if args.build:
     # Deploy to webdev via Ansible
     print 'Deploying docker container to staging'
     os.chdir('../ansible-deploy')
-    command = 'ansible-playbook -i hosts --extra-vars "host=staging" --extra-vars ' \
-              '"service=%s" ansible-deploy.yml' % SERVICE_TO_DOCKERHUB_REPO[service_name]
+    command = 'ansible-playbook -i hosts --extra-vars "host=staging-%s" --extra-vars ' \
+              '"service=%s" ansible-deploy.yml' % (SERVICE_TO_DOCKERHUB_REPO[service_name], SERVICE_TO_DOCKERHUB_REPO[service_name])
     print ' > ', command
     call(command, shell=True)
