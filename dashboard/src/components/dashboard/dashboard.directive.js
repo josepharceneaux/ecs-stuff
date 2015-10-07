@@ -3,7 +3,7 @@
     'use strict';
 
     angular.module('app.dashboard')
-        .directive('tmplDashboard', directiveFunction)
+        .directive('gtDashboard', directiveFunction)
         .controller('DashboardController', ControllerFunction);
 
 

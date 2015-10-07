@@ -17,7 +17,7 @@
         $stateProvider
             .state('dashboard', {
                 url: '/',
-                template: '<tmpl-dashboard></tmpl-dashboard>'
+                template: '<gt-dashboard></gt-dashboard>'
             });
     }
 })();

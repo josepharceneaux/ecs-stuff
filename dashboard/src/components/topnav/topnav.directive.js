@@ -3,7 +3,7 @@
 
     angular
         .module('app.topnav')
-        .directive('tmplTopnav', directiveFunction)
+        .directive('gtTopnav', directiveFunction)
         .controller('TopnavController', ControllerFunction);
 
 

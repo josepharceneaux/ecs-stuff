@@ -3,7 +3,7 @@
     'use strict';
 
     angular.module('app.approot')
-        .directive('tmplApproot', directiveFunction);
+        .directive('gtApproot', directiveFunction);
 
 
     // ----- directiveFunction -----
