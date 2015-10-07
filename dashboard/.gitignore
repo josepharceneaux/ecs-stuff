@@ -1,5 +1,7 @@
-# npm modules
+# Ignore Node, Bower & Sass
+###################
 node_modules
-
-# bower components
 bower_components
+build
+.sass-cache
+.tmp
