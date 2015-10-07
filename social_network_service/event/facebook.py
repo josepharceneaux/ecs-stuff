@@ -15,7 +15,7 @@ facebook = import_from_dist_packages('facebook')
 
 class Facebook(EventBase):
     def __init__(self, *args, **kwargs):
-        super(Facebook, self).__init__(Facebook, *args, **kwargs)
+        super(Facebook, self).__init__(*args, **kwargs)
         self.start_date = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
         self.end_date = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
         self.graph = None

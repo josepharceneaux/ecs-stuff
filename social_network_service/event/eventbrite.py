@@ -36,7 +36,7 @@ class Eventbrite(EventBase):
         :param kwargs:
         :return:
         """
-        super(Eventbrite, self).__init__(EVENTBRITE, *args, **kwargs)
+        super(Eventbrite, self).__init__(*args, **kwargs)
         # calling super constructor sets the api_url and access_token
         self.event_payload = None
         self.social_network_event_id = None
