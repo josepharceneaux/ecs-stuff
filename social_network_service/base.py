@@ -11,7 +11,7 @@ from social_network_service import logger
 from common.models.user import User, UserCredentials
 from common.models.social_network import SocialNetwork
 from social_network_service.custom_exections import NoUserFound, \
-    UserCredentialsNotFound, MissingFiledsInUserCredentials
+    UserCredentialsNotFound, MissingFiledsInUserCredentials, ApiException
 from utilities import log_error, log_exception, http_request, get_class
 
 
@@ -422,6 +422,8 @@ class SocialNetworkBase(object):
         access_token_status = self.validate_token()
         if not access_token_status:  # access token has expired, need to refresh it
             return self.refresh_access_token()
+        return access_token_status
+
 
     @staticmethod
     def save_user_credentials_in_db(user_credentials):
@@ -456,3 +458,57 @@ class SocialNetworkBase(object):
             log_exception({'user_id': user_credentials['user_id'],
                            'error': error_message})
         return False
+
+    @classmethod
+    def get_access_and_refresh_token(cls, url, payload_data, user_id, social_network):
+        """
+        This function is used by Social Network API to save 'access_token' and 'refresh_token'
+        for specific social network against a user (current user) by sending an POST call
+        to respective social network API.
+        :param user_id: current user id
+        :type user_id: int
+        :param social_network: social_network in getTalent database
+        :type social_network: common.models.social_network.SocialNetwork
+        :param payload_data: dictionary containing required data
+                sample data
+                payload_data = {'client_id': social_network.client_key,
+                                'client_secret': social_network.secret_key,
+                                'grant_type': 'authorization_code', # vendor specific
+                                'redirect_uri': social_network.redirect_uri,
+                                'code': code_to_get_access_token
+                                }
+        :type payload_data: dict
+        :return:
+        """
+        get_token_response = http_request('POST', url, data=payload_data,
+                                          user_id=user_id)
+        try:
+            if get_token_response.ok:
+                # access token is used to make API calls, this is what we need
+                # to make subsequent calls
+                response = get_token_response.json()
+                access_token = response.get('access_token')
+                # refresh token is used to refresh the access token
+                refresh_token = response.get('refresh_token')
+                user_credentials = UserCredentials.get_by_user_and_social_network_id(user_id, social_network.id)
+                if user_credentials:
+                    user_credentials.update(access_token=access_token,
+                                            refresh_token=refresh_token)
+                else:
+                    user_credentials = UserCredentials(user_id=user_id,
+                                                       social_network_id=social_network.id,
+                                                       access_token=access_token,
+                                                       refresh_token=refresh_token)
+                    UserCredentials.save(user_credentials)
+            else:
+                error_message = get_token_response.json().get('error')
+                log_error({'user_id': user_id,
+                           'error': error_message})
+                raise ApiException('Unable to to get access token for current user')
+
+        except Exception as e:
+            error_message = e.message
+            log_exception({'user_id': user_id,
+                           'error': error_message})
+            raise ApiException('Unable to create user credentials for current user')
+        return user_credentials

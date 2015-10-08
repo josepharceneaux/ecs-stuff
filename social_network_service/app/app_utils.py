@@ -1,4 +1,5 @@
 from functools import wraps
+import json
 import flask
 from flask import Response
 from flask.ext.restful import abort
@@ -11,6 +12,8 @@ class ApiResponse(Response):
     Override default_mimetype to 'application/json' to return proper json api response
     """
     def __init__(self, response, status=200, content_type='application/json', headers=None):
+        if isinstance(response, dict):
+            response = json.dumps(response)
         super(Response, self).__init__(response, status=status, content_type=content_type, headers=headers)
 
 
