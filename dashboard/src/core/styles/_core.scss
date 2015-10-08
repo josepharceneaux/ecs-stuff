@@ -12,6 +12,11 @@ body {
 #app-root {
   position: relative;
 
+  .logo {
+    width: 110px;
+    height: 30px;
+  }
+
   #app-topnav {
     .navbar-brand {
       position: relative;
