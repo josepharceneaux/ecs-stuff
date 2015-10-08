@@ -12,9 +12,78 @@ body {
 #app-root {
   position: relative;
 
-  .navbar-brand {
-    width: $sidenav-width;
-    border-right: 1px solid $navbar-default-border;
+  #app-topnav {
+    .navbar-brand {
+      position: relative;
+      width: $sidenav-width;
+      border-right: 1px solid $navbar-default-border;
+
+      .header-toggle {
+        display: block;
+        border: none;
+        position: absolute;
+        right: 0;
+        top: 0;
+        margin: 10px 10px 0 0;
+        padding: 9px 10px;
+        background-color: transparent;
+        background-image: none;
+
+        .icon-bar {
+          display: block;
+          width: 22px;
+          height: 2px;
+          border-radius: 1px;
+          background-color: #888888;
+        }
+
+        .icon-bar + .icon-bar {
+          margin-top: 4px;
+        }
+      }
+    }
+
+    .login-nav {
+      padding: 10px 15px;
+
+      .avatar {
+        width: 60px;
+        float: left;
+        text-align: center;
+
+        img {
+          margin: -13px 10px -14px 10px;
+          height: 30px;
+          width: 30px;
+          border-radius: 50em;
+        }
+      }
+
+      .user {
+        display: inline-block;
+        text-align: left;
+        margin-top: -5px;
+        padding: 0;
+
+        .first-name {
+          display: block;
+          font-size: 11px;
+          font-weight: bold;
+        }
+
+        .company-name {
+          display: block;
+          margin-top: -6px !important;
+          font-size: 13px;
+        }
+      }
+
+      .caret-icon {
+        display: inline-block;
+        width: 30px;
+        text-align: center;
+      }
+    }
   }
 
   #app-sidenav {

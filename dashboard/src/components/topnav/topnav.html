@@ -1,28 +1,61 @@
 <!-- App Top Navigation -->
-<nav class="navbar navbar-default navbar-static-top">
-    <div class="container-fluid">
-        <div class="navbar-header">
-            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar" ng-click="vm.isCollapsed = !vm.isCollapsed" aria-expanded="false" aria-controls="navbar">
-                <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </button>
-            <a class="navbar-brand" ui-sref="dashboard">GetTalent</a>
-        </div>
+<div id="app-topnav">
+    <nav class="navbar navbar-default navbar-static-top">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar"
+                        ng-click="vm.isCollapsed = !vm.isCollapsed" aria-expanded="false" aria-controls="navbar">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <div class="navbar-brand">
+                    <a ui-sref="dashboard" class="topnav-logo">
+                        <img src="images/logo.png" height="30" width="110" alt="getTalent"/>
+                    </a>
 
-        <div id="navbar" class="navbar-collapse collapse" ng-class="!vm.isCollapsed && 'in'">
-            <form class="navbar-form navbar-left" role="search">
-                <div class="form-group">
-                    <input type="text" class="form-control" placeholder="Search">
+                    <button type="button" class="header-toggle">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
                 </div>
-            </form>
+            </div>
 
-            <div class="navbar-right">
-                <p class="navbar-text">First Name</p>
-                <p class="navbar-text">Company Name</p>
+            <div id="navbar" class="navbar-collapse collapse" ng-class="!vm.isCollapsed && 'in'">
+                <form class="navbar-form navbar-left" role="search">
+                    <div class="form-group">
+                        <i class="fa fa-search"></i>
+                        <input type="text" class="form-control" placeholder="Search">
+                    </div>
+                </form>
+
+                <ul class="nav navbar-nav navbar-right">
+                    <li dropdown>
+                        <a class="login-nav" dropdown-toggle>
+                            <div class="avatar">
+                                <img src="images/avatar.jpg" alt="Avatar">
+                            </div>
+                            <div class="user">
+                                <span class="first-name">First Name</span>
+                                <span class="company-name">Company Name</span>
+                            </div>
+                            <div class="caret-icon">
+                                <i class="fa fa-angle-down fa-2x"></i>
+                            </div>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="#">Profile</a></li>
+                            <li><a href="#">Settings</a></li>
+                            <li><a href="#">History</a></li>
+                            <li role="separator" class="divider"></li>
+                            <li><a href="#">Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
             </div>
         </div>
-    </div>
-</nav>
+    </nav>
+</div>
 <!-- End App Top Navigation -->
