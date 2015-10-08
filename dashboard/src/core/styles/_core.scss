@@ -93,7 +93,74 @@ body {
     top: $topnav-height;
     bottom: $footer-height;
     background-color: $color-sidenav;
-    border-right: 1px solid #000;
+    border-right: 1px solid $navbar-default-border;
+
+    display: flex;
+    align-items: flex-start;
+    align-content: flex-start;
+
+    .pane-left,
+    .pane-right {
+      height: 100%;
+
+      a {
+        color: #000;
+      }
+    }
+
+    .pane-left {
+      flex: 0 0 $sidenav-left-pane-width;
+      border-right: 1px solid $navbar-default-border;
+
+      li {
+        margin: 30px 0;
+
+        a {
+          padding: 0;
+          text-align: center;
+          background: #FFF;
+          border-right: 7px solid #FFF;
+
+          span {
+            display: block;
+            margin-top: 10px;
+            font-size: 10px;
+            font-weight: lighter;
+          }
+
+          &:hover {
+            border-right: 7px solid $navbar-default-border;
+          }
+        }
+
+        &.active {
+          a {
+            border-right: 7px solid $navbar-default-border;
+          }
+        }
+
+        &.divider {
+          height: 1px;
+          background-color: $navbar-default-border;
+        }
+      }
+    }
+
+    .pane-right {
+      flex: 1 0 auto;
+
+      li {
+        border-bottom: 1px solid $navbar-default-border;
+
+        a {
+          padding: 25px 15px 15px;
+        }
+
+        &.active {
+          background-color: #EEEEEE;
+        }
+      }
+    }
   }
 
   #app-content {
