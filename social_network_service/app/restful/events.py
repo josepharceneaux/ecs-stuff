@@ -7,7 +7,6 @@ from social_network_service.app.app_utils import api_route, authenticate, ApiRes
 from social_network_service.custom_exections import ApiException
 from social_network_service.manager import process_event, delete_events
 from common.models.event import Event
-from common.models.user import User
 
 events_blueprint = Blueprint('events_api', __name__)
 api = Api()
@@ -142,7 +141,7 @@ class Events(Resource):
         except ApiException as err:
             raise
         except Exception as err:
-            raise ApiException('APIError: Internal Server error occurred!', status_code=500)
+            raise ApiException('APIError: Internal Server error occurred!')
         headers = {'Location': '/events/%s' % gt_event_id}
         resp = ApiResponse(json.dumps(dict(id=gt_event_id)), status=201, headers=headers)
         return resp
@@ -248,15 +247,16 @@ class EventById(Resource):
         :param id: integer, unique id representing event in GT database
         :return: json for required event
         """
+
         user_id = kwargs['user_id']
         event = Event.get_by_user_and_event_id(user_id, event_id)
         if event:
             try:
                 event = event.to_json()
             except Exception as e:
-                raise ApiException('Unable to serialize event data', status_code=500)
+                raise ApiException('Unable to serialize event data')
             return dict(event=event), 200
-        raise ApiException('Event does not exist with id %s' % event_id, status_code=400)
+        raise ApiException('Event does not exist with id %s' % event_id, error_code=400)
 
     @authenticate
     def post(self, event_id, **kwargs):
@@ -329,7 +329,7 @@ class EventById(Resource):
                 raise
             except Exception as err:
                 print(traceback.format_exc())
-                raise ApiException('APIError: Internal Server error!', status_code=500)
+                raise ApiException('APIError: Internal Server error!')
             return ApiResponse(json.dumps(dict(message='Event updated successfully')), status=204)
         return ApiResponse(json.dumps(dict(message='Forbidden: You can not edit event for given event_id')),
                            status=403)
@@ -365,66 +365,5 @@ class EventById(Resource):
         if len(deleted) == 1:
             return ApiResponse(json.dumps(dict(message='Event deleted successfully')), status=200)
         return ApiResponse(json.dumps(dict(message='Forbidden: Unable to delete event')), status=403)
-
-
-# @api.route('/venues/')
-# class Venues(Resource):
-#
-#     @authenticate
-#     def get(self, **kwargs):
-#         """
-#         Returns venues owned by current user
-#         :return: json for venues
-#
-#         :Example:
-#             headers = {'Authorization': 'Bearer <access_token>'}
-#             response = requests.get(API_URL + '/events/', headers=headers)
-#
-#         .. Response::
-#
-#             {
-#               "count": 1,
-#               "venues": [
-#                 {
-#                     "zipcode": "95014",
-#                     "social_network_id": 13,
-#                     "address_line2": "",
-#                     "address_line1": "Infinite Loop",
-#                     "latitude": 0,
-#                     "longitude": 0,
-#                     "state": "CA",
-#                     "city": "Cupertino",
-#                     "country": "us"
-#                 }
-#
-#               ]
-#             }
-#
-#         .. Status:: 200 (OK)
-#                     500 (Internal Server Error)
-#         """
-#         user_id = kwargs['user_id']
-#         user = User.get_by_id(user_id)
-#         venues = user.venues.all()
-#         venues = map(lambda venue: venue.to_json(), venues)
-#         resp = json.dumps(dict(venues=venues, count=len(venues)))
-#         return ApiResponse(resp, status=200)
-#
-#
-# @api.route('/organizers/')
-# class Organizers(Resource):
-#
-#     @authenticate
-#     def get(self, **kwargs):
-#         """
-#         Returns organizers created by current user
-#         :return: json for organizers
-#         """
-#         user_id = kwargs['user_id']
-#         user = User.get_by_id(user_id)
-#         organizers = user.organizers.all()
-#         organizers = map(lambda organizer: organizer.to_json(), organizers)
-#         resp = json.dumps(dict(organizers=organizers, count=len(organizers)))
-#         return ApiResponse(resp, status=200)
 
 

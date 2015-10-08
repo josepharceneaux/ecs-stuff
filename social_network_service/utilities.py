@@ -252,7 +252,7 @@ def get_class(social_network_name, category, user_credentials=None):
                    'error': error_message})
         raise SocialNetworkNotImplemented('Import Error: Unable to import module for required social network')
     except AttributeError as e:
-        raise ApiException('APIError: Unable to import module for required social network', status_code=500)
+        raise ApiException('APIError: Unable to import module for required social network', error_code=500)
     return _class
 
 

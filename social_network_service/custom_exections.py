@@ -1,3 +1,5 @@
+from common.error_handling import TalentError
+
 
 class InvalidUsage(Exception):
     status_code = 400
@@ -15,23 +17,23 @@ class InvalidUsage(Exception):
         return rv
 
 
-class ApiException(Exception):
+class ApiException(TalentError):
     status_code = 500
 
-    def __init__(self, message, detail=None, status_code=None, payload=None):
-        Exception.__init__(self)
-        self.message = message
-        self.detail = detail
-        if status_code:
-            self.status_code = status_code
-        self.payload = payload
-
-    def to_dict(self):
-        rv = dict(self.payload or ())
-        rv['message'] = self.message
-        if self.detail:
-            rv['detail'] = self.detail
-        return rv
+    # def __init__(self, message, detail=None, status_code=None, payload=None):
+    #     Exception.__init__(self)
+    #     self.message = message
+    #     self.detail = detail
+    #     if status_code:
+    #         self.status_code = status_code
+    #     self.payload = payload
+    #
+    # def to_dict(self):
+    #     rv = dict(self.payload or ())
+    #     rv['message'] = self.message
+    #     if self.detail:
+    #         rv['detail'] = self.detail
+    #     return rv
 
 
 class SocialNetworkError(ApiException):
