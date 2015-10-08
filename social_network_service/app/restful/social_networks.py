@@ -412,16 +412,160 @@ class Venues(Resource):
                 else:
                     not_deleted.append(_id)
 
-                if len(not_deleted) == 0:
-                    return ApiResponse(json.dumps(dict(
-                        message='%s Venue/s deleted successfully' % len(deleted))),
-                        status=200)
+            if len(not_deleted) == 0:
+                return ApiResponse(json.dumps(dict(
+                    message='%s Venue/s deleted successfully' % len(deleted))),
+                    status=200)
 
-                return ApiResponse(json.dumps(dict(message='Unable to delete %s venue/s' % len(not_deleted),
-                                                   deleted=deleted,
-                                                   not_deleted=not_deleted)), status=207)
+            return ApiResponse(json.dumps(dict(message='Unable to delete %s venue/s' % len(not_deleted),
+                                               deleted=deleted,
+                                               not_deleted=not_deleted)), status=207)
         else:
             return ApiResponse(json.dumps(dict(message='Bad request, include ids as list data')), status=400)
+
+
+@api.route('/venues/<int:venue_id>')
+class VenueById(Resource):
+    """
+        This resource handles venue CRUD operations for a single venue given by venue_id
+    """
+
+    @authenticate
+    def get(self, venue_id, **kwargs):
+        """
+        This action returns a venue (given by id) created by current user.
+        :param venue_id: id of venue to be returned
+        :keyword user_id: id of venue owner (user who created venue)
+
+        :Example:
+            headers = {'Authorization': 'Bearer <access_token>'}
+            response = requests.get(
+                                        API_URL + '/organizers/1',
+                                        headers=headers
+                                    )
+
+        .. Response::
+
+            {
+              "organizer": {
+                  "address_line2": "",
+                  "city": "Cupertino",
+                  "address_line1": "Infinite Loop",
+                  "user_id": 1,
+                  "social_network_id": 13,
+                  "country": "us",
+                  "zipcode": "95014",
+                  "longitude": 0,
+                  "social_network_venue_id": "15570022",
+                  "state": "CA",
+                  "latitude": 0,
+                  "id": 1
+                }
+            }
+
+        .. Status:: 200 (OK)
+                    404 (Resource not found)
+                    500 (Internal Server Error)
+        """
+        user_id = kwargs['user_id']
+        venue = Venue.get_by_user_id_venue_id(user_id, venue_id)
+        if venue:
+            venue = venue.to_json()
+            resp = json.dumps({'venue': venue})
+            return ApiResponse(resp, status=200)
+        else:
+            ApiResponse(json.dumps(dict(messsage='Venue not found')), status=404)
+
+    @authenticate
+    def post(self, venue_id, **kwargs):
+        """
+        Updates a venue for current user
+        :param venue_id: id of the requested venue
+        :return:
+
+        :Example:
+            venue_data = {
+                  "address_line2": "",
+                  "city": "Cupertino",
+                  "address_line1": "Infinite Loop",
+                  "social_network_id": 13,
+                  "country": "us",
+                  "zipcode": "95014",
+                  "longitude": 0,
+                  "social_network_venue_id": "15570022",
+                  "state": "CA",
+                  "latitude": 0,
+                  "id": 1
+                }
+
+
+            headers = {
+                        'Authorization': 'Bearer <access_token>',
+                        'Content-Type': 'application/json'
+                       }
+            data = json.dumps(venue_data)
+            response = requests.post(
+                                        API_URL + '/venues/1',
+                                        data=data,
+                                        headers=headers,
+                                    )
+
+        .. Response::
+
+            {
+                'message': 'Venue updated successfully'
+            }
+
+        .. Status:: 204 (Resource Updated)
+                    500 (Internal Server Error)
+
+        """
+        user_id = kwargs['user_id']
+        venue_data = request.get_json(force=True)
+        venue = Venue.get_by_user_id_venue_id(user_id, venue_id)
+        if venue:
+            venue_data['user_id'] = user_id
+            venue.update(**venue_data)
+            return ApiResponse(json.dumps(dict(message='Venue updated successfully')), status=204)
+        else:
+            return ApiResponse(json.dumps(dict(messsage='Venue not found')), status=404)
+
+    @authenticate
+    def delete(self, venue_id, **kwargs):
+        """
+        This endpoint deletes one venue owned by this user
+        :param venue_id: id of venue on getTalent database to be deleted
+        :return:
+
+        :Example:
+            headers = {
+                        'Authorization': 'Bearer <access_token>',
+                        'Content-Type': 'application/json'
+                       }
+            response = requests.delete(
+                                        API_URL + '/venues/1',
+                                        headers=headers,
+                                    )
+
+        .. Response::
+
+            {
+                'message': 'Venue has been deleted successfully'
+            }
+        .. Status:: 200 (Resource Deleted)
+                    404 (Not found)
+                    500 (Internal Server Error)
+
+        """
+        # Get user_id
+        user_id = kwargs['user_id']
+        venue = Venue.get_by_user_id_venue_id(user_id, venue_id)
+        if venue:
+            Venue.delete(venue_id)
+            resp = json.dumps(dict(message='Venue has been deleted successfully'))
+            return ApiResponse(resp, status=200)
+        else:
+            return ApiResponse(json.dumps(dict(message='Venue not found')), status=404)
 
 
 @api.route('/organizers/')
@@ -459,11 +603,8 @@ class Organizers(Resource):
                     500 (Internal Server Error)
         """
         user_id = kwargs['user_id']
-        try:
-            organizers = map(lambda organizer: organizer.to_json(), Organizer.get_by_user_id(user_id))
-            resp = json.dumps({'organizers': organizers, 'count': len(organizers)})
-        except Exception as e:
-            return ApiResponse(json.dumps(dict(messsage='APIError: Internal Server error..')), status=500)
+        organizers = map(lambda organizer: organizer.to_json(), Organizer.get_by_user_id(user_id))
+        resp = json.dumps({'organizers': organizers, 'count': len(organizers)})
         return ApiResponse(resp, status=200)
 
     @authenticate
@@ -503,13 +644,10 @@ class Organizers(Resource):
 
         """
         user_id = kwargs['user_id']
-        try:
-            organizer_data = request.get_json(force=True)
-            organizer_data['user_id'] = user_id
-            organizer = Organizer(**organizer_data)
-            Organizer.save(organizer)
-        except Exception as e:
-            return ApiResponse(json.dumps(dict(messsage='APIError: Internal Server error..')), status=500)
+        organizer_data = request.get_json(force=True)
+        organizer_data['user_id'] = user_id
+        organizer = Organizer(**organizer_data)
+        Organizer.save(organizer)
         return ApiResponse(json.dumps(dict(messsage='Organizer created successfully', id=organizer.id)), status=201)
 
     @authenticate
@@ -561,13 +699,250 @@ class Organizers(Resource):
                 else:
                     not_deleted.append(_id)
 
-                if len(not_deleted) == 0:
-                    return ApiResponse(json.dumps(dict(
-                        message='%s Organizer/s deleted successfully' % len(deleted))),
-                        status=200)
+            if len(not_deleted) == 0:
+                return ApiResponse(json.dumps(dict(
+                    message='%s Organizer/s deleted successfully' % len(deleted))),
+                    status=200)
 
-                return ApiResponse(json.dumps(dict(message='Unable to delete %s organizer/s' % len(not_deleted),
-                                                   deleted=deleted,
-                                                   not_deleted=not_deleted)), status=207)
+            return ApiResponse(json.dumps(dict(message='Unable to delete %s organizer/s' % len(not_deleted),
+                                               deleted=deleted,
+                                               not_deleted=not_deleted)), status=207)
         else:
             return ApiResponse(json.dumps(dict(message='Bad request, include ids as list data')), status=400)
+
+
+@api.route('/organizers/<int:organizer_id>')
+class OrganizerById(Resource):
+    """
+        This resource handles organizer CRUD operations for a single organizer given by organizer_id
+    """
+
+    @authenticate
+    def get(self, organizer_id, **kwargs):
+        """
+        This action returns an organizer (given by id) created by current user.
+        :param organizer_id: id of organizer to be returned
+        :keyword user_id: id of organizer owner (user who created organizer)
+
+        :Example:
+            headers = {'Authorization': 'Bearer <access_token>'}
+            organizer_id = 1
+            response = requests.get(
+                                        API_URL + '/organizers/' + str(organizer_id),
+                                        headers=headers
+                                    )
+
+        .. Response::
+
+            {
+              "organizer": {
+                    "id": 1
+                    "user_id": 1,
+                    "name": "Zohaib Ijaz",
+                    "email": "mzohaib.qc@gmail.com",
+                    "about": "I am a software engineer"
+              }
+            }
+
+        .. Status:: 200 (OK)
+                    404 (Resource not found)
+                    500 (Internal Server Error)
+        """
+        user_id = kwargs['user_id']
+        organizer = Organizer.get_by_user_id_organizer_id(user_id, organizer_id)
+        if organizer:
+            organizer = organizer.to_json()
+            resp = json.dumps({'organizer': organizer})
+            return ApiResponse(resp, status=200)
+        else:
+            ApiResponse(json.dumps(dict(messsage='APIError: Organizer not found')), status=404)
+
+    @authenticate
+    def post(self, organizer_id, **kwargs):
+        """
+        Updates an organizer for current user
+        :return:
+
+        :Example:
+            organizer_data = {
+                    'id': 1,
+                    "name": "My Organizer",
+                    "email": "organizer@gmail.com",
+                    "about": "He arranges events"
+                }
+
+
+            headers = {
+                        'Authorization': 'Bearer <access_token>',
+                        'Content-Type': 'application/json'
+                       }
+            data = json.dumps(organizer_data)
+            response = requests.post(
+                                        API_URL + '/organizers/1',
+                                        data=data,
+                                        headers=headers,
+                                    )
+
+        .. Response::
+
+            {
+                "message" : 'Organizer updated successfully'
+            }
+
+        .. Status:: 204 (Resource Updated)
+                    500 (Internal Server Error)
+
+        """
+        user_id = kwargs['user_id']
+        organizer_data = request.get_json(force=True)
+        organizer = Organizer.get_by_user_id_organizer_id(user_id, organizer_id)
+        if organizer:
+            organizer_data['user_id'] = user_id
+            organizer.update(**organizer_data)
+            return ApiResponse(json.dumps(dict(message='Organizer updated successfully')), status=204)
+        else:
+            return ApiResponse(json.dumps(dict(messsage='Organizer not found')), status=404)
+
+    @authenticate
+    def delete(self, organizer_id, **kwargs):
+        """
+        This endpoint deletes one organizer owned by this user
+        :param kwargs:
+        :return:
+
+        :Example:
+            headers = {
+                        'Authorization': 'Bearer <access_token>',
+                        'Content-Type': 'application/json'
+                       }
+            response = requests.delete(
+                                        API_URL + '/organizers/1',
+                                        headers=headers,
+                                    )
+
+        .. Response::
+
+            {
+                'message': 'Organizer has been deleted successfully'
+            }
+        .. Status:: 200 (Resource Deleted)
+                    404 (Not found)
+                    500 (Internal Server Error)
+
+        """
+        # Get user_id
+        user_id = kwargs['user_id']
+        organizer = Organizer.get_by_user_id_organizer_id(user_id, organizer_id)
+        if organizer:
+            Organizer.delete(organizer_id)
+            resp = json.dumps(dict(message='Organizer has been deleted successfully'))
+            return ApiResponse(resp, status=200)
+        else:
+            return ApiResponse(json.dumps(dict(message='Organizer not found')), status=404)
+
+
+@api.route('/social_networks/process_access_token/<int:social_network_id>')
+class ProcessAccessToken(Resource):
+    """
+    This resource adds user credentials for given user and social network
+    This resource takes access token 'code' and social network id for which we
+    want to add credentials.
+    """
+    @authenticate
+    def post(self, social_network_id, **kwargs):
+        """
+        Adds credentials for user for given social network.
+        Gets data from post request which contains 'code' and 'social_credentials'
+        :param args:
+        :param kwargs:
+        :return:
+
+        :Example:
+            data = {
+                    'code': '32432ffd2s8fd23e8saq123ds6a3da21221
+                    }
+
+
+            headers = {
+                        'Authorization': 'Bearer <access_token>',
+                        'Content-Type': 'application/json'
+                       }
+            data = json.dumps(data)
+            response = requests.post(
+                                        API_URL + '/social_networks/process_access_token/13',
+                                        data=data,
+                                        headers=headers,
+                                    )
+
+        .. Response::
+
+            {
+                "message" : 'User credentials added successfully'
+            }
+
+        .. Status:: 201 (Resource Updated)
+                    404 (Social Network not found)
+                    500 (Internal Server Error)
+
+        """
+        user_id = kwargs['user_id']
+        # Get json request data
+        req_data = request.get_json(force=True)
+        code = req_data['code']
+        social_network = SocialNetwork.get_by_id(social_network_id)
+        # if social network does not exists, send failure message
+        if social_network:
+            # Get social network specific Social Network class
+            social_network_class = get_class(social_network.name, 'social_network')
+            # call specific class method to save user credentials and webhook in case of Eventbrite
+            social_network_class.get_access_and_refresh_token(social_network, code, user_id)
+            return ApiResponse(dict(message='User credentials added successfully'), status=201)
+        else:
+            return ApiResponse(dict(message='Social Network not found'), status=404)
+
+
+@api.route('/social_networks/token_validity/<int:social_network_id>')
+class GetTokenValidity(Resource):
+    @authenticate
+    def get(self, social_network_id, **kwargs):
+        """
+        Get user access_token validity status for specified social network
+        :param social_network_id: id for specified social network
+        :type social_network_id: int
+        :keyword user_id: id for current user
+        :type user_id: int
+
+        :Example:
+
+            headers = {'Authorization': 'Bearer <access_token>'}
+            response = requests.get(
+                                        API_URL + /social_networks/token_validity/13,
+                                        headers=headers
+                                    )
+
+        .. Response::
+
+            {
+              "status": true
+            }
+
+        .. Status:: 200 (OK)
+                    467 (UserCredentials not found)
+                    404 (Social Network not found)
+                    500 (Internal Server Error)
+
+        """
+        user_id = kwargs['user_id']
+        # Get social network specified by social_network_id
+        social_network = SocialNetwork.get_by_id(social_network_id)
+        if social_network:
+            # Get social network specific Social Network class
+            social_network_class = get_class(social_network.name, 'social_network')
+            # create social network object which will validate and refresh access token (if possible)
+            sn = social_network_class(user_id=user_id,
+                                      social_network=social_network
+                                      )
+            return ApiResponse(dict(status=sn.access_token_status))
+        else:
+            return ApiResponse(dict(message='Invalid social network Id given'), status=404)
+

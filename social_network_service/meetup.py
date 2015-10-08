@@ -1,6 +1,7 @@
 import json
 
 from base import SocialNetworkBase
+from common.models.social_network import SocialNetwork
 from utilities import http_request, logger, log_error, log_exception
 
 
@@ -99,6 +100,24 @@ class Meetup(SocialNetworkBase):
             log_exception({'user_id': self.user.id,
                            'error': error_message})
         return status
+
+    @classmethod
+    def get_access_and_refresh_token(cls, social_network, code_to_get_access_token, user_id):
+        """
+        This function is called from process_access_token() inside controller
+        user.py. Here we get the access token from provided user_credentials
+        and auth code for fetching access token by making API call.
+        :return:
+        """
+        auth_url = social_network.auth_url + "/access"
+        # create Social Network Specific payload data
+        payload_data = {'client_id': social_network.client_key,
+                        'client_secret': social_network.secret_key,
+                        'grant_type': 'authorization_code',
+                        'redirect_uri': social_network.redirect_uri,
+                        'code': code_to_get_access_token}
+        social_network = SocialNetwork.get_by_name(cls.__name__)
+        super(Meetup, cls).get_access_and_refresh_token(auth_url, payload_data, user_id, social_network)
 
 # if __name__ == "__main__":
 #     eb = Meetup(user_id=1, social_network_id=13)

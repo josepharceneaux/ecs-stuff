@@ -134,6 +134,9 @@ class Facebook(RSVPBase):
         """
          :param response: rsvp is likely the dict we get from the response
             of Graph API of Facebook.
+         :type response: requests.Response
+         :param target_list: list in which items to be appended after getting from different pages/requests
+         :type target_list: list
 
         - This function is used to get the data of candidate related
           to given rsvp. It attaches all the information in attendee object.
@@ -152,8 +155,6 @@ class Facebook(RSVPBase):
             social_network_service/rsvp/base.py for more insight.
 
         :return: attendee object which contains data about the candidate
-        :param response:
-        :param target_list:
         :return:
         """
         while True:

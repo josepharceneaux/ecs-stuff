@@ -24,7 +24,7 @@ class Facebook(SocialNetworkBase):
         self.api_relative_url = '/me'
         payload = {'access_token': self.access_token}
 
-        super(Facebook, self).validate_token(payload=payload)
+        return super(Facebook, self).validate_token(payload=payload)
 # if __name__ == "__main__":
 #     eb = Facebook(user_id=1, social_network_id=2)
 #     eb.process_events()

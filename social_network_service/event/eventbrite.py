@@ -18,7 +18,7 @@ from social_network_service.custom_exections import EventNotCreated, \
     VenueNotFound, TicketsNotCreated, EventNotPublished, EventInputMissing, \
     EventLocationNotCreated
 from social_network_service.utilities import log_error, logger, log_exception, \
-    http_request
+    http_request, get_utc_datetime
 
 from common.models.event import Event
 EVENTBRITE = 'Eventbrite'
@@ -395,6 +395,7 @@ class Eventbrite(EventBase):
         :exception TicketsNotCreated (throws exception if unable to create or update tickets)
         :return: tickets_id (an id which refers to tickets for event on eventbrite.com
         """
+        # send POST request to create or update tickets for event
         response = http_request('POST', tickets_url, params=self.ticket_payload,
                                 headers=self.headers, user_id=self.user.id)
         if response.ok:
@@ -442,7 +443,10 @@ class Eventbrite(EventBase):
         :param event_id:id of newly created event
         :return: True if event is deleted from vendor, False other wsie
         """
+        # we will only set specific url here
         self.url_to_delete_event = self.api_url + "/events/" + str(event_id) + "/unpublish/"
+        # common unpublish functionality is in EventBase class' unpublish_event() method
+        # remove event from Eventbrite and from local database
         super(Eventbrite, self).unpublish_event(event_id, method=method)
 
     @staticmethod
@@ -457,7 +461,7 @@ class Eventbrite(EventBase):
         """
         mandatory_input_data = ['title', 'description', 'end_datetime',
                                 'timezone', 'start_datetime', 'currency']
-        if not all([input in data and data[input] for input in mandatory_input_data]):
+        if not all([field in data and data[field] for field in mandatory_input_data]):
             log_error({
                 'user_id': '',
                 'error': 'Mandatory parameters missing in Eventbrite data'
@@ -472,104 +476,32 @@ class Eventbrite(EventBase):
         :type data: dict
         :exception KeyError: can raise KeyError if some key not found in event data
         """
-        if data:
-            self.data = data
-            self.validate_required_fields(data)
-            #  filling required fields for Eventbrite
-            event_name = data['title']
-            description = data['description']
-            # Eventbrite assumes that provided start and end DateTime is in UTC
-            # So, form given Timezone, (eventTimeZone in our case), It changes the
-            # provided DateTime accordingly.
-            # Here we are converting DateTime into UTC format to be sent to vendor
-            utc_dts = []
-            start_time = end_time = ''
-            naive_dts = [data['start_datetime'], data['start_datetime']]
-            if data['timezone']:
-                local_timezone = pytz.timezone(data['timezone'])
-                for naive_dt in naive_dts:
-                    local_dt = local_timezone.localize(naive_dt, is_dst=None)
-                    utc_dt = local_dt.astimezone(pytz.utc)
-                    utc_dts.append(utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ"))
-                start_time = utc_dts[0]
-                end_time = utc_dts[1]
-            else:
-                error_message = 'Time Zone is None for Event %s ' % event_name
-                log_error({
-                    'user_id': self.user.id,
-                    'error': error_message
-                })
-            currency = data['currency']
-            time_zone = data['timezone']
+        assert data, 'data should not be None/empty'
+        assert isinstance(data, dict), 'data should be a dictionary'
+        self.data = data
+        self.validate_required_fields(data)
+        # Eventbrite assumes that provided start and end DateTime is in UTC
+        # So, form given Timezone, (eventTimeZone in our case), It changes the
+        # provided DateTime accordingly.
+        start_time = get_utc_datetime(data['start_datetime'], data['timezone'])
+        end_time = get_utc_datetime(data['end_datetime'], data['timezone'])
+        # This dict is used to create an event as a draft on vendor
+        self.event_payload = {
+            'event.start.utc': start_time,
+            'event.start.timezone': data['timezone'],
+            'event.end.utc': end_time,
+            'event.end.timezone': data['timezone'],
+            'event.currency': data['currency'],
+            'event.name.html': data['title'],
+            'event.description.html': data['description']
+        }
+        self.venue_id = data['venue_id']
+        # Creating ticket data as Eventbrite wants us to associate tickets with events
+        # This dict is used to create tickets for a specified event
+        self.ticket_payload = {
+            'ticket_class.name': 'Event Ticket',
+            'ticket_class.quantity_total': data['max_attendees'],
+            'ticket_class.free': True,
+        }
+        self.social_network_event_id = data.get('social_network_event_id')
 
-            # Creating ticket data as Eventbrite wants us to associate tickets
-            # with events
-            venue_name = 'Event Address'
-            number_of_tickets = data['max_attendees']
-            free_tickets = True
-            ticket_type = 'Event Ticket'
-
-            # This dict is used to create an event as a draft on vendor
-            self.event_payload = {
-                'event.start.utc': start_time,
-                'event.start.timezone': time_zone,
-                'event.end.utc': end_time,
-                'event.end.timezone': time_zone,
-                'event.currency': currency,
-                'event.name.html': event_name,
-                'event.description.html': description
-            }
-            self.venue_id = data['venue_id']
-            # This dict is used to create tickets for a specified event
-            self.ticket_payload = {
-                'ticket_class.name': ticket_type,
-                'ticket_class.quantity_total': number_of_tickets,
-                'ticket_class.free': free_tickets,
-            }
-            self.social_network_event_id = data.get('social_network_event_id')
-        else:
-            error_message = 'Data is None'
-            log_error({
-                'user_id': self.user.id,
-                'error': error_message
-            })
-
-    def create_webhook(self, user_credentials):
-        """
-        Creates a webhook to stream the live feed of Eventbrite users to the
-        Flask app. It gets called in the save_token_in_db().
-        It takes user_credentials to save webhook against that user.
-        Here it performs a check which ensures  that webhook is not generated
-        every time code passes through this flow once a webhook has been
-        created for a user (since webhooks don't expire and are unique for
-        every user).
-        :return: True if webhook creation is successful o/w False
-        """
-        status = False
-        if (user_credentials.user_id == user_credentials.user_id) \
-                and (user_credentials.social_network_id == user_credentials.social_network_id) \
-                and (user_credentials.webhook in [None, '']):
-            url = self.api_url + "/webhooks/"
-            payload = {'endpoint_url': WEBHOOK_REDIRECT_URL}
-            response = http_request('POST', url, params=payload, headers=self.headers,
-                                    user_id=self.user.id)
-            if response.ok:
-                try:
-                    webhook_id = response.json()['id']
-                    user_credentials.update_record(webhook=webhook_id)
-                    status = True
-                except Exception as error:
-                    log_exception({
-                        'user_id': self.user.id,
-                        'error': error.message
-                    })
-            else:
-                error_message = "Eventbrite Webhook wasn't created successfully"
-                log_exception({
-                    'user_id': self.user.id,
-                    'error': error_message
-                })
-        else:
-            # webhook has already been created for this user
-            status = True
-        return status

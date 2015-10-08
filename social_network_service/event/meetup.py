@@ -29,7 +29,8 @@ class Meetup(EventBase):
 
     :Example:
 
-        To create a meetup event you have to do tha following:
+        To create / update a meetup event you have to do tha following:
+
         1. Create Meetup instance
             meetup = Meetup(user=user_obj,
                             social_network=social_network_obj,
@@ -40,13 +41,14 @@ class Meetup(EventBase):
 
             it will add parsed data to 'self.payload' dictionary
 
-        3. Now call create_event() which will
+        3. Now call create_event() / update_event()  which will
                 get venue from db given by venue_id (local db venue id) in self.payload.
                 if venue in db contains 'social_network_venue_id', it means that venues has already
                 been created on Meetup so no need to create again on Meetup, just return that id to be passed
                 in self.payload.
                 And if 'social_network_venue_id' in none, creates venue on Meetup and returns Meetup venue id
                 It now sends a POST request to Meetup API to create event and returns event
+
     """
 
     def __init__(self, *args, **kwargs):
@@ -62,6 +64,7 @@ class Meetup(EventBase):
         self.payload = None
         self.location = None
         self.group_url_name = None
+        self.group_ids = []
         self.social_network_event_id = None
         self.start_date = kwargs.get('start_date') or (datetime.now() - timedelta(days=5))
         self.end_date = kwargs.get('end_date') or (datetime.now() + timedelta(days=5))
@@ -118,12 +121,22 @@ class Meetup(EventBase):
         return all_events
 
     def _filter_event(self, event):
-        if event['group']['id']:
+        """
+        This method returns True id given event's group is owned by current user
+        :param event: event to be tested
+        :return True or False
+        :rtype Boolean
+        """
+        group_id = event['group'].get('id')
+        # check if  event's group id exists
+        if group_id:
+            if group_id in self.group_ids:
+                return True
             url = self.api_url + '/groups/?sign=true'
+            # send request
             response = http_request('GET', url,
                                     params={
-                                        'group_id':
-                                            event['group']['id']
+                                        'group_id': group_id
                                     },
                                     headers=self.headers,
                                     user_id=self.user.id)
@@ -132,6 +145,8 @@ class Meetup(EventBase):
                 group_organizer = group['results'][0]['organizer']
                 # group_organizer contains a dict that has member_id and name
                 if str(group_organizer['member_id']) == self.member_id:
+                    # save this group id as user's owned groups, so no need to fetch it again
+                    self.group_ids.append(group_id)
                     return True
         return False
 
@@ -301,10 +316,10 @@ class Meetup(EventBase):
             logger.info('|  Event %s updated Successfully  |' % self.payload['name'])
             self.data['social_network_event_id'] = event_id
         else:
-            error_message = 'Event was not Created. Error occurred during event creation on Meetup'
+            error_message = 'Event was not Created. Error occurred during event update on Meetup'
             log_error({'user_id': self.user.id,
                        'error': error_message})
-            raise EventNotCreated('ApiError: Unable to create event on social network')
+            raise EventNotCreated('ApiError: Unable to update event on social network')
 
     def add_location(self):
         """

@@ -7,6 +7,7 @@ import imp
 import sys
 import json
 import inspect
+import pytz
 import requests
 import datetime
 import traceback
@@ -238,7 +239,7 @@ def get_class(social_network_name, category, user_credentials=None):
     :return:
     """
     if category == 'social_network':
-        module_name = 'social_network_service.' + social_network_name
+        module_name = 'social_network_service.' + social_network_name.lower()
     else:
         module_name = 'social_network_service.' + category + '.' + social_network_name.lower()
     try:
@@ -345,4 +346,28 @@ def import_from_dist_packages(name, custom_name=None):
     module = imp.load_module(custom_name, f, pathname, desc)
     f.close()
     return module
+
+
+def get_utc_datetime(dt, timezone):
+    """
+    This method takes datetime object and timezone name and returns UTC specific datetime
+
+    :Example:
+
+        >>> now = datetime.datetime.now()  # datetime.datetime(2015, 10, 8, 11, 16, 55, 520914)
+        >>> timezone = 'Asia/Karachi'
+        >>> utc_datetime = get_utc_datetime(now, timezone) # '2015-10-08T06:16:55Z'
+
+    :param dt: datetime object
+    :type dt: datetime.datetime
+    :return: timezone specific datetime object
+    :rtype string
+    """
+    assert timezone, 'Timezone should not be none'
+    assert isinstance(dt, datetime.datetime)
+    # get timezone info from given datetime object
+    local_timezone = pytz.timezone(timezone)
+    local_dt = local_timezone.localize(dt, is_dst=None)
+    utc_dt = local_dt.astimezone(pytz.utc)
+    return utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
