@@ -6,9 +6,13 @@
         'app.core',
 
         // Features (listed alphabetically)
+        'app.admin',
         'app.approot',
+        'app.campaigns',
         'app.dashboard',
         'app.footer',
+        'app.help',
+        'app.pipeline',
         'app.sidenav',
         'app.topnav'
     ]);
