@@ -92,5 +92,9 @@ class AccessTokenHasExpired(ApiException):
     status_code = 466
 
 
-class UserCredentialsNotFound(ApiException):
+class NoUserFound(ApiException):
     status_code = 467
+
+
+class UserCredentialsNotFound(ApiException):
+    status_code = 469

@@ -97,8 +97,6 @@ def init_app():
     Call this method at the start of app or manager for Events/RSVPs
     :return:
     """
-    from social_network_service.utilities import get_callee_data
-    print(get_callee_data())
     db.init_app(flask_app)
     db.app = flask_app
     return flask_app

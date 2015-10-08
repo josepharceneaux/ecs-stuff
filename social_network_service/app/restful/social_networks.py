@@ -927,7 +927,7 @@ class GetTokenValidity(Resource):
             }
 
         .. Status:: 200 (OK)
-                    467 (UserCredentials not found)
+                    469 (UserCredentials not found)
                     404 (Social Network not found)
                     500 (Internal Server Error)
 

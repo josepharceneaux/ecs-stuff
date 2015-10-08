@@ -326,7 +326,7 @@ class UserCredentials(db.Model):
         return success
 
     @classmethod
-    def get_by_webhook_id_and_social_network(cls, webhook_id, social_network_id):
+    def get_by_webhook_id_and_social_network_id(cls, webhook_id, social_network_id):
         assert webhook_id is not None
         assert social_network_id is not None
         return cls.query.filter(

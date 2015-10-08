@@ -122,7 +122,7 @@ class Meetup(RSVPBase):
           attendees is a utility object we share in calls that contains
           pertinent data.
 
-        - This method is called from process_rsvps() present in
+        - This method is called from process_rsvps() defined in
           RSVPBase class.
 
         :Example:

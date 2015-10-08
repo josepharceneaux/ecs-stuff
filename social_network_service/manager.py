@@ -1,8 +1,8 @@
 import sys
 import argparse
 import traceback
-# from social_network_service import init_app
-# init_app()
+from social_network_service import init_app
+init_app()
 
 from gevent.pool import Pool
 from datetime import datetime
