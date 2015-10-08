@@ -88,7 +88,7 @@ module.exports = function (config) {
         // If dev: watches sass, compiles it to css, browser-sync handles reload
         var files = [].concat(config.js, config.html, config.sass);
         if (isDev) {
-            watch(files, { readDelay: 5000 }, function(){ gulp.start('inject', browserSync.reload); });
+            watch(files, { readDelay: 3000 }, function(){ gulp.start('inject', browserSync.reload); });
         } else {
             watch(files, function(){ gulp.start('optimize', browserSync.reload); });
         }
