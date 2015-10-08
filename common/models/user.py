@@ -29,9 +29,11 @@ class User(db.Model):
     added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
     updated_time = db.Column('updatedTime', db.DateTime)
     dice_user_id = db.Column('diceUserId', db.Integer)
+    group_id = db.Column('groupId', db.Integer, db.ForeignKey('user_groups.id'), default=1, nullable=False)
 
     # Relationships
     candidates = relationship('Candidate', backref='user')
+    user_groups = relationship('UserGroups', backref='user')
     public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
 
     def is_authenticated(self):
@@ -279,3 +281,58 @@ class UserScopedRoles(db.Model):
         """
         user_scoped_roles = UserScopedRoles.query.filter_by(userId=user_id).all() or []
         return dict(roles=[user_scoped_role.roleId for user_scoped_role in user_scoped_roles])
+
+
+class UserGroups(db.Model):
+    __tablename__ = 'user_groups'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False, unique=True)
+    description = db.Column(db.String(225), nullable=True)
+    domain_id = db.Column(
+        db.Integer, db.ForeignKey('domain.id')
+    )
+    domain = db.relationship('Domain')
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+    @staticmethod
+    def save(domain_id, name, description=''):
+        """ Create a new user group.
+        :param name: Name of the user group
+        :param domain_id: Domain Id of the user group.
+        :param description: Description of the user group.
+        """
+        user_group = UserGroups(name=name, description=description, domain_id=domain_id)
+        db.session.add(user_group)
+        db.session.commit()
+        return user_group.id
+
+    @staticmethod
+    def get_by_id(group_id):
+        """ Get a user group with supplied group_id.
+        :param group_id: id of a user group.
+        """
+        return UserGroups.query.get(group_id)
+
+    @staticmethod
+    def get_by_name(group_name):
+        """ Get a user group with supplied group_name.
+        :param group_name: Name of a user group.
+        """
+        return UserGroups.query.filter_by(name=group_name).first()
+
+    @staticmethod
+    def all():
+        """ Get all groups_ids in database """
+        all_user_groups = UserGroups.query.all() or []
+        return dict(user_groups=[user_group.id for user_group in all_user_groups])
+
+    @staticmethod
+    def all_groups_of_domain(domain_id):
+        """ Get all user_groups with names in database """
+        all_user_groups_of_domain = UserGroups.query.filter_by(domain_id=domain_id) or []
+        return dict(user_groups=[{'id': user_group.id, 'name': user_group.name} for user_group in
+                                 all_user_groups_of_domain])
