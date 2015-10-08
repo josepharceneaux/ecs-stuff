@@ -4,12 +4,16 @@ import flask
 import requests
 from social_network_service import init_app
 app = init_app()
+
+from restful.events import events_blueprint
+from restful.social_networks import social_network_blueprint
+from social_network_service import logger
 from social_network_service.app.app_utils import ApiResponse
 from social_network_service.app.restful.data import data_blueprint
 from social_network_service.custom_exections import ApiException
 from social_network_service.rsvp.eventbrite import Eventbrite as EventbriteRsvp
-from restful.social_networks import social_network_blueprint
-from restful.events import events_blueprint
+
+
 
 from flask.ext.restful import Api
 from flask import Flask, request, session, g, redirect, url_for, \
@@ -53,7 +57,7 @@ def hello_world():
         from common.models.candidate import Candidate
         from common.models.event import Event
         candidate = Candidate.query.all()[0]
-        event = Event.query.get(1)
+        event = Event.query.all()[0]
     except Exception as error:
         import traceback
         return traceback.format_exc()
@@ -150,19 +154,23 @@ def handle_rsvp():
             data = json.loads(request.data)
             action = data['config']['action']
             if action == 'order.placed':
+                logger.debug('Got an RSVP from eventbrite event')
                 url_of_rsvp = str(json.loads(request.data)['api_url'])
                 # gets dictionary object of social_network_rsvp_id
                 social_network_rsvp_id = get_rsvp_id(url_of_rsvp)
                 webhook_id = data['config']['webhook_id']
-                user_credentials = EventbriteRsvp.get_user_credentials_by_webhook(webhook_id)
+                user_credentials = EventbriteRsvp.get_user_credentials_by_webhook(webhook_id,
+                                                                                  social_network_rsvp_id)
                 user_id = user_credentials.user_id
+                logger.debug('Organizer of event is %s(UserId:%s)'
+                             %(user_credentials.user.name, user_credentials.user.id))
                 social_network_class = get_class(user_credentials.social_network.name.lower(),
                                                  'social_network')
                 # we call social network class here for auth purpose, If token is expired
                 # access token is refreshed and we use fresh token
-                sn = social_network_class(user_id=user_credentials.userId,
+                sn = social_network_class(user_id=user_credentials.user_id,
                                           social_network_id=user_credentials.social_network.id)
-                if not user_credentials.memberId:
+                if not user_credentials.member_id:
                     # get an save the member Id of gt-user
                     sn.get_member_id(dict())
                 rsvp_class = get_class(user_credentials.social_network.name.lower(), 'rsvp')
@@ -175,10 +183,10 @@ def handle_rsvp():
                 print 'Successful Webhook Connection'
         else:
             # return hub_challenge, 200
-            error_message = 'No RSVP Data'
+            error_message = 'No RSVP Data Received'
             log_error({'user_id': user_id,
                        'error': error_message})
-            data = {'message': 'No RSVP Data',
+            data = {'message': error_message,
                     'status_code': 500}
             return flask.jsonify(**data), 500
     except Exception as e:

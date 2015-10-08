@@ -13,9 +13,9 @@ from social_network_service.utilities import log_exception, log_error
 
 
 class RSVPBase(object):
-    """This class is the base class for handling RSVPs related to all three
+    """This is the base class for handling RSVPs related to events of all three
      social networks 1-Meetup, 2-Eventbrite, 3-Facebook for now.
-     It contains the common functionality and some abstract methods, which
+     It contains the common functionality and some abstract methods which
      are implemented by child classes.
 
     It contains following methods:
@@ -26,7 +26,7 @@ class RSVPBase(object):
             It sets user, user_credentials, social network,
             headers (authentication headers), api_url, access_token,
             and start_date_dt.
-            It also initializes rsvp list to empty list.
+            It also initializes rsvps list to empty list.
 
     * get_rsvps(self, event) : abstract
         All child classes need to implement this method to get RVSPs of a
@@ -34,34 +34,36 @@ class RSVPBase(object):
 
     * get_all_rsvps(self, events):
         This method loops over the list of events and call get_rsvps(event)
-        in each event. It then append rsvps in self.rsvps
+        on each event. It then append rsvps of each event in self.rsvps.
 
     * process_rsvps(self, rsvps):
         This method loops over the list of rsvps. It picks one rsvp and call
         other methods to process and save them it in database.
 
     * post_process_rsvp(self, rsvp):
-        This method is made for future user if we have to do some
-        post processing on saved rsvps.
+        This method is made for future use if we have to do some post
+        processing on saved rsvps.
 
     * get_attendee(self, rsvp): abstract
         This method creates and returns the attendee object by getting data
-        about the candidate using respective API calls. (attendee object
-        contains the information about candidate like name, city, country etc)
+        about the candidate using respective API of social network.
+        (attendee object contains the information about candidate like name,
+         city, country etc)
 
     * pick_source_product(self, attendee):
         In this method, we get the source_product_id of the candidate and
         appends it in attendee object. Then we return the attendee object.
 
     * save_attendee_source(self, attendee):
-        This method gets the source of attendee i.e. social_network_event_id of
-        candidate. It then appends the social_network_event_id in attendee
+        This method saves the source of attendee i.e. social_network_event_id
+        of candidate. It then appends the social_network_event_id in attendee
         object and returns it.
 
     * save_attendee_as_candidate(self, attendee):
-        Once we have all the required fields for candidate, we save/update
-        it in candidate table in this method. It appends the id of candidate in
-        db and attendee object and returns it.
+        Once we have the data for candidate, we save/update the data in
+        candidate table in this method. It appends the id of candidate_id
+        (id of candidate in db) in the attendee object and returns attendee
+        object. It also returns the attendee object.
 
     * save_rsvp(self, attendee):
         In this method, we extract the data of RSVP from attendee object
@@ -78,7 +80,7 @@ class RSVPBase(object):
         website.
 
     - We make the object of this class while importing RSVPs both through
-        manager and webhook::
+        manager and webhook.
 
         :Example:
 
@@ -95,7 +97,7 @@ class RSVPBase(object):
         sn_rsvp_obj.process_rsvps(self.events)
 
     **See Also**
-        .. seealso:: get_rsvp() method in EventBase class inside
+        .. seealso:: process_events_rsvps() method in EventBase class inside
                     social_network_service/event/base.py for more insight.
     """
     __metaclass__ = ABCMeta
@@ -116,7 +118,7 @@ class RSVPBase(object):
             self.start_date_dt = None
         except Exception as e:
             # Shouldn't raise an exception, just log it.
-            # The reason is, we make multiple objects of this class for multiple
+            # The reason is, we make multiple objects of this class for each
             # user credentials. So, if one of them fails to proceed, we simply
             # log the error here and move on to process next object.
             error_message = e.message
@@ -133,15 +135,17 @@ class RSVPBase(object):
         should be implemented by a child as implementation may vary across
         social networks.
 
-        - This method is called inside get_all_rsvps().
+        - This method is called from get_all_rsvps() defined in RSVPBase class
+            inside social_network_service/rsvp/base.py. We use this method
+            while importing RSVPs through social network manager.
 
         :Example:
 
             rsvps = self.get_rsvps(event)
 
         **See Also**
-        .. seealso:: get_all_rsvps() method in RSVPBase class
-        inside social_network_service/rsvp/base.py
+        .. seealso:: get_all_rsvps() method in RSVPBase class inside
+        social_network_service/rsvp/base.py
 
         :return: It returns the list of rsvps for a particular event where
         each rsvp is likely the response from social network in dict format.
@@ -151,13 +155,16 @@ class RSVPBase(object):
     def get_all_rsvps(self, events):
         """
         :param events: events is the list of all the events of a particular
-                       user present in database table "event",
+                       user present in database table "event".
 
-        - We go over each event one by one and do the following:
-            - Get RSVPs of that event. This is done in the get_rsvps()
-                method which gets RSVPs and attach them to rsvps list of dicts.
+        - We go over each event one by one and get RSVPs of that event.
+            This is done in the get_rsvps() method which fetches RSVPs and
+            attach them to rsvps list of dicts.
 
-        - We use this method while importing RSVPs through manager.
+        - We use this method inside process_events_rsvps() defined in
+            EventBase class inside social_network_service/event/base.py.
+
+        - We use this method while importing RSVPs via social network manager.
 
         :Example:
 
@@ -212,23 +219,28 @@ class RSVPBase(object):
         """
         :param rsvps: rsvps is the list of rsvps of all events of a particular
                       user.
-        - This method does the processing on RSVPs present in rsvps.
+        - This method does the processing on RSVPs present in "rsvps".
 
         Here we do the followings
-            a)- we pick an rsvp from rsvps.
-            b)- We move on to getting attendee using the given
-                rsvp by get_attendees() call. attendees is a utility object we
-                 share in calls that contains pertinent data.
-                get_attendee() should be implemented by a child.
-            c)- We pick the source product of rsvp (e.g. meetup or eventbrite).
+            a)- we pick an rsvp from "rsvps".
+            b)- We move on to get attendee using the given rsvp by
+                get_attendees() call. attendees is a utility object we
+                share in calls that contains pertinent data. get_attendee()
+                should be implemented by a child.
+            c)- We pick the source product of RSVP (e.g. meetup or eventbrite).
             d)- We store the source of candidate in candidate_source db table.
-            e)- Once we have the attendees we call save_attendee_as_candidate()
-                which store each attendee as a candidate.
-            f)- Finally we save the rsvp in rsvp and candidate_event_rsvp db
-                tables.
+            e)- Once we have the attendees data we call
+                save_attendee_as_candidate() which store each attendee as a
+                candidate.
+            f)- Finally we save the RSVP in
+                1- rsvp
+                2- candidate_event_rsvp
+                3- Activity db tables.
 
-        - This method is called from process_events_rsvps() present in
-          EventBase class.
+        - This method is called from process_events_rsvps() defined in
+            EventBase class inside social_network_service/event/base.py.
+
+        - We use this method while importing RSVPs via social network manager.
 
         :Example:
             - sn_rsvp_obj = sn_rsvp_class(social_network=self.social_network,
@@ -270,6 +282,12 @@ class RSVPBase(object):
             logger.debug('%d RSVPs for events of %s(UserId: %s) have been '
                          'processed and saved successfully in database.'
                          % (len(rsvps), self.user.name, self.user.id))
+
+    def post_process_rsvps(self, rsvps):
+        """
+        This method is defined if we need to use it in future.
+        """
+        pass
 
     # def post_process_rsvps(self, rsvps):
     #     """
@@ -321,16 +339,19 @@ class RSVPBase(object):
     @abstractmethod
     def get_attendee(self, rsvp):
         """
-        :param rsvp: rsvp is the dict which we got from response
-            of specific social network.
+        :param rsvp: rsvp is the dict which we get from response
+            of specific social network API.
 
         - This function is used to get the data of candidate related
           to given rsvp. It attaches all the information in attendee object.
           attendees is a utility object we share in calls that contains
           pertinent data. Child classes will implement the functionality.
 
-        - This method is called from process_rsvps() present in
-          RSVPBase class.
+        - This method is called from process_rsvps() defined in
+          RSVPBase class inside social_network_service/rsvp/base.py.
+
+        - We use this method while importing RSVPs through social network
+          manager or webhook.
 
         :Example:
 
@@ -352,10 +373,14 @@ class RSVPBase(object):
                          contains pertinent data.
 
         - Here we pick the id of source product by providing social network
-         name and appends the id of matched record in attendee object.
+            name and appends the id of matched record in attendee object. If
+            no record is found, we log and raise the error.
 
-        - This method is called from process_rsvps() present in
-          RSVPBase class.
+        - This method is called from process_rsvps() defined in
+          RSVPBase class inside social_network_service/rsvp/base.py.
+
+        - We use this method while importing RSVPs through social network
+          manager or webhook.
 
         :Example:
 
@@ -389,8 +414,11 @@ class RSVPBase(object):
          It then appends id of source in attendee object to be saved in
          candidate table.
 
-        - This method is called from process_rsvps() present in
-          RSVPBase class.
+        - This method is called from process_rsvps() defined in
+          RSVPBase class inside social_network_service/rsvp/base.py.
+
+        - We use this method while importing RSVPs through social network
+          manager or webhook.
 
         :Example:
 
@@ -431,8 +459,11 @@ class RSVPBase(object):
          then appends the candidate_id to the attendee object and returns
          attendee object.
 
-        - This method is called from process_rsvps() present in
-          RSVPBase class.
+        - This method is called from process_rsvps() defined in
+          RSVPBase class inside social_network_service/rsvp/base.py.
+
+        - We use this method while importing RSVPs through social network
+          manager or webhook.
 
         :Example:
 
@@ -481,8 +512,11 @@ class RSVPBase(object):
         It then appends the id of record in attendee object and returns
         attendee object as well.
 
-        - This method is called from process_rsvps() present in
-          RSVPBase class.
+        - This method is called from process_rsvps() defined in
+          RSVPBase class inside social_network_service/rsvp/base.py.
+
+        - We use this method while importing RSVPs through social network
+          manager or webhook.
 
         :Example:
 
@@ -530,8 +564,11 @@ class RSVPBase(object):
         rsvp_id to save/update the record. It appends id of record in
         attendee object and returns attendee object.
 
-        - This method is called from process_rsvps() present in
-          RSVPBase class.
+        - This method is called from process_rsvps() defined in
+          RSVPBase class inside social_network_service/rsvp/base.py.
+
+        - We use this method while importing RSVPs through social network
+          manager or webhook.
 
         :Example:
 
@@ -573,8 +610,11 @@ class RSVPBase(object):
         - Once rsvp is stored in all required tables, here we update Activity table
         so that Get Talent user can see rsvps in Activity Feed.
 
-        - This method is called from process_rsvps() present in
-          RSVPBase class.
+        - This method is called from process_rsvps() defined in
+          RSVPBase class inside social_network_service/rsvp/base.py.
+
+        - We use this method while importing RSVPs through social network
+          manager or webhook.
 
         :Example:
 

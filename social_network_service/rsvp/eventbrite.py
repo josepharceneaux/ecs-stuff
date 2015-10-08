@@ -3,6 +3,10 @@ from datetime import datetime
 from base import RSVPBase
 from common.models.event import Event
 from common.models.user import UserCredentials
+from common.models.social_network import SocialNetwork
+
+from social_network_service import logger
+from social_network_service.custom_exections import NoUserFound
 from social_network_service.utilities import http_request, Attendee, \
     log_exception, log_error
 
@@ -10,6 +14,8 @@ from social_network_service.utilities import http_request, Attendee, \
 class Eventbrite(RSVPBase):
     """
     - This class is inherited from RSVPBase class.
+        RSVPBase class is defined inside social_network_service/rsvp/base.py
+
     - This implements the following abstract methods
 
         1- get_rsvps() and
@@ -27,7 +33,7 @@ class Eventbrite(RSVPBase):
         To process rsvp of an eventbrite event (via webhook) you have to do
         following steps:
 
-        1-
+        1- Import this class
             from social_network_service.rsvp.eventbrite import Eventbrite
                                                             as EventbriteRsvp
 
@@ -65,10 +71,11 @@ class Eventbrite(RSVPBase):
         super(Eventbrite, self).__init__(*args, **kwargs)
 
     @classmethod
-    def get_user_credentials_by_webhook(cls, webhook_id):
+    def get_user_credentials_by_webhook(cls, webhook_id, social_network_rsvp_id):
         """
         :param webhook_id: id of webhook extracted from received data
                         of an rsvp.
+        :param social_network_rsvp_id: id of rsvp on social network website.
 
         - user credentials db table have a field webhook_id. we pass
             webhook_id in this method and this gives the user's
@@ -84,38 +91,30 @@ class Eventbrite(RSVPBase):
 
         :Example:
 
-            from social_network_service.rsvp.eventbrite import Eventbrite as EventbriteRsvp
-            user_credentials = EventbriteRsvp.get_user_credentials_by_webhook(webhook_id)
+            from social_network_service.rsvp.eventbrite import Eventbrite
+            user_credentials = Eventbrite.get_user_credentials_by_webhook(webhook_id)
 
         **See Also**
             .. seealso:: handle_rsvp() function in social_network_service/app/app.py
                          for more understanding.
         """
-        user = None
-        webhook = None
+        rsvp_data = {'webhook_id': webhook_id,
+                     'social_network_rsvp_id': social_network_rsvp_id}
         if webhook_id:
-            try:
-                # gets gt-user object
-                user = UserCredentials.get_by_webhook_id(webhook_id)
-                webhook = {'webhook_id': webhook_id}
-            except Exception as e:
-                error_message = e.message
-                log_exception({'user_id': '',
-                               'error': error_message})
-                # raise the error TODO
+            # gets gt-user object
+            social_network = SocialNetwork.get_by_name(cls.__name__)
+            user = UserCredentials.get_by_webhook_id_and_social_network_id(
+                webhook_id, social_network.id)
         else:
-            # TODO may be following is redudant, we should just assert on
-            # webhook_id at the top and remove this else
-            error_message = 'Webhook Id is None. Can not Process RSVP'
-            log_error({'user_id': '',
-                       'error': error_message})
+            error_message = 'Webhook is "%(webhook_id)s" for ' \
+                            'rsvp(id=%(social_network_rsvp_id)s)' % rsvp_data
+            raise NoUserFound('API Error: %s' % error_message)
         if user:
             return user
         else:
-            error_message = "No User found in database corresponding to " \
-                            "webhook id %(webhook_id)s" % webhook
-            log_error({'user_id': '',
-                       'error': error_message})
+            error_message = "No User found in database that corresponds to " \
+                            "webhook id %(webhook_id)s" % rsvp_data
+            raise NoUserFound('API Error: %s' % error_message)
 
     def process_rsvp_via_webhook(self, rsvp):
         """
@@ -170,12 +169,16 @@ class Eventbrite(RSVPBase):
                 attendee = self.save_candidate_event_rsvp(attendee)
                 # base class method to save rsvp data in DB table activity
                 self.save_rsvp_in_activity_table(attendee)
+            logger.debug('\nRSVP for event "%s" of %s(UserId: %s) has been '
+                         'processed and saved successfully in database. '
+                         '\nCandidate Name is %s'
+                         % (attendee.event.title, self.user.name,
+                            self.user.id, attendee.full_name))
         except Exception as e:
-            # Shouldn't raise an exception, just log it and move to process
-            # next RSVP
             error_message = e.message
             log_exception({'user_id': self.user.id,
                            'error': error_message})
+            raise
 
     def process_rsvps(self, events):
         """
@@ -202,7 +205,7 @@ class Eventbrite(RSVPBase):
           attendees is a utility object we share in calls that contains
           pertinent data.
 
-        - This method is called from process_rsvps() present in
+        - This method is called from process_rsvps() defined in
           RSVPBase class.
 
         - It is also called from process_rsvps_via_webhook() in

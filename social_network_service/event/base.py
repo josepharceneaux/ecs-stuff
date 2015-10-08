@@ -1,6 +1,7 @@
 """
 This module contains EventBase class which provides common methods for
-all social networks that have event related functionality like save_event, delete_event, get_rsvps etc.
+all social networks that have event related functionality like save_event, delete_event,
+process_events_rsvps etc.
 
 """
 from abc import ABCMeta, abstractmethod
@@ -71,7 +72,7 @@ class EventBase(object):
     * get_events_from_db(start_date):
         This method returns all events for which event.start_date is after given date.
 
-    * get_rsvps():
+    * process_events_rsvps():
         This method imports RSVPs of all events for a specific user.
 
     * save_event(data):
@@ -120,9 +121,6 @@ class EventBase(object):
         refresh_token = user_credentials.refresh_token
         webhook = user_credentials.webhook
         return member_id, access_token, refresh_token, webhook
-
-    # def get_events(self, social_network):
-    #     return self.get_events(social_network)
 
     @abstractmethod
     def create_event(self, *args, **kwargs):

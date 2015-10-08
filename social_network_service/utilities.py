@@ -125,50 +125,87 @@ def get_callee_data():
 
 def log_error(log_data):
     """
-    Here we do the descriptive logging. 'log_data' dict is passed
-    in parameters which contains error details in 'error' and User Id in
-    'user_id'. We first get the information of callee using get_callee_data(),
-    and append user_id_and_error_message in it. Finally we log the descriptive
-    error using logger.error().
+    :param log_data: is a dict which contains error details and User Id in
+                    keys 'error' and 'user_id' respectively.
+
+    - Here we do the descriptive logging.
+
+    - We first get the information of callee using get_data_to_log()
+        and then we log the error using logger.error()
+
+    - callee contains the useful information of traceback like
+        Reason of error, function name, file name, user id, class name etc.
+
+    - This function is called usually inside try except block.
+
+    :Example:
+
+        log_error({'user_id': user_id,
+                   'error': error_message})
+    ** See Also:
+        - Have a look on get_access_token() defined in
+        social_network_service/base.py for more insight.
+
     :param log_data:
     :return:
     """
-    # get_callee_data() returns the dictionary of callee data
-    callee_data_dict = get_callee_data()
-    # appends user_id_and_error_message in callee_data_dict
-    callee_data_dict.update(log_data)
-    if get_callee_data().has_key('traceback_info'):
-        callee_data = ("\nReason: %(traceback_info)s\n"
-                       "User Id: %(user_id)s" % callee_data_dict)
-    else:
-        callee_data = ("\nReason: %(error)s,\n"
-                       "function Name: %(function_name)s,\n"
-                       "file Name: %(file_name)s,\n"
-                       "line No: %(line_no)s,\n"
-                       "User Id: %(user_id)s" % callee_data_dict)
-        if callee_data_dict.get('class_name'):
-            callee_data += ",\nclass: %(class_name)s" % callee_data_dict
+    callee_data = get_data_to_log(log_data)
     logger.error(callee_data)
 
 
 def log_exception(log_data):
     """
-    Here we do the descriptive logging. 'log_data' dict is passed
-    in parameters which contains exception details in 'error' and User Id in
-    'user_id'. We first get the information of callee using get_callee_data(),
-    and append user_id_and_error_message in it. Finally we log the descriptive
-    error using logger.exception()
-    :param log_data:
-    :return:
+    :param log_data: is a dict which contains error details and User Id in
+                     keys 'error' and 'user_id' respectively.
+
+    - Here we do the descriptive logging.
+
+    - We first get the information of callee using get_data_to_log()
+        and then we log the error using logger.exception()
+
+    - callee contains the useful information of traceback like
+        Reason of error, function name, file name, user id, class name etc.
+
+    - This function is called usually inside try except block.
+
+    :Example:
+
+        log_exception({'user_id': user_id,
+                       'error': error_message})
+    ** See Also:
+        - Have a look on get_access_token() defined in
+        social_network_service/base.py for more insight.
+    """
+    callee_data = get_data_to_log(log_data)
+    logger.exception(callee_data)
+
+
+def get_data_to_log(log_data):
+    """
+    :param log_data:  is a dict which contains error details and User Id in
+            keys 'error'  in 'user_id' respectively.
+
+    - We first get the information of callee using get_callee_data(),
+        and append user_id_and_error_message in it. Finally we return the
+        descriptive error message.
+
+    - This function is called from log_error() and log_exception() defined in
+        social_network_service/utilities.py
+
+    ** See Also:
+        - Have a look on log_error() or log_exception() defined in
+        social_network_service/utilities.py
+    :return: callee_data which contains the useful information of traceback
+            like Reason of error, function name, file name, user id etc.
     """
     # get_callee_data() returns the dictionary of callee data
     callee_data_dict = get_callee_data()
     # appends user_id_and_error_message in callee_data_dict
     callee_data_dict.update(log_data)
-    if get_callee_data().has_key('traceback_info'):
+    if callee_data_dict.has_key('traceback_info'):
         callee_data = ("\nReason: %(traceback_info)s \n"
                        "User Id: %(user_id)s" % callee_data_dict)
-    else:
+    elif callee_data_dict.get('user_id'):
         callee_data = ("\nReason: %(error)s,\n"
                        "function Name: %(function_name)s,\n"
                        "file Name: %(file_name)s,\n"
@@ -176,7 +213,9 @@ def log_exception(log_data):
                        "User Id: %(user_id)s" % callee_data_dict)
         if callee_data_dict.get('class_name'):
             callee_data += ",\nclass: %(class_name)s" % callee_data_dict
-    logger.exception(callee_data)
+    else:
+        callee_data = ("Reason: %(error)s"% callee_data_dict)
+    return callee_data
 
 
 def http_request(method_type, url, params=None, headers=None, data=None, user_id=None):

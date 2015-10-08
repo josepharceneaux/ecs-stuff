@@ -90,3 +90,7 @@ class VenueNotFound(ApiException):
 
 class AccessTokenHasExpired(ApiException):
     status_code = 466
+
+
+class NoUserFound(ApiException):
+    status_code = 467
