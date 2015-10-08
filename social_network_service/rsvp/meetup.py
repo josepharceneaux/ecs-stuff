@@ -1,7 +1,11 @@
+"""
+This modules contains Meetup class. It inherits from RSVPBase class.
+Meetup contains methods like get_rsvps(), get_attendee() etc.
+"""
 from datetime import datetime, timedelta
+
 from common.models.event import Event
 from base import RSVPBase
-from social_network_service.custom_exections import AccessTokenHasExpired
 from social_network_service.utilities import http_request, Attendee, \
     milliseconds_since_epoch_to_dt, log_exception, log_error
 

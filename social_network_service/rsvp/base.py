@@ -1,3 +1,9 @@
+"""
+This module contains RSVPBase class which contains common methods for
+all social networks that have RSVP related functionality. It provides methods
+like get_rsvps(), get_attendee(), process_rsvps(),save_attendee_as_candidate()
+etc.
+"""
 import json
 
 from abc import ABCMeta, abstractmethod
@@ -10,6 +16,7 @@ from common.models.candidate import CandidateSource, Candidate
 
 from social_network_service import logger
 from social_network_service.utilities import log_exception, log_error
+from social_network_service.custom_exections import UserCredentialsNotFound
 
 
 class RSVPBase(object):
@@ -107,23 +114,13 @@ class RSVPBase(object):
             self.user_credentials = kwargs.get('user_credentials')
             self.user = User.get_by_id(self.user_credentials.user_id)
         else:
-            error_message = 'User Credentials are None'
-            log_error({'user_id': 'Not Available',
-                       'error': error_message})
-        try:
-            self.headers = kwargs.get('headers')
-            self.social_network = kwargs.get('social_network')
-            self.api_url = kwargs.get('social_network').api_url
-            self.access_token = self.user_credentials.access_token
-            self.start_date_dt = None
-        except Exception as e:
-            # Shouldn't raise an exception, just log it.
-            # The reason is, we make multiple objects of this class for each
-            # user credentials. So, if one of them fails to proceed, we simply
-            # log the error here and move on to process next object.
-            error_message = e.message
-            log_exception({'user_id': self.user.id,
-                           'error': error_message})
+            raise UserCredentialsNotFound(
+                'API Error: User Credentials not found')
+        self.headers = kwargs.get('headers')
+        self.social_network = kwargs.get('social_network')
+        self.api_url = kwargs.get('social_network').api_url
+        self.access_token = self.user_credentials.access_token
+        self.start_date_dt = None
         self.rsvps = []
 
     @abstractmethod

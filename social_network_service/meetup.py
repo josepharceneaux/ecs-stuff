@@ -7,11 +7,7 @@ from utilities import http_request, logger, log_error, log_exception
 class Meetup(SocialNetworkBase):
 
     def __init__(self, *args, **kwargs):
-
         super(Meetup, self).__init__(*args, **kwargs)
-        # token validity is checked here
-        # if token is expired, we refresh it here
-        self.validate_and_refresh_access_token()
 
     @classmethod
     def get_access_token(cls, data):
@@ -57,11 +53,27 @@ class Meetup(SocialNetworkBase):
 
     def refresh_access_token(self):
         """
-        When user authorize to Meetup account, we get a refresh token
-        and access token. Access token expires in one hour.
-        Here we refresh the access_token using refresh_token without user
-        involvement and save in user_credentials db table
-        :return:
+        - When user authorize to Meetup account, we get a refresh token
+            and access token. Access token expires in one hour.
+            Here we refresh the access_token using refresh_token without user
+            involvement and save in user_credentials db table.
+
+
+        - This function is called from validate_and_refresh_access_token()
+            defined in SocialNetworkBase class inside
+            social_network_service/base.py
+
+        :Example:
+                from social_network_service.meetup import Meetup
+                sn = Meetup(user_id=1)
+                sn.refresh_access_token()
+
+        **See Also**
+        .. seealso:: validate_and_refresh_token() function defined in
+            SocialNetworkBase class inside social_network_service/base.py.
+
+        :return True if token has been refreshed successfully and False
+                otherwise.
         """
         status = False
         user_refresh_token = self.user_credentials.refresh_token

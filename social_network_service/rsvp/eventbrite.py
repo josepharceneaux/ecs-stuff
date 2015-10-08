@@ -1,3 +1,7 @@
+"""
+This modules contains Eventbrite class. It inherits from RSVPBase class.
+Eventbrite contains methods like get_rsvps(), get_attendee() etc.
+"""
 from datetime import datetime
 
 from base import RSVPBase

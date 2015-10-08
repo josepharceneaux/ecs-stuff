@@ -8,7 +8,7 @@ from abc import ABCMeta, abstractmethod
 
 from social_network_service import logger
 from social_network_service.custom_exections import EventNotSaveInDb, \
-    EventNotUnpublished
+    EventNotUnpublished, UserCredentialsNotFound, NoUserFound
 from social_network_service.utilities import log_error, get_class, \
     http_request, log_exception
 
@@ -95,16 +95,24 @@ class EventBase(object):
         self.rsvps = []
         self.data = None
         self.headers = kwargs.get('headers')
-        self.user_credentials = kwargs.get('user_credentials')
-        self.user = kwargs.get('user') or User.get_by_id(self.user_credentials.user_id)
-        self.social_network = kwargs.get('social_network')
-        assert isinstance(self.user, User)
-        assert isinstance(self.social_network, SocialNetwork)
-        self.api_url = self.social_network.api_url
-        self.member_id, self.access_token, self.refresh_token, self.webhook = \
-            self._get_user_credentials()
-        self.url_to_delete_event = None
-        self.venue_id = None
+        if kwargs.get('user_credentials') or kwargs.get('user'):
+            self.user_credentials = kwargs.get('user_credentials')
+            self.user = kwargs.get('user') or User.get_by_id(
+                self.user_credentials.user_id)
+            self.social_network = kwargs.get('social_network')
+            if isinstance(self.user, User):
+                self.api_url = self.social_network.api_url
+                self.member_id, self.access_token, self.refresh_token, self.webhook = \
+                    self._get_user_credentials()
+                self.url_to_delete_event = None
+                self.venue_id = None
+            else:
+                error_message = "No User found in database with id %(user_id)s" \
+                            % self.user_credentials.user_id
+                raise NoUserFound('API Error: %s' % error_message)
+        else:
+            raise UserCredentialsNotFound('API Error: User Credentials not '
+                                          'found')
 
     def _get_user_credentials(self):
         """
@@ -311,15 +319,21 @@ class EventBase(object):
         # get_required class under rsvp/ to process rsvps
         sn_rsvp_class = get_class(self.social_network.name, 'rsvp')
         # create object of selected rsvp class
-        sn_rsvp_obj = sn_rsvp_class(social_network=self.social_network,
+        sn_rsvp_obj = sn_rsvp_class(user_credentials=user_credentials,
                                     headers=self.headers,
-                                    user_credentials=user_credentials)
+                                    social_network=self.social_network
+                                    )
         # gets events of given Social Network from database
         self.events = self.get_events_from_db(sn_rsvp_obj.start_date_dt)
         if self.events:
             logger.debug('There are %s events of %s(UserId: %s) in database '
                          'within provided time range.'
                          % (len(self.events), self.user.name, self.user.id))
+        else:
+            logger.debug('No events found of %s(UserId: %s) in database '
+                         'within provided time range.'
+                         % (self.user.name, self.user.id))
+
         # get RSVPs of all events present in self.events using API of
         # respective social network
         self.rsvps = sn_rsvp_obj.get_all_rsvps(self.events)

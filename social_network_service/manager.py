@@ -9,7 +9,7 @@ from datetime import datetime
 from dateutil.parser import parse
 
 from social_network_service import logger
-from utilities import get_class, log_error
+from utilities import get_class, log_error, log_exception
 
 from common.models.event import Event
 from common.models.user import UserCredentials
@@ -173,22 +173,26 @@ def start():
     job_pool = Pool(POOL_SIZE)
     if all_user_credentials:
         for user_credentials in all_user_credentials:
-            social_network = SocialNetwork.get_by_name(user_credentials.social_network.name)
-            social_network_class = get_class(social_network.name.lower(), 'social_network',
-                                             user_credentials=user_credentials)
-            # we call social network class here for auth purpose, If token is expired
-            # access token is refreshed and we use fresh token
-            sn = social_network_class(user_id=user_credentials.user_id)
-            if not user_credentials.member_id:
-                # gets an save the member Id of gt-user
-                sn.get_member_id(dict())
-            logger.debug('%s Importer has started for %s(UserId: %s).'
-                         ' Social Network is %s.'
-                         % (name_space.mode.title(), sn.user.name, sn.user.id,
-                            social_network.name))
-            job_pool.spawn(sn.process, name_space.mode,
-                           user_credentials=user_credentials)
-        job_pool.join()
+            try:
+                social_network = SocialNetwork.get_by_name(user_credentials.social_network.name)
+                social_network_class = get_class(social_network.name.lower(), 'social_network',
+                                                 user_credentials=user_credentials)
+                # we call social network class here for auth purpose, If token is expired
+                # access token is refreshed and we use fresh token
+                sn = social_network_class(user_id=user_credentials.user_id)
+                if not user_credentials.member_id:
+                    # gets an save the member Id of gt-user
+                    sn.get_member_id(dict())
+                logger.debug('%s Importer has started for %s(UserId: %s).'
+                             ' Social Network is %s.'
+                             % (name_space.mode.title(), sn.user.name, sn.user.id,
+                                social_network.name))
+                job_pool.spawn(sn.process, name_space.mode,
+                               user_credentials=user_credentials)
+            except Exception as e:
+                log_exception({'user_id': user_credentials.user_id,
+                               'error': e.message})
+            job_pool.join()
     else:
         logger.error('There is no User in db for social network %s' % name_space.social_network)
         

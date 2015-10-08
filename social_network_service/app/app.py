@@ -12,7 +12,7 @@ from social_network_service.app.app_utils import ApiResponse
 from social_network_service.app.restful.data import data_blueprint
 from social_network_service.custom_exections import ApiException
 from social_network_service.rsvp.eventbrite import Eventbrite as EventbriteRsvp
-
+from social_network_service.utilities import log_exception, get_class, log_error
 
 
 from flask.ext.restful import Api
@@ -21,8 +21,6 @@ from flask import Flask, request, session, g, redirect, url_for, \
 
 
 # configuration
-from social_network_service.utilities import log_exception, get_class, log_error
-
 DATABASE = '/tmp/flaskr.db'
 DEBUG = True
 SECRET_KEY = 'development key'
@@ -227,8 +225,6 @@ def handle_api_exception(error):
 def handle_any_errors(error):
     response = json.dumps(dict(message='Ooops! Internal server error occurred..'))
     return ApiResponse(response, status=500)
-
-
 
 # app = Flask(__name__)
 # app.config.from_object('social_network_service.config')

@@ -94,3 +94,7 @@ class AccessTokenHasExpired(ApiException):
 
 class NoUserFound(ApiException):
     status_code = 467
+
+
+class MissingFiledsInUserCredentials(ApiException):
+    status_code = 468

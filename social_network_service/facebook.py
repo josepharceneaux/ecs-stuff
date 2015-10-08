@@ -4,11 +4,7 @@ from social_network_service.base import SocialNetworkBase
 class Facebook(SocialNetworkBase):
 
     def __init__(self, *args, **kwargs):
-
         super(Facebook, self).__init__(*args, **kwargs)
-        # token validity is checked here
-        # if token is expired, we refresh it here
-        self.validate_and_refresh_access_token()
 
     @classmethod
     def get_access_token(cls, code_to_get_access_token, relative_url=None):

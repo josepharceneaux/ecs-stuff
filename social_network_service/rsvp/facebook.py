@@ -1,3 +1,7 @@
+"""
+This modules contains Facebook class. It inherits from RSVPBase class.
+Facebook contains methods like get_rsvps(), get_attendee() etc.
+"""
 import requests
 
 from datetime import datetime, timedelta

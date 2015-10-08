@@ -9,11 +9,7 @@ WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
 class Eventbrite(SocialNetworkBase):
 
     def __init__(self, *args, **kwargs):
-
         super(Eventbrite, self).__init__(*args, **kwargs)
-        # token validity is checked here
-        # if token is expired, we refresh it here
-        # self.validate_and_refresh_access_token()
 
     @classmethod
     def get_access_token(cls, data, relative_url=None):
