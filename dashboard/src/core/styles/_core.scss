@@ -91,84 +91,90 @@ body {
     }
   }
 
-  #app-sidenav {
-    position: absolute;
-    width: $sidenav-width;
-    left: 0;
-    top: $topnav-height;
-    bottom: $footer-height;
-    background-color: $color-sidenav;
-    border-right: 1px solid $navbar-default-border;
-
+  #app-content {
     display: flex;
+    min-height: 600px;
 
-    .pane-left,
-    .pane-right {
-      height: 100%;
-
-      a {
-        color: #000;
-      }
-    }
-
-    .pane-left {
-      flex: 0 0 $sidenav-left-pane-width;
+    #app-sidenav-wrapper {
+      position: relative;
+      flex: 0 0 $sidenav-width;
+      background-color: $color-sidenav;
       border-right: 1px solid $navbar-default-border;
 
-      li {
-        margin: 30px 0;
+      #app-sidenav {
+        position: absolute;
+        height: 100%;
+        width: 100%;
+        display: flex;
 
-        a {
-          padding: 0;
-          text-align: center;
-          background: #FFF;
-          border-right: 7px solid #FFF;
+        .pane-left,
+        .pane-right {
+          height: 100%;
 
-          span {
-            display: block;
-            margin-top: 10px;
-            font-size: 10px;
-            font-weight: lighter;
-          }
-
-          &:hover {
-            border-right: 7px solid $navbar-default-border;
-          }
-        }
-
-        &.active {
           a {
-            border-right: 7px solid $navbar-default-border;
+            color: #000;
           }
         }
 
-        &.divider {
-          height: 1px;
-          background-color: $navbar-default-border;
+        .pane-left {
+          flex: 0 0 $sidenav-left-pane-width;
+          border-right: 1px solid $navbar-default-border;
+
+          li {
+            margin: 30px 0;
+
+            a {
+              padding: 0;
+              text-align: center;
+              background: #FFF;
+              border-right: 7px solid #FFF;
+
+              span {
+                display: block;
+                margin-top: 10px;
+                font-size: 10px;
+                font-weight: lighter;
+              }
+
+              &:hover {
+                border-right: 7px solid $navbar-default-border;
+              }
+            }
+
+            &.active {
+              a {
+                border-right: 7px solid $navbar-default-border;
+              }
+            }
+
+            &.divider {
+              height: 1px;
+              background-color: $navbar-default-border;
+            }
+          }
+        }
+
+        .pane-right {
+          flex: 1 0 auto;
+
+          li {
+            border-bottom: 1px solid $navbar-default-border;
+
+            a {
+              padding: 25px 15px 15px;
+            }
+
+            &.active {
+              background-color: #EEEEEE;
+            }
+          }
         }
       }
     }
 
-    .pane-right {
-      flex: 1 0 auto;
-
-      li {
-        border-bottom: 1px solid $navbar-default-border;
-
-        a {
-          padding: 25px 15px 15px;
-        }
-
-        &.active {
-          background-color: #EEEEEE;
-        }
-      }
+    #app-view-wrapper {
+      flex: 1 1 auto;
     }
-  }
-
-  #app-content {
-    margin-left: $sidenav-width;
-    min-height: 600px;
   }
 
   #app-footer {
