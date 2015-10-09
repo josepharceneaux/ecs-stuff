@@ -29,6 +29,42 @@ class AreaOfInterest(db.Model):
         return "<AreaOfInterest (parent_id=' %r')>" % self.parent_id
 
 
+class City(db.Model):
+    __tablename__ = 'city'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column('Name', db.String(255))
+    state_id = db.Column('StateId', db.Integer, db.ForeignKey('state.id'))
+    postal_code = db.Column('PostalCode', db.String(63))
+    latitude_radians = db.Column('LatitudeRadians', db.Float)
+    longitude_radians = db.Column('LongitudeRadians', db.Float)
+    alternate_names = db.Column('AlternateNames', db.Text)
+    coordinates = db.Column('Coordinates', db.String(127))
+
+    # Relationships
+    zipcodes = relationship('Zipcode', backref='city')
+
+    def __repr__(self):
+        return "<City (name=' %r')>" % self.name
+
+
+class Country(db.Model):
+    __tablename__ = 'country'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column('Name', db.String(100), nullable=False)
+    code = db.Column('Code', db.String(20), nullable=False)
+
+    # Relationships
+    candidate_military_services = relationship('CandidateMilitaryService', backref='country')
+    patent_details = relationship('PatentDetail', backref='country')
+    candidate_addresses = relationship('CandidateAddress', backref='country')
+    candidate_educations = relationship('CandidateEducation', backref='country')
+    candidate_experiences = relationship('CandidateExperience', backref='country')
+    states = relationship('State', backref='country')
+
+    def __repr__(self):
+        return "<Country (name=' %r')>" % self.name
+
+
 class Culture(db.Model):
     __tablename__ = 'culture'
     id = db.Column(db.Integer, primary_key=True)
@@ -40,6 +76,15 @@ class Culture(db.Model):
 
     def __repr__(self):
         return "<Culture (description=' %r')>" % self.description
+
+
+# Even though the table name is major I'm keeping the model class singular.
+class Major(db.Model):
+    __tablename__ = 'majors'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column('Name', db.String(100), nullable=False)
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
 
 class Organization(db.Model):
@@ -63,24 +108,6 @@ class Product(db.Model):
         return "<Product (name=' %r')>" % self.name
 
 
-class Country(db.Model):
-    __tablename__ = 'country'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(100), nullable=False)
-    code = db.Column('Code', db.String(20), nullable=False)
-
-    # Relationships
-    candidate_military_services = relationship('CandidateMilitaryService', backref='country')
-    patent_details = relationship('PatentDetail', backref='country')
-    candidate_addresses = relationship('CandidateAddress', backref='country')
-    candidate_educations = relationship('CandidateEducation', backref='country')
-    candidate_experiences = relationship('CandidateExperience', backref='country')
-    states = relationship('State', backref='country')
-
-    def __repr__(self):
-        return "<Country (name=' %r')>" % self.name
-
-
 class State(db.Model):
     __tablename__ = 'state'
     id = db.Column(db.Integer, primary_key=True)
@@ -94,24 +121,6 @@ class State(db.Model):
 
     def __repr__(self):
         return "<State (name=' %r')>" % self.name
-
-
-class City(db.Model):
-    __tablename__ = 'city'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(255))
-    state_id = db.Column('StateId', db.Integer, db.ForeignKey('state.id'))
-    postal_code = db.Column('PostalCode', db.String(63))
-    latitude_radians = db.Column('LatitudeRadians', db.Float)
-    longitude_radians = db.Column('LongitudeRadians', db.Float)
-    alternate_names = db.Column('AlternateNames', db.Text)
-    coordinates = db.Column('Coordinates', db.String(127))
-
-    # Relationships
-    zipcodes = relationship('Zipcode', backref='city')
-
-    def __repr__(self):
-        return "<City (name=' %r')>" % self.name
 
 
 class Zipcode(db.Model):

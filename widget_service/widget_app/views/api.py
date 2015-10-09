@@ -9,9 +9,11 @@ from flask import request
 from flask import render_template
 
 # Module specific
-from widget_service.common.models.misc import AreaOfInterest
-from widget_service.common.models.user import User
 from widget_service.common.models.candidate import University
+from widget_service.common.models.misc import AreaOfInterest
+from widget_service.common.models.misc import Major
+from widget_service.common.models.user import Domain
+from widget_service.common.models.user import User
 from widget_service.common.models.widget import WidgetPage
 from widget_service.widget_app import db
 from widget_service.widget_app.views.utils import parse_interest_ids_from_form
@@ -32,7 +34,7 @@ def widget(domain):
         return render_template('kaiser_3.html', domain=domain)
 
 
-@mod.route('/<widget_name>', methods=['GET', 'POST'])
+@mod.route('/widget/<widget_name>', methods=['GET', 'POST'])
 def process_widget(widget_name):
     if request.method == 'GET':
         return render_widget_via_name(widget_name)
@@ -86,3 +88,10 @@ def get_areas_of_interest(widget_name):
 def get_university_names():
     university_names = db.session.query(University.name)
     return jsonify(universities=[uni for uni in university_names])
+
+
+@mod.route('/majors/<domain_name>', methods=['GET'])
+def get_major_names(domain_name):
+    domain_id = db.session.query(Domain.id).filter(Domain.name==domain_name)
+    majors = db.session.query(Major.name).filter(domain_id==domain_id)
+    return jsonify(majors=[major for major in majors])

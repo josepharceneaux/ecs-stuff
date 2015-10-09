@@ -11,6 +11,7 @@ from widget_service.common.models.candidate import University
 from widget_service.common.models.misc import AreaOfInterest
 from widget_service.common.models.misc import Country
 from widget_service.common.models.misc import Culture
+from widget_service.common.models.misc import Major
 from widget_service.common.models.misc import Organization
 from widget_service.common.models.misc import State
 from widget_service.common.models.user import Domain
@@ -216,6 +217,16 @@ def create_test_candidate_source(create_test_domain, request):
 
 
 @pytest.fixture(autouse=True)
+def create_test_majors(create_test_domain, request):
+    majors = []
+    for i in xrange(5):
+        majors.append(Major(name=randomword(18), domain_id=create_test_domain.id))
+    db.session.bulk_save_objects(majors)
+
+
+
+
+@pytest.fixture(autouse=True)
 def create_test_widget_page(create_test_user, create_test_candidate_source, request):
     test_widget_page = WidgetPage(url=randomword(20), page_views=0, sign_ups=0,
                                   widget_name=randomword(20), user_id=create_test_user.id,
@@ -262,20 +273,26 @@ def create_test_extra_fields_location(create_test_domain, request):
 
 
 def test_api_returns_domain_filtered_aois(create_test_widget_page, request):
-    response = APP.get('/widget/v1/interests/{}'.format(create_test_widget_page.widget_name))
+    response = APP.get('/v1/interests/{}'.format(create_test_widget_page.widget_name))
     assert response.status_code == 200
     assert len(json.loads(response.data)['primary_interests']) == 10
     assert len(json.loads(response.data)['secondary_interests']) == 2
 
 
 def test_api_returns_university_name_list(request):
-    response = APP.get('/widget/v1/universities')
+    response = APP.get('/v1/universities')
     assert response.status_code == 200
     assert len(json.loads(response.data)['universities']) == 5
 
 
+def test_api_returns_majors_name_list(create_test_domain, request):
+    response = APP.get('/v1/majors/{}'.format(create_test_domain.name))
+    assert response.status_code == 200
+    assert len(json.loads(response.data)['majors']) == 5
+
+
 def test_get_call_returns_widget_page_html(create_test_widget_page, request):
-    response = APP.get('/widget/v1/{}'.format(create_test_widget_page.widget_name))
+    response = APP.get('/v1/widget/{}'.format(create_test_widget_page.widget_name))
     assert response.status_code == 200
     assert response.data == create_test_widget_page.widget_html
 
@@ -298,7 +315,7 @@ def test_post_call_creates_candidate_object(create_test_widget_page, create_test
         'hidden-tags-location': 'Northern California: All Cities|Southern California: Pomona'
     }
     with APP as c:
-        post_response = c.post('/widget/v1/{}'.format(create_test_widget_page.widget_name), data=candidate_dict)
+        post_response = c.post('/v1/widget/{}'.format(create_test_widget_page.widget_name), data=candidate_dict)
     assert post_response.status_code == 200
 
 

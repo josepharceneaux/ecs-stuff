@@ -10,4 +10,4 @@ app.config.from_object('widget_service.config')
 db = SQLAlchemy(app)
 from .views import api
 
-app.register_blueprint(api.mod, url_prefix='/widget/v1')
+app.register_blueprint(api.mod, url_prefix='/v1')
