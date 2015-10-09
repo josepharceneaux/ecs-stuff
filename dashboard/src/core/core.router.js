@@ -13,6 +13,7 @@
         $locationProvider.html5Mode(true);
 
         $urlRouterProvider.otherwise('/dashboard');
+        //$urlRouterProvider.when('/dashboard', '/dashboard/overview');
 
         $stateProvider
             .state('site', {
@@ -20,8 +21,8 @@
             })
             .state('dashboard', {
                 parent: 'site',
-                abstract: true,
-                url: '/dashboard'
+                url: '/dashboard',
+                redirectTo: 'dashboard.overview'
             })
             .state('dashboard.overview', {
                 url: '',
