@@ -1,0 +1,53 @@
+import json
+import uuid
+
+USER_PASSWORD = 'temp976892'
+
+def generate_user_data():
+    data = {'users': [
+        {
+            'first_name': 'Flipe',
+            'last_name': 'Luiz',
+            'email': 'f.luiz+%s@example.com' % str(uuid.uuid4())[0:8],
+            'domain': '',
+            'expiration_date': '',
+            'brand': '',
+            'department': '',
+            'group': '',
+            'KPI': ''
+        }
+    ]}
+    return data
+
+
+def update_user_data(user_id):
+    return {'user_id': user_id, 'first_name': 'mohsen', 'last_name': 'johnson',
+            'email': 'f.luiz+%s@example.com' % str(uuid.uuid4())[0:8]}
+
+
+###############################
+# test cases for GETting user #
+###############################
+def test_get_user_with_admin_user_in_domain(sample_admin_user, webclient):
+    """
+    :type webclient: TalentWebClient
+    """
+    # Login admin user
+    admin_user = sample_admin_user
+    webclient.cas_login(admin_user['email'], USER_PASSWORD)
+    assert webclient.status == 200
+
+    # Create user
+    webclient.call_controller_function('api', 'users.json/%s', data=json.dumps(generate_user_data()))
+    print webclient.json()
+    user_id = webclient.json()['users'][0]['id']
+    assert webclient.status == 200
+
+    # Get user
+    webclient.call_controller_function('api', 'users.json/%s' % user_id)
+    assert webclient.status == 200
+    assert 'id' in webclient.json()['user']
+    assert 'first_name' and 'last_name' and 'email' in webclient.json()['user']
+    assert 'password' not in webclient.json()['user']
+    assert 'registration_key' not in webclient.json()['user']
+    assert 'reset_password_key' not in webclient.json()['user']
