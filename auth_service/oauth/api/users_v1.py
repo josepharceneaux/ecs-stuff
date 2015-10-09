@@ -1,14 +1,17 @@
-from flask_restful import Resource, Api, reqparse
-from auth_service.oauth import app, db
+from flask_restful import (Api, reqparse, Resource)
+from auth_service.oauth import app
 from common.models.user import User
+from common.utils.validators import is_number
+from common.utils.auth_utils import authenticate_oauth_user
+from flask import request
 
 api = Api(app)
 parser = reqparse.RequestParser()
 
-# Post, Get, Update, Delete
+
 class UserResource(Resource):
     def get(self, **kwargs):
-        """ GET /web/api/users/:id
+        """ GET /web/users/:id
 
         Fetch user object with user's basic info.
 
@@ -20,9 +23,19 @@ class UserResource(Resource):
                  user's password, registration_key, and reset_password_key.
                  Not Found Error if user is not found.
         """
+        authenticated_user = authenticate_oauth_user(request=request)
+        if authenticated_user.get('error'):
+            return {'error': {'code': 2, 'message': 'not authorized'}}, 403
+
         requested_user_id = kwargs.get('id')
+        # id must be integer
+        if not is_number(requested_user_id):
+            print is_number(requested_user_id)
+            return {'error': {'message': 'invalid input'}}, 400
 
         requested_user = User.query.get(requested_user_id)
+        if not requested_user:
+            return {'error': {'message': 'user not found'}}, 404
 
         return {'user': {
             'id': requested_user_id,
@@ -35,7 +48,7 @@ class UserResource(Resource):
             'dice_user_id': requested_user.dice_user_id
         }}
 
-api.add_resource(UserResource, "/api/users/<id>")
+api.add_resource(UserResource, "/v1/users/<id>")
 
 
 if __name__ == '__main__':
