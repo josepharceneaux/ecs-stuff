@@ -3,8 +3,8 @@
     'use strict';
 
     angular.module('app.dashboard')
-        .directive('gtDashboard', directiveFunction)
-        .controller('DashboardController', ControllerFunction);
+        .directive('gtDashboardOverview', directiveFunction)
+        .controller('DashboardOverviewController', ControllerFunction);
 
 
     // ----- directiveFunction -----
@@ -15,10 +15,10 @@
 
         var directive = {
             restrict: 'E',
-            templateUrl: 'components/dashboard/dashboard.html',
+            templateUrl: 'components/dashboard/dashboard-overview/dashboard-overview.html',
             scope: {
             },
-            controller: 'DashboardController',
+            controller: 'DashboardOverviewController',
             controllerAs: 'vm'
         };
 
@@ -35,7 +35,7 @@
         activate();
 
         function activate() {
-            logger.log('Activated Dashboard View');
+            logger.log('Activated Dashboard Overview View');
         }
     }
 

@@ -12,12 +12,32 @@
 
         $locationProvider.html5Mode(true);
 
-        $urlRouterProvider.otherwise('/');
+        $urlRouterProvider.otherwise('/dashboard');
 
         $stateProvider
+            .state('site', {
+                abstract: true
+            })
             .state('dashboard', {
-                url: '/dashboard',
-                template: '<gt-dashboard></gt-dashboard>'
+                parent: 'site',
+                abstract: true,
+                url: '/dashboard'
+            })
+            .state('dashboard.overview', {
+                url: '',
+                views: {
+                    '@': {
+                        template: '<gt-dashboard-overview></gt-dashboard-overview>'
+                    }
+                }
+            })
+            .state('dashboard.customize', {
+                url: '/customize',
+                views: {
+                    '@': {
+                        template: '<gt-dashboard-customize></gt-dashboard-customize>'
+                    }
+                }
             })
             .state('pipeline', {
                 url: '/pipeline',
