@@ -28,6 +28,15 @@ def update_user_data(user_id):
 ###############################
 # test cases for GETting user #
 ###############################
+import requests
+
+def test_get_user_without_authentication():
+    # Get user
+    user_id = 5
+    resp = requests.get('http://127.0.0.1:5000/v1/users/%s' % user_id)
+    print resp
+    assert resp.status_code == 401
+
 def test_get_user_with_admin_user_in_domain(sample_admin_user, webclient):
     """
     :type webclient: TalentWebClient
