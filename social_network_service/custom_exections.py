@@ -20,21 +20,6 @@ class InvalidUsage(Exception):
 class ApiException(TalentError):
     status_code = 500
 
-    # def __init__(self, message, detail=None, status_code=None, payload=None):
-    #     Exception.__init__(self)
-    #     self.message = message
-    #     self.detail = detail
-    #     if status_code:
-    #         self.status_code = status_code
-    #     self.payload = payload
-    #
-    # def to_dict(self):
-    #     rv = dict(self.payload or ())
-    #     rv['message'] = self.message
-    #     if self.detail:
-    #         rv['detail'] = self.detail
-    #     return rv
-
 
 class SocialNetworkError(ApiException):
     status_code = 452
@@ -94,3 +79,14 @@ class AccessTokenHasExpired(ApiException):
 
 class NoUserFound(ApiException):
     status_code = 467
+
+class MissingFieldsInUserCredentials(ApiException):
+    status_code = 468
+
+
+class EventNotFound(ApiException):
+    status_code = 469
+
+
+class ProductNotFound(ApiException):
+    status_code = 470

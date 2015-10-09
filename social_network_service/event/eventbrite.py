@@ -1,27 +1,32 @@
 """
 This modules contains Eventbrite class. It inherits from EventBase class.
 Eventbrite contains methods to create, update, get, delete events.
-It alos contains methods to get events RSVPs.
+It also contains methods to get RSVPs of events.
 """
-import pytz
-import json
 
+# Standard Library
+import json
 from datetime import datetime
 from datetime import timedelta
 
+# Application specific
 from common.models.venue import Venue
+from common.models.event import Event
 from common.models.organizer import Organizer
-
 from social_network_service import flask_app as app
 from social_network_service.event.base import EventBase
-from social_network_service.custom_exections import EventNotCreated, \
-    VenueNotFound, TicketsNotCreated, EventNotPublished, EventInputMissing, \
-    EventLocationNotCreated
-from social_network_service.utilities import log_error, logger, log_exception, \
-    http_request, get_utc_datetime
+from social_network_service.utilities import log_error, get_class
+from social_network_service.utilities import logger
+from social_network_service.utilities import log_exception
+from social_network_service.utilities import http_request
+from social_network_service.utilities import get_utc_datetime
+from social_network_service.custom_exections import EventNotCreated
+from social_network_service.custom_exections import VenueNotFound
+from social_network_service.custom_exections import TicketsNotCreated
+from social_network_service.custom_exections import EventNotPublished
+from social_network_service.custom_exections import EventInputMissing
+from social_network_service.custom_exections import EventLocationNotCreated
 
-from common.models.event import Event
-EVENTBRITE = 'Eventbrite'
 WEBHOOK_REDIRECT_URL = app.config['WEBHOOK_REDIRECT_URL']
 
 
@@ -47,6 +52,24 @@ class Eventbrite(EventBase):
         self.venue_payload = None
         self.start_date_in_utc = kwargs.get('start_date') or \
                                  (datetime.now() - timedelta(days=60)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    def process_events_rsvps(self, user_credentials, rsvp_data=None):
+        """
+        We get events against a particular user_credential.
+        Then we get the rsvps of all events present in database and process
+        them to save in database.
+        :param user_credentials:
+        :return:
+        """
+        # get_required class under rsvp/ to process rsvps
+        sn_rsvp_class = get_class(self.social_network.name, 'rsvp')
+        # create object of selected rsvp class
+        sn_rsvp_obj = sn_rsvp_class(user_credentials=user_credentials,
+                                    headers=self.headers,
+                                    social_network=self.social_network
+                                    )
+        # process RSVPs and save in database
+        sn_rsvp_obj.process_rsvp_via_webhook(rsvp_data)
 
     def get_events(self):
         """
@@ -438,8 +461,8 @@ class Eventbrite(EventBase):
     def unpublish_event(self, event_id, method='POST'):
         """
         This function is used when run unit test. It sets the api_relative_url
-        and calls base class method to delete the Event from meetup which was
-        created in the unit testing.
+        and calls base class method to delete the Event from Eventbrite website
+        which was created in the unit testing.
         :param event_id:id of newly created event
         :return: True if event is deleted from vendor, False other wsie
         """

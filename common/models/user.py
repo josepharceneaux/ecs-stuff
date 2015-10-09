@@ -334,4 +334,4 @@ class UserCredentials(db.Model):
                 UserCredentials.webhook == webhook_id,
                 UserCredentials.social_network_id == social_network_id
             )
-        ).first()
+        ).one()

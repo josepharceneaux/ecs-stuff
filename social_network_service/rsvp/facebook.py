@@ -1,14 +1,26 @@
+"""
+This modules contains Facebook class. It inherits from RSVPBase class.
+Facebook contains methods like get_rsvps(), get_attendee() etc.
+"""
+
+# Standard Library
+from datetime import datetime
+from datetime import timedelta
+
+# Third Party
 import requests
-
-from datetime import datetime, timedelta
-from common.models.event import Event
-from social_network_service.rsvp.base import RSVPBase
-from social_network_service.utilities import Attendee, log_exception, \
-    import_from_dist_packages, log_error
-
 # Here we import facebook-sdk python module making sure it doesn't import
 # our local facebook.py modules
+from social_network_service.utilities import import_from_dist_packages
 facebook = import_from_dist_packages('facebook')
+
+# Application Specific
+from common.models.event import Event
+from social_network_service import logger
+from social_network_service.rsvp.base import RSVPBase
+from social_network_service.utilities import Attendee
+from social_network_service.utilities import log_exception
+from social_network_service.custom_exections import EventNotFound
 
 
 class Facebook(RSVPBase):
@@ -24,7 +36,7 @@ class Facebook(RSVPBase):
         - To process rsvp of an facebook event (via social network manager) you
             have to do following steps:
 
-        1- Crete the object of this class by providing required parameters.
+        1- Create the object of this class by providing required parameters.
             sn_rsvp_obj = sn_rsvp_class(social_network=self.social_network,
                                         headers=self.headers,
                                         user_credentials=user_credentials)
@@ -32,7 +44,7 @@ class Facebook(RSVPBase):
         2. Get events of user from db within specified date range
             self.events = self.get_events_from_db(sn_rsvp_obj.start_date_dt)
 
-        3. Get rsvps of all events using API of meetup
+        3. Get rsvps of all events using API of Facebook
             self.rsvps = sn_rsvp_obj.get_all_rsvps(self.events)
 
         4. Call method process_rsvp() on rsvp object to process RSVPs
@@ -43,7 +55,7 @@ class Facebook(RSVPBase):
             social_network_service/event/base.py for more insight.
 
         .. note::
-            You can learn more about meetup API from following link
+            You can learn more about Facebook API from following link
             - https://developers.facebook.com/docs/graph-api
     """
 
@@ -55,8 +67,10 @@ class Facebook(RSVPBase):
         :return:
         """
         super(Facebook, self).__init__(*args, **kwargs)
-        self.start_date = (datetime.now() - timedelta(days=3000)).strftime("%Y-%m-%d")
-        self.end_date = (datetime.now() + timedelta(days=60)).strftime("%Y-%m-%d")
+        self.start_date = \
+            (datetime.now() - timedelta(days=3000)).strftime("%Y-%m-%d")
+        self.end_date = \
+            (datetime.now() + timedelta(days=60)).strftime("%Y-%m-%d")
         self.start_date_dt = datetime.strptime(self.start_date, "%Y-%m-%d")
         self.end_date_dt = datetime.strptime(self.end_date, "%Y-%m-%d")
         self.graph = None
@@ -100,9 +114,9 @@ class Facebook(RSVPBase):
             # Get list of people surely attending
             confirm_attendees = self.graph.get_object(url + 'attending')
         except facebook.GraphAPIError as error:
-            error_message = "Couldn't get 'attending' RSVPs (Facebook). %s" % error.message
             log_exception({'user_id': self.user.id,
-                           'error': error_message})
+                           'error': "Couldn't get 'attending' RSVPs (Facebook). %s"\
+                            % error.message})
             raise
         rsvps += confirm_attendees['data']
         self.get_all_pages(confirm_attendees, rsvps)
@@ -110,9 +124,9 @@ class Facebook(RSVPBase):
         try:
             expected_attendees = self.graph.get_object(url + 'maybe')
         except facebook.GraphAPIError as error:
-            error_message = "Couldn't get 'maybe' RSVPs (Facebook). %s" % error.message
             log_exception({'user_id': self.user.id,
-                           'error': error_message})
+                           'error': "Couldn't get 'maybe' RSVPs (Facebook). %s"\
+                            % error.message})
             raise
         rsvps += expected_attendees['data']
         self.get_all_pages(expected_attendees, rsvps)
@@ -120,14 +134,16 @@ class Facebook(RSVPBase):
         try:
             declined_attendees = self.graph.get_object(url + 'declined')
         except facebook.GraphAPIError as error:
-            error_message = "Couldn't get 'Declined' RSVPs (Facebook). %s" % error.message
             log_exception({'user_id': self.user.id,
-                           'error': error_message})
+                           'error': "Couldn't get 'Declined' RSVPs (Facebook). %s"\
+                            % error.message})
             raise
         rsvps += declined_attendees['data']
         self.get_all_pages(declined_attendees, rsvps)
         for rsvp in rsvps:
-            rsvp.update({'vendor_event_id': str(event.social_network_event_id)})
+            rsvp.update(
+                {'vendor_event_id': str(event.social_network_event_id)}
+            )
         return rsvps
 
     def get_all_pages(self, response, target_list):
@@ -135,7 +151,8 @@ class Facebook(RSVPBase):
          :param response: rsvp is likely the dict we get from the response
             of Graph API of Facebook.
          :type response: requests.Response
-         :param target_list: list in which items to be appended after getting from different pages/requests
+         :param target_list: list in which items to be appended after getting
+                from different pages/requests
          :type target_list: list
 
         - This function is used to get the data of candidate related
@@ -170,8 +187,9 @@ class Facebook(RSVPBase):
             except requests.HTTPError as error:
                 error_message_dict = dict(url=response['paging']['next'],
                                           error_message=error.message)
-                error_message = "Couldn't get data while paginating over Facebook records. " \
-                                "URL: %(url)s, %(error_message)s" % error_message_dict
+                error_message = "Couldn't get data while paginating over " \
+                                "Facebook records. URL: %(url)s, " \
+                                "%(error_message)s" % error_message_dict
                 log_exception({'user_id': self.user.id,
                               'error': error_message})
                 raise
@@ -202,9 +220,11 @@ class Facebook(RSVPBase):
         try:
             data = self.graph.get_object('v2.4/' + rsvp['id'],
                                          fields='first_name, last_name, name, '
-                                                'email, location, address, link, picture')
+                                                'email, location, address, '
+                                                'link, picture')
         except facebook.GraphAPIError as error:
-            error_message = "Couldn't get Facebook's attendee info. %s" % error.message
+            error_message = "Couldn't get Facebook's attendee info. %s" \
+                            % error.message
             log_exception({'user_id': self.user.id,
                           'error': error_message})
             raise
@@ -214,7 +234,8 @@ class Facebook(RSVPBase):
                                                  + data['location']['id'],
                                                  fields='location')
             except facebook.GraphAPIError as error:
-                error_message = " Couldn't get location info (Facebook). %s" % error.message
+                error_message = " Couldn't get location info (Facebook). %s"\
+                                % error.message
                 log_exception({'user_id': self.user.id,
                                'error': error_message})
                 raise
@@ -235,36 +256,34 @@ class Facebook(RSVPBase):
                 attendee.longitude = location.get('longitude')
                 attendee.zip = location.get('zip')
                 attendee.profile_url = data.get('link', '')
-                # TODO also check in following if 'data' and 'url' keys are there as well
-                attendee.picture_url = data['picture']['data']['url'] if 'picture' in data else ''
+                # TODO also check in following if 'data' and 'url' keys are
+                # there as well
+                attendee.picture_url = data['picture']['data']['url'] \
+                    if 'picture' in data else ''
                 attendee.gt_user_id = self.user.id
                 attendee.social_network_id = self.social_network.id
                 attendee.vendor_rsvp_id = rsvp['id']  # we are using profile_id
                 # here as we do not have any rsvp_id for this vendor
-                #TODO cannot we do datetime.now() for added_time
+                #  TODO cannot we do datetime.now() for added_time
                 attendee.added_time = ' '
-                attendee.vendor_img_link = "<img class='pull-right' " \
-                                           "style='width:60px;height:30px' " \
-                                           "src='/web/static/images/activities/facebook_logo.png'/>"
-                vendor_event_id = rsvp['vendor_event_id']
+                attendee.vendor_img_link = \
+                    "<img class='pull-right' " \
+                    "style='width:60px;height:30px' " \
+                    "src='/web/static/images/activities/facebook_logo.png'/>"
+                social_network_event_id = rsvp['vendor_event_id']
                 if rsvp['rsvp_status'].strip() == 'attending' \
                         or rsvp['rsvp_status'].strip() == 'maybe':
                     attendee.rsvp_status = 'yes'
                 else:
                     attendee.rsvp_status = 'no'
                 event = Event.get_by_user_id_social_network_id_vendor_event_id(
-                    self.user.id, self.social_network.id, vendor_event_id)
+                    self.user.id, self.social_network.id, social_network_event_id)
                 if event:
                     attendee.event = event
+                    return attendee
                 else:
-                    error_message = 'Event is not present in db, VendorEventId is %s' \
-                                    % vendor_event_id
-                    log_error({'user_id': self.user.id,
-                               'error': error_message})
-                return attendee
-            except Exception as e:
-                error_message = e.message
-                log_exception({'user_id': self.user.id,
-                               'error': error_message})
+                    raise EventNotFound('Event is not present in db, '
+                                        'social_network_event_id is %s. User Id: %s'
+                                        % (social_network_event_id, self.user.id))
+            except:
                 raise
-
