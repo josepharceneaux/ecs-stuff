@@ -1,11 +1,11 @@
 """Tests for the Widget Service API"""
 __author__ = 'erikfarmer'
 
-from collections import deque
 import datetime
 import json
 import pytest
 
+from widget_service.common.models.candidate import CustomField
 from widget_service.common.models.candidate import CandidateSource
 from widget_service.common.models.candidate import University
 from widget_service.common.models.misc import AreaOfInterest
@@ -22,6 +22,7 @@ from widget_service.widget_app import db
 from widget_service.common.utils.handy_functions import randomword
 from widget_service.common.utils.db_utils import get_or_create
 from widget_service.widget_app.views.utils import parse_interest_ids_from_form
+from widget_service.widget_app.views.utils import parse_city_and_state_ids_from_form
 
 APP = app.test_client()
 
@@ -240,40 +241,68 @@ def create_test_widget_page(create_test_user, create_test_candidate_source, requ
     return test_widget_page
 
 
+@pytest.fixture(autouse=True)
+def create_test_extra_fields_location(create_test_domain, request):
+    state_field = CustomField(domain_id=create_test_domain.id, name='State of Interest',
+                              type='string', added_time=datetime.datetime.now(),
+                              updated_time=datetime.datetime.now())
+    db.session.add(state_field)
+    db.session.commit()
+
+    city_field = CustomField(domain_id=create_test_domain.id, name='City of Interest',
+                              type='string', added_time=datetime.datetime.now(),
+                              updated_time=datetime.datetime.now())
+    db.session.add(city_field)
+    db.session.commit()
+    def fin():
+        db.session.query(CustomField).delete()
+        db.session.commit()
+    request.addfinalizer(fin)
+    return [state_field, city_field]
+
+
 def test_api_returns_domain_filtered_aois(create_test_widget_page, request):
-    response = APP.get('/widgetV1/interests/{}'.format(create_test_widget_page.widget_name))
+    response = APP.get('/widget/v1/interests/{}'.format(create_test_widget_page.widget_name))
     assert response.status_code == 200
     assert len(json.loads(response.data)['primary_interests']) == 10
     assert len(json.loads(response.data)['secondary_interests']) == 2
 
 
 def test_api_returns_university_name_list(request):
-    response = APP.get('/widgetV1/universities')
+    response = APP.get('/widget/v1/universities')
     assert response.status_code == 200
     assert len(json.loads(response.data)['universities']) == 5
 
 
 def test_get_call_returns_widget_page_html(create_test_widget_page, request):
-    response = APP.get('/widgetV1/{}'.format(create_test_widget_page.widget_name))
+    response = APP.get('/widget/v1/{}'.format(create_test_widget_page.widget_name))
     assert response.status_code == 200
     assert response.data == create_test_widget_page.widget_html
 
 
 def test_post_call_creates_candidate_object(create_test_widget_page, create_test_AOIs, request):
+    subcategory = db.session.query(AreaOfInterest).filter(AreaOfInterest.parent_id!=None).first()
+    parent_category_1 = db.session.query(AreaOfInterest).get(subcategory.parent_id)
+    parent_category_2 = db.session.query(AreaOfInterest).filter(
+        AreaOfInterest.id!=parent_category_1.id).filter(
+        AreaOfInterest.parent_id==None).first()
+    aoi_string = "{parent_category_without_sub}: All Subcategories|{parent_category_with_sub}: {subcategory}".format(
+        parent_category_without_sub=parent_category_2.description,
+        parent_category_with_sub=parent_category_1.description,
+        subcategory=subcategory.description)
     candidate_dict = {
         'firstName': randomword(12),
         'lastName': randomword(12),
         'emailAdd': '{}@gmail.com'.format(randomword(12)),
-        'hidden-tags-aoi': [{'id': aoi.id} for aoi in create_test_AOIs],
-        # 'hidden-tags-location': [{'id': aoi.id} for aoi in create_test_AOIs]
+        'hidden-tags-aoi': aoi_string,
+        'hidden-tags-location': 'Northern California: All Cities|Southern California: Pomona'
     }
     with APP as c:
-        post_response = c.post('/widgetV1/{}'.format(create_test_widget_page.widget_name))
+        post_response = c.post('/widget/v1/{}'.format(create_test_widget_page.widget_name), data=candidate_dict)
     assert post_response.status_code == 200
 
 
 def test_parse_interest_ids_from_form(request):
-    # test_string = "Communications: Copywriter|Communications: Marketing Communications|Construction: All Subcategories"
     subcategory = db.session.query(AreaOfInterest).filter(AreaOfInterest.parent_id!=None).first()
     parent_category_1 = db.session.query(AreaOfInterest).get(subcategory.parent_id)
     parent_category_2 = db.session.query(AreaOfInterest).filter(
@@ -286,4 +315,15 @@ def test_parse_interest_ids_from_form(request):
     processed_ids = parse_interest_ids_from_form(test_string)
     assert processed_ids == [
         {'id': parent_category_2.id}, {'id': subcategory.id}
+    ]
+
+
+def test_parse_location_ids_from_form(create_test_extra_fields_location, request):
+    state_custom_field_id = create_test_extra_fields_location[0].id
+    city_custom_field_id = create_test_extra_fields_location[1].id
+    test_string = 'Northern California: All Cities|Southern California: Pomona'
+    processed_ids = parse_city_and_state_ids_from_form(test_string)
+    assert processed_ids == [
+        {'id': state_custom_field_id, 'value': 'Northern California'},
+        {'id': city_custom_field_id, 'value': 'Pomona'}
     ]

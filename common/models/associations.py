@@ -39,4 +39,3 @@ class ReferencePhone(db.Model):
 
     def __repr__(self):
         return "<ReferencePhone (reference_id=' %r')>" % self.candidate_reference_id
-

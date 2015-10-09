@@ -645,18 +645,12 @@ class University(db.Model):
         return "<University (name=' %r')>" % self.name
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+class CustomField(db.Model):
+    __tablename__ = 'custom_field'
+    id = db.Column(db.Integer, primary_key=True)
+    domain_id = db.Column('DomainId', db.Integer)
+    name = db.Column('Name', db.Text)
+    type = db.Column('Type', db.Text)
+    category_id = db.Column('CategoryId', db.Integer)
+    added_time = db.Column('AddedTime', db.DateTime)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())

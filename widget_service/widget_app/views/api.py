@@ -9,13 +9,13 @@ from flask import request
 from flask import render_template
 
 # Module specific
-from common.models.misc import AreaOfInterest
-from common.models.db import db
-from common.models.user import Domain
-from common.models.user import User
-from common.models.candidate import University
-from common.models.widget import WidgetPage
-
+from widget_service.common.models.misc import AreaOfInterest
+from widget_service.common.models.user import User
+from widget_service.common.models.candidate import University
+from widget_service.common.models.widget import WidgetPage
+from widget_service.widget_app import db
+from widget_service.widget_app.views.utils import parse_interest_ids_from_form
+from widget_service.widget_app.views.utils import parse_city_and_state_ids_from_form
 
 mod = Blueprint('widget_api', __name__)
 
@@ -37,7 +37,7 @@ def process_widget(widget_name):
     if request.method == 'GET':
         return render_widget_via_name(widget_name)
     if request.method == 'POST':
-        return process_widget_submission(widget_name)
+        return process_widget_submission(widget_name, request.form)
 
 
 def render_widget_via_name(widget_name):
@@ -45,7 +45,17 @@ def render_widget_via_name(widget_name):
     return widget.widget_html, 200
 
 
-def process_widget_submission(widget_name):
+def process_widget_submission(widget_name, form):
+    candidate_dict = {
+        'full_name': '{} {}'.format(form['firstName'], form['lastName']),
+        'emails': [{'address': form['emailAdd'], 'label': 'Primary'}],
+        'areas_of_interest':  parse_interest_ids_from_form(form['hidden-tags-aoi']),
+        'custom_fields': parse_city_and_state_ids_from_form(form['hidden-tags-location'])
+    }
+    # payload = json.dumps({'candidates': [candidate_dict]})
+    # request = Request('http://127.0.0.1:8000/web/api/candidates.json', data=payload,
+    #                   headers={'Authorization': oauth_token})
+    # response_body = urlopen(request).read()
     return jsonify(widget_name=widget_name)
 
 
