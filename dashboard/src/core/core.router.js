@@ -57,6 +57,54 @@
                     }
                 }
             })
+            .state('campaigns.emailCampaigns', {
+                url: '/emailCampaigns',
+                views: {
+                    '@' : {
+                        template: '<gt-email-campaigns></gt-email-campaigns>'
+                    }
+                }
+            })
+            .state('campaigns.eventCampaigns', {
+                url: '/eventCampaigns',
+                views: {
+                    '@' : {
+                        template: '<gt-event-campaigns></gt-event-campaigns>'
+                    }
+                }
+            })
+            .state('campaigns.smsCampaigns', {
+                url: '/smsCampaigns',
+                views: {
+                    '@' : {
+                        template: '<gt-sms-campaigns></gt-sms-campaigns>'
+                    }
+                }
+            })
+            .state('campaigns.socialMediaCampaigns', {
+                url: '/socialMediaCampaigns',
+                views: {
+                    '@' : {
+                        template: '<gt-social-media-campaigns></gt-social-media-campaigns>'
+                    }
+                }
+            })
+            .state('campaigns.contentCampaigns', {
+                url: '/contentCampaigns',
+                views: {
+                    '@' : {
+                        template: '<gt-content-campaigns></gt-content-campaigns>'
+                    }
+                }
+            })
+            .state('campaigns.pushNotifications', {
+                url: '/pushNotifications',
+                views: {
+                    '@' : {
+                        template: '<gt-push-notifications></gt-push-notifications>'
+                    }
+                }
+            })
             .state('admin', {
                 url: '/admin',
                 template: '<gt-admin></gt-admin>'
