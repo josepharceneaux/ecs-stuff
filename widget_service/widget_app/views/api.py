@@ -87,7 +87,7 @@ def get_areas_of_interest(widget_name):
 @mod.route('/universities', methods=['GET'])
 def get_university_names():
     university_names = db.session.query(University.name)
-    return jsonify(universities=[uni for uni in university_names])
+    return jsonify(universities_list=[uni for uni in university_names])
 
 
 @mod.route('/majors/<domain_name>', methods=['GET'])

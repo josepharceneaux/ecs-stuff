@@ -32,19 +32,19 @@ $(document).ready(function() {
                 }).blur();
     }
 
-    // Load up university list
-    //    $.ajax(
-    //        type: "post",
-    //        dataType: "json",
-    //        url: "",
-    //        success: function(response)
-    //            universitiesList = response['universities_list'];
-    //            $("#university").typeahead(
-    //                items: 10,
-    //                source: universitiesList
-    //            });
-    //        }
-    //    });
+     //Load up university list
+        $.ajax({
+            type: "get",
+            dataType: "json",
+            url: "/v1/universities",
+            success: function(response){
+                universitiesList = response['universities_list'];
+                $("#university").typeahead(
+                    items: 10,
+                    source: universitiesList
+                });
+            }
+        });
 
     $(".tm-input-aoi").tagsManager({
         hiddenTagListId: 'hidden-tags-aoi',
@@ -160,6 +160,7 @@ function createDegreeOptions(){
     return true;
 }
 
+
 function createGraduationYearOptions(){
     var minYear = 2011;
     var currentYear= minYear;
@@ -182,6 +183,25 @@ function createGraduationYearOptions(){
         currentYear += 1;
     }
 }
+
+
+$.ajax({
+    type: "get",
+    dataType: "json",
+    url: "/v1/majors/kaiser_corp",
+    success: function(response) {
+        var majorSelector = document.getElementById('major');
+        var option;
+        var majors = response.majors;
+        for (var i=0; i < majors.length; i++) {
+            option = document.createElement("option");
+            option.label = degrees[i];
+            option.value = degrees[i];
+            option.text = degrees[i];
+            degreeSelector.add(option);
+        };
+    };
+});
 
 createDegreeOptions();
 createGraduationYearOptions();

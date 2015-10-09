@@ -256,7 +256,7 @@ var protoCounter = {
 function getInterestsJSON() {
     var interests;
     var request = $.ajax({
-        url: "/widgetV1/interests/kaiser_corporate",
+        url: "/v1/interests/kaiser_corporate",
         type: "GET",
         dataType: "json"
     });

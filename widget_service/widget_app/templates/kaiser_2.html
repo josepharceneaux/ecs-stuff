@@ -124,9 +124,6 @@
                         <label class="hide" id="majorLabel" >Major</label>
                         <select aria-labelledby="majorLabel" class="span6" name="major" id="major" required>
                             <option value="" title="Major">Major</option>
-{#                            {{ for major in majors: }}#}
-{#                            <option title="{{= major.name }}" value="{{= major.name }}">{{= major.name }}</option>#}
-{#                            {{ pass }}#}
                             <option title="Other" value="Other">Other</option>
                         </select>
                         <input type="text" class="span2 other" style="display:none" id="majorOther" name="majorOther" placeholder="Other major" value="" />
