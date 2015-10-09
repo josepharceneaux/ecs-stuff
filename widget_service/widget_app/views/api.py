@@ -43,7 +43,7 @@ def process_widget(widget_name):
 
 
 def render_widget_via_name(widget_name):
-    widget = WidgetPage.query.filter_by(widget_name=widget_name).first()
+    widget = db.session.query(WidgetPage).filter_by(widget_name=widget_name).first()
     return widget.widget_html, 200
 
 

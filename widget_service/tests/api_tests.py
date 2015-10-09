@@ -27,7 +27,6 @@ from widget_service.widget_app.views.utils import parse_city_and_state_ids_from_
 
 APP = app.test_client()
 
-
 @pytest.fixture(autouse=True)
 def test_org(request):
     org_attrs = dict(name='Rocket League All Stars - {}'.format(randomword(8)))
@@ -222,6 +221,11 @@ def create_test_majors(create_test_domain, request):
     for i in xrange(5):
         majors.append(Major(name=randomword(18), domain_id=create_test_domain.id))
     db.session.bulk_save_objects(majors)
+    def fin():
+        db.session.query(Major).delete()
+        db.session.commit()
+    request.addfinalizer(fin)
+    return majors
 
 
 
@@ -246,7 +250,8 @@ def create_test_widget_page(create_test_user, create_test_candidate_source, requ
         try:
             db.session.delete(test_widget_page)
             db.session.commit()
-        except Exception:
+        except Exception as e:
+            print "Received exception deleting widget_page %s: %s" % (test_widget_page, e)
             pass
     request.addfinalizer(fin)
     return test_widget_page
