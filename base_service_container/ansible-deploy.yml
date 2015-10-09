@@ -1,0 +1,47 @@
+# Ansible configuration file to deploy Flask services
+
+- hosts: all
+  vars:
+    - ansible_python_interpreter: python
+  tasks:
+    - name: Install py-docker Python module
+      pip:  name=docker-py
+    - name: Build gettalent/base-service-container image
+      local_action:
+          module: docker_image
+          path: .
+          name: gettalent/base-service-container
+          state: present
+
+#- name: Build Docker image for base-service-container
+#  hosts: local
+#  sudo: yes
+#  tasks:
+#    - name: check or build image
+#      docker_image: path="./" name="gettalent/base-service-container" state=present
+
+#- name: Deploy localhost
+#  hosts: localhost
+#  vars:
+#    image: gettalent/base-service-container
+#  sudo: no
+#  tasks:
+#    - name: Pull latest image from dockerhub registery
+#      command: docker pull {{image}}
+#
+#    - name: Stop and remove flask service docker container
+#      docker:
+#        image: "{{image}}"
+#        state: absent
+
+#    - name: Start flask service docker container
+#      docker:
+#        image: "{{image}}"
+#        state: reloaded
+#        ports:
+#          - "80:80"
+#          - "443:443"
+#        env:
+#            GT_ENVIRONMENT: "{{GT_ENVIRONMENT}}"
+#        volumes:
+#          - "/usr/local/etc/ssl:/etc/nginx/ssl"
