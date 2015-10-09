@@ -3,8 +3,8 @@
     'use strict';
 
     angular.module('app.campaigns')
-        .directive('gtCampaigns', directiveFunction)
-        .controller('CampaignsController', ControllerFunction);
+        .directive('gtCampaignsOverview', directiveFunction)
+        .controller('CampaignsOverviewController', ControllerFunction);
 
 
     // ----- directiveFunction -----
@@ -15,10 +15,10 @@
 
         var directive = {
             restrict: 'E',
-            templateUrl: 'components/campaigns/campaigns.html',
+            templateUrl: 'components/campaigns/campaigns-overview/campaigns-overview.html',
             scope: {
             },
-            controller: 'CampaignsController',
+            controller: 'CampaignsOverviewController',
             controllerAs: 'vm'
         };
 
@@ -35,7 +35,7 @@
         activate();
 
         function activate() {
-            logger.log('Activated Campaigns View');
+            logger.log('Activated Campaigns Overview View');
         }
     }
 

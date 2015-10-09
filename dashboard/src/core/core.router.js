@@ -45,8 +45,17 @@
                 template: '<gt-pipeline></gt-pipeline>'
             })
             .state('campaigns', {
+                parent: 'site',
                 url: '/campaigns',
-                template: '<gt-campaigns></gt-campaigns>'
+                redirectTo: 'campaigns.overview'
+            })
+            .state('campaigns.overview', {
+                url: '',
+                views: {
+                    '@': {
+                        template: '<gt-campaigns-overview></gt-campaigns-overview>'
+                    }
+                }
             })
             .state('admin', {
                 url: '/admin',
