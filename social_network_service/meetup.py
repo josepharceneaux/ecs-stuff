@@ -12,7 +12,7 @@ class Meetup(SocialNetworkBase):
         super(Meetup, self).__init__(*args, **kwargs)
         # token validity is checked here
         # if token is expired, we refresh it here
-        self.validate_and_refresh_access_token()
+        # self.validate_and_refresh_access_token()
 
     @classmethod
     def get_access_token(cls, data):

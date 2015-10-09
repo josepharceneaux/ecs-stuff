@@ -1,9 +1,11 @@
 import os
+import string
 from common.models.db import db
 from social_network_service import init_app
 app = init_app()
 import pytest
 import datetime
+import random
 from social_network_service.manager import process_event, delete_events
 from common.models.venue import Venue
 from common.models.organizer import Organizer
@@ -19,7 +21,7 @@ from common.models.social_network import SocialNetwork
 
 
 
-from werkzeug.security import gen_salt
+from werkzeug.security import gen_salt, generate_password_hash
 from mixer._faker import faker
 from mixer.backend.sqlalchemy import Mixer
 
@@ -56,19 +58,19 @@ def base_url():
     return APP_URL
 
 
-@pytest.fixture(scope='session')
-def app(request):
-    """
-    Create a Flask app, and override settings, for the whole test session.
-    """
-
-    app.config.update(
-        TESTING=True,
-        # SQLALCHEMY_DATABASE_URI=TEST_DATABASE_URI,
-        LIVESERVER_PORT=6000
-    )
-
-    return app.test_client()
+# @pytest.fixture(scope='session')
+# def app(request):
+#     """
+#     Create a Flask app, and override settings, for the whole test session.
+#     """
+#
+#     app.config.update(
+#         TESTING=True,
+#         # SQLALCHEMY_DATABASE_URI=TEST_DATABASE_URI,
+#         LIVESERVER_PORT=6000
+#     )
+#
+#     return app.test_client()
 
 
 @pytest.fixture(scope='session')
@@ -85,43 +87,57 @@ def eventbrite():
 def facebook():
     return SocialNetwork.get_by_name('Facebook')
 
-# @pytest.fixture(scope='session')
-# def client(request):
-#     """
-#     Get the test_client from the app, for the whole test session.
-#     """
-#     # Add test client in Client DB
-#     client_id = gen_salt(40)
-#     client_secret = gen_salt(50)
-#     test_client = Client(
-#         client_id=client_id,
-#         client_secret=client_secret
-#     )
-#     Client.save(test_client)
-#
-#     def delete_client():
-#         Client.delete(test_client.client_id)
-#
-#     request.addfinalizer(delete_client)
-#     return test_client
 
+@pytest.fixture(scope='session')
+def test_client(request):
+    """
+    Get the test_client from the app, for the whole test session.
+    """
+    # Add test client in Client DB
+    client_id = gen_salt(40)
+    client_secret = gen_salt(50)
+    client = Client(
+        client_id=client_id,
+        client_secret=client_secret
+    )
+    Client.save(test_client)
 
-# @pytest.fixture(scope='session')
-# def culture():
-#     mixer = Mixer(session=db_session, commit=True)
-#     culture = Culture.get_by_code('en-us')
-#     if culture:
-#         return culture
-#     else:
-#         culture = mixer.blend('common.gt_models.culture.Culture', code='en-us')
-#     return culture
+    def delete_client():
+        Client.delete(client.client_id)
+
+    request.addfinalizer(delete_client)
+    return client
 
 
 @pytest.fixture(scope='session')
-def domain(request, organization, culture):
+def test_culture(request):
+    mixer = Mixer(session=db_session, commit=True)
+    culture = mixer.blend(Culture, description=faker.nickname(), code=randomword(5))
+
+    def fin():
+        Culture.delete(culture.id)
+
+    request.addfinalizer(fin)
+    return culture
+
+
+@pytest.fixture(scope='session')
+def test_organization(request):
+    mixer = Mixer(session=db_session, commit=True)
+    organization = mixer.blend(Organization, name=faker.nickname(), notes='')
+
+    def delete_organization():
+        Organization.delete(organization.id)
+    request.addfinalizer(delete_organization)
+
+    return organization
+
+
+@pytest.fixture(scope='session')
+def test_domain(request, test_organization, test_culture):
     now_timestamp = datetime.datetime.now().strftime("%Y:%m:%d %H:%M:%S")
     mixer = Mixer(session=db_session, commit=True)
-    domain = mixer.blend(Domain, organization=organization, culture=culture,
+    domain = mixer.blend(Domain, organization=test_organization, culture=test_culture,
                          name=faker.nickname(), addedTime=now_timestamp)
 
     def delete_doamin():
@@ -132,96 +148,131 @@ def domain(request, organization, culture):
 
 
 @pytest.fixture(scope='session')
-def organization(request):
+def test_user(request, test_domain):
     mixer = Mixer(session=db_session, commit=True)
-    organization = mixer.blend('gt_common.models.organization.Organization')
+    user = mixer.blend(User, domain=test_domain, firstName=faker.nickname(),
+                       lastName=faker.nickname(), email=faker.email_address(),
+                       password=generate_password_hash('A123456', method='pbkdf2:sha512'))
 
-    def delete_organization():
-        Organization.delete(organization.id)
-    request.addfinalizer(delete_organization)
-
-    return organization
-
-
-@pytest.fixture(scope='session')
-def user(request):
-    mixer = Mixer(session=db_session, commit=True)
-    user = User.get_by_id(1)
-    # user = mixer.blend(User, domain=domain, culture=culture, firstName=faker.nickname(),
-    #                    lastName=faker.nickname(), email=faker.email_address(),
-    #                    password=generate_password_hash('A123456', method='pbkdf2:sha512'))
-
+    def fin():
+        User.delete(user.id)
+    request.addfinalizer(fin)
     return user
 
 
 @pytest.fixture(scope='session')
-def client_credentials(request, user):
-    client_id = gen_salt(40)
-    client_secret = gen_salt(50)
-    client = Client(client_id=client_id, client_secret=client_secret)
-    Client.save(client)
-    return client
+def test_token(request, test_user):
+    mixer = Mixer(session=db_session, commit=True)
+    token = mixer.blend(Token,
+                        user=test_user,
+                        token_type='Bearer',
+                        access_token=randomword(20),
+                        refresh_token=randomword(20),
+                        expires=datetime.datetime(year=2050, month=1, day=1))
+
+    def fin():
+        Token.delete(token)
+    request.addfinalizer(fin)
+    return token
 
 
 @pytest.fixture(scope='session')
-def auth_data(user):
-    # TODO; make the URL constant, create client_id and client_secret on the fly
-    # auth_service_url = GET_TOKEN_URL
+def test_eventbrite_credentials(request, test_user):
+    mixer = Mixer(session=db_session, commit=True)
+    sn = SocialNetwork.get_by_name('Eventbrite')
+    user_credentials = mixer.blend(UserCredentials,
+                                   social_network=sn,
+                                   user=test_user,
+                                   access_token=app.config['EVENTBRITE_ACCESS_TOKEN'],
+                                   refresh_token=app.config['EVENTBRITE_REFRESH_TOKEN'])
 
-    # token = Token.get_by_user_id(user.id)[0]
-    token = user.tokens[0]
-    # client_credentials = token.client
-    # data = dict(client_id=client_credentials.client_id,
-    #             client_secret=client_credentials.client_secret, username=user.email,
-    #             password='Iamzohaib123', grant_type='password')
-    # headers = {'content-type': 'application/x-www-form-urlencoded'}
-    # response = requests.post(auth_service_url, data=data, headers=headers)
-    # assert response.status_code == 200
-    # assert response.json().has_key('access_token')
-    # assert response.json().has_key('refresh_token')
-    # return response.json()
+    def fin():
+        UserCredentials.delete(user_credentials.id)
+    request.addfinalizer(fin)
+    return user_credentials
+
+
+@pytest.fixture(scope='session')
+def test_meetup_credentials(request, test_user):
+    mixer = Mixer(session=db_session, commit=True)
+    sn = SocialNetwork.get_by_name('Meetup')
+    user_credentials = mixer.blend(UserCredentials,
+                                   social_network=sn,
+                                   user=test_user,
+                                   access_token=app.config['MEETUP_ACCESS_TOKEN'],
+                                   refresh_token=app.config['MEETUP_REFRESH_TOKEN'])
+
+    def fin():
+        UserCredentials.delete(user_credentials.id)
+    request.addfinalizer(fin)
+    return user_credentials
+
+# @pytest.fixture(scope='session')
+# def client_credentials(request, user):
+#     client_id = gen_salt(40)
+#     client_secret = gen_salt(50)
+#     client = Client(client_id=client_id, client_secret=client_secret)
+#     Client.save(client)
+#     return client
+
+
+@pytest.fixture(scope='session')
+def auth_data(test_user, test_eventbrite_credentials, test_meetup_credentials, test_token):
+    token = test_token
     return token.to_json()
 
 
 @pytest.fixture(scope='session')
-def meetup_event_data(request, user, meetup):
+def meetup_event_data(request, test_user, meetup, meetup_venue, test_meetup_credentials):
     data = EVENT_DATA.copy()
     data['social_network_id'] = meetup.id
+    data['venue_id'] = meetup_venue.id
 
     def delete_event():
         # delete event if it was created by API. In that case, data contains id of that event
         if 'id' in data:
             event_id = data['id']
             del data['id']
-            delete_events(user.id, [event_id])
+            delete_events(test_user.id, [event_id])
 
     request.addfinalizer(delete_event)
     return data
 
 
 @pytest.fixture(scope='session')
-def eventbrite_event_data(eventbrite):
+def eventbrite_event_data(request, eventbrite, test_user, eventbrite_venue, test_eventbrite_credentials):
     data = EVENT_DATA.copy()
     data['social_network_id'] = eventbrite.id
+    data['venue_id'] = eventbrite_venue.id
+
+    def delete_event():
+        # delete event if it was created by API. In that case, data contains id of that event
+        if 'id' in data:
+            event_id = data['id']
+            del data['id']
+            delete_events(test_user.id, [event_id])
+
+    request.addfinalizer(delete_event)
     return data
 
 
 @pytest.fixture(scope='session')
-def events(request, user,  meetup, eventbrite):
+def events(request, test_user, test_eventbrite_credentials,
+           test_meetup_credentials, meetup, eventbrite, venues):
     events = []
     event = EVENT_DATA.copy()
     event['title'] = 'Meetup ' + event['title']
     event['social_network_id'] = meetup.id
-    event['venue_id'] = 1
-    event_id = process_event(event, user.id)
+    event['venue_id'] = venues[0].id
+    event_id = process_event(event, test_user.id)
     event = Event.get_by_id(event_id)
     events.append(event)
 
     event = EVENT_DATA.copy()
     event['title'] = 'Eventbrite ' + event['title']
     event['social_network_id'] = eventbrite.id
-    event['venue_id'] = 2
-    event_id = process_event(event, user.id)
+    event['venue_id'] = venues[1].id
+    event_id = process_event(event, test_user.id)
     event = Event.get_by_id(event_id)
     events.append(event)
 
@@ -242,11 +293,11 @@ def event_in_db(request, events):
 
 
 @pytest.fixture(scope='session')
-def venues(request, user, meetup, eventbrite):
+def venues(request, test_user, meetup, eventbrite):
     venues = []
     meetup_venue = {
         "social_network_id": meetup.id,
-        "user_id": user.id,
+        "user_id": test_user.id,
         "zipcode": "95014",
         "address_line2": "",
         "address_line1": "Infinite Loop",
@@ -262,7 +313,7 @@ def venues(request, user, meetup, eventbrite):
 
     eventbrite_venue = {
         "social_network_id": eventbrite.id,
-        "user_id": user.id,
+        "user_id": test_user.id,
         "zipcode": "54600",
         "address_line2": "H# 163, Block A",
         "address_line1": "New Muslim Town",
@@ -288,9 +339,19 @@ def venue_in_db(request, venues):
 
 
 @pytest.fixture(scope='session')
-def organizer_in_db(request, user):
+def meetup_venue(request, venues):
+    return venues[0]
+
+
+@pytest.fixture(scope='session')
+def eventbrite_venue(request, venues):
+    return venues[1]
+
+
+@pytest.fixture(scope='session')
+def organizer_in_db(request, test_user):
     organizer = {
-        "user_id": user.id,
+        "user_id": test_user.id,
         "name": "Test Organizer",
         "email": "testemail@gmail.com",
         "about": "He is a testing engineer"
@@ -301,7 +362,7 @@ def organizer_in_db(request, user):
 
 
 @pytest.fixture(scope='session')
-def get_test_events(request, user, meetup, eventbrite, venues):
+def get_test_events(request, test_user, meetup, eventbrite, venues):
 
     meetup_event_data = EVENT_DATA.copy()
     meetup_event_data['social_network_id'] = meetup.id
@@ -315,12 +376,12 @@ def get_test_events(request, user, meetup, eventbrite, venues):
         if 'id' in meetup_event_data:
             event_id = meetup_event_data['id']
             del meetup_event_data['id']
-            delete_events(user.id, [event_id])
+            delete_events(test_user.id, [event_id])
 
         if 'id' in eventbrite_event_data:
             event_id = eventbrite_event_data['id']
             del eventbrite_event_data['id']
-            delete_events(user.id, [event_id])
+            delete_events(test_user.id, [event_id])
 
     request.addfinalizer(delete_test_event)
     return meetup_event_data, eventbrite_event_data
@@ -350,13 +411,13 @@ def meetup_missing_data(request, eventbrite_event_data):
 
 
 @pytest.fixture(scope='session')
-def is_subscribed_test_data(request, user):
+def is_subscribed_test_data(request, test_user):
     test_social_network1 = SocialNetwork(name='SN1', url='www.SN1.com')
     SocialNetwork.save(test_social_network1)
     test_social_network2 = SocialNetwork(name='SN2', url='www.SN1.com')
     SocialNetwork.save(test_social_network2)
 
-    test_social_network1_credentials = UserCredentials(user_id=user.id,
+    test_social_network1_credentials = UserCredentials(user_id=test_user.id,
                                                        social_network_id=test_social_network1.id,
                                                        access_token='lorel ipsum',
                                                        refresh_token='lorel ipsum')
@@ -379,3 +440,7 @@ def teardown_fixtures(user, client_credentials, domain, organization):
     User.delete(user.id)
     Domain.delete(domain.id)
     Organization.delete(organization.id)
+
+
+def randomword(length):
+    return ''.join(random.choice(string.lowercase) for i in xrange(length))

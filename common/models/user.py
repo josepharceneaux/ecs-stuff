@@ -57,7 +57,7 @@ class User(db.Model):
 
     @property
     def name(self):
-        return self.first_name + ' ' + self.last_name
+        return (self.first_name or '') + ' ' + (self.last_name or '')
 
     def __repr__(self):
         return "<email (email=' %r')>" % self.email

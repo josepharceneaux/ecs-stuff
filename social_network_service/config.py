@@ -44,3 +44,11 @@ else:
 
 SECRET_KEY = os.urandom(24).encode('hex')
 OAUTH2_PROVIDER_TOKEN_EXPIRES_IN = 7200  # 2 hours expiry time for bearer token
+
+# Meetup Credentials
+MEETUP_ACCESS_TOKEN = '7fa7dcf7534662ad0b886573c8de4393'
+MEETUP_REFRESH_TOKEN = '572e92626a941aa37305cbe2a54c365e'
+
+# Eventbrite Credentials
+EVENTBRITE_ACCESS_TOKEN = 'AT6NWWWVUBJ6KCVNOONL'
+EVENTBRITE_REFRESH_TOKEN = ''

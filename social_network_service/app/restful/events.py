@@ -65,11 +65,7 @@ class Events(Resource):
                     500 (Internal Server Error)
 
         """
-        try:
-            # Refresh Session before fetching events from db
-            events = map(lambda event: event.to_json(), Event.query.filter_by(user_id=kwargs['user_id']).all())
-        except Exception as e:
-            return ApiResponse(json.dumps(dict(messsage='APIError: Internal Server error while retrieving records')), status=500)
+        events = map(lambda event: event.to_json(), Event.query.filter_by(user_id=kwargs['user_id']).all())
         if events:
             return {'events': events, 'count': len(events)}, 200
         else:

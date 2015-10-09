@@ -3,11 +3,9 @@
 """
 import requests
 import json
-from common.models.social_network import SocialNetwork
-from common.models.user import UserCredentials
 
 
-def test_subscribed_social_network(user, base_url, auth_data, is_subscribed_test_data):
+def test_subscribed_social_network(test_user, base_url, auth_data, is_subscribed_test_data):
     """
     Input: We created two test social networks with name SN1 and SN2 and added credentials for SN1
     in UserCredentials Table in is_subscribed_test_data fixture.

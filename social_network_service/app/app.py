@@ -13,8 +13,6 @@ from social_network_service.app.restful.data import data_blueprint
 from social_network_service.custom_exections import ApiException
 from social_network_service.rsvp.eventbrite import Eventbrite as EventbriteRsvp
 
-
-
 from flask.ext.restful import Api
 from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash

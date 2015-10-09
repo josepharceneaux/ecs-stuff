@@ -50,7 +50,7 @@ class Eventbrite(EventBase):
 
     def get_events(self):
         """
-        We send GET requests to Eventbrite API and get already created events by this useron eventbrite.com.
+        We send GET requests to Eventbrite API and get already created events by this user on eventbrite.com.
         We also have to handle pagination because Eventbrite's API does that too.
         :return all_events: a collection of eventbrite events for specific user
         :rtype all_events: list

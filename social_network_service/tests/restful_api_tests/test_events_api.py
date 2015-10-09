@@ -14,6 +14,18 @@ API_URL = app.config['APP_URL']
 
 class TestResourceEvents:
 
+    def setup_method(self, method):
+        """ setup up any state tied to the execution of the given
+            method in a class.  setup_method is invoked for every
+            test method of a class.
+        """
+        print(method)
+
+    def teardown_method(self, method):
+        """ teardown any state that was previously setup
+            with a setup_method call."""
+        print(method)
+
     def test_get_with_invalid_token(self):
         response = requests.get(API_URL + '/events/', headers=dict(Authorization='Bearer %s' % 'invalid_token'))
         assert response.status_code == 401, 'It should be unauthorized (401)'
@@ -24,14 +36,22 @@ class TestResourceEvents:
         response = requests.get(API_URL + '/events/', headers=dict(Authorization='Bearer %s' % auth_data['access_token']))
         assert response.status_code == 200, 'Status should be Ok (200)'
         events = response.json()['events']
+        assert len(events) == 0, 'There should be some events for test user'
+
+    def test_get_with_valid_token(self, auth_data, event_in_db):
+
+        response = requests.get(API_URL + '/events/', headers=dict(Authorization='Bearer %s' % auth_data['access_token']))
+        assert response.status_code == 200, 'Status should be Ok (200)'
+        events = response.json()['events']
         assert len(events) > 0, 'There should be some events for test user'
 
     def test_post_with_invalid_token(self):
-        response = requests.post(API_URL + '/events/', data=dict(a='a', b='b'),  headers=dict(Authorization='Bearer %s' % 'invalid_token'))
+        response = requests.post(API_URL + '/events/', data=dict(a='a', b='b'),
+                                 headers=dict(Authorization='Bearer %s' % 'invalid_token'))
         assert response.status_code == 401, 'It should be unauthorized (401)'
         assert 'events' not in response.json()
 
-    def test_post_with_valid_token(self,user, auth_data, test_event):
+    def test_post_with_valid_token(self, auth_data, test_event):
         event_data = test_event
         response = requests.post(API_URL + '/events/', data=json.dumps(event_data),
                                  headers={'Authorization': 'Bearer %s' % auth_data['access_token'],
@@ -57,7 +77,7 @@ class TestResourceEvents:
                                           'Content-Type': 'application/json'})
         assert response.status_code == 453, 'There should be an missing field error for %s KeyError' % key
 
-    def test_meetup_with_valid_address(self, user, auth_data, meetup_event_data):
+    def test_meetup_with_valid_address(self, auth_data, meetup_event_data):
         event_data = meetup_event_data
         response = requests.post(API_URL + '/events/', data=json.dumps(event_data),
                                  headers={'Authorization': 'Bearer %s' % auth_data['access_token'],
@@ -199,9 +219,9 @@ class TestOrganizers:
         results = response.json()
         assert 'organizers' in results
 
-    def test_post_with_invalid_token(self, user):
+    def test_post_with_invalid_token(self, test_user):
         organizer = {
-            "user_id": user.id,
+            "user_id": test_user.id,
             "name": "Test Organizer",
             "email": "testemail@gmail.com",
             "about": "He is a testing engineer"
@@ -210,9 +230,9 @@ class TestOrganizers:
                                  headers=dict(Authorization='Bearer %s' % 'invalid_token'))
         assert response.status_code == 401, 'It should be unauthorized (401)'
 
-    def test_post_with_valid_token(self, auth_data, user):
+    def test_post_with_valid_token(self, auth_data, test_user):
         organizer = {
-            "user_id": user.id,
+            "user_id": test_user.id,
             "name": "Test Organizer",
             "email": "testemail@gmail.com",
             "about": "He is a testing engineer"
@@ -239,4 +259,3 @@ class TestOrganizers:
         response = requests.delete(API_URL + '/organizers/',  data=json.dumps(organizer_ids),
                                    headers=dict(Authorization='Bearer %s' % auth_data['access_token']))
         assert response.status_code == 200, 'Status should be Ok (200)'
-

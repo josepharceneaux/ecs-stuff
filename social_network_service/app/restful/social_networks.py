@@ -474,7 +474,7 @@ class VenueById(Resource):
             resp = json.dumps({'venue': venue})
             return ApiResponse(resp, status=200)
         else:
-            ApiResponse(json.dumps(dict(messsage='Venue not found')), status=404)
+            return ApiResponse(json.dumps(dict(messsage='Venue not found')), status=404)
 
     @authenticate
     def post(self, venue_id, **kwargs):
@@ -927,7 +927,7 @@ class GetTokenValidity(Resource):
             }
 
         .. Status:: 200 (OK)
-                    469 (UserCredentials not found)
+                    461 (UserCredentials not found)
                     404 (Social Network not found)
                     500 (Internal Server Error)
 
