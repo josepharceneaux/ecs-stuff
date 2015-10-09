@@ -144,7 +144,7 @@ def log_error(log_data):
         log_error({'user_id': user_id,
                    'error': error_message})
     ** See Also:
-        - Have a look on get_access_token() defined in
+        - Have a look on get_access_and_refresh_token() defined in
         social_network_service/base.py for more insight.
 
     :param log_data:
@@ -174,7 +174,7 @@ def log_exception(log_data):
         log_exception({'user_id': user_id,
                        'error': error_message})
     ** See Also:
-        - Have a look on get_access_token() defined in
+        - Have a look on get_access_and_refresh_token() defined in
         social_network_service/base.py for more insight.
     """
     callee_data = get_data_to_log(log_data)

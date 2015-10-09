@@ -1,16 +1,28 @@
+"""
+This modules contains Facebook class. It inherits from EventBase class.
+Facebook contains methods to create, update, get, delete events.
+It also contains methods to get RSVPs of events.
+"""
+
+# Standard Library
+from datetime import datetime
+from datetime import timedelta
+
+# Third Party
 import requests
-
-from datetime import datetime, timedelta
-from social_network_service.utilities import log_exception, import_from_dist_packages
-from common.models.event import Event
-from common.models.organizer import Organizer
-from common.models.venue import Venue
-from social_network_service.event.base import EventBase
-
 # We have to import the Facebook page in the following way because we
 # want to avoid name conflicts that arise due to name of the package and
 # name of the files in which package is being used.
+from social_network_service.utilities import import_from_dist_packages
 facebook = import_from_dist_packages('facebook')
+
+# Application Specific
+from common.models.venue import Venue
+from common.models.event import Event
+from common.models.organizer import Organizer
+from social_network_service.event.base import EventBase
+from social_network_service.utilities import log_exception
+
 
 
 class Facebook(EventBase):

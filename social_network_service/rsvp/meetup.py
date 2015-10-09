@@ -2,12 +2,19 @@
 This modules contains Meetup class. It inherits from RSVPBase class.
 Meetup contains methods like get_rsvps(), get_attendee() etc.
 """
-from datetime import datetime, timedelta
 
-from common.models.event import Event
+# Standard Library
+from datetime import datetime
+from datetime import timedelta
+
+# Application Specific
 from base import RSVPBase
-from social_network_service.utilities import http_request, Attendee, \
-    milliseconds_since_epoch_to_dt, log_exception, log_error
+from common.models.event import Event
+from social_network_service import logger
+from social_network_service.utilities import Attendee
+from social_network_service.utilities import http_request
+from social_network_service.utilities import milliseconds_since_epoch_to_dt
+from social_network_service.custom_exections import EventNotFound
 
 
 class Meetup(RSVPBase):
@@ -20,13 +27,13 @@ class Meetup(RSVPBase):
 
     :Example:
 
-        - To process rsvp of an eventbrite event (via social network manager) you
+        - To process rsvp of an Meetup event (via social network manager) you
             have to do following steps:
 
         1- Crete the object of this class by providing required parameters.
-            sn_rsvp_obj = sn_rsvp_class(social_network=self.social_network,
-                                        headers=self.headers,
-                                        user_credentials=user_credentials)
+            sn_rsvp_obj = Meetup(social_network=self.social_network,
+                                headers=self.headers,
+                                user_credentials=user_credentials)
 
         2. Get events of user from db within specified date range
             self.events = self.get_events_from_db(sn_rsvp_obj.start_date_dt)
@@ -52,8 +59,10 @@ class Meetup(RSVPBase):
         - Here we set the date range to get events from database.
         """
         super(Meetup, self).__init__(*args, **kwargs)
-        self.start_date = kwargs.get('start_date') or (datetime.now() - timedelta(days=90))
-        self.end_date = kwargs.get('end_date') or (datetime.now() + timedelta(days=90))
+        self.start_date = kwargs.get('start_date') \
+                          or (datetime.now() - timedelta(days=90))
+        self.end_date = kwargs.get('end_date') \
+                        or (datetime.now() + timedelta(days=90))
         self.start_date_dt = self.start_date
         self.end_date_dt = self.end_date
 
@@ -94,7 +103,8 @@ class Meetup(RSVPBase):
         assert social_network_id is not None
         events_url = self.api_url + '/rsvps/?sign=true&page=100'
         params = {'event_id': event.social_network_event_id}
-        response = http_request('GET', events_url, params=params, headers=self.headers,
+        response = http_request('GET', events_url, params=params,
+                                headers=self.headers,
                                 user_id=self.user.id)
         if response.ok:
             data = response.json()
@@ -160,8 +170,8 @@ class Meetup(RSVPBase):
                                                 member_248211984.jpeg'
         }, 'response': 'yes'
         }
-        - So we will get the member data and issue a member call to get more info
-        about member so we can later save him as a candidate
+        - So we will get the member data and issue a member call to get more
+            info about member so we can later save him as a candidate.
 
         **See Also**
             .. seealso:: process_rsvps() method in RSVPBase class inside
@@ -207,14 +217,10 @@ class Meetup(RSVPBase):
                     self.user.id, self.social_network.id, social_network_event_id)
                 if event:
                     attendee.event = event
+                    return attendee
                 else:
-                    error_message = 'Event is not present in db, VendorEventId is %s' \
-                                    % social_network_event_id
-                    log_error({'user_id': self.user.id,
-                               'error': error_message})
-                return attendee
-            except Exception as e:
-                error_message = e.message
-                log_exception({'user_id': self.user.id,
-                               'error': error_message})
+                    raise EventNotFound('Event is not present in db, '
+                                        'social_network_event_id is %s. User Id: %s'
+                                        % (social_network_event_id, self.user.id))
+            except:
                 raise

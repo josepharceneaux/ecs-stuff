@@ -1,18 +1,28 @@
 """
 This module contains SocialNetworkBase class which provides common methods for
-all social networks like get_access_token(), validate_access_token(),
+all social networks like get_access_and_refresh_token(), validate_access_token(),
 refresh_access_token(), get_member_id() and save_user_credentials_in_db() etc.
 """
 
+# Standard Library
+from abc import ABCMeta
+
+# Third Party
 import requests
 
-from abc import ABCMeta
-from social_network_service import logger
-from common.models.user import User, UserCredentials
+# Application Specific
+from utilities import get_class
+from utilities import log_error
+from utilities import http_request
+from utilities import log_exception
+from common.models.user import User
+from common.models.user import UserCredentials
 from common.models.social_network import SocialNetwork
-from social_network_service.custom_exections import NoUserFound, \
-    UserCredentialsNotFound, MissingFiledsInUserCredentials, ApiException
-from utilities import log_error, log_exception, http_request, get_class
+from social_network_service import logger
+from social_network_service.custom_exections import NoUserFound
+from social_network_service.custom_exections import ApiException
+from social_network_service.custom_exections import UserCredentialsNotFound
+from social_network_service.custom_exections import MissingFieldsInUserCredentials
 
 
 class SocialNetworkBase(object):
@@ -114,8 +124,12 @@ class SocialNetworkBase(object):
         user_id = kwargs.get('user_id')
         self.user = User.query.get(user_id)
         if isinstance(self.user, User):
-            self.social_network = \
-                SocialNetwork.get_by_name(self.__class__.__name__)
+            social_network = kwargs.get('social_network')
+            if social_network and isinstance(social_network, SocialNetwork):
+                self.social_network = social_network
+            else:
+                self.social_network = \
+                    SocialNetwork.get_by_name(self.__class__.__name__)
             self.user_credentials = \
                 UserCredentials.get_by_user_and_social_network_id(
                     user_id, self.social_network.id)
@@ -134,7 +148,9 @@ class SocialNetworkBase(object):
                     self.gt_user_id = data['gt_user_id']
                     self.social_network_id = data['social_network_id']
                     self.access_token = data['access_token']
-                    self.headers = {'Authorization': 'Bearer ' + self.access_token}
+                    self.headers = {
+                        'Authorization': 'Bearer ' + self.access_token
+                    }
                 else:
                     # gets fields which are missing
                     items = [key for key, value in data.iteritems()
@@ -145,10 +161,13 @@ class SocialNetworkBase(object):
                     error_message = \
                         "User id: %(user_id)s\n Missing Item(s) in user's " \
                         "credential: %(missing_items)s\n" % data_to_log
-                    raise MissingFiledsInUserCredentials('API Error: %s' % error_message)
+                    raise MissingFieldsInUserCredentials('API Error: %s'
+                                                         % error_message)
             else:
-                raise UserCredentialsNotFound('API Error: User Credentials not'
-                                              ' found')
+                raise UserCredentialsNotFound('UserCredentials for social network '
+                                              '%s and User Id %s not found in db.'
+                                              % (self.__class__.__name__,
+                                                 self.user.id))
         else:
             error_message = "No User found in database with id %(user_id)s" \
                             % kwargs.get('user_id')
@@ -157,11 +176,13 @@ class SocialNetworkBase(object):
         # so here we generate authorization header to be used by both of them
         self.headers = {'Authorization': 'Bearer ' + self.access_token}
         # token validity is checked here
-        # if token is expired, we refresh it here
+        # If token is expired, we refresh it here and save new access token
+        # in database.
         self.access_token_status = self.validate_and_refresh_access_token()
         self.start_date_dt = None
+        self.webhook_id = None
 
-    def process(self, mode, user_credentials=None):
+    def process(self, mode, user_credentials=None, rsvp_data=None):
         """
         :param mode: mode is either 'event' or 'rsvp.
         :param user_credentials: are the credentials of user for
@@ -205,101 +226,78 @@ class SocialNetworkBase(object):
                 # process events to save in database
                 sn_event_obj.process_events(self.events)
             elif mode == 'rsvp':
-                sn_event_obj.process_events_rsvps(user_credentials)
-        except Exception as e:
+                sn_event_obj.process_events_rsvps(user_credentials,
+                                                  rsvp_data=rsvp_data)
+        except Exception as error:
             log_exception({'user_id': '',
-                           'error': e.message})
-
-    # def process_events(self):
-    #     """
-    #     This method gets events by calling the respective event's
-    #     class in the SocialNetworkService/event directory. So if
-    #     we want to retrieve events for Eventbrite then we're basically
-    #     doing this.
-    #     from event import eventbrite
-    #     eventbrite = eventbrite.Eventbrite(self.user, self.social_network)
-    #     self.events = eventbrite.get_events(self.social_network)
-    #     :return:
-    #     """
-    #     sn_name = self.social_network.name.strip()
-    #     event_class = get_class(sn_name, 'event')
-    #     sn_event_obj = event_class(user=self.user,
-    #                                social_network=self.social_network,
-    #                                headers=self.headers)
-    #     self.events = sn_event_obj.get_events()
-    #     sn_event_obj.process_events(self.events)
-    #
-    # def process_rsvps(self, user_credentials=None):
-    #     """
-    #     This method gets events by calling the respective event's
-    #     class in the SocialNetworkService/event directory. So if
-    #     we want to retrieve events for Eventbrite then we're basically
-    #     doing this.
-    #     from event import eventbrite
-    #     eventbrite = eventbrite.Eventbrite(self.user, self.social_network)
-    #     self.events = eventbrite.get_events(self.social_network)
-    #     :return:
-    #     """
-    #
-    #     sn_name = self.social_network.name.strip()
-    #     event_class = get_class(sn_name, 'event')
-    #     sn_event_obj = event_class(user=self.user,
-    #                                social_network=self.social_network,
-    #                                headers=self.headers)
-    #
-    #     sn_rsvp_class = get_class(sn_name, 'rsvp')
-    #     sn_rsvp_obj = sn_rsvp_class(social_network=self.social_network,
-    #                                 headers=self.headers,
-    #                                 user_credentials=user_credentials)
-    #
-    #     self.events = sn_event_obj.get_events_from_db(sn_rsvp_obj.start_date_dt)
-    #
-    #     sn_rsvp_obj.process_rsvps(self.events)
+                           'error': error.message})
 
     @classmethod
-    def get_access_token(cls, data):  # data contains social_network,
-                                    # code to get access token, api_relative_url
+    def get_access_and_refresh_token(cls, user_id, social_network,
+                                     code_to_get_access_token=None,
+                                     method_type=None,
+                                     payload=None,
+                                     api_relative_url=None):
         """
-        When user tries to connect to a social network (eventbrite and meetup
-        for now), then after successful redirection, social network returns a
-        "code" to exchange for access and refresh tokens. We exchange "code"
-        for access and refresh tokens in this method.
+        This function is used by Social Network API to save 'access_token'
+        and 'refresh_token' for specific social network against a user (current
+        user) by sending an POST call to respective social network API.
+        :param user_id: current user id
+        :type user_id: int
+        :param social_network: social_network in getTalent database
+        :type social_network: common.models.social_network.SocialNetwork
+        :param payload: dictionary containing required data
+                sample data
+                payload_data = {'client_id': social_network.client_key,
+                                'client_secret': social_network.secret_key,
+                                'grant_type': 'authorization_code', # vendor
+                                 specific
+                                'redirect_uri': social_network.redirect_uri,
+                                'code': code_to_get_access_token
+                                }
+        :type payload: dict
         :return:
         """
-        # TODO comment after API endpoint works fine
-        access_token = None
-        refresh_token = None
-        auth_url = data['social_network'].auth_url + data['relative_url']
-        payload_data = {'client_id': data['social_network'].client_key,
-                        'client_secret': data['social_network'].secret_key,
-                        'grant_type': 'authorization_code',
-                        'redirect_uri': data['social_network'].redirect_uri,
-                        'code': data['code']}
-        get_token_response = http_request('POST', auth_url, data=payload_data)
+        url = social_network.auth_url + api_relative_url
+        get_token_response = http_request(method_type, url, data=payload,
+                                          user_id=user_id)
         try:
             if get_token_response.ok:
                 # access token is used to make API calls, this is what we need
                 # to make subsequent calls
                 response = get_token_response.json()
                 access_token = response.get('access_token')
+                if not access_token:
+                    # In case of Facebook, access_token is get as below
+                    access_token = \
+                        get_token_response.content.split('=')[1].split('&')[0]
                 # refresh token is used to refresh the access token
                 refresh_token = response.get('refresh_token')
+                user_credentials_dict = dict(user_id=user_id,
+                                             social_network_id=social_network.id,
+                                             access_token=access_token,
+                                             refresh_token=refresh_token)
+                status = cls.save_user_credentials_in_db(user_credentials_dict)
+                if status:
+                    return UserCredentials.get_by_user_id(user_id)
+                else:
+                    raise ApiException('Unable to save/update user '
+                                       'credentials')
             else:
                 error_message = get_token_response.json().get('error')
-                log_error({'user_id': '',
+                log_error({'user_id': user_id,
                            'error': error_message})
-        except Exception as e:
-            error_message = e.message
-            log_exception({'user_id': '',
-                           'error': error_message})
-        return access_token, refresh_token
+                raise ApiException('Unable to to get access token for '
+                                   'current user')
 
-    def get_member_id(self, data):
+        except Exception as error:
+            log_exception({'user_id': user_id,
+                           'error': error.message})
+            raise ApiException('Unable to create user credentials for current'
+                               ' user')
+
+    def get_member_id(self):
         """
-        :param data: data contains the API relative url
-                    (which is passed by child classes) to make API call to get
-                    member id.
-
         - Member Id is the id of user on some social network. This is used
             to fetch events or RSVPs of user from social network.
 
@@ -309,7 +307,7 @@ class SocialNetworkBase(object):
         :Example:
                 from social_network_service.meetup import Meetup
                 sn = Meetup(user_id=1)
-                sn.get_member_id(dict(api_relative_url='/member/self'))
+                sn.get_member_id()
 
         **See Also**
         .. seealso:: start() function defined in social network manager
@@ -317,9 +315,10 @@ class SocialNetworkBase(object):
         """
         try:
             user_credentials = self.user_credentials
-            url = self.api_url + data['api_relative_url']
+            url = self.api_url + self.api_relative_url
             # Now we have the URL, access token, and header is set too,
-            get_member_id_response = http_request('POST', url, headers=self.headers,
+            get_member_id_response = http_request('POST', url,
+                                                  headers=self.headers,
                                                   user_id=self.user.id)
             if get_member_id_response.ok:
                 member_id = get_member_id_response.json().get('id')
@@ -341,10 +340,11 @@ class SocialNetworkBase(object):
             sets the payload) or is None for other social networks.
 
         - This function is called from validate_and_refresh_access_token()
-         social network service base class inside social_network_service/base.py
-         to check the validity of the access token of current user for a specific
-         social network. We take the access token, make request to social network
-         API, and check if it didn't error'ed out.
+         social network service base class inside
+         social_network_service/base.py to check the validity of the access
+         token of current user for a specific social network. We take the
+         access token, make request to social network API, and check if it
+         didn't error'ed out.
 
         :Example:
                 from social_network_service.meetup import Meetup
@@ -369,10 +369,9 @@ class SocialNetworkBase(object):
                              " Social Network is %s"
                              % (self.user.name, self.user.id,
                                 self.social_network.name))
-        except requests.RequestException as e:
-            error_message = e.message
+        except requests.RequestException as error:
             log_exception({'user_id': self.user.id,
-                           'error': error_message})
+                           'error': error.message})
         return status
 
     def refresh_access_token(self):
@@ -403,7 +402,8 @@ class SocialNetworkBase(object):
     def validate_and_refresh_access_token(self):
         """
         - This validates the access token. if access token has
-        expired. It also refreshes it and saves the fresh access token in database.
+        expired. It also refreshes it and saves the fresh access token in
+         database.
 
         - It calls validate_access_token() and refresh_access_token() defined
             in SocialNetworkBase class inside social_network_service/base.py
@@ -420,10 +420,10 @@ class SocialNetworkBase(object):
         :return the True if token has been refreshed, False otherwise.
         """
         access_token_status = self.validate_token()
-        if not access_token_status:  # access token has expired, need to refresh it
+        if not access_token_status:
+            # access token has expired, need to refresh it
             return self.refresh_access_token()
         return access_token_status
-
 
     @staticmethod
     def save_user_credentials_in_db(user_credentials):
@@ -453,62 +453,7 @@ class SocialNetworkBase(object):
             else:
                 UserCredentials.save(**user_credentials)
             return True
-        except Exception as e:
-            error_message = e.message
+        except Exception as error:
             log_exception({'user_id': user_credentials['user_id'],
-                           'error': error_message})
+                           'error': error.message})
         return False
-
-    @classmethod
-    def get_access_and_refresh_token(cls, url, payload_data, user_id, social_network):
-        """
-        This function is used by Social Network API to save 'access_token' and 'refresh_token'
-        for specific social network against a user (current user) by sending an POST call
-        to respective social network API.
-        :param user_id: current user id
-        :type user_id: int
-        :param social_network: social_network in getTalent database
-        :type social_network: common.models.social_network.SocialNetwork
-        :param payload_data: dictionary containing required data
-                sample data
-                payload_data = {'client_id': social_network.client_key,
-                                'client_secret': social_network.secret_key,
-                                'grant_type': 'authorization_code', # vendor specific
-                                'redirect_uri': social_network.redirect_uri,
-                                'code': code_to_get_access_token
-                                }
-        :type payload_data: dict
-        :return:
-        """
-        get_token_response = http_request('POST', url, data=payload_data,
-                                          user_id=user_id)
-        try:
-            if get_token_response.ok:
-                # access token is used to make API calls, this is what we need
-                # to make subsequent calls
-                response = get_token_response.json()
-                access_token = response.get('access_token')
-                # refresh token is used to refresh the access token
-                refresh_token = response.get('refresh_token')
-                user_credentials = UserCredentials.get_by_user_and_social_network_id(user_id, social_network.id)
-                if user_credentials:
-                    user_credentials.update(access_token=access_token,
-                                            refresh_token=refresh_token)
-                else:
-                    user_credentials = UserCredentials(user_id=user_id,
-                                                       social_network_id=social_network.id,
-                                                       access_token=access_token,
-                                                       refresh_token=refresh_token)
-                    UserCredentials.save(user_credentials)
-            else:
-                error_message = get_token_response.json().get('error')
-                log_error({'user_id': user_id,
-                           'error': error_message})
-                raise ApiException('Unable to to get access token for current user')
-
-        except Exception as e:
-            error_message = e.message
-            log_exception({'user_id': user_id,
-                           'error': error_message})
-            raise ApiException('Unable to create user credentials for current user')
-        return user_credentials

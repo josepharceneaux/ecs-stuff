@@ -3,6 +3,8 @@ import json
 import flask
 import requests
 from social_network_service import init_app
+from social_network_service.eventbrite import Eventbrite
+
 app = init_app()
 
 from restful.events import events_blueprint
@@ -152,33 +154,24 @@ def handle_rsvp():
             data = json.loads(request.data)
             action = data['config']['action']
             if action == 'order.placed':
-                logger.debug('Got an RSVP from eventbrite event')
-                url_of_rsvp = str(json.loads(request.data)['api_url'])
-                # gets dictionary object of social_network_rsvp_id
-                social_network_rsvp_id = get_rsvp_id(url_of_rsvp)
+                logger.debug('Got an RSVP from eventbrite event via webhook.')
                 webhook_id = data['config']['webhook_id']
-                user_credentials = EventbriteRsvp.get_user_credentials_by_webhook(webhook_id,
-                                                                                  social_network_rsvp_id)
+                user_credentials = \
+                    EventbriteRsvp.get_user_credentials_by_webhook(webhook_id)
                 user_id = user_credentials.user_id
-                logger.debug('Organizer of event is %s(UserId:%s)'
-                             %(user_credentials.user.name, user_credentials.user.id))
-                social_network_class = get_class(user_credentials.social_network.name.lower(),
-                                                 'social_network')
-                # we call social network class here for auth purpose, If token is expired
-                # access token is refreshed and we use fresh token
-                sn = social_network_class(user_id=user_credentials.user_id,
-                                          social_network_id=user_credentials.social_network.id)
+                social_network_class = \
+                    get_class(user_credentials.social_network.name.lower(),
+                              'social_network')
+                # we call social network class here for auth purpose, If token is
+                # expired, we try to refresh access token. If succeeded, we move on
+                # to next step.
+                sn_obj = social_network_class(user_id=user_credentials.user_id)
                 if not user_credentials.member_id:
                     # get an save the member Id of gt-user
-                    sn.get_member_id(dict())
-                rsvp_class = get_class(user_credentials.social_network.name.lower(), 'rsvp')
-                rsvp_obj = rsvp_class(user_credentials=user_credentials,
-                                      social_network=user_credentials.social_network,
-                                      headers=sn.headers)
-                # calls class method to process RSVP
-                rsvp_obj.process_rsvp_via_webhook(social_network_rsvp_id)
+                    sn_obj.get_member_id()
+                sn_obj.process('rsvp', user_credentials=user_credentials, rsvp_data=data)
             elif action == 'test':
-                print 'Successful Webhook Connection'
+                logger.debug('Successful Webhook Connection')
         else:
             # return hub_challenge, 200
             error_message = 'No RSVP Data Received'
@@ -187,32 +180,16 @@ def handle_rsvp():
             data = {'message': error_message,
                     'status_code': 500}
             return flask.jsonify(**data), 500
-    except Exception as e:
-        error_message = e.message
+    except Exception as error:
         log_exception({'user_id': user_id,
-                       'error': error_message})
-        data = {'message': e.message,
+                       'error': error.message})
+        data = {'message': error.message,
                 'status_code': 500}
         return flask.jsonify(**data), 500
 
     data = {'message': 'RSVP Saved',
             'status_code': 200}
     return flask.jsonify(**data), 200
-
-
-def get_rsvp_id(url):
-    """
-    This gets the social_network_rsvp_id by comparing url of response of rsvp
-    and defined regular expression
-    :return:
-    """
-    assert url is not None
-    regex_to_get_rsvp_id = \
-        '^https:\/\/www.eventbriteapi.com\/v3\/orders\/(?P<rsvp_id>[0-9]+)'
-    match = re.match(regex_to_get_rsvp_id, url)
-    vendor_rsvp_id = match.groupdict()['rsvp_id']
-    rsvp = {'rsvp_id': vendor_rsvp_id}
-    return rsvp
 
 
 @app.errorhandler(ApiException)

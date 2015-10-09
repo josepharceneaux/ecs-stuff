@@ -96,5 +96,13 @@ class NoUserFound(ApiException):
     status_code = 467
 
 
-class MissingFiledsInUserCredentials(ApiException):
+class MissingFieldsInUserCredentials(ApiException):
     status_code = 468
+
+
+class EventNotFound(ApiException):
+    status_code = 469
+
+
+class ProductNotFound(ApiException):
+    status_code = 470
