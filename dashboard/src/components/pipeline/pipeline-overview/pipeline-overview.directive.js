@@ -3,8 +3,8 @@
     'use strict';
 
     angular.module('app.pipeline')
-        .directive('gtPipeline', directiveFunction)
-        .controller('PipelineController', ControllerFunction);
+        .directive('gtPipelineOverview', directiveFunction)
+        .controller('PipelineOverviewController', ControllerFunction);
 
 
     // ----- directiveFunction -----
@@ -15,10 +15,10 @@
 
         var directive = {
             restrict: 'E',
-            templateUrl: 'components/pipeline/pipeline.html',
+            templateUrl: 'components/pipeline/pipeline-overview/pipeline-overview.html',
             scope: {
             },
-            controller: 'PipelineController',
+            controller: 'PipelineOverviewController',
             controllerAs: 'vm'
         };
 
@@ -35,7 +35,7 @@
         activate();
 
         function activate() {
-            logger.log('Activated Pipeline View');
+            logger.log('Activated Pipeline Overview View');
         }
     }
 

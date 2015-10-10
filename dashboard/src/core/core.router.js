@@ -41,8 +41,17 @@
                 }
             })
             .state('pipeline', {
+                parent: 'site',
                 url: '/pipeline',
-                template: '<gt-pipeline></gt-pipeline>'
+                redirectTo: 'pipeline.overview'
+            })
+            .state('pipeline.overview', {
+                url: '',
+                views: {
+                    '@': {
+                        template: '<gt-pipeline-overview></gt-pipeline-overview>'
+                    }
+                }
             })
             .state('campaigns', {
                 parent: 'site',
