@@ -39,7 +39,7 @@ $(document).ready(function() {
             url: "/v1/universities",
             success: function(response){
                 universitiesList = response['universities_list'];
-                $("#university").typeahead(
+                $("#university").typeahead({
                     items: 10,
                     source: universitiesList
                 });
@@ -200,7 +200,7 @@ $.ajax({
             option.text = degrees[i];
             degreeSelector.add(option);
         };
-    };
+    }
 });
 
 createDegreeOptions();

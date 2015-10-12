@@ -79,7 +79,7 @@
 <div class="container" >
     <div class="row">
         <div class="span7" style="margin-left:30px">
-            <form name="widget" style="margin-bottom:0" novalidate method="post" autocomplete="off" enctype="multipart/form-data" action="">
+            <form id="widget-form" name="widget" style="margin-bottom:0" novalidate method="post" autocomplete="off" enctype="multipart/form-data">
                 <input type="hidden" name="is_special" value="1" />
                 <p style="margin-left:64px">
                     <strong>
@@ -142,9 +142,6 @@
                         <label class="hide" id="interestLabel" >Major</label>
                         <select aria-labelledby="interestLabel" class="span6" name="interestId" id="interestId">
                             <option value="" title="Areas of Interest">Areas of Interest</option>
-{#                            {{ for interest in areas_of_interest: }}#}
-{#                            <option title="{{= interest.description }}" value="{{= interest.id }}" {{= XML('selected="selected"') if form_fields.get('interestId') == interest.id else ''}} >{{= interest.description }}</option>#}
-{#                            {{ pass }}#}
                         </select>
                         <div class="scrollable-tab-container" style="float: left;max-height: 67px;padding: 3px;overflow: auto;">
                             <input type="hidden" id="hidden-tags-aoi" name="hidden-tags-aoi" class="tm-input-aoi tm-input-success" />
@@ -163,7 +160,7 @@
 
                 <div class="control-group">
                     <div class="controls">
-                        <button type="submit" class="offset2 btn btn-warning">Submit</button>
+                        <button id="submit" class="offset2 btn btn-warning">Submit</button>
                     </div>
                 </div>
                 <p style="margin-left:134px">
@@ -175,14 +172,14 @@
         </div>
     </div>
 
-    <div class="row">
+    <div id="form-success" class="row">
         <div class="span6" style="margin-left:30px;margin-top:30px;">
             <p class="alert alert-success" >Your information has successfully been submitted.</p>
             <p>Thank you for your interest in our talent community. </p>
         </div>
     </div>
 
-    <div class="row">
+    <div id="form-error" class="row">
         <div class="span6" style="margin-left:30px;margin-top:30px">
             <div class="alert alert-error">
                 <p>An error occurred while sending your information. Please refresh the page and try again.</p>

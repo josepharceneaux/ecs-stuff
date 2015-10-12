@@ -34,3 +34,23 @@ function renderInterests(interests) {
         interestSelector.add(option);
     }
 }
+
+$('#submit').on('click', function() {
+    $.ajax({
+        type: 'POST',
+        url: '/v1/widget/candidates',
+        data: $('widget-form').serialize(),
+        success: function(response) {
+            if ('success' in response) {
+                $('#widget-form').hide();
+                $('#form-success').show();
+            }
+            else {
+                $('#form-error').show();
+            }
+        },
+        error: function(response) {
+            $('#form-error').show();
+        }
+    })
+});

@@ -19,7 +19,6 @@ from widget_service.common.models.misc import Major
 from widget_service.common.models.user import Domain
 from widget_service.common.models.user import User
 from widget_service.common.models.widget import WidgetPage
-from widget_service.common.utils.auth_utils import authenticate_oauth_user
 from widget_service.widget_app import db
 from widget_service.widget_app.views.utils import parse_interest_ids_from_form
 from widget_service.widget_app.views.utils import parse_city_and_state_ids_from_form
@@ -28,7 +27,7 @@ mod = Blueprint('widget_api', __name__)
 
 
 @mod.route('/test/<domain>', methods=['GET'])
-def widget(domain):
+def show_widget(domain):
     if app.config['ENVIRONMENT'] != 'dev':
         return 'Error', 400
     if domain == 'kaiser-military':
@@ -39,20 +38,15 @@ def widget(domain):
         return render_template('kaiser_3.html', domain=domain)
 
 
-@mod.route('/widget/<widget_name>', methods=['GET', 'POST'])
+@mod.route('/widget/<widget_name>', methods=['GET'])
 def process_widget(widget_name):
-    if request.method == 'GET':
-        return render_widget_via_name(widget_name)
-    if request.method == 'POST':
-        return process_widget_submission(widget_name, request.form)
-
-
-def render_widget_via_name(widget_name):
     widget = db.session.query(WidgetPage).filter_by(widget_name=widget_name).first()
     return widget.widget_html, 200
 
 
-def process_widget_submission(widget_name, form):
+@mod.route('/widget/candidates', methods=['POST'])
+def create_candidate_from_widget():
+    form = request.form
     candidate_dict = {
         'full_name': '{} {}'.format(form['firstName'], form['lastName']),
         'emails': [{'address': form['emailAdd'], 'label': 'Primary'}],

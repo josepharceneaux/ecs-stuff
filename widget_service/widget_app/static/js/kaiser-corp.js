@@ -161,26 +161,26 @@ $(document).ready(function() {
         $(".education-group").toggle();
     });
 
-    $("form").submit(function(e) {
-        var validInputs = true;
-        $("input[required], select[required]").each(function(index) {
-            var isValid = checkRequired(this);
-            validInputs = validInputs && isValid;
-        });
-
-        // If inputs are all valid, and placeholder attribute is not supported, then blank out all inputs set to their placeholder
-        if (placeholderNotSupported && validInputs ) {
-            $("[placeholder]").each(function(e) {
-                var input = $(this);
-                if (input.val() == input.attr('placeholder')) {
-                    input.val('');
-                }
-            });
-        }
-
-        if (! validInputs) e.preventDefault();
-        return validInputs;
-    });
+    //$("form").submit(function(e) {
+    //    var validInputs = true;
+    //    $("input[required], select[required]").each(function(index) {
+    //        var isValid = checkRequired(this);
+    //        validInputs = validInputs && isValid;
+    //    });
+    //
+    //    // If inputs are all valid, and placeholder attribute is not supported, then blank out all inputs set to their placeholder
+    //    if (placeholderNotSupported && validInputs ) {
+    //        $("[placeholder]").each(function(e) {
+    //            var input = $(this);
+    //            if (input.val() == input.attr('placeholder')) {
+    //                input.val('');
+    //            }
+    //        });
+    //    }
+    //
+    //    if (! validInputs) e.preventDefault();
+    //    return validInputs;
+    //});
 
 
 });

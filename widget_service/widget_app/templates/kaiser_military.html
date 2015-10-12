@@ -66,7 +66,7 @@
 <div class="container">
     <div class="row">
         <div class="" style="margin-left:30px;">
-            <form name="widget" method="post" novalidate autocomplete="on" enctype="multipart/form-data" action="/widget/<domain-ID>">
+            <form id="widget-form" name="widget" method="post" novalidate autocomplete="on" enctype="multipart/form-data" action="/widget/<domain-ID>">
                 <div class="control-group">
                     <div class="controls">
                         <h1>
@@ -103,11 +103,7 @@
                             <input type="hidden" id="hidden-tags-aoi" name="hidden-tags-aoi" class="tm-input-aoi tm-input-success" />
                         </div>
                     </div>
-
-{#                    {{ for aoi in areas_of_interest: }}#}
                     <select title="Sub area of interest" class="aoiIdToSubAoi" data-aoi-id="" style="display: none" aria-hidden="true">
-{#                        TODO needs dynamic sub AOIs#}
-{#                        <option label="{{= sub_aoi.description }}" value="{{= sub_aoi.id }}">{{= sub_aoi.description }}</option>#}
                     </select>
                 </div>
 

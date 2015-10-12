@@ -337,7 +337,7 @@ def test_get_call_returns_widget_page_html(create_test_widget_page, request):
     assert response.data == create_test_widget_page.widget_html
 
 
-def test_post_call_creates_candidate_object(create_test_widget_page, create_test_AOIs, request):
+def test_post_call_creates_candidate_object(create_test_AOIs, request):
     subcategory = db.session.query(AreaOfInterest).filter(AreaOfInterest.parent_id!=None).first()
     parent_category_1 = db.session.query(AreaOfInterest).get(subcategory.parent_id)
     parent_category_2 = db.session.query(AreaOfInterest).filter(
@@ -355,7 +355,7 @@ def test_post_call_creates_candidate_object(create_test_widget_page, create_test
         'hidden-tags-location': 'Northern California: All Cities|Southern California: Pomona'
     }
     with APP as c:
-        post_response = c.post('/v1/widget/{}'.format(create_test_widget_page.widget_name), data=candidate_dict)
+        post_response = c.post('/v1/widget/', data=candidate_dict)
     assert post_response.status_code == 201
     assert 'success' in post_response.data
 
