@@ -1,0 +1,37 @@
+- name: Bootstrap getTalent Flask Docker container
+  hosts: local
+  vars:
+    project_path: /root/talent_service
+    project_requirements: requirements.txt
+  tasks:
+    - name: update core libs
+      apt: update_cache=yes
+    - name: install basic packages
+      apt: pkg={{ item }} update_cache=yes cache_valid_time=259200  # 3 days
+      with_items:
+        - curl
+        - wget
+        - build-essential
+        - gcc
+        - make
+        - zlib1g-dev
+        - libbz2-dev
+        - libmysqlclient-dev
+        - libreadline-dev
+        - libxml2-dev
+        - libxslt-dev
+        - libssl-dev
+        - libffi-dev
+        - nginx
+    - name: install Python and Basic Tools
+      apt: pkg={{ item }} update_cache=yes cache_valid_time=259200  # 3 days
+      with_items:
+        - python
+        - python-dev
+        - python-distribute
+        - python-pip
+        - python-setuptools
+        - software-properties-common
+        - python-software-properties
+#    - name: install requirements.txt
+#      pip: requirements="{{ project_path }}/{{ project_requirements }}"
