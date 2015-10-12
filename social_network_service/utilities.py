@@ -252,8 +252,10 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                 elif e.response.status_code < 500 and 'errors' in e.response.json():
                     error_message = e.message + ' , Details: ' \
                                     + json.dumps(e.response.json().get('errors'))
+
                 else:
-                    error_message = e.message
+                    raise
+                    # error_message = e.message
             except requests.RequestException as e:
                 error_message = e.message
             if error_message:

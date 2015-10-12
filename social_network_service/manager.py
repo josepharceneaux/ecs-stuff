@@ -180,9 +180,7 @@ def start():
                 # we call social network class here for auth purpose, If token is expired
                 # access token is refreshed and we use fresh token
                 sn = social_network_class(user_id=user_credentials.user_id)
-                if not user_credentials.member_id:
-                    # gets an save the member Id of gt-user
-                    sn.get_member_id(dict())
+
                 logger.debug('%s Importer has started for %s(UserId: %s).'
                              ' Social Network is %s.'
                              % (name_space.mode.title(), sn.user.name, sn.user.id,

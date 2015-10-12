@@ -3,7 +3,6 @@ import json
 import flask
 import requests
 from social_network_service import init_app
-from social_network_service.eventbrite import Eventbrite
 
 app = init_app()
 

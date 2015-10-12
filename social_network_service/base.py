@@ -26,12 +26,49 @@ from social_network_service.custom_exections import MissingFieldsInUserCredentia
 
 
 class SocialNetworkBase(object):
-    """This is the base class for all three social networks
-     1-Meetup, 2-Eventbrite, 3-Facebook for now.
-     It contains the common functionality and some abstract methods which
-     are implemented by child classes.
+    """
+    - This is the base class related to social networks. It contains the
+        common functionality and some abstract methods which are implemented
+        by child classes.
 
-    It contains following methods:
+    - Currently we have the implementation for following social networks.
+
+        1- Meetup
+        2- Eventbrite
+        3- Facebook
+
+    - One can add any new social network to work with according to requirements
+
+    - Usually API of any social network requires user permission to gain access
+        of user's account. Once user allows access, we get an access token to
+        play with the API of that social network. This access token expires in
+        1- One hour (Meetup)
+        2- Not expires until account password is changed (Eventbrite)
+        3- Sixty days (Facebook).
+
+    - Before going to event part, we first check the validity of access token,
+        and try to refresh it without user interaction inside __init__().
+        Currently it is refreshed for Meetup successfully. For this task we
+        have the methods
+
+            1- validate_token() and 2- refresh_access_token()
+
+        in base and child classes.
+        validate_token() implemented in child, sets the value of variable
+        self.api_relative_url. It then calls super class method to make HTTP
+        request on
+
+            url = self.social_network.api_url + self.api_relative_url
+
+        If we get response status in range 2xx, then access token is valid.
+        Otherwise we implement functionality in child method
+        **refresh_access_token()** according to the social network. On success we
+        return True, otherwise False.
+
+    - Social Networks and Events has 'has a' relationship. All the
+        functionality related to events is inside social_network_service/event/
+
+    This class contains following methods:
 
     * __init__():
         This method is called by creating any child RSVP class object.
@@ -46,7 +83,7 @@ class SocialNetworkBase(object):
         on its value, it calls the process_events() or process_event_rsvps() to
         import events and rsvps respectively.
 
-    * get_access_token(cls, data):
+    * get_access_and_refresh_token(cls, data):
         When user tries to connect to a social network (eventbrite and meetup
         for now), then after successful redirection, social network returns a
         "code" to exchange for access and refresh tokens. We exchange "code"
@@ -75,7 +112,7 @@ class SocialNetworkBase(object):
     - This class does the authentication of access token and calls required
         methods to import/create events or import RSVPs
 
-    - We make the object of this class as given in following:
+    - An example of importing events of Meetup is given below:
         :Example:
 
         If we are importing events of Meetup social network, then we do the
@@ -85,7 +122,7 @@ class SocialNetworkBase(object):
             from social_network_service.meetup import Meetup
             sn = Meetup(user_id=1)
 
-        2- Call process()
+        2- Call method process()
             sn.process('event', user_credentials=user_credentials)
 
         3- Create EventClass object
@@ -138,7 +175,7 @@ class SocialNetworkBase(object):
                     "access_token": self.user_credentials.access_token,
                     "gt_user_id": self.user_credentials.user_id,
                     "social_network_id": self.social_network.id,
-                    "api_url": self.social_network.api_url
+                    "api_url": self.social_network.api_url,
                 }
                 # checks if any field is missing for given user credentials
                 items = [value for key, value in data.iteritems()
@@ -151,6 +188,9 @@ class SocialNetworkBase(object):
                     self.headers = {
                         'Authorization': 'Bearer ' + self.access_token
                     }
+                    if not self.user_credentials.member_id:
+                        # gets an save the member Id of gt-user
+                        self.get_member_id()
                 else:
                     # gets fields which are missing
                     items = [key for key, value in data.iteritems()
