@@ -79,19 +79,36 @@ class Meetup(SocialNetworkBase):
 
     def get_groups(self):
         """
-        This function returns the groups of Meetup for which the current user
-        is an organizer to be shown in drop down while creating event on Meetup
-        through Event Creation Form.
+        - This function fetches the groups of user from Meetup website for
+            which the user is an organizer. These groups are used to be shown
+            in drop down while creating event on Meetup through Event Creation
+            Form.
+
+        - This function is called from GET method of class MeetupGroups() inside
+            social_network_service/app/restful/social_network.py
+
+        :Example:
+                from social_network_service.meetup import Meetup
+                sn = Meetup(user_id=1)
+                sn.get_groups()
+
+        **See Also**
+        .. seealso:: GET method of class MeetupGroups() inside
+            social_network_service/app/restful/social_network.py
         """
         url = self.api_url + '/groups/'
         params = {'member_id': 'self'}
-        response = http_request('GET', url, params=params, headers=self.headers,
+        response = http_request('GET', url, params=params,
+                                headers=self.headers,
                                 user_id=self.user.id)
         if response.ok:
+            # If some error occurs during HTTP call,
+            # we log it inside http_request()
             meta_data = json.loads(response.text)['meta']
             member_id = meta_data['url'].split('=')[1].split('&')[0]
             data = json.loads(response.text)['results']
-            groups = filter(lambda item: item['organizer']['member_id'] == int(member_id), data)
+            groups = filter(lambda item: item['organizer']['member_id']
+                                         == int(member_id), data)
             return groups
 
     def validate_token(self, payload=None):
