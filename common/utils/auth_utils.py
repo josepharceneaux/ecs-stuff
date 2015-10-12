@@ -7,15 +7,18 @@ import requests
 from flask import current_app as app
 
 
-def authenticate_oauth_user(request):
+def authenticate_oauth_user(request, token=None):
     """
     :param request: (object) flask request object
     :return:
     """
-    try:
-        oauth_token = request.headers['Authorization']
-    except KeyError:
-        return {'error': {'code': None, 'message':'No Authorization set', 'http_code': 400}}
+    if token:
+        oauth_token = token
+    else:
+        try:
+            oauth_token = request.headers['Authorization']
+        except KeyError:
+            return {'error': {'code': None, 'message':'No Authorization set', 'http_code': 400}}
     r = requests.get(app.config['OAUTH_SERVER_URI'], headers={'Authorization': oauth_token})
     if r.status_code != 200:
         return {'error': {'code': 3, 'message': 'Not authorized', 'http_code': 401}}

@@ -134,7 +134,7 @@ class EmailLabel(db.Model):
     __tablename__ = 'email_label'
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column('Description', db.String(50))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
     candidate_emails = relationship('CandidateEmail', backref='email_label')
@@ -151,7 +151,7 @@ class CandidateEmail(db.Model):
     email_label_id = db.Column('EmailLabelId', db.Integer, db.ForeignKey('email_label.id')) # 1 = Primary
     address = db.Column('Address', db.String(100))
     is_default = db.Column('IsDefault', db.Boolean)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
 
 class CandidatePhoto(db.Model):

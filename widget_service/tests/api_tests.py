@@ -7,6 +7,7 @@ import pytest
 
 from widget_service.common.models.candidate import CustomField
 from widget_service.common.models.candidate import CandidateSource
+from widget_service.common.models.candidate import EmailLabel
 from widget_service.common.models.candidate import University
 from widget_service.common.models.misc import AreaOfInterest
 from widget_service.common.models.misc import Country
@@ -14,7 +15,9 @@ from widget_service.common.models.misc import Culture
 from widget_service.common.models.misc import Major
 from widget_service.common.models.misc import Organization
 from widget_service.common.models.misc import State
+from widget_service.common.models.user import Client
 from widget_service.common.models.user import Domain
+from widget_service.common.models.user import Token
 from widget_service.common.models.user import User
 from widget_service.common.models.widget import WidgetPage
 from widget_service.widget_app import app
@@ -277,6 +280,38 @@ def create_test_extra_fields_location(create_test_domain, request):
     return [state_field, city_field]
 
 
+@pytest.fixture(autouse=True)
+def create_test_oauth_credentials(create_test_user, request):
+    test_client = Client(client_id=randomword(16), client_secret=randomword(18))
+    test_token = Token(client_id=test_client.client_id, user_id=create_test_user.id, token_type='bearer',
+                       access_token=randomword(18), refresh_token=randomword(18),
+                       expires=datetime.datetime(2050, 04, 26))
+    db.session.add(test_client)
+    db.session.commit()
+    db.session.add(test_token)
+    db.session.commit()
+    def fin():
+        db.session.query(Token).delete()
+        db.session.commit()
+        db.session.query(Client).delete()
+        db.session.commit()
+    request.addfinalizer(fin)
+    app.config['OAUTH_TOKEN'] = test_token
+    return {'test_client': test_client, 'test_token': test_token}
+
+
+@pytest.fixture(autouse=True)
+def create_test_email_label(request):
+    test_email_label = EmailLabel(description='Primary')
+    db.session.add(test_email_label)
+    db.session.commit()
+    def fin():
+        db.session.query(EmailLabel).delete()
+        db.session.commit()
+    return test_email_label
+
+
+
 def test_api_returns_domain_filtered_aois(create_test_widget_page, request):
     response = APP.get('/v1/interests/{}'.format(create_test_widget_page.widget_name))
     assert response.status_code == 200
@@ -321,7 +356,8 @@ def test_post_call_creates_candidate_object(create_test_widget_page, create_test
     }
     with APP as c:
         post_response = c.post('/v1/widget/{}'.format(create_test_widget_page.widget_name), data=candidate_dict)
-    assert post_response.status_code == 200
+    assert post_response.status_code == 201
+    assert 'success' in post_response.data
 
 
 def test_parse_interest_ids_from_form(request):

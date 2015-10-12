@@ -1,12 +1,16 @@
 """Widget serving/processing"""
 __author = 'erikfarmer'
 
-# Framework specific
+# Standard library
+import json
+
+# Framework specific/Third Party
 from flask import Blueprint
 from flask import current_app as app
 from flask import jsonify
 from flask import request
 from flask import render_template
+import requests
 
 # Module specific
 from widget_service.common.models.candidate import University
@@ -15,6 +19,7 @@ from widget_service.common.models.misc import Major
 from widget_service.common.models.user import Domain
 from widget_service.common.models.user import User
 from widget_service.common.models.widget import WidgetPage
+from widget_service.common.utils.auth_utils import authenticate_oauth_user
 from widget_service.widget_app import db
 from widget_service.widget_app.views.utils import parse_interest_ids_from_form
 from widget_service.widget_app.views.utils import parse_city_and_state_ids_from_form
@@ -54,11 +59,13 @@ def process_widget_submission(widget_name, form):
         'areas_of_interest':  parse_interest_ids_from_form(form['hidden-tags-aoi']),
         'custom_fields': parse_city_and_state_ids_from_form(form['hidden-tags-location'])
     }
-    # payload = json.dumps({'candidates': [candidate_dict]})
-    # request = Request('http://127.0.0.1:8000/web/api/candidates.json', data=payload,
-    #                   headers={'Authorization': oauth_token})
-    # response_body = urlopen(request).read()
-    return jsonify(widget_name=widget_name)
+    payload = json.dumps({'candidates': [candidate_dict]})
+    try:
+        request = requests.post(app.config['CANDIDATE_CREATION_URI'], data=payload,
+                          headers={'Authorization': app.config['OAUTH_TOKEN'].access_token})
+    except:
+        return jsonify({'error': {'message': 'unable to create candidate from form'}})
+    return jsonify({'success': {'message': 'candidate successfully created'}}), 201
 
 
 @mod.route('/interests/<widget_name>', methods=['GET'])
