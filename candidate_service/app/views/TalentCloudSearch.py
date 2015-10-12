@@ -13,7 +13,8 @@ import simplejson
 
 import TalentPropertyManager # To get the CLOUDSEARCH_REGION
 from common_functions import users_in_domain, get_or_create_areas_of_interest
-from candidate_service.common.models.db import get_table,db
+from candidate_service.common.models.db import get_table, db, conn_db
+from sqlalchemy import select
 from candidate_service.app import logger
 
 API_VERSION = "2013-01-01"
@@ -321,7 +322,6 @@ def _build_candidate_documents(candidate_ids):
                sep=group_concat_separator,
                date_format=MYSQL_DATE_FORMAT)
 
-    db = current.db
     results = db.executesql(sql_query, as_dict=True)
 
     # Go through results & build action dicts
@@ -589,7 +589,7 @@ def search_candidates(domain_id, vars, search_limit=15, candidate_ids_only=False
     """
     if location:
         import re
-        from GoogleGeoSearch import get_geo_coordinates_bounding
+        from common_functions import get_geo_coordinates_bounding
         location = location.strip()
         radius = vars.get('radius')
         # If zipcode and radius provided, get coordinates & do a geo search
@@ -914,9 +914,6 @@ def search_candidates(domain_id, vars, search_limit=15, candidate_ids_only=False
     try:
         results = search_service.search(**params)
     except Exception:
-        logger.exception("Received exception in search_candidates: search_candidates(%(domain_id)s,"
-                        "%(vars)s, %(search_limit)s, %(candidate_ids_only)s,""%(get_percentage_match)s,"
-                         " %(count_only)s). params=%(params)s" % locals())
         return context_data
 
     matches = results['hits']['hit']
@@ -1143,34 +1140,44 @@ def _update_facet_counts(filter_queries, params_fq, existing_facets, query_strin
     for filter_query in filter_queries:
         if 'user_id' in filter_query:
             fq_without_user_id = params_fq.replace(filter_query,'')
-            query_user_id_facet = {'query':query_string, 'size':0, 'filter_query': fq_without_user_id, 'query_parser': 'lucene', 'ret':'_no_fields', 'facet':"{user_id: {size:50}}"}
+            query_user_id_facet = {'query': query_string, 'size': 0, 'filter_query': fq_without_user_id,
+                                   'query_parser': 'lucene', 'ret': '_no_fields', 'facet': "{user_id: {size:50}}"}
             result_user_id_facet = search_service.search(**query_user_id_facet)
             owners = users_in_domain(domain_id)
             facet_owner = result_user_id_facet['facets']['user_id']['buckets']
             existing_facets['usernameFacet'] = get_username_facet_info_with_ids(facet_owner, owners)
         if 'area_of_interest_id' in filter_query:
             fq_without_area_of_interest = params_fq.replace(filter_query,'')
-            query_area_of_interest_facet = {'query':query_string, 'size':0, 'filter_query':fq_without_area_of_interest, 'query_parser': 'lucene', 'ret':'_no_fields', 'facet':"{area_of_interest_id: {size:500}}"}
+            query_area_of_interest_facet = {'query': query_string, 'size': 0,
+                                            'filter_query': fq_without_area_of_interest, 'query_parser': 'lucene',
+                                            'ret': '_no_fields', 'facet': "{area_of_interest_id: {size:500}}"}
             result_area_of_interest_facet = search_service.search(**query_area_of_interest_facet)
             areas = get_or_create_areas_of_interest(domain_id, True)
             facet_aoi = result_area_of_interest_facet['facets']['area_of_interest_id']['buckets']
-            existing_facets['areaOfInterestIdFacet'] = get_facet_info_with_ids(facet_aoi,'description',areas)
+            existing_facets['areaOfInterestIdFacet'] = get_facet_info_with_ids(facet_aoi, 'description',areas)
         if 'source_id' in filter_query:
             fq_without_source_id = params_fq.replace(filter_query,'')
             query_source_id_facet = {'query':query_string, 'size':0, 'filter_query':fq_without_source_id, 'query_parser': 'lucene', 'ret':'_no_fields', 'facet':"{source_id: {size:50}}"}
             result_source_id_facet = search_service.search(**query_source_id_facet)
-            domain_candidate_source = db(db.candidate_source.domainId == domain_id).select(cache=(cache.ram, 120))
+            candidate_source = get_table('candidate_source')
+            stmt = select([candidate_source.c.id]).where(candidate_source.c.domainId == domain_id)
+            domain_candidate_source = conn_db.execute(stmt).fetchall()
+            # domain_candidate_source = db(db.candidate_source.domainId == domain_id).select(cache=(cache.ram, 120))
             facet_source = result_source_id_facet['facets']['source_id']['buckets']
             existing_facets['sourceFacet'] = get_facet_info_with_ids(facet_source,'description',domain_candidate_source)
         if 'school_name' in filter_query:
-            fq_without_school_name = params_fq.replace(filter_query,'')
-            query_school_name_facet = {'query':query_string, 'size':0, 'filter_query':fq_without_school_name, 'query_parser': 'lucene', 'ret':'_no_fields', 'facet':"{school_name: {size:500}}"}
+            fq_without_school_name = params_fq.replace(filter_query, '')
+            query_school_name_facet = {'query': query_string, 'size':0, 'filter_query': fq_without_school_name,
+                                       'query_parser': 'lucene', 'ret': '_no_fields',
+                                       'facet': "{school_name: {size:500}}"}
             result_school_name_facet = search_service.search(**query_school_name_facet)
             facet_school = result_school_name_facet['facets']['school_name']['buckets']
             existing_facets['schoolNameFacet'] = get_bucket_facet_value_count(facet_school)
         if 'degree_type' in filter_query:
             fq_without_degree_type = params_fq.replace(filter_query,'')
-            query_degree_type_facet = {'query':query_string, 'size':0, 'filter_query':fq_without_degree_type, 'query_parser': 'lucene', 'ret':'_no_fields', 'facet':"{degree_type: {size:50}}"}
+            query_degree_type_facet = {'query': query_string, 'size': 0, 'filter_query': fq_without_degree_type,
+                                       'query_parser': 'lucene', 'ret': '_no_fields', 'facet':
+                                           "{degree_type: {size:50}}"}
             result_degree_type_facet = search_service.search(**query_degree_type_facet)
             facet_degree_type = result_degree_type_facet['facets']['degree_type']['buckets']
             existing_facets['degreeTypeFacet'] = get_bucket_facet_value_count(facet_degree_type)

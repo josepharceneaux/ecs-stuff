@@ -20,18 +20,10 @@ EC2_TAG_SECTION_SEPARATOR = "|"  # separates section name from key name in EC2 t
 
 REGION_KEY = "region"
 DOMAIN_KEY = "domain"
-EMAIL_KEY = "email"
-ENV_KEY = "env"
-ACCOUNT_ID_KEY = "account-id"
-BUCKET_KEY = "bucket"
-INSTANCE_NAME = 'instance-name'
 
 
 class PropertySection(Enum):
     cloudsearch = [DOMAIN_KEY, REGION_KEY]
-    local = [EMAIL_KEY, ENV_KEY, INSTANCE_NAME]
-    iam = [ACCOUNT_ID_KEY]
-    s3 = [BUCKET_KEY, REGION_KEY]
 
 
 _config = None
@@ -72,36 +64,12 @@ def get_env():
     return _get_config_parser().get(PropertySection.local.name, ENV_KEY)
 
 
-def get_email():
-    return _get_config_parser().get(PropertySection.local.name, EMAIL_KEY)
-
-
 def get_cloudsearch_domain_name():
     return _get_config_parser().get(PropertySection.cloudsearch.name, DOMAIN_KEY)
 
 
 def get_cloudsearch_region():
     return _get_config_parser().get(PropertySection.cloudsearch.name, REGION_KEY)
-
-
-def get_s3_bucket_name():
-    return _get_config_parser().get(PropertySection.s3.name, BUCKET_KEY)
-
-
-def get_s3_region():
-    """
-
-    :return: if returns '', uses S3 default region
-    """
-    return _get_config_parser().get(PropertySection.s3.name, REGION_KEY)
-
-
-def get_aws_account_id():
-    return _get_config_parser().get(PropertySection.iam.name, ACCOUNT_ID_KEY)
-
-
-def get_instance_id():
-    return _get_config_parser().get(PropertySection.local.name, INSTANCE_NAME)
 
 
 def _get_config_parser():
