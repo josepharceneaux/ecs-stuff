@@ -13,7 +13,7 @@ import simplejson
 
 import TalentPropertyManager # To get the CLOUDSEARCH_REGION
 from common_functions import users_in_domain, get_or_create_areas_of_interest
-from candidate_service.common.models.db import get_table, db, conn_db
+from candidate_service.common.models.db import get_table, db, conn_db, session
 from sqlalchemy import select
 from candidate_service.app import logger
 
@@ -491,24 +491,6 @@ def _send_batch_request(action_dicts):
                 deletes += result.deletes
 
     return adds, deletes
-
-
-def _upload_sdf_to_s3(document_service_connection):
-    """
-    If batch size exceeds 5MB, upload the SDF into S3.
-    Add the documents in cloudsearch via s3.
-    :param document_service_connection: Cloudsearch DocumentServiceConnection object
-    """
-    import uuid
-    sdf_key_name = str(uuid.uuid4())
-    logger.error("Attention: Batch failed. SDF data is at %s"%sdf_key_name)
-    sdf_content = document_service_connection.get_sdf()
-    import TalentS3
-    url, key_obj = TalentS3.upload_to_s3(sdf_content, CLOUDSEARCH_SDF_S3_FOLDER, sdf_key_name)
-    document_service_connection.add_sdf_from_s3(key_obj=key_obj)
-    document_service_connection.commit()
-    document_service_connection.clear_sdf()
-    return sdf_key_name
 
 
 def _get_search_service():
@@ -995,7 +977,7 @@ def search_candidates(domain_id, vars, search_limit=15, candidate_ids_only=False
 
     search_data = dict(descriptions=matches, facets=facets, error=dict(), vars=vars, mode='search')
 
-    max_pages = int( math.ceil(total_found / float(search_limit)) ) if search_limit else 1
+    max_pages = int(math.ceil(total_found / float(search_limit))) if search_limit else 1
 
     # Update return dictionary with search results
     context_data['candidate_ids'] = candidate_ids
@@ -1032,20 +1014,22 @@ def get_faceting_information(facets, domain_id):
         search_facets_values['usernameFacet'] = get_username_facet_info_with_ids(facet_owner, owners)
     if facet_aoi:
         areas = get_or_create_areas_of_interest(domain_id, True)
-        search_facets_values['areaOfInterestIdFacet'] = get_facet_info_with_ids(facet_aoi, 'description', areas)
+        search_facets_values['areaOfInterestIdFacet'] = get_facet_info_with_ids('area_of_interest', facet_aoi,
+                                                                                'description', areas)
 
-    c_source = get_table('candidate_source')
     if facet_source:
-        pass
-        # stmt = select(c_source.c.id).where(c_source.c.domainId == domain_id)
-        # domain_candidate_source = conn_db.execute(stmt).fetchall()
-        # search_facets_values['sourceFacet'] = get_facet_info_with_ids(facet_source,
-        #                                                               'description', domain_candidate_source)
+        c_source = get_table('candidate_source')
+        stmt = select([c_source.c.id]).where(c_source.c.domainId == domain_id)
+        domain_candidate_source = conn_db.execute(stmt).fetchall()
+        search_facets_values['sourceFacet'] = get_facet_info_with_ids('candidate_source', facet_source,
+                                                                      'description', domain_candidate_source)
 
     if facet_status:
-        pass
-        # candidate_status = db(db.candidate_status).select(cache=(cache.ram, 3000))
-        # search_facets_values['statusFacet'] = get_facet_info_with_ids(facet_status, 'description', candidate_status)
+        c_status = get_table('candidate_status')
+        stmt = select([c_status.c.id])
+        candidate_status = conn_db.execute(stmt).fetchall()
+        search_facets_values['statusFacet'] = get_facet_info_with_ids('candidate_status', facet_status,
+                                                                      'description', candidate_status)
 
     if facet_skills:
         search_facets_values['skillDescriptionFacet'] = get_bucket_facet_value_count(facet_skills)
@@ -1079,17 +1063,19 @@ def get_faceting_information(facets, domain_id):
 
 
 def get_username_facet_info_with_ids(facet_owner, users):
-    tmp_dict = get_facet_info_with_ids(facet_owner, 'email', users)
+    tmp_dict = get_facet_info_with_ids('user', facet_owner, 'email', users)
     # Dict is (email, value) -> count
     new_tmp_dict = dict()
     # Replace each user's email with name
     for email_value_tuple, count in tmp_dict.items():
-        user = users.find(lambda u: u.email == email_value_tuple[0]).first()
-        new_tmp_dict[(current.name_from_user(user), email_value_tuple[1])] = count
+        c_source = get_table('user')
+        user_row = session.query(c_source).filter_by(email=email_value_tuple[0]).first()
+        # user = users.find(lambda u: u.email == email_value_tuple[0]).first()
+        new_tmp_dict[user_row.firstName+" "+user_row.lastName, email_value_tuple[1]] = count
     return new_tmp_dict
 
 
-def get_facet_info_with_ids(facet, field_name, rows):
+def get_facet_info_with_ids(table_name, facet, field_name, rows):
     """
     Few facets are filtering using ids, for those facets with ids, get their names (from db) for displaying on html
     also send ids so as to ease search with filter queries,
@@ -1098,19 +1084,16 @@ def get_facet_info_with_ids(facet, field_name, rows):
     :param field_name: Name which is to be returned for UI. This is name of field from table
     :return: Dictionary with field name as key and count of candidates + facet id as value
     """
+
     tmp_dict = {}
-    # for bucket in facet:
-    #     row = rows.find(lambda row: row.id == int(bucket['value'])).first()
-    #     if row:
-    #         tmp_dict[(getattr(row, field_name), bucket['value'])] = bucket['count']
-    #     else:
-    #         #TODO: Email an alert to admins regarding the id not found in database but there in cloudsearch,
-    #         # Someone should look into this and resolve the error
-    #         # Error: "id" (bucket['value']) not found in local database, but is there in AWS cloudseach server
-    #         # we do not want to display error and block search results, so display the results by-passing this id
-    #         pass
-    #         #TODO: Ask what should be done in this case, bypass with no error or raise exception and block execution
-    #
+    for bucket in facet:
+        table = get_table(table_name)
+        row = session.query(table).filter_by(id=int(bucket['value'])).first()
+        if row:
+            tmp_dict[(getattr(row, field_name), bucket['value'])] = bucket['count']
+        else:
+            pass
+
     return tmp_dict
 
 
