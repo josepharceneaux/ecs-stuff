@@ -13,11 +13,21 @@
         $locationProvider.html5Mode(true);
 
         $urlRouterProvider.otherwise('/dashboard');
-        //$urlRouterProvider.when('/dashboard', '/dashboard/overview');
 
         $stateProvider
             .state('site', {
-                abstract: true
+                abstract: true,
+                views: {
+                    topnav: {
+                        template: '<gt-topnav></gt-topnav>'
+                    },
+                    sidenav: {
+                        template: '<div id="app-sidenav-wrapper"><gt-sidenav></gt-sidenav></div>'
+                    },
+                    footer: {
+                        template: '<gt-footer></gt-footer>'
+                    }
+                }
             })
             .state('dashboard', {
                 parent: 'site',
@@ -93,7 +103,7 @@
             .state('campaigns.emailCampaigns', {
                 url: '/emailCampaigns',
                 views: {
-                    '@' : {
+                    '@': {
                         template: '<gt-email-campaigns></gt-email-campaigns>'
                     }
                 }
@@ -101,7 +111,7 @@
             .state('campaigns.eventCampaigns', {
                 url: '/eventCampaigns',
                 views: {
-                    '@' : {
+                    '@': {
                         template: '<gt-event-campaigns></gt-event-campaigns>'
                     }
                 }
@@ -109,7 +119,7 @@
             .state('campaigns.smsCampaigns', {
                 url: '/smsCampaigns',
                 views: {
-                    '@' : {
+                    '@': {
                         template: '<gt-sms-campaigns></gt-sms-campaigns>'
                     }
                 }
@@ -117,7 +127,7 @@
             .state('campaigns.socialMediaCampaigns', {
                 url: '/socialMediaCampaigns',
                 views: {
-                    '@' : {
+                    '@': {
                         template: '<gt-social-media-campaigns></gt-social-media-campaigns>'
                     }
                 }
@@ -125,7 +135,7 @@
             .state('campaigns.contentCampaigns', {
                 url: '/contentCampaigns',
                 views: {
-                    '@' : {
+                    '@': {
                         template: '<gt-content-campaigns></gt-content-campaigns>'
                     }
                 }
@@ -133,18 +143,28 @@
             .state('campaigns.pushNotifications', {
                 url: '/pushNotifications',
                 views: {
-                    '@' : {
+                    '@': {
                         template: '<gt-push-notifications></gt-push-notifications>'
                     }
                 }
             })
             .state('admin', {
+                parent: 'site',
                 url: '/admin',
-                template: '<gt-admin></gt-admin>'
+                views: {
+                    '@': {
+                        template: '<gt-admin></gt-admin>'
+                    }
+                }
             })
             .state('help', {
+                parent: 'site',
                 url: '/help',
-                template: '<gt-help></gt-help>'
+                views: {
+                    '@': {
+                        template: '<gt-help></gt-help>'
+                    }
+                }
             });
     }
 })();
