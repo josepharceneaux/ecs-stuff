@@ -244,7 +244,6 @@ class EventById(Resource):
         :param id: integer, unique id representing event in GT database
         :return: json for required event
         """
-        a = 1 + ''
         user_id = kwargs['user_id']
         event = Event.get_by_user_and_event_id(user_id, event_id)
         if event:

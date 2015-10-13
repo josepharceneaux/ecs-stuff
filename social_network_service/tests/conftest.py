@@ -365,7 +365,8 @@ def organizer_in_db(request, test_user):
 
 
 @pytest.fixture(scope='session')
-def get_test_events(request, test_user, meetup, eventbrite, venues):
+def get_test_events(request, test_user, meetup, eventbrite, venues, test_eventbrite_credentials,
+           test_meetup_credentials):
 
     meetup_event_data = EVENT_DATA.copy()
     meetup_event_data['social_network_id'] = meetup.id

@@ -110,6 +110,8 @@ class TestEventById:
         assert 'event' in results
         api_event = results['event']
         event = event.to_json()
+        del event['venue_id']
+        del event['organizer_id']
         comparison = '\n{0: <20}  |  {1: <40} |  {2: <40}\n'.format('Key', 'Expected', 'Found')
         comparison += '=' * 100 + '\n'
         status = True
