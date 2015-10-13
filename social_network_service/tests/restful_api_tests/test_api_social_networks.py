@@ -19,11 +19,13 @@ def test_subscribed_social_network(test_user, base_url, auth_data, is_subscribed
     """
     response = requests.get(base_url + '/social_networks/',
                             headers={'Authorization': auth_data['access_token']})
-
+    print 'Response returned'
+    print response.status_code
+    print response.text
     social_networks = json.loads(response.text)['social_networks']
     assert all(['is_subscribed' in sn for sn in social_networks])
     add_social_networks = filter(lambda sn: sn['name'] in ['SN1', 'SN2'], social_networks)
-    assert len(add_social_networks) == 2, 'There should be two items after filter that we added now'
+    assert len(add_social_networks) >= 2, 'There should be two items after filter that we added now'
     subscribed_social_network = filter(lambda sn: sn['name'] in ['SN1'], add_social_networks)
     assert len(subscribed_social_network) == 1, 'Only one added social network is subscribed'
     assert subscribed_social_network[0]['is_subscribed'] == True, 'SN1 must be subscribed'
@@ -31,3 +33,12 @@ def test_subscribed_social_network(test_user, base_url, auth_data, is_subscribed
     not_subscribed_social_network = filter(lambda sn: sn['name'] in ['SN2'], add_social_networks)
     assert len(not_subscribed_social_network) == 1, 'Only one added social network is subscribed'
     assert not_subscribed_social_network[0]['is_subscribed'] == False, 'SN2 must be not subscribed'
+
+
+
+def test_social_network_no_auth(test_user, base_url, auth_data):
+    response = requests.get(base_url + '/social_networks/',
+                            headers={'Authorization': 'some random'})
+    assert response.status_code == 401
+    assert "The server could not verify" in json.loads(response.text)['message']
+

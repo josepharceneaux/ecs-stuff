@@ -269,7 +269,7 @@ class SocialNetworkBase(object):
                 sn_event_obj.process_events_rsvps(user_credentials,
                                                   rsvp_data=rsvp_data)
         except Exception as error:
-            log_exception({'user_id': '',
+            log_exception({'user_id': self.user.id,
                            'error': error.message})
 
     @classmethod

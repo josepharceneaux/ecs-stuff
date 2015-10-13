@@ -265,6 +265,10 @@ def meetup_event(request, test_user, test_eventbrite_credentials,
     event['organizer_id'] = organizer_in_db.id
     event_id = process_event(event, test_user.id)
     event = Event.get_by_id(event_id)
+
+    def fin():
+        delete_events(test_user.id, [event_id])
+    request.addfinalizer(fin)
     return event
 
 
@@ -278,7 +282,12 @@ def eventbrite_event(request, test_user, test_eventbrite_credentials,
     event['organizer_id'] = organizer_in_db.id
     event_id = process_event(event, test_user.id)
     event = Event.get_by_id(event_id)
+
+    def fin():
+        delete_events(test_user.id, [event_id])
+    request.addfinalizer(fin)
     return event
+
     # def delete_test_events():
     #     event_ids = [event.id for event in events]
     #     delete_events(user.id, event_ids)

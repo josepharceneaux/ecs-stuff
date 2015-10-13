@@ -6,11 +6,10 @@ from common.models.venue import Venue
 from social_network_service.app.app_utils import authenticate, api_route, ApiResponse
 from flask.ext.restful import Resource, Api
 from social_network_service.meetup import Meetup
-
+from social_network_service.custom_exections import ApiException
 from common.models.user import UserCredentials, User
 from common.models.social_network import SocialNetwork
 from social_network_service.utilities import get_class
-
 social_network_blueprint = Blueprint('social_network_api', __name__)
 api = Api()
 api.init_app(social_network_blueprint)
@@ -27,6 +26,132 @@ class SocialNetworks(Resource):
         for dict in dicts:
             dict['is_subscribed'] = value
         return dicts
+
+
+    @authenticate
+    def post(self, **kwargs):
+        """
+        This method takes data to create social network in database.
+
+        :Example:
+            social_network = {
+                    "name": 'Github',
+                    "url": 'http://www.github.com/',
+                    "apiUrl": "http://www.github.com/v1/api/",
+                    "clientKey": "client_key_here",
+                    "secretKey": "client_secret_goes_here",
+                    "redirectUri": "http://gettalent.com",
+                    "authUrl": "http://www.github.com/auth",
+            }
+
+            headers = {
+                        'Authorization': 'Bearer <access_token>',
+                        'Content-Type': 'application/json'
+                       }
+            data = json.dumps(social_network)
+            response = requests.post(
+                                        API_URL + '/social_network/',
+                                        data=data,
+                                        headers=headers,
+                                    )
+
+        .. Response::
+
+            {
+                id: 123232
+            }
+        .. Status:: 201 (Resource Created)
+                    500 (Internal Server Error)
+                    401 (Unauthorized to access getTalent)
+                    452 (Unable to determine Social Network)
+                    453 (Some Required event fields are missing)
+                    455 (Event not created)
+                    456 (Event not Published on Social Network)
+                    458 (Event venue not created on Social Network)
+                    459 (Tickets for event not created)
+                    460 (Event was not save in getTalent database)
+                    461 (User credentials of user for Social Network not found)
+                    462 (No implementation for specified Social Network)
+                    464 (Invalid datetime for event)
+                    465 (Specified Venue not found in database)
+                    466 (Access token for Social Network has expired)
+
+
+        :return: id of created event
+        """
+        # get json post request data
+        sn_data = request.get_json(force=True)
+        social_network = SocialNetwork(**sn_data)
+        SocialNetwork.save(social_network)
+        response = None
+        headers = {'Location': '/social_network/%s' % social_network.id}
+        try:
+            response = ApiResponse(json.dumps(dict(id=social_network.id)), status=201, headers=headers)
+        except ApiException:
+            raise
+        except Exception:
+            raise ApiException('APIError: Internal Server error occurred!')
+        else:
+            return response
+
+    @authenticate
+    def delete(self, **kwargs):
+        """
+        Deletes multiple social network whose ids are given in list in request data
+        :param kwargs:
+        :return:
+
+        :Example:
+            social_network_ids = {
+                'ids': [1,2,3]
+            }
+            headers = {
+                        'Authorization': 'Bearer <access_token>',
+                        'Content-Type': 'application/json'
+                       }
+            data = json.dumps(social_network_ids)
+            response = requests.post(
+                                        API_URL + '/social_network/',
+                                        data=data,
+                                        headers=headers,
+                                    )
+
+        .. Response::
+
+            {
+                'message': '3 social networks have been deleted successfully'
+            }
+        .. Status:: 200 (Resource Deleted)
+                    207 (Not all deleted)
+                    400 (Bad request)
+                    500 (Internal Server Error)
+
+        """
+        user_id = kwargs['user_id']
+        # get event_ids for events to be deleted
+        req_data = request.get_json(force=True)
+        social_network_ids = req_data['social_network_ids'] if 'social_network_ids' in req_data and isinstance(req_data['social_network_ids'], list) else []
+        total_deleted = 0
+        total_not_deleted = 0
+        if social_network_ids:
+            for sn_id in social_network_ids:
+                try:
+                    if SocialNetwork.get_by_id(sn_id):
+                        SocialNetwork.delete(sn_id)
+                        total_deleted += 1
+                except Exception:
+                    # TODO log the exception
+                    total_not_deleted += 1
+
+        if total_deleted:
+                return ApiResponse(json.dumps(dict(
+                    message='%s social networks deleted successfully' % total_deleted)), status=200)
+        elif total_not_deleted:
+            return ApiResponse(json.dumps(dict(message='Unable to delete %s social networks' % total_not_deleted,
+                                               deleted=total_deleted,
+                                               not_deleted=total_not_deleted)), status=207)
+        return ApiResponse(json.dumps(dict(message='Bad request, include social work ids as list data')), status=400)
+
 
     @authenticate
     def get(self, *args, **kwargs):
@@ -92,6 +217,7 @@ class SocialNetworks(Resource):
                 [data.social_network_id for data in subscribed_data]
             )
             # Convert it to JSON
+            subscribed_networks[0].to_json()
             subscribed_networks = map(lambda sn: sn.to_json(), subscribed_networks)
             # Add 'is_subscribed' key in each object and set it to True because
             # these are the social networks user is subscribed to
@@ -113,8 +239,7 @@ class SocialNetworks(Resource):
         if all_networks:
             for sn in all_networks:
                 del sn['secret_key']
-            return {'social_networks': all_networks,
-                    'count': len(all_networks)}
+            return ApiResponse(json.dumps({'social_networks': all_networks, 'count': len(all_networks)}))
         else:
             return {'social_networks': [], 'count': 0}
 
