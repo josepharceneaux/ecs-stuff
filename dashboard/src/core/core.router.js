@@ -15,6 +15,10 @@
         $urlRouterProvider.otherwise('/dashboard');
 
         $stateProvider
+            .state('login', {
+                url: '/login',
+                template: '<gt-login></gt-login>'
+            })
             .state('site', {
                 abstract: true,
                 views: {

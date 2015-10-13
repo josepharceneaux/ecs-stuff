@@ -12,6 +12,7 @@
         'app.dashboard',
         'app.footer',
         'app.help',
+        'app.login',
         'app.pipeline',
         'app.sidenav',
         'app.topnav'
