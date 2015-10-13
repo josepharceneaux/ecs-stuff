@@ -9,18 +9,22 @@ import json
 import inspect
 import pytz
 import requests
-import datetime
 import traceback
 import importlib
-
+from datetime import datetime
+from dateutil.parser import parse
 from requests_oauthlib import OAuth2Session
+
+# Application Specific Imports
+from common.models.user import User
+from common.models.event import Event
+from common.models.social_network import SocialNetwork
 
 from social_network_service import logger
 from social_network_service import flask_app as app
-from social_network_service.custom_exections import SocialNetworkNotImplemented,\
-    ApiException, AccessTokenHasExpired
-
-from common.models.user import User
+from social_network_service.custom_exections import ApiException, AccessTokenHasExpired
+from social_network_service.custom_exections import SocialNetworkError, \
+    SocialNetworkNotImplemented, InvalidDatetime, EventInputMissing
 
 
 OAUTH_SERVER = app.config['OAUTH_SERVER_URI']
@@ -298,6 +302,101 @@ def get_class(social_network_name, category, user_credentials=None):
     return _class
 
 
+def process_event(data, user_id, method='Create'):
+    """
+    This functions is called from restful POST service (which gets data from
+    Event Create Form submission).
+    It creates event on vendor as well as saves in database.
+    Data in the arguments is the Data coming from Event creation form submission
+    user_id is the id of current logged in user (which we get from session).
+    """
+    if data:
+        social_network_id = data['social_network_id']
+        social_network = SocialNetwork.get_by_id(social_network_id)
+        # creating class object for respective social network
+        social_network_class = get_class(social_network.name.lower(), 'social_network')
+        event_class = get_class(social_network.name.lower(), 'event')
+        sn = social_network_class(user_id=user_id)
+        event_obj = event_class(user=sn.user,
+                                headers=sn.headers,
+                                social_network=social_network)
+
+        data['user_id'] = user_id
+        # converting incoming Datetime object from Form submission into the
+        # required format for API call
+        try:
+            start = data['start_datetime']
+            end = data['end_datetime']
+            if not all([start, end]):
+                raise
+        except Exception as e:
+            raise EventInputMissing("DateTimeError: Unable to find datetime inputs")
+        try:
+            data['start_datetime'] = parse(start)
+            data['end_datetime'] = parse(end)
+            if data['start_datetime'] < datetime.now() or data['end_datetime'] < datetime.now():
+                raise InvalidDatetime('Invalid DateTime')
+        except InvalidDatetime as e:
+            raise InvalidDatetime('Invalid DateTime: start_datetime and end_datetime should '
+                                  'be in future.')
+        except Exception as e:
+            raise InvalidDatetime('Invalid DateTime: Kindly specify datetime in ISO format')
+        # posting event on social network
+
+        event_obj.event_gt_to_sn_mapping(data)
+        if method == 'Create':
+            event_obj.create_event()
+        else:
+            event_obj.update_event()
+
+        if event_obj.data['social_network_event_id']:  # Event has been successfully published on vendor
+            # save event in database
+            gt_event_id = event_obj.save_event()
+            return gt_event_id
+    else:
+        error_message = 'Data not received from Event Creation/Edit FORM'
+        log_error({'user_id': user_id,
+                   'error': error_message})
+
+
+def delete_events(user_id, event_ids):
+    assert len(event_ids) > 0, 'event_ids should contain at least one event id'
+    if event_ids:
+        social_networks = {}
+        deleted, not_deleted = [], []
+        for event_id in event_ids:
+            event = Event.get_by_user_and_event_id(user_id, event_id)
+            if event:
+                social_network = event.social_network
+                if social_network.id not in social_networks:
+                    social_network_class = get_class(social_network.name.lower(), 'social_network')
+                    event_class = get_class(social_network.name.lower(), 'event')
+                    sn = social_network_class(user_id=user_id, social_network_id=social_network.id)
+                    event_obj = event_class(user=sn.user,
+                                            social_network=social_network,
+                                            headers=sn.headers)
+                    social_networks[social_network.id] = dict(event_obj=event_obj,
+                                                              event_ids=[event_id])
+                else:
+                    social_networks[social_network.id]['event_ids'].append(event_id)
+            else:
+                not_deleted.append(event_id)
+        for _, social_network in social_networks.items():
+            event_obj = social_network['event_obj']
+            dltd, nt_dltd = event_obj.delete_events(social_network['event_ids'])
+            deleted.extend(dltd)
+            not_deleted.extend(nt_dltd)
+        return deleted, not_deleted
+    else:
+        error_message = 'event_ids should contain at least one event id'
+        log_error(
+            dict(
+                error=error_message,
+                user=user_id,
+            )
+        )
+
+
 def camel_case_to_snake_case(name):
     """ Convert camel case to underscore case
         e.g. apptTypeId --> appt_type_id
@@ -405,7 +504,7 @@ def get_utc_datetime(dt, timezone):
     :rtype string
     """
     assert timezone, 'Timezone should not be none'
-    assert isinstance(dt, datetime.datetime)
+    assert isinstance(dt, datetime)
     # get timezone info from given datetime object
     local_timezone = pytz.timezone(timezone)
     local_dt = local_timezone.localize(dt, is_dst=None)

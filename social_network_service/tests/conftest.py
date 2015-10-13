@@ -6,7 +6,7 @@ app = init_app()
 import pytest
 import datetime
 import random
-from social_network_service.manager import process_event, delete_events
+from social_network_service.utilities import process_event, delete_events
 from common.models.venue import Venue
 from common.models.organizer import Organizer
 
@@ -18,7 +18,6 @@ from common.models.domain import Domain
 from common.models.culture import Culture
 from common.models.organization import Organization
 from common.models.social_network import SocialNetwork
-
 
 
 from werkzeug.security import gen_salt, generate_password_hash
@@ -416,6 +415,9 @@ def meetup_missing_data(request, eventbrite_event_data):
 
 @pytest.fixture(scope='session')
 def is_subscribed_test_data(request, test_user):
+    old_records = SocialNetwork.query.filter(SocialNetwork.name.in_(['SN1', 'SN2'])).all()
+    if old_records:
+        db.session.delete(old_records)
     test_social_network1 = SocialNetwork(name='SN1', url='www.SN1.com')
     SocialNetwork.save(test_social_network1)
     test_social_network2 = SocialNetwork(name='SN2', url='www.SN1.com')

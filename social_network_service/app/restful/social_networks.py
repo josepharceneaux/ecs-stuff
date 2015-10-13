@@ -211,32 +211,72 @@ class MeetupGroups(Resource):
         return ApiResponse(resp, status=200)
 
 
-@api.route('/social_network/refresh_token/')
+@api.route('/social_networks/token_validity/<int:social_network_id>')
+class GetTokenValidity(Resource):
+    @authenticate
+    def get(self, social_network_id, **kwargs):
+        """
+        Get user access_token validity status for specified social network
+        :param social_network_id: id for specified social network
+        :type social_network_id: int
+        :keyword user_id: id for current user
+        :type user_id: int
+
+        :Example:
+
+            headers = {'Authorization': 'Bearer <access_token>'}
+            response = requests.get(
+                                        API_URL + /social_networks/token_validity/13,
+                                        headers=headers
+                                    )
+
+        .. Response::
+
+            {
+              "status": true
+            }
+
+        .. Status:: 200 (OK)
+                    461 (UserCredentials not found)
+                    404 (Social Network not found)
+                    500 (Internal Server Error)
+
+        """
+        user_id = kwargs['user_id']
+        # Get social network specified by social_network_id
+        social_network = SocialNetwork.get_by_id(social_network_id)
+        if social_network:
+            # Get social network specific Social Network class
+            social_network_class = get_class(social_network.name, 'social_network')
+            # create social network object which will validate and refresh access token (if possible)
+            sn = social_network_class(user_id=user_id,
+                                      social_network=social_network
+                                      )
+            return ApiResponse(dict(status=sn.access_token_status))
+        else:
+            return ApiResponse(dict(message='Invalid social network Id given'), status=404)
+
+
+@api.route('/social_network/refresh_token/<int:social_network_id>')
 class RefreshToken(Resource):
     """
         This resource refreshes access token for given social network for given user
     """
 
     @authenticate
-    def post(self, *args, **kwargs):
+    def get(self, social_network_id, **kwargs):
         """
         Gets a fresh token for specified user and social network
         :return:
 
         :Example:
-            data = {
-                "social_network_id": 13
-            }
 
 
             headers = {
                         'Authorization': 'Bearer <access_token>',
-                        'Content-Type': 'application/json'
                        }
-            data = json.dumps(data)
-            response = requests.post(
-                                        API_URL + '/social_network/refresh_token/',
-                                        data=data,
+            response = requests.get(
+                                        API_URL + '/social_network/refresh_token/13',
                                         headers=headers,
                                     )
 
@@ -253,9 +293,6 @@ class RefreshToken(Resource):
         """
         user_id = kwargs['user_id']
         try:
-            data = request.get_json(force=True)
-            data['user_id'] = user_id
-            social_network_id = data['social_network_id']
             social_network = SocialNetwork.get_by_id(social_network_id)
             # creating class object for respective social network
             social_network_class = get_class(social_network.name.lower(), 'social_network')
@@ -906,49 +943,4 @@ class ProcessAccessToken(Resource):
         else:
             return ApiResponse(dict(message='Social Network not found'), status=404)
 
-
-@api.route('/social_networks/token_validity/<int:social_network_id>')
-class GetTokenValidity(Resource):
-    @authenticate
-    def get(self, social_network_id, **kwargs):
-        """
-        Get user access_token validity status for specified social network
-        :param social_network_id: id for specified social network
-        :type social_network_id: int
-        :keyword user_id: id for current user
-        :type user_id: int
-
-        :Example:
-
-            headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(
-                                        API_URL + /social_networks/token_validity/13,
-                                        headers=headers
-                                    )
-
-        .. Response::
-
-            {
-              "status": true
-            }
-
-        .. Status:: 200 (OK)
-                    461 (UserCredentials not found)
-                    404 (Social Network not found)
-                    500 (Internal Server Error)
-
-        """
-        user_id = kwargs['user_id']
-        # Get social network specified by social_network_id
-        social_network = SocialNetwork.get_by_id(social_network_id)
-        if social_network:
-            # Get social network specific Social Network class
-            social_network_class = get_class(social_network.name, 'social_network')
-            # create social network object which will validate and refresh access token (if possible)
-            sn = social_network_class(user_id=user_id,
-                                      social_network=social_network
-                                      )
-            return ApiResponse(dict(status=sn.access_token_status))
-        else:
-            return ApiResponse(dict(message='Invalid social network Id given'), status=404)
 

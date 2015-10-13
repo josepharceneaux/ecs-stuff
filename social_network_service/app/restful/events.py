@@ -5,7 +5,7 @@ from flask import Blueprint, request
 from flask.ext.restful import Api, Resource
 from social_network_service.app.app_utils import api_route, authenticate, ApiResponse
 from social_network_service.custom_exections import ApiException
-from social_network_service.manager import process_event, delete_events
+from social_network_service.utilities import process_event, delete_events
 from common.models.event import Event
 from social_network_service.utilities import add_organizer_venue_data
 
