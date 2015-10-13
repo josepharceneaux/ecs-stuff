@@ -61,7 +61,6 @@ class User(db.Model):
         return "<email (email=' %r')>" % self.email
 
 
-
 class JobOpening(db.Model):
     __tablename__ = 'job_opening'
     id = db.Column(db.Integer, primary_key=True)

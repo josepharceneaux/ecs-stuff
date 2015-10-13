@@ -277,6 +277,7 @@ class SocialNetworkBase(object):
                                      code_to_get_access_token=None,
                                      method_type=None,
                                      payload=None,
+                                     params=None,
                                      api_relative_url=None):
         """
         This function is used by Social Network API to save 'access_token'
@@ -300,29 +301,22 @@ class SocialNetworkBase(object):
         """
         url = social_network.auth_url + api_relative_url
         get_token_response = http_request(method_type, url, data=payload,
-                                          user_id=user_id)
+                                          user_id=user_id, params=params)
         try:
             if get_token_response.ok:
                 # access token is used to make API calls, this is what we need
                 # to make subsequent calls
-                response = get_token_response.json()
-                access_token = response.get('access_token')
-                if not access_token:
+                try:
+                    response = get_token_response.json()
+                    access_token = response.get('access_token')
+                    # refresh token is used to refresh the access token
+                    refresh_token = response.get('refresh_token')
+                except ValueError as e:
                     # In case of Facebook, access_token is get as below
                     access_token = \
                         get_token_response.content.split('=')[1].split('&')[0]
-                # refresh token is used to refresh the access token
-                refresh_token = response.get('refresh_token')
-                user_credentials_dict = dict(user_id=user_id,
-                                             social_network_id=social_network.id,
-                                             access_token=access_token,
-                                             refresh_token=refresh_token)
-                status = cls.save_user_credentials_in_db(user_credentials_dict)
-                if status:
-                    return UserCredentials.get_by_user_id(user_id)
-                else:
-                    raise ApiException('Unable to save/update user '
-                                       'credentials')
+                    refresh_token = ''
+                return access_token, refresh_token
             else:
                 error_message = get_token_response.json().get('error')
                 log_error({'user_id': user_id,
@@ -485,15 +479,16 @@ class SocialNetworkBase(object):
 
         :return the True if db transaction is successful. False otherwise.
         """
-        gt_user_in_db = UserCredentials.get_by_user_and_social_network_id(
+        user_credentials_in_db = UserCredentials.get_by_user_and_social_network_id(
             user_credentials['user_id'], user_credentials['social_network_id'])
         try:
-            if gt_user_in_db:
-                gt_user_in_db.update(**user_credentials)
+            if user_credentials_in_db:
+                user_credentials_in_db.update(**user_credentials)
             else:
-                UserCredentials.save(**user_credentials)
-            return True
+                user_credentials = UserCredentials(**user_credentials)
+                UserCredentials.save(user_credentials)
+            return user_credentials_in_db
         except Exception as error:
             log_exception({'user_id': user_credentials['user_id'],
                            'error': error.message})
-        return False
+            raise ApiException('APIError: Unable to create user credentials')

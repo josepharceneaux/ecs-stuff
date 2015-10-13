@@ -37,7 +37,6 @@ class Meetup(EventBase):
 
         1. Create Meetup instance
             meetup = Meetup(user=user_obj,
-                            social_network=social_network_obj,
                             headers=authentication_headers
                             )
         2. Then first create Meetup specific event data by calling
@@ -61,6 +60,40 @@ class Meetup(EventBase):
     def __init__(self, *args, **kwargs):
         """
         Initialize required class variables to be used later.
+        this object has following attributes:
+            - events:
+                a list of events from social network
+            - rsvp:
+                a list of RSVPs for events in 'events' list
+            - data:
+                a dictionary containing post request data to create event
+            - user:
+                User object  user who sent the request to create this object
+            - user_credentials:
+                user credentials for eventbrite for this user
+            - social_network:
+                SocialNetwork object representing Eventbrite SN
+            - api_url:
+                URL to access eventbrite API
+            - url_to_delete_event:
+                URL to unpublist event from social network (eventbrite)
+            - member_id:
+                user member id on eventbrite
+            - venue_id:
+                Id of the location for this event
+            - payload:
+                a dictionary containing data for event creation on eventbrite
+            - group_url_name:
+                meetup group name owned by this user
+            - group_ids:
+                list of group ids owned by user
+            - social_network_event_id:
+                event id of event on eventbrite
+            - start_time_since_epoch:
+                time passed after epoch till start_time
+            - end_time_since_epoch:
+                time passed after epoch till end_time
+
         :param args:
         :param kwargs:
         :return:
@@ -69,7 +102,6 @@ class Meetup(EventBase):
         # calling super constructor sets the api_url and access_token
         self.data = None
         self.payload = None
-        self.location = None
         self.group_url_name = None
         self.group_ids = []
         self.social_network_event_id = None

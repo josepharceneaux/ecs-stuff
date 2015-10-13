@@ -212,15 +212,6 @@ def test_meetup_credentials(request, test_user):
     return user_credentials
 
 
-# @pytest.fixture(scope='session')
-# def client_credentials(request, user):
-#     client_id = gen_salt(40)
-#     client_secret = gen_salt(50)
-#     client = Client(client_id=client_id, client_secret=client_secret)
-#     Client.save(client)
-#     return client
-
-
 @pytest.fixture(scope='session')
 def auth_data(test_user, test_eventbrite_credentials, test_meetup_credentials, test_token):
     token = test_token
@@ -378,7 +369,8 @@ def organizer_in_db(request, test_user):
 
 
 @pytest.fixture(scope='session')
-def get_test_events(request, test_user, meetup, eventbrite, venues):
+def get_test_events(request, test_user, meetup, eventbrite, venues, test_eventbrite_credentials,
+           test_meetup_credentials):
     meetup_event_data = EVENT_DATA.copy()
     meetup_event_data['social_network_id'] = meetup.id
     meetup_event_data['venue_id'] = venues[0].id

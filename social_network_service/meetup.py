@@ -197,6 +197,7 @@ class Meetup(SocialNetworkBase):
     def get_access_and_refresh_token(cls, user_id, social_network, code_to_get_access_token=None,
                                      method_type='POST',
                                      payload=None,
+                                     params=None,
                                      api_relative_url=None):
         """
         - This function is used by Social Network API to get

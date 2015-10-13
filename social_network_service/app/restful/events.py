@@ -7,6 +7,7 @@ from social_network_service.app.app_utils import api_route, authenticate, ApiRes
 from social_network_service.custom_exections import ApiException
 from social_network_service.manager import process_event, delete_events
 from common.models.event import Event
+from social_network_service.utilities import add_organizer_venue_data
 
 events_blueprint = Blueprint('events_api', __name__)
 api = Api()
@@ -65,7 +66,7 @@ class Events(Resource):
                     500 (Internal Server Error)
 
         """
-        events = map(lambda event: event.to_json(), Event.query.filter_by(user_id=kwargs['user_id']).all())
+        events = map(add_organizer_venue_data, Event.query.filter_by(user_id=kwargs['user_id']).all())
         if events:
             return {'events': events, 'count': len(events)}, 200
         else:
@@ -243,15 +244,14 @@ class EventById(Resource):
         :param id: integer, unique id representing event in GT database
         :return: json for required event
         """
-
         user_id = kwargs['user_id']
         event = Event.get_by_user_and_event_id(user_id, event_id)
         if event:
             try:
-                event = event.to_json()
+                event_data = add_organizer_venue_data(event)
             except Exception as e:
                 raise ApiException('Unable to serialize event data')
-            return dict(event=event), 200
+            return dict(event=event_data), 200
         raise ApiException('Event does not exist with id %s' % event_id, error_code=400)
 
     @authenticate
@@ -327,8 +327,8 @@ class EventById(Resource):
                 print(traceback.format_exc())
                 raise ApiException('APIError: Internal Server error!')
             return ApiResponse(json.dumps(dict(message='Event updated successfully')), status=204)
-        return ApiResponse(json.dumps(dict(message='Forbidden: You can not edit event for given event_id')),
-                           status=403)
+        return ApiResponse(json.dumps(dict(message='Event not found')),
+                           status=404)
 
     @authenticate
     def delete(self, event_id, **kwargs):
@@ -361,5 +361,4 @@ class EventById(Resource):
         if len(deleted) == 1:
             return ApiResponse(json.dumps(dict(message='Event deleted successfully')), status=200)
         return ApiResponse(json.dumps(dict(message='Forbidden: Unable to delete event')), status=403)
-
 
