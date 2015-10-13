@@ -53,6 +53,30 @@
                     }
                 }
             })
+            .state('pipeline.smartLists', {
+                url: '/smartLists',
+                views: {
+                    '@': {
+                        template: '<gt-smart-lists></gt-smart-lists>'
+                    }
+                }
+            })
+            .state('pipeline.candidateSearch', {
+                url: '/candidateSearch',
+                views: {
+                    '@': {
+                        template: '<gt-candidate-search></gt-candidate-search>'
+                    }
+                }
+            })
+            .state('pipeline.importCandidates', {
+                url: '/importCandidates',
+                views: {
+                    '@': {
+                        template: '<gt-import-candidates></gt-import-candidates>'
+                    }
+                }
+            })
             .state('campaigns', {
                 parent: 'site',
                 url: '/campaigns',
