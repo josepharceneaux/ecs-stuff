@@ -2,6 +2,12 @@
 This module contains EventBase class which provides common methods for
 all social networks that have event related functionality like save_event, delete_event,
 process_events_rsvps etc.
+
+To add another social network for events management, following are steps:
+
+    + Add social network class which will handle authentication specific tasks.
+    + Add Event class for this social network which will handle event related tasks.
+
 """
 
 # Standard Library

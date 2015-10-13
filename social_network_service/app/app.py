@@ -5,6 +5,7 @@
 """
 # Standard imports
 import json
+import traceback
 import flask
 
 # init APP
@@ -121,6 +122,7 @@ def handle_api_exception(error):
     :type error:  ApiException
     :return: json response
     """
+    logger.debug('Error: %s\nTraceback: %s' % (error, traceback.format_exc()))
     response = json.dumps(error.to_dict())
     return ApiResponse(response, status=error.status_code)
 
@@ -133,6 +135,7 @@ def handle_any_errors(error):
     :type error:  Exception
     :return: json response
     """
+    logger.debug('Error: %s\nTraceback: %s' % (error, traceback.format_exc()))
     response = json.dumps(dict(message='Ooops! Internal server error occurred..'))
     return ApiResponse(response, status=500)
 
