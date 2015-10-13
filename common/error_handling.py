@@ -45,6 +45,12 @@ class InternalServerError(TalentError):
         return 500
 
 
+class ForbiddenError(TalentError):
+    @classmethod
+    def http_status_code(cls):
+        return 401
+
+
 def register_error_handlers(app, logger):
     """
 
