@@ -5,8 +5,8 @@ import datetime
 import json
 import pytest
 
-from widget_service.common.models.candidate import CustomField
 from widget_service.common.models.candidate import CandidateSource
+from widget_service.common.models.candidate import CustomField
 from widget_service.common.models.candidate import EmailLabel
 from widget_service.common.models.candidate import University
 from widget_service.common.models.misc import AreaOfInterest
