@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Test and Deploy auth_service" type="PythonConfigurationType" factoryName="Python">
+  <configuration default="false" name="Deploy Container: auth_service" type="PythonConfigurationType" factoryName="Python">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
@@ -14,7 +14,7 @@
     <module name="talent-flask-services" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/container_config.py" />
-    <option name="PARAMETERS" value="--build=auth_service" />
+    <option name="PARAMETERS" value="--deploy=auth_service" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <method />
   </configuration>
