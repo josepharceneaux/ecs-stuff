@@ -2,17 +2,17 @@ import sys
 import argparse
 import traceback
 from social_network_service import init_app
+
 init_app()
 
 from gevent.pool import Pool
 
 from social_network_service import logger
+from social_network_service.custom_exections import AccessTokenHasExpired
 from utilities import get_class, log_error, log_exception
 
 from common.models.user import UserCredentials
 from common.models.social_network import SocialNetwork
-
-
 
 POOL_SIZE = 5
 
@@ -75,13 +75,15 @@ def start():
                 # we call social network class here for auth purpose, If token is expired
                 # access token is refreshed and we use fresh token
                 sn = social_network_class(user_id=user_credentials.user_id)
-
-                logger.debug('%s Importer has started for %s(UserId: %s).'
-                             ' Social Network is %s.'
-                             % (name_space.mode.title(), sn.user.name, sn.user.id,
-                                social_network.name))
-                job_pool.spawn(sn.process, name_space.mode,
-                               user_credentials=user_credentials)
+                if sn.access_token_status:
+                    logger.debug('%s Importer has started for %s(UserId: %s).'
+                                 ' Social Network is %s.'
+                                 % (name_space.mode.title(), sn.user.name, sn.user.id,
+                                    social_network.name))
+                    job_pool.spawn(sn.process, name_space.mode,
+                                   user_credentials=user_credentials)
+                else:
+                    raise AccessTokenHasExpired
             except Exception as error:
                 log_exception({'user_id': user_credentials.user_id,
                                'error': error.message})

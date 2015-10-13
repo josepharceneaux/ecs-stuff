@@ -5,6 +5,7 @@ class. Eventbrite contains methods like create_webhook(), get_member_id() etc.
 
 # Application Specific
 from base import SocialNetworkBase
+from common.models.user import UserCredentials
 from utilities import http_request, log_exception
 from social_network_service import flask_app as app
 from social_network_service.custom_exections import ApiException
@@ -98,9 +99,9 @@ class Eventbrite(SocialNetworkBase):
     @staticmethod
     def save_user_credentials_in_db(user_credentials):
         """
-        :param user_credentials: User credentials for which we need to create
-                webhook. Webhook is created to be updated about any RSVP on an
-                event of Eventbrite.
+        :param user_credentials_dict: User credentials dict for which we need
+                to create webhook. Webhook is created to be updated about any
+                RSVP on an event of Eventbrite.
 
         - This overrides the SocialNetworkBase class method
             save_user_credentials_in_db() because in case of user credentials
@@ -127,6 +128,7 @@ class Eventbrite(SocialNetworkBase):
                                      code_to_get_access_token=None,
                                      method_type='POST',
                                      payload=None,
+                                     params=None,
                                      api_relative_url=None):
         """
         - This function is used by Social Network API to get

@@ -112,9 +112,18 @@ def get_callee_data():
     length_of_frame = len(callee_frame)
     no_of_items = list(range(0, length_of_frame-1))
     no_of_item = None
+    selected_items = []
     for item in no_of_items:
-        if length_of_frame - item == 4:
+        # ignoring standard library files of python and pycharm
+        if 'site-packages' not in callee_frame[item][1] \
+                and 'pycharm' not in callee_frame[item][1]:
+            selected_items.append(item)
+        else:
+            break
+    for item in selected_items:
+        if len(selected_items) - item == 4:
             no_of_item = item
+            break
     if no_of_item:
         try:
             callee_data = {
@@ -123,7 +132,7 @@ def get_callee_data():
                 'class_name': callee_frame[no_of_item][0].f_locals['self'].__class__.__name__
                 if callee_frame[no_of_item][0].f_locals.has_key('self') else '',
                 'function_name': callee_frame[no_of_item][3]}
-        except Exception as e:
+        except:
             callee_data = {'traceback_info': traceback.format_exc()}
         return callee_data
 
@@ -250,13 +259,18 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                     # This is the error code for Not Authorized user(Expired Token)
                     # if this error code occurs, we raise exception
                     # AccessTokenHasExpired
-                    raise AccessTokenHasExpired('API Error: Access token has expired.'
+                    raise AccessTokenHasExpired('Access token has expired.'
                                                 ' User Id: %s' % user_id)
                 # checks if error occurred on "Server" or is it a bad request
-                elif e.response.status_code < 500 and 'errors' in e.response.json():
-                    error_message = e.message + ' , Details: ' \
-                                    + json.dumps(e.response.json().get('errors'))
-
+                elif e.response.status_code < 500:
+                    if 'errors' in e.response.json():
+                        error_message = e.message + ', Details: ' \
+                                        + json.dumps(e.response.json().get('errors'))
+                    elif 'error_description' in e.response.json():
+                        error_message = e.message + ' , Details: ' \
+                                        + json.dumps(e.response.json().get('error_description'))
+                    else:
+                        error_message = e.message
                 else:
                     raise
                     # error_message = e.message

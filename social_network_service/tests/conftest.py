@@ -2,14 +2,15 @@ import os
 import string
 from common.models.db import db
 from social_network_service import init_app
+
 app = init_app()
 import pytest
-import datetime
 import random
+
 from social_network_service.utilities import process_event, delete_events
+from datetime import datetime, timedelta
 from common.models.venue import Venue
 from common.models.organizer import Organizer
-
 from common.models.user import User, UserCredentials
 from common.models.user import Token
 from common.models.event import Event
@@ -18,7 +19,6 @@ from common.models.domain import Domain
 from common.models.culture import Culture
 from common.models.organization import Organization
 from common.models.social_network import SocialNetwork
-
 
 from werkzeug.security import gen_salt, generate_password_hash
 from mixer._faker import faker
@@ -35,17 +35,17 @@ OAUTH_SERVER = app.config['OAUTH_SERVER_URI']
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 EVENT_DATA = {
-    "organizer_id": 1,
-    "venue_id": 1,
+    "organizer_id": '',  # will be updated in fixture 'meetup_event_data' or 'eventbrite_event_data'
+    "venue_id": '',  # will be updated in fixture 'meetup_event_data' or 'eventbrite_event_data'
     "title": "Test Event",
     "description": "Test Event Description",
     "registration_instruction": "Just Come",
-    "end_datetime": (datetime.datetime.now() + datetime.timedelta(days=20)).strftime('%Y-%m-%d %H:%M:%S'),
+    "start_datetime": (datetime.now() + timedelta(days=20)).strftime('%Y-%m-%d %H:%M:%S'),
+    "end_datetime": (datetime.now() + timedelta(days=22)).strftime('%Y-%m-%d %H:%M:%S'),
     "group_url_name": "QC-Python-Learning",
-    "social_network_id": 13,
+    "social_network_id": '',  # will be updated in fixture 'meetup_event_data' or 'eventbrite_event_data'
     "timezone": "Asia/Karachi",
     "cost": 0,
-    "start_datetime":(datetime.datetime.now() + datetime.timedelta(days=10)).strftime('%Y-%m-%d %H:%M:%S'),
     "currency": "USD",
     "group_id": 18837246,
     "max_attendees": 10
@@ -127,6 +127,7 @@ def test_organization(request):
 
     def delete_organization():
         Organization.delete(organization.id)
+
     request.addfinalizer(delete_organization)
 
     return organization
@@ -134,7 +135,7 @@ def test_organization(request):
 
 @pytest.fixture(scope='session')
 def test_domain(request, test_organization, test_culture):
-    now_timestamp = datetime.datetime.now().strftime("%Y:%m:%d %H:%M:%S")
+    now_timestamp = datetime.now().strftime("%Y:%m:%d %H:%M:%S")
     mixer = Mixer(session=db_session, commit=True)
     domain = mixer.blend(Domain, organization=test_organization, culture=test_culture,
                          name=faker.nickname(), addedTime=now_timestamp)
@@ -155,6 +156,7 @@ def test_user(request, test_domain):
 
     def fin():
         User.delete(user.id)
+
     request.addfinalizer(fin)
     return user
 
@@ -167,10 +169,11 @@ def test_token(request, test_user):
                         token_type='Bearer',
                         access_token=randomword(20),
                         refresh_token=randomword(20),
-                        expires=datetime.datetime(year=2050, month=1, day=1))
+                        expires=datetime(year=2050, month=1, day=1))
 
     def fin():
         Token.delete(token)
+
     request.addfinalizer(fin)
     return token
 
@@ -187,6 +190,7 @@ def test_eventbrite_credentials(request, test_user):
 
     def fin():
         UserCredentials.delete(user_credentials.id)
+
     request.addfinalizer(fin)
     return user_credentials
 
@@ -203,6 +207,7 @@ def test_meetup_credentials(request, test_user):
 
     def fin():
         UserCredentials.delete(user_credentials.id)
+
     request.addfinalizer(fin)
     return user_credentials
 
@@ -214,10 +219,11 @@ def auth_data(test_user, test_eventbrite_credentials, test_meetup_credentials, t
 
 
 @pytest.fixture(scope='session')
-def meetup_event_data(request, test_user, meetup, meetup_venue, test_meetup_credentials):
+def meetup_event_data(request, test_user, meetup, meetup_venue, test_meetup_credentials, organizer_in_db):
     data = EVENT_DATA.copy()
     data['social_network_id'] = meetup.id
     data['venue_id'] = meetup_venue.id
+    data['organizer_id'] = organizer_in_db.id
 
     def delete_event():
         # delete event if it was created by API. In that case, data contains id of that event
@@ -235,6 +241,7 @@ def eventbrite_event_data(request, eventbrite, test_user, eventbrite_venue, test
     data = EVENT_DATA.copy()
     data['social_network_id'] = eventbrite.id
     data['venue_id'] = eventbrite_venue.id
+    data['organizer_id'] = organizer_in_db.id
 
     def delete_event():
         # delete event if it was created by API. In that case, data contains id of that event
@@ -247,51 +254,49 @@ def eventbrite_event_data(request, eventbrite, test_user, eventbrite_venue, test
     return data
 
 
+@pytest.fixture(scope='session')
+def meetup_event(request, test_user, test_eventbrite_credentials,
+           test_meetup_credentials, meetup, eventbrite, venues, organizer_in_db):
+    event = EVENT_DATA.copy()
+    event['title'] = 'Meetup ' + event['title']
+    event['social_network_id'] = meetup.id
+    event['venue_id'] = venues[0].id
+    event['organizer_id'] = organizer_in_db.id
+    event_id = process_event(event, test_user.id)
+    event = Event.get_by_id(event_id)
+    return event
+
+
+@pytest.fixture(scope='session')
+def eventbrite_event(request, test_user, test_eventbrite_credentials,
+           test_meetup_credentials, meetup, eventbrite, venues, organizer_in_db):
+    event = EVENT_DATA.copy()
+    event['title'] = 'Eventbrite ' + event['title']
+    event['social_network_id'] = eventbrite.id
+    event['venue_id'] = venues[1].id
+    event['organizer_id'] = organizer_in_db.id
+    event_id = process_event(event, test_user.id)
+    event = Event.get_by_id(event_id)
+    return event
+    # def delete_test_events():
+    #     event_ids = [event.id for event in events]
+    #     delete_events(user.id, event_ids)
+    #
+    # request.addfinalizer(delete_test_events)
+    # return events
+
+
 # @pytest.fixture(scope='session')
-# def events(request, test_user, test_eventbrite_credentials,
-#            test_meetup_credentials, meetup, eventbrite, venues):
-#     events = []
-#     event = EVENT_DATA.copy()
-#     event['title'] = 'Meetup ' + event['title']
-#     event['social_network_id'] = meetup.id
-#     event['venue_id'] = venues[0].id
-#     event_id = process_event(event, test_user.id)
-#     event = Event.get_by_id(event_id)
-#     events.append(event)
+# def meetup_event_in_db(events):
+#     return events[0]
 #
-#     event = EVENT_DATA.copy()
-#     event['title'] = 'Eventbrite ' + event['title']
-#     event['social_network_id'] = eventbrite.id
-#     event['venue_id'] = venues[1].id
-#     event_id = process_event(event, test_user.id)
-#     event = Event.get_by_id(event_id)
-#     events.append(event)
 #
-#     # def delete_test_events():
-#     #     event_ids = [event.id for event in events]
-#     #     delete_events(user.id, event_ids)
-#     #
-#     # request.addfinalizer(delete_test_events)
-#     return events
-
-
-@pytest.fixture(params=['Meetup', 'Eventbrite'])
-def event_in_db(request, test_user, test_eventbrite_credentials,
-           test_meetup_credentials, meetup, eventbrite, venues):
-    if request.param == 'Meetup':
-        event = EVENT_DATA.copy()
-        event['title'] = 'Meetup ' + event['title']
-        event['social_network_id'] = meetup.id
-        event['venue_id'] = venues[0].id
-        event_id = process_event(event, test_user.id)
-        return Event.get_by_id(event_id)
+@pytest.fixture(params=['Eventbrite', 'Meetup'])
+def event_in_db(request, eventbrite_event, meetup_event):
     if request.param == 'Eventbrite':
-        event = EVENT_DATA.copy()
-        event['title'] = 'Eventbrite ' + event['title']
-        event['social_network_id'] = eventbrite.id
-        event['venue_id'] = venues[1].id
-        event_id = process_event(event, test_user.id)
-        return Event.get_by_id(event_id)
+        return eventbrite_event
+    elif request.param == 'Meetup':
+        return meetup_event
 
 
 @pytest.fixture(scope='session')
@@ -366,7 +371,6 @@ def organizer_in_db(request, test_user):
 @pytest.fixture(scope='session')
 def get_test_events(request, test_user, meetup, eventbrite, venues, test_eventbrite_credentials,
            test_meetup_credentials):
-
     meetup_event_data = EVENT_DATA.copy()
     meetup_event_data['social_network_id'] = meetup.id
     meetup_event_data['venue_id'] = venues[0].id
@@ -403,7 +407,6 @@ def test_event(request, get_test_events):
                         'end_datetime', 'timezone',
                         'start_datetime', 'currency'])
 def eventbrite_missing_data(request, eventbrite_event_data):
-
     return request.param, eventbrite_event_data
 
 

@@ -188,9 +188,6 @@ class SocialNetworkBase(object):
                     self.headers = {
                         'Authorization': 'Bearer ' + self.access_token
                     }
-                    if not self.user_credentials.member_id:
-                        # gets an save the member Id of gt-user
-                        self.get_member_id()
                 else:
                     # gets fields which are missing
                     items = [key for key, value in data.iteritems()
@@ -221,6 +218,9 @@ class SocialNetworkBase(object):
         self.access_token_status = self.validate_and_refresh_access_token()
         self.start_date_dt = None
         self.webhook_id = None
+        if not self.user_credentials.member_id:
+            # gets an save the member Id of gt-user
+            self.get_member_id()
 
     def process(self, mode, user_credentials=None, rsvp_data=None):
         """

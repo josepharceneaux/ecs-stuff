@@ -49,6 +49,7 @@ class Facebook(SocialNetworkBase):
                                      code_to_get_access_token=None,
                                      method_type='GET',
                                      payload=None,
+                                     params=None,
                                      api_relative_url=None):
         """
         - This function is used by Social Network API to get extended
