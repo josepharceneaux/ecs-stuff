@@ -161,6 +161,7 @@ $(document).ready(function() {
         $(".education-group").toggle();
     });
 
+    //Legacy submit code
     //$("form").submit(function(e) {
     //    var validInputs = true;
     //    $("input[required], select[required]").each(function(index) {

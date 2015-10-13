@@ -28,6 +28,10 @@ mod = Blueprint('widget_api', __name__)
 
 @mod.route('/test/<domain>', methods=['GET'])
 def show_widget(domain):
+    """ Route for testing template rendering/js functions/etc.
+    :param domain: (string) the domain associated with an html template in for local testing.
+    :return: a rendered HTML page.
+    """
     if app.config['ENVIRONMENT'] != 'dev':
         return 'Error', 400
     if domain == 'kaiser-military':
@@ -40,12 +44,18 @@ def show_widget(domain):
 
 @mod.route('/widget/<widget_name>', methods=['GET'])
 def process_widget(widget_name):
+    """This function will likely not be used as our pages will ideally be stored in S3.
+    """
     widget = db.session.query(WidgetPage).filter_by(widget_name=widget_name).first()
     return widget.widget_html, 200
 
 
+#TODO This should dynamically add 'optiona' field such as preferred location/military experience.
 @mod.route('/widget/candidates', methods=['POST'])
 def create_candidate_from_widget():
+    """ Post receiver for processing widget date.
+    :return: A success or error message to change the page state of a widget.
+    """
     form = request.form
     candidate_dict = {
         'full_name': '{} {}'.format(form['firstName'], form['lastName']),
@@ -64,6 +74,11 @@ def create_candidate_from_widget():
 
 @mod.route('/interests/<widget_name>', methods=['GET'])
 def get_areas_of_interest(widget_name):
+    """ API call that provides interests list filtered by the domain.
+    :param widget_name: (string)
+    :return: A dictionary pointing to primary and seconday interests that have been filtered by
+             domain.
+    """
     current_widget = WidgetPage.query.filter_by(widget_name=widget_name).first()
     widget_user = User.query.get(current_widget.user_id)
     interests = db.session.query(AreaOfInterest).filter(
@@ -87,12 +102,14 @@ def get_areas_of_interest(widget_name):
 
 @mod.route('/universities', methods=['GET'])
 def get_university_names():
+    """API call for names of universities in db in format used by widget select tags."""
     university_names = db.session.query(University.name)
     return jsonify(universities_list=[uni for uni in university_names])
 
 
 @mod.route('/majors/<domain_name>', methods=['GET'])
 def get_major_names(domain_name):
+    """API call for returning list of major names filtered by domain"""
     domain_id = db.session.query(Domain.id).filter(Domain.name==domain_name)
     majors = db.session.query(Major.name).filter(domain_id==domain_id)
     return jsonify(majors=[major for major in majors])

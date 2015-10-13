@@ -6,6 +6,12 @@ from widget_service.common.models.misc import AreaOfInterest
 
 
 def parse_interest_ids_from_form(interests_string):
+    """Converts tag-manager input string into usable format for candidate dict.
+    :param interests_string: (string) String in format:
+        "<Master_Category>: <Sub_category or 'All Subcategories'>|
+         <Master_Category>: <Sub_category or 'All Subcategories'>"
+    :return: a list of dictionaries containing usable ids for a candidate object
+    """
     processed_interest_ids = []
     raw_interests = interests_string.split('|')
     for interest in raw_interests:
@@ -19,6 +25,12 @@ def parse_interest_ids_from_form(interests_string):
 
 
 def parse_city_and_state_ids_from_form(locations_string):
+    """Converts tag-manager input string into usable format for candidate dict.
+    :param locations_string: (string) String in format:
+        "<Region>: <sub_region or 'All Cities'>|
+         <Region>: <sub_region or 'All Cities'>"
+    :return: a list of dictionaries containing usable location ids for a candidate object
+    """
     processed_location_ids = []
     state_custom_field_id = db.session.query(CustomField).filter(
         CustomField.name=='State of Interest').first().id
