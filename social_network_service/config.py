@@ -8,6 +8,8 @@ import logging.config
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 LOGGING_CONF = os.path.join(APP_ROOT, 'logging.conf')
 logging.config.fileConfig(LOGGING_CONF)
+
+os.environ['GT_ENVIRONMENT'] = 'dev'
 # SQL ALCHEMY DB URL
 if os.environ.get('GT_ENVIRONMENT') == 'dev':
     APP_URL = 'http://0.0.0.0:5000'

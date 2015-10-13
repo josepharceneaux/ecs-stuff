@@ -189,11 +189,11 @@ def start():
                     job_pool.spawn(sn.process, name_space.mode,
                                    user_credentials=user_credentials)
                 else:
-                    raise AccessTokenHasExpired
+                    raise AccessTokenHasExpired('Access token has expired')
             except Exception as error:
                 log_exception({'user_id': user_credentials.user_id,
                                'error': error.message})
-            job_pool.join()
+        job_pool.join()
     else:
         logger.error('There is no User in db for social network %s' % name_space.social_network)
         

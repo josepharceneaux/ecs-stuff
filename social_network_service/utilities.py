@@ -105,32 +105,42 @@ def authenticate_user(request):
 def get_callee_data():
     current_frame = inspect.currentframe()
     callee_frame = inspect.getouterframes(current_frame, 2)
-    length_of_frame = len(callee_frame)
-    no_of_items = list(range(0, length_of_frame-1))
-    no_of_item = None
-    selected_items = []
-    for item in no_of_items:
-        # ignoring standard library files of python and pycharm
-        if 'site-packages' not in callee_frame[item][1] \
-                and 'pycharm' not in callee_frame[item][1]:
-            selected_items.append(item)
-        else:
-            break
-    for item in selected_items:
-        if len(selected_items) - item == 4:
-            no_of_item = item
-            break
-    if no_of_item:
-        try:
-            callee_data = {
-                'file_name': callee_frame[no_of_item][1],
-                'line_no': callee_frame[no_of_item][2],
-                'class_name': callee_frame[no_of_item][0].f_locals['self'].__class__.__name__
-                if callee_frame[no_of_item][0].f_locals.has_key('self') else '',
-                'function_name': callee_frame[no_of_item][3]}
-        except:
-            callee_data = {'traceback_info': traceback.format_exc()}
-        return callee_data
+    # length_of_frame = len(callee_frame)
+    # no_of_items = list(range(0, length_of_frame-1))
+    # no_of_item = None
+    # selected_items = []
+    # for item in no_of_items:
+    #     # ignoring standard library files of python and pycharm
+    #     if 'site-packages' not in callee_frame[item][1] \
+    #             and 'pycharm' not in callee_frame[item][1]:
+    #         selected_items.append(item)
+    #     else:
+    #         break
+    # for item in selected_items:
+    # if len(selected_items) - item == 4:
+    #     no_of_item = item
+    #     break
+
+    no_of_item = 3
+    #  We are using number 3 here, as
+    # we call this function inside log_error() or log_exception()
+    # which uses get_data_to_log(). get_data_to_log() calls get_callee_data().
+    # So, here is the story,
+    # index 0 has traceback of get_callee_data()
+    # index 1 has traceback of get_data_to_log()
+    # index 2 has traceback of log_error() or log_exception()
+    # index 3 will have the traceback of function from where we call
+    # log_error() or log_exception().
+    try:
+        callee_data = {
+            'file_name': callee_frame[no_of_item][1],
+            'line_no': callee_frame[no_of_item][2],
+            'class_name': callee_frame[no_of_item][0].f_locals['self'].__class__.__name__
+            if callee_frame[no_of_item][0].f_locals.has_key('self') else '',
+            'function_name': callee_frame[no_of_item][3]}
+    except:
+        callee_data = {'traceback_info': traceback.format_exc()}
+    return callee_data
 
 
 def log_error(log_data):
@@ -208,6 +218,11 @@ def get_data_to_log(log_data):
     :return: callee_data which contains the useful information of traceback
             like Reason of error, function name, file name, user id etc.
     """
+    if hasattr(log_data.get('error'), 'message') \
+            or '400' in log_data['error']:
+        callee_data = ("Reason: %(error)s, "
+                       "User Id: %(user_id)s" % log_data)
+        return callee_data
     # get_callee_data() returns the dictionary of callee data
     callee_data_dict = get_callee_data()
     # appends user_id_and_error_message in callee_data_dict
@@ -251,12 +266,12 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                 # we can raise it with Response.raise_for_status():"""
                 response.raise_for_status()
             except requests.exceptions.HTTPError as e:
-                if e.response.status_code == 401:
-                    # This is the error code for Not Authorized user(Expired Token)
-                    # if this error code occurs, we raise exception
-                    # AccessTokenHasExpired
-                    raise AccessTokenHasExpired('Access token has expired.'
-                                                ' User Id: %s' % user_id)
+                if e.response.status_code in [401]:
+                    # 401 is the error code for Not Authorized user(Expired Token)
+                    # 400 is the error code for bad request
+                    # raise AccessTokenHasExpired('Access token has expired.'
+                    #                             ' User Id: %s' % user_id)
+                    raise
                 # checks if error occurred on "Server" or is it a bad request
                 elif e.response.status_code < 500:
                     if 'errors' in e.response.json():
