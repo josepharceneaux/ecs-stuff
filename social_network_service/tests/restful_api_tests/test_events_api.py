@@ -9,7 +9,7 @@ from common.models.event import Event
 API_URL = app.config['APP_URL']
 
 # TODO comment all tests , on the top and each method
-# TODO Delete all data crrearted or used by tests
+# TODO Delete all data created or used by tests
 
 
 class TestResourceEvents:

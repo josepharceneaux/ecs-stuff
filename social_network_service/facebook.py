@@ -46,7 +46,7 @@ class Facebook(SocialNetworkBase):
 
     @classmethod
     def get_access_and_refresh_token(cls, user_id, social_network,
-                                     code_to_get_extended_token=None,
+                                     code_to_get_access_token=None,
                                      method_type='GET',
                                      payload=None,
                                      api_relative_url=None):
@@ -74,14 +74,14 @@ class Facebook(SocialNetworkBase):
         """
         api_relative_url = "/access_token"
         # create Social Network Specific payload data
-        payload_data = {'client_id': social_network.clientKey,
-                        'client_secret': social_network.secretKey,
+        payload_data = {'client_id': social_network.client_key,
+                        'client_secret': social_network.secret_key,
                         'grant_type': 'fb_exchange_token',
-                        'fb_exchange_token': code_to_get_extended_token,
-                        'redirect_uri': social_network.redirectUri}
+                        'fb_exchange_token': code_to_get_access_token,
+                        'redirect_uri': social_network.redirect_uri}
         # calls super class method with api_relative_url and payload data
-        super(Facebook, cls).get_access_and_refresh_token(
-            user_id, social_network, method_type=method_type, payload=payload_data,
+        return super(Facebook, cls).get_access_and_refresh_token(
+            user_id, social_network, method_type=method_type, params=payload_data,
             api_relative_url=api_relative_url)
 
     def validate_token(self, payload=None):

@@ -119,8 +119,8 @@ class Eventbrite(SocialNetworkBase):
         .. seealso:: process_access_token() function defined in
             social network manager inside social_network_service/manager.py.
         """
-        super(Eventbrite, Eventbrite).save_user_credentials_in_db(user_credentials)
-        Eventbrite.create_webhook(user_credentials)
+        user_credentials_in_db = super(Eventbrite, Eventbrite).save_user_credentials_in_db(user_credentials)
+        Eventbrite.create_webhook(user_credentials_in_db)
 
     @classmethod
     def get_access_and_refresh_token(cls, user_id, social_network,
@@ -161,11 +161,9 @@ class Eventbrite(SocialNetworkBase):
                         'redirect_uri': social_network.redirect_uri,
                         'code': code_to_get_access_token}
         # calls super class method with api_relative_url and payload data
-        user_credentials = super(Eventbrite, cls).get_access_and_refresh_token(
+        return super(Eventbrite, cls).get_access_and_refresh_token(
             user_id, social_network, method_type=method_type, payload=payload_data,
             api_relative_url=api_relative_url)
-        # create the webhook for getTalent user and saves webhook id in db
-        cls.create_webhook(user_credentials)
 
     @classmethod
     def create_webhook(cls, user_credentials):

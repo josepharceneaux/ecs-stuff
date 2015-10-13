@@ -207,14 +207,6 @@ def test_meetup_credentials(request, test_user):
     request.addfinalizer(fin)
     return user_credentials
 
-# @pytest.fixture(scope='session')
-# def client_credentials(request, user):
-#     client_id = gen_salt(40)
-#     client_secret = gen_salt(50)
-#     client = Client(client_id=client_id, client_secret=client_secret)
-#     Client.save(client)
-#     return client
-
 
 @pytest.fixture(scope='session')
 def auth_data(test_user, test_eventbrite_credentials, test_meetup_credentials, test_token):
@@ -256,40 +248,51 @@ def eventbrite_event_data(request, eventbrite, test_user, eventbrite_venue, test
     return data
 
 
-@pytest.fixture(scope='session')
-def events(request, test_user, test_eventbrite_credentials,
-           test_meetup_credentials, meetup, eventbrite, venues):
-    events = []
-    event = EVENT_DATA.copy()
-    event['title'] = 'Meetup ' + event['title']
-    event['social_network_id'] = meetup.id
-    event['venue_id'] = venues[0].id
-    event_id = process_event(event, test_user.id)
-    event = Event.get_by_id(event_id)
-    events.append(event)
-
-    event = EVENT_DATA.copy()
-    event['title'] = 'Eventbrite ' + event['title']
-    event['social_network_id'] = eventbrite.id
-    event['venue_id'] = venues[1].id
-    event_id = process_event(event, test_user.id)
-    event = Event.get_by_id(event_id)
-    events.append(event)
-
-    # def delete_test_events():
-    #     event_ids = [event.id for event in events]
-    #     delete_events(user.id, event_ids)
-    #
-    # request.addfinalizer(delete_test_events)
-    return events
+# @pytest.fixture(scope='session')
+# def events(request, test_user, test_eventbrite_credentials,
+#            test_meetup_credentials, meetup, eventbrite, venues):
+#     events = []
+#     event = EVENT_DATA.copy()
+#     event['title'] = 'Meetup ' + event['title']
+#     event['social_network_id'] = meetup.id
+#     event['venue_id'] = venues[0].id
+#     event_id = process_event(event, test_user.id)
+#     event = Event.get_by_id(event_id)
+#     events.append(event)
+#
+#     event = EVENT_DATA.copy()
+#     event['title'] = 'Eventbrite ' + event['title']
+#     event['social_network_id'] = eventbrite.id
+#     event['venue_id'] = venues[1].id
+#     event_id = process_event(event, test_user.id)
+#     event = Event.get_by_id(event_id)
+#     events.append(event)
+#
+#     # def delete_test_events():
+#     #     event_ids = [event.id for event in events]
+#     #     delete_events(user.id, event_ids)
+#     #
+#     # request.addfinalizer(delete_test_events)
+#     return events
 
 
 @pytest.fixture(params=['Meetup', 'Eventbrite'])
-def event_in_db(request, events):
+def event_in_db(request, test_user, test_eventbrite_credentials,
+           test_meetup_credentials, meetup, eventbrite, venues):
     if request.param == 'Meetup':
-        return events[0]
+        event = EVENT_DATA.copy()
+        event['title'] = 'Meetup ' + event['title']
+        event['social_network_id'] = meetup.id
+        event['venue_id'] = venues[0].id
+        event_id = process_event(event, test_user.id)
+        return Event.get_by_id(event_id)
     if request.param == 'Eventbrite':
-        return events[1]
+        event = EVENT_DATA.copy()
+        event['title'] = 'Eventbrite ' + event['title']
+        event['social_network_id'] = eventbrite.id
+        event['venue_id'] = venues[1].id
+        event_id = process_event(event, test_user.id)
+        return Event.get_by_id(event_id)
 
 
 @pytest.fixture(scope='session')

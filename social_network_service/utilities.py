@@ -410,3 +410,73 @@ def get_utc_datetime(dt, timezone):
     utc_dt = local_dt.astimezone(pytz.utc)
     return utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
+
+def add_organizer_venue_data(event):
+    """
+    When a user requests for events or a single event data, we return event data which contains
+    associated venue and organizer objects data as well.
+    If venue or organizer is None for this event, we add empty dict {} for venue or organizer data.
+
+    We are adding associated organizer and venue data in event data here.
+    This method takes an event (Event) object and then returns json data which contains
+    event data as well as organizer and venue
+
+    .. Example:
+
+        - Pass event object to this method
+        - it will return data like this
+        - Sample Output:
+            {
+                "cost": 0,
+                "currency": "USD",
+                "description": "Test Event Description",
+                "end_datetime": "2015-10-27 16:40:57",
+                "group_id": "18837246",
+                "group_url_name": "QC-Python-Learning",
+                "id": 200,
+                "max_attendees": 10,
+                "organizer": {
+                                  "about": "I am a software engineer",
+                                  "email": "mzohaib.qc@gmail.com",
+                                  "id": 1,
+                                  "name": "Zohaib Ijaz",
+                                  "user_id": 1
+                            },
+                "registration_instruction": "Just Come",
+                "social_network_event_id": "225893535",
+                "social_network_id": 13,
+                "start_datetime": "2015-10-17 16:40:57",
+                "tickets_id": "",
+                "timezone": "Asia/Karachi",
+                "title": "Meetup Test Event",
+                "url": "",
+                "user_id": 1,
+                "venue": {
+                              "address_line1": "Infinite Loop",
+                              "address_line2": "",
+                              "city": "Cupertino",
+                              "country": "us",
+                              "id": 1,
+                              "latitude": -120,
+                              "longitude": 31,
+                              "social_network_id": 13,
+                              "social_network_venue_id": "15570022",
+                              "state": "CA",
+                              "user_id": 1,
+                              "zipcode": "95014"
+                        }
+              }
+
+    :param event: model object
+    :return: dictionary containing event data plus organizer and venue data
+    :rtype dict:
+    """
+    event_data = event.to_json()
+    # add organizer data under organizer key
+    event_data['organizer'] = event.organizer.to_json() if event.organizer else {}
+    del event_data['organizer_id']
+    # add venue data under venue key
+    event_data['venue'] = event.venue.to_json() if event.venue else {}
+    del event_data['venue_id']
+    return event_data
+

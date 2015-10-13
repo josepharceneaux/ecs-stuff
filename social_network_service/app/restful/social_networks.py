@@ -895,10 +895,13 @@ class ProcessAccessToken(Resource):
             # Get social network specific Social Network class
             social_network_class = get_class(social_network.name, 'social_network')
             # call specific class method to save user credentials and webhook in case of Eventbrite
-            user_credentials = social_network_class.get_access_and_refresh_token(user_id,
-                                                                                 social_network,
-                                                                                 code_to_get_access_token=code)
-            social_network_class.save_user_credentials_in_db(user_credentials)
+            access_token, refresh_token = social_network_class.get_access_and_refresh_token(
+                user_id, social_network, code_to_get_access_token=code)
+            user_credentials_dict = dict(user_id=user_id,
+                                         social_network_id=social_network.id,
+                                         access_token=access_token,
+                                         refresh_token=refresh_token)
+            social_network_class.save_user_credentials_in_db(user_credentials_dict)
             return ApiResponse(dict(message='User credentials added successfully'), status=201)
         else:
             return ApiResponse(dict(message='Social Network not found'), status=404)
