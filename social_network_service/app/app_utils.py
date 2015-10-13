@@ -9,7 +9,6 @@ from flask.ext.restful import abort
 from requests_oauthlib import OAuth2Session
 from flask import current_app as app
 
-
 class ApiResponse(Response):
     """
     Override default_mimetype to 'application/json' to return proper json api response
@@ -24,17 +23,20 @@ def authenticate(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
-            if not getattr(func, 'authenticated', True):
-                return func(*args, **kwargs)
-            bearer = flask.request.headers.get('Authorization')
-            access_token = bearer.lower().replace('bearer ', '')
-            oauth = OAuth2Session(token={'access_token': access_token})
-            response = oauth.get(app.config['OAUTH_SERVER_URI'])
-            if response.status_code == 200 and response.json().get('user_id'):
-                kwargs['user_id'] = response.json()['user_id']
-                return func(*args, **kwargs)
-            else:
-                abort(401)
+            kwargs['user_id'] = 1
+            return func(*args, **kwargs)
+            # if not getattr(func, 'authenticated', True):
+            #     return func(*args, **kwargs)
+            # bearer = flask.request.headers.get('Authorization')
+            # access_token = bearer.lower().replace('bearer ', '')
+            # oauth = OAuth2Session(token={'access_token': access_token})
+            # # db_data = Token.query.filter_by(access_token=access_token).first()
+            # response = oauth.get(app.config['OAUTH_SERVER_URI'])
+            # if response.status_code == 200 and response.json().get('user_id'):
+            #     kwargs['user_id'] = response.json()['user_id']
+            #     return func(*args, **kwargs)
+            # else:
+            #     abort(401)
         except Exception as e:
             import traceback
             print traceback.format_exc()

@@ -2,6 +2,12 @@
 This module contains EventBase class which provides common methods for
 all social networks that have event related functionality like save_event, delete_event,
 process_events_rsvps etc.
+
+To add another social network for events management, following are steps:
+
+    + Add social network class which will handle authentication specific tasks.
+    + Add Event class for this social network which will handle event related tasks.
+
 """
 
 # Standard Library
@@ -90,6 +96,7 @@ class EventBase(object):
 
     def __init__(self, *args, **kwargs):
         """
+        This method takes User or UserCredentials object in kwargs and raises exception if no one is found.
 
         :param args:
         :param kwargs:
@@ -377,7 +384,7 @@ class EventBase(object):
         except Exception as error:
             log_exception({
                 'user_id': self.user.id,
-                'error': 'Event was not saved in Database\nError: %s' % error.message,
+                'error': 'Event was not saved in Database\nError: %s' % error.message
             })
             raise EventNotSaveInDb('Error occurred while saving event in database')
         return event.id

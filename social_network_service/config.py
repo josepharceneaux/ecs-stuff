@@ -8,7 +8,7 @@ import logging.config
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 LOGGING_CONF = os.path.join(APP_ROOT, 'logging.conf')
 logging.config.fileConfig(LOGGING_CONF)
-# TODO Remove line below
+
 os.environ['GT_ENVIRONMENT'] = 'dev'
 # SQL ALCHEMY DB URL
 if os.environ.get('GT_ENVIRONMENT') == 'dev':
@@ -46,8 +46,8 @@ SECRET_KEY = os.urandom(24).encode('hex')
 OAUTH2_PROVIDER_TOKEN_EXPIRES_IN = 7200  # 2 hours expiry time for bearer token
 
 # Meetup Credentials
-MEETUP_ACCESS_TOKEN = '7fa7dcf7534662ad0b886573c8de4393'
-MEETUP_REFRESH_TOKEN = '572e92626a941aa37305cbe2a54c365e'
+MEETUP_ACCESS_TOKEN = '61af155133bd70dd74089cf0e88d11c1'
+MEETUP_REFRESH_TOKEN = '077e818c162ad1c1956f9b018e43e9a6'
 
 # Eventbrite Credentials
 EVENTBRITE_ACCESS_TOKEN = 'AT6NWWWVUBJ6KCVNOONL'

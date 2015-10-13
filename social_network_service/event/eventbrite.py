@@ -35,11 +35,69 @@ class Eventbrite(EventBase):
     This class inherits from EventBase class.
     This implements the abstract methods defined in interface.
     It also implements functions to create event on Eventbrite website.
+
+    :Example:
+
+        To create / update a meetup event you have to do tha following:
+
+        1. Create Eventbrite instance
+            eventbrite = Eventbrite(user=user_obj,
+                            headers=authentication_headers
+                            )
+        2. Then first create Eventbrite specific event data by calling
+            event_gt_to_sn_mapping()
+            eventbrite.event_gt_to_sn_mapping(data)
+
+            it will add parsed data to 'self.payload' dictionary
+
+        3. Now call create_event() / update_event()  which will
+                get venue from db given by venue_id (local db venue id) in
+                self.payload.
+                if venue in db contains 'social_network_venue_id', it means
+                that venues has already been created on Eventbrite so no need to
+                create again on Eventbrite, just return that id to be passed
+                in self.payload.
+                And if 'social_network_venue_id' in none, creates venue on
+                Eventbrite and returns Eventbrite venue id. It now sends a POST request
+                to Eventbrite API to create event and returns event
+
     """
 
     def __init__(self, *args, **kwargs):
         """
         This method initializes eventbrite object and assigns default/initial values.
+        this object has following attributes:
+            - events:
+                a list of events from social network
+            - rsvp:
+                a list of RSVPs for events in 'events' list
+            - data:
+                a dictionary containing post request data to create event
+            - user:
+                User object  user who sent the request to create this object
+            - user_credentials:
+                user credentials for eventbrite for this user
+            - social_network:
+                SocialNetwork object representing Eventbrite SN
+            - api_url:
+                URL to access eventbrite API
+            - url_to_delete_event:
+                URL to unpublist event from social network (eventbrite)
+            - member_id:
+                user member id on eventbrite
+            - venue_id:
+                Id of the location for this event
+            - event_payload:
+                a dictionary containing data for event creation on eventbrite
+            - tickets_payload:
+                dictionary containing data for event tickets
+            - venue_payload:
+                dictionary containing data for location/ venue to be added on eventbrite
+            - social_network_event_id:
+                event id of event on eventbrite
+            - start_date_in_utc:
+                utc start_date for event importer
+
         :param args:
         :param kwargs:
         :return:

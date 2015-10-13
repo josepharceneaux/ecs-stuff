@@ -1,6 +1,6 @@
 """Initializer for Social Network Service App"""
 from types import MethodType
-
+from social_network_service.model_helpers import add_model_helpers
 
 __author__ = 'zohaib'
 
@@ -97,6 +97,7 @@ def init_app():
     Call this method at the start of app or manager for Events/RSVPs
     :return:
     """
+    add_model_helpers(db.Model)
     db.init_app(flask_app)
     db.app = flask_app
     return flask_app

@@ -8,8 +8,8 @@ class RSVP(db.Model):
     candidate_id = db.Column('candidateId', db.Integer, db.ForeignKey("candidate.id"), nullable=False)
     event_id = db.Column('eventId', db.Integer, db.ForeignKey("event.id"), nullable=False)
     social_network_id = db.Column('socialNetworkId', db.Integer, db.ForeignKey("social_network.id"), nullable=False)
-    rsvp_status = db.Column('status', db.String(20))
-    rsvp_datetime = db.Column('datetime', db.DateTime)
+    status = db.Column('status', db.String(20))
+    datetime = db.Column('datetime', db.DateTime)
     payment_status = db.Column('paymentStatus', db.String(20))
 
     def __repr__(self):
@@ -50,6 +50,21 @@ class RSVP(db.Model):
                 RSVP.candidate_id == candidate_id,
                 RSVP.social_network_id == social_network_id,
                 RSVP.event_id == event_id
+            )
+        ).first()
+
+    @classmethod
+    def get_by_social_network_rsvp_id_and_social_network_id(cls,
+                                                              social_network_rsvp_id,
+                                                              social_network_id,
+                                                              ):
+        assert social_network_id is not None
+        assert social_network_rsvp_id is not None
+
+        return cls.query.filter(
+            db.and_(
+                RSVP.social_network_rsvp_id == social_network_rsvp_id,
+                RSVP.social_network_id == social_network_id
             )
         ).first()
 
