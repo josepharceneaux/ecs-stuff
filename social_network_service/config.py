@@ -13,7 +13,7 @@ os.environ['GT_ENVIRONMENT'] = 'dev'
 # SQL ALCHEMY DB URL
 if os.environ.get('GT_ENVIRONMENT') == 'dev':
     APP_URL = 'http://0.0.0.0:5000'
-    OAUTH_SERVER_URI = 'http://0.0.0.0:8081/oauth2/authorize'
+    OAUTH_SERVER_URI = 'http://0.0.0.0:5005/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@localhost/talent_local'
     LOGGER = logging.getLogger("social_network_service.dev")

@@ -36,8 +36,8 @@ def authenticate(func):
             else:
                 abort(401)
         except Exception as e:
-            # import traceback
-            # print traceback.format_exc()
+            import traceback
+            print traceback.format_exc()
             # print 'Error....'
             # print e.message
             # abort(401)

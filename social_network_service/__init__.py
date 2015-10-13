@@ -19,7 +19,7 @@ def to_json(self):
     from social_network_service.utilities import camel_case_to_snake_case
     # add your coversions for things like datetime's
     # and what-not that aren't serializable.
-    convert = dict(DATETIME=str)
+    convert = dict(DATETIME=str, TIMESTAMP=str)
 
     data = dict()
     for col in self.__class__.__table__.columns:

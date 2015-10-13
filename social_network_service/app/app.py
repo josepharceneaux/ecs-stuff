@@ -199,7 +199,7 @@ def handle_api_exception(error):
 
 @app.errorhandler(Exception)
 def handle_any_errors(error):
-    response = json.dumps(dict(message='Ooops! Internal server error occurred..'))
+    response = json.dumps(dict(message='Ooops! Internal server error occurred..' + error.message))
     return ApiResponse(response, status=500)
 
 # app = Flask(__name__)
