@@ -26,12 +26,35 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = [];
+    ControllerFunction.$inject = ['$state'];
 
     /* @ngInject */
-    function ControllerFunction() {
+    function ControllerFunction($state) {
         var vm = this;
         vm.isCollapsed = true;
+        vm.state = $state;
+        vm.menuItems = {
+            dashboard: {
+                overview: 'Overview',
+                customize: 'Customize'
+            },
+            pipeline: {
+                overview: 'Overview',
+                smartLists: 'Smart Lists',
+                candidateSearch: 'Candidate Search',
+                importCandidates: 'Import Candidates'
+            },
+            campaigns: {
+                overview: 'Overview',
+                emailCampaigns: 'Email Campaigns',
+                smsCampaigns: 'SMS Campaigns',
+                socialMediaCampaigns: 'Social Media Campaigns',
+                contentCampaigns: 'Content Campaigns',
+                pushNotifications: 'Push Notifications'
+            },
+            admin: {},
+            help: {}
+        };
     }
 
 })();

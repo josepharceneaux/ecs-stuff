@@ -36,49 +36,9 @@
         </ul>
     </div>
     <div class="pane-right">
-        <ul class="nav">
-            <li ui-sref-active="active">
-                <a ui-sref="dashboard.overview">Overview</a>
-            </li>
-            <li ui-sref-active="active">
-                <a ui-sref="dashboard.customize">Customize</a>
-            </li>
-        </ul>
-        <ul class="nav">
-            <li ui-sref-active="active">
-                <a ui-sref="pipeline.overview">Overview</a>
-            </li>
-            <li ui-sref-active="active">
-                <a ui-sref="pipeline.smartLists">Smart Lists</a>
-            </li>
-            <li ui-sref-active="active">
-                <a ui-sref="pipeline.candidateSearch">Candidate Search</a>
-            </li>
-            <li ui-sref-active="active">
-                <a ui-sref="pipeline.importCandidates">Import Candidates</a>
-            </li>
-        </ul>
-        <ul class="nav">
-            <li ui-sref-active="active">
-                <a ui-sref="campaigns.overview">Overview</a>
-            </li>
-            <li ui-sref-active="active">
-                <a ui-sref="campaigns.emailCampaigns">Email Campaigns</a>
-            </li>
-            <li ui-sref-active="active">
-                <a ui-sref="campaigns.eventCampaigns">Event Campaigns</a>
-            </li>
-            <li ui-sref-active="active">
-                <a ui-sref="campaigns.smsCampaigns">SMS Campaigns</a>
-            </li>
-            <li ui-sref-active="active">
-                <a ui-sref="campaigns.socialMediaCampaigns">Social Media Campaigns</a>
-            </li>
-            <li ui-sref-active="active">
-                <a ui-sref="campaigns.contentCampaigns">Content Campaigns</a>
-            </li>
-            <li ui-sref-active="active">
-                <a ui-sref="campaigns.pushNotifications">Push Notifications</a>
+        <ul class="nav" ng-repeat="(menu, subMenus) in vm.menuItems" ng-if="vm.state.includes(menu)">
+            <li ui-sref-active="active" ng-repeat="(subMenu, menuTitle) in subMenus">
+                <a ui-sref="{{menu}}.{{subMenu}}">{{menuTitle}}</a>
             </li>
         </ul>
     </div>
