@@ -1,7 +1,5 @@
-import json
-import uuid
-# from activity_service.tests.api_tests import *
-
+import json, uuid, requests
+from common.tests.conftest import *
 
 USER_PASSWORD = 'temp976892'
 
@@ -30,7 +28,6 @@ def update_user_data(user_id):
 ###############################
 # test cases for GETting user #
 ###############################
-import requests
 def test_get_user_without_authentication():
     # Get user
     user_id = 5

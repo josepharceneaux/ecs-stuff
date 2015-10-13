@@ -20,19 +20,27 @@ APP = app.test_client()
 # todo: authentication expires in 2 hours. For testing, we might need a referesh token unless if all tests run in two hours
 @pytest.fixture()
 def get_auth_token(test_user):
+    """
+    :param test_user:
+    :return:
+    """
+    # client_id and client_secret can be any arbitrary string
     client_id = str(uuid.uuid4())[0:8]
     client_secret = str(uuid.uuid4())[0:8]
-    client = Client(client_id=client_id, client_secret=client_secret)
-    db.session.add(client)
-    db.session.commit()
 
+    new_client = Client(client_id=client_id, client_secret=client_secret)
+    db.session.add(new_client)
+    db.session.commit()
+    print "get_auth_token test_user: %s" % test_user
     user_email = test_user['email']
     user_password = test_user['password']
-    requests.post('http://127.0.0.1:5000/oauth2/token', data=dict(grant_type='password',
-                                                                  username='amir@gettalent.com',
-                                                                  password='Password1',
-                                                                  client_id='clientid',
-                                                                  client_secret='clientsecret'))
+    resp = requests.post('http://127.0.0.1:5000/oauth2/token', data=dict(grant_type='password',
+                                                                         username=user_email,
+                                                                         password=user_password,
+                                                                         client_id='clientid',
+                                                                         client_secret='clientsecret'))
+    print "get_auth_token response: %s" % resp
+    pass
 
 
 def revoke_auth_token():
@@ -160,7 +168,7 @@ def test_culture(request):
 @pytest.fixture(autouse=True)
 def test_org(request):
     org_attrs = dict(name='Rocket League All Stars - {}'.format(randomword(8)))
-    test_org, created = get_or_create(db.session, Organization, defaults=None, **org_attrs)
+    test_org, created = get_or_create(session=db.session, model=Organization, defaults=None, org_attrs)
     if created:
         db.session.add(test_org)
         db.session.commit()
