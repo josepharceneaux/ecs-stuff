@@ -377,7 +377,7 @@ class EventBase(object):
         except Exception as error:
             log_exception({
                 'user_id': self.user.id,
-                'error': 'Event was not saved in Database\nError: %s' % error.message,
+                'error': 'Event was not saved in Database\nError: %s' % error.message
             })
             raise EventNotSaveInDb('Error occurred while saving event in database')
         return event.id

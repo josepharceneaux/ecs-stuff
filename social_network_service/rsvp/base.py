@@ -525,8 +525,8 @@ class RSVPBase(object):
             'event_id': attendee.event.id,
             'social_network_rsvp_id': attendee.vendor_rsvp_id,
             'social_network_id': attendee.social_network_id,
-            'rsvp_status': attendee.rsvp_status,
-            'rsvp_datetime': attendee.added_time
+            'status': attendee.rsvp_status,
+            'datetime': attendee.added_time
         }
         if rsvp_in_db:
             rsvp_in_db.update(**data)

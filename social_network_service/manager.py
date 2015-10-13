@@ -9,14 +9,14 @@ from datetime import datetime
 from dateutil.parser import parse
 
 from social_network_service import logger
-from utilities import get_class, log_error, log_exception
+from utilities import get_class, log_error, log_exception, http_request
 
 from common.models.event import Event
 from common.models.user import UserCredentials
 from common.models.social_network import SocialNetwork
 
 from social_network_service.custom_exections import SocialNetworkError, \
-    SocialNetworkNotImplemented, InvalidDatetime, EventInputMissing
+    SocialNetworkNotImplemented, InvalidDatetime, EventInputMissing, AccessTokenHasExpired
 
 POOL_SIZE = 5
 
@@ -63,6 +63,7 @@ def process_event(data, user_id, method='Create'):
         except SocialNetworkNotImplemented as e:
             raise
         except Exception as e:
+            logger.debug(e.message)
             raise SocialNetworkError('Unable to determine social network. '
                                      'Please verify your data (socialNetworkId)')
 
@@ -180,13 +181,15 @@ def start():
                 # we call social network class here for auth purpose, If token is expired
                 # access token is refreshed and we use fresh token
                 sn = social_network_class(user_id=user_credentials.user_id)
-
-                logger.debug('%s Importer has started for %s(UserId: %s).'
-                             ' Social Network is %s.'
-                             % (name_space.mode.title(), sn.user.name, sn.user.id,
-                                social_network.name))
-                job_pool.spawn(sn.process, name_space.mode,
-                               user_credentials=user_credentials)
+                if sn.access_token_status:
+                    logger.debug('%s Importer has started for %s(UserId: %s).'
+                                 ' Social Network is %s.'
+                                 % (name_space.mode.title(), sn.user.name, sn.user.id,
+                                    social_network.name))
+                    job_pool.spawn(sn.process, name_space.mode,
+                                   user_credentials=user_credentials)
+                else:
+                    raise AccessTokenHasExpired
             except Exception as error:
                 log_exception({'user_id': user_credentials.user_id,
                                'error': error.message})
