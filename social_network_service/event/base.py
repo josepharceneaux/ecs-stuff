@@ -15,6 +15,8 @@ from abc import ABCMeta
 from abc import abstractmethod
 
 # Application Specific
+from datetime import datetime
+from dateutil.parser import parse
 from common.models.user import User
 from common.models.event import Event
 from common.models.user import UserCredentials
@@ -23,7 +25,7 @@ from social_network_service.utilities import log_error
 from social_network_service.utilities import get_class
 from social_network_service.utilities import http_request
 from social_network_service.utilities import log_exception
-from social_network_service.custom_exections import NoUserFound
+from social_network_service.custom_exections import NoUserFound, InvalidDatetime
 from social_network_service.custom_exections import EventNotSaveInDb
 from social_network_service.custom_exections import EventNotUnpublished
 from social_network_service.custom_exections import UserCredentialsNotFound
@@ -160,7 +162,6 @@ class EventBase(object):
         """
         pass
 
-    @abstractmethod
     def event_gt_to_sn_mapping(self, data):
         """
         This function is used to map gt-fields to required social network fields
@@ -168,7 +169,15 @@ class EventBase(object):
         :param data:
         :return:
         """
-        pass
+        # converting incoming Datetime object from Form submission into the
+        # required format for API call
+        try:
+            start = data['start_datetime']
+            end = data['end_datetime']
+            data['start_datetime'] = parse(start)
+            data['end_datetime'] = parse(end)
+        except Exception as e:
+            raise InvalidDatetime('Invalid DateTime: Kindly specify datetime in UTC format like 2015-10-08T06:16:55Z')
 
     def pre_process_events(self, events):
         """

@@ -542,12 +542,10 @@ class Eventbrite(EventBase):
         """
         mandatory_input_data = ['title', 'description', 'end_datetime',
                                 'timezone', 'start_datetime', 'currency']
-        if not all([field in data and data[field] for field in mandatory_input_data]):
-            log_error({
-                'user_id': '',
-                'error': 'Mandatory parameters missing in Eventbrite data'
-            })
-            raise EventInputMissing("Mandatory parameter missing in Eventbrite data.")
+        # gets fields which are missing
+        missing_items = [key for key in mandatory_input_data if not data.get(key)]
+        if missing_items:
+            raise EventInputMissing("Mandatory Input Missing: %s" % missing_items)
 
     def event_gt_to_sn_mapping(self, data):
         """
@@ -559,6 +557,8 @@ class Eventbrite(EventBase):
         """
         assert data, 'data should not be None/empty'
         assert isinstance(data, dict), 'data should be a dictionary'
+        # convert datetime strings to datetime objects
+        super(Eventbrite, self).event_gt_to_sn_mapping(data)
         self.data = data
         self.validate_required_fields(data)
         # Eventbrite assumes that provided start and end DateTime is in UTC

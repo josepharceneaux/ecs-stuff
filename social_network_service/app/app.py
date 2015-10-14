@@ -136,6 +136,6 @@ def handle_any_errors(error):
     :return: json response
     """
     logger.debug('Error: %s\nTraceback: %s' % (error, traceback.format_exc()))
-    response = json.dumps(dict(message='Ooops! Internal server error occurred..'))
+    response = json.dumps(dict(message='Ooops! Internal server error occurred..' + error.message))
     return ApiResponse(response, status=500)
 

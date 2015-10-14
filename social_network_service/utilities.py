@@ -12,7 +12,6 @@ import requests
 import traceback
 import importlib
 from datetime import datetime
-from dateutil.parser import parse
 from requests_oauthlib import OAuth2Session
 
 # Application Specific Imports
@@ -22,9 +21,8 @@ from common.models.social_network import SocialNetwork
 
 from social_network_service import logger
 from social_network_service import flask_app as app
-from social_network_service.custom_exections import ApiException, AccessTokenHasExpired
-from social_network_service.custom_exections import SocialNetworkError, \
-    SocialNetworkNotImplemented, InvalidDatetime, EventInputMissing
+from social_network_service.custom_exections import ApiException
+from social_network_service.custom_exections import SocialNetworkNotImplemented
 
 
 OAUTH_SERVER = app.config['OAUTH_SERVER_URI']
@@ -351,27 +349,6 @@ def process_event(data, user_id, method='Create'):
                                 social_network=social_network)
 
         data['user_id'] = user_id
-        # converting incoming Datetime object from Form submission into the
-        # required format for API call
-        try:
-            start = data['start_datetime']
-            end = data['end_datetime']
-            if not all([start, end]):
-                raise
-        except Exception as e:
-            raise EventInputMissing("DateTimeError: Unable to find datetime inputs")
-        try:
-            data['start_datetime'] = parse(start)
-            data['end_datetime'] = parse(end)
-            if data['start_datetime'] < datetime.now() or data['end_datetime'] < datetime.now():
-                raise InvalidDatetime('Invalid DateTime')
-        except InvalidDatetime as e:
-            raise InvalidDatetime('Invalid DateTime: start_datetime and end_datetime should '
-                                  'be in future.')
-        except Exception as e:
-            raise InvalidDatetime('Invalid DateTime: Kindly specify datetime in ISO format')
-        # posting event on social network
-
         event_obj.event_gt_to_sn_mapping(data)
         if method == 'Create':
             event_obj.create_event()
