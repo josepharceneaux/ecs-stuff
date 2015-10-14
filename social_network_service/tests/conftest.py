@@ -11,7 +11,7 @@ from social_network_service.utilities import process_event, delete_events
 from datetime import datetime, timedelta
 from common.models.venue import Venue
 from common.models.organizer import Organizer
-from common.models.user import User, UserCredentials
+from common.models.user import User, UserSocialNetworkCredential
 from common.models.user import Token
 from common.models.event import Event
 from common.models.user import Client
@@ -182,14 +182,14 @@ def test_token(request, test_user):
 def test_eventbrite_credentials(request, test_user):
     mixer = Mixer(session=db_session, commit=True)
     sn = SocialNetwork.get_by_name('Eventbrite')
-    user_credentials = mixer.blend(UserCredentials,
+    user_credentials = mixer.blend(UserSocialNetworkCredential,
                                    social_network=sn,
                                    user=test_user,
                                    access_token=app.config['EVENTBRITE_ACCESS_TOKEN'],
                                    refresh_token=app.config['EVENTBRITE_REFRESH_TOKEN'])
 
     def fin():
-        UserCredentials.delete(user_credentials.id)
+        UserSocialNetworkCredential.delete(user_credentials.id)
 
     request.addfinalizer(fin)
     return user_credentials
@@ -199,14 +199,14 @@ def test_eventbrite_credentials(request, test_user):
 def test_meetup_credentials(request, test_user):
     mixer = Mixer(session=db_session, commit=True)
     sn = SocialNetwork.get_by_name('Meetup')
-    user_credentials = mixer.blend(UserCredentials,
+    user_credentials = mixer.blend(UserSocialNetworkCredential,
                                    social_network=sn,
                                    user=test_user,
                                    access_token=app.config['MEETUP_ACCESS_TOKEN'],
                                    refresh_token=app.config['MEETUP_REFRESH_TOKEN'])
 
     def fin():
-        UserCredentials.delete(user_credentials.id)
+        UserSocialNetworkCredential.delete(user_credentials.id)
 
     request.addfinalizer(fin)
     return user_credentials
@@ -438,14 +438,14 @@ def is_subscribed_test_data(request, test_user):
     test_social_network2 = SocialNetwork(name='SN2', url='www.SN1.com')
     SocialNetwork.save(test_social_network2)
 
-    test_social_network1_credentials = UserCredentials(user_id=test_user.id,
+    test_social_network1_credentials = UserSocialNetworkCredential(user_id=test_user.id,
                                                        social_network_id=test_social_network1.id,
                                                        access_token='lorel ipsum',
                                                        refresh_token='lorel ipsum')
-    UserCredentials.save(test_social_network1_credentials)
+    UserSocialNetworkCredential.save(test_social_network1_credentials)
 
     def fin():
-        UserCredentials.delete(test_social_network1_credentials.id)
+        UserSocialNetworkCredential.delete(test_social_network1_credentials.id)
         SocialNetwork.delete(test_social_network1.id)
         SocialNetwork.delete(test_social_network2.id)
 

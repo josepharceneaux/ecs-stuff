@@ -42,7 +42,6 @@ def after_request(response):
     return response
 
 
-# @app.errorhandler(404)
 @app.route('/')
 def hello_world():
     # return 'Hello World!', 404

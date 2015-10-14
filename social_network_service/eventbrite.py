@@ -32,8 +32,8 @@ class Eventbrite(SocialNetworkBase):
         - To create the webhook for getTalent user
 
         1- Get the user credentials first
-            from common.models.user import UserCredentials
-            user_credentials = UserCredentials.get_by_id(1)
+            from common.models.user import UserSocialNetworkCredential
+            user_credentials = UserSocialNetworkCredential.get_by_id(1)
 
         2. Call create_webhook() on class and pass user credentials in arguments
             Eventbrite.create_webhook(user_credentials)

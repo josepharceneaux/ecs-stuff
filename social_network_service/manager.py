@@ -12,8 +12,8 @@ from social_network_service import init_app
 init_app()
 
 # Application Specific
-from utilities import get_class, log_exception, http_request
-from common.models.user import UserCredentials
+from utilities import get_class, log_exception
+from common.models.user import UserSocialNetworkCredential
 from common.models.social_network import SocialNetwork
 from social_network_service import logger
 from social_network_service.custom_exections import AccessTokenHasExpired
@@ -48,7 +48,7 @@ def start():
         social_network_name = name_space.social_network.lower()
         social_network_obj = SocialNetwork.get_by_name(social_network_name)
         social_network_id = social_network_obj.id
-    all_user_credentials = UserCredentials.get_all_credentials(social_network_id)
+    all_user_credentials = UserSocialNetworkCredential.get_all_credentials(social_network_id)
     job_pool = Pool(POOL_SIZE)
     if all_user_credentials:
         for user_credentials in all_user_credentials:

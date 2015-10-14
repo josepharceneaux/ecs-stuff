@@ -20,7 +20,7 @@ class SocialNetwork(db.Model):
     # Relationships
     candidate_social_networks = db.relationship('CandidateSocialNetwork', backref='social_network')
     events = db.relationship("Event", backref='social_network', lazy='dynamic')
-    user_credentials = db.relationship("UserCredentials")
+    user_credentials = db.relationship("UserSocialNetworkCredential")
     venues = db.relationship('Venue', backref='social_network', lazy='dynamic')
 
     def __repr__(self):

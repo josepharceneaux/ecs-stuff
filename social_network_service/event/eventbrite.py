@@ -306,9 +306,26 @@ class Eventbrite(EventBase):
         """
         This function is used to post/create event on Eventbrite.com
         It uses create_tickets() method to allow user subscriptions and publish_event() to make it public
-
         :exception EventNotCreated: throws exception if unable to create event on Eventbrite.com
         :return: event_id, tickets_id: a tuple containing event_id on Eventbrite and tickets_id for this event
+
+            :Example:
+
+                In order to create event first create EventBrite object and it takes user
+                and authentication headers e.g.
+
+                >> eventbrite = Eventbrite(user=gt_user, headers=authentication_headers)
+
+                Then call event_gt_to_sn_mapping() method on this object and pass it event dictionary.
+                >> eventbrite.event_gt_to_sn_mapping(event_data)
+
+                It will create event payload which is required to post event on Eventbrite.com
+                Now call create event to create event on Eventbrite.com
+
+                >> eventbrite.create_event()
+
+                This method returns id of getTalent event that was created on Eventbrite.com as well.
+
         """
         # create url to post/create event on eventbrite.com
         url = self.api_url + "/events/"
@@ -331,6 +348,7 @@ class Eventbrite(EventBase):
                         % self.event_payload['event.name.html'])
             self.data['social_network_event_id'] = event_id
             self.data['tickets_id'] = ticket_id
+            return self.save_event()
         else:
             error_message = 'Event was not created Successfully as draft'
             response = response.json()
@@ -350,6 +368,23 @@ class Eventbrite(EventBase):
 
         :exception EventNotCreated: throws exception if unable to update event on Eventbrite.com)
         :return: event_id, tickets_id: a tuple containing event_id on Eventbrite and tickets_id for this event)
+
+            :Example:
+
+                In order to updates event first create EventBrite object and it takes user
+                and authentication headers e.g.
+
+                >> eventbrite = Eventbrite(user=gt_user, headers=authentication_headers)
+
+                Then call event_gt_to_sn_mapping() method on this object and pass it event dictionary.
+                >> eventbrite.event_gt_to_sn_mapping(event_data)
+
+                It will create event payload which is required to post event on Eventbrite.com
+                Now call update_event to  update event on Eventbrite.com and in getTalent database.
+
+                >> eventbrite.update_event()
+
+                This method returns id of updated getTalent event.
         """
         # create url to update event
         url = self.api_url + "/events/" + str(self.social_network_event_id) + '/'
@@ -365,6 +400,7 @@ class Eventbrite(EventBase):
                         % self.event_payload['event.name.html'])
             self.data['social_network_event_id'] = event_id
             self.data['tickets_id'] = ticket_id
+            return self.save_event()
         else:
             error_message = 'Event was not updated Successfully'
             response = response.json()
@@ -385,6 +421,22 @@ class Eventbrite(EventBase):
         :exception VenueNotFound: raises exception if venue does not exist in database
         :return venue_id: id for venue created on eventbrite.com
         :rtype venue_id: int
+
+            :Example:
+
+                This method is used to create venue or location for event on Eventbrite.
+                It requires a venue already created in getTalent database otherwise it will raise
+                VenueNotFound exception
+
+                Given venue id it first gets venue from database and uses its data to create
+                Eventbrite object
+
+                >> eventbrite = Eventbrite(user=gt_user, headers=authentication_headers)
+
+                Then we call add location from create event
+                To get a better understanding see *create_event()* method.
+
+
         """
         # get venue from db which will be created on Eventbrite
         venue = Venue.get_by_user_id_social_network_id_venue_id(self.user.id,
@@ -498,7 +550,7 @@ class Eventbrite(EventBase):
         This event is public.
         :param event_id: id for event on eventbrite.com
         :type event_id: int
-        :exception EventNotPublished: raises this exception when unable to publish event on Evntbrite.com
+        :exception EventNotPublished: raises this exception when unable to publish event on Eventbrite.com
         :return:
         """
         # create url to publish event
@@ -522,7 +574,7 @@ class Eventbrite(EventBase):
         and calls base class method to delete the Event from Eventbrite website
         which was created in the unit testing.
         :param event_id:id of newly created event
-        :return: True if event is deleted from vendor, False other wsie
+        :return: True if event is deleted from vendor, False otherwise
         """
         # we will only set specific url here
         self.url_to_delete_event = self.api_url + "/events/" + str(event_id) + "/unpublish/"
@@ -554,6 +606,45 @@ class Eventbrite(EventBase):
         :param data: dictionary containing event data
         :type data: dict
         :exception KeyError: can raise KeyError if some key not found in event data
+
+
+            : Example:
+
+                this method takes getTalent specific event data in following format.
+
+                data = {
+                        "organizer_id": 1,
+                        "venue_id": 1,
+                        "title": "Test Event",
+                        "description": "Test Event Description",
+                        "registration_instruction": "Just Come",
+                        "end_datetime": "30 Oct, 2015 04:51 pm",
+                        "group_url_name": "QC-Python-Learning",
+                        "social_network_id": 13,
+                        "timezone": "Asia/Karachi",
+                        "cost": 0,
+                        "start_datetime": "25 Oct, 2015 04:50 pm",
+                        "currency": "USD",
+                        "group_id": 18837246,
+                        "max_attendees": 10
+                }
+
+                And then makes Eventbrite specific data like this
+
+                event_payload = {
+                                    'event.start.utc': '2015-10-30T11:51:00Z',
+                                    'event.start.timezone': "Asia/Karachi",
+                                    'event.end.utc': '2015-10-25T11:50:00Z',
+                                    'event.end.timezone': "Asia/Karachi",
+                                    'event.currency': 'USD',
+                                    'event.name.html': 'Test Event',
+                                    'event.description.html': 'Test Event Description'
+                                }
+                ticket_payload = {
+                                    'ticket_class.name': 'Event Ticket',
+                                    'ticket_class.quantity_total': 10,
+                                    'ticket_class.free': True,
+                                }
         """
         assert data, 'data should not be None/empty'
         assert isinstance(data, dict), 'data should be a dictionary'

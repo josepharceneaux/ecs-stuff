@@ -8,7 +8,7 @@ import json
 def test_subscribed_social_network(test_user, base_url, auth_data, is_subscribed_test_data):
     """
     Input: We created two test social networks with name SN1 and SN2 and added credentials for SN1
-    in UserCredentials Table in is_subscribed_test_data fixture.
+    in UserSocialNetworkCredential Table in is_subscribed_test_data fixture.
 
     Output: Once we call the /social_networks/ for that user we get a list
     of all social networks and for Now in social_networks API data, these two social networks
@@ -35,10 +35,10 @@ def test_subscribed_social_network(test_user, base_url, auth_data, is_subscribed
     assert not_subscribed_social_network[0]['is_subscribed'] == False, 'SN2 must be not subscribed'
 
 
-
 def test_social_network_no_auth(test_user, base_url, auth_data):
     response = requests.get(base_url + '/social_networks/',
                             headers={'Authorization': 'some random'})
     assert response.status_code == 401
     assert "The server could not verify" in json.loads(response.text)['message']
+
 

@@ -36,7 +36,7 @@ class User(db.Model):
     # Relationships
     candidates = db.relationship('Candidate', backref='user')
     public_candidate_sharings = db.relationship('PublicCandidateSharing', backref='user')
-    user_credentials = db.relationship('UserCredentials', backref='user')
+    user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
     events = db.relationship('Event', backref='user', lazy='dynamic')
     organizers = db.relationship('Organizer', backref='user', lazy='dynamic')
     venues = db.relationship('Venue', backref='user', lazy='dynamic')
@@ -267,12 +267,12 @@ class UserScopedRoles(db.Model):
         return dict(roles=[user_scoped_role.roleId for user_scoped_role in user_scoped_roles])
 
 
-class UserCredentials(db.Model):
+class UserSocialNetworkCredential(db.Model):
     """
     This represents database table that holds user's credentials of a
     social network.
     """
-    __tablename__ = 'user_credentials'
+    __tablename__ = 'user_social_network_credential'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id'), nullable=False)
     social_network_id = db.Column('socialNetworkId', db.Integer, db.ForeignKey('social_network.id'), nullable=False)
@@ -294,14 +294,14 @@ class UserCredentials(db.Model):
         assert social_network_id is not None
 
         return cls.query.filter(
-            UserCredentials.social_network_id == social_network_id
+            cls.social_network_id == social_network_id
         ).all()
 
     @classmethod
     def get_by_user_id(cls, user_id):
         assert user_id is not None
         return cls.query.filter(
-            UserCredentials.user_id == user_id
+            cls.user_id == user_id
         ).all()
 
     @classmethod
@@ -310,8 +310,8 @@ class UserCredentials(db.Model):
         assert social_network_id is not None
         return cls.query.filter(
             db.and_(
-                UserCredentials.user_id == user_id,
-                UserCredentials.social_network_id == social_network_id
+                cls.user_id == user_id,
+                cls.social_network_id == social_network_id
             )
         ).first()
 
@@ -331,7 +331,7 @@ class UserCredentials(db.Model):
         assert social_network_id is not None
         return cls.query.filter(
             db.and_(
-                UserCredentials.webhook == webhook_id,
-                UserCredentials.social_network_id == social_network_id
+                cls.webhook == webhook_id,
+                cls.social_network_id == social_network_id
             )
         ).one()

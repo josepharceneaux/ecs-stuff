@@ -10,11 +10,10 @@ from base import RSVPBase
 
 # Application Specific
 from common.models.event import Event
-from common.models.user import UserCredentials
+from common.models.user import UserSocialNetworkCredential
 from common.models.social_network import SocialNetwork
 from social_network_service import logger
 from social_network_service.utilities import Attendee
-from social_network_service.utilities import log_error
 from social_network_service.utilities import http_request
 from social_network_service.custom_exections import NoUserFound
 from social_network_service.custom_exections import EventNotFound
@@ -115,7 +114,7 @@ class Eventbrite(RSVPBase):
         if webhook_id:
             # gets gt-user object
             social_network = SocialNetwork.get_by_name(cls.__name__)
-            user_credentials = UserCredentials.get_by_webhook_id_and_social_network_id(
+            user_credentials = UserSocialNetworkCredential.get_by_webhook_id_and_social_network_id(
                 webhook_id, social_network.id)
         else:
             raise NoUserFound('Webhook is "%(webhook_id)s"' % webhook_id_dict)

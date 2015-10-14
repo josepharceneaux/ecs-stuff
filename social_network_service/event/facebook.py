@@ -24,7 +24,6 @@ from social_network_service.event.base import EventBase
 from social_network_service.utilities import log_exception
 
 
-
 class Facebook(EventBase):
     def __init__(self, *args, **kwargs):
         super(Facebook, self).__init__(*args, **kwargs)
@@ -34,9 +33,19 @@ class Facebook(EventBase):
 
     def get_events(self):
         """
+        This method retrieves events from facebook through its Graph API and saves in database.
         We send GET requests to API URL and get data. We also
         have to handle pagination because Facebook's API
-        does that too.
+        sends paginated response.
+
+
+            :Example:
+
+                create facebook object and call get_events on it
+
+                facebook = Facebook(user=gt_user,
+                                    headers=auth_headers)
+                facebook.get_events()
         """
         self.graph = facebook.GraphAPI(access_token=self.access_token)
         all_events = []
@@ -90,7 +99,6 @@ class Facebook(EventBase):
         Basically we take event's data from Facebook's end
         and map their fields to getTalent db and finally we return
         Event's object (instance of SQLAlchemy model).
-        TODO; document like Sphinx
         :param event:
         :return:
         """
@@ -185,15 +193,16 @@ class Facebook(EventBase):
 
     def create_event(self):
         """
-        Event creation via API is not alloewd on Facebook
+        Event creation via API is not allowed on Facebook but since it inherits EventBase class so we
+        need to implement it
         :return:
         """
         pass
 
     def event_gt_to_sn_mapping(self, data):
         """
-        Event creation via API is not alloewd on Facebook.
-        So ther will be no maapping of fields
+        Event creation via API is not allowed on Facebook.
+        So there will be no mapping of fields.
         :return:
         """
         pass

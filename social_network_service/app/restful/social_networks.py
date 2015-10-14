@@ -3,11 +3,12 @@ import types
 from flask import Blueprint, request
 from common.models.organizer import Organizer
 from common.models.venue import Venue
+from social_network_service import logger
 from social_network_service.app.app_utils import authenticate, api_route, ApiResponse
 from flask.ext.restful import Resource, Api
 from social_network_service.meetup import Meetup
 from social_network_service.custom_exections import ApiException
-from common.models.user import UserCredentials, User
+from common.models.user import UserSocialNetworkCredential, User
 from common.models.social_network import SocialNetwork
 from social_network_service.utilities import get_class
 social_network_blueprint = Blueprint('social_network_api', __name__)
@@ -130,7 +131,8 @@ class SocialNetworks(Resource):
         user_id = kwargs['user_id']
         # get event_ids for events to be deleted
         req_data = request.get_json(force=True)
-        social_network_ids = req_data['social_network_ids'] if 'social_network_ids' in req_data and isinstance(req_data['social_network_ids'], list) else []
+        social_network_ids = req_data['social_network_ids'] \
+            if 'social_network_ids' in req_data and isinstance(req_data['social_network_ids'], list) else []
         total_deleted = 0
         total_not_deleted = 0
         if social_network_ids:
@@ -139,17 +141,17 @@ class SocialNetworks(Resource):
                     if SocialNetwork.get_by_id(sn_id):
                         SocialNetwork.delete(sn_id)
                         total_deleted += 1
-                except Exception:
-                    # TODO log the exception
+                except Exception as e:
                     total_not_deleted += 1
+                    logger.debug('Unable to delete social network with ID: %s\nError: %s' % (sn_id, e.message))
 
-        if total_deleted:
-                return ApiResponse(json.dumps(dict(
-                    message='%s social networks deleted successfully' % total_deleted)), status=200)
-        elif total_not_deleted:
+        if total_not_deleted:
             return ApiResponse(json.dumps(dict(message='Unable to delete %s social networks' % total_not_deleted,
                                                deleted=total_deleted,
                                                not_deleted=total_not_deleted)), status=207)
+        elif total_deleted:
+                return ApiResponse(json.dumps(dict(
+                    message='%s social networks deleted successfully' % total_deleted)), status=200)
         return ApiResponse(json.dumps(dict(message='Bad request, include social work ids as list data')), status=400)
 
 
@@ -208,9 +210,9 @@ class SocialNetworks(Resource):
         """
         user_id = kwargs.get('user_id')
         assert user_id
-        # Get list of networks user is subscribed to from UserCredentials table
+        # Get list of networks user is subscribed to from UserSocialNetworkCredential table
         subscribed_networks = None
-        subscribed_data = UserCredentials.get_by_user_id(user_id=user_id)
+        subscribed_data = UserSocialNetworkCredential.get_by_user_id(user_id=user_id)
         if subscribed_data:
             # Get list of social networks user is subscribed to
             subscribed_networks = SocialNetwork.get_by_ids(
@@ -362,7 +364,7 @@ class GetTokenValidity(Resource):
             }
 
         .. Status:: 200 (OK)
-                    461 (UserCredentials not found)
+                    461 (UserSocialNetworkCredential not found)
                     404 (Social Network not found)
                     500 (Internal Server Error)
 

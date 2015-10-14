@@ -179,9 +179,8 @@ class Facebook(RSVPBase):
                 response = requests.get(response['paging']['next'])
                 if response.ok:
                     response = response.json()
-                # #TODO following if sohuld be removed
-                if response and response['data']:
-                    target_list.extend(response['data'])
+                    if 'data' in response:
+                        target_list.extend(response['data'])
             except KeyError:
                 break
             except requests.HTTPError as error:
@@ -256,10 +255,9 @@ class Facebook(RSVPBase):
                 attendee.longitude = location.get('longitude')
                 attendee.zip = location.get('zip')
                 attendee.profile_url = data.get('link', '')
-                # TODO also check in following if 'data' and 'url' keys are
                 # there as well
                 attendee.picture_url = data['picture']['data']['url'] \
-                    if 'picture' in data else ''
+                    if 'picture' in data and 'data' in data['picture'] and 'url' in data['picture']['data'] else ''
                 attendee.gt_user_id = self.user.id
                 attendee.social_network_id = self.social_network.id
                 attendee.vendor_rsvp_id = rsvp['id']  # we are using profile_id

@@ -349,6 +349,7 @@ class Meetup(EventBase):
             logger.info('|  Event %s created Successfully  |'
                         % self.payload['name'])
             self.data['social_network_event_id'] = event_id
+            return self.save_event()
         else:
             error_message = 'Event was not Created. Error occurred during' \
                             ' draft creation'
@@ -380,6 +381,7 @@ class Meetup(EventBase):
             logger.info('|  Event %s updated Successfully  |'
                         % self.payload['name'])
             self.data['social_network_event_id'] = event_id
+            return self.save_event()
         else:
             error_message = 'Event was not Created. Error occurred during ' \
                             'event update on Meetup'
@@ -397,6 +399,20 @@ class Meetup(EventBase):
                   in getTalent database
         :return id: id of venue created if creation is successful.
         :rtype id: int
+
+            :Example:
+
+                This method is used to create venue or location for event on Meetup.
+                It requires a venue already created in getTalent database otherwise it will raise
+                VenueNotFound exception
+
+                Given venue id it first gets venue from database and uses its data to create
+                Meetup object
+
+                >> meetup = Meetup(user=gt_user, headers=authentication_headers)
+
+                Then we call add location from create event
+                To get a better understanding see *create_event()* method.
         """
         venue_in_db = Venue.get_by_user_id_social_network_id_venue_id(
             self.user.id, self.social_network.id, self.venue_id)
@@ -461,7 +477,7 @@ class Meetup(EventBase):
         and calls base class method to delete the Event from meetup which was
         created in the unit testing.
         :param event_id:id of newly created event
-        :return: True if event is deleted from vendor, False other wsie
+        :return: True if event is deleted from vendor, False otherwise
         :rtype Boolean
         """
         self.url_to_delete_event = self.api_url + "/event/" + str(event_id)
@@ -496,6 +512,39 @@ class Meetup(EventBase):
         :type data: dict
         :exception KeyError: can raise KeyError if some key not found in event
                             data
+
+            : Example:
+
+                this method takes getTalent specific event data in following format.
+
+                data = {
+                        "organizer_id": 1,
+                        "venue_id": 1,
+                        "title": "Test Event",
+                        "description": "Test Event Description",
+                        "registration_instruction": "Just Come",
+                        "end_datetime": "30 Oct, 2015 04:51 pm",
+                        "group_url_name": "QC-Python-Learning",
+                        "social_network_id": 13,
+                        "timezone": "Asia/Karachi",
+                        "cost": 0,
+                        "start_datetime": "25 Oct, 2015 04:50 pm",
+                        "currency": "USD",
+                        "group_id": 18837246,
+                        "max_attendees": 10
+                }
+
+                And then makes Meetup specific data like this
+
+                event_payload = {
+                                    'name': 'Test Event',
+                                    'group_id': 18837246,
+                                    'group_url_name': 'QC-Python-Learning',
+                                    'description': 'Test Event Description',
+                                    'time': 14563323434,
+                                    'guest_limit': 10
+                                }
+
         """
         assert data, 'data should not be None/empty'
         assert isinstance(data, dict), 'data should be a dictionary'

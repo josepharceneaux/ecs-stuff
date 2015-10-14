@@ -338,14 +338,9 @@ def process_event(data, user_id, method='Create'):
         data['user_id'] = user_id
         event_obj.event_gt_to_sn_mapping(data)
         if method == 'Create':
-            event_obj.create_event()
+            return event_obj.create_event()
         else:
-            event_obj.update_event()
-
-        if event_obj.data['social_network_event_id']:  # Event has been successfully published on vendor
-            # save event in database
-            gt_event_id = event_obj.save_event()
-            return gt_event_id
+            return event_obj.update_event()
     else:
         error_message = 'Data not received from Event Creation/Edit FORM'
         log_error({'user_id': user_id,

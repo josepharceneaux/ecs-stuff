@@ -1,7 +1,7 @@
 # Application Specific
 from common.models.event import Event
 from common.models.rsvp import RSVP
-from common.models.user import UserCredentials
+from common.models.user import UserSocialNetworkCredential
 from common.models.social_network import SocialNetwork
 from social_network_service.utilities import get_class, http_request
 
@@ -21,7 +21,7 @@ class Test_Event_Importer():
         'meetup_event' to create events on Meetup websites.
         """
         social_network_event_id = meetup_event.social_network_event_id
-        user_credentials = UserCredentials.get_by_user_and_social_network_id(
+        user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(
             auth_data['user_id'], meetup_event.social_network.id)
         Event.delete(meetup_event.id)
         # create object of respective social network
@@ -52,7 +52,7 @@ class Test_Event_Importer():
         """
 
         social_network_event_id = meetup_event.social_network_event_id
-        user_credentials = UserCredentials.get_by_user_and_social_network_id(
+        user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(
             auth_data['user_id'], meetup_event.social_network.id)
         # create object of respective social network
         social_network = SocialNetwork.get_by_name(user_credentials.social_network.name)

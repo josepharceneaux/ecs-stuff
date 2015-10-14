@@ -16,7 +16,7 @@ from utilities import log_error
 from utilities import http_request
 from utilities import log_exception
 from common.models.user import User
-from common.models.user import UserCredentials
+from common.models.user import UserSocialNetworkCredential
 from common.models.social_network import SocialNetwork
 from social_network_service import logger
 from social_network_service.custom_exections import NoUserFound
@@ -168,7 +168,7 @@ class SocialNetworkBase(object):
                 self.social_network = \
                     SocialNetwork.get_by_name(self.__class__.__name__)
             self.user_credentials = \
-                UserCredentials.get_by_user_and_social_network_id(
+                UserSocialNetworkCredential.get_by_user_and_social_network_id(
                     user_id, self.social_network.id)
             if self.user_credentials:
                 data = {
@@ -201,7 +201,7 @@ class SocialNetworkBase(object):
                     raise MissingFieldsInUserCredentials('API Error: %s'
                                                          % error_message)
             else:
-                raise UserCredentialsNotFound('UserCredentials for social network '
+                raise UserCredentialsNotFound('UserSocialNetworkCredential for social network '
                                               '%s and User Id %s not found in db.'
                                               % (self.__class__.__name__,
                                                  self.user.id))
@@ -479,14 +479,14 @@ class SocialNetworkBase(object):
 
         :return the True if db transaction is successful. False otherwise.
         """
-        user_credentials_in_db = UserCredentials.get_by_user_and_social_network_id(
+        user_credentials_in_db = UserSocialNetworkCredential.get_by_user_and_social_network_id(
             user_credentials['user_id'], user_credentials['social_network_id'])
         try:
             if user_credentials_in_db:
                 user_credentials_in_db.update(**user_credentials)
             else:
-                user_credentials = UserCredentials(**user_credentials)
-                UserCredentials.save(user_credentials)
+                user_credentials = UserSocialNetworkCredential(**user_credentials)
+                UserSocialNetworkCredential.save(user_credentials)
             return user_credentials_in_db
         except Exception as error:
             log_exception({'user_id': user_credentials['user_id'],

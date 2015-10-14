@@ -1,5 +1,17 @@
 """
-TODO; commment what this file is and wehat it does
+This modules contains helper methods and Classes which we are using in Social Network Service API app.
+
+        * ApiResponse:
+            This class is used to create API response object to return json response.
+
+        * authenticate:
+            This helper method is being used to annotate api endpoints and
+            it get user info from Authorization token and then passes user_id
+            in requested api endpoint method.
+
+
+
+
 """
 from functools import wraps
 import json
@@ -23,6 +35,14 @@ class ApiResponse(Response):
 
 
 def authenticate(func):
+    """
+    This helper method is being used to annotate api endpoints and
+    it get user info from Authorization token and then passes user_id
+    in requested api endpoint method.
+    :param func: api endpoint method to be called
+    :type func: function
+    :return:
+    """
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
@@ -47,6 +67,22 @@ def authenticate(func):
 
 
 def api_route(self, *args, **kwargs):
+    """
+    This method helps to make api endpoints to look similar to normal flask routes.
+    Simply use it as a decorator on api endpoint method.
+
+        :Example:
+
+            @api.route('/events/')
+            class Events(Resource):
+
+                def get(*args, **kwargs):
+                    do stuff here for GET request
+
+                def post(*args, **kwargs):
+                    do stuff here for POST request
+
+    """
     def wrapper(cls):
         self.add_resource(cls, *args, **kwargs)
         return cls

@@ -19,7 +19,7 @@ from datetime import datetime
 from dateutil.parser import parse
 from common.models.user import User
 from common.models.event import Event
-from common.models.user import UserCredentials
+from common.models.user import UserSocialNetworkCredential
 from social_network_service import logger
 from social_network_service.utilities import log_error
 from social_network_service.utilities import get_class
@@ -98,7 +98,7 @@ class EventBase(object):
 
     def __init__(self, *args, **kwargs):
         """
-        This method takes User or UserCredentials object in kwargs and raises exception if no one is found.
+        This method takes User or UserSocialNetworkCredential object in kwargs and raises exception if no one is found.
 
         :param args:
         :param kwargs:
@@ -132,7 +132,7 @@ class EventBase(object):
         member_id, access_token and refresh_token for user.
         :return:
         """
-        user_credentials = UserCredentials.get_by_user_and_social_network_id(
+        user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(
             self.user.id, self.social_network.id
         )
         assert user_credentials is not None
