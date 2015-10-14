@@ -29,11 +29,11 @@ class User(db.Model):
     added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
     updated_time = db.Column('updatedTime', db.DateTime)
     dice_user_id = db.Column('diceUserId', db.Integer)
-    group_id = db.Column('groupId', db.Integer, db.ForeignKey('user_groups.id'), default=1, nullable=False)
+    group_id = db.Column('groupId', db.Integer, db.ForeignKey('user_groups.id'))
+    # TODO: Set Nullable = False after setting group_id for existing data
 
     # Relationships
     candidates = relationship('Candidate', backref='user')
-    user_groups = relationship('UserGroups', backref='user')
     public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
 
     def is_authenticated(self):
@@ -225,7 +225,7 @@ class UserScopedRoles(db.Model):
         """
         if User.query.get(user_id):
             for role in roles_list:
-                if UserScopedRoles.is_number(role):
+                if UserScopedRoles.is_role_number(role):
                     role_id = role
                 else:
                     domain_role = DomainRole.get_by_name(role)
@@ -255,7 +255,7 @@ class UserScopedRoles(db.Model):
         """
         if User.query.get(user_id):
             for role in roles_list:
-                if UserScopedRoles.is_number(role):
+                if UserScopedRoles.is_role_number(role):
                     role_id = role
                 else:
                     domain_role = DomainRole.get_by_name(role)
@@ -290,9 +290,10 @@ class UserGroups(db.Model):
     name = db.Column(db.String(255), nullable=False, unique=True)
     description = db.Column(db.String(225), nullable=True)
     domain_id = db.Column(
-        db.Integer, db.ForeignKey('domain.id')
+        db.Integer, db.ForeignKey('domain.id'), nullable=False
     )
     domain = db.relationship('Domain')
+    users = relationship('User', backref='user_groups')
 
     def delete(self):
         db.session.delete(self)
