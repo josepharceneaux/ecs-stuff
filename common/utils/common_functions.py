@@ -3,6 +3,7 @@ from activity_service.common.models.db import db
 from activity_service.activities_app import app
 from flask import current_app
 
+
 # Setting current app context
 with app.app_context():
     db.session.commit()
@@ -19,3 +20,4 @@ def get_or_create(session, model, defaults=None, **kwargs):
         instance = model(**params)
         session.add(instance)
         return instance, True
+

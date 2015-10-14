@@ -3,63 +3,91 @@ from datetime import datetime
 import random, string, uuid
 
 # Third Party
-import pytest
+import pytest, requests
 from common.utils.common_functions import get_or_create
 
 # Application Specific
 from activity_service.activities_app import app
 from activity_service.common.models.db import db
-from activity_service.common.models.misc import (Activity, Culture, Organization)
-from activity_service.common.models.candidate import Candidate
-from activity_service.common.models.user import (Client, Domain, Token, User)
+from activity_service.common.models.misc import (Culture, Organization)
+from activity_service.common.models.user import (Client, Domain, User, Token)
 
 ISO_FORMAT = '%Y-%m-%d %H:%M'
 APP = app.test_client()
+USER_PASSWORD = 'pbkdf2(1000,64,sha512)$a97efdd8d6b0bf7f$55de0d7bafb29a88e7596542aa927ac0e1fbc30e94db2c5215851c72294ebe01fb6461b27f0c01b9bd7d3ce4a180707b6652ba2334c7a2b0fcb93c946aa8b4ec'
 
 
-# todo: authentication expires in 2 hours. For testing, we might need a referesh token unless if all tests run in two hours
+class UserAuthentication():
+    def __init__(self, db):
+        self.db = db
+        self.client_id = str(uuid.uuid4())[0:8]
+        self.client_secret = str(uuid.uuid4())[0:8]
+        self.new_client = Client(client_id=self.client_id, client_secret=self.client_secret)
+
+    def get_auth_token(self, user, get_bearer_token=False):
+        self.db.session.add(self.new_client)
+        self.db.session.commit()
+        if get_bearer_token:
+            return get_token(user_login_credentials=dict(
+                client_id=self.client_id, client_secret=self.client_secret, user=user
+            ))
+        return dict(client_id=self.client_id, client_secret=self.client_secret, user=user)
+
+    def get_auth_credentials_to_revoke_token(self, user, auto_revoke=False):
+        self.db.session.commit()
+        token = Token.query.filter_by(user_id=user.id).first()
+        if auto_revoke:
+            return revoke_token(user_logout_credentials=dict(
+                token=token, client_id=self.client_id, client_secret=self.client_secret, user=user
+            ))
+        return dict(token=token, client_id=self.client_id, client_secret=self.client_secret,
+                    grand_type='password')
+
+    def refresh_token(self, user):
+        token = Token.query.filter_by(user_id=user.id).first()
+        return dict(grand_type='refresh_token', token_row=token)
+
+
 @pytest.fixture()
-def get_auth_token(sample_user):
-    """
-    :param test_user:
-    :return:
-    """
-    # client_id and client_secret can be any arbitrary string
-    client_id = str(uuid.uuid4())[0:8]
-    client_secret = str(uuid.uuid4())[0:8]
+def user_auth():
+    return UserAuthentication(db=db)
 
-    # Add cline_id and client_secret to the database
-    new_client = Client(client_id=client_id, client_secret=client_secret)
-    db.session.add(new_client)
-    db.session.commit()
 
-    user_email = sample_user.email
-    user_password = sample_user.password
+def get_token(user_login_credentials):
+    data = {'client_id': user_login_credentials['client_id'],
+            'client_secret': user_login_credentials['client_secret'],
+            'username': user_login_credentials['user'].email,
+            'password': 'Talent15',
+            'grant_type':'password'}
+    resp = requests.post('http://localhost:5000/oauth2/token', data=data)
+    assert resp.status_code == 200
+    return resp.json()
 
-    return dict(email=user_email, password=user_password, client_id=client_id,
-                client_secret=client_secret)
+
+def revoke_token(user_logout_credentials):
+    access_token = user_logout_credentials['token'].access_token
+    revoke_data = {'client_id': user_logout_credentials['client_id'],
+                   'client_secret': user_logout_credentials['client_secret'],
+                   'token': access_token,
+                   'grant_type': 'password'}
+    resp = requests.post('http://localhost:5000/oauth2/revoke', data=revoke_data)
+    assert resp.status_code == 200
+    return
 
 
 @pytest.fixture(autouse=True)
 def sample_user(test_domain):
     user_attrs = dict(
         domain_id=test_domain.id, first_name='Jamtry', last_name='Jonas',
-
-        password='pbkdf2(1000,64,sha512)$a97efdd8d6b0bf7f$55de0d7bafb29a88e7596542aa927ac0e1fbc30e94db2c5215851c72294ebe01fb6461b27f0c01b9bd7d3ce4a180707b6652ba2334c7a2b0fcb93c946aa8b4ec',
-
+        password=USER_PASSWORD,
         email='sample_user@{}.com'.format(randomword(7)), added_time=datetime(2050, 4, 26)
     )
     user, created = get_or_create(db.session, User, defaults=None, **user_attrs)
     if created:
-        print "$$$$$ CREATED $$$$$"
         db.session.add(user)
         db.session.commit()
 
     return user
-
-
-def revoke_auth_token():
-    pass
 
 
 @pytest.fixture(autouse=True)

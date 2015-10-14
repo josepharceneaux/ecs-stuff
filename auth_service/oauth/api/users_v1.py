@@ -4,7 +4,6 @@ from common.models.user import User
 from common.utils.validators import is_number
 from common.utils.auth_utils import authenticate_oauth_user
 from flask import request
-from common.error_handling import *
 
 
 api = Api(app)
@@ -27,8 +26,7 @@ class UserResource(Resource):
         """
         authenticated_user = authenticate_oauth_user(request=request)
         if authenticated_user.get('error'):
-            return {'error': {'code': 2, 'message': 'not authorized'}}, 401
-            # raise ForbiddenError(error_message='not authorized', error_code=401)
+            return {'error': {'code': 2, 'message': 'Invalid username and/or password'}}, 401
 
         requested_user_id = kwargs.get('id')
         # id must be integer
@@ -38,7 +36,7 @@ class UserResource(Resource):
 
         requested_user = User.query.get(requested_user_id)
         if not requested_user:
-            return {'error': {'message': 'user not found'}}, 404
+            return {'error': {'message': 'User not found'}}, 404
 
         return {'user': {
             'id': requested_user_id,
@@ -47,7 +45,6 @@ class UserResource(Resource):
             'first_name': requested_user.first_name,
             'last_name': requested_user.last_name,
             'phone': requested_user.phone,
-            'registration_id': requested_user.registration_id,
             'dice_user_id': requested_user.dice_user_id
         }}
 
