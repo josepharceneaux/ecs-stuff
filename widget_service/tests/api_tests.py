@@ -80,6 +80,7 @@ def test_domain(test_culture, test_org, request):
 
     db.session.add(test_domain)
     db.session.commit()
+
     def fin():
         try:
             db.session.delete(test_domain)
@@ -93,15 +94,16 @@ def test_domain(test_culture, test_org, request):
 @pytest.fixture(autouse=True)
 def second_domain(test_culture, test_org, request):
     test_domain2 = Domain(name=random_word(40), usage_limitation=0,
-                         expiration=datetime.datetime(2050, 4, 26),
-                         added_time=datetime.datetime(2050, 4, 26),
-                         organization_id=test_org.id, is_fair_check_on=False, is_active=1,
-                         default_tracking_code=1, default_from_name=(random_word(100)),
-                         default_culture_id=test_culture.id,
-                         settings_json=random_word(55), updated_time=datetime.datetime.now())
+                          expiration=datetime.datetime(2050, 4, 26),
+                          added_time=datetime.datetime(2050, 4, 26),
+                          organization_id=test_org.id, is_fair_check_on=False, is_active=1,
+                          default_tracking_code=1, default_from_name=(random_word(100)),
+                          default_culture_id=test_culture.id,
+                          settings_json=random_word(55), updated_time=datetime.datetime.now())
 
     db.session.add(test_domain2)
     db.session.commit()
+
     def fin():
         try:
             db.session.delete(test_domain2)
@@ -150,6 +152,7 @@ def test_country(request):
     test_country = Country(name='United States', code='U.S.A')
     db.session.add(test_country)
     db.session.commit()
+
     def fin():
         try:
             db.session.delete(test_country)
@@ -166,6 +169,7 @@ def test_state(test_country, request):
                        abbreviation='CA')
     db.session.add(test_state)
     db.session.commit()
+
     def fin():
         try:
             db.session.delete(test_state)
@@ -184,6 +188,7 @@ def test_universities(test_state, request):
             University(name=random_word(35), state_id=test_state.id)
         )
     db.session.bulk_save_objects(universities)
+
     def fin():
         db.session.query(University).delete()
         db.session.commit()
@@ -195,8 +200,8 @@ def test_universities(test_state, request):
 def test_user(test_domain, request):
     user_attrs = dict(
         domain_id=test_domain.id, first_name='Jamtry', last_name='Jonas',
-        password='pbkdf2(1000,64,sha512)$bd913bac5e55a39b$ea5a0a2a2d156003faaf7986ea4cba3f25607e43ecffb36e0d2b82381035bbeaded29642a1dd6673e922f162d322862459dd3beedda4501c90f7c14b3669cd72',
-        email='jamtry@{}.com'.format(random_word(7)), added_time=datetime.datetime(2050, 4, 26)
+        password='password', email='jamtry@{}.com'.format(random_word(7)),
+        added_time=datetime.datetime(2050, 4, 26)
     )
     test_user, created = get_or_create(db.session, User, defaults=None, **user_attrs)
     if created:
@@ -220,6 +225,7 @@ def test_candidate_source(test_domain, request):
                                   domain_id=test_domain.id)
     db.session.add(test_source)
     db.session.commit()
+
     def fin():
         try:
             db.session.delete(test_source)
@@ -236,13 +242,12 @@ def test_majors(test_domain, request):
     for i in xrange(5):
         majors.append(Major(name=random_word(18), domain_id=test_domain.id))
     db.session.bulk_save_objects(majors)
+
     def fin():
         db.session.query(Major).delete()
         db.session.commit()
     request.addfinalizer(fin)
     return majors
-
-
 
 
 @pytest.fixture(autouse=True)
@@ -261,6 +266,7 @@ def test_widget_page(test_user, test_candidate_source, request):
                                   )
     db.session.add(test_widget_page)
     db.session.commit()
+
     def fin():
         try:
             db.session.delete(test_widget_page)
@@ -281,10 +287,11 @@ def test_extra_fields_location(test_domain, request):
     db.session.commit()
 
     city_field = CustomField(domain_id=test_domain.id, name='City of Interest',
-                              type='string', added_time=datetime.datetime.now(),
-                              updated_time=datetime.datetime.now())
+                             type='string', added_time=datetime.datetime.now(),
+                             updated_time=datetime.datetime.now())
     db.session.add(city_field)
     db.session.commit()
+
     def fin():
         db.session.query(CustomField).delete()
         db.session.commit()
@@ -302,6 +309,7 @@ def test_oauth_credentials(test_user, request):
     db.session.commit()
     db.session.add(test_token)
     db.session.commit()
+
     def fin():
         db.session.query(Token).delete()
         db.session.commit()
@@ -317,11 +325,12 @@ def test_email_label(request):
     test_email_label = EmailLabel(description='Primary')
     db.session.add(test_email_label)
     db.session.commit()
+
     def fin():
         db.session.query(EmailLabel).delete()
         db.session.commit()
+    request.addfinalizer(fin)
     return test_email_label
-
 
 
 def test_api_returns_domain_filtered_aois(test_widget_page, request):
