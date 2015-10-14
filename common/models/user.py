@@ -333,7 +333,39 @@ class UserGroups(db.Model):
 
     @staticmethod
     def all_groups_of_domain(domain_id):
-        """ Get all user_groups with names in database """
+        """ Get all user_groups of with names in database """
         all_user_groups_of_domain = UserGroups.query.filter_by(domain_id=domain_id) or []
         return dict(user_groups=[{'id': user_group.id, 'name': user_group.name} for user_group in
                                  all_user_groups_of_domain])
+
+    @staticmethod
+    def all_users_of_group(group_id):
+        """ Get all users of a group """
+        all_users_of_group = User.query.filter_by(group_id=group_id) or []
+        return dict(users=[{'id': user.id, 'lastName': user.last_name} for user in all_users_of_group])
+
+    @staticmethod
+    def delete_groups(domain_id, group_ids):
+        if Domain.query.get(domain_id):
+            for group_id in group_ids:
+                group = UserGroups.query.get(group_id) or None
+                if group and group.domain_id == domain_id:
+                    db.session.delete(group)
+                else:
+                    raise Exception("Group %s doesn't exist or either it doesn't belong to Domain %s " % (group_id, domain_id))
+            db.session.commit()
+        else:
+            raise Exception("Domain %s doesn't exist" % domain_id)
+
+    @staticmethod
+    def add_users_to_group(group_id, user_ids):
+        if UserGroups.query.get(group_id):
+            for user_id in user_ids:
+                user = User.query.get(user_id) or None
+                if user:
+                    user.group_id = group_id
+                    db.session.commit()
+                else:
+                    raise Exception("User: %s doesn't exist" % user_id)
+        else:
+            raise Exception("User group %s doesn't exist" % group_id)

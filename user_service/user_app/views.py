@@ -4,31 +4,14 @@ from . import app
 from common.models.user import *
 from user_service.user_app import logger
 from flask import request, jsonify
-import requests
-import json
-from functools import wraps
-
-
-def require_oauth(func):
-    @wraps(func)
-    def authenticate(*args, **kwargs):
-        try:
-            oauth_token = request.headers['Authorization']
-        except KeyError:
-            return jsonify({'error': {'message': 'No Auth header set'}}), 400
-        r = requests.get(app.config['OAUTH_SERVER_URI'], headers={'Authorization': oauth_token})
-        if r.status_code != 200:
-            return jsonify({'error': {'message': 'Invalid Authorization'}}), 401
-        valid_user_id = json.loads(r.text).get('user_id')
-        if not valid_user_id:
-            return jsonify({'error': {'message': 'Oauth did not provide a valid user_id'}}), 400
-        return func(*args, **kwargs)
-    return authenticate
+from common.utils.auth_utils import require_oauth, accepted_roles, required_roles
 
 
 @app.route('/')
+@require_oauth
 def hello_world():
-    return jsonify(good=True)
+    user = request.oauth_token
+    return jsonify(good=user)
 
 
 @app.route('/roles/verify')
@@ -49,6 +32,7 @@ def verify_roles():
 
 @app.route('/users/<int:user_id>/roles', methods=['POST', 'GET', 'DELETE'])
 @require_oauth
+@required_roles('ADMIN')
 def user_scoped_roles(user_id):
     if request.method == 'GET':
         return jsonify(UserScopedRoles.get_all_roles_of_user(user_id))
@@ -73,6 +57,60 @@ def user_scoped_roles(user_id):
 
 @app.route('/domain/<int:domain_id>/roles', methods=['GET'])
 @require_oauth
+@accepted_roles('ADMIN', 'CAN_SEND_CAMPAIGN')
 def get_all_roles_of_domain(domain_id):
     if Domain.query.get(domain_id):
         return jsonify(DomainRole.all_roles_of_domain(domain_id))
+
+
+@app.route('/groups/<int:group_id>/users', methods=['POST', 'GET'])
+@require_oauth
+@accepted_roles('ADMIN', 'DOMAIN_ADMIN')
+def user_groups(group_id):
+    if request.method == 'GET':
+        # Get all users of group
+        return jsonify(UserGroups.all_users_of_group(group_id))
+    else:
+        posted_data = request.get_json(silent=True)
+        if posted_data:
+            try:
+                if request.method == 'POST':
+                    UserGroups.add_users_to_group(group_id, posted_data.get('user_ids'))
+                    return jsonify(success=True)
+                else:
+                    raise Exception("Invalid URL method %s" % request.method)
+            except Exception as e:
+                logger.error(e)
+                return jsonify(error_message=e.message), 404
+        else:
+            return jsonify(error_message='Request data is corrupt'), 400
+
+
+@app.route('/groups', methods=['GET', 'POST', 'DELETE'])
+@require_oauth
+@accepted_roles('ADMIN', 'DOMAIN_ADMIN')
+def domain_groups(group_id):
+    if request.method == 'GET':
+        # Get all groups of a domain
+        return jsonify(UserGroups.all_groups_of_domain(request.user.domain_id))
+
+    posted_data = request.get_json(silent=True)
+    if posted_data:
+        try:
+            if request.method == 'POST':
+                name = posted_data.get('group_name')
+                description = posted_data.get('group_description') or ''
+                domain_id = request.user.domain_id
+                UserGroups.save(domain_id, name, description)
+                return jsonify(success=True)
+            if request.method == 'DELETE':
+                # Delete groups with given group_ids
+                UserGroups.delete_groups(request.user.domain_id, posted_data.get('group_ids'))
+                return jsonify(success=True)
+            else:
+                raise Exception("Invalid URL method %s" % request.method)
+        except Exception as e:
+            logger.error(e)
+            return jsonify(error_message=e.message), 404
+    else:
+        return jsonify(error_message='Request data is corrupt'), 400

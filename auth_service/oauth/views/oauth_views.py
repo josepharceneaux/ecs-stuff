@@ -1,79 +1,13 @@
 __author__ = 'ufarooqi'
 
 from auth_service.oauth import app
-from werkzeug.security import check_password_hash
-from auth_service.common.models.user import *
 from auth_service.oauth import gt_oauth
 from auth_service.oauth import logger
 from flask import request, jsonify
-from datetime import datetime, timedelta
-
-
-@gt_oauth.clientgetter
-def load_client(client_id):
-    return Client.query.filter_by(client_id=client_id).first()
-
-
-# Format of PBKDF hashed passwords in web2py is different than that of flask
-def change_hashing_format(password):
-    if password is None:
-        return ''
-    elif password.count('$') == 2:
-        (digest_alg, salt, hash) = password.split('$')
-        return 'pbkdf2:sha512:1000$%s$%s' % (salt, hash)
 
 
 gt_oauth.grantgetter(lambda *args, **kwargs: None)
 gt_oauth.grantsetter(lambda *args, **kwargs: None)
-
-
-@gt_oauth.usergetter
-def get_user(username, password, *args, **kwargs):
-    user = User.query.filter_by(email=username).first()
-    if user:
-        user_password = change_hashing_format(user.password)
-        if check_password_hash(user_password, password):
-            return user
-    logger.warn('There is no user with username: %s and password: %s', username, password)
-    return None
-
-
-@gt_oauth.tokengetter
-def load_token(access_token=None, refresh_token=None):
-    if access_token:
-        return Token.query.filter_by(access_token=access_token).first()
-    elif refresh_token:
-        return Token.query.filter_by(refresh_token=refresh_token).first()
-
-
-@gt_oauth.tokensetter
-def save_token(token, request, *args, **kwargs):
-    tokens = Token.query.filter_by(
-        client_id=request.client.client_id,
-        user_id=request.user.id
-    )
-    # make sure that every client has only one token connected to a user
-    for t in tokens:
-        db.session.delete(t)
-
-    expires_in = token.get('expires_in')
-    expires = datetime.utcnow() + timedelta(seconds=expires_in)
-    token['expires_at'] = expires.strftime("%d/%m/%Y %H:%M:%S")
-    token['user_id'] = request.user.id
-
-    tok = Token(
-        access_token=token['access_token'],
-        refresh_token=token['refresh_token'],
-        token_type=token['token_type'],
-        _scopes=token['scope'],
-        expires=expires,
-        client_id=request.client.client_id,
-        user_id=request.user.id,
-    )
-    db.session.add(tok)
-    db.session.commit()
-    logger.info('Bearer token has been created for user %s', request.user.id)
-    return tok
 
 
 @app.route('/oauth2/token', methods=['POST'])
@@ -91,6 +25,12 @@ def revoke_token():
 @app.route('/oauth2/authorize')
 @gt_oauth.require_oauth()
 def authorize():
+    if hasattr(request.oauth, 'error_message'):
+        error_message = request.oauth.error_message or ''
+        if error_message:
+            error_code = request.oauth.error_code or None
+            return jsonify({'error': {'code': error_code, 'message': error_message}}), 404
+
     user = request.oauth.user
     logger.info('User %s has been authorized to access getTalent api', user.id)
     return jsonify(user_id=user.id)
