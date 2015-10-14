@@ -74,18 +74,18 @@ class Attendee(object):
 
 
 def unix_time(dt):
-    epoch = datetime.datetime.utcfromtimestamp(0)
+    epoch = datetime.utcfromtimestamp(0)
     delta = dt - epoch
     return delta.total_seconds()
 
 
 def milliseconds_since_epoch(dt):
-    assert isinstance(dt, datetime.datetime) == True
+    assert isinstance(dt, datetime) == True
     return unix_time(dt) * 1000.0
 
 
 def milliseconds_since_epoch_to_dt(epoch):
-    return datetime.datetime.fromtimestamp(epoch / 1000.0)
+    return datetime.fromtimestamp(epoch / 1000.0)
 
 
 def authenticate_user(request):
@@ -510,12 +510,12 @@ def get_utc_datetime(dt, timezone):
 
     :Example:
 
-        >>> now = datetime.datetime.now()  # datetime.datetime(2015, 10, 8, 11, 16, 55, 520914)
+        >>> now = datetime.now()  # datetime(2015, 10, 8, 11, 16, 55, 520914)
         >>> timezone = 'Asia/Karachi'
         >>> utc_datetime = get_utc_datetime(now, timezone) # '2015-10-08T06:16:55Z'
 
     :param dt: datetime object
-    :type dt: datetime.datetime
+    :type dt: datetime
     :return: timezone specific datetime object
     :rtype string
     """
