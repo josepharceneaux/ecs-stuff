@@ -99,7 +99,7 @@ class Eventbrite(SocialNetworkBase):
     @staticmethod
     def save_user_credentials_in_db(user_credentials):
         """
-        :param user_credentials_dict: User credentials dict for which we need
+        :param user_credentials: User credentials dict for which we need
                 to create webhook. Webhook is created to be updated about any
                 RSVP on an event of Eventbrite.
 
@@ -110,15 +110,17 @@ class Eventbrite(SocialNetworkBase):
         - It first saves the credentials in db, gets the webhook id by calling
             create_webhook()using Eventbrite's API and updates the record in db.
 
-        - This method is called from process_access_token() defined in
-            social network manager inside social_network_service/manager.py.
+        - This method is called from POST method of end point ProcessAccessToken()
+            defined in social network Rest API inside
+            social_network_service/app/restful/social_network.py.
 
         **See Also**
         .. seealso:: save_user_credentials_in_db() function defined in
             socialNetworkBase class inside social_network_service/base.py.
 
-        .. seealso:: process_access_token() function defined in
-            social network manager inside social_network_service/manager.py.
+        .. seealso::POST method of end point ProcessAccessToken()
+            defined in social network Rest API inside
+            social_network_service/app/restful/social_network.py.
         """
         user_credentials_in_db = super(Eventbrite, Eventbrite).save_user_credentials_in_db(user_credentials)
         Eventbrite.create_webhook(user_credentials_in_db)

@@ -2,16 +2,20 @@
 This file contains some (supposedly) common utility functions that may be used
 or consumed by various programs.
 """
+
+# Standard Library
 import re
 import imp
 import sys
 import json
 import inspect
-import pytz
-import requests
 import traceback
 import importlib
 from datetime import datetime
+
+# Third Party
+import pytz
+import requests
 from dateutil.parser import parse
 from requests_oauthlib import OAuth2Session
 
@@ -19,11 +23,10 @@ from requests_oauthlib import OAuth2Session
 from common.models.user import User
 from common.models.event import Event
 from common.models.social_network import SocialNetwork
-
 from social_network_service import logger
 from social_network_service import flask_app as app
-from social_network_service.custom_exections import ApiException, AccessTokenHasExpired
-from social_network_service.custom_exections import SocialNetworkError, \
+from social_network_service.custom_exections import ApiException
+from social_network_service.custom_exections import \
     SocialNetworkNotImplemented, InvalidDatetime, EventInputMissing
 
 
@@ -109,22 +112,6 @@ def authenticate_user(request):
 def get_callee_data():
     current_frame = inspect.currentframe()
     callee_frame = inspect.getouterframes(current_frame, 2)
-    # length_of_frame = len(callee_frame)
-    # no_of_items = list(range(0, length_of_frame-1))
-    # no_of_item = None
-    # selected_items = []
-    # for item in no_of_items:
-    #     # ignoring standard library files of python and pycharm
-    #     if 'site-packages' not in callee_frame[item][1] \
-    #             and 'pycharm' not in callee_frame[item][1]:
-    #         selected_items.append(item)
-    #     else:
-    #         break
-    # for item in selected_items:
-    # if len(selected_items) - item == 4:
-    #     no_of_item = item
-    #     break
-
     no_of_item = 3
     #  We are using number 3 here, as
     # we call this function inside log_error() or log_exception()
