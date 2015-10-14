@@ -15,13 +15,14 @@ from common.models.event import Event
 from common.models.organizer import Organizer
 from social_network_service import flask_app as app
 from social_network_service.event.base import EventBase
-from social_network_service.utilities import log_error, get_class
 from social_network_service.utilities import logger
+from social_network_service.utilities import log_error
+from social_network_service.utilities import get_class
 from social_network_service.utilities import log_exception
 from social_network_service.utilities import http_request
 from social_network_service.utilities import get_utc_datetime
-from social_network_service.custom_exections import EventNotCreated
 from social_network_service.custom_exections import VenueNotFound
+from social_network_service.custom_exections import EventNotCreated
 from social_network_service.custom_exections import TicketsNotCreated
 from social_network_service.custom_exections import EventNotPublished
 from social_network_service.custom_exections import EventInputMissing
@@ -54,12 +55,12 @@ class Eventbrite(EventBase):
                 get venue from db given by venue_id (local db venue id) in
                 self.payload.
                 if venue in db contains 'social_network_venue_id', it means
-                that venues has already been created on Eventbrite so no need to
-                create again on Eventbrite, just return that id to be passed
+                that venues has already been created on Eventbrite so no need
+                to create again on Eventbrite, just return that id to be passed
                 in self.payload.
                 And if 'social_network_venue_id' in none, creates venue on
-                Eventbrite and returns Eventbrite venue id. It now sends a POST request
-                to Eventbrite API to create event and returns event
+                Eventbrite and returns Eventbrite venue id. It now sends a POST
+                request to Eventbrite API to create event and returns event
 
     """
 
@@ -92,7 +93,8 @@ class Eventbrite(EventBase):
             - tickets_payload:
                 dictionary containing data for event tickets
             - venue_payload:
-                dictionary containing data for location/ venue to be added on eventbrite
+                dictionary containing data for location/ venue to be added on
+                eventbrite
             - social_network_event_id:
                 event id of event on eventbrite
             - start_date_in_utc:
@@ -116,8 +118,9 @@ class Eventbrite(EventBase):
         We get events against a particular user_credential.
         Then we get the rsvps of all events present in database and process
         them to save in database.
-        :param user_credentials:
-        :return:
+        :param user_credentials: are the credentials of user for
+                                    a specific social network in db.
+        :type user_credentials: common.models.user.UserSocialNetworkCredential
         """
         # get_required class under rsvp/ to process rsvps
         sn_rsvp_class = get_class(self.social_network.name, 'rsvp')
@@ -439,6 +442,7 @@ class Eventbrite(EventBase):
         This method should be called after creating event on social_network.
         See "social_network_service.event.Eventbrite.create_event" method for further info
         :param event_id: event id which refers to event on eventbrite.com
+        :type event_id: str
         :exception TicketsNotCreated (throws exception if unable to create tickets)
         :return: tickets_id (an id which refers to tickets created on eventbrite.com
         """
@@ -451,6 +455,7 @@ class Eventbrite(EventBase):
         This method should be called after updating event contents on social_network.
         See "social_network_service.event.Eventbrite.update_event" method for further info
         :param event_id: event id which refers to event on eventbrite.com
+        :type event_id: str
         :exception TicketsNotCreated (throws exception if unable to update tickets)
         :return: tickets_id (an id which refers to tickets updated on eventbrite.com
         """
@@ -473,6 +478,7 @@ class Eventbrite(EventBase):
         It returns tickets id if successful otherwise raises "TicketsNotCreated" ecxception
 
         :param tickets_url  (API url to create or update event tickets)
+        :type tickets_url: str
         :exception TicketsNotCreated (throws exception if unable to create or update tickets)
         :return: tickets_id (an id which refers to tickets for event on eventbrite.com
         """
@@ -522,6 +528,7 @@ class Eventbrite(EventBase):
         and calls base class method to delete the Event from Eventbrite website
         which was created in the unit testing.
         :param event_id:id of newly created event
+        :type event_id: int
         :return: True if event is deleted from vendor, False other wsie
         """
         # we will only set specific url here

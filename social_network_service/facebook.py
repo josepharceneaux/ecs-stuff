@@ -60,18 +60,25 @@ class Facebook(SocialNetworkBase):
         - Here we set the payload data to pass in HTTP request for exchange of
             access token.
 
-        :param user_id: current user id
-        :type user_id: int
-        :param social_network: social_network in getTalent database
-        :type social_network: common.models.social_network.SocialNetwork
-        :param code_to_get_extended_token: Code which is exchanged for an
-                access token
-        :param method_type: In case of Facebook, need to make a GET call.
-        :param payload: is set inside this method and is passed in super
-                constructor.
-        :type payload: dict
+        :param user_id: current user id.
+        :param social_network: social_network in getTalent database.
+        :param code_to_get_access_token: Code which is exchanged for an
+                access token.
+        :param method_type: In case of Facebook, we need to make a 'GET' call
+                to get access token.
+        :param payload: is set None for Facebook and data is sent in params.
+        :param params: dictionary of data to send in the url params.
         :param api_relative_url: This variable is set in this function and
-                is passed in super constructor to make HTTP request.
+        is passed in super constructor to make HTTP request.
+
+        :type user_id: int
+        :type social_network: common.models.social_network.SocialNetwork
+        :type code_to_get_access_token: str
+        :type method_type: str
+        :type payload: dict
+        :type payload: dict
+        :type api_relative_url: str
+        :return: returns access token and refresh token
         """
         api_relative_url = "/access_token"
         # create Social Network Specific payload data
@@ -88,6 +95,7 @@ class Facebook(SocialNetworkBase):
     def validate_token(self, payload=None):
         """
         :param payload: payload is set here which contains the access token.
+        :type payload: dict
 
         - We also  set the API relative url and put it in
             "self.api_relative_url".

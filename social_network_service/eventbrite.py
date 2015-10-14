@@ -77,7 +77,7 @@ class Eventbrite(SocialNetworkBase):
     def validate_token(self, payload=None):
         """
         :param payload is None in case of Eventbrite as we pass access token
-                    in headers:
+            in headers:
 
         - Here we set the API relative url and put it in
             "self.api_relative_url".
@@ -98,9 +98,10 @@ class Eventbrite(SocialNetworkBase):
     @staticmethod
     def save_user_credentials_in_db(user_credentials):
         """
-        :param user_credentials: User credentials dict for which we need
-                to create webhook. Webhook is created to be updated about any
-                RSVP on an event of Eventbrite.
+        :param user_credentials: User's social network credentials for which
+                we need to create webhook. Webhook is created to be updated
+                about any RSVP on an event of Eventbrite.
+        :type user_credentials: dict
 
         - This overrides the SocialNetworkBase class method
             save_user_credentials_in_db() because in case of user credentials
@@ -144,17 +145,25 @@ class Eventbrite(SocialNetworkBase):
             update user credentials in db.
 
         :param user_id: current user id.
-        :type user_id: int.
         :param social_network: social_network in getTalent database.
-        :type social_network: common.models.social_network.SocialNetwork.
         :param code_to_get_access_token: Code which is exchanged for an
                 access token.
-        :param method_type: In case of Eventbrite, need to make a POST call.
+        :param method_type: In case of Eventbrite, need to make a 'POST' call
+                to get access token.
         :param payload: is set inside this method and is passed in super
-                constructor.
-        :type payload: dict.
+                constructor. This is sent in body of HTTP request.
+        :param params: dictionary of data to send in the url params.
         :param api_relative_url: This variable is set in this function and
-                is passed in super constructor to make HTTP request.
+        is passed in super constructor to make HTTP request.
+
+        :type user_id: int
+        :type social_network: common.models.social_network.SocialNetwork
+        :type code_to_get_access_token: str
+        :type method_type: str
+        :type payload: dict
+        :type payload: dict
+        :type api_relative_url: str
+        :return: returns access token and refresh token
         """
         api_relative_url = "/token"
         # create Social Network Specific payload data
@@ -171,9 +180,11 @@ class Eventbrite(SocialNetworkBase):
     @classmethod
     def create_webhook(cls, user_credentials):
         """
-        :param user_credentials: User credentials for which we need to create
-                webhook. Webhook is created to be updated about any RSVP on an
+        :param user_credentials: User's social network credentials for which
+                we need to create webhook. Webhook is created to be updated
+                about any RSVP on an
                 event of Eventbrite.
+        :type user_credentials:  common.models.user.UserSocialNetworkCredential
 
         - This method creates a webhook to stream the live feed of RSVPs of
             Eventbrite events to the getTalent app. Once we have the webhook

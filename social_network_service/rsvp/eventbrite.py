@@ -14,7 +14,6 @@ from common.models.user import UserCredentials
 from common.models.social_network import SocialNetwork
 from social_network_service import logger
 from social_network_service.utilities import Attendee
-from social_network_service.utilities import log_error
 from social_network_service.utilities import http_request
 from social_network_service.custom_exections import NoUserFound
 from social_network_service.custom_exections import EventNotFound
@@ -89,6 +88,7 @@ class Eventbrite(RSVPBase):
         """
         :param webhook_id: id of webhook extracted from received data
                         of an rsvp.
+        :type webhook_id: str
 
         - user credentials db table have a field webhook_id. we pass
             webhook_id in this method and this gives the user's
@@ -127,8 +127,8 @@ class Eventbrite(RSVPBase):
 
     def process_rsvp_via_webhook(self, rsvp_data):
         """
-        :param rsvp_data: is a dict we get from the response of RSVP via
-                        webhook
+        :param rsvp_data: is a dict we make using rsvp_social_network_id
+            getting from response of RSVP via webhook
 
         - This method does the processing to save rsvp in db.
 
@@ -169,6 +169,9 @@ class Eventbrite(RSVPBase):
     @staticmethod
     def get_rsvp_id(url):
         """
+        :param url: url we get from the response of RSVP via webhook
+        :type url: str
+
         This gets the social_network_rsvp_id by comparing url of response of rsvp
         and defined regular expression
         :return:
@@ -197,8 +200,8 @@ class Eventbrite(RSVPBase):
 
     def get_attendee(self, rsvp):
         """
-        :param rsvp: rsvp is likely the dict we get from the response
-            of social network API.
+        :param rsvp: rsvp is likely the response of social network API.
+        :type rsvp: dict
 
         - This function is used to get the data of candidate related
           to given rsvp. It attaches all the information in attendee object.

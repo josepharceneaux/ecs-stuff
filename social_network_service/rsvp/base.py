@@ -25,12 +25,22 @@ from social_network_service.custom_exections import UserCredentialsNotFound
 
 
 class RSVPBase(object):
-    """This is the base class for handling RSVPs related to events of all three
-     social networks 1-Meetup, 2-Eventbrite, 3-Facebook for now.
-     It contains the common functionality and some abstract methods which
-     are implemented by child classes.
+    """
+    - Social network has Events and an Event has RSVPs. This is the base class
+        for handling RSVPs related to events of following social networks
+            1-Meetup,
+            2-Eventbrite,
+            3-Facebook for now.
+    - This class contains the common functionality and some abstract methods
+        which are implemented by child classes.
 
-    It contains following methods:
+    - So, if we need to add a new social network for which we have Events, we
+        will need to make a new class in separate file which will inherit from
+        RSVPBase class. In new class we will implement abstract methods that
+        are defined below in this class.
+
+    - It contains following methods to import RSVPs for an event of a
+        particular social network:
 
     * __init__():
         This method is called by creating any child RSVP class object.
@@ -91,7 +101,8 @@ class RSVPBase(object):
         From this table data, user can see the activity feed on getTalent
         website.
 
-    - We make the object of this class while importing RSVPs both through
+    - To understand how the RSVP importer works, we have an example here.
+        We make the object of this class while importing RSVPs both through
         manager and webhook.
 
         :Example:
@@ -103,10 +114,20 @@ class RSVPBase(object):
                                     headers=self.headers,
                                     user_credentials=user_credentials)
 
-        then we call process_rsvps() on sn_rsvp_obj by passing events in
+        then we call get_all_rsvps() on sn_rsvp_obj by passing events in
         parameters as follow
 
-        sn_rsvp_obj.process_rsvps(self.events)
+            self.rsvps = sn_rsvp_obj.get_all_rsvps(self.events)
+
+        This gives us all the RSVPs of events of a particular user.
+        Once we have all rsvps to process, we call process_rsvps() on
+        sn_rsvp_obj as
+
+            sn_rsvp_obj.process_rsvps(self.rsvps)
+
+        which loops through each rsvp in self.rsvps and passes it in
+        post_process_rsvps() which serves the processing to save
+        rsvp in database.
 
     **See Also**
         .. seealso:: process_events_rsvps() method in EventBase class inside
@@ -131,7 +152,8 @@ class RSVPBase(object):
     @abstractmethod
     def get_rsvps(self, event):
         """
-        :param event: event is the model object of Model "Event".
+        :param event: event in getTalent database
+        :type event: common.models.event.Event
 
         - For a given event, we get the rsvps in this method. This method
         should be implemented by a child as implementation may vary across
@@ -156,8 +178,9 @@ class RSVPBase(object):
 
     def get_all_rsvps(self, events):
         """
-        :param events: events is the list of all the events of a particular
+        :param events: events contains all the events of a particular
                        user present in database table "event".
+        :type events: list
 
         - We go over each event one by one and get RSVPs of that event.
             This is done in the get_rsvps() method which fetches RSVPs and
@@ -182,7 +205,7 @@ class RSVPBase(object):
 
             self.rsvps = sn_rsvp_obj.get_all_rsvps(self.events)
 
-        It appends rsvps of all events of a particular user in self.rsvps
+        :return: It appends rsvps of all events of a particular user in self.rsvps
         and returns it.
 
         **See Also**
@@ -218,8 +241,10 @@ class RSVPBase(object):
 
     def process_rsvps(self, rsvps):
         """
-        :param rsvps: rsvps is the list of rsvps of all events of a particular
+        :param rsvps: rsvps contains rsvps of all events of a particular
                       user.
+        :type rsvps: list
+
         - This method picks an rsvp from "rsvps" and pass it to
             post_process_rsvp()
 
@@ -253,8 +278,9 @@ class RSVPBase(object):
     def post_process_rsvp(self, rsvp):
         """
         :param rsvp: is likely the response from social network API.
+        :type rsvp: dict
 
-        Here we do the followings
+        Here we do the following steps
             a)- We move on to get attendee using the given rsvp by
                 get_attendees() call. attendees is a utility object we
                 share in calls that contains pertinent data. get_attendee()
@@ -307,30 +333,12 @@ class RSVPBase(object):
             # process next RSVP
             log_exception({'error': error.message})
 
-    def post_process_rsvps(self, rsvps):
-        """
-        This method is defined if we need to use it in future.
-        """
-        pass
-
-    def get_attendees(self, rsvps):
-        """
-        This calls get_attendee() which is usually implemented by the child
-        because implementation may vary across different vendors.
-        :param rsvps:
-        :return:
-        """
-        attendees = map(self.get_attendee, rsvps)
-        # only picks those attendees for which we are able to get data
-        # rest attendees are logged and are not processed further
-        attendees = filter(lambda attendee: attendee is not None, attendees)
-        return attendees
-
     @abstractmethod
     def get_attendee(self, rsvp):
         """
-        :param rsvp: rsvp is the dict which we get from response
-            of specific social network API.
+        :param rsvp: rsvp is likely the response we get from specific social
+            network API.
+        :type rsvp: dict
 
         - This function is used to get the data of candidate related
           to given rsvp. It attaches all the information in attendee object.
@@ -354,13 +362,11 @@ class RSVPBase(object):
         """
         pass
 
-    def pick_source_products(self, attendees):
-        return map(self.pick_source_product, attendees)
-
     def pick_source_product(self, attendee):
         """
         :param attendee: attendees is a utility object we share in calls that
                          contains pertinent data.
+        :type attendee: object of class Attendee defined in utilities.py
 
         - Here we pick the id of source product by providing social network
             name and appends the id of matched record in attendee object. If
@@ -389,13 +395,11 @@ class RSVPBase(object):
                                   % (self.social_network.name, self.user.id))
         return attendee
 
-    def save_attendees_source(self, attendees):
-        return map(self.save_attendee_source, attendees)
-
     def save_attendee_source(self, attendee):
         """
         :param attendee: attendees is a utility object we share in calls that
                  contains pertinent data.
+        :type attendee: object of class Attendee defined in utilities.py
 
         - This method checks if the event is present in candidate_source db
          table. If does not exist, it adds record, otherwise updates the record.
@@ -434,13 +438,11 @@ class RSVPBase(object):
         attendee.candidate_source_id = entry_id
         return attendee
 
-    def save_attendees_as_candidates(self, attendees):
-        return map(self.save_attendee_as_candidate, attendees)
-
     def save_attendee_as_candidate(self, attendee):
         """
         :param attendee: attendees is a utility object we share in calls that
          contains pertinent data.
+        :type attendee: object of class Attendee defined in utilities.py
 
         - This method adds the attendee as a new candidate if it is not present
          in the database already, otherwise it updates the previous record. It
@@ -487,13 +489,11 @@ class RSVPBase(object):
         attendee.candidate_id = candidate_id
         return attendee
 
-    def save_rsvps(self, attendees):
-        return map(self.save_rsvp, attendees)
-
     def save_rsvp(self, attendee):
         """
         :param attendee: attendees is a utility object we share in calls that
          contains pertinent data.
+        :type attendee: object of class Attendee defined in utilities.py
 
         - It finds the matched record in database. If record is already present
         in db, it updates the previous record, otherwise it adds a new record.
@@ -538,13 +538,11 @@ class RSVPBase(object):
         attendee.rsvp_id = rsvp_id_db
         return attendee
 
-    def save_candidates_events_rsvps(self, attendees):
-        return map(self.save_candidate_event_rsvp, attendees)
-
     def save_candidate_event_rsvp(self, attendee):
         """
         :param attendee: attendees is a utility object we share in calls that
          contains pertinent data.
+        :type attendee: object of class Attendee defined in utilities.py
 
         - This method adds an entry for every rsvp in candidate_event_rsvp
         table if entry is not present already, otherwise it updates the
@@ -586,14 +584,11 @@ class RSVPBase(object):
         attendee.candidate_event_rsvp_id = entity_id
         return attendee
 
-    def save_rsvps_in_activity_table(self, attendees):
-        self.attendees = map(self.save_rsvp_in_activity_table, attendees)
-        return self.attendees
-
     def save_rsvp_in_activity_table(self, attendee):
         """
         :param attendee: attendees is a utility object we share in calls that
          contains pertinent data.
+        :type attendee: object of class Attendee defined in utilities.py
 
         - Once rsvp is stored in all required tables, here we update Activity table
         so that Get Talent user can see rsvps in Activity Feed.
@@ -643,3 +638,4 @@ class RSVPBase(object):
             candidate_activity = Activity(**data)
             Activity.save(candidate_activity)
         return attendee
+

@@ -16,7 +16,6 @@ facebook = import_from_dist_packages('facebook')
 
 # Application Specific
 from common.models.event import Event
-from social_network_service import logger
 from social_network_service.rsvp.base import RSVPBase
 from social_network_service.utilities import Attendee
 from social_network_service.utilities import log_exception
@@ -77,7 +76,8 @@ class Facebook(RSVPBase):
 
     def get_rsvps(self, event):
         """
-        :param event: event is a db model object of model "Event".
+        :param event: event in getTalent database
+        :type event: common.models.event.Event
 
         - We get RSVPs of given event from Graph API of Facebook
 
@@ -150,9 +150,9 @@ class Facebook(RSVPBase):
         """
          :param response: rsvp is likely the dict we get from the response
             of Graph API of Facebook.
-         :type response: requests.Response
          :param target_list: list in which items to be appended after getting
                 from different pages/requests
+         :type response: requests.Response
          :type target_list: list
 
         - This function is used to get the data of candidate related
@@ -172,7 +172,6 @@ class Facebook(RSVPBase):
             social_network_service/rsvp/base.py for more insight.
 
         :return: attendee object which contains data about the candidate
-        :return:
         """
         while True:
             try:
@@ -196,8 +195,8 @@ class Facebook(RSVPBase):
 
     def get_attendee(self, rsvp):
         """
-        :param rsvp: rsvp is likely the dict we get from the response
-            of Graph API of Facebook.
+        :param rsvp: rsvp is likely the response of social network API.
+        :type rsvp: dict
 
         - This function is used to get the data of candidate related
           to given rsvp. It attaches all the information in attendee object.

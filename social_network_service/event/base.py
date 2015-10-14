@@ -15,7 +15,6 @@ from abc import ABCMeta
 from abc import abstractmethod
 
 # Application Specific
-from datetime import datetime
 from dateutil.parser import parse
 from common.models.user import User
 from common.models.event import Event
@@ -25,7 +24,8 @@ from social_network_service.utilities import log_error
 from social_network_service.utilities import get_class
 from social_network_service.utilities import http_request
 from social_network_service.utilities import log_exception
-from social_network_service.custom_exections import NoUserFound, InvalidDatetime
+from social_network_service.custom_exections import NoUserFound
+from social_network_service.custom_exections import InvalidDatetime
 from social_network_service.custom_exections import EventNotSaveInDb
 from social_network_service.custom_exections import EventNotUnpublished
 from social_network_service.custom_exections import UserCredentialsNotFound
@@ -155,6 +155,9 @@ class EventBase(object):
     @abstractmethod
     def event_sn_to_gt_mapping(self, event):
         """
+        :param event: is likely the response from social network API
+        :type event: dict
+
         While importing events, we need to map social network fields according
         to gt-database fields. Child classes will implement this.
         :param event:
@@ -166,8 +169,8 @@ class EventBase(object):
         """
         This function is used to map gt-fields to required social network fields
         for API calls. Child classes will implement this.
-        :param data:
-        :return:
+        :param data: data we get from Event creation form
+        :type data: dict
         """
         # converting incoming Datetime object from Form submission into the
         # required format for API call
@@ -181,6 +184,9 @@ class EventBase(object):
 
     def pre_process_events(self, events):
         """
+        :param events: contains events of a particular user for a specific
+            social network.
+        :type events: list
         If we need any pre processing of events, we will implement the
         functionality here. For now, we don't do any pre processing.
         :param events:
@@ -190,13 +196,14 @@ class EventBase(object):
 
     def process_events(self, events):
         """
+        :param events: contains events of a particular user for a specific
+            social network.
+        :type events: list
         This is the function to process events once we have the events of
         some social network. It first maps the social network fields to
         gt-db fields. Then it checks if the event is present is db or not.
         If event is already in db, it updates the event fields otherwise
         it stores the event in db.
-        :param events:
-        :return:
         """
         if events:
             self.pre_process_events(events)
@@ -240,6 +247,9 @@ class EventBase(object):
 
     def post_process_events(self, events):
         """
+        :param events: contains events of a particular user for a specific
+            social network.
+        :type events: list
         Once the event is stored in database after importing from social
         network, this function can be used to some post processing.
         For now, we don't do any post processing
@@ -253,8 +263,9 @@ class EventBase(object):
         Here we pass an event id, picks it from db, and try to delete
         it both from social network and database. If successfully deleted
         from both sources, returns True, otherwise returns False
-        :param event_id:
-        :return:
+        :param event_id: is the 'id' of event present in our db
+        :type event_id: long
+        :return: True if deletion is successful, False o/w
         """
         event = Event.get_by_user_and_event_id(self.user.id, event_id)
         if event:
@@ -271,6 +282,11 @@ class EventBase(object):
         return False  # event not found in database
 
     def delete_events(self, event_ids):
+        """
+        :param event_ids: contains all the ids of events to be deleted
+            both from social network and database.
+        :type event_ids: list
+        """
 
         deleted = []
         not_deleted = []
@@ -280,14 +296,14 @@ class EventBase(object):
                     deleted.append(event_id)
                 else:
                     not_deleted.append(event_id)
-
         return deleted, not_deleted
 
     def unpublish_event(self, event_id, method='POST'):
         """
         This function is used when run unit test. It deletes the Event from
         meetup which was created in the unit testing.
-        :param event_id:id of newly created event
+        :param event_id: id of newly created event
+        :type event_id: int
         :return: True if event is deleted from vendor, False other wsie
         """
         # create url to publish event
@@ -319,6 +335,7 @@ class EventBase(object):
         """
         This gets the events from database which starts after the specified start_date
         :param start_date:
+        :type start_date: datetime
         :return:
         """
         if start_date:
@@ -332,8 +349,9 @@ class EventBase(object):
         We get events against a particular user_credential.
         Then we get the rsvps of all events present in database and process
         them to save in database.
-        :param user_credentials:
-        :return:
+        :param user_credentials: are the credentials of user for
+                                    a specific social network in db.
+        :type user_credentials: common.models.user.UserSocialNetworkCredential
         """
         # get_required class under rsvp/ to process rsvps
         sn_rsvp_class = get_class(self.social_network.name, 'rsvp')

@@ -24,7 +24,6 @@ from social_network_service.event.base import EventBase
 from social_network_service.utilities import log_exception
 
 
-
 class Facebook(EventBase):
     def __init__(self, *args, **kwargs):
         super(Facebook, self).__init__(*args, **kwargs)
@@ -69,7 +68,8 @@ class Facebook(EventBase):
         in response['paging']['next'], when we don't we stop.
         :param response:
         :param target_list:
-        :return:
+        :type response: dict
+        :type target_list: list
         """
         while True:
             try:
@@ -92,6 +92,7 @@ class Facebook(EventBase):
         Event's object (instance of SQLAlchemy model).
         TODO; document like Sphinx
         :param event:
+        :type event: dict
         :return:
         """
         venue = None
@@ -192,8 +193,8 @@ class Facebook(EventBase):
 
     def event_gt_to_sn_mapping(self, data):
         """
-        Event creation via API is not alloewd on Facebook.
-        So ther will be no maapping of fields
+        Event creation via API is not allowed on Facebook.
+        So ther will be no mapping of fields
         :return:
         """
         pass
