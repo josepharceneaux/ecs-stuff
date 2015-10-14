@@ -1,40 +1,24 @@
+# Standard Library
 import sys
 import argparse
 import traceback
-from social_network_service import init_app
 
-init_app()
-
+# Third Party
 from gevent.pool import Pool
 
-from social_network_service import logger
-from social_network_service.custom_exections import AccessTokenHasExpired
-from utilities import get_class, log_error, log_exception
 
+# App Settings
+from social_network_service import init_app
+init_app()
+
+# Application Specific
+from utilities import get_class, log_exception, http_request
 from common.models.user import UserCredentials
 from common.models.social_network import SocialNetwork
+from social_network_service import logger
+from social_network_service.custom_exections import AccessTokenHasExpired
 
 POOL_SIZE = 5
-
-
-def process_access_token(social_network_name, code_to_get_access_token, gt_user_id):
-    social_network = SocialNetwork.get_by_name(social_network_name)
-    social_network_class = get_class(social_network_name, 'social_network')
-    access_token, refresh_token = social_network_class.get_access_token(
-        social_network,
-        code_to_get_access_token)
-    if access_token:
-        user_credentials = dict(user_id=gt_user_id,
-                                social_network_id=social_network.id,
-                                access_token=access_token,
-                                refresh_token=refresh_token,
-                                member_id=None)
-        # we have access token, lets save in db
-        social_network_class.save_token_in_db(user_credentials)
-    else:
-        error_message = "Couldn't get access token for %s " % social_network_name
-        log_error({'user_id': gt_user_id,
-                   'error': error_message})
 
 
 def start():
