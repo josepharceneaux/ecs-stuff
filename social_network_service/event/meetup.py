@@ -106,9 +106,9 @@ class Meetup(EventBase):
         self.group_ids = []
         self.social_network_event_id = None
         self.start_date = kwargs.get('start_date') \
-                          or (datetime.now() + timedelta(days=20))
+                          or (datetime.now() - timedelta(days=10))
         self.end_date = kwargs.get('end_date') \
-                        or (datetime.now() + timedelta(days=25))
+                        or (datetime.now() + timedelta(days=10))
         self.start_time_since_epoch = milliseconds_since_epoch(self.start_date)
         self.end_time_since_epoch = milliseconds_since_epoch(self.end_date)
 
@@ -166,6 +166,7 @@ class Meetup(EventBase):
         """
         This method returns True id given event's group is owned by current user
         :param event: event to be tested
+        :type event: dict
         :return True or False
         :rtype Boolean
         """
@@ -200,6 +201,7 @@ class Meetup(EventBase):
         Event's object. We also issue some calls to get updated
         venue and organizer information.
         :param event:
+        :type event: dict
         :return:
         """
         organizer = None
@@ -477,6 +479,7 @@ class Meetup(EventBase):
         and calls base class method to delete the Event from meetup which was
         created in the unit testing.
         :param event_id:id of newly created event
+        :type event_id: int
         :return: True if event is deleted from vendor, False otherwise
         :rtype Boolean
         """

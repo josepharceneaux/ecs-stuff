@@ -482,12 +482,12 @@ def get_utc_datetime(dt, timezone):
 
     :Example:
 
-        >>> now = datetime.now()  # datetime.datetime(2015, 10, 8, 11, 16, 55, 520914)
+        >>> now = datetime.now()  # datetime(2015, 10, 8, 11, 16, 55, 520914)
         >>> timezone = 'Asia/Karachi'
-        >>> utc_datetime = get_utc_datetime(now, timezone) # '2015-10-08T06:16:55Z'
+        >>> utc_datetime = get_utc_datetime(now, timezone) # '2015-10-08T06:16:55Z
 
     :param dt: datetime object
-    :type dt: datetime.datetime
+    :type dt: datetime
     :return: timezone specific datetime object
     :rtype string
     """

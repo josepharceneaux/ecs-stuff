@@ -10,7 +10,6 @@ from datetime import timedelta
 # Application Specific
 from base import RSVPBase
 from common.models.event import Event
-from social_network_service import logger
 from social_network_service.utilities import Attendee
 from social_network_service.utilities import http_request
 from social_network_service.utilities import milliseconds_since_epoch_to_dt
@@ -68,7 +67,8 @@ class Meetup(RSVPBase):
 
     def get_rsvps(self, event):
         """
-        :param event: event is a db model object of model "Event".
+        :param event: event in getTalent database
+        :type event: common.models.event.Event
 
         - We get RSVPs of given event by API of Meetup.
 
@@ -128,8 +128,8 @@ class Meetup(RSVPBase):
 
     def get_attendee(self, rsvp):
         """
-        :param rsvp: rsvp is likely the dict we get from the response
-            of social network API.
+        :param rsvp: rsvp is likely the response of social network API.
+        :type rsvp: dict
 
         - This function is used to get the data of candidate related
           to given rsvp. It attaches all the information in attendee object.

@@ -255,9 +255,9 @@ def eventbrite_event_data(request, eventbrite, test_user, eventbrite_venue, test
     return data
 
 
-@pytest.fixture(scope='session')
-def meetup_event(request, test_user, test_eventbrite_credentials,
-           test_meetup_credentials, meetup, eventbrite, venues, organizer_in_db):
+@pytest.fixture(scope='function')
+def meetup_event(request, test_user, test_meetup_credentials, meetup,
+                 venues, organizer_in_db):
     event = EVENT_DATA.copy()
     event['title'] = 'Meetup ' + event['title']
     event['social_network_id'] = meetup.id
@@ -265,16 +265,26 @@ def meetup_event(request, test_user, test_eventbrite_credentials,
     event['organizer_id'] = organizer_in_db.id
     event_id = process_event(event, test_user.id)
     event = Event.get_by_id(event_id)
+    event_in_db = {'event': event}
 
     def fin():
-        delete_events(test_user.id, [event_id])
+        """
+        This is finalizer for meetup event. Once test is passed, we need to
+        delete the newly created event from website of social network. After
+        test has been passed, we insert the 'id' of event in our db in
+        'event_in_db' dict. If 'id' is present in 'event_in_db', we call
+        delete_event() function to delete the event both from social network
+        and from our database.
+        """
+        if 'id' in event_in_db:
+            delete_events(test_user.id, [event_in_db['id']])
     request.addfinalizer(fin)
-    return event
+    return event_in_db
 
 
 @pytest.fixture(scope='session')
 def eventbrite_event(request, test_user, test_eventbrite_credentials,
-           test_meetup_credentials, meetup, eventbrite, venues, organizer_in_db):
+                     eventbrite, venues, organizer_in_db):
     event = EVENT_DATA.copy()
     event['title'] = 'Eventbrite ' + event['title']
     event['social_network_id'] = eventbrite.id
@@ -284,6 +294,14 @@ def eventbrite_event(request, test_user, test_eventbrite_credentials,
     event = Event.get_by_id(event_id)
 
     def fin():
+        """
+        This is finalizer for meetup event. Once test is passed, we need to
+        delete the newly created event from website of social network. After
+        test has been passed, we insert the 'id' of event in our db in
+        'event_in_db' dict. If 'id' is present in 'event_in_db', we call
+        delete_event() function to delete the event both from social network
+        and from our database.
+        """
         delete_events(test_user.id, [event_id])
     request.addfinalizer(fin)
     return event

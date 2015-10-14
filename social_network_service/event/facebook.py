@@ -78,7 +78,8 @@ class Facebook(EventBase):
         in response['paging']['next'], when we don't we stop.
         :param response:
         :param target_list:
-        :return:
+        :type response: dict
+        :type target_list: list
         """
         while True:
             try:
@@ -100,6 +101,7 @@ class Facebook(EventBase):
         and map their fields to getTalent db and finally we return
         Event's object (instance of SQLAlchemy model).
         :param event:
+        :type event: dict
         :return:
         """
         venue = None

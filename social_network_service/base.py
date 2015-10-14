@@ -227,6 +227,8 @@ class SocialNetworkBase(object):
         :param mode: mode is either 'event' or 'rsvp.
         :param user_credentials: are the credentials of user for
                                     a specific social network in db.
+        :type mode: str
+        :type user_credentials: common.models.user.UserSocialNetworkCredential
 
         - Depending upon the mode, here we make the objects of required
             classes (Event Class or RSVP class) and call required methods on
@@ -284,9 +286,7 @@ class SocialNetworkBase(object):
         and 'refresh_token' for specific social network against a user (current
         user) by sending an POST call to respective social network API.
         :param user_id: current user id
-        :type user_id: int
         :param social_network: social_network in getTalent database
-        :type social_network: common.models.social_network.SocialNetwork
         :param payload: dictionary containing required data
                 sample data
                 payload_data = {'client_id': social_network.client_key,
@@ -296,8 +296,11 @@ class SocialNetworkBase(object):
                                 'redirect_uri': social_network.redirect_uri,
                                 'code': code_to_get_access_token
                                 }
+
+        :type user_id: int
+        :type social_network: common.models.social_network.SocialNetwork
         :type payload: dict
-        :return:
+        :return: returns access token and refresh token
         """
         url = social_network.auth_url + api_relative_url
         get_token_response = http_request(method_type, url, data=payload,
@@ -372,6 +375,7 @@ class SocialNetworkBase(object):
         """
         :param payload: contains the access token of Facebook (Child class
             sets the payload) or is None for other social networks.
+        :type payload: dict
 
         - This function is called from validate_and_refresh_access_token()
          social network service base class inside
@@ -462,6 +466,9 @@ class SocialNetworkBase(object):
     @staticmethod
     def save_user_credentials_in_db(user_credentials):
         """
+        :param user_credentials: user's social network credentials
+        :type user_credentials: dict
+
         - It checks if user_credentials are already in database. If a record
             is found, it updates the record. Otherwise it saves as new record.
 
