@@ -4,10 +4,13 @@ TODO; commment what this file is and wehat it does
 from functools import wraps
 import json
 import flask
+import traceback
 from flask import Response
 from flask.ext.restful import abort
 from requests_oauthlib import OAuth2Session
+from social_network_service import logger
 from flask import current_app as app
+
 
 class ApiResponse(Response):
     """
@@ -23,26 +26,22 @@ def authenticate(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
-            kwargs['user_id'] = 1
-            return func(*args, **kwargs)
-            # if not getattr(func, 'authenticated', True):
-            #     return func(*args, **kwargs)
-            # bearer = flask.request.headers.get('Authorization')
-            # access_token = bearer.lower().replace('bearer ', '')
-            # oauth = OAuth2Session(token={'access_token': access_token})
-            # # db_data = Token.query.filter_by(access_token=access_token).first()
-            # response = oauth.get(app.config['OAUTH_SERVER_URI'])
-            # if response.status_code == 200 and response.json().get('user_id'):
-            #     kwargs['user_id'] = response.json()['user_id']
-            #     return func(*args, **kwargs)
-            # else:
-            #     abort(401)
+            if not getattr(func, 'authenticated', True):
+                return func(*args, **kwargs)
+            bearer = flask.request.headers.get('Authorization')
+            access_token = bearer.lower().replace('bearer ', '')
+            oauth = OAuth2Session(token={'access_token': access_token})
+            # db_data = Token.query.filter_by(access_token=access_token).first()
+            response = oauth.get(app.config['OAUTH_SERVER_URI'])
+            if response.status_code == 200 and response.json().get('user_id'):
+                kwargs['user_id'] = response.json()['user_id']
+                return func(*args, **kwargs)
+            else:
+                abort(401)
         except Exception as e:
-            import traceback
-            print traceback.format_exc()
-            # print 'Error....'
-            # print e.message
-            # abort(401)
+            user_id = kwargs.get('user_id', 'Not given')
+            logger.debug('User ID: %s\nError : %s\n\nTraceback: %s' % (
+                user_id, e.message, traceback.format_exc()))
             raise
     return wrapper
 

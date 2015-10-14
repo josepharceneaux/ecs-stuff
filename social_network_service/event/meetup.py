@@ -483,15 +483,10 @@ class Meetup(EventBase):
                                 'group_url_name', 'start_datetime',
                                 'max_attendees',
                                 'venue_id']
-        # all required fields must be given in data dictionary otherwise raise exception
-        if not all([input in data and data[input]
-                    for input in mandatory_input_data]):
-            log_error({
-                'user_id': '',
-                'error': 'Mandatory parameters missing in Meetup event data'
-            })
-            raise EventInputMissing("Mandatory parameter missing in Meetup "
-                                    "event data.")
+        # gets fields which are missing
+        missing_items = [key for key in mandatory_input_data if not data.get(key)]
+        if missing_items:
+            raise EventInputMissing("Mandatory Input Missing: %s" % missing_items)
 
     def event_gt_to_sn_mapping(self, data):
         """
@@ -502,37 +497,36 @@ class Meetup(EventBase):
         :exception KeyError: can raise KeyError if some key not found in event
                             data
         """
-        if data:
-            self.data = data
-            self.validate_required_fields(data)
-            # assert whether data['start_datetime'] is instance of dt
-            # converting Datetime object to epoch for API call
-            start_time = int(data['start_datetime'].strftime("%s")) * 1000
-            self.payload = {
-                'name': data['title'],
-                'group_id': data['group_id'],
-                'group_url_name': data['group_url_name'],
-                'description': data['description'],
-                'time': start_time,
-                'guest_limit': data['max_attendees']
-            }
-            self.venue_id = data['venue_id']
-            if data['end_datetime']:
-                duration = int((data['end_datetime'] -
-                                data['start_datetime']).total_seconds())
-                self.payload.update({'duration': duration})
-            if data['group_url_name']:
-                self.group_url_name = data['group_url_name']
-            else:
-                error_message = 'Group UrlName is None for eventName: %s' \
-                                % data['title']
-                log_error({'user_id': self.user.id,
-                           'error': error_message})
-            self.social_network_event_id = data.get('social_network_event_id')
-            # if self.social_network_event_id:
-            #     self.payload.update({'lat': data['latitude'],
-            #                          'lon': data['longitude']})
+        assert data, 'data should not be None/empty'
+        assert isinstance(data, dict), 'data should be a dictionary'
+        super(Meetup, self).event_gt_to_sn_mapping(data)
+        self.data = data
+        self.validate_required_fields(data)
+        # assert whether data['start_datetime'] is instance of dt
+        # converting Datetime object to epoch for API call
+        start_time = int(data['start_datetime'].strftime("%s")) * 1000
+        self.payload = {
+            'name': data['title'],
+            'group_id': data['group_id'],
+            'group_url_name': data['group_url_name'],
+            'description': data['description'],
+            'time': start_time,
+            'guest_limit': data['max_attendees']
+        }
+        self.venue_id = data['venue_id']
+        if data['end_datetime']:
+            duration = int((data['end_datetime'] -
+                            data['start_datetime']).total_seconds())
+            self.payload.update({'duration': duration})
+        if data['group_url_name']:
+            self.group_url_name = data['group_url_name']
         else:
-            error_message = 'Data is None'
+            error_message = 'Group UrlName is None for eventName: %s' \
+                            % data['title']
             log_error({'user_id': self.user.id,
                        'error': error_message})
+        self.social_network_event_id = data.get('social_network_event_id')
+        # if self.social_network_event_id:
+        #     self.payload.update({'lat': data['latitude'],
+        #                          'lon': data['longitude']})
+

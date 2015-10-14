@@ -237,7 +237,8 @@ def meetup_event_data(request, test_user, meetup, meetup_venue, test_meetup_cred
 
 
 @pytest.fixture(scope='session')
-def eventbrite_event_data(request, eventbrite, test_user, eventbrite_venue, test_eventbrite_credentials):
+def eventbrite_event_data(request, eventbrite, test_user, eventbrite_venue, test_eventbrite_credentials,
+                          organizer_in_db):
     data = EVENT_DATA.copy()
     data['social_network_id'] = eventbrite.id
     data['venue_id'] = eventbrite_venue.id
@@ -379,13 +380,15 @@ def organizer_in_db(request, test_user):
 
 @pytest.fixture(scope='session')
 def get_test_events(request, test_user, meetup, eventbrite, venues, test_eventbrite_credentials,
-           test_meetup_credentials):
+           test_meetup_credentials, organizer_in_db):
     meetup_event_data = EVENT_DATA.copy()
     meetup_event_data['social_network_id'] = meetup.id
     meetup_event_data['venue_id'] = venues[0].id
+    meetup_event_data['organizer_id'] = organizer_in_db.id
     eventbrite_event_data = EVENT_DATA.copy()
     eventbrite_event_data['social_network_id'] = eventbrite.id
     eventbrite_event_data['venue_id'] = venues[1].id
+    eventbrite_event_data['organizer_id'] = organizer_in_db.id
 
     def delete_test_event():
         # delete event if it was created by API. In that case, data contains id of that event
@@ -428,8 +431,8 @@ def meetup_missing_data(request, eventbrite_event_data):
 @pytest.fixture(scope='session')
 def is_subscribed_test_data(request, test_user):
     old_records = SocialNetwork.query.filter(SocialNetwork.name.in_(['SN1', 'SN2'])).all()
-    if old_records:
-        db.session.delete(old_records)
+    for sn in old_records:
+        SocialNetwork.delete(sn.id)
     test_social_network1 = SocialNetwork(name='SN1', url='www.SN1.com')
     SocialNetwork.save(test_social_network1)
     test_social_network2 = SocialNetwork(name='SN2', url='www.SN1.com')
