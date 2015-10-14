@@ -6,12 +6,14 @@
 import math
 import operator
 from datetime import datetime
-import os
+
 import boto
 import boto.exception
 import simplejson
 
-from candidate_service.common.models.db import get_table, db, session
+import TalentPropertyManager # To get the CLOUDSEARCH_REGION
+from common_functions import users_in_domain, get_or_create_areas_of_interest
+from candidate_service.common.models.db import get_table, db, conn_db, session
 from sqlalchemy import select
 from candidate_service.app import logger
 
@@ -142,7 +144,7 @@ HIPCHAT_TOKEN = 'ZmNg80eCeIN6sMCjIv03KNO2B4tqRcxTQNL44FBd'
 SOCIALCV_API_KEY = "c96dfb6b9344d07cee29804152f798751ae8fdee"
 STACKOVERFLOW_API_KEY = "hzOEoH16*Q7Y3QCWT9y)zA(("
 
-CLOUDSEARCH_REGION = os.environ.get('CLOUDSEARCHREGION')
+CLOUDSEARCH_REGION = TalentPropertyManager.get_cloudsearch_region()
 
 
 def get_cloud_search_connection():
@@ -200,6 +202,297 @@ def make_search_service_public():
                                                                            access_policies=access_policies)
 
 
+def define_index_fields():
+    """
+    Add/Edit new index field form above defined index fields.
+     * to delete index fields call delete_index_fields
+    :return:
+    """
+    import time
+    from copy import deepcopy
+    conn = get_cloud_search_connection()
+    for index_field_name, index_field_options in INDEX_FIELD_NAME_TO_OPTIONS.iteritems():
+        logger.info("Defining index field %s", index_field_name)
+        index_field_dict = deepcopy(index_field_options)
+        index_field_dict['IndexFieldName'] = index_field_name
+        conn.layer1.define_index_field(_cloud_search_domain.name, index_field_dict)
+        time.sleep(1)  # To prevent throttling
+
+
+def delete_index_fields():
+    """
+    Deletes above defined index fields.
+    :return:
+    """
+    if not current.IS_DEV:
+        raise Exception("Can't call delete_index_fields() in prod! Use the console instead")
+    conn = get_cloud_search_connection()
+    for index_field_name in INDEX_FIELD_NAME_TO_OPTIONS:
+        logger.info("Deleting index field %s", index_field_name)
+        conn.layer1.delete_index_field(_cloud_search_domain.name, index_field_name)
+
+
+def index_documents():
+    conn = get_cloud_search_connection()
+    conn.layer1.index_documents(_cloud_search_domain.name)
+
+
+def _build_candidate_documents(candidate_ids):
+    """
+    Returns dicts like: {type="add", id="{candidate_id}", fields={dict of fields to values}}
+
+    """
+    if not candidate_ids:
+        logger.warn("Attempted to build candidate documents when candidate_ids=%s", candidate_ids)
+        return []
+    group_concat_separator = '~~~'
+
+    sql_query = """
+    SELECT
+                # Candidate table info
+                candidate.id AS `id`, candidate.firstName AS `first_name`, candidate.lastName AS `last_name`,
+                candidate.statusId AS `status_id`, DATE_FORMAT(candidate.addedTime, '%(date_format)s') AS `added_time`,
+                candidate.ownerUserId AS `user_id`, candidate.objective AS `objective`,
+                candidate.sourceId AS `source_id`, candidate.sourceProductId AS `source_product_id`,
+                candidate.totalMonthsExperience AS `total_months_experience`,
+
+                # Address & contact info
+                candidate_address.city AS `city`, candidate_address.state AS `state`, candidate_address.zipCode AS `zip_code`,
+                candidate_address.coordinates AS `coordinates`,
+                GROUP_CONCAT(DISTINCT candidate_email.address SEPARATOR '%(sep)s') AS `email`,
+
+                # AOIs and Custom Fields
+                GROUP_CONCAT(DISTINCT candidate_area_of_interest.areaOfInterestId SEPARATOR '%(sep)s') AS `area_of_interest_id`,
+                GROUP_CONCAT(DISTINCT CONCAT(candidate_custom_field.customFieldId, '|', candidate_custom_field.value) SEPARATOR '%(sep)s') AS `custom_field_id_and_value`,
+
+                # Military experience
+                GROUP_CONCAT(DISTINCT candidate_military_service.highestGrade SEPARATOR '%(sep)s') AS `military_highest_grade`,
+                GROUP_CONCAT(DISTINCT candidate_military_service.serviceStatus SEPARATOR '%(sep)s') AS `military_service_status`,
+                GROUP_CONCAT(DISTINCT candidate_military_service.branch SEPARATOR '%(sep)s') AS `military_branch`,
+                GROUP_CONCAT(DISTINCT DATE_FORMAT(candidate_military_service.toDate, '%(date_format)s') SEPARATOR '%(sep)s') AS `military_end_date`,
+
+                # Experience
+                GROUP_CONCAT(DISTINCT candidate_experience.organization SEPARATOR '%(sep)s') AS `organization`,
+                GROUP_CONCAT(DISTINCT candidate_experience.position SEPARATOR '%(sep)s') AS `position`,
+                GROUP_CONCAT(DISTINCT candidate_experience_bullet.description SEPARATOR '%(sep)s') AS `experience_description`,
+
+                # Education
+                GROUP_CONCAT(DISTINCT candidate_education.schoolName SEPARATOR '%(sep)s') AS `school_name`,
+                GROUP_CONCAT(DISTINCT candidate_education_degree.degreeType SEPARATOR '%(sep)s') AS `degree_type`,
+                GROUP_CONCAT(DISTINCT candidate_education_degree.degreeTitle SEPARATOR '%(sep)s') AS `degree_title`,
+                GROUP_CONCAT(DISTINCT DATE_FORMAT(candidate_education_degree.endTime, '%(date_format)s') SEPARATOR '%(sep)s') AS `degree_end_date`,
+                GROUP_CONCAT(DISTINCT candidate_education_degree_bullet.concentrationType SEPARATOR '%(sep)s') AS `concentration_type`,
+
+                # Skill & unidentified
+                GROUP_CONCAT(DISTINCT candidate_skill.description SEPARATOR '%(sep)s') AS `skill_description`,
+                GROUP_CONCAT(DISTINCT candidate_unidentified.description SEPARATOR '%(sep)s') AS `unidentified_description`,
+
+                # Rating and comments
+                GROUP_CONCAT(DISTINCT CONCAT(candidate_rating.ratingTagId, '|', candidate_rating.value) SEPARATOR '%(sep)s') AS `candidate_rating_id_and_value`,
+                GROUP_CONCAT(DISTINCT candidate_text_comment.comment SEPARATOR '%(sep)s') AS `text_comment`
+
+    FROM        candidate
+
+    LEFT JOIN   candidate_address ON (candidate.id = candidate_address.candidateId)
+    LEFT JOIN   candidate_email ON (candidate.id = candidate_email.candidateId)
+
+    LEFT JOIN   candidate_area_of_interest ON (candidate.id = candidate_area_of_interest.candidateId)
+    LEFT JOIN   candidate_custom_field ON (candidate.id = candidate_custom_field.candidateId)
+
+    LEFT JOIN   candidate_military_service ON (candidate.id = candidate_military_service.candidateId)
+
+    LEFT JOIN   candidate_experience ON (candidate.id = candidate_experience.candidateId)
+    LEFT JOIN   candidate_experience_bullet ON (candidate_experience.id = candidate_experience_bullet.candidateExperienceId)
+
+    LEFT JOIN   candidate_education ON (candidate.id = candidate_education.candidateId)
+    LEFT JOIN   candidate_education_degree ON (candidate_education.id = candidate_education_degree.candidateEducationId)
+    LEFT JOIN   candidate_education_degree_bullet ON (candidate_education_degree.id = candidate_education_degree_bullet.candidateEducationDegreeId)
+
+    LEFT JOIN   candidate_skill ON (candidate.id = candidate_skill.candidateId)
+    LEFT JOIN   candidate_unidentified ON (candidate.id = candidate_unidentified.candidateId)
+
+    LEFT JOIN   candidate_rating ON (candidate.id = candidate_rating.candidateId)
+    LEFT JOIN   candidate_text_comment ON (candidate.id = candidate_text_comment.candidateId)
+
+    WHERE       candidate.id IN (%(candidate_ids_string)s)
+
+    GROUP BY    candidate.id
+    ;
+    """ % dict(candidate_ids_string=','.join(["%s" % candidate_id for candidate_id in candidate_ids]),
+               sep=group_concat_separator,
+               date_format=MYSQL_DATE_FORMAT)
+
+    results = db.executesql(sql_query, as_dict=True)
+
+    # Go through results & build action dicts
+    action_dicts = []
+    for field_name_to_sql_value in results:
+        candidate_id = field_name_to_sql_value['id']
+        action_dict = dict(type='add', id=str(candidate_id))
+
+        # Remove keys with empty values
+        field_name_to_sql_value = {k: v for k, v in field_name_to_sql_value.items() if v}
+
+        # Massage 'field_name_to_sql_value' values into the types they are supposed to be
+        for field_name in field_name_to_sql_value.keys():
+            index_field_options = INDEX_FIELD_NAME_TO_OPTIONS.get(field_name)
+
+            if not index_field_options:
+                logger.error("Unknown field name, could not build document: %s", field_name)
+                continue
+
+            sql_value = field_name_to_sql_value[field_name]
+            if not sql_value:
+                continue
+
+            index_field_type = index_field_options['IndexFieldType']
+            if 'array' in index_field_type:
+                sql_value_array = sql_value.split(group_concat_separator)
+                if index_field_type == 'int-array':
+                    # If int-array, turn all values to ints
+                    sql_value_array = [int(field_value) for field_value in sql_value_array]
+                field_name_to_sql_value[field_name] = sql_value_array
+
+        # Add the required values we didn't get from DB
+        field_name_to_sql_value['domain_id'] = db.user(field_name_to_sql_value['user_id']).domainId
+
+        action_dict['fields'] = field_name_to_sql_value
+        action_dicts.append(action_dict)
+
+    return action_dicts
+
+
+def upload_candidate_documents(candidate_ids):
+    import time
+    if isinstance(candidate_ids, int) or isinstance(candidate_ids, long):
+        candidate_ids = [candidate_ids]
+    logger.info("Uploading %s candidate documents. Generating action dicts...", len(candidate_ids))
+    start_time = time.time()
+    action_dicts = _build_candidate_documents(candidate_ids)
+    logger.info("Action dicts generated (took %ss). Sending %s action dicts", time.time() - start_time, len(action_dicts))
+    adds, deletes = _send_batch_request(action_dicts)
+    if deletes:
+        logger.error("Shouldn't have gotten any deletes in a batch add operation. Got %s deletes. candidate_ids: %s", deletes, candidate_ids)
+    return adds
+
+
+def upload_candidate_documents_in_domain(domain_id):
+    candidates = db(
+        (db.candidate.ownerUserId == db.user.id) &
+        (db.user.domainId == domain_id)
+    ).select(db.candidate.id, db.candidate.ownerUserId, cacheable=True).as_list()
+    candidate_ids = [candidate['id'] for candidate in candidates]
+    logger.info("Uploading %s candidates of domain %s", len(candidate_ids), domain_id)
+    return upload_candidate_documents(candidate_ids)
+
+
+def upload_candidate_documents_of_user(user):
+    candidates = db(db.candidate.ownerUserId == user.id).select(
+        db.candidate.id, db.candidate.ownerUserId, cacheable=True).as_list()
+    candidate_ids = [candidate['id'] for candidate in candidates]
+    logger.info("Uploading %s candidates of user's domain %s", len(candidate_ids), user.domainId)
+    return upload_candidate_documents(candidate_ids=candidate_ids)
+
+
+def upload_all_candidate_documents():
+    adds = 0
+    for domain in db(db.domain.id > 0).select().as_list():
+        logger.info("Uploading all candidates of domain %s", domain['id'])
+        adds += upload_candidate_documents_in_domain(domain['id'])
+    return adds
+
+
+def delete_candidate_documents(candidate_ids):
+    if isinstance(candidate_ids, int):
+        candidate_ids = [candidate_ids]
+    action_dicts = [dict(type='delete', id=candidate_id) for candidate_id in candidate_ids]
+    adds, deletes = _send_batch_request(action_dicts)
+    if adds:
+        logger.error("Shouldn't have gotten any adds in a batch delete operation. Got %s adds. candidate_ids: %s", adds, candidate_ids)
+    return deletes
+
+
+def delete_all_candidate_documents():
+    """
+    Should only be used for dev domains, if all candidate documents needs to be deleted from CloudSearch.
+    It only works on dev domain (to avoid the function hitting accidentally on production)
+
+    """
+    if not current.IS_DEV:
+        raise Exception("Can't call delete_all_candidate_documents() in prod! Use the console instead")
+
+    # Get all candidate ids by searching for everything except a nonsense string
+    params = {'ret': "_no_fields", 'query': "-12421412421412", 'query_parser': 'lucene', "cursor": "initial", "size": 5000}
+
+    search_service = _get_search_service()
+    no_more_candidates = False
+    total_num_deleted = 0
+    while not no_more_candidates:
+        # Get the next batch of candidates to delete
+        results = search_service.search(**params)
+        matches = results['hits']['hit']
+        candidate_ids_to_delete = []
+        for item in matches:
+            candidate_ids_to_delete.extend(item.values())
+
+        # Now delete them
+        logger.debug("delete_all_candidate_documents: Deleting %s candidate documents", len(candidate_ids_to_delete))
+        num_deleted = delete_candidate_documents(candidate_ids_to_delete)
+        if not num_deleted:
+            no_more_candidates = True
+
+        # Update cursor for next run
+        new_cursor = results['hits']['cursor']
+        params['cursor'] = new_cursor
+
+        total_num_deleted += num_deleted
+    return total_num_deleted
+
+
+def _send_batch_request(action_dicts):
+    adds, deletes = 0, 0
+    get_cloud_search_connection()
+    import boto.cloudsearch2.document
+    document_service_connection = boto.cloudsearch2.document.DocumentServiceConnection(domain=_cloud_search_domain)
+    max_possible_request_size_bytes = 2  # Opening/closing brackets
+
+    # If the batch request size > 5MB, split it up
+    for i, action_dict in enumerate(action_dicts):
+        action_dict_json = simplejson.dumps(action_dict)
+        if len(action_dict_json) > DOCUMENT_SIZE_LIMIT_BYTES:
+            # Individual doc size shouldn't exceed 1MB
+            logger.error("_send_batch_request: action dict was > 1MB, so couldn't send: %s" % action_dict)
+            continue
+        elif max_possible_request_size_bytes < BATCH_REQUEST_LIMIT_BYTES:
+            # Add doc to aggregated string if it fits
+            if action_dict['type'] == 'delete':
+                document_service_connection.delete(action_dict['id'])
+                max_possible_request_size_bytes += 30  # approx. delete dict size
+            else:
+                document_service_connection.add(action_dict['id'], fields=action_dict['fields'])
+                max_possible_request_size_bytes += 40 + len(action_dict_json)  # approx. add dict size
+
+        if (len(action_dicts) == i + 1) or (max_possible_request_size_bytes + DOCUMENT_SIZE_LIMIT_BYTES > BATCH_REQUEST_LIMIT_BYTES):
+            """
+            If we're at the end of the loop, or once 4MB is reached, send out the request. We sent it out at 4MB (not 5MB) because the last
+            document in the batch could be 1MB.
+            """
+            try:
+                result = document_service_connection.commit()
+            except Exception:
+                logger.exception("_send_batch_request: Exception when sending batch request")
+                result = None
+            document_service_connection.clear_sdf()
+            max_possible_request_size_bytes = 2
+            if result:
+                if result.errors:
+                    logger.error("Received errors committing action_dicts to CloudSearch: %s", result.errors)
+                adds += result.adds
+                deletes += result.deletes
+
+    return adds, deletes
+
+
 def _get_search_service():
     get_cloud_search_connection()
     return _cloud_search_domain.get_search_service().domain_connection
@@ -255,6 +548,7 @@ def search_candidates(domain_id, vars, search_limit=15, candidate_ids_only=False
             vars['source_id'] = new_source_ids
 
     search_queries = []
+    query = ''
     # If query is array, separate values by spaces
     if vars.get('query') and not isinstance(vars['query'], basestring):
         query = ' '.join(vars['query'])
@@ -716,19 +1010,26 @@ def get_faceting_information(facets, domain_id):
     facet_custom_field_id_and_value = facets.get('custom_field_id_and_value').get('buckets')
 
     if facet_owner:
-        search_facets_values['usernameFacet'] = get_username_facet_info_with_ids(facet_owner)
-
+        owners = users_in_domain(domain_id)
+        search_facets_values['usernameFacet'] = get_username_facet_info_with_ids(facet_owner, owners)
     if facet_aoi:
+        areas = get_or_create_areas_of_interest(domain_id, True)
         search_facets_values['areaOfInterestIdFacet'] = get_facet_info_with_ids('area_of_interest', facet_aoi,
-                                                                                'description')
+                                                                                'description', areas)
 
     if facet_source:
+        c_source = get_table('candidate_source')
+        stmt = select([c_source.c.id]).where(c_source.c.domainId == domain_id)
+        domain_candidate_source = conn_db.execute(stmt).fetchall()
         search_facets_values['sourceFacet'] = get_facet_info_with_ids('candidate_source', facet_source,
-                                                                      'description')
+                                                                      'description', domain_candidate_source)
 
     if facet_status:
+        c_status = get_table('candidate_status')
+        stmt = select([c_status.c.id])
+        candidate_status = conn_db.execute(stmt).fetchall()
         search_facets_values['statusFacet'] = get_facet_info_with_ids('candidate_status', facet_status,
-                                                                      'description')
+                                                                      'description', candidate_status)
 
     if facet_skills:
         search_facets_values['skillDescriptionFacet'] = get_bucket_facet_value_count(facet_skills)
@@ -761,8 +1062,8 @@ def get_faceting_information(facets, domain_id):
     return search_facets_values
 
 
-def get_username_facet_info_with_ids(facet_owner):
-    tmp_dict = get_facet_info_with_ids('user', facet_owner, 'email')
+def get_username_facet_info_with_ids(facet_owner, users):
+    tmp_dict = get_facet_info_with_ids('user', facet_owner, 'email', users)
     # Dict is (email, value) -> count
     new_tmp_dict = dict()
     # Replace each user's email with name
@@ -774,7 +1075,7 @@ def get_username_facet_info_with_ids(facet_owner):
     return new_tmp_dict
 
 
-def get_facet_info_with_ids(table_name, facet, field_name):
+def get_facet_info_with_ids(table_name, facet, field_name, rows):
     """
     Few facets are filtering using ids, for those facets with ids, get their names (from db) for displaying on html
     also send ids so as to ease search with filter queries,
@@ -825,26 +1126,28 @@ def _update_facet_counts(filter_queries, params_fq, existing_facets, query_strin
             query_user_id_facet = {'query': query_string, 'size': 0, 'filter_query': fq_without_user_id,
                                    'query_parser': 'lucene', 'ret': '_no_fields', 'facet': "{user_id: {size:50}}"}
             result_user_id_facet = search_service.search(**query_user_id_facet)
+            owners = users_in_domain(domain_id)
             facet_owner = result_user_id_facet['facets']['user_id']['buckets']
-            existing_facets['usernameFacet'] = get_username_facet_info_with_ids(facet_owner)
-
+            existing_facets['usernameFacet'] = get_username_facet_info_with_ids(facet_owner, owners)
         if 'area_of_interest_id' in filter_query:
             fq_without_area_of_interest = params_fq.replace(filter_query,'')
             query_area_of_interest_facet = {'query': query_string, 'size': 0,
                                             'filter_query': fq_without_area_of_interest, 'query_parser': 'lucene',
                                             'ret': '_no_fields', 'facet': "{area_of_interest_id: {size:500}}"}
             result_area_of_interest_facet = search_service.search(**query_area_of_interest_facet)
+            areas = get_or_create_areas_of_interest(domain_id, True)
             facet_aoi = result_area_of_interest_facet['facets']['area_of_interest_id']['buckets']
-            existing_facets['areaOfInterestIdFacet'] = get_facet_info_with_ids("area_of_interest", facet_aoi,
-                                                                               'description')
+            existing_facets['areaOfInterestIdFacet'] = get_facet_info_with_ids(facet_aoi, 'description',areas)
         if 'source_id' in filter_query:
-            fq_without_source_id = params_fq.replace(filter_query, '')
+            fq_without_source_id = params_fq.replace(filter_query,'')
             query_source_id_facet = {'query':query_string, 'size':0, 'filter_query':fq_without_source_id, 'query_parser': 'lucene', 'ret':'_no_fields', 'facet':"{source_id: {size:50}}"}
             result_source_id_facet = search_service.search(**query_source_id_facet)
+            candidate_source = get_table('candidate_source')
+            stmt = select([candidate_source.c.id]).where(candidate_source.c.domainId == domain_id)
+            domain_candidate_source = conn_db.execute(stmt).fetchall()
             # domain_candidate_source = db(db.candidate_source.domainId == domain_id).select(cache=(cache.ram, 120))
             facet_source = result_source_id_facet['facets']['source_id']['buckets']
-            existing_facets['sourceFacet'] = get_facet_info_with_ids('candidate_source', facet_source, 'description')
-
+            existing_facets['sourceFacet'] = get_facet_info_with_ids(facet_source,'description',domain_candidate_source)
         if 'school_name' in filter_query:
             fq_without_school_name = params_fq.replace(filter_query, '')
             query_school_name_facet = {'query': query_string, 'size':0, 'filter_query': fq_without_school_name,
