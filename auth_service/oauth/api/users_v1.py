@@ -27,7 +27,6 @@ class UserResource(Resource):
         """
         authenticated_user = authenticate_oauth_user(request=request)
         if authenticated_user.get('error'):
-            print "auth_service/api/..."
             return {'error': {'code': 2, 'message': 'not authorized'}}, 401
             # raise ForbiddenError(error_message='not authorized', error_code=401)
 
@@ -39,7 +38,6 @@ class UserResource(Resource):
 
         requested_user = User.query.get(requested_user_id)
         if not requested_user:
-            print "no authenticated user"
             return {'error': {'message': 'user not found'}}, 404
 
         return {'user': {
