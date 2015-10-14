@@ -22,7 +22,7 @@ mod = Blueprint('activities_api', __name__)
 
 
 @mod.route('/')
-def hello_world():
+def index():
     return '/parse_resume'
 
 
@@ -60,9 +60,9 @@ def parse_file_picker_resume():
         return jsonify({'error': 'Invalid query params'}), 400
 
     result_dict = parse_resume(file_obj=resume_file, filename_str=filename_str)
-    processed_data = result_dict.get('processed_data')
+    processed_data = result_dict.get('dice_api_response')
     if processed_data:
-        del result_dict['processed_data']
+        del result_dict['dice_api_response']
     email_present = True if result_dict.get('emails') else False
     if create_candidate:
         if email_present:
@@ -73,4 +73,4 @@ def parse_file_picker_resume():
             return jsonify(**{'error': {'code': 3, 'message': 'Parsed resume did not have email',
                                         'candidate': result_dict}}), 400
 
-    return jsonify(**{'candidate': result_dict, 'dice_api_response': result_dict['dice_api_response']})
+    return jsonify(**{'candidate': result_dict, 'dice_api_response': processed_data})
