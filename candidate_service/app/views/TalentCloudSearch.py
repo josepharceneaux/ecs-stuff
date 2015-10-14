@@ -143,10 +143,7 @@ SOCIALCV_API_KEY = "c96dfb6b9344d07cee29804152f798751ae8fdee"
 STACKOVERFLOW_API_KEY = "hzOEoH16*Q7Y3QCWT9y)zA(("
 
 CLOUDSEARCH_REGION = os.environ.get('CLOUDSEARCHREGION')
-
-DOMAIN_KEY = "domain"
-
-DOMAIN_NAME = 'gettalent-naveen'
+cloudsearch_domain_name = os.environ.get('DOMAIN_NAME')
 
 
 def get_cloud_search_connection():
@@ -157,7 +154,7 @@ def get_cloud_search_connection():
                                                                      sign_request=True,
                                                                      region=CLOUDSEARCH_REGION)
 
-        _cloud_search_domain = _cloud_search_connection_layer_2.lookup(DOMAIN_NAME)
+        _cloud_search_domain = _cloud_search_connection_layer_2.lookup(cloudsearch_domain_name)
         if not _cloud_search_domain:
             return "Not Cloud Search Domain...!!"
 
@@ -172,7 +169,7 @@ def create_domain(domain_name=None):
     :return: Domain object, or None if not found
     """
     if not domain_name:
-        domain_name = DOMAIN_NAME
+        domain_name = cloudsearch_domain_name
     layer2 = get_cloud_search_connection()
     if not layer2.lookup(domain_name):
         return layer2.create_domain(domain_name)
