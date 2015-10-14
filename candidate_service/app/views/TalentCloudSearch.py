@@ -6,13 +6,11 @@
 import math
 import operator
 from datetime import datetime
-
+import os
 import boto
 import boto.exception
 import simplejson
 
-import TalentPropertyManager # To get the CLOUDSEARCH_REGION
-from common_functions import users_in_domain, get_or_create_areas_of_interest
 from candidate_service.common.models.db import get_table, db, conn_db, session
 from sqlalchemy import select
 from candidate_service.app import logger
@@ -144,7 +142,11 @@ HIPCHAT_TOKEN = 'ZmNg80eCeIN6sMCjIv03KNO2B4tqRcxTQNL44FBd'
 SOCIALCV_API_KEY = "c96dfb6b9344d07cee29804152f798751ae8fdee"
 STACKOVERFLOW_API_KEY = "hzOEoH16*Q7Y3QCWT9y)zA(("
 
-CLOUDSEARCH_REGION = TalentPropertyManager.get_cloudsearch_region()
+CLOUDSEARCH_REGION = os.environ.get('CLOUDSEARCHREGION')
+
+DOMAIN_KEY = "domain"
+
+DOMAIN_NAME = 'gettalent-naveen'
 
 
 def get_cloud_search_connection():
@@ -155,9 +157,7 @@ def get_cloud_search_connection():
                                                                      sign_request=True,
                                                                      region=CLOUDSEARCH_REGION)
 
-        import TalentPropertyManager
-        cloudsearch_domain_name = TalentPropertyManager.get_cloudsearch_domain_name()
-        _cloud_search_domain = _cloud_search_connection_layer_2.lookup(cloudsearch_domain_name)
+        _cloud_search_domain = _cloud_search_connection_layer_2.lookup(DOMAIN_NAME)
         if not _cloud_search_domain:
             return "Not Cloud Search Domain...!!"
 
@@ -172,8 +172,7 @@ def create_domain(domain_name=None):
     :return: Domain object, or None if not found
     """
     if not domain_name:
-        import TalentPropertyManager
-        domain_name = TalentPropertyManager.get_cloudsearch_domain_name()
+        domain_name = DOMAIN_NAME
     layer2 = get_cloud_search_connection()
     if not layer2.lookup(domain_name):
         return layer2.create_domain(domain_name)
@@ -548,7 +547,6 @@ def search_candidates(domain_id, vars, search_limit=15, candidate_ids_only=False
             vars['source_id'] = new_source_ids
 
     search_queries = []
-    query = ''
     # If query is array, separate values by spaces
     if vars.get('query') and not isinstance(vars['query'], basestring):
         query = ' '.join(vars['query'])
@@ -788,7 +786,8 @@ def search_candidates(domain_id, vars, search_limit=15, candidate_ids_only=False
             # This is for handling standard custom values (not for email preferences)
             if type(value) == list:
                 # To avoid REQUEST TOO LONG error we are limiting the search to 50 items
-                # TODO: When Kaiser city of interest and state of interest is merged, remove the logic to truncate to 50.
+                # TODO: When Kaiser city of interest and state of interest is merged,
+                # remove the logic to truncate to 50.
                 value = value[0:50]
                 for val in value:
                     cf_value = cf_id+'|'+val
@@ -890,8 +889,7 @@ def search_candidates(domain_id, vars, search_limit=15, candidate_ids_only=False
         return dict(total_found=total_found, candidate_ids=candidate_ids)
 
     # Make search request with error handling
-    import time
-    start_time = time.time()
+
     search_service = _get_search_service()
     try:
         results = search_service.search(**params)
@@ -910,7 +908,7 @@ def search_candidates(domain_id, vars, search_limit=15, candidate_ids_only=False
     if candidate_ids_only:
         return dict(total_found=total_found, candidate_ids=candidate_ids)
 
-    facets = get_faceting_information(results.get('facets'),domain_id)
+    facets = get_faceting_information(results.get('facets'))
 
     # Update facets
     _update_facet_counts(filter_queries,params['filter_query'], facets, query_string, domain_id)
@@ -991,7 +989,7 @@ def search_candidates(domain_id, vars, search_limit=15, candidate_ids_only=False
     return context_data
 
 
-def get_faceting_information(facets, domain_id):
+def get_faceting_information(facets):
     # Fetch facet names from database with given ids
     search_facets_values = {}
     # cache = SimpleCache()
@@ -1010,26 +1008,19 @@ def get_faceting_information(facets, domain_id):
     facet_custom_field_id_and_value = facets.get('custom_field_id_and_value').get('buckets')
 
     if facet_owner:
-        owners = users_in_domain(domain_id)
-        search_facets_values['usernameFacet'] = get_username_facet_info_with_ids(facet_owner, owners)
+        search_facets_values['usernameFacet'] = get_username_facet_info_with_ids(facet_owner)
+
     if facet_aoi:
-        areas = get_or_create_areas_of_interest(domain_id, True)
         search_facets_values['areaOfInterestIdFacet'] = get_facet_info_with_ids('area_of_interest', facet_aoi,
-                                                                                'description', areas)
+                                                                                'description')
 
     if facet_source:
-        c_source = get_table('candidate_source')
-        stmt = select([c_source.c.id]).where(c_source.c.domainId == domain_id)
-        domain_candidate_source = conn_db.execute(stmt).fetchall()
         search_facets_values['sourceFacet'] = get_facet_info_with_ids('candidate_source', facet_source,
-                                                                      'description', domain_candidate_source)
+                                                                      'description')
 
     if facet_status:
-        c_status = get_table('candidate_status')
-        stmt = select([c_status.c.id])
-        candidate_status = conn_db.execute(stmt).fetchall()
         search_facets_values['statusFacet'] = get_facet_info_with_ids('candidate_status', facet_status,
-                                                                      'description', candidate_status)
+                                                                      'description')
 
     if facet_skills:
         search_facets_values['skillDescriptionFacet'] = get_bucket_facet_value_count(facet_skills)
@@ -1062,8 +1053,8 @@ def get_faceting_information(facets, domain_id):
     return search_facets_values
 
 
-def get_username_facet_info_with_ids(facet_owner, users):
-    tmp_dict = get_facet_info_with_ids('user', facet_owner, 'email', users)
+def get_username_facet_info_with_ids(facet_owner):
+    tmp_dict = get_facet_info_with_ids('user', facet_owner, 'email')
     # Dict is (email, value) -> count
     new_tmp_dict = dict()
     # Replace each user's email with name
@@ -1075,7 +1066,7 @@ def get_username_facet_info_with_ids(facet_owner, users):
     return new_tmp_dict
 
 
-def get_facet_info_with_ids(table_name, facet, field_name, rows):
+def get_facet_info_with_ids(table_name, facet, field_name):
     """
     Few facets are filtering using ids, for those facets with ids, get their names (from db) for displaying on html
     also send ids so as to ease search with filter queries,
@@ -1122,32 +1113,29 @@ def _update_facet_counts(filter_queries, params_fq, existing_facets, query_strin
     # Multi-select facet scenario
     for filter_query in filter_queries:
         if 'user_id' in filter_query:
-            fq_without_user_id = params_fq.replace(filter_query,'')
+            fq_without_user_id = params_fq.replace(filter_query, '')
             query_user_id_facet = {'query': query_string, 'size': 0, 'filter_query': fq_without_user_id,
                                    'query_parser': 'lucene', 'ret': '_no_fields', 'facet': "{user_id: {size:50}}"}
             result_user_id_facet = search_service.search(**query_user_id_facet)
-            owners = users_in_domain(domain_id)
             facet_owner = result_user_id_facet['facets']['user_id']['buckets']
-            existing_facets['usernameFacet'] = get_username_facet_info_with_ids(facet_owner, owners)
+            existing_facets['usernameFacet'] = get_username_facet_info_with_ids(facet_owner)
         if 'area_of_interest_id' in filter_query:
-            fq_without_area_of_interest = params_fq.replace(filter_query,'')
+            fq_without_area_of_interest = params_fq.replace(filter_query, '')
             query_area_of_interest_facet = {'query': query_string, 'size': 0,
                                             'filter_query': fq_without_area_of_interest, 'query_parser': 'lucene',
                                             'ret': '_no_fields', 'facet': "{area_of_interest_id: {size:500}}"}
             result_area_of_interest_facet = search_service.search(**query_area_of_interest_facet)
-            areas = get_or_create_areas_of_interest(domain_id, True)
             facet_aoi = result_area_of_interest_facet['facets']['area_of_interest_id']['buckets']
-            existing_facets['areaOfInterestIdFacet'] = get_facet_info_with_ids(facet_aoi, 'description',areas)
+            existing_facets['areaOfInterestIdFacet'] = get_facet_info_with_ids("area_of_interest", facet_aoi,
+                                                                               'description')
         if 'source_id' in filter_query:
-            fq_without_source_id = params_fq.replace(filter_query,'')
-            query_source_id_facet = {'query':query_string, 'size':0, 'filter_query':fq_without_source_id, 'query_parser': 'lucene', 'ret':'_no_fields', 'facet':"{source_id: {size:50}}"}
+            fq_without_source_id = params_fq.replace(filter_query, '')
+            query_source_id_facet = {'query': query_string, 'size': 0, 'filter_query': fq_without_source_id,
+                                     'query_parser': 'lucene', 'ret': '_no_fields', 'facet': "{source_id: {size:50}}"}
             result_source_id_facet = search_service.search(**query_source_id_facet)
-            candidate_source = get_table('candidate_source')
-            stmt = select([candidate_source.c.id]).where(candidate_source.c.domainId == domain_id)
-            domain_candidate_source = conn_db.execute(stmt).fetchall()
             # domain_candidate_source = db(db.candidate_source.domainId == domain_id).select(cache=(cache.ram, 120))
             facet_source = result_source_id_facet['facets']['source_id']['buckets']
-            existing_facets['sourceFacet'] = get_facet_info_with_ids(facet_source,'description',domain_candidate_source)
+            existing_facets['sourceFacet'] = get_facet_info_with_ids('candidate_source', facet_source, 'description')
         if 'school_name' in filter_query:
             fq_without_school_name = params_fq.replace(filter_query, '')
             query_school_name_facet = {'query': query_string, 'size':0, 'filter_query': fq_without_school_name,
