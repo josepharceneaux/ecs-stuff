@@ -20,10 +20,11 @@ class Test_Event_Importer():
         'auth_data' to create user credentials and
         'meetup_event' to create events on Meetup websites.
         """
-        social_network_event_id = meetup_event.social_network_event_id
+        event = meetup_event['event']
+        social_network_event_id = event.social_network_event_id
         user_credentials = UserCredentials.get_by_user_and_social_network_id(
-            auth_data['user_id'], meetup_event.social_network.id)
-        Event.delete(meetup_event.id)
+            auth_data['user_id'], event.social_network.id)
+        Event.delete(event.id)
         # create object of respective social network
         social_network = SocialNetwork.get_by_name(user_credentials.social_network.name)
         social_network_class = get_class(social_network.name.lower(), 'social_network',
@@ -34,7 +35,9 @@ class Test_Event_Importer():
         sn.process('event', user_credentials=user_credentials)
         event = Event.get_by_user_and_social_network_event_id(auth_data['user_id'],
                                                               social_network_event_id)
-        assert event.description.find("Test Event Description")
+        assert isinstance(event, Event), "event should be a model object"
+        assert event.description.find("Test Event Description"), 'Event not imported in database'
+        meetup_event['id'] = event.id
 
     def test_meetup_rsvp(self, auth_data, meetup_event):
         """
@@ -50,10 +53,10 @@ class Test_Event_Importer():
             using social_network_rsvp_id and finally assert on the status of
             RSVP. It should be same as given in POST request's payload.
         """
-
-        social_network_event_id = meetup_event.social_network_event_id
+        event = meetup_event['event']
+        social_network_event_id = event.social_network_event_id
         user_credentials = UserCredentials.get_by_user_and_social_network_id(
-            auth_data['user_id'], meetup_event.social_network.id)
+            auth_data['user_id'], event.social_network.id)
         # create object of respective social network
         social_network = SocialNetwork.get_by_name(user_credentials.social_network.name)
         social_network_class = get_class(social_network.name.lower(), 'social_network',
@@ -71,3 +74,4 @@ class Test_Event_Importer():
         rsvp_in_db = RSVP.get_by_social_network_rsvp_id_and_social_network_id(
             social_network_rsvp_id, social_network.id)
         assert rsvp_in_db.status == payload['rsvp']
+        meetup_event['id'] = event.id
