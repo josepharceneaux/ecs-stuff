@@ -23,7 +23,7 @@ from widget_service.common.models.widget import WidgetPage
 from widget_service.widget_app import app
 from widget_service.widget_app import db
 
-from widget_service.common.utils.handy_functions import randomword
+from widget_service.common.utils.handy_functions import random_word
 from widget_service.common.utils.db_utils import get_or_create
 from widget_service.widget_app.views.utils import parse_interest_ids_from_form
 from widget_service.widget_app.views.utils import parse_city_and_state_ids_from_form
@@ -32,7 +32,7 @@ APP = app.test_client()
 
 @pytest.fixture(autouse=True)
 def test_org(request):
-    org_attrs = dict(name='Rocket League All Stars - {}'.format(randomword(8)))
+    org_attrs = dict(name='Rocket League All Stars - {}'.format(random_word(8)))
     test_org, created = get_or_create(db.session, Organization, defaults=None, **org_attrs)
     if created:
         db.session.add(test_org)
@@ -51,7 +51,7 @@ def test_org(request):
 
 @pytest.fixture(autouse=True)
 def test_culture(request):
-    culture_attrs = dict(description='Foo {}'.format(randomword(12)), code=randomword(5))
+    culture_attrs = dict(description='Foo {}'.format(random_word(12)), code=random_word(5))
     test_culture, created = get_or_create(db.session, Culture, defaults=None, **culture_attrs)
     if created:
         db.session.add(test_culture)
@@ -69,30 +69,20 @@ def test_culture(request):
 
 
 @pytest.fixture(autouse=True)
-def create_test_domain(test_culture, test_org, request):
-    test_domain = Domain(name=randomword(40), usage_limitation=0,
+def test_domain(test_culture, test_org, request):
+    test_domain = Domain(name=random_word(40), usage_limitation=0,
                          expiration=datetime.datetime(2050, 4, 26),
                          added_time=datetime.datetime(2050, 4, 26),
                          organization_id=test_org.id, is_fair_check_on=False, is_active=1,
-                         default_tracking_code=1, default_from_name=(randomword(100)),
+                         default_tracking_code=1, default_from_name=(random_word(100)),
                          default_culture_id=test_culture.id,
-                         settings_json=randomword(55), updated_time=datetime.datetime.now())
-
-    test_domain2 = Domain(name=randomword(40), usage_limitation=0,
-                         expiration=datetime.datetime(2050, 4, 26),
-                         added_time=datetime.datetime(2050, 4, 26),
-                         organization_id=test_org.id, is_fair_check_on=False, is_active=1,
-                         default_tracking_code=1, default_from_name=(randomword(100)),
-                         default_culture_id=test_culture.id,
-                         settings_json=randomword(55), updated_time=datetime.datetime.now())
+                         settings_json=random_word(55), updated_time=datetime.datetime.now())
 
     db.session.add(test_domain)
-    db.session.add(test_domain2)
     db.session.commit()
     def fin():
         try:
             db.session.delete(test_domain)
-            db.session.delete(test_domain2)
             db.session.commit()
         except Exception:
             pass
@@ -101,18 +91,40 @@ def create_test_domain(test_culture, test_org, request):
 
 
 @pytest.fixture(autouse=True)
-def create_test_AOIs(create_test_domain, request):
+def second_domain(test_culture, test_org, request):
+    test_domain2 = Domain(name=random_word(40), usage_limitation=0,
+                         expiration=datetime.datetime(2050, 4, 26),
+                         added_time=datetime.datetime(2050, 4, 26),
+                         organization_id=test_org.id, is_fair_check_on=False, is_active=1,
+                         default_tracking_code=1, default_from_name=(random_word(100)),
+                         default_culture_id=test_culture.id,
+                         settings_json=random_word(55), updated_time=datetime.datetime.now())
+
+    db.session.add(test_domain2)
+    db.session.commit()
+    def fin():
+        try:
+            db.session.delete(test_domain2)
+            db.session.commit()
+        except Exception:
+            pass
+    request.addfinalizer(fin)
+    return test_domain2
+
+
+@pytest.fixture(autouse=True)
+def test_areas_of_interest(test_domain, request):
     aois = []
     sub_aois = []
     # Create our parent categories.
     for i in xrange(10):
         aois.append(
-            AreaOfInterest(id=i+1, domain_id=create_test_domain.id, description=randomword(16),
+            AreaOfInterest(id=i+1, domain_id=test_domain.id, description=random_word(16),
                            parent_id=None)
         )
     for i in xrange(2):
             aois.append(
-                AreaOfInterest(domain_id=create_test_domain.id + 1, description=randomword(16),
+                AreaOfInterest(domain_id=test_domain.id + 1, description=random_word(16),
                                parent_id=None)
             )
     db.session.bulk_save_objects(aois)
@@ -120,7 +132,7 @@ def create_test_AOIs(create_test_domain, request):
     parent_id = aois[0].id
     for i in xrange(2):
             sub_aois.append(
-                AreaOfInterest(domain_id=create_test_domain.id, description=randomword(16),
+                AreaOfInterest(domain_id=test_domain.id, description=random_word(16),
                                parent_id=parent_id)
             )
     db.session.bulk_save_objects(sub_aois)
@@ -134,7 +146,7 @@ def create_test_AOIs(create_test_domain, request):
 
 
 @pytest.fixture(autouse=True)
-def create_test_country(request):
+def test_country(request):
     test_country = Country(name='United States', code='U.S.A')
     db.session.add(test_country)
     db.session.commit()
@@ -149,8 +161,8 @@ def create_test_country(request):
 
 
 @pytest.fixture(autouse=True)
-def create_test_state(create_test_country, request):
-    test_state = State(name='California', alpha_code='potato', country_id=create_test_country.id,
+def test_state(test_country, request):
+    test_state = State(name='California', alpha_code='potato', country_id=test_country.id,
                        abbreviation='CA')
     db.session.add(test_state)
     db.session.commit()
@@ -165,11 +177,11 @@ def create_test_state(create_test_country, request):
 
 
 @pytest.fixture(autouse=True)
-def create_test_universities(create_test_state, request):
+def test_universities(test_state, request):
     universities = []
     for i in xrange(5):
         universities.append(
-            University(name=randomword(35), state_id=create_test_state.id)
+            University(name=random_word(35), state_id=test_state.id)
         )
     db.session.bulk_save_objects(universities)
     def fin():
@@ -180,11 +192,11 @@ def create_test_universities(create_test_state, request):
 
 
 @pytest.fixture(autouse=True)
-def create_test_user(create_test_domain, request):
+def test_user(test_domain, request):
     user_attrs = dict(
-        domain_id=create_test_domain.id, first_name='Jamtry', last_name='Jonas',
+        domain_id=test_domain.id, first_name='Jamtry', last_name='Jonas',
         password='pbkdf2(1000,64,sha512)$bd913bac5e55a39b$ea5a0a2a2d156003faaf7986ea4cba3f25607e43ecffb36e0d2b82381035bbeaded29642a1dd6673e922f162d322862459dd3beedda4501c90f7c14b3669cd72',
-        email='jamtry@{}.com'.format(randomword(7)), added_time=datetime.datetime(2050, 4, 26)
+        email='jamtry@{}.com'.format(random_word(7)), added_time=datetime.datetime(2050, 4, 26)
     )
     test_user, created = get_or_create(db.session, User, defaults=None, **user_attrs)
     if created:
@@ -203,9 +215,9 @@ def create_test_user(create_test_domain, request):
 
 
 @pytest.fixture(autouse=True)
-def create_test_candidate_source(create_test_domain, request):
-    test_source = CandidateSource(description=randomword(40), notes=randomword(40),
-                                  domain_id=create_test_domain.id)
+def test_candidate_source(test_domain, request):
+    test_source = CandidateSource(description=random_word(40), notes=random_word(40),
+                                  domain_id=test_domain.id)
     db.session.add(test_source)
     db.session.commit()
     def fin():
@@ -219,10 +231,10 @@ def create_test_candidate_source(create_test_domain, request):
 
 
 @pytest.fixture(autouse=True)
-def create_test_majors(create_test_domain, request):
+def test_majors(test_domain, request):
     majors = []
     for i in xrange(5):
-        majors.append(Major(name=randomword(18), domain_id=create_test_domain.id))
+        majors.append(Major(name=random_word(18), domain_id=test_domain.id))
     db.session.bulk_save_objects(majors)
     def fin():
         db.session.query(Major).delete()
@@ -234,18 +246,18 @@ def create_test_majors(create_test_domain, request):
 
 
 @pytest.fixture(autouse=True)
-def create_test_widget_page(create_test_user, create_test_candidate_source, request):
-    test_widget_page = WidgetPage(url=randomword(20), page_views=0, sign_ups=0,
-                                  widget_name=randomword(20), user_id=create_test_user.id,
-                                  candidate_source_id=create_test_candidate_source.id,
-                                  welcome_email_text=randomword(40),
-                                  welcome_email_html=randomword(40),
-                                  welcome_email_subject=randomword(40),
-                                  request_email_text=randomword(40),
-                                  request_email_html=randomword(40),
-                                  request_email_subject=randomword(40),
-                                  email_source=randomword(40), reply_address=randomword(40),
-                                  widget_html=randomword(200), s3_location=randomword(12)
+def test_widget_page(test_user, test_candidate_source, request):
+    test_widget_page = WidgetPage(url=random_word(20), page_views=0, sign_ups=0,
+                                  widget_name=random_word(20), user_id=test_user.id,
+                                  candidate_source_id=test_candidate_source.id,
+                                  welcome_email_text=random_word(40),
+                                  welcome_email_html=random_word(40),
+                                  welcome_email_subject=random_word(40),
+                                  request_email_text=random_word(40),
+                                  request_email_html=random_word(40),
+                                  request_email_subject=random_word(40),
+                                  email_source=random_word(40), reply_address=random_word(40),
+                                  widget_html=random_word(200), s3_location=random_word(12)
                                   )
     db.session.add(test_widget_page)
     db.session.commit()
@@ -261,14 +273,14 @@ def create_test_widget_page(create_test_user, create_test_candidate_source, requ
 
 
 @pytest.fixture(autouse=True)
-def create_test_extra_fields_location(create_test_domain, request):
-    state_field = CustomField(domain_id=create_test_domain.id, name='State of Interest',
+def test_extra_fields_location(test_domain, request):
+    state_field = CustomField(domain_id=test_domain.id, name='State of Interest',
                               type='string', added_time=datetime.datetime.now(),
                               updated_time=datetime.datetime.now())
     db.session.add(state_field)
     db.session.commit()
 
-    city_field = CustomField(domain_id=create_test_domain.id, name='City of Interest',
+    city_field = CustomField(domain_id=test_domain.id, name='City of Interest',
                               type='string', added_time=datetime.datetime.now(),
                               updated_time=datetime.datetime.now())
     db.session.add(city_field)
@@ -281,10 +293,10 @@ def create_test_extra_fields_location(create_test_domain, request):
 
 
 @pytest.fixture(autouse=True)
-def create_test_oauth_credentials(create_test_user, request):
-    test_client = Client(client_id=randomword(16), client_secret=randomword(18))
-    test_token = Token(client_id=test_client.client_id, user_id=create_test_user.id, token_type='bearer',
-                       access_token=randomword(18), refresh_token=randomword(18),
+def test_oauth_credentials(test_user, request):
+    test_client = Client(client_id=random_word(16), client_secret=random_word(18))
+    test_token = Token(client_id=test_client.client_id, user_id=test_user.id, token_type='bearer',
+                       access_token=random_word(18), refresh_token=random_word(18),
                        expires=datetime.datetime(2050, 04, 26))
     db.session.add(test_client)
     db.session.commit()
@@ -301,7 +313,7 @@ def create_test_oauth_credentials(create_test_user, request):
 
 
 @pytest.fixture(autouse=True)
-def create_test_email_label(request):
+def test_email_label(request):
     test_email_label = EmailLabel(description='Primary')
     db.session.add(test_email_label)
     db.session.commit()
@@ -312,8 +324,8 @@ def create_test_email_label(request):
 
 
 
-def test_api_returns_domain_filtered_aois(create_test_widget_page, request):
-    response = APP.get('/v1/interests/{}'.format(create_test_widget_page.widget_name))
+def test_api_returns_domain_filtered_aois(test_widget_page, request):
+    response = APP.get('/v1/interests/{}'.format(test_widget_page.widget_name))
     assert response.status_code == 200
     assert len(json.loads(response.data)['primary_interests']) == 10
     assert len(json.loads(response.data)['secondary_interests']) == 2
@@ -325,19 +337,19 @@ def test_api_returns_university_name_list(request):
     assert len(json.loads(response.data)['universities_list']) == 5
 
 
-def test_api_returns_majors_name_list(create_test_domain, request):
-    response = APP.get('/v1/majors/{}'.format(create_test_domain.name))
+def test_api_returns_majors_name_list(test_domain, request):
+    response = APP.get('/v1/majors/{}'.format(test_domain.name))
     assert response.status_code == 200
     assert len(json.loads(response.data)['majors']) == 5
 
 
-def test_get_call_returns_widget_page_html(create_test_widget_page, request):
-    response = APP.get('/v1/widget/{}'.format(create_test_widget_page.widget_name))
+def test_get_call_returns_widget_page_html(test_widget_page, request):
+    response = APP.get('/v1/widget/{}'.format(test_widget_page.widget_name))
     assert response.status_code == 200
-    assert response.data == create_test_widget_page.widget_html
+    assert response.data == test_widget_page.widget_html
 
 
-def test_post_call_creates_candidate_object(create_test_AOIs, request):
+def test_post_call_creates_candidate_object(areas_of_interest, request):
     subcategory = db.session.query(AreaOfInterest).filter(AreaOfInterest.parent_id!=None).first()
     parent_category_1 = db.session.query(AreaOfInterest).get(subcategory.parent_id)
     parent_category_2 = db.session.query(AreaOfInterest).filter(
@@ -348,9 +360,9 @@ def test_post_call_creates_candidate_object(create_test_AOIs, request):
         parent_category_with_sub=parent_category_1.description,
         subcategory=subcategory.description)
     candidate_dict = {
-        'firstName': randomword(12),
-        'lastName': randomword(12),
-        'emailAdd': '{}@gmail.com'.format(randomword(12)),
+        'firstName': random_word(12),
+        'lastName': random_word(12),
+        'emailAdd': '{}@gmail.com'.format(random_word(12)),
         'hidden-tags-aoi': aoi_string,
         'hidden-tags-location': 'Northern California: All Cities|Southern California: Pomona'
     }
@@ -376,9 +388,9 @@ def test_parse_interest_ids_from_form(request):
     ]
 
 
-def test_parse_location_ids_from_form(create_test_extra_fields_location, request):
-    state_custom_field_id = create_test_extra_fields_location[0].id
-    city_custom_field_id = create_test_extra_fields_location[1].id
+def test_parse_location_ids_from_form(test_extra_fields_location, request):
+    state_custom_field_id = test_extra_fields_location[0].id
+    city_custom_field_id = test_extra_fields_location[1].id
     test_string = 'Northern California: All Cities|Southern California: Pomona'
     processed_ids = parse_city_and_state_ids_from_form(test_string)
     assert processed_ids == [

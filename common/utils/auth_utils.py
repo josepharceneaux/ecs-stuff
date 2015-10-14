@@ -9,7 +9,7 @@ from flask import current_app as app
 
 def authenticate_oauth_user(request, token=None):
     """
-    :param request: (object) flask request object
+    :param flask.wrappers.Request request: Flask Request object
     :return:
     """
     if token:

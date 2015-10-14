@@ -8,7 +8,7 @@ from widget_service.common.models.misc import Culture
 from widget_service.common.models.misc import Major
 from widget_service.common.models.misc import Organization
 from widget_service.common.models.user import Domain
-from widget_service.common.utils.handy_functions import randomword
+from widget_service.common.utils.handy_functions import random_word
 from widget_service.widget_app import db
 
 def fill_db():
@@ -49,24 +49,24 @@ def fill_db():
     MAJORS = []
     for i in xrange(30):
         MAJORS.append(
-            Major(name=randomword(12), domain_id=random.choice(DOMAINS).id)
+            Major(name=random_word(12), domain_id=random.choice(DOMAINS).id)
         )
     db.session.bulk_save_objects(MAJORS)
     for d in DOMAINS:
         for i in xrange(10):
-            aoi = AreaOfInterest(domain_id=d.id, description=randomword(4),
+            aoi = AreaOfInterest(domain_id=d.id, description=random_word(4),
                                  parent_id=None)
             db.session.add(aoi)
             db.session.commit()
             for ii in xrange(4):
-                sub_aoi = AreaOfInterest(domain_id=d.id, description='{}: {}'.format(aoi.description, randomword(6)),
+                sub_aoi = AreaOfInterest(domain_id=d.id, description='{}: {}'.format(aoi.description, random_word(6)),
                                  parent_id=aoi.id)
                 db.session.add(sub_aoi)
                 db.session.commit()
     UNIVERSITIES = []
     for i in xrange(10):
         UNIVERSITIES.append(
-            University(name='University of {}'.format(randomword(6)))
+            University(name='University of {}'.format(random_word(6)))
         )
     db.session.bulk_save_objects(UNIVERSITIES)
     db.session.commit()
