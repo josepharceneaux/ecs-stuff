@@ -1,10 +1,10 @@
 {
-  "name": "angular-template",
+  "name": "gettalent-dashboard",
   "version": "0.1.0",
-  "description": "A template to kick-start AngularJS projects",
-  "author": "Naresh Bhatia",
+  "description": "GetTalent",
+  "author": "Haohong Xu",
   "license": "MIT",
-  "homepage": "https://github.com/archfirst/angular-template",
+  "homepage": "",
   "ignore": [
     "**/.*",
     "node_modules",
@@ -23,6 +23,7 @@
     "angular-sanitize": "~1.4.0",
     "angular-toastr": "~1.4.1",
     "angular-ui-router": "~0.2.15",
+    "angular-oauth2": "~3.0.1",
     "bootstrap-sass": "~3.3.4",
     "lodash": "~3.9.3",
     "font-awesome": "~4.4.0"
