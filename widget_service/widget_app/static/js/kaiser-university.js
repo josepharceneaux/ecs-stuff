@@ -51,10 +51,10 @@ $(document).ready(function() {
         hiddenTagListName: 'interestTags',
         delimiters: [124]
     });
-    $('#interestId').change(function(){
-        if ( ! $("#interestId").find(":selected").val())
+    $('#interestSelect').change(function(){
+        if ( ! $("#interestSelect").find(":selected").val())
             return false;
-        $("#hidden-tags-aoi").tagsManager('pushTag', $("#interestId").find(":selected").text());
+        $("#hidden-tags-aoi").tagsManager('pushTag', $("#interestSelect").find(":selected").text());
         $(this).find(":first-child").text("Select another interest...");
         $(this).val("");
         $(this).focus();
@@ -186,24 +186,38 @@ function createGraduationYearOptions(){
     }
 }
 
+function getInterestsJSON() {
+    var interests;
+    var request = $.ajax({
+        url: "/v1/interests/kaiser_university",
+        type: "GET",
+        dataType: "json"
+    });
+    request.success(function(interests) {
+        SUB_AOIS = interests.secondary_interests;
+        renderInterests(interests);
+    });
+}
+
 
 $.ajax({
     type: "get",
     dataType: "json",
-    url: "/v1/majors/kaiser_corp",
+    url: "/v1/majors/kaiser_university",
     success: function(response) {
         var majorSelector = document.getElementById('major');
         var option;
         var majors = response.majors;
         for (var i=0; i < majors.length; i++) {
             option = document.createElement("option");
-            option.label = degrees[i];
-            option.value = degrees[i];
-            option.text = degrees[i];
-            degreeSelector.add(option);
+            option.label = majors[i];
+            option.value = majors[i];
+            option.text = majors[i];
+            majorSelector.add(option);
         };
     }
 });
 
 createDegreeOptions();
 createGraduationYearOptions();
+getInterestsJSON();

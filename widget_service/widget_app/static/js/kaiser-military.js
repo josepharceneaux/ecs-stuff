@@ -342,7 +342,7 @@ function createMilitaryGrades(){
 function getInterestsJSON() {
     var interests;
     var request = $.ajax({
-        url: "/widgetV1/interests/kaiser_military",
+        url: "/v1/interests/kaiser_military",
         type: "GET",
         dataType: "json"
     });

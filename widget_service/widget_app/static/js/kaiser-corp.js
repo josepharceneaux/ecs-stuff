@@ -55,7 +55,9 @@ $(document).ready(function() {
         // Populate & show sub AOI dropdown
         $("#subInterestSelect").empty();
         var aoiId = $(this).find(':selected').val();
+        console.log('Primary AOI: ' + aoiId);
         var subAOIList = aoiIdToSubAois(aoiId);
+        console.log(subAOIList);
 
         $("#subInterestSelect").append("<option value=''>Select Subcategory</option>");
         $("#subInterestSelect").append("<option value='All'>All Subcategories</option>");

@@ -322,7 +322,7 @@ def test_api_returns_domain_filtered_aois(create_test_widget_page, request):
 def test_api_returns_university_name_list(request):
     response = APP.get('/v1/universities')
     assert response.status_code == 200
-    assert len(json.loads(response.data)['universities']) == 5
+    assert len(json.loads(response.data)['universities_list']) == 5
 
 
 def test_api_returns_majors_name_list(create_test_domain, request):

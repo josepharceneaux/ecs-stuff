@@ -72,17 +72,16 @@ def create_candidate_from_widget():
     return jsonify({'success': {'message': 'candidate successfully created'}}), 201
 
 
-@mod.route('/interests/<widget_name>', methods=['GET'])
-def get_areas_of_interest(widget_name):
+@mod.route('/interests/<domain>', methods=['GET'])
+def get_areas_of_interest(domain):
     """ API call that provides interests list filtered by the domain.
-    :param widget_name: (string)
+    :param domain: (string)
     :return: A dictionary pointing to primary and seconday interests that have been filtered by
              domain.
     """
-    current_widget = WidgetPage.query.filter_by(widget_name=widget_name).first()
-    widget_user = User.query.get(current_widget.user_id)
+    current_domain = Domain.query.filter_by(name=domain).first()
     interests = db.session.query(AreaOfInterest).filter(
-        AreaOfInterest.domain_id == widget_user.domain_id)
+        AreaOfInterest.domain_id == current_domain.id)
     primary_interests = []
     secondary_interests = []
     for interest in interests:
@@ -93,6 +92,7 @@ def get_areas_of_interest(widget_name):
             })
         else:
             primary_interests.append({
+                'id': interest.id,
                 'description': interest.description,
                 'parent_id': interest.parent_id
             })
@@ -104,7 +104,8 @@ def get_areas_of_interest(widget_name):
 def get_university_names():
     """API call for names of universities in db in format used by widget select tags."""
     university_names = db.session.query(University.name)
-    return jsonify(universities_list=[uni for uni in university_names])
+    # return jsonify(universities_list=[name for name in university_names])
+    return jsonify({'universities_list': [university.name for university in university_names]})
 
 
 @mod.route('/majors/<domain_name>', methods=['GET'])

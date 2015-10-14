@@ -19,21 +19,21 @@ def fill_db():
     db.session.commit()
     db.session.add(KAISER_UMBRELLA)
     db.session.commit()
-    KAISER_CORP = Domain(name='Kaiser Corporate', usage_limitation=0,
+    KAISER_CORP = Domain(name='kaiser_corporate', usage_limitation=0,
                          expiration=datetime.datetime(2050, 4, 26),
                          added_time=datetime.datetime(2050, 4, 26),
                          organization_id=KAISER_UMBRELLA.id, is_fair_check_on=False, is_active=1,
                          default_tracking_code=1, default_from_name=('asd'),
                          default_culture_id=RANDOM_CULTURE.id,
                          settings_json='json', updated_time=datetime.datetime.now())
-    KAISER_UNI = Domain(name='Kaiser University', usage_limitation=0,
+    KAISER_UNI = Domain(name='kaiser_university', usage_limitation=0,
                          expiration=datetime.datetime(2050, 4, 26),
                          added_time=datetime.datetime(2050, 4, 26),
                          organization_id=KAISER_UMBRELLA.id, is_fair_check_on=False, is_active=1,
                          default_tracking_code=1, default_from_name=('asd'),
                          default_culture_id=RANDOM_CULTURE.id,
                          settings_json='json', updated_time=datetime.datetime.now())
-    KAISER_MIL = Domain(name='Kaiser Military', usage_limitation=0,
+    KAISER_MIL = Domain(name='kaiser_military', usage_limitation=0,
                          expiration=datetime.datetime(2050, 4, 26),
                          added_time=datetime.datetime(2050, 4, 26),
                          organization_id=KAISER_UMBRELLA.id, is_fair_check_on=False, is_active=1,
@@ -69,6 +69,7 @@ def fill_db():
             University(name='University of {}'.format(randomword(6)))
         )
     db.session.bulk_save_objects(UNIVERSITIES)
+    db.session.commit()
 
 
 
