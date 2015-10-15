@@ -33,7 +33,7 @@ def test_user_authentication(sample_user, user_auth):
     data = {'client_id': resp['token_row'].client_id,
             'refresh_token': resp['token_row'].refresh_token,
             'grant_type':'refresh_token'}
-    r = requests.post('http://localhost:5000/oauth2/token', data=data)
+    r = requests.post('http://localhost:8001/oauth2/token', data=data)
     print "\ntoken_row for refreshing auth token: %s" % r.json()
     assert r.status_code == 200
     assert resp['token_row'].user_id == get_auth_token_resp['user_id']
@@ -52,8 +52,8 @@ def test_get_user_without_authentication():
 
     # Get user
     user_id = 5
-    resp = requests.get('http://127.0.0.1:5000/v1/users/%s' % user_id)
-    print "\nResponse to http://127.0.0.1:5000/v1/users/%s: \n%s" % (user_id, resp.content)
+    resp = requests.get('http://127.0.0.1:8001/v1/users/%s' % user_id)
+    print "\nResponse to http://127.0.0.1:8001/v1/users/%s: \n%s" % (user_id, resp.content)
 
     assert resp.status_code == 401
 
