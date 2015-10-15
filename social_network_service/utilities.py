@@ -527,9 +527,9 @@ def get_utc_datetime(dt, timezone):
 
     :Example:
 
-        >>> now = datetime.now()  # datetime(2015, 10, 8, 11, 16, 55, 520914)
-        >>> timezone = 'Asia/Karachi'
-        >>> utc_datetime = get_utc_datetime(now, timezone) # '2015-10-08T06:16:55Z
+        >> now = datetime.now()  # datetime(2015, 10, 8, 11, 16, 55, 520914)
+        >> timezone = 'Asia/Karachi'
+        >> utc_datetime = get_utc_datetime(now, timezone) # '2015-10-08T06:16:55Z
 
     :param dt: datetime object
     :type dt: datetime
@@ -540,7 +540,11 @@ def get_utc_datetime(dt, timezone):
     assert isinstance(dt, datetime)
     # get timezone info from given datetime object
     local_timezone = pytz.timezone(timezone)
-    local_dt = local_timezone.localize(dt, is_dst=None)
+    try:
+        local_dt = local_timezone.localize(dt, is_dst=None)
+    except ValueError as e:
+        # datetime object already contains timezone info
+        return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
     utc_dt = local_dt.astimezone(pytz.utc)
     return utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
