@@ -14,6 +14,7 @@ import requests
 # want to avoid name conflicts that arise due to name of the package and
 # name of the files in which package is being used.
 from social_network_service.utilities import import_from_dist_packages
+
 facebook = import_from_dist_packages('facebook')
 
 # Application Specific
@@ -25,6 +26,29 @@ from social_network_service.utilities import log_exception
 
 
 class Facebook(EventBase):
+    """
+    This class inherits from EventBase class.
+    This implements the abstract methods defined in interface.
+
+    :Example:
+
+        To import Facebook event you have to do tha following:
+
+        1. Create Facebook instance
+            facebook_obj = Facebook(user=user_obj,
+                            headers=authentication_headers)
+        2. Then call process() of socialNetworkBaseClass
+            facebook_obj.process('event', user_credentials=user_credentials)
+
+        process() will do internally is given in the following steps:
+            1- from social_network_service.event.facebook import Facebook
+            facebook_event_obj = Facebook(user_credentials=user_credentials,
+                                       social_network=self.social_network,
+                                       headers=self.headers)
+            events = facebook_event_obj.get_events()
+    - See also process() in socialNetworkBase class inside social_network_service/base.py
+    """
+
     def __init__(self, *args, **kwargs):
         super(Facebook, self).__init__(*args, **kwargs)
         self.start_date = (datetime.now() - timedelta(days=3000)).strftime("%Y-%m-%d")
@@ -33,7 +57,8 @@ class Facebook(EventBase):
 
     def get_events(self):
         """
-        This method retrieves events from facebook through its Graph API and saves in database.
+        This method retrieves events from facebook through its Graph API and
+        saves in database.
         We send GET requests to API URL and get data. We also
         have to handle pagination because Facebook's API
         sends paginated response.
@@ -68,7 +93,8 @@ class Facebook(EventBase):
             user_events.extend(response['data'])
             self.get_all_pages(response, user_events)
         # Need only events user is an admin of
-        user_events = filter(lambda event: event['is_viewer_admin'] is True, user_events)
+        user_events = filter(lambda event: event['is_viewer_admin'] is True,
+                             user_events)
         all_events.extend(user_events)
         return all_events
 
@@ -97,12 +123,16 @@ class Facebook(EventBase):
 
     def event_sn_to_gt_mapping(self, event):
         """
-        Basically we take event's data from Facebook's end
-        and map their fields to getTalent db and finally we return
-        Event's object (instance of SQLAlchemy model).
-        :param event:
-        :type event: dict
-        :return:
+        We take event's data from social network's API and map its fields to
+        getTalent database fields. Finally we return Event's object to
+        save/update record in getTalent database.
+        We also issue some calls to get updated venue and organizer information.
+        :param event: data from eventbrite API.
+        :type event: dictionary
+        :exception Exception: It raises exception if there is an error getting
+            data from API.
+        :return: event: Event object
+        :rtype event: common.models.event.Event
         """
         venue = None
         owner = None
@@ -126,7 +156,8 @@ class Facebook(EventBase):
             organizer_data = dict(
                 user_id=self.user.id,
                 name=owner['name'] if owner and owner.has_key('name') else '',
-                email=organizer['email'] if organizer and organizer.has_key('email') else '',
+                email=organizer['email'] if organizer and organizer.has_key(
+                    'email') else '',
                 about=''
             )
             organizer_in_db = Organizer.get_by_user_id_and_name(
@@ -145,17 +176,23 @@ class Facebook(EventBase):
             venue_data = dict(
                 social_network_venue_id=venue['id'],
                 user_id=self.user.id,
-                address_line1=location['street'] if location.has_key('street') else '',
+                address_line1=location['street'] if location.has_key(
+                    'street') else '',
                 address_line2='',
-                city=location['city'].title() if location.has_key('city') else '',
+                city=location['city'].title() if location.has_key(
+                    'city') else '',
                 state='',
                 zipcode=location['zip'] if location.has_key('zip') else None,
-                country=location['country'].title() if location.has_key('country') else '',
-                longitude=float(location['longitude']) if location.has_key('longitude') else 0,
-                latitude=float(location['latitude']) if location.has_key('latitude') else 0,
+                country=location['country'].title() if location.has_key(
+                    'country') else '',
+                longitude=float(location['longitude']) if location.has_key(
+                    'longitude') else 0,
+                latitude=float(location['latitude']) if location.has_key(
+                    'latitude') else 0,
             )
-            venue_in_db = Venue.get_by_user_id_and_social_network_venue_id(self.user.id,
-                                                                           venue['id'])
+            venue_in_db = Venue.get_by_user_id_and_social_network_venue_id(
+                self.user.id,
+                venue['id'])
             if venue_in_db:
                 venue_in_db.update(**venue_data)
                 venue_id = venue_in_db.id
@@ -195,7 +232,8 @@ class Facebook(EventBase):
 
     def create_event(self):
         """
-        Event creation via API is not allowed on Facebook but since it inherits EventBase class so we
+        Event creation via API is not allowed on Facebook but since it inherits
+        EventBase class so we
         need to implement it
         :return:
         """

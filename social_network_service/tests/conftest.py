@@ -1,26 +1,35 @@
+# Standard Library
 import os
-from common.models.db import db
-from social_network_service import init_app
 
-app = init_app()
+# Third Party
 import pytest
 
-from social_network_service.utilities import process_event, delete_events, get_random_word
 from datetime import datetime, timedelta
-from common.models.venue import Venue
-from common.models.organizer import Organizer
-from common.models.user import User, UserSocialNetworkCredential
+from mixer._faker import faker
+from werkzeug.security import gen_salt
+from mixer.backend.sqlalchemy import Mixer
+from werkzeug.security import generate_password_hash
+
+# App Settings
+from social_network_service import init_app
+app = init_app()
+
+# Application Specific
+from common.models.db import db
+from common.models.user import User
 from common.models.user import Token
 from common.models.event import Event
+from common.models.venue import Venue
 from common.models.user import Client
 from common.models.domain import Domain
 from common.models.culture import Culture
+from common.models.organizer import Organizer
 from common.models.organization import Organization
 from common.models.social_network import SocialNetwork
-
-from werkzeug.security import gen_salt, generate_password_hash
-from mixer._faker import faker
-from mixer.backend.sqlalchemy import Mixer
+from common.models.user import UserSocialNetworkCredential
+from social_network_service.utilities import process_event
+from social_network_service.utilities import delete_events
+from social_network_service.utilities import  get_random_word
 
 db_session = db.session
 
@@ -250,11 +259,12 @@ def test_eventbrite_credentials(request, test_user):
     """
     mixer = Mixer(session=db_session, commit=True)
     sn = SocialNetwork.get_by_name('Eventbrite')
-    user_credentials = mixer.blend(UserSocialNetworkCredential,
-                                   social_network=sn,
-                                   user=test_user,
-                                   access_token=app.config['EVENTBRITE_ACCESS_TOKEN'],
-                                   refresh_token=app.config['EVENTBRITE_REFRESH_TOKEN'])
+    user_credentials = mixer.blend(
+        UserSocialNetworkCredential,
+        social_network=sn,
+        user=test_user,
+        access_token=app.config['EVENTBRITE_ACCESS_TOKEN'],
+        refresh_token=app.config['EVENTBRITE_REFRESH_TOKEN'])
 
     def fin():
         """
@@ -277,11 +287,12 @@ def test_meetup_credentials(request, test_user):
     """
     mixer = Mixer(session=db_session, commit=True)
     sn = SocialNetwork.get_by_name('Meetup')
-    user_credentials = mixer.blend(UserSocialNetworkCredential,
-                                   social_network=sn,
-                                   user=test_user,
-                                   access_token=app.config['MEETUP_ACCESS_TOKEN'],
-                                   refresh_token=app.config['MEETUP_REFRESH_TOKEN'])
+    user_credentials = mixer.blend(
+        UserSocialNetworkCredential,
+        social_network=sn,
+        user=test_user,
+        access_token=app.config['MEETUP_ACCESS_TOKEN'],
+        refresh_token=app.config['MEETUP_REFRESH_TOKEN'])
 
     def fin():
         """
@@ -311,13 +322,7 @@ def meetup_event_data(request, test_user, meetup, meetup_venue, organizer_in_db)
     This fixture creates a dictionary containing event data to
     create event on Meetup social network.
     It uses meetup SocialNetwork model object, venue for meetup
-    and an organizer to create event data for
-    :param request:
-    :param test_user:
-    :param meetup:
-    :param meetup_venue:
-    :param organizer_in_db:
-    :return:
+    and an organizer to create event data
     """
     data = EVENT_DATA.copy()
     data['social_network_id'] = meetup.id
@@ -325,7 +330,8 @@ def meetup_event_data(request, test_user, meetup, meetup_venue, organizer_in_db)
     data['organizer_id'] = organizer_in_db.id
 
     def delete_event():
-        # delete event if it was created by API. In that case, data contains id of that event
+        # delete event if it was created by API. In that case,
+        # data contains id of that event
         if 'id' in data:
             event_id = data['id']
             del data['id']
@@ -344,7 +350,8 @@ def eventbrite_event_data(request, eventbrite, test_user, eventbrite_venue,
     data['organizer_id'] = organizer_in_db.id
 
     def delete_event():
-        # delete event if it was created by API. In that case, data contains id of that event
+        # delete event if it was created by API. In that case,
+        # data contains id of that event
         if 'id' in data:
             event_id = data['id']
             del data['id']

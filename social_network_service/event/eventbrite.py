@@ -14,12 +14,12 @@ from common.models.venue import Venue
 from common.models.event import Event
 from common.models.organizer import Organizer
 from social_network_service import flask_app as app
-from social_network_service.event.base import EventBase
 from social_network_service.utilities import logger
 from social_network_service.utilities import log_error
 from social_network_service.utilities import get_class
-from social_network_service.utilities import log_exception
+from social_network_service.event.base import EventBase
 from social_network_service.utilities import http_request
+from social_network_service.utilities import log_exception
 from social_network_service.utilities import get_utc_datetime
 from social_network_service.custom_exections import VenueNotFound
 from social_network_service.custom_exections import EventNotCreated
@@ -66,8 +66,9 @@ class Eventbrite(EventBase):
 
     def __init__(self, *args, **kwargs):
         """
-        This method initializes eventbrite object and assigns default/initial values.
-        this object has following attributes:
+        This method initializes eventbrite object and assigns default/initial
+        values.
+        This object has following attributes:
             - events:
                 a list of events from social network
             - rsvp:
@@ -110,8 +111,10 @@ class Eventbrite(EventBase):
         self.social_network_event_id = None
         self.ticket_payload = None
         self.venue_payload = None
-        self.start_date_in_utc = kwargs.get('start_date') or \
-                                 (datetime.now() - timedelta(days=60)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        self.start_date_in_utc =\
+            kwargs.get('start_date') \
+            or (datetime.now() -
+                timedelta(days=60)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     def process_events_rsvps(self, user_credentials, rsvp_data=None):
         """
@@ -134,8 +137,10 @@ class Eventbrite(EventBase):
 
     def get_events(self):
         """
-        We send GET requests to Eventbrite API and get already created events by this user on eventbrite.com.
-        We also have to handle pagination because Eventbrite's API does that too.
+        We send GET requests to Eventbrite API and get already created events
+        by this user on eventbrite.com.
+        We also have to handle pagination because Eventbrite's API does that
+        too.
         :return all_events: a collection of eventbrite events for specific user
         :rtype all_events: list
         """
@@ -147,7 +152,8 @@ class Eventbrite(EventBase):
         # initialize event list to empty
         all_events = []
         try:
-            # send a GET request to eventbrite.com api to get events for given user and after start_date
+            # send a GET request to eventbrite.com api to get events for given
+            #  user and after start_date
             response = http_request('GET', events_url,
                                     params=params,
                                     headers=self.headers,
@@ -170,8 +176,10 @@ class Eventbrite(EventBase):
                 params_copy['page'] = current_page
                 try:
                     # get data for every page
-                    response = http_request('GET', events_url, params=params_copy,
-                                            headers=self.headers, user_id=self.user.id)
+                    response = http_request('GET', events_url,
+                                            params=params_copy,
+                                            headers=self.headers,
+                                            user_id=self.user.id)
                 except Exception as error:
                     log_exception({'user_id': self.user.id,
                                    'error': error.message})
@@ -184,13 +192,14 @@ class Eventbrite(EventBase):
 
     def event_sn_to_gt_mapping(self, event):
         """
-        Basically we take event's data from Eventbrite's end
-        and map their fields to getTalent database specific data and finally we return
-        Event's object. We also issue some calls to get updated
-        venue and organizer information.
+        We take event's data from social network's API and map its fields to
+        getTalent database fields. Finally we return Event's object to
+        save/update record in getTalent database.
+        We also issue some calls to get updated venue and organizer information.
         :param event: data from eventbrite API.
         :type event: dictionary
-        :exception Exception: It raises exception if there is an error getting data from API.
+        :exception Exception: It raises exception if there is an error getting
+            data from API.
         :return: event: Event object
         :rtype event: common.models.event.Event
         """
@@ -204,7 +213,9 @@ class Eventbrite(EventBase):
         if event['venue_id']:
             try:
                 # Get venues from Eventbrite API for this event.
-                response = http_request('GET', self.api_url + '/venues/' + event['venue_id'],
+                response = http_request('GET',
+                                        self.api_url + '/venues/'
+                                        + event['venue_id'],
                                         headers=self.headers,
                                         user_id=self.user.id)
             except Exception as error:
@@ -214,14 +225,17 @@ class Eventbrite(EventBase):
             if response.ok:
                 # get json data for venue
                 venue = response.json()
-                # Now let's try to get the information about the event's organizer
+                # Now let's try to get the information about the event's
+                #  organizer
                 if event['organizer_id']:
                     try:
                         # Get organizer of the event from Eventbrite API.
-                        response = http_request('GET', self.api_url +
-                                                '/organizers/' + event['organizer_id'],
-                                                headers=self.headers,
-                                                user_id=self.user.id)
+                        response = http_request(
+                            'GET',
+                            self.api_url + '/organizers/' +
+                            event['organizer_id'],
+                            headers=self.headers,
+                            user_id=self.user.id)
                     except Exception as error:
                         log_exception({'user_id': self.user.id,
                                        'error': error.message})
@@ -231,24 +245,27 @@ class Eventbrite(EventBase):
                         organizer = json.loads(response.text)
                     if organizer:
                         try:
-                            response = http_request('GET', self.api_url + '/users/'
-                                                    + self.member_id,
-                                                    headers=self.headers,
-                                                    user_id=self.user.id)
+                            response = http_request(
+                                'GET',
+                                self.api_url + '/users/' + self.member_id,
+                                headers=self.headers,
+                                user_id=self.user.id)
                         except Exception as error:
                             log_exception({'user_id': self.user.id,
                                            'error': error.message})
                             raise
                         if response.ok:
                             organizer_info = json.loads(response.text)
-                            organizer_email = organizer_info['emails'][0]['email']
+                            organizer_email = \
+                                organizer_info['emails'][0]['email']
 
         if organizer:
             organizer_data = dict(
                 user_id=self.user.id,
                 name=organizer['name'] if organizer.has_key('name') else '',
                 email=organizer_email if organizer_email else '',
-                about=organizer['description'] if organizer.has_key('description') else ''
+                about=organizer['description']
+                if organizer.has_key('description') else ''
 
             )
             organizer_in_db = Organizer.get_by_user_id_and_name(
@@ -275,8 +292,9 @@ class Eventbrite(EventBase):
                 longitude=float(venue['address']['longitude']) if venue else 0,
                 latitude=float(venue['address']['latitude']) if venue else 0,
             )
-            venue_in_db = Venue.get_by_user_id_and_social_network_venue_id(self.user.id,
-                                                                           venue['id'])
+            venue_in_db = \
+                Venue.get_by_user_id_and_social_network_venue_id(self.user.id,
+                                                                 venue['id'])
             if venue_in_db:
                 venue_in_db.update(**venue_data)
                 venue_id = venue_in_db.id
@@ -308,36 +326,46 @@ class Eventbrite(EventBase):
     def create_event(self):
         """
         This function is used to post/create event on Eventbrite.com
-        It uses create_tickets() method to allow user subscriptions and publish_event() to make it public
-        :exception EventNotCreated: throws exception if unable to create event on Eventbrite.com
-        :return: event_id, tickets_id: a tuple containing event_id on Eventbrite and tickets_id for this event
+        It uses create_tickets() method to allow user subscriptions and
+        publish_event() to make it public
+        :exception EventNotCreated: throws exception if unable to create
+            event on Eventbrite.com
+        :return: event_id, tickets_id: a tuple containing event_id on
+            Eventbrite and tickets_id for this event
 
             :Example:
 
-                In order to create event first create EventBrite object and it takes user
-                and authentication headers e.g.
+                In order to create event first create EventBrite object and it
+                takes user and authentication headers e.g.
 
-                >> eventbrite = Eventbrite(user=gt_user, headers=authentication_headers)
+                >> eventbrite = Eventbrite(user=gt_user,
+                                           headers=authentication_headers)
 
-                Then call event_gt_to_sn_mapping() method on this object and pass it event dictionary.
+                Then call event_gt_to_sn_mapping() method on this object and
+                 pass it event dictionary.
                 >> eventbrite.event_gt_to_sn_mapping(event_data)
 
-                It will create event payload which is required to post event on Eventbrite.com
+                It will create event payload which is required to post event on
+                Eventbrite.com
                 Now call create event to create event on Eventbrite.com
 
                 >> eventbrite.create_event()
 
-                This method returns id of getTalent event that was created on Eventbrite.com as well.
+                This method returns id of getTalent event that was created on
+                 Eventbrite.com as well.
 
         """
         # create url to post/create event on eventbrite.com
         url = self.api_url + "/events/"
-        # adding venue for the event or reuse if already created on eventbrite.com
+        # adding venue for the event or reuse if already created on
+        # eventbrite.com
         venue_id = self.add_location()
-        # add venue_id in event payload so it can be associated with this event on eventbrite
+        # add venue_id in event payload so it can be associated with this event
+        #  on eventbrite
         self.event_payload['event.venue_id'] = venue_id
         # create event on eventbrite by sending POST request
-        response = http_request('POST', url, params=self.event_payload, headers=self.headers,
+        response = http_request('POST', url, params=self.event_payload,
+                                headers=self.headers,
                                 user_id=self.user.id)
         if response.ok:
             # event has been created on vendor and saved in draft there
@@ -355,7 +383,8 @@ class Eventbrite(EventBase):
         else:
             error_message = 'Event was not created Successfully as draft'
             response = response.json()
-            error_detail = response.get('error', '') + ': ' + response.get('error_description', '')
+            error_detail = response.get('error', '') + ': ' \
+                           + response.get('error_description', '')
             if error_detail != ': ':
                 error_message += '\n%s' % error_detail
             log_error({
@@ -367,33 +396,43 @@ class Eventbrite(EventBase):
     def update_event(self):
         """
         This function is used to update an event on Eventbrite.com
-        It uses update_tickets() method to update number of tickets for this event
+        It uses update_tickets() method to update number of tickets for this
+         event
 
-        :exception EventNotCreated: throws exception if unable to update event on Eventbrite.com)
-        :return: event_id, tickets_id: a tuple containing event_id on Eventbrite and tickets_id for this event)
+        :exception EventNotCreated: throws exception if unable to update event
+         on Eventbrite.com)
+        :return: event_id, tickets_id: a tuple containing event_id on
+         Eventbrite and tickets_id for this event)
 
             :Example:
 
-                In order to updates event first create EventBrite object and it takes user
+                In order to updates event first create EventBrite object and it
+                 takes user
                 and authentication headers e.g.
 
-                >> eventbrite = Eventbrite(user=gt_user, headers=authentication_headers)
+                >> eventbrite = Eventbrite(user=gt_user,
+                                           headers=authentication_headers)
 
-                Then call event_gt_to_sn_mapping() method on this object and pass it event dictionary.
+                Then call event_gt_to_sn_mapping() method on this object and
+                pass it event dictionary.
                 >> eventbrite.event_gt_to_sn_mapping(event_data)
 
-                It will create event payload which is required to post event on Eventbrite.com
-                Now call update_event to  update event on Eventbrite.com and in getTalent database.
+                It will create event payload which is required to post event on
+                Eventbrite.com
+                Now call update_event to  update event on Eventbrite.com and in
+                getTalent database.
 
                 >> eventbrite.update_event()
 
                 This method returns id of updated getTalent event.
         """
         # create url to update event
-        url = self.api_url + "/events/" + str(self.social_network_event_id) + '/'
+        url = \
+            self.api_url + "/events/" + str(self.social_network_event_id) + '/'
         venue_id = self.add_location()  # adding venue for the event
         self.event_payload['event.venue_id'] = venue_id
-        response = http_request('POST', url, params=self.event_payload, headers=self.headers,
+        response = http_request('POST', url, params=self.event_payload,
+                                headers=self.headers,
                                 user_id=self.user.id)
         if response.ok:  # event has been updated on Eventbrite.com
             event_id = response.json()['id']
@@ -407,7 +446,8 @@ class Eventbrite(EventBase):
         else:
             error_message = 'Event was not updated Successfully'
             response = response.json()
-            error_detail = response.get('error', '') + ': ' + response.get('error_description', '')
+            error_detail = response.get('error', '') + ': ' \
+                           + response.get('error_description', '')
             if error_detail != ': ':
                 error_message += '\n%s' % error_detail
             log_error({
@@ -420,21 +460,24 @@ class Eventbrite(EventBase):
         """
         This generates a venue object for the event and returns the
         id of venue.
-        :exception EventLocationNotCreated: throws exception if unable to create or update venue on Eventbrite
-        :exception VenueNotFound: raises exception if venue does not exist in database
+        :exception EventLocationNotCreated: throws exception if unable to
+            create or update venue on Eventbrite
+        :exception VenueNotFound: raises exception if venue does not exist
+            in database
         :return venue_id: id for venue created on eventbrite.com
         :rtype venue_id: int
 
             :Example:
 
-                This method is used to create venue or location for event on Eventbrite.
-                It requires a venue already created in getTalent database otherwise it will raise
-                VenueNotFound exception
+                This method is used to create venue or location for event
+                on Eventbrite. It requires a venue already created in getTalent
+                database otherwise it will raise VenueNotFound exception
 
-                Given venue id it first gets venue from database and uses its data to create
-                Eventbrite object
+                Given venue id it first gets venue from database and uses its
+                data to create Eventbrite object
 
-                >> eventbrite = Eventbrite(user=gt_user, headers=authentication_headers)
+                >> eventbrite = Eventbrite(user=gt_user,
+                                           headers=authentication_headers)
 
                 Then we call add location from create event
                 To get a better understanding see *create_event()* method.
@@ -442,9 +485,8 @@ class Eventbrite(EventBase):
 
         """
         # get venue from db which will be created on Eventbrite
-        venue = Venue.get_by_user_id_social_network_id_venue_id(self.user.id,
-                                                                self.social_network.id,
-                                                                self.venue_id)
+        venue = Venue.get_by_user_id_social_network_id_venue_id(
+            self.user.id, self.social_network.id, self.venue_id)
         if venue:
             if venue.social_network_venue_id:
                 # there is already a venue on Eventbrite with this info.
@@ -463,7 +505,8 @@ class Eventbrite(EventBase):
             }
             # create url to send post request to create venue
             url = self.api_url + "/venues/"
-            response = http_request('POST', url, params=payload, headers=self.headers,
+            response = http_request('POST', url, params=payload,
+                                    headers=self.headers,
                                     user_id=self.user.id)
             if response.ok:
                 logger.info('|  Venue has been created  |')
@@ -471,75 +514,99 @@ class Eventbrite(EventBase):
                 venue.update(social_network_venue_id=venue_id)
                 return venue_id
             else:
-                error_message = "Venue was not Created. There are some errors: " \
-                                "Details: %s " % response
+                error_message = "Venue was not Created. There are some " \
+                                "errors: Details: %s " % response
                 message = '\nErrors from the Social Network:\n'
-                message += ''.join(response.json().get('error') + ',' + response.json().get('error_description'))
+                message += \
+                    ''.join(response.json().get('error') + ','
+                            + response.json().get('error_description'))
                 error_message += message
                 log_error({'error': error_message,
                            'user_id': self.user.id
                            })
-                raise EventLocationNotCreated('ApiError: Unable to create venue for event\n %s' % message)
+                raise EventLocationNotCreated(
+                    'ApiError: Unable to create venue for event\n %s'
+                    % message)
         else:
-            error_message = 'Venue with ID = %s does not exist in db.' % self.venue_id
+            error_message = 'Venue with ID = %s does not exist in db.' \
+                            % self.venue_id
             log_error({
                 'user_id': self.user.id,
                 'error': error_message,
             })
-            raise VenueNotFound('Venue not found in database. Kindly create venue first.')
+            raise VenueNotFound('Venue not found in database. Kindly create'
+                                ' venue first.')
 
-    def create_tickets(self, event_id):
+    def create_tickets(self, social_network_event_id):
         """
         This method creates tickets for specific event on Eventbrite.com.
         This method should be called after creating event on social_network.
-        See "social_network_service.event.Eventbrite.create_event" method for further info
-        :param event_id: event id which refers to event on eventbrite.com
-        :type event_id: str
-        :exception TicketsNotCreated (throws exception if unable to create tickets)
-        :return: tickets_id (an id which refers to tickets created on eventbrite.com
+        See "social_network_service.event.Eventbrite.create_event" method for
+        further info
+        :param social_network_event_id: event id which refers to event on
+            eventbrite.com
+        :type social_network_event_id: str
+        :exception TicketsNotCreated (throws exception if unable to
+            create tickets)
+        :return: tickets_id (an id which refers to tickets created on
+            eventbrite.com
         """
-        tickets_url = self.api_url + "/events/" + event_id + "/ticket_classes/"
+        tickets_url = self.api_url + "/events/" + social_network_event_id \
+                      + "/ticket_classes/"
         return self.manage_event_tickets(tickets_url)
 
-    def update_tickets(self, event_id):
+    def update_tickets(self, social_network_event_id):
         """
         This method updated tickets for specific event on Eventbrite.com.
-        This method should be called after updating event contents on social_network.
-        See "social_network_service.event.Eventbrite.update_event" method for further info
-        :param event_id: event id which refers to event on eventbrite.com
-        :type event_id: str
-        :exception TicketsNotCreated (throws exception if unable to update tickets)
-        :return: tickets_id (an id which refers to tickets updated on eventbrite.com
+        This method should be called after updating event contents on
+        social_network.
+        See "social_network_service.event.Eventbrite.update_event" method for
+            further info
+        :param social_network_event_id: event id which refers to event on
+        eventbrite.com
+        :type social_network_event_id: str
+        :exception TicketsNotCreated (throws exception if unable to update
+            tickets)
+        :return: tickets_id (an id which refers to tickets updated on
+            eventbrite.com
         """
-        tickets_url = self.api_url + "/events/" + event_id + "/ticket_classes/"
-        event = Event.get_by_user_and_social_network_event_id(self.user.id, event_id)
+        tickets_url = self.api_url + "/events/" + social_network_event_id \
+                      + "/ticket_classes/"
+        event = Event.get_by_user_and_social_network_event_id(
+            self.user.id, social_network_event_id)
         if event.tickets_id:
             tickets_url = tickets_url + str(event.tickets_id) + '/'
         else:
-            logger.info('Tickets ID is not available for event with id %s, User:  %s'
-                        % (event_id, self.user.name))
-            raise TicketsNotCreated('ApiError: Unable to update event tickets on Eventbrite '
-                                    'as tickets_id was not found for this event')
+            logger.info('Tickets ID is not available for event with id %s,'
+                        ' User:  %s' % (social_network_event_id,
+                                        self.user.name))
+            raise TicketsNotCreated('ApiError: Unable to update event tickets'
+                                    ' on Eventbrite as tickets_id was not '
+                                    'found for this event')
         return self.manage_event_tickets(tickets_url)
 
     def manage_event_tickets(self, tickets_url):
         """
         Here tickets are created for event on Eventbrite.
-        This method sends a POST request to Eventbrite.com API to create or update tickets.
-        Call this method from create_tickets or update_tickets with respective tickets_url.
-        It returns tickets id if successful otherwise raises "TicketsNotCreated" ecxception
+        This method sends a POST request to Eventbrite.com API to create or
+        update tickets. Call this method from create_tickets or update_tickets
+        with respective tickets_url. It returns tickets id if successful
+        otherwise raises "TicketsNotCreated" ecxception
 
         :param tickets_url  (API url to create or update event tickets)
         :type tickets_url: str
-        :exception TicketsNotCreated (throws exception if unable to create or update tickets)
-        :return: tickets_id (an id which refers to tickets for event on eventbrite.com
+        :exception TicketsNotCreated (throws exception if unable to create or
+            update tickets)
+        :return: tickets_id (an id which refers to tickets for event on
+            eventbrite.com
         """
         # send POST request to create or update tickets for event
         response = http_request('POST', tickets_url, params=self.ticket_payload,
                                 headers=self.headers, user_id=self.user.id)
         if response.ok:
             logger.info('|  %s Ticket(s) have been created  |'
-                        % str(self.ticket_payload['ticket_class.quantity_total']))
+                        % str(self.ticket_payload['ticket_class.quantity_total']
+            ))
             tickets_id = response.json().get('id')
             return tickets_id
         else:
@@ -548,63 +615,74 @@ class Eventbrite(EventBase):
                 'user_id': self.user.id,
                 'error': error_message,
             })
-            raise TicketsNotCreated('ApiError: Unable to create event tickets on Eventbrite')
+            raise TicketsNotCreated('ApiError: Unable to create event tickets '
+                                    'on Eventbrite')
 
-    def publish_event(self, event_id):
+    def publish_event(self, social_network_event_id):
         """
         This function publishes the Event on Eventbrite.
         This event is public.
-        :param event_id: id for event on eventbrite.com
-        :type event_id: int
-        :exception EventNotPublished: raises this exception when unable to publish event on Eventbrite.com
+        :param social_network_event_id: id for event on eventbrite.com
+        :type social_network_event_id: int
+        :exception EventNotPublished: raises this exception when unable to
+            publish event on Eventbrite.com
         :return:
         """
         # create url to publish event
-        url = self.api_url + "/events/" + str(event_id) + "/publish/"
+        url = self.api_url + "/events/" + str(social_network_event_id) \
+              + "/publish/"
         # params are None. Access token is present in self.headers
-        response = http_request('POST', url, headers=self.headers, user_id=self.user.id)
+        response = http_request('POST', url, headers=self.headers,
+                                user_id=self.user.id)
         if response.ok:
             logger.info('|  Event has been published  |')
         else:
-            error_message = "Event was not Published. There are some errors: " \
-                            "Details: %s  |" % response
+            error_message = "Event was not Published. There are some " \
+                            "errors: Details: %s  |" % response
             log_error({
                 'user_id': self.user.id,
                 'error': error_message,
             })
-            raise EventNotPublished('ApiError: Unable to publish event on specified social network')
+            raise EventNotPublished('ApiError: Unable to publish event '
+                                    'on specified social network')
 
-    def unpublish_event(self, event_id, method='POST'):
+    def unpublish_event(self, social_network_event_id, method='POST'):
         """
         This function is used when run unit test. It sets the api_relative_url
         and calls base class method to delete the Event from Eventbrite website
         which was created in the unit testing.
-        :param event_id:id of newly created event
-        :type event_id: int
+        :param social_network_event_id:id of newly created event
+        :type social_network_event_id: int
         :return: True if event is deleted from vendor, False otherwise
         """
         # we will only set specific url here
-        self.url_to_delete_event = self.api_url + "/events/" + str(event_id) + "/unpublish/"
-        # common unpublish functionality is in EventBase class' unpublish_event() method
+        self.url_to_delete_event = self.api_url + "/events/" + \
+                                   str(social_network_event_id) + "/unpublish/"
+        # common unpublish functionality is in EventBase class'
+        # unpublish_event() method
         # remove event from Eventbrite and from local database
-        super(Eventbrite, self).unpublish_event(event_id, method=method)
+        super(Eventbrite, self).unpublish_event(social_network_event_id,
+                                                method=method)
 
     @staticmethod
     def validate_required_fields(data):
         """
         Here we validate that all the required fields for the event creation on
-        Eventbrite are filled. If any required filed is missing, raises exception
-        named  EventInputMissing.
+        Eventbrite are filled. If any required filed is missing, raises
+        exception named  EventInputMissing.
         :param data: dictionary containing event data
         :type data: dict
-        :exception EventInputMissing: raises exception if all required fields are not found
+        :exception EventInputMissing: raises exception if all required fields
+            are not found
         """
         mandatory_input_data = ['title', 'description', 'end_datetime',
                                 'timezone', 'start_datetime', 'currency']
         # gets fields which are missing
-        missing_items = [key for key in mandatory_input_data if not data.get(key)]
+        missing_items = [key for key in mandatory_input_data
+                         if not data.get(key)]
         if missing_items:
-            raise EventInputMissing("Mandatory Input Missing: %s" % missing_items)
+            raise EventInputMissing("Mandatory Input Missing: %s"
+                                    % missing_items)
 
     def event_gt_to_sn_mapping(self, data):
         """
@@ -612,12 +690,13 @@ class Eventbrite(EventBase):
         EventCreationForm to the data required for API calls on Eventbrite.
         :param data: dictionary containing event data
         :type data: dict
-        :exception KeyError: can raise KeyError if some key not found in event data
-
+        :exception KeyError: can raise KeyError if some key not found in
+            event data
 
             : Example:
 
-                this method takes getTalent specific event data in following format.
+                this method takes getTalent specific event data in following
+                 format.
 
                 data = {
                         "organizer_id": 1,
@@ -645,7 +724,8 @@ class Eventbrite(EventBase):
                                     'event.end.timezone': "Asia/Karachi",
                                     'event.currency': 'USD',
                                     'event.name.html': 'Test Event',
-                                    'event.description.html': 'Test Event Description'
+                                    'event.description.html':
+                                                    'Test Event Description'
                                 }
                 ticket_payload = {
                                     'ticket_class.name': 'Event Ticket',
@@ -675,7 +755,8 @@ class Eventbrite(EventBase):
             'event.description.html': data['description']
         }
         self.venue_id = data['venue_id']
-        # Creating ticket data as Eventbrite wants us to associate tickets with events
+        # Creating ticket data as Eventbrite wants us to associate tickets with
+        #  events
         # This dict is used to create tickets for a specified event
         self.ticket_payload = {
             'ticket_class.name': 'Event Ticket',

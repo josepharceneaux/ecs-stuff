@@ -124,7 +124,8 @@ class Meetup(EventBase):
         # page size is 100 so if we have 500 records we will make
         # 5 requests (using pagination where each response will contain
         # 100 records).
-        events_url = self.api_url + '/events/?sign=true&page=100&fields=timezone'
+        events_url = \
+            self.api_url + '/events/?sign=true&page=100&fields=timezone'
         params = {
             'member_id': self.member_id,
             'time': '%.0f, %.0f' %
@@ -196,13 +197,16 @@ class Meetup(EventBase):
 
     def event_sn_to_gt_mapping(self, event):
         """
-        Basically we take event's data from Meetup's end
-        and map their fields to ours and finally we return
-        Event's object. We also issue some calls to get updated
-        venue and organizer information.
-        :param event:
-        :type event: dict
-        :return:
+        We take event's data from social network's API and map its fields to
+        getTalent database fields. Finally we return Event's object to
+        save/update record in getTalent database.
+        We also issue some calls to get updated venue and organizer information.
+        :param event: data from eventbrite API.
+        :type event: dictionary
+        :exception Exception: It raises exception if there is an error getting
+            data from API.
+        :return: event: Event object
+        :rtype event: common.models.event.Event
         """
         organizer = None
         venue = None
@@ -249,7 +253,7 @@ class Meetup(EventBase):
             start_time = milliseconds_since_epoch_to_dt(float(event['time']))
             end_time = event['duration'] if event.has_key('duration') else None
             if end_time:
-                end_time =\
+                end_time = \
                     milliseconds_since_epoch_to_dt(
                         (float(event['time'])) + (float(end_time) * 1000))
 
@@ -265,8 +269,9 @@ class Meetup(EventBase):
             )
             organizer_in_db = Organizer.get_by_user_id_and_name(
                 self.user.id,
-                group_organizer['name'] if group_organizer.has_key('name') else ''
-                                                              )
+                group_organizer['name'] if group_organizer.has_key(
+                    'name') else ''
+            )
             if organizer_in_db:
                 organizer_in_db.update(**organizer_data)
                 organizer_id = organizer_in_db.id
@@ -281,17 +286,17 @@ class Meetup(EventBase):
                 address_line1=venue['address_1'] if venue else '',
                 address_line2='',
                 city=venue['city'].title().strip()
-                            if venue and venue.has_key('city') else '',
+                if venue and venue.has_key('city') else '',
                 state=venue['state'].title().strip()
-                            if venue and venue.has_key('state') else '',
+                if venue and venue.has_key('state') else '',
                 zipcode=venue['zip']
-                            if venue and venue.has_key('zip') else None,
+                if venue and venue.has_key('zip') else None,
                 country=venue['country'].title().strip()
-                            if venue and venue.has_key('country') else '',
+                if venue and venue.has_key('country') else '',
                 longitude=float(venue['lon'])
-                            if venue and venue.has_key('lon') else 0,
+                if venue and venue.has_key('lon') else 0,
                 latitude=float(venue['lat'])
-                            if venue and venue.has_key('lat') else 0,
+                if venue and venue.has_key('lat') else 0,
             )
             venue_in_db = Venue.get_by_user_id_and_social_network_venue_id(
                 self.user.id, venue['id'])
@@ -307,7 +312,7 @@ class Meetup(EventBase):
             social_network_event_id=event['id'],
             title=event['name'],
             description=event['description']
-                            if event.has_key('description') else '',
+            if event.has_key('description') else '',
             social_network_id=self.social_network.id,
             user_id=self.user.id,
             organizer_id=organizer_id,
@@ -404,12 +409,13 @@ class Meetup(EventBase):
 
             :Example:
 
-                This method is used to create venue or location for event on Meetup.
-                It requires a venue already created in getTalent database otherwise it will raise
-                VenueNotFound exception
+                This method is used to create venue or location for event on
+                Meetup.
+                It requires a venue already created in getTalent database
+                otherwise it will raise VenueNotFound exception
 
-                Given venue id it first gets venue from database and uses its data to create
-                Meetup object
+                Given venue id it first gets venue from database and uses its
+                data to create Meetup object
 
                 >> meetup = Meetup(user=gt_user, headers=authentication_headers)
 
@@ -473,18 +479,20 @@ class Meetup(EventBase):
             raise VenueNotFound('Venue not found in database. Kindly specify '
                                 'a valid venue.')
 
-    def unpublish_event(self, event_id, method='DELETE'):
+    def unpublish_event(self, social_network_event_id, method='DELETE'):
         """
         This function is used when run unit test. It sets the api_relative_url
         and calls base class method to delete the Event from meetup which was
         created in the unit testing.
-        :param event_id:id of newly created event
-        :type event_id: int
+        :param social_network_event_id:id of newly created event
+        :type social_network_event_id: int
         :return: True if event is deleted from vendor, False otherwise
         :rtype Boolean
         """
-        self.url_to_delete_event = self.api_url + "/event/" + str(event_id)
-        super(Meetup, self).unpublish_event(event_id, method=method)
+        self.url_to_delete_event = self.api_url + "/event/" \
+                                   + str(social_network_event_id)
+        super(Meetup, self).unpublish_event(social_network_event_id,
+                                            method=method)
 
     @staticmethod
     def validate_required_fields(data):
@@ -494,8 +502,8 @@ class Meetup(EventBase):
         named  EventInputMissing.
         :param data: dictionary containing event data
         :type data: dict
-        :exception EventInputMissing: raises exception if all required fields are
-         not found in data dictionary
+        :exception EventInputMissing: raises exception if all required fields
+         are not found in data dictionary
         """
         # these are required fields for Meetup event
         mandatory_input_data = ['title', 'description', 'group_id',
@@ -503,9 +511,11 @@ class Meetup(EventBase):
                                 'max_attendees',
                                 'venue_id']
         # gets fields which are missing
-        missing_items = [key for key in mandatory_input_data if not data.get(key)]
+        missing_items = [key for key in mandatory_input_data if
+                         not data.get(key)]
         if missing_items:
-            raise EventInputMissing("Mandatory Input Missing: %s" % missing_items)
+            raise EventInputMissing(
+                "Mandatory Input Missing: %s" % missing_items)
 
     def event_gt_to_sn_mapping(self, data):
         """
@@ -518,7 +528,8 @@ class Meetup(EventBase):
 
             : Example:
 
-                this method takes getTalent specific event data in following format.
+                this method takes getTalent specific event data in following
+                format.
 
                 data = {
                         "organizer_id": 1,
@@ -581,4 +592,3 @@ class Meetup(EventBase):
         # if self.social_network_event_id:
         #     self.payload.update({'lat': data['latitude'],
         #                          'lon': data['longitude']})
-
