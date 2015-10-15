@@ -1,28 +1,36 @@
+# Standard Library
 import os
 import string
-from common.models.db import db
-from social_network_service import init_app
-
-app = init_app()
-import pytest
 import random
+from datetime import datetime
+from datetime import timedelta
 
-from social_network_service.utilities import process_event, delete_events
-from datetime import datetime, timedelta
-from common.models.venue import Venue
-from common.models.organizer import Organizer
-from common.models.user import User, UserSocialNetworkCredential
+# Third Party
+import pytest
+from mixer._faker import faker
+from werkzeug.security import gen_salt
+from mixer.backend.sqlalchemy import Mixer
+from werkzeug.security import generate_password_hash
+
+# App Settings
+from social_network_service import init_app, logger
+app = init_app()
+
+# Application Specific
+from common.models.db import db
+from common.models.user import User
 from common.models.user import Token
 from common.models.event import Event
+from common.models.venue import Venue
 from common.models.user import Client
 from common.models.domain import Domain
 from common.models.culture import Culture
+from common.models.organizer import Organizer
 from common.models.organization import Organization
 from common.models.social_network import SocialNetwork
-
-from werkzeug.security import gen_salt, generate_password_hash
-from mixer._faker import faker
-from mixer.backend.sqlalchemy import Mixer
+from common.models.user import UserSocialNetworkCredential
+from social_network_service.utilities import process_event
+from social_network_service.utilities import delete_events
 
 db_session = db.session
 
@@ -187,11 +195,12 @@ def test_token(request, test_user):
 def test_eventbrite_credentials(request, test_user):
     mixer = Mixer(session=db_session, commit=True)
     sn = SocialNetwork.get_by_name('Eventbrite')
-    user_credentials = mixer.blend(UserSocialNetworkCredential,
-                                   social_network=sn,
-                                   user=test_user,
-                                   access_token=app.config['EVENTBRITE_ACCESS_TOKEN'],
-                                   refresh_token=app.config['EVENTBRITE_REFRESH_TOKEN'])
+    user_credentials = mixer.blend(
+        UserSocialNetworkCredential,
+        social_network=sn,
+        user=test_user,
+        access_token=app.config['EVENTBRITE_ACCESS_TOKEN'],
+        refresh_token=app.config['EVENTBRITE_REFRESH_TOKEN'])
 
     def fin():
         UserSocialNetworkCredential.delete(user_credentials.id)
@@ -204,11 +213,12 @@ def test_eventbrite_credentials(request, test_user):
 def test_meetup_credentials(request, test_user):
     mixer = Mixer(session=db_session, commit=True)
     sn = SocialNetwork.get_by_name('Meetup')
-    user_credentials = mixer.blend(UserSocialNetworkCredential,
-                                   social_network=sn,
-                                   user=test_user,
-                                   access_token=app.config['MEETUP_ACCESS_TOKEN'],
-                                   refresh_token=app.config['MEETUP_REFRESH_TOKEN'])
+    user_credentials = mixer.blend(
+        UserSocialNetworkCredential,
+        social_network=sn,
+        user=test_user,
+        access_token=app.config['MEETUP_ACCESS_TOKEN'],
+        refresh_token=app.config['MEETUP_REFRESH_TOKEN'])
 
     def fin():
         UserSocialNetworkCredential.delete(user_credentials.id)
@@ -218,20 +228,23 @@ def test_meetup_credentials(request, test_user):
 
 
 @pytest.fixture(scope='session')
-def auth_data(test_user, test_eventbrite_credentials, test_meetup_credentials, test_token):
+def auth_data(test_user, test_eventbrite_credentials, test_meetup_credentials,
+              test_token):
     token = test_token
     return token.to_json()
 
 
 @pytest.fixture(scope='session')
-def meetup_event_data(request, test_user, meetup, meetup_venue, test_meetup_credentials, organizer_in_db):
+def meetup_event_data(request, test_user, meetup, meetup_venue,
+                      test_meetup_credentials, organizer_in_db):
     data = EVENT_DATA.copy()
     data['social_network_id'] = meetup.id
     data['venue_id'] = meetup_venue.id
     data['organizer_id'] = organizer_in_db.id
 
     def delete_event():
-        # delete event if it was created by API. In that case, data contains id of that event
+        # delete event if it was created by API. In that case,
+        # data contains id of that event
         if 'id' in data:
             event_id = data['id']
             del data['id']
@@ -242,15 +255,16 @@ def meetup_event_data(request, test_user, meetup, meetup_venue, test_meetup_cred
 
 
 @pytest.fixture(scope='session')
-def eventbrite_event_data(request, eventbrite, test_user, eventbrite_venue, test_eventbrite_credentials,
-                          organizer_in_db):
+def eventbrite_event_data(request, eventbrite, test_user, eventbrite_venue,
+                          test_eventbrite_credentials, organizer_in_db):
     data = EVENT_DATA.copy()
     data['social_network_id'] = eventbrite.id
     data['venue_id'] = eventbrite_venue.id
     data['organizer_id'] = organizer_in_db.id
 
     def delete_event():
-        # delete event if it was created by API. In that case, data contains id of that event
+        # delete event if it was created by API. In that case,
+        # data contains id of that event
         if 'id' in data:
             event_id = data['id']
             del data['id']
@@ -313,33 +327,9 @@ def eventbrite_event(request, test_user, test_eventbrite_credentials,
     event['organizer_id'] = organizer_in_db.id
     event_id = process_event(event, test_user.id)
     event = Event.get_by_id(event_id)
-
-    def fin():
-        """
-        This is finalizer for meetup event. Once test is passed, we need to
-        delete the newly created event from website of social network. After
-        test has been passed, we insert the 'id' of event in our db in
-        'event_in_db' dict. If 'id' is present in 'event_in_db', we call
-        delete_event() function to delete the event both from social network
-        and from our database.
-        """
-        delete_events(test_user.id, [event_id])
-    request.addfinalizer(fin)
     return event
 
-    # def delete_test_events():
-    #     event_ids = [event.id for event in events]
-    #     delete_events(user.id, event_ids)
-    #
-    # request.addfinalizer(delete_test_events)
-    # return events
 
-
-# @pytest.fixture(scope='session')
-# def meetup_event_in_db(events):
-#     return events[0]
-#
-#
 @pytest.fixture(params=['Eventbrite', 'Meetup'])
 def event_in_db(request, eventbrite_event, meetup_event):
     if request.param == 'Eventbrite':

@@ -205,8 +205,8 @@ class RSVPBase(object):
 
             self.rsvps = sn_rsvp_obj.get_all_rsvps(self.events)
 
-        :return: It appends rsvps of all events of a particular user in self.rsvps
-        and returns it.
+        :return: It appends rsvps of all events of a particular user in
+            self.rsvps and returns it.
 
         **See Also**
             .. seealso:: process_events_rsvps() method in EventBase class
@@ -234,6 +234,10 @@ class RSVPBase(object):
                     # get RSVPs of next event
                     log_exception({'user_id': self.user.id,
                                    'error': error.message})
+                    if hasattr(error, 'response'):
+                        if error.response.status_code == 401:
+                            # Access token is Invalid, Stop the execution.
+                            break
             logger.debug('There are %d RSVPs to process for events of '
                          '%s(UserId: %s).' % (len(self.rsvps), self.user.name,
                                               self.user.id))
@@ -391,7 +395,8 @@ class RSVPBase(object):
         if source_product:
             attendee.source_product_id = source_product.id
         else:
-            raise ProductNotFound('No product found for Social Network %s. User Id: %s'
+            raise ProductNotFound('No product found for Social Network '
+                                  '%s. User Id: %s'
                                   % (self.social_network.name, self.user.id))
         return attendee
 
@@ -402,8 +407,8 @@ class RSVPBase(object):
         :type attendee: object of class Attendee defined in utilities.py
 
         - This method checks if the event is present in candidate_source db
-         table. If does not exist, it adds record, otherwise updates the record.
-         It then appends id of source in attendee object to be saved in
+         table. If does not exist, it adds record, otherwise updates the
+         record. It then appends id of source in attendee object to be saved in
          candidate table.
 
         - This method is called from process_rsvps() defined in
@@ -426,7 +431,8 @@ class RSVPBase(object):
             attendee.event.description)
 
         data = {'description': attendee.event.title,
-                'notes': attendee.event.description[:495],  # field is 500 chars
+                'notes': attendee.event.description[:495],
+                # field is 500 chars
                 'domain_id': self.user.domain_id}
         if entry_in_db:
             entry_in_db.update(**data)
@@ -438,7 +444,8 @@ class RSVPBase(object):
         attendee.candidate_source_id = entry_id
         return attendee
 
-    def save_attendee_as_candidate(self, attendee):
+    @staticmethod
+    def save_attendee_as_candidate(attendee):
         """
         :param attendee: attendees is a utility object we share in calls that
          contains pertinent data.
@@ -489,7 +496,8 @@ class RSVPBase(object):
         attendee.candidate_id = candidate_id
         return attendee
 
-    def save_rsvp(self, attendee):
+    @staticmethod
+    def save_rsvp(attendee):
         """
         :param attendee: attendees is a utility object we share in calls that
          contains pertinent data.
@@ -515,7 +523,8 @@ class RSVPBase(object):
 
         :return attendee:
         """
-        rsvp_in_db = RSVP.get_by_vendor_rsvp_id_candidate_id_vendor_id_event_id(
+        rsvp_in_db = \
+            RSVP.get_by_vendor_rsvp_id_candidate_id_vendor_id_event_id(
             attendee.vendor_rsvp_id,
             attendee.candidate_id,
             attendee.social_network_id,
@@ -538,7 +547,8 @@ class RSVPBase(object):
         attendee.rsvp_id = rsvp_id_db
         return attendee
 
-    def save_candidate_event_rsvp(self, attendee):
+    @staticmethod
+    def save_candidate_event_rsvp(attendee):
         """
         :param attendee: attendees is a utility object we share in calls that
          contains pertinent data.
@@ -590,8 +600,8 @@ class RSVPBase(object):
          contains pertinent data.
         :type attendee: object of class Attendee defined in utilities.py
 
-        - Once rsvp is stored in all required tables, here we update Activity table
-        so that Get Talent user can see rsvps in Activity Feed.
+        - Once rsvp is stored in all required tables, here we update Activity
+            table so that Get Talent user can see rsvps in Activity Feed.
 
         - This method is called from process_rsvps() defined in
           RSVPBase class inside social_network_service/rsvp/base.py.
@@ -620,7 +630,8 @@ class RSVPBase(object):
                   'eventTitle': event_title,
                   'response': attendee.rsvp_status,
                   'img': attendee.vendor_img_link,
-                  'creator': '%s' % gt_user_first_name + ' %s' % gt_user_last_name}
+                  'creator': '%s' % gt_user_first_name + ' %s'
+                                                         % gt_user_last_name}
         activity_in_db = Activity.get_by_user_id_params_type_source_id(
             attendee.gt_user_id,
             json.dumps(params),

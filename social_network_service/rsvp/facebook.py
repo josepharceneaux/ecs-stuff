@@ -115,8 +115,8 @@ class Facebook(RSVPBase):
             confirm_attendees = self.graph.get_object(url + 'attending')
         except facebook.GraphAPIError as error:
             log_exception({'user_id': self.user.id,
-                           'error': "Couldn't get 'attending' RSVPs (Facebook). %s"\
-                            % error.message})
+                           'error': "Couldn't get 'attending' RSVPs (Facebook)."
+                                    " %s" % error.message})
             raise
         rsvps += confirm_attendees['data']
         self.get_all_pages(confirm_attendees, rsvps)
@@ -125,8 +125,8 @@ class Facebook(RSVPBase):
             expected_attendees = self.graph.get_object(url + 'maybe')
         except facebook.GraphAPIError as error:
             log_exception({'user_id': self.user.id,
-                           'error': "Couldn't get 'maybe' RSVPs (Facebook). %s"\
-                            % error.message})
+                           'error': "Couldn't get 'maybe' RSVPs (Facebook)."
+                                    " %s" % error.message})
             raise
         rsvps += expected_attendees['data']
         self.get_all_pages(expected_attendees, rsvps)
@@ -135,8 +135,8 @@ class Facebook(RSVPBase):
             declined_attendees = self.graph.get_object(url + 'declined')
         except facebook.GraphAPIError as error:
             log_exception({'user_id': self.user.id,
-                           'error': "Couldn't get 'Declined' RSVPs (Facebook). %s"\
-                            % error.message})
+                           'error': "Couldn't get 'Declined' RSVPs (Facebook)."
+                                    " %s" % error.message})
             raise
         rsvps += declined_attendees['data']
         self.get_all_pages(declined_attendees, rsvps)
@@ -256,7 +256,8 @@ class Facebook(RSVPBase):
                 attendee.profile_url = data.get('link', '')
                 # there as well
                 attendee.picture_url = data['picture']['data']['url'] \
-                    if 'picture' in data and 'data' in data['picture'] and 'url' in data['picture']['data'] else ''
+                    if 'picture' in data and 'data' in data['picture']\
+                       and 'url' in data['picture']['data'] else ''
                 attendee.gt_user_id = self.user.id
                 attendee.social_network_id = self.social_network.id
                 # we are using profile_id
@@ -285,7 +286,9 @@ class Facebook(RSVPBase):
                     return attendee
                 else:
                     raise EventNotFound('Event is not present in db, '
-                                        'social_network_event_id is %s. User Id: %s'
-                                        % (social_network_event_id, self.user.id))
+                                        'social_network_event_id is '
+                                        '%s. User Id: %s'
+                                        % (social_network_event_id,
+                                           self.user.id))
             except:
                 raise

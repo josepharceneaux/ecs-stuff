@@ -214,13 +214,16 @@ class Meetup(RSVPBase):
                 attendee.added_time = dt
                 assert social_network_event_id is not None
                 event = Event.get_by_user_id_social_network_id_vendor_event_id(
-                    self.user.id, self.social_network.id, social_network_event_id)
+                    self.user.id, self.social_network.id,
+                    social_network_event_id)
                 if event:
                     attendee.event = event
                     return attendee
                 else:
                     raise EventNotFound('Event is not present in db, '
-                                        'social_network_event_id is %s. User Id: %s'
-                                        % (social_network_event_id, self.user.id))
+                                        'social_network_event_id is %s. '
+                                        'User Id: %s'
+                                        % (social_network_event_id,
+                                           self.user.id))
             except:
                 raise

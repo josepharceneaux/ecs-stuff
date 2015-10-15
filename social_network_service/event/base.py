@@ -1,12 +1,13 @@
 """
 This module contains EventBase class which provides common methods for
-all social networks that have event related functionality like save_event, delete_event,
-process_events_rsvps etc.
+all social networks that have event related functionality like save_event,
+delete_event, process_events_rsvps etc.
 
 To add another social network for events management, following are steps:
 
     + Add social network class which will handle authentication specific tasks.
-    + Add Event class for this social network which will handle event related tasks.
+    + Add Event class for this social network which will handle event related
+    tasks.
 
 """
 
@@ -33,8 +34,8 @@ from social_network_service.custom_exections import UserCredentialsNotFound
 
 class EventBase(object):
     """
-    This class is base for all Social Network Specific Event classes and handles common
-    functionality for event related tasks.
+    This class is base for all Social Network Specific Event classes and handles
+    common functionality for event related tasks.
 
     It contains following methods:
 
@@ -49,16 +50,18 @@ class EventBase(object):
         respective social network and in getTalent database
 
     * event_sn_to_gt_mapping(): abstract
-        This method maps/serializes event data from social network to getTalent specific data.
-        Every child class has its own implementation for its event data.
+        This method maps/serializes event data from social network to getTalent
+        specific data. Every child class has its own implementation for its
+        event data.
 
     * event_gt_to_sn_mapping(): abstract
-        This method maps/serializes event data from getTalent event data social network specific data.
+        This method maps/serializes event data from getTalent event data social
+        network specific data.
         Every child class has its own implementation for its event data.
 
     * pre_process_events():
-        This method does not contain any implementation yet. But maybe in future it
-        will contain some pre processing code for events.
+        This method does not contain any implementation yet. But maybe in
+        future it will contain some pre processing code for events.
 
     * process_events():
         Call this method after fetching events from social network.
@@ -66,39 +69,45 @@ class EventBase(object):
         It saves events in getTalent database after processing.
 
     * delete_event(event_id):
-        This method calls 'unpublish_event() method of respective class to remove event
-        from social network and then deletes this event from getTalent database.
+        This method calls 'unpublish_event() method of respective class to
+        remove event from social network and then deletes this event from
+        getTalent database.
         How it works:
-        It takes integer id for event in getTalent database. It retrieves that  event from database.
-        If it finds any event with given id, it tries to unpublish that event otherwise returns False.
+        It takes integer id for event in getTalent database. It retrieves that
+        event from database. If it finds any event with given id, it tries to
+        un publish that event otherwise returns False.
 
     * delete_events(array of ids):
         This method takes list or tuple of ids of events to be deleted.
         It then calls delete_event() method and returns two list of ids.
-        One list for deleted events and other list contains ids of events that were not deleted.
+        One list for deleted events and other list contains ids of events that
+        were not deleted.
         : returns deleted, not_deleted
 
     * get_events():
-        Each child class has its own get_events() method to import/ extract events from respective
-        social network.
+        Each child class has its own get_events() method to import/ extract
+        events from respective social network.
 
     * get_events_from_db(start_date):
-        This method returns all events for which event.start_date is after given date.
+        This method returns all events for which event.start_date is after
+        given date.
 
     * process_events_rsvps():
         This method imports RSVPs of all events for a specific user.
 
     * save_event(data):
-        This method takes dictionary containing event data. It first checks if any event is there
-        with given info (user_id, social_network_id, social_network_event_id), then it updates
-        the existing event otherwise creates a new event in getTalent database.
+        This method takes dictionary containing event data. It first checks if
+        any event is there with given info (user_id, social_network_id,
+        social_network_event_id), then it updates the existing event otherwise
+        creates a new event in getTalent database.
 
     """
     __metaclass__ = ABCMeta
 
     def __init__(self, *args, **kwargs):
         """
-        This method takes User or UserSocialNetworkCredential object in kwargs and raises exception if no one is found.
+        This method takes User or UserSocialNetworkCredential object in kwargs
+        and raises exception if no one is found.
 
         :param args:
         :param kwargs:
@@ -115,24 +124,25 @@ class EventBase(object):
             self.social_network = kwargs.get('social_network')
             if isinstance(self.user, User):
                 self.api_url = self.social_network.api_url
-                self.member_id, self.access_token, self.refresh_token, self.webhook = \
-                    self._get_user_credentials()
+                self.member_id, self.access_token, self.refresh_token, \
+                self.webhook = self._get_user_credentials()
                 self.url_to_delete_event = None
                 self.venue_id = None
             else:
-                error_message = "No User found in database with id %(user_id)s" \
-                            % self.user_credentials.user_id
+                error_message = "No User found in database with id " \
+                                "%(user_id)s" % self.user_credentials.user_id
                 raise NoUserFound('API Error: %s' % error_message)
         else:
             raise UserCredentialsNotFound('User Credentials are empty/none')
 
     def _get_user_credentials(self):
         """
-        This method get user_credentials for given user and returns a tuple containing
-        member_id, access_token and refresh_token for user.
+        This method get user_credentials for given user and returns a tuple
+        containing member_id, access_token and refresh_token for user.
         :return:
         """
-        user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(
+        user_credentials = \
+            UserSocialNetworkCredential.get_by_user_and_social_network_id(
             self.user.id, self.social_network.id
         )
         assert user_credentials is not None
@@ -145,7 +155,8 @@ class EventBase(object):
     @abstractmethod
     def create_event(self, *args, **kwargs):
         """
-        Each child class implements its own social network specific event creation code.
+        Each child class implements its own social network specific event
+        creation code.
         :param args:
         :param kwargs:
         :return:
@@ -167,8 +178,8 @@ class EventBase(object):
 
     def event_gt_to_sn_mapping(self, data):
         """
-        This function is used to map gt-fields to required social network fields
-        for API calls. Child classes will implement this.
+        This function is used to map gt-fields to required social network
+        fields for API calls. Child classes will implement this.
         :param data: data we get from Event creation form
         :type data: dict
         """
@@ -180,7 +191,8 @@ class EventBase(object):
             data['start_datetime'] = parse(start)
             data['end_datetime'] = parse(end)
         except Exception as e:
-            raise InvalidDatetime('Invalid DateTime: Kindly specify datetime in UTC format like 2015-10-08T06:16:55Z')
+            raise InvalidDatetime('Invalid DateTime: Kindly specify datetime '
+                                  'in UTC format like 2015-10-08T06:16:55Z')
 
     def pre_process_events(self, events):
         """
@@ -264,7 +276,7 @@ class EventBase(object):
         it both from social network and database. If successfully deleted
         from both sources, returns True, otherwise returns False
         :param event_id: is the 'id' of event present in our db
-        :type event_id: long
+        :type event_id: int or long
         :return: True if deletion is successful, False o/w
         """
         event = Event.get_by_user_and_event_id(self.user.id, event_id)
@@ -272,13 +284,14 @@ class EventBase(object):
             try:
                 self.unpublish_event(event.social_network_event_id)
                 Event.delete(event_id)
+                logger.debug('\nMeetup "Test Event" has been deleted '
+                             'from database.')
                 return True
             except Exception as error:  # some error while removing event
                 log_exception({
                     'user_id': self.user.id,
                     'error': error.message,
                 })
-                return False
         return False  # event not found in database
 
     def delete_events(self, event_ids):
@@ -303,7 +316,7 @@ class EventBase(object):
         This function is used when run unit test. It deletes the Event from
         meetup which was created in the unit testing.
         :param event_id: id of newly created event
-        :type event_id: int
+        :type event_id: int or long
         :return: True if event is deleted from vendor, False other wsie
         """
         # create url to publish event
@@ -333,16 +346,15 @@ class EventBase(object):
 
     def get_events_from_db(self, start_date):
         """
-        This gets the events from database which starts after the specified start_date
+        This gets the events from database which starts after the specified
+        start_date
         :param start_date:
         :type start_date: datetime
         :return:
         """
         if start_date:
-            return Event.get_by_user_id_vendor_id_start_date(self.user.id,
-                                                             self.social_network.id,
-                                                             start_date
-                                                             )
+            return Event.get_by_user_id_vendor_id_start_date(
+                self.user.id, self.social_network.id, start_date)
 
     def process_events_rsvps(self, user_credentials, rsvp_data=None):
         """
@@ -380,10 +392,10 @@ class EventBase(object):
 
     def save_event(self):
         """
-        This method takes dictionary containing event data. It first checks if any event is there
-        with given info (user_id, social_network_id, social_network_event_id), then it updates
-        the existing event otherwise creates a new event in getTalent database.
-
+        This method takes dictionary containing event data. It first checks if
+        any event is there with given info (user_id, social_network_id,
+        social_network_event_id), then it updates the existing event otherwise
+        creates a new event in getTalent database.
         Call this method after successfully publishing event on social network.
 
         :param data: dictionary containing data for event to be saved
@@ -411,7 +423,9 @@ class EventBase(object):
         except Exception as error:
             log_exception({
                 'user_id': self.user.id,
-                'error': 'Event was not saved in Database\nError: %s' % error.message
+                'error': 'Event was not saved in Database\nError: %s'
+                         % error.message
             })
-            raise EventNotSaveInDb('Error occurred while saving event in database')
+            raise EventNotSaveInDb('Error occurred while saving event '
+                                   'in database')
         return event.id
