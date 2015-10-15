@@ -35,6 +35,9 @@
                     footer: {
                         template: '<gt-footer></gt-footer>'
                     }
+                },
+                data: {
+                    loginRequired: true
                 }
             })
             .state('dashboard', {

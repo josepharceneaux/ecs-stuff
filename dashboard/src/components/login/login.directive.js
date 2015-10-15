@@ -26,12 +26,39 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = [];
+    ControllerFunction.$inject = ['$rootScope', '$state', '$stateParams', 'OAuth'];
 
     /* @ngInject */
-    function ControllerFunction() {
+    function ControllerFunction($rootScope, $state, $stateParams, OAuth) {
         var vm = this;
-        vm.errorMessage = "";
+
+        vm.username = '';
+        vm.password = '';
+        vm.errorMessage = '';
+        vm.login = login;
+
+        init();
+
+        function init() {
+            if ($stateParams.errorMessage) {
+                vm.errorMessage = $stateParams.errorMessage;
+            }
+        }
+
+        function login() {
+            OAuth.getAccessToken({
+                username: vm.username,
+                password: vm.password
+            }).then(function() {
+                if (angular.isDefined($rootScope.redirectTo)) {
+                    $state.go($rootScope.redirectTo.state, $rootScope.redirectTo.params);
+                } else {
+                    $state.go('dashboard');
+                }
+            }, function() {
+                vm.errorMessage = 'Authentication failed.';
+            });
+        }
     }
 
 })();

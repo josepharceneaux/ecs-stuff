@@ -26,12 +26,18 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = [];
+    ControllerFunction.$inject = ['$state', 'OAuthToken'];
 
     /* @ngInject */
-    function ControllerFunction() {
+    function ControllerFunction($state, OAuthToken) {
         var vm = this;
         vm.isCollapsed = true;
+        vm.logout = logout;
+
+        function logout() {
+            OAuthToken.removeToken();
+            $state.go('login');
+        }
     }
 
 })();
