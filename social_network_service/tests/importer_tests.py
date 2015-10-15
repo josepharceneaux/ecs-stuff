@@ -13,10 +13,10 @@ class Test_Event_Importer():
      1- auth_data to create test user and its credentials
      2- meetup_event() to create event on social network website
     """
-    def test_meetup_event(self, auth_data, meetup_event):
+    def test_meetup_event(self, auth_data, meetup_event_dict):
         """
-        :param auth_data: fixture present in conftest.py
-        :param meetup_event: fixture present in conftest.py
+        :param auth_data: pyTest fixture present in conftest.py
+        :param meetup_event_dict: fixture present in conftest.py
         - meetup_event fixture creates an event on social network website
             and saves it in database. After this we delete this event from
             database and import all the events of test user created by fixture.
@@ -24,7 +24,7 @@ class Test_Event_Importer():
             We add 'id' of imported event to delete newly created event from
             social network website in the finalizer of meetup_event.
         """
-        event = meetup_event['event']
+        event = meetup_event_dict['event']
         social_network_event_id = event.social_network_event_id
         user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(
             auth_data['user_id'], event.social_network.id)
@@ -42,12 +42,12 @@ class Test_Event_Importer():
                                                               social_network_event_id)
         assert isinstance(event, Event), "event should be a model object"
         assert event.description.find("Test Event Description"), 'Event not imported in database'
-        meetup_event['id'] = event.id
+        meetup_event_dict['id'] = event.id
 
-    def test_meetup_rsvp(self, auth_data, meetup_event):
+    def test_meetup_rsvp(self, auth_data, meetup_event_dict):
         """
         :param auth_data: fixture present in conftest.py
-        :param meetup_event: fixture present in conftest.py
+        :param meetup_event_dict: fixture present in conftest.py
 
         - Here we use fixture meetup_event to create new event on Meetup
             website. After success we post an RSVP on this event.
@@ -64,7 +64,7 @@ class Test_Event_Importer():
         - We add 'id' of newly created event to delete it from social network
             website in the finalizer of meetup_event.
         """
-        event = meetup_event['event']
+        event = meetup_event_dict['event']
         social_network_event_id = event.social_network_event_id
         user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(
             auth_data['user_id'], event.social_network.id)
@@ -87,4 +87,4 @@ class Test_Event_Importer():
             social_network_rsvp_id, social_network.id)
         assert isinstance(rsvp_in_db, RSVP)
         assert rsvp_in_db.status == payload['rsvp']
-        meetup_event['id'] = event.id
+        meetup_event_dict['id'] = event.id

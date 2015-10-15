@@ -257,18 +257,18 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
             except requests.exceptions.HTTPError as e:
                 if e.response.status_code in [401]:
                     # 401 is the error code for Not Authorized user(Expired Token)
-                    # 400 is the error code for bad request
-                    # raise AccessTokenHasExpired('Access token has expired.'
-                    #                             ' User Id: %s' % user_id)
+
                     raise
                 # checks if error occurred on "Server" or is it a bad request
                 elif e.response.status_code < 500:
                     if 'errors' in e.response.json():
                         error_message = e.message + ', Details: ' \
-                                        + json.dumps(e.response.json().get('errors'))
+                                        + json.dumps(
+                            e.response.json().get('errors'))
                     elif 'error_description' in e.response.json():
                         error_message = e.message + ' , Details: ' \
-                                        + json.dumps(e.response.json().get('error_description'))
+                                        + json.dumps(
+                            e.response.json().get('error_description'))
                     else:
                         error_message = e.message
                 else:

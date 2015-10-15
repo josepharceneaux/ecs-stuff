@@ -213,7 +213,7 @@ class RSVPBase(object):
             inside social_network_service/event/base.py
         """
         if events:
-            logger.debug('Going to get RSVPs for events '
+            logger.debug('Getting RSVPs for events '
                          'of %s(UserId: %s) from %s website.'
                          % (self.user.name, self.user.id,
                             self.social_network.name))

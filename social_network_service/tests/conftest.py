@@ -256,7 +256,7 @@ def eventbrite_event_data(request, eventbrite, test_user, eventbrite_venue, test
 
 
 @pytest.fixture(scope='function')
-def meetup_event(request, test_user, test_meetup_credentials, meetup,
+def meetup_event(test_user, test_meetup_credentials, meetup,
                  venues, organizer_in_db):
     event = EVENT_DATA.copy()
     event['title'] = 'Meetup ' + event['title']
@@ -265,7 +265,22 @@ def meetup_event(request, test_user, test_meetup_credentials, meetup,
     event['organizer_id'] = organizer_in_db.id
     event_id = process_event(event, test_user.id)
     event = Event.get_by_id(event_id)
-    event_in_db = {'event': event}
+    return event
+
+
+@pytest.fixture(scope='function')
+def meetup_event_dict(request, test_user, meetup_event):
+    """
+    This puts meetup event in a dict 'meetup_event_in_db'.
+    When event has been imported successfully, we add event_id in this dict.
+    After test has passed, we delete this imported event both from social
+    network website and database.
+    :param request:
+    :param meetup_event:
+    :type request: flask.request
+    :type meetup_event: pyTest fixture
+    """
+    meetup_event_in_db = {'event': meetup_event}
 
     def fin():
         """
@@ -276,10 +291,10 @@ def meetup_event(request, test_user, test_meetup_credentials, meetup,
         delete_event() function to delete the event both from social network
         and from our database.
         """
-        if 'id' in event_in_db:
-            delete_events(test_user.id, [event_in_db['id']])
+        if 'id' in meetup_event_in_db:
+            delete_events(test_user.id, [meetup_event_in_db['id']])
     request.addfinalizer(fin)
-    return event_in_db
+    return meetup_event_in_db
 
 
 @pytest.fixture(scope='session')
