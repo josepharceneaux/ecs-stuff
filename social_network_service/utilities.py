@@ -568,4 +568,3 @@ def add_organizer_venue_data(event):
     event_data['venue'] = event.venue.to_json() if event.venue else {}
     del event_data['venue_id']
     return event_data
-
