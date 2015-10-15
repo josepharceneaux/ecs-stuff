@@ -34,14 +34,15 @@ APP_URL = app.config['APP_URL']
 OAUTH_SERVER = app.config['OAUTH_SERVER_URI']
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
+# This is common data for creating test events
 EVENT_DATA = {
     "organizer_id": '',  # will be updated in fixture 'meetup_event_data' or 'eventbrite_event_data'
     "venue_id": '',  # will be updated in fixture 'meetup_event_data' or 'eventbrite_event_data'
     "title": "Test Event",
     "description": "Test Event Description",
     "registration_instruction": "Just Come",
-    "start_datetime": (datetime.now() + timedelta(days=20)).strftime('%Y-%m-%d %H:%M:%S'),
-    "end_datetime": (datetime.now() + timedelta(days=22)).strftime('%Y-%m-%d %H:%M:%S'),
+    "start_datetime": (datetime.now() + timedelta(days=20)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "end_datetime": (datetime.now() + timedelta(days=22)).strftime("%Y-%m-%dT%H:%M:%SZ"),
     "group_url_name": "QC-Python-Learning",
     "social_network_id": '',  # will be updated in fixture 'meetup_event_data' or 'eventbrite_event_data'
     "timezone": "Asia/Karachi",
@@ -54,11 +55,14 @@ EVENT_DATA = {
 
 @pytest.fixture(scope='session')
 def base_url():
+    """
+    This fixture returns social network app url
+    """
     return APP_URL
 
 
 # @pytest.fixture(scope='session')
-# def app(request):
+# def test_app(request):
 #     """
 #     Create a Flask app, and override settings, for the whole test session.
 #     """
@@ -68,8 +72,9 @@ def base_url():
 #         # SQLALCHEMY_DATABASE_URI=TEST_DATABASE_URI,
 #         LIVESERVER_PORT=6000
 #     )
-#
-#     return app.test_client()
+#     os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+#     app.run(host='0.0.0.0', port=5000, debug=True)
+#     return app
 
 
 @pytest.fixture(scope='session')
@@ -265,7 +270,6 @@ def meetup_event(request, test_user, test_meetup_credentials, meetup,
     event['organizer_id'] = organizer_in_db.id
     event_id = process_event(event, test_user.id)
     event = Event.get_by_id(event_id)
-    event_in_db = {'event': event}
 
     def fin():
         """
@@ -276,10 +280,11 @@ def meetup_event(request, test_user, test_meetup_credentials, meetup,
         delete_event() function to delete the event both from social network
         and from our database.
         """
-        if 'id' in event_in_db:
-            delete_events(test_user.id, [event_in_db['id']])
+        event = Event.get_by_id(event_id)
+        if event:
+            delete_events(test_user.id, [event_id])
     request.addfinalizer(fin)
-    return event_in_db
+    return event
 
 
 @pytest.fixture(scope='session')

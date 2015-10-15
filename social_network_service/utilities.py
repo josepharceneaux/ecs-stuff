@@ -348,46 +348,81 @@ def process_event(data, user_id, method='Create'):
 
 
 def delete_events(user_id, event_ids):
+    """
+    This utility function takes a list of event ids and id of user who owns the events.
+    This function first create a mappings dictionary for which looks like this
+
+            social_networks = {
+                    # keys are Ids, and values are corresponding Social Network object and event ids
+                    "13" : {
+                              "event_obj": Meetup obj,
+                              "event_ids" : [1,2,4]
+                            },
+                    "18" : {
+                              "event_obj": Eventbrite obj,
+                              "event_ids" : [33,45]
+                            }
+
+                }
+    We then iterate this dictionary and call delete_events() method on respective social network objects.
+
+    :param user_id:
+    :param event_ids:
+    :return:
+    """
     assert len(event_ids) > 0, 'event_ids should contain at least one event id'
-    if event_ids:
-        social_networks = {}
-        deleted, not_deleted = [], []
-        for event_id in event_ids:
-            event = Event.get_by_user_and_event_id(user_id, event_id)
-            if event:
-                social_network = event.social_network
-                if social_network.id not in social_networks:
-                    social_network_class = get_class(social_network.name.lower(), 'social_network')
-                    event_class = get_class(social_network.name.lower(), 'event')
-                    sn = social_network_class(user_id=user_id, social_network_id=social_network.id)
-                    event_obj = event_class(user=sn.user,
-                                            social_network=social_network,
-                                            headers=sn.headers)
-                    social_networks[social_network.id] = dict(event_obj=event_obj,
-                                                              event_ids=[event_id])
-                else:
-                    social_networks[social_network.id]['event_ids'].append(event_id)
+    # dictionary for mappings
+    social_networks = {}
+    # list for event id that are deleted successfully and that were not delete due to any reason
+    deleted, not_deleted = [], []
+    # iterate through all event ids
+    for event_id in event_ids:
+        # get event from database for this user and event id
+        event = Event.get_by_user_and_event_id(user_id, event_id)
+        # if event was not found then it means that, either this event does not exists at all
+        # or this user does not create that event, so he is not allowed to get that so push this
+        # event id in not_delete list.
+        if event:
+            # get social network from event
+            social_network = event.social_network
+            # social network id is already in mapping dictionary then just add this event id in
+            # its specific event ids list otherwise create a new dictionary with social_network id as key
+            # and set social network object and ids list for events
+            if social_network.id not in social_networks:
+                # get social network and event management class for this social network
+                social_network_class = get_class(social_network.name.lower(), 'social_network')
+                event_class = get_class(social_network.name.lower(), 'event')
+                sn = social_network_class(user_id=user_id, social_network_id=social_network.id)
+                event_obj = event_class(user=sn.user,
+                                        social_network=social_network,
+                                        headers=sn.headers)
+                social_networks[social_network.id] = dict(event_obj=event_obj,
+                                                          event_ids=[event_id])
             else:
-                not_deleted.append(event_id)
-        for _, social_network in social_networks.items():
-            event_obj = social_network['event_obj']
-            dltd, nt_dltd = event_obj.delete_events(social_network['event_ids'])
-            deleted.extend(dltd)
-            not_deleted.extend(nt_dltd)
-        return deleted, not_deleted
-    else:
-        error_message = 'event_ids should contain at least one event id'
-        log_error(
-            dict(
-                error=error_message,
-                user=user_id,
-            )
-        )
+                social_networks[social_network.id]['event_ids'].append(event_id)
+        else:
+            # if event was not found, put this id in not_deleted list
+            not_deleted.append(event_id)
+
+    for social_network_id, social_network in social_networks.items():
+        # get event object from mapping dictionary and invoke delete_events on this to unpublish / remove
+        # social network specific actions
+        event_obj = social_network['event_obj']
+        successful, unsuccessful = event_obj.delete_events(social_network['event_ids'])
+        deleted.extend(successful)
+        not_deleted.extend(unsuccessful)
+    return deleted, not_deleted
 
 
 def camel_case_to_snake_case(name):
     """ Convert camel case to underscore case
-        e.g. apptTypeId --> appt_type_id
+        socialNetworkId --> social_network_id
+
+            :Example:
+
+                result = camel_case_to_snake_case('socialNetworkId')
+                assert result == 'social_network_id'
+
     """
     name_ = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name_).lower()
@@ -395,7 +430,12 @@ def camel_case_to_snake_case(name):
 
 def camel_case_to_title_case(name):
     """ Converts camel case to title case
-        e.g. apptTypeId --> Appt Type I
+        social_network_id --> Social Network Id
+
+            :Example:
+
+                result = camel_case_to_title_case('social_network_id')
+                assert result == 'Social Network Id'
     """
     name_ = camel_case_to_snake_case(name)
     return ' '.join(name_.split('_')).title()
@@ -404,6 +444,11 @@ def camel_case_to_title_case(name):
 def snake_case_to_camel_case(name):
     """ Convert string or unicode from lower-case underscore to camel-case
         e.g. appt_type_id --> apptTypeId
+
+            :Example:
+
+                result = snake_case_to_camel_case('social_network_id')
+                assert result == 'socialNetworkId'
     """
     splitted_string = name.split('_')
     # use string's class to work on the string to keep its type

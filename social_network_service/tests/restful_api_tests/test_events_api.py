@@ -136,5 +136,8 @@ class TestEventById:
         assert response.status_code == 401, 'It should be unauthorized (401)'
 
     def test_delete_with_valid_token(self, auth_data, event_in_db):
-        response = requests.delete(API_URL + '/events/' + str(event_in_db.id), headers=dict(Authorization='Bearer %s' % auth_data['access_token']))
+        event_id = event_in_db.id
+        response = requests.delete(API_URL + '/events/' + str(event_id), headers=dict(Authorization='Bearer %s' % auth_data['access_token']))
         assert response.status_code == 200, 'Status should be Ok (200)'
+        response = requests.delete(API_URL + '/events/' + str(event_id), headers=dict(Authorization='Bearer %s' % auth_data['access_token']))
+        assert response.status_code == 403, 'Unable to delete event as it is not present there (403)'
