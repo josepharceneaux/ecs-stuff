@@ -14,37 +14,43 @@ from activity_service.common.models.user import (Client, Domain, User, Token)
 
 ISO_FORMAT = '%Y-%m-%d %H:%M'
 APP = app.test_client()
-USER_PASSWORD = 'pbkdf2(1000,64,sha512)$a97efdd8d6b0bf7f$55de0d7bafb29a88e7596542aa927ac0e1fbc30e94db2c5215851c72294ebe01fb6461b27f0c01b9bd7d3ce4a180707b6652ba2334c7a2b0fcb93c946aa8b4ec'
+USER_HASHED_PASSWORD = 'pbkdf2(1000,64,sha512)$a97efdd8d6b0bf7f$55de0d7bafb29a88e7596542aa927ac0e1fbc30e94db2c5215851c72294ebe01fb6461b27f0c01b9bd7d3ce4a180707b6652ba2334c7a2b0fcb93c946aa8b4ec'
 
 
 class UserAuthentication():
     def __init__(self, db):
         self.db = db
-        self.client_id = str(uuid.uuid4())[0:8]
-        self.client_secret = str(uuid.uuid4())[0:8]
+        self.client_id = str(uuid.uuid4())[0:8]     # can be any arbitrary string
+        self.client_secret = str(uuid.uuid4())[0:8] # can be any arbitrary string
         self.new_client = Client(client_id=self.client_id, client_secret=self.client_secret)
 
-    def get_auth_token(self, user, get_bearer_token=False):
+    def get_auth_token(self, user_row, get_bearer_token=False):
+        """ Function will add new_client to the database
+        :param user:    user-row
+        :return:        {'client_id': '01a14510', 'client_secret': '04077ead'}
+        """
         self.db.session.add(self.new_client)
         self.db.session.commit()
+        # will return return access_token, refresh_token, user_id, token_type, and expiration date + time
         if get_bearer_token:
             return get_token(user_login_credentials=dict(
-                client_id=self.client_id, client_secret=self.client_secret, user=user
+                client_id=self.client_id, client_secret=self.client_secret, user_row=user_row
             ))
-        return dict(client_id=self.client_id, client_secret=self.client_secret, user=user)
+        return dict(client_id=self.client_id, client_secret=self.client_secret, user_row=user_row)
 
-    def get_auth_credentials_to_revoke_token(self, user, auto_revoke=False):
+    def get_auth_credentials_to_revoke_token(self, user_row, auto_revoke=False):
         self.db.session.commit()
-        token = Token.query.filter_by(user_id=user.id).first()
+        token = Token.query.filter_by(user_id=user_row.id).first()
+        # if auto_revoke is set to True, function will post to /oauth2/revoke and assert its success
         if auto_revoke:
             return revoke_token(user_logout_credentials=dict(
-                token=token, client_id=self.client_id, client_secret=self.client_secret, user=user
+                token=token, client_id=self.client_id, client_secret=self.client_secret, user=user_row
             ))
         return dict(token=token, client_id=self.client_id, client_secret=self.client_secret,
                     grand_type='password')
 
-    def refresh_token(self, user):
-        token = Token.query.filter_by(user_id=user.id).first()
+    def refresh_token(self, user_row):
+        token = Token.query.filter_by(user_id=user_row.id).first()
         return dict(grand_type='refresh_token', token_row=token)
 
 
@@ -56,7 +62,7 @@ def user_auth():
 def get_token(user_login_credentials):
     data = {'client_id': user_login_credentials['client_id'],
             'client_secret': user_login_credentials['client_secret'],
-            'username': user_login_credentials['user'].email,
+            'username': user_login_credentials['user_row'].email,
             'password': 'Talent15',
             'grant_type':'password'}
     resp = requests.post('http://localhost:5000/oauth2/token', data=data)
@@ -79,7 +85,7 @@ def revoke_token(user_logout_credentials):
 def sample_user(test_domain):
     user_attrs = dict(
         domain_id=test_domain.id, first_name='Jamtry', last_name='Jonas',
-        password=USER_PASSWORD,
+        password=USER_HASHED_PASSWORD,
         email='sample_user@{}.com'.format(randomword(7)), added_time=datetime(2050, 4, 26)
     )
     user, created = get_or_create(db.session, User, defaults=None, **user_attrs)

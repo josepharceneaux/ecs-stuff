@@ -26,13 +26,13 @@ class UserResource(Resource):
         """
         authenticated_user = authenticate_oauth_user(request=request)
         if authenticated_user.get('error'):
-            return {'error': {'code': 2, 'message': 'Invalid username and/or password'}}, 401
+            return {'error': {'code': 3, 'message': 'Not authorized'}}, 401
 
         requested_user_id = kwargs.get('id')
         # id must be integer
         if not is_number(requested_user_id):
             print is_number(requested_user_id)
-            return {'error': {'message': 'invalid input'}}, 400
+            return {'error': {'code': 4, 'message': 'ID must be an integer'}}, 400
 
         requested_user = User.query.get(requested_user_id)
         if not requested_user:
