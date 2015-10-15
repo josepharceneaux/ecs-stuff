@@ -16,6 +16,7 @@ IPython
 pytest
 Flask-OAuthlib==0.9.1
 oauthlib==1.0.3
+Flask-Cors
 
 BeautifulSoup==3.2.1
 beautifulsoup4==4.4.0
