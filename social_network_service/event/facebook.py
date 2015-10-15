@@ -123,12 +123,16 @@ class Facebook(EventBase):
 
     def event_sn_to_gt_mapping(self, event):
         """
-        Basically we take event's data from Facebook's end
-        and map their fields to getTalent db and finally we return
-        Event's object (instance of SQLAlchemy model).
-        :param event:
-        :type event: dict
-        :return:
+        We take event's data from social network's API and map its fields to
+        getTalent database fields. Finally we return Event's object to
+        save/update record in getTalent database.
+        We also issue some calls to get updated venue and organizer information.
+        :param event: data from eventbrite API.
+        :type event: dictionary
+        :exception Exception: It raises exception if there is an error getting
+            data from API.
+        :return: event: Event object
+        :rtype event: common.models.event.Event
         """
         venue = None
         owner = None

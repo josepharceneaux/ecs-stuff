@@ -168,7 +168,6 @@ class EventBase(object):
         """
         :param event: is likely the response from social network API
         :type event: dict
-
         While importing events, we need to map social network fields according
         to gt-database fields. Child classes will implement this.
         :param event:
@@ -176,6 +175,7 @@ class EventBase(object):
         """
         pass
 
+    @abstractmethod
     def event_gt_to_sn_mapping(self, data):
         """
         This function is used to map gt-fields to required social network
