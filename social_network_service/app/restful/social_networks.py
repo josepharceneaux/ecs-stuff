@@ -375,7 +375,8 @@ class GetTokenValidity(Resource):
         if social_network:
             # Get social network specific Social Network class
             social_network_class = get_class(social_network.name, 'social_network')
-            # create social network object which will validate and refresh access token (if possible)
+            # create social network object which will validate
+            # and refresh access token (if possible)
             sn = social_network_class(user_id=user_id,
                                       social_network=social_network
                                       )

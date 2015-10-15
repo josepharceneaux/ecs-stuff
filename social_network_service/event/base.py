@@ -98,7 +98,8 @@ class EventBase(object):
 
     def __init__(self, *args, **kwargs):
         """
-        This method takes User or UserSocialNetworkCredential object in kwargs and raises exception if no one is found.
+        This method takes User or UserSocialNetworkCredential object in kwargs and
+        raises exception if no one is found.
 
         :param args:
         :param kwargs:

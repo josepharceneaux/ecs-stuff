@@ -8,6 +8,8 @@ import re
 import imp
 import sys
 import json
+import string
+import random
 import inspect
 import traceback
 import importlib
@@ -617,3 +619,13 @@ def add_organizer_venue_data(event):
     event_data['venue'] = event.venue.to_json() if event.venue else {}
     del event_data['venue_id']
     return event_data
+
+
+def get_random_word(length):
+    """
+    This function takes a number as an input and creates a random string of length
+    specified by given number.
+    :param length: int or long
+    :return:
+    """
+    return ''.join(random.choice(string.lowercase) for i in xrange(length))
