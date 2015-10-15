@@ -3,6 +3,7 @@ import json
 import types
 from flask import Blueprint
 from flask.ext.restful import Resource, Api
+from flask.ext.cors import CORS
 import pytz
 from social_network_service.app.app_utils import api_route, ApiResponse
 
@@ -10,6 +11,15 @@ data_blueprint = Blueprint('data_api', __name__)
 api = Api()
 api.init_app(data_blueprint)
 api.route = types.MethodType(api_route, api)
+
+
+# Enable CORS
+CORS(data_blueprint, resources={
+    r'/data/*': {
+        'origins': '*',
+        'allow_headers': ['Content-Type', 'Authorization']
+    }
+})
 
 
 @api.route('/data/timezones/')
