@@ -1,3 +1,5 @@
+# Base container modules. These are common modules required by all services, or modules that take a long time to install
+
 Flask==0.10.1
 requests==2.7.0
 requests-oauthlib==0.5.0
@@ -16,12 +18,13 @@ IPython
 pytest
 Flask-OAuthlib==0.9.1
 oauthlib==1.0.3
+lxml==3.4.4
+gevent==1.0.2
 
 BeautifulSoup==3.2.1
 beautifulsoup4==4.4.0
 ghostscript==0.4.1
 html5lib==0.999999
-lxml==3.4.4
 MarkupSafe==0.23
 pdfminer==20110515
 phonenumbers==7.0.8
@@ -40,7 +43,6 @@ SQLAlchemy==1.0.8
 aniso8601==1.0.0
 facebook-sdk==0.4.0
 fake-factory==0.5.2
-gevent==1.0.2
 greenlet==0.4.7
 mixer==5.2.2
 pytz==2015.4

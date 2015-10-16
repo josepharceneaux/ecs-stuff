@@ -8,7 +8,7 @@ from common.models.candidate import *
 from common.models.user import *
 
 app = Flask(__name__)
-app.config.from_object('resume_service.config')
+app.config.from_object('config')
 app.register_blueprint(api.mod)
 logger = app.config['LOGGER']
 
