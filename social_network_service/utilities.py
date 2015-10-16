@@ -109,19 +109,27 @@ def authenticate_user(request):
         return None
 
 
-def get_callee_data():
+def get_callee_data(app_name=None):
     current_frame = inspect.currentframe()
     callee_frame = inspect.getouterframes(current_frame, 2)
-    no_of_item = 3
-    #  We are using number 3 here, as
-    # we call this function inside log_error() or log_exception()
-    # which uses get_data_to_log(). get_data_to_log() calls get_callee_data().
-    # So, here is the story,
-    # index 0 has traceback of get_callee_data()
-    # index 1 has traceback of get_data_to_log()
-    # index 2 has traceback of log_error() or log_exception()
-    # index 3 will have the traceback of function from where we call
-    # log_error() or log_exception().
+    if app_name == 'social_network_service':
+        no_of_item = 3
+        if callee_frame[no_of_item][3] == 'http_request':
+            no_of_item = 4
+        # We are using number 3 here, as
+        # we call this function inside log_error() or log_exception()
+        # which uses get_data_to_log().
+        # get_data_to_log() calls get_callee_data().
+        # So, here is the story,
+        # index 0 has traceback of get_callee_data()
+        # index 1 has traceback of get_data_to_log()
+        # index 2 has traceback of log_error() or log_exception()
+        # index 3 will have the traceback of function from where we call
+        # log_error() or log_exception().
+        # Another case is logging inside http_request. For this we need
+        # traceback of the function from where http_request was called.
+    else:
+        no_of_item = None
     try:
         callee_data = {
             'file_name': callee_frame[no_of_item][1],
@@ -209,13 +217,12 @@ def get_data_to_log(log_data):
     :return: callee_data which contains the useful information of traceback
             like Reason of error, function name, file name, user id etc.
     """
-    if hasattr(log_data.get('error'), 'message') \
-            or '400' in log_data['error']:
+    if hasattr(log_data.get('error'), 'message'):
         callee_data = ("Reason: %(error)s, "
                        "User Id: %(user_id)s" % log_data)
         return callee_data
     # get_callee_data() returns the dictionary of callee data
-    callee_data_dict = get_callee_data()
+    callee_data_dict = get_callee_data(app_name='social_network_service')
     # appends user_id_and_error_message in callee_data_dict
     callee_data_dict.update(log_data)
     if callee_data_dict.has_key('traceback_info'):
@@ -274,8 +281,8 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                     else:
                         error_message = e.message
                 else:
+                    # raise any Server error occurred on social network website
                     raise
-                    # error_message = e.message
             except requests.RequestException as e:
                 error_message = e.message
             if error_message:

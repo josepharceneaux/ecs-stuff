@@ -80,6 +80,7 @@ class AccessTokenHasExpired(ApiException):
 class NoUserFound(ApiException):
     status_code = 467
 
+
 class MissingFieldsInUserCredentials(ApiException):
     status_code = 468
 
