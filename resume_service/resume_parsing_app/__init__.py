@@ -1,19 +1,22 @@
 """Initializer for Resume Parsing App"""
 __author__ = 'erikfarmer'
 
-from flask import Flask
 from views import api
-from common.models.db import db
-from common.models.candidate import *
-from common.models.user import *
+from flask import Flask
+# from flask_sqlalchemy import SQLAlchemy
+from resume_service.common.models.db import db
+
+import config
 
 app = Flask(__name__)
-app.config.from_object('resume_service.config')
-app.register_blueprint(api.mod)
-logger = app.config['LOGGER']
-
+app.config.from_object(config)
+# db = SQLAlchemy(app)
 db.init_app(app)
 db.app = app
+
+app.register_blueprint(api.mod)
+
+logger = app.config['LOGGER']
 
 from common.error_handling import register_error_handlers
 
