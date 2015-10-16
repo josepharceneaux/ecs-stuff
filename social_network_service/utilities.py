@@ -18,6 +18,7 @@ from datetime import datetime
 # Third Party
 import pytz
 import requests
+from pytz import timezone
 from requests_oauthlib import OAuth2Session
 
 # Application Specific Imports
@@ -74,18 +75,41 @@ class Attendee(object):
 
 
 def unix_time(dt):
-    epoch = datetime.utcfromtimestamp(0)
+    """
+    Converts dt(UTC) datetime object to epoch in seconds
+    :param dt:
+    :type dt: datetime
+    :return: returns epoch time in milliseconds.
+    """
+    epoch = datetime(1970, 1, 1, tzinfo=timezone('UTC'))
     delta = dt - epoch
     return delta.total_seconds()
 
 
 def milliseconds_since_epoch(dt):
+    """
+    Converts dt(UTC) datetime object to epoch in milliseconds
+    :param dt:
+    :type dt: datetime
+    :return: returns epoch time in milliseconds.
+    """
     assert isinstance(dt, datetime), 'input argument should be datetime object'
     return unix_time(dt) * 1000.0
 
 
-def milliseconds_since_epoch_to_dt(epoch):
-    return datetime.fromtimestamp(epoch / 1000.0)
+def milliseconds_since_epoch_local_time(dt):
+    """
+    Converts dt(local time) datetime object to epoch in milliseconds
+    :param dt:
+    :type dt: datetime
+    :return: returns epoch time in milliseconds.
+    """
+    assert isinstance(dt, datetime), 'input argument should be datetime object'
+    return int(dt.strftime("%s")) * 1000
+
+
+def milliseconds_since_epoch_to_dt(epoch, tz=timezone('UTC')):
+    return datetime.fromtimestamp(epoch / 1000.0, tz=tz)
 
 
 def authenticate_user(request):
@@ -513,8 +537,14 @@ def convert_keys_to_snake_case(dictionary):
 
 def import_from_dist_packages(name, custom_name=None):
     """
-    This function is used to import facebook-sdk module rather than local
-    module named as facebook
+    - We have a module facebook-sdk in this project which is imported as
+        import facebook
+    Also we have Facebook classes defined by ourselves inside
+    social_network_service/. So when we import facebook inside our classes
+    (e.g import facebook in  social_network_service/rsvp/facebook.py), we have
+    name conflict.
+    - This function is used to import facebook-sdk module rather than local
+    module named as facebook.
     :param name:
     :param custom_name:
     :return:
@@ -548,7 +578,7 @@ def get_utc_datetime(dt, timezone):
     assert timezone, 'Timezone should not be none'
     assert isinstance(dt, datetime)
     # get timezone info from given datetime object
-    local_timezone = pytz.timezone(timezone)
+    local_timezone = timezone(timezone)
     try:
         local_dt = local_timezone.localize(dt, is_dst=None)
     except ValueError as e:
