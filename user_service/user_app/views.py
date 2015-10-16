@@ -92,7 +92,8 @@ def user_groups(group_id):
 def domain_groups(group_id):
     if request.method == 'GET':
         # Get all groups of a domain
-        return jsonify(UserGroups.all_groups_of_domain(request.user.domain_id))
+        domain_id = request.args.get('domain_id') if request.args.get('domain_id') else request.user.domain_id
+        return jsonify(UserGroups.all_groups_of_domain(domain_id))
 
     posted_data = request.get_json(silent=True)
     if posted_data:
@@ -100,7 +101,8 @@ def domain_groups(group_id):
             if request.method == 'POST':
                 name = posted_data.get('group_name')
                 description = posted_data.get('group_description') or ''
-                domain_id = request.user.domain_id
+                domain_id = posted_data.get('domain_id') or ''
+                domain_id = domain_id if domain_id else request.user.domain_id
                 UserGroups.save(domain_id, name, description)
                 return jsonify(success=True)
             if request.method == 'DELETE':

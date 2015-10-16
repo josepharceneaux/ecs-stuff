@@ -2,7 +2,7 @@ __author__ = 'ufarooqi'
 import random
 import string
 from werkzeug.security import generate_password_hash
-from user_service.common.models.user import *
+from common.models.user import *
 import requests
 import json
 
@@ -13,6 +13,7 @@ USER_SERVICE_ENDPOINT = 'http://127.0.0.1:8004/%s'
 USER_ROLES = USER_SERVICE_ENDPOINT % 'users/%s/roles'
 USER_ROLES_VERIFY = USER_SERVICE_ENDPOINT % 'roles/verify'
 USER_DOMAIN_ROLES = USER_SERVICE_ENDPOINT % 'domain/%s/roles'
+DOMAIN_GROUPS = USER_SERVICE_ENDPOINT % ''
 
 
 def create_test_user(domain_id):
@@ -43,42 +44,71 @@ def get_access_token(user, client_id, client_secret):
     if not (auth_service_token_response.get(u'access_token') and auth_service_token_response.get(u'refresh_token')):
         raise Exception("Either Access Token or Refresh Token is missing")
     else:
-        return Token.query.filter_by(access_token=auth_service_token_response.get(u'access_token'))
+        return auth_service_token_response.get(u'access_token')
 
 
-def user_scoped_roles(token, test_role_first=None, test_role_second=None, action="GET", false_case=False):
-    headers = {'Authorization': 'Bearer %s' % token.access_token}
+def user_scoped_roles(access_token, user_id, test_roles=None, action="GET", false_case=False):
+    if test_roles:
+        test_role_first = test_roles[0]
+        test_role_second = test_roles[1]
+    headers = {'Authorization': 'Bearer %s' % access_token}
     if action == "GET":
-        response = json.loads(requests.get(USER_ROLES % token.user_id, headers=headers).data)
-        return response.get('roles')
+        response = requests.get(USER_ROLES % user_id, headers=headers)
+        if response.status_code == 200:
+            response = json.loads(response.text)
+            return response.get('roles')
+        return response.status_code
     elif action == "POST":
         headers['content-type'] = 'application/json'
-        test_role_first = DomainRole.get_by_name(test_role_first)
         test_role_second = DomainRole.get_by_name(test_role_second)
         if false_case:
             data = {'roles': [int(test_role_second.id) + 1]}
         else:
             data = {'roles': [test_role_first, test_role_second.id]}
-        response = requests.post(USER_ROLES % token.user_id, headers=headers, data=json.dumps(data))
+        response = requests.post(USER_ROLES % user_id, headers=headers, data=json.dumps(data))
         return response.status_code
     elif action == "DELETE":
         headers['content-type'] = 'application/json'
         data = {'roles': [test_role_first, DomainRole.get_by_name(test_role_second).id]}
-        response = requests.delete(USER_ROLES % token.user_id, headers=headers, data=json.dumps(data))
+        response = requests.delete(USER_ROLES % user_id, headers=headers, data=json.dumps(data))
         return response.status_code
 
 
-def get_roles_of_domain(token):
-    headers = {'Authorization': 'Bearer %s' % token.access_token}
-    domain_id = User.query.get(token.user_id).domain_id
-    response = json.loads(requests.get(USER_DOMAIN_ROLES % domain_id, headers=headers).data)
-    domain_roles = response.get('roles') or []
-    return [domain_role.get('name') for domain_role in domain_roles]
+def get_roles_of_domain(access_token, domain_id):
+    headers = {'Authorization': 'Bearer %s' % access_token}
+    response = requests.get(USER_DOMAIN_ROLES % domain_id, headers=headers)
+    if response.status_code == 200:
+        response = json.loads(response.text)
+        domain_roles = response.get('roles') or []
+        return [domain_role.get('name') for domain_role in domain_roles]
+    return response.status_code
 
 
 def verify_user_scoped_role(user, role):
     user_id = user.get_id()
-    import urllib
-    response = json.loads(requests.get(USER_ROLES_VERIFY, query_string=urllib.urlencode({"role": role,
-                                                                                         "user_id": user_id})).data)
+    response = json.loads(requests.get(USER_ROLES_VERIFY, params={"role": role, "user_id": user_id}).text)
     return response.get('success')
+
+
+def domain_groups(access_token, domain_id, action='GET'):
+    headers = {'Authorization': 'Bearer %s' % access_token}
+    if action == "GET":
+        response = requests.get(USER_ROLES % user_id, headers=headers)
+        if response.status_code == 200:
+            response = json.loads(response.text)
+            return response.get('roles')
+        return response.status_code
+    elif action == "POST":
+        headers['content-type'] = 'application/json'
+        test_role_second = DomainRole.get_by_name(test_role_second)
+        if false_case:
+            data = {'roles': [int(test_role_second.id) + 1]}
+        else:
+            data = {'roles': [test_role_first, test_role_second.id]}
+        response = requests.post(USER_ROLES % user_id, headers=headers, data=json.dumps(data))
+        return response.status_code
+    elif action == "DELETE":
+        headers['content-type'] = 'application/json'
+        data = {'roles': [test_role_first, DomainRole.get_by_name(test_role_second).id]}
+        response = requests.delete(USER_ROLES % user_id, headers=headers, data=json.dumps(data))
+        return response.status_code

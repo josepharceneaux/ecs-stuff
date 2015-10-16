@@ -12,6 +12,7 @@ import re
 from flask import Blueprint
 from flask import jsonify
 from flask import request
+from flask.ext.cors import CORS
 
 # application specific
 from common.models.db import db
@@ -22,6 +23,15 @@ from common.utils.auth_utils import require_oauth
 ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
 POSTS_PER_PAGE = 20
 mod = Blueprint('activities_api', __name__)
+
+
+# Enable CORS
+CORS(mod, resources={
+    r'/activities/*': {
+        'origins': '*',
+        'allow_headers': ['Content-Type', 'Authorization']
+    }
+})
 
 
 @mod.route('/activities/<page>', methods=['GET'])

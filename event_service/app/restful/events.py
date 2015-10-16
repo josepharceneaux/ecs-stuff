@@ -5,6 +5,7 @@ from event_exporter.common import process_event
 from gt_models.event import Event
 from flask import Blueprint, request
 from flask.ext.restful import Api, Resource
+from flask.ext.cors import CORS
 
 events_blueprint = Blueprint('events_api', __name__)
 api = Api()
@@ -12,6 +13,15 @@ api.init_app(events_blueprint)
 
 
 api.route = types.MethodType(api_route, api)
+
+
+# Enable CORS
+CORS(events_blueprint, resources={
+    r'/events/*': {
+        'origins': '*',
+        'allow_headers': ['Content-Type', 'Authorization']
+    }
+})
 
 
 @api.route('/events/')

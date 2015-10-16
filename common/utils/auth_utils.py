@@ -60,3 +60,23 @@ def accepted_roles(*roles):
                                                  "perform this operation"}}), 401
         return authenticate_roles
     return domain_roles
+
+
+def authenticate_oauth_user(request):
+    """
+    :param request: (object) flask request object
+    :return:
+    """
+    try:
+        oauth_token = request.headers['Authorization']
+    except KeyError:
+        return {'error': {'code': None, 'message':'No Authorization set', 'http_code': 400}}
+    r = requests.get(app.config['OAUTH_SERVER_URI'], headers={'Authorization': oauth_token})
+    if r.status_code != 200:
+        return {'error': {'code': 3, 'message': 'Not authorized', 'http_code': 401}}
+    valid_user_id = json.loads(r.text).get('user_id')
+    if not valid_user_id:
+        return {'error': {'code': 25,
+                          'message': "Access token is invalid. Please refresh your token"},
+                          'http_code': 400}
+    return {'user_id': valid_user_id}

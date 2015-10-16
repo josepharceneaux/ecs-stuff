@@ -10,6 +10,7 @@ from flask import Blueprint
 from flask import current_app as app
 from flask import request
 from flask import jsonify
+from flask.ext.cors import CORS
 
 # Application specific/third party libs
 from .app_constants import Constants as current
@@ -19,6 +20,15 @@ from boto.s3.connection import S3Connection
 from common.utils.auth_utils import require_oauth
 
 mod = Blueprint('activities_api', __name__)
+
+
+# Enable CORS
+CORS(mod, resources={
+    r'/parse_resume': {
+        'origins': '*',
+        'allow_headers': ['Content-Type', 'Authorization']
+    }
+})
 
 
 @mod.route('/')

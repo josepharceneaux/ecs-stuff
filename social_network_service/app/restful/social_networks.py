@@ -5,6 +5,7 @@ from gt_common.models.organizer import Organizer
 from gt_common.models.venue import Venue
 from social_network_service.app.app_utils import authenticate, api_route, ApiResponse
 from flask.ext.restful import Resource, Api
+from flask.ext.cors import CORS
 from social_network_service.meetup import Meetup
 
 from gt_common.models.user import UserCredentials
@@ -15,6 +16,15 @@ social_network_blueprint = Blueprint('social_network_api', __name__)
 api = Api()
 api.init_app(social_network_blueprint)
 api.route = types.MethodType(api_route, api)
+
+
+# Enable CORS
+CORS(social_network_blueprint, resources={
+    r'/(social_networks|venues|organizers)/*': {
+        'origins': '*',
+        'allow_headers': ['Content-Type', 'Authorization']
+    }
+})
 
 
 @api.route('/social_networks/')

@@ -4,6 +4,17 @@ from auth_service.oauth import app
 from auth_service.oauth import gt_oauth
 from auth_service.oauth import logger
 from flask import request, jsonify
+from flask.ext.cors import CORS
+
+
+# Enable CORS
+CORS(app, resources={
+    r'/(oauth2|roles|users)/*': {
+        'origins': '*',
+        'allow_headers': ['Content-Type', 'Authorization']
+    }
+})
+
 
 
 gt_oauth.grantgetter(lambda *args, **kwargs: None)
@@ -34,3 +45,4 @@ def authorize():
     user = request.oauth.user
     logger.info('User %s has been authorized to access getTalent api', user.id)
     return jsonify(user_id=user.id)
+
