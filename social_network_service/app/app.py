@@ -19,6 +19,7 @@ from restful.events import events_blueprint
 from flask.ext.restful import Api
 from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash
+from flask.ext.cors import CORS
 
 # configuration
 from social_network_service.utilities import log_exception, get_class, logger, get_message_to_log, log_error
@@ -42,6 +43,15 @@ EVENTBRITE = 'Eventbrite'
 app.register_blueprint(social_network_blueprint)
 app.register_blueprint(events_blueprint)
 app.register_blueprint(data_blueprint)
+
+
+# Enable CORS
+CORS(app, resources={
+    r'/*': {
+        'origins': '*',
+        'allow_headers': ['Content-Type', 'Authorization']
+    }
+})
 
 
 @app.after_request

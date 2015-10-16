@@ -14,3 +14,7 @@ Resume Service
 Event Service
 -------------
 [README](event_service/README.md)
+
+Dashboard in AngularJS
+----------------------
+[README](dashboard/README.md)

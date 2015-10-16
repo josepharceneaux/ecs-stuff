@@ -72,7 +72,7 @@ def _update_data_type(engine, referenced_table_name, data_type_to_change_to):
     # Create new foreign key for dict_of_child_tables
     for child_table_list in dict_of_all_child_tables.values():
         for child_table in child_table_list:
-            query = "ALTER TABLE `%s` ADD CONSTRAINT fk_%s_%s FOREIGN KEY (`%s`) REFERENCES `%s`(id)" % \
+            query = "ALTER TABLE `%s` ADD CONSTRAINT fk_%s_%s FOREIGN KEY (`%s`) REFERENCES `%s`(id) ON DELETE CASCADE" % \
                     (child_table[0], referenced_table_name, child_table[0], child_table[1], referenced_table_name)
             print query
             engine.execute(query)
@@ -190,3 +190,5 @@ if __name__ == "__main__":
         for table_tuple in list_of_table_names_to_be_updated:
             print "#" * 50 + " " + "TABLE: " + str(table_tuple[0].upper()) + " " + "#" * 50
             update_table_column_data_type(table_name=table_tuple[0], data_type_to_change_to='INT')
+
+    # run_script()

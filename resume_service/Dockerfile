@@ -1,19 +1,21 @@
-FROM ansible/ubuntu14.04-ansible:stable
+FROM gettalent/base-service-container:latest
 MAINTAINER Erik Farmer <erik@gettalent.com>
 
-WORKDIR /root
-ADD . ResumeParser
+WORKDIR /root/base_service_container
+ADD . resume_service
+WORKDIR /root/base_service_container/resume_service
 
-ADD ansible/container-bootstrap.yml /srv/ansible/container-bootstrap.yml
-WORKDIR /srv/ansible
-RUN ansible-playbook container-bootstrap.yml -c local
-
-RUN rm /etc/nginx/sites-enabled/default
-ADD ansible/talent-nginx.conf /etc/nginx/conf.d/
-
-WORKDIR /root/ResumeParser
 EXPOSE 80
+EXPOSE 443
+
+# Set DB connection string
+ENV DB_STRING mysql://talent_web:s!web976892@livedb.gettalent.com/talent_core
 
 CMD\
+    eval "$(pyenv init -)" && \
+
     /etc/init.d/nginx restart && \
-    uwsgi --ini ./talent-uwsgi.ini
+
+    export PYTHONPATH=../ && \
+
+    uwsgi --env GT_ENVIRONMENT=$GT_ENVIRONMENT --env DB_STRING=$DB_STRING --ini ./talent-uwsgi.ini

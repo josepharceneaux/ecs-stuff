@@ -1,0 +1,46 @@
+<!-- App Side Navigation -->
+<div id="app-sidenav">
+    <div class="pane-left">
+        <ul class="nav">
+            <li ui-sref-active="active">
+                <a ui-sref="dashboard" ng-click="vm.isCollapsed = !vm.isCollapsed">
+                    <i class="fa fa-dashboard fa-3x"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li ui-sref-active="active">
+                <a ui-sref="pipeline" ng-click="vm.isCollapsed = !vm.isCollapsed">
+                    <i class="fa fa-filter fa-3x fa-flip-horizontal"></i>
+                    <span>Talent Pipeline</span>
+                </a>
+            </li>
+            <li ui-sref-active="active">
+                <a ui-sref="campaigns" ng-click="vm.isCollapsed = !vm.isCollapsed">
+                    <i class="fa fa-wifi fa-3x"></i>
+                    <span>Campaigns</span>
+                </a>
+            </li>
+            <li ui-sref-active="active">
+                <a ui-sref="admin" ng-click="vm.isCollapsed = !vm.isCollapsed">
+                    <i class="fa fa-wrench fa-3x"></i>
+                    <span>Admin</span>
+                </a>
+            </li>
+            <li role="separator" class="divider"></li>
+            <li ui-sref-active="active">
+                <a ui-sref="help" ng-click="vm.isCollapsed = !vm.isCollapsed">
+                    <i class="fa fa-life-ring fa-3x"></i>
+                    <span>Help</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="pane-right">
+        <ul class="nav" ng-repeat="(menu, subMenus) in vm.menuItems" ng-if="vm.state.includes(menu)">
+            <li ui-sref-active="active" ng-repeat="(subMenu, menuTitle) in subMenus">
+                <a ui-sref="{{menu}}.{{subMenu}}">{{menuTitle}}</a>
+            </li>
+        </ul>
+    </div>
+</div>
+<!-- End App Side Navigation -->
