@@ -11,6 +11,8 @@ import pytest
 from resume_service.resume_parsing_app import app
 from resume_service.resume_parsing_app import db
 from resume_service.common.models.candidate import Candidate
+from resume_service.common.models.candidate import CandidateEmail
+from resume_service.common.models.candidate import EmailLabel
 from resume_service.common.models.misc import Culture
 from resume_service.common.models.misc import Organization
 from resume_service.common.models.user import Client
@@ -36,9 +38,6 @@ WORK_EXPERIENCES_KEYS = ('city', 'end_date', 'country', 'company', 'role', 'is_c
 
 SKILLS_KEYS = ('name', 'months_used', 'last_used_date')
 
-TEST_ACCESS_TOKEN = 'fooz'
-TEST_REFRESH_TOKEN = 'barz'
-
 
 @pytest.fixture(autouse=True)
 def test_org(request):
@@ -49,12 +48,8 @@ def test_org(request):
         db.session.commit()
 
     def fin():
-        try:
-            db.session.delete(test_org)
-            db.session.commit()
-        except Exception:
-            pass
-
+        db.session.delete(test_org)
+        db.session.commit()
     request.addfinalizer(fin)
     return test_org
 
@@ -68,12 +63,8 @@ def test_culture(request):
        db.session.commit()
 
    def fin():
-       try:
-           db.session.delete(test_culture)
-           db.session.commit()
-       except Exception:
-           pass
-
+       db.session.delete(test_culture)
+       db.session.commit()
    request.addfinalizer(fin)
    return test_culture
 
@@ -92,11 +83,8 @@ def test_domain(test_culture, test_org, request):
     db.session.commit()
 
     def fin():
-       try:
-           db.session.delete(test_domain)
-           db.session.commit()
-       except Exception:
-           pass
+       db.session.delete(test_domain)
+       db.session.commit()
     request.addfinalizer(fin)
     return test_domain
 
@@ -110,11 +98,8 @@ def test_user(test_domain, request):
     db.session.commit()
 
     def fin():
-        try:
-            db.session.delete(test_user)
-            db.session.commit()
-        except Exception:
-            pass
+        db.session.delete(test_user)
+        db.session.commit()
     request.addfinalizer(fin)
     return test_user
 
@@ -126,7 +111,7 @@ def test_client(request):
     db.session.commit()
 
     def fin():
-        db.session.delete(test_client)
+        db.session.query(Client).delete()
         db.session.commit()
     request.addfinalizer(fin)
     return test_client
@@ -134,33 +119,25 @@ def test_client(request):
 
 @pytest.fixture(autouse=True)
 def test_token(test_user, test_client, request):
-    test_token = Token(client_id=test_client.client_id, user_id=test_user.id, token_type='bearer', access_token=TEST_ACCESS_TOKEN,
-                       refresh_token=TEST_REFRESH_TOKEN, expires=datetime.datetime(2050, 4, 26))
+    test_token = Token(client_id=test_client.client_id, user_id=test_user.id, token_type='bearer', access_token=random_word(8),
+                       refresh_token=random_word(8), expires=datetime.datetime(2050, 4, 26))
     db.session.add(test_token)
     db.session.commit()
 
     def fin():
         db.session.query(Token).delete()
-        db.session.query(Candidate).delete()
+        db.session.commit()
     request.addfinalizer(fin)
     return test_token
 
 
-def teardown_module(module):
-    db.session.query(User).delete()
-    db.session.commit()
-    db.session.query(Domain).delete()
-    db.session.commit()
-    db.session.query(Organization).delete()
-    db.session.commit()
-    db.session.query(Culture).delete()
-    db.session.commit()
-    db.session.query(Client).delete()
-    db.session.commit()
-    db.session.query(Token).delete()
-    db.session.commit()
-    db.session.query(Candidate).delete()
-    db.session.commit()
+@pytest.fixture(autouse=True)
+def test_email_label(request):
+    label_attrs = dict(id=1, description='Primary', updated_time=datetime.datetime.now())
+    label_object, created = get_or_create(db.session, EmailLabel, label_attrs)
+    if created:
+        db.session.commit()
+    return label_object
 
 
 def test_base_url():
@@ -190,7 +167,7 @@ def test_doc_by_post(test_token):
     # Below should be 3. BG upgrade caused dice_api_response change
     assert len(json_obj['educations']) == 1
     assert len(json_obj['work_experiences']) == 7
-    doc_db_record = Candidate.query.filter_by(formatted_name='VEENA NITHOO').first()
+    doc_db_record = db.session.query(Candidate).filter_by(formatted_name='VEENA NITHOO').first()
     assert not doc_db_record
     keys_formatted_test(json_obj)
 
@@ -218,20 +195,6 @@ def test_v13_pdf_from_fp_key(test_token):
     json_obj = fetch_resume_fp_key_response(test_token, 'test_bin_13.pdf')['candidate']
     assert json_obj['full_name'] == 'BRUCE PARKEY'
     assert len(json_obj['work_experiences']) == 3
-    keys_formatted_test(json_obj)
-
-
-#TODO Verify with candidate service up.
-def test_v15_pdf_by_post(test_token):
-    """Test that v1.5 pdf files can be posted."""
-    json_obj = fetch_resume_post_response(test_token, 'test_bin.pdf', create_mode='True')['candidate']
-    assert json_obj['full_name'] == 'MARK GREENE'
-    assert json_obj['emails'][0]['address'] == 'techguymark@yahoo.com'
-    assert len(json_obj['educations']) == 1
-    # Below should be 9 OR 15 (9major + 6 'Additional work experience information'. See resume. Blame BG
-    assert len(json_obj['work_experiences']) == 11
-    v15_pdf_candidate = Candidate.query.filter_by(formatted_name='MARK GREENE').first()
-    assert v15_pdf_candidate is not None
     keys_formatted_test(json_obj)
 
 
@@ -307,6 +270,20 @@ def test_invalid_token_fails():
                                data=dict(filepicker_key=filepicker_key))
     json_obj = json.loads(test_response.data)
     assert 'error' in json_obj
+
+
+
+def test_v15_pdf_by_post(test_token):
+    """Test that v1.5 pdf files can be posted."""
+    json_obj = fetch_resume_post_response(test_token, 'test_bin.pdf', create_mode='True')['candidate']
+    assert json_obj['full_name'] == 'MARK GREENE'
+    assert json_obj['emails'][0]['address'] == 'techguymark@yahoo.com'
+    assert len(json_obj['educations']) == 1
+    # Below should be 9 OR 15 (9major + 6 'Additional work experience information'. See resume. Blame BG
+    assert len(json_obj['work_experiences']) == 11
+    v15_pdf_candidate = db.session.query(Candidate).filter_by(formatted_name='MARK GREENE').first()
+    assert v15_pdf_candidate is not None
+    keys_formatted_test(json_obj)
 
 
 def fetch_resume_post_response(test_token, file_name, create_mode=''):
