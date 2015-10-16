@@ -253,13 +253,13 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
         if url:
             try:
                 response = method(url, params=params, headers=headers, data=data)
-                # If we made a bad request (a 4XX client error or 5XX server error response),
+                # If we made a bad request (a 4XX client error or 5XX server
+                # error response),
                 # we can raise it with Response.raise_for_status():"""
                 response.raise_for_status()
             except requests.exceptions.HTTPError as e:
                 if e.response.status_code in [401]:
                     # 401 is the error code for Not Authorized user(Expired Token)
-
                     raise
                 # checks if error occurred on "Server" or is it a bad request
                 elif e.response.status_code < 500:

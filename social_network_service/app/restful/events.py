@@ -3,6 +3,7 @@ import traceback
 import types
 from flask import Blueprint, request
 from flask.ext.restful import Api, Resource
+from flask.ext.cors import CORS
 from social_network_service.app.app_utils import api_route, authenticate, ApiResponse
 from social_network_service.custom_exections import ApiException
 from social_network_service.utilities import process_event, delete_events
@@ -13,6 +14,15 @@ events_blueprint = Blueprint('events_api', __name__)
 api = Api()
 api.init_app(events_blueprint)
 api.route = types.MethodType(api_route, api)
+
+
+# Enable CORS
+CORS(events_blueprint, resources={
+    r'/(events|venues|organizers)/*': {
+        'origins': '*',
+        'allow_headers': ['Content-Type', 'Authorization']
+    }
+})
 
 
 @api.route('/events/')

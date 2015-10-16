@@ -45,6 +45,18 @@ class InternalServerError(TalentError):
         return 500
 
 
+class UnauthorizedError(TalentError):
+    @classmethod
+    def http_status_code(cls):
+        return 401
+
+
+class ForbiddenError(TalentError):
+    @classmethod
+    def http_status_code(cls):
+        return 403
+
+
 def register_error_handlers(app, logger):
     """
 
@@ -60,6 +72,12 @@ def register_error_handlers(app, logger):
     def handle_invalid_usage(error):
         response = jsonify(error.to_dict())
         logger.warn("Invalid API usage for app %s: %s", app.import_name, response)
+        return response, error.http_status_code
+
+    @app.errorhandler(UnauthorizedError)
+    def handle_unauthorized(error):
+        logger.warn("Unauthorized for app %s", app.import_name)
+        response = jsonify(error.to_dict())
         return response, error.http_status_code
 
     @app.errorhandler(500)

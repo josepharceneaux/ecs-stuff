@@ -14,16 +14,17 @@ from social_network_service import init_app
 app = init_app()
 
 # 3rd party imports
-from flask.ext.restful import Api
 from flask import request
+from flask.ext.cors import CORS
+from flask.ext.restful import Api
 
 # Application specific imports
 from restful.events import events_blueprint
-from restful.social_networks import social_network_blueprint
 from social_network_service import logger
+from restful.social_networks import social_network_blueprint
 from social_network_service.app.app_utils import ApiResponse
-from social_network_service.app.restful.data import data_blueprint
 from social_network_service.custom_exections import ApiException
+from social_network_service.app.restful.data import data_blueprint
 from social_network_service.rsvp.eventbrite import Eventbrite as EventbriteRsvp
 from social_network_service.utilities import log_exception, get_class, log_error
 
@@ -32,6 +33,15 @@ app.register_blueprint(social_network_blueprint)
 app.register_blueprint(events_blueprint)
 app.register_blueprint(data_blueprint)
 api = Api(app)
+
+
+# Enable CORS
+CORS(app, resources={
+    r'/*': {
+        'origins': '*',
+        'allow_headers': ['Content-Type', 'Authorization']
+    }
+})
 
 
 @app.after_request
@@ -87,10 +97,8 @@ def handle_rsvp():
                 # expired, we try to refresh access token. If succeeded, we move on
                 # to next step.
                 sn_obj = social_network_class(user_id=user_credentials.user_id)
-                if not user_credentials.member_id:
-                    # get an save the member Id of gt-user
-                    sn_obj.get_member_id()
-                sn_obj.process('rsvp', user_credentials=user_credentials, rsvp_data=data)
+                sn_obj.process('rsvp', user_credentials=user_credentials,
+                               rsvp_data=data)
             elif action == 'test':
                 logger.debug('Successful Webhook Connection')
         else:

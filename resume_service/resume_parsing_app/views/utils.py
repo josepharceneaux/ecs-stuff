@@ -3,8 +3,6 @@
 __author__ = 'erikfarmer'
 
 import json
-# from urllib2 import Request
-# from urllib2 import urlopen
 
 import requests
 
