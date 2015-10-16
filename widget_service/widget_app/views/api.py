@@ -3,6 +3,7 @@ __author = 'erikfarmer'
 
 # Standard library
 import json
+from collections import defaultdict
 
 # Framework specific/Third Party
 from flask import Blueprint
@@ -42,30 +43,33 @@ def show_widget(domain):
         return render_template('kaiser_3.html', domain=domain)
 
 
-@mod.route('/widget/<widget_name>', methods=['GET'])
-def process_widget(widget_name):
-    """This function will likely not be used as our pages will ideally be stored in S3.
-    """
-    widget = db.session.query(WidgetPage).filter_by(widget_name=widget_name).first()
-    return widget.widget_html, 200
-
-
-#TODO This should dynamically add 'optiona' field such as preferred location/military experience.
-@mod.route('/widget/candidates', methods=['POST'])
-def create_candidate_from_widget():
+#TODO This should dynamically add 'optional' fields such as preferred location/military experience.
+@mod.route('/widget/<domain>', methods=['POST'])
+def create_candidate_from_widget(domain):
     """ Post receiver for processing widget date.
     :return: A success or error message to change the page state of a widget.
     """
     form = request.form
-    candidate_dict = {
-        'full_name': '{} {}'.format(form['firstName'], form['lastName']),
-        'emails': [{'address': form['emailAdd'], 'label': 'Primary'}],
-        'areas_of_interest':  parse_interest_ids_from_form(form['hidden-tags-aoi']),
-        'custom_fields': parse_city_and_state_ids_from_form(form['hidden-tags-location'])
-    }
+    candidate_dict = defaultdict(dict)
+    candidate_dict['full_name'] = '{} {}'.format(form['firstName'], form['lastName'])
+    candidate_dict['emails'] =  [{'address': form['emailAdd'], 'label': 'Primary'}]
+    candidate_dict['areas_of_interest'] = parse_interest_ids_from_form(form['hidden-tags-aoi'])
+    if form['hidden-tags-location']:
+        custom_fields = parse_city_and_state_ids_from_form(form['hidden-tags-location'])
+        candidate_dict['custom_fields'] = custom_fields
+    if form['jobFrequency']:
+        candidate_dict['WHAT IS THE FIELD HERE LOL'] = form['jobFrequency']
+    if form['militaryBranch']:
+        candidate_dict['military_services']['branch'] = form['militaryBranch']
+    if form['militaryStatus']:
+        candidate_dict['military_services']['status'] = form['militaryStatus']
+    if form['militaryGrade']:
+        candidate_dict['military_services']['grade'] = form['militaryGrade']
+    if form['militaryToDate']:
+        candidate_dict['military_services']['to_date'] = form['militaryToDate']
     payload = json.dumps({'candidates': [candidate_dict]})
     try:
-        request = requests.post(app.config['CANDIDATE_CREATION_URI'], data=payload,
+        r = requests.post(app.config['CANDIDATE_CREATION_URI'], data=payload,
                           headers={'Authorization': app.config['OAUTH_TOKEN'].access_token})
     except:
         return jsonify({'error': {'message': 'unable to create candidate from form'}})
