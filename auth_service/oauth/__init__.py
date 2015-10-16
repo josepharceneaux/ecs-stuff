@@ -9,6 +9,7 @@ app.config.from_object('auth_service.config')
 
 logger = app.config['LOGGER']
 from auth_service.common.error_handling import register_error_handlers
+print "register error handlers"
 register_error_handlers(app, logger)
 
 db.init_app(app)

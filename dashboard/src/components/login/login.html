@@ -1,0 +1,10 @@
+<form class="form-login" ng-submit="vm.login()">
+    <h2 class="form-login-heading">Please sign in</h2>
+    <div class="alert alert-danger animated fadeIn" ng-show="vm.errorMessage">{{vm.errorMessage}}</div>
+
+    <label for="inputUsername" class="sr-only">Username</label>
+    <input type="text" id="inputUsername" class="form-control" placeholder="Username" required autofocus ng-model="vm.username">
+    <label for="inputPassword" class="sr-only">Password</label>
+    <input type="password" id="inputPassword" class="form-control" placeholder="Password" required ng-model="vm.password">
+    <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+</form>

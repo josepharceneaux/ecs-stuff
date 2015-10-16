@@ -7,6 +7,16 @@ from auth_service.oauth import gt_oauth
 from auth_service.oauth import logger
 from flask import request, jsonify
 from datetime import datetime, timedelta
+from flask.ext.cors import CORS
+
+
+# Enable CORS
+CORS(app, resources={
+    r'/(oauth2|roles|users)/*': {
+        'origins': '*',
+        'allow_headers': ['Content-Type', 'Authorization']
+    }
+})
 
 
 @gt_oauth.clientgetter
