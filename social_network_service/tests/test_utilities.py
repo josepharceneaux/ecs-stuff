@@ -1,9 +1,14 @@
 __author__ = 'zohaib'
+from datetime import datetime, timedelta
+from dateutil.parser import parse
+from pytz import timezone
+
 from social_network_service.utilities import camel_case_to_snake_case
 from social_network_service.utilities import snake_case_to_camel_case
 from social_network_service.utilities import camel_case_to_title_case
 from social_network_service.utilities import convert_keys_to_snake_case
 from social_network_service.utilities import convert_keys_to_camel_case
+from social_network_service.utilities import get_utc_datetime
 
 
 def test_camel_case_to_snake_case():
@@ -68,11 +73,49 @@ def test_convert_keys_to_snake_case():
                            Camel2Camel2Case='value3',
                            getHTTPResponseCode=123,
                            get2HTTPResponseCode='name')
-    assert camel_case_to_snake_case('CamelCase') == 'camel_case'
-    assert camel_case_to_snake_case('CamelCamelCase') == 'camel_camel_case'
-    assert camel_case_to_snake_case('Camel2Camel2Case') == 'camel2_camel2_case'
-    assert camel_case_to_snake_case('getHTTPResponseCode') == 'get_http_response_code'
-    assert camel_case_to_snake_case('get2HTTPResponseCode') == 'get2_http_response_code'
-    assert camel_case_to_snake_case('HTTPResponseCode') == 'http_response_code'
-    assert camel_case_to_snake_case('HTTPResponseCodeXYZ') == 'http_response_code_xyz'
+    snake_case_dict = dict(camel_case='value1',
+                           camel_camel_case='value2',
+                           camel2_camel2_case='value3',
+                           get_http_response_code=123,
+                           get2_http_response_code='name')
 
+    assert convert_keys_to_snake_case(camel_case_dict) == snake_case_dict
+
+
+def test_convert_keys_to_camel_case():
+    """
+    In this test, we will verify that convert_keys_to_snake_case() method converts dictionaries
+    according to our requirements, i.e. converts from dictionary keys from
+     snake case to camel case
+    :return:
+    """
+    snake_case_dict = dict(camel_case='value1',
+                           camel_camel_case='value2',
+                           camel2_camel2_case='value3',
+                           get_http_response_code=123,
+                           get2_http_response_code='name')
+
+    camel_case_dict = dict(camelCase='value1',
+                           camelCamelCase='value2',
+                           camel2Camel2Case='value3',
+                           getHttpResponseCode=123,
+                           get2HttpResponseCode='name')
+
+    assert convert_keys_to_camel_case(snake_case_dict) == camel_case_dict
+
+
+def test_get_utc_datetime():
+    """
+    get_utc_datetime() returns utc datetime string
+    This test is to test get_utc_datetime() function.
+    We will pass different datetime objects and test different scenarios.
+    :return:
+    """
+    now = datetime(2015, 10, 16, 12, 12, 12)
+    assert get_utc_datetime(now, 'Asia/Karachi') == '2015-10-16T07:12:12Z', \
+        'UTC date time should be 5 hours behind Asia/Karachi timezone datetime'
+
+    now = datetime(2015, 10, 16, 11, 11, 11, tzinfo=timezone('Asia/Karachi'))
+    print now
+    assert get_utc_datetime(now, 'Asia/Karachi') == '2015-10-16T11:11:11Z', \
+        'UTC date time should be 5 hours behind Asia/Karachi timezone datetime'
