@@ -47,3 +47,5 @@ mixer==5.2.2
 pytz==2015.4
 loggly-python-handler==1.0.0
 python-dateutil==2.4.2
+
+Flask-Script
