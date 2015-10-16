@@ -1,14 +1,32 @@
 __author__ = 'zohaib'
-from datetime import datetime, timedelta
-from dateutil.parser import parse
+
+# Standard Library
+from datetime import datetime
+
+# Third Party
 from pytz import timezone
 
-from social_network_service.utilities import camel_case_to_snake_case
+# Application Specific
+from social_network_service.utilities import unix_time
 from social_network_service.utilities import snake_case_to_camel_case
 from social_network_service.utilities import camel_case_to_title_case
+from social_network_service.utilities import camel_case_to_snake_case
 from social_network_service.utilities import convert_keys_to_snake_case
 from social_network_service.utilities import convert_keys_to_camel_case
 from social_network_service.utilities import get_utc_datetime
+from social_network_service.utilities import import_from_dist_packages
+from social_network_service.utilities import milliseconds_since_epoch
+from social_network_service.utilities import milliseconds_since_epoch_to_dt
+from social_network_service.utilities import milliseconds_since_epoch_local_time
+
+TEST_DATE = datetime(2015, 1, 1)
+UTC_TIMEZONE = timezone('UTC')
+LOCAL_TIMEZONE = timezone('Asia/Karachi')
+UTC_TEST_DATE = UTC_TIMEZONE.localize(TEST_DATE, is_dst=None)
+LOCAL_TEST_DATE = LOCAL_TIMEZONE.localize(TEST_DATE, is_dst=None)
+EPOCH_UTC_TEST_DATE_IN_SECONDS = 1420070400
+EPOCH_UTC_TEST_DATE_IN_MILLISECONDS = 1420070400000
+EPOCH_LOCAL_TEST_DATE_IN_MILLISECONDS = 1420052400000
 
 
 def test_camel_case_to_snake_case():
@@ -119,3 +137,88 @@ def test_get_utc_datetime():
     print now
     assert get_utc_datetime(now, 'Asia/Karachi') == '2015-10-16T11:11:11Z', \
         'UTC date time should be 5 hours behind Asia/Karachi timezone datetime'
+
+def test_import_from_dist_packages():
+    """
+    - In this test, we will verify the working of
+        import_from_dist_packages() function defined in
+        social_network_service/utilities.py
+    - We import facebook using test_import_from_dist_packages()
+        and we should get facebook-sdk module from site-packages.
+    """
+    facebook_sdk_package = import_from_dist_packages('facebook')
+    assert hasattr(facebook_sdk_package, 'GraphAPI')
+    assert hasattr(facebook_sdk_package, 'GraphAPIError')
+    assert hasattr(facebook_sdk_package, 'base64')
+    assert hasattr(facebook_sdk_package, 'cgi')
+
+
+def test_unix_time():
+    """
+    - In this test, we will verify the working of
+        unix_time() function defined in social_network_service/utilities.py
+    - We give a test date and assert its output to expected value
+    """
+    # case 1 - date is datetime.datetime object
+    assert int(unix_time(UTC_TEST_DATE)) == EPOCH_UTC_TEST_DATE_IN_SECONDS
+    # case 2 - date in string format
+    try:
+        unix_time(str(UTC_TEST_DATE))
+    except TypeError as e:
+        assert e.message.find('unsupported operand type') == 0
+        assert 'str' in e.message
+
+
+def test_milliseconds_since_epoch():
+    """
+    - In this test, we will verify the working of
+        milliseconds_since_epoch() function defined in
+        social_network_service/utilities.py
+    - We give a test date and assert its output to expected value
+    """
+    # case 1 - date is datetime.datetime object
+    assert int(milliseconds_since_epoch(UTC_TEST_DATE)) == EPOCH_UTC_TEST_DATE_IN_MILLISECONDS
+    # case 2 - date in string format
+    test_date_str = '2015-1-1'
+    try:
+        unix_time(test_date_str)
+    except TypeError as e:
+        assert e.message.find('unsupported operand type') == 0
+        assert 'str' in e.message
+
+
+def test_milliseconds_since_epoch_local_time():
+    """
+    - In this test, we will verify the working of
+        milliseconds_since_epoch_local_time() function defined in
+        social_network_service/utilities.py
+    - We give a test date and assert its output to expected value
+    """
+    # case 1 - date is datetime.datetime object
+    result = int(milliseconds_since_epoch_local_time(UTC_TEST_DATE))
+    assert result == EPOCH_LOCAL_TEST_DATE_IN_MILLISECONDS
+    # case 2 - date in string format
+    test_date_str = '2015-1-1'
+    try:
+        unix_time(test_date_str)
+    except TypeError as e:
+        assert e.message.find('unsupported operand type') == 0
+        assert 'str' in e.message
+
+
+def test_milliseconds_since_epoch_to_dt():
+    """
+    - In this test, we will verify the working of
+        milliseconds_since_epoch_to_dt() function defined in
+        social_network_service/utilities.py
+    - We give an epoch and assert its output to expected date time object
+    """
+    # case 1 - we give epoch seconds in UTC, when it is converted in datetime
+    # object, it should be same as UTC_TEST_DATE.
+    converted_date_1 = milliseconds_since_epoch_to_dt(EPOCH_UTC_TEST_DATE_IN_MILLISECONDS)
+    assert converted_date_1 == UTC_TEST_DATE
+    # case 2 - we give epoch seconds using local time, and provide over local timezone info,
+    # it should be same as date object given in LOCAL_TEST_DATE.
+    converted_date_2 = milliseconds_since_epoch_to_dt(
+        EPOCH_LOCAL_TEST_DATE_IN_MILLISECONDS, tz=LOCAL_TIMEZONE)
+    assert converted_date_2 == LOCAL_TEST_DATE

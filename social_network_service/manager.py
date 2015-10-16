@@ -67,7 +67,9 @@ def start():
                     job_pool.spawn(sn.process, name_space.mode,
                                    user_credentials=user_credentials)
                 else:
-                    raise AccessTokenHasExpired('Access token has expired')
+                    raise AccessTokenHasExpired
+            except KeyError:
+                raise
             except Exception as error:
                 log_exception({'user_id': user_credentials.user_id,
                                'error': error.message})
@@ -78,7 +80,7 @@ def start():
 if __name__ == '__main__':
     try:
         start()
-    except TypeError:
+    except TypeError as e:
         logger.error('Please provide required parameters to run manager')
     except Exception:
         logger.error(traceback.format_exc())

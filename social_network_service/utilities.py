@@ -18,6 +18,7 @@ from datetime import datetime
 # Third Party
 import pytz
 import requests
+from pytz import timezone
 from requests_oauthlib import OAuth2Session
 
 # Application Specific Imports
@@ -74,18 +75,41 @@ class Attendee(object):
 
 
 def unix_time(dt):
-    epoch = datetime.utcfromtimestamp(0)
+    """
+    Converts dt(UTC) datetime object to epoch in seconds
+    :param dt:
+    :type dt: datetime
+    :return: returns epoch time in milliseconds.
+    """
+    epoch = datetime(1970, 1, 1, tzinfo=timezone('UTC'))
     delta = dt - epoch
     return delta.total_seconds()
 
 
 def milliseconds_since_epoch(dt):
+    """
+    Converts dt(UTC) datetime object to epoch in milliseconds
+    :param dt:
+    :type dt: datetime
+    :return: returns epoch time in milliseconds.
+    """
     assert isinstance(dt, datetime), 'input argument should be datetime object'
     return unix_time(dt) * 1000.0
 
 
-def milliseconds_since_epoch_to_dt(epoch):
-    return datetime.fromtimestamp(epoch / 1000.0)
+def milliseconds_since_epoch_local_time(dt):
+    """
+    Converts dt(local time) datetime object to epoch in milliseconds
+    :param dt:
+    :type dt: datetime
+    :return: returns epoch time in milliseconds.
+    """
+    assert isinstance(dt, datetime), 'input argument should be datetime object'
+    return int(dt.strftime("%s")) * 1000
+
+
+def milliseconds_since_epoch_to_dt(epoch, tz=timezone('UTC')):
+    return datetime.fromtimestamp(epoch / 1000.0, tz=tz)
 
 
 def authenticate_user(request):
@@ -109,19 +133,27 @@ def authenticate_user(request):
         return None
 
 
-def get_callee_data():
+def get_callee_data(app_name=None):
     current_frame = inspect.currentframe()
     callee_frame = inspect.getouterframes(current_frame, 2)
-    no_of_item = 3
-    #  We are using number 3 here, as
-    # we call this function inside log_error() or log_exception()
-    # which uses get_data_to_log(). get_data_to_log() calls get_callee_data().
-    # So, here is the story,
-    # index 0 has traceback of get_callee_data()
-    # index 1 has traceback of get_data_to_log()
-    # index 2 has traceback of log_error() or log_exception()
-    # index 3 will have the traceback of function from where we call
-    # log_error() or log_exception().
+    if app_name == 'social_network_service':
+        no_of_item = 3
+        if callee_frame[no_of_item][3] == 'http_request':
+            no_of_item = 4
+        # We are using number 3 here, as
+        # we call this function inside log_error() or log_exception()
+        # which uses get_data_to_log().
+        # get_data_to_log() calls get_callee_data().
+        # So, here is the story,
+        # index 0 has traceback of get_callee_data()
+        # index 1 has traceback of get_data_to_log()
+        # index 2 has traceback of log_error() or log_exception()
+        # index 3 will have the traceback of function from where we call
+        # log_error() or log_exception().
+        # Another case is logging inside http_request. For this we need
+        # traceback of the function from where http_request was called.
+    else:
+        no_of_item = None
     try:
         callee_data = {
             'file_name': callee_frame[no_of_item][1],
@@ -209,13 +241,12 @@ def get_data_to_log(log_data):
     :return: callee_data which contains the useful information of traceback
             like Reason of error, function name, file name, user id etc.
     """
-    if hasattr(log_data.get('error'), 'message') \
-            or '400' in log_data['error']:
+    if hasattr(log_data.get('error'), 'message'):
         callee_data = ("Reason: %(error)s, "
                        "User Id: %(user_id)s" % log_data)
         return callee_data
     # get_callee_data() returns the dictionary of callee data
-    callee_data_dict = get_callee_data()
+    callee_data_dict = get_callee_data(app_name='social_network_service')
     # appends user_id_and_error_message in callee_data_dict
     callee_data_dict.update(log_data)
     if callee_data_dict.has_key('traceback_info'):
@@ -274,8 +305,8 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                     else:
                         error_message = e.message
                 else:
+                    # raise any Server error occurred on social network website
                     raise
-                    # error_message = e.message
             except requests.RequestException as e:
                 error_message = e.message
             if error_message:
@@ -506,8 +537,14 @@ def convert_keys_to_snake_case(dictionary):
 
 def import_from_dist_packages(name, custom_name=None):
     """
-    This function is used to import facebook-sdk module rather than local
-    module named as facebook
+    - We have a module facebook-sdk in this project which is imported as
+        import facebook
+    Also we have Facebook classes defined by ourselves inside
+    social_network_service/. So when we import facebook inside our classes
+    (e.g import facebook in  social_network_service/rsvp/facebook.py), we have
+    name conflict.
+    - This function is used to import facebook-sdk module rather than local
+    module named as facebook.
     :param name:
     :param custom_name:
     :return:
@@ -541,7 +578,7 @@ def get_utc_datetime(dt, timezone):
     assert timezone, 'Timezone should not be none'
     assert isinstance(dt, datetime)
     # get timezone info from given datetime object
-    local_timezone = pytz.timezone(timezone)
+    local_timezone = timezone(timezone)
     try:
         local_dt = local_timezone.localize(dt, is_dst=None)
     except ValueError as e:

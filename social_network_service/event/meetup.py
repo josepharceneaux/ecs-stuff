@@ -457,7 +457,8 @@ class Meetup(EventBase):
                 except Exception as e:
                     raise EventLocationNotCreated('ApiError: Unable to create'
                                                   ' venue for event',
-                                                  detail=str(e))
+                                                  additional_error_info=
+                                                  dict(venue_error=str(e)))
             else:
                 error_message = 'Venue was not Added. There are some errors'
                 errors = response.json().get('errors')
@@ -567,7 +568,7 @@ class Meetup(EventBase):
         self.validate_required_fields(data)
         # assert whether data['start_datetime'] is instance of dt
         # converting Datetime object to epoch for API call
-        start_time = int(data['start_datetime'].strftime("%s")) * 1000
+        start_time = int(milliseconds_since_epoch(data['start_datetime']))
         self.payload = {
             'name': data['title'],
             'group_id': data['group_id'],
