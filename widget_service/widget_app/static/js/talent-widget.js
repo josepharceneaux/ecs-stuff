@@ -38,7 +38,7 @@ function renderInterests(interests) {
 $('#submit').on('click', function() {
     $.ajax({
         type: 'POST',
-        url: '/v1/widget/candidates',
+        url: '/',
         data: $('widget-form').serialize(),
         success: function(response) {
             if ('success' in response) {
