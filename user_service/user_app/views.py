@@ -57,7 +57,7 @@ def user_scoped_roles(user_id):
 
 @app.route('/domain/<int:domain_id>/roles', methods=['GET'])
 @require_oauth
-@accepted_roles('ADMIN', 'CAN_SEND_CAMPAIGN')
+@accepted_roles('ADMIN', 'DOMAIN_ADMIN')
 def get_all_roles_of_domain(domain_id):
     if Domain.query.get(domain_id):
         return jsonify(DomainRole.all_roles_of_domain(domain_id))
