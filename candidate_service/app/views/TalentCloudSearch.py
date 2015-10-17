@@ -7,12 +7,14 @@ import math
 import operator
 from datetime import datetime
 import os
+
 import boto
 import boto.exception
 import simplejson
+from flask import request
 
 from candidate_service.common.models.db import get_table, db, conn_db, session
-from sqlalchemy import select
+
 from candidate_service.app import logger
 
 API_VERSION = "2013-01-01"
@@ -862,13 +864,7 @@ def search_candidates(domain_id, vars, search_limit=15, candidate_ids_only=False
         params = dict(params.items() + geo_params.items())
 
     # Return data dictionary. Initializing here, to have standard return type across the function
-    context_data = dict(candidate_ids=[],
-                        percentage_matches=[],
-                        search_data=dict(descriptions=[], facets=dict(), error=dict(), vars=vars, mode='search'),
-                        total_found=0,
-                        descriptions=[],
-                        max_score=0,
-                        max_pages=0)
+    context_data = dict()
 
     # Looks like cloudsearch does not have something like return only count predefined
     # removing fields and returned content should speed up network request
@@ -971,17 +967,21 @@ def search_candidates(domain_id, vars, search_limit=15, candidate_ids_only=False
     percentage_matches = []
 
     search_data = dict(descriptions=matches, facets=facets, error=dict(), vars=vars, mode='search')
-
-    max_pages = int(math.ceil(total_found / float(search_limit))) if search_limit else 1
-
+    fields_data = [data['fields'] for data in matches]
+    context_data['candidates'] = fields_data
+    requested_data = request.args
+    if requested_data:
+        requested_data = request.args.get('fields').split(',')
+        required_context_data = {}
+        response_candidates_data = []
+        for fields in fields_data:
+            required_data = {fk: fields[fk] for fk in requested_data if fk in fields}
+            response_candidates_data.append(required_data)
+        required_context_data['candidates'] = response_candidates_data
+        if required_context_data:
+            return required_context_data
     # Update return dictionary with search results
-    context_data['candidate_ids'] = candidate_ids
-    context_data['percentage_matches'] = percentage_matches
-    context_data['search_data'] = search_data
-    context_data['total_found'] = total_found
-    context_data['descriptions'] = []
-    context_data['max_score'] = max_score
-    context_data['max_pages'] = max_pages
+    max_pages = int(math.ceil(total_found / float(search_limit))) if search_limit else 1
 
     return context_data
 
