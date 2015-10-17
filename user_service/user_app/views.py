@@ -89,25 +89,24 @@ def user_groups(group_id):
 @app.route('/groups', methods=['GET', 'POST', 'DELETE'])
 @require_oauth
 @accepted_roles('ADMIN', 'DOMAIN_ADMIN')
-def domain_groups(group_id):
+def domain_groups():
     if request.method == 'GET':
         # Get all groups of a domain
-        domain_id = request.args.get('domain_id') if request.args.get('domain_id') else request.user.domain_id
+        domain_id = request.args.get('domain_id') or request.user.domain_id
         return jsonify(UserGroups.all_groups_of_domain(domain_id))
 
     posted_data = request.get_json(silent=True)
     if posted_data:
         try:
             if request.method == 'POST':
-                name = posted_data.get('group_name')
-                description = posted_data.get('group_description') or ''
-                domain_id = posted_data.get('domain_id') or ''
-                domain_id = domain_id if domain_id else request.user.domain_id
-                UserGroups.save(domain_id, name, description)
+                groups = posted_data.get('groups')
+                domain_id = posted_data.get('domain_id') or request.user.domain_id
+                UserGroups.add_groups(groups, domain_id)
                 return jsonify(success=True)
             if request.method == 'DELETE':
                 # Delete groups with given group_ids
-                UserGroups.delete_groups(request.user.domain_id, posted_data.get('group_ids'))
+                domain_id = posted_data.get('domain_id') or request.user.domain_id
+                UserGroups.delete_groups(domain_id, posted_data.get('groups'))
                 return jsonify(success=True)
             else:
                 raise Exception("Invalid URL method %s" % request.method)

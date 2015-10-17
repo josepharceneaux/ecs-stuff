@@ -1,12 +1,10 @@
 import pytest
 from werkzeug.security import gen_salt
-from user_service.user_app import app
 from common_functions import *
 
 OAUTH_ENDPOINT = 'http://127.0.0.1:8001/%s'
 TOKEN_URL = OAUTH_ENDPOINT % 'oauth2/token'
-
-APP = app.test_client()
+PASSWORD = gen_salt(20)
 
 
 @pytest.fixture()
@@ -21,14 +19,14 @@ def access_token(request, non_admin_user, admin_user):
     db.session.add(test_client)
     db.session.commit()
 
-    non_admin_user_access_token = get_access_token(non_admin_user, client_id, client_secret)
-    admin_user_access_token = get_access_token(admin_user, client_id, client_secret)
+    non_admin_user_access_token = get_access_token(non_admin_user, PASSWORD, client_id, client_secret)
+    admin_user_access_token = get_access_token(admin_user, PASSWORD, client_id, client_secret)
+    db.session.commit()
 
     def tear_down():
-        db.session.delete(Token.query.filter_by(access_token=non_admin_user_access_token).first())
-        db.session.delete(Token.query.filter_by(access_token=admin_user_access_token).first())
-        db.session.delete(test_client)
-        db.session.commit()
+        Token.query.filter_by(access_token=non_admin_user_access_token).first().delete()
+        Token.query.filter_by(access_token=admin_user_access_token).first().delete()
+        test_client.delete()
     request.addfinalizer(tear_down)
 
     return {'non_admin_user': non_admin_user_access_token, 'admin_user': admin_user_access_token}
@@ -36,7 +34,7 @@ def access_token(request, non_admin_user, admin_user):
 
 @pytest.fixture()
 def non_admin_user(request, domain_id):
-    user = create_test_user(domain_id)
+    user = create_test_user(domain_id, PASSWORD)
 
     def tear_down():
         db.session.delete(user)
@@ -47,8 +45,10 @@ def non_admin_user(request, domain_id):
 
 @pytest.fixture()
 def admin_user(request, domain_id, domain_admin_role):
-    user = create_test_user(domain_id)
-    user_scoped_role = UserScopedRoles.add_roles(user.id, [domain_admin_role])
+    user = create_test_user(domain_id, PASSWORD)
+    UserScopedRoles.add_roles(user.id, [domain_admin_role])
+    user_scoped_role = UserScopedRoles.query.filter((UserScopedRoles.userId == user.id)
+                                                                & (UserScopedRoles.roleId == domain_admin_role)).first()
 
     def tear_down():
         db.session.delete(user_scoped_role)
@@ -97,22 +97,14 @@ def domain_roles(request, domain_id):
     def tear_down():
         db.session.delete(DomainRole.query.get(test_role_first_id))
         db.session.delete(DomainRole.query.get(test_role_second_id))
+        db.session.commit()
     request.addfinalizer(tear_down)
     return {'test_roles': [test_role_first, test_role_second]}
 
 
 @pytest.fixture()
-def user_groups(request, domain_id):
-    test_group_first = gen_salt(20)
-    test_group_first_id = UserGroups.save(domain_id, test_group_first, "It's first test group")
-    test_group_second = gen_salt(20)
-    test_group_second_id = UserGroups.save(domain_id, test_group_second, "It's second test group")
-
-    def tear_down():
-        db.session.delete(UserGroups.query.get(test_group_first_id))
-        db.session.delete(UserGroups.query.get(test_group_second_id))
-    request.addfinalizer(tear_down)
-    return {'test_groups': [test_group_first, test_group_second]}
+def group_names():
+    return {'test_groups': [gen_salt(20), gen_salt(20)]}
 
 
 def test_user_scoped_roles(access_token, non_admin_user, domain_roles, domain_id):
@@ -146,7 +138,28 @@ def test_user_scoped_roles(access_token, non_admin_user, domain_roles, domain_id
     # Check if roles have been deleted successfully from a user
     assert not user_scoped_roles(access_token=access_token['admin_user'], user_id=non_admin_user.id)
 
-def test_user_groups(access_token, non_admin_user, domain_groups):
 
+def test_user_groups(access_token, non_admin_user, group_names, domain_id):
 
+    # Add Groups to domain
+    assert domain_groups(access_token=access_token['admin_user'], domain_id=domain_id, action="POST",
+                         test_groups=group_names['test_groups']) == 200
+
+    # Check If groups have been added successfully in a domain
+    assert domain_groups(access_token=access_token['admin_user'], domain_id=domain_id) == group_names['test_groups']
+
+    # Check If groups have been added successfully in a domain with non-admin user
+    assert domain_groups(access_token=access_token['non_admin_user'], domain_id=domain_id) == 401
+
+    # Add non-admin user to a group
+    assert user_groups(access_token=access_token['admin_user'], action='POST', group_id=UserGroups.
+                       get_by_name(group_names['test_groups'][0]).id, user_ids=[non_admin_user.id]) == 200
+
+    # Get all users of a group
+    assert user_groups(access_token=access_token['admin_user'],
+                       group_id=UserGroups.get_by_name(group_names['test_groups'][0]).id) == [non_admin_user.id]
+
+    # Delete Groups of a domain
+    assert domain_groups(access_token=access_token['admin_user'], domain_id=domain_id, action="DELETE",
+                         test_groups=group_names['test_groups']) == 200
 

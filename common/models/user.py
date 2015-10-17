@@ -1,6 +1,7 @@
 from db import db
 from sqlalchemy.orm import relationship, backref
 import time
+from common.utils.validators import is_number
 import datetime
 
 from candidate import CandidateSource
@@ -94,6 +95,10 @@ class Client(db.Model):
     client_id = db.Column(db.String(40), primary_key=True)
     client_secret = db.Column(db.String(55), nullable=False)
 
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
     # Possible values are 'public' or 'confidential'
     @property
     def client_type(self):
@@ -121,7 +126,6 @@ class Token(db.Model):
     client = db.relationship('Client')
 
     user_id = db.Column(
-        # db.BigInteger, db.ForeignKey('user.id')
         db.INTEGER, db.ForeignKey('user.id')
     )
     user = db.relationship('User')
@@ -210,22 +214,15 @@ class UserScopedRoles(db.Model):
     domainRole = db.relationship('DomainRole')
 
     @staticmethod
-    def is_role_number(s):
-        try:
-            float(s)
-            return True
-        except ValueError:
-            return False
-
-    @staticmethod
     def add_roles(user_id, roles_list):
         """ Add a role for user
         :param user_id: Id of a user
         :param roles_list: list of roleIds or roleNames
         """
-        if User.query.get(user_id):
+        user = User.query.get(user_id)
+        if user:
             for role in roles_list:
-                if UserScopedRoles.is_role_number(role):
+                if is_number(role):
                     role_id = role
                 else:
                     domain_role = DomainRole.get_by_name(role)
@@ -233,8 +230,8 @@ class UserScopedRoles(db.Model):
                         role_id = domain_role.id
                     else:
                         role_id = None
-
-                if role_id and DomainRole.query.get(role_id):
+                domain_role = DomainRole.query.get(role_id)
+                if role_id and domain_role and (not domain_role.domainId or domain_role.domainId == user.domain_id):
                     if not UserScopedRoles.query.filter((UserScopedRoles.userId == user_id) &
                                                                 (UserScopedRoles.roleId == role_id)).first():
                         user_scoped_role = UserScopedRoles(userId=user_id, roleId=role_id)
@@ -242,9 +239,8 @@ class UserScopedRoles(db.Model):
                     else:
                         raise Exception("Role: %s already exists for user: %s" % (role, user_id))
                 else:
-                    raise Exception("Role: %s doesn't exist" % role)
+                    raise Exception("Role: %s doesn't exist or It belongs to a different domain" % role)
             db.session.commit()
-            return user_scoped_role
         else:
             raise Exception("User %s doesn't exist" % user_id)
 
@@ -256,7 +252,7 @@ class UserScopedRoles(db.Model):
         """
         if User.query.get(user_id):
             for role in roles_list:
-                if UserScopedRoles.is_role_number(role):
+                if is_number(role):
                     role_id = role
                 else:
                     domain_role = DomainRole.get_by_name(role)
@@ -301,18 +297,6 @@ class UserGroups(db.Model):
         db.session.commit()
 
     @staticmethod
-    def save(domain_id, name, description=''):
-        """ Create a new user group.
-        :param name: Name of the user group
-        :param domain_id: Domain Id of the user group.
-        :param description: Description of the user group.
-        """
-        user_group = UserGroups(name=name, description=description, domain_id=domain_id)
-        db.session.add(user_group)
-        db.session.commit()
-        return user_group.id
-
-    @staticmethod
     def get_by_id(group_id):
         """ Get a user group with supplied group_id.
         :param group_id: id of a user group.
@@ -333,8 +317,68 @@ class UserGroups(db.Model):
         return dict(user_groups=[user_group.id for user_group in all_user_groups])
 
     @staticmethod
+    def add_groups(groups, domain_id):
+        """ Add new user groups.
+        :param groups: List of the user groups
+        :param domain_id: Domain Id of the user groups.
+        """
+        for group in groups:
+            name = group.get('group_name')
+            description = group.get('group_description')
+            group_domain_id = group.get('domain_id')
+            if not UserGroups.query.filter_by(name=name).first():
+                user_group = UserGroups(name=name, description=description, domain_id=group_domain_id or domain_id)
+            else:
+                raise Exception("Group '%s' already exists so It cannot be added again" % name)
+            db.session.add(user_group)
+        db.session.commit()
+
+    @staticmethod
     def all_groups_of_domain(domain_id):
-        """ Get all user_groups with names in database """
+        """ Get all user_groups of with names in database """
         all_user_groups_of_domain = UserGroups.query.filter_by(domain_id=domain_id) or []
         return dict(user_groups=[{'id': user_group.id, 'name': user_group.name} for user_group in
                                  all_user_groups_of_domain])
+
+    @staticmethod
+    def all_users_of_group(group_id):
+        """ Get all users of a group """
+        all_users_of_group = User.query.filter_by(group_id=group_id) or []
+        return dict(users=[{'id': user.id, 'lastName': user.last_name} for user in all_users_of_group])
+
+    @staticmethod
+    def delete_groups(domain_id, groups):
+        if Domain.query.get(domain_id):
+            for group in groups:
+                if is_number(group):
+                    group_id = group
+                else:
+                    user_group = UserGroups.query.filter_by(name=group).first()
+                    if user_group:
+                        group_id = user_group.id
+                    else:
+                        group_id = None
+
+                group = UserGroups.query.get(group_id) or None if group_id else None
+                if group and group.domain_id == domain_id:
+                    db.session.delete(group)
+                else:
+                    raise Exception("Group %s doesn't exist or either it doesn't belong to Domain %s " % (group_id, domain_id))
+            db.session.commit()
+        else:
+            raise Exception("Domain %s doesn't exist" % domain_id)
+
+    @staticmethod
+    def add_users_to_group(group_id, user_ids):
+        user_group = UserGroups.query.get(group_id)
+        if user_group:
+            for user_id in user_ids:
+                user = User.query.get(user_id) or None
+                if user and user.domain_id == user_group.domain_id:
+                    user.group_id = group_id
+                else:
+                    raise Exception("User: %s doesn't exist or either it doesn't belong to Domain %s"
+                                    % (user_id, user.domain_id))
+            db.session.commit()
+        else:
+            raise Exception("User group %s doesn't exist" % group_id)
