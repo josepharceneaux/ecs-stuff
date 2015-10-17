@@ -13,9 +13,14 @@ SERVICE_TO_DOCKERHUB_REPO = {'activity_service': 'activities-service',
                              'candidate_service': 'candidate-service',
                              'base_service_container': 'base-service-container'}
 
+SERVICE_TO_PORT_NUMBER = {'activity_service': 8002,
+                          'auth_service': 8001,
+                          'resume_service': 8003}
+
 parser = argparse.ArgumentParser(description='Common files administrator for Docker building.')
 parser.add_argument('--build', nargs=1, choices=SERVICE_TO_DOCKERHUB_REPO.keys(), help='Invokes the Docker build action for given service')
 parser.add_argument('--deploy', nargs=1, choices=SERVICE_TO_DOCKERHUB_REPO.keys(), help='Pushes to Dockerhub & deploys the latest container into staging environment')
+parser.add_argument('--run', nargs=1, choices=SERVICE_TO_DOCKERHUB_REPO.keys(), help='Runs the container locally for given service')
 args = parser.parse_args()
 
 
@@ -58,37 +63,53 @@ def attach_bash_shell_to_vm_if_not_linux():
 if args.build:
     service_name = args.build[0]
     repo_name = "gettalent/%s" % SERVICE_TO_DOCKERHUB_REPO[service_name]
+    print 'Changing dir to %s' % service_name
     os.chdir(service_name)
 
     attach_bash_shell_to_vm_if_not_linux()
 
-    if service_name == 'base_service_container':
-        # If it's the base-service-container, decrypt the SSL files
-        print 'Decrypting server SSL files with ansible-vault'
-        command = 'ansible-vault decrypt DigiCertCA.crt star_gettalent_com.crt star_gettalent_com.key'
-        print ' > ', command
-        call(command, shell=True)
-
     # Build Dockerfile
     print 'Building Docker file for service %(service_name)s, repo %(repo_name)s:' % locals()
-    command = 'tar -czh . | docker build -t %(repo_name)s:latest -' % locals()
+    command = 'tar -czh . | docker build --rm=false -t %(repo_name)s:latest -' % locals()
     print ' > ', command
     call(command, shell=True)
 
-    if service_name == 'base_service_container':
-        # If it's the base-service-container, encrypt the SSL files again
-        print 'Encrypting server SSL files with ansible-vault. Please use the same password.'
-        command = 'ansible-vault encrypt DigiCertCA.crt star_gettalent_com.crt star_gettalent_com.key'
-        print ' > ', command
-        call(command, shell=True)
-
     # TODO: Running and testing docker container locally
+
+
+if args.run:
+    # Set up Docker env
+    service_name = args.run[0]
+    repo_name = "gettalent/%s" % SERVICE_TO_DOCKERHUB_REPO[service_name]
+    print 'Changing dir to %s' % service_name
+    os.chdir(service_name)
+
+    attach_bash_shell_to_vm_if_not_linux()
+
+    # from urllib2 import urlopen
+    # my_ip = urlopen('http://ip.42.pl/raw').read()
+    import socket
+    my_ip = socket.gethostbyname(socket.gethostname())
+
+    command = 'docker run -p %s:80 -p %s:443 -e "GT_ENVIRONMENT=dev" --add-host=mysql_host:%s %s' % (
+        SERVICE_TO_PORT_NUMBER[service_name],
+        SERVICE_TO_PORT_NUMBER[service_name] + 1000,
+        my_ip,
+        repo_name)
+
+    # print 'Running Docker container: %s' % service_name
+    # os.chdir('../ansible-deploy')
+    # command = 'ansible-playbook --connection=local --extra-vars "service=%s" ansible-run-local.yml' % \
+    #           SERVICE_TO_DOCKERHUB_REPO[service_name]
+    print ' > ', command
+    call(command, shell=True)
 
 
 if args.deploy:
     # Set up Docker env
     service_name = args.deploy[0]
     repo_name = "gettalent/%s" % SERVICE_TO_DOCKERHUB_REPO[service_name]
+    print 'Changing dir to %s' % service_name
     os.chdir(service_name)
 
     attach_bash_shell_to_vm_if_not_linux()

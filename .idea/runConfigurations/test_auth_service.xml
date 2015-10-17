@@ -1,9 +1,8 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Build Container: activity_service" type="PythonConfigurationType" factoryName="Python" folderName="activity_service">
+  <configuration default="false" name="test auth_service" type="tests" factoryName="py.test">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
-      <env name="PYTHONUNBUFFERED" value="1" />
       <env name="GT_ENVIRONMENT" value="dev" />
     </envs>
     <option name="SDK_HOME" value="" />
@@ -13,9 +12,18 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <module name="talent-flask-services" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/container_config.py" />
-    <option name="PARAMETERS" value="--build=activity_service" />
-    <option name="SHOW_COMMAND_LINE" value="false" />
+    <option name="SCRIPT_NAME" value="" />
+    <option name="CLASS_NAME" value="" />
+    <option name="METHOD_NAME" value="" />
+    <option name="FOLDER_NAME" value="" />
+    <option name="TEST_TYPE" value="TEST_SCRIPT" />
+    <option name="PATTERN" value="" />
+    <option name="USE_PATTERN" value="false" />
+    <option name="testToRun" value="auth_service/oauth/tests" />
+    <option name="keywords" value="" />
+    <option name="params" value="-v -s" />
+    <option name="USE_PARAM" value="true" />
+    <option name="USE_KEYWORD" value="false" />
     <method />
   </configuration>
 </component>

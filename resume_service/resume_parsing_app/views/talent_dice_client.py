@@ -12,8 +12,9 @@ def parse_resume_with_bg(file_name, file_data):
     """
 
     :return: dict containing rawXML (the HR-XML from BurningGlass) as well as other fields provided by Dice Data Science™
-    :rtype: dict[str, T]
+    :rtype: dict[str, T] | bool
     """
+
     url = 'https://api.dice.com/profiles/resume/parse'
     try:
         payload = {'fileName': file_name, 'resumeData': file_data}
@@ -73,20 +74,22 @@ def dice_resource_owner_credentials_oauth_login(username, password, dice_env='pr
     :return: Dice user credentials dict
     :rtype: None | dict
     """
+    import time
+    start_time = time.time()
 
     # Get Dice domain
     dice_domain = _env_to_dice_domain(dice_env)
 
     url = "https://secure.%s.com/oauth/token" % dice_domain
     params = dict(grant_type="password", username=username, password=password)
-    # TODO debug Logger
+    current_app.logger.debug("dice_resource_owner_credentials_oauth_login: Sending POST to %s, params=%s", url, params)
     try:
         response = requests.post(url,
                                  params=params,
                                  auth=(current.GETTALENT_CLIENT_ID, current.GETTALENT_CLIENT_SECRET))
         """ :type : requests.Response """
     except requests.exceptions.RequestException:
-        # TODO log exception
+        current_app.logger.exception("Received exception making request to %s", url)
         return None
 
     try:
@@ -94,14 +97,17 @@ def dice_resource_owner_credentials_oauth_login(username, password, dice_env='pr
         access_token = response_dict.get(u'access_token')
         refresh_token = response_dict.get(u'refresh_token')
         if response_dict.get(u'error') == u'invalid_grant':
-            # TODO bad credentials log
+            current_app.logger.error("Dice login failed, bad credentials (username=%s, password=%s)", username, password)
             return None
         elif not access_token or not refresh_token:
-            # TODO logger error.
+            current_app.logger.error("Missing access or refresh token in response: %s", response_dict)
             return None
-    except Exception as e:
-        # TODO Log the exception or email admins
+    except Exception:
+        current_app.logger.exception("Received exception attempting to do Dice resource owner auth (username=%s, password=%s)",
+                                     username, password)
         return None
+    current_app.logger.info("Benchmark: dice_resource_owner_credentials_oauth_login(%s, %s, %s) took %ss",
+                            username, password, dice_env, time.time() - start_time)
     return response_dict
 
 
