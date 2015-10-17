@@ -34,7 +34,8 @@ var gulp = require('gulp'),
     'inject',
     'optimize',
     'test',
-    'bump'
+    'bump',
+    'config'
 ].forEach(buildTask);
 
 
