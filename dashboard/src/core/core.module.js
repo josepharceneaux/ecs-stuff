@@ -10,6 +10,7 @@
         // Our reusable framework
         'fw.exception',
         'fw.logger',
+        'app.config',
 
         // 3rd Party modules
         'toastr',
