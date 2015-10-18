@@ -1,2 +1,2 @@
-# AuthService
-Flask microservice for handling authentication.
+# UserService
+Flask microservice for handling user functions.
