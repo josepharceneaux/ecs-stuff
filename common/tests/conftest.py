@@ -141,6 +141,7 @@ def test_culture(request):
 @pytest.fixture(autouse=True)
 def test_org(request):
     org_attrs = dict(name='Rocket League All Stars - {}'.format(randomword(8)))
+    db.session.rollback()
     test_org, created = get_or_create(session=db.session, model=Organization, **org_attrs)
     if created:
         db.session.add(test_org)
