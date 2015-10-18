@@ -69,13 +69,13 @@ def get_all_roles_of_domain(domain_id):
 def user_groups(group_id):
     if request.method == 'GET':
         # Get all users of group
-        return jsonify(UserGroups.all_users_of_group(group_id))
+        return jsonify(UserGroup.all_users_of_group(group_id))
     else:
         posted_data = request.get_json(silent=True)
         if posted_data:
             try:
                 if request.method == 'POST':
-                    UserGroups.add_users_to_group(group_id, posted_data.get('user_ids'))
+                    UserGroup.add_users_to_group(group_id, posted_data.get('user_ids'))
                     return jsonify(success=True)
                 else:
                     raise Exception("Invalid URL method %s" % request.method)
@@ -93,7 +93,7 @@ def domain_groups():
     if request.method == 'GET':
         # Get all groups of a domain
         domain_id = request.args.get('domain_id') or request.user.domain_id
-        return jsonify(UserGroups.all_groups_of_domain(domain_id))
+        return jsonify(UserGroup.all_groups_of_domain(domain_id))
 
     posted_data = request.get_json(silent=True)
     if posted_data:
@@ -101,12 +101,12 @@ def domain_groups():
             if request.method == 'POST':
                 groups = posted_data.get('groups')
                 domain_id = posted_data.get('domain_id') or request.user.domain_id
-                UserGroups.add_groups(groups, domain_id)
+                UserGroup.add_groups(groups, domain_id)
                 return jsonify(success=True)
             if request.method == 'DELETE':
                 # Delete groups with given group_ids
                 domain_id = posted_data.get('domain_id') or request.user.domain_id
-                UserGroups.delete_groups(domain_id, posted_data.get('groups'))
+                UserGroup.delete_groups(domain_id, posted_data.get('groups'))
                 return jsonify(success=True)
             else:
                 raise Exception("Invalid URL method %s" % request.method)

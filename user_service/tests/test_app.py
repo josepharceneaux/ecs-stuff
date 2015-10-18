@@ -21,7 +21,6 @@ def access_token(request, non_admin_user, admin_user):
 
     non_admin_user_access_token = get_access_token(non_admin_user, PASSWORD, client_id, client_secret)
     admin_user_access_token = get_access_token(admin_user, PASSWORD, client_id, client_secret)
-    db.session.commit()
 
     def tear_down():
         Token.query.filter_by(access_token=non_admin_user_access_token).first().delete()
@@ -152,12 +151,12 @@ def test_user_groups(access_token, non_admin_user, group_names, domain_id):
     assert domain_groups(access_token=access_token['non_admin_user'], domain_id=domain_id) == 401
 
     # Add non-admin user to a group
-    assert user_groups(access_token=access_token['admin_user'], action='POST', group_id=UserGroups.
+    assert user_groups(access_token=access_token['admin_user'], action='POST', group_id=UserGroup.
                        get_by_name(group_names['test_groups'][0]).id, user_ids=[non_admin_user.id]) == 200
 
     # Get all users of a group
     assert user_groups(access_token=access_token['admin_user'],
-                       group_id=UserGroups.get_by_name(group_names['test_groups'][0]).id) == [non_admin_user.id]
+                       group_id=UserGroup.get_by_name(group_names['test_groups'][0]).id) == [non_admin_user.id]
 
     # Delete Groups of a domain
     assert domain_groups(access_token=access_token['admin_user'], domain_id=domain_id, action="DELETE",

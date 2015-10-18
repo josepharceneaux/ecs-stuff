@@ -44,7 +44,7 @@ def parse_file_picker_resume():
     Returns:
         result_dict: a json string extrapolating the processed resume.
     """
-    
+
     # Get the resume file object from Filepicker or the request body, if provided
     filepicker_key = request.form.get('filepicker_key')
     create_candidate = request.form.get('create_candidate')

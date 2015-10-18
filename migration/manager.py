@@ -32,8 +32,8 @@ def add_roles_to_existing_users():
 def add_groups_to_user():
     db.engine.execute('\
     ALTER TABLE user\
-    ADD groupId int(11),\
-    ADD FOREIGN KEY (`groupId`) REFERENCES `user_groups` (`id`) ON UPDATE CASCADE ON DELETE CASCADE;')
+    ADD userGroupId int(11),\
+    ADD FOREIGN KEY (`userGroupId`) REFERENCES `user_group` (`id`) ON UPDATE CASCADE ON DELETE CASCADE;')
 
 
 if __name__ == '__main__':

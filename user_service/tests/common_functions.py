@@ -101,6 +101,7 @@ def domain_groups(access_token, domain_id, test_groups=None, action='GET'):
         headers['content-type'] = 'application/json'
         data = {'groups': [{'group_name': group, 'domain_id': domain_id} for group in test_groups]}
         response = requests.post(DOMAIN_GROUPS, headers=headers, data=json.dumps(data))
+        db.session.commit()
         return response.status_code
     elif action == "DELETE":
         headers['content-type'] = 'application/json'

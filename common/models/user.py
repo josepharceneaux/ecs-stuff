@@ -30,8 +30,8 @@ class User(db.Model):
     added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
     updated_time = db.Column('updatedTime', db.DateTime)
     dice_user_id = db.Column('diceUserId', db.Integer)
-    group_id = db.Column('groupId', db.Integer, db.ForeignKey('user_groups.id'))
-    # TODO: Set Nullable = False after setting group_id for existing data
+    user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.id'))
+    # TODO: Set Nullable = False after setting user_group_id for existing data
 
     # Relationships
     candidates = relationship('Candidate', backref='user')
@@ -280,40 +280,40 @@ class UserScopedRoles(db.Model):
         return dict(roles=[user_scoped_role.roleId for user_scoped_role in user_scoped_roles])
 
 
-class UserGroups(db.Model):
-    __tablename__ = 'user_groups'
+class UserGroup(db.Model):
+    __tablename__ = 'user_group'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), nullable=False, unique=True)
+    name = db.Column(db.String(255), nullable=False)
     description = db.Column(db.String(225), nullable=True)
     domain_id = db.Column(
         db.Integer, db.ForeignKey('domain.id'), nullable=False
     )
     domain = db.relationship('Domain')
-    users = relationship('User', backref='user_groups')
+    users = relationship('User', backref='user_group')
 
     def delete(self):
         db.session.delete(self)
         db.session.commit()
 
     @staticmethod
-    def get_by_id(group_id):
-        """ Get a user group with supplied group_id.
-        :param group_id: id of a user group.
+    def get_by_id(user_group_id):
+        """ Get a user group with supplied user_group_id.
+        :param user_group_id: id of a user group.
         """
-        return UserGroups.query.get(group_id)
+        return UserGroup.query.get(user_group_id)
 
     @staticmethod
     def get_by_name(group_name):
         """ Get a user group with supplied group_name.
         :param group_name: Name of a user group.
         """
-        return UserGroups.query.filter_by(name=group_name).first()
+        return UserGroup.query.filter_by(name=group_name).first()
 
     @staticmethod
     def all():
         """ Get all groups_ids in database """
-        all_user_groups = UserGroups.query.all() or []
+        all_user_groups = UserGroup.query.all() or []
         return dict(user_groups=[user_group.id for user_group in all_user_groups])
 
     @staticmethod
@@ -326,8 +326,8 @@ class UserGroups(db.Model):
             name = group.get('group_name')
             description = group.get('group_description')
             group_domain_id = group.get('domain_id')
-            if not UserGroups.query.filter_by(name=name).first():
-                user_group = UserGroups(name=name, description=description, domain_id=group_domain_id or domain_id)
+            if not UserGroup.query.filter_by(name=name).first():
+                user_group = UserGroup(name=name, description=description, domain_id=group_domain_id or domain_id)
             else:
                 raise Exception("Group '%s' already exists so It cannot be added again" % name)
             db.session.add(user_group)
@@ -336,14 +336,14 @@ class UserGroups(db.Model):
     @staticmethod
     def all_groups_of_domain(domain_id):
         """ Get all user_groups of with names in database """
-        all_user_groups_of_domain = UserGroups.query.filter_by(domain_id=domain_id) or []
+        all_user_groups_of_domain = UserGroup.query.filter_by(domain_id=domain_id) or []
         return dict(user_groups=[{'id': user_group.id, 'name': user_group.name} for user_group in
                                  all_user_groups_of_domain])
 
     @staticmethod
     def all_users_of_group(group_id):
         """ Get all users of a group """
-        all_users_of_group = User.query.filter_by(group_id=group_id) or []
+        all_users_of_group = User.query.filter_by(user_group_id=group_id) or []
         return dict(users=[{'id': user.id, 'lastName': user.last_name} for user in all_users_of_group])
 
     @staticmethod
@@ -353,13 +353,13 @@ class UserGroups(db.Model):
                 if is_number(group):
                     group_id = group
                 else:
-                    user_group = UserGroups.query.filter_by(name=group).first()
+                    user_group = UserGroup.query.filter_by(name=group).first()
                     if user_group:
                         group_id = user_group.id
                     else:
                         group_id = None
 
-                group = UserGroups.query.get(group_id) or None if group_id else None
+                group = UserGroup.query.get(group_id) or None if group_id else None
                 if group and group.domain_id == domain_id:
                     db.session.delete(group)
                 else:
@@ -370,15 +370,15 @@ class UserGroups(db.Model):
 
     @staticmethod
     def add_users_to_group(group_id, user_ids):
-        user_group = UserGroups.query.get(group_id)
+        user_group = UserGroup.query.get(group_id)
         if user_group:
             for user_id in user_ids:
                 user = User.query.get(user_id) or None
                 if user and user.domain_id == user_group.domain_id:
-                    user.group_id = group_id
+                    user.user_group_id = group_id
                 else:
                     raise Exception("User: %s doesn't exist or either it doesn't belong to Domain %s"
                                     % (user_id, user.domain_id))
             db.session.commit()
         else:
-            raise Exception("User group %s doesn't exist" % group_id)
+            raise Exception("User group %s doesn't exist" % user_group_id)

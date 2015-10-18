@@ -4,28 +4,25 @@ import string
 from urllib import urlencode
 
 import pytest
+import requests
 from werkzeug.security import generate_password_hash, gen_salt
-
-from auth_service.oauth import app, gt_oauth
+from auth_service.oauth import app
 from auth_service.common.models.user import *
 
-TOKEN_URL = '/oauth2/token'
-REVOKE_URL = '/oauth2/revoke'
-AUTHORIZE_URL = '/oauth2/authorize'
+OAUTH_ENDPOINT = 'http://127.0.0.1:8001/%s'
+TOKEN_URL = OAUTH_ENDPOINT % 'oauth2/token'
+REVOKE_URL = OAUTH_ENDPOINT % 'oauth2/revoke'
+AUTHORIZE_URL = OAUTH_ENDPOINT % 'oauth2/authorize'
 
 
 class AuthServiceTestsContext:
     def __init__(self):
-        self.app = app.test_client()
-        self.oauth = gt_oauth
         self.email = ''
         self.password = ''
         self.client_id = ''
         self.client_secret = ''
         self.access_token = ''
         self.test_domain = None
-        self.test_role_first = ""
-        self.test_role_second = ""
 
     def set_up(self):
         # Add test user in user DB
@@ -37,7 +34,8 @@ class AuthServiceTestsContext:
 
         # Add test domain
         test_domain = Domain(
-            name=gen_salt(20)
+            name=gen_salt(20),
+            expiration='0000-00-00 00:00:00'
         )
         db.session.add(test_domain)
         db.session.commit()
@@ -61,17 +59,12 @@ class AuthServiceTestsContext:
             client_secret=self.client_secret
         )
         db.session.add(test_client)
-
-        # Add two test roles
-        self.test_role_first = gen_salt(20)
-        DomainRole.save(self.test_domain, self.test_role_first)
-        self.test_role_second = gen_salt(20)
-        DomainRole.save(self.test_domain, self.test_role_second)
+        db.session.commit()
 
     def authorize_token(self):
         headers = {'Authorization': 'Bearer %s' % self.access_token}
-        response = self.app.get(AUTHORIZE_URL, headers=headers)
-        response_data = self.json_response(response.data)
+        response = requests.get(AUTHORIZE_URL, headers=headers)
+        response_data = json.loads(response.text)
         return response.status_code, response_data.get('user_id') if response_data else ''
 
     def token_handler(self, params, headers, refresh_token='', action='fetch'):
@@ -90,60 +83,17 @@ class AuthServiceTestsContext:
         else:
             raise Exception("%s is not a valid action" % action)
 
-        response = self.app.post(REVOKE_URL if action == 'revoke' else TOKEN_URL, data=urlencode(params),
+        response = requests.post(REVOKE_URL if action == 'revoke' else TOKEN_URL, data=urlencode(params),
                                  headers=headers)
+        db.session.commit()
         if action == 'revoke':
             return response.status_code
-        json_response = self.json_response(response.data)
+        json_response = json.loads(response.text)
         if json_response:
             access_token = json_response.get('access_token') or ''
             refresh_token = json_response.get('refresh_token') or ''
 
         return access_token, refresh_token, response.status_code
-
-    def test_roles_of_user(self, action="GET", false_case=False):
-        headers = {'Authorization': 'Bearer %s' % self.access_token}
-        if action == "GET":
-            response = json.loads(self.app.get('/users/%s/roles' % self.oauth._usergetter(self.email, self.password)
-                                               .get_id(), headers=headers).data)
-            return response.get('roles')
-        elif action == "POST":
-            headers['content-type'] = 'application/json'
-            test_role_first = DomainRole.get_by_name(self.test_role_first)
-            test_role_second = DomainRole.get_by_name(self.test_role_second)
-            if false_case:
-                data = {'roles': [int(test_role_second.id) + 1]}
-            else:
-                data = {'roles': [self.test_role_first, test_role_second.id]}
-            response = self.app.post('/users/%s/roles' % self.oauth._usergetter(self.email, self.password).get_id(),
-                                     data=json.dumps(data), headers=headers)
-            return response.status_code
-        elif action == "DELETE":
-            headers['content-type'] = 'application/json'
-            data = {'roles': [self.test_role_first, DomainRole.get_by_name(self.test_role_second).id]}
-            response = self.app.delete('/users/%s/roles' % self.oauth._usergetter(self.email, self.password).get_id(),
-                                       data=json.dumps(data), headers=headers)
-            return response.status_code
-
-    def get_roles_of_domain(self):
-        headers = {'Authorization': 'Bearer %s' % self.access_token}
-        response = json.loads(self.app.get('/domain/%s/roles' % self.test_domain, headers=headers).data)
-        domain_roles = response.get('roles') or []
-        return [domain_role.get('name') for domain_role in domain_roles]
-
-    def verify_user_scoped_role(self, role):
-        user_id = self.oauth._usergetter(self.email, self.password).get_id()
-        import urllib
-        response = json.loads(self.app.get("/roles/verify", query_string=urllib.urlencode({"role": role,
-                                                                                           "user_id": user_id})).data)
-        return response.get('success')
-
-    @staticmethod
-    def json_response(data):
-        try:
-            return json.loads(data)
-        except Exception:
-            return None
 
 
 @pytest.fixture()
@@ -152,26 +102,16 @@ def app_context(request):
     context.set_up()
 
     def tear_down():
-        token = context.oauth._tokengetter(access_token=context.access_token) or None
-        client = context.oauth._clientgetter(context.client_id) or None
-        user = context.oauth._usergetter(context.email, context.password) or None
-        test_role_first = DomainRole.get_by_name(context.test_role_first) or None
-        test_role_second = DomainRole.get_by_name(context.test_role_second) or None
+        token = Token.query.filter_by(access_token=context.access_token).first() or None
+        client = Client.query.filter_by(client_id=context.client_id).first() or None
+        user = User.query.filter_by(email=context.email).first() or None
         test_domain = Domain.query.get(context.test_domain) or None
         if token:
             db.session.delete(token)
         if client:
             db.session.delete(client)
         if user:
-            user_scoped_roles = UserScopedRoles.query.filter_by(userId=user.id).all()
-            for user_scoped_role in user_scoped_roles:
-                db.session.delete(user_scoped_role)
-            db.session.commit()
             db.session.delete(user)
-        if test_role_first:
-            db.session.delete(test_role_first)
-        if test_role_second:
-            db.session.delete(test_role_second)
         if test_domain:
             db.session.delete(test_domain)
         db.session.commit()
@@ -200,33 +140,10 @@ def test_auth_service(app_context):
     status_code, authorized_user_id = app_context.authorize_token()
     assert status_code == 200 and authorized_user_id == user_id
 
-    # Add roles to existing user
-    assert app_context.test_roles_of_user(action="POST") == 200
-
-    # Check if roles has been added successfully in existing user
-    assert app_context.test_roles_of_user() == [DomainRole.get_by_name(app_context.test_role_first).id,
-                                                DomainRole.get_by_name(app_context.test_role_second).id]
-
-    # Add a false role to existing user
-    assert app_context.test_roles_of_user(action="POST", false_case=True) != 200
-
-    # verify a user role
-    assert app_context.verify_user_scoped_role(app_context.test_role_first)
-    assert app_context.verify_user_scoped_role(app_context.test_role_second)
-
-    # Get all roles of a domain
-    assert app_context.get_roles_of_domain() == [app_context.test_role_first, app_context.test_role_second]
-
-    # Delete roles from a user
-    assert app_context.test_roles_of_user(action="DELETE") == 200
-
-    # Check if roles have been deleted successfully from a user
-    assert not app_context.test_roles_of_user()
-
     # Revoke a Bearer Token
     assert app_context.token_handler(params, headers, action='revoke') == 200
 
     # Authorize revoked bearer token
     status_code, authorized_user_id = app_context.authorize_token()
-    assert status_code == 401
+    assert status_code == 404
 
