@@ -1,3 +1,6 @@
+"""
+This file contains list of all API endpoints related to events.
+"""
 import json
 import traceback
 import types
@@ -28,7 +31,7 @@ CORS(events_blueprint, resources={
 @api.route('/events/')
 class Events(Resource):
     """
-        This resource returns a list of events or it can be used to create event using POST
+        This resource returns a list of events or it can be used to create event using POST.
     """
     @authenticate
     def get(self, **kwargs):
@@ -125,7 +128,7 @@ class Events(Resource):
                     500 (Internal Server Error)
                     401 (Unauthorized to access getTalent)
                     452 (Unable to determine Social Network)
-                    453 (Some Required event fields are missing)
+                    453 (Some required event fields are missing)
                     455 (Event not created)
                     456 (Event not Published on Social Network)
                     458 (Event venue not created on Social Network)
@@ -145,9 +148,9 @@ class Events(Resource):
         try:
             # create event on social network and local database
             gt_event_id = process_event(event_data, kwargs['user_id'])
-        except ApiException as err:
+        except ApiException:
             raise
-        except Exception as err:
+        except Exception:
             raise ApiException('APIError: Internal Server error occurred!')
         headers = {'Location': '/events/%s' % gt_event_id}
         resp = ApiResponse(json.dumps(dict(id=gt_event_id)), status=201, headers=headers)
@@ -156,7 +159,7 @@ class Events(Resource):
     @authenticate
     def delete(self, **kwargs):
         """
-        Deletes multiple event whose ids are given in list in request data
+        Deletes multiple event whose ids are given in list in request data.
         :param kwargs:
         :return:
 
@@ -180,7 +183,7 @@ class Events(Resource):
             {
                 'message': '3 Events have been deleted successfully'
             }
-        .. Status:: 200 (Resource Deleted)
+        .. Status:: 200 (Resource deleted)
                     207 (Not all deleted)
                     400 (Bad request)
                     500 (Internal Server Error)
@@ -259,7 +262,7 @@ class EventById(Resource):
         if event:
             try:
                 event_data = add_organizer_venue_data(event)
-            except Exception as e:
+            except Exception:
                 raise ApiException('Unable to serialize event data')
             return dict(event=event_data), 200
         raise ApiException('Event does not exist with id %s' % event_id, error_code=400)
@@ -267,7 +270,7 @@ class EventById(Resource):
     @authenticate
     def post(self, event_id, **kwargs):
         """
-        Updates event in GT database and on corresponding social network
+        Updates event in getTalent's database and on corresponding social network.
         :param event_id: id of event on getTalent database
 
         :Example:
@@ -331,10 +334,10 @@ class EventById(Resource):
         if event:
             try:
                 process_event(event_data, user_id, method='Update')
-            except ApiException as err:
+            except ApiException:
                 raise
-            except Exception as err:
-                print(traceback.format_exc())
+            except Exception:
+                # print(traceback.format_exc())
                 raise ApiException('APIError: Internal Server error!')
             return ApiResponse(json.dumps(dict(message='Event updated successfully')), status=204)
         return ApiResponse(json.dumps(dict(message='Event not found')),
@@ -343,7 +346,7 @@ class EventById(Resource):
     @authenticate
     def delete(self, event_id, **kwargs):
         """
-        Removes a single event from GT database and from social network as well.
+        Removes a single event from getTalent's database and from social network as well.
         :param id: (Integer) unique id in Event table on GT database.
 
         :Example:

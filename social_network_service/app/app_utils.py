@@ -1,18 +1,15 @@
 """
-This modules contains helper methods and Classes which we are using in Social Network Service API app.
+This modules contains helper methods and classes which we are using in Social Network Service API app.
 
         * ApiResponse:
             This class is used to create API response object to return json response.
 
         * authenticate:
             This helper method is being used to annotate api endpoints and
-            it get user info from Authorization token and then passes user_id
+            it gets user info from authorization token and then passes user_id
             in requested api endpoint method.
-
-
-
-
 """
+
 from functools import wraps
 import json
 import flask

@@ -27,13 +27,13 @@ from social_network_service.custom_exections import EventLocationNotCreated
 
 class Meetup(EventBase):
     """
-    This class is inherited from TalentEventBase class
-    This implements the abstract methods defined in interface
+    This class is inherited from TalentEventBase class and
+    it implements the abstract methods defined in interface.
     It also implements functions to create event on Meetup website
 
     :Example:
 
-        To create / update a meetup event you have to do tha following:
+        To create / update a Meetup event you have to do tha following:
 
         1. Create Meetup instance
             meetup = Meetup(user=user_obj,
@@ -48,11 +48,11 @@ class Meetup(EventBase):
         3. Now call create_event() / update_event()  which will
                 get venue from db given by venue_id (local db venue id) in
                 self.payload.
-                if venue in db contains 'social_network_venue_id', it means
+                If venue in db contains 'social_network_venue_id', it means
                 that venues has already been created on Meetup so no need to
                 create again on Meetup, just return that id to be passed
                 in self.payload.
-                And if 'social_network_venue_id' in none, creates venue on
+                And if 'social_network_venue_id' is none, it creates venue on
                 Meetup and returns Meetup venue id. It now sends a POST request
                 to Meetup API to create event and returns event
     """
@@ -66,29 +66,29 @@ class Meetup(EventBase):
             - rsvp:
                 a list of RSVPs for events in 'events' list
             - data:
-                a dictionary containing post request data to create event
+                a dictionary containing POST request data to create event
             - user:
                 User object  user who sent the request to create this object
             - user_credentials:
-                user credentials for eventbrite for this user
+                user credentials for Meetup for this user
             - social_network:
-                SocialNetwork object representing Eventbrite SN
+                SocialNetwork object representing Meetup SN
             - api_url:
-                URL to access eventbrite API
+                URL to access Meetup API
             - url_to_delete_event:
-                URL to unpublist event from social network (eventbrite)
+                URL to unpublist event from social network (Meetup)
             - member_id:
-                user member id on eventbrite
+                user member id on Meetup
             - venue_id:
                 Id of the location for this event
             - payload:
-                a dictionary containing data for event creation on eventbrite
+                a dictionary containing data for event creation on Meetup
             - group_url_name:
-                meetup group name owned by this user
+                Meetup group name owned by this user
             - group_ids:
                 list of group ids owned by user
             - social_network_event_id:
-                event id of event on eventbrite
+                event id of event on Meetup
             - start_time_since_epoch:
                 time passed after epoch till start_time
             - end_time_since_epoch:
@@ -143,7 +143,7 @@ class Meetup(EventBase):
                                self._filter_event(event)])
             # next_url determines the pagination, this variable keeps
             # appearing in response if there are more pages and stops
-            # showing when there are no more.
+            # showing up when there are no more.
             next_url = data['meta']['next'] or None
             while next_url:
                 events = []  # resetting events for next page
@@ -165,19 +165,18 @@ class Meetup(EventBase):
 
     def _filter_event(self, event):
         """
-        This method returns True id given event's group is owned by current user
+        This method returns True if given event's group is owned by current user.
         :param event: event to be tested
         :type event: dict
         :return True or False
         :rtype Boolean
         """
         group_id = event['group'].get('id')
-        # check if  event's group id exists
+        # check if event's group id exists
         if group_id:
             if group_id in self.group_ids:
                 return True
             url = self.api_url + '/groups/?sign=true'
-            # send request
             response = http_request('GET', url,
                                     params={
                                         'group_id': group_id
@@ -201,7 +200,7 @@ class Meetup(EventBase):
         getTalent database fields. Finally we return Event's object to
         save/update record in getTalent database.
         We also issue some calls to get updated venue and organizer information.
-        :param event: data from eventbrite API.
+        :param event: data from Meetup's API.
         :type event: dictionary
         :exception Exception: It raises exception if there is an error getting
             data from API.
@@ -217,10 +216,12 @@ class Meetup(EventBase):
         end_time = None
         if event.get('venue'):
             # venue data looks like
-            # {u'city': u'Cupertino', u'name': u'Meetup Address',
-            # u'country': u'US', u'lon': -122.030754,
-            #  u'address_1': u'Infinite Loop', u'repinned': False,
-            # u'lat': 37.33167, u'id': 24062708}
+            # {
+            #       u'city': u'Cupertino', u'name': u'Meetup Address',
+            #       u'country': u'US', u'lon': -122.030754,
+            #       u'address_1': u'Infinite Loop', u'repinned': False,
+            #       u'lat': 37.33167, u'id': 24062708
+            # }
             venue = event['venue']
         # Get organizer info. First get the organizer from group info and
         # then get organizer's information which will be used to store
@@ -318,7 +319,7 @@ class Meetup(EventBase):
             organizer_id=organizer_id,
             venue_id=venue_id,
             # group id and urlName are required fields to edit an event
-            # So, should raise exception if Null
+            # so should raise exception if Null
             group_id=event['group']['id'] if event.has_key('group') else '',
             group_url_name=event['group']['urlname'],
             # Let's drop error logs if venue has no address, or if address
@@ -337,12 +338,12 @@ class Meetup(EventBase):
 
     def create_event(self):
         """
-        This function is used to create meetup event using vendor's API.
+        This function is used to create Meetup event using vendor's API.
         It first creates a venue for event. Then venue_id is passed to
-        event_payload,
-        Then a post request to Meetup API create event on Meetup.com
+        event_payload.
+        Then a POST request to Meetup API creates event on Meetup.com
         :exception EventNotCreated: raises exception if unable to
-        publish/create event on Meetup.com
+        publish/create event on Meetup.com.
         """
         url = self.api_url + "/event"
         venue_id = self.add_location()
@@ -362,13 +363,12 @@ class Meetup(EventBase):
                             ' draft creation'
             log_error({'user_id': self.user.id,
                        'error': error_message})
-            raise EventNotCreated('ApiError: Unable to create event on social'
-                                  ' network')
+            raise EventNotCreated('ApiError: Unable to create event on Meetup')
 
     def update_event(self):
         """
         It first creates/ updates a venue on Meetup.com and then passes that
-        venue's id in event payload to update event location along with event
+        venue's id in event's payload to update event location along with event
         data.
         :exception EventNotCreated: raises exception if unable to update event
                 on Meetup.com
@@ -390,20 +390,19 @@ class Meetup(EventBase):
             self.data['social_network_event_id'] = event_id
             return self.save_event()
         else:
-            error_message = 'Event was not Created. Error occurred during ' \
+            error_message = 'Event was not created. Error occurred during ' \
                             'event update on Meetup'
             log_error({'user_id': self.user.id,
                        'error': error_message})
-            raise EventNotCreated('ApiError: Unable to update event on social'
-                                  ' network')
+            raise EventNotCreated('ApiError: Unable to update event on Meetup')
 
     def add_location(self):
         """
-        This function adds the location of event for on Meetup.com.
+        This function adds the location of event.
         :exception EventLocationNotCreated: raises exception if unable to
-                  create venue on Meetup.com
+                  create venue on Meetup.com.
         :exception VenueNotFound: raises exception if unable to find venue
-                  in getTalent database
+                  in getTalent database.
         :return id: id of venue created if creation is successful.
         :rtype id: int
 
@@ -412,7 +411,7 @@ class Meetup(EventBase):
                 This method is used to create venue or location for event on
                 Meetup.
                 It requires a venue already created in getTalent database
-                otherwise it will raise VenueNotFound exception
+                otherwise it will raise VenueNotFound exception.
 
                 Given venue id it first gets venue from database and uses its
                 data to create Meetup object
@@ -430,7 +429,7 @@ class Meetup(EventBase):
 
             # For creating venue for event, Meetup uses url which is
             # different than the url we use in other API calls of Meetup.
-            # So class variable 'api_url' is not used here
+            # So class variable 'api_url' is not used here.
             url = 'https://api.meetup.com/' + self.group_url_name + '/venues'
             payload = {
                 'address_1': venue_in_db.address_line1,
@@ -448,8 +447,8 @@ class Meetup(EventBase):
                 logger.info('|  Venue has been Added  |')
             elif response.status_code == 409:
                 # 409 is returned when our venue is matching existing
-                # venue/venues
-                # so we will pick first one in potential matches
+                # venue/venues. So we pick the first one in potential
+                # matches.
                 try:
                     venue_id = json.loads(response.text)[
                         'errors'][0]['potential_matches'][0]['id']
@@ -460,7 +459,7 @@ class Meetup(EventBase):
                                                   additional_error_info=
                                                   dict(venue_error=str(e)))
             else:
-                error_message = 'Venue was not Added. There are some errors'
+                error_message = 'Venue was not Added. There are some errors.'
                 errors = response.json().get('errors')
                 message = '\nErrors from the social network:\n'
                 message += '\n'.join(error['message'] + ', ' + error['code']
@@ -482,12 +481,12 @@ class Meetup(EventBase):
 
     def unpublish_event(self, social_network_event_id, method='DELETE'):
         """
-        This function is used when run unit test. It sets the api_relative_url
-        and calls base class method to delete the Event from meetup which was
-        created in the unit testing.
+        This function is used while running unit test. It sets the api_relative_url
+        and calls base class method to delete the Event from Meetup which was
+        created in the unit test.
         :param social_network_event_id:id of newly created event
         :type social_network_event_id: int
-        :return: True if event is deleted from vendor, False otherwise
+        :return: True if event is deleted from vendor, False otherwise.
         :rtype Boolean
         """
         self.url_to_delete_event = self.api_url + "/event/" \
@@ -499,12 +498,12 @@ class Meetup(EventBase):
     def validate_required_fields(data):
         """
         Here we validate that all the required fields for the event creation on
-        meetup are filled. If any required filed is missing, raises exception
+        Meetup are filled. If any required filed is missing, raises exception
         named  EventInputMissing.
         :param data: dictionary containing event data
         :type data: dict
         :exception EventInputMissing: raises exception if all required fields
-         are not found in data dictionary
+         are not found in data dictionary.
         """
         # these are required fields for Meetup event
         mandatory_input_data = ['title', 'description', 'group_id',
@@ -524,12 +523,12 @@ class Meetup(EventBase):
         EventCreationForm to the data required for API calls on Meetup.com.
         :param data: dictionary containing event data
         :type data: dict
-        :exception KeyError: can raise KeyError if some key not found in event
-                            data
+        :exception KeyError: Can raise KeyError if some key not found in event
+                            data.
 
             : Example:
 
-                this method takes getTalent specific event data in following
+                This method takes getTalent specific event data in following
                 format.
 
                 data = {
@@ -561,8 +560,8 @@ class Meetup(EventBase):
                                 }
 
         """
-        assert data, 'data should not be None/empty'
-        assert isinstance(data, dict), 'data should be a dictionary'
+        assert data, 'Data should not be None/empty'
+        assert isinstance(data, dict), 'Data should be a dictionary'
         super(Meetup, self).event_gt_to_sn_mapping(data)
         self.data = data
         self.validate_required_fields(data)
@@ -590,6 +589,3 @@ class Meetup(EventBase):
             log_error({'user_id': self.user.id,
                        'error': error_message})
         self.social_network_event_id = data.get('social_network_event_id')
-        # if self.social_network_event_id:
-        #     self.payload.update({'lat': data['latitude'],
-        #                          'lon': data['longitude']})

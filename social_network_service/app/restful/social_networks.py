@@ -1,3 +1,6 @@
+"""
+This file contains API endpoints related to social network.
+"""
 import json
 import types
 from flask import Blueprint, request
@@ -30,7 +33,7 @@ CORS(social_network_blueprint, resources={
 @api.route('/social_networks/')
 class SocialNetworks(Resource):
     """
-        This resource returns a list of social networks
+        This resource returns a list of social networks.
     """
 
     def set_is_subscribed(self, dicts, value=False):
@@ -75,17 +78,17 @@ class SocialNetworks(Resource):
                     500 (Internal Server Error)
                     401 (Unauthorized to access getTalent)
                     452 (Unable to determine Social Network)
-                    453 (Some Required event fields are missing)
+                    453 (Some required event fields are missing)
                     455 (Event not created)
-                    456 (Event not Published on Social Network)
+                    456 (Event not published on Social Network)
                     458 (Event venue not created on Social Network)
                     459 (Tickets for event not created)
                     460 (Event was not save in getTalent database)
-                    461 (User credentials of user for Social Network not found)
-                    462 (No implementation for specified Social Network)
+                    461 (User credentials of user for social network not found)
+                    462 (No implementation for specified social network)
                     464 (Invalid datetime for event)
-                    465 (Specified Venue not found in database)
-                    466 (Access token for Social Network has expired)
+                    465 (Specified venue not found in database)
+                    466 (Access token for social network has expired)
 
 
         :return: id of created event
@@ -108,7 +111,7 @@ class SocialNetworks(Resource):
     @authenticate
     def delete(self, **kwargs):
         """
-        Deletes multiple social network whose ids are given in list in request data
+        Deletes multiple social network whose ids are given in list in request data.
         :param kwargs:
         :return:
 
@@ -259,7 +262,7 @@ class SocialNetworks(Resource):
 @api.route('/social_networks/groups/')
 class MeetupGroups(Resource):
     """
-        This resource returns a list of user's admin groups for Meetup
+        This resource returns a list of user's admin groups for Meetup.
     """
 
     @authenticate
@@ -343,7 +346,7 @@ class MeetupGroups(Resource):
             groups = meetup.get_groups()
             resp = json.dumps(dict(groups=groups,
                                    count=len(groups)))
-        except Exception as e:
+        except Exception:
             return ApiResponse(json.dumps(dict(message='APIError: Internal Server Error')), status=500)
         return ApiResponse(resp, status=200)
 
@@ -353,7 +356,7 @@ class GetTokenValidity(Resource):
     @authenticate
     def get(self, social_network_id, **kwargs):
         """
-        Get user access_token validity status for specified social network
+        Get user access_token validity status for specified social network.
         :param social_network_id: id for specified social network
         :type social_network_id: int
         :keyword user_id: id for current user
@@ -375,7 +378,7 @@ class GetTokenValidity(Resource):
 
         .. Status:: 200 (OK)
                     461 (UserSocialNetworkCredential not found)
-                    404 (Social Network not found)
+                    404 (Social network not found)
                     500 (Internal Server Error)
 
         """
@@ -392,19 +395,19 @@ class GetTokenValidity(Resource):
                                       )
             return ApiResponse(dict(status=sn.access_token_status))
         else:
-            return ApiResponse(dict(message='Invalid social network Id given'), status=404)
+            return ApiResponse(dict(message='Invalid social network id given'), status=404)
 
 
 @api.route('/social_network/refresh_token/<int:social_network_id>')
 class RefreshToken(Resource):
     """
-        This resource refreshes access token for given social network for given user
+        This resource refreshes access token for given social network for given user.
     """
 
     @authenticate
     def get(self, social_network_id, **kwargs):
         """
-        Gets a fresh token for specified user and social network
+        Gets a fresh token for specified user and social network.
         :return:
 
         :Example:
@@ -436,8 +439,8 @@ class RefreshToken(Resource):
             social_network_class = get_class(social_network.name.lower(), 'social_network')
             sn = social_network_class(user_id=user_id)
             status = sn.refresh_access_token()
-        except Exception as e:
-            return ApiResponse(json.dumps(dict(messsage='APIError: Internal Server error..')), status=500)
+        except Exception:
+            return ApiResponse(json.dumps(dict(messsage='APIError: Internal Server error')), status=500)
         if status:
             return ApiResponse(json.dumps(dict(messsage='Access token has been refreshed',
                                                status=True)), status=200)
@@ -449,7 +452,7 @@ class RefreshToken(Resource):
 @api.route('/venues/')
 class Venues(Resource):
     """
-        This resource returns a list of user's created venues
+        This resource returns a list of user's created venues.
     """
 
     @authenticate
@@ -546,7 +549,7 @@ class Venues(Resource):
     @authenticate
     def delete(self, **kwargs):
         """
-        This endpoint deletes venues specified in list in request data
+        This endpoint deletes venues specified in list in request data.
 
         :Example:
             venue_ids = {
@@ -708,7 +711,7 @@ class VenueById(Resource):
     @authenticate
     def delete(self, venue_id, **kwargs):
         """
-        This endpoint deletes one venue owned by this user
+        This endpoint deletes one venue owned by this user.
         :param venue_id: id of venue on getTalent database to be deleted
         :return:
 
@@ -746,7 +749,7 @@ class VenueById(Resource):
 @api.route('/organizers/')
 class Organizers(Resource):
     """
-        This resource handles organizer CRUD operations
+        This resource handles organizer CRUD operations.
     """
 
     @authenticate
@@ -785,7 +788,7 @@ class Organizers(Resource):
     @authenticate
     def post(self, *args, **kwargs):
         """
-        Creates a organizer for this user
+        Creates a organizer for this user.
         :return:
 
         :Example:
@@ -828,7 +831,7 @@ class Organizers(Resource):
     @authenticate
     def delete(self, **kwargs):
         """
-        This endpoint deletes one or more organizer owned by this user
+        This endpoint deletes one or more organizer owned by this user.
         :param kwargs:
         :return:
 
@@ -889,7 +892,7 @@ class Organizers(Resource):
 @api.route('/organizers/<int:organizer_id>')
 class OrganizerById(Resource):
     """
-        This resource handles organizer CRUD operations for a single organizer given by organizer_id
+        This resource handles organizer CRUD operations for a single organizer given by organizer_id.
     """
 
     @authenticate
@@ -935,7 +938,7 @@ class OrganizerById(Resource):
     @authenticate
     def post(self, organizer_id, **kwargs):
         """
-        Updates an organizer for current user
+        Updates an organizer for current user.
         :return:
 
         :Example:
@@ -981,7 +984,7 @@ class OrganizerById(Resource):
     @authenticate
     def delete(self, organizer_id, **kwargs):
         """
-        This endpoint deletes one organizer owned by this user
+        This endpoint deletes one organizer owned by this user.
         :param kwargs:
         :return:
 
@@ -1019,7 +1022,7 @@ class OrganizerById(Resource):
 @api.route('/social_networks/process_access_token/<int:social_network_id>')
 class ProcessAccessToken(Resource):
     """
-    This resource adds user credentials for given user and social network
+    This resource adds user credentials for given user and social network.
     This resource takes access token 'code' and social network id for which we
     want to add credentials.
     """
@@ -1027,7 +1030,7 @@ class ProcessAccessToken(Resource):
     def post(self, social_network_id, **kwargs):
         """
         Adds credentials for user for given social network.
-        Gets data from post request which contains 'code' and 'social_credentials'
+        Gets data from POST request which contains 'code' and 'social_credentials'
         :param args:
         :param kwargs:
         :return:

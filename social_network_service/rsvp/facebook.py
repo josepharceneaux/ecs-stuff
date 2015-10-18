@@ -254,20 +254,19 @@ class Facebook(RSVPBase):
                 attendee.longitude = location.get('longitude')
                 attendee.zip = location.get('zip')
                 attendee.profile_url = data.get('link', '')
-                # there as well
                 attendee.picture_url = data['picture']['data']['url'] \
                     if 'picture' in data and 'data' in data['picture']\
                        and 'url' in data['picture']['data'] else ''
                 attendee.gt_user_id = self.user.id
                 attendee.social_network_id = self.social_network.id
-                # we are using profile_id
-                # here as we do not have any rsvp_id for this vendor.
+                # we are using profile_id here as we don't have any
+                # rsvp_id for this vendor.
                 attendee.vendor_rsvp_id = rsvp['id']
                 # We do not have 'time' of rsvp from Facebook API response.
                 # We cannot use datetime.now() here because every time we run
                 # importer, we will have duplicate candidates as their added
                 # time will not be same as the added time of previous record.
-                # so for now, we are saving it blank.
+                # So for now, we are saving it as blank.
                 attendee.added_time = ' '
                 attendee.vendor_img_link = \
                     "<img class='pull-right' " \
@@ -290,5 +289,5 @@ class Facebook(RSVPBase):
                                         '%s. User Id: %s'
                                         % (social_network_event_id,
                                            self.user.id))
-            except:
+            except Exception:
                 raise

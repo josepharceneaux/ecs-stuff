@@ -40,7 +40,7 @@ class Facebook(EventBase):
         2. Then call process() of socialNetworkBaseClass
             facebook_obj.process('event', user_credentials=user_credentials)
 
-        process() will do internally is given in the following steps:
+        What process() will do internally is given in the following steps:
             1- from social_network_service.event.facebook import Facebook
             facebook_event_obj = Facebook(user_credentials=user_credentials,
                                        social_network=self.social_network,
@@ -67,7 +67,6 @@ class Facebook(EventBase):
             :Example:
 
                 create facebook object and call get_events on it
-
                 facebook = Facebook(user=gt_user,
                                     headers=auth_headers)
                 facebook.get_events()
@@ -101,7 +100,7 @@ class Facebook(EventBase):
     def get_all_pages(self, response, target_list):
         """
         We keep iterating over pages as long as keep finding the URL
-        in response['paging']['next'], when we don't we stop.
+        in response['paging']['next'].
         :param response:
         :param target_list:
         :type response: dict
@@ -127,7 +126,7 @@ class Facebook(EventBase):
         getTalent database fields. Finally we return Event's object to
         save/update record in getTalent database.
         We also issue some calls to get updated venue and organizer information.
-        :param event: data from eventbrite API.
+        :param event: data from Eventbrite API.
         :type event: dictionary
         :exception Exception: It raises exception if there is an error getting
             data from API.

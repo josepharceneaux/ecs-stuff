@@ -59,7 +59,7 @@ class Meetup(SocialNetworkBase):
         - We then call super class method get_member_id() to get Id
             of user on Meetup website.
 
-        - Member Id is used to fetch events or RSVPs of user from social
+        - Member id is used to fetch events or RSVPs of user from social
             network.
 
         - This method is called from start() defined in social network manager
@@ -80,7 +80,7 @@ class Meetup(SocialNetworkBase):
     def get_groups(self):
         """
         - This function fetches the groups of user from Meetup website for
-            which the user is an organizer. These groups are used to be shown
+            which the user is an organizer. These groups are shown
             in drop down while creating event on Meetup through Event Creation
             Form.
 
@@ -134,7 +134,7 @@ class Meetup(SocialNetworkBase):
 
     def refresh_access_token(self):
         """
-        - When user authorize to Meetup account, we get a refresh token
+        - When user authorizes Meetup account, we get a refresh token
             and access token. Access token expires in one hour.
             Here we refresh the access_token using refresh_token without user
             involvement and save in user_credentials db table.

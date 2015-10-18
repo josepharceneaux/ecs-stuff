@@ -152,8 +152,8 @@ class Eventbrite(EventBase):
         # initialize event list to empty
         all_events = []
         try:
-            # send a GET request to eventbrite.com api to get events for given
-            #  user and after start_date
+            # send a GET request to eventbrite's api to get events for given
+            # user and after start_date
             response = http_request('GET', events_url,
                                     params=params,
                                     headers=self.headers,
@@ -226,7 +226,7 @@ class Eventbrite(EventBase):
                 # get json data for venue
                 venue = response.json()
                 # Now let's try to get the information about the event's
-                #  organizer
+                # organizer
                 if event['organizer_id']:
                     try:
                         # Get organizer of the event from Eventbrite API.
@@ -283,14 +283,14 @@ class Eventbrite(EventBase):
             venue_data = dict(
                 social_network_venue_id=event['venue_id'],
                 user_id=self.user.id,
-                address_line1=venue['address']['address_1'] if venue else '',
-                address_line2=venue['address']['address_2'] if venue else '',
-                city=venue['address']['city'] if venue else '',
-                state=venue['address']['region'] if venue else '',
+                address_line1=venue['address']['address_1'] if venue and venue.has_key('address') else '',
+                address_line2=venue['address']['address_2'] if venue and venue.has_key('address') else '',
+                city=venue['address']['city'] if venue and venue.has_key('address') else '',
+                state=venue['address']['region'] if venue and venue.has_key('address') else '',
                 zipcode=None,
-                country=venue['address']['country'] if venue else '',
-                longitude=float(venue['address']['longitude']) if venue else 0,
-                latitude=float(venue['address']['latitude']) if venue else 0,
+                country=venue['address']['country'] if venue and venue.has_key('address') else '',
+                longitude=float(venue['address']['longitude']) if venue and venue.has_key('address') else 0,
+                latitude=float(venue['address']['latitude']) if venue and venue.has_key('address') else 0,
             )
             venue_in_db = \
                 Venue.get_by_user_id_and_social_network_venue_id(self.user.id,
@@ -361,19 +361,19 @@ class Eventbrite(EventBase):
         # eventbrite.com
         venue_id = self.add_location()
         # add venue_id in event payload so it can be associated with this event
-        #  on eventbrite
+        # on eventbrite
         self.event_payload['event.venue_id'] = venue_id
         # create event on eventbrite by sending POST request
         response = http_request('POST', url, params=self.event_payload,
                                 headers=self.headers,
                                 user_id=self.user.id)
         if response.ok:
-            # event has been created on vendor and saved in draft there
+            # Event has been created on vendor and saved in draft there.
             # Now we need to create tickets for it and then publish it.
             event_id = response.json()['id']
             # Ticket are going to be created/updated
             ticket_id = self.create_tickets(event_id)
-            # Ticket(s) have been created for new created Event
+            # Ticket(s) have been created for newly created Event
             self.publish_event(event_id)
             logger.info('|  Event %s created Successfully  |'
                         % self.event_payload['event.name.html'])
@@ -407,8 +407,7 @@ class Eventbrite(EventBase):
             :Example:
 
                 In order to updates event first create EventBrite object and it
-                 takes user
-                and authentication headers e.g.
+                takes user and authentication headers e.g.
 
                 >> eventbrite = Eventbrite(user=gt_user,
                                            headers=authentication_headers)
@@ -418,8 +417,8 @@ class Eventbrite(EventBase):
                 >> eventbrite.event_gt_to_sn_mapping(event_data)
 
                 It will create event payload which is required to post event on
-                Eventbrite.com
-                Now call update_event to  update event on Eventbrite.com and in
+                Eventbrite.com.
+                Now call update_event to update event on Eventbrite.com and in
                 getTalent database.
 
                 >> eventbrite.update_event()
@@ -471,7 +470,7 @@ class Eventbrite(EventBase):
 
                 This method is used to create venue or location for event
                 on Eventbrite. It requires a venue already created in getTalent
-                database otherwise it will raise VenueNotFound exception
+                database otherwise it will raise VenueNotFound exception.
 
                 Given venue id it first gets venue from database and uses its
                 data to create Eventbrite object
@@ -557,7 +556,7 @@ class Eventbrite(EventBase):
 
     def update_tickets(self, social_network_event_id):
         """
-        This method updated tickets for specific event on Eventbrite.com.
+        This method update tickets for specific event on Eventbrite.com.
         This method should be called after updating event contents on
         social_network.
         See "social_network_service.event.Eventbrite.update_event" method for
@@ -568,7 +567,7 @@ class Eventbrite(EventBase):
         :exception TicketsNotCreated (throws exception if unable to update
             tickets)
         :return: tickets_id (an id which refers to tickets updated on
-            eventbrite.com
+            eventbrite.com)
         """
         tickets_url = self.api_url + "/events/" + social_network_event_id \
                       + "/ticket_classes/"
@@ -591,14 +590,14 @@ class Eventbrite(EventBase):
         This method sends a POST request to Eventbrite.com API to create or
         update tickets. Call this method from create_tickets or update_tickets
         with respective tickets_url. It returns tickets id if successful
-        otherwise raises "TicketsNotCreated" ecxception
+        otherwise raises "TicketsNotCreated" exception
 
         :param tickets_url  (API url to create or update event tickets)
         :type tickets_url: str
         :exception TicketsNotCreated (throws exception if unable to create or
             update tickets)
         :return: tickets_id (an id which refers to tickets for event on
-            eventbrite.com
+            eventbrite.com)
         """
         # send POST request to create or update tickets for event
         response = http_request('POST', tickets_url, params=self.ticket_payload,
@@ -644,23 +643,23 @@ class Eventbrite(EventBase):
                 'error': error_message,
             })
             raise EventNotPublished('ApiError: Unable to publish event '
-                                    'on specified social network')
+                                    'on Eventbrite')
 
     def unpublish_event(self, social_network_event_id, method='POST'):
         """
-        This function is used when run unit test. It sets the api_relative_url
+        This function is used while running unit tests. It sets the api_relative_url
         and calls base class method to delete the Event from Eventbrite website
         which was created in the unit testing.
-        :param social_network_event_id:id of newly created event
+        :param social_network_event_id:id of newly created event.
         :type social_network_event_id: int
-        :return: True if event is deleted from vendor, False otherwise
+        :return: True if event is deleted from vendor, False otherwise.
         """
         # we will only set specific url here
         self.url_to_delete_event = self.api_url + "/events/" + \
                                    str(social_network_event_id) + "/unpublish/"
         # common unpublish functionality is in EventBase class'
-        # unpublish_event() method
-        # remove event from Eventbrite and from local database
+        # unpublish_event() method.
+        # Removes event from Eventbrite and from local database
         super(Eventbrite, self).unpublish_event(social_network_event_id,
                                                 method=method)
 
@@ -669,7 +668,7 @@ class Eventbrite(EventBase):
         """
         Here we validate that all the required fields for the event creation on
         Eventbrite are filled. If any required filed is missing, raises
-        exception named  EventInputMissing.
+        exception named EventInputMissing.
         :param data: dictionary containing event data
         :type data: dict
         :exception EventInputMissing: raises exception if all required fields
@@ -695,7 +694,7 @@ class Eventbrite(EventBase):
 
             : Example:
 
-                this method takes getTalent specific event data in following
+                This method takes getTalent specific event data in following
                  format.
 
                 data = {
@@ -733,14 +732,14 @@ class Eventbrite(EventBase):
                                     'ticket_class.free': True,
                                 }
         """
-        assert data, 'data should not be None/empty'
-        assert isinstance(data, dict), 'data should be a dictionary'
+        assert data, 'Data should not be None/empty'
+        assert isinstance(data, dict), 'Data should be a dictionary'
         # convert datetime strings to datetime objects
         super(Eventbrite, self).event_gt_to_sn_mapping(data)
         self.data = data
         self.validate_required_fields(data)
         # Eventbrite assumes that provided start and end DateTime is in UTC
-        # So, form given Timezone, (eventTimeZone in our case), It changes the
+        # So, form given Timezone, (eventTimeZone in our case), it changes the
         # provided DateTime accordingly.
         start_time = get_utc_datetime(data['start_datetime'], data['timezone'])
         end_time = get_utc_datetime(data['end_datetime'], data['timezone'])
@@ -756,8 +755,7 @@ class Eventbrite(EventBase):
         }
         self.venue_id = data['venue_id']
         # Creating ticket data as Eventbrite wants us to associate tickets with
-        #  events
-        # This dict is used to create tickets for a specified event
+        # events. This dict is used to create tickets for a specified event.
         self.ticket_payload = {
             'ticket_class.name': 'Event Ticket',
             'ticket_class.quantity_total': data['max_attendees'],

@@ -140,8 +140,9 @@ class Eventbrite(RSVPBase):
         :Example:
 
             - rsvp_obj = rsvp_class(
-            user_credentials=user_credentials,
-            social_network=user_credentials.social_network, headers=sn.headers)
+                user_credentials=user_credentials,
+                social_network=user_credentials.social_network, headers=sn.headers
+            )
             # calls class method to process RSVP
             - rsvp_obj.process_rsvp_via_webhook(social_network_rsvp_id)
 
@@ -267,5 +268,5 @@ class Eventbrite(RSVPBase):
                                         '%s. User Id: %s'
                                         % (social_network_event_id,
                                            self.user.id))
-            except:
+            except Exception:
                 raise

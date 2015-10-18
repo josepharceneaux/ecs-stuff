@@ -29,7 +29,7 @@ class Meetup(RSVPBase):
         - To process rsvp of an Meetup event (via social network manager) you
             have to do following steps:
 
-        1- Crete the object of this class by providing required parameters.
+        1- Create the object of this class by providing required parameters.
             sn_rsvp_obj = Meetup(social_network=self.social_network,
                                 headers=self.headers,
                                 user_credentials=user_credentials)
@@ -48,7 +48,7 @@ class Meetup(RSVPBase):
             social_network_service/event/base.py for more insight.
 
         .. note::
-            You can learn more about meetup API from following link
+            You can learn more about Meetup API from following link
             - https://secure.meetup.com/meetup_api/
         """
     def __init__(self, *args, **kwargs):
@@ -144,32 +144,34 @@ class Meetup(RSVPBase):
             attendee = self.get_attendee(rsvp)
 
         - RSVP data return from Meetup looks like
-        {
-        'group': {
-            'group_lat': 24.860000610351562, 'created': 1439953915212,
-            'join_mode': 'open', 'group_lon': 67.01000213623047,
-            'urlname': 'Meteor-Karachi', 'id': 17900002
-        }, 'created': 1438040123000, 'rsvp_id': 1562651661,
-        'mtime': 1438040194000,
-        'event': {
-            'event_url':
-            'http://www.meetup.com/Meteor-Karachi/events/223588917/',
-            'time': 1440252000000, 'name': 'Welcome to Karachi - Meteor',
-            'id': '223588917'
-        }, 'member': {
-            'name': 'kamran', 'member_id': 190405794
-        }, 'guests': 1, 'member_photo': {
-            'thumb_link':
-            'http://photos3.meetupstatic.com/photos/member/c/b/1/0/
-                                                thumb_248211984.jpeg',
-            'photo_id': 248211984, 'highres_link':
-            'http://photos3.meetupstatic.com/photos/member/c/b/1/0/
-                                                highres_248211984.jpeg',
-            'photo_link':
-            'http://photos3.meetupstatic.com/photos/member/c/b/1/0/
-                                                member_248211984.jpeg'
-        }, 'response': 'yes'
-        }
+            {
+            'group': {
+                        'group_lat': 24.860000610351562, 'created': 1439953915212,
+                        'join_mode': 'open', 'group_lon': 67.01000213623047,
+                        'urlname': 'Meteor-Karachi', 'id': 17900002
+                    }, 'created': 1438040123000, 'rsvp_id': 1562651661,
+            'mtime': 1438040194000,
+            'event': {
+                        'event_url':
+                        'http://www.meetup.com/Meteor-Karachi/events/223588917/',
+                        'time': 1440252000000, 'name': 'Welcome to Karachi - Meteor',
+                        'id': '223588917'
+                    },
+            'member': {
+                        'name': 'kamran', 'member_id': 190405794
+                    },
+            'guests': 1, 'member_photo': {
+                        'thumb_link':
+                        'http://photos3.meetupstatic.com/photos/member/c/b/1/0/
+                                                            thumb_248211984.jpeg',
+                        'photo_id': 248211984, 'highres_link':
+                        'http://photos3.meetupstatic.com/photos/member/c/b/1/0/
+                                                            highres_248211984.jpeg',
+                        'photo_link':
+                        'http://photos3.meetupstatic.com/photos/member/c/b/1/0/
+                                                            member_248211984.jpeg'
+                    }, 'response': 'yes'
+            }
         - So we will get the member data and issue a member call to get more
             info about member so we can later save him as a candidate.
 
@@ -225,5 +227,5 @@ class Meetup(RSVPBase):
                                         'User Id: %s'
                                         % (social_network_event_id,
                                            self.user.id))
-            except:
+            except Exception:
                 raise

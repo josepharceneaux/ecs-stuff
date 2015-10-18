@@ -212,14 +212,13 @@ class SocialNetworkBase(object):
         # Eventbrite and meetup social networks take access token in header
         # so here we generate authorization header to be used by both of them
         self.headers = {'Authorization': 'Bearer ' + self.access_token}
-        # token validity is checked here
-        # If token is expired, we refresh it here and save new access token
-        # in database.
+        # token validity is checked here. If token is expired, we refresh it
+        # here and save new access token in database.
         self.access_token_status = self.validate_and_refresh_access_token()
         self.start_date_dt = None
         self.webhook_id = None
         if not self.user_credentials.member_id:
-            # gets an save the member Id of gt-user
+            # gets and save the member id of gt-user
             self.get_member_id()
 
     def process(self, mode, user_credentials=None, rsvp_data=None):
@@ -315,7 +314,8 @@ class SocialNetworkBase(object):
                     # refresh token is used to refresh the access token
                     refresh_token = response.get('refresh_token')
                 except ValueError as e:
-                    # In case of Facebook, access_token is get as below
+                    # In case of Facebook, access_token is retrieved as follows
+                    #TODO; there should be more checks to see if it indeeed is Facebook
                     access_token = \
                         get_token_response.content.split('=')[1].split('&')[0]
                     refresh_token = ''
@@ -382,7 +382,7 @@ class SocialNetworkBase(object):
          social_network_service/base.py to check the validity of the access
          token of current user for a specific social network. We take the
          access token, make request to social network API, and check if it
-         didn't error'ed out.
+         didn't error out.
 
         :Example:
                 from social_network_service.meetup import Meetup
@@ -439,8 +439,8 @@ class SocialNetworkBase(object):
 
     def validate_and_refresh_access_token(self):
         """
-        - This validates the access token. if access token has
-        expired. It also refreshes it and saves the fresh access token in
+        - This validates the access token. If access token has
+        expired, it also refreshes it and saves the fresh access token in
          database.
 
         - It calls validate_access_token() and refresh_access_token() defined
@@ -470,7 +470,7 @@ class SocialNetworkBase(object):
         :type user_credentials: dict
 
         - It checks if user_credentials are already in database. If a record
-            is found, it updates the record. Otherwise it saves as new record.
+            is found, it updates the record otherwise it saves as new record.
 
         - It is called e.g. from refresh_access_token() inside
             social_network_service/meetup.py

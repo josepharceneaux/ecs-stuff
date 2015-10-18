@@ -69,8 +69,8 @@ def hello_world():
 @app.route('/rsvp', methods=['GET', 'POST'])
 def handle_rsvp():
     """
-    This function Only receives data when a candidate rsvp to some event.
-    It first find the getTalent user having incoming webhook id.
+    This function only receives data when a candidate rsvp to some event.
+    It first finds the getTalent user having incoming webhook id.
     Then it creates the candidate in candidate table by getting information
     of attendee. Then it inserts in rsvp table the required information.
     It will also insert an entry in DB tables candidate_event_rsvp and activity
@@ -100,10 +100,10 @@ def handle_rsvp():
                 sn_obj.process('rsvp', user_credentials=user_credentials,
                                rsvp_data=data)
             elif action == 'test':
-                logger.debug('Successful Webhook Connection')
+                logger.debug('Successful webhook connection')
         else:
             # return hub_challenge, 200
-            error_message = 'No RSVP Data Received'
+            error_message = 'No RSVP data received.'
             log_error({'user_id': user_id,
                        'error': error_message})
             data = {'message': error_message,

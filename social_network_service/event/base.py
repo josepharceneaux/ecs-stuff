@@ -42,12 +42,12 @@ class EventBase(object):
     * __init__():
         This method is called by creating any child event class object.
         It sets initial values for event object e.g.
-            It sets user, user_credentials, headers (authentication headers)
+            It sets user, user_credentials, headers (authentication headers).
             It initializes event and rsvp list to empty list.
 
     * create_event() : abstract
         All child classes need to implement this method to create event on
-        respective social network and in getTalent database
+        respective social network and in getTalent database.
 
     * event_sn_to_gt_mapping(): abstract
         This method maps/serializes event data from social network to getTalent
@@ -55,7 +55,7 @@ class EventBase(object):
         event data.
 
     * event_gt_to_sn_mapping(): abstract
-        This method maps/serializes event data from getTalent event data social
+        This method maps/serializes event data from getTalent event data to social
         network specific data.
         Every child class has its own implementation for its event data.
 
@@ -75,7 +75,7 @@ class EventBase(object):
         How it works:
         It takes integer id for event in getTalent database. It retrieves that
         event from database. If it finds any event with given id, it tries to
-        un publish that event otherwise returns False.
+        unpublish that event otherwise returns False.
 
     * delete_events(array of ids):
         This method takes list or tuple of ids of events to be deleted.
@@ -190,7 +190,7 @@ class EventBase(object):
             end = data['end_datetime']
             data['start_datetime'] = parse(start)
             data['end_datetime'] = parse(end)
-        except Exception as e:
+        except Exception:
             raise InvalidDatetime('Invalid DateTime: Kindly specify datetime '
                                   'in UTC format like 2015-10-08T06:16:55Z')
 
@@ -263,8 +263,8 @@ class EventBase(object):
             social network.
         :type events: list
         Once the event is stored in database after importing from social
-        network, this function can be used to some post processing.
-        For now, we don't do any post processing
+        network, this function can be used to do some post processing.
+        For now, we don't do any post processing but possibly in future.
         :param events:
         :return:
         """
@@ -274,10 +274,10 @@ class EventBase(object):
         """
         Here we pass an event id, picks it from db, and try to delete
         it both from social network and database. If successfully deleted
-        from both sources, returns True, otherwise returns False
+        from both sources, returns True, otherwise returns False.
         :param event_id: is the 'id' of event present in our db
         :type event_id: int or long
-        :return: True if deletion is successful, False o/w
+        :return: True if deletion is successful, False otherwise.
         """
         event = Event.get_by_user_and_event_id(self.user.id, event_id)
         if event:
@@ -313,11 +313,11 @@ class EventBase(object):
 
     def unpublish_event(self, event_id, method='POST'):
         """
-        This function is used when run unit test. It deletes the Event from
-        meetup which was created in the unit testing.
+        This function is used while running unit tests. It deletes the Event from
+        database that were created during the lifetime of a unit test.
         :param event_id: id of newly created event
         :type event_id: int or long
-        :return: True if event is deleted from vendor, False other wsie
+        :return: True if event is deleted from vendor, False otherwise.
         """
         # create url to publish event
         url = self.url_to_delete_event
