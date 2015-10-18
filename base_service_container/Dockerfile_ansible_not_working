@@ -1,0 +1,34 @@
+##### IMPORTANT #####
+# Build this file ONLY when DigiCertCA.crt, star_gettalent_com.crt and star_gettalent_com.key are in this directory.
+# They are NOT in version control for security reasons.
+
+FROM ansible/ubuntu14.04-ansible:stable
+MAINTAINER Osman Masood <osman@gettalent.com>
+
+WORKDIR /root
+ADD . base_service_container
+
+# TODO issue here: https://github.com/dirn/ansible-pyenv/issues/1
+RUN ansible-galaxy install dirn.pyenv  # Install Ansible role for pyenv from Galaxy
+
+# TODO We get a Python error:  NameError: global name 'DEFAULT_DOCKER_API_VERSION' is not defined. Using Ansible to build these containers isn't worth the problems it's causing :(
+# Run Ansible playbook
+ADD ansible/container-bootstrap.yml /srv/ansible/container-bootstrap.yml
+WORKDIR /srv/ansible
+RUN ansible-playbook -v container-bootstrap.yml -c local
+
+# Install Python requirements common to all services
+RUN pip install -r /root/base_service_container/requirements.txt
+
+# Install nginx stuff
+RUN rm /etc/nginx/sites-enabled/default
+ADD talent-nginx.conf /etc/nginx/conf.d/
+# ADD DigiCertCA.crt /usr/local/etc/ssl/DigiCertCA.crt
+# ADD star_gettalent_com.crt /usr/local/etc/ssl/star_gettalent_com.crt
+# ADD star_gettalent_com.key /usr/local/etc/ssl/star_gettalent_com.key
+ADD DigiCertCA.crt /etc/nginx/ssl/DigiCertCA.crt
+ADD star_gettalent_com.crt /etc/nginx/ssl/star_gettalent_com.crt
+ADD star_gettalent_com.key /etc/nginx/ssl/star_gettalent_com.key
+
+WORKDIR /root/base_service_container
+# EXPOSE 80

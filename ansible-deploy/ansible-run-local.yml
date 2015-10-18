@@ -1,0 +1,21 @@
+# Ansible configuration file to deploy Flask services
+
+#- name: Install docker py
+#  pip: name=docker-py==1.1.0
+
+- name: Run service on localhost
+  hosts: localhost
+  vars:
+    image: gettalent/{{service}}
+#  sudo: yes
+  tasks:
+      docker:
+        image: "{{image}}"
+        state: reloaded
+        ports:
+          - "80:80"
+          - "443:443"
+        env:
+            GT_ENVIRONMENT: dev
+#        volumes:
+#          - "/usr/local/etc/ssl:/etc/nginx/ssl"
