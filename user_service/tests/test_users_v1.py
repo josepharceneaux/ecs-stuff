@@ -52,8 +52,8 @@ def test_get_user_without_authentication():
 
     # Get user
     user_id = 5
-    resp = requests.get('http://127.0.0.1:8001/v1/users/%s' % user_id)
-    print "\nResponse to http://127.0.0.1:8001/v1/users/%s: \n%s" % (user_id, resp.content)
+    resp = requests.get('http://127.0.0.1:8004/v1/users/%s' % user_id)
+    print "\nResponse to http://127.0.0.1:8004/v1/users/%s: \n%s" % (user_id, resp.content)
 
     assert resp.status_code == 401
 

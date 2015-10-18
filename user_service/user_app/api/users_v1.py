@@ -1,13 +1,8 @@
-from flask_restful import (Api, reqparse, Resource)
-from auth_service.oauth import app
+from flask_restful import Resource
 from common.models.user import User
 from common.utils.validators import is_number
 from common.utils.auth_utils import authenticate_oauth_user
 from flask import request
-
-
-api = Api(app)
-parser = reqparse.RequestParser()
 
 
 class UserResource(Resource):
@@ -48,4 +43,3 @@ class UserResource(Resource):
             'dice_user_id': requested_user.dice_user_id
         }}
 
-api.add_resource(UserResource, "/v1/users/<id>")

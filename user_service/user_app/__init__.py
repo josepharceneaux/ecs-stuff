@@ -2,6 +2,7 @@ __author__ = 'ufarooqi'
 
 from flask import Flask
 from common.models.db import db
+from flask_restful import (Api, reqparse, Resource)
 
 app = Flask(__name__)
 app.config.from_object('user_service.config')
@@ -12,6 +13,11 @@ register_error_handlers(app, logger)
 
 db.init_app(app)
 db.app = app
+
+from api.users_v1 import UserResource
+api = Api(app)
+parser = reqparse.RequestParser()
+api.add_resource(UserResource, "/v1/users/<id>")
 
 import views
 

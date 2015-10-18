@@ -325,11 +325,12 @@ class UserGroup(db.Model):
         for group in groups:
             name = group.get('group_name')
             description = group.get('group_description')
-            group_domain_id = group.get('domain_id')
-            if not UserGroup.query.filter_by(name=name).first():
-                user_group = UserGroup(name=name, description=description, domain_id=group_domain_id or domain_id)
+            group_domain_id = group.get('domain_id') or domain_id
+            already_existing_group = UserGroup.query.filter_by(name=name).first() or None
+            if not already_existing_group or already_existing_group.domain_id != group_domain_id:
+                user_group = UserGroup(name=name, description=description, domain_id=group_domain_id)
             else:
-                raise Exception("Group '%s' already exists so It cannot be added again" % name)
+                raise Exception("Group '%s' already exists in same domain so It cannot be added again" % name)
             db.session.add(user_group)
         db.session.commit()
 
@@ -381,4 +382,4 @@ class UserGroup(db.Model):
                                     % (user_id, user.domain_id))
             db.session.commit()
         else:
-            raise Exception("User group %s doesn't exist" % user_group_id)
+            raise Exception("User group %s doesn't exist" % group_id)
