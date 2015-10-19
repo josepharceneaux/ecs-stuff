@@ -66,7 +66,7 @@ class Meetup(SocialNetworkBase):
             inside social_network_service/manager.py.
 
         **See Also**
-        .. seealso:: get_member_id() function defined in socialNetworkBase
+        .. seealso:: get_member_id() function defined in SocialNetworkBase
             class inside social_network_service/base.py.
 
         .. seealso:: start() function defined in social network manager
@@ -123,10 +123,10 @@ class Meetup(SocialNetworkBase):
             access token.
 
         - This method is called from validate_and_refresh_access_token() defined in
-            socialNetworkBase class inside social_network_service/base.py.
+            SocialNetworkBase class inside social_network_service/base.py.
 
         **See Also**
-        .. seealso:: validate_token() function defined in socialNetworkBase
+        .. seealso:: validate_token() function defined in SocialNetworkBase
             class inside social_network_service/base.py.
         """
         self.api_relative_url = '/member/self'

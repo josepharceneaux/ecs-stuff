@@ -37,7 +37,7 @@ class Facebook(EventBase):
         1. Create Facebook instance
             facebook_obj = Facebook(user=user_obj,
                             headers=authentication_headers)
-        2. Then call process() of socialNetworkBaseClass
+        2. Then call process() of SocialNetworkBaseClass
             facebook_obj.process('event', user_credentials=user_credentials)
 
         What process() will do internally is given in the following steps:
@@ -46,7 +46,7 @@ class Facebook(EventBase):
                                        social_network=self.social_network,
                                        headers=self.headers)
             events = facebook_event_obj.get_events()
-    - See also process() in socialNetworkBase class inside social_network_service/base.py
+    - See also process() in SocialNetworkBase class inside social_network_service/base.py
     """
 
     def __init__(self, *args, **kwargs):

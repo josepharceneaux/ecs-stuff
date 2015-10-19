@@ -37,8 +37,6 @@ class SocialNetworkBase(object):
         2- Eventbrite
         3- Facebook
 
-    - One can add any new social network to work with according to requirements
-
     - Usually API of any social network requires user permission to gain access
         of user's account. Once user allows access, we get an access token to
         play with the API of that social network. This access token expires in
@@ -66,7 +64,35 @@ class SocialNetworkBase(object):
         return True, otherwise False.
 
     - Social Networks and Events has 'has a' relationship. All the
-        functionality related to events is inside social_network_service/event/
+        functionality related to events is inside social_network_service/event/.
+
+    ** How to incorporate new social network **
+    .. Adding new social network::
+
+        One can add new social network say "xyz" to work with by implementing
+        auth related functionality in social_network_service/xyz.py.
+        "xyz.py" will have a class XYZ() inherited from SocialNetworkBase
+        and will have the methods like
+
+        1- get_access_and_refresh_token() to get access token (and refresh
+            token if xyz has any)
+
+        2- validate_access_token() to check the validity of access token present
+            in getTalent db table 'user_social_network_credential'
+
+        3- refresh_access_token() (if "xyz" social network allows to refresh
+            access token without user interaction)
+        etc.
+
+        **See Also**
+        .. seealso:: Meetup class inside social_network_service/meetup.py.
+
+        If 'xyz' social network has Events, the functionality of handling
+        Events will go inside social_network_service/event/xyz.py.
+        **See Also**
+        .. seealso:: EventBase class to get insight how the event handling will be
+         done. (social_network_service/event/base.py).
+        .. seealso:: Meetup class inside social_network_service/event/meetup.py.
 
     This class contains following methods:
 
@@ -335,11 +361,26 @@ class SocialNetworkBase(object):
 
     def get_member_id(self):
         """
-        - Member Id is the id of user on some social network. This is used
-            to fetch events or RSVPs of user from social network.
+        - If getTalent user has an account on some social network, like
+            Meetup.com, it will have a "Member id" for that social network.
+            This "Member id" is used to make API subsequent calls to fetch
+            events or RSVPs and relevant data for getTalent user from social
+            network website.
 
-        - This method is called from start() defined in social network manager
-            inside social_network_service/manager.py.
+        - In this method, we have value of "self.api_relative_url" which is
+            set in child classes according to API of respective social network.
+            We then make a HTTP POST call on required url. If we get response
+            2xx, we retrieve the "Member id" from response of HTTP POST call
+            and update the record in user_social_network_credentials db table.
+
+        - We call this method from __init__() of SocialNetworkBase class so
+            that we don't need to get 'Member id' of getTalent user while
+            making object of some social network class at different places.
+            (e.g.
+            1- creating object of Meetup() in start() method of manager.
+            2- while processing event inside process_event() defined in
+                social_network_service/utilities.py
+            )
 
         :Example:
                 from social_network_service.meetup import Meetup
@@ -347,8 +388,8 @@ class SocialNetworkBase(object):
                 sn.get_member_id()
 
         **See Also**
-        .. seealso:: start() function defined in social network manager
-            inside social_network_service/manager.py.
+        .. seealso:: __init__() method defined in SocialNetworkBase class
+            inside social_network_service/base.py.
         """
         try:
             user_credentials = self.user_credentials

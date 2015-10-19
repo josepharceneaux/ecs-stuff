@@ -65,7 +65,7 @@ class Eventbrite(SocialNetworkBase):
             inside social_network_service/manager.py.
 
         **See Also**
-        .. seealso:: get_member_id() function defined in socialNetworkBase
+        .. seealso:: get_member_id() function defined in SocialNetworkBase
             class inside social_network_service/base.py.
 
         .. seealso:: start() function defined in social network manager
@@ -86,10 +86,10 @@ class Eventbrite(SocialNetworkBase):
             access token.
 
         - This method is called from validate_and_refresh_access_token() defined in
-            socialNetworkBase class inside social_network_service/base.py.
+            SocialNetworkBase class inside social_network_service/base.py.
 
         **See Also**
-        .. seealso:: validate_token() function defined in socialNetworkBase
+        .. seealso:: validate_token() function defined in SocialNetworkBase
             class inside social_network_service/base.py.
         """
         self.api_relative_url = '/users/me/'
@@ -116,7 +116,7 @@ class Eventbrite(SocialNetworkBase):
 
         **See Also**
         .. seealso:: save_user_credentials_in_db() function defined in
-            socialNetworkBase class inside social_network_service/base.py.
+            SocialNetworkBase class inside social_network_service/base.py.
 
         .. seealso::POST method of end point ProcessAccessToken()
             defined in social network Rest API inside
