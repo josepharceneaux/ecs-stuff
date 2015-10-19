@@ -34,8 +34,9 @@ WEBHOOK_REDIRECT_URL = app.config['WEBHOOK_REDIRECT_URL']
 class Eventbrite(EventBase):
     """
     This class inherits from EventBase class.
-    This implements the abstract methods defined in interface.
-    It also implements functions to create event on Eventbrite website.
+    This implements the abstract methods defined in EventBase class.
+    It also implements methods to create, update , retrieve and delete (unpublish)
+     event on Eventbrite website.
 
     :Example:
 

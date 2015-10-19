@@ -335,7 +335,7 @@ class SocialNetworkBase(object):
 
     def get_member_id(self):
         """
-        - Member Id is the id of user on some social network. This is used
+        - Member Id is the id of user on respective social network. This is used
             to fetch events or RSVPs of user from social network.
 
         - This method is called from start() defined in social network manager

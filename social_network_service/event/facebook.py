@@ -50,6 +50,36 @@ class Facebook(EventBase):
     """
 
     def __init__(self, *args, **kwargs):
+        """
+        This method initializes eventbrite object and assigns default/initial
+        values.
+        This object has following attributes:
+            - events:
+                a list of events from social network
+            - rsvp:
+                a list of RSVPs for events in 'events' list
+            - data:
+                a dictionary containing post request data to create event
+            - user:
+                User object  user who sent the request to create this object
+            - user_credentials:
+                user credentials for eventbrite for this user
+            - social_network:
+                SocialNetwork object representing Eventbrite SN
+            - api_url:
+                URL to access Facebook API
+            - start_date:
+                Start date  to import events (i.e. import events after this date (inclusive))
+            - end_date:
+                last date for importing events. (i.e. import events before this date (inclusive))
+            - graph:
+                GraphAPI object which will be used to get all data from facebook through its
+                Graph API.
+
+        :param args:
+        :param kwargs:
+        :return:
+        """
         super(Facebook, self).__init__(*args, **kwargs)
         self.start_date = (datetime.now() - timedelta(days=3000)).strftime("%Y-%m-%d")
         self.end_date = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")

@@ -6,8 +6,91 @@ delete_event, process_events_rsvps etc.
 To add another social network for events management, following are steps:
 
     + Add social network class which will handle authentication specific tasks.
-    + Add Event class for this social network which will handle event related
-    tasks.
+
+        On the frontend side, redirect user to corresponding social network authentication
+        page and then user will be redirected to our page (according to our settings)
+        Now we need to send access and refresh token to Social Network API endpoint
+        to add these credentials for current user.
+
+        - get_access_and_refresh_token()
+          Add this method which will get access and refresh token from social network
+          API and then call save_user_credentials_in_db() which will save these credentials
+          Refresh token will used to renew access token for this social network and user.
+
+                Different social networks has different policies for access token expiration.
+
+                - Access token for Meetup expires after an hour and can be refreshed
+                  using "refresh" token
+
+                - Access token for Eventbrite never expires if user does not change
+                  his password on Eventbrite. we need to redirect the user to Eventbrite
+                  authentication page to get new token.
+
+                - Access token for Facebook expires after 59-60 days but when it expires,
+                  we need to redirect the user to facebook authentication page to get new token.
+
+
+        - get_member_id()
+            This method gets user member id on corresponding social network.
+            Every social network has it own way of getting member id using API calls.
+
+        - validate_token()
+            This method simply access some simple API endpoint of corresponding social network
+            and checks whether it returns success or 401 error. If everything goes well, it
+            returns True otherwise False
+
+        - refresh_access_token()
+            This method uses social network specific approach to get a fresh new token for
+            user to get access to its API
+
+        - validate_and_refresh_access_token()
+            This method simply checks access token status using above validate_token()
+            and it it gets False then it tries to refresh token using refresh_access_token()
+
+        - save_user_credentials_in_db()
+            This method saves user social network credentials in database
+
+    + Add Event class for this social network which will handle event related tasks.
+        To add a new social network for events, we have to add a new class in
+        social_network_service/event/ directory.
+
+        Here we are following our own convention of naming modules and Classes which is as:
+            If the name of social network is "Abc" then we need to create a module under
+            "social_network_service/event/" with it name but all small letters like *abc.py*
+            and class inside that module will be named "Abc" Title case single word.
+            This class will inherit from "social_network_service.event.EventBase".
+
+            This class will contain all method required to create, update, retrieve and delete
+            events from that social network.
+
+        Here is a list of event class method which commonly needed to impliment.
+
+            - get_events()
+                Impliment a method to retrieve events from social network
+
+            - event_gt_to_sn_mapping():
+                Impliment a method which will map getTalent specific data to social network
+                specific data.
+
+            - event_sn_to_gt_mapping():
+                Impliment a method which will map social network specific event data
+                to getTalent specific data.
+
+            - create_event():
+                Impliment a method which will do all task for creating event on socail network
+                and on getTalent database.
+
+            - update_even():
+                It will impliment code to update an event on social network and on getTalent
+                database.
+
+            - add_location():
+                Impliment a method which will create venue or location on social network for event.
+
+            - unpublish_event():
+                impliment a method which will unpublish or remove already created event on
+                social network.
+
 
 """
 
@@ -397,10 +480,7 @@ class EventBase(object):
         social_network_event_id), then it updates the existing event otherwise
         creates a new event in getTalent database.
         Call this method after successfully publishing event on social network.
-
-        :param data: dictionary containing data for event to be saved
-        :type data: dictionary
-        :return event.id: id for event that was created or updated
+        :return event.id: id for event in getTalent database, that was created or updated
         :rtype event.id : int
         """
         data = self.data
