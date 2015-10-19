@@ -35,6 +35,8 @@ def search():
     grade = request.args.get('highestGrade')
     military_end_date_from = request.args.get('military_end_date_from')
     military_end_date_to = request.args.get('military_end_date_to')
+    query = request.args.get("q")
+    limit = request.args.get("limit")
 
     request_vars = {"location": location, "skillDescriptionFacet": skills,
                     "areaOfInterestIdFacet": area_of_interest, "statusFacet": status, "sourceFacet": source,
@@ -44,9 +46,10 @@ def search():
                     "degree_end_year_from": degree_end_year_from, "degree_end_year_to": degree_end_year_to,
                     "serviceStatus": service_status, "branch": branch, "highestGrade": grade,
                     "military_end_date_from": military_end_date_from, "military_end_date_to": military_end_date_to,
-                    "usernameFacet": user
+                    "usernameFacet": user, "q": query, "limit": limit
                     }
-    candidate_search_results = TalentCloudSearch.search_candidates(1, request_vars, 1)
+    # If limit is not requested then the Search limit would be taken as 15, the default value
+    candidate_search_results = TalentCloudSearch.search_candidates(1, request_vars, int(limit) if limit else 15)
 
     return jsonify(candidate_search_results)
 

@@ -145,7 +145,7 @@ SOCIALCV_API_KEY = "c96dfb6b9344d07cee29804152f798751ae8fdee"
 STACKOVERFLOW_API_KEY = "hzOEoH16*Q7Y3QCWT9y)zA(("
 
 CLOUDSEARCH_REGION = os.environ.get('CLOUDSEARCHREGION')
-cloudsearch_domain_name = os.environ.get('DOMAIN_NAME')
+CLOUDSEARCH_DOMAIN_NAME = os.environ.get('DOMAIN_NAME')
 
 
 def get_cloud_search_connection():
@@ -156,7 +156,7 @@ def get_cloud_search_connection():
                                                                      sign_request=True,
                                                                      region=CLOUDSEARCH_REGION)
 
-        _cloud_search_domain = _cloud_search_connection_layer_2.lookup(cloudsearch_domain_name)
+        _cloud_search_domain = _cloud_search_connection_layer_2.lookup(CLOUDSEARCH_DOMAIN_NAME)
         if not _cloud_search_domain:
             return "Not Cloud Search Domain...!!"
 
@@ -171,7 +171,7 @@ def create_domain(domain_name=None):
     :return: Domain object, or None if not found
     """
     if not domain_name:
-        domain_name = cloudsearch_domain_name
+        domain_name = CLOUDSEARCH_DOMAIN_NAME
     layer2 = get_cloud_search_connection()
     if not layer2.lookup(domain_name):
         return layer2.create_domain(domain_name)
@@ -547,13 +547,13 @@ def search_candidates(domain_id, vars, search_limit=15, candidate_ids_only=False
 
     search_queries = []
     # If query is array, separate values by spaces
-    if vars.get('query') and not isinstance(vars['query'], basestring):
-        query = ' '.join(vars['query'])
-        search_queries.append(query)
-    elif vars.get('query'):
-        query = vars.get('query')
+    if vars.get('q') and not isinstance(vars['q'], basestring):
+        q = ' '.join(vars['q'])
+        search_queries.append(q)
+    elif vars.get('q'):
+        q = vars.get('q')
         # search_queries.append(' AND '.join(query.split(' ')))  # kathleen cook -> kathleen AND cook
-        search_queries.append(query)
+        search_queries.append(q)
 
     """ TODO check if we can use weights (^) instead of following logic
      (http://docs.aws.amazon.com/cloudsearch/latest/developerguide/weighting-fields.html)"""
@@ -834,11 +834,14 @@ def search_candidates(domain_id, vars, search_limit=15, candidate_ids_only=False
     if not search_queries:
         # If no search query is provided, (may be in case of landing talent page) then fetch all results
         query_string = "id:%s" % vars['id'] if vars.get('id') else "*:*"
+
     else:
-        query_string = "(or %s)" % " ".join(search_queries)
+        query_string = "(%s)" % " ".join(search_queries)
         if vars.get('id'):
             # If we want to check if a certain candidate ID is in a smartlist
             query_string = "(and id:%s %s)" % (vars['id'], query_string)
+        else:
+            query_string = "( %s)" % query_string
 
     params = dict(query=query_string, sort=sort, start=offset, size=search_limit)
     params['query_parser'] = 'lucene'
@@ -864,7 +867,13 @@ def search_candidates(domain_id, vars, search_limit=15, candidate_ids_only=False
         params = dict(params.items() + geo_params.items())
 
     # Return data dictionary. Initializing here, to have standard return type across the function
-    context_data = dict()
+    context_data = dict(candidate_ids=[],
+                        percentage_matches=[],
+                        search_data=dict(descriptions=[], facets=dict(), error=dict(), vars=vars, mode='search'),
+                        total_found=0,
+                        descriptions=[],
+                        max_score=0,
+                        max_pages=0)
 
     # Looks like cloudsearch does not have something like return only count predefined
     # removing fields and returned content should speed up network request
@@ -951,7 +960,7 @@ def search_candidates(domain_id, vars, search_limit=15, candidate_ids_only=False
     if get_percentage_match:
         # if sorting is other than "_score, desc", fire another query with _score, desc sorting so as to get
         # max relevance score.
-        default_sorting = "%s %s" %(DEFAULT_SORT_FIELD, DEFAULT_SORT_ORDER)
+        default_sorting = "%s %s" % (DEFAULT_SORT_FIELD, DEFAULT_SORT_ORDER)
         params['sort'] = default_sorting  # Update the sort parameter, to have sorting based on _score, desc
         # Limit search to one result, we only want max_score which is top most row when sorted with above criteria
         params['size'] = 1
@@ -967,10 +976,10 @@ def search_candidates(domain_id, vars, search_limit=15, candidate_ids_only=False
     percentage_matches = []
 
     search_data = dict(descriptions=matches, facets=facets, error=dict(), vars=vars, mode='search')
+    max_pages = int(math.ceil(total_found / float(search_limit))) if search_limit else 1
     fields_data = [data['fields'] for data in matches]
-    context_data['candidates'] = fields_data
-    requested_data = request.args
-    if requested_data:
+    if request.args.get('fields'):
+        # Checks the fields is requested by client or not
         requested_data = request.args.get('fields').split(',')
         required_context_data = {}
         response_candidates_data = []
@@ -979,9 +988,22 @@ def search_candidates(domain_id, vars, search_limit=15, candidate_ids_only=False
             response_candidates_data.append(required_data)
         required_context_data['candidates'] = response_candidates_data
         if required_context_data:
+            # Returns the fitered data which has requested by the client
             return required_context_data
+    else:
+        search_results = dict()
+        search_results['candidates'] = fields_data
+        # Returns a dictionary with all the candidates data
+        return search_results
+
     # Update return dictionary with search results
-    max_pages = int(math.ceil(total_found / float(search_limit))) if search_limit else 1
+    context_data['candidate_ids'] = candidate_ids
+    context_data['percentage_matches'] = percentage_matches
+    context_data['search_data'] = search_data
+    context_data['total_found'] = total_found
+    context_data['descriptions'] = []
+    context_data['max_score'] = max_score
+    context_data['max_pages'] = max_pages
 
     return context_data
 
