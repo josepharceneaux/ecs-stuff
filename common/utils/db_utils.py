@@ -14,3 +14,9 @@ def get_or_create(session, model, defaults=None, **kwargs):
         instance = model(**params)
         session.add(instance)
         return instance, True
+
+
+def serialize_queried_sa_obj(obj):
+    attrs = vars(obj)
+    attrs.pop('_sa_instance_state', None)
+    return attrs

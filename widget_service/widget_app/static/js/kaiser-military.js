@@ -172,27 +172,6 @@ $(document).ready(function() {
         year = parseInt(split[1]);
         setMilitaryToDate(month, dateNumber, year);
     });
-
-    // Legacy Submit code
-    //$("form").submit(function(e) {
-    //    var validInputs = true;
-    //    $("input[required], select[required], [data-widget-optional]").each(function(index) {
-    //        var isValid = checkRequired(this);
-    //        validInputs = validInputs && isValid;
-    //    });
-    //
-    //    // If inputs are all valid, and placeholder attribute is not supported, then blank out all inputs set to their placeholder
-    //    if (placeholderNotSupported && validInputs ) {
-    //        $("[placeholder]").each(function(e) {
-    //            var input = $(this);
-    //            if (input.val() == input.attr('placeholder')) {
-    //                input.val('');
-    //            }
-    //        });
-    //    }
-    //    if (! validInputs) e.preventDefault();
-    //    return validInputs;
-    //});
 });
 
 function setMilitaryToDate(monthNumber, dateNumber, year) {
@@ -342,7 +321,7 @@ function createMilitaryGrades(){
 function getInterestsJSON() {
     var interests;
     var request = $.ajax({
-        url: "/v1/interests/kaiser_military",
+        url: "/v1/kaiser-military/interests",
         type: "GET",
         dataType: "json"
     });

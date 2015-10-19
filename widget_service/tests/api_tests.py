@@ -72,12 +72,12 @@ def test_culture(request):
 def test_domain(test_culture, test_org, request):
     test_domain = Domain(name=random_word(40), usage_limitation=0,
                          expiration=datetime.datetime(2050, 4, 26),
-                         added_time=datetime.datetime(2050, 4, 26),
+                         added_time=datetime.datetime.today(),
                          organization_id=test_org.id, is_fair_check_on=False, is_active=1,
                          default_tracking_code=1, default_from_name=(random_word(100)),
                          default_culture_id=test_culture.id,
-                         settings_json=random_word(55), updated_time=datetime.datetime.now())
-
+                         settings_json=random_word(55), updated_time=datetime.datetime.now(),
+                         uuid=random_word(127))
     db.session.add(test_domain)
     db.session.commit()
 
@@ -95,12 +95,12 @@ def test_domain(test_culture, test_org, request):
 def second_domain(test_culture, test_org, request):
     test_domain2 = Domain(name=random_word(40), usage_limitation=0,
                           expiration=datetime.datetime(2050, 4, 26),
-                          added_time=datetime.datetime(2050, 4, 26),
+                          added_time=datetime.datetime.today(),
                           organization_id=test_org.id, is_fair_check_on=False, is_active=1,
                           default_tracking_code=1, default_from_name=(random_word(100)),
                           default_culture_id=test_culture.id,
-                          settings_json=random_word(55), updated_time=datetime.datetime.now())
-
+                          settings_json=random_word(55), updated_time=datetime.datetime.now(),
+                          uuid=random_word(127))
     db.session.add(test_domain2)
     db.session.commit()
 
@@ -115,23 +115,23 @@ def second_domain(test_culture, test_org, request):
 
 
 @pytest.fixture(autouse=True)
-def test_areas_of_interest(test_domain, request):
+def test_areas_of_interest(test_domain, second_domain, request):
     aois = []
     sub_aois = []
     # Create our parent categories.
     for i in xrange(10):
         aois.append(
-            AreaOfInterest(id=i+1, domain_id=test_domain.id, description=random_word(16),
+            AreaOfInterest(domain_id=test_domain.id, description=random_word(16),
                            parent_id=None)
         )
     for i in xrange(2):
             aois.append(
-                AreaOfInterest(domain_id=test_domain.id + 1, description=random_word(16),
+                AreaOfInterest(domain_id=second_domain.id, description=random_word(16),
                                parent_id=None)
             )
     db.session.bulk_save_objects(aois)
     # Create our sub-categories.
-    parent_id = aois[0].id
+    parent_id = db.session.query(AreaOfInterest).filter_by(domain_id=test_domain.id).first().id
     for i in xrange(2):
             sub_aois.append(
                 AreaOfInterest(domain_id=test_domain.id, description=random_word(16),
@@ -201,7 +201,7 @@ def test_user(test_domain, request):
     user_attrs = dict(
         domain_id=test_domain.id, first_name='Jamtry', last_name='Jonas',
         password='password', email='jamtry@{}.com'.format(random_word(7)),
-        added_time=datetime.datetime(2050, 4, 26)
+        added_time=datetime.datetime.today()
     )
     test_user, created = get_or_create(db.session, User, defaults=None, **user_attrs)
     if created:
@@ -262,7 +262,6 @@ def test_widget_page(test_user, test_candidate_source, request):
                                   request_email_html=random_word(40),
                                   request_email_subject=random_word(40),
                                   email_source=random_word(40), reply_address=random_word(40),
-                                  widget_html=random_word(200), s3_location=random_word(12)
                                   )
     db.session.add(test_widget_page)
     db.session.commit()
@@ -333,8 +332,8 @@ def test_email_label(request):
     return test_email_label
 
 
-def test_api_returns_domain_filtered_aois(test_widget_page, request):
-    response = APP.get('/v1/interests/{}'.format(test_widget_page.widget_name))
+def test_api_returns_domain_filtered_aois(test_domain, request):
+    response = APP.get('/v1/{}/interests'.format(test_domain.uuid))
     assert response.status_code == 200
     assert len(json.loads(response.data)['primary_interests']) == 10
     assert len(json.loads(response.data)['secondary_interests']) == 2
@@ -347,15 +346,9 @@ def test_api_returns_university_name_list(request):
 
 
 def test_api_returns_majors_name_list(test_domain, request):
-    response = APP.get('/v1/majors/{}'.format(test_domain.name))
+    response = APP.get('/v1/{}/majors'.format(test_domain.uuid))
     assert response.status_code == 200
     assert len(json.loads(response.data)['majors']) == 5
-
-
-def test_get_call_returns_widget_page_html(test_widget_page, request):
-    response = APP.get('/v1/widget/{}'.format(test_widget_page.widget_name))
-    assert response.status_code == 200
-    assert response.data == test_widget_page.widget_html
 
 
 def test_post_call_creates_candidate_object(areas_of_interest, request):
@@ -379,6 +372,10 @@ def test_post_call_creates_candidate_object(areas_of_interest, request):
         post_response = c.post('/v1/widget/', data=candidate_dict)
     assert post_response.status_code == 201
     assert 'success' in post_response.data
+
+
+def test_post_creates_kaiser_military_candidate():
+    pass
 
 
 def test_parse_interest_ids_from_form(request):

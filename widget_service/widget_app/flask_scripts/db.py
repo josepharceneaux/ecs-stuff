@@ -8,6 +8,7 @@ from widget_service.common.models.misc import Culture
 from widget_service.common.models.misc import Major
 from widget_service.common.models.misc import Organization
 from widget_service.common.models.user import Domain
+from widget_service.common.models.widget import WidgetPage
 from widget_service.common.utils.handy_functions import random_word
 from widget_service.widget_app import db
 
@@ -25,26 +26,33 @@ def fill_db():
                          organization_id=KAISER_UMBRELLA.id, is_fair_check_on=False, is_active=1,
                          default_tracking_code=1, default_from_name=('asd'),
                          default_culture_id=RANDOM_CULTURE.id,
-                         settings_json='json', updated_time=datetime.datetime.now())
+                         settings_json='json', updated_time=datetime.datetime.now(),
+                         uuid='kaiser-corporate')
     KAISER_UNI = Domain(name='kaiser_university', usage_limitation=0,
                          expiration=datetime.datetime(2050, 4, 26),
                          added_time=datetime.datetime(2050, 4, 26),
                          organization_id=KAISER_UMBRELLA.id, is_fair_check_on=False, is_active=1,
                          default_tracking_code=1, default_from_name=('asd'),
                          default_culture_id=RANDOM_CULTURE.id,
-                         settings_json='json', updated_time=datetime.datetime.now())
+                         settings_json='json', updated_time=datetime.datetime.now(),
+                         uuid='kaiser-university')
     KAISER_MIL = Domain(name='kaiser_military', usage_limitation=0,
                          expiration=datetime.datetime(2050, 4, 26),
                          added_time=datetime.datetime(2050, 4, 26),
                          organization_id=KAISER_UMBRELLA.id, is_fair_check_on=False, is_active=1,
                          default_tracking_code=1, default_from_name=('asd'),
                          default_culture_id=RANDOM_CULTURE.id,
-                         settings_json='json', updated_time=datetime.datetime.now())
+                         settings_json='json', updated_time=datetime.datetime.now(),
+                         uuid='kaiser-military')
     DOMAINS = [KAISER_CORP, KAISER_UNI, KAISER_MIL]
     for d in DOMAINS:
         db.session.add(d)
     db.session.commit()
-    print 'Finished creating Culture, Organization, Domains'
+    corp_wp = WidgetPage(domain_uuid=KAISER_CORP.uuid, template_name='kaiser_3.html')
+    university_wp = WidgetPage(domain_uuid=KAISER_UNI.uuid, template_name='kaiser_2.html')
+    military_wp = WidgetPage(domain_uuid=KAISER_MIL.uuid, template_name='kaiser_military.html')
+    db.session.bulk_save_objects([corp_wp, university_wp, military_wp])
+    print 'Finished creating Culture, Organization, Domains, WidgetPages'
     print 'Creating Majors and Areas of Interest'
     MAJORS = []
     for i in xrange(30):

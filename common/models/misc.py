@@ -86,6 +86,11 @@ class Major(db.Model):
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
+    def serialize(self):
+        return {
+            'id': self.id,
+        }
+
 
 class Organization(db.Model):
     __tablename__ = 'organization'

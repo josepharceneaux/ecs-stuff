@@ -38,7 +38,10 @@ $(document).ready(function() {
             dataType: "json",
             url: "/v1/universities",
             success: function(response){
-                universitiesList = response['universities_list'];
+                universitiesList = [];
+                for (var i=0; i < response['universities_list'].length; i++){
+                    universitiesList.push(response['universities_list'][i].name);
+                }
                 $("#university").typeahead({
                     items: 10,
                     source: universitiesList
@@ -92,28 +95,6 @@ $(document).ready(function() {
         $("#nuid").toggle();
     });
 
-
-    // Legacy Submit Code
-    //$("form").submit(function(e) {
-    //    var validInputs = true;
-    //    $("input[required], select[required]").each(function(index) {
-    //        var isValid = checkRequired(this);
-    //        validInputs = validInputs && isValid;
-    //    });
-    //
-    //    // If inputs are all valid, and placeholder attribute is not supported, then blank out all inputs set to their placeholder
-    //    if (placeholderNotSupported && validInputs ) {
-    //        $("[placeholder]").each(function(e) {
-    //            var input = $(this);
-    //            if (input.val() == input.attr('placeholder')) {
-    //                input.val('');
-    //            }
-    //        });
-    //    }
-    //
-    //    if (! validInputs) e.preventDefault();
-    //    return validInputs;
-    //});
 });
 function checkRequired(input) {
     var $input = $(input);
@@ -189,7 +170,7 @@ function createGraduationYearOptions(){
 function getInterestsJSON() {
     var interests;
     var request = $.ajax({
-        url: "/v1/interests/kaiser_university",
+        url: "/v1/kaiser-university/interests",
         type: "GET",
         dataType: "json"
     });
@@ -203,16 +184,16 @@ function getInterestsJSON() {
 $.ajax({
     type: "get",
     dataType: "json",
-    url: "/v1/majors/kaiser_university",
+    url: "/v1/kaiser-university/majors",
     success: function(response) {
         var majorSelector = document.getElementById('major');
         var option;
         var majors = response.majors;
         for (var i=0; i < majors.length; i++) {
             option = document.createElement("option");
-            option.label = majors[i];
-            option.value = majors[i];
-            option.text = majors[i];
+            option.label = majors[i].name;
+            option.value = majors[i].name;
+            option.text = majors[i].name;
             majorSelector.add(option);
         };
     }

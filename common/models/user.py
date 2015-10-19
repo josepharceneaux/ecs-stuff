@@ -65,6 +65,7 @@ class Domain(db.Model):
     default_from_name = db.Column('defaultFromName', db.String(255))
     settings_json = db.Column('settingsJson', db.Text)
     updated_time = db.Column('updatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    uuid = db.Column('uuid', db.String(127))
 
     # Relationships
     users = relationship('User', backref='domain')

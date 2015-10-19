@@ -14,33 +14,28 @@ from flask import render_template
 import requests
 
 # Module specific
+from widget_service.common.models.candidate import CustomField
 from widget_service.common.models.candidate import University
 from widget_service.common.models.misc import AreaOfInterest
 from widget_service.common.models.misc import Major
 from widget_service.common.models.user import Domain
-from widget_service.common.models.user import User
 from widget_service.common.models.widget import WidgetPage
 from widget_service.widget_app import db
 from widget_service.widget_app.views.utils import parse_interest_ids_from_form
 from widget_service.widget_app.views.utils import parse_city_and_state_ids_from_form
+from widget_service.common.utils.db_utils import serialize_queried_sa_obj
 
 mod = Blueprint('widget_api', __name__)
 
 
-@mod.route('/test/<domain>', methods=['GET'])
-def show_widget(domain):
+@mod.route('/widgets/<domain_uuid>', methods=['GET'])
+def show_widget(domain_uuid):
     """ Route for testing template rendering/js functions/etc.
     :param domain: (string) the domain associated with an html template in for local testing.
     :return: a rendered HTML page.
     """
-    if app.config['ENVIRONMENT'] != 'dev':
-        return 'Error', 400
-    if domain == 'kaiser-military':
-        return render_template('kaiser_military.html', domain=domain)
-    elif domain == 'kaiser-university':
-        return render_template('kaiser_2.html', domain=domain)
-    elif domain == 'kaiser-corp':
-        return render_template('kaiser_3.html', domain=domain)
+    template = db.session.query(WidgetPage).filter_by(domain_uuid=domain_uuid).first().template_name
+    return render_template(template, domain=domain_uuid)
 
 
 #TODO This should dynamically add 'optional' fields such as preferred location/military experience.
@@ -56,9 +51,12 @@ def create_candidate_from_widget(domain):
     candidate_dict['areas_of_interest'] = parse_interest_ids_from_form(form['hidden-tags-aoi'])
     if form['hidden-tags-location']:
         custom_fields = parse_city_and_state_ids_from_form(form['hidden-tags-location'])
-        candidate_dict['custom_fields'] = custom_fields
+        candidate_dict.setdefault('custom_fields', []).append(custom_fields)
     if form['jobFrequency']:
-        candidate_dict['WHAT IS THE FIELD HERE LOL'] = form['jobFrequency']
+        frequency_field = db.session.query(CustomField).filter_by(name='Subscription Preference').first()
+        candidate_dict.setdefault('custom_fields', []).append(
+            {frequency_field.id: form['jobFrequency']}
+        )
     if form['militaryBranch']:
         candidate_dict['military_services']['branch'] = form['militaryBranch']
     if form['militaryStatus']:
@@ -76,45 +74,37 @@ def create_candidate_from_widget(domain):
     return jsonify({'success': {'message': 'candidate successfully created'}}), 201
 
 
-@mod.route('/interests/<domain>', methods=['GET'])
-def get_areas_of_interest(domain):
+@mod.route('/<domain_uuid>/interests', methods=['GET'])
+def get_areas_of_interest(domain_uuid):
     """ API call that provides interests list filtered by the domain.
     :param domain: (string)
     :return: A dictionary pointing to primary and seconday interests that have been filtered by
              domain.
     """
-    current_domain = Domain.query.filter_by(name=domain).first()
+    current_domain = db.session.query(Domain).filter_by(uuid=domain_uuid).first()
     interests = db.session.query(AreaOfInterest).filter(
         AreaOfInterest.domain_id == current_domain.id)
     primary_interests = []
     secondary_interests = []
     for interest in interests:
         if interest.parent_id:
-            secondary_interests.append({
-                'description': interest.description,
-                'parent_id': interest.parent_id
-            })
+            secondary_interests.append(serialize_queried_sa_obj(interest))
         else:
-            primary_interests.append({
-                'id': interest.id,
-                'description': interest.description,
-                'parent_id': interest.parent_id
-            })
+            primary_interests.append(serialize_queried_sa_obj(interest))
     return jsonify({'primary_interests': primary_interests,
                     'secondary_interests': secondary_interests})
+
+
+@mod.route('/<domain_uuid>/majors', methods=['GET'])
+def get_major_names(domain_uuid):
+    """API call for returning list of major names filtered by domain"""
+    domain_id = db.session.query(Domain.id).filter(Domain.uuid==domain_uuid)
+    majors = db.session.query(Major).filter(domain_id==domain_id)
+    return jsonify(majors=[serialize_queried_sa_obj(m) for m in majors])
 
 
 @mod.route('/universities', methods=['GET'])
 def get_university_names():
     """API call for names of universities in db in format used by widget select tags."""
-    university_names = db.session.query(University.name)
-    # return jsonify(universities_list=[name for name in university_names])
-    return jsonify({'universities_list': [university.name for university in university_names]})
-
-
-@mod.route('/majors/<domain_name>', methods=['GET'])
-def get_major_names(domain_name):
-    """API call for returning list of major names filtered by domain"""
-    domain_id = db.session.query(Domain.id).filter(Domain.name==domain_name)
-    majors = db.session.query(Major.name).filter(domain_id==domain_id)
-    return jsonify(majors=[major for major in majors])
+    universities = db.session.query(University).all()
+    return jsonify(universities_list=[serialize_queried_sa_obj(u) for u in universities])
