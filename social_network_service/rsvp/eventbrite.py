@@ -130,11 +130,20 @@ class Eventbrite(RSVPBase):
     def process_rsvp_via_webhook(self, rsvp_data):
         """
         :param rsvp_data: is a dict we make using rsvp_social_network_id
-            getting from response of RSVP via webhook
+            getting from response of RSVP via webhook.
 
-        - This method does the processing to save rsvp in db.
+        ** Working **
+        - This method does the following steps to incorporate RSVP:
+            1- It gets the url of RSVP (for Eventbrite, this is the url of
+                order placed by some person on some Event).
+            2- It then gets the id of RSVP (id of order) by using method
+                get_rsvp_id() by passing url(which we got in first step)
+                as argument.
+            3- It then calls post_process_rsvp() by passing rsvp id in
+                it. See functionality of post_process_rsvp() defined in
+                RSVPBase class inside social_network_service/rsvp/base.py.
 
-        - This  method is called from process_events_rsvps() function in
+        - This method is called from process_events_rsvps() method in
             social_network_service/event/eventbrite.py
 
         :Example:

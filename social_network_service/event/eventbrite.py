@@ -148,7 +148,7 @@ class Eventbrite(EventBase):
         # create url to fetch events from eventbrite.com
         events_url = self.api_url + '/events/search/'
         params = {'user.id': self.member_id,
-                  'date_created.range_start': self.start_date_in_utc
+                  # 'date_created.range_start': self.start_date_in_utc
                   }
         # initialize event list to empty
         all_events = []

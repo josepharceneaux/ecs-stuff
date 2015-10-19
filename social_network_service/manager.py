@@ -6,7 +6,6 @@ import traceback
 # Third Party
 from gevent.pool import Pool
 
-
 # App Settings
 from social_network_service import init_app
 init_app()
@@ -23,12 +22,36 @@ POOL_SIZE = 5
 
 def start():
     """
-    This function is called by manager to process events or rsvps from given
-    social network. It first gets the user_credentials of all the users in
-    database and does the processing for each user. Then it instantiates
-    respective social network class for auth process. Then we call the
-    class socialNetworkBase class method process() to proceed further
-    :return:
+    This function is called when we run manager to import events or rsvps from
+    social network website.
+
+    "manager" takes "-m mode -s social_network" as arguments to run.
+        - "mode" will be either "event" or "rsvp".
+        - "source" will be from following (for now)
+            1- meetup
+            2- eventbrite
+            3- facebook.
+
+    ** Working **
+    What this method does, is explained in following steps:
+
+    1- It creates a job_pool to process multiple user_credentials in parallel.
+    2- It gets the user_social_network_credentials of all the users related
+        to given social network (social_network provided in arguments) from
+        getTalent database in variable all_user_credentials.
+    3- It picks one user_credential from all_user_credentials and instantiates
+        respective social network class for auth process.
+    4- If access token is not valid, we raise
+        AccessTokenHasExpired exception and move on to next user_credential.
+    5- If access token is valid, we spawn the job pool by calling the
+        SocialNetworkBase class method process() and by passing "mode" and
+        "user_credential" as arguments.
+    6- Once all user_credential have been traversed, we call job_pool.join()
+        to execute all the tasks in job_pool.
+
+    **See Also**
+    .. seealso:: process() method of SocialNetworkBase class inside
+                social_network_service/base.py.
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("-m",
@@ -40,7 +63,8 @@ def start():
                         action="store",
                         type=str,
                         dest="social_network",
-                        help="specify social work name to process e.g. '-s facebook' or '-s meetup'")
+                        help="specify social work name to process e.g. "
+                             "'-s facebook' or '-s meetup'")
 
     name_space = parser.parse_args()
     social_network_id = None
@@ -67,7 +91,9 @@ def start():
                     job_pool.spawn(sn.process, name_space.mode,
                                    user_credentials=user_credentials)
                 else:
-                    raise AccessTokenHasExpired
+                    raise AccessTokenHasExpired(
+                        'Access token has expired. Please connect with %s again '
+                        'from "Profile" page.' % user_credentials.social_network.name)
             except KeyError:
                 raise
             except Exception as error:
@@ -75,7 +101,8 @@ def start():
                                'error': error.message})
         job_pool.join()
     else:
-        logger.error('There is no User in db for social network %s' % name_space.social_network)
+        logger.error('There is no User in db for social network %s'
+                     % name_space.social_network)
         
 if __name__ == '__main__':
     try:
