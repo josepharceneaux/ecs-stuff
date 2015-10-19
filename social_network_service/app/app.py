@@ -87,10 +87,11 @@ def handle_rsvp():
             data = json.loads(request.data)
             action = data['config']['action']
             if action == 'order.placed':
-                logger.debug('Got an RSVP from Eventbrite event via webhook.')
                 webhook_id = data['config']['webhook_id']
                 user_credentials = \
                     EventbriteRsvp.get_user_credentials_by_webhook(webhook_id)
+                logger.debug('Got an RSVP on %s Event via webhook.'
+                             % user_credentials.social_network.name)
                 user_id = user_credentials.user_id
                 social_network_class = \
                     get_class(user_credentials.social_network.name.lower(),
@@ -100,14 +101,8 @@ def handle_rsvp():
                 # processing to save in getTalent db tables otherwise we raise
                 # exception AccessTokenHasExpired.
                 sn_obj = social_network_class(user_id=user_credentials.user_id)
-                if sn_obj.access_token_status:
-                    sn_obj.process('rsvp', user_credentials=user_credentials,
-                                   rsvp_data=data)
-                else:
-                    raise AccessTokenHasExpired(
-                        'Access token has expired. Please connect with %s again '
-                        'from "Profile" page.' % user_credentials.social_network.name)
-
+                sn_obj.process('rsvp', user_credentials=user_credentials,
+                               rsvp_data=data)
             elif action == 'test':
                 logger.debug('Successful webhook connection')
 

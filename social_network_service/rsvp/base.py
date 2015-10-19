@@ -97,7 +97,7 @@ class RSVPBase(object):
         website.
 
     ** How to incorporate new social network **
-    .. Adding new social network::
+    .. Adding RSVP code for a Social network::
 
         If we need to implement a new social network say 'xyz', for
         which we have Events, we will need to create a new file as
@@ -129,7 +129,7 @@ class RSVPBase(object):
                                     headers=self.headers,
                                     user_credentials=user_credentials)
 
-        then we call get_all_rsvps() on sn_rsvp_obj by passing events in
+        Then we call get_all_rsvps() on sn_rsvp_obj by passing events in
         parameters as follow
 
             self.rsvps = sn_rsvp_obj.get_all_rsvps(self.events)
@@ -140,7 +140,7 @@ class RSVPBase(object):
 
             sn_rsvp_obj.process_rsvps(self.rsvps)
 
-        which loops through each rsvp in self.rsvps and passes it in
+        Above loops through each rsvp in self.rsvps and passes it in
         post_process_rsvps() which serves the processing to save
         rsvp in database.
 
@@ -211,7 +211,7 @@ class RSVPBase(object):
                                     headers=self.headers,
                                     user_credentials=user_credentials)
 
-        then we call get_all_rsvps() on sn_rsvp_obj by passing events in
+        Then we call get_all_rsvps() on sn_rsvp_obj by passing events in
         parameters as follow
 
             self.rsvps = sn_rsvp_obj.get_all_rsvps(self.events)

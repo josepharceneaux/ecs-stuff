@@ -8,7 +8,6 @@ import json
 
 # Application Specific
 from utilities import logger
-from utilities import log_error
 from utilities import http_request
 from utilities import log_exception
 from base import SocialNetworkBase
@@ -53,15 +52,19 @@ class Meetup(SocialNetworkBase):
 
     def get_member_id(self):
         """
-        - If getTalent user has an account on Facebook website, then we
-            have a "Member id (profile id of Facebook user)".
-            This "Member id" is used to make API  subsequent calls to
-            fetch events or RSVPs and relevant data for getTalent user
-            from social network website.
+        - If getTalent user has an account on Meetup website, then we have a
+            "member id" which is used to make API subsequent calls to fetch
+            events or RSVPs and relevant data for getTalent user from Meetup
+            website.
 
-        - Here we set the API relative url and put it in
-            "self.api_relative_url". We then call super class method
-            get_member_id() to get "Member id" using API of Facebook.
+        - Here we set the value of "self.api_relative_url". We then call super
+            class method get_member_id() to get the "member id".
+            get_member_id() in SocialNetworkBase makes url like
+                url = self.social_network.api_url + self.api_relative_url
+            (This will evaluate in case of Meetup as
+                url = 'https://api.meetup.com/2' + '/member/self')
+            After this, it makes a POST call on this url and check if status
+            of response is 2xx.
 
         - This method is called in __int__() of SocialNetworkBase class to
             get and save member_id in getTalent db table
@@ -115,11 +118,14 @@ class Meetup(SocialNetworkBase):
         :param payload is None in case of Meetup as we pass access token
                     in headers:
 
-        - Here we set the API relative url and put it in
-            "self.api_relative_url".
-
-        - We then call super class method validate_token() to validate the
-            access token.
+        - Here we set the value of "self.api_relative_url". We then call super
+            class method validate_token() to validate the access token.
+            validate_token() in SocialNetworkBase makes url like
+                url = self.social_network.api_url + self.api_relative_url
+            (This will evaluate in case of Meetup as
+                url = 'https://api.meetup.com/2' + '/member/self')
+            After this, it makes a POST call on this url and check if status
+            of response is 2xx.
 
         - This method is called from validate_and_refresh_access_token() defined in
             SocialNetworkBase class inside social_network_service/base.py.
@@ -166,8 +172,8 @@ class Meetup(SocialNetworkBase):
                         'refresh_token': user_refresh_token}
         response = http_request('POST', auth_url, data=payload_data,
                                 user_id=self.user.id)
-        try:
-            if response.ok:
+        if response.ok:
+            try:
                 # access token has been refreshed successfully, need to update
                 # self.access_token and self.headers
                 self.access_token = response.json().get('access_token')
@@ -182,14 +188,13 @@ class Meetup(SocialNetworkBase):
                 status = self.save_user_credentials_in_db(user_credentials_dict)
                 logger.debug("Access token has been refreshed for %s(UserId:%s)."
                              % (self.user.name, self.user.id))
-            else:
-                error_message = response.json().get('error')
-                log_error({'user_id': self.user.id,
-                           'error': error_message})
-        except Exception as error:
-            log_exception({'user_id': self.user.id,
-                           'error': "Error occurred while refreshing access token. "
-                                    "Error is: " + error.message})
+            except Exception as error:
+                log_exception({'user_id': self.user.id,
+                               'error': "Error occurred while refreshing access token. "
+                                        "Error is: " + error.message})
+        else:
+            # Error has been logged inside http_request()
+            pass
         return status
 
     @classmethod

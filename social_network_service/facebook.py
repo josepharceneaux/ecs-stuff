@@ -97,14 +97,18 @@ class Facebook(SocialNetworkBase):
         :param payload: payload is set here which contains the access token.
         :type payload: dict
 
-        - We also  set the API relative url and put it in
-            "self.api_relative_url".
+        - Here we set the value of "self.api_relative_url". We then call super
+            class method validate_token() to validate the access token.
+            validate_token() in SocialNetworkBase makes url like
+                url = self.social_network.api_url + self.api_relative_url
+            (This will evaluate in case of Facebook as
+                url = 'https://graph.facebook.com/v2.4' + '/me')
+            After this, it makes a POST call on this url and check if status
+            of response is 2xx.
 
-        - We then call super class method validate_token() to validate the
-            access token.
-
-        - This method is called from validate_and_refresh_access_token() defined in
-            SocialNetworkBase class inside social_network_service/base.py.
+        - This method is called from validate_and_refresh_access_token()
+            defined in SocialNetworkBase class inside
+            social_network_service/base.py.
 
         **See Also**
         .. seealso:: validate_token() function defined in SocialNetworkBase

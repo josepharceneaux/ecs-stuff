@@ -4,6 +4,9 @@ import argparse
 import traceback
 
 # Third Party
+import gevent
+from gevent import monkey
+gevent.monkey.patch_all()
 from gevent.pool import Pool
 
 # App Settings
@@ -83,17 +86,13 @@ def start():
                 # we call social network class here for auth purpose, If token is expired
                 # access token is refreshed and we use fresh token
                 sn = social_network_class(user_id=user_credentials.user_id)
-                if sn.access_token_status:
-                    logger.debug('%s Importer has started for %s(UserId: %s).'
-                                 ' Social Network is %s.'
-                                 % (name_space.mode.title(), sn.user.name, sn.user.id,
-                                    social_network.name))
-                    job_pool.spawn(sn.process, name_space.mode,
-                                   user_credentials=user_credentials)
-                else:
-                    raise AccessTokenHasExpired(
-                        'Access token has expired. Please connect with %s again '
-                        'from "Profile" page.' % user_credentials.social_network.name)
+
+                logger.debug('%s Importer has started for %s(UserId: %s).'
+                             ' Social Network is %s.'
+                             % (name_space.mode.title(), sn.user.name, sn.user.id,
+                                social_network.name))
+                job_pool.spawn(sn.process, name_space.mode,
+                               user_credentials=user_credentials)
             except KeyError:
                 raise
             except Exception as error:

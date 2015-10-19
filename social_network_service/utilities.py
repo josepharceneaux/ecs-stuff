@@ -299,7 +299,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                                         + json.dumps(
                             e.response.json().get('errors'))
                     elif 'error_description' in e.response.json():
-                        error_message = e.message + ' , Details: ' \
+                        error_message = e.message + ', Details: ' \
                                         + json.dumps(
                             e.response.json().get('error_description'))
                     else:

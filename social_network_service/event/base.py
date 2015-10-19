@@ -365,10 +365,11 @@ class EventBase(object):
         event = Event.get_by_user_and_event_id(self.user.id, event_id)
         if event:
             try:
+                event_name = event.title
                 self.unpublish_event(event.social_network_event_id)
                 Event.delete(event_id)
-                logger.debug('\nMeetup "Test Event" has been deleted '
-                             'from database.')
+                logger.debug('Event "%s" has been deleted from '
+                             'database.' % event_name)
                 return True
             except Exception as error:  # some error while removing event
                 log_exception({

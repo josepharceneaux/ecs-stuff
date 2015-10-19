@@ -16,10 +16,10 @@ from utilities import log_error
 from utilities import http_request
 from utilities import log_exception
 from common.models.user import User
-from common.models.user import UserSocialNetworkCredential
 from common.models.social_network import SocialNetwork
+from common.models.user import UserSocialNetworkCredential
 from social_network_service import logger
-from social_network_service.custom_exections import NoUserFound
+from social_network_service.custom_exections import NoUserFound, AccessTokenHasExpired
 from social_network_service.custom_exections import ApiException
 from social_network_service.custom_exections import UserCredentialsNotFound
 from social_network_service.custom_exections import MissingFieldsInUserCredentials
@@ -52,11 +52,13 @@ class SocialNetworkBase(object):
             1- validate_token() and 2- refresh_access_token()
 
         in base and child classes.
+
         validate_token() implemented in child, sets the value of variable
         self.api_relative_url. It then calls super class method to make HTTP
         request on
-
             url = self.social_network.api_url + self.api_relative_url
+        (This will evaluate in case of Meetup as
+            url = 'https://api.meetup.com/2' + '/member/self')
 
         If we get response status in range 2xx, then access token is valid.
         Otherwise we implement functionality in child method
@@ -75,7 +77,7 @@ class SocialNetworkBase(object):
         and will have the methods like
 
         1- get_access_and_refresh_token() to get access token (and refresh
-            token if xyz has any)
+            token if "xyz" has any)
 
         2- validate_access_token() to check the validity of access token present
             in getTalent db table 'user_social_network_credential'
@@ -241,6 +243,12 @@ class SocialNetworkBase(object):
         # token validity is checked here. If token is expired, we refresh it
         # here and save new access token in database.
         self.access_token_status = self.validate_and_refresh_access_token()
+        if not self.access_token_status:
+            # Access token has expired. Couldn't refresh it for given
+            # social network.
+            raise AccessTokenHasExpired(
+                'Access token has expired. Please connect with %s again '
+                'from "Profile" page' % self.social_network.name)
         self.start_date_dt = None
         self.webhook_id = None
         if not self.user_credentials.member_id:
@@ -282,11 +290,11 @@ class SocialNetworkBase(object):
                                        headers=self.headers)
             if mode == 'event':
                 # gets events using respective API of Social Network
-                logger.debug('Getting events of %s(UserId: %s) from '
+                logger.debug('Getting event(s) of %s(UserId: %s) from '
                              '%s website.' % (self.user.name, self.user.id,
-                                self.social_network.name))
+                                              self.social_network.name))
                 self.events = sn_event_obj.get_events()
-                logger.debug('Got %s events of %s(UserId: %s) on %s within '
+                logger.debug('Got %s event(s) of %s(UserId: %s) on %s within '
                              'provided time range.'
                              % (len(self.events), self.user.name, self.user.id,
                                 self.social_network.name))
@@ -339,12 +347,14 @@ class SocialNetworkBase(object):
                     access_token = response.get('access_token')
                     # refresh token is used to refresh the access token
                     refresh_token = response.get('refresh_token')
-                except ValueError as e:
-                    # In case of Facebook, access_token is retrieved as follows
-                    #TODO; there should be more checks to see if it indeeed is Facebook
-                    access_token = \
-                        get_token_response.content.split('=')[1].split('&')[0]
-                    refresh_token = ''
+                except ValueError:
+                    if 'facebook' in social_network.api_url:
+                        # In case of Facebook, access_token is retrieved as follows
+                        access_token = \
+                            get_token_response.content.split('=')[1].split('&')[0]
+                        refresh_token = ''
+                    else:
+                        raise
                 return access_token, refresh_token
             else:
                 error_message = get_token_response.json().get('error')
@@ -362,16 +372,20 @@ class SocialNetworkBase(object):
     def get_member_id(self):
         """
         - If getTalent user has an account on some social network, like
-            Meetup.com, it will have a "Member id" for that social network.
-            This "Member id" is used to make API subsequent calls to fetch
+            Meetup.com, it will have a "member id" for that social network.
+            This "member id" is used to make API subsequent calls to fetch
             events or RSVPs and relevant data for getTalent user from social
             network website.
 
         ** Working **
-            - In this method, we have value of "self.api_relative_url" which is
-                set in child classes according to API of respective social
-                network. We then make a HTTP POST call on required url. If we
-                get response status 2xx, we retrieve the "Member id" from
+            - In this method, we have value of "self.api_relative_url" set by
+                child classes according to API of respective social network.
+                "self.api_relative_url" is appended in "self.api_url" like
+                    url = self.api_url + self.api_relative_url
+                This will evaluate in case of Meetup as
+                    url = 'https://api.meetup.com/2' + '/member/self'
+                We then make a HTTP POST call on required url. If we
+                get response status 2xx, we retrieve the "member id" from
                 response of HTTP POST call and update the record in
                 user_social_network_credentials db table.
 
@@ -382,7 +396,7 @@ class SocialNetworkBase(object):
             sn.get_member_id()
 
         - We call this method from __init__() of SocialNetworkBase class so
-            that we don't need to get 'Member id' of getTalent user while
+            that we don't need to get 'member id' of getTalent user while
             making object of some social network class at different places.
             (e.g.
             1- creating object of Meetup() in start() method of manager.
@@ -394,6 +408,8 @@ class SocialNetworkBase(object):
         .. seealso:: __init__() method defined in SocialNetworkBase class
             inside social_network_service/base.py.
         """
+        logger.debug('Getting "member id" of %s(user id: %s) using API of %s.'
+                     % (self.user.name, self.user.id, self.social_network.name))
         try:
             user_credentials = self.user_credentials
             url = self.api_url + self.api_relative_url
@@ -425,8 +441,14 @@ class SocialNetworkBase(object):
          social network service base class inside
          social_network_service/base.py to check the validity of the access
          token of current user for a specific social network. We take the
-         access token, make request to social network API, and check if it
-         didn't error out.
+         access token, make request to social network API on url
+            url = self.api_url + self.api_relative_url
+         and check if it didn't error out.
+
+         We have value of "self.api_relative_url" set by child classes
+            according to API of respective social network. Above url will
+            evaluate in case of Meetup as
+            url = 'https://api.meetup.com/2' + '/member/self'
 
         :Example:
                 from social_network_service.meetup import Meetup
@@ -440,20 +462,20 @@ class SocialNetworkBase(object):
         :return status of of access token either True or False.
         """
         status = False
-        relative_url = self.api_relative_url
-        url = self.api_url + relative_url
+        url = self.api_url + self.api_relative_url
         try:
             response = requests.get(url, headers=self.headers, params=payload)
             if response.ok:
                 status = True
             else:
                 logger.debug("Access token has expired for %s(UserId:%s)."
-                             " Social Network is %s"
+                             " Social Network is %s."
                              % (self.user.name, self.user.id,
                                 self.social_network.name))
         except requests.RequestException as error:
-            log_exception({'user_id': self.user.id,
-                           'error': error.message})
+            raise AccessTokenHasExpired('Error: %s, Please '
+                                        'connect with %s again from "Profile" page.'
+                                        % (error.message, self.social_network.name))
         return status
 
     def refresh_access_token(self):

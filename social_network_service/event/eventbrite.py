@@ -40,7 +40,7 @@ class Eventbrite(EventBase):
 
     :Example:
 
-        To create / update a meetup event you have to do tha following:
+        To create / update a Eventbrite event you have to do tha following:
 
         1. Create Eventbrite instance
             eventbrite = Eventbrite(user=user_obj,

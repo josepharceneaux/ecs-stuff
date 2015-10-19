@@ -51,7 +51,7 @@ class Facebook(EventBase):
 
     def __init__(self, *args, **kwargs):
         """
-        This method initializes eventbrite object and assigns default/initial
+        This method initializes facebook object and assigns default/initial
         values.
         This object has following attributes:
             - events:
@@ -63,9 +63,9 @@ class Facebook(EventBase):
             - user:
                 User object  user who sent the request to create this object
             - user_credentials:
-                user credentials for eventbrite for this user
+                user credentials for facebook for this user
             - social_network:
-                SocialNetwork object representing Eventbrite SN
+                SocialNetwork object representing Facebook SN
             - api_url:
                 URL to access Facebook API
             - start_date:
@@ -82,7 +82,7 @@ class Facebook(EventBase):
         """
         super(Facebook, self).__init__(*args, **kwargs)
         self.start_date = (datetime.now() - timedelta(days=3000)).strftime("%Y-%m-%d")
-        self.end_date = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
+        self.end_date = (datetime.now() + timedelta(days=60)).strftime("%Y-%m-%d")
         self.graph = None
 
     def get_events(self):
@@ -156,7 +156,7 @@ class Facebook(EventBase):
         getTalent database fields. Finally we return Event's object to
         save/update record in getTalent database.
         We also issue some calls to get updated venue and organizer information.
-        :param event: data from Eventbrite API.
+        :param event: data from Facebook API.
         :type event: dictionary
         :exception Exception: It raises exception if there is an error getting
             data from API.
