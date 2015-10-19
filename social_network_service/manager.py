@@ -91,7 +91,9 @@ def start():
                     job_pool.spawn(sn.process, name_space.mode,
                                    user_credentials=user_credentials)
                 else:
-                    raise AccessTokenHasExpired
+                    raise AccessTokenHasExpired(
+                        'Access token has expired. Please connect with %s again '
+                        'from "Profile" page.' % user_credentials.social_network.name)
             except KeyError:
                 raise
             except Exception as error:

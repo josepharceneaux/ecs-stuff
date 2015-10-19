@@ -104,7 +104,10 @@ def handle_rsvp():
                     sn_obj.process('rsvp', user_credentials=user_credentials,
                                    rsvp_data=data)
                 else:
-                    raise AccessTokenHasExpired('Access token has expired.')
+                    raise AccessTokenHasExpired(
+                        'Access token has expired. Please connect with %s again '
+                        'from "Profile" page.' % user_credentials.social_network.name)
+
             elif action == 'test':
                 logger.debug('Successful webhook connection')
 
