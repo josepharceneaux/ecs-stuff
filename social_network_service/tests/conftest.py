@@ -540,29 +540,29 @@ def get_test_events(request, test_user, meetup, eventbrite, venues, test_eventbr
     """
     This fixture returns data (dictionary) to create meetup and eventbrite events
     """
-    meetup_event_data = EVENT_DATA.copy()
-    meetup_event_data['social_network_id'] = meetup.id
-    meetup_event_data['venue_id'] = venues[0].id
-    meetup_event_data['organizer_id'] = organizer_in_db.id
-    eventbrite_event_data = EVENT_DATA.copy()
-    eventbrite_event_data['social_network_id'] = eventbrite.id
-    eventbrite_event_data['venue_id'] = venues[1].id
-    eventbrite_event_data['organizer_id'] = organizer_in_db.id
+    meetup_dict = EVENT_DATA.copy()
+    meetup_dict['social_network_id'] = meetup.id
+    meetup_dict['venue_id'] = venues[0].id
+    meetup_dict['organizer_id'] = organizer_in_db.id
+    eventbrite_dict = EVENT_DATA.copy()
+    eventbrite_dict['social_network_id'] = eventbrite.id
+    eventbrite_dict['venue_id'] = venues[1].id
+    eventbrite_dict['organizer_id'] = organizer_in_db.id
 
     def delete_test_event():
         # delete event if it was created by API. In that case, data contains id of that event
-        if 'id' in meetup_event_data:
-            event_id = meetup_event_data['id']
-            del meetup_event_data['id']
+        if 'id' in meetup_dict:
+            event_id = meetup_dict['id']
+            del meetup_dict['id']
             delete_events(test_user.id, [event_id])
 
-        if 'id' in eventbrite_event_data:
-            event_id = eventbrite_event_data['id']
-            del eventbrite_event_data['id']
+        if 'id' in eventbrite_dict:
+            event_id = eventbrite_dict['id']
+            del eventbrite_dict['id']
             delete_events(test_user.id, [event_id])
 
     request.addfinalizer(delete_test_event)
-    return meetup_event_data, eventbrite_event_data
+    return meetup_dict, eventbrite_dict
 
 
 @pytest.fixture(params=['Meetup', 'Eventbrite'])
@@ -581,7 +581,7 @@ def test_event(request, get_test_events):
 
 @pytest.fixture(params=['title', 'description',
                         'end_datetime', 'timezone',
-                        'start_datetime', 'currency'])
+                        'start_datetime', 'currency'], scope='function')
 def eventbrite_missing_data(request, eventbrite_event_data):
     """
     This fixture returns eventbrite data and a key will be deleted from data to test
@@ -590,11 +590,11 @@ def eventbrite_missing_data(request, eventbrite_event_data):
     :param eventbrite_event_data: dictionary for eventbrite event data
     :return:
     """
-    return request.param, eventbrite_event_data
+    return request.param, eventbrite_event_data.copy()
 
 
 @pytest.fixture(params=['title', 'description', 'group_id',
-                        'group_url_name', 'start_datetime', 'max_attendees'])
+                        'group_url_name', 'start_datetime', 'max_attendees'], scope='function')
 def meetup_missing_data(request, meetup_event_data):
     """
     This fixture returns meetup data and a key will be deleted from data to test
@@ -603,7 +603,7 @@ def meetup_missing_data(request, meetup_event_data):
     :param meetup_event_data: dictionary for meetup event data
     :return:
     """
-    return request.param, meetup_event_data
+    return request.param, meetup_event_data.copy()
 
 
 @pytest.fixture(scope='session')

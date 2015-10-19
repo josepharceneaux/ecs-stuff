@@ -560,7 +560,7 @@ def import_from_dist_packages(name, custom_name=None):
     return module
 
 
-def get_utc_datetime(dt, timezone):
+def get_utc_datetime(dt, tz):
     """
     This method takes datetime object and timezone name and returns UTC specific datetime
 
@@ -575,10 +575,10 @@ def get_utc_datetime(dt, timezone):
     :return: timezone specific datetime object
     :rtype string
     """
-    assert timezone, 'Timezone should not be none'
+    assert tz, 'Timezone should not be none'
     assert isinstance(dt, datetime)
     # get timezone info from given datetime object
-    local_timezone = timezone(timezone)
+    local_timezone = timezone(tz)
     try:
         local_dt = local_timezone.localize(dt, is_dst=None)
     except ValueError as e:

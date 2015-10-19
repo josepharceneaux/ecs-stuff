@@ -16,7 +16,7 @@ from common.models.organizer import Organizer
 from social_network_service import logger
 from social_network_service.event.base import EventBase
 from social_network_service.utilities import http_request
-from social_network_service.utilities import milliseconds_since_epoch
+from social_network_service.utilities import milliseconds_since_epoch_local_time
 from social_network_service.utilities import milliseconds_since_epoch_to_dt
 from social_network_service.utilities import log_error
 from social_network_service.custom_exections import VenueNotFound
@@ -109,8 +109,8 @@ class Meetup(EventBase):
                           or (datetime.now() + timedelta(days=19))
         self.end_date = kwargs.get('end_date') \
                         or (datetime.now() + timedelta(days=23))
-        self.start_time_since_epoch = milliseconds_since_epoch(self.start_date)
-        self.end_time_since_epoch = milliseconds_since_epoch(self.end_date)
+        self.start_time_since_epoch = milliseconds_since_epoch_local_time(self.start_date)
+        self.end_time_since_epoch = milliseconds_since_epoch_local_time(self.end_date)
 
     def get_events(self):
         """
@@ -567,7 +567,7 @@ class Meetup(EventBase):
         self.validate_required_fields(data)
         # assert whether data['start_datetime'] is instance of dt
         # converting Datetime object to epoch for API call
-        start_time = int(milliseconds_since_epoch(data['start_datetime']))
+        start_time = int(milliseconds_since_epoch_local_time(data['start_datetime']))
         self.payload = {
             'name': data['title'],
             'group_id': data['group_id'],

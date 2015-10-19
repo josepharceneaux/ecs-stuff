@@ -1,5 +1,40 @@
 """
 This file contains API endpoints related to social network.
+    Following is a list of API endpoints:
+        - Social Networks:  /social_networks/
+            GET     : Get all social networks
+            POST    : Create a social network
+            DELETE  : Delete a social network
+
+        - Meetup Groups: /social_networks/groups/
+            GET     : get Meetup groups owned by user.
+
+        - Get Token Validity: /social_networks/token_validity/<int:social_network_id>
+            GET     : Get user access_token validity status for specified social network.
+
+        - Refresh Access Token: /social_network/refresh_token/<int:social_network_id>
+            GET: This resource refreshes access token for given social network for given user.
+
+        - Venues: /venues/
+            GET     : Get all venues created by the user
+            POST    : Create a venue
+            DELETE  : Delete one or more venues from getTalent database.
+
+        - VenueById: /venues/<int:venue_id>
+            GET     : Get a venue with specific id
+            POST    : Update an existing venue
+            DELETE  : Delete a venue from getTalent database
+
+        - Organizers: /organizers/
+            GET     : Get all organizers created by the user
+            POST    : Create an organizer
+            DELETE  : Delete one or more organizers
+
+        - OrganizerById: /organizers/<int: organizer_id>
+            GET     : Get an organizer
+            POST    : Update an existing organizer
+            DELETE  : Delete a single organizer
+
 """
 import json
 import types

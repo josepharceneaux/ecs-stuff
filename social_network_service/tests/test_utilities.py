@@ -2,6 +2,7 @@ __author__ = 'zohaib'
 
 # Standard Library
 from datetime import datetime
+from dateutil.parser import parse
 
 # Third Party
 from pytz import timezone
@@ -133,10 +134,12 @@ def test_get_utc_datetime():
     assert get_utc_datetime(now, 'Asia/Karachi') == '2015-10-16T07:12:12Z', \
         'UTC date time should be 5 hours behind Asia/Karachi timezone datetime'
 
-    now = datetime(2015, 10, 16, 11, 11, 11, tzinfo=timezone('Asia/Karachi'))
+    # now = datetime(2015, 10, 16, 11, 11, 11, tzinfo=timezone('Asia/Karachi'))
+    now = parse('2015-10-16T11:11:11Z')
     print now
     assert get_utc_datetime(now, 'Asia/Karachi') == '2015-10-16T11:11:11Z', \
         'UTC date time should be 5 hours behind Asia/Karachi timezone datetime'
+
 
 def test_import_from_dist_packages():
     """

@@ -50,7 +50,7 @@ To add another social network for events management, following are steps:
         - save_user_credentials_in_db()
             This method saves user social network credentials in database
 
-    + Add Event class for this social network which will handle event related tasks.
+    + Add Event class for social network which will handle event related tasks.
         To add a new social network for events, we have to add a new class in
         social_network_service/event/ directory.
 
@@ -271,8 +271,8 @@ class EventBase(object):
         try:
             start = data['start_datetime']
             end = data['end_datetime']
-            data['start_datetime'] = parse(start)
-            data['end_datetime'] = parse(end)
+            data['start_datetime'] = parse(start) if start else ''
+            data['end_datetime'] = parse(end) if end else ''
         except Exception:
             raise InvalidDatetime('Invalid DateTime: Kindly specify datetime '
                                   'in UTC format like 2015-10-08T06:16:55Z')
