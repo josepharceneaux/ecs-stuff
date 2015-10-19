@@ -99,6 +99,21 @@ Below this level you will find various folders that arrange the application's fu
 - `gulp help`
 
     Displays all of the available gulp tasks.
+    
+### App Config
+- `gulp config`
+
+    Builds environment constants using GT_NODE_ENV env variable
+    Default environment is `development`.
+    
+    ```bash
+    $ GT_NODE_ENV=development gulp config
+    $ GT_NODE_ENV=production gulp config
+    $ GT_NODE_ENV=local gulp config
+    ```
+    
+    Running `gulp serve-dev` simply will run the app with development environment variable.
+    Running `GT_NODE_ENV=production gulp serve-dev` will run the app with production environment variable.
 
 ### Code Analysis
 

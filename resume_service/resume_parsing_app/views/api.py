@@ -54,6 +54,8 @@ def parse_file_picker_resume():
     valid_user_id = json.loads(r.text).get('user_id')
     if not valid_user_id:
         return jsonify({'error': {'message': 'Oauth did not provide a valid user_id'}}), 400
+
+    # Get the resume file object from Filepicker or the request body, if provided
     filepicker_key = request.form.get('filepicker_key')
     create_candidate = request.form.get('create_candidate')
     if filepicker_key:
@@ -69,6 +71,7 @@ def parse_file_picker_resume():
     else:
         return jsonify({'error': 'Invalid query params'}), 400
 
+    # Parse resume
     result_dict = parse_resume(file_obj=resume_file, filename_str=filename_str)
     processed_data = result_dict.get('dice_api_response')
     if processed_data:

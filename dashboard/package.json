@@ -44,6 +44,7 @@
     "gulp-load-plugins": "^1.0.0-rc.1",
     "gulp-minify-html": "^1.0.3",
     "gulp-ng-annotate": "^1.0.0",
+    "gulp-ng-config": "^1.2.1",
     "gulp-nodemon": "^2.0.3",
     "gulp-plumber": "^1.0.1",
     "gulp-print": "^1.1.0",
