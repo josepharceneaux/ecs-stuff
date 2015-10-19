@@ -145,13 +145,7 @@ class Events(Resource):
         """
         # get json post request data
         event_data = request.get_json(force=True)
-        try:
-            # create event on social network and local database
-            gt_event_id = process_event(event_data, kwargs['user_id'])
-        except ApiException:
-            raise
-        except Exception:
-            raise ApiException('APIError: Internal Server error occurred!')
+        gt_event_id = process_event(event_data, kwargs['user_id'])
         headers = {'Location': '/events/%s' % gt_event_id}
         resp = ApiResponse(json.dumps(dict(id=gt_event_id)), status=201, headers=headers)
         return resp
@@ -192,7 +186,7 @@ class Events(Resource):
         user_id = kwargs['user_id']
         # get event_ids for events to be deleted
         req_data = request.get_json(force=True)
-        event_ids = req_data['event_ids'] if 'event_ids' in req_data and isinstance(req_data['event_ids'], list) else []
+        event_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else []
         # check if event_ids list is not empty
         if event_ids:
             deleted, not_deleted = delete_events(user_id, event_ids)
@@ -260,12 +254,10 @@ class EventById(Resource):
         user_id = kwargs['user_id']
         event = Event.get_by_user_and_event_id(user_id, event_id)
         if event:
-            try:
-                event_data = add_organizer_venue_data(event)
-            except Exception:
-                raise ApiException('Unable to serialize event data')
+            event_data = add_organizer_venue_data(event)
             return dict(event=event_data), 200
-        raise ApiException('Event does not exist with id %s' % event_id, error_code=400)
+        return ApiResponse(json.dumps(dict(message='Event does not exist with id %s' % event_id)),
+                           status=400)
 
     @authenticate
     def post(self, event_id, **kwargs):
@@ -332,13 +324,7 @@ class EventById(Resource):
         event = Event.get_by_user_id_event_id_social_network_event_id(
             user_id, event_id, event_data['social_network_event_id'])
         if event:
-            try:
-                process_event(event_data, user_id, method='Update')
-            except ApiException:
-                raise
-            except Exception:
-                # print(traceback.format_exc())
-                raise ApiException('APIError: Internal Server error!')
+            process_event(event_data, user_id, method='Update')
             return ApiResponse(json.dumps(dict(message='Event updated successfully')), status=204)
         return ApiResponse(json.dumps(dict(message='Event not found')),
                            status=404)

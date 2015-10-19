@@ -1,3 +1,7 @@
+"""
+This module contains api endpoint which are very much Events App specific.
+It contains endpoint for timezones which returns a list of all timezones.
+"""
 from datetime import datetime
 import json
 import types
@@ -30,6 +34,46 @@ class TimeZones(Resource):
     def get(self, **kwargs):
         """
         This action returns a list of user timezones.
+
+            :Example:
+
+                    headers = {
+                                'Authorization': 'Bearer <access_token>'
+                               }
+                    response = requests.get(
+                                                API_URL + '/data/timezones',
+                                                headers=headers,
+                                            )
+
+
+
+
+        .. Response:
+                {
+                  "timezones": [
+                    {
+                      "name": "GMT +00:00  Africa/Abidjan",
+                      "value": "Africa/Abidjan"
+                    },
+                    {
+                      "name": "GMT +00:00  Africa/Accra",
+                      "value": "Africa/Accra"
+                    },
+                    {
+                      "name": "GMT +00:00  Africa/Bamako",
+                      "value": "Africa/Bamako"
+                    },
+                    {
+                      "name": "GMT +00:00  Africa/Banjul",
+                      "value": "Africa/Banjul"
+                    },
+                    .
+                    .
+                    .
+                    .
+                    .
+                   ]
+                }
         """
         try:
             timezones = get_timezones()
@@ -39,6 +83,11 @@ class TimeZones(Resource):
 
 
 def get_timezones():
+    """
+    This function returns a list of timezones.
+    It uses pytz to get commonly used timezones.
+    :return:
+    """
     timezones = []
     for timezone_name in pytz.common_timezones:
         offset = datetime.now(pytz.timezone(timezone_name)).strftime('%z')
