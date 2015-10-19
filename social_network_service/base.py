@@ -367,11 +367,19 @@ class SocialNetworkBase(object):
             events or RSVPs and relevant data for getTalent user from social
             network website.
 
-        - In this method, we have value of "self.api_relative_url" which is
-            set in child classes according to API of respective social network.
-            We then make a HTTP POST call on required url. If we get response
-            2xx, we retrieve the "Member id" from response of HTTP POST call
-            and update the record in user_social_network_credentials db table.
+        ** Working **
+            - In this method, we have value of "self.api_relative_url" which is
+                set in child classes according to API of respective social
+                network. We then make a HTTP POST call on required url. If we
+                get response status 2xx, we retrieve the "Member id" from
+                response of HTTP POST call and update the record in
+                user_social_network_credentials db table.
+
+        :Example:
+
+            from social_network_service.meetup import Meetup
+            sn = Meetup(user_id=1)
+            sn.get_member_id()
 
         - We call this method from __init__() of SocialNetworkBase class so
             that we don't need to get 'Member id' of getTalent user while
@@ -381,11 +389,6 @@ class SocialNetworkBase(object):
             2- while processing event inside process_event() defined in
                 social_network_service/utilities.py
             )
-
-        :Example:
-                from social_network_service.meetup import Meetup
-                sn = Meetup(user_id=1)
-                sn.get_member_id()
 
         **See Also**
         .. seealso:: __init__() method defined in SocialNetworkBase class

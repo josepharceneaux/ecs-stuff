@@ -148,24 +148,33 @@ class Facebook(RSVPBase):
 
     def get_all_pages(self, response, target_list):
         """
-         :param response: rsvp is likely the dict we get from the response
-            of Graph API of Facebook.
+         :param response: dictionary containing data after a request is made.
          :param target_list: list in which items to be appended after getting
                 from different pages/requests
          :type response: requests.Response
          :type target_list: list
 
-        - This function is used to get the data of candidate related
-          to given rsvp. It attaches all the information in attendee object.
-          attendees is a utility object we share in calls that contains
-          pertinent data.
+        - This method is used to get the paginated data.
+          To get all data about event attendees, event rsvps etc we need to send multiple
+          request because facebook sends data in pages or we can say chunks, some specific number
+          of records in a single request and a url to next page (resources).
+          So to get all pages data call this method and pass first request response and
+          target list in which data is to be appended.
+          It will send request to get next page given in this request "next" attribute/Key
+           and will continue until no next page is there to fetch.
 
-        - This method is called from process_rsvps() defined in
-          RSVPBase class.
+            :Example:
 
-        :Example:
+                try:
+                    # get those attendees who have confirmed their presence
+                    expected_attendees = self.graph.get_object(url + 'confirm')
+                except facebook.GraphAPIError as error:
+                    # handle errors here
+                    pass
+                rsvps += expected_attendees['data']
+                self.get_all_pages(expected_attendees, rsvps)
 
-            attendee = self.get_attendee(rsvp)
+                It will add all confirm rsvps in "rsvps" list which was passed as target.
 
         **See Also**
             .. seealso:: process_rsvps() method in RSVPBase class inside
