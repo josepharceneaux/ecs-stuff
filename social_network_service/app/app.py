@@ -19,14 +19,16 @@ from flask.ext.cors import CORS
 from flask.ext.restful import Api
 
 # Application specific imports
-from restful.events import events_blueprint
 from social_network_service import logger
-from restful.social_networks import social_network_blueprint
 from social_network_service.app.app_utils import ApiResponse
 from social_network_service.custom_exections import ApiException
 from social_network_service.app.restful.data import data_blueprint
+from social_network_service.custom_exections import AccessTokenHasExpired
 from social_network_service.rsvp.eventbrite import Eventbrite as EventbriteRsvp
-from social_network_service.utilities import log_exception, get_class, log_error
+from restful.events import events_blueprint
+from social_network_service.utilities import get_class
+from social_network_service.utilities import log_exception
+from restful.social_networks import social_network_blueprint
 
 # Register Blueprints for different APIs
 app.register_blueprint(social_network_blueprint)
@@ -80,12 +82,12 @@ def handle_rsvp():
     # hub_mode = request.args['hub.mode']
     # assert verify_token == 'token'
     user_id = ''
-    try:
-        if request.data:
+    if request.data:
+        try:
             data = json.loads(request.data)
             action = data['config']['action']
             if action == 'order.placed':
-                logger.debug('Got an RSVP from eventbrite event via webhook.')
+                logger.debug('Got an RSVP from Eventbrite event via webhook.')
                 webhook_id = data['config']['webhook_id']
                 user_credentials = \
                     EventbriteRsvp.get_user_credentials_by_webhook(webhook_id)
@@ -93,32 +95,36 @@ def handle_rsvp():
                 social_network_class = \
                     get_class(user_credentials.social_network.name.lower(),
                               'social_network')
-                # we call social network class here for auth purpose, If token is
-                # expired, we try to refresh access token. If succeeded, we move on
-                # to next step.
+                # we make social network object here to check the validity of
+                # access token. If access token is valid, we proceed to do the
+                # processing to save in getTalent db tables otherwise we raise
+                # exception AccessTokenHasExpired.
                 sn_obj = social_network_class(user_id=user_credentials.user_id)
-                sn_obj.process('rsvp', user_credentials=user_credentials,
-                               rsvp_data=data)
+                if sn_obj.access_token_status:
+                    sn_obj.process('rsvp', user_credentials=user_credentials,
+                                   rsvp_data=data)
+                else:
+                    raise AccessTokenHasExpired('Access token has expired.')
             elif action == 'test':
                 logger.debug('Successful webhook connection')
-        else:
-            # return hub_challenge, 200
-            error_message = 'No RSVP data received.'
-            log_error({'user_id': user_id,
-                       'error': error_message})
-            data = {'message': error_message,
+
+        except Exception as error:
+            log_exception({'user_id': user_id,
+                           'error': error.message})
+            data = {'message': error.message,
                     'status_code': 500}
             return flask.jsonify(**data), 500
-    except Exception as error:
-        log_exception({'user_id': user_id,
-                       'error': error.message})
-        data = {'message': error.message,
-                'status_code': 500}
-        return flask.jsonify(**data), 500
 
-    data = {'message': 'RSVP Saved',
-            'status_code': 200}
-    return flask.jsonify(**data), 200
+        data = {'message': 'RSVP Saved',
+                'status_code': 200}
+        return flask.jsonify(**data), 200
+
+    else:
+        # return hub_challenge, 200
+        error_message = 'No RSVP data received.'
+        data = {'message': error_message,
+                'status_code': 200}
+        return flask.jsonify(**data), 200
 
 
 @app.errorhandler(ApiException)

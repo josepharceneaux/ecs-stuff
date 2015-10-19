@@ -53,26 +53,25 @@ class Meetup(SocialNetworkBase):
 
     def get_member_id(self):
         """
+        - If getTalent user has an account on Facebook website, then we
+            have a "Member id (profile id of Facebook user)".
+            This "Member id" is used to make API  subsequent calls to
+            fetch events or RSVPs and relevant data for getTalent user
+            from social network website.
+
         - Here we set the API relative url and put it in
-            "self.api_relative_url".
+            "self.api_relative_url". We then call super class method
+            get_member_id() to get "Member id" using API of Facebook.
 
-        - We then call super class method get_member_id() to get Id
-            of user on Meetup website.
-
-        - Member id is used to fetch events or RSVPs of user from social
-            network.
-
-        - This method is called from start() defined in social network manager
-            inside social_network_service/manager.py.
+        - This method is called in __int__() of SocialNetworkBase class to
+            get and save member_id in getTalent db table
+            user_social_network_credential for a particular record.
 
         **See Also**
-        .. seealso:: get_member_id() function defined in SocialNetworkBase
+        .. seealso:: get_member_id() method defined in SocialNetworkBase
             class inside social_network_service/base.py.
 
-        .. seealso:: start() function defined in social network manager
-            inside social_network_service/manager.py.
-
-        :return:
+        .. seealso:: __init__() method of SocialNetworkBase class.
         """
         self.api_relative_url = '/member/self'
         super(Meetup, self).get_member_id()
