@@ -14,7 +14,7 @@ class Product(db.Model):
 
     @classmethod
     def get_by_name(cls, vendor_name):
-        assert vendor_name is not None
+        assert vendor_name
         return cls.query.filter(
             db.and_(
                 Product.name == vendor_name

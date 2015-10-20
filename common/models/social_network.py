@@ -1,5 +1,7 @@
-from datetime import datetime
-import time
+# Standard Library
+import datetime
+
+# Application Specific
 from db import db
 import event
 import venue
@@ -15,7 +17,7 @@ class SocialNetwork(db.Model):
     secret_key = db.Column('secretKey', db.String(500))
     redirect_uri = db.Column('redirectUri', db.String(255))
     auth_url = db.Column('authUrl', db.String(200))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.now())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
     candidate_social_networks = db.relationship('CandidateSocialNetwork', backref='social_network')
@@ -28,14 +30,14 @@ class SocialNetwork(db.Model):
 
     @classmethod
     def get_by_name(cls, name):
-        assert name is not None
+        assert name
         return cls.query.filter(
             SocialNetwork.name == name.strip()
         ).one()
 
     @classmethod
     def get_by_id(cls, id):
-        assert id is not None
+        assert id
         return cls.query.filter(
             SocialNetwork.id == id
         ).one()

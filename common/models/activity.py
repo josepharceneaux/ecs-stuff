@@ -13,7 +13,7 @@ class Activity(db.Model):
 
     @classmethod
     def get_by_user_id_params_type_source_id(cls, user_id, params, type, source_id):
-        assert user_id is not None
+        assert user_id
         return cls.query.filter(
             db.and_(
                 Activity.user_id == user_id,

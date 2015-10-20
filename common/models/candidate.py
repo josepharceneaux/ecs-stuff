@@ -97,7 +97,7 @@ class Candidate(db.Model):
                                                                user_id,
                                                                source_id,
                                                                product_id):
-        assert user_id is not None
+        assert user_id
         return cls.query.filter(
             and_(
                 Candidate.first_name == first_name,
@@ -144,7 +144,7 @@ class CandidateSource(db.Model):
 
     @classmethod
     def get_by_description_and_notes(cls, event_name, event_description):
-        assert event_name is not None
+        assert event_name
         return cls.query.filter(
             and_(
                 CandidateSource.description == event_name,
@@ -210,7 +210,6 @@ class CandidateRating(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
 
-
 class CandidateTextComment(db.Model):
     __tablename__ = 'candidate_text_comment'
     id = db.Column(db.Integer, primary_key=True)
@@ -271,9 +270,6 @@ class CandidatePreferredLocation(db.Model):
 
     def __repr__(self):
         return "<CandidatePreferredLocation (candidate_id=' %r')>" % self.candidate_id
-
-
-
 
 
 class CandidateLanguage(db.Model):
