@@ -102,10 +102,10 @@ def app_context(request):
     context.set_up()
 
     def tear_down():
-        token = Token.query.filter_by(access_token=context.access_token).first() or None
-        client = Client.query.filter_by(client_id=context.client_id).first() or None
-        user = User.query.filter_by(email=context.email).first() or None
-        test_domain = Domain.query.get(context.test_domain) or None
+        token = Token.query.filter_by(access_token=context.access_token).first()
+        client = Client.query.filter_by(client_id=context.client_id).first()
+        user = User.query.filter_by(email=context.email).first()
+        test_domain = Domain.query.get(context.test_domain)
         if token:
             db.session.delete(token)
         if client:

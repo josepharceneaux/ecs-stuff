@@ -19,7 +19,8 @@ manager = Manager(app)
 @manager.command
 def add_roles_to_existing_users():
     # Get all existing roles and user (probably 2)
-    roles = DomainRole.all().get('roles')
+    all_roles = DomainRole.all()
+    roles = [all_role.id for all_role in all_roles]
     existing_users = User.query.all()
     if len(roles) and len(existing_users):
         for existing_user in existing_users:

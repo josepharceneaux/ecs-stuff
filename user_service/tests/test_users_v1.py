@@ -1,8 +1,8 @@
 from common.tests.conftest import UserAuthentication
 from common.tests.conftest import *
 
-
 USER_PASSWORD = 'Talent15'
+
 
 ####################################
 # test cases for oauth2 operations #

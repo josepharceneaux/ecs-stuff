@@ -1,11 +1,13 @@
 from flask_restful import Resource
 from common.models.user import User
 from common.utils.validators import is_number
-from common.utils.auth_utils import authenticate_oauth_user
+from common.utils.auth_utils import require_oauth
 from flask import request
 
 
 class UserResource(Resource):
+    decorators = [require_oauth]
+
     def get(self, **kwargs):
         """ GET /web/users/:id
 
@@ -19,11 +21,9 @@ class UserResource(Resource):
                  user's password, registration_key, and reset_password_key.
                  Not Found Error if user is not found.
         """
-        authenticated_user = authenticate_oauth_user(request=request)
-        if authenticated_user.get('error'):
-            return {'error': {'code': 3, 'message': 'Not authorized'}}, 401
 
-        requested_user_id = kwargs.get('id')
+        # If user_id not is provided then use the id of logged in user
+        requested_user_id = kwargs.get('id') or request.user.id
         # id must be integer
         if not is_number(requested_user_id):
             print is_number(requested_user_id)

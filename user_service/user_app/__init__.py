@@ -2,7 +2,7 @@ __author__ = 'ufarooqi'
 
 from flask import Flask
 from common.models.db import db
-from flask_restful import (Api, reqparse, Resource)
+from gt_custom_restful import *
 
 app = Flask(__name__)
 app.config.from_object('user_service.config')
@@ -15,7 +15,7 @@ db.init_app(app)
 db.app = app
 
 from api.users_v1 import UserResource
-api = Api(app)
+api = GetTalentApi(app)
 parser = reqparse.RequestParser()
 api.add_resource(UserResource, "/v1/users/<id>")
 
