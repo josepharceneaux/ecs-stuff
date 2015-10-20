@@ -1,9 +1,11 @@
 from db import db
 import datetime
 import logging
-import candidate
+import venue
 import domain
+import candidate
 import organizer
+import social_network
 from candidate import CandidateSource
 from candidate import CandidateAreaOfInterest
 from misc import AreaOfInterest
