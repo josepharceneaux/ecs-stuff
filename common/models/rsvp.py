@@ -20,10 +20,7 @@ class RSVP(db.Model):
                                                           candidate_id,
                                                           social_network_id,
                                                           added_time):
-        assert vendor_rsvp_id is not None
-        assert candidate_id is not None
-        assert social_network_id is not None
-
+        assert vendor_rsvp_id and candidate_id and social_network_id
         return cls.query.filter(
             db.and_(
                 RSVP.social_network_rsvp_id == vendor_rsvp_id,
@@ -39,11 +36,7 @@ class RSVP(db.Model):
                                                               candidate_id,
                                                               social_network_id,
                                                               event_id):
-        assert vendor_rsvp_id is not None
-        assert candidate_id is not None
-        assert social_network_id is not None
-        assert event_id is not None
-
+        assert vendor_rsvp_id and candidate_id and social_network_id and event_id
         return cls.query.filter(
             db.and_(
                 RSVP.social_network_rsvp_id == vendor_rsvp_id,
@@ -58,9 +51,7 @@ class RSVP(db.Model):
                                                               social_network_rsvp_id,
                                                               social_network_id,
                                                               ):
-        assert social_network_id is not None
-        assert social_network_rsvp_id is not None
-
+        assert social_network_id and social_network_rsvp_id
         return cls.query.filter(
             db.and_(
                 RSVP.social_network_rsvp_id == social_network_rsvp_id,
@@ -82,10 +73,7 @@ class CandidateEventRSVP(db.Model):
 
     @classmethod
     def get_by_id_of_candidate_event_rsvp(cls, candidate_id, event_id, rsvp_id):
-        assert candidate_id is not None
-        assert event_id is not None
-        assert rsvp_id is not None
-
+        assert candidate_id and event_id and rsvp_id
         return cls.query.filter(
             db.and_(
                 CandidateEventRSVP.candidate_id == candidate_id,

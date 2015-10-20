@@ -284,30 +284,28 @@ class UserSocialNetworkCredential(db.Model):
 
     @classmethod
     def get_all_credentials(cls, social_network_id=None):
-        if social_network_id is None:
+        if not social_network_id:
             return cls.query.all()
         else:
             return cls.get_user_credentials_of_social_network(social_network_id)
 
     @classmethod
     def get_user_credentials_of_social_network(cls, social_network_id):
-        assert social_network_id is not None
-
+        assert social_network_id
         return cls.query.filter(
             cls.social_network_id == social_network_id
         ).all()
 
     @classmethod
     def get_by_user_id(cls, user_id):
-        assert user_id is not None
+        assert user_id
         return cls.query.filter(
             cls.user_id == user_id
         ).all()
 
     @classmethod
     def get_by_user_and_social_network_id(cls, user_id, social_network_id):
-        assert user_id is not None
-        assert social_network_id is not None
+        assert user_id and social_network_id
         return cls.query.filter(
             db.and_(
                 cls.user_id == user_id,
@@ -327,8 +325,7 @@ class UserSocialNetworkCredential(db.Model):
 
     @classmethod
     def get_by_webhook_id_and_social_network_id(cls, webhook_id, social_network_id):
-        assert webhook_id is not None
-        assert social_network_id is not None
+        assert webhook_id and social_network_id
         return cls.query.filter(
             db.and_(
                 cls.webhook == webhook_id,

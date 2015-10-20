@@ -22,7 +22,6 @@ class Event(db.Model):
     currency = db.Column('currency', db.String(20))
     timezone = db.Column('timezone', db.String(100))
     max_attendees = db.Column('maxAttendees', db.Integer)
-    # TODO comment why do we need ticket_id. Also, why is it not a relation?
     tickets_id = db.Column('ticketsId', db.Integer, nullable=True)
 
     def __ne__(self, other_event):
@@ -38,6 +37,7 @@ class Event(db.Model):
 
     @classmethod
     def get_by_user_and_social_network_event_id(cls, user_id, social_network_event_id):
+        assert user_id and social_network_event_id
         return cls.query.filter(
             db.and_(
                 Event.user_id == user_id,
@@ -46,8 +46,7 @@ class Event(db.Model):
 
     @classmethod
     def get_by_user_id_vendor_id_start_date(cls, user_id, social_network_id, start_date):
-        assert user_id is not None
-        assert social_network_id is not None
+        assert user_id and social_network_id and start_date
         return cls.query.filter(
             db.and_(
                 Event.user_id == user_id,
@@ -57,10 +56,9 @@ class Event(db.Model):
 
     @classmethod
     def get_by_user_id_social_network_id_vendor_event_id(cls, user_id,
-                                                         social_network_id, social_network_event_id):
-        assert social_network_id is not None
-        assert social_network_event_id is not None
-        assert user_id is not None
+                                                         social_network_id,
+                                                         social_network_event_id):
+        assert social_network_id and social_network_event_id and user_id
         return cls.query.filter(
             db.and_(
                 Event.user_id == user_id,
@@ -72,9 +70,7 @@ class Event(db.Model):
     @classmethod
     def get_by_user_id_event_id_social_network_event_id(cls, user_id,
                                                          _id, social_network_event_id):
-        assert _id is not None
-        assert social_network_event_id is not None
-        assert user_id is not None
+        assert _id and social_network_event_id and user_id
         return cls.query.filter(
             db.and_(
                 Event.user_id == user_id,
@@ -85,6 +81,7 @@ class Event(db.Model):
 
     @classmethod
     def get_by_user_and_event_id(cls, user_id, event_id):
+        assert user_id and event_id
         return cls.query.filter(
             db.and_(
                 Event.user_id == user_id,
