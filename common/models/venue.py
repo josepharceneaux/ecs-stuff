@@ -13,7 +13,7 @@ class Venue(db.Model):
     address_line2 = db.Column('addressLine2', db.String(300))
     city = db.Column('city', db.String(100))
     state = db.Column('state', db.String(100))
-    zipcode = db.Column('zipcode', db.Integer)
+    zipcode = db.Column('zipcode', db.String(10))
     country = db.Column('country', db.String(100))
     longitude = db.Column('longitude', db.Float)
     latitude = db.Column('latitude', db.Float)
