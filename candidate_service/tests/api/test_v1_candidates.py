@@ -36,8 +36,12 @@ def generate_multiple_candidates_data():
 # test cases for GETting candidate #
 ####################################
 def test_get_candidate(sample_user):
+    # TODO: create user, login user, create candidate, fetch candidate
     user = sample_user
     candidate_id =  1
     r = requests.get("http://127.0.0.1:7000/v1/candidates/%s" % candidate_id)
 
-    print "\nresp = %s" % r
+    assert r.status_code == 200
+    assert 'candidate' in r.json()
+    assert 'id', 'emails' in r.json()['candidate']
+    print "\nresp = %s" % r.json()
