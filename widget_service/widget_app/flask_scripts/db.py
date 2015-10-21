@@ -2,6 +2,7 @@ __author__ = 'erikfarmer'
 import datetime
 import random
 
+from widget_service.common.models.candidate import CustomField
 from widget_service.common.models.candidate import University
 from widget_service.common.models.misc import AreaOfInterest
 from widget_service.common.models.misc import Culture
@@ -12,6 +13,8 @@ from widget_service.common.models.widget import WidgetPage
 from widget_service.common.utils.handy_functions import random_word
 from widget_service.widget_app import db
 
+
+# TODO add primary email label, phone label , custom fields (sub pref, nuid).
 def fill_db():
     print 'Filling Database'
     RANDOM_CULTURE = Culture(description='random', code='rndmz')

@@ -31,53 +31,72 @@ mod = Blueprint('widget_api', __name__)
 @mod.route('/widgets/<domain_uuid>', methods=['GET'])
 def show_widget(domain_uuid):
     """ Route for testing template rendering/js functions/etc.
-    :param domain: (string) the domain associated with an html template in for local testing.
+    :param domain_uuid: (string) the domain associated with an html template in for local testing.
     :return: a rendered HTML page.
     """
     template = db.session.query(WidgetPage).filter_by(domain_uuid=domain_uuid).first().template_name
     return render_template(template, domain=domain_uuid)
 
 
-#TODO This should dynamically add 'optional' fields such as preferred location/military experience.
-@mod.route('/widget/<domain>', methods=['POST'])
+@mod.route('/widgets/<domain>', methods=['POST'])
 def create_candidate_from_widget(domain):
     """ Post receiver for processing widget date.
     :return: A success or error message to change the page state of a widget.
     """
     form = request.form
     candidate_dict = defaultdict(dict)
-    candidate_dict['full_name'] = '{} {}'.format(form['firstName'], form['lastName'])
-    candidate_dict['emails'] =  [{'address': form['emailAdd'], 'label': 'Primary'}]
+    candidate_single_field_name = form.get('name')
+    candidate_double_field_name = '{} {}'.format(form.get('firstName'), form.get('lastName'))
+    candidate_locations = form.get('hidden-tags-location')
+    candidate_nuid = form.get('nuid') # Kaiser University Only Field
+    candidate_frequency = form.get('jobFrequency')
+    candidate_military_branch = form.get('militaryBranch')
+    candidate_military_status = form.get('militaryStatus')
+    candidate_military_grade = form.get('militaryGrade')
+    candidate_military_to_date = form.get('militaryToDate')
+    if candidate_single_field_name:
+        candidate_dict['full_name'] = candidate_single_field_name
+    else:
+        candidate_dict['full_name'] = candidate_double_field_name
+    candidate_dict['emails'] = [{'address': form['emailAdd'], 'label': 'Primary'}]
     candidate_dict['areas_of_interest'] = parse_interest_ids_from_form(form['hidden-tags-aoi'])
-    if form['hidden-tags-location']:
-        custom_fields = parse_city_and_state_ids_from_form(form['hidden-tags-location'])
-        candidate_dict.setdefault('custom_fields', []).append(custom_fields)
-    if form['jobFrequency']:
-        frequency_field = db.session.query(CustomField).filter_by(name='Subscription Preference').first()
+    if candidate_locations:
+        custom_fields = parse_city_and_state_ids_from_form(candidate_locations)
+        candidate_dict.setdefault('custom_fields', []).extend(custom_fields)
+    if candidate_nuid:
+        nuid_field = db.session.query(CustomField).filter_by(name='NUID').first()
         candidate_dict.setdefault('custom_fields', []).append(
-            {frequency_field.id: form['jobFrequency']}
+            {'id': nuid_field.id, 'value': candidate_nuid}
         )
-    if form['militaryBranch']:
-        candidate_dict['military_services']['branch'] = form['militaryBranch']
-    if form['militaryStatus']:
-        candidate_dict['military_services']['status'] = form['militaryStatus']
-    if form['militaryGrade']:
-        candidate_dict['military_services']['grade'] = form['militaryGrade']
-    if form['militaryToDate']:
-        candidate_dict['military_services']['to_date'] = form['militaryToDate']
+    if candidate_frequency:
+        frequency_field = db.session.query(CustomField).filter_by(
+            name='Subscription Preference').first()
+        candidate_dict.setdefault('custom_fields', []).append(
+            {'id': frequency_field.id, 'value': candidate_frequency}
+        )
+    military_service_dict = {}
+    if candidate_military_branch:
+        military_service_dict['branch'] = candidate_military_branch
+    if candidate_military_status:
+        military_service_dict['status'] = candidate_military_status
+    if candidate_military_grade:
+        military_service_dict['grade'] = candidate_military_grade
+    if candidate_military_to_date:
+        military_service_dict['to_date'] = candidate_military_to_date
+    candidate_dict['military_services'] = [military_service_dict] if military_service_dict else None
     payload = json.dumps({'candidates': [candidate_dict]})
-    try:
-        r = requests.post(app.config['CANDIDATE_CREATION_URI'], data=payload,
-                          headers={'Authorization': app.config['OAUTH_TOKEN'].access_token})
-    except:
-        return jsonify({'error': {'message': 'unable to create candidate from form'}})
+    oauth_token = app.config['OAUTH_TOKEN'].access_token
+    r = requests.post(app.config['CANDIDATE_CREATION_URI'], data=payload,
+                      headers={'Authorization': oauth_token})
+    if r.status_code != 200:
+        return jsonify({'error': {'message': 'unable to create candidate from form'}}), 401
     return jsonify({'success': {'message': 'candidate successfully created'}}), 201
 
 
 @mod.route('/<domain_uuid>/interests', methods=['GET'])
 def get_areas_of_interest(domain_uuid):
     """ API call that provides interests list filtered by the domain.
-    :param domain: (string)
+    :param domain_uuid: (string)
     :return: A dictionary pointing to primary and seconday interests that have been filtered by
              domain.
     """
@@ -98,8 +117,8 @@ def get_areas_of_interest(domain_uuid):
 @mod.route('/<domain_uuid>/majors', methods=['GET'])
 def get_major_names(domain_uuid):
     """API call for returning list of major names filtered by domain"""
-    domain_id = db.session.query(Domain.id).filter(Domain.uuid==domain_uuid)
-    majors = db.session.query(Major).filter(domain_id==domain_id)
+    domain_id = db.session.query(Domain.id).filter(Domain.uuid == domain_uuid)
+    majors = db.session.query(Major).filter(domain_id == domain_id)
     return jsonify(majors=[serialize_queried_sa_obj(m) for m in majors])
 
 

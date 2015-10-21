@@ -115,7 +115,7 @@ def second_domain(test_culture, test_org, request):
 
 
 @pytest.fixture(autouse=True)
-def test_areas_of_interest(test_domain, second_domain, request):
+def areas_of_interest(test_domain, second_domain, request):
     aois = []
     sub_aois = []
     # Create our parent categories.
@@ -251,7 +251,7 @@ def test_majors(test_domain, request):
 
 
 @pytest.fixture(autouse=True)
-def test_widget_page(test_user, test_candidate_source, request):
+def test_widget_page(test_user, test_candidate_source, test_domain, request):
     test_widget_page = WidgetPage(url=random_word(20), page_views=0, sign_ups=0,
                                   widget_name=random_word(20), user_id=test_user.id,
                                   candidate_source_id=test_candidate_source.id,
@@ -262,6 +262,7 @@ def test_widget_page(test_user, test_candidate_source, request):
                                   request_email_html=random_word(40),
                                   request_email_subject=random_word(40),
                                   email_source=random_word(40), reply_address=random_word(40),
+                                  domain_uuid=test_domain.uuid, template_name=random_word(12)
                                   )
     db.session.add(test_widget_page)
     db.session.commit()
@@ -291,11 +292,17 @@ def test_extra_fields_location(test_domain, request):
     db.session.add(city_field)
     db.session.commit()
 
+    subscription_pref_field = CustomField(domain_id=test_domain.id, name='Subscription Preference',
+                             type='string', added_time=datetime.datetime.now(),
+                             updated_time=datetime.datetime.now())
+    db.session.add(subscription_pref_field)
+    db.session.commit()
+
     def fin():
         db.session.query(CustomField).delete()
         db.session.commit()
     request.addfinalizer(fin)
-    return [state_field, city_field]
+    return [state_field, city_field, subscription_pref_field]
 
 
 @pytest.fixture(autouse=True)
@@ -321,14 +328,10 @@ def test_oauth_credentials(test_user, request):
 
 @pytest.fixture(autouse=True)
 def test_email_label(request):
-    test_email_label = EmailLabel(description='Primary')
-    db.session.add(test_email_label)
-    db.session.commit()
-
-    def fin():
-        db.session.query(EmailLabel).delete()
+    email_label_args = {'id':1, 'description': 'Primary'}
+    test_email_label, created = get_or_create(db.session, EmailLabel, **email_label_args)
+    if not created:
         db.session.commit()
-    request.addfinalizer(fin)
     return test_email_label
 
 
@@ -351,31 +354,24 @@ def test_api_returns_majors_name_list(test_domain, request):
     assert len(json.loads(response.data)['majors']) == 5
 
 
-def test_post_call_creates_candidate_object(areas_of_interest, request):
-    subcategory = db.session.query(AreaOfInterest).filter(AreaOfInterest.parent_id!=None).first()
-    parent_category_1 = db.session.query(AreaOfInterest).get(subcategory.parent_id)
-    parent_category_2 = db.session.query(AreaOfInterest).filter(
-        AreaOfInterest.id!=parent_category_1.id).filter(
-        AreaOfInterest.parent_id==None).first()
-    aoi_string = "{parent_category_without_sub}: All Subcategories|{parent_category_with_sub}: {subcategory}".format(
-        parent_category_without_sub=parent_category_2.description,
-        parent_category_with_sub=parent_category_1.description,
-        subcategory=subcategory.description)
+def test_military_candidate(request):
+    aoi_string = gen_mock_aois()
     candidate_dict = {
         'firstName': random_word(12),
         'lastName': random_word(12),
         'emailAdd': '{}@gmail.com'.format(random_word(12)),
         'hidden-tags-aoi': aoi_string,
-        'hidden-tags-location': 'Northern California: All Cities|Southern California: Pomona'
+        'hidden-tags-location': 'Northern California: All Cities|Southern California: Pomona',
+        'militaryBranch': 'Air Force',
+        'militaryStatus': 'active',
+        'militaryGrade': 'E-1',
+        'militaryToDate': datetime.datetime.today().isoformat()[:10],
+        'jobFrequency': 'Weekly'
     }
     with APP as c:
-        post_response = c.post('/v1/widget/', data=candidate_dict)
+        post_response = c.post('/v1/widgets/fakedomain', data=candidate_dict)
     assert post_response.status_code == 201
     assert 'success' in post_response.data
-
-
-def test_post_creates_kaiser_military_candidate():
-    pass
 
 
 def test_parse_interest_ids_from_form(request):
@@ -403,3 +399,15 @@ def test_parse_location_ids_from_form(test_extra_fields_location, request):
         {'id': state_custom_field_id, 'value': 'Northern California'},
         {'id': city_custom_field_id, 'value': 'Pomona'}
     ]
+
+
+def gen_mock_aois():
+    subcategory = db.session.query(AreaOfInterest).filter(AreaOfInterest.parent_id!=None).first()
+    parent_category_1 = db.session.query(AreaOfInterest).get(subcategory.parent_id)
+    parent_category_2 = db.session.query(AreaOfInterest).filter(
+        AreaOfInterest.id!=parent_category_1.id).filter(
+        AreaOfInterest.parent_id==None).first()
+    return "{parent_category_without_sub}: All Subcategories|{parent_category_with_sub}: {subcategory}".format(
+        parent_category_without_sub=parent_category_2.description,
+        parent_category_with_sub=parent_category_1.description,
+        subcategory=subcategory.description)
