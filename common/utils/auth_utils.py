@@ -38,7 +38,7 @@ def authenticate_oauth_user(request, token=None):
 
 def get_token_by_client_and_user(client_id, user_id):
     # Fetches an Oauth2 token given a client_id/user_id.
-    token = db.session.query(Token).filter_by(client_id=client_id, user_id=user_id)
+    token = db.session.query(Token).filter_by(client_id=client_id, user_id=user_id).first()
     if not token:
         token = create_token(client_id, user_id)
     return token
@@ -46,10 +46,10 @@ def get_token_by_client_and_user(client_id, user_id):
 
 def create_token(client_id, user_id):
     # Creates an Oauth2 token given a client_id/user_id.
-    token = Token(client_id=client_id, user_id=user_id, token_type='bearer',
+    token = Token(client_id=client_id, user_id=user_id, token_type='Bearer',
                   access_token=random_letter_digit_string(255),
                   refresh_token=random_letter_digit_string(255),
-                  expires=datetime.now + timedelta(hours=2))
+                  expires=datetime.now() + timedelta(hours=2))
     db.session.add(token)
     db.session.commit()
     return token

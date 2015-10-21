@@ -308,15 +308,15 @@ def test_extra_fields_location(test_domain, request):
 @pytest.fixture(autouse=True)
 def test_oauth_credentials(test_user, request):
     test_client = Client(client_id=random_word(16), client_secret=random_word(18))
-    test_token = Token(client_id=test_client.client_id, user_id=test_user.id, token_type='bearer',
-                       access_token=random_word(18), refresh_token=random_word(18),
-                       expires=datetime.datetime(2050, 04, 26))
+    # test_token = Token(client_id=test_client.client_id, user_id=test_user.id, token_type='bearer',
+    #                    access_token=random_word(18), refresh_token=random_word(18),
+    #                    expires=datetime.datetime(2050, 04, 26))
     db.session.add(test_client)
     db.session.commit()
     app.config['WIDGET_CLIENT_ID'] = test_client.client_id
     app.config['WIDGET_CLIENT_SECRET'] = test_client.client_secret
-    db.session.add(test_token)
-    db.session.commit()
+    # db.session.add(test_token)
+    # db.session.commit()
 
     def fin():
         db.session.query(Token).delete()
@@ -324,8 +324,8 @@ def test_oauth_credentials(test_user, request):
         db.session.query(Client).delete()
         db.session.commit()
     request.addfinalizer(fin)
-    app.config['OAUTH_TOKEN'] = test_token
-    return {'test_client': test_client, 'test_token': test_token}
+    # app.config['OAUTH_TOKEN'] = test_token
+    return {'test_client': test_client}
 
 
 @pytest.fixture(autouse=True)
@@ -356,7 +356,7 @@ def test_api_returns_majors_name_list(test_domain, request):
     assert len(json.loads(response.data)['majors']) == 5
 
 
-def test_military_candidate(request):
+def test_military_candidate(test_domain, request):
     aoi_string = gen_mock_aois()
     candidate_dict = {
         'firstName': random_word(12),
@@ -371,7 +371,7 @@ def test_military_candidate(request):
         'jobFrequency': 'Weekly'
     }
     with APP as c:
-        post_response = c.post('/v1/widgets/fakedomain', data=candidate_dict)
+        post_response = c.post('/v1/widgets/{}'.format(test_domain.uuid), data=candidate_dict)
     assert post_response.status_code == 201
     assert 'success' in post_response.data
 

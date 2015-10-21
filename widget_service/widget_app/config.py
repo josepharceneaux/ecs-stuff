@@ -5,7 +5,7 @@ import os
 if os.environ.get('GT_ENVIRONMENT') == 'dev':
     ENVIRONMENT = 'dev'
     CANDIDATE_CREATION_URI = 'http://127.0.0.1:8000/web/api/candidates.json'
-    OAUTH_SERVER_URI = 'http://0.0.0.0:8081/oauth2/authorize'
+    OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@localhost/talent_local'
     DEBUG = True
 elif os.environ.get('GT_ENVIRONMENT') == 'circle':

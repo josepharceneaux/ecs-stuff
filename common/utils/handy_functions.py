@@ -9,6 +9,6 @@ def random_word(length):
     return ''.join(random.choice(string.lowercase) for i in xrange(length))
 
 
-def random_letter_digit_string(size=6, chars=string.uppercase + string.lowercase + string.digits):
+def random_letter_digit_string(size=6, chars=string.lowercase + string.digits):
     # Creates a random string of lowercase/uppercase letter and digits. Useful for Oauth2 tokens.
     return ''.join(random.choice(chars) for _ in range(size))
