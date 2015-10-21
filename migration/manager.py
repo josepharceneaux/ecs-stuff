@@ -22,20 +22,23 @@ def add_admin_roles_to_existing_users():
     if not DomainRole.get_by_name('DOMAIN_ADMIN'):
         DomainRole.save('DOMAIN_ADMIN')
 
+
     customer_managers = WebAuthMembership.query.filter_by(group_id=1).all()   # Customer Managers have group_id = 1
-    user_managers = WebAuthMembership.query.filter_by(group_id=2).all()  # Customer Managers have group_id = 2
+    user_managers = WebAuthMembership.query.filter_by(group_id=2).all()  # User Managers have group_id = 2
 
     for user_manager in user_managers:
         try:
             UserScopedRoles.add_roles(user_manager.user_id, ['DOMAIN_ADMIN'])
-        except Exception:
-            pass
+            print "Added role DOMAIN_ADMIN to user %s" % user_manager.user_id
+        except Exception as e:
+            print "Couldn't add role DOMAIN_ADMIN to user %s because: %s" % (user_manager.user_id, e.message)
 
     for customer_manager in customer_managers:
         try:
             UserScopedRoles.add_roles(customer_manager.user_id, ['ADMIN'])
-        except Exception:
-            pass
+            print "Added role ADMIN to user %s" % customer_manager.user_id
+        except Exception as e:
+            print "Couldn't add role ADMIN to user %s because: %s" % (customer_manager.user_id, e.message)
 
 
 @manager.command
@@ -43,7 +46,7 @@ def add_groups_to_user():
     try:
         db.engine.execute('\
         ALTER TABLE user\
-        ADD userGroupId IF NOT EXISTS int(11),\
+        ADD userGroupId int(11),\
         ADD FOREIGN KEY (`userGroupId`) REFERENCES `user_group` (`id`) ON UPDATE CASCADE ON DELETE CASCADE;')
     except Exception as e:
         print e.message

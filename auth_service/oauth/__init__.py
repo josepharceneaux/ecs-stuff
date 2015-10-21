@@ -18,7 +18,7 @@ db.app = app
 gt_oauth = OAuth2Provider()
 gt_oauth.init_app(app)
 
-from validator import GetTalentOauthValidator
+from oauth_utilities import GetTalentOauthValidator
 gt_oauth._validator = GetTalentOauthValidator()
 
 import views

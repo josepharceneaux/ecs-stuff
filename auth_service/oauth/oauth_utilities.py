@@ -7,11 +7,21 @@ from datetime import datetime, timedelta
 
 
 def load_client(client_id):
+    """
+    It's a client getter method i.e it'll simply retrieve Client object from database given valid client_id
+    :param int client_id: id of a client
+    :rtype: Client
+    """
     return Client.query.filter_by(client_id=client_id).first()
 
 
-# Format of PBKDF hashed passwords in web2py is different than that of flask
+# TODO Once our flask services would be up we'll migrate all existing passwords to flask PBKDF format
 def change_hashing_format(password):
+    """
+    This method compensates for difference between formats of PBKDF hashed password in web2py and flask
+    :param str password: password of a user
+    :rtype: str
+    """
     if password is None:
         return ''
     elif password.count('$') == 2:
@@ -20,6 +30,14 @@ def change_hashing_format(password):
 
 
 def get_user(username, password, *args, **kwargs):
+    """
+    It's user getter method i.e it'll retrieve a User object from database given valid username/password
+    :param str username: username of a user
+    :param str password:  password of a user
+    :rtype: User
+    """
+    assert isinstance(username, basestring)
+    assert isinstance(password, basestring)
     user = User.query.filter_by(email=username).first()
     if user:
         user_password = change_hashing_format(user.password)
@@ -30,13 +48,26 @@ def get_user(username, password, *args, **kwargs):
 
 
 def load_token(access_token=None, refresh_token=None):
+    """
+    It's token getter method i.e it'll retrieve a Token object from database given valid access or refresh token
+    :param str access_token: value of access_token of a user
+    :param str refresh_token: value of refresh_token of a user
+    :rtype: Token
+    """
     if access_token:
         return Token.query.filter_by(access_token=access_token).first()
     elif refresh_token:
         return Token.query.filter_by(refresh_token=refresh_token).first()
+    return None
 
 
 def save_token(token, request, *args, **kwargs):
+    """
+    This method will delete all old tokens of a user and will store new token in Token table
+    :param dict[str | int] token: dictionary of different attributes of a bearer token
+    :param Request request: flask request instance
+    :rtype: Token
+    """
     tokens = Token.query.filter_by(
         client_id=request.client.client_id,
         user_id=request.user.id
@@ -66,6 +97,9 @@ def save_token(token, request, *args, **kwargs):
 
 
 class GetTalentOauthValidator(OAuth2RequestValidator):
+    """
+    GetTalentOauthValidator is wrapper to flask-oauthlib native request validator to improve error messages
+    """
 
     def __init__(self):
         self._clientgetter = load_client
@@ -74,6 +108,13 @@ class GetTalentOauthValidator(OAuth2RequestValidator):
         self._tokensetter = save_token
 
     def validate_bearer_token(self, token, scopes, request):
+        """
+        This method will check existence and expiration of bearer token
+        :param str token: value of access_token
+        :param list[str] scopes:
+        :param Request request: flask request instance
+        :rtype: bool
+        """
         tok = self._tokengetter(access_token=token)
         if not tok:
             request.error_message = 'Bearer Token is not found.'

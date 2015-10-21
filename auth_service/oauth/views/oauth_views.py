@@ -4,6 +4,7 @@ from auth_service.oauth import app
 from auth_service.oauth import gt_oauth
 from auth_service.oauth import logger
 from flask import request, jsonify
+from auth_service.common.error_handling import *
 from flask.ext.cors import CORS
 
 
@@ -14,8 +15,6 @@ CORS(app, resources={
         'allow_headers': ['Content-Type', 'Authorization']
     }
 })
-
-
 
 gt_oauth.grantgetter(lambda *args, **kwargs: None)
 gt_oauth.grantsetter(lambda *args, **kwargs: None)
@@ -40,8 +39,7 @@ def authorize():
         error_message = request.oauth.error_message or ''
         if error_message:
             error_code = request.oauth.error_code or None
-            return jsonify({'error': {'code': error_code, 'message': error_message}}), 404
-
+            raise UnauthorizedError(error_message=error_message, error_code=error_code)
     user = request.oauth.user
     logger.info('User %s has been authorized to access getTalent api', user.id)
     return jsonify(user_id=user.id)

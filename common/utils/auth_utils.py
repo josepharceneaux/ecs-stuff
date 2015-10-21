@@ -13,6 +13,10 @@ from common.error_handling import *
 def require_oauth(func):
     @wraps(func)
     def authenticate(*args, **kwargs):
+        """
+        This method will verify Authorization header of request using getTalent AuthService and will set
+        request.user and request.oauth_token
+        """
         try:
             oauth_token = request.headers['Authorization']
         except KeyError:
@@ -31,14 +35,18 @@ def require_oauth(func):
     return authenticate
 
 
-def required_roles(*roles):
+def require_all_roles(*role_names):
+    """ This method ensures that user should have all roles given in roles list"""
     def domain_roles(func):
         @wraps(func)
         def authenticate_roles(*args, **kwargs):
             user_roles = UserScopedRoles.get_all_roles_of_user(request.user.id)
-            user_roles = [user_role.roleId for user_role in user_roles]
-            for role in roles:
-                domain_role = DomainRole.get_by_name(role) or ''
+            user_roles = [user_role.role_id for user_role in user_roles]
+            if not role_names:
+                # Roles list is empty so it means func is not roles protected
+                return func(*args, **kwargs)
+            domain_roles = DomainRole.get_by_names(role_names) or ''
+            for domain_role in domain_roles:
                 if not domain_role or domain_role.id not in user_roles:
                     raise UnauthorizedError(error_message="User doesn't have appropriate permissions to \
                                                             perform this operation")
@@ -47,18 +55,30 @@ def required_roles(*roles):
     return domain_roles
 
 
-def accepted_roles(*roles):
+def require_any_role(*role_names):
+    """
+    This method ensures that user should have at least one role from given roles list and set
+    request.domain_independent_role to true if user has some domain independent (ADMIN) role
+    """
     def domain_roles(func):
         @wraps(func)
         def authenticate_roles(*args, **kwargs):
             user_roles = UserScopedRoles.get_all_roles_of_user(request.user.id)
-            user_roles = [user_role.roleId for user_role in user_roles]
-            for role in roles:
-                domain_role = DomainRole.get_by_name(role) or ''
+            user_roles = [user_role.role_id for user_role in user_roles]
+            if not role_names:
+                # Roles list is empty so it means func is not roles protected
+                return func(*args, **kwargs)
+            domain_roles = DomainRole.get_by_names(role_names) or ''
+            for domain_role in domain_roles:
                 if domain_role and domain_role.id in user_roles:
-                    request.domain_role = role
-                    return func(*args, **kwargs)
-            raise UnauthorizedError(error_message="User doesn't have appropriate permissions to \
-                                                    perform this operation")
+                    if not domain_role.domain_id:
+                        request.domain_independent_role = True
+                        return func(*args, **kwargs)
+                    request.domain_independent_role = False
+            if hasattr(request, 'domain_independent_role'):
+                return func(*args, **kwargs)
+            else:
+                raise UnauthorizedError(error_message="User doesn't have appropriate permissions to \
+                                                        perform this operation")
         return authenticate_roles
     return domain_roles

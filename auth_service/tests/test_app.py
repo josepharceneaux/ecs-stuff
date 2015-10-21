@@ -64,8 +64,11 @@ class AuthServiceTestsContext:
     def authorize_token(self):
         headers = {'Authorization': 'Bearer %s' % self.access_token}
         response = requests.get(AUTHORIZE_URL, headers=headers)
-        response_data = json.loads(response.text)
-        return response.status_code, response_data.get('user_id') if response_data else ''
+        if response.status_code == 200:
+            response_data = json.loads(response.text)
+            return response.status_code, response_data.get('user_id') if response_data else ''
+        else:
+            return response.status_code, ''
 
     def token_handler(self, params, headers, refresh_token='', action='fetch'):
         params = params.copy()
@@ -145,5 +148,5 @@ def test_auth_service(app_context):
 
     # Authorize revoked bearer token
     status_code, authorized_user_id = app_context.authorize_token()
-    assert status_code == 404
+    assert status_code == 401
 
