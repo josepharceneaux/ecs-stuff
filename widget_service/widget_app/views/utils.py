@@ -1,6 +1,7 @@
 __author__ = 'erikfarmer'
 
 from widget_service.common.models.candidate import CustomField
+from widget_service.common.models.widget import WidgetPage
 from widget_service.widget_app import db
 from widget_service.common.models.misc import AreaOfInterest
 
@@ -45,3 +46,8 @@ def parse_city_and_state_ids_from_form(locations_string):
         else:
             processed_location_ids.append({'id': city_custom_field_id, 'value': city})
     return processed_location_ids
+
+
+def get_widget_user_from_domain(domain_uuid):
+    domain_widget = db.session.query(WidgetPage).filter(WidgetPage.domain_uuid == domain_uuid)
+    return getattr(domain_widget, 'user_id', None)

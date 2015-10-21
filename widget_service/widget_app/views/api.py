@@ -4,6 +4,7 @@ __author = 'erikfarmer'
 # Standard library
 import json
 from collections import defaultdict
+from datetime import datetime
 
 # Framework specific/Third Party
 from flask import Blueprint
@@ -24,6 +25,10 @@ from widget_service.widget_app import db
 from widget_service.widget_app.views.utils import parse_interest_ids_from_form
 from widget_service.widget_app.views.utils import parse_city_and_state_ids_from_form
 from widget_service.common.utils.db_utils import serialize_queried_sa_obj
+from widget_service.common.utils.auth_utils import get_token_by_client_and_user
+from widget_service.common.utils.auth_utils import refresh_expired_token
+
+from widget_service.widget_app.views.utils import get_widget_user_from_domain
 
 mod = Blueprint('widget_api', __name__)
 
@@ -31,18 +36,31 @@ mod = Blueprint('widget_api', __name__)
 @mod.route('/widgets/<domain_uuid>', methods=['GET'])
 def show_widget(domain_uuid):
     """ Route for testing template rendering/js functions/etc.
-    :param domain_uuid: (string) the domain associated with an html template in for local testing.
+    :param domain_uuid: (string) the domain associated with an html template.
     :return: a rendered HTML page.
     """
     template = db.session.query(WidgetPage).filter_by(domain_uuid=domain_uuid).first().template_name
     return render_template(template, domain=domain_uuid)
 
 
-@mod.route('/widgets/<domain>', methods=['POST'])
-def create_candidate_from_widget(domain):
+@mod.route('/widgets/<domain_uuid>', methods=['POST'])
+def create_candidate_from_widget(domain_uuid):
     """ Post receiver for processing widget date.
+    :param domain_uuid: (string) the domain_uuid associated with a WidgetPage.
     :return: A success or error message to change the page state of a widget.
     """
+    # Get User from domain
+    widget_user_id = get_widget_user_from_domain(domain_uuid)
+    # Get or Widget Client
+    widget_client_id = app.config['WIDGET_CLIENT_ID']
+    # Check for Token with userId and Client
+    widget_token = get_token_by_client_and_user(widget_client_id, widget_user_id)
+    # If expired refresh
+    if widget_token.expires < datetime.now():
+        access_token = refresh_expired_token(widget_token, widget_client_id,
+                                             app.config['WIDGET_CLIENT_SECRET'])
+    else:
+        access_token = widget_token.access_token
     form = request.form
     candidate_dict = defaultdict(dict)
     candidate_single_field_name = form.get('name')
@@ -85,9 +103,8 @@ def create_candidate_from_widget(domain):
         military_service_dict['to_date'] = candidate_military_to_date
     candidate_dict['military_services'] = [military_service_dict] if military_service_dict else None
     payload = json.dumps({'candidates': [candidate_dict]})
-    oauth_token = app.config['OAUTH_TOKEN'].access_token
     r = requests.post(app.config['CANDIDATE_CREATION_URI'], data=payload,
-                      headers={'Authorization': oauth_token})
+                      headers={'Authorization': access_token})
     if r.status_code != 200:
         return jsonify({'error': {'message': 'unable to create candidate from form'}}), 401
     return jsonify({'success': {'message': 'candidate successfully created'}}), 201

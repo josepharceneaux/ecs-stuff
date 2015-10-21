@@ -313,6 +313,8 @@ def test_oauth_credentials(test_user, request):
                        expires=datetime.datetime(2050, 04, 26))
     db.session.add(test_client)
     db.session.commit()
+    app.config['WIDGET_CLIENT_ID'] = test_client.client_id
+    app.config['WIDGET_CLIENT_SECRET'] = test_client.client_secret
     db.session.add(test_token)
     db.session.commit()
 
@@ -350,7 +352,7 @@ def test_api_returns_university_name_list(request):
 
 def test_api_returns_majors_name_list(test_domain, request):
     response = APP.get('/v1/{}/majors'.format(test_domain.uuid))
-    assert response.status_code == 200
+    assert response.staxctus_code == 200
     assert len(json.loads(response.data)['majors']) == 5
 
 
