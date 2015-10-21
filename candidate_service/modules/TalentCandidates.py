@@ -1,6 +1,6 @@
 from candidate_service.common.models.candidate import db
 from candidate_service.common.models.candidate import (
-    Candidate, EmailLabel, CandidateEmail
+    Candidate, EmailLabel, CandidateEmail, CandidatePhone, PhoneLabel
 )
 from candidate_service.common.models.user import User
 from candidate_service.app import logger
@@ -41,15 +41,21 @@ def fetch_candidate_info(candidate_id, fields=None):
         first_name = candidate.first_name or ''
         last_name = candidate.last_name or ''
         full_name = (first_name.capitalize() + ' ' + last_name.capitalize()).strip()
-
     email = None
     if get_all_fields or 'emails' in fields:
         email = email_label_and_address(candidate_id=candidate_id)
+    phone = None
+    if get_all_fields or 'phones' in fields:
+        phone = phone_label_and_value(candidate_id=candidate_id)
+    history = None
+    if get_all_fields or 'contact_history' in fields:
+        history = contact_history(candidate_id=candidate_id)
 
     return_dict = {
         'id': candidate_id,
         'full_name': full_name,
-        'emails': email
+        'emails': email,
+        'phones': phone
     }
 
     # Remove all values that are empty
@@ -58,7 +64,23 @@ def fetch_candidate_info(candidate_id, fields=None):
 
 
 def email_label_and_address(candidate_id):
+    candidate_emails = db.session.query(CandidateEmail).filter_by(candidate_id=candidate_id)
     return [{
         'label': db.session.query(EmailLabel).get(email.email_label_id).description,
         'address': email.address
-    } for email in db.session.query(CandidateEmail).filter_by(candidate_id=candidate_id)]
+    } for email in candidate_emails]
+
+
+def phone_label_and_value(candidate_id):
+    candidate_phones = db.session.query(CandidatePhone).filter_by(candidate_id=candidate_id)
+    return [{
+        'label': db.session.query(PhoneLabel).get(phone.phone_label_id).description,
+        'value': phone.value
+    } for phone in candidate_phones]
+
+
+def contact_history(candidate_id):
+    timeline = []
+
+    # Campaign sends & campaigns
+    email_campaign_sends = db.session.query()

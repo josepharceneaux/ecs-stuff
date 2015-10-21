@@ -3,7 +3,9 @@ from sqlalchemy.orm import relationship
 import datetime
 import time
 
+from email_marketing import EmailCampaign, EmailCampaignSend
 from associations import ReferenceEmail
+
 
 class Candidate(db.Model):
     __tablename__ = 'candidate'
@@ -52,6 +54,7 @@ class Candidate(db.Model):
     candidate_educations = relationship('CandidateEducation', backref='candidate')
     candidate_skills = relationship('CandidateSkill', backref='candidate')
     candidate_unidentifieds = relationship('CandidateUnidentified', backref='candidate')
+    email_campaign_sends = relationship('EmailCampaignSend', backref='candidate')
 
     def get_id(self):
         return unicode(self.id)
