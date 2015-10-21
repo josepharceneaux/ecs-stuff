@@ -1,4 +1,4 @@
-__author__ = 'zohaib'
+__author__ = 'basit'
 
 import os
 import logging
@@ -9,7 +9,6 @@ APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 LOGGING_CONF = os.path.join(APP_ROOT, 'logging.conf')
 logging.config.fileConfig(LOGGING_CONF)
 
-os.environ['GT_ENVIRONMENT'] = 'dev'
 # SQL ALCHEMY DB URL
 if os.environ.get('GT_ENVIRONMENT') == 'dev':
     APP_URL = 'http://0.0.0.0:5000'
@@ -41,7 +40,10 @@ elif os.environ.get('GT_ENVIRONMENT') == 'prod':
     DEBUG = False
 else:
     raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")
+if LOGGER:
+    LOGGER.info("sms_campaign_service is running in %s environment"
+                % os.environ.get('GT_ENVIRONMENT'))
 
-SECRET_KEY = os.urandom(24).encode('hex')
-OAUTH2_PROVIDER_TOKEN_EXPIRES_IN = 7200  # 2 hours expiry time for bearer token
+GOOGLE_API_KEY = 'AIzaSyCT7Gg3zfB0yXaBXSPNVhFCZRJzu9WHo4o'
+GOOGLE_URLSHORTENER_API_URL = 'https://www.googleapis.com/urlshortener/v1/url'
 

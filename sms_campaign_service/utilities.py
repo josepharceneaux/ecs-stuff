@@ -4,11 +4,9 @@ __author__ = 'basit'
 import json
 
 # Application Specific
+from config import GOOGLE_API_KEY
+from config import GOOGLE_URLSHORTENER_API_URL
 from social_network_service.utilities import http_request
-
-GOOGLE_API_KEY = 'AIzaSyCT7Gg3zfB0yXaBXSPNVhFCZRJzu9WHo4o'
-GOOGLE_URLSHORTENER_API_URL = 'https://www.googleapis.com/urlshortener/v1/url'
-# LONG_URL = 'http://www.google.com/'
 
 
 def url_conversion(long_url):
