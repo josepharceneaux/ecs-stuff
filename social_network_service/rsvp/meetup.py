@@ -69,6 +69,8 @@ class Meetup(RSVPBase):
         """
         :param event: event in getTalent database
         :type event: common.models.event.Event
+        :return: rsvps of given event
+        :rtype: list
 
         - We get RSVPs of given event by API of Meetup.
 
@@ -130,6 +132,8 @@ class Meetup(RSVPBase):
         """
         :param rsvp: rsvp is likely the response of social network API.
         :type rsvp: dict
+        :return: attendee
+        :rtype: object
 
         - This function is used to get the data of candidate related
           to given rsvp. It attaches all the information in attendee object.
@@ -178,8 +182,6 @@ class Meetup(RSVPBase):
         **See Also**
             .. seealso:: process_rsvps() method in RSVPBase class inside
             social_network_service/rsvp/base.py for more insight.
-
-        :return: attendee object which contains data about the candidate
         """
         events_url = self.api_url + '/member/' \
                      + str(rsvp['member']['member_id']) \

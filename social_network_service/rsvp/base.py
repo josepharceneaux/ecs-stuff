@@ -382,6 +382,7 @@ class RSVPBase(object):
             .. seealso:: process_rsvps() method in RSVPBase class inside
             social_network_service/rsvp/base.py
         :return attendee:
+        :rtype: object
         """
         pass
 
@@ -407,8 +408,8 @@ class RSVPBase(object):
 
         **See Also**
             .. seealso:: process_rsvps() method in EventBase class
-
         :return attendee:
+        :rtype: object
         """
         source_product = Product.get_by_name(self.social_network.name)
         if source_product:
@@ -442,8 +443,8 @@ class RSVPBase(object):
 
         **See Also**
             .. seealso:: process_rsvps() method in EventBase class
-
         :return attendee:
+        :rtype: object
         """
         entry_in_db = CandidateSource.get_by_description_and_notes(
             attendee.event.title,
@@ -487,8 +488,8 @@ class RSVPBase(object):
 
         **See Also**
             .. seealso:: process_rsvps() method in EventBase class
-
         :return attendee:
+        :rtype: object
         """
         newly_added_candidate = 1  # 1 represents entity is new candidate
         candidate_in_db = \
@@ -539,8 +540,8 @@ class RSVPBase(object):
 
         **See Also**
             .. seealso:: process_rsvps() method in EventBase class
-
         :return attendee:
+        :rtype: object
         """
         rsvp_in_db = \
             RSVP.get_by_vendor_rsvp_id_candidate_id_vendor_id_event_id(
@@ -591,8 +592,8 @@ class RSVPBase(object):
 
         **See Also**
             .. seealso:: process_rsvps() method in EventBase class
-
         :return attendee:
+        :rtype: object
         """
         entity_in_db = CandidateEventRSVP.get_by_id_of_candidate_event_rsvp(
             attendee.candidate_id,
@@ -634,8 +635,8 @@ class RSVPBase(object):
 
         **See Also**
             .. seealso:: process_rsvps() method in EventBase class
-
         :return attendee:
+        :rtype: object
         """
         assert attendee.event.title is not None
         event_title = attendee.event.title

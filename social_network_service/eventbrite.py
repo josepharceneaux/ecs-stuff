@@ -83,7 +83,8 @@ class Eventbrite(SocialNetworkBase):
         """
         :param payload is None in case of Eventbrite as we pass access token
             in headers:
-
+        :return: True if access token is valid otherwise False
+        :rtype: bool
         - Here we set the value of "self.api_relative_url". We then call super
             class method validate_token() to validate the access token.
             validate_token() in SocialNetworkBase makes url like
@@ -131,7 +132,8 @@ class Eventbrite(SocialNetworkBase):
             defined in social network Rest API inside
             social_network_service/app/restful/social_network.py.
         """
-        user_credentials_in_db = super(Eventbrite, Eventbrite).save_user_credentials_in_db(user_credentials)
+        user_credentials_in_db = super(Eventbrite,
+                                       Eventbrite).save_user_credentials_in_db(user_credentials)
         Eventbrite.create_webhook(user_credentials_in_db)
 
     @classmethod
@@ -173,6 +175,7 @@ class Eventbrite(SocialNetworkBase):
         :type payload: dict
         :type api_relative_url: str
         :return: returns access token and refresh token
+        :rtype: tuple
         """
         api_relative_url = "/token"
         # create Social Network Specific payload data
@@ -213,8 +216,6 @@ class Eventbrite(SocialNetworkBase):
 
         .. seealso:: get_access_and_refresh_token() function defined in Eventbrite
             class inside social_network_service/eventbrite.py.
-
-        :return: True if webhook creation is successful o/w False.
         """
         url = user_credentials.social_network.api_url + "/webhooks/"
         payload = {'endpoint_url': WEBHOOK_REDIRECT_URL}

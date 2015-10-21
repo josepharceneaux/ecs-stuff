@@ -402,8 +402,8 @@ class Eventbrite(EventBase):
 
         :exception EventNotCreated: throws exception if unable to update event
          on Eventbrite.com)
-        :return: event_id, tickets_id: a tuple containing event_id on
-         Eventbrite and tickets_id for this event)
+        :return: id of event
+        :rtype: int
 
             :Example:
 
@@ -550,6 +550,7 @@ class Eventbrite(EventBase):
             create tickets)
         :return: tickets_id (an id which refers to tickets created on
             eventbrite.com
+        :rtype: str
         """
         tickets_url = self.api_url + "/events/" + social_network_event_id \
                       + "/ticket_classes/"
@@ -569,6 +570,7 @@ class Eventbrite(EventBase):
             tickets)
         :return: tickets_id (an id which refers to tickets updated on
             eventbrite.com)
+        :rtype: str
         """
         tickets_url = self.api_url + "/events/" + social_network_event_id \
                       + "/ticket_classes/"
@@ -599,6 +601,7 @@ class Eventbrite(EventBase):
             update tickets)
         :return: tickets_id (an id which refers to tickets for event on
             eventbrite.com)
+        :rtype: str
         """
         # send POST request to create or update tickets for event
         response = http_request('POST', tickets_url, params=self.ticket_payload,
@@ -626,7 +629,6 @@ class Eventbrite(EventBase):
         :type social_network_event_id: int
         :exception EventNotPublished: raises this exception when unable to
             publish event on Eventbrite.com
-        :return:
         """
         # create url to publish event
         url = self.api_url + "/events/" + str(social_network_event_id) \
@@ -653,7 +655,6 @@ class Eventbrite(EventBase):
         which was created in the unit testing.
         :param social_network_event_id:id of newly created event.
         :type social_network_event_id: int
-        :return: True if event is deleted from vendor, False otherwise.
         """
         # we will only set specific url here
         self.url_to_delete_event = self.api_url + "/events/" + \

@@ -89,7 +89,8 @@ class Eventbrite(RSVPBase):
         :param webhook_id: id of webhook extracted from received data
                         of an rsvp.
         :type webhook_id: str
-
+        :return: user's social network credentials
+        :rtype: common.models.user.UserCredentials
         - user credentials db table have a field webhook_id. we pass
             webhook_id in this method and this gives the user's
             (owner of the event for which we are processing rsvp) data.
@@ -117,8 +118,8 @@ class Eventbrite(RSVPBase):
             # gets gt-user object
             social_network = SocialNetwork.get_by_name(cls.__name__)
             user_credentials = UserSocialNetworkCredential.\
-                get_by_webhook_id_and_social_network_id(
-                webhook_id, social_network.id)
+                get_by_webhook_id_and_social_network_id(webhook_id,
+                                                        social_network.id)
         else:
             raise NoUserFound('Webhook is "%(webhook_id)s"' % webhook_id_dict)
         if user_credentials:
@@ -187,13 +188,14 @@ class Eventbrite(RSVPBase):
 
         This gets the social_network_rsvp_id by comparing url of response of
         rsvp and defined regular expression
-        :return:
+        :return: social_network_rsvp_id
+        :rtype: dict
         """
         regex_to_get_rsvp_id = \
             '^https:\/\/www.eventbriteapi.com\/v3\/orders\/(?P<rsvp_id>[0-9]+)'
         match = re.match(regex_to_get_rsvp_id, url)
-        vendor_rsvp_id = match.groupdict()['rsvp_id']
-        rsvp = {'rsvp_id': vendor_rsvp_id}
+        social_network_rsvp_id = match.groupdict()['rsvp_id']
+        rsvp = {'rsvp_id': social_network_rsvp_id}
         return rsvp
 
     def process_rsvps(self, events):
@@ -215,6 +217,8 @@ class Eventbrite(RSVPBase):
         """
         :param rsvp: rsvp is likely the response of social network API.
         :type rsvp: dict
+        :return: attendee
+        :rtype: object
 
         - This function is used to get the data of candidate related
           to given rsvp. It attaches all the information in attendee object.
@@ -237,8 +241,6 @@ class Eventbrite(RSVPBase):
 
             .. seealso:: process_rsvps_via_webhook() method in class Eventbrite
                 inside social_network_service/rsvp/eventbrite.py
-
-        :return: attendee object which contains data about the candidate
         """
         url = self.api_url + "/orders/" + rsvp['rsvp_id']
         response = http_request('GET', url, headers=self.headers,

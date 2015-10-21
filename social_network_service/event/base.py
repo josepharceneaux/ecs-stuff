@@ -222,7 +222,8 @@ class EventBase(object):
         """
         This method get user_credentials for given user and returns a tuple
         containing member_id, access_token and refresh_token for user.
-        :return:
+        :return: member_id, access_token, refresh_token, webhook
+        :rtype: tuple
         """
         user_credentials = \
             UserSocialNetworkCredential.get_by_user_and_social_network_id(
@@ -361,6 +362,7 @@ class EventBase(object):
         :param event_id: is the 'id' of event present in our db
         :type event_id: int or long
         :return: True if deletion is successful, False otherwise.
+        :rtype: bool
         """
         event = Event.get_by_user_and_event_id(self.user.id, event_id)
         if event:
@@ -402,6 +404,7 @@ class EventBase(object):
         :param event_id: id of newly created event
         :type event_id: int or long
         :return: True if event is deleted from vendor, False otherwise.
+        :rtype: bool
         """
         # create url to publish event
         url = self.url_to_delete_event

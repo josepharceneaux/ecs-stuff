@@ -19,8 +19,9 @@ from common.models.user import User
 from common.models.social_network import SocialNetwork
 from common.models.user import UserSocialNetworkCredential
 from social_network_service import logger
-from social_network_service.custom_exections import NoUserFound, AccessTokenHasExpired
+from social_network_service.custom_exections import NoUserFound
 from social_network_service.custom_exections import ApiException
+from social_network_service.custom_exections import AccessTokenHasExpired
 from social_network_service.custom_exections import UserCredentialsNotFound
 from social_network_service.custom_exections import MissingFieldsInUserCredentials
 
@@ -334,6 +335,7 @@ class SocialNetworkBase(object):
         :type social_network: common.models.social_network.SocialNetwork
         :type payload: dict
         :return: returns access token and refresh token
+        :rtype: tuple (str, str)
         """
         url = social_network.auth_url + api_relative_url
         get_token_response = http_request(method_type, url, data=payload,
@@ -436,6 +438,8 @@ class SocialNetworkBase(object):
         :param payload: contains the access token of Facebook (Child class
             sets the payload) or is None for other social networks.
         :type payload: dict
+        :return: True if token is valid otherwise False
+        :rtype: bool
 
         - This function is called from validate_and_refresh_access_token()
          social network service base class inside
@@ -499,6 +503,7 @@ class SocialNetworkBase(object):
             SocialNetworkBase class inside social_network_service/base.py.
 
         :return True if token has been refreshed successfully, False otherwise.
+        :rtype: bool
 
         """
         return False
@@ -522,6 +527,7 @@ class SocialNetworkBase(object):
             inside social_network_service/base.py.
 
         :return the True if token has been refreshed, False otherwise.
+        :rtype: bool
         """
         access_token_status = self.validate_token()
         if not access_token_status:
@@ -550,7 +556,8 @@ class SocialNetworkBase(object):
         .. seealso:: refresh_access_token() method of Meetup class
             inside social_network_service/meetup.py
 
-        :return the True if db transaction is successful. False otherwise.
+        :return user's social network credentials
+        :rtype: common.models.user.UserCredentials
         """
         user_credentials_in_db = UserSocialNetworkCredential.get_by_user_and_social_network_id(
             user_credentials['user_id'], user_credentials['social_network_id'])

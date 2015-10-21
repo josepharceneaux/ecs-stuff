@@ -78,7 +78,6 @@ class Facebook(EventBase):
 
         :param args:
         :param kwargs:
-        :return:
         """
         super(Facebook, self).__init__(*args, **kwargs)
         self.start_date = (datetime.now() - timedelta(days=3000)).strftime("%Y-%m-%d")
@@ -92,7 +91,9 @@ class Facebook(EventBase):
         We send GET requests to API URL and get data. We also
         have to handle pagination because Facebook's API
         sends paginated response.
-
+        :return: all events of getTalent user on Facebook within specified
+            time range
+        :rtype: list
 
             :Example:
 

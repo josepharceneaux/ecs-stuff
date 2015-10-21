@@ -96,7 +96,6 @@ class Meetup(EventBase):
 
         :param args:
         :param kwargs:
-        :return:
         """
         super(Meetup, self).__init__(*args, **kwargs)
         # calling super constructor sets the api_url and access_token
@@ -117,7 +116,7 @@ class Meetup(EventBase):
         We send GET requests to API URL and get data. We also
         have to handle pagination because Meetup's API
         does that too.
-        :return: all_events: list of events retrieved from Meetup.com
+        :return: all_events: Events of getTalent user on Meetup.com
         :rtype all_events: list
         """
         all_events = []  # contains all events of gt-users
@@ -344,6 +343,8 @@ class Meetup(EventBase):
         Then a POST request to Meetup API creates event on Meetup.com
         :exception EventNotCreated: raises exception if unable to
         publish/create event on Meetup.com.
+        :return: id of event in db
+        :rtype: int
         """
         url = self.api_url + "/event"
         venue_id = self.add_location()
@@ -372,7 +373,8 @@ class Meetup(EventBase):
         data.
         :exception EventNotCreated: raises exception if unable to update event
                 on Meetup.com
-        :return
+        :return: id of event
+        :rtype: int
         """
         # create url to update event
         url = self.api_url + "/event/" + str(self.social_network_event_id)

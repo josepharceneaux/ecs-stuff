@@ -80,6 +80,7 @@ def unix_time(dt):
     :param dt:
     :type dt: datetime
     :return: returns epoch time in milliseconds.
+    :rtype: long
     """
     epoch = datetime(1970, 1, 1, tzinfo=timezone('UTC'))
     delta = dt - epoch
@@ -92,6 +93,7 @@ def milliseconds_since_epoch(dt):
     :param dt:
     :type dt: datetime
     :return: returns epoch time in milliseconds.
+    :rtype: long
     """
     assert isinstance(dt, datetime), 'input argument should be datetime object'
     return unix_time(dt) * 1000.0
@@ -103,6 +105,7 @@ def milliseconds_since_epoch_local_time(dt):
     :param dt:
     :type dt: datetime
     :return: returns epoch time in milliseconds.
+    :rtype: long
     """
     assert isinstance(dt, datetime), 'input argument should be datetime object'
     return int(dt.strftime("%s")) * 1000
@@ -134,6 +137,15 @@ def authenticate_user(request):
 
 
 def get_callee_data(app_name=None):
+    """
+    This is used to get the data of callee, i.e. the function where
+    error is logged. We can say it gives the traceback info but in more
+    precise way by giving file_name, line_no, function_name and class_name
+    if any.
+    :param app_name:
+    :return: callee_data
+    :rtype: dict
+    """
     current_frame = inspect.currentframe()
     callee_frame = inspect.getouterframes(current_frame, 2)
     if app_name == 'social_network_service':
@@ -188,9 +200,6 @@ def log_error(log_data):
     ** See Also:
         - Have a look on get_access_and_refresh_token() defined in
         social_network_service/base.py for more insight.
-
-    :param log_data:
-    :return:
     """
     callee_data = get_data_to_log(log_data)
     logger.error(callee_data)
@@ -240,6 +249,7 @@ def get_data_to_log(log_data):
         social_network_service/utilities.py
     :return: callee_data which contains the useful information of traceback
             like Reason of error, function name, file name, user id etc.
+    :rtype: dict
     """
     if hasattr(log_data.get('error'), 'message'):
         callee_data = ("Reason: %(error)s, "
@@ -275,7 +285,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     :param headers: headers for Authorization.
     :param data: data to be sent.
     :param user_id: Id of logged in user.
-    :return:
+    :return: response from HTTP request or None
     """
     response = None
     if method_type in ['GET', 'POST', 'PUT', 'DELETE']:
@@ -327,8 +337,7 @@ def get_class(social_network_name, category, user_credentials=None):
     Here we pass following parameters
     :param social_network_name:
     :param category:
-    and we import the required class and return it
-    :return:
+    :return: import the required class and return it
     """
     if category == 'social_network':
         module_name = 'social_network_service.' + social_network_name.lower()
@@ -343,9 +352,11 @@ def get_class(social_network_name, category, user_credentials=None):
                         % social_network_name
         log_error({'user_id': user_credentials.user_id if user_credentials else '',
                    'error': error_message})
-        raise SocialNetworkNotImplemented('Import Error: Unable to import module for required social network')
+        raise SocialNetworkNotImplemented('Import Error: Unable to import'
+                                          ' module for required social network')
     except AttributeError as e:
-        raise ApiException('APIError: Unable to import module for required social network', error_code=500)
+        raise ApiException('APIError: Unable to import module for required '
+                           'social network', error_code=500)
     return _class
 
 
@@ -356,12 +367,15 @@ def process_event(data, user_id, method='Create'):
     It creates event on vendor as well as saves in database.
     Data in the arguments is the Data coming from Event creation form submission
     user_id is the id of current logged in user (which we get from session).
+    :return: id of event
+    :rtype: int
     """
     if data:
         social_network_id = data['social_network_id']
         social_network = SocialNetwork.get_by_id(social_network_id)
         # creating class object for respective social network
-        social_network_class = get_class(social_network.name.lower(), 'social_network')
+        social_network_class = get_class(social_network.name.lower(),
+                                         'social_network')
         event_class = get_class(social_network.name.lower(), 'event')
         sn = social_network_class(user_id=user_id)
         event_obj = event_class(user=sn.user,
@@ -397,11 +411,13 @@ def delete_events(user_id, event_ids):
                             }
 
                 }
-    We then iterate this dictionary and call delete_events() method on respective social network objects.
+    We then iterate this dictionary and call delete_events() method on respective social
+     network objects.
 
     :param user_id:
     :param event_ids:
-    :return:
+    :return: deleted(events that have been deleted), not_deleted (events that weren't deleted)
+    :rtype: tuple (list, list)
     """
     assert len(event_ids) > 0, 'event_ids should contain at least one event id'
     # dictionary for mappings
@@ -419,7 +435,8 @@ def delete_events(user_id, event_ids):
             # get social network from event
             social_network = event.social_network
             # social network id is already in mapping dictionary then just add this event id in
-            # its specific event ids list otherwise create a new dictionary with social_network id as key
+            # its specific event ids list otherwise create a new dictionary with
+            #  social_network id as key
             # and set social network object and ids list for events
             if social_network.id not in social_networks:
                 # get social network and event management class for this social network
@@ -438,7 +455,8 @@ def delete_events(user_id, event_ids):
             not_deleted.append(event_id)
 
     for social_network_id, social_network in social_networks.items():
-        # get event object from mapping dictionary and invoke delete_events on this to unpublish / remove
+        # get event object from mapping dictionary and invoke delete_events on this to
+        #  unpublish / remove
         # social network specific actions
         event_obj = social_network['event_obj']
         successful, unsuccessful = event_obj.delete_events(social_network['event_ids'])

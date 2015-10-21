@@ -78,6 +78,8 @@ class Facebook(RSVPBase):
         """
         :param event: event in getTalent database
         :type event: common.models.event.Event
+        :return: rsvps of given event
+        :rtype: list
 
         - We get RSVPs of given event from Graph API of Facebook
 
@@ -104,8 +106,6 @@ class Facebook(RSVPBase):
         **See Also**
             .. seealso:: get_all_rsvps() method in RSVPBase class
             inside social_network_service/rsvp/base.py for more insight.
-
-        :return: list of rsvps
         """
         rsvps = []
         try:
@@ -205,6 +205,8 @@ class Facebook(RSVPBase):
         """
         :param rsvp: rsvp is likely the response of social network API.
         :type rsvp: dict
+        :return: attendee
+        :rtype: object
 
         - This function is used to get the data of candidate related
           to given rsvp. It attaches all the information in attendee object.
@@ -221,8 +223,6 @@ class Facebook(RSVPBase):
         **See Also**
             .. seealso:: process_rsvps() method in RSVPBase class inside
             social_network_service/rsvp/base.py for more insight.
-
-        :return: attendee object which contains data about the candidate
         """
         try:
             data = self.graph.get_object('v2.4/' + rsvp['id'],

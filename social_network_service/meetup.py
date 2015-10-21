@@ -93,7 +93,9 @@ class Meetup(SocialNetworkBase):
                 from social_network_service.meetup import Meetup
                 sn = Meetup(user_id=1)
                 sn.get_groups()
-
+        :return: Meetup groups for which gt-user is an organizer
+        :rtype: list (list of dicts where each dict is likely the response from
+                    Meetup API)
         **See Also**
         .. seealso:: GET method of class MeetupGroups() inside
             social_network_service/app/restful/social_network.py
@@ -117,7 +119,8 @@ class Meetup(SocialNetworkBase):
         """
         :param payload is None in case of Meetup as we pass access token
                     in headers:
-
+        :return: True if access token is valid otherwise False
+        :rtype: bool
         - Here we set the value of "self.api_relative_url". We then call super
             class method validate_token() to validate the access token.
             validate_token() in SocialNetworkBase makes url like
@@ -160,6 +163,7 @@ class Meetup(SocialNetworkBase):
 
         :return True if token has been refreshed successfully and False
                 otherwise.
+        :rtype: bool
         """
         status = False
         user_refresh_token = self.user_credentials.refresh_token
@@ -232,6 +236,7 @@ class Meetup(SocialNetworkBase):
         :type payload: dict
         :type api_relative_url: str
         :return: returns access token and refresh token
+        :rtype: tuple
         """
         api_relative_url = "/access"
         # create Social Network Specific payload data
