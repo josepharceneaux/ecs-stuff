@@ -268,8 +268,8 @@ def test_extra_fields_location(test_domain, request):
     db.session.commit()
 
     subscription_pref_field = CustomField(domain_id=test_domain.id, name='Subscription Preference',
-                             type='string', added_time=datetime.datetime.now(),
-                             updated_time=datetime.datetime.now())
+                                          type='string', added_time=datetime.datetime.now(),
+                                          updated_time=datetime.datetime.now())
     db.session.add(subscription_pref_field)
     db.session.commit()
 
@@ -299,7 +299,7 @@ def test_oauth_credentials(test_user, request):
 
 @pytest.fixture(autouse=True)
 def test_email_label(request):
-    email_label_args = {'id':1, 'description': 'Primary'}
+    email_label_args = {'id': 1, 'description': 'Primary'}
     test_email_label, created = get_or_create(db.session, EmailLabel, **email_label_args)
     if not created:
         db.session.commit()
@@ -390,7 +390,7 @@ def test_parse_interest_ids_from_form(request):
     parent_category_1 = db.session.query(AreaOfInterest).get(subcategory.parent_id)
     parent_category_2 = db.session.query(AreaOfInterest).filter(
         AreaOfInterest.id!=parent_category_1.id).filter(
-        AreaOfInterest.parent_id==None).first()
+        AreaOfInterest.parent_id == None).first()
     test_string = "{parent_category_without_sub}: All Subcategories|{parent_category_with_sub}: {subcategory}".format(
         parent_category_without_sub=parent_category_2.description,
         parent_category_with_sub=parent_category_1.description,
@@ -413,11 +413,11 @@ def test_parse_location_ids_from_form(test_extra_fields_location, request):
 
 
 def gen_mock_aois():
-    subcategory = db.session.query(AreaOfInterest).filter(AreaOfInterest.parent_id!=None).first()
+    subcategory = db.session.query(AreaOfInterest).filter(AreaOfInterest.parent_id != None).first()
     parent_category_1 = db.session.query(AreaOfInterest).get(subcategory.parent_id)
     parent_category_2 = db.session.query(AreaOfInterest).filter(
         AreaOfInterest.id!=parent_category_1.id).filter(
-        AreaOfInterest.parent_id==None).first()
+        AreaOfInterest.parent_id == None).first()
     return "{parent_category_without_sub}: All Subcategories|{parent_category_with_sub}: {subcategory}".format(
         parent_category_without_sub=parent_category_2.description,
         parent_category_with_sub=parent_category_1.description,
