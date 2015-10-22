@@ -39,12 +39,8 @@ def test_org(request):
         db.session.commit()
 
     def fin():
-        try:
-            db.session.delete(test_org)
-            db.session.commit()
-        except Exception:
-            pass
-
+        db.session.delete(test_org)
+        db.session.commit()
     request.addfinalizer(fin)
     return test_org
 
@@ -58,12 +54,8 @@ def test_culture(request):
         db.session.commit()
 
     def fin():
-        try:
-            db.session.delete(test_culture)
-            db.session.commit()
-        except Exception:
-            pass
-
+        db.session.delete(test_culture)
+        db.session.commit()
     request.addfinalizer(fin)
     return test_culture
 
@@ -82,11 +74,8 @@ def test_domain(test_culture, test_org, request):
     db.session.commit()
 
     def fin():
-        try:
-            db.session.delete(test_domain)
-            db.session.commit()
-        except Exception:
-            pass
+        db.session.delete(test_domain)
+        db.session.commit()
     request.addfinalizer(fin)
     return test_domain
 
@@ -105,11 +94,8 @@ def second_domain(test_culture, test_org, request):
     db.session.commit()
 
     def fin():
-        try:
-            db.session.delete(test_domain2)
-            db.session.commit()
-        except Exception:
-            pass
+        db.session.delete(test_domain2)
+        db.session.commit()
     request.addfinalizer(fin)
     return test_domain2
 
@@ -154,11 +140,8 @@ def test_country(request):
     db.session.commit()
 
     def fin():
-        try:
-            db.session.delete(test_country)
-            db.session.commit()
-        except Exception:
-            pass
+        db.session.delete(test_country)
+        db.session.commit()
     request.addfinalizer(fin)
     return test_country
 
@@ -171,11 +154,8 @@ def test_state(test_country, request):
     db.session.commit()
 
     def fin():
-        try:
-            db.session.delete(test_state)
-            db.session.commit()
-        except Exception:
-            pass
+        db.session.delete(test_state)
+        db.session.commit()
     request.addfinalizer(fin)
     return test_state
 
@@ -209,12 +189,8 @@ def test_user(test_domain, request):
         db.session.commit()
 
     def fin():
-        try:
-            db.session.delete(test_user)
-            db.session.commit()
-        except Exception:
-            pass
-
+        db.session.delete(test_user)
+        db.session.commit()
     request.addfinalizer(fin)
     return test_user
 
@@ -227,11 +203,8 @@ def test_candidate_source(test_domain, request):
     db.session.commit()
 
     def fin():
-        try:
-            db.session.delete(test_source)
-            db.session.commit()
-        except Exception:
-            pass
+        db.session.delete(test_source)
+        db.session.commit()
     request.addfinalizer(fin)
     return test_source
 
@@ -268,12 +241,8 @@ def test_widget_page(test_user, test_candidate_source, test_domain, request):
     db.session.commit()
 
     def fin():
-        try:
-            db.session.delete(test_widget_page)
-            db.session.commit()
-        except Exception as e:
-            print "Received exception deleting widget_page %s: %s" % (test_widget_page, e)
-            pass
+        db.session.delete(test_widget_page)
+        db.session.commit()
     request.addfinalizer(fin)
     return test_widget_page
 
@@ -352,7 +321,7 @@ def test_api_returns_university_name_list(request):
 
 def test_api_returns_majors_name_list(test_domain, request):
     response = APP.get('/v1/{}/majors'.format(test_domain.uuid))
-    assert response.staxctus_code == 200
+    assert response.status_code == 200
     assert len(json.loads(response.data)['majors']) == 5
 
 

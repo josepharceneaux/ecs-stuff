@@ -69,7 +69,7 @@ class Domain(db.Model):
 
     # Relationships
     users = relationship('User', backref='domain')
-    candidate_sources = relationship('CandidateSource', backref='domain')
+    candidate_sources = relationship('CandidateSource', cascade="all, delete-orphan", passive_deletes=True)
     areas_of_interest = relationship('AreaOfInterest', backref='domain')
 
     def get_id(self):

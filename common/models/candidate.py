@@ -93,7 +93,7 @@ class CandidateSource(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column('Description', db.String(100))
     notes = db.Column('Notes', db.String(500))
-    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
