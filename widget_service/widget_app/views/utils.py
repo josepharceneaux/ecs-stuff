@@ -48,6 +48,26 @@ def parse_city_and_state_ids_from_form(locations_string):
     return processed_location_ids
 
 
+def process_city_and_state_from_fields(city, state):
+    processed_location_ids = []
+    state_custom_field_id = db.session.query(CustomField).filter(
+        CustomField.name=='State of Interest').first().id
+    city_custom_field_id = db.session.query(CustomField).filter(
+        CustomField.name=='City of Interest').first().id
+    processed_location_ids.append({'id': state_custom_field_id, 'value': state})
+    processed_location_ids.append({'id': city_custom_field_id, 'value': city})
+    return processed_location_ids
+
+
+def create_candidate_educations_dict(major, degree, school_name, grad_date):
+    return {
+        'degree': degree,
+        'major': major,
+        'school_name': school_name,
+        'graduation_date': grad_date
+    }
+
+
 def get_widget_user_from_domain(domain_uuid):
     domain_widget = db.session.query(WidgetPage).filter(
         WidgetPage.domain_uuid == domain_uuid).first()

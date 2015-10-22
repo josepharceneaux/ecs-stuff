@@ -22,8 +22,10 @@ from widget_service.common.models.misc import Major
 from widget_service.common.models.user import Domain
 from widget_service.common.models.widget import WidgetPage
 from widget_service.widget_app import db
+from widget_service.widget_app.views.utils import create_candidate_educations_dict
 from widget_service.widget_app.views.utils import parse_interest_ids_from_form
 from widget_service.widget_app.views.utils import parse_city_and_state_ids_from_form
+from widget_service.widget_app.views.utils import process_city_and_state_from_fields
 from widget_service.common.utils.db_utils import serialize_queried_sa_obj
 from widget_service.common.utils.auth_utils import get_token_by_client_and_user
 from widget_service.common.utils.auth_utils import refresh_expired_token
@@ -63,35 +65,57 @@ def create_candidate_from_widget(domain_uuid):
         access_token = widget_token.access_token
     form = request.form
     candidate_dict = defaultdict(dict)
+    # Common fields.
     candidate_single_field_name = form.get('name')
     candidate_double_field_name = '{} {}'.format(form.get('firstName'), form.get('lastName'))
+    candidate_dict['emails'] = [{'address': form['emailAdd'], 'label': 'Primary'}]
+    candidate_dict['areas_of_interest'] = parse_interest_ids_from_form(form['hidden-tags-aoi'])
+    # Location based fields.
     candidate_locations = form.get('hidden-tags-location')
-    candidate_nuid = form.get('nuid') # Kaiser University Only Field
-    candidate_frequency = form.get('jobFrequency')
+    candidate_city = form.get('city')
+    candidate_state = form.get('state')
+    # Education fields.
+    candidate_university = form.get('university')
+    candidate_degree = form.get('degree')
+    candidate_major = form.get('major')
+    candidate_graduation_date = form.get('graduation')
+    # Kaiser University Only Field.
+    candidate_nuid = form.get('nuid')
+    # Kaiser Military fields.
     candidate_military_branch = form.get('militaryBranch')
     candidate_military_status = form.get('militaryStatus')
     candidate_military_grade = form.get('militaryGrade')
     candidate_military_to_date = form.get('militaryToDate')
+    candidate_frequency = form.get('jobFrequency')
+    # Common Widget field processing.
     if candidate_single_field_name:
         candidate_dict['full_name'] = candidate_single_field_name
     else:
         candidate_dict['full_name'] = candidate_double_field_name
-    candidate_dict['emails'] = [{'address': form['emailAdd'], 'label': 'Primary'}]
-    candidate_dict['areas_of_interest'] = parse_interest_ids_from_form(form['hidden-tags-aoi'])
     if candidate_locations:
         custom_fields = parse_city_and_state_ids_from_form(candidate_locations)
         candidate_dict.setdefault('custom_fields', []).extend(custom_fields)
-    if candidate_nuid:
-        nuid_field = db.session.query(CustomField).filter_by(name='NUID').first()
-        candidate_dict.setdefault('custom_fields', []).append(
-            {'id': nuid_field.id, 'value': candidate_nuid}
-        )
+    if candidate_city and candidate_state:
+        city_state_list = process_city_and_state_from_fields(candidate_city, candidate_state)
+        candidate_dict.setdefault('custom_fields', []).extend(city_state_list)
     if candidate_frequency:
         frequency_field = db.session.query(CustomField).filter_by(
             name='Subscription Preference').first()
         candidate_dict.setdefault('custom_fields', []).append(
             {'id': frequency_field.id, 'value': candidate_frequency}
         )
+    # Kaiser University specific processing.
+    if candidate_university and candidate_degree and candidate_major:
+        candidate_dict['educations'] = [create_candidate_educations_dict(candidate_university,
+                                                                        candidate_degree,
+                                                                        candidate_major,
+                                                                        candidate_graduation_date)]
+    if candidate_nuid:
+        nuid_field = db.session.query(CustomField).filter_by(name='NUID').first()
+        candidate_dict.setdefault('custom_fields', []).append(
+            {'id': nuid_field.id, 'value': candidate_nuid}
+        )
+    # Kaiser Military specific processing.
     military_service_dict = {}
     if candidate_military_branch:
         military_service_dict['branch'] = candidate_military_branch
@@ -102,6 +126,7 @@ def create_candidate_from_widget(domain_uuid):
     if candidate_military_to_date:
         military_service_dict['to_date'] = candidate_military_to_date
     candidate_dict['military_services'] = [military_service_dict] if military_service_dict else None
+
     payload = json.dumps({'candidates': [candidate_dict]})
     r = requests.post(app.config['CANDIDATE_CREATION_URI'], data=payload,
                       headers={'Authorization': 'bearer {}'.format(access_token)})

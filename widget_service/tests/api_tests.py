@@ -292,6 +292,12 @@ def test_extra_fields_location(test_domain, request):
     db.session.add(city_field)
     db.session.commit()
 
+    nuid_field = CustomField(domain_id=test_domain.id, name='NUID', type='string',
+                             added_time=datetime.datetime.now(),
+                             updated_time=datetime.datetime.now())
+    db.session.add(nuid_field)
+    db.session.commit()
+
     subscription_pref_field = CustomField(domain_id=test_domain.id, name='Subscription Preference',
                              type='string', added_time=datetime.datetime.now(),
                              updated_time=datetime.datetime.now())
@@ -308,15 +314,10 @@ def test_extra_fields_location(test_domain, request):
 @pytest.fixture(autouse=True)
 def test_oauth_credentials(test_user, request):
     test_client = Client(client_id=random_word(16), client_secret=random_word(18))
-    # test_token = Token(client_id=test_client.client_id, user_id=test_user.id, token_type='bearer',
-    #                    access_token=random_word(18), refresh_token=random_word(18),
-    #                    expires=datetime.datetime(2050, 04, 26))
     db.session.add(test_client)
     db.session.commit()
     app.config['WIDGET_CLIENT_ID'] = test_client.client_id
     app.config['WIDGET_CLIENT_SECRET'] = test_client.client_secret
-    # db.session.add(test_token)
-    # db.session.commit()
 
     def fin():
         db.session.query(Token).delete()
@@ -324,7 +325,6 @@ def test_oauth_credentials(test_user, request):
         db.session.query(Client).delete()
         db.session.commit()
     request.addfinalizer(fin)
-    # app.config['OAUTH_TOKEN'] = test_token
     return {'test_client': test_client}
 
 
@@ -373,6 +373,46 @@ def test_military_candidate(test_domain, request):
     with APP as c:
         post_response = c.post('/v1/widgets/{}'.format(test_domain.uuid), data=candidate_dict)
     assert post_response.status_code == 201
+    # TODO expand to check DB that are fields are there
+    assert 'success' in post_response.data
+
+
+def test_university_candidate(test_domain, request):
+    aoi_string = gen_mock_aois()
+    candidate_dict = {
+        'name': random_word(12),
+        'emailAdd': '{}@gmail.com'.format(random_word(12)),
+        'city': random_word(10),
+        'state': random_word(10),
+        'university': random_word(10),
+        'degree': random_word(10),
+        'major': random_word(10),
+        'graduation': random_word(8),
+        'hidden-tags-aoi': aoi_string,
+        'nuid': random_word(8),
+        'jobFrequency': 'Monthly'
+    }
+    with APP as c:
+        post_response = c.post('/v1/widgets/{}'.format(test_domain.uuid), data=candidate_dict)
+    assert post_response.status_code == 201
+    # TODO expand to check DB that are fields are there
+    assert 'success' in post_response.data
+
+
+def test_corporate_candidate(test_domain, request):
+    aoi_string = gen_mock_aois()
+    candidate_dict = {
+        'firstName': random_word(12),
+        'lastName': random_word(12),
+        'emailAdd': '{}@gmail.com'.format(random_word(12)),
+        'hidden-tags-aoi': aoi_string,
+        'hidden-tags-location': 'Northern California: All Cities|Southern California: Pomona',
+        'jobFrequency': 'Daily'
+    }
+    with APP as c:
+        post_response = c.post('/v1/widgets/{}'.format(test_domain.uuid), data=candidate_dict)
+    assert post_response.status_code == 201
+    # TODO expand to check DB that are fields are there
     assert 'success' in post_response.data
 
 
