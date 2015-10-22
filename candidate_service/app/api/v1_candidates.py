@@ -35,6 +35,7 @@ class CandidateResource(Resource):
             return {'error': {'message': 'Not authorized'}}, 403
 
         candidate_data = fetch_candidate_info(candidate_id=candidate_id)
+
         return {'candidate': candidate_data}
 
 api.add_resource(CandidateResource, "/v1/candidates/<id>")

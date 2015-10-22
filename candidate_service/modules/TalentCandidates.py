@@ -1,4 +1,5 @@
 from candidate_service.common.models.candidate import db
+from candidate_service.app import logger
 from candidate_service.common.models.candidate import (
     Candidate, EmailLabel, CandidateEmail, CandidatePhone, PhoneLabel,
     CandidateWorkPreference, CandidatePreferredLocation, CandidateAddress,
@@ -7,12 +8,9 @@ from candidate_service.common.models.candidate import (
     CandidateSocialNetwork, SocialNetwork
 )
 from candidate_service.common.models.associations import CandidateAreaOfInterest
-from candidate_service.common.models.email_marketing import (
-    EmailCampaign, EmailCampaignSend
-)
+from candidate_service.common.models.email_marketing import (EmailCampaign, EmailCampaignSend)
 from candidate_service.common.models.misc import (Country, AreaOfInterest, CustomField)
 from candidate_service.common.models.user import User
-from candidate_service.app import logger
 from datetime import date
 
 
@@ -181,7 +179,7 @@ def work_experiences(candidate_id):
         'company': candidate_experience.organization,
         'role': candidate_experience.position,
         'start_date': date_of_employment(year=candidate_experience.start_year,
-                                         month=candidate_experience.start_moth or 1),
+                                         month=candidate_experience.start_month or 1),
         'end_date': date_of_employment(year=candidate_experience.end_year,
                                        month=candidate_experience.end_month or 1),
         'city': candidate_experience.city,
@@ -308,12 +306,11 @@ def contact_history(candidate_id):
             logger.error("contact_history: email_campaign_send has no email_campaign_id: %s", email_campaign_send.id)
             continue
         email_campaign = db.session.query(EmailCampaign).get(email_campaign_send.email_campaign_id)
-        # todo: complete event_type
         timeline.insert(0, dict(event_datetime=email_campaign_send.sentTime,
                                 event_type=ContactHistoryEvent.EMAIL_SEND,
                                 campaign_name=email_campaign.name))
 
-    # Sort events by datetime and convert all the datetimes to isoformat
+    # Sort events by datetime and convert all datetimes to isoformat
     timeline = sorted(timeline, key=lambda entry: entry['event_datetime'], reverse=True)
     for event in timeline:
         event['event_datetime'] = event['event_datetime'].isoformat()
@@ -322,7 +319,8 @@ def contact_history(candidate_id):
 
 
 def date_of_employment(year, month, day=1):
-    return date(year, month, day) if year else None
+    # Stringify datetime object to ensure it will be JSON serializable
+    return str(date(year, month, day)) if year else None
 
 
 def country_name_from_country_id(country_id):
