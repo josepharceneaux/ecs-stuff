@@ -49,7 +49,7 @@ def create_token(client_id, user_id):
     token = Token(client_id=client_id, user_id=user_id, token_type='Bearer',
                   access_token=random_letter_digit_string(255),
                   refresh_token=random_letter_digit_string(255),
-                  expires=datetime.now() + timedelta(hours=2))
+                  expires=datetime.utcnow() + timedelta(hours=2))
     db.session.add(token)
     db.session.commit()
     return token

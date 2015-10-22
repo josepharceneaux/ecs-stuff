@@ -104,7 +104,7 @@ def create_candidate_from_widget(domain_uuid):
     candidate_dict['military_services'] = [military_service_dict] if military_service_dict else None
     payload = json.dumps({'candidates': [candidate_dict]})
     r = requests.post(app.config['CANDIDATE_CREATION_URI'], data=payload,
-                      headers={'Authorization': access_token})
+                      headers={'Authorization': 'bearer {}'.format(access_token)})
     if r.status_code != 200:
         return jsonify({'error': {'message': 'unable to create candidate from form'}}), 401
     return jsonify({'success': {'message': 'candidate successfully created'}}), 201
