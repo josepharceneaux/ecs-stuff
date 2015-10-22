@@ -81,16 +81,16 @@ class Domain(db.Model):
 
 class WebAuthGroup(db.Model):
     __tablename__ = 'web_auth_group'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.BIGINT, primary_key=True)
     role = db.Column('role', db.String(255))
     description = db.Column('description', db.TEXT)
 
 
 class WebAuthMembership(db.Model):
     __tablename__ = 'web_auth_membership'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column('user_id', db.String(255), db.ForeignKey('user.id'))
-    group_id = db.Column('group_id', db.TEXT, db.ForeignKey('web_auth_group.id'))
+    id = db.Column(db.BIGINT, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    group_id = db.Column(db.BIGINT, db.ForeignKey('web_auth_group.id'))
 
     web_auth_group = relationship('WebAuthGroup', backref='web_auth_membership')
     user = relationship('User', backref='web_auth_membership')
