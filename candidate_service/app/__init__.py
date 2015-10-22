@@ -16,4 +16,4 @@ logger = app.config['LOGGER']
 
 register_error_handlers(app=app, logger=logger)
 
-logger.info("Starting candidate_service in %s environment", app.config['GT_ENVIRONMENT'])
+# logger.info("Starting candidate_service in %s environment", app.config['GT_ENVIRONMENT'])

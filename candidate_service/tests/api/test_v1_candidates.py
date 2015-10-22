@@ -1,4 +1,6 @@
 from common.tests.conftest import *
+from common.tests.conftest import UserAuthentication
+
 
 USER_PASSWORD = 'Talent15'
 
@@ -35,11 +37,16 @@ def generate_multiple_candidates_data():
 ####################################
 # test cases for GETting candidate #
 ####################################
-def test_get_candidate(sample_user):
+def test_get_candidate(sample_user, user_auth):
+    """
+    :param sample_user: user-row
+    :type user_auth:    UserAuthentication
+    """
     # TODO: create user, login user, create candidate, fetch candidate
     user = sample_user
-    candidate_id =  1
-    r = requests.get("http://127.0.0.1:7000/v1/candidates/%s" % candidate_id)
+
+    candidate_id = 4
+    r = requests.get("http://127.0.0.1:8004/v1/candidates/%s" % candidate_id)
 
     assert r.status_code == 200
     assert 'candidate' in r.json()

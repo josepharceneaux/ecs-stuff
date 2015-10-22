@@ -59,6 +59,14 @@ class Candidate(db.Model):
     def get_id(self):
         return unicode(self.id)
 
+    @classmethod
+    def get_by_id(cls, candidate_id):
+        """
+        :type candidate_id: int
+        :rtype: Candidate
+        """
+        return db.session.query(Candidate).get(candidate_id)
+
     def __repr__(self):
         return "<Candidate(formatted_name=' %r')>" % self.formatted_name
 
@@ -538,9 +546,9 @@ class CandidateEducationDegree(db.Model):
     list_order = db.Column('ListOrder', db.SmallInteger)
     degree_type = db.Column('DegreeType', db.String(100))
     degree_title = db.Column('DegreeTitle', db.String(100))
-    start_year = db.Column('StartYear', db.Integer)  # todo: accept Year format only or create a function to validate
+    start_year = db.Column('StartYear', db.Integer)
     start_month = db.Column('StartMonth', db.SmallInteger)
-    end_year = db.Column('EndYear', db.Integer)  # todo: accept Year format only or create a function to validate
+    end_year = db.Column('EndYear', db.Integer)
     end_month = db.Column('EndMonth', db.SmallInteger)
     gpa_num = db.Column('GpaNum', db.DECIMAL)
     gpa_denom = db.Column('GpaDenom', db.DECIMAL)
@@ -581,10 +589,10 @@ class CandidateExperience(db.Model):
     city = db.Column('City', db.String(50))
     state = db.Column('State', db.String(50))
     end_month = db.Column('EndMonth', db.SmallInteger)
-    start_year = db.Column('StartYear', db.Integer)  # todo: accept Year format only or create a function to validate
+    start_year = db.Column('StartYear', db.Integer)
     country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
     start_month = db.Column('StartMonth', db.SmallInteger)
-    end_year = db.Column('EndYear', db.Integer)  # todo: accept Year format only or create a function to validate
+    end_year = db.Column('EndYear', db.Integer)
     is_current = db.Column('IsCurrent', db.Boolean, default=False)
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
@@ -616,7 +624,7 @@ class CandidateSkill(db.Model):
     list_order = db.Column('ListOrder', db.SmallInteger)
     description = db.Column('Description', db.String(10000))
     added_time = db.Column('AddedTime', db.DateTime)
-    totla_months = db.Column('TotalMonths', db.Integer)
+    total_months = db.Column('TotalMonths', db.Integer)
     last_used = db.Column('LastUsed', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 

@@ -263,8 +263,8 @@ def military_services(candidate_id):
         'service_status': military_info.service_status,
         'highest_grade': military_info.highest_grade,
         'highest_rank': military_info.highest_rank,
-        'start_date': military_info.start_date,
-        'end_date': military_info.end_date,
+        'start_date': military_info.from_date,
+        'end_date': military_info.to_date,
         'country': country_name_from_country_id(country_id=military_info.country_id)
     } for military_info in candidate_military_experience]
 
