@@ -31,7 +31,7 @@ class User(db.Model):
     dice_user_id = db.Column('diceUserId', db.Integer)
 
     # Relationships
-    candidates = relationship('Candidate', backref='user')
+    candidates = relationship('Candidate', cascade="all, delete-orphan", passive_deletes=True)
     public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
 
     def is_authenticated(self):

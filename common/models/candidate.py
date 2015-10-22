@@ -16,7 +16,7 @@ class Candidate(db.Model):
     is_web_hidden = db.Column('IsWebHidden', db.Boolean, default=False)
     is_mobile_hidden = db.Column('IsMobileHidden', db.Boolean, default=False)
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
-    user_id = db.Column('OwnerUserId', db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column('OwnerUserId', db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'))
     domain_can_read = db.Column('DomainCanRead', db.Boolean, default=True)
     domain_can_write = db.Column('DomainCanWrite', db.Boolean, default=False)
     dice_social_profile_id = db.Column('DiceSocialProfileId', db.String(128))
