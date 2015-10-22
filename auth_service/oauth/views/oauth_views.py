@@ -23,18 +23,21 @@ gt_oauth.grantsetter(lambda *args, **kwargs: None)
 @app.route('/oauth2/token', methods=['POST'])
 @gt_oauth.token_handler
 def access_token(*args, **kwargs):
+    """ Create a new access_token for a user and store it in Token table """
     return None
 
 
 @app.route('/oauth2/revoke', methods=['POST'])
 @gt_oauth.revoke_handler
 def revoke_token():
+    """ Revoke or delete an access_token from Token table """
     pass
 
 
 @app.route('/oauth2/authorize')
 @gt_oauth.require_oauth()
 def authorize():
+    """ Authorize an access token which is stored in Authorization header """
     if hasattr(request.oauth, 'error_message'):
         error_message = request.oauth.error_message or ''
         if error_message:
