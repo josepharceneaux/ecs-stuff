@@ -76,6 +76,7 @@ class Domain(db.Model):
     users = relationship('User', backref='domain')
     candidate_sources = relationship('CandidateSource', backref='domain')
     areas_of_interest = relationship('AreaOfInterest', backref='domain')
+    custom_fields = relationship('CustomField', backref='domain')
 
     def get_id(self):
         return unicode(self.id)

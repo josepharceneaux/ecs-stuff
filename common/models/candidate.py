@@ -54,6 +54,7 @@ class Candidate(db.Model):
     candidate_skills = relationship('CandidateSkill', backref='candidate')
     candidate_unidentifieds = relationship('CandidateUnidentified', backref='candidate')
     email_campaign_sends = relationship('EmailCampaignSend', backref='candidate')
+    candidate_custom_fields = relationship('CandidateCustomField', backref='candidate')
 
     def get_id(self):
         return unicode(self.id)
@@ -645,6 +646,20 @@ class University(db.Model):
 
     def __repr__(self):
         return "<University (name=' %r')>" % self.name
+
+
+class CandidateCustomField(db.Model):
+    __tablename__ = 'candidate_custom_field'
+    id = db.Column(db.Integer, primary_key=True)
+    value = db.Column('Value', db.Text)
+    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
+    custom_field_id = db.Column('CustomFieldId', db.Integer, db.ForeignKey('custom_field.id'))
+    added_time = db.Column('AddedTime', db.DateTime)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+    def __repr__(self):
+        return "<CandidateCustomField (id = %r)>" % self.id
+
 
 
 

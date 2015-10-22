@@ -2,12 +2,15 @@ from candidate_service.common.models.candidate import db
 from candidate_service.common.models.candidate import (
     Candidate, EmailLabel, CandidateEmail, CandidatePhone, PhoneLabel,
     CandidateWorkPreference, CandidatePreferredLocation, CandidateAddress,
-    CandidateExperience, CandidateEducation, CandidateEducationDegree
+    CandidateExperience, CandidateEducation, CandidateEducationDegree,
+    CandidateSkill, CandidateMilitaryService, CandidateCustomField,
+    CandidateSocialNetwork, SocialNetwork
 )
+from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.email_marketing import (
     EmailCampaign, EmailCampaignSend
 )
-from candidate_service.common.models.misc import Country
+from candidate_service.common.models.misc import (Country, AreaOfInterest, CustomField)
 from candidate_service.common.models.user import User
 from candidate_service.app import logger
 from datetime import date
@@ -77,21 +80,57 @@ def fetch_candidate_info(candidate_id, fields=None):
     if get_all_fields or 'educations' in fields:
         candidate_educations = educations(candidate_id=candidate_id)
 
-    # history = None
-    # if get_all_fields or 'contact_history' in fields:
-    #     history = contact_history(candidate_id=candidate_id)
+    candidate_skills = None
+    if get_all_fields or 'skills' in fields:
+        candidate_skills = skills(candidate_id=candidate_id)
+
+    candidate_interests = None
+    if get_all_fields or 'areas_of_interest' in fields:
+        candidate_interests = areas_of_interest(candidate_id=candidate_id)
+
+    candidate_military_services = None
+    if get_all_fields or 'military_services' in fields:
+        candidate_military_services = military_services(candidate_id=candidate_id)
+
+    candidate_custom_fields = None
+    if get_all_fields or 'custom_fields' in fields:
+        candidate_custom_fields = custom_fields(candidate_id=candidate_id)
+
+    candidate_social_networks = None
+    if get_all_fields or 'social_networks' in fields:
+        candidate_social_networks = social_network_name_and_url(candidate_id=candidate_id)
+
+    history = None
+    if get_all_fields or 'contact_history' in fields:
+        history = contact_history(candidate_id=candidate_id)
+
+    openweb_id = None
+    if get_all_fields or 'openweb_id' in fields:
+        openweb_id = candidate.dice_social_profile_id
+
+    dice_profile_id = None
+    if get_all_fields or 'dice_profile_id' in fields:
+        dice_profile_id = candidate.dice_profile_id
 
     return_dict = {
         'id': candidate_id,
         'full_name': full_name,
+        'created_at_datetime': None,
         'emails': emails,
         'phones': phones,
         'addresses': candidate_addresses,
-        'work_experience': candidate_work_experiences,
+        'work_experiences': candidate_work_experiences,
         'work_preference': candidate_work_preference,
         'preferred_locations': candidate_preferred_locations,
         'educations': candidate_educations,
-        # 'contact_history': history
+        'skills': candidate_skills,
+        'areas_of_interest': candidate_interests,
+        'military_services': candidate_military_services,
+        'custom_fields': candidate_custom_fields,
+        'social_networks': candidate_social_networks,
+        'contact_history': history,
+        'openweb_id': openweb_id,
+        'dice_profile_id': dice_profile_id
     }
 
     # Remove all values that are empty
@@ -199,6 +238,89 @@ def degree_info(education_id):
     } for degree in education]
 
 
+def skills(candidate_id):
+    candidate_skills = db.session.query(CandidateSkill).\
+        filter_by(candidate_id=candidate_id)
+    return [{
+        'name': skill.description,
+        'month_used': skill.total_months,
+        'last_used_date': skill.last_used.isoformat() if skill.last_used else None
+    } for skill in candidate_skills]
+
+
+def areas_of_interest(candidate_id):
+    candidate_interests = db.session.query(CandidateAreaOfInterest).\
+        filter_by(candidate_id=candidate_id)
+    return [{
+        'id': db.session.query(AreaOfInterest).get(interest.area_of_interest_id).id,
+        'name': db.session.query(AreaOfInterest).get(interest.area_of_interest_id).description
+    } for interest in candidate_interests]
+
+
+def military_services(candidate_id):
+    candidate_military_experience = db.session.query(CandidateMilitaryService).\
+        filter_by(candidate_id=candidate_id)
+    return [{
+        'branch': military_info.branch,
+        'service_status': military_info.service_status,
+        'highest_grade': military_info.highest_grade,
+        'highest_rank': military_info.highest_rank,
+        'start_date': military_info.start_date,
+        'end_date': military_info.end_date,
+        'country': country_name_from_country_id(country_id=military_info.country_id)
+    } for military_info in candidate_military_experience]
+
+
+def custom_fields(candidate_id):
+    candidate_custom_fields = db.session.query(CandidateCustomField).\
+        filter_by(candidate_id=candidate_id)
+    return [{
+        'id': candidate_custom_field.custom_field_id,
+        'name': db.session.query(CustomField).get(candidate_custom_field.custom_field_id),
+        'value': candidate_custom_field.value,
+        'created_at_datetime': candidate_custom_field.added_time.isoformat()
+    } for candidate_custom_field in candidate_custom_fields]
+
+
+def social_network_name_and_url(candidate_id):
+    candidate_social_networks = db.session.query(CandidateSocialNetwork).\
+        filter_by(candidate_id=candidate_id)
+    return [{
+        'name': social_network_name(social_network_id=social_network.social_network_id),
+        'url': social_network.social_profile_url
+    } for social_network in candidate_social_networks]
+
+
+class ContactHistoryEvent:
+    CREATED_AT = 'created_at'
+    EMAIL_SEND = 'email_send'
+    EMAIL_OPEN = 'email_open'   # Todo: Implement opens and clicks into timeline
+    EMAIL_CLICK = 'email_click'
+
+
+def contact_history(candidate_id):
+    timeline = []
+
+    # Campaign sends & campaigns
+    email_campaign_sends = db.session.query(EmailCampaignSend).filter_by(candidate_id=candidate_id)
+    for email_campaign_send in email_campaign_sends:
+        if not email_campaign_sends.email_campaign_id:
+            logger.error("contact_history: email_campaign_send has no email_campaign_id: %s", email_campaign_send.id)
+            continue
+        email_campaign = db.session.query(EmailCampaign).get(email_campaign_send.email_campaign_id)
+        # todo: complete event_type
+        timeline.insert(0, dict(event_datetime=email_campaign_send.sentTime,
+                                event_type=ContactHistoryEvent.EMAIL_SEND,
+                                campaign_name=email_campaign.name))
+
+    # Sort events by datetime and convert all the datetimes to isoformat
+    timeline = sorted(timeline, key=lambda entry: entry['event_datetime'], reverse=True)
+    for event in timeline:
+        event['event_datetime'] = event['event_datetime'].isoformat()
+
+    return dict(timeline=timeline)
+
+
 def date_of_employment(year, month, day=1):
     return date(year, month, day) if year else None
 
@@ -214,24 +336,11 @@ def country_name_from_country_id(country_id):
         return 'United States'
 
 
-# def contact_history(candidate_id):
-#     timeline = []
-#
-#     # Campaign sends & campaigns
-#     email_campaign_sends = db.session.query(EmailCampaignSend).filter_by(candidate_id=candidate_id)
-#     for email_campaign_send in email_campaign_sends:
-#         if not email_campaign_sends.email_campaign_id:
-#             logger.error("contact_history: email_campaign_send has no email_campaign_id: %s", email_campaign_send.id)
-#             continue
-#         email_campaign = db.session.query(EmailCampaign).get(email_campaign_send.email_campaign_id)
-#         # todo: complete event_type
-#         timeline.insert(0, dict(event_datetime=email_campaign_send.sentTime,
-#                                 event_type='',
-#                                 campaign_name=email_campaign.name))
-#
-#     # Sort events by datetime and convert all the datetimes to isoformat
-#     timeline = sorted(timeline, key=lambda entry: entry['event_datetime'], reverse=True)
-#     for event in timeline:
-#         event['event_datetime'] = event['event_datetime'].isoformat()
-#
-#     return dict(timeline=timeline)
+def social_network_name(social_network_id):
+    social_network = db.session.query(SocialNetwork).get(social_network_id)
+    if social_network:
+        return social_network.name
+    else:
+        logger.info('social_network_name: social_network from ID not recognized: %s', social_network_id)
+        return None
+
