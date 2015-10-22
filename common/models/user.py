@@ -188,7 +188,9 @@ class DomainRole(db.Model):
 
     @staticmethod
     def save(role_name, domain_id=None):
-        """ Create a new Role record with the supplied domain_id and role_name.
+        """
+        Create a new Role record with the supplied domain_id and role_name. If domain_id is provided then role
+        would be domain specific otherwise it would be general
         :param int | None domain_id: domain id of a role.
         :param basestring role_name: role name of a role.
         :rtype: int

@@ -21,8 +21,11 @@ def require_oauth(func):
             oauth_token = request.headers['Authorization']
         except KeyError:
             raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
-        r = requests.get(app.config['OAUTH_SERVER_URI'], headers={'Authorization': oauth_token})
-        if r.status_code != 200:
+        try:
+            r = requests.get(app.config['OAUTH_SERVER_URI'], headers={'Authorization': oauth_token})
+        except Exception as e:
+            raise InternalServerError(error_message=e.message)
+        if not r.ok:
             error_body = json.loads(r.text)
             if error_body['error']:
                 raise UnauthorizedError(error_message=error_body['error']['message'], error_code=error_body['error']['code'])

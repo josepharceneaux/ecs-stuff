@@ -82,7 +82,7 @@ def revoke_token(user_logout_credentials):
 
 
 @pytest.fixture(autouse=True)
-def sample_user(test_domain):
+def sample_user(request, test_domain):
     user_attrs = dict(
         domain_id=test_domain.id, first_name='Jamtry', last_name='Jonas',
         password=USER_HASHED_PASSWORD,
@@ -93,6 +93,14 @@ def sample_user(test_domain):
         db.session.add(user)
         db.session.commit()
 
+    def fin():
+        try:
+            db.session.delete(user)
+            db.session.commit()
+        except Exception:
+            pass
+
+    request.addfinalizer(fin)
     return user
 
 
@@ -141,7 +149,6 @@ def test_culture(request):
 @pytest.fixture(autouse=True)
 def test_org(request):
     org_attrs = dict(name='Rocket League All Stars - {}'.format(randomword(8)))
-    db.session.rollback()
     test_org, created = get_or_create(session=db.session, model=Organization, **org_attrs)
     if created:
         db.session.add(test_org)
