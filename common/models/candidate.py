@@ -47,8 +47,6 @@ class Candidate(db.Model):
     last_name = db.Column('LastName', db.String(50))
     formatted_name = db.Column('FormattedName', db.String(150))
     status_id = db.Column('StatusId', db.Integer, db.ForeignKey('candidate_status.id'))
-    is_web_hidden = db.Column('IsWebHidden', db.Boolean, default=False)
-    is_mobile_hidden = db.Column('IsMobileHidden', db.Boolean, default=False)
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
     user_id = db.Column('OwnerUserId', db.Integer, db.ForeignKey('user.id'))
     domain_can_read = db.Column('DomainCanRead', db.Boolean, default=True)

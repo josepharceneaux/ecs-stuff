@@ -49,6 +49,8 @@ from social_network_service.meetup import Meetup
 from social_network_service.custom_exections import ApiException
 from common.models.user import UserSocialNetworkCredential, User
 from common.models.social_network import SocialNetwork
+from common.error_handling import ResourceNotFound, InternalServerError,\
+    InvalidUsage, ForbiddenError
 from social_network_service.utilities import get_class
 social_network_blueprint = Blueprint('social_network_api', __name__)
 api = Api()
@@ -66,7 +68,7 @@ CORS(social_network_blueprint, resources={
 
 
 @api.route('/social_networks/')
-class SocialNetworks(Resource):
+class SocialNetworksResource(Resource):
     """
         This resource returns a list of social networks.
     """
@@ -139,7 +141,7 @@ class SocialNetworks(Resource):
         except ApiException:
             raise
         except Exception:
-            raise ApiException('APIError: Internal Server error occurred!')
+            raise InternalServerError
         else:
             return response
 
@@ -200,7 +202,7 @@ class SocialNetworks(Resource):
         elif total_deleted:
                 return ApiResponse(json.dumps(dict(
                     message='%s social networks deleted successfully' % total_deleted)), status=200)
-        return ApiResponse(json.dumps(dict(message='Bad request, include social work ids as list data')), status=400)
+        return InvalidUsage('Bad request, include social work ids as list data')
 
 
     @authenticate
@@ -294,8 +296,8 @@ class SocialNetworks(Resource):
             return {'social_networks': [], 'count': 0}
 
 
-@api.route('/social_networks/groups/')
-class MeetupGroups(Resource):
+@api.route('/social_networks/meetup/groups/')
+class MeetupGroupsResource(Resource):
     """
         This resource returns a list of user's admin groups for Meetup.
     """
@@ -303,7 +305,8 @@ class MeetupGroups(Resource):
     @authenticate
     def get(self, *args, **kwargs):
         """
-        This action returns a list of user events.
+        This action returns a list of user events. In the response, we return fields
+        as returned from Meetup's /groups call given at http://www.meetup.com/meetup_api/docs/2/groups/
 
         :Example:
             headers = {'Authorization': 'Bearer <access_token>'}
@@ -382,12 +385,12 @@ class MeetupGroups(Resource):
             resp = json.dumps(dict(groups=groups,
                                    count=len(groups)))
         except Exception:
-            return ApiResponse(json.dumps(dict(message='APIError: Internal Server Error')), status=500)
+            raise InternalServerError
         return ApiResponse(resp, status=200)
 
 
 @api.route('/social_networks/token_validity/<int:social_network_id>')
-class GetTokenValidity(Resource):
+class GetTokenValidityResource(Resource):
     @authenticate
     def get(self, social_network_id, **kwargs):
         """
@@ -430,11 +433,11 @@ class GetTokenValidity(Resource):
                                       )
             return ApiResponse(dict(status=sn.access_token_status))
         else:
-            return ApiResponse(dict(message='Invalid social network id given'), status=404)
+            raise ResourceNotFound("Invalid social network id given")
 
 
 @api.route('/social_network/refresh_token/<int:social_network_id>')
-class RefreshToken(Resource):
+class RefreshTokenResource(Resource):
     """
         This resource refreshes access token for given social network for given user.
     """
@@ -475,17 +478,16 @@ class RefreshToken(Resource):
             sn = social_network_class(user_id=user_id)
             status = sn.refresh_access_token()
         except Exception:
-            return ApiResponse(json.dumps(dict(messsage='APIError: Internal Server error')), status=500)
+            raise InternalServerError("Couldn't get fresh token for specified user and social network")
         if status:
             return ApiResponse(json.dumps(dict(messsage='Access token has been refreshed',
                                                status=True)), status=200)
         else:
-            return ApiResponse(json.dumps(dict(messsage='Unable to refresh access_token',
-                                               status=False)), status=403)
+            raise ForbiddenError("Unable to refresh access token")
 
 
 @api.route('/venues/')
-class Venues(Resource):
+class VenuesResource(Resource):
     """
         This resource returns a list of user's created venues.
     """
@@ -634,11 +636,11 @@ class Venues(Resource):
                                                deleted=deleted,
                                                not_deleted=not_deleted)), status=207)
         else:
-            return ApiResponse(json.dumps(dict(message='Bad request, include ids as list data')), status=400)
+            return InvalidUsage('Bad request, include ids as list data')
 
 
 @api.route('/venues/<int:venue_id>')
-class VenueById(Resource):
+class VenueByIdResource(Resource):
     """
         This resource handles venue CRUD operations for a single venue given by venue_id
     """
@@ -687,7 +689,7 @@ class VenueById(Resource):
             resp = json.dumps({'venue': venue})
             return ApiResponse(resp, status=200)
         else:
-            return ApiResponse(json.dumps(dict(messsage='Venue not found')), status=404)
+            return ResourceNotFound('Venue not found')
 
     @authenticate
     def post(self, venue_id, **kwargs):
@@ -741,7 +743,7 @@ class VenueById(Resource):
             venue.update(**venue_data)
             return ApiResponse(json.dumps(dict(message='Venue updated successfully')), status=204)
         else:
-            return ApiResponse(json.dumps(dict(messsage='Venue not found')), status=404)
+            return ResourceNotFound('Venue not found')
 
     @authenticate
     def delete(self, venue_id, **kwargs):
@@ -778,11 +780,11 @@ class VenueById(Resource):
             resp = json.dumps(dict(message='Venue has been deleted successfully'))
             return ApiResponse(resp, status=200)
         else:
-            return ApiResponse(json.dumps(dict(message='Venue not found')), status=404)
+            return ResourceNotFound('Venue not found')
 
 
 @api.route('/organizers/')
-class Organizers(Resource):
+class OrganizersResource(Resource):
     """
         This resource handles organizer CRUD operations.
     """
@@ -921,11 +923,11 @@ class Organizers(Resource):
                                                deleted=deleted,
                                                not_deleted=not_deleted)), status=207)
         else:
-            return ApiResponse(json.dumps(dict(message='Bad request, include ids as list data')), status=400)
+            return InvalidUsage('Bad request, include ids as list data')
 
 
 @api.route('/organizers/<int:organizer_id>')
-class OrganizerById(Resource):
+class OrganizerByIdResource(Resource):
     """
         This resource handles organizer CRUD operations for a single organizer given by organizer_id.
     """
@@ -968,7 +970,7 @@ class OrganizerById(Resource):
             resp = json.dumps({'organizer': organizer})
             return ApiResponse(resp, status=200)
         else:
-            ApiResponse(json.dumps(dict(messsage='APIError: Organizer not found')), status=404)
+            raise ResourceNotFound('Organizer not found')
 
     @authenticate
     def post(self, organizer_id, **kwargs):
@@ -1014,7 +1016,7 @@ class OrganizerById(Resource):
             organizer.update(**organizer_data)
             return ApiResponse(json.dumps(dict(message='Organizer updated successfully')), status=204)
         else:
-            return ApiResponse(json.dumps(dict(messsage='Organizer not found')), status=404)
+            return ResourceNotFound("Organizer not found")
 
     @authenticate
     def delete(self, organizer_id, **kwargs):
@@ -1051,11 +1053,10 @@ class OrganizerById(Resource):
             resp = json.dumps(dict(message='Organizer has been deleted successfully'))
             return ApiResponse(resp, status=200)
         else:
-            return ApiResponse(json.dumps(dict(message='Organizer not found')), status=404)
-
+            return ResourceNotFound("Organizer not found")
 
 @api.route('/social_networks/process_access_token/<int:social_network_id>')
-class ProcessAccessToken(Resource):
+class ProcessAccessTokenResource(Resource):
     """
     This resource adds user credentials for given user and social network.
     This resource takes access token 'code' and social network id for which we
@@ -1117,6 +1118,6 @@ class ProcessAccessToken(Resource):
             social_network_class.save_user_credentials_in_db(user_credentials_dict)
             return ApiResponse(dict(message='User credentials added successfully'), status=201)
         else:
-            return ApiResponse(dict(message='Social Network not found'), status=404)
+            return ResourceNotFound('Social Network not found')
 
 

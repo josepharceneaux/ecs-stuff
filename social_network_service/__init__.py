@@ -6,11 +6,10 @@ from flask import Flask
 
 from common.models.db import db
 from social_network_service.model_helpers import add_model_helpers
+from common.error_handling import register_error_handlers
 
 flask_app = Flask(__name__)
 flask_app.config.from_object('social_network_service.config')
-logger = flask_app.config['LOGGER']
-
 
 def init_app():
     """
@@ -20,4 +19,8 @@ def init_app():
     add_model_helpers(db.Model)
     db.init_app(flask_app)
     db.app = flask_app
+    logger = flask_app.config['LOGGER']
+    register_error_handlers(flask_app, logger)
+    logger.info("Starting social network service in %s environment", flask_app.config['GT_ENVIRONMENT'])
     return flask_app
+

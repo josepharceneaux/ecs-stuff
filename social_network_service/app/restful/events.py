@@ -11,6 +11,8 @@ from social_network_service.app.app_utils import api_route, authenticate, ApiRes
 from social_network_service.custom_exections import ApiException
 from social_network_service.utilities import process_event, delete_events
 from common.models.event import Event
+from common.error_handling import InternalServerError, ResourceNotFound,\
+    InvalidUsage, ForbiddenError
 from social_network_service.utilities import add_organizer_venue_data
 
 events_blueprint = Blueprint('events_api', __name__)
@@ -198,7 +200,7 @@ class Events(Resource):
             return ApiResponse(json.dumps(dict(message='Unable to delete %s events' % len(not_deleted),
                                                deleted=deleted,
                                                not_deleted=not_deleted)), status=207)
-        return ApiResponse(json.dumps(dict(message='Bad request, include event_ids as list data')), status=400)
+        return InvalidUsage('Bad request, include event_ids as list data')
 
 
 @api.route('/events/<int:event_id>')
@@ -256,8 +258,7 @@ class EventById(Resource):
         if event:
             event_data = add_organizer_venue_data(event)
             return dict(event=event_data), 200
-        return ApiResponse(json.dumps(dict(message='Event does not exist with id %s' % event_id)),
-                           status=400)
+        return ResourceNotFound('Event does not exist with id %s' % event_id)
 
     @authenticate
     def post(self, event_id, **kwargs):
@@ -326,8 +327,7 @@ class EventById(Resource):
         if event:
             process_event(event_data, user_id, method='Update')
             return ApiResponse(json.dumps(dict(message='Event updated successfully')), status=204)
-        return ApiResponse(json.dumps(dict(message='Event not found')),
-                           status=404)
+        return ResourceNotFound('Event not found')
 
     @authenticate
     def delete(self, event_id, **kwargs):
@@ -359,5 +359,5 @@ class EventById(Resource):
         deleted, not_deleted = delete_events(user_id, [event_id])
         if len(deleted) == 1:
             return ApiResponse(json.dumps(dict(message='Event deleted successfully')), status=200)
-        return ApiResponse(json.dumps(dict(message='Forbidden: Unable to delete event')), status=403)
+        return ForbiddenError('Forbidden: Unable to delete event')
 

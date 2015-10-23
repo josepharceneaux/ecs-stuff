@@ -56,6 +56,10 @@ class ForbiddenError(TalentError):
     def http_status_code(cls):
         return 403
 
+class ResourceNotFound(TalentError):
+    @classmethod
+    def http_status_code(cls):
+        return 404
 
 def register_error_handlers(app, logger):
     """
