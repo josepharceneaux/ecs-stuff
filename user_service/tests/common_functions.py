@@ -14,7 +14,7 @@ USER_SERVICE_ENDPOINT = 'http://127.0.0.1:8004/%s'
 USER_ROLES = USER_SERVICE_ENDPOINT % 'users/%s/roles'
 USER_ROLES_VERIFY = USER_SERVICE_ENDPOINT % 'roles/verify'
 USER_DOMAIN_ROLES = USER_SERVICE_ENDPOINT % 'domain/%s/roles'
-DOMAIN_GROUPS = USER_SERVICE_ENDPOINT % 'groups'
+DOMAIN_GROUPS = USER_SERVICE_ENDPOINT % 'domain/%s/groups'
 USER_GROUPS = USER_SERVICE_ENDPOINT % 'groups/%s/users'
 
 
@@ -92,21 +92,21 @@ def verify_user_scoped_role(user, role):
 def domain_groups(access_token, domain_id, test_groups=None, action='GET'):
     headers = {'Authorization': 'Bearer %s' % access_token}
     if action == "GET":
-        response = requests.get(DOMAIN_GROUPS, headers=headers, params={'domain_id': domain_id})
+        response = requests.get(DOMAIN_GROUPS % domain_id, headers=headers, params={'domain_id': domain_id})
         if response.status_code == 200:
             response = json.loads(response.text)
             return [group['name'] for group in response.get('user_groups')]
         return response.status_code
     elif action == "POST":
         headers['content-type'] = 'application/json'
-        data = {'groups': [{'group_name': group, 'domain_id': domain_id} for group in test_groups]}
-        response = requests.post(DOMAIN_GROUPS, headers=headers, data=json.dumps(data))
+        data = {'groups': [{'name': group, 'description': group} for group in test_groups]}
+        response = requests.post(DOMAIN_GROUPS % domain_id, headers=headers, data=json.dumps(data))
         db.session.commit()
         return response.status_code
     elif action == "DELETE":
         headers['content-type'] = 'application/json'
         data = {'groups': [group for group in test_groups]}
-        response = requests.delete(DOMAIN_GROUPS, headers=headers, data=json.dumps(data))
+        response = requests.delete(DOMAIN_GROUPS % domain_id, headers=headers, data=json.dumps(data))
         return response.status_code
 
 

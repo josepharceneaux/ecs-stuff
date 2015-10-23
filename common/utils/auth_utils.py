@@ -74,11 +74,11 @@ def require_any_role(*role_names):
             domain_roles = DomainRole.get_by_names(role_names) or ''
             for domain_role in domain_roles:
                 if domain_role and domain_role.id in user_roles:
-                    if not domain_role.domain_id:
-                        request.domain_independent_role = True
+                    if domain_role.role_name == 'ADMIN':
+                        request.is_admin_user = True
                         return func(*args, **kwargs)
-                    request.domain_independent_role = False
-            if hasattr(request, 'domain_independent_role'):
+                    request.is_admin_user = False
+            if hasattr(request, 'is_admin_user'):
                 return func(*args, **kwargs)
             else:
                 raise UnauthorizedError(error_message="User doesn't have appropriate permissions to \

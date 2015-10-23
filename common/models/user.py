@@ -255,13 +255,13 @@ class UserScopedRoles(db.Model):
     user = db.relationship('User', backref=db.backref('user_scoped_roles', cascade="all, delete-orphan"))
 
     @staticmethod
-    def add_roles(user_id, roles_list):
+    def add_roles(user, is_admin_user, roles_list):
         """ Add a role for user
-        :param int user_id: Id of a user
+        :param User user: user object
+        :param bool is_admin_user: either user has ADMIN role
         :param list[int | str] roles_list: list of role_ids or role_names or both
         :rtype: None
         """
-        user = User.query.get(user_id)
         if user:
             for role in roles_list:
                 if is_number(role):
@@ -273,46 +273,46 @@ class UserScopedRoles(db.Model):
                     else:
                         raise InvalidUsage("Role: %s doesn't exist" % role)
                 domain_role = DomainRole.query.get(role_id)
-                if role_id and domain_role and (not domain_role.domain_id or domain_role.domain_id == user.domain_id):
-                    if not UserScopedRoles.query.filter((UserScopedRoles.user_id == user_id) &
+                # Add given role to a given user if user who sent this request is either admin or either from same domain
+                if domain_role and (is_admin_user or domain_role.domain_id == user.domain_id):
+                    if not UserScopedRoles.query.filter((UserScopedRoles.user_id == user.id) &
                                                                 (UserScopedRoles.role_id == role_id)).first():
-                        user_scoped_role = UserScopedRoles(user_id=user_id, role_id=role_id)
+                        user_scoped_role = UserScopedRoles(user_id=user.id, role_id=role_id)
                         db.session.add(user_scoped_role)
                     else:
-                        raise InvalidUsage("Role: %s already exists for user: %s" % (role, user_id))
+                        raise InvalidUsage("Role: %s already exists for user: %s" % (role, user.id))
                 else:
                     raise InvalidUsage("Role: %s doesn't exist or it belongs to a different domain" % role)
             db.session.commit()
         else:
-            raise InvalidUsage("User %s doesn't exist" % user_id)
+            raise InvalidUsage("User %s doesn't exist" % user.id)
 
     @staticmethod
-    def delete_roles(user_id, roles_list):
+    def delete_roles(user, is_admin_user, roles_list):
         """ Delete a role for user
-        :param int user_id: Id of a user
+        :param User user: user object
+        :param bool is_admin_user: either user has ADMIN role
         :param list[int | str] roles_list: list of role_ids or role_names or both
         :rtype: None
         """
-        if User.query.get(user_id):
-            for role in roles_list:
-                if is_number(role):
-                    role_id = int(role)
+        for role in roles_list:
+            if is_number(role):
+                role_id = int(role)
+            else:
+                domain_role = DomainRole.get_by_name(role)
+                if domain_role:
+                    role_id = domain_role.id
                 else:
-                    domain_role = DomainRole.get_by_name(role)
-                    if domain_role:
-                        role_id = domain_role.id
-                    else:
-                        raise InvalidUsage("Domain role %s doesn't exist" % role)
+                    raise InvalidUsage("Domain role %s doesn't exist" % role)
 
-                user_scoped_role = UserScopedRoles.query.filter((UserScopedRoles.user_id == user_id)
-                                                                & (UserScopedRoles.role_id == role_id)).first()
-                if user_scoped_role:
-                    db.session.delete(user_scoped_role)
-                else:
-                    raise InvalidUsage("User %s doesn't have any role %s" % (user_id, role_id))
-            db.session.commit()
-        else:
-            raise InvalidUsage("User %s doesn't exist" % user_id)
+            user_scoped_role = UserScopedRoles.query.filter((UserScopedRoles.user_id == user.id)
+                                                            & (UserScopedRoles.role_id == role_id)).first()
+            # Delete a given role only if user who sent this request is either ADMIN or it has same domain_id as given role
+            if user_scoped_role and (is_admin_user or DomainRole.query.get(role_id).domain_id == user.domain_id):
+                db.session.delete(user_scoped_role)
+            else:
+                raise InvalidUsage("User %s doesn't have any role %s or " % (user.id, role_id))
+        db.session.commit()
 
     @staticmethod
     def get_all_roles_of_user(user_id):
@@ -369,12 +369,11 @@ class UserGroup(db.Model):
         :rtype: None
         """
         for group in groups:
-            name = group.get('group_name')
-            description = group.get('group_description')
-            group_domain_id = int(group.get('domain_id') or domain_id)
-            already_existing_group = UserGroup.query.filter_by(name=name).first() or None
-            if not already_existing_group or already_existing_group.domain_id != group_domain_id:
-                user_group = UserGroup(name=name, description=description, domain_id=group_domain_id)
+            name = group.get('name')
+            description = group.get('description')
+            already_existing_group = UserGroup.query.filter_by(name=name, domain_id=domain_id).first()
+            if not already_existing_group:
+                user_group = UserGroup(name=name, description=description, domain_id=domain_id)
             else:
                 raise InvalidUsage("Group '%s' already exists in same domain so it cannot be added again" % name)
             db.session.add(user_group)
@@ -397,9 +396,10 @@ class UserGroup(db.Model):
         return User.query.filter_by(user_group_id=group_id).all()
 
     @staticmethod
-    def delete_groups(domain_id, groups):
+    def delete_groups(domain_id, is_admin_user, groups):
         """ Delete few or all groups of a domain
         :param int domain_id: id of a domain
+        :param bool is_admin_user: either user has ADMIN role
         :param list[int | str] groups: list of names or ids of user groups
         :rtype: None
         """
@@ -415,30 +415,27 @@ class UserGroup(db.Model):
                         group_id = None
 
                 group = UserGroup.query.get(group_id) or None if group_id else None
-                if group and group.domain_id == domain_id:
+                if group and (is_admin_user or group.domain_id == domain_id):
                     db.session.delete(group)
                 else:
-                    raise InvalidUsage("Group %s doesn't exist or either it doesn't belong to Domain %s " % (group_id, domain_id))
+                    raise InvalidUsage("Group %s doesn't exist or either it doesn't belong to\
+                                            Domain %s " % (group_id, domain_id))
             db.session.commit()
         else:
             raise InvalidUsage("Domain %s doesn't exist" % domain_id)
 
     @staticmethod
-    def add_users_to_group(group_id, user_ids):
+    def add_users_to_group(user_group, user_ids):
         """
-        :param int group_id: id of a user group
+        :param UserGroup user_group: user group
         :param list[int] user_ids: list of ids of users
         :rtype: None
         """
-        user_group = UserGroup.query.get(group_id)
-        if user_group:
-            for user_id in user_ids:
-                user = User.query.get(user_id) or None
-                if user and user.domain_id == user_group.domain_id:
-                    user.user_group_id = group_id
-                else:
-                    raise InvalidUsage("User: %s doesn't exist or either it doesn't belong to same Domain\
-                                            %s as user group" % (user_id, user_group.domain_id))
-            db.session.commit()
-        else:
-            raise InvalidUsage("User group %s doesn't exist" % group_id)
+        for user_id in user_ids:
+            user = User.query.get(user_id) or None
+            if user and user.domain_id == user_group.domain_id:
+                user.user_group_id = user_group.id
+            else:
+                raise InvalidUsage("User: %s doesn't exist or either it doesn't belong to same Domain\
+                                        %s as user group" % (user_id, user_group.domain_id))
+        db.session.commit()

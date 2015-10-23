@@ -59,7 +59,7 @@ def sample_user(request, domain_id):
 @pytest.fixture()
 def admin_user(request, domain_id, domain_admin_role):
     user = create_test_user(domain_id, PASSWORD)
-    UserScopedRoles.add_roles(user.id, [domain_admin_role])
+    UserScopedRoles.add_roles(user, True, [domain_admin_role])
     user_scoped_role = UserScopedRoles.query.filter((UserScopedRoles.user_id == user.id)
                                                                 & (UserScopedRoles.role_id == domain_admin_role)).first()
 
@@ -105,7 +105,7 @@ def domain_roles(request, domain_id):
     test_role_first = gen_salt(20)
     test_role_first_id = DomainRole.save(test_role_first, domain_id)
     test_role_second = gen_salt(20)
-    test_role_second_id = DomainRole.save(test_role_second)
+    test_role_second_id = DomainRole.save(test_role_second, domain_id)
 
     def tear_down():
         db.session.delete(DomainRole.query.get(test_role_first_id))
@@ -144,7 +144,7 @@ def test_user_scoped_roles(access_token, admin_access_token, sample_user, domain
     assert verify_user_scoped_role(sample_user, domain_roles['test_roles'][1])
     #
     # Get all roles of a domain
-    assert get_roles_of_domain(access_token=admin_access_token, domain_id=domain_id) == [domain_roles['test_roles'][0]]
+    assert get_roles_of_domain(access_token=admin_access_token, domain_id=domain_id) == domain_roles['test_roles']
 
     # Get all roles of a domain using non-admin user
     assert get_roles_of_domain(access_token=access_token, domain_id=domain_id) == 401

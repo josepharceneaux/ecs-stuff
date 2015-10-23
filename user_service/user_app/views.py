@@ -28,7 +28,7 @@ def verify_roles():
 def user_scoped_roles(user_id):
     user = User.query.get(user_id)
     # if logged-in user has any other role than ADMIN then it should belong to same domain as input user
-    if user and (request.domain_independent_role or (request.user.domain_id == user.domain_id)):
+    if user and (request.is_admin_user or (request.user.domain_id == user.domain_id)):
         if request.method == 'GET':
             user_roles = UserScopedRoles.get_all_roles_of_user(user_id)
             return jsonify(dict(roles=[user_scoped_role.role_id for user_scoped_role in user_roles]))
@@ -36,10 +36,10 @@ def user_scoped_roles(user_id):
             posted_data = request.get_json(silent=True)
             if posted_data:
                 if request.method == 'POST':
-                    UserScopedRoles.add_roles(user_id, posted_data.get('roles'))
+                    UserScopedRoles.add_roles(user, request.is_admin_user, posted_data.get('roles'))
                     return jsonify(success=True)
                 else:
-                    UserScopedRoles.delete_roles(user_id, posted_data.get('roles'))
+                    UserScopedRoles.delete_roles(user, request.is_admin_user, posted_data.get('roles'))
                     return jsonify(success=True)
             else:
                 raise InvalidUsage(error_message='Request data is corrupt')
@@ -53,7 +53,7 @@ def user_scoped_roles(user_id):
 @require_any_role('ADMIN', 'DOMAIN_ADMIN')
 def get_all_roles_of_domain(domain_id):
     # if logged-in user has any other role than ADMIN then it should belong to same domain as input domain_id
-    if Domain.query.get(domain_id) and (request.domain_independent_role or (request.user.domain_id == domain_id)):
+    if Domain.query.get(domain_id) and (request.is_admin_user or (request.user.domain_id == domain_id)):
         all_roles_of_domain = DomainRole.all_roles_of_domain(domain_id)
         return jsonify(dict(roles=[{'id': domain_role.id, 'name': domain_role.role_name} for
                                    domain_role in all_roles_of_domain]))
@@ -67,7 +67,7 @@ def get_all_roles_of_domain(domain_id):
 def user_groups(group_id):
     user_group = UserGroup.query.get(group_id)
     # if logged-in user has any other role than ADMIN then it should belong to same domain as input user_group
-    if user_group and (request.domain_independent_role or request.user.domain_id == user_group.domain_id):
+    if user_group and (request.is_admin_user or request.user.domain_id == user_group.domain_id):
         if request.method == 'GET':
             # Get all users of group
             all_users_of_group = UserGroup.all_users_of_group(group_id)
@@ -75,7 +75,7 @@ def user_groups(group_id):
         else:
             posted_data = request.get_json(silent=True)
             if posted_data:
-                UserGroup.add_users_to_group(group_id, posted_data.get('user_ids'))
+                UserGroup.add_users_to_group(user_group, posted_data.get('user_ids'))
                 return jsonify(success=True)
             else:
                 raise InvalidUsage(error_message='Request data is corrupt')
@@ -84,15 +84,14 @@ def user_groups(group_id):
                                             this group is different than that of user')
 
 
-@app.route('/groups', methods=['GET', 'POST', 'DELETE'])
+@app.route('/domain/<int:domain_id>/groups', methods=['GET', 'POST', 'DELETE'])
 @require_oauth
 @require_any_role('ADMIN', 'DOMAIN_ADMIN')
-def domain_groups():
+def domain_groups(domain_id):
+    # Get all groups of a domain
     if request.method == 'GET':
-        # Get all groups of a domain
-        domain_id = int(request.args.get('domain_id') or request.user.domain_id)
         # if logged-in user has any other role than ADMIN then it should belong to same domain as input domain_id
-        if Domain.query.get(domain_id) and (request.domain_independent_role or request.user.domain_id == domain_id):
+        if Domain.query.get(domain_id) and (request.is_admin_user or request.user.domain_id == domain_id):
             all_user_groups_of_domain = UserGroup.all_groups_of_domain(domain_id)
             return jsonify(dict(user_groups=[{'id': user_group.id, 'name': user_group.name} for user_group in
                                              all_user_groups_of_domain]))
@@ -101,19 +100,18 @@ def domain_groups():
                                                 is different than that of logged-in user')
     posted_data = request.get_json(silent=True)
     if posted_data:
-        domain_id = int(posted_data.get('domain_id') or request.user.domain_id)
-        # if logged-in user has any other role than ADMIN then it should belong to same domain as input domain_id
-        if Domain.query.get(domain_id) and (request.domain_independent_role or request.user.domain_id == domain_id):
-            if request.method == 'POST':
+        if request.method == 'POST':
+            # if logged-in user has any other role than ADMIN then it should belong to same domain as input domain_id
+            if Domain.query.get(domain_id) and (request.is_admin_user or request.user.domain_id == domain_id):
                 groups = posted_data.get('groups')
                 UserGroup.add_groups(groups, domain_id)
                 return jsonify(success=True)
             else:
-                # Delete groups with given group_ids
-                UserGroup.delete_groups(domain_id, posted_data.get('groups'))
-                return jsonify(success=True)
+                raise InvalidUsage(error_message='Either domain_id is invalid or it \
+                                            is different than that of logged-in user')
         else:
-            raise InvalidUsage(error_message='Either domain_id is invalid or it \
-                                                is different than that of logged-in user')
+            # Delete groups with given group_ids
+            UserGroup.delete_groups(request.user.domain_id, request.is_admin_user, posted_data.get('groups'))
+            return jsonify(success=True)
     else:
         raise InvalidUsage(error_message='Request data is corrupt')
