@@ -52,3 +52,19 @@ def test_get_candidate(sample_user, user_auth):
     assert 'candidate' in r.json()
     assert 'id', 'emails' in r.json()['candidate']
     print "\nresp = %s" % r.json()
+
+
+####################################
+# test cases for POSTing candidate #
+####################################
+def test_create_candidate(sample_user):
+    """
+    :param sample_user: user-row
+    """
+    import json
+    r = requests.post(
+        url='http://127.0.0.1:8004/v1/candidates',
+        data=json.dumps(generate_single_candidate_data())
+    )
+    print "\nresp = %s" % r
+    print "\nresp = %s" % r.json()
