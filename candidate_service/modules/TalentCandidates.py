@@ -28,6 +28,19 @@ def does_candidate_belong_to_user(user_row, candidate_id):
     return True if candidate_row else False
 
 
+def is_custom_field_authorized(custom_field_ids, user):
+    # TODO: see if there's a way to complete this with SQL query only. Perhaps use raw sql
+    # Todo: add docstring
+    # Todo: users_domain_id must be a separate function
+    approved_custom_fields = db.session.query(CustomField).filter(CustomField.id.in_(custom_field_ids))
+    users_domain_id = db.session.query(User).get(user.id).domain_id
+    for custom_field in approved_custom_fields:
+        if custom_field.domain_id != users_domain_id:
+            return False
+
+    return True
+
+
 def fetch_candidate_info(candidate_id, fields=None):
     """
     Fetched for candidate object via candidate's id

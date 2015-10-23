@@ -1,7 +1,8 @@
 from candidate_service.app import (app, db, logger)
 from flask_restful import (Api, Resource)
 from candidate_service.modules.TalentCandidates import (
-    does_candidate_belong_to_user, fetch_candidate_info
+    does_candidate_belong_to_user, fetch_candidate_info,
+    is_custom_field_authorized
 )
 from candidate_service.common.models.user import User
 from common.utils.validators import (is_number, is_valid_email)
@@ -32,24 +33,73 @@ class CandidateResource(Resource):
         if not is_number(candidate_id):
             return {'error': {'message': 'Candidate ID must be an integer'}}, 400
 
-        # if not does_candidate_belong_to_user(user_row=authed_user, candidate_id=candidate_id):
-        #     return {'error': {'message': 'Not authorized'}}, 403
+        if not does_candidate_belong_to_user(user_row=authed_user, candidate_id=candidate_id):
+            return {'error': {'message': 'Not authorized'}}, 403
 
         candidate_data = fetch_candidate_info(candidate_id=candidate_id)
 
         return {'candidate': candidate_data}
 
     def post(self, **kwargs):
-        print "kwargs = %s" % kwargs
+        """
+        POST /web/api/candidates
+        input: {'candidates': [candidateObject1, candidateObject2, ...]}
 
-        request_data = parse_request_data()
-        if request_data.get('error'):
-            return request_data
+        Creates new candidate(s).
 
-        return request_data
+        Takes a JSON dict containing:
+            - a candidates key and a list of candidate-object(s) as values
+        Function only accepts JSON dict.
+        JSON dict must contain candidate's email address(s).
 
+        :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
+        """
+        # Parse request data
+        body_dict = parse_request_data()
+        if body_dict.get('error'):
+            return body_dict
+
+        # Retrieve candidate object(s)
+        list_of_candidate_dicts = body_dict.get('candidates')
+
+        # Candidate dict(s) must be in a list
+        if not isinstance(list_of_candidate_dicts, list):
+            return {'error': {'message': 'Unacceptable input: Candidate object(s) must be in a list'}}, 400
+
+        created_candidate_ids = []
+        for candidate_dict in list_of_candidate_dicts:
+
+            emails = [{'label': email.get('label'), 'address': email.get('address')}
+                      for email in candidate_dict.get('emails')]
+            # Email address is required for creating a candidate
+            if not any(emails):
+                return {'error': {'message': 'Email address required'}}, 400
+
+            # Validate email address' format
+            if filter(lambda email: not is_valid_email(email['address']), emails):
+                return {'error': {'message': 'Invalid email address/format'}}, 400
+
+            phones = candidate_dict.get('phones')
+            addresses = candidate_dict.get('addresses')
+            educations = candidate_dict.get('educations')
+            military_services = candidate_dict.get('military_services')
+            social_networks = candidate_dict.get('social_networks', [])
+            custom_fields = candidate_dict.get('custom_fields', [])
+            areas_of_interest = candidate_dict.get('areas_of_interest', [])
+            candidate_experiences = candidate_dict.get('work_experiences', [])
+
+            # Prevent user from adding custom field(s) to other domain(s)
+            custom_field_ids = [custom_field['id'] for custom_field in custom_fields]
+            # todo: need to pass in user-row here
+            is_authorized = is_custom_field_authorized(custom_field_ids=custom_field_ids, user='')
+            if not is_authorized:
+                return {'error': {'message': 'Unauthorized area of interest IDs'}}, 403
+
+        return body_dict
 
 api.add_resource(CandidateResource, '/v1/candidates/<id>', '/v1/candidates')
+
+
 
 
 def parse_request_data():
