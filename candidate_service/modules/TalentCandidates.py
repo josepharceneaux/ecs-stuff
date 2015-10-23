@@ -10,35 +10,7 @@ from candidate_service.common.models.candidate import (
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.email_marketing import (EmailCampaign, EmailCampaignSend)
 from candidate_service.common.models.misc import (Country, AreaOfInterest, CustomField)
-from candidate_service.common.models.user import User
 from datetime import date
-
-
-def does_candidate_belong_to_user(user_row, candidate_id):
-    """
-    Function checks if:
-        1. Candidate belongs to user AND
-        2. Candidate is in the same domain as the user
-    """
-    candidate_row = db.session.query(Candidate).join(User).filter(
-        Candidate.id == candidate_id, Candidate.user_id == user_row.id,
-        User.domain_id == user_row.domain_id
-    ).first()
-
-    return True if candidate_row else False
-
-
-def is_custom_field_authorized(custom_field_ids, user):
-    # TODO: see if there's a way to complete this with SQL query only. Perhaps use raw sql
-    # Todo: add docstring
-    # Todo: users_domain_id must be a separate function
-    approved_custom_fields = db.session.query(CustomField).filter(CustomField.id.in_(custom_field_ids))
-    users_domain_id = db.session.query(User).get(user.id).domain_id
-    for custom_field in approved_custom_fields:
-        if custom_field.domain_id != users_domain_id:
-            return False
-
-    return True
 
 
 def fetch_candidate_info(candidate_id, fields=None):
@@ -303,6 +275,9 @@ def social_network_name_and_url(candidate_id):
 
 
 class ContactHistoryEvent:
+    def __init__(self):
+        pass
+
     CREATED_AT = 'created_at'
     EMAIL_SEND = 'email_send'
     EMAIL_OPEN = 'email_open'   # Todo: Implement opens and clicks into timeline

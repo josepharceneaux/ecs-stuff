@@ -1,13 +1,21 @@
-from candidate_service.app import (app, db, logger)
+# Flask specific
+from flask import (request, jsonify)
 from flask_restful import (Api, Resource)
-from candidate_service.modules.TalentCandidates import (
-    does_candidate_belong_to_user, fetch_candidate_info,
-    is_custom_field_authorized
-)
+
+# Candidate service specific
+from candidate_service.app import (app, db, logger)
+from candidate_service.modules.TalentCandidates import fetch_candidate_info
 from candidate_service.common.models.user import User
+from candidate_service.modules.validators import (
+    does_candidate_belong_to_user, is_custom_field_authorized,
+    is_area_of_interest_authorized
+)
+
+# Common utilities
 from common.utils.validators import (is_number, is_valid_email)
 from common.utils.auth_utils import authenticate_oauth_user
-from flask import (request, jsonify)
+
+# Standard Library
 import json
 
 
@@ -54,6 +62,12 @@ class CandidateResource(Resource):
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
+        # authed_user = authenticate_oauth_user(request=request)
+        # if authed_user.get('error'):
+        #     return {'error': {'code': 3, 'message': 'Authentication failed'}}, 401
+
+        authed_user = db.session.query(User).get(1)
+
         # Parse request data
         body_dict = parse_request_data()
         if body_dict.get('error'):
@@ -90,10 +104,18 @@ class CandidateResource(Resource):
 
             # Prevent user from adding custom field(s) to other domain(s)
             custom_field_ids = [custom_field['id'] for custom_field in custom_fields]
-            # todo: need to pass in user-row here
-            is_authorized = is_custom_field_authorized(custom_field_ids=custom_field_ids, user='')
+            is_authorized = is_custom_field_authorized(custom_field_ids=custom_field_ids,
+                                                       user_domain_id=authed_user.domain_id)
+            if not is_authorized:
+                return {'error': {'message': 'Unauthorized custom field IDs'}}, 403
+
+            # Prevent user from adding area(s) of interest to other domain(s)
+            area_of_interest_ids = [area_of_interest['id'] for area_of_interest in areas_of_interest]
+            is_authorized = is_area_of_interest_authorized(area_of_interest_ids=area_of_interest_ids,
+                                                           user_domain_id=authed_user.domain_id)
             if not is_authorized:
                 return {'error': {'message': 'Unauthorized area of interest IDs'}}, 403
+
 
         return body_dict
 
