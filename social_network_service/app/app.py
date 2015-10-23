@@ -21,9 +21,9 @@ from flask.ext.restful import Api
 # Application specific imports
 from social_network_service import logger
 from social_network_service.app.app_utils import ApiResponse
-from social_network_service.custom_exections import ApiException
+from social_network_service.custom_exceptions import ApiException
 from social_network_service.app.restful.data import data_blueprint
-from social_network_service.custom_exections import AccessTokenHasExpired
+from social_network_service.custom_exceptions import AccessTokenHasExpired
 from social_network_service.rsvp.eventbrite import Eventbrite as EventbriteRsvp
 from restful.events import events_blueprint
 from social_network_service.utilities import get_class

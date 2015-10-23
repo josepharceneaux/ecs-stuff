@@ -19,11 +19,11 @@ from common.models.user import User
 from common.models.social_network import SocialNetwork
 from common.models.user import UserSocialNetworkCredential
 from social_network_service import logger
-from social_network_service.custom_exections import NoUserFound
-from social_network_service.custom_exections import ApiException
-from social_network_service.custom_exections import AccessTokenHasExpired
-from social_network_service.custom_exections import UserCredentialsNotFound
-from social_network_service.custom_exections import MissingFieldsInUserCredentials
+from social_network_service.custom_exceptions import NoUserFound
+from social_network_service.custom_exceptions import ApiException
+from social_network_service.custom_exceptions import AccessTokenHasExpired
+from social_network_service.custom_exceptions import UserCredentialsNotFound
+from social_network_service.custom_exceptions import MissingFieldsInUserCredentials
 
 
 class SocialNetworkBase(object):

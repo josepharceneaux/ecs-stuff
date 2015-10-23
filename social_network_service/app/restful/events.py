@@ -8,7 +8,7 @@ from flask import Blueprint, request
 from flask.ext.restful import Api, Resource
 from flask.ext.cors import CORS
 from social_network_service.app.app_utils import api_route, authenticate, ApiResponse
-from social_network_service.custom_exections import ApiException
+from social_network_service.custom_exceptions import ApiException
 from social_network_service.utilities import process_event, delete_events
 from common.models.event import Event
 from common.error_handling import InternalServerError, ResourceNotFound,\

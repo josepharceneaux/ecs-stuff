@@ -46,7 +46,7 @@ from social_network_service.app.app_utils import authenticate, api_route, ApiRes
 from flask.ext.restful import Resource, Api
 from flask.ext.cors import CORS
 from social_network_service.meetup import Meetup
-from social_network_service.custom_exections import ApiException
+from social_network_service.custom_exceptions import ApiException
 from common.models.user import UserSocialNetworkCredential, User
 from common.models.social_network import SocialNetwork
 from common.error_handling import ResourceNotFound, InternalServerError,\

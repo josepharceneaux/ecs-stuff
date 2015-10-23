@@ -21,12 +21,12 @@ from social_network_service.event.base import EventBase
 from social_network_service.utilities import http_request
 from social_network_service.utilities import log_exception
 from social_network_service.utilities import get_utc_datetime
-from social_network_service.custom_exections import VenueNotFound
-from social_network_service.custom_exections import EventNotCreated
-from social_network_service.custom_exections import TicketsNotCreated
-from social_network_service.custom_exections import EventNotPublished
-from social_network_service.custom_exections import EventInputMissing
-from social_network_service.custom_exections import EventLocationNotCreated
+from social_network_service.custom_exceptions import VenueNotFound
+from social_network_service.custom_exceptions import EventNotCreated
+from social_network_service.custom_exceptions import TicketsNotCreated
+from social_network_service.custom_exceptions import EventNotPublished
+from social_network_service.custom_exceptions import EventInputMissing
+from social_network_service.custom_exceptions import EventLocationNotCreated
 
 WEBHOOK_REDIRECT_URL = app.config['WEBHOOK_REDIRECT_URL']
 

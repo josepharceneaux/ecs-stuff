@@ -20,8 +20,8 @@ from common.models.rsvp import CandidateEventRSVP
 from common.models.candidate import CandidateSource
 from social_network_service import logger
 from social_network_service.utilities import log_exception
-from social_network_service.custom_exections import ProductNotFound
-from social_network_service.custom_exections import UserCredentialsNotFound
+from social_network_service.custom_exceptions import ProductNotFound
+from social_network_service.custom_exceptions import UserCredentialsNotFound
 
 
 class RSVPBase(object):

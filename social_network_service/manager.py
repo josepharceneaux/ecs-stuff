@@ -18,7 +18,7 @@ from utilities import get_class, log_exception
 from common.models.user import UserSocialNetworkCredential
 from common.models.social_network import SocialNetwork
 from social_network_service import logger
-from social_network_service.custom_exections import AccessTokenHasExpired
+from social_network_service.custom_exceptions import AccessTokenHasExpired
 
 POOL_SIZE = 5
 

@@ -15,8 +15,8 @@ from common.models.social_network import SocialNetwork
 from social_network_service import logger
 from social_network_service.utilities import Attendee
 from social_network_service.utilities import http_request
-from social_network_service.custom_exections import NoUserFound
-from social_network_service.custom_exections import EventNotFound
+from social_network_service.custom_exceptions import NoUserFound
+from social_network_service.custom_exceptions import EventNotFound
 
 
 class Eventbrite(RSVPBase):

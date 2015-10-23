@@ -108,11 +108,11 @@ from social_network_service.utilities import log_error
 from social_network_service.utilities import get_class
 from social_network_service.utilities import http_request
 from social_network_service.utilities import log_exception
-from social_network_service.custom_exections import NoUserFound
-from social_network_service.custom_exections import InvalidDatetime
-from social_network_service.custom_exections import EventNotSaveInDb
-from social_network_service.custom_exections import EventNotUnpublished
-from social_network_service.custom_exections import UserCredentialsNotFound
+from social_network_service.custom_exceptions import NoUserFound
+from social_network_service.custom_exceptions import InvalidDatetime
+from social_network_service.custom_exceptions import EventNotSaveInDb
+from social_network_service.custom_exceptions import EventNotUnpublished
+from social_network_service.custom_exceptions import UserCredentialsNotFound
 
 
 class EventBase(object):

@@ -19,7 +19,7 @@ from common.models.event import Event
 from social_network_service.rsvp.base import RSVPBase
 from social_network_service.utilities import Attendee
 from social_network_service.utilities import log_exception
-from social_network_service.custom_exections import EventNotFound
+from social_network_service.custom_exceptions import EventNotFound
 
 
 class Facebook(RSVPBase):
