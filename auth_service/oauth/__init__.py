@@ -3,9 +3,10 @@ __author__ = 'ufarooqi'
 from flask import Flask
 from flask_oauthlib.provider import OAuth2Provider
 from auth_service.common.models.db import db
+from auth_service import config
 
 app = Flask(__name__)
-app.config.from_object('auth_service.config')
+app.config.from_object(config)
 
 logger = app.config['LOGGER']
 from auth_service.common.error_handling import register_error_handlers
