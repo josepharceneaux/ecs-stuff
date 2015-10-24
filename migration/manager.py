@@ -22,23 +22,25 @@ def add_admin_roles_to_existing_users():
     if not DomainRole.get_by_name('DOMAIN_ADMIN'):
         DomainRole.save('DOMAIN_ADMIN')
 
-
     customer_managers = WebAuthMembership.query.filter_by(group_id=1).all()   # Customer Managers have group_id = 1
     user_managers = WebAuthMembership.query.filter_by(group_id=2).all()  # User Managers have group_id = 2
 
+    customer_managers = User.query.filter(User.id.in_([customer_manager.user_id for customer_manager in customer_managers])).all()
+    user_managers = User.query.filter(User.id.in_([user_manager.user_id for user_manager in user_managers])).all()
+
     for user_manager in user_managers:
         try:
-            UserScopedRoles.add_roles(user_manager.user_id, ['DOMAIN_ADMIN'])
-            print "Added role DOMAIN_ADMIN to user %s" % user_manager.user_id
+            UserScopedRoles.add_roles(user_manager, True, ['DOMAIN_ADMIN'])
+            print "Added role DOMAIN_ADMIN to user %s" % user_manager.id
         except Exception as e:
-            print "Couldn't add role DOMAIN_ADMIN to user %s because: %s" % (user_manager.user_id, e.message)
+            print "Couldn't add role DOMAIN_ADMIN to user %s because: %s" % (user_manager.id, e.message)
 
     for customer_manager in customer_managers:
         try:
-            UserScopedRoles.add_roles(customer_manager.user_id, ['ADMIN'])
-            print "Added role ADMIN to user %s" % customer_manager.user_id
+            UserScopedRoles.add_roles(customer_manager, True, ['ADMIN'])
+            print "Added role ADMIN to user %s" % customer_manager.id
         except Exception as e:
-            print "Couldn't add role ADMIN to user %s because: %s" % (customer_manager.user_id, e.message)
+            print "Couldn't add role ADMIN to user %s because: %s" % (customer_manager.id, e.message)
 
 
 @manager.command
