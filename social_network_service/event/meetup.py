@@ -12,7 +12,7 @@ from datetime import timedelta
 # Application specific
 from common.models.venue import Venue
 from common.models.event import Event
-from common.models.organizer import Organizer
+from common.models.event_organizer import EventOrganizer
 from social_network_service import logger
 from social_network_service.utilities import log_error
 from social_network_service.event.base import EventBase
@@ -267,7 +267,7 @@ class Meetup(EventBase):
                 if organizer and organizer.has_key('bio') else ''
 
             )
-            organizer_in_db = Organizer.get_by_user_id_and_name(
+            organizer_in_db = EventOrganizer.get_by_user_id_and_name(
                 self.user.id,
                 group_organizer['name'] if group_organizer.has_key(
                     'name') else ''
@@ -276,8 +276,8 @@ class Meetup(EventBase):
                 organizer_in_db.update(**organizer_data)
                 organizer_id = organizer_in_db.id
             else:
-                organizer_instance = Organizer(**organizer_data)
-                Organizer.save(organizer_instance)
+                organizer_instance = EventOrganizer(**organizer_data)
+                EventOrganizer.save(organizer_instance)
                 organizer_id = organizer_instance.id
         if venue:
             venue_data = dict(

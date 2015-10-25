@@ -10,7 +10,7 @@ class Event(db.Model):
     description = db.Column('description', db.String(1000))
     social_network_id = db.Column('socialNetworkId', db.Integer, db.ForeignKey('social_network.id'), nullable=False)
     user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id'), nullable=False)
-    organizer_id = db.Column('organizerId', db.Integer, db.ForeignKey('organizer.id'), nullable=False)
+    organizer_id = db.Column('organizerId', db.Integer, db.ForeignKey('event_organizer.id'), nullable=False)
     venue_id = db.Column('venueId', db.Integer, db.ForeignKey('venue.id'), nullable=False)
     group_id = db.Column('groupId', db.String(100))
     group_url_name = db.Column('groupUrlName', db.String(500))

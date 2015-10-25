@@ -39,7 +39,7 @@ This file contains API endpoints related to social network.
 import json
 import types
 from flask import Blueprint, request
-from common.models.organizer import Organizer
+from common.models.event_organizer import EventOrganizer
 from common.models.venue import Venue
 from social_network_service import logger
 from social_network_service.app.app_utils import authenticate, api_route, ApiResponse
@@ -818,7 +818,7 @@ class OrganizersResource(Resource):
                     500 (Internal Server Error)
         """
         user_id = kwargs['user_id']
-        organizers = map(lambda organizer: organizer.to_json(), Organizer.get_by_user_id(user_id))
+        organizers = map(lambda organizer: organizer.to_json(), EventOrganizer.get_by_user_id(user_id))
         resp = json.dumps({'organizers': organizers, 'count': len(organizers)})
         return ApiResponse(resp, status=200)
 
@@ -861,8 +861,8 @@ class OrganizersResource(Resource):
         user_id = kwargs['user_id']
         organizer_data = request.get_json(force=True)
         organizer_data['user_id'] = user_id
-        organizer = Organizer(**organizer_data)
-        Organizer.save(organizer)
+        organizer = EventOrganizer(**organizer_data)
+        EventOrganizer.save(organizer)
         return ApiResponse(json.dumps(dict(messsage='Organizer created successfully', id=organizer.id)), status=201)
 
     @authenticate
@@ -907,9 +907,9 @@ class OrganizersResource(Resource):
         # If no organizer id is given, return 400 (Bad request)
         if organizer_ids:
             for _id in organizer_ids:
-                organizer = Organizer.get_by_user_id_organizer_id(user_id, _id)
+                organizer = EventOrganizer.get_by_user_id_organizer_id(user_id, _id)
                 if organizer:
-                    Organizer.delete(_id)
+                    EventOrganizer.delete(_id)
                     deleted.append(_id)
                 else:
                     not_deleted.append(_id)
@@ -964,7 +964,7 @@ class OrganizerByIdResource(Resource):
                     500 (Internal Server Error)
         """
         user_id = kwargs['user_id']
-        organizer = Organizer.get_by_user_id_organizer_id(user_id, organizer_id)
+        organizer = EventOrganizer.get_by_user_id_organizer_id(user_id, organizer_id)
         if organizer:
             organizer = organizer.to_json()
             resp = json.dumps({'organizer': organizer})
@@ -1010,7 +1010,7 @@ class OrganizerByIdResource(Resource):
         """
         user_id = kwargs['user_id']
         organizer_data = request.get_json(force=True)
-        organizer = Organizer.get_by_user_id_organizer_id(user_id, organizer_id)
+        organizer = EventOrganizer.get_by_user_id_organizer_id(user_id, organizer_id)
         if organizer:
             organizer_data['user_id'] = user_id
             organizer.update(**organizer_data)
@@ -1047,9 +1047,9 @@ class OrganizerByIdResource(Resource):
         """
         # Get user_id
         user_id = kwargs['user_id']
-        organizer = Organizer.get_by_user_id_organizer_id(user_id, organizer_id)
+        organizer = EventOrganizer.get_by_user_id_organizer_id(user_id, organizer_id)
         if organizer:
-            Organizer.delete(organizer_id)
+            EventOrganizer.delete(organizer_id)
             resp = json.dumps(dict(message='Organizer has been deleted successfully'))
             return ApiResponse(resp, status=200)
         else:

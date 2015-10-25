@@ -23,7 +23,7 @@ from common.models.venue import Venue
 from common.models.user import Client
 from common.models.domain import Domain
 from common.models.culture import Culture
-from common.models.organizer import Organizer
+from common.models.event_organizer import EventOrganizer
 from common.models.organization import Organization
 from common.models.social_network import SocialNetwork
 from common.models.user import UserSocialNetworkCredential
@@ -529,8 +529,8 @@ def organizer_in_db(request, test_user):
         "email": "testemail@gmail.com",
         "about": "He is a testing engineer"
     }
-    organizer = Organizer(**organizer)
-    Organizer.save(organizer)
+    organizer = EventOrganizer(**organizer)
+    EventOrganizer.save(organizer)
     return organizer
 
 

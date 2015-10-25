@@ -1,7 +1,7 @@
 import json
 import requests
 from social_network_service import flask_app as app
-from common.models.organizer import Organizer
+from common.models.event_organizer import EventOrganizer
 
 API_URL = app.config['APP_URL']
 
@@ -43,10 +43,10 @@ class TestOrganizers:
         assert response.status_code == 201, 'Status should be Ok, Resource created (201)'
         response = response.json()
         assert response['id'] > 0
-        Organizer.session.commit()
-        organizer = Organizer.get_by_id(response['id'])
+        EventOrganizer.session.commit()
+        organizer = EventOrganizer.get_by_id(response['id'])
         assert organizer, 'Organizer created successfully in db'
-        Organizer.delete(organizer.id)
+        EventOrganizer.delete(organizer.id)
 
     def test_delete_with_invalid_token(self):
 

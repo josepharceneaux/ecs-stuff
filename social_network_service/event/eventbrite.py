@@ -12,7 +12,7 @@ from datetime import timedelta
 # Application specific
 from common.models.venue import Venue
 from common.models.event import Event
-from common.models.organizer import Organizer
+from common.models.event_organizer import EventOrganizer
 from social_network_service import flask_app as app
 from social_network_service.utilities import logger
 from social_network_service.utilities import log_error
@@ -269,7 +269,7 @@ class Eventbrite(EventBase):
                 if organizer.has_key('description') else ''
 
             )
-            organizer_in_db = Organizer.get_by_user_id_and_name(
+            organizer_in_db = EventOrganizer.get_by_user_id_and_name(
                 self.user.id,
                 organizer['name'] if organizer.has_key('name') else ''
                                                               )
@@ -277,8 +277,8 @@ class Eventbrite(EventBase):
                 organizer_in_db.update(**organizer_data)
                 organizer_id = organizer_in_db.id
             else:
-                organizer_instance = Organizer(**organizer_data)
-                Organizer.save(organizer_instance)
+                organizer_instance = EventOrganizer(**organizer_data)
+                EventOrganizer.save(organizer_instance)
                 organizer_id = organizer_instance.id
         if venue:
             venue_data = dict(

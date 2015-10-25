@@ -4,7 +4,7 @@ import logging
 import venue
 import domain
 import candidate
-import organizer
+import event_organizer
 import social_network
 from candidate import CandidateSource
 from candidate import CandidateAreaOfInterest
@@ -40,7 +40,7 @@ class User(db.Model):
     public_candidate_sharings = db.relationship('PublicCandidateSharing', backref='user')
     user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
     events = db.relationship('Event', backref='user', lazy='dynamic')
-    organizers = db.relationship('Organizer', backref='user', lazy='dynamic')
+    organizers = db.relationship('EventOrganizer', backref='user', lazy='dynamic')
     venues = db.relationship('Venue', backref='user', lazy='dynamic')
 
     def is_authenticated(self):
@@ -61,19 +61,6 @@ class User(db.Model):
 
     def __repr__(self):
         return "<email (email=' %r')>" % self.email
-
-
-class JobOpening(db.Model):
-    __tablename__ = 'job_opening'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column('UserId', db.Integer, db.ForeignKey('user.id'))
-    job_code = db.Column('JobCode', db.String(100))
-    description = db.Column('Description', db.String(500))
-    title = db.Column('Title', db.String(150))
-    added_time = db.Column('AddedTime', db.TIMESTAMP, default=datetime.datetime.now())
-
-    def __repr__(self):
-        return "<JobOpening (title=' %r')>" % self.title
 
 
 class Client(db.Model):

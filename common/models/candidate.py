@@ -140,12 +140,12 @@ class CandidateSource(db.Model):
         return "<CandidateSource (description= '%r')>" % self.description
 
     @classmethod
-    def get_by_description_and_notes(cls, event_name, event_description):
-        assert event_name
+    def get_by_description_and_notes(cls, source_name, source_description):
+        assert source_description and source_name
         return cls.query.filter(
             and_(
-                CandidateSource.description == event_name,
-                CandidateSource.notes == event_description,
+                CandidateSource.description == source_name,
+                CandidateSource.notes == source_description,
             )
         ).first()
 
