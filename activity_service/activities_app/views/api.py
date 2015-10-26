@@ -12,33 +12,37 @@ import re
 from flask import Blueprint
 from flask import jsonify
 from flask import request
+from flask.ext.cors import CORS
 
 # application specific
 from common.models.db import db
 from common.models.user import User
 from common.models.misc import Activity
-from common.utils.auth_utils import authenticate_oauth_user
+from common.utils.auth_utils import require_oauth
 
 ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
 POSTS_PER_PAGE = 20
 mod = Blueprint('activities_api', __name__)
 
 
+# Enable CORS
+CORS(mod, resources={
+    r'/activities/*': {
+        'origins': '*',
+        'allow_headers': ['Content-Type', 'Authorization']
+    }
+})
+
+
 @mod.route('/activities/<page>', methods=['GET'])
+@require_oauth
 def get_activities(page):
     """Authenticate endpoint requests and then properly route then to the retrieve or creation
        functions.
     :param int page: Page used in pagination for GET requests.
     :return: JSON formatted pagination response or message notifying creation status.
     """
-    valid_user_id = None
-    authentication_result = authenticate_oauth_user(request)
-    error_result = authentication_result.get('error')
-    if error_result:
-        return jsonify({'error': {'code': error_result.get('code'),
-                                  'message': error_result.get('message')}}), error_result.get('http_code', 400)
-    else:
-        valid_user_id = authentication_result.get('user_id')
+    valid_user_id = request.user.id
     is_aggregate_request = request.args.get('aggregate') == '1'
     tam = TalentActivityManager()
     if is_aggregate_request:
@@ -60,14 +64,9 @@ def get_activities(page):
 
 
 @mod.route('/activities/', methods=['POST'])
+@require_oauth
 def post_activity():
-    authentication_result = authenticate_oauth_user(request)
-    error_result = authentication_result.get('error')
-    if error_result:
-        return jsonify({'error': {'code': error_result.get('code'),
-                                  'message': error_result.get('message')}}), error_result.get('http_code', 400)
-    else:
-        valid_user_id = authentication_result.get('user_id')
+    valid_user_id = request.user.id
     tam = TalentActivityManager()
     return create_activity(valid_user_id, request.form.get('type'),
                                request.form.get('source_table'), request.form.get('source_id'),

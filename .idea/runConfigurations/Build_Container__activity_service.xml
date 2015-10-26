@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Build Container: activity_service" type="PythonConfigurationType" factoryName="Python">
+  <configuration default="false" name="Build Container: activity_service" type="PythonConfigurationType" factoryName="Python" folderName="activity_service">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>

@@ -4,6 +4,7 @@ from cStringIO import StringIO
 from os.path import basename
 from os.path import splitext
 from time import sleep
+from time import time
 import base64
 import string
 import datetime
@@ -21,13 +22,12 @@ import requests
 from BeautifulSoup import BeautifulSoup
 from bs4 import BeautifulSoup as bs4
 import magic
-
 from flask import current_app
 
 from talent_dice_client import parse_resume_with_bg
 
 
-def parse_resume(file_obj, filename_str, is_test_parser=False):
+def parse_resume(file_obj, filename_str):
     """Primary resume parsing function.
 
     Args:
@@ -39,6 +39,7 @@ def parse_resume(file_obj, filename_str, is_test_parser=False):
         Dictionary containing error message or candidate data.
 
     """
+    current_app.logger.info("Beginning parse_resume(%s)", filename_str)
     file_ext = basename(splitext(filename_str.lower())[-1]) if filename_str else ""
 
     if not file_ext.startswith("."):
@@ -56,7 +57,9 @@ def parse_resume(file_obj, filename_str, is_test_parser=False):
     is_resume_image = False
     if file_ext in image_formats:
         if file_ext == '.pdf':
+            start_time = time()
             text = convert_pdf_to_text(file_obj)
+            current_app.logger.info("Benchmark: convert_pdf_to_text(%s) took %ss", filename_str, time() - start_time)
             if not text.strip():
                 # pdf is possibly an image
                 is_resume_image = True
@@ -67,10 +70,9 @@ def parse_resume(file_obj, filename_str, is_test_parser=False):
     file_obj.seek(0)
     if is_resume_image:
         # If file is an image, OCR it
-        if is_test_parser:
-            doc_content = ocr_image(file_obj, export_format='txt')
-        else:
-            doc_content = ocr_image(file_obj)
+        start_time = time()
+        doc_content = ocr_image(file_obj)
+        current_app.logger.info("Benchmark: ocr_image(%s) took %ss", filename_str, time() - start_time)
     else:
         """
         BurningGlass doesn't work when the file's MIME type is text/html, even if the file is a .doc file.
@@ -78,10 +80,14 @@ def parse_resume(file_obj, filename_str, is_test_parser=False):
         MS Word/LibreOffice/etc.)
         So, we have to convert the file into PDF using xhtml2pdf.
         """
+        start_time = time()
         doc_content = file_obj.read()
         mime_type = magic.from_buffer(doc_content, mime=True)
+        current_app.logger.info("Benchmark: Reading file_obj and magic.from_buffer(%s) took %ss", filename_str, time() - start_time)
         final_file_ext = file_ext
+
         if mime_type == 'text/html':
+            start_time = time()
             file_obj = StringIO()
             try:
                 create_pdf_status = pisa.CreatePDF(doc_content, file_obj)
@@ -95,23 +101,22 @@ def parse_resume(file_obj, filename_str, is_test_parser=False):
             file_obj.seek(0)
             doc_content = file_obj.read()
             final_file_ext = '.pdf'
+            current_app.logger.info("Benchmark: pisa.CreatePDF(%s) and reading file took %ss", filename_str,
+                                    time() - start_time)
 
     if not doc_content:
         current_app.logger.error('parse_resume: No doc_content')
         return {}
-    if is_test_parser and is_resume_image:
-        return dict(
-            parsed_resume=doc_content,
-            is_resume_image=is_resume_image
-        )
 
     encoded_resume = base64.b64encode(doc_content)
+    start_time = time()
     bg_response_dict = parse_resume_with_bg(filename_str + final_file_ext, encoded_resume)
+    current_app.logger.info("Benchmark: parse_resume_with_bg(%s) took %ss", filename_str + final_file_ext,
+                            time() - start_time)
     if bg_response_dict:
         candidate_data = parse_xml_into_candidate_dict(bg_response_dict)
         candidate_data['dice_api_response'] = bg_response_dict
         return candidate_data
-
     else:
         return dict(error='No XML text')
 
@@ -138,12 +143,13 @@ def ocr_image(img_file_obj, export_format='pdfSearchable'):
         return 0
 
     xml = BeautifulSoup(response.text)
+    current_app.logger.info("ocr_image() - Abby response to processImage: %s", response.text)
 
     task_id = xml.response.task['id']
     estimated_processing_time = int(xml.response.task['estimatedprocessingtime'])
 
     if xml.response.task['status'] != 'Queued':
-        current_app.logger.error('Non queued status in ABBY OCR')
+        current_app.logger.error('ocr_image() - Non queued status in ABBY OCR')
         pass
 
     # Keep pinging Abby to get task status. Quit if tried too many times
@@ -157,18 +163,21 @@ def ocr_image(img_file_obj, export_format='pdfSearchable'):
                                 auth=ABBY_OCR_API_AUTH_TUPLE)
         xml = BeautifulSoup(response.text)
         ocr_url = xml.response.task.get('resulturl')
+        current_app.logger.info("ocr_image() - Abby response to getTaskStatus: %s", response.text)
 
         if not ocr_url:
             if num_tries > max_num_tries:
                 current_app.logger.error('OCR took > {} tries to process image'.format(max_num_tries))
                 raise Exception('OCR took > {} tries to process image'.format(max_num_tries))
-
             estimated_processing_time = 2  # If not done in originally estimated processing time, wait 2 more seconds
             num_tries += 1
             continue
 
     if response.status_code == requests.codes.ok:
+        start_time = time()
         response = requests.get(ocr_url)
+        current_app.logger.info("Benchmark: ocr_image: requests.get(%s) took %ss to download resume", ocr_url,
+                                time() - start_time)
         return response.content
     else:
         return 0
