@@ -13,6 +13,7 @@ class TalentError(Exception):
         """
         Exception.__init__(self)
         self.message = error_message
+        self.status_code = None
         if error_code is not None:
             self.status_code = error_code
         self.additional_error_info = additional_error_info
@@ -76,13 +77,13 @@ def register_error_handlers(app, logger):
     def handle_invalid_usage(error):
         response = jsonify(error.to_dict())
         logger.warn("Invalid API usage for app %s: %s", app.import_name, response)
-        return response, error.http_status_code
+        return response, error.http_status_code()
 
     @app.errorhandler(UnauthorizedError)
     def handle_unauthorized(error):
         logger.warn("Unauthorized for app %s", app.import_name)
         response = jsonify(error.to_dict())
-        return response, error.http_status_code
+        return response, error.http_status_code()
 
     @app.errorhandler(500)
     def handle_internal_server_errors(exc):
