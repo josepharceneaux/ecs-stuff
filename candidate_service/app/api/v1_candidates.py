@@ -13,7 +13,6 @@ from candidate_service.modules.validators import (
 
 # Common utilities
 from common.utils.validators import (is_number, is_valid_email)
-from common.utils.auth_utils import authenticate_oauth_user
 
 # Standard Library
 import json
