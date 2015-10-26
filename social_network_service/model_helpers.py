@@ -74,7 +74,7 @@ def to_json(instance):
             try:
                 # try to convert column value by given converter method
                 data[name] = convert[typ](value)
-            except Exception as e:
+            except:
                 data[name] = "Error:  Failed to covert using ", str(convert[typ])
         elif value is None:
             # if value is None, make it empty string

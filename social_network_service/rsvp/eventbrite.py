@@ -207,8 +207,7 @@ class Eventbrite(RSVPBase):
         - This overrides the base class method process_rsvps().
         """
         raise NotImplementedError("RSVPs for social network %s are handled via"
-                                  " webhook. User Id: %s"
-                                  % (self.social_network.name, self.user.id))
+                                  " webhook." % self.social_network.name)
 
     def get_rsvps(self, event):
         pass

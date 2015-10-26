@@ -14,7 +14,6 @@ import requests
 from utilities import get_class
 from utilities import log_error
 from utilities import http_request
-from utilities import log_exception
 from common.models.user import User
 from common.models.social_network import SocialNetwork
 from common.models.user import UserSocialNetworkCredential
@@ -247,9 +246,10 @@ class SocialNetworkBase(object):
         if not self.access_token_status:
             # Access token has expired. Couldn't refresh it for given
             # social network.
-            raise AccessTokenHasExpired(
-                'Access token has expired. Please connect with %s again '
-                'from "Profile" page' % self.social_network.name)
+            logger.debug('__init__: Access token has expired. '
+                         'Please connect with %s again from "Profile" page. user_id: %s'
+                         % (self.user.id, self.social_network.name))
+            raise AccessTokenHasExpired
         self.start_date_dt = None
         self.webhook_id = None
         if not self.user_credentials.member_id:
@@ -304,9 +304,11 @@ class SocialNetworkBase(object):
             elif mode == 'rsvp':
                 sn_event_obj.process_events_rsvps(user_credentials,
                                                   rsvp_data=rsvp_data)
-        except Exception as error:
-            log_exception({'user_id': self.user.id,
-                           'error': error.message})
+        except:
+            logger.exception('process: running %s importer, user_id: %s, '
+                             'social network: %s(id: %s)'
+                             % (mode, self.user.id, self.social_network.name,
+                                self.social_network.id))
 
     @classmethod
     def get_access_and_refresh_token(cls, user_id, social_network,
@@ -359,15 +361,15 @@ class SocialNetworkBase(object):
                         raise
                 return access_token, refresh_token
             else:
-                error_message = get_token_response.json().get('error')
                 log_error({'user_id': user_id,
-                           'error': error_message})
+                           'error': get_token_response.json().get('error')})
                 raise ApiException('Unable to to get access token for '
                                    'current user')
 
-        except Exception as error:
-            log_exception({'user_id': user_id,
-                           'error': error.message})
+        except:
+            logger.exception('get_access_and_refresh_token: user_id: %s, '
+                             'social network: %s(id: %s)'
+                             % (user_id, social_network.name, social_network.id))
             raise ApiException('Unable to create user credentials for current'
                                ' user')
 
@@ -428,10 +430,9 @@ class SocialNetworkBase(object):
             else:
                 # Error has been logged inside http_request()
                 pass
-        except Exception as error:
-            error_message = error.message
-            log_exception({'user_id': self.user.id,
-                           'error': error_message})
+        except:
+            logger.exception('get_member_id: user_id: %s, social network: %s(id: %s)'
+                             % (self.user.id, self.social_network.name, self.social_network.id))
 
     def validate_token(self, payload=None):
         """
@@ -568,7 +569,7 @@ class SocialNetworkBase(object):
                 user_credentials = UserSocialNetworkCredential(**user_credentials)
                 UserSocialNetworkCredential.save(user_credentials)
             return user_credentials_in_db
-        except Exception as error:
-            log_exception({'user_id': user_credentials['user_id'],
-                           'error': error.message})
+        except:
+            logger.exception('save_user_credentials_in_db: user_id: %s',
+                             user_credentials['user_id'])
             raise ApiException('APIError: Unable to create user credentials')

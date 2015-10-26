@@ -105,9 +105,9 @@ class Meetup(EventBase):
         self.group_ids = []
         self.social_network_event_id = None
         self.start_date = kwargs.get('start_date') \
-                          or (datetime.now() + timedelta(days=19))
+                          or (datetime.now() - timedelta(days=5))
         self.end_date = kwargs.get('end_date') \
-                        or (datetime.now() + timedelta(days=23))
+                        or (datetime.now() + timedelta(days=10))
         self.start_time_since_epoch = milliseconds_since_epoch_local_time(self.start_date)
         self.end_time_since_epoch = milliseconds_since_epoch_local_time(self.end_date)
 

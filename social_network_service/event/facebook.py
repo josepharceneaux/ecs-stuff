@@ -13,6 +13,7 @@ import requests
 # We have to import the Facebook page in the following way because we
 # want to avoid name conflicts that arise due to name of the package and
 # name of the files in which package is being used.
+from social_network_service import logger
 from social_network_service.utilities import import_from_dist_packages
 
 facebook = import_from_dist_packages('facebook')
@@ -22,7 +23,6 @@ from common.models.venue import Venue
 from common.models.event import Event
 from common.models.event_organizer import EventOrganizer
 from social_network_service.event.base import EventBase
-from social_network_service.utilities import log_exception
 
 
 class Facebook(EventBase):
@@ -115,9 +115,8 @@ class Facebook(EventBase):
                 since=self.start_date,
                 until=self.end_date
             )
-        except facebook.GraphAPIError as error:
-            log_exception({'user_id': self.user.id,
-                           'error': error.message})
+        except facebook.GraphAPIError:
+            logger.exception('get_events: user_id: %s' % self.user.id)
             raise
         if 'data' in response:
             user_events.extend(response['data'])
@@ -146,9 +145,8 @@ class Facebook(EventBase):
                     target_list.extend(response['data'])
             except KeyError:
                 break
-            except requests.HTTPError as error:
-                log_exception({'user_id': self.user.id,
-                               'error': error.message})
+            except requests.HTTPError:
+                logger.exception('get_all_pages: user_id: %s' % self.user.id)
                 raise
 
     def event_sn_to_gt_mapping(self, event):
@@ -178,9 +176,10 @@ class Facebook(EventBase):
             try:
                 organizer = self.graph.get_object('v2.4/' + owner['id'])
                 organizer = organizer.get('data')
-            except facebook.GraphAPIError as error:
-                log_exception({'user_id': self.user.id,
-                               'error': error.message})
+            except facebook.GraphAPIError:
+                logger.exception('event_sn_to_gt_mapping: Getting data of organizer. '
+                                 'user_id: %s, social_network_event_id: %s'
+                                 % (self.user.id, event['id']))
                 raise
         if owner or organizer:
             organizer_data = dict(
@@ -254,9 +253,9 @@ class Facebook(EventBase):
                     and event.has_key('noreply_count'))
                 else ''
             )
-        except Exception as error:
-            log_exception({'user_id': self.user.id,
-                           'error': error.message})
+        except:
+            logger.exception('event_sn_to_gt_mapping: user_id: %s, '
+                             'social_network_event_id: %s' % (self.user.id, event['id']))
         else:
             return event
 

@@ -130,7 +130,7 @@ def authenticate_user(request):
                 return User.get_by_id(user_id) if user_id else None
             else:
                 return None
-        except Exception as e:
+        except:
             return None
     else:
         return None
@@ -153,15 +153,15 @@ def get_callee_data(app_name=None):
         if callee_frame[no_of_item][3] == 'http_request':
             no_of_item = 4
         # We are using number 3 here, as
-        # we call this function inside log_error() or log_exception()
+        # we call this function inside log_error()
         # which uses get_data_to_log().
         # get_data_to_log() calls get_callee_data().
         # So, here is the story,
         # index 0 has traceback of get_callee_data()
         # index 1 has traceback of get_data_to_log()
-        # index 2 has traceback of log_error() or log_exception()
+        # index 2 has traceback of log_error()
         # index 3 will have the traceback of function from where we call
-        # log_error() or log_exception().
+        # log_error().
         # Another case is logging inside http_request. For this we need
         # traceback of the function from where http_request was called.
     else:
@@ -205,33 +205,6 @@ def log_error(log_data):
     logger.error(callee_data)
 
 
-def log_exception(log_data):
-    """
-    :param log_data: is a dict which contains error details and User Id in
-                     keys 'error' and 'user_id' respectively.
-
-    - Here we do the descriptive logging.
-
-    - We first get the information of callee using get_data_to_log()
-        and then we log the error using logger.exception()
-
-    - callee contains the useful information of traceback like
-        Reason of error, function name, file name, user id, class name etc.
-
-    - This function is called usually inside try except block.
-
-    :Example:
-
-        log_exception({'user_id': user_id,
-                       'error': error_message})
-    ** See Also:
-        - Have a look on get_access_and_refresh_token() defined in
-        social_network_service/base.py for more insight.
-    """
-    callee_data = get_data_to_log(log_data)
-    logger.exception(callee_data)
-
-
 def get_data_to_log(log_data):
     """
     :param log_data:  is a dict which contains error details and User Id in
@@ -241,11 +214,11 @@ def get_data_to_log(log_data):
         and append user_id_and_error_message in it. Finally we return the
         descriptive error message.
 
-    - This function is called from log_error() and log_exception() defined in
+    - This function is called from log_error() defined in
         social_network_service/utilities.py
 
     ** See Also:
-        - Have a look on log_error() or log_exception() defined in
+        - Have a look on log_error() defined in
         social_network_service/utilities.py
     :return: callee_data which contains the useful information of traceback
             like Reason of error, function name, file name, user id etc.
@@ -320,13 +293,12 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
             except requests.RequestException as e:
                 error_message = e.message
             if error_message:
-                log_exception({'user_id': user_id,
-                               'error': error_message})
+                logger.error('http_request: HTTP request failed, %s, '
+                             'user_id: %s', error_message, user_id)
             return response
         else:
-            error_message = 'URL is None. Unable to make %s Call' % method_type
-            log_error({'user_id': user_id,
-                       'error': error_message})
+            error_message = 'URL is None. Unable to make "%s" Call' % method_type
+            logger.error('http_request: Error: %s, user_id: %s' % (error_message, user_id))
     else:
         logger.error('Unknown Method type %s ' % method_type)
 
@@ -352,8 +324,8 @@ def get_class(social_network_name, category, user_credentials=None):
                         % social_network_name
         log_error({'user_id': user_credentials.user_id if user_credentials else '',
                    'error': error_message})
-        raise SocialNetworkNotImplemented('Import Error: Unable to import'
-                                          ' module for required social network')
+        raise NotImplementedError('Import Error: Unable to import'
+                                  'module for required social network')
     except AttributeError as e:
         raise ApiException('APIError: Unable to import module for required '
                            'social network', error_code=500)

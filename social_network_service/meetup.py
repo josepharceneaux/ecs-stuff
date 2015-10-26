@@ -9,7 +9,6 @@ import json
 # Application Specific
 from utilities import logger
 from utilities import http_request
-from utilities import log_exception
 from base import SocialNetworkBase
 
 
@@ -192,10 +191,8 @@ class Meetup(SocialNetworkBase):
                 status = self.save_user_credentials_in_db(user_credentials_dict)
                 logger.debug("Access token has been refreshed for %s(UserId:%s)."
                              % (self.user.name, self.user.id))
-            except Exception as error:
-                log_exception({'user_id': self.user.id,
-                               'error': "Error occurred while refreshing access token. "
-                                        "Error is: " + error.message})
+            except:
+                logger.exception('refresh_access_token: user_id: %s' % self.user.id)
         else:
             # Error has been logged inside http_request()
             pass

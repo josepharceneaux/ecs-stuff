@@ -19,7 +19,6 @@ from social_network_service.utilities import log_error
 from social_network_service.utilities import get_class
 from social_network_service.event.base import EventBase
 from social_network_service.utilities import http_request
-from social_network_service.utilities import log_exception
 from social_network_service.utilities import get_utc_datetime
 from social_network_service.custom_exceptions import VenueNotFound
 from social_network_service.custom_exceptions import EventNotCreated
@@ -159,10 +158,10 @@ class Eventbrite(EventBase):
                                     params=params,
                                     headers=self.headers,
                                     user_id=self.user.id)
-        except Exception as error:
-            log_exception({'user_id': self.user.id,
-                           'error': error.message})
+        except:
+            logger.exception('get_events: user_id: %s' % self.user.id)
             raise
+
         if response.ok:
             # if response is ok, get json data
             data = response.json()
@@ -181,9 +180,8 @@ class Eventbrite(EventBase):
                                             params=params_copy,
                                             headers=self.headers,
                                             user_id=self.user.id)
-                except Exception as error:
-                    log_exception({'user_id': self.user.id,
-                                   'error': error.message})
+                except:
+                    logger.exception('get_events: user_id: %s' % self.user.id)
                     raise
                 if response.ok:
                     data = response.json()
@@ -219,9 +217,9 @@ class Eventbrite(EventBase):
                                         + event['venue_id'],
                                         headers=self.headers,
                                         user_id=self.user.id)
-            except Exception as error:
-                log_exception({'user_id': self.user.id,
-                               'error': error.message})
+            except:
+                logger.exception('event_sn_to_gt_mapping: user_id: %s,'
+                                 'social_network_event_id: %s' % (self.user.id, event['id']))
                 raise
             if response.ok:
                 # get json data for venue
@@ -237,9 +235,10 @@ class Eventbrite(EventBase):
                             event['organizer_id'],
                             headers=self.headers,
                             user_id=self.user.id)
-                    except Exception as error:
-                        log_exception({'user_id': self.user.id,
-                                       'error': error.message})
+                    except:
+                        logger.exception('event_sn_to_gt_mapping: user_id: %s, '
+                                         'social_network_event_id: %s'
+                                 % (self.user.id, event['id']))
                         raise
                     if response.ok:
                         # Get json data  for organizer
@@ -251,9 +250,10 @@ class Eventbrite(EventBase):
                                 self.api_url + '/users/' + self.member_id,
                                 headers=self.headers,
                                 user_id=self.user.id)
-                        except Exception as error:
-                            log_exception({'user_id': self.user.id,
-                                           'error': error.message})
+                        except:
+                            logger.exception('event_sn_to_gt_mapping: user_id: %s, '
+                                             'social_network_event_id: %s'
+                                             % (self.user.id, event['id']))
                             raise
                         if response.ok:
                             organizer_info = json.loads(response.text)

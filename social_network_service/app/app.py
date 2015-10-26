@@ -10,7 +10,8 @@ import flask
 
 # init APP
 # This line should come before any imports from models
-from social_network_service import init_app
+from social_network_service import init_app, logger
+
 app = init_app()
 
 # 3rd party imports
@@ -19,15 +20,12 @@ from flask.ext.cors import CORS
 from flask.ext.restful import Api
 
 # Application specific imports
-from social_network_service import logger
 from social_network_service.app.app_utils import ApiResponse
 from social_network_service.custom_exceptions import ApiException
 from social_network_service.app.restful.data import data_blueprint
-from social_network_service.custom_exceptions import AccessTokenHasExpired
 from social_network_service.rsvp.eventbrite import Eventbrite as EventbriteRsvp
 from restful.events import events_blueprint
 from social_network_service.utilities import get_class
-from social_network_service.utilities import log_exception
 from restful.social_networks import social_network_blueprint
 
 # Register Blueprints for different APIs
@@ -62,7 +60,7 @@ def hello_world():
         from common.models.event import Event
         candidate = Candidate.query.all()[0]
         event = Event.query.all()[0]
-    except Exception as error:
+    except:
         import traceback
         return traceback.format_exc()
     return 'Hello World! %s, %s' % (candidate.first_name, event.title)
@@ -107,8 +105,8 @@ def handle_rsvp():
                 logger.debug('Successful webhook connection')
 
         except Exception as error:
-            log_exception({'user_id': user_id,
-                           'error': error.message})
+            logger.exception('handle_rsvp: Request data: %s, user_id: %s',
+                             request.data, user_id)
             data = {'message': error.message,
                     'status_code': 500}
             return flask.jsonify(**data), 500

@@ -19,7 +19,6 @@ from common.models.candidate import Candidate
 from common.models.rsvp import CandidateEventRSVP
 from common.models.candidate import CandidateSource
 from social_network_service import logger
-from social_network_service.utilities import log_exception
 from social_network_service.custom_exceptions import ProductNotFound
 from social_network_service.custom_exceptions import UserCredentialsNotFound
 
@@ -248,8 +247,10 @@ class RSVPBase(object):
                 except Exception as error:
                     # Shouldn't raise an exception, just log it and move to
                     # get RSVPs of next event
-                    log_exception({'user_id': self.user.id,
-                                   'error': error.message})
+                    logger.exception('get_all_rsvps: user_id: %s, event_id: %s, '
+                                     'social network: %s(id:%s)'
+                                     % (self.user.id, event['id'], self.social_network.name,
+                                        self.social_network.id))
                     if hasattr(error, 'response'):
                         if error.response.status_code == 401:
                             # Access token is Invalid, Stop the execution.
@@ -351,10 +352,13 @@ class RSVPBase(object):
             attendee = self.save_candidate_event_rsvp(attendee)
             attendee = self.save_rsvp_in_activity_table(attendee)
             return attendee
-        except Exception as error:
+        except:
             # Shouldn't raise an exception, just log it and move to
             # process next RSVP
-            log_exception({'error': error.message})
+            logger.exception('post_process_rsvps: user_id: %s, RSVP data: %s, '
+                             'social network: %s(id:%s)'
+                             % (self.user.id, rsvp, self.social_network.name,
+                                self.social_network.id))
 
     @abstractmethod
     def get_attendee(self, rsvp):
