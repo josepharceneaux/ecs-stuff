@@ -389,10 +389,11 @@ class MeetupGroupsResource(Resource):
         return ApiResponse(resp, status=200)
 
 
-@api.route('/social_networks/token_validity/<int:social_network_id>')
+#@api.route('/social_networks/token_validity/<int:social_network_id>')
+@api.route('/social_networks/token/validity')
 class GetTokenValidityResource(Resource):
     @authenticate
-    def get(self, social_network_id, **kwargs):
+    def get(self, **kwargs):
         """
         Get user access_token validity status for specified social network.
         :param social_network_id: id for specified social network
@@ -403,9 +404,13 @@ class GetTokenValidityResource(Resource):
         :Example:
 
             headers = {'Authorization': 'Bearer <access_token>'}
+            data = {
+                'social_network_id': 18
+                }
             response = requests.get(
                                         API_URL + /social_networks/token_validity/13,
                                         headers=headers
+                                        data=json.dumps(data)
                                     )
 
         .. Response::
@@ -422,7 +427,8 @@ class GetTokenValidityResource(Resource):
         """
         user_id = kwargs['user_id']
         # Get social network specified by social_network_id
-        social_network = SocialNetwork.get_by_id(social_network_id)
+        request_data = request.get_json(force=True)
+        social_network = SocialNetwork.get_by_id(request_data['social_network_id'])
         if social_network:
             # Get social network specific Social Network class
             social_network_class = get_class(social_network.name, 'social_network')
@@ -436,7 +442,8 @@ class GetTokenValidityResource(Resource):
             raise ResourceNotFound("Invalid social network id given")
 
 
-@api.route('/social_network/refresh_token/<int:social_network_id>')
+#@api.route('/social_network/refresh_token/<int:social_network_id>')
+@api.route('/social_networks/token/refresh')
 class RefreshTokenResource(Resource):
     """
         This resource refreshes access token for given social network for given user.
@@ -454,9 +461,13 @@ class RefreshTokenResource(Resource):
             headers = {
                         'Authorization': 'Bearer <access_token>',
                        }
+            data = {
+                'social_network_id': 13
+                }
             response = requests.get(
                                         API_URL + '/social_network/refresh_token/13',
                                         headers=headers,
+                                        data=json.dumps(data)
                                     )
 
         .. Response::
@@ -471,8 +482,11 @@ class RefreshTokenResource(Resource):
                     500 (Internal Server Error)
         """
         user_id = kwargs['user_id']
+        request_data = request.get_json(force=True)
         try:
-            social_network = SocialNetwork.get_by_id(social_network_id)
+            social_network = SocialNetwork.get_by_id(request_data['social_network_id'])
+            if not social_network:
+                raise ResourceNotFound("Social Network not found")
             # creating class object for respective social network
             social_network_class = get_class(social_network.name.lower(), 'social_network')
             sn = social_network_class(user_id=user_id)
@@ -1055,7 +1069,8 @@ class OrganizerByIdResource(Resource):
         else:
             return ResourceNotFound("Organizer not found")
 
-@api.route('/social_networks/process_access_token/<int:social_network_id>')
+#@api.route('/social_networks/process_access_token/<int:social_network_id>')
+@api.route('/social_networks/user/credentials')
 class ProcessAccessTokenResource(Resource):
     """
     This resource adds user credentials for given user and social network.
@@ -1063,7 +1078,7 @@ class ProcessAccessTokenResource(Resource):
     want to add credentials.
     """
     @authenticate
-    def post(self, social_network_id, **kwargs):
+    def post(self, **kwargs):
         """
         Adds credentials for user for given social network.
         Gets data from POST request which contains 'code' and 'social_credentials'
@@ -1074,6 +1089,7 @@ class ProcessAccessTokenResource(Resource):
         :Example:
             data = {
                     'code': '32432ffd2s8fd23e8saq123ds6a3da21221
+                    'social_network_id': 13
                     }
 
 
@@ -1103,7 +1119,7 @@ class ProcessAccessTokenResource(Resource):
         # Get json request data
         req_data = request.get_json(force=True)
         code = req_data['code']
-        social_network = SocialNetwork.get_by_id(social_network_id)
+        social_network = SocialNetwork.get_by_id(req_data['social_network_id'])
         # if social network does not exists, send failure message
         if social_network:
             # Get social network specific Social Network class
