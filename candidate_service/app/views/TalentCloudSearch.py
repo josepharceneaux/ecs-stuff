@@ -130,7 +130,7 @@ AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 
 CLOUD_SEARCH_REGION = os.environ.get('CLOUD_SEARCH_REGION')
-CLOUD_SEARCH_DOMAIN_NAME = os.environ.get('DOMAIN_NAME')
+CLOUD_SEARCH_DOMAIN_NAME = os.environ.get('CLOUD_SEARCH_DOMAIN_NAME')
 
 
 def get_cloud_search_connection():
@@ -143,7 +143,7 @@ def get_cloud_search_connection():
 
         _cloud_search_domain = _cloud_search_connection_layer_2.lookup(CLOUD_SEARCH_DOMAIN_NAME)
         if not _cloud_search_domain:
-            raise Exception("Not Cloud Search Domain...!!")
+            raise Exception("No CloudSearch domain found")
 
     return _cloud_search_connection_layer_2
 
