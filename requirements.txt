@@ -51,3 +51,5 @@ loggly-python-handler==1.0.0
 python-dateutil==2.4.2
 
 Flask-Script
+
+twilio

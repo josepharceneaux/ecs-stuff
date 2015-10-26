@@ -9,6 +9,8 @@ import traceback
 
 # Initializing App. This line should come before any imports from models
 from sms_campaign_service import init_app
+from social_network_service.utilities import http_request
+
 app = init_app()
 
 # Third party imports
@@ -53,22 +55,22 @@ def hello_world():
 
 
 @app.route('/url_conversion', methods=['GET', 'POST'])
-@app.route('/url_conversion/<url>', methods=['GET', 'POST'])
+# @app.route('/url_conversion/<url>', methods=['GET', 'POST'])
 def short_url_test(url=None):
     """
     This is a test end point which converts given URL to short URL
     :return:
     """
-    if url:
+    url = 'http://127.0.0.1:8010/convert_url'
+    response = http_request('GET', url, params={'url': LONG_URL})
+    if response.ok:
         short_url, long_url = url_conversion(url)
-        data = {'short_url': short_url,
-                'long_url': long_url,
-                'status_code': 200}
+        return redirect(short_url)
     else:
         data = {'message': 'No URL given in request',
                 'status_code': 200}
     return flask.jsonify(**data), 200
-    # return redirectshort_url)
+
 
 
 @app.errorhandler(ApiException)
