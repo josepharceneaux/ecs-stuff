@@ -56,7 +56,7 @@ def create_candidate_from_widget(domain_uuid):
     # Get or Widget Client
     widget_client_id = app.config['WIDGET_CLIENT_ID']
     # Check for Token with userId and Client
-    widget_token = get_token_by_client_and_user(widget_client_id, widget_user_id)
+    widget_token = get_token_by_client_and_user(widget_client_id, widget_user_id, db)
     # If expired refresh
     if widget_token.expires < datetime.now():
         access_token = refresh_expired_token(widget_token, widget_client_id,

@@ -1,7 +1,6 @@
 __author__ = 'erikfarmer'
 
 import os
-os.environ['GT_ENVIRONMENT'] = 'dev'
 
 from flask.ext.script import Manager
 from flask import url_for
@@ -11,6 +10,9 @@ from widget_app.flask_scripts.db import fill_db
 from widget_app.flask_scripts.db import destroy_db
 
 manager = Manager(app)
+
+if not os.environ['GT_ENVIRONMENT'] == 'dev':
+    raise Exception("Environment variable GT_ENVIRONMENT detecting non dev environment.")
 
 
 @manager.command

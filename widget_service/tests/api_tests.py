@@ -281,12 +281,34 @@ def test_extra_fields_location(test_domain, request):
 
 
 @pytest.fixture(autouse=True)
-def test_oauth_credentials(test_user, request):
+def test_oauth_credentials(request):
     test_client = Client(client_id=random_word(16), client_secret=random_word(18))
     db.session.add(test_client)
     db.session.commit()
     app.config['WIDGET_CLIENT_ID'] = test_client.client_id
     app.config['WIDGET_CLIENT_SECRET'] = test_client.client_secret
+
+    def fin():
+        db.session.query(Token).delete()
+        db.session.commit()
+        db.session.query(Client).delete()
+        db.session.commit()
+    request.addfinalizer(fin)
+    return {'test_client': test_client}
+
+
+@pytest.fixture()
+def test_expired_oauth_credentials(test_user, request):
+    test_client = Client(client_id=random_word(16), client_secret=random_word(18))
+    db.session.add(test_client)
+    db.session.commit()
+    app.config['WIDGET_CLIENT_ID'] = test_client.client_id
+    app.config['WIDGET_CLIENT_SECRET'] = test_client.client_secret
+    test_token = Token(client_id=test_client.client_id, user_id=test_user.id, token_type='bearer',
+                       access_token=random_word(18), refresh_token=random_word(18),
+                       expires=datetime.datetime.now() - datetime.timedelta(days=30))
+    db.session.add(test_token)
+    db.session.commit()
 
     def fin():
         db.session.query(Token).delete()
@@ -385,6 +407,23 @@ def test_corporate_candidate(test_domain, request):
     assert 'success' in post_response.data
 
 
+def test_expired_token_refreshes(test_domain, test_expired_oauth_credentials, request):
+    aoi_string = gen_mock_aois()
+    candidate_dict = {
+        'firstName': random_word(12),
+        'lastName': random_word(12),
+        'emailAdd': '{}@gmail.com'.format(random_word(12)),
+        'hidden-tags-aoi': aoi_string,
+        'hidden-tags-location': 'Northern California: All Cities|Southern California: Pomona',
+        'jobFrequency': 'Daily'
+    }
+    with APP as c:
+        post_response = c.post('/v1/widgets/{}'.format(test_domain.uuid), data=candidate_dict)
+    assert post_response.status_code == 201
+    # TODO expand to check DB that are fields are there
+    assert 'success' in post_response.data
+
+
 def test_parse_interest_ids_from_form(request):
     subcategory = db.session.query(AreaOfInterest).filter(AreaOfInterest.parent_id!=None).first()
     parent_category_1 = db.session.query(AreaOfInterest).get(subcategory.parent_id)
@@ -410,6 +449,9 @@ def test_parse_location_ids_from_form(test_extra_fields_location, request):
         {'id': state_custom_field_id, 'value': 'Northern California'},
         {'id': city_custom_field_id, 'value': 'Pomona'}
     ]
+
+
+
 
 
 def gen_mock_aois():
