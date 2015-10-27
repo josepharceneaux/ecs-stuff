@@ -250,25 +250,25 @@ def test_widget_page(test_user, test_candidate_source, test_domain, request):
 @pytest.fixture(autouse=True)
 def test_extra_fields_location(test_domain, request):
     state_field = CustomField(domain_id=test_domain.id, name='State of Interest',
-                              type='string', added_time=datetime.datetime.now(),
+                              field_type='string', added_time=datetime.datetime.now(),
                               updated_time=datetime.datetime.now())
     db.session.add(state_field)
     db.session.commit()
 
     city_field = CustomField(domain_id=test_domain.id, name='City of Interest',
-                             type='string', added_time=datetime.datetime.now(),
+                             field_type='string', added_time=datetime.datetime.now(),
                              updated_time=datetime.datetime.now())
     db.session.add(city_field)
     db.session.commit()
 
-    nuid_field = CustomField(domain_id=test_domain.id, name='NUID', type='string',
+    nuid_field = CustomField(domain_id=test_domain.id, name='NUID', field_type='string',
                              added_time=datetime.datetime.now(),
                              updated_time=datetime.datetime.now())
     db.session.add(nuid_field)
     db.session.commit()
 
     subscription_pref_field = CustomField(domain_id=test_domain.id, name='Subscription Preference',
-                                          type='string', added_time=datetime.datetime.now(),
+                                          field_type='string', added_time=datetime.datetime.now(),
                                           updated_time=datetime.datetime.now())
     db.session.add(subscription_pref_field)
     db.session.commit()
