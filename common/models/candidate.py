@@ -649,8 +649,8 @@ class CustomField(db.Model):
     __tablename__ = 'custom_field'
     id = db.Column(db.Integer, primary_key=True)
     domain_id = db.Column('DomainId', db.Integer)
-    name = db.Column('Name', db.Text)
-    field_type = db.Column('Type', db.Text)
+    name = db.Column('Name', db.String(127))
+    field_type = db.Column('Type', db.String(127))
     category_id = db.Column('CategoryId', db.Integer)
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())

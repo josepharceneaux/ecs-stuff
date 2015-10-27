@@ -29,24 +29,6 @@ class AreaOfInterest(db.Model):
         return "<AreaOfInterest (parent_id=' %r')>" % self.parent_id
 
 
-class City(db.Model):
-    __tablename__ = 'city'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(255))
-    state_id = db.Column('StateId', db.Integer, db.ForeignKey('state.id'))
-    postal_code = db.Column('PostalCode', db.String(63))
-    latitude_radians = db.Column('LatitudeRadians', db.Float)
-    longitude_radians = db.Column('LongitudeRadians', db.Float)
-    alternate_names = db.Column('AlternateNames', db.Text)
-    coordinates = db.Column('Coordinates', db.String(127))
-
-    # Relationships
-    zipcodes = relationship('Zipcode', backref='city')
-
-    def __repr__(self):
-        return "<City (name=' %r')>" % self.name
-
-
 class Country(db.Model):
     __tablename__ = 'country'
     id = db.Column(db.Integer, primary_key=True)
@@ -111,21 +93,6 @@ class Product(db.Model):
 
     def __repr__(self):
         return "<Product (name=' %r')>" % self.name
-
-
-class State(db.Model):
-    __tablename__ = 'state'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(255))
-    alpha_code = db.Column('AlphaCode', db.String(31))
-    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
-    abbreviation = db.Column('Abbreviation', db.String(255))
-
-    # Relationships
-    cities = relationship('City', backref='state')
-
-    def __repr__(self):
-        return "<State (name=' %r')>" % self.name
 
 
 class Zipcode(db.Model):
