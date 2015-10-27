@@ -2,7 +2,7 @@
 
 from flask import jsonify, request, Blueprint
 import TalentCloudSearch
-
+from common.utils.auth_utils import require_oauth
 
 mod = Blueprint('candidate_search_api', __name__)
 
@@ -13,12 +13,13 @@ def hello_world():
 
 
 @mod.route('/candidates', methods=['GET'])
+@require_oauth
 def search():
     TalentCloudSearch.get_cloud_search_connection()
     location = request.args.get('location')
-    user = request.args.get('user_id')
+    user = request.args.get('user_ids')
     skills = request.args.get('skills')
-    areas_of_interest = request.args.get('areas_of_interest_id')
+    areas_of_interest = request.args.get('area_of_interest_ids')
     status = request.args.get("status_id")
     source = request.args.get('source_id')
     min_exp = request.args.get('minimum_experience')
@@ -31,12 +32,11 @@ def search():
     concentration = request.args.get('concentration')
     degree_end_year_from = request.args.get('degree_end_year_from')
     degree_end_year_to = request.args.get('degree_end_year_to')
-    service_status = request.args.get('service_status')
-    branch = request.args.get('branch')
-    grade = request.args.get('highest_grade')
+    service_status = request.args.get('military_service_status')
+    branch = request.args.get('military_branch')
+    grade = request.args.get('military_highest_grade')
     military_end_date_from = request.args.get('military_end_date_from')
     military_end_date_to = request.args.get('military_end_date_to')
-    social_networks = request.args.get('social_networks')
     query = request.args.get("q")
     limit = request.args.get("limit")
 
@@ -48,7 +48,7 @@ def search():
                     "degree_end_year_from": degree_end_year_from, "degree_end_year_to": degree_end_year_to,
                     "serviceStatus": service_status, "branch": branch, "highestGrade": grade,
                     "military_end_date_from": military_end_date_from, "military_end_date_to": military_end_date_to,
-                    "usernameFacet": user, "social_networks": social_networks, "q": query, "limit": limit
+                    "usernameFacet": user, "q": query, "limit": limit
                     }
     # If limit is not requested then the Search limit would be taken as 15, the default value
     candidate_search_results = TalentCloudSearch.search_candidates(1, request_vars, int(limit) if limit else 15)
