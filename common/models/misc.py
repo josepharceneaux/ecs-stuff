@@ -1,3 +1,4 @@
+from sqlalchemy import and_
 from db import db
 import datetime
 from sqlalchemy.orm import relationship
@@ -79,3 +80,25 @@ class Zipcode(db.Model):
 
     def __repr__(self):
         return "<Zipcode (code=' %r')>" % self.code
+
+
+class UrlConversion(db.Model):
+    __tablename__ = 'url_conversion'
+    id = db.Column(db.Integer, primary_key=True)
+    source_url = db.Column('sourceUrl', db.String(512))
+    destination_url = db.Column('destinationUrl', db.String(512))
+    hit_count = db.Column('hitCount', db.Integer)
+    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
+    last_hit_time = db.Column('lastHitTime', db.DateTime)
+
+    def __repr__(self):
+        return "<UrlConversion (id=' %r')>" % self.id
+
+    @classmethod
+    def get_by_destination_url(cls, destination_url):
+        assert destination_url
+        return cls.query.filter(
+            and_(
+                UrlConversion.destination_url == destination_url
+            )
+        ).first()

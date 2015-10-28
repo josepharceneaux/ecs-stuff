@@ -8,24 +8,28 @@ import json
 import traceback
 
 # Initializing App. This line should come before any imports from models
-from common.error_handling import InternalServerError
 from sms_campaign_service import init_app
-from social_network_service.utilities import http_request
-
 app = init_app()
 
 # Third party imports
 import flask
+from flask import request
 from flask.ext.cors import CORS
 from flask.ext.restful import Api
 from werkzeug.utils import redirect
 
 # Application specific imports
 from sms_campaign_service import logger
-from sms_campaign_service.utilities import url_conversion, send_sms
+from social_network_service.utilities import http_request
+from sms_campaign_service.utilities import url_conversion
+from sms_campaign_service.utilities import send_sms_campaign
+from sms_campaign_service.utilities import get_smart_list_ids
+from sms_campaign_service.utilities import process_redirection
+from sms_campaign_service.utilities import process_link_in_body_text
 from sms_campaign_service.app.app_utils import ApiResponse
 from sms_campaign_service.custom_exections import ApiException
 from restful.sms_campaign import sms_campaign_blueprint
+from common.error_handling import InternalServerError
 
 # Register Blueprints for different APIs
 app.register_blueprint(sms_campaign_blueprint)
@@ -73,17 +77,54 @@ def short_url_test(url=None):
     return flask.jsonify(**data), 200
 
 
+# @app.task
 @app.route('/sms', methods=['GET', 'POST'])
 def sms_send():
     """
-    This is a test end point which sends sms
+    This is a test end point which sends sms campaign
     :return:
     """
-    response = send_sms()
+    if request.args.has_key('text'):
+        body_text = request.args['text']
+        body_text = process_link_in_body_text(body_text)
+    else:
+        body_text = 'Welcome to getTalent, Please click on given link: %s' % LONG_URL
+    ids = get_smart_list_ids()
+    response = send_sms_campaign(ids, body_text)
     if response:
         return flask.jsonify(**response), response['status_code']
     else:
         raise InternalServerError
+
+
+@app.route("/sms_receive", methods=['GET', 'POST'])
+def sms_receive():
+    """
+    This is a test end point to receive sms
+    :return:
+    """
+    if request.values:
+        response = 'SMS received from %(From)s on %(To)s. Body text is "%(Body)s"' \
+                   % request.values
+        print response
+    else:
+        response = 'No SMS received'
+    data = {'message': response,
+            'status_code': 200}
+    return flask.jsonify(**data)
+
+
+@app.route('/redirect', methods=['GET', 'POST'])
+def redirect_to_long_url():
+    """
+    This is a test end point which redirects to Long URL
+    :return:
+    """
+    if request.args.get('url_id'):
+        url_conversion = process_redirection(request.args['url_id'])
+        return redirect(url_conversion.destination_url)
+    else:
+        return ''
 
 
 @app.errorhandler(ApiException)

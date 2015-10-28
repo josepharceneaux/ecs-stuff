@@ -52,4 +52,6 @@ python-dateutil==2.4.2
 
 Flask-Script
 
+Flask-Celery==2.4.3
+redis==2.10.3
 twilio
