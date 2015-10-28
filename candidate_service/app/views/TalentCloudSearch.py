@@ -14,7 +14,8 @@ import simplejson
 from flask import request
 from flask import current_app
 
-from candidate_service.common.models.db import get_table, db, session
+from candidate_service.common.models.db import db
+from common_functions import get_table, session
 from candidate_service.config import GT_ENVIRONMENT
 
 API_VERSION = "2013-01-01"
@@ -912,7 +913,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     if count_only:
         return dict(total_found=total_found, candidate_ids=[])
 
-    candidate_ids = [ match.get('id') for match in matches ]
+    candidate_ids = [match.get('id') for match in matches]
 
     if candidate_ids_only:
         return dict(total_found=total_found, candidate_ids=candidate_ids)
@@ -928,7 +929,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     # Special flag for kaiser's NUID custom field
     has_kaiser_nuid = False
     num_kaiser_nuids = 0
-    if len(facets.get('custom_field_id_and_value',dict())):
+    if len(facets.get('custom_field_id_and_value', dict())):
         custom_fields = dict()
         for cf_facet_row in facets['custom_field_id_and_value']:
             # cf_hash example: 9|Top Gun
@@ -1004,6 +1005,9 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     else:
         search_results = dict()
         search_results['candidates'] = fields_data
+        for values in search_results['candidates']:
+            if 'email' in values:
+                values['email'] = {"address": values['email']}
         # Returns a dictionary with all the candidates data
         return search_results
 

@@ -1,4 +1,21 @@
-__author__ = 'naveen'
+
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import MetaData, Table, create_engine
+from sqlalchemy.orm import sessionmaker
+from config import SQLALCHEMY_DATABASE_URI
+
+
+db = SQLAlchemy()
+engine = create_engine(SQLALCHEMY_DATABASE_URI)
+conn_db = engine.connect()
+metadata = MetaData(bind=engine)
+Session = sessionmaker(bind=engine)
+session = Session()
+
+
+def get_table(table_name=''):
+        table = Table(table_name, metadata, autoload=True)
+        return table
 
 
 def users_in_domain(domain_id):
@@ -6,7 +23,6 @@ def users_in_domain(domain_id):
         params: domain_id: Domain id
         returns: database users in given domain
         """
-        from candidate_service.common.models.db import get_table
         users = get_table("user")
         user_domain = users.select(users.c.domainId == domain_id).execute().first()
         return user_domain
