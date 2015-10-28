@@ -178,6 +178,15 @@ class CandidatePhone(db.Model):
     def __repr__(self):
         return "<CandidatePhone (value=' %r', extention= ' %r')>" % (self.value, self.extension)
 
+    @classmethod
+    def get_by_candidate_id(cls, candidate_id):
+        assert candidate_id
+        return cls.query.filter(
+            and_(
+                CandidatePhone.candidate_id == candidate_id
+            )
+        ).one()
+
 class CandidateEmail(db.Model):
     __tablename__ = 'candidate_email'
     id = db.Column(db.Integer, primary_key=True)

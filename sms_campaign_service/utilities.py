@@ -1,3 +1,5 @@
+from common.models.candidate import CandidatePhone
+
 __author__ = 'basit'
 
 # Standard Library
@@ -41,22 +43,36 @@ def url_conversion(long_url):
 # print "My short url is {}".format(shortener.short(url))
 
 
+import twilio
+import twilio.rest
+
+# Application Specific
+from config import TWILIO_ACCOUNT_SID
+from config import TWILIO_AUTH_TOKEN
+from config import TWILIO_NUMBER
 
 
+def send_sms():
+    data = None
+    try:
+        ids = get_smart_list_ids()
+        for _id in ids:
+            candidate_phone = CandidatePhone.get_by_candidate_id(_id)
+            client = twilio.rest.TwilioRestClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+            message = client.messages.create(
+                body="Hello World",
+                to=str(candidate_phone.value),
+                from_=TWILIO_NUMBER
+            )
+            data = {'message': 'SMS has been sent successfully to %s candidate(s)'
+                               ' from %s. Body text is %s.' 
+                               % (len(ids), message.from_, message.body),
+                    'status_code': 200}
+    except twilio.TwilioRestException as e:
+        data = {'message': e.message,
+                'status_code': 500}
+    return data
 
-# import twilio
-# import twilio.rest
-#
-# # Application Specific
-# from config import TWILIO_ACCOUNT_SID
-# from config import TWILIO_AUTH_TOKEN
-#
-# try:
-#     client = twilio.rest.TwilioRestClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-#     message = client.messages.create(
-#         body="Hello World",
-#         to="+923344955479",
-#         from_="+18312221043"
-#     )
-# except twilio.TwilioRestException as e:
-#     print e
+
+def get_smart_list_ids():
+    return [86]

@@ -8,6 +8,7 @@ import json
 import traceback
 
 # Initializing App. This line should come before any imports from models
+from common.error_handling import InternalServerError
 from sms_campaign_service import init_app
 from social_network_service.utilities import http_request
 
@@ -21,7 +22,7 @@ from werkzeug.utils import redirect
 
 # Application specific imports
 from sms_campaign_service import logger
-from sms_campaign_service.utilities import url_conversion
+from sms_campaign_service.utilities import url_conversion, send_sms
 from sms_campaign_service.app.app_utils import ApiResponse
 from sms_campaign_service.custom_exections import ApiException
 from restful.sms_campaign import sms_campaign_blueprint
@@ -71,6 +72,18 @@ def short_url_test(url=None):
                 'status_code': 200}
     return flask.jsonify(**data), 200
 
+
+@app.route('/sms', methods=['GET', 'POST'])
+def sms_send():
+    """
+    This is a test end point which sends sms
+    :return:
+    """
+    response = send_sms()
+    if response:
+        return flask.jsonify(**response), response['status_code']
+    else:
+        raise InternalServerError
 
 
 @app.errorhandler(ApiException)
