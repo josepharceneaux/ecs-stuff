@@ -1,6 +1,5 @@
-from common.tests.conftest import *
 from common.tests.conftest import UserAuthentication
-
+from common.tests.conftest import *
 
 USER_PASSWORD = 'Talent15'
 
@@ -37,34 +36,41 @@ def generate_multiple_candidates_data():
 ####################################
 # test cases for GETting candidate #
 ####################################
-def test_get_candidate(sample_user, user_auth):
-    """
-    :param sample_user: user-row
-    :type user_auth:    UserAuthentication
-    """
-    # TODO: create user, login user, create candidate, fetch candidate
-    user = sample_user
-
-    candidate_id = 4
-    r = requests.get("http://127.0.0.1:8004/v1/candidates/%s" % candidate_id)
-
-    assert r.status_code == 200
-    assert 'candidate' in r.json()
-    assert 'id', 'emails' in r.json()['candidate']
-    print "\nresp = %s" % r.json()
+# def test_get_candidate(sample_user, user_auth):
+#     """
+#     :param sample_user: user-row
+#     :type user_auth:    UserAuthentication
+#     """
+#     user = sample_user
+#
+#     candidate_id = 4
+#     r = requests.get("http://127.0.0.1:8005/v1/candidates/%s" % candidate_id)
+#
+#     assert r.status_code == 200
+#     assert 'candidate' in r.json()
+#     assert 'id', 'emails' in r.json()['candidate']
+#     print "\nresp = %s" % r.json()
 
 
 ####################################
 # test cases for POSTing candidate #
 ####################################
-def test_create_candidate(sample_user):
+def test_create_candidate(sample_user, user_auth):
     """
     :param sample_user: user-row
+    :type  user_auth:   UserAuthentication
     """
+    user = sample_user
+
+    authenticate = user_auth.get_auth_token(user_row=sample_user, get_bearer_token=True)
+    print "-" * 100
+    print "authentication = %s" % authenticate
+
     import json
     r = requests.post(
-        url='http://127.0.0.1:8004/v1/candidates',
-        data=json.dumps(generate_single_candidate_data())
+        url='http://127.0.0.1:8005/v1/candidates',
+        data=json.dumps(generate_single_candidate_data()),
+        headers={'Authorization': authenticate['access_token']}
     )
     print "\nresp = %s" % r
     print "\nresp = %s" % r.json()

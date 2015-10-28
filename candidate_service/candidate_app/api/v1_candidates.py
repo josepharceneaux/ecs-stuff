@@ -3,9 +3,9 @@ from flask import (request, jsonify)
 from flask_restful import (Api, Resource)
 
 # Candidate service specific
-from candidate_service.app import (app, db, logger)
+from candidate_service.candidate_app import app, db, logger
 from candidate_service.modules.TalentCandidates import fetch_candidate_info
-from candidate_service.common.models.user import User
+from common.models.user import User
 from candidate_service.modules.validators import (
     does_candidate_belong_to_user, is_custom_field_authorized,
     is_area_of_interest_authorized
@@ -13,6 +13,7 @@ from candidate_service.modules.validators import (
 
 # Common utilities
 from common.utils.validators import (is_number, is_valid_email)
+from common.utils.auth_utils import require_oauth
 
 # Standard Library
 import json
@@ -21,9 +22,11 @@ import json
 api = Api(app=app)
 
 class CandidateResource(Resource):
+    decorators = [require_oauth]
+    print "require_oauth = %s" % decorators
+
     def get(self, **kwargs):
 
-        # TODO: remove print statement. Assign authed_user to authenticate_oauth_user()
         print "kwargs = %s" % kwargs
         authed_user = db.session.query(User).get(1)
 
