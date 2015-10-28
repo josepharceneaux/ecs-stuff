@@ -42,6 +42,7 @@ class TestResourceEvents:
                                  headers={'Authorization': 'Bearer %s' % auth_data['access_token'],
                                           'Content-Type': 'application/json'})
         assert response.status_code == 201, 'Status should be Ok, Resource Created (201)'
+        assert 'Location' in response.headers
         event_id = response.json()['id']
         assert event_id > 0, 'Event id should be a positive number'
         test_event['id'] = event_id     # Add created event id  in test_event so it can be deleted in tear_down
@@ -52,7 +53,12 @@ class TestResourceEvents:
         response = requests.post(API_URL + '/events/', data=json.dumps(event_data),
                                  headers={'Authorization': 'Bearer %s' % auth_data['access_token'],
                                           'Content-Type': 'application/json'})
-        assert response.status_code == 453, 'There should be an missing field error for %s KeyError' % key
+        assert response.status_code == 500, 'It should fail'
+        response = response.json()
+        if key in ['start_datetime', 'end_datetime']:
+            assert response['error']['code'] == 464, 'There should be an Invalid datetime error'
+        else:
+            assert response['error']['code'] == 453, 'There should be an missing field error for %s KeyError' % key
 
     def test_meetup_with_missing_required_fields(self, auth_data, meetup_missing_data):
         key, event_data = meetup_missing_data
@@ -60,7 +66,12 @@ class TestResourceEvents:
         response = requests.post(API_URL + '/events/', data=json.dumps(event_data),
                                  headers={'Authorization': 'Bearer %s' % auth_data['access_token'],
                                           'Content-Type': 'application/json'})
-        assert response.status_code == 453, 'There should be an missing field error for %s KeyError' % key
+        assert response.status_code == 500, 'It should fail'
+        response = response.json()
+        if key in ['start_datetime', 'end_datetime']:
+            assert response['error']['code'] == 464, 'There should be an Invalid datetime error'
+        else:
+            assert response['error']['code'] == 453, 'There should be an missing field error for %s KeyError' % key
 
     def test_meetup_with_valid_address(self, auth_data, meetup_event_data):
         event_data = meetup_event_data
@@ -77,7 +88,10 @@ class TestResourceEvents:
         response = requests.post(API_URL + '/events/', data=json.dumps(event_data),
                                  headers={'Authorization': 'Bearer %s' % auth_data['access_token'],
                                           'Content-Type': 'application/json'})
-        assert response.status_code == 465, 'Event should not be created, address is invalid according to Meetup API'
+        assert response.status_code == 500, 'Internal Server Error'
+        response = response.json()
+        assert response['error']['code'] == 465, \
+            'Event should not be created, address is invalid according to Meetup API'
 
 
 class TestEventById:
@@ -118,18 +132,20 @@ class TestEventById:
         event = event_in_db.to_json()
         datetime_now = datetime.datetime.now()
         event['title'] = 'Test update event'
-        event['start_datetime'] = (datetime_now + datetime.timedelta(days=50)).strftime('%Y-%m-%d %H:%M:%S')
-        event['end_datetime'] = (datetime_now + datetime.timedelta(days=60)).strftime('%Y-%m-%d %H:%M:%S')
+        event['start_datetime'] = (datetime_now + datetime.timedelta(days=50)).strftime('%Y-%m-%dT%H:%M:%SZ')
+        event['end_datetime'] = (datetime_now + datetime.timedelta(days=60)).strftime('%Y-%m-%dT%H:%M:%SZ')
         response = requests.post(API_URL + '/events/' + str(event['id']), data=json.dumps(event),
                                  headers={'Authorization': 'Bearer %s' % auth_data['access_token'],
                                           'Content-Type': 'application/json'})
-        assert response.status_code == 204, 'Status should be Ok, Resource Modified (204)'
+        assert response.status_code == 200, 'Status should be Ok, Resource Modified (204)'
         event_db = Event.get_by_id(event['id'])
         Event.session.commit()  # needed to refresh session otherwise it will show old objects
         event_db = event_db.to_json()
         assert event['title'] == event_db['title'], 'event_title is modified'
-        assert event['start_datetime'] == event_db['start_datetime'], 'event_start_datetime is modified'
-        assert event['end_datetime'] == event_db['end_datetime'], 'event_end_datetime is modified'
+        assert event['start_datetime'] == event_db['start_datetime'].replace(' ', 'T') + 'Z', \
+            'start_datetime is modified'
+        assert event['end_datetime'] == event_db['end_datetime'].replace(' ', 'T') + 'Z', \
+            'end_datetime is modified'
 
     def test_delete_with_invalid_token(self, event_in_db):
         response = requests.delete(API_URL + '/events/' + str(event_in_db.id), headers=dict(Authorization='Bearer %s' % 'invalid_token'))

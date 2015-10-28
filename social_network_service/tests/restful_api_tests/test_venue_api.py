@@ -39,6 +39,7 @@ class TestVenues:
                                  headers={'Authorization': 'Bearer %s' % auth_data['access_token'],
                                           'Content-Type': 'application/json'})
         assert response.status_code == 201, 'Status should be Ok, Resource created (201)'
+        assert 'Location' in response.headers
         response = response.json()
         assert response['id'] > 0
         Venue.session.commit()
@@ -57,3 +58,22 @@ class TestVenues:
         response = requests.delete(API_URL + '/venues/',  data=json.dumps(venue_ids),
                                    headers=dict(Authorization='Bearer %s' % auth_data['access_token']))
         assert response.status_code == 200, 'Status should be Ok (200)'
+
+        venue_ids = {'ids': [-1]}  # event id which does not exists, test 207 status
+        response = requests.delete(API_URL + '/venues/',  data=json.dumps(venue_ids),
+                                   headers=dict(Authorization='Bearer %s' % auth_data['access_token']))
+        assert response.status_code == 207, 'Unable to delete all venues (207)'
+        response = response.json()
+        assert 'deleted' in response and len(response['deleted']) == 0
+        assert 'not_deleted' in response and len(response['not_deleted']) == 1
+        assert 'message' in response
+
+        venue_ids = {'ids': -1}  # invalid ids format to test 400 status code
+        response = requests.delete(API_URL + '/venues/',  data=json.dumps(venue_ids),
+                                   headers=dict(Authorization='Bearer %s' % auth_data['access_token']))
+        assert response.status_code == 400, 'Bad Request'
+        response = response.json()
+        assert response['error']['code'] == 400, 'Bad Request'
+        assert 'message' in response['error'] and \
+               response['error']['message'] == 'Bad request, include ids as list data'
+

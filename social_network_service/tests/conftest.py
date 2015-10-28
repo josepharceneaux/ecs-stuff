@@ -55,7 +55,7 @@ EVENT_DATA = {
     "timezone": "Asia/Karachi",
     "cost": 0,
     "currency": "USD",
-    "group_id": 18837246,
+    "social_network_group_id": 18837246,
     "max_attendees": 10
 }
 
@@ -124,13 +124,14 @@ def test_client(request):
         client_id=client_id,
         client_secret=client_secret
     )
-    Client.save(test_client)
+    Client.save(client)
 
     def delete_client():
         """
         This method deletes client at the end of test session
         """
-        Client.delete(client.client_id)
+        # Client.delete(client.client_id)
+        client.delete()
 
     request.addfinalizer(delete_client)
     return client
@@ -223,7 +224,7 @@ def test_user(request, test_domain):
 
 
 @pytest.fixture(scope='session')
-def test_token(request, test_user):
+def test_token(request, test_user, test_client):
     """
     This create access token in Token table for this user so we can access API
     :param request:
@@ -231,12 +232,13 @@ def test_token(request, test_user):
     :return:
     """
     mixer = Mixer(session=db_session, commit=True)
-    token = mixer.blend(Token,
-                        user=test_user,
-                        token_type='Bearer',
-                        access_token=get_random_word(20),
-                        refresh_token=get_random_word(20),
-                        expires=datetime(year=2050, month=1, day=1))
+    token = Token(user_id=test_user.id,
+                  token_type='Bearer',
+                  access_token=get_random_word(20),
+                  refresh_token=get_random_word(20),
+                  client_id=test_client.client_id,
+                  expires=datetime(year=2050, month=1, day=1))
+    Token.save(token)
 
     def fin():
         """
@@ -593,7 +595,7 @@ def eventbrite_missing_data(request, eventbrite_event_data):
     return request.param, eventbrite_event_data.copy()
 
 
-@pytest.fixture(params=['title', 'description', 'group_id',
+@pytest.fixture(params=['title', 'description', 'social_network_group_id',
                         'group_url_name', 'start_datetime', 'max_attendees'], scope='function')
 def meetup_missing_data(request, meetup_event_data):
     """

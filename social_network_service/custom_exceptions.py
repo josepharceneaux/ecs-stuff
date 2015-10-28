@@ -1,24 +1,13 @@
 from common.error_handling import TalentError
 
 
-class InvalidUsage(Exception):
-    status_code = 400
-
-    def __init__(self, message, status_code=None, payload=None):
-        Exception.__init__(self)
-        self.message = message
-        if status_code is not None:
-            self.status_code = status_code
-        self.payload = payload
-
-    def to_dict(self):
-        rv = dict(self.payload or ())
-        rv['message'] = self.message
-        return rv
-
-
 class ApiException(TalentError):
     status_code = 500
+
+    def to_dict(self):
+        error_dict = super(ApiException, self).to_dict()
+        error_dict['error']['code'] = self.__class__.status_code
+        return error_dict
 
 
 class SocialNetworkError(ApiException):

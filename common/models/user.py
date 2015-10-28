@@ -50,7 +50,7 @@ class User(db.Model):
     public_candidate_sharings = db.relationship('PublicCandidateSharing', backref='user')
     user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
     events = db.relationship('Event', backref='user', lazy='dynamic')
-    organizers = db.relationship('EventOrganizer', backref='user', lazy='dynamic')
+    event_organizers = db.relationship('EventOrganizer', backref='user', lazy='dynamic')
     venues = db.relationship('Venue', backref='user', lazy='dynamic')
     user_group = db.relationship('UserGroup', backref='user')
 
@@ -114,20 +114,6 @@ class WebAuthMembership(db.Model):
 
     web_auth_group = relationship('WebAuthGroup', backref='web_auth_membership')
     user = relationship('User', backref='web_auth_membership')
-
-
-class JobOpening(db.Model):
-    __tablename__ = 'job_opening'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column('UserId', db.Integer, db.ForeignKey('user.id'))
-    job_code = db.Column('JobCode', db.String(100))
-    description = db.Column('Description', db.String(500))
-    title = db.Column('Title', db.String(150))
-    added_time = db.Column('AddedTime', db.TIMESTAMP, default=time.time())
-
-
-    def __repr__(self):
-        return "<email (email=' %r')>" % self.email
 
 
 class Client(db.Model):
@@ -425,7 +411,7 @@ class UserGroup(db.Model):
         :param list[int | str] groups: list of names or ids of user groups
         :rtype: None
         """
-        if Domain.query.get(domain_id):
+        if domain.Domain.query.get(domain_id):
             for group in groups:
                 if is_number(group):
                     group_id = group

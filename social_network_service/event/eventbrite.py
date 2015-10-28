@@ -310,7 +310,7 @@ class Eventbrite(EventBase):
             description=event['description']['text'],
             social_network_id=self.social_network.id,
             user_id=self.user.id,
-            group_id=0,
+            social_network_group_id=0,
             url='',
             group_url_name='',
             organizer_id=organizer_id,
@@ -677,7 +677,7 @@ class Eventbrite(EventBase):
             are not found
         """
         mandatory_input_data = ['title', 'description', 'end_datetime',
-                                'timezone', 'start_datetime', 'currency']
+                                'timezone', 'start_datetime', 'currency', 'venue_id', 'organizer_id']
         # gets fields which are missing
         missing_items = [key for key in mandatory_input_data
                          if not data.get(key)]
@@ -712,7 +712,7 @@ class Eventbrite(EventBase):
                         "cost": 0,
                         "start_datetime": "25 Oct, 2015 04:50 pm",
                         "currency": "USD",
-                        "group_id": 18837246,
+                        "social_network_group_id": 18837246,
                         "max_attendees": 10
                 }
 

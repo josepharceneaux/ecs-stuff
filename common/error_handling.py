@@ -57,10 +57,12 @@ class ForbiddenError(TalentError):
     def http_status_code(cls):
         return 403
 
+
 class ResourceNotFound(TalentError):
     @classmethod
     def http_status_code(cls):
         return 404
+
 
 def register_error_handlers(app, logger):
     """
@@ -84,6 +86,12 @@ def register_error_handlers(app, logger):
         logger.warn("Unauthorized for app %s", app.import_name)
         response = jsonify(error.to_dict())
         return response, error.http_status_code()
+
+    @app.errorhandler(TalentError)
+    def handle_exception(exc):
+        response = exc.to_dict()
+        logger.exception("Internal server error for app %s: %s", app.import_name, response)
+        return jsonify(response), exc.http_status_code()
 
     @app.errorhandler(500)
     def handle_internal_server_errors(exc):

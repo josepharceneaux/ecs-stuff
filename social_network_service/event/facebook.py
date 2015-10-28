@@ -238,7 +238,7 @@ class Facebook(EventBase):
                 user_id=self.user.id,
                 organizer_id=organizer_id,
                 venue_id=venue_id,
-                group_id=0,
+                social_network_group_id=0,
                 start_datetime=event.get('start_time'),
                 end_datetime=event.get('end_time'),
                 timezone=event.get('timezone'),
