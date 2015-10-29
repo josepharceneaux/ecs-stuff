@@ -7,8 +7,9 @@ import json
 from config import GOOGLE_API_KEY, REDIRECT_URL
 from config import GOOGLE_URLSHORTENER_API_URL
 from social_network_service.utilities import http_request
-from common.models.misc import UrlConversion
-from common.models.candidate import CandidatePhone
+from sms_campaign_service.common.models.misc import UrlConversion
+from sms_campaign_service.common.models.candidate import CandidatePhone
+from sms_campaign_service.common.models.user import UserPhone
 
 
 def url_conversion(long_url):
@@ -50,7 +51,6 @@ import twilio.rest
 # Application Specific
 from config import TWILIO_ACCOUNT_SID
 from config import TWILIO_AUTH_TOKEN
-from config import TWILIO_NUMBER
 
 
 def send_sms_campaign(ids, body_text):
@@ -62,6 +62,8 @@ def send_sms_campaign(ids, body_text):
     :type body_text: str
     :return:
     """
+    # TODO: remove hard codeed value
+    user_phone = UserPhone.get_by_user_id(1)
     data = None
     try:
         for _id in ids:
@@ -69,9 +71,8 @@ def send_sms_campaign(ids, body_text):
             client = twilio.rest.TwilioRestClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
             message = client.messages.create(
                 body=body_text,
-                to=str(candidate_phone.value),
-                # to='+12055585769',
-                from_=TWILIO_NUMBER
+                to=candidate_phone.value,
+                from_=user_phone.value
             )
             data = {'message': 'SMS has been sent successfully to %s candidate(s)'
                                ' from %s. Body text is %s.'
@@ -133,6 +134,7 @@ def get_url_in_body_text(body_text):
         if 'www' in word or 'http' in word:
             return word
     return ''
+
 
 def transform_body_text(body_text, short_url):
     """

@@ -19,6 +19,7 @@ from flask.ext.restful import Api
 from werkzeug.utils import redirect
 
 # Application specific imports
+from restful.sms_campaign import sms_campaign_blueprint
 from sms_campaign_service import logger
 from social_network_service.utilities import http_request
 from sms_campaign_service.utilities import url_conversion
@@ -27,9 +28,8 @@ from sms_campaign_service.utilities import get_smart_list_ids
 from sms_campaign_service.utilities import process_redirection
 from sms_campaign_service.utilities import process_link_in_body_text
 from sms_campaign_service.app.app_utils import ApiResponse
-from sms_campaign_service.custom_exections import ApiException
-from restful.sms_campaign import sms_campaign_blueprint
-from common.error_handling import InternalServerError
+from sms_campaign_service.custom_exceptions import ApiException
+from sms_campaign_service.common.error_handling import InternalServerError
 
 # Register Blueprints for different APIs
 app.register_blueprint(sms_campaign_blueprint)

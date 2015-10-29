@@ -10,6 +10,7 @@ class PhoneLabel(db.Model):
 
     # Relationships
     candidate_phones = db.relationship('CandidatePhone', backref='phone_label')
+    user_phones = db.relationship('UserPhone', backref='phone_label')
     # reference_phones = db.relationship('ReferencePhone', backref='phone_label')
 
     def __repr__(self):

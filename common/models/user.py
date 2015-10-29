@@ -1,6 +1,7 @@
 import time
 import logging
 import datetime
+from sqlalchemy import and_
 
 from db import db
 from sqlalchemy.orm import relationship, backref
@@ -71,6 +72,35 @@ class User(db.Model):
     def __repr__(self):
         return "<email (email=' %r')>" % self.email
 
+
+class UserPhone(db.Model):
+    __tablename__ = 'user_phone'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column('Userid', db.Integer, db.ForeignKey('user.id'))
+    phone_label_id = db.Column('PhoneLabelId', db.Integer, db.ForeignKey('phone_label.id'))
+    value = db.Column(db.String(50), nullable=False)
+
+    def __repr__(self):
+        return "<Phone (value=' %r')>" % self.Value
+
+    @classmethod
+    def get_by_user_id(cls, user_id):
+        assert user_id
+        return cls.query.filter(
+            and_(
+                UserPhone.user_id == user_id
+            )
+        ).one()
+
+    @classmethod
+    def get_by_user_id_and_phone_label_id(cls, user_id, phone_label_id):
+        assert user_id
+        return cls.query.filter(
+            and_(
+                UserPhone.user_id == user_id,
+                UserPhone.phone_label_id == phone_label_id
+            )
+        ).one()
 
 # class Domain(db.Model):
 #     __tablename__ = 'domain'

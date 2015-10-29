@@ -1,4 +1,4 @@
-from common.error_handling import TalentError
+from sms_campaign_service.common.error_handling import TalentError
 
 
 class InvalidUsage(Exception):
