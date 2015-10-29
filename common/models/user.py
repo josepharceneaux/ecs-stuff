@@ -6,8 +6,7 @@ import domain
 import candidate
 import organizer
 import social_network
-from candidate import CandidateSource
-from candidate import CandidateAreaOfInterest
+import candidate
 from misc import AreaOfInterest
 
 logger = logging.getLogger(__file__)

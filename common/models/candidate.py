@@ -4,6 +4,8 @@ from sqlalchemy.orm import relationship
 import datetime
 import voice
 import culture
+from misc import AreaOfInterest
+
 
 class CandidateAreaOfInterest(db.Model):
     __tablename__ = 'candidate_area_of_interest'

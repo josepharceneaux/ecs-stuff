@@ -5,7 +5,6 @@ from sqlalchemy.orm import relationship
 import time
 import domain
 import patent
-from candidate import CandidateMilitaryService
 
 
 class AreaOfInterest(db.Model):
