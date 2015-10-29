@@ -74,7 +74,7 @@ def handle_rsvp():
     It first finds the getTalent user having incoming webhook id.
     Then it creates the candidate in candidate table by getting information
     of attendee. Then it inserts in rsvp table the required information.
-    It will also insert an entry in DB tables candidate_event_rsvp and activity
+    It will also insert an entry in DB table activity
     """
     # hub_challenge = request.args['hub.challenge']
     # verify_token = request.args['hub.verify_token']

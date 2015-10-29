@@ -62,11 +62,9 @@ class Attendee(object):
         self.gt_user_id = None  # attendee's corresponding gt-user id
         self.vendor_rsvp_id = None  # attendee's vendor rsvp id
         self.social_network_id = None  # attendee's social network id
-        self.candidate_event_rsvp_id = None  # attendee's entry id in
         self.candidate_source_id = None  # attendee's candidate_source id
         # from db
         self.source_product_id = None  # attendee's source product id in database
-        # candidate_event_rsvp
 
     def __str__(self):
         return 'Name: %s, RSVP_ID: %s, EMAIL: %s' % (self.full_name,
