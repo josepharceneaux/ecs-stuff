@@ -1,50 +1,59 @@
-# Flask specific
-from flask import (request, jsonify)
 from flask_restful import Resource
-
-# Candidate service specific
-from candidate_service.candidate_app import app, db, logger
-from candidate_service.modules.TalentCandidates import fetch_candidate_info
+from candidate_service.candidate_app import db
+from candidate_service.modules.TalentCandidates import (
+    fetch_candidate_info, get_candidate_id_from_candidate_email
+)
 from common.models.user import User
 from candidate_service.modules.validators import (
     does_candidate_belong_to_user, is_custom_field_authorized,
     is_area_of_interest_authorized
 )
-
-# Common utilities
 from common.utils.validators import (is_number, is_valid_email)
 from common.utils.auth_utils import require_oauth
-
-# Standard Library
-import json
+from candidate_service.helper.api import parse_request_data
 
 
 class CandidateResource(Resource):
-    decorators = [require_oauth]
-    print "require_oauth = %s" % decorators
+    # todo: add require_oauth as a decorator and authenticate user
+    # todo: use flask built in error handling and blueprint
+    # decorators = [require_oauth]
 
     def get(self, **kwargs):
+        """ Function can fetch a candidate via two methods:
+                I.  GET /v1/candidates/:id
+                    Takes an integer as candidate's ID, parsed from kwargs
 
+                OR
+                II. GET /v1/candidates/:email
+                    Takes a valid email address, parsed from kwargs
+
+        :return:    A dict of candidate info
+                    404 status if candidate is not found
+        """
         print "kwargs = %s" % kwargs
-        authed_user = db.session.query(User).get(1)
-
-        # authed_user = authenticate_oauth_user(request=request)
-        # if authed_user.get('error'):
-        #     return {'error': {'code': 3, 'message': 'Authentication failed'}}, 401
+        authed_user = db.session.query(User).get(2)
 
         candidate_id = kwargs.get('id')
-        # candidate_id is required
-        if not candidate_id:
-            return {'error': {'message': 'A valid candidate ID is required'}}, 400
-
-        # candidate_id must be an integer
+        print "candidate id = %s" % candidate_id
+        # Search via candidate_id or candidate_email
         if not is_number(candidate_id):
-            return {'error': {'message': 'Candidate ID must be an integer'}}, 400
+            # candidate_email is provided
+            candidate_email = kwargs.get('email')
 
-        if not does_candidate_belong_to_user(user_row=authed_user, candidate_id=candidate_id):
+            # Email address must be valid
+            if not is_valid_email(candidate_email):
+                return {'error': {'message': 'Valid email address required'}}
+
+            candidate_id = get_candidate_id_from_candidate_email(candidate_email=candidate_email)
+
+        # Candidate must belong to logged in user
+        if not does_candidate_belong_to_user(user_row=authed_user,
+                                             candidate_id=candidate_id):
             return {'error': {'message': 'Not authorized'}}, 403
 
         candidate_data = fetch_candidate_info(candidate_id=candidate_id)
+        if not candidate_data:
+            return {'error': {'message': 'Candidate not found'}}, 404
 
         return {'candidate': candidate_data}
 
@@ -62,10 +71,6 @@ class CandidateResource(Resource):
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
-        # authed_user = authenticate_oauth_user(request=request)
-        # if authed_user.get('error'):
-        #     return {'error': {'code': 3, 'message': 'Authentication failed'}}, 401
-
         authed_user = db.session.query(User).get(1)
 
         # Parse request data
@@ -120,27 +125,27 @@ class CandidateResource(Resource):
         return body_dict
 
 
-def parse_request_data():
-    """
-    :rtype:
-    """
-    request_data = ''
-    try:
-        request_data = request.data
-        logger.info('%s:%s: Received request data: %s',
-                    (request.url, request.method, request_data))
-        body_dict = json.loads(request_data)
-    except Exception:
-        logger.info('%s:%s: Received request data: %s',
-                    (request.url, request.method, request_data))
-        return {'error': {'message': 'Unable to parse request data as JSON'}}, 400
-
-    # Request data must be a JSON dict
-    if not isinstance(body_dict, dict):
-        return {'error': {'message': 'Request data must be a JSON dict'}}, 400
-
-    # Request data cannot be empty
-    if not any(body_dict):
-        return {'error': {'message': 'Request data cannot be empty'}}, 400
-
-    return body_dict
+# def parse_request_data():
+#     """
+#     :rtype:
+#     """
+#     request_data = ''
+#     try:
+#         request_data = request.data
+#         logger.info('%s:%s: Received request data: %s',
+#                     (request.url, request.method, request_data))
+#         body_dict = json.loads(request_data)
+#     except Exception:
+#         logger.info('%s:%s: Received request data: %s',
+#                     (request.url, request.method, request_data))
+#         return {'error': {'message': 'Unable to parse request data as JSON'}}, 400
+#
+#     # Request data must be a JSON dict
+#     if not isinstance(body_dict, dict):
+#         return {'error': {'message': 'Request data must be a JSON dict'}}, 400
+#
+#     # Request data cannot be empty
+#     if not any(body_dict):
+#         return {'error': {'message': 'Request data cannot be empty'}}, 400
+#
+#     return body_dict

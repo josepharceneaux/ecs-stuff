@@ -36,13 +36,11 @@ def generate_multiple_candidates_data():
 ####################################
 # test cases for GETting candidate #
 ####################################
-def test_get_candidate(sample_user, user_auth):
+def test_get_candidate_via_candidate_id(sample_user, user_auth):
     """
     :param sample_user: user-row
     :type user_auth:    UserAuthentication
     """
-    user = sample_user
-
     candidate_id = 4
     r = requests.get("http://127.0.0.1:8005/v1/candidates/%s" % candidate_id)
 
@@ -52,19 +50,13 @@ def test_get_candidate(sample_user, user_auth):
     print "\nresp = %s" % r.json()
 
 
+def test_get_candidate_via_candidate_email():
+    candidate_email = "brad.howard58@gmail.com"
+    r = requests.get("http://127.0.0.1:8005/v1/candidates/%s" % candidate_email)
+
+    print "resp = %s" % r
+
+
 ####################################
 # test cases for POSTing candidate #
 ####################################
-def test_create_candidate(sample_user, user_auth):
-    """
-    :param sample_user: user-row
-    :type  user_auth:   UserAuthentication
-    """
-    user = sample_user
-    import json
-    r = requests.post(
-        url='http://127.0.0.1:8005/v1/candidates',
-        data=json.dumps(generate_single_candidate_data())
-    )
-    print "\nresp = %s" % r
-    print "\nresp = %s" % r.json()

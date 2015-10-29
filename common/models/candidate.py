@@ -164,6 +164,9 @@ class CandidateEmail(db.Model):
     is_default = db.Column('IsDefault', db.Boolean)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
+    def __repr__(self):
+        return "<CandidateEmail (address='%r')" % self.address
+
 
 class CandidatePhoto(db.Model):
     __tablename__ = 'candidate_photo'

@@ -1,4 +1,4 @@
-from candidate_service.common.models.candidate import db
+from common.models.db import db
 from candidate_service.candidate_app import logger
 from candidate_service.common.models.candidate import (
     Candidate, EmailLabel, CandidateEmail, CandidatePhone, PhoneLabel,
@@ -318,7 +318,8 @@ def country_name_from_country_id(country_id):
     if country:
         return country.name
     else:
-        logger.info('country_name_from_country_id: country_id is not recognized: %s', country_id)
+        logger.info('country_name_from_country_id: country_id is not recognized: %s',
+                    country_id)
         return 'United States'
 
 
@@ -327,6 +328,17 @@ def social_network_name(social_network_id):
     if social_network:
         return social_network.name
     else:
-        logger.info('social_network_name: social_network from ID not recognized: %s', social_network_id)
+        logger.info('social_network_name: social_network from ID not recognized: %s',
+                    social_network_id)
         return None
 
+
+def get_candidate_id_from_candidate_email(candidate_email):
+    candidate_email_row = db.session.query(CandidateEmail).\
+        filter_by(address=candidate_email).first()
+    if not candidate_email_row:
+        logger.info('get_candidate_id_from_candidate_email: candidate email not recognized: %s',
+                    candidate_email)
+        return None
+
+    return candidate_email_row.candidate_id

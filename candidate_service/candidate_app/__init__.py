@@ -15,7 +15,10 @@ db.app = app
 from flask_restful import Api
 from candidate_service.candidate_app.api.v1_candidates import CandidateResource
 api = Api(app=app)
-api.add_resource(CandidateResource, '/v1/candidates/<id>', '/v1/candidates')
+api.add_resource(CandidateResource,
+                 '/v1/candidates/<int:id>',
+                 '/v1/candidates/<email>',
+                 '/v1/candidates')
 
 db.create_all()
 db.session.commit()
