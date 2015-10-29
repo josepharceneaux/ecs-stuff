@@ -13,12 +13,16 @@ db.init_app(app=app)
 db.app = app
 
 from flask_restful import Api
-from candidate_service.candidate_app.api.v1_candidates import CandidateResource
+from candidate_service.candidate_app.api.v1_candidates import (
+    CandidateResource, CandidateEmailCampaignResource
+)
 api = Api(app=app)
 api.add_resource(CandidateResource,
                  '/v1/candidates/<int:id>',
                  '/v1/candidates/<email>',
                  '/v1/candidates')
+api.add_resource(CandidateEmailCampaignResource,
+                 '/v1/candidates/<int:id>/email_campaigns/<int:email_campaign_id>/email_campaign_sends', endpoint='candidates')
 
 db.create_all()
 db.session.commit()

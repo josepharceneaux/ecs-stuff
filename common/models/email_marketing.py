@@ -32,7 +32,6 @@ class EmailCampaign(db.Model):
     is_subscription = db.Column('isSubscription', db.SmallInteger, default=False)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
     email_client_id = db.Column('EmailClientId', db.Integer, db.ForeignKey('email_client.id'))
-    # todo: Relationships => email_client_id, frequency_id
 
     # Relationships
     email_campaign_sends = relationship('EmailCampaignSend', backref='email_campaign')
@@ -74,3 +73,27 @@ class EmailCampaignSend(db.Model):
     def __repr__(self):
         return "<EmailCampaignSend (id = %r)>" % self.id
 
+
+class Frequency(db.Model):
+    __tablename__ = 'frequency'
+    id = db.Column(db.Integer, primary_key=True)
+    description = db.Column('Description', db.String(10))
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+    # Relationships
+    email_campaings = relationship('EmailCampaign', backref='frequency')
+
+    def __repr__(self):
+        return "<Frequency (id = %r)>" % self.id
+
+
+class EmailClient(db.Model):
+    __tablename__ = 'email_client'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
+
+    # Relationships
+    email_campaigns = relationship('EmailCampaign', backref='email_client')
+
+    def __repr__(self):
+        return "<EmailClient (name = %r)>" % self.name

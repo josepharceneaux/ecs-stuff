@@ -1,12 +1,12 @@
 from flask_restful import Resource
-from candidate_service.candidate_app import db
+from candidate_service.common.models.db import db
 from candidate_service.modules.TalentCandidates import (
     fetch_candidate_info, get_candidate_id_from_candidate_email
 )
-from common.models.user import User
+from candidate_service.common.models.user import User
 from candidate_service.modules.validators import (
     does_candidate_belong_to_user, is_custom_field_authorized,
-    is_area_of_interest_authorized
+    is_area_of_interest_authorized, does_email_campaign_belong_to_domain
 )
 from common.utils.validators import (is_number, is_valid_email)
 from common.utils.auth_utils import require_oauth
@@ -19,7 +19,9 @@ class CandidateResource(Resource):
     # decorators = [require_oauth]
 
     def get(self, **kwargs):
-        """ Function can fetch a candidate via two methods:
+        """
+        Endpoints can do these operations:
+            1. Fetch a candidate via two methods:
                 I.  GET /v1/candidates/:id
                     Takes an integer as candidate's ID, parsed from kwargs
 
@@ -30,11 +32,9 @@ class CandidateResource(Resource):
         :return:    A dict of candidate info
                     404 status if candidate is not found
         """
-        print "kwargs = %s" % kwargs
         authed_user = db.session.query(User).get(2)
 
         candidate_id = kwargs.get('id')
-        print "candidate id = %s" % candidate_id
         # Search via candidate_id or candidate_email
         if not is_number(candidate_id):
             # candidate_email is provided
@@ -44,11 +44,10 @@ class CandidateResource(Resource):
             if not is_valid_email(candidate_email):
                 return {'error': {'message': 'Valid email address required'}}
 
-            candidate_id = get_candidate_id_from_candidate_email(candidate_email=candidate_email)
+            candidate_id = get_candidate_id_from_candidate_email(candidate_email)
 
         # Candidate must belong to logged in user
-        if not does_candidate_belong_to_user(user_row=authed_user,
-                                             candidate_id=candidate_id):
+        if not does_candidate_belong_to_user(user_row=authed_user, candidate_id=candidate_id):
             return {'error': {'message': 'Not authorized'}}, 403
 
         candidate_data = fetch_candidate_info(candidate_id=candidate_id)
@@ -125,27 +124,20 @@ class CandidateResource(Resource):
         return body_dict
 
 
-# def parse_request_data():
-#     """
-#     :rtype:
-#     """
-#     request_data = ''
-#     try:
-#         request_data = request.data
-#         logger.info('%s:%s: Received request data: %s',
-#                     (request.url, request.method, request_data))
-#         body_dict = json.loads(request_data)
-#     except Exception:
-#         logger.info('%s:%s: Received request data: %s',
-#                     (request.url, request.method, request_data))
-#         return {'error': {'message': 'Unable to parse request data as JSON'}}, 400
-#
-#     # Request data must be a JSON dict
-#     if not isinstance(body_dict, dict):
-#         return {'error': {'message': 'Request data must be a JSON dict'}}, 400
-#
-#     # Request data cannot be empty
-#     if not any(body_dict):
-#         return {'error': {'message': 'Request data cannot be empty'}}, 400
-#
-#     return body_dict
+class CandidateEmailCampaignResource(Resource):
+    # decorators = [require_oauth]
+
+    def get(self, **kwargs):
+        authed_user = db.session.query(User).get(1)
+
+        print "kwargs = %s" % kwargs
+        candidate_id = kwargs.get('id')
+        email_campaign_id = kwargs.get('email_campaign_id')
+        if not candidate_id or not email_campaign_id:
+            return {'error': {'message': 'candidate ID and email campaign ID are required.'}}
+
+        # Candidate must belong to user & email campaign must belong to user's domain
+        validate_1 = does_candidate_belong_to_user(user_row=authed_user, candidate_id=candidate_id)
+        validate_2 = does_email_campaign_belong_to_domain(user_row=authed_user)
+        if not validate_1 or not validate_2:
+            return {'error': {'message': 'Not authorized'}}, 403

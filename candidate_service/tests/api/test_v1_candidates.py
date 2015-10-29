@@ -56,6 +56,17 @@ def test_get_candidate_via_candidate_email():
 
     print "resp = %s" % r
 
+###############################################
+# test cases for GETting email_campaign_sends #
+###############################################
+def test_get_email_campaign_sends():
+    candidate_id = 208
+    email_campaign_id = 3
+    r = requests.get('http://127.0.0.1:8005/v1/candidates/%s/email_campaigns/%s/email_campaign_sends'
+                     % (candidate_id, email_campaign_id))
+    print "resp = %s" % r
+    print "resp_json = %s" % r.text
+
 
 ####################################
 # test cases for POSTing candidate #
