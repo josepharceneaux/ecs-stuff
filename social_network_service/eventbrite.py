@@ -5,9 +5,9 @@ class. Eventbrite contains methods like create_webhook(), get_member_id() etc.
 
 # Application Specific
 from base import SocialNetworkBase
-from utilities import http_request, log_exception
-from social_network_service import flask_app as app
-from social_network_service.custom_exections import ApiException
+from utilities import http_request
+from social_network_service import flask_app as app, logger
+from social_network_service.custom_exceptions import ApiException
 
 WEBHOOK_REDIRECT_URL = app.config['WEBHOOK_REDIRECT_URL']
 
@@ -32,7 +32,7 @@ class Eventbrite(SocialNetworkBase):
         - To create the webhook for getTalent user
 
         1- Get the user credentials first
-            from common.models.user import UserSocialNetworkCredential
+            from social_network_service.common.models.user import UserSocialNetworkCredential
             user_credentials = UserSocialNetworkCredential.get_by_id(1)
 
         2. Call create_webhook() on class and pass user credentials in arguments
@@ -222,20 +222,9 @@ class Eventbrite(SocialNetworkBase):
         headers = {'Authorization': 'Bearer ' + user_credentials.access_token}
         response = http_request('POST', url, params=payload, headers=headers,
                                 user_id=user_credentials.user.id)
-        if response.ok:
-            try:
-                webhook_id = response.json()['id']
-                user_credentials.update(webhook=webhook_id)
-            except Exception as error:
-                log_exception({
-                    'user_id': user_credentials.user.id,
-                    'error': error.message
-                })
-                raise ApiException("Eventbrite Webhook wasn't created successfully")
-        else:
-            error_message = "Eventbrite Webhook wasn't created successfully"
-            log_exception({
-                'user_id': user_credentials.user.id,
-                'error': error_message
-            })
-            raise ApiException(error_message)
+        try:
+            webhook_id = response.json()['id']
+            user_credentials.update(webhook=webhook_id)
+        except:
+            logger.exception('create_webhook: user_id: %s' % user_credentials.user.id)
+            raise ApiException("Eventbrite Webhook wasn't created successfully")

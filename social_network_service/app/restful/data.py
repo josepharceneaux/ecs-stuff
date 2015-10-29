@@ -9,10 +9,10 @@ from flask import Blueprint
 from flask.ext.restful import Resource, Api
 from flask.ext.cors import CORS
 import pytz
-from social_network_service.app.app_utils import api_route, ApiResponse
+from social_network_service.app.app_utils import api_route, ApiResponse, CustomApi
 
 data_blueprint = Blueprint('data_api', __name__)
-api = Api()
+api = CustomApi()
 api.init_app(data_blueprint)
 api.route = types.MethodType(api_route, api)
 

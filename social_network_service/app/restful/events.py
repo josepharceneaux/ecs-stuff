@@ -2,19 +2,19 @@
 This file contains list of all API endpoints related to events.
 """
 import json
-import traceback
 import types
 from flask import Blueprint, request
-from flask.ext.restful import Api, Resource
+from flask.ext.restful import Api, Resource, abort
 from flask.ext.cors import CORS
-from social_network_service.app.app_utils import api_route, authenticate, ApiResponse
-from social_network_service.custom_exections import ApiException
+from social_network_service.app.app_utils import api_route, authenticate, ApiResponse, CustomApi
 from social_network_service.utilities import process_event, delete_events
-from common.models.event import Event
+from social_network_service.common.models.event import Event
+from social_network_service.common.error_handling import ResourceNotFound,\
+    InvalidUsage, ForbiddenError
 from social_network_service.utilities import add_organizer_venue_data
 
 events_blueprint = Blueprint('events_api', __name__)
-api = Api()
+api = CustomApi()
 api.init_app(events_blueprint)
 api.route = types.MethodType(api_route, api)
 
@@ -56,7 +56,7 @@ class Events(Resource):
                   "currency": "USD",
                   "description": "Test Event Description",
                   "end_datetime": "2015-10-30 16:51:00",
-                  "group_id": "18837246",
+                  "social_network_group_id": "18837246",
                   "group_url_name": "QC-Python-Learning",
                   "id": 189,
                   "max_attendees": 10,
@@ -81,9 +81,9 @@ class Events(Resource):
         """
         events = map(add_organizer_venue_data, Event.query.filter_by(user_id=kwargs['user_id']).all())
         if events:
-            return {'events': events, 'count': len(events)}, 200
+            return ApiResponse(json.dumps(dict(events=events, count=len(events))))
         else:
-            return {'events': [], 'count': 0}, 200
+            return ApiResponse(json.dumps(dict(events=[], count=0)))
 
     @authenticate
     def post(self, **kwargs):
@@ -104,7 +104,7 @@ class Events(Resource):
                     "cost": 0,
                     "start_datetime": "25 Oct, 2015 04:50 pm",
                     "currency": "USD",
-                    "group_id": 18837246,
+                    "social_network_group_id": 18837246,
                     "max_attendees": 10
             }
 
@@ -127,6 +127,10 @@ class Events(Resource):
         .. Status:: 201 (Resource Created)
                     500 (Internal Server Error)
                     401 (Unauthorized to access getTalent)
+
+        .. Error codes:
+                    In case of internal server error, response contains error code which can be
+
                     452 (Unable to determine Social Network)
                     453 (Some required event fields are missing)
                     455 (Event not created)
@@ -147,8 +151,7 @@ class Events(Resource):
         event_data = request.get_json(force=True)
         gt_event_id = process_event(event_data, kwargs['user_id'])
         headers = {'Location': '/events/%s' % gt_event_id}
-        resp = ApiResponse(json.dumps(dict(id=gt_event_id)), status=201, headers=headers)
-        return resp
+        return ApiResponse(json.dumps(dict(id=gt_event_id)), status=201, headers=headers)
 
     @authenticate
     def delete(self, **kwargs):
@@ -198,7 +201,7 @@ class Events(Resource):
             return ApiResponse(json.dumps(dict(message='Unable to delete %s events' % len(not_deleted),
                                                deleted=deleted,
                                                not_deleted=not_deleted)), status=207)
-        return ApiResponse(json.dumps(dict(message='Bad request, include event_ids as list data')), status=400)
+        raise InvalidUsage('Bad request, include event_ids as list data', error_code=400)
 
 
 @api.route('/events/<int:event_id>')
@@ -226,7 +229,7 @@ class EventById(Resource):
                           "currency": "USD",
                           "description": "Test Event Description",
                           "end_datetime": "2015-10-30 16:51:00",
-                          "group_id": "18837246",
+                          "social_network_group_id": "18837246",
                           "group_url_name": "QC-Python-Learning",
                           "id": 1,
                           "max_attendees": 10,
@@ -256,8 +259,7 @@ class EventById(Resource):
         if event:
             event_data = add_organizer_venue_data(event)
             return dict(event=event_data), 200
-        return ApiResponse(json.dumps(dict(message='Event does not exist with id %s' % event_id)),
-                           status=400)
+        raise ResourceNotFound('Event does not exist with id %s' % event_id, error_code=404)
 
     @authenticate
     def post(self, event_id, **kwargs):
@@ -280,7 +282,7 @@ class EventById(Resource):
                     "cost": 0,
                     "start_datetime": "25 Oct, 2015 04:50 pm",
                     "currency": "USD",
-                    "group_id": 18837246,
+                    "social_network_group_id": 18837246,
                     "max_attendees": 10
             }
 
@@ -300,10 +302,14 @@ class EventById(Resource):
 
             No Content
 
-        .. Status:: 204 (Resource Modified)
+        .. Status:: 200 (Resource Modified)
                     500 (Internal Server Error)
                     401 (Unauthorized to access getTalent)
                     403 (Forbidden: Can not update specified event)
+
+        .. Error codes (returned in response's body):
+                    In case of internal server error, response contains error code which can be
+
                     452 (Unable to determine Social Network)
                     453 (Some Required event fields are missing)
                     455 (Event not created)
@@ -325,9 +331,8 @@ class EventById(Resource):
             user_id, event_id, event_data['social_network_event_id'])
         if event:
             process_event(event_data, user_id, method='Update')
-            return ApiResponse(json.dumps(dict(message='Event updated successfully')), status=204)
-        return ApiResponse(json.dumps(dict(message='Event not found')),
-                           status=404)
+            return ApiResponse(json.dumps(dict(message='Event updated successfully')), status=200)
+        raise ResourceNotFound('Event not found', error_code=404)
 
     @authenticate
     def delete(self, event_id, **kwargs):
@@ -359,5 +364,5 @@ class EventById(Resource):
         deleted, not_deleted = delete_events(user_id, [event_id])
         if len(deleted) == 1:
             return ApiResponse(json.dumps(dict(message='Event deleted successfully')), status=200)
-        return ApiResponse(json.dumps(dict(message='Forbidden: Unable to delete event')), status=403)
+        raise ForbiddenError('Forbidden: Unable to delete event', error_code=403)
 

@@ -2,8 +2,8 @@ from db import db
 import event
 
 
-class Organizer(db.Model):
-    __tablename__ = 'organizer'
+class EventOrganizer(db.Model):
+    __tablename__ = 'event_organizer'
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -11,22 +11,21 @@ class Organizer(db.Model):
     email = db.Column('email', db.String(200))
     about = db.Column('about', db.String(1000))
 
-    event = db.relationship('Event', backref='organizer', lazy='dynamic')
+    event = db.relationship('Event', backref='event_organizer', lazy='dynamic')
 
     @classmethod
     def get_by_user_id(cls, user_id):
         assert user_id
-        return cls.query.filter(Organizer.user_id == user_id).all()
-
+        return cls.query.filter(EventOrganizer.user_id == user_id).all()
 
     @classmethod
     def get_by_user_id_organizer_id(cls, user_id, organizer_id):
         assert user_id
-        return cls.query.filter(Organizer.user_id == user_id,
-                                Organizer.id == organizer_id).first()
+        return cls.query.filter(EventOrganizer.user_id == user_id,
+                                EventOrganizer.id == organizer_id).first()
 
     @classmethod
     def get_by_user_id_and_name(cls, user_id, name):
         assert user_id and name
-        return cls.query.filter(Organizer.user_id == user_id,
-                                Organizer.name == name).first()
+        return cls.query.filter(EventOrganizer.user_id == user_id,
+                                EventOrganizer.name == name).first()

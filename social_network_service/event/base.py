@@ -97,22 +97,22 @@ To add another social network for events management, following are steps:
 # Standard Library
 from abc import ABCMeta
 from abc import abstractmethod
+import re
 
 # Application Specific
 from dateutil.parser import parse
-from common.models.user import User
-from common.models.event import Event
-from common.models.user import UserSocialNetworkCredential
+from social_network_service.common.models.user import User
+from social_network_service.common.models.event import Event
+from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service import logger
 from social_network_service.utilities import log_error
 from social_network_service.utilities import get_class
 from social_network_service.utilities import http_request
-from social_network_service.utilities import log_exception
-from social_network_service.custom_exections import NoUserFound
-from social_network_service.custom_exections import InvalidDatetime
-from social_network_service.custom_exections import EventNotSaveInDb
-from social_network_service.custom_exections import EventNotUnpublished
-from social_network_service.custom_exections import UserCredentialsNotFound
+from social_network_service.custom_exceptions import NoUserFound
+from social_network_service.custom_exceptions import InvalidDatetime
+from social_network_service.custom_exceptions import EventNotSaveInDb
+from social_network_service.custom_exceptions import EventNotUnpublished
+from social_network_service.custom_exceptions import UserCredentialsNotFound
 
 
 class EventBase(object):
@@ -270,11 +270,15 @@ class EventBase(object):
         # converting incoming Datetime object from Form submission into the
         # required format for API call
         try:
-            start = data['start_datetime']
-            end = data['end_datetime']
+            start = data.get('start_datetime')
+            end = data.get('end_datetime')
+            utc_pattern = '\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z'
+            if not (re.match(utc_pattern, start) and re.match(utc_pattern, end)):
+                raise InvalidDatetime('Invalid DateTime: Kindly specify datetime '
+                                      'in UTC format like 2015-10-08T06:16:55Z')
             data['start_datetime'] = parse(start) if start else ''
             data['end_datetime'] = parse(end) if end else ''
-        except Exception:
+        except:
             raise InvalidDatetime('Invalid DateTime: Kindly specify datetime '
                                   'in UTC format like 2015-10-08T06:16:55Z')
 
@@ -326,15 +330,12 @@ class EventBase(object):
                             event_in_db.update(**data)
                         else:
                             Event.save(event)
-                    except Exception as error:
-                        error_message = 'Cannot process an event. Social ' \
-                                        'network: %s. Details: %s' \
-                                        % (self.social_network.id,
-                                           error.message)
-                        log_exception({
-                            'user_id': self.user.id,
-                            'error': error_message,
-                        })
+                    except:
+                        logger.exception('process_events: Cannot process event. '
+                                         'social_network_event_id: %s, user_id: %s, '
+                                         'social network: %s(id: %s)'
+                                         % (event.social_network_event_id, self.user.id,
+                                            self.social_network.name, self.social_network.id))
             logger.debug('%s Event(s) of %s(UserId: %s) has/have been '
                          'saved/updated in database.'
                          % (len(events), self.user.name, self.user.id))
@@ -373,11 +374,11 @@ class EventBase(object):
                 logger.debug('Event "%s" has been deleted from '
                              'database.' % event_name)
                 return True
-            except Exception as error:  # some error while removing event
-                log_exception({
-                    'user_id': self.user.id,
-                    'error': error.message,
-                })
+            except:  # some error while removing event
+                logger.exception('delete_event: user_id: %s, event_id: %s, '
+                                 ' social network: %s(id: %s)'
+                                 % (self.user.id, event.id, self.social_network.name,
+                                    self.social_network.id))
         return False  # event not found in database
 
     def delete_events(self, event_ids):
@@ -504,12 +505,11 @@ class EventBase(object):
                 # event not found in database, create a new one
                 event = Event(**data)
                 Event.save(event)
-        except Exception as error:
-            log_exception({
-                'user_id': self.user.id,
-                'error': 'Event was not saved in Database\nError: %s'
-                         % error.message
-            })
+        except Exception as e:
+            logger.exception('save_event: Event was not updated/saved in Database. '
+                             'user_id: %s, event_id: %s, social network: %s(id: %s)'
+                             % (self.user.id, event.id, self.social_network.name,
+                                self.social_network.id))
             raise EventNotSaveInDb('Error occurred while saving event '
                                    'in database')
         return event.id

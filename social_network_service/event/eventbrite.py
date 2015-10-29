@@ -10,23 +10,22 @@ from datetime import datetime
 from datetime import timedelta
 
 # Application specific
-from common.models.venue import Venue
-from common.models.event import Event
-from common.models.organizer import Organizer
 from social_network_service import flask_app as app
 from social_network_service.utilities import logger
 from social_network_service.utilities import log_error
 from social_network_service.utilities import get_class
 from social_network_service.event.base import EventBase
 from social_network_service.utilities import http_request
-from social_network_service.utilities import log_exception
 from social_network_service.utilities import get_utc_datetime
-from social_network_service.custom_exections import VenueNotFound
-from social_network_service.custom_exections import EventNotCreated
-from social_network_service.custom_exections import TicketsNotCreated
-from social_network_service.custom_exections import EventNotPublished
-from social_network_service.custom_exections import EventInputMissing
-from social_network_service.custom_exections import EventLocationNotCreated
+from social_network_service.custom_exceptions import VenueNotFound
+from social_network_service.custom_exceptions import EventNotCreated
+from social_network_service.custom_exceptions import TicketsNotCreated
+from social_network_service.custom_exceptions import EventNotPublished
+from social_network_service.custom_exceptions import EventInputMissing
+from social_network_service.custom_exceptions import EventLocationNotCreated
+from social_network_service.common.models.venue import Venue
+from social_network_service.common.models.event import Event
+from social_network_service.common.models.event_organizer import EventOrganizer
 
 WEBHOOK_REDIRECT_URL = app.config['WEBHOOK_REDIRECT_URL']
 
@@ -159,10 +158,10 @@ class Eventbrite(EventBase):
                                     params=params,
                                     headers=self.headers,
                                     user_id=self.user.id)
-        except Exception as error:
-            log_exception({'user_id': self.user.id,
-                           'error': error.message})
+        except:
+            logger.exception('get_events: user_id: %s' % self.user.id)
             raise
+
         if response.ok:
             # if response is ok, get json data
             data = response.json()
@@ -181,9 +180,8 @@ class Eventbrite(EventBase):
                                             params=params_copy,
                                             headers=self.headers,
                                             user_id=self.user.id)
-                except Exception as error:
-                    log_exception({'user_id': self.user.id,
-                                   'error': error.message})
+                except:
+                    logger.exception('get_events: user_id: %s' % self.user.id)
                     raise
                 if response.ok:
                     data = response.json()
@@ -219,9 +217,9 @@ class Eventbrite(EventBase):
                                         + event['venue_id'],
                                         headers=self.headers,
                                         user_id=self.user.id)
-            except Exception as error:
-                log_exception({'user_id': self.user.id,
-                               'error': error.message})
+            except:
+                logger.exception('event_sn_to_gt_mapping: user_id: %s,'
+                                 'social_network_event_id: %s' % (self.user.id, event['id']))
                 raise
             if response.ok:
                 # get json data for venue
@@ -237,9 +235,10 @@ class Eventbrite(EventBase):
                             event['organizer_id'],
                             headers=self.headers,
                             user_id=self.user.id)
-                    except Exception as error:
-                        log_exception({'user_id': self.user.id,
-                                       'error': error.message})
+                    except:
+                        logger.exception('event_sn_to_gt_mapping: user_id: %s, '
+                                         'social_network_event_id: %s'
+                                 % (self.user.id, event['id']))
                         raise
                     if response.ok:
                         # Get json data  for organizer
@@ -251,9 +250,10 @@ class Eventbrite(EventBase):
                                 self.api_url + '/users/' + self.member_id,
                                 headers=self.headers,
                                 user_id=self.user.id)
-                        except Exception as error:
-                            log_exception({'user_id': self.user.id,
-                                           'error': error.message})
+                        except:
+                            logger.exception('event_sn_to_gt_mapping: user_id: %s, '
+                                             'social_network_event_id: %s'
+                                             % (self.user.id, event['id']))
                             raise
                         if response.ok:
                             organizer_info = json.loads(response.text)
@@ -269,7 +269,7 @@ class Eventbrite(EventBase):
                 if organizer.has_key('description') else ''
 
             )
-            organizer_in_db = Organizer.get_by_user_id_and_name(
+            organizer_in_db = EventOrganizer.get_by_user_id_and_name(
                 self.user.id,
                 organizer['name'] if organizer.has_key('name') else ''
                                                               )
@@ -277,8 +277,8 @@ class Eventbrite(EventBase):
                 organizer_in_db.update(**organizer_data)
                 organizer_id = organizer_in_db.id
             else:
-                organizer_instance = Organizer(**organizer_data)
-                Organizer.save(organizer_instance)
+                organizer_instance = EventOrganizer(**organizer_data)
+                EventOrganizer.save(organizer_instance)
                 organizer_id = organizer_instance.id
         if venue:
             venue_data = dict(
@@ -310,7 +310,7 @@ class Eventbrite(EventBase):
             description=event['description']['text'],
             social_network_id=self.social_network.id,
             user_id=self.user.id,
-            group_id=0,
+            social_network_group_id=0,
             url='',
             group_url_name='',
             organizer_id=organizer_id,
@@ -677,7 +677,7 @@ class Eventbrite(EventBase):
             are not found
         """
         mandatory_input_data = ['title', 'description', 'end_datetime',
-                                'timezone', 'start_datetime', 'currency']
+                                'timezone', 'start_datetime', 'currency', 'venue_id', 'organizer_id']
         # gets fields which are missing
         missing_items = [key for key in mandatory_input_data
                          if not data.get(key)]
@@ -712,7 +712,7 @@ class Eventbrite(EventBase):
                         "cost": 0,
                         "start_datetime": "25 Oct, 2015 04:50 pm",
                         "currency": "USD",
-                        "group_id": 18837246,
+                        "social_network_group_id": 18837246,
                         "max_attendees": 10
                 }
 

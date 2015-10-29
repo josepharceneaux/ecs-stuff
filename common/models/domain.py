@@ -1,3 +1,4 @@
+import datetime
 from sqlalchemy.orm import relationship
 from db import db
 
@@ -14,10 +15,16 @@ class Domain(db.Model):
     settings_json = db.Column('settingsJson', db.String(1000))
     dice_company_id = db.Column('diceCompanyId', db.Integer)
 
-    user = relationship('User', backref='domain')
+    # Relationships
+    users = relationship('User', backref='domain')
+    candidate_sources = relationship('CandidateSource', backref='domain')
+    areas_of_interest = relationship('AreaOfInterest', backref='domain')
 
     def __init__(self, name=None):
         self.name = name
 
     def __repr__(self):
         return '<Domain %r>' % self.name
+
+    def get_id(self):
+        return unicode(self.id)

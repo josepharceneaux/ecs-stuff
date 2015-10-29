@@ -11,15 +11,15 @@ from datetime import timedelta
 import requests
 # Here we import facebook-sdk python module making sure it doesn't import
 # our local facebook.py modules
+from social_network_service import logger
 from social_network_service.utilities import import_from_dist_packages
 facebook = import_from_dist_packages('facebook')
 
 # Application Specific
-from common.models.event import Event
+from social_network_service.common.models.event import Event
 from social_network_service.rsvp.base import RSVPBase
 from social_network_service.utilities import Attendee
-from social_network_service.utilities import log_exception
-from social_network_service.custom_exections import EventNotFound
+from social_network_service.custom_exceptions import EventNotFound
 
 
 class Facebook(RSVPBase):
@@ -113,30 +113,30 @@ class Facebook(RSVPBase):
             url = 'v2.4/%s' % str(event.social_network_event_id) + '/'
             # Get list of people surely attending
             confirm_attendees = self.graph.get_object(url + 'attending')
-        except facebook.GraphAPIError as error:
-            log_exception({'user_id': self.user.id,
-                           'error': "Couldn't get 'attending' RSVPs (Facebook)."
-                                    " %s" % error.message})
+        except facebook.GraphAPIError:
+            logger.exception("get_rsvps: Couldn't get 'attending' RSVPs (Facebook), "
+                             "user_id: %s, social_network_event_id: %s"
+                             % (self.user.id, event.social_network_event_id))
             raise
         rsvps += confirm_attendees['data']
         self.get_all_pages(confirm_attendees, rsvps)
         # Get list of people who aren't certain
         try:
             expected_attendees = self.graph.get_object(url + 'maybe')
-        except facebook.GraphAPIError as error:
-            log_exception({'user_id': self.user.id,
-                           'error': "Couldn't get 'maybe' RSVPs (Facebook)."
-                                    " %s" % error.message})
+        except facebook.GraphAPIError:
+            logger.exception("get_rsvps: Couldn't get 'maybe' RSVPs (Facebook), "
+                             "user_id: %s, social_network_event_id: %s"
+                             % (self.user.id, event.social_network_event_id))
             raise
         rsvps += expected_attendees['data']
         self.get_all_pages(expected_attendees, rsvps)
         # Get list of people who declined
         try:
             declined_attendees = self.graph.get_object(url + 'declined')
-        except facebook.GraphAPIError as error:
-            log_exception({'user_id': self.user.id,
-                           'error': "Couldn't get 'Declined' RSVPs (Facebook)."
-                                    " %s" % error.message})
+        except facebook.GraphAPIError:
+            logger.exception("get_rsvps: Couldn't get 'declined' RSVPs (Facebook), "
+                             "user_id: %s, social_network_event_id: %s"
+                             % (self.user.id, event.social_network_event_id))
             raise
         rsvps += declined_attendees['data']
         self.get_all_pages(declined_attendees, rsvps)
@@ -197,8 +197,8 @@ class Facebook(RSVPBase):
                 error_message = "Couldn't get data while paginating over " \
                                 "Facebook records. URL: %(url)s, " \
                                 "%(error_message)s" % error_message_dict
-                log_exception({'user_id': self.user.id,
-                              'error': error_message})
+                logger.exception("get_all_pages: %s, user_id: %s"
+                                 % (error_message, self.user.id))
                 raise
 
     def get_attendee(self, rsvp):
@@ -229,22 +229,20 @@ class Facebook(RSVPBase):
                                          fields='first_name, last_name, name, '
                                                 'email, location, address, '
                                                 'link, picture')
-        except facebook.GraphAPIError as error:
-            error_message = "Couldn't get Facebook's attendee info. %s" \
-                            % error.message
-            log_exception({'user_id': self.user.id,
-                          'error': error_message})
+        except facebook.GraphAPIError:
+            logger.exception("get_attendee: Couldn't get Facebook's attendee info. "
+                             "user_id: %s, social_network_rsvp_id: %s"
+                             % (self.user.id, rsvp['id']))
             raise
         if 'location' in data:
             try:
                 location = self.graph.get_object('v2.4/'
                                                  + data['location']['id'],
                                                  fields='location')
-            except facebook.GraphAPIError as error:
-                error_message = " Couldn't get location info (Facebook). %s"\
-                                % error.message
-                log_exception({'user_id': self.user.id,
-                               'error': error_message})
+            except facebook.GraphAPIError:
+                logger.exception("get_attendee: Couldn't get location info (Facebook). "
+                                 "user_id: %s, social_network_rsvp_id: %s"
+                                 % (self.user.id, rsvp['id']))
                 raise
             if 'location' in location:
                 location = location['location']

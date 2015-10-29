@@ -13,16 +13,16 @@ import requests
 # We have to import the Facebook page in the following way because we
 # want to avoid name conflicts that arise due to name of the package and
 # name of the files in which package is being used.
+from social_network_service import logger
 from social_network_service.utilities import import_from_dist_packages
 
 facebook = import_from_dist_packages('facebook')
 
 # Application Specific
-from common.models.venue import Venue
-from common.models.event import Event
-from common.models.organizer import Organizer
+from social_network_service.common.models.venue import Venue
+from social_network_service.common.models.event import Event
+from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service.event.base import EventBase
-from social_network_service.utilities import log_exception
 
 
 class Facebook(EventBase):
@@ -115,9 +115,8 @@ class Facebook(EventBase):
                 since=self.start_date,
                 until=self.end_date
             )
-        except facebook.GraphAPIError as error:
-            log_exception({'user_id': self.user.id,
-                           'error': error.message})
+        except facebook.GraphAPIError:
+            logger.exception('get_events: user_id: %s' % self.user.id)
             raise
         if 'data' in response:
             user_events.extend(response['data'])
@@ -146,9 +145,8 @@ class Facebook(EventBase):
                     target_list.extend(response['data'])
             except KeyError:
                 break
-            except requests.HTTPError as error:
-                log_exception({'user_id': self.user.id,
-                               'error': error.message})
+            except requests.HTTPError:
+                logger.exception('get_all_pages: user_id: %s' % self.user.id)
                 raise
 
     def event_sn_to_gt_mapping(self, event):
@@ -178,9 +176,10 @@ class Facebook(EventBase):
             try:
                 organizer = self.graph.get_object('v2.4/' + owner['id'])
                 organizer = organizer.get('data')
-            except facebook.GraphAPIError as error:
-                log_exception({'user_id': self.user.id,
-                               'error': error.message})
+            except facebook.GraphAPIError:
+                logger.exception('event_sn_to_gt_mapping: Getting data of organizer. '
+                                 'user_id: %s, social_network_event_id: %s'
+                                 % (self.user.id, event['id']))
                 raise
         if owner or organizer:
             organizer_data = dict(
@@ -190,7 +189,7 @@ class Facebook(EventBase):
                     'email') else '',
                 about=''
             )
-            organizer_in_db = Organizer.get_by_user_id_and_name(
+            organizer_in_db = EventOrganizer.get_by_user_id_and_name(
                 self.user.id,
                 owner['name'] if owner and owner.has_key('name') else '')
 
@@ -198,8 +197,8 @@ class Facebook(EventBase):
                 organizer_in_db.update(**organizer_data)
                 organizer_id = organizer_in_db.id
             else:
-                organizer_instance = Organizer(**organizer_data)
-                Organizer.save(organizer_instance)
+                organizer_instance = EventOrganizer(**organizer_data)
+                EventOrganizer.save(organizer_instance)
                 organizer_id = organizer_instance.id
 
         if venue:
@@ -239,7 +238,7 @@ class Facebook(EventBase):
                 user_id=self.user.id,
                 organizer_id=organizer_id,
                 venue_id=venue_id,
-                group_id=0,
+                social_network_group_id=0,
                 start_datetime=event.get('start_time'),
                 end_datetime=event.get('end_time'),
                 timezone=event.get('timezone'),
@@ -254,9 +253,9 @@ class Facebook(EventBase):
                     and event.has_key('noreply_count'))
                 else ''
             )
-        except Exception as error:
-            log_exception({'user_id': self.user.id,
-                           'error': error.message})
+        except:
+            logger.exception('event_sn_to_gt_mapping: user_id: %s, '
+                             'social_network_event_id: %s' % (self.user.id, event['id']))
         else:
             return event
 

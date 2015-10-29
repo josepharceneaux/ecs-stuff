@@ -15,18 +15,18 @@ from social_network_service import init_app
 app = init_app()
 
 # Application Specific
-from common.models.db import db
-from common.models.user import User
-from common.models.user import Token
-from common.models.event import Event
-from common.models.venue import Venue
-from common.models.user import Client
-from common.models.domain import Domain
-from common.models.culture import Culture
-from common.models.organizer import Organizer
-from common.models.organization import Organization
-from common.models.social_network import SocialNetwork
-from common.models.user import UserSocialNetworkCredential
+from social_network_service.common.models.db import db
+from social_network_service.common.models.user import User
+from social_network_service.common.models.user import Token
+from social_network_service.common.models.event import Event
+from social_network_service.common.models.venue import Venue
+from social_network_service.common.models.user import Client
+from social_network_service.common.models.domain import Domain
+from social_network_service.common.models.culture import Culture
+from social_network_service.common.models.event_organizer import EventOrganizer
+from social_network_service.common.models.organization import Organization
+from social_network_service.common.models.social_network import SocialNetwork
+from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.utilities import process_event
 from social_network_service.utilities import delete_events
 from social_network_service.utilities import  get_random_word
@@ -55,7 +55,7 @@ EVENT_DATA = {
     "timezone": "Asia/Karachi",
     "cost": 0,
     "currency": "USD",
-    "group_id": 18837246,
+    "social_network_group_id": 18837246,
     "max_attendees": 10
 }
 
@@ -124,13 +124,14 @@ def test_client(request):
         client_id=client_id,
         client_secret=client_secret
     )
-    Client.save(test_client)
+    Client.save(client)
 
     def delete_client():
         """
         This method deletes client at the end of test session
         """
-        Client.delete(client.client_id)
+        # Client.delete(client.client_id)
+        client.delete()
 
     request.addfinalizer(delete_client)
     return client
@@ -223,7 +224,7 @@ def test_user(request, test_domain):
 
 
 @pytest.fixture(scope='session')
-def test_token(request, test_user):
+def test_token(request, test_user, test_client):
     """
     This create access token in Token table for this user so we can access API
     :param request:
@@ -231,12 +232,13 @@ def test_token(request, test_user):
     :return:
     """
     mixer = Mixer(session=db_session, commit=True)
-    token = mixer.blend(Token,
-                        user=test_user,
-                        token_type='Bearer',
-                        access_token=get_random_word(20),
-                        refresh_token=get_random_word(20),
-                        expires=datetime(year=2050, month=1, day=1))
+    token = Token(user_id=test_user.id,
+                  token_type='Bearer',
+                  access_token=get_random_word(20),
+                  refresh_token=get_random_word(20),
+                  client_id=test_client.client_id,
+                  expires=datetime(year=2050, month=1, day=1))
+    Token.save(token)
 
     def fin():
         """
@@ -529,8 +531,8 @@ def organizer_in_db(request, test_user):
         "email": "testemail@gmail.com",
         "about": "He is a testing engineer"
     }
-    organizer = Organizer(**organizer)
-    Organizer.save(organizer)
+    organizer = EventOrganizer(**organizer)
+    EventOrganizer.save(organizer)
     return organizer
 
 
@@ -593,7 +595,7 @@ def eventbrite_missing_data(request, eventbrite_event_data):
     return request.param, eventbrite_event_data.copy()
 
 
-@pytest.fixture(params=['title', 'description', 'group_id',
+@pytest.fixture(params=['title', 'description', 'social_network_group_id',
                         'group_url_name', 'start_datetime', 'max_attendees'], scope='function')
 def meetup_missing_data(request, meetup_event_data):
     """

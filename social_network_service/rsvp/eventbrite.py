@@ -9,14 +9,14 @@ from datetime import datetime
 from base import RSVPBase
 
 # Application Specific
-from common.models.event import Event
-from common.models.user import UserSocialNetworkCredential
-from common.models.social_network import SocialNetwork
+from social_network_service.common.models.event import Event
+from social_network_service.common.models.user import UserSocialNetworkCredential
+from social_network_service.common.models.social_network import SocialNetwork
 from social_network_service import logger
 from social_network_service.utilities import Attendee
 from social_network_service.utilities import http_request
-from social_network_service.custom_exections import NoUserFound
-from social_network_service.custom_exections import EventNotFound
+from social_network_service.custom_exceptions import NoUserFound
+from social_network_service.custom_exceptions import EventNotFound
 
 
 class Eventbrite(RSVPBase):
@@ -207,8 +207,7 @@ class Eventbrite(RSVPBase):
         - This overrides the base class method process_rsvps().
         """
         raise NotImplementedError("RSVPs for social network %s are handled via"
-                                  " webhook. User Id: %s"
-                                  % (self.social_network.name, self.user.id))
+                                  " webhook." % self.social_network.name)
 
     def get_rsvps(self, event):
         pass

@@ -22,13 +22,13 @@ from pytz import timezone
 from requests_oauthlib import OAuth2Session
 
 # Application Specific Imports
-from common.models.user import User
-from common.models.event import Event
-from common.models.social_network import SocialNetwork
+from social_network_service.common.models.user import User
+from social_network_service.common.models.event import Event
+from social_network_service.common.models.social_network import SocialNetwork
 from social_network_service import logger
 from social_network_service import flask_app as app
-from social_network_service.custom_exections import ApiException
-from social_network_service.custom_exections import SocialNetworkNotImplemented
+from social_network_service.custom_exceptions import ApiException, SocialNetworkError
+from social_network_service.custom_exceptions import SocialNetworkNotImplemented
 
 
 OAUTH_SERVER = app.config['OAUTH_SERVER_URI']
@@ -62,11 +62,9 @@ class Attendee(object):
         self.gt_user_id = None  # attendee's corresponding gt-user id
         self.vendor_rsvp_id = None  # attendee's vendor rsvp id
         self.social_network_id = None  # attendee's social network id
-        self.candidate_event_rsvp_id = None  # attendee's entry id in
         self.candidate_source_id = None  # attendee's candidate_source id
         # from db
         self.source_product_id = None  # attendee's source product id in database
-        # candidate_event_rsvp
 
     def __str__(self):
         return 'Name: %s, RSVP_ID: %s, EMAIL: %s' % (self.full_name,
@@ -130,7 +128,7 @@ def authenticate_user(request):
                 return User.get_by_id(user_id) if user_id else None
             else:
                 return None
-        except Exception as e:
+        except:
             return None
     else:
         return None
@@ -153,15 +151,15 @@ def get_callee_data(app_name=None):
         if callee_frame[no_of_item][3] == 'http_request':
             no_of_item = 4
         # We are using number 3 here, as
-        # we call this function inside log_error() or log_exception()
+        # we call this function inside log_error()
         # which uses get_data_to_log().
         # get_data_to_log() calls get_callee_data().
         # So, here is the story,
         # index 0 has traceback of get_callee_data()
         # index 1 has traceback of get_data_to_log()
-        # index 2 has traceback of log_error() or log_exception()
+        # index 2 has traceback of log_error()
         # index 3 will have the traceback of function from where we call
-        # log_error() or log_exception().
+        # log_error().
         # Another case is logging inside http_request. For this we need
         # traceback of the function from where http_request was called.
     else:
@@ -205,33 +203,6 @@ def log_error(log_data):
     logger.error(callee_data)
 
 
-def log_exception(log_data):
-    """
-    :param log_data: is a dict which contains error details and User Id in
-                     keys 'error' and 'user_id' respectively.
-
-    - Here we do the descriptive logging.
-
-    - We first get the information of callee using get_data_to_log()
-        and then we log the error using logger.exception()
-
-    - callee contains the useful information of traceback like
-        Reason of error, function name, file name, user id, class name etc.
-
-    - This function is called usually inside try except block.
-
-    :Example:
-
-        log_exception({'user_id': user_id,
-                       'error': error_message})
-    ** See Also:
-        - Have a look on get_access_and_refresh_token() defined in
-        social_network_service/base.py for more insight.
-    """
-    callee_data = get_data_to_log(log_data)
-    logger.exception(callee_data)
-
-
 def get_data_to_log(log_data):
     """
     :param log_data:  is a dict which contains error details and User Id in
@@ -241,11 +212,11 @@ def get_data_to_log(log_data):
         and append user_id_and_error_message in it. Finally we return the
         descriptive error message.
 
-    - This function is called from log_error() and log_exception() defined in
+    - This function is called from log_error() defined in
         social_network_service/utilities.py
 
     ** See Also:
-        - Have a look on log_error() or log_exception() defined in
+        - Have a look on log_error() defined in
         social_network_service/utilities.py
     :return: callee_data which contains the useful information of traceback
             like Reason of error, function name, file name, user id etc.
@@ -320,13 +291,12 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
             except requests.RequestException as e:
                 error_message = e.message
             if error_message:
-                log_exception({'user_id': user_id,
-                               'error': error_message})
+                logger.error('http_request: HTTP request failed, %s, '
+                             'user_id: %s', error_message, user_id)
             return response
         else:
-            error_message = 'URL is None. Unable to make %s Call' % method_type
-            log_error({'user_id': user_id,
-                       'error': error_message})
+            error_message = 'URL is None. Unable to make "%s" Call' % method_type
+            logger.error('http_request: Error: %s, user_id: %s' % (error_message, user_id))
     else:
         logger.error('Unknown Method type %s ' % method_type)
 
@@ -352,11 +322,11 @@ def get_class(social_network_name, category, user_credentials=None):
                         % social_network_name
         log_error({'user_id': user_credentials.user_id if user_credentials else '',
                    'error': error_message})
-        raise SocialNetworkNotImplemented('Import Error: Unable to import'
-                                          ' module for required social network')
+        raise SocialNetworkNotImplemented('Import Error: Unable to import '
+                                          'module for required social network')
     except AttributeError as e:
-        raise ApiException('APIError: Unable to import module for required '
-                           'social network', error_code=500)
+        raise SocialNetworkNotImplemented('Unable to import module for required '
+                                          'social network')
     return _class
 
 
@@ -372,16 +342,18 @@ def process_event(data, user_id, method='Create'):
     """
     if data:
         social_network_id = data['social_network_id']
-        social_network = SocialNetwork.get_by_id(social_network_id)
-        # creating class object for respective social network
-        social_network_class = get_class(social_network.name.lower(),
-                                         'social_network')
-        event_class = get_class(social_network.name.lower(), 'event')
-        sn = social_network_class(user_id=user_id)
-        event_obj = event_class(user=sn.user,
-                                headers=sn.headers,
-                                social_network=social_network)
-
+        social_network = SocialNetwork.get(social_network_id)
+        if social_network:
+            # creating class object for respective social network
+            social_network_class = get_class(social_network.name.lower(),
+                                             'social_network')
+            event_class = get_class(social_network.name.lower(), 'event')
+            sn = social_network_class(user_id=user_id)
+            event_obj = event_class(user=sn.user,
+                                    headers=sn.headers,
+                                    social_network=social_network)
+        else:
+            raise SocialNetworkError('Unable to find social network')
         data['user_id'] = user_id
         event_obj.event_gt_to_sn_mapping(data)
         if method == 'Create':
@@ -626,7 +598,7 @@ def add_organizer_venue_data(event):
                 "currency": "USD",
                 "description": "Test Event Description",
                 "end_datetime": "2015-10-27 16:40:57",
-                "group_id": "18837246",
+                "social_network_group_id": "18837246",
                 "group_url_name": "QC-Python-Learning",
                 "id": 200,
                 "max_attendees": 10,
@@ -668,7 +640,7 @@ def add_organizer_venue_data(event):
     """
     event_data = event.to_json()
     # add organizer data under organizer key
-    event_data['organizer'] = event.organizer.to_json() if event.organizer else {}
+    event_data['event_organizer'] = event.event_organizer.to_json() if event.event_organizer else {}
     del event_data['organizer_id']
     # add venue data under venue key
     event_data['venue'] = event.venue.to_json() if event.venue else {}

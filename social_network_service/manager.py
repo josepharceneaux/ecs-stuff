@@ -10,15 +10,14 @@ gevent.monkey.patch_all()
 from gevent.pool import Pool
 
 # App Settings
-from social_network_service import init_app
+from social_network_service.app.app import init_app
 init_app()
 
 # Application Specific
-from utilities import get_class, log_exception
-from common.models.user import UserSocialNetworkCredential
-from common.models.social_network import SocialNetwork
+from utilities import get_class
 from social_network_service import logger
-from social_network_service.custom_exections import AccessTokenHasExpired
+from social_network_service.common.models.user import UserSocialNetworkCredential
+from social_network_service.common.models.social_network import SocialNetwork
 
 POOL_SIZE = 5
 
@@ -73,8 +72,13 @@ def start():
     social_network_id = None
     if name_space.social_network is not None:
         social_network_name = name_space.social_network.lower()
-        social_network_obj = SocialNetwork.get_by_name(social_network_name)
-        social_network_id = social_network_obj.id
+        try:
+            social_network_obj = SocialNetwork.get_by_name(social_network_name)
+            social_network_id = social_network_obj.id
+        except:
+            raise NotImplementedError('Social Network "%s" is not allowed for now, '
+                                      'please implement code for this social network.'
+                                      % social_network_name)
     all_user_credentials = UserSocialNetworkCredential.get_all_credentials(social_network_id)
     job_pool = Pool(POOL_SIZE)
     if all_user_credentials:
@@ -95,9 +99,9 @@ def start():
                                user_credentials=user_credentials)
             except KeyError:
                 raise
-            except Exception as error:
-                log_exception({'user_id': user_credentials.user_id,
-                               'error': error.message})
+            except:
+                logger.exception('start: running %s importer, user_id: %s',
+                                 name_space.mode, user_credentials.user_id)
         job_pool.join()
     else:
         logger.error('There is no User in db for social network %s'
@@ -108,6 +112,6 @@ if __name__ == '__main__':
         start()
     except TypeError as e:
         logger.error('Please provide required parameters to run manager')
-    except Exception:
+    except:
         logger.error(traceback.format_exc())
         sys.exit(1)

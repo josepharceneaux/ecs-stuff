@@ -2,10 +2,12 @@ __author__ = 'ufarooqi'
 
 from flask import Flask
 from flask_oauthlib.provider import OAuth2Provider
-from common.models.db import db
+
+from auth_service.common.models.db import db
+from auth_service import config
 
 app = Flask(__name__)
-app.config.from_object('auth_service.config')
+app.config.from_object(config)
 
 logger = app.config['LOGGER']
 from auth_service.common.error_handling import register_error_handlers
@@ -17,6 +19,9 @@ db.app = app
 
 gt_oauth = OAuth2Provider()
 gt_oauth.init_app(app)
+
+from oauth_utilities import GetTalentOauthValidator
+gt_oauth._validator = GetTalentOauthValidator()
 
 import views
 

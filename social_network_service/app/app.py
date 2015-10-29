@@ -10,32 +10,26 @@ import flask
 
 # init APP
 # This line should come before any imports from models
-from social_network_service import init_app
+from social_network_service import init_app, logger
 app = init_app()
 
 # 3rd party imports
 from flask import request
 from flask.ext.cors import CORS
-from flask.ext.restful import Api
 
 # Application specific imports
-from social_network_service import logger
-from social_network_service.app.app_utils import ApiResponse
-from social_network_service.custom_exections import ApiException
 from social_network_service.app.restful.data import data_blueprint
-from social_network_service.custom_exections import AccessTokenHasExpired
 from social_network_service.rsvp.eventbrite import Eventbrite as EventbriteRsvp
 from restful.events import events_blueprint
 from social_network_service.utilities import get_class
-from social_network_service.utilities import log_exception
 from restful.social_networks import social_network_blueprint
+from social_network_service.app.app_utils import CustomApi
 
 # Register Blueprints for different APIs
 app.register_blueprint(social_network_blueprint)
 app.register_blueprint(events_blueprint)
 app.register_blueprint(data_blueprint)
-api = Api(app)
-
+api = CustomApi(app)
 
 # Enable CORS
 CORS(app, resources={
@@ -58,11 +52,11 @@ def after_request(response):
 def hello_world():
     # return 'Hello World!', 404
     try:
-        from common.models.candidate import Candidate
-        from common.models.event import Event
+        from social_network_service.common.models.candidate import Candidate
+        from social_network_service.common.models.event import Event
         candidate = Candidate.query.all()[0]
         event = Event.query.all()[0]
-    except Exception as error:
+    except:
         import traceback
         return traceback.format_exc()
     return 'Hello World! %s, %s' % (candidate.first_name, event.title)
@@ -75,7 +69,7 @@ def handle_rsvp():
     It first finds the getTalent user having incoming webhook id.
     Then it creates the candidate in candidate table by getting information
     of attendee. Then it inserts in rsvp table the required information.
-    It will also insert an entry in DB tables candidate_event_rsvp and activity
+    It will also insert an entry in DB table activity
     """
     # hub_challenge = request.args['hub.challenge']
     # verify_token = request.args['hub.verify_token']
@@ -107,8 +101,8 @@ def handle_rsvp():
                 logger.debug('Successful webhook connection')
 
         except Exception as error:
-            log_exception({'user_id': user_id,
-                           'error': error.message})
+            logger.exception('handle_rsvp: Request data: %s, user_id: %s',
+                             request.data, user_id)
             data = {'message': error.message,
                     'status_code': 500}
             return flask.jsonify(**data), 500
@@ -123,30 +117,4 @@ def handle_rsvp():
         data = {'message': error_message,
                 'status_code': 200}
         return flask.jsonify(**data), 200
-
-
-@app.errorhandler(ApiException)
-def handle_api_exception(error):
-    """
-    This handler handles ApiException error
-    :param error: exception object containing error info
-    :type error:  ApiException
-    :return: json response
-    """
-    logger.debug('Error: %s\nTraceback: %s' % (error, traceback.format_exc()))
-    response = json.dumps(error.to_dict())
-    return ApiResponse(response, status=error.status_code)
-
-
-@app.errorhandler(Exception)
-def handle_any_errors(error):
-    """
-    This handler handles any kind of error in app.
-    :param error: exception object containing error info
-    :type error:  Exception
-    :return: json response
-    """
-    logger.debug('Error: %s\nTraceback: %s' % (error, traceback.format_exc()))
-    response = json.dumps(dict(message='Ooops! Internal server error occurred..' + str(error.message)))
-    return ApiResponse(response, status=500)
 
