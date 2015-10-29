@@ -20,7 +20,7 @@ def search():
     user = request.args.get('user_ids')
     skills = request.args.get('skills')
     areas_of_interest = request.args.get('area_of_interest_ids')
-    status = request.args.get("status_id")
+    status = request.args.get("status_ids")
     source = request.args.get('source_ids')
     min_exp = request.args.get('minimum_experience')
     max_exp = request.args.get('maximum_experience')
