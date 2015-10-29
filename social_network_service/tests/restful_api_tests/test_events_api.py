@@ -46,7 +46,7 @@ class TestResourceEvents:
                                           'Content-Type': 'application/json'})
         assert response.status_code == 500
         response = response.json()
-        assert 'error' in response and response['error']['code'] == 452, 'Invalid social Network'
+        assert 'error' in response and response['error']['code'] == 4052, 'Invalid social Network'
 
         event_data['social_network_id'] = 1
         response = requests.post(API_URL + '/events/', data=json.dumps(event_data),
@@ -54,7 +54,7 @@ class TestResourceEvents:
                                           'Content-Type': 'application/json'})
         assert response.status_code == 500
         response = response.json()
-        assert 'error' in response and response['error']['code'] == 462, 'Social Network have no events implementation'
+        assert 'error' in response and response['error']['code'] == 4062, 'Social Network have no events implementation'
 
         event_data['social_network_id'] = social_network_id
         event_data['event_id'] = 0
@@ -63,7 +63,7 @@ class TestResourceEvents:
                                           'Content-Type': 'application/json'})
         assert response.status_code == 500
         response = response.json()
-        assert 'error' in response and response['error']['code'] == 465, 'Social Network have no events implementation'
+        assert 'error' in response and response['error']['code'] == 4065, 'Social Network have no events implementation'
 
         event_data['venue_id'] = venue_id
         response = requests.post(API_URL + '/events/', data=json.dumps(event_data),
@@ -84,9 +84,9 @@ class TestResourceEvents:
         assert response.status_code == 500, 'It should fail'
         response = response.json()
         if key in ['start_datetime', 'end_datetime']:
-            assert response['error']['code'] == 464, 'There should be an Invalid datetime error'
+            assert response['error']['code'] == 4064, 'There should be an Invalid datetime error'
         else:
-            assert response['error']['code'] == 453, 'There should be an missing field error for %s KeyError' % key
+            assert response['error']['code'] == 4053, 'There should be an missing field error for %s KeyError' % key
 
     def test_meetup_with_missing_required_fields(self, auth_data, meetup_missing_data):
         key, event_data = meetup_missing_data
@@ -97,9 +97,9 @@ class TestResourceEvents:
         assert response.status_code == 500, 'It should fail'
         response = response.json()
         if key in ['start_datetime', 'end_datetime']:
-            assert response['error']['code'] == 464, 'There should be an Invalid datetime error'
+            assert response['error']['code'] == 4064, 'There should be an Invalid datetime error'
         else:
-            assert response['error']['code'] == 453, 'There should be an missing field error for %s KeyError' % key
+            assert response['error']['code'] == 4053, 'There should be an missing field error for %s KeyError' % key
 
     def test_meetup_with_valid_address(self, auth_data, meetup_event_data):
         event_data = meetup_event_data
@@ -118,7 +118,7 @@ class TestResourceEvents:
                                           'Content-Type': 'application/json'})
         assert response.status_code == 500, 'Internal Server Error'
         response = response.json()
-        assert response['error']['code'] == 465, \
+        assert response['error']['code'] == 4065, \
             'Event should not be created, address is invalid according to Meetup API'
 
 

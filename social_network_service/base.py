@@ -249,7 +249,7 @@ class SocialNetworkBase(object):
             logger.debug('__init__: Access token has expired. '
                          'Please connect with %s again from "Profile" page. user_id: %s'
                          % (self.user.id, self.social_network.name))
-            raise AccessTokenHasExpired
+            raise AccessTokenHasExpired('Access token has expired for %s' % self.social_network.name)
         self.start_date_dt = None
         self.webhook_id = None
         if not self.user_credentials.member_id:

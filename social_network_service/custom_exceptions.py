@@ -1,9 +1,9 @@
 import json
-from social_network_service.common.error_handling import InternalServerError
+from social_network_service.common.error_handling import InternalServerError, TalentError
 
 
 class ApiException(InternalServerError):
-    status_code = 500
+    status_code = 4000
 
     def to_dict(self):
         error_dict = super(ApiException, self).to_dict()
@@ -45,7 +45,7 @@ class TicketsNotCreated(ApiException):
 
 
 class EventNotSaveInDb(ApiException):
-    status_code = 460
+    status_code = 4060
 
 
 class UserCredentialsNotFound(ApiException):

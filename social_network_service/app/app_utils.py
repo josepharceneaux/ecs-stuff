@@ -13,13 +13,15 @@ This modules contains helper methods and classes which we are using in Social Ne
 from functools import wraps
 import json
 import flask
+import inspect
 import traceback
 from flask import Response
 from flask.ext.restful import abort, Api
 from requests_oauthlib import OAuth2Session
-from common.error_handling import TalentError
+from common.error_handling import TalentError, InternalServerError
 from social_network_service import logger
 from flask import current_app as app
+from social_network_service.custom_exceptions import ApiException
 
 
 class CustomApi(Api):
@@ -37,7 +39,9 @@ class CustomApi(Api):
         # if it is our custom exception or its subclass instance then raise it
         # so it error_handlers for app can catch this error and can send proper response
         # in required format
-        if isinstance(e, TalentError):
+        class_name = e.__class__.__name__
+        if class_name in [c.__name__ for c in TalentError.__subclasses__() + ApiException.__subclasses__()] + \
+                ['ApiException', 'TalentError']:
             raise
         else:
             # if it is not a custom exception then let the Api class handle it.

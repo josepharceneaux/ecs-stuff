@@ -656,3 +656,4 @@ def get_random_word(length):
     :return:
     """
     return ''.join(random.choice(string.lowercase) for i in xrange(length))
+
