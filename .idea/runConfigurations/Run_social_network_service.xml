@@ -1,10 +1,10 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run social network service" type="PythonConfigurationType" factoryName="Python">
+  <configuration default="false" name="Run social_network_service" type="PythonConfigurationType" factoryName="Python" folderName="social_network_service">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
-      <env name="GT_ENVIRONMENT" value="dev" />
       <env name="PYTHONUNBUFFERED" value="1" />
+      <env name="GT_ENVIRONMENT" value="dev" />
     </envs>
     <option name="SDK_HOME" value="$USER_HOME$/.pyenv/versions/2.7.9/bin/python" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/social_network_service" />

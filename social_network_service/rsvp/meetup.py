@@ -9,7 +9,7 @@ from datetime import timedelta
 
 # Application Specific
 from base import RSVPBase
-from common.models.event import Event
+from social_network_service.common.models.event import Event
 from social_network_service.utilities import Attendee
 from social_network_service.utilities import http_request
 from social_network_service.custom_exceptions import EventNotFound

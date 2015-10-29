@@ -14,9 +14,9 @@ import requests
 from utilities import get_class
 from utilities import log_error
 from utilities import http_request
-from common.models.user import User
-from common.models.social_network import SocialNetwork
-from common.models.user import UserSocialNetworkCredential
+from social_network_service.common.models.user import User
+from social_network_service.common.models.social_network import SocialNetwork
+from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service import logger
 from social_network_service.custom_exceptions import NoUserFound
 from social_network_service.custom_exceptions import ApiException

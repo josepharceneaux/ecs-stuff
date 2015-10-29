@@ -10,9 +10,6 @@ from datetime import datetime
 from datetime import timedelta
 
 # Application specific
-from common.models.venue import Venue
-from common.models.event import Event
-from common.models.event_organizer import EventOrganizer
 from social_network_service import flask_app as app
 from social_network_service.utilities import logger
 from social_network_service.utilities import log_error
@@ -26,6 +23,9 @@ from social_network_service.custom_exceptions import TicketsNotCreated
 from social_network_service.custom_exceptions import EventNotPublished
 from social_network_service.custom_exceptions import EventInputMissing
 from social_network_service.custom_exceptions import EventLocationNotCreated
+from social_network_service.common.models.venue import Venue
+from social_network_service.common.models.event import Event
+from social_network_service.common.models.event_organizer import EventOrganizer
 
 WEBHOOK_REDIRECT_URL = app.config['WEBHOOK_REDIRECT_URL']
 

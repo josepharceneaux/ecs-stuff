@@ -1,5 +1,5 @@
 import json
-from common.error_handling import TalentError, InternalServerError
+from social_network_service.common.error_handling import InternalServerError
 
 
 class ApiException(InternalServerError):

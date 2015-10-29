@@ -52,8 +52,8 @@ def after_request(response):
 def hello_world():
     # return 'Hello World!', 404
     try:
-        from common.models.candidate import Candidate
-        from common.models.event import Event
+        from social_network_service.common.models.candidate import Candidate
+        from social_network_service.common.models.event import Event
         candidate = Candidate.query.all()[0]
         event = Event.query.all()[0]
     except:
@@ -69,7 +69,7 @@ def handle_rsvp():
     It first finds the getTalent user having incoming webhook id.
     Then it creates the candidate in candidate table by getting information
     of attendee. Then it inserts in rsvp table the required information.
-    It will also insert an entry in DB tables candidate_event_rsvp and activity
+    It will also insert an entry in DB table activity
     """
     # hub_challenge = request.args['hub.challenge']
     # verify_token = request.args['hub.verify_token']

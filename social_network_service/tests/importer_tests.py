@@ -1,8 +1,8 @@
 # Application Specific
-from common.models.rsvp import RSVP
-from common.models.event import Event
-from common.models.social_network import SocialNetwork
-from common.models.user import UserSocialNetworkCredential
+from social_network_service.common.models.rsvp import RSVP
+from social_network_service.common.models.event import Event
+from social_network_service.common.models.social_network import SocialNetwork
+from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service import logger
 from social_network_service.utilities import get_class
 from social_network_service.utilities import http_request

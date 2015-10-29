@@ -101,9 +101,9 @@ import re
 
 # Application Specific
 from dateutil.parser import parse
-from common.models.user import User
-from common.models.event import Event
-from common.models.user import UserSocialNetworkCredential
+from social_network_service.common.models.user import User
+from social_network_service.common.models.event import Event
+from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service import logger
 from social_network_service.utilities import log_error
 from social_network_service.utilities import get_class

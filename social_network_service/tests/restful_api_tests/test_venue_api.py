@@ -1,7 +1,7 @@
 import json
 import requests
 from social_network_service import flask_app as app
-from common.models.venue import Venue
+from social_network_service.common.models.venue import Venue
 
 API_URL = app.config['APP_URL']
 

@@ -8,8 +8,9 @@ from flask.ext.restful import Api, Resource, abort
 from flask.ext.cors import CORS
 from social_network_service.app.app_utils import api_route, authenticate, ApiResponse, CustomApi
 from social_network_service.utilities import process_event, delete_events
-from common.models.event import Event
-from common.error_handling import *
+from social_network_service.common.models.event import Event
+from social_network_service.common.error_handling import ResourceNotFound,\
+    InvalidUsage, ForbiddenError
 from social_network_service.utilities import add_organizer_venue_data
 
 events_blueprint = Blueprint('events_api', __name__)

@@ -39,17 +39,16 @@ This file contains API endpoints related to social network.
 import json
 import types
 from flask import Blueprint, request
-from common.models.event_organizer import EventOrganizer
-from common.models.venue import Venue
+from social_network_service.common.models.event_organizer import EventOrganizer
+from social_network_service.common.models.venue import Venue
 from social_network_service import logger
 from social_network_service.app.app_utils import authenticate, api_route, ApiResponse, CustomApi
 from flask.ext.restful import Resource, Api
 from flask.ext.cors import CORS
 from social_network_service.meetup import Meetup
-from social_network_service.custom_exceptions import ApiException
-from common.models.user import UserSocialNetworkCredential, User
-from common.models.social_network import SocialNetwork
-from common.error_handling import ResourceNotFound, InternalServerError,\
+from social_network_service.common.models.user import UserSocialNetworkCredential, User
+from social_network_service.common.models.social_network import SocialNetwork
+from social_network_service.common.error_handling import ResourceNotFound, InternalServerError,\
     InvalidUsage, ForbiddenError
 from social_network_service.utilities import get_class
 social_network_blueprint = Blueprint('social_network_api', __name__)

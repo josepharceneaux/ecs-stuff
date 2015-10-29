@@ -10,9 +10,9 @@ from datetime import datetime
 from datetime import timedelta
 
 # Application specific
-from common.models.venue import Venue
-from common.models.event import Event
-from common.models.event_organizer import EventOrganizer
+from social_network_service.common.models.venue import Venue
+from social_network_service.common.models.event import Event
+from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service import logger
 from social_network_service.utilities import log_error
 from social_network_service.event.base import EventBase
@@ -105,9 +105,9 @@ class Meetup(EventBase):
         self.social_network_group_ids = []
         self.social_network_event_id = None
         self.start_date = kwargs.get('start_date') \
-                          or (datetime.now() - timedelta(days=5))
+                          or (datetime.now() - timedelta(days=60))
         self.end_date = kwargs.get('end_date') \
-                        or (datetime.now() + timedelta(days=10))
+                        or (datetime.now() + timedelta(days=60))
         self.start_time_since_epoch = milliseconds_since_epoch_local_time(self.start_date)
         self.end_time_since_epoch = milliseconds_since_epoch_local_time(self.end_date)
 
@@ -125,6 +125,8 @@ class Meetup(EventBase):
         # 100 records).
         events_url = \
             self.api_url + '/events/?sign=true&page=100&fields=timezone'
+        # we can specify status=upcoming,past,draft,cancelled etc. By default we
+        # have status=upcoming, so we are not explicitly specifying in fields.
         params = {
             'member_id': self.member_id,
             'time': '%.0f, %.0f' %

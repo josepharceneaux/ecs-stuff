@@ -58,26 +58,3 @@ class RSVP(db.Model):
                 RSVP.social_network_id == social_network_id
             )
         ).first()
-
-
-class CandidateEventRSVP(db.Model):
-    __tablename__ = 'candidate_event_rsvp'
-
-    id = db.Column(db.Integer, primary_key=True)
-    candidate_id = db.Column('candidateId', db.Integer, db.ForeignKey('candidate.id'), nullable=False)
-    event_id = db.Column('eventId', db.Integer, db.ForeignKey('event.id'), nullable=False)
-    rsvp_id = db.Column('rsvpId', db.Integer, db.ForeignKey('rsvp.id'), nullable=False)
-
-    def __repr__(self):
-        return '<CandidateEventRSVP %r %r %r>' % (self.candidate_id, self.event_id, self.rsvpStatus)
-
-    @classmethod
-    def get_by_id_of_candidate_event_rsvp(cls, candidate_id, event_id, rsvp_id):
-        assert candidate_id and event_id and rsvp_id
-        return cls.query.filter(
-            db.and_(
-                CandidateEventRSVP.candidate_id == candidate_id,
-                CandidateEventRSVP.event_id == event_id,
-                CandidateEventRSVP.rsvp_id == rsvp_id,
-            )
-        ).first()

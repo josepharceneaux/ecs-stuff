@@ -19,9 +19,9 @@ from social_network_service.utilities import import_from_dist_packages
 facebook = import_from_dist_packages('facebook')
 
 # Application Specific
-from common.models.venue import Venue
-from common.models.event import Event
-from common.models.event_organizer import EventOrganizer
+from social_network_service.common.models.venue import Venue
+from social_network_service.common.models.event import Event
+from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service.event.base import EventBase
 
 

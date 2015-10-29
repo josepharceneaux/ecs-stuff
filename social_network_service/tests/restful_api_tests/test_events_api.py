@@ -2,7 +2,7 @@ import json
 import datetime
 import requests
 from social_network_service import flask_app as app
-from common.models.event import Event
+from social_network_service.common.models.event import Event
 
 API_URL = app.config['APP_URL']
 

@@ -11,13 +11,12 @@ from abc import ABCMeta
 from abc import abstractmethod
 
 # Application Specific
-from common.models.rsvp import RSVP
-from common.models.user import User
-from common.models.product import Product
-from common.models.activity import Activity
-from common.models.candidate import Candidate
-from common.models.rsvp import CandidateEventRSVP
-from common.models.candidate import CandidateSource
+from social_network_service.common.models.rsvp import RSVP
+from social_network_service.common.models.user import User
+from social_network_service.common.models.product import Product
+from social_network_service.common.models.activity import Activity
+from social_network_service.common.models.candidate import Candidate
+from social_network_service.common.models.candidate import CandidateSource
 from social_network_service import logger
 from social_network_service.custom_exceptions import ProductNotFound
 from social_network_service.custom_exceptions import UserCredentialsNotFound
@@ -84,11 +83,6 @@ class RSVPBase(object):
     * save_rsvp(self, attendee):
         In this method, we extract the data of RSVP from attendee object
         and save/update that data in db table rsvp.
-
-    * save_candidate_event_rsvp(self, attendee):
-        This method adds/update an entry of db table candidate_event_rsvp
-        using rsvp_id, event_id and candidate_id (where id is the the id
-        of respective entity in database).
 
     * save_rsvp_in_activity_table(self, attendee):
         This method adds/update an entry for each rsvp in db table activity.
@@ -316,7 +310,6 @@ class RSVPBase(object):
                     a candidate.
                 e)- Finally we save the RSVP in following tables
                     1- rsvp
-                    2- candidate_event_rsvp
                     3- Activity
 
         - This method is called from process_rsvps() defined in
@@ -347,9 +340,7 @@ class RSVPBase(object):
             attendee = self.save_attendee_as_candidate(attendee)
             # following call will store rsvp info in attendees
             attendee = self.save_rsvp(attendee)
-            # finally we store info in candidate_event_rsvp table for
-            # attendee
-            attendee = self.save_candidate_event_rsvp(attendee)
+            # finally we store info in table activity
             attendee = self.save_rsvp_in_activity_table(attendee)
             return attendee
         except:
@@ -571,53 +562,6 @@ class RSVPBase(object):
         attendee.rsvp_id = rsvp_id_db
         return attendee
 
-    @staticmethod
-    def save_candidate_event_rsvp(attendee):
-        """
-        :param attendee: attendees is a utility object we share in calls that
-         contains pertinent data.
-        :type attendee: object of class Attendee defined in utilities.py
-
-        - This method adds an entry for every rsvp in candidate_event_rsvp
-        table if entry is not present already, otherwise it updates the
-        previous record. It uses candidate_id, event_id and
-        rsvp_id to save/update the record. It appends id of record in
-        attendee object and returns attendee object.
-
-        - This method is called from process_rsvps() defined in
-          RSVPBase class inside social_network_service/rsvp/base.py.
-
-        - We use this method while importing RSVPs through social network
-          manager or webhook.
-
-        :Example:
-
-            attendee = self.save_candidate_event_rsvp(attendee)
-
-        **See Also**
-            .. seealso:: process_rsvps() method in EventBase class
-        :return attendee:
-        :rtype: object
-        """
-        entity_in_db = CandidateEventRSVP.get_by_id_of_candidate_event_rsvp(
-            attendee.candidate_id,
-            attendee.event.id,
-            attendee.rsvp_id)
-        data = {
-            'candidate_id': attendee.candidate_id,
-            'event_id': attendee.event.id,
-            'rsvp_id': attendee.rsvp_id
-        }
-        if entity_in_db:
-            entity_in_db.update(**data)
-            entity_id = entity_in_db.id
-        else:
-            candidate_event_rsvp = CandidateEventRSVP(**data)
-            CandidateEventRSVP.save(candidate_event_rsvp)
-            entity_id = candidate_event_rsvp.id
-        attendee.candidate_event_rsvp_id = entity_id
-        return attendee
-
     def save_rsvp_in_activity_table(self, attendee):
         """
         :param attendee: attendees is a utility object we share in calls that
@@ -660,9 +604,9 @@ class RSVPBase(object):
             attendee.gt_user_id,
             json.dumps(params),
             type_of_rsvp,
-            attendee.candidate_event_rsvp_id)
-        data = {'source_table': 'candidate_event_rsvp',
-                'source_id': attendee.candidate_event_rsvp_id,
+            attendee.rsvp_id)
+        data = {'source_table': 'rsvp',
+                'source_id': attendee.rsvp_id,
                 'added_time': attendee.added_time,
                 'type': type_of_rsvp,
                 'user_id': attendee.gt_user_id,
@@ -673,4 +617,3 @@ class RSVPBase(object):
             candidate_activity = Activity(**data)
             Activity.save(candidate_activity)
         return attendee
-
