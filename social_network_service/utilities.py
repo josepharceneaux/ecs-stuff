@@ -598,7 +598,7 @@ def add_organizer_venue_data(event):
                 "currency": "USD",
                 "description": "Test Event Description",
                 "end_datetime": "2015-10-27 16:40:57",
-                "group_id": "18837246",
+                "social_network_group_id": "18837246",
                 "group_url_name": "QC-Python-Learning",
                 "id": 200,
                 "max_attendees": 10,
@@ -640,7 +640,7 @@ def add_organizer_venue_data(event):
     """
     event_data = event.to_json()
     # add organizer data under organizer key
-    event_data['organizer'] = event.organizer.to_json() if event.organizer else {}
+    event_data['event_organizer'] = event.event_organizer.to_json() if event.event_organizer else {}
     del event_data['organizer_id']
     # add venue data under venue key
     event_data['venue'] = event.venue.to_json() if event.venue else {}

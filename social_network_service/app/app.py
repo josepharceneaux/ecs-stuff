@@ -54,6 +54,7 @@ def after_request(response):
 
 @app.route('/')
 def hello_world():
+
     # return 'Hello World!', 404
     try:
         from common.models.candidate import Candidate
@@ -123,28 +124,28 @@ def handle_rsvp():
         return flask.jsonify(**data), 200
 
 
-@app.errorhandler(ApiException)
-def handle_api_exception(error):
-    """
-    This handler handles ApiException error
-    :param error: exception object containing error info
-    :type error:  ApiException
-    :return: json response
-    """
-    logger.debug('Error: %s\nTraceback: %s' % (error, traceback.format_exc()))
-    response = json.dumps(error.to_dict())
-    return ApiResponse(response, status=error.status_code)
-
-
-@app.errorhandler(Exception)
-def handle_any_errors(error):
-    """
-    This handler handles any kind of error in app.
-    :param error: exception object containing error info
-    :type error:  Exception
-    :return: json response
-    """
-    logger.debug('Error: %s\nTraceback: %s' % (error, traceback.format_exc()))
-    response = json.dumps(dict(message='Ooops! Internal server error occurred..' + str(error.message)))
-    return ApiResponse(response, status=500)
+# @app.errorhandler(ApiException)
+# def handle_api_exception(error):
+#     """
+#     This handler handles ApiException error
+#     :param error: exception object containing error info
+#     :type error:  ApiException
+#     :return: json response
+#     """
+#     logger.debug('Error: %s\nTraceback: %s' % (error, traceback.format_exc()))
+#     response = json.dumps(error.to_dict())
+#     return ApiResponse(response, status=error.status_code)
+#
+#
+# @app.errorhandler(Exception)
+# def handle_any_errors(error):
+#     """
+#     This handler handles any kind of error in app.
+#     :param error: exception object containing error info
+#     :type error:  Exception
+#     :return: json response
+#     """
+#     logger.debug('Error: %s\nTraceback: %s' % (error, traceback.format_exc()))
+#     response = json.dumps(dict(message='Ooops! Internal server error occurred..' + str(error.message)))
+#     return ApiResponse(response, status=500)
 

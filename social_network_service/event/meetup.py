@@ -85,7 +85,7 @@ class Meetup(EventBase):
                 a dictionary containing data for event creation on Meetup
             - group_url_name:
                 Meetup group name owned by this user
-            - group_ids:
+            - social_network_group_ids:
                 list of group ids owned by user
             - social_network_event_id:
                 event id of event on Meetup
@@ -102,7 +102,7 @@ class Meetup(EventBase):
         self.data = None
         self.payload = None
         self.group_url_name = None
-        self.group_ids = []
+        self.social_network_group_ids = []
         self.social_network_event_id = None
         self.start_date = kwargs.get('start_date') \
                           or (datetime.now() - timedelta(days=5))
@@ -170,15 +170,15 @@ class Meetup(EventBase):
         :return True or False
         :rtype Boolean
         """
-        group_id = event['group'].get('id')
+        social_network_group_id = event['group'].get('id')
         # check if event's group id exists
-        if group_id:
-            if group_id in self.group_ids:
+        if social_network_group_id:
+            if social_network_group_id in self.social_network_group_ids:
                 return True
             url = self.api_url + '/groups/?sign=true'
             response = http_request('GET', url,
                                     params={
-                                        'group_id': group_id
+                                        'group_id': social_network_group_id
                                     },
                                     headers=self.headers,
                                     user_id=self.user.id)
@@ -189,7 +189,7 @@ class Meetup(EventBase):
                 if str(group_organizer['member_id']) == self.member_id:
                     # save this group id as user's owned groups, so no need to
                     # fetch it again
-                    self.group_ids.append(group_id)
+                    self.social_network_group_ids.append(social_network_group_id)
                     return True
         return False
 
@@ -319,7 +319,7 @@ class Meetup(EventBase):
             venue_id=venue_id,
             # group id and urlName are required fields to edit an event
             # so should raise exception if Null
-            group_id=event['group']['id'] if event.has_key('group') else '',
+            social_network_group_id=event['group']['id'] if event.has_key('group') else '',
             group_url_name=event['group']['urlname'],
             # Let's drop error logs if venue has no address, or if address
             # has no longitude/latitude
@@ -508,10 +508,9 @@ class Meetup(EventBase):
          are not found in data dictionary.
         """
         # these are required fields for Meetup event
-        mandatory_input_data = ['title', 'description', 'group_id',
+        mandatory_input_data = ['title', 'description', 'social_network_group_id',
                                 'group_url_name', 'start_datetime',
-                                'max_attendees',
-                                'venue_id']
+                                'max_attendees', 'venue_id', 'organizer_id']
         # gets fields which are missing
         missing_items = [key for key in mandatory_input_data if
                          not data.get(key)]
@@ -546,7 +545,7 @@ class Meetup(EventBase):
                         "cost": 0,
                         "start_datetime": "25 Oct, 2015 04:50 pm",
                         "currency": "USD",
-                        "group_id": 18837246,
+                        "social_network_group_id": 18837246,
                         "max_attendees": 10
                 }
 
@@ -554,7 +553,7 @@ class Meetup(EventBase):
 
                 event_payload = {
                                     'name': 'Test Event',
-                                    'group_id': 18837246,
+                                    'social_network_group_id': 18837246,
                                     'group_url_name': 'QC-Python-Learning',
                                     'description': 'Test Event Description',
                                     'time': 14563323434,
@@ -572,7 +571,7 @@ class Meetup(EventBase):
         start_time = int(milliseconds_since_epoch_local_time(data['start_datetime']))
         self.payload = {
             'name': data['title'],
-            'group_id': data['group_id'],
+            'group_id': data['social_network_group_id'],
             'group_url_name': data['group_url_name'],
             'description': data['description'],
             'time': start_time,

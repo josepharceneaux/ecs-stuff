@@ -18,7 +18,6 @@ class EventOrganizer(db.Model):
         assert user_id
         return cls.query.filter(EventOrganizer.user_id == user_id).all()
 
-
     @classmethod
     def get_by_user_id_organizer_id(cls, user_id, organizer_id):
         assert user_id

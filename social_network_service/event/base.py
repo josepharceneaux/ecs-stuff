@@ -97,6 +97,7 @@ To add another social network for events management, following are steps:
 # Standard Library
 from abc import ABCMeta
 from abc import abstractmethod
+import re
 
 # Application Specific
 from dateutil.parser import parse
@@ -271,6 +272,10 @@ class EventBase(object):
         try:
             start = data.get('start_datetime')
             end = data.get('end_datetime')
+            utc_pattern = '\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z'
+            if not (re.match(utc_pattern, start) and re.match(utc_pattern, end)):
+                raise InvalidDatetime('Invalid DateTime: Kindly specify datetime '
+                                      'in UTC format like 2015-10-08T06:16:55Z')
             data['start_datetime'] = parse(start) if start else ''
             data['end_datetime'] = parse(end) if end else ''
         except:
@@ -500,7 +505,7 @@ class EventBase(object):
                 # event not found in database, create a new one
                 event = Event(**data)
                 Event.save(event)
-        except:
+        except Exception as e:
             logger.exception('save_event: Event was not updated/saved in Database. '
                              'user_id: %s, event_id: %s, social network: %s(id: %s)'
                              % (self.user.id, event.id, self.social_network.name,
