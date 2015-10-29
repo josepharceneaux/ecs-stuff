@@ -22,4 +22,4 @@ db.init_app(app)
 
 db.app = app
 
-logger.info("Starting search_service in %s environment", app.config['GT_ENVIRONMENT'])
+logger.info("Starting candidate_service in %s environment", app.config['GT_ENVIRONMENT'])

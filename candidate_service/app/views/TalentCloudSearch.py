@@ -416,7 +416,7 @@ def delete_all_candidate_documents():
     params = {'ret': "_no_fields", 'query': "-12421412421412", 'query_parser': 'lucene', "cursor": "initial",
               "size": 5000}
 
-    search_service = _get_search_service()
+    search_service = _cloud_search_domain_connection()
     no_more_candidates = False
     total_num_deleted = 0
     while not no_more_candidates:
@@ -487,7 +487,7 @@ def _send_batch_request(action_dicts):
     return adds, deletes
 
 
-def _get_search_service():
+def _cloud_search_domain_connection():
     get_cloud_search_connection()
     return _cloud_search_domain.get_search_service().domain_connection
 
@@ -900,7 +900,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
 
     # Make search request with error handling
 
-    search_service = _get_search_service()
+    search_service = _cloud_search_domain_connection()
     try:
         results = search_service.search(**params)
     except Exception:
@@ -1142,7 +1142,7 @@ def _update_facet_counts(filter_queries, params_fq, existing_facets, query_strin
     :param filter_queries:
     :return:
     """
-    search_service = _get_search_service()
+    search_service = _cloud_search_domain_connection()
     # Multi-select facet scenario
     for filter_query in filter_queries:
         if 'user_id' in filter_query:
@@ -1194,7 +1194,7 @@ def _cloud_search_fetch_all(params):
     :return: total_found: total number of candidate found
     :return: error: if there was error while executing search query
     """
-    search_service = _get_search_service()
+    search_service = _cloud_search_domain_connection()
     params['cursor'] = 'initial'  # Initialize cursor
     # remove start, as it is produces error with cursor
     del params['start']
