@@ -4,17 +4,16 @@ This file contains list of all API endpoints related to events.
 import json
 import types
 from flask import Blueprint, request
-from flask.ext.restful import Api, Resource
+from flask.ext.restful import Api, Resource, abort
 from flask.ext.cors import CORS
-from social_network_service.app.app_utils import api_route, authenticate, ApiResponse
+from social_network_service.app.app_utils import api_route, authenticate, ApiResponse, CustomApi
 from social_network_service.utilities import process_event, delete_events
 from common.models.event import Event
-from common.error_handling import ResourceNotFound,\
-    InvalidUsage, ForbiddenError
+from common.error_handling import *
 from social_network_service.utilities import add_organizer_venue_data
 
 events_blueprint = Blueprint('events_api', __name__)
-api = Api()
+api = CustomApi()
 api.init_app(events_blueprint)
 api.route = types.MethodType(api_route, api)
 
@@ -81,9 +80,9 @@ class Events(Resource):
         """
         events = map(add_organizer_venue_data, Event.query.filter_by(user_id=kwargs['user_id']).all())
         if events:
-            return {'events': events, 'count': len(events)}, 200
+            return ApiResponse(json.dumps(dict(events=events, count=len(events))))
         else:
-            return {'events': [], 'count': 0}, 200
+            return ApiResponse(json.dumps(dict(events=[], count=0)))
 
     @authenticate
     def post(self, **kwargs):
@@ -151,8 +150,7 @@ class Events(Resource):
         event_data = request.get_json(force=True)
         gt_event_id = process_event(event_data, kwargs['user_id'])
         headers = {'Location': '/events/%s' % gt_event_id}
-        resp = ApiResponse(json.dumps(dict(id=gt_event_id)), status=201, headers=headers)
-        return resp
+        return ApiResponse(json.dumps(dict(id=gt_event_id)), status=201, headers=headers)
 
     @authenticate
     def delete(self, **kwargs):
@@ -202,7 +200,7 @@ class Events(Resource):
             return ApiResponse(json.dumps(dict(message='Unable to delete %s events' % len(not_deleted),
                                                deleted=deleted,
                                                not_deleted=not_deleted)), status=207)
-        return InvalidUsage('Bad request, include event_ids as list data')
+        raise InvalidUsage('Bad request, include event_ids as list data', error_code=400)
 
 
 @api.route('/events/<int:event_id>')
@@ -308,7 +306,7 @@ class EventById(Resource):
                     401 (Unauthorized to access getTalent)
                     403 (Forbidden: Can not update specified event)
 
-        .. Error codes:
+        .. Error codes (returned in response's body):
                     In case of internal server error, response contains error code which can be
 
                     452 (Unable to determine Social Network)

@@ -42,7 +42,7 @@ from flask import Blueprint, request
 from common.models.event_organizer import EventOrganizer
 from common.models.venue import Venue
 from social_network_service import logger
-from social_network_service.app.app_utils import authenticate, api_route, ApiResponse
+from social_network_service.app.app_utils import authenticate, api_route, ApiResponse, CustomApi
 from flask.ext.restful import Resource, Api
 from flask.ext.cors import CORS
 from social_network_service.meetup import Meetup
@@ -53,7 +53,7 @@ from common.error_handling import ResourceNotFound, InternalServerError,\
     InvalidUsage, ForbiddenError
 from social_network_service.utilities import get_class
 social_network_blueprint = Blueprint('social_network_api', __name__)
-api = Api()
+api = CustomApi()
 api.init_app(social_network_blueprint)
 api.route = types.MethodType(api_route, api)
 
@@ -110,7 +110,7 @@ class SocialNetworksResource(Resource):
             {
                 id: 123232
             }
-        .. Status:: 201 (Resource Created)
+        .. HTTP Status:: 201 (Resource Created)
                     500 (Internal Server Error)
                     401 (Unauthorized to access getTalent)
 
@@ -170,7 +170,8 @@ class SocialNetworksResource(Resource):
             {
                 'message': '3 social networks have been deleted successfully'
             }
-        .. Status:: 200 (Resource Deleted)
+        .. HTTP Status::
+                    200 (Resource Deleted)
                     207 (Not all deleted)
                     400 (Bad request)
                     500 (Internal Server Error)
@@ -200,7 +201,7 @@ class SocialNetworksResource(Resource):
         elif total_deleted:
                 return ApiResponse(json.dumps(dict(
                     message='%s social networks deleted successfully' % total_deleted)), status=200)
-        return InvalidUsage('Bad request, include social work ids as list data')
+        raise InvalidUsage('Bad request, include social work ids as list data', error_code=400)
 
     @authenticate
     def get(self, *args, **kwargs):
@@ -252,7 +253,7 @@ class SocialNetworksResource(Resource):
               ]
             }
 
-        .. Status:: 200 (OK)
+        .. HTTP Status:: 200 (OK)
                     500 (Internal Server Error)
         """
         user_id = kwargs.get('user_id')
@@ -374,7 +375,7 @@ class MeetupGroupsResource(Resource):
               ]
             }
 
-        .. Status:: 200 (OK)
+        .. HTTP Status:: 200 (OK)
                     500 (Internal Server Error)
         """
         user_id = kwargs['user_id']
@@ -417,7 +418,7 @@ class GetTokenValidityResource(Resource):
               "status": true
             }
 
-        .. Status:: 200 (OK)
+        .. HTTP Status:: 200 (OK)
                     461 (UserSocialNetworkCredential not found)
                     404 (Social network not found)
                     500 (Internal Server Error)
@@ -474,7 +475,7 @@ class RefreshTokenResource(Resource):
                 'status' : true
             }
 
-        .. Status:: 201 (Resource Created)
+        .. HTTP Status:: 201 (Resource Created)
                     403 (Failed to refresh token)
                     500 (Internal Server Error)
         """
@@ -489,7 +490,7 @@ class RefreshTokenResource(Resource):
             sn = social_network_class(user_id=user_id)
             status = sn.refresh_access_token()
         except Exception:
-            raise InternalServerError("Couldn't get fresh token for specified user and social network")
+            raise InternalServerError("Couldn't get fresh token for specified user and social network", error_code=500)
         if status:
             return ApiResponse(json.dumps(dict(messsage='Access token has been refreshed',
                                                status=True)), status=200)
@@ -534,7 +535,7 @@ class VenuesResource(Resource):
               ]
             }
 
-        .. Status:: 200 (OK)
+        .. HTTP Status:: 200 (OK)
                     500 (Internal Server Error)
 
         """
@@ -583,7 +584,7 @@ class VenuesResource(Resource):
                 'id' : 123
             }
 
-        .. Status:: 201 (Resource Created)
+        .. HTTP Status:: 201 (Resource Created)
                     500 (Internal Server Error)
 
         """
@@ -622,7 +623,7 @@ class VenuesResource(Resource):
             {
                 'message': '3 Venues have been deleted successfully'
             }
-        .. Status:: 200 (Resource Deleted)
+        .. HTTP Status:: 200 (Resource Deleted)
                     207 (Not all deleted)
                     400 (Bad request)
                     500 (Internal Server Error)
@@ -692,7 +693,7 @@ class VenueByIdResource(Resource):
 
             }
 
-        .. Status:: 200 (OK)
+        .. HTTP Status:: 200 (OK)
                     404 (Resource not found)
                     500 (Internal Server Error)
         """
@@ -745,7 +746,7 @@ class VenueByIdResource(Resource):
                 'message': 'Venue updated successfully'
             }
 
-        .. Status:: 200 (Resource Updated)
+        .. HTTP Status:: 200 (Resource Updated)
                     500 (Internal Server Error)
 
         """
@@ -781,7 +782,7 @@ class VenueByIdResource(Resource):
             {
                 'message': 'Venue has been deleted successfully'
             }
-        .. Status:: 200 (Resource Deleted)
+        .. HTTP Status:: 200 (Resource Deleted)
                     404 (Not found)
                     500 (Internal Server Error)
 
@@ -828,7 +829,7 @@ class EventOrganizersResource(Resource):
               ]
             }
 
-        .. Status:: 200 (OK)
+        .. HTTP Status:: 200 (OK)
                     500 (Internal Server Error)
         """
         user_id = kwargs['user_id']
@@ -868,7 +869,7 @@ class EventOrganizersResource(Resource):
                 'id' : 123
             }
 
-        .. Status:: 201 (Resource Created)
+        .. HTTP Status:: 201 (Resource Created)
                     500 (Internal Server Error)
 
         """
@@ -908,7 +909,7 @@ class EventOrganizersResource(Resource):
             {
                 'message': '3 event organizers have been deleted successfully'
             }
-        .. Status:: 200 (Resource Deleted)
+        .. HTTP Status:: 200 (Resource Deleted)
                     207 (Not all deleted)
                     400 (Bad request)
                     500 (Internal Server Error)
@@ -975,7 +976,7 @@ class EventOrganizerByIdResource(Resource):
               }
             }
 
-        .. Status:: 200 (OK)
+        .. HTTP Status:: 200 (OK)
                     404 (Resource not found)
                     500 (Internal Server Error)
         """
@@ -1020,7 +1021,7 @@ class EventOrganizerByIdResource(Resource):
                 "message" : 'Event organizer updated successfully'
             }
 
-        .. Status:: 200 (Resource Updated)
+        .. HTTP Status:: 200 (Resource Updated)
                     500 (Internal Server Error)
 
         """
@@ -1056,7 +1057,7 @@ class EventOrganizerByIdResource(Resource):
             {
                 'message': 'Organizer has been deleted successfully'
             }
-        .. Status:: 200 (Resource Deleted)
+        .. HTTP Status:: 200 (Resource Deleted)
                     404 (Not found)
                     500 (Internal Server Error)
 
@@ -1069,7 +1070,7 @@ class EventOrganizerByIdResource(Resource):
             resp = json.dumps(dict(message='Organizer has been deleted successfully'))
             return ApiResponse(resp, status=200)
         else:
-            return ResourceNotFound("Organizer not found", error_code=404)
+            raise ResourceNotFound("Organizer not found", error_code=404)
 
 
 @api.route('/social_networks/user/credentials')
@@ -1112,7 +1113,7 @@ class ProcessAccessTokenResource(Resource):
                 "message" : 'User credentials added successfully'
             }
 
-        .. Status:: 201 (Resource Updated)
+        .. HTTP Status:: 201 (Resource Updated)
                     404 (Social Network not found)
                     500 (Internal Server Error)
 

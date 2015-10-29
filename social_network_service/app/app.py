@@ -11,29 +11,25 @@ import flask
 # init APP
 # This line should come before any imports from models
 from social_network_service import init_app, logger
-
 app = init_app()
 
 # 3rd party imports
 from flask import request
 from flask.ext.cors import CORS
-from flask.ext.restful import Api
 
 # Application specific imports
-from social_network_service.app.app_utils import ApiResponse
-from social_network_service.custom_exceptions import ApiException
 from social_network_service.app.restful.data import data_blueprint
 from social_network_service.rsvp.eventbrite import Eventbrite as EventbriteRsvp
 from restful.events import events_blueprint
 from social_network_service.utilities import get_class
 from restful.social_networks import social_network_blueprint
+from social_network_service.app.app_utils import CustomApi
 
 # Register Blueprints for different APIs
 app.register_blueprint(social_network_blueprint)
 app.register_blueprint(events_blueprint)
 app.register_blueprint(data_blueprint)
-api = Api(app)
-
+api = CustomApi(app)
 
 # Enable CORS
 CORS(app, resources={
@@ -54,7 +50,6 @@ def after_request(response):
 
 @app.route('/')
 def hello_world():
-
     # return 'Hello World!', 404
     try:
         from common.models.candidate import Candidate
@@ -122,30 +117,4 @@ def handle_rsvp():
         data = {'message': error_message,
                 'status_code': 200}
         return flask.jsonify(**data), 200
-
-
-# @app.errorhandler(ApiException)
-# def handle_api_exception(error):
-#     """
-#     This handler handles ApiException error
-#     :param error: exception object containing error info
-#     :type error:  ApiException
-#     :return: json response
-#     """
-#     logger.debug('Error: %s\nTraceback: %s' % (error, traceback.format_exc()))
-#     response = json.dumps(error.to_dict())
-#     return ApiResponse(response, status=error.status_code)
-#
-#
-# @app.errorhandler(Exception)
-# def handle_any_errors(error):
-#     """
-#     This handler handles any kind of error in app.
-#     :param error: exception object containing error info
-#     :type error:  Exception
-#     :return: json response
-#     """
-#     logger.debug('Error: %s\nTraceback: %s' % (error, traceback.format_exc()))
-#     response = json.dumps(dict(message='Ooops! Internal server error occurred..' + str(error.message)))
-#     return ApiResponse(response, status=500)
 

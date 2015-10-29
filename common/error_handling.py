@@ -70,7 +70,6 @@ def register_error_handlers(app, logger):
     :type app: flask.app.Flask
     :type logger: logging.Logger
     """
-
     @app.errorhandler(405)
     def handle_method_not_allowed(ignored):
         return jsonify({'error': {'message': 'Given HTTP method is not allowed on this endpoint'}}), 405
@@ -87,16 +86,24 @@ def register_error_handlers(app, logger):
         response = jsonify(error.to_dict())
         return response, error.http_status_code()
 
-    @app.errorhandler(TalentError)
-    def handle_exception(exc):
-        response = exc.to_dict()
-        logger.exception("Internal server error for app %s: %s", app.import_name, response)
-        return jsonify(response), exc.http_status_code()
+    @app.errorhandler(ResourceNotFound)
+    def handle_resource_not_found(error):
+        logger.warn("Resource not found for app %s", app.import_name)
+        response = jsonify(error.to_dict())
+        return response, error.http_status_code()
+
+    @app.errorhandler(ForbiddenError)
+    def handle_forbidden(error):
+        logger.warn("Forbidden request format for app %s", app.import_name)
+        response = jsonify(error.to_dict())
+        return response, error.http_status_code()
 
     @app.errorhandler(500)
     def handle_internal_server_errors(exc):
         if exc.__class__.__name__ == InternalServerError.__name__:  # Why doesn't instanceof() work here?
             # If an InternalServerError is raised by the server code, return its to_dict
+            response = exc.to_dict()
+        elif isinstance(exc, InternalServerError):
             response = exc.to_dict()
         elif isinstance(exc, Exception):
             # If any other Exception is thrown, return its message

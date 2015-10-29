@@ -27,7 +27,7 @@ from common.models.event import Event
 from common.models.social_network import SocialNetwork
 from social_network_service import logger
 from social_network_service import flask_app as app
-from social_network_service.custom_exceptions import ApiException
+from social_network_service.custom_exceptions import ApiException, SocialNetworkError
 from social_network_service.custom_exceptions import SocialNetworkNotImplemented
 
 
@@ -324,11 +324,11 @@ def get_class(social_network_name, category, user_credentials=None):
                         % social_network_name
         log_error({'user_id': user_credentials.user_id if user_credentials else '',
                    'error': error_message})
-        raise NotImplementedError('Import Error: Unable to import'
-                                  'module for required social network')
+        raise SocialNetworkNotImplemented('Import Error: Unable to import '
+                                          'module for required social network')
     except AttributeError as e:
-        raise ApiException('APIError: Unable to import module for required '
-                           'social network', error_code=500)
+        raise SocialNetworkNotImplemented('Unable to import module for required '
+                                          'social network')
     return _class
 
 
@@ -344,16 +344,18 @@ def process_event(data, user_id, method='Create'):
     """
     if data:
         social_network_id = data['social_network_id']
-        social_network = SocialNetwork.get_by_id(social_network_id)
-        # creating class object for respective social network
-        social_network_class = get_class(social_network.name.lower(),
-                                         'social_network')
-        event_class = get_class(social_network.name.lower(), 'event')
-        sn = social_network_class(user_id=user_id)
-        event_obj = event_class(user=sn.user,
-                                headers=sn.headers,
-                                social_network=social_network)
-
+        social_network = SocialNetwork.get(social_network_id)
+        if social_network:
+            # creating class object for respective social network
+            social_network_class = get_class(social_network.name.lower(),
+                                             'social_network')
+            event_class = get_class(social_network.name.lower(), 'event')
+            sn = social_network_class(user_id=user_id)
+            event_obj = event_class(user=sn.user,
+                                    headers=sn.headers,
+                                    social_network=social_network)
+        else:
+            raise SocialNetworkError('Unable to find social network')
         data['user_id'] = user_id
         event_obj.event_gt_to_sn_mapping(data)
         if method == 'Create':
