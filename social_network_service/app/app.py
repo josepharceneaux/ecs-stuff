@@ -57,8 +57,8 @@ def hello_world():
 
     # return 'Hello World!', 404
     try:
-        from common.models.candidate import Candidate
-        from common.models.event import Event
+        from social_network_service.common.models.candidate import Candidate
+        from social_network_service.common.models.event import Event
         candidate = Candidate.query.all()[0]
         event = Event.query.all()[0]
     except:

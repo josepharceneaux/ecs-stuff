@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run social network service" type="PythonConfigurationType" factoryName="Python">
+  <configuration default="false" name="Run social_network_service" type="PythonConfigurationType" factoryName="Python" folderName="social_network_service">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>

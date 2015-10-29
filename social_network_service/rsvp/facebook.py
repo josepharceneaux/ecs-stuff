@@ -16,7 +16,7 @@ from social_network_service.utilities import import_from_dist_packages
 facebook = import_from_dist_packages('facebook')
 
 # Application Specific
-from common.models.event import Event
+from social_network_service.common.models.event import Event
 from social_network_service.rsvp.base import RSVPBase
 from social_network_service.utilities import Attendee
 from social_network_service.custom_exceptions import EventNotFound

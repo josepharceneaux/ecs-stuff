@@ -42,7 +42,7 @@ other model classes inherit. But this changes will only effect this app or the a
 """
 __author__ = 'zohaib'
 from types import MethodType
-from common.models.db import db
+from social_network_service.common.models.db import db
 
 
 def to_json(instance):

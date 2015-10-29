@@ -1,4 +1,4 @@
-from common.error_handling import TalentError
+from social_network_service.common.error_handling import TalentError
 
 
 class ApiException(TalentError):
