@@ -1,5 +1,5 @@
 from candidate_service.common.models.candidate import db
-from candidate_service.app import logger
+from candidate_service.candidate_app import logger
 from candidate_service.common.models.candidate import (
     Candidate, EmailLabel, CandidateEmail, CandidatePhone, PhoneLabel,
     CandidateWorkPreference, CandidatePreferredLocation, CandidateAddress,

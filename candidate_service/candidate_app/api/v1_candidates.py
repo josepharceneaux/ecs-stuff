@@ -1,6 +1,6 @@
 # Flask specific
 from flask import (request, jsonify)
-from flask_restful import (Api, Resource)
+from flask_restful import Resource
 
 # Candidate service specific
 from candidate_service.candidate_app import app, db, logger
@@ -18,8 +18,6 @@ from common.utils.auth_utils import require_oauth
 # Standard Library
 import json
 
-
-api = Api(app=app)
 
 class CandidateResource(Resource):
     decorators = [require_oauth]
@@ -120,10 +118,6 @@ class CandidateResource(Resource):
 
 
         return body_dict
-
-api.add_resource(CandidateResource, '/v1/candidates/<id>', '/v1/candidates')
-
-
 
 
 def parse_request_data():
