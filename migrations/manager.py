@@ -1,10 +1,16 @@
 from flask import Flask
 from flask.ext.script import Manager
 from flask.ext.migrate import Migrate, MigrateCommand
+from common.models.associations import *
+from common.models.misc import *
+from common.models.candidate import *
+from common.models.db import db
 from common.models.user import *
+from common.models.widget import *
+import migrations.config
 
 app = Flask(__name__)
-app.config.from_object('config')
+app.config.from_object(migrations.config)
 
 db.init_app(app)
 db.app = app

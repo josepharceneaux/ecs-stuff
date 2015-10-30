@@ -170,7 +170,7 @@ function createGraduationYearOptions(){
 function getInterestsJSON() {
     var interests;
     var request = $.ajax({
-        url: "/v1/kaiser-university/interests",
+        url: "/v1/domains/" + window.location.pathname.split('/')[3] + "/interests",
         type: "GET",
         dataType: "json"
     });
@@ -184,7 +184,7 @@ function getInterestsJSON() {
 $.ajax({
     type: "get",
     dataType: "json",
-    url: "/v1/kaiser-university/majors",
+    url: "/v1/domains/" + window.location.pathname.split('/')[3] + "/majors",
     success: function(response) {
         var majorSelector = document.getElementById('major');
         var option;

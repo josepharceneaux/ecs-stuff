@@ -9,11 +9,11 @@ from candidate import CandidateMilitaryService
 class Activity(db.Model):
     __tablename__ = 'activity'
     id = db.Column(db.Integer, primary_key=True)
-    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
-    source_table = db.Column('sourceTable', db.String(127))
-    source_id = db.Column('sourceID', db.Integer)
-    type = db.Column('type', db.Integer)
-    user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id'))
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
+    source_table = db.Column('SourceTable', db.String(127))
+    source_id = db.Column('SourceID', db.Integer)
+    type = db.Column('Type', db.Integer)
+    user_id = db.Column('UserId', db.Integer, db.ForeignKey('user.id'))
     params = db.Column(db.Text)
 
 
@@ -29,6 +29,16 @@ class AreaOfInterest(db.Model):
         return "<AreaOfInterest (parent_id=' %r')>" % self.parent_id
 
 
+class ClassificationType(db.Model):
+    __tablename__ = 'classification_type'
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column('Code', db.String(100))
+    description = db.Column('Description', db.String(250))
+    notes = db.Column('Notes', db.String(500))
+    list_order = db.Column('ListOrder', db.Integer)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+
 class Country(db.Model):
     __tablename__ = 'country'
     id = db.Column(db.Integer, primary_key=True)
@@ -41,7 +51,6 @@ class Country(db.Model):
     candidate_addresses = relationship('CandidateAddress', backref='country')
     candidate_educations = relationship('CandidateEducation', backref='country')
     candidate_experiences = relationship('CandidateExperience', backref='country')
-    states = relationship('State', backref='country')
 
     def __repr__(self):
         return "<Country (name=' %r')>" % self.name
@@ -93,14 +102,3 @@ class Product(db.Model):
 
     def __repr__(self):
         return "<Product (name=' %r')>" % self.name
-
-
-class Zipcode(db.Model):
-    __tablename__ = 'zipcode'
-    id = db.Column(db.Integer, primary_key=True)
-    code = db.Column('Code', db.String(31))
-    city_id = db.Column('CityId', db.Integer, db.ForeignKey('city.id'))
-    coordinates = db.Column('Coordinates', db.String(127))
-
-    def __repr__(self):
-        return "<Zipcode (code=' %r')>" % self.code

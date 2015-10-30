@@ -31,4 +31,5 @@ elif os.environ.get('GT_ENVIRONMENT') == 'prod':
 else:
     raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")
 
+ENCRYPTION_KEY = 'heylookeveryonewegotasupersecretkeyoverhere'
 SECRET_KEY = os.urandom(24).encode('hex')

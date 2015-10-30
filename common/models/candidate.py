@@ -425,7 +425,7 @@ class CandidatePatentHistory(db.Model):
 class PatentDetail(db.Model):
     __tabelname__ = 'patent_detail'
     id = db.Column(db.BigInteger, primary_key=True)
-    patent_id = db.Column('PatentId', db.BigInteger, db.ForeignKey('patent.id')) # TODO: add relationship
+    patent_id = db.Column('PatentId', db.BigInteger, db.ForeignKey('candidate_patent_history.id'))
     issuing_authority = db.Column('IssuingAuthority', db.String(255))
     country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
@@ -451,7 +451,7 @@ class PatentStatus(db.Model):
 class PatentInventor(db.Model):
     __tablename__ = 'patent_inventor'
     id = db.Column(db.BigInteger, primary_key=True)
-    patent_id = db.Column('PatentId', db.BigInteger, db.ForeignKey('patent.id')) # TODO: add relationship
+    patent_id = db.Column('PatentId', db.BigInteger, db.ForeignKey('candidate_patent_history.id')) # TODO: add relationship
     name = db.Column('Name', db.String(500))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
@@ -638,7 +638,6 @@ class University(db.Model):
     __tablename__ = 'university'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Name', db.String(255))
-    state_id = db.Column('StateId', db.Integer, db.ForeignKey('state.id'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):

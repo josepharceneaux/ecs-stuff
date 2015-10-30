@@ -30,13 +30,13 @@ class User(db.Model):
     added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
     updated_time = db.Column('updatedTime', db.DateTime)
     dice_user_id = db.Column('diceUserId', db.Integer)
-    user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.id', ondelete='CASCADE'))
+    # user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.id', ondelete='CASCADE'))
     # TODO: Set Nullable = False after setting user_group_id for existing data
 
     # Relationships
     candidates = relationship('Candidate', cascade="all, delete-orphan", passive_deletes=True)
     public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
-    user_group = relationship('UserGroup', backref='user')
+    # user_group = relationship('UserGroup', backref='user')
 
     def is_authenticated(self):
         return True
@@ -69,7 +69,6 @@ class Domain(db.Model):
     default_from_name = db.Column('defaultFromName', db.String(255))
     settings_json = db.Column('settingsJson', db.Text)
     updated_time = db.Column('updatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-    uuid = db.Column('uuid', db.String(36))
 
     # Relationships
     users = relationship('User', backref='domain')
@@ -149,7 +148,7 @@ class Token(db.Model):
     client = db.relationship('Client', backref=db.backref('token', cascade="all, delete-orphan"))
 
     user_id = db.Column(
-        db.INTEGER, db.ForeignKey('user.id', ondelete='CASCADE')
+        'user_id', db.INTEGER, db.ForeignKey('user.id', ondelete='CASCADE')
     )
     user = db.relationship('User', backref=db.backref('token', cascade="all, delete-orphan"))
 
@@ -176,10 +175,10 @@ class DomainRole(db.Model):
     __tablename__ = 'domain_role'
 
     id = db.Column(db.Integer, primary_key=True)
-    role_name = db.Column(db.String(255), nullable=False, unique=True)
+    role_name = db.Column('roleName', db.String(255), nullable=False, unique=True)
 
     domain_id = db.Column(
-        db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE')
+        'domainId', db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE')
     )
     domain = db.relationship('Domain', backref=db.backref('domain_role', cascade="all, delete-orphan"))
 
@@ -247,10 +246,10 @@ class UserScopedRoles(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(
-        db.INTEGER, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False
+        'userId', db.INTEGER, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False
     )
     role_id = db.Column(
-        db.Integer, db.ForeignKey('domain_role.id', ondelete='CASCADE'), nullable=False
+        'roleId', db.Integer, db.ForeignKey('domain_role.id', ondelete='CASCADE'), nullable=False
     )
     domain_role = db.relationship('DomainRole', backref=db.backref('user_scoped_roles', cascade="all, delete-orphan"))
     user = db.relationship('User', backref=db.backref('user_scoped_roles', cascade="all, delete-orphan"))

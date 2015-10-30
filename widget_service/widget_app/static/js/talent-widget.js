@@ -35,6 +35,7 @@ function renderInterests(interests) {
     }
 }
 
+
 $('#submit').on('click', function() {
     $.ajax({
         type: 'POST',

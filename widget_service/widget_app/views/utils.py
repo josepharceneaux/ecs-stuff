@@ -68,7 +68,7 @@ def create_candidate_educations_dict(major, degree, school_name, grad_date):
     }
 
 
-def get_widget_user_from_domain(domain_uuid):
-    domain_widget = db.session.query(WidgetPage).filter(
-        WidgetPage.domain_uuid == domain_uuid).first()
-    return getattr(domain_widget, 'user_id', None)
+def get_widget_user_from_unique_key(unique_key):
+    widget = db.session.query(WidgetPage).filter(
+        WidgetPage.id == unique_key).first()
+    return getattr(widget, 'user_id', None)

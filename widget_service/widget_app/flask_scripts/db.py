@@ -29,31 +29,28 @@ def fill_db():
                          organization_id=KAISER_UMBRELLA.id, is_fair_check_on=False, is_active=1,
                          default_tracking_code=1, default_from_name=('asd'),
                          default_culture_id=RANDOM_CULTURE.id,
-                         settings_json='json', updated_time=datetime.datetime.now(),
-                         uuid='kaiser-corporate')
+                         settings_json='json', updated_time=datetime.datetime.now(),)
     KAISER_UNI = Domain(name='kaiser_university', usage_limitation=0,
                          expiration=datetime.datetime(2050, 4, 26),
                          added_time=datetime.datetime(2050, 4, 26),
                          organization_id=KAISER_UMBRELLA.id, is_fair_check_on=False, is_active=1,
                          default_tracking_code=1, default_from_name=('asd'),
                          default_culture_id=RANDOM_CULTURE.id,
-                         settings_json='json', updated_time=datetime.datetime.now(),
-                         uuid='kaiser-university')
+                         settings_json='json', updated_time=datetime.datetime.now(),)
     KAISER_MIL = Domain(name='kaiser_military', usage_limitation=0,
                          expiration=datetime.datetime(2050, 4, 26),
                          added_time=datetime.datetime(2050, 4, 26),
                          organization_id=KAISER_UMBRELLA.id, is_fair_check_on=False, is_active=1,
                          default_tracking_code=1, default_from_name=('asd'),
                          default_culture_id=RANDOM_CULTURE.id,
-                         settings_json='json', updated_time=datetime.datetime.now(),
-                         uuid='kaiser-military')
+                         settings_json='json', updated_time=datetime.datetime.now())
     DOMAINS = [KAISER_CORP, KAISER_UNI, KAISER_MIL]
     for d in DOMAINS:
         db.session.add(d)
     db.session.commit()
-    corp_wp = WidgetPage(domain_uuid=KAISER_CORP.uuid, template_name='kaiser_3.html')
-    university_wp = WidgetPage(domain_uuid=KAISER_UNI.uuid, template_name='kaiser_2.html')
-    military_wp = WidgetPage(domain_uuid=KAISER_MIL.uuid, template_name='kaiser_military.html')
+    corp_wp = WidgetPage(widget_name='kaiser_3.html')
+    university_wp = WidgetPage(widget_name='kaiser_2.html')
+    military_wp = WidgetPage(widget_name='kaiser_military.html')
     db.session.bulk_save_objects([corp_wp, university_wp, military_wp])
     print 'Finished creating Culture, Organization, Domains, WidgetPages'
     print 'Creating Majors and Areas of Interest'

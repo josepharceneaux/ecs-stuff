@@ -3,8 +3,10 @@ __author = 'erikfarmer'
 
 # Standard library
 import json
+from base64 import b64decode
 from collections import defaultdict
 from datetime import datetime
+from urllib import unquote_plus
 
 # Framework specific/Third Party
 from flask import Blueprint
@@ -13,6 +15,7 @@ from flask import jsonify
 from flask import request
 from flask import render_template
 import requests
+import simplecrypt
 
 # Module specific
 from widget_service.common.models.candidate import CustomField
@@ -30,29 +33,40 @@ from widget_service.common.utils.db_utils import serialize_queried_sa_obj
 from widget_service.common.utils.auth_utils import get_token_by_client_and_user
 from widget_service.common.utils.auth_utils import refresh_expired_token
 
-from widget_service.widget_app.views.utils import get_widget_user_from_domain
+from widget_service.widget_app.views.utils import get_widget_user_from_unique_key
 
+simplecrypt.EXPANSION_COUNT = (10000, 10000, 10000)
 mod = Blueprint('widget_api', __name__)
 
 
-@mod.route('/widgets/<domain_uuid>', methods=['GET'])
-def show_widget(domain_uuid):
+@mod.route('/domains/<path:encrypted_domain_id>/widgets/<path:encrypted_widget_id>', methods=['GET'])
+def show_widget(encrypted_domain_id, encrypted_widget_id):
     """ Route for testing template rendering/js functions/etc.
-    :param domain_uuid: (string) the domain associated with an html template.
+    :param encrypted_widget_id: (string) The encrypted widget_id associated with an html template.
+    :param encrypted_domain_id: (string) The encrypted domain_id associated with domain relations.
     :return: a rendered HTML page.
     """
-    template = db.session.query(WidgetPage).filter_by(domain_uuid=domain_uuid).first().template_name
-    return render_template(template, domain=domain_uuid)
+    b64decoded_url = b64decode(encrypted_widget_id)
+    decrypted_url = simplecrypt.decrypt(app.config['ENCRYPTION_KEY'], b64decoded_url)
+    id = int(decrypted_url.split('.')[0])
+    template = db.session.query(WidgetPage).get(id).widget_name
+    if template:
+        return render_template(template)
+    else:
+        return 'We should have a 404 page here'
 
 
-@mod.route('/widgets/<domain_uuid>', methods=['POST'])
-def create_candidate_from_widget(domain_uuid):
+@mod.route('/domains/<path:encrypted_domain_id>/widgets/<path:encrypted_widget_id>', methods=['POST'])
+def create_candidate_from_widget(encrypted_domain_id, encrypted_widget_id):
     """ Post receiver for processing widget date.
-    :param domain_uuid: (string) the domain_uuid associated with a WidgetPage.
+    :param encrypted_widget_id: (string) the domain_uuid associated with a WidgetPage.
     :return: A success or error message to change the page state of a widget.
     """
+    b64decoded_url = b64decode(encrypted_widget_id)
+    decrypted_url = simplecrypt.decrypt(app.config['ENCRYPTION_KEY'], b64decoded_url)
+    id = int(decrypted_url.split('.')[0])
     # Get User from domain
-    widget_user_id = get_widget_user_from_domain(domain_uuid)
+    widget_user_id = widget = db.session.query(WidgetPage).get(id).user_id
     # Get or Widget Client
     widget_client_id = app.config['WIDGET_CLIENT_ID']
     # Check for Token with userId and Client
@@ -135,14 +149,17 @@ def create_candidate_from_widget(domain_uuid):
     return jsonify({'success': {'message': 'candidate successfully created'}}), 201
 
 
-@mod.route('/<domain_uuid>/interests', methods=['GET'])
-def get_areas_of_interest(domain_uuid):
+@mod.route('/domains/<path:encrypted_domain_id>/interests', methods=['GET'])
+def get_areas_of_interest(encrypted_domain_id):
     """ API call that provides interests list filtered by the domain.
-    :param domain_uuid: (string)
+    :param encrypted_domain_id: (string)
     :return: A dictionary pointing to primary and seconday interests that have been filtered by
              domain.
     """
-    current_domain = db.session.query(Domain).filter_by(uuid=domain_uuid).first()
+    b64decoded_url = b64decode(encrypted_domain_id)
+    decrypted_url = simplecrypt.decrypt(app.config['ENCRYPTION_KEY'], b64decoded_url)
+    id = int(decrypted_url.split('.')[0])
+    current_domain = db.session.query(Domain).get(id)
     interests = db.session.query(AreaOfInterest).filter(
         AreaOfInterest.domain_id == current_domain.id)
     primary_interests = []
@@ -156,11 +173,14 @@ def get_areas_of_interest(domain_uuid):
                     'secondary_interests': secondary_interests})
 
 
-@mod.route('/<domain_uuid>/majors', methods=['GET'])
-def get_major_names(domain_uuid):
+@mod.route('/domains/<path:encrypted_domain_id>/majors', methods=['GET'])
+def get_major_names(encrypted_domain_id):
     """API call for returning list of major names filtered by domain"""
-    domain_id = db.session.query(Domain.id).filter(Domain.uuid == domain_uuid)
-    majors = db.session.query(Major).filter(domain_id == domain_id)
+    b64decoded_url = b64decode(encrypted_domain_id)
+    decrypted_url = simplecrypt.decrypt(app.config['ENCRYPTION_KEY'], b64decoded_url)
+    id = int(decrypted_url.split('.')[0])
+    current_domain = db.session.query(Domain).get(id)
+    majors = db.session.query(Major).filter(Major.domain_id == current_domain.id)
     return jsonify(majors=[serialize_queried_sa_obj(m) for m in majors])
 
 

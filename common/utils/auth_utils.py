@@ -2,8 +2,7 @@
 __author__ = 'erikfarmer'
 
 # Standard Library
-from datetime import datetime
-from datetime import timedelta
+import datetime
 from functools import wraps
 import json
 # Third Party
@@ -133,7 +132,7 @@ def create_token(client_id, user_id, db):
     token = Token(client_id=client_id, user_id=user_id, token_type='Bearer',
                   access_token=random_letter_digit_string(255),
                   refresh_token=random_letter_digit_string(255),
-                  expires=datetime.utcnow() + timedelta(hours=2))
+                  expires=datetime.datetime.utcnow() + datetime.timedelta(hours=2))
     db.session.add(token)
     db.session.commit()
     return token

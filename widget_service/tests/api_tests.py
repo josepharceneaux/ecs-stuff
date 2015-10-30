@@ -14,12 +14,12 @@ from widget_service.common.models.misc import Country
 from widget_service.common.models.misc import Culture
 from widget_service.common.models.misc import Major
 from widget_service.common.models.misc import Organization
-from widget_service.common.models.misc import State
 from widget_service.common.models.user import Client
 from widget_service.common.models.user import Domain
 from widget_service.common.models.user import Token
 from widget_service.common.models.user import User
 from widget_service.common.models.widget import WidgetPage
+from widget_service.widget_app.flask_scripts.url_encode import gt_url_encrypt
 from widget_service.widget_app import app
 from widget_service.widget_app import db
 
@@ -68,8 +68,7 @@ def test_domain(test_culture, test_org, request):
                          organization_id=test_org.id, is_fair_check_on=False, is_active=1,
                          default_tracking_code=1, default_from_name=(random_word(100)),
                          default_culture_id=test_culture.id,
-                         settings_json=random_word(55), updated_time=datetime.datetime.now(),
-                         uuid=random_word(127))
+                         settings_json=random_word(55), updated_time=datetime.datetime.now())
     db.session.add(test_domain)
     db.session.commit()
 
@@ -88,8 +87,7 @@ def second_domain(test_culture, test_org, request):
                           organization_id=test_org.id, is_fair_check_on=False, is_active=1,
                           default_tracking_code=1, default_from_name=(random_word(100)),
                           default_culture_id=test_culture.id,
-                          settings_json=random_word(55), updated_time=datetime.datetime.now(),
-                          uuid=random_word(127))
+                          settings_json=random_word(55), updated_time=datetime.datetime.now())
     db.session.add(test_domain2)
     db.session.commit()
 
@@ -147,25 +145,11 @@ def test_country(request):
 
 
 @pytest.fixture(autouse=True)
-def test_state(test_country, request):
-    test_state = State(name='California', alpha_code='potato', country_id=test_country.id,
-                       abbreviation='CA')
-    db.session.add(test_state)
-    db.session.commit()
-
-    def fin():
-        db.session.delete(test_state)
-        db.session.commit()
-    request.addfinalizer(fin)
-    return test_state
-
-
-@pytest.fixture(autouse=True)
-def test_universities(test_state, request):
+def test_universities(request):
     universities = []
     for i in xrange(5):
         universities.append(
-            University(name=random_word(35), state_id=test_state.id)
+            University(name=random_word(35))
         )
     db.session.bulk_save_objects(universities)
 
@@ -224,7 +208,7 @@ def test_majors(test_domain, request):
 
 
 @pytest.fixture(autouse=True)
-def test_widget_page(test_user, test_candidate_source, test_domain, request):
+def test_widget_page(test_user, test_candidate_source, request):
     test_widget_page = WidgetPage(url=random_word(20), page_views=0, sign_ups=0,
                                   widget_name=random_word(20), user_id=test_user.id,
                                   candidate_source_id=test_candidate_source.id,
@@ -235,7 +219,7 @@ def test_widget_page(test_user, test_candidate_source, test_domain, request):
                                   request_email_html=random_word(40),
                                   request_email_subject=random_word(40),
                                   email_source=random_word(40), reply_address=random_word(40),
-                                  domain_uuid=test_domain.uuid, template_name=random_word(12)
+                                  unique_key=random_word(12)
                                   )
     db.session.add(test_widget_page)
     db.session.commit()
@@ -329,7 +313,7 @@ def test_email_label(request):
 
 
 def test_api_returns_domain_filtered_aois(test_domain, request):
-    response = APP.get('/v1/{}/interests'.format(test_domain.uuid))
+    response = APP.get('/v1/domains/{}/interests'.format(gt_url_encrypt(test_domain.id)))
     assert response.status_code == 200
     assert len(json.loads(response.data)['primary_interests']) == 10
     assert len(json.loads(response.data)['secondary_interests']) == 2
@@ -342,12 +326,12 @@ def test_api_returns_university_name_list(request):
 
 
 def test_api_returns_majors_name_list(test_domain, request):
-    response = APP.get('/v1/{}/majors'.format(test_domain.uuid))
+    response = APP.get('/v1/domains/{}/majors'.format(gt_url_encrypt(test_domain.id)))
     assert response.status_code == 200
     assert len(json.loads(response.data)['majors']) == 5
 
 
-def test_military_candidate(test_domain, request):
+def test_military_candidate(test_widget_page, request):
     aoi_string = gen_mock_aois()
     candidate_dict = {
         'firstName': random_word(12),
@@ -362,13 +346,14 @@ def test_military_candidate(test_domain, request):
         'jobFrequency': 'Weekly'
     }
     with APP as c:
-        post_response = c.post('/v1/widgets/{}'.format(test_domain.uuid), data=candidate_dict)
+        post_response = c.post('/v1/domains/potato/widgets/{}'.format(
+            gt_url_encrypt(test_widget_page.id)), data=candidate_dict)
     assert post_response.status_code == 201
     # TODO expand to check DB that are fields are there
     assert 'success' in post_response.data
 
 
-def test_university_candidate(test_domain, request):
+def test_university_candidate(test_widget_page, request):
     aoi_string = gen_mock_aois()
     candidate_dict = {
         'name': random_word(12),
@@ -384,13 +369,14 @@ def test_university_candidate(test_domain, request):
         'jobFrequency': 'Monthly'
     }
     with APP as c:
-        post_response = c.post('/v1/widgets/{}'.format(test_domain.uuid), data=candidate_dict)
+        post_response = c.post('/v1/domains/potato/widgets/{}'.format(
+            gt_url_encrypt(test_widget_page.id)), data=candidate_dict)
     assert post_response.status_code == 201
     # TODO expand to check DB that are fields are there
     assert 'success' in post_response.data
 
 
-def test_corporate_candidate(test_domain, request):
+def test_corporate_candidate(test_widget_page, request):
     aoi_string = gen_mock_aois()
     candidate_dict = {
         'firstName': random_word(12),
@@ -401,13 +387,14 @@ def test_corporate_candidate(test_domain, request):
         'jobFrequency': 'Daily'
     }
     with APP as c:
-        post_response = c.post('/v1/widgets/{}'.format(test_domain.uuid), data=candidate_dict)
+        post_response = c.post('/v1/domains/potato/widgets/{}'.format(
+            gt_url_encrypt(test_widget_page.id)), data=candidate_dict)
     assert post_response.status_code == 201
     # TODO expand to check DB that are fields are there
     assert 'success' in post_response.data
 
 
-def test_expired_token_refreshes(test_domain, test_expired_oauth_credentials, request):
+def test_expired_token_refreshes(test_widget_page, test_expired_oauth_credentials, request):
     aoi_string = gen_mock_aois()
     candidate_dict = {
         'firstName': random_word(12),
@@ -418,7 +405,8 @@ def test_expired_token_refreshes(test_domain, test_expired_oauth_credentials, re
         'jobFrequency': 'Daily'
     }
     with APP as c:
-        post_response = c.post('/v1/widgets/{}'.format(test_domain.uuid), data=candidate_dict)
+        post_response = c.post('/v1/domains/potato/widgets/{}'.format(
+            gt_url_encrypt(test_widget_page.id)), data=candidate_dict)
     assert post_response.status_code == 201
     # TODO expand to check DB that are fields are there
     assert 'success' in post_response.data
