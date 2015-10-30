@@ -1,8 +1,8 @@
 import json
-from social_network_service.common.error_handling import InternalServerError, TalentError
+import social_network_service.common.error_handling
 
 
-class ApiException(InternalServerError):
+class ApiException(social_network_service.common.error_handling.InternalServerError):
     status_code = 4000
 
     def to_dict(self):
@@ -22,6 +22,10 @@ class SocialNetworkError(ApiException):
 
 class EventInputMissing(ApiException):
     status_code = 4053
+
+
+class EventOrganizerNotFound(ApiException):
+    status_code = 4054
 
 
 class EventNotCreated(ApiException):

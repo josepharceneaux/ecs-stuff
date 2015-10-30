@@ -39,6 +39,5 @@ def test_social_network_no_auth(test_user, base_url, auth_data):
     response = requests.get(base_url + '/social_networks/',
                             headers={'Authorization': 'some random'})
     assert response.status_code == 401
-    assert "The server could not verify" in json.loads(response.text)['message']
 
 

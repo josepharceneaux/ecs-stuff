@@ -341,7 +341,7 @@ def process_event(data, user_id, method='Create'):
     :rtype: int
     """
     if data:
-        social_network_id = data['social_network_id']
+        social_network_id = data.get('social_network_id', 0)
         social_network = SocialNetwork.get(social_network_id)
         if social_network:
             # creating class object for respective social network

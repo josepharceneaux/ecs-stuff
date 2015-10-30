@@ -13,15 +13,13 @@ This modules contains helper methods and classes which we are using in Social Ne
 from functools import wraps
 import json
 import flask
-import inspect
 import traceback
 from flask import Response
-from flask.ext.restful import abort, Api
+from flask.ext.restful import Api
 from requests_oauthlib import OAuth2Session
-from common.error_handling import TalentError, InternalServerError
+from common.error_handling import UnauthorizedError
 from social_network_service import logger
 from flask import current_app as app
-from social_network_service.custom_exceptions import ApiException
 
 
 class CustomApi(Api):
@@ -39,9 +37,10 @@ class CustomApi(Api):
         # if it is our custom exception or its subclass instance then raise it
         # so it error_handlers for app can catch this error and can send proper response
         # in required format
-        class_name = e.__class__.__name__
-        if class_name in [c.__name__ for c in TalentError.__subclasses__() + ApiException.__subclasses__()] + \
-                ['ApiException', 'TalentError']:
+
+        # check whether this exception is some chile class of TalentError base class.
+        bases = [cls.__name__ for cls in e.__class__.__mro__]
+        if 'TalentError' in bases:
             raise
         else:
             # if it is not a custom exception then let the Api class handle it.
@@ -81,7 +80,8 @@ def authenticate(func):
                 kwargs['user_id'] = response.json()['user_id']
                 return func(*args, **kwargs)
             else:
-                abort(401)
+                # abort(401)
+                raise UnauthorizedError('User not recognized. Invalid access token', error_code=401)
         except Exception as e:
             user_id = kwargs.get('user_id', 'Not given')
             logger.debug('User ID: %s\nError : %s\n\nTraceback: %s' % (

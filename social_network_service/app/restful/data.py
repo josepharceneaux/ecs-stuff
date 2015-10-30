@@ -78,7 +78,7 @@ class TimeZones(Resource):
         try:
             timezones = get_timezones()
         except Exception as e:
-            return ApiResponse(json.dumps(dict(messsage='APIError: Internal Server Error')), status=500)
+            return ApiResponse(json.dumps(dict(error=dict(messsage='APIError: Unable to get timezones.'))), status=500)
         return ApiResponse(json.dumps(dict(timezones=timezones)), status=200)
 
 

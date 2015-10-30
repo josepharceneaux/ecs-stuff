@@ -676,7 +676,7 @@ class Eventbrite(EventBase):
         :exception EventInputMissing: raises exception if all required fields
             are not found
         """
-        mandatory_input_data = ['title', 'description', 'end_datetime',
+        mandatory_input_data = ['title', 'description', 'end_datetime', 'max_attendees',
                                 'timezone', 'start_datetime', 'currency', 'venue_id', 'organizer_id']
         # gets fields which are missing
         missing_items = [key for key in mandatory_input_data
@@ -684,6 +684,7 @@ class Eventbrite(EventBase):
         if missing_items:
             raise EventInputMissing("Mandatory Input Missing: %s"
                                     % missing_items)
+        EventBase.validate_required_fields(data)
 
     def event_gt_to_sn_mapping(self, data):
         """
@@ -736,10 +737,10 @@ class Eventbrite(EventBase):
         """
         assert data, 'Data should not be None/empty'
         assert isinstance(data, dict), 'Data should be a dictionary'
-        # convert datetime strings to datetime objects
-        super(Eventbrite, self).event_gt_to_sn_mapping(data)
         self.data = data
         self.validate_required_fields(data)
+        # convert datetime strings to datetime objects
+        super(Eventbrite, self).event_gt_to_sn_mapping(data)
         # Eventbrite assumes that provided start and end DateTime is in UTC
         # So, form given Timezone, (eventTimeZone in our case), it changes the
         # provided DateTime accordingly.

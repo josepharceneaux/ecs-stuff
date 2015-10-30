@@ -511,7 +511,7 @@ class Meetup(EventBase):
         """
         # these are required fields for Meetup event
         mandatory_input_data = ['title', 'description', 'social_network_group_id',
-                                'group_url_name', 'start_datetime',
+                                'group_url_name', 'start_datetime', 'timezone',
                                 'max_attendees', 'venue_id', 'organizer_id']
         # gets fields which are missing
         missing_items = [key for key in mandatory_input_data if
@@ -519,6 +519,7 @@ class Meetup(EventBase):
         if missing_items:
             raise EventInputMissing(
                 "Mandatory Input Missing: %s" % missing_items)
+        EventBase.validate_required_fields(data)
 
     def event_gt_to_sn_mapping(self, data):
         """
@@ -565,10 +566,9 @@ class Meetup(EventBase):
         """
         assert data, 'Data should not be None/empty'
         assert isinstance(data, dict), 'Data should be a dictionary'
-        super(Meetup, self).event_gt_to_sn_mapping(data)
         self.data = data
         self.validate_required_fields(data)
-        # assert whether data['start_datetime'] is instance of dt
+        super(Meetup, self).event_gt_to_sn_mapping(data)
         # converting Datetime object to epoch for API call
         start_time = int(milliseconds_since_epoch_local_time(data['start_datetime']))
         self.payload = {

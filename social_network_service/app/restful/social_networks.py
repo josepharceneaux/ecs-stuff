@@ -391,7 +391,7 @@ class MeetupGroupsResource(Resource):
 @api.route('/social_networks/token/validity')
 class GetTokenValidityResource(Resource):
     @authenticate
-    def get(self, **kwargs):
+    def post(self, **kwargs):
         """
         Get user access_token validity status for specified social network.
         :param social_network_id: id for specified social network
@@ -447,7 +447,7 @@ class RefreshTokenResource(Resource):
     """
 
     @authenticate
-    def get(self, social_network_id, **kwargs):
+    def post(self, **kwargs):
         """
         Gets a fresh token for specified user and social network.
         :return:
@@ -877,7 +877,7 @@ class EventOrganizersResource(Resource):
         organizer_data['user_id'] = user_id
         organizer = EventOrganizer(**organizer_data)
         EventOrganizer.save(organizer)
-        headers = {'Location': '/organizers/%s' % organizer.id}
+        headers = {'Location': '/event_organizers/%s' % organizer.id}
         return ApiResponse(json.dumps(dict(messsage='Event organizer created successfully', id=organizer.id)),
                            status=201, headers=headers)
 

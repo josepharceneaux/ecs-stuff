@@ -4,7 +4,7 @@ This file contains list of all API endpoints related to events.
 import json
 import types
 from flask import Blueprint, request
-from flask.ext.restful import Api, Resource, abort
+from flask.ext.restful import Resource, abort
 from flask.ext.cors import CORS
 from social_network_service.app.app_utils import api_route, authenticate, ApiResponse, CustomApi
 from social_network_service.utilities import process_event, delete_events

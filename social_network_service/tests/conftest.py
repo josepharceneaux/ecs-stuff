@@ -364,7 +364,7 @@ def eventbrite_event_data(request, eventbrite, test_user, eventbrite_venue,
 
 
 @pytest.fixture(scope='function')
-def meetup_event(test_user, test_meetup_credentials, meetup,
+def meetup_event(request, test_user, test_meetup_credentials, meetup,
                  venues, organizer_in_db):
     event = EVENT_DATA.copy()
     event['title'] = 'Meetup ' + event['title']
@@ -373,6 +373,17 @@ def meetup_event(test_user, test_meetup_credentials, meetup,
     event['organizer_id'] = organizer_in_db.id
     event_id = process_event(event, test_user.id)
     event = Event.get_by_id(event_id)
+
+    def fin():
+        """
+        This is finalizer for meetup event. Once test is passed, we need to
+        delete the newly created event from website of social network. After
+        test has been passed, we call
+        delete_event() function to delete the event both from social network
+        and from our database.
+        """
+        delete_events(test_user.id, [event_id])
+    request.addfinalizer(fin)
     return event
 
 
@@ -424,7 +435,7 @@ def eventbrite_event(request, test_user, test_eventbrite_credentials,
 
     def fin():
         """
-        This is finalizer for meetup event. Once test is passed, we need to
+        This is finalizer for eventbrite event. Once test is passed, we need to
         delete the newly created event from website of social network. After
         test has been passed, we call
         delete_event() function to delete the event both from social network
@@ -583,7 +594,8 @@ def test_event(request, get_test_events):
 
 @pytest.fixture(params=['title', 'description',
                         'end_datetime', 'timezone',
-                        'start_datetime', 'currency'], scope='function')
+                        'start_datetime', 'currency',
+                        'venue_id', 'organizer_id'], scope='function')
 def eventbrite_missing_data(request, eventbrite_event_data):
     """
     This fixture returns eventbrite data and a key will be deleted from data to test
@@ -596,7 +608,8 @@ def eventbrite_missing_data(request, eventbrite_event_data):
 
 
 @pytest.fixture(params=['title', 'description', 'social_network_group_id',
-                        'group_url_name', 'start_datetime', 'max_attendees'], scope='function')
+                        'group_url_name', 'start_datetime', 'max_attendees',
+                        'venue_id', 'organizer_id'], scope='function')
 def meetup_missing_data(request, meetup_event_data):
     """
     This fixture returns meetup data and a key will be deleted from data to test
