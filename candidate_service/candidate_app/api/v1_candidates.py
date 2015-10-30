@@ -4,6 +4,7 @@ from candidate_service.modules.TalentCandidates import (
     fetch_candidate_info, get_candidate_id_from_candidate_email
 )
 from candidate_service.common.models.user import User
+from candidate_service.common.models.email_marketing import EmailCampaign
 from candidate_service.modules.validators import (
     does_candidate_belong_to_user, is_custom_field_authorized,
     is_area_of_interest_authorized, does_email_campaign_belong_to_domain
@@ -124,20 +125,27 @@ class CandidateResource(Resource):
         return body_dict
 
 
-class CandidateEmailCampaignResource(Resource):
-    # decorators = [require_oauth]
-
-    def get(self, **kwargs):
-        authed_user = db.session.query(User).get(1)
-
-        print "kwargs = %s" % kwargs
-        candidate_id = kwargs.get('id')
-        email_campaign_id = kwargs.get('email_campaign_id')
-        if not candidate_id or not email_campaign_id:
-            return {'error': {'message': 'candidate ID and email campaign ID are required.'}}
-
-        # Candidate must belong to user & email campaign must belong to user's domain
-        validate_1 = does_candidate_belong_to_user(user_row=authed_user, candidate_id=candidate_id)
-        validate_2 = does_email_campaign_belong_to_domain(user_row=authed_user)
-        if not validate_1 or not validate_2:
-            return {'error': {'message': 'Not authorized'}}, 403
+# class CandidateEmailCampaignResource(Resource):
+#     # decorators = [require_oauth]
+#
+#     def get(self, **kwargs):
+#         authed_user = db.session.query(User).get(1)
+#
+#         candidate_id = kwargs.get('id')
+#         email_campaign_id = kwargs.get('email_campaign_id')
+#         if not candidate_id or not email_campaign_id:
+#             return {'error': {'message': 'candidate ID and email campaign ID are required.'}}
+#
+#         # Candidate must belong to user & email campaign must belong to user's domain
+#         validate_1 = does_candidate_belong_to_user(user_row=authed_user, candidate_id=candidate_id)
+#         validate_2 = does_email_campaign_belong_to_domain(user_row=authed_user)
+#         if not validate_1 or not validate_2:
+#             return {'error': {'message': 'Not authorized'}}, 403
+#
+#         email_campaign = db.session.query(EmailCampaign).get(email_campaign_id)
+#
+#         # Get all email_campaign_send objects of the requested candidate
+#         from candidate_service.modules.TalentCandidates import retrieve_email_campaign_send
+#         email_campaign_send_rows = retrieve_email_campaign_send(email_campaign, candidate_id)
+#
+#         return {'email_campaign_sends': email_campaign_send_rows}

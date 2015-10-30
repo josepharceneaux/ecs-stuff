@@ -52,3 +52,4 @@ def does_email_campaign_belong_to_domain(user_row):
         filter(User.domain_id == user_row.domain_id).first()
 
     return True if email_campaing_rows else False
+
