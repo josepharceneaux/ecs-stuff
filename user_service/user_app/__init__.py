@@ -14,10 +14,10 @@ register_error_handlers(app, logger)
 db.init_app(app)
 db.app = app
 
-from api.users_v1 import UserResource
+from api.users_v1 import UserApi
 api = GetTalentApi(app)
 parser = reqparse.RequestParser()
-api.add_resource(UserResource, "/v1/users/<id>")
+api.add_resource(UserApi, "/users/<int:id>")
 
 import views
 

@@ -5,6 +5,7 @@ from common.models.user import *
 from flask import request
 from common.error_handling import *
 from common.utils.auth_utils import require_oauth, require_any_role
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 # TODO this endpoint will be removed eventually as we have decorators for this purpose
@@ -115,3 +116,37 @@ def domain_groups(domain_id):
             return jsonify(success=True)
     else:
         raise InvalidUsage(error_message='Request data is corrupt')
+
+
+@app.route('/users/<int:user_id>/update_password', methods=['POST'])
+@require_oauth
+def update_password(user_id):
+    """
+    This endpoint will be used to update the password of a user given old password
+    :param: int user_id: Id of user whose password is going to be updated
+    :return: success message if password will be updated successfully
+    :rtype: dict
+    """
+    posted_data = request.get_json(silent=True)
+    if posted_data:
+        old_password = posted_data.get('old_password', '')
+        new_password = posted_data.get('new_password', '')
+        if not old_password or not new_password:
+            raise NotFoundError(error_message="Either old or new password are missing")
+        user = User.query.get(user_id)
+        if not user:
+            raise NotFoundError(error_message="User with user_id %s doesn't exist" % user_id)
+
+        old_password_hashed = user.password
+        # If password is hashed in web2py app
+        if 'pbkdf2:sha512:1000' not in old_password_hashed and old_password_hashed.count('$') == 2:
+            (digest_alg, salt, hash_key) = user.password.split('$')
+            old_password_hashed = 'pbkdf2:sha512:1000$%s$%s' % (salt, hash_key)
+        if check_password_hash(old_password_hashed, old_password):
+            user.password = generate_password_hash(new_password, method='pbkdf2:sha512')
+            db.session.commit()
+            return dict(success="Your password has been changed successfully")
+        else:
+            raise UnauthorizedError(error_message="Old password is not correct")
+    else:
+        raise InvalidUsage(error_message='No request data is found')

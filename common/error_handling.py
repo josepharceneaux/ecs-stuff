@@ -52,6 +52,12 @@ class UnauthorizedError(TalentError):
         return 401
 
 
+class NotFoundError(TalentError):
+    @classmethod
+    def http_status_code(cls):
+        return 404
+
+
 class ForbiddenError(TalentError):
     @classmethod
     def http_status_code(cls):
@@ -73,6 +79,12 @@ def register_error_handlers(app, logger):
     def handle_invalid_usage(error):
         response = jsonify(error.to_dict())
         logger.warn("Invalid API usage for app %s: %s", app.import_name, response)
+        return response, error.http_status_code()
+
+    @app.errorhandler(NotFoundError)
+    def handle_not_found(error):
+        logger.warn("Requested resource not found for the app %s", app.import_name)
+        response = jsonify(error.to_dict())
         return response, error.http_status_code()
 
     @app.errorhandler(UnauthorizedError)

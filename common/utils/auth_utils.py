@@ -72,13 +72,14 @@ def require_any_role(*role_names):
                 # Roles list is empty so it means func is not roles protected
                 return func(*args, **kwargs)
             domain_roles = DomainRole.get_by_names(role_names) or ''
+            # Roles which a requesting user possess
+            valid_domain_roles = []
             for domain_role in domain_roles:
                 if domain_role and domain_role.id in user_roles:
-                    if domain_role.role_name == 'ADMIN':
-                        request.is_admin_user = True
-                        return func(*args, **kwargs)
-                    request.is_admin_user = False
-            if hasattr(request, 'is_admin_user'):
+                    valid_domain_roles.append(domain_role.role_name)
+            if valid_domain_roles:
+                request.valid_domain_roles = valid_domain_roles
+                request.is_admin_user = True if 'ADMIN' in valid_domain_roles else False
                 return func(*args, **kwargs)
             else:
                 raise UnauthorizedError(error_message="User doesn't have appropriate permissions to \

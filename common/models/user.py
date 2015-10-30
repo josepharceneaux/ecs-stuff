@@ -1,6 +1,7 @@
 import time
 import datetime
 from sqlalchemy.orm import relationship, backref
+from sqlalchemy.dialects.mysql import TINYINT
 from db import db
 from common.utils.validators import is_number
 from common.error_handling import *
@@ -31,6 +32,7 @@ class User(db.Model):
     updated_time = db.Column('updatedTime', db.DateTime)
     dice_user_id = db.Column('diceUserId', db.Integer)
     user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.id', ondelete='CASCADE'))
+    is_disabled = db.Column(TINYINT, default='0', nullable=False)
     # TODO: Set Nullable = False after setting user_group_id for existing data
 
     # Relationships
@@ -53,6 +55,14 @@ class User(db.Model):
     def __repr__(self):
         return "<email (email=' %r')>" % self.email
 
+    @staticmethod
+    def all_user_of_domain(domain_id):
+        """ Get user_ids of all users of a given domain_id
+        :param int domain_id: id of a domain.
+        :rtype: list[User]
+        """
+        return User.query.filter_by(domain_id=domain_id).all()
+
 
 class Domain(db.Model):
     __tablename__ = 'domain'
@@ -69,6 +79,7 @@ class Domain(db.Model):
     default_from_name = db.Column('defaultFromName', db.String(255))
     settings_json = db.Column('settingsJson', db.Text)
     updated_time = db.Column('updatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    dice_company_id = db.Column('diceCompanyId', db.Integer, index=True)
 
     # Relationships
     users = relationship('User', backref='domain')
@@ -273,7 +284,7 @@ class UserScopedRoles(db.Model):
                     else:
                         raise InvalidUsage("Role: %s doesn't exist" % role)
                 domain_role = DomainRole.query.get(role_id)
-                # Add given role to a given user if user who sent this request is either admin or either from same domain
+                # Add given role to a given user if user who sent this request is either admin or from same domain
                 if domain_role and (is_admin_user or domain_role.domain_id == user.domain_id):
                     if not UserScopedRoles.query.filter((UserScopedRoles.user_id == user.id) &
                                                                 (UserScopedRoles.role_id == role_id)).first():

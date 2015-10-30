@@ -54,6 +54,16 @@ def add_groups_to_user():
         print e.message
 
 
+@manager.command
+def add_is_disabled_field_to_user():
+    try:
+        db.engine.execute("\
+        ALTER TABLE user\
+        ADD is_disabled tinyint(1) NOT NULL DEFAULT '0';")
+    except Exception as e:
+        print e.message
+
+
 if __name__ == '__main__':
     db.create_all()
     db.session.commit()
