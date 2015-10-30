@@ -44,9 +44,10 @@ class Culture(db.Model):
 
 class Organization(db.Model):
     __tablename__ = 'organization'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column('Id', db.Integer, primary_key=True)
     name = db.Column('Name', db.String(500), unique=True)
     notes = db.Column('Notes', db.String(1000))
+    updated_time = db.Column('updatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<Organization (name=' %r')>" % self.name

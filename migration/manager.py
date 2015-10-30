@@ -55,10 +55,13 @@ def add_groups_to_user():
 
 
 @manager.command
-def add_is_disabled_field_to_user():
+def add_is_disabled_field_to_user_domain_table():
     try:
         db.engine.execute("\
         ALTER TABLE user\
+        ADD is_disabled tinyint(1) NOT NULL DEFAULT '0';")
+        db.engine.execute("\
+        ALTER TABLE domain\
         ADD is_disabled tinyint(1) NOT NULL DEFAULT '0';")
     except Exception as e:
         print e.message

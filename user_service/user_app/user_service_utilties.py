@@ -1,12 +1,11 @@
 __author__ = 'ufarooqi'
 from flask import render_template
-from user_service.user_app import logger
 from user_service.common.utils.amazon_ses import send_email
 from user_service.common.models.user import db, Domain, User, UserScopedRoles
 from werkzeug.security import generate_password_hash, gen_salt
 
 
-def get_or_create_domain(name, usage_limitation=-1, organization_id=1, default_culture_id=1, dice_company_id=None):
+def get_or_create_domain(name, usage_limitation=-1, organization_id=1, expiration=None, default_culture_id=1, dice_company_id=None):
     """
     Gets or creates domain with given name.
     Returns domain id of domain found in database or newly created.
@@ -23,10 +22,6 @@ def get_or_create_domain(name, usage_limitation=-1, organization_id=1, default_c
     domain = Domain.query.filter_by(name=name).first()
     if domain:
         if dice_company_id and not domain.dice_company_id:
-            # Adds in the diceCompanyId if not already there
-            logger.info("Domain %s was previously not Dice-connected. Will connect domain with Dice ID %s", name,
-                        dice_company_id)
-
             domain.dice_company_id = dice_company_id
             db.session.commit()
         return domain.id
@@ -34,7 +29,7 @@ def get_or_create_domain(name, usage_limitation=-1, organization_id=1, default_c
     else:
         # Create domain if it doesn't exist
         domain = Domain(name=name, usage_limitation=usage_limitation, organization_id=organization_id,
-                        default_culture_id=default_culture_id, dice_company_id=dice_company_id)
+                        default_culture_id=default_culture_id, dice_company_id=dice_company_id, expiration=expiration)
         db.session.add(domain)
         db.session.commit()
 

@@ -120,6 +120,7 @@ def domain_groups(domain_id):
 
 @app.route('/users/<int:user_id>/update_password', methods=['POST'])
 @require_oauth
+@require_any_role()
 def update_password(user_id):
     """
     This endpoint will be used to update the password of a user given old password
@@ -127,25 +128,32 @@ def update_password(user_id):
     :return: success message if password will be updated successfully
     :rtype: dict
     """
-    posted_data = request.get_json(silent=True)
+    user = User.query.get(user_id)
+    if not user:
+        raise NotFoundError(error_message="User with user_id %s doesn't exist" % user_id)
+    # Logged-in user should be either DOMAIN_ADMIN, ADMIN to update password or it can update its own password
+    if user_id != request.user.id and not request.is_admin_user and ('DOMAIN_ADMIN' not in request.
+            valid_domain_roles or user.domain_id != request.user.domain_id):
+        raise UnauthorizedError('User %s is not allowed to update the password' % request.user.id)
+
+    posted_data = request.get_json()
     if posted_data:
         old_password = posted_data.get('old_password', '')
         new_password = posted_data.get('new_password', '')
         if not old_password or not new_password:
-            raise NotFoundError(error_message="Either old or new password are missing")
-        user = User.query.get(user_id)
-        if not user:
-            raise NotFoundError(error_message="User with user_id %s doesn't exist" % user_id)
-
+            raise NotFoundError(error_message="Either old or new password is missing")
         old_password_hashed = user.password
         # If password is hashed in web2py app
         if 'pbkdf2:sha512:1000' not in old_password_hashed and old_password_hashed.count('$') == 2:
             (digest_alg, salt, hash_key) = user.password.split('$')
             old_password_hashed = 'pbkdf2:sha512:1000$%s$%s' % (salt, hash_key)
         if check_password_hash(old_password_hashed, old_password):
+            # Change user's password
             user.password = generate_password_hash(new_password, method='pbkdf2:sha512')
+            # Delete any tokens associated with him as password is changed now
+            Token.query.filter_by(user_id=user_id).delete()
             db.session.commit()
-            return dict(success="Your password has been changed successfully")
+            return jsonify(dict(success="Your password has been changed successfully"))
         else:
             raise UnauthorizedError(error_message="Old password is not correct")
     else:

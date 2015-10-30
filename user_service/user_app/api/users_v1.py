@@ -4,14 +4,15 @@ from user_service.common.models.user import User, Domain, db
 from user_service.user_app.user_service_utilties import check_if_user_exists, create_user_for_company
 from user_service.common.utils.validators import is_number, is_valid_email
 from user_service.common.utils.auth_utils import require_oauth, require_any_role
-from user_service.common.error_handling import *
+from common.error_handling import *
 
 
 class UserApi(Resource):
 
     # Access token and role authentication decorators
-    decorators = [require_oauth, require_any_role('ADMIN', 'DOMAIN_ADMIN')]
+    decorators = [require_oauth]
 
+    @require_any_role()
     def get(self, **kwargs):
         """
         GET /users/<id> Fetch user object with user's basic info
@@ -50,8 +51,9 @@ class UserApi(Resource):
 
         # If nothing is returned above then simply raise the custom exception
         raise UnauthorizedError(error_message="Either logged-in user belongs to different domain as requested_user\
-                                                  or it's no an ADMIN or DOMAIN_ADMIN user")
+                                                  or it's not an ADMIN or DOMAIN_ADMIN user")
 
+    @require_any_role('ADMIN', 'DOMAIN_ADMIN')
     def post(self):
         """
         POST /users  Create a new user
@@ -137,17 +139,15 @@ class UserApi(Resource):
 
         return {'users': user_ids}
 
+    @require_any_role('ADMIN', 'DOMAIN_ADMIN')
     def delete(self, **kwargs):
         """
         DELETE /users/<id>
 
-        Function can delete one user per request.
-        Function will remove user-object from db
-
-        Only ADMIN or DOMAIN_ADMIN users can delete users
+        Function will disable user-object in db
+        Only ADMIN or DOMAIN_ADMIN users can disable users
         User will be prevented from deleting itself
-        Last user in domain cannot be deleted
-        All of user's data will be transferred to the DOMAIN_ADMIN
+        Last user in domain cannot be disabled
 
         :return: {'user' {'id': user_id}}
         :rtype:  dict
@@ -175,7 +175,7 @@ class UserApi(Resource):
 
         # Prevent user from deleting the last user in the domain
         # count < 3 accounts for: logged_in_user and at least one user in the logged_in_user's domain
-        all_users_of_domain_of_user_to_delete = User.query.filter_by(domain_id=user_to_delete.domain_id).all
+        all_users_of_domain_of_user_to_delete = User.query.filter_by(domain_id=user_to_delete.domain_id).all()
         if (user_to_delete.domain_id == request.user.domain_id and len(all_users_of_domain_of_user_to_delete) < 3)\
                 or len(all_users_of_domain_of_user_to_delete) < 2:
             raise InvalidUsage(error_message="Last user in domain %s cannot be deleted" % user_to_delete.domain_id)
@@ -186,6 +186,7 @@ class UserApi(Resource):
 
         return {'user': {'id': user_id_to_delete}}
 
+    @require_any_role()
     def put(self, **kwargs):
         """
         PUT /users/<id>
@@ -214,11 +215,11 @@ class UserApi(Resource):
             raise UnauthorizedError(error_message="Logged-in user should be either DOMAIN_ADMIN,\
                                                                     ADMIN to modify a user or it can modify itself")
 
-        first_name = posted_data.get('first_name')
-        last_name = posted_data.get('last_name')
-        email = posted_data.get('email')
+        first_name = posted_data.get('first_name', '').strip()
+        last_name = posted_data.get('last_name', '').strip()
+        email = posted_data.get('email', '').strip()
         # TODO: Phone numbers formatting should be done on client side using country information for user
-        phone = posted_data.get('phone')
+        phone = posted_data.get('phone', '').strip()
 
         if email and not is_valid_email(email=email):
             raise InvalidUsage(error_message="Email Address %s is not properly formatted" % email)

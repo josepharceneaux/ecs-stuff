@@ -80,6 +80,7 @@ class Domain(db.Model):
     settings_json = db.Column('settingsJson', db.Text)
     updated_time = db.Column('updatedTime', db.TIMESTAMP, default=datetime.datetime.now())
     dice_company_id = db.Column('diceCompanyId', db.Integer, index=True)
+    is_disabled = db.Column(TINYINT, default='0', nullable=False)
 
     # Relationships
     users = relationship('User', backref='domain')

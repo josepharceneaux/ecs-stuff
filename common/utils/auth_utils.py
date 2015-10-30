@@ -66,23 +66,25 @@ def require_any_role(*role_names):
     def domain_roles(func):
         @wraps(func)
         def authenticate_roles(*args, **kwargs):
-            user_roles = UserScopedRoles.get_all_roles_of_user(request.user.id)
-            user_roles = [user_role.role_id for user_role in user_roles]
+            user_roles = [DomainRole.query.get(user_role.role_id).role_name for user_role in
+                          UserScopedRoles.get_all_roles_of_user(request.user.id)]
             if not role_names:
                 # Roles list is empty so it means func is not roles protected
-                return func(*args, **kwargs)
-            domain_roles = DomainRole.get_by_names(role_names) or ''
-            # Roles which a requesting user possess
-            valid_domain_roles = []
-            for domain_role in domain_roles:
-                if domain_role and domain_role.id in user_roles:
-                    valid_domain_roles.append(domain_role.role_name)
-            if valid_domain_roles:
-                request.valid_domain_roles = valid_domain_roles
-                request.is_admin_user = True if 'ADMIN' in valid_domain_roles else False
+                request.valid_domain_roles = user_roles
+                request.is_admin_user = True if 'ADMIN' in request.valid_domain_roles else False
                 return func(*args, **kwargs)
             else:
-                raise UnauthorizedError(error_message="User doesn't have appropriate permissions to \
-                                                        perform this operation")
+                # Roles which a requesting user possess
+                valid_domain_roles = []
+                for role_name in role_names:
+                    if role_name in user_roles:
+                        valid_domain_roles.append(role_name)
+                if valid_domain_roles:
+                    request.valid_domain_roles = valid_domain_roles
+                    request.is_admin_user = True if 'ADMIN' in valid_domain_roles else False
+                    return func(*args, **kwargs)
+                else:
+                    raise UnauthorizedError(error_message="User doesn't have appropriate permissions to \
+                                                            perform this operation")
         return authenticate_roles
     return domain_roles

@@ -4,6 +4,7 @@ from flask import Flask
 from common.models.db import db
 from gt_custom_restful import *
 
+
 app = Flask(__name__)
 app.config.from_object('user_service.config')
 
@@ -15,9 +16,11 @@ db.init_app(app)
 db.app = app
 
 from api.users_v1 import UserApi
+from api.domain_v1 import DomainApi
+
 api = GetTalentApi(app)
-parser = reqparse.RequestParser()
-api.add_resource(UserApi, "/users/<int:id>")
+api.add_resource(UserApi, "/users", "/users/<int:id>")
+api.add_resource(DomainApi, "/domains/<int:id>")
 
 import views
 
