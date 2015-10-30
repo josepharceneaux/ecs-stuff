@@ -1,9 +1,9 @@
+from flask import request
 from flask_restful import Resource
 from candidate_service.common.models.db import db
 from candidate_service.modules.TalentCandidates import (
     fetch_candidate_info, get_candidate_id_from_candidate_email
 )
-from candidate_service.common.models.user import User
 from candidate_service.common.models.email_marketing import EmailCampaign
 from candidate_service.modules.validators import (
     does_candidate_belong_to_user, is_custom_field_authorized,
@@ -12,12 +12,11 @@ from candidate_service.modules.validators import (
 from common.utils.validators import (is_number, is_valid_email)
 from common.utils.auth_utils import require_oauth
 from candidate_service.helper.api import parse_request_data
+from candidate_service.modules.api_custom_errors import *
 
 
 class CandidateResource(Resource):
-    # todo: add require_oauth as a decorator and authenticate user
-    # todo: use flask built in error handling and blueprint
-    # decorators = [require_oauth]
+    decorators = [require_oauth]
 
     def get(self, **kwargs):
         """
@@ -33,8 +32,7 @@ class CandidateResource(Resource):
         :return:    A dict of candidate info
                     404 status if candidate is not found
         """
-        authed_user = db.session.query(User).get(2)
-
+        authed_user = request.user
         candidate_id = kwargs.get('id')
         # Search via candidate_id or candidate_email
         if not is_number(candidate_id):
@@ -43,17 +41,18 @@ class CandidateResource(Resource):
 
             # Email address must be valid
             if not is_valid_email(candidate_email):
-                return {'error': {'message': 'Valid email address required'}}
+                return bad_request_error(message='A valid email address is required')
 
             candidate_id = get_candidate_id_from_candidate_email(candidate_email)
 
         # Candidate must belong to logged in user
-        if not does_candidate_belong_to_user(user_row=authed_user, candidate_id=candidate_id):
-            return {'error': {'message': 'Not authorized'}}, 403
+        if not does_candidate_belong_to_user(user_row=authed_user,
+                                             candidate_id=candidate_id):
+            return forbidden_error()
 
         candidate_data = fetch_candidate_info(candidate_id=candidate_id)
         if not candidate_data:
-            return {'error': {'message': 'Candidate not found'}}, 404
+            return not_found_error(message='Candidate not found')
 
         return {'candidate': candidate_data}
 
@@ -71,7 +70,7 @@ class CandidateResource(Resource):
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
-        authed_user = db.session.query(User).get(1)
+        authed_user = request.user
 
         # Parse request data
         body_dict = parse_request_data()
@@ -83,7 +82,7 @@ class CandidateResource(Resource):
 
         # Candidate dict(s) must be in a list
         if not isinstance(list_of_candidate_dicts, list):
-            return {'error': {'message': 'Unacceptable input: Candidate object(s) must be in a list'}}, 400
+            return bad_request_error(message="Unacceptable input: Candidate object(s) must be in a list")
 
         created_candidate_ids = []
         for candidate_dict in list_of_candidate_dicts:
@@ -92,11 +91,11 @@ class CandidateResource(Resource):
                       for email in candidate_dict.get('emails')]
             # Email address is required for creating a candidate
             if not any(emails):
-                return {'error': {'message': 'Email address required'}}, 400
+                return bad_request_error(message="Email address required")
 
             # Validate email address' format
             if filter(lambda email: not is_valid_email(email['address']), emails):
-                return {'error': {'message': 'Invalid email address/format'}}, 400
+                return bad_request_error(message="Invalid email address/format")
 
             phones = candidate_dict.get('phones')
             addresses = candidate_dict.get('addresses')
@@ -112,40 +111,46 @@ class CandidateResource(Resource):
             is_authorized = is_custom_field_authorized(custom_field_ids=custom_field_ids,
                                                        user_domain_id=authed_user.domain_id)
             if not is_authorized:
-                return {'error': {'message': 'Unauthorized custom field IDs'}}, 403
+                return unauthorized_error(message="Unauthorized custom field IDs")
 
             # Prevent user from adding area(s) of interest to other domain(s)
             area_of_interest_ids = [area_of_interest['id'] for area_of_interest in areas_of_interest]
             is_authorized = is_area_of_interest_authorized(area_of_interest_ids=area_of_interest_ids,
                                                            user_domain_id=authed_user.domain_id)
             if not is_authorized:
-                return {'error': {'message': 'Unauthorized area of interest IDs'}}, 403
+                return unauthorized_error(message="Unauthorized area of interest IDs")
 
 
         return body_dict
 
 
-# class CandidateEmailCampaignResource(Resource):
-#     # decorators = [require_oauth]
-#
-#     def get(self, **kwargs):
-#         authed_user = db.session.query(User).get(1)
-#
-#         candidate_id = kwargs.get('id')
-#         email_campaign_id = kwargs.get('email_campaign_id')
-#         if not candidate_id or not email_campaign_id:
-#             return {'error': {'message': 'candidate ID and email campaign ID are required.'}}
-#
-#         # Candidate must belong to user & email campaign must belong to user's domain
-#         validate_1 = does_candidate_belong_to_user(user_row=authed_user, candidate_id=candidate_id)
-#         validate_2 = does_email_campaign_belong_to_domain(user_row=authed_user)
-#         if not validate_1 or not validate_2:
-#             return {'error': {'message': 'Not authorized'}}, 403
-#
-#         email_campaign = db.session.query(EmailCampaign).get(email_campaign_id)
-#
-#         # Get all email_campaign_send objects of the requested candidate
-#         from candidate_service.modules.TalentCandidates import retrieve_email_campaign_send
-#         email_campaign_send_rows = retrieve_email_campaign_send(email_campaign, candidate_id)
-#
-#         return {'email_campaign_sends': email_campaign_send_rows}
+class CandidateEmailCampaignResource(Resource):
+    decorators = [require_oauth]
+
+    def get(self, **kwargs):
+        """
+        Fetch and return all EmailCampaignSend objects sent to a known candidate.
+            GET /v1/candidates/<int:id>/email_campaigns/<int:email_campaign_id>/email_campaign_sends
+            - This requires an email_campaign_id & a candidate_id
+            - Email campaign must belong to the candidate & candidate must belong to the logged in user.
+        :return: A list of EmailCampaignSend object(s)
+        """
+        authed_user = request.user
+        candidate_id = kwargs.get('id')
+        email_campaign_id = kwargs.get('email_campaign_id')
+        if not candidate_id or not email_campaign_id:
+            return bad_request_error(message="Candidate ID and email campaign ID are required")
+
+        # Candidate must belong to user & email campaign must belong to user's domain
+        validate_1 = does_candidate_belong_to_user(user_row=authed_user, candidate_id=candidate_id)
+        validate_2 = does_email_campaign_belong_to_domain(user_row=authed_user)
+        if not validate_1 or not validate_2:
+            return forbidden_error()
+
+        email_campaign = db.session.query(EmailCampaign).get(email_campaign_id)
+
+        # Get all email_campaign_send objects of the requested candidate
+        from candidate_service.modules.TalentCandidates import retrieve_email_campaign_send
+        email_campaign_send_rows = retrieve_email_campaign_send(email_campaign, candidate_id)
+
+        return {'email_campaign_sends': email_campaign_send_rows}

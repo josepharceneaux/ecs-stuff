@@ -10,6 +10,8 @@ def does_candidate_belong_to_user(user_row, candidate_id):
     Function checks if:
         1. Candidate belongs to user AND
         2. Candidate is in the same domain as the user
+    :type   candidate_id: int
+    :type   user_row: User
     :rtype: bool
     """
     candidate_row = db.session.query(Candidate).join(User).filter(

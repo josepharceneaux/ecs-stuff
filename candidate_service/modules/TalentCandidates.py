@@ -343,22 +343,22 @@ def get_candidate_id_from_candidate_email(candidate_email):
     return candidate_email_row.candidate_id
 
 
-# # TODO: move function to Email Marketing Service
-# def retrieve_email_campaign_send(email_campaign, candidate_id):
-#     """
-#     :param email_campaign:
-#     :param candidate_id:
-#     :rtype:     list(dict)
-#     """
-#     from candidate_service.common.models.email_marketing import EmailCampaignSend
-#     email_campaign_send_rows = db.session.query(EmailCampaignSend).\
-#         filter_by(EmailCampaignSend.email_campaign_id == email_campaign.id,
-#                   EmailCampaignSend.candidate_id == candidate_id)
-#
-#     return [{
-#         'candidate_id': email_campaign_send_row.candidate_id,
-#         'sent_time': email_campaign_send_row.sent_time
-#     } for email_campaign_send_row in email_campaign_send_rows]
+# TODO: move function to Email Marketing Service
+def retrieve_email_campaign_send(email_campaign, candidate_id):
+    """
+    :param email_campaign:
+    :param candidate_id:
+    :rtype:     list(dict)
+    """
+    from candidate_service.common.models.email_marketing import EmailCampaignSend
+    email_campaign_send_rows = db.session.query(EmailCampaignSend).\
+        filter_by(EmailCampaignSend.email_campaign_id == email_campaign.id,
+                  EmailCampaignSend.candidate_id == candidate_id)
+
+    return [{
+        'candidate_id': email_campaign_send_row.candidate_id,
+        'sent_time': email_campaign_send_row.sent_time
+    } for email_campaign_send_row in email_campaign_send_rows]
 
 
 

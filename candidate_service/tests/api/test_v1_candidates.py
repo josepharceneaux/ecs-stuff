@@ -36,38 +36,41 @@ def generate_multiple_candidates_data():
 ####################################
 # test cases for GETting candidate #
 ####################################
-def test_get_candidate_via_candidate_id(sample_user, user_auth):
+BASE_URI = "http://127.0.0.1:8005/v1/candidates"
+def test_get_candidate_from_forbidden_domain(sample_user, user_auth):
     """
     :param sample_user: user-row
     :type user_auth:    UserAuthentication
     """
-    candidate_id = 4
-    r = requests.get("http://127.0.0.1:8005/v1/candidates/%s" % candidate_id)
-
-    assert r.status_code == 200
-    assert 'candidate' in r.json()
-    assert 'id', 'emails' in r.json()['candidate']
-    print "\nresp = %s" % r.json()
-
-
-def test_get_candidate_via_candidate_email():
-    candidate_email = "brad.howard58@gmail.com"
-    r = requests.get("http://127.0.0.1:8005/v1/candidates/%s" % candidate_email)
-
-    print "resp = %s" % r
-
-###############################################
-# test cases for GETting email_campaign_sends #
-###############################################
-def test_get_email_campaign_sends():
-    candidate_id = 208
-    email_campaign_id = 3
-    r = requests.get('http://127.0.0.1:8005/v1/candidates/%s/email_campaigns/%s/email_campaign_sends'
-                     % (candidate_id, email_campaign_id))
-    print "resp = %s" % r
-    print "resp_json = %s" % r.text
+    # todo: once POST is complete, will need to create candidate first and then retrieve it
+    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+    candidate_id = 3
+    resp = requests.get(
+        url=BASE_URI + "/%s" % candidate_id,
+        headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
+    )
+    assert resp.status_code == 403
+    print "\nresp = %s" % resp
+    print "\nresp = %s" % resp.json()
 
 
-####################################
-# test cases for POSTing candidate #
-####################################
+# ###############################################
+# # test cases for GETting email_campaign_sends #
+# ###############################################
+# def test_get_email_campaign_sends():
+#     candidate_id = 208
+#     email_campaign_id = 3
+#     r = requests.get('http://127.0.0.1:8005/v1/candidates/%s/email_campaigns/%s/email_campaign_sends'
+#                      % (candidate_id, email_campaign_id))
+#     print "resp = %s" % r
+#     print "resp_json = %s" % r.text
+
+
+#######################################
+# test cases for POSTing candidate(s) #
+#######################################
+
+
+#########################################
+# test cases for DELETEing candidate(s) #
+#########################################
