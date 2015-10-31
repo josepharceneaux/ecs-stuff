@@ -120,8 +120,14 @@ class CandidateResource(Resource):
             if not is_authorized:
                 return unauthorized_error(message="Unauthorized area of interest IDs")
 
+            # country_id = country_code_or_name_to_id(addresses[0].get('country')) if addresses else 1
+            #     if not country_id:
+            #         country_id = 1  # country_code_or_name_to_id returns None if no match
+            from candidate_service.modules.TalentCandidates import create_candidate_from_params
+            resp_dict = create_candidate_from_params()
+            created_candidate_ids.append(resp_dict['candidate_id'])
 
-        return body_dict
+        return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}
 
 
 class CandidateEmailCampaignResource(Resource):

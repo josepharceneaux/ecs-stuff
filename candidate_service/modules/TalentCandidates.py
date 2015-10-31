@@ -10,6 +10,7 @@ from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.email_marketing import (EmailCampaign, EmailCampaignSend)
 from candidate_service.common.models.misc import (Country, AreaOfInterest, CustomField)
 from datetime import date
+from candidate_service.common.models.user import User
 
 
 def fetch_candidate_info(candidate_id, fields=None):
@@ -361,9 +362,156 @@ def retrieve_email_campaign_send(email_campaign, candidate_id):
     } for email_campaign_send_row in email_campaign_send_rows]
 
 
+def create_candidate_from_params(
+        user_id,
+        candidate_id=None,
+        first_name=None,
+        middle_name=None,
+        last_name=None,
+        formatted_name=None,
+        added_time=None,
+        status_id=None,
+        objective=None,
+        summary=None,
+        total_months_experience=None,
+        culture_id=None,
+        emails=None,
+        phones=None,
+        city=None,
+        state=None,
+        zip_code=None,
+        country_id=None,
+        university=None,
+        university_start_year=None,
+        university_start_month=None,
+        graduation_year=None,
+        graduation_month=None,
+        military_branch=None,
+        military_grade=None,
+        military_to_date=None,
+        area_of_interest_ids=None,
+        custom_field_dicts=None,
+        candidate_experience_dicts=None,
+        social_networks=None,
+        candidate_skill_dicts=None,
+        work_preference=None,
+        preferred_locations=None,
+        dice_social_profile_id=None,
+        dice_profile_id=None,
+        update_if_email_exists=True,
+        # source_product_id=None,   # todo: is this field still used?
+        source_id=None,
+        domain_can_read=1,
+        domain_can_write=1
+):
+    # Format inputs
+    import datetime
+    added_time = added_time or datetime.datetime.now()
+    # Figure out first_name, last_name, middle_name, and formatted_name from inputs
+    if first_name or last_name or middle_name or formatted_name:
+        if (first_name or last_name) and not formatted_name:
+            # If first_name and last_name given but not formatted_name, guess it
+            formatted_name = get_fullname_from_name_fields(first_name, middle_name, last_name)
+        elif formatted_name and (not first_name or not last_name):
+            # Otherwise, guess formatted_name from the other fields
+            first_name, middle_name, last_name = get_name_fields_from_name(formatted_name)
+
+    is_update = False
+    domain_id = domain_id_from_user_id(user_id=user_id)
+
+    if candidate_id:
+        is_update = True
+    elif dice_social_profile_id or dice_profile_id or (emails and update_if_email_exists):
+        # Is this an existing candidate?
+        candidate = None
+
+        # Check for existing dice_social_profile_id and dice_profile_id
+        if dice_social_profile_id:
+            candidate = db.session.queyr(Candidate).join(User).filter(
+                Candidate.dice_social_profile_id == dice_social_profile_id,
+                User.domain_id == domain_id
+            ).first()
+        elif dice_profile_id:
+            candidate = db.session.query(Candidate).join(User).filter(
+                Candidate.dice_profile_id == dice_profile_id,
+                User.domain_id == domain_id
+            ).first()
+
+        # If candidate still not found, check for existing email address, if specified
+        if not candidate and emails and update_if_email_exists:
+            if isinstance(emails[0], dict):
+                email = emails[0].get('address')
+            candidate = db.session.query(CandidateEmail).join(User).filter(
+                CandidateEmail.address.in_(email),
+                CandidateEmail.candidate_id == candidate_id,
+                User.domain_id == domain_id
+            ).first()
+
+        # If candidate found, thisd is an update
+        if candidate:
+            candidate_id = candidate.id
+            is_update = True
+
+    if not is_update:
+        candidate_id = db.session.add(Candidate(
+            first_name=first_name,
+            middle_name=middle_name,
+            last_name=last_name,
+            formatted_name=formatted_name,
+            added_time=added_time,
+            status_id=1,
+            user_id=user_id,
+            domain_can_read=domain_can_read,
+            domain_can_write=domain_can_write,
+            dice_profile_id=dice_profile_id,
+            dice_social_profile_id=dice_social_profile_id,
+            source_id=source_id,
+            objective=objective,
+            summary=summary
+        ))
+
+    return dict(candidate_id=candidate_id)
 
 
+def get_fullname_from_name_fields(first_name, middle_name, last_name):
+    full_name = ''
+    if first_name:
+        full_name = '%s ' % first_name
+    if middle_name:
+        full_name = '%s%s ' % (full_name, middle_name)
+    if last_name:
+        full_name = '%s%s' % (full_name, last_name)
+
+    return full_name
 
 
+def get_name_fields_from_name(formatted_name):
+    names = formatted_name.split(' ') if formatted_name else []
+    first_name, middle_name, last_name = '', '', ''
+    if len(names) == 1:
+        last_name = names[0]
+    elif len(names) > 1:
+        first_name, last_name = names[0], names[-1]
+        # middle_name is everything between first_name and last_name
+        # middle_name = '' if only first_name and last_name are provided
+        middle_name = ' '.join(names[1:-1])
+
+    return first_name, middle_name, last_name
 
 
+# Todo: move function to user_service/module
+def domain_id_from_user_id(user_id):
+    """
+    :type   user_id:  int
+    :return domain_id
+    """
+    user = db.session.query(User).get(user_id)
+    if not user:
+        logger.error('domain_id_from_user_id: Tried to find the domain ID of the user: %s',
+                     user_id)
+        return None
+    if not user.domain_id:
+        logger.error('domain_id_from_user_id: user.domain_id was None!', user_id)
+        return None
+
+    return user.domain_id

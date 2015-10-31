@@ -50,8 +50,8 @@ def does_email_campaign_belong_to_domain(user_row):
     """ Function retrieves all email campaigns belonging to user's domain
     :rtype: bool
     """
-    email_campaing_rows = db.session.query(EmailCampaign).join(User).\
+    email_campaign_rows = db.session.query(EmailCampaign).join(User).\
         filter(User.domain_id == user_row.domain_id).first()
 
-    return True if email_campaing_rows else False
+    return True if email_campaign_rows else False
 
