@@ -14,6 +14,9 @@ from common.utils.auth_utils import require_oauth
 from candidate_service.helper.api import parse_request_data
 from candidate_service.modules.api_custom_errors import *
 
+# error
+from common.error_handling import (ForbiddenError, InvalidUsage)
+
 
 class CandidateResource(Resource):
     # decorators = [require_oauth]
@@ -43,16 +46,14 @@ class CandidateResource(Resource):
 
             # Email address must be valid
             if not is_valid_email(candidate_email):
-                return bad_request_error(message='A valid email address is required')
+                return InvalidUsage(error_message="A valid email address is required")
 
             candidate_id = get_candidate_id_from_candidate_email(candidate_email)
 
         # Candidate must belong to logged in user
         if not does_candidate_belong_to_user(user_row=authed_user,
                                              candidate_id=candidate_id):
-            from common.error_handling import ForbiddenError
             raise ForbiddenError(error_message="Candidate does not belong to your domain!")
-            # return forbidden_error()
 
         candidate_data = fetch_candidate_info(candidate_id=candidate_id)
         if not candidate_data:
@@ -78,67 +79,61 @@ class CandidateResource(Resource):
         from candidate_service.common.models.user import User
         authed_user = db.session.query(User).get(1)
 
-        # Parse request data
-        # body_dict = parse_request_data()
-        # if body_dict.get('error'):
-        #     return body_dict
+        body_dict = request.get_json(force=True)
 
-        print "flask_jsoned = %s" % request.get_json(force=True)
-        # print "body_dict = %s" % body_dict
+        print "body_dict = %s" % body_dict
 
-        return
+        # Retrieve candidate object(s)
+        list_of_candidate_dicts = body_dict.get('candidates')
 
-        # # Retrieve candidate object(s)
-        # list_of_candidate_dicts = body_dict.get('candidates')
-        #
-        # # Candidate dict(s) must be in a list
-        # if not isinstance(list_of_candidate_dicts, list):
-        #     return bad_request_error(message="Unacceptable input: Candidate object(s) must be in a list")
-        #
-        # created_candidate_ids = []
-        # for candidate_dict in list_of_candidate_dicts:
-        #
-        #     emails = [{'label': email.get('label'), 'address': email.get('address')}
-        #               for email in candidate_dict.get('emails')]
-        #     # Email address is required for creating a candidate
-        #     if not any(emails):
-        #         return bad_request_error(message="Email address required")
-        #
-        #     # Validate email address' format
-        #     if filter(lambda email: not is_valid_email(email['address']), emails):
-        #         return bad_request_error(message="Invalid email address/format")
-        #
-        #     phones = candidate_dict.get('phones')
-        #     addresses = candidate_dict.get('addresses')
-        #     educations = candidate_dict.get('educations')
-        #     military_services = candidate_dict.get('military_services')
-        #     social_networks = candidate_dict.get('social_networks', [])
-        #     custom_fields = candidate_dict.get('custom_fields', [])
-        #     areas_of_interest = candidate_dict.get('areas_of_interest', [])
-        #     candidate_experiences = candidate_dict.get('work_experiences', [])
-        #
-        #     # Prevent user from adding custom field(s) to other domain(s)
-        #     custom_field_ids = [custom_field['id'] for custom_field in custom_fields]
-        #     is_authorized = is_custom_field_authorized(custom_field_ids=custom_field_ids,
-        #                                                user_domain_id=authed_user.domain_id)
-        #     if not is_authorized:
-        #         return unauthorized_error(message="Unauthorized custom field IDs")
-        #
-        #     # Prevent user from adding area(s) of interest to other domain(s)
-        #     area_of_interest_ids = [area_of_interest['id'] for area_of_interest in areas_of_interest]
-        #     is_authorized = is_area_of_interest_authorized(area_of_interest_ids=area_of_interest_ids,
-        #                                                    user_domain_id=authed_user.domain_id)
-        #     if not is_authorized:
-        #         return unauthorized_error(message="Unauthorized area of interest IDs")
-        #
-        #     # country_id = country_code_or_name_to_id(addresses[0].get('country')) if addresses else 1
-        #     #     if not country_id:
-        #     #         country_id = 1  # country_code_or_name_to_id returns None if no match
-        #     from candidate_service.modules.TalentCandidates import create_candidate_from_params
-        #     resp_dict = create_candidate_from_params()
-        #     created_candidate_ids.append(resp_dict['candidate_id'])
-        #
-        # return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}
+        # Candidate dict(s) must be in a list
+        if not isinstance(list_of_candidate_dicts, list):
+            return bad_request_error(message="Unacceptable input: Candidate object(s) must be in a list")
+
+        created_candidate_ids = []
+        for candidate_dict in list_of_candidate_dicts:
+
+            emails = [{'label': email.get('label'), 'address': email.get('address')}
+                      for email in candidate_dict.get('emails')]
+            # Email address is required for creating a candidate
+            if not any(emails):
+                return bad_request_error(message="Email address required")
+
+            # Validate email address' format
+            if filter(lambda email: not is_valid_email(email['address']), emails):
+                return bad_request_error(message="Invalid email address/format")
+
+            phones = candidate_dict.get('phones')
+            addresses = candidate_dict.get('addresses')
+            educations = candidate_dict.get('educations')
+            military_services = candidate_dict.get('military_services')
+            social_networks = candidate_dict.get('social_networks', [])
+            custom_fields = candidate_dict.get('custom_fields', [])
+            areas_of_interest = candidate_dict.get('areas_of_interest', [])
+            candidate_experiences = candidate_dict.get('work_experiences', [])
+
+            # Prevent user from adding custom field(s) to other domain(s)
+            custom_field_ids = [custom_field['id'] for custom_field in custom_fields]
+            is_authorized = is_custom_field_authorized(custom_field_ids=custom_field_ids,
+                                                       user_domain_id=authed_user.domain_id)
+            if not is_authorized:
+                return unauthorized_error(message="Unauthorized custom field IDs")
+
+            # Prevent user from adding area(s) of interest to other domain(s)
+            area_of_interest_ids = [area_of_interest['id'] for area_of_interest in areas_of_interest]
+            is_authorized = is_area_of_interest_authorized(area_of_interest_ids=area_of_interest_ids,
+                                                           user_domain_id=authed_user.domain_id)
+            if not is_authorized:
+                return unauthorized_error(message="Unauthorized area of interest IDs")
+
+            # country_id = country_code_or_name_to_id(addresses[0].get('country')) if addresses else 1
+            #     if not country_id:
+            #         country_id = 1  # country_code_or_name_to_id returns None if no match
+            from candidate_service.modules.TalentCandidates import create_candidate_from_params
+            resp_dict = create_candidate_from_params()
+            created_candidate_ids.append(resp_dict['candidate_id'])
+
+        return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}
 
 
 class CandidateEmailCampaignResource(Resource):

@@ -4,6 +4,7 @@ from gt_custom_restful import *
 
 
 app = Flask(__name__)
+import config
 app.config.from_object('candidate_service.config')
 
 logger = app.config['LOGGER']
