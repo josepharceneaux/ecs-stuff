@@ -27,8 +27,7 @@ from social_network_service.common.models.event import Event
 from social_network_service.common.models.social_network import SocialNetwork
 from social_network_service import logger
 from social_network_service import flask_app as app
-from social_network_service.custom_exceptions import ApiException, SocialNetworkError
-from social_network_service.custom_exceptions import SocialNetworkNotImplemented
+from social_network_service.custom_exceptions import *
 
 
 OAUTH_SERVER = app.config['OAUTH_SERVER_URI']

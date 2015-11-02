@@ -1,7 +1,7 @@
 """
 This modules contains helper methods and classes which we are using in Social Network Service API app.
 
-        * ApiResponse:
+        * SocialNetworkApiResponse:
             This class is used to create API response object to return json response.
 
         * authenticate:
@@ -39,15 +39,16 @@ class CustomApi(Api):
         # in required format
 
         # check whether this exception is some chile class of TalentError base class.
-        bases = [cls.__name__ for cls in e.__class__.__mro__]
-        if 'TalentError' in bases:
+        # bases = [cls.__name__ for cls in e.__class__.__mro__]
+        # if 'TalentError' in bases:
+        if isinstance(e, TalentError):
             raise
         else:
             # if it is not a custom exception then let the Api class handle it.
             return super(CustomApi, self).handle_error(e)
 
 
-class ApiResponse(Response):
+class SocialNetworkApiResponse(Response):
     """
     Override default_mimetype to 'application/json' to return proper json api response
     """

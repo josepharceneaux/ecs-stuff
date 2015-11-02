@@ -105,7 +105,7 @@ def register_error_handlers(app, logger):
         if exc.__class__.__name__ == InternalServerError.__name__:  # Why doesn't instanceof() work here?
             # If an InternalServerError is raised by the server code, return its to_dict
             response = exc.to_dict()
-        elif hasattr(exc, 'to_dict'):
+        elif isinstance(exc, InternalServerError):
             response = exc.to_dict()
         elif isinstance(exc, Exception):
             # If any other Exception is thrown, return its message

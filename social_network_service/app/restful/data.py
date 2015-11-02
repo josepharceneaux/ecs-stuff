@@ -9,7 +9,7 @@ from flask import Blueprint
 from flask.ext.restful import Resource, Api
 from flask.ext.cors import CORS
 import pytz
-from social_network_service.app.app_utils import api_route, ApiResponse, CustomApi
+from social_network_service.app.app_utils import api_route, SocialNetworkApiResponse, CustomApi
 
 data_blueprint = Blueprint('data_api', __name__)
 api = CustomApi()
@@ -78,8 +78,9 @@ class TimeZones(Resource):
         try:
             timezones = get_timezones()
         except Exception as e:
-            return ApiResponse(json.dumps(dict(error=dict(messsage='APIError: Unable to get timezones.'))), status=500)
-        return ApiResponse(json.dumps(dict(timezones=timezones)), status=200)
+            return SocialNetworkApiResponse(json.dumps(dict(error=dict(messsage='APIError: Unable to get timezones.'))),
+                                            status=500)
+        return SocialNetworkApiResponse(json.dumps(dict(timezones=timezones)), status=200)
 
 
 def get_timezones():
