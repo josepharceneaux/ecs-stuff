@@ -17,7 +17,7 @@ import traceback
 from flask import Response
 from flask.ext.restful import Api
 from requests_oauthlib import OAuth2Session
-from common.error_handling import UnauthorizedError
+from social_network_service.common.error_handling import *
 from social_network_service import logger
 from flask import current_app as app
 
