@@ -43,11 +43,11 @@ def test_get_candidate_from_forbidden_domain(sample_user, user_auth):
     :type user_auth:    UserAuthentication
     """
     # todo: once POST is complete, will need to create candidate first and then retrieve it
-    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+    # auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
     candidate_id = 3
     resp = requests.get(
-        url=BASE_URI + "/%s" % candidate_id,
-        headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
+        url=BASE_URI + "/%s" % candidate_id
+        # headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
     )
     assert resp.status_code == 403
     print "\nresp = %s" % resp
@@ -69,7 +69,14 @@ def test_get_candidate_from_forbidden_domain(sample_user, user_auth):
 #######################################
 # test cases for POSTing candidate(s) #
 #######################################
-
+def test_post_candidate():
+    import json
+    r = requests.post(
+        url=BASE_URI,
+        data=json.dumps('')
+    )
+    print "resp_status = %s" % r.status_code
+    print "resp = %s" % r
 
 #########################################
 # test cases for DELETEing candidate(s) #
