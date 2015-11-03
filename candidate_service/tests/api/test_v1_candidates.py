@@ -61,8 +61,14 @@ def test_post_candidate():
         url=BASE_URI,
         data=json.dumps(generate_single_candidate_data())
     )
-    print "resp_status = %s" % r.status_code
-    print "resp = %s" % r
+
+    resp_object = r.json()
+    print "\n resp_object = %s" % resp_object
+
+    assert r.status_code == 200
+    assert 'candidates' in resp_object
+    assert isinstance(resp_object, dict)
+    assert isinstance(resp_object['candidates'], list)
 
 #########################################
 # test cases for DELETEing candidate(s) #

@@ -472,6 +472,25 @@ def create_candidate_from_params(
             ))
             db.session.commit()
 
+    # Add Candidate's areas_of_interest
+    if area_of_interest_ids:
+        for area_of_interest_id in area_of_interest_ids:
+            db.session.add(CandidateAreaOfInterest(
+                candidate_id=candidate_id,
+                area_of_interest_id=area_of_interest_id
+            ))
+            db.session.commit()
+
+    # Add Candidate's custom_field(s)
+    if custom_field_ids:
+        for custom_field_id in custom_field_ids:
+            db.session.add(CandidateCustomField(
+                candidate_id=candidate_id,
+                custom_field_id=custom_field_id,
+                added_time=added_time
+            ))
+            db.session.commit()
+
     # Add Candidate's email(s)
     if emails:
         for email in emails:

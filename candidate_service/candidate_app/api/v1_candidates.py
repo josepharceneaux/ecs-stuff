@@ -114,7 +114,8 @@ class CandidateResource(Resource):
             is_authorized = is_custom_field_authorized(custom_field_ids=custom_field_ids,
                                                        user_domain_id=authed_user.domain_id)
             if not is_authorized:
-                raise ForbiddenError(error_message="Unauthorized custom field IDs")
+                # raise ForbiddenError(error_message="Unauthorized custom field IDs")
+                pass
 
             # Prevent user from adding area(s) of interest to other domain(s)
             areas_of_interest = candidate_dict.get('areas_of_interest', [])
@@ -122,7 +123,8 @@ class CandidateResource(Resource):
             is_authorized = is_area_of_interest_authorized(area_of_interest_ids=area_of_interest_ids,
                                                            user_domain_id=authed_user.domain_id)
             if not is_authorized:
-                raise ForbiddenError(error_message="Unauthorized area of interest IDs")
+                pass
+                # raise ForbiddenError(error_message="Unauthorized area of interest IDs")
 
             addresses = candidate_dict.get('addresses')
             country_id = addresses[0].get('country') if addresses else 1
