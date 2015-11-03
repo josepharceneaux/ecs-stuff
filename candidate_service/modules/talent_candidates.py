@@ -1,6 +1,8 @@
 """
 Functions related to retrieving, creating, updating, and deleting candidates
 """
+import datetime
+from datetime import date
 from candidate_service.candidate_app import db, logger
 from candidate_service.common.models.candidate import (
     Candidate, EmailLabel, CandidateEmail, CandidatePhone, PhoneLabel,
@@ -12,12 +14,16 @@ from candidate_service.common.models.candidate import (
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.email_marketing import (EmailCampaign, EmailCampaignSend)
 from candidate_service.common.models.misc import (Country, AreaOfInterest, CustomField)
-import datetime
-from datetime import date
 from candidate_service.common.models.user import User
 
 # Error handling
 from common.error_handling import InvalidUsage
+
+# Validations
+from common.utils.validators import sanitize_zip_code
+
+# Parsing
+from resume_service.resume_parsing_app.views.parse_lib import get_coordinates
 
 
 def fetch_candidate_info(candidate_id, fields=None):
@@ -436,7 +442,38 @@ def create_candidate_from_params(
     db.session.commit()
     candidate_id = candidate.id
 
-    # Add Candidate's email(s) to db
+    # Add Candidate's address(es)
+    if addresses:
+        for address in addresses:
+            # Get country ID
+            country_id = country_id_from_country_name_or_code(address['country'])
+
+            # Validate Zip Code
+            zip_code = sanitize_zip_code(address['zip_code'])
+
+            # City
+            city = address.city
+
+            # State
+            state = address.state
+
+            # Get coordinates
+            coordinates = get_coordinates(zip_code, city, state)
+
+            db.session.add(CandidateAddress(
+                candidate_id=candidate_id,
+                address_line_1=address.address_line_1,
+                address_line_2=address.address_line_2,
+                city=city,
+                state=state,
+                country_id=country_id,
+                zip_code=zip_code,
+                po_box=address.po_box,
+                is_default=address.is_default,
+                coordinates=coordinates
+            ))
+
+    # Add Candidate's email(s)
     if emails:
         for email in emails:
             # Get email label ID
@@ -449,6 +486,7 @@ def create_candidate_from_params(
             ))
             db.session.commit()
 
+    # Add Candidate's phone(s)
     if phones:
         for phone in phones:
             # Get phone label ID
@@ -463,6 +501,22 @@ def create_candidate_from_params(
 
 
     return dict(candidate_id=candidate_id)
+
+
+def country_id_from_country_name_or_code(country_name_or_code):
+    """
+    Function will find and return ID of the country matching with country_name_or_code
+    If not match is found, default return is 1 => 'United States'
+
+    :return: Country.id
+    """
+    from candidate_service.common.models.misc import Country
+    all_countries = db.session.query(Country).all()
+    matching_country_id = next((row.id for row in all_countries
+                                if row.code.lower() == country_name_or_code.lower()
+                                or row.name.lower() == country_name_or_code.lower()), None)
+    return matching_country_id if matching_country_id else 1
+
 
 
 def email_label_id_from_email_label(email_label):
