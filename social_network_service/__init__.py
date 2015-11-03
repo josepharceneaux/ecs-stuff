@@ -4,7 +4,7 @@ __author__ = 'zohaib'
 from flask import Flask
 
 from social_network_service.common.models.db import db
-from social_network_service.common.error_handling import register_error_handlers
+from social_network_service.common.error_handling import *
 from social_network_service.model_helpers import add_model_helpers
 
 flask_app = Flask(__name__)
