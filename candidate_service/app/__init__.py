@@ -6,8 +6,6 @@ from common.error_handling import register_error_handlers
 from views import api
 from candidate_service import config
 
-__author__ = 'naveen'
-
 app = Flask(__name__)
 
 app.config.from_object(config)

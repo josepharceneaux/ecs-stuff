@@ -7,13 +7,11 @@ import pytest, requests
 from common.utils.common_functions import get_or_create
 
 # Application Specific
-from activity_service.activities_app import app
-from activity_service.common.models.db import db
-from activity_service.common.models.misc import (Culture, Organization)
-from activity_service.common.models.user import (Client, Domain, User, Token)
+from common.models.db import db
+from common.models.user import (Client, Domain, User, Token)
+from common.models.misc import (Culture, Organization)
 
 ISO_FORMAT = '%Y-%m-%d %H:%M'
-APP = app.test_client()
 USER_HASHED_PASSWORD = 'pbkdf2(1000,64,sha512)$a97efdd8d6b0bf7f$55de0d7bafb29a88e7596542aa927ac0e1fbc30e94db2c5215851c72294ebe01fb6461b27f0c01b9bd7d3ce4a180707b6652ba2334c7a2b0fcb93c946aa8b4ec'
 
 
@@ -82,7 +80,7 @@ def revoke_token(user_logout_credentials):
 
 
 @pytest.fixture(autouse=True)
-def sample_user(request, test_domain):
+def sample_user(test_domain):
     user_attrs = dict(
         domain_id=test_domain.id, first_name='Jamtry', last_name='Jonas',
         password=USER_HASHED_PASSWORD,
@@ -93,14 +91,6 @@ def sample_user(request, test_domain):
         db.session.add(user)
         db.session.commit()
 
-    def fin():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except Exception:
-            pass
-
-    request.addfinalizer(fin)
     return user
 
 

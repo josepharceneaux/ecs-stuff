@@ -7,6 +7,7 @@ from common.error_handling import *
 from candidate import CandidateSource
 from associations import CandidateAreaOfInterest
 from misc import AreaOfInterest
+from email_marketing import EmailCampaign
 
 
 class User(db.Model):
@@ -37,6 +38,7 @@ class User(db.Model):
     candidates = relationship('Candidate', backref='user')
     public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
     user_group = relationship('UserGroup', backref='user')
+    email_campaigns = relationship('EmailCampaign', backref='user')
 
     def is_authenticated(self):
         return True
@@ -74,6 +76,7 @@ class Domain(db.Model):
     users = relationship('User', backref='domain')
     candidate_sources = relationship('CandidateSource', backref='domain')
     areas_of_interest = relationship('AreaOfInterest', backref='domain')
+    custom_fields = relationship('CustomField', backref='domain')
 
     def get_id(self):
         return unicode(self.id)

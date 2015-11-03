@@ -1,3 +1,4 @@
+
 """Application config file."""
 
 import os
@@ -11,6 +12,7 @@ __author__ = 'naveen'
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 LOGGING_CONF = os.path.join(APP_ROOT, 'logging.conf')
 logging.config.fileConfig(LOGGING_CONF)
+
 GT_ENVIRONMENT = os.environ.get('GT_ENVIRONMENT')
 if GT_ENVIRONMENT == 'dev':
     OAUTH_SERVER_URI = 'http://127.0.0.1:8001/oauth2/authorize'
@@ -39,3 +41,4 @@ else:
     raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")
 
 SECRET_KEY = os.urandom(24).encode('hex')
+
