@@ -12,12 +12,12 @@ import boto
 import boto.exception
 import simplejson
 from flask import request
+
+from candidate_service.app import db
 from flask import current_app
-
-from candidate_service.common.models.db import db
-from common_functions import get_table, session
 from candidate_service.config import GT_ENVIRONMENT
-
+from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateStatus
+from candidate_service.common.models.user import User
 API_VERSION = "2013-01-01"
 MYSQL_DATE_FORMAT = '%Y-%m-%dT%H:%i:%S.%fZ'
 BATCH_REQUEST_LIMIT_BYTES = 5 * 1024 * 1024
@@ -365,20 +365,18 @@ def upload_candidate_documents(candidate_ids):
 
 
 def upload_candidate_documents_in_domain(domain_id):
-    candidate_table = get_table("candidate")
-    user = get_table("user")
-    candidates = candidate_table.select([candidate_table.id, candidate_table.ownerUserId]).\
-        where((candidate_table.c.ownerUserId == user.c.id) & (user.c.domainId == domain_id)).execute().as_list()
+
+    candidate = db.session.query(Candidate).join(User).filter(Candidate.user_id == User.id,
+                                                              User.domain_id == domain_id)
+    candidates = [candidate.id, candidate.user_id]
     candidate_ids = [candidate['id'] for candidate in candidates]
     current_app.logger.info("Uploading %s candidates of domain %s", len(candidate_ids), domain_id)
     return upload_candidate_documents(candidate_ids)
 
 
 def upload_candidate_documents_of_user(user):
-    candidate_table = get_table("candidate")
-    user = get_table("user")
-    candidates = candidate_table.select([candidate_table.c.id, candidate_table.c.ownerUserId]).\
-        where(candidate_table.c.ownerUserId == user.c.id).execute().as_list()
+    candidate = db.session.query(Candidate).join(User).filter_by(Candidate.user_id == User.id)
+    candidates = [candidate.id, candidate.user_id]
     candidate_ids = [candidate['id'] for candidate in candidates]
     current_app.logger.info("Uploading %s candidates of user's domain %s", len(candidate_ids), user.domainId)
     return upload_candidate_documents(candidate_ids=candidate_ids)
@@ -1045,15 +1043,16 @@ def get_faceting_information(facets):
         search_facets_values['usernameFacet'] = get_username_facet_info_with_ids(facet_owner)
 
     if facet_aoi:
-        search_facets_values['areaOfInterestIdFacet'] = get_facet_info_with_ids('area_of_interest', facet_aoi,
+        from candidate_service.common.models.misc import AreaOfInterest
+        search_facets_values['areaOfInterestIdFacet'] = get_facet_info_with_ids(AreaOfInterest, facet_aoi,
                                                                                 'description')
 
     if facet_source:
-        search_facets_values['sourceFacet'] = get_facet_info_with_ids('candidate_source', facet_source,
+        search_facets_values['sourceFacet'] = get_facet_info_with_ids(CandidateSource, facet_source,
                                                                       'description')
 
     if facet_status:
-        search_facets_values['statusFacet'] = get_facet_info_with_ids('candidate_status', facet_status,
+        search_facets_values['statusFacet'] = get_facet_info_with_ids(CandidateStatus, facet_status,
                                                                       'description')
 
     if facet_skills:
@@ -1088,14 +1087,13 @@ def get_faceting_information(facets):
 
 
 def get_username_facet_info_with_ids(facet_owner):
-    tmp_dict = get_facet_info_with_ids('user', facet_owner, 'email')
+    tmp_dict = get_facet_info_with_ids(User, facet_owner, 'email')
     # Dict is (email, value) -> count
     new_tmp_dict = dict()
     # Replace each user's email with name
     for email_value_tuple, count in tmp_dict.items():
-        c_source = get_table('user')
-        user_row = session.query(c_source).filter_by(email=email_value_tuple[0]).first()
-        new_tmp_dict[user_row.firstName+" "+user_row.lastName, email_value_tuple[1]] = count
+        user_row = db.session.query(User).filter_by(email=email_value_tuple[0]).first()
+        new_tmp_dict[user_row.first_name+" "+user_row.last_name, email_value_tuple[1]] = count
     return new_tmp_dict
 
 
@@ -1110,9 +1108,10 @@ def get_facet_info_with_ids(table_name, facet, field_name):
     """
 
     tmp_dict = {}
+    if isinstance(table_name, basestring):
+        table_name = table_name.split("'")
     for bucket in facet:
-        table = get_table(table_name)
-        row = session.query(table).filter_by(id=int(bucket['value'])).first()
+        row = db.session.query(table_name).filter_by(id=int(bucket['value'])).first()
         if row:
             tmp_dict[(getattr(row, field_name), bucket['value'])] = bucket['count']
         else:
