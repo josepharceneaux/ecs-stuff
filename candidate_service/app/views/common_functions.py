@@ -1,3 +1,4 @@
+from flask import current_app
 
 from candidate_service.app import db
 from candidate_service.common.models.user import User
@@ -8,8 +9,19 @@ def users_in_domain(domain_id):
         params: domain_id: Domain id
         returns: database users in given domain
         """
-        user_domain = db.session.query(User).get(domain_id).first()
+        user_domain = db.session.query(User).filter_by(User.domain_id == domain_id)
         return user_domain
+
+
+def domain_id_from_user_id(user_id):
+    user = db.session.query(User).filter_by(User.id == user_id).first()
+    if not user:
+        current_app.logger.error("domain_id_from_user_id(%s): Tried to find domain ID of user: ", user_id)
+        return None
+    if not user.domainId:
+        current_app.logger.error("domain_id_from_user_id(%s): user.domainId was None!", user_id)
+        return None
+    return user.domainId
 
 
 def get_geo_coordinates(location):
