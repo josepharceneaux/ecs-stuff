@@ -55,6 +55,7 @@ class Candidate(db.Model):
     candidate_unidentifieds = relationship('CandidateUnidentified', backref='candidate')
     email_campaign_sends = relationship('EmailCampaignSend', backref='candidate')
     candidate_custom_fields = relationship('CandidateCustomField', backref='candidate')
+    candidate_experiences = relationship('CandidateExperience', backref='candidate')
 
     def get_id(self):
         return unicode(self.id)
@@ -518,7 +519,7 @@ class CandidateAddress(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
-        return "<CandidateAddress (candidate_id=' %r')>" % self.candidate_id
+        return "<CandidateAddress (candidate_id = %r)>" % self.candidate_id
 
 
 class CandidateEducation(db.Model):
@@ -539,7 +540,7 @@ class CandidateEducation(db.Model):
     candidate_education_degrees = relationship('CandidateEducationDegree', backref='candidate_education')
 
     def __repr__(self):
-        return "<CandidateEducation (candidate_id=' %r')>" % self.candidate_id
+        return "<CandidateEducation (candidate_id = %r)>" % self.candidate_id
 
 
 class CandidateEducationDegree(db.Model):

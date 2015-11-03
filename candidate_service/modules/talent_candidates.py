@@ -1,3 +1,6 @@
+"""
+Functions related to retrieving, creating, updating, and deleting candidates
+"""
 from candidate_service.candidate_app import db, logger
 from candidate_service.common.models.candidate import (
     Candidate, EmailLabel, CandidateEmail, CandidatePhone, PhoneLabel,
@@ -9,19 +12,24 @@ from candidate_service.common.models.candidate import (
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.email_marketing import (EmailCampaign, EmailCampaignSend)
 from candidate_service.common.models.misc import (Country, AreaOfInterest, CustomField)
+import datetime
 from datetime import date
 from candidate_service.common.models.user import User
+
+# Error handling
+from common.error_handling import InvalidUsage
 
 
 def fetch_candidate_info(candidate_id, fields=None):
     """
-    Fetched for candidate object via candidate's id
+    Fetch for candidate object via candidate's id
     :type       candidate_id: int
     :type       fields: None | str
 
     :return:    Candidate dict
     :rtype:     dict[str, T]
     """
+    assert isinstance(candidate_id, int)
     candidate = db.session.query(Candidate).get(candidate_id)
     if not candidate:
         logger.error('Candidate not found, candidate_id: %s', candidate_id)
@@ -37,15 +45,15 @@ def fetch_candidate_info(candidate_id, fields=None):
 
     emails = None
     if get_all_fields or 'emails' in fields:
-        emails = email_label_and_address(candidate_id=candidate_id)
+        emails = email_label_and_address(candidate=candidate)
 
     phones = None
     if get_all_fields or 'phones' in fields:
-        phones = phone_label_and_value(candidate_id=candidate_id)
+        phones = phone_label_and_value(candidate=candidate)
 
     candidate_addresses = None
     if get_all_fields or 'addresses' in fields:
-        candidate_addresses = addresses(candidate_id=candidate_id)
+        candidate_addresses = addresses(candidate=candidate)
 
     candidate_work_experiences = None
     if get_all_fields or 'work_experiences' in fields:
@@ -53,19 +61,19 @@ def fetch_candidate_info(candidate_id, fields=None):
 
     candidate_work_preference = None
     if get_all_fields or 'work_preferences' in fields:
-        candidate_work_preference = work_preference(candidate_id=candidate_id)
+        candidate_work_preference = work_preference(candidate=candidate)
 
     candidate_preferred_locations = None
     if get_all_fields or 'preferred_locations' in fields:
-        candidate_preferred_locations = preferred_locations(candidate_id=candidate_id)
+        candidate_preferred_locations = preferred_locations(candidate=candidate)
 
     candidate_educations = None
     if get_all_fields or 'educations' in fields:
-        candidate_educations = educations(candidate_id=candidate_id)
+        candidate_educations = educations(candidate=candidate)
 
     candidate_skills = None
     if get_all_fields or 'skills' in fields:
-        candidate_skills = skills(candidate_id=candidate_id)
+        candidate_skills = skills(candidate=candidate)
 
     candidate_interests = None
     if get_all_fields or 'areas_of_interest' in fields:
@@ -73,19 +81,19 @@ def fetch_candidate_info(candidate_id, fields=None):
 
     candidate_military_services = None
     if get_all_fields or 'military_services' in fields:
-        candidate_military_services = military_services(candidate_id=candidate_id)
+        candidate_military_services = military_services(candidate=candidate)
 
     candidate_custom_fields = None
     if get_all_fields or 'custom_fields' in fields:
-        candidate_custom_fields = custom_fields(candidate_id=candidate_id)
+        candidate_custom_fields = custom_fields(candidate=candidate)
 
     candidate_social_networks = None
     if get_all_fields or 'social_networks' in fields:
-        candidate_social_networks = social_network_name_and_url(candidate_id=candidate_id)
+        candidate_social_networks = social_network_name_and_url(candidate=candidate)
 
     history = None
     if get_all_fields or 'contact_history' in fields:
-        history = contact_history(candidate_id=candidate_id)
+        history = contact_history(candidate=candidate)
 
     openweb_id = None
     if get_all_fields or 'openweb_id' in fields:
@@ -121,25 +129,24 @@ def fetch_candidate_info(candidate_id, fields=None):
     return return_dict
 
 
-def email_label_and_address(candidate_id):
-    candidate_emails = db.session.query(CandidateEmail).filter_by(candidate_id=candidate_id)
+def email_label_and_address(candidate):
+    candidate_emails = candidate.candidate_emails
     return [{
         'label': db.session.query(EmailLabel).get(email.email_label_id).description,
         'address': email.address
     } for email in candidate_emails]
 
 
-def phone_label_and_value(candidate_id):
-    candidate_phones = db.session.query(CandidatePhone).filter_by(candidate_id=candidate_id)
+def phone_label_and_value(candidate):
+    candidate_phones = candidate.candidate_phones
     return [{
         'label': db.session.query(PhoneLabel).get(phone.phone_label_id).description,
         'value': phone.value
     } for phone in candidate_phones]
 
 
-def addresses(candidate_id):
-    candidate_addresses = db.session.query(CandidateAddress).\
-        filter_by(candidate_id=candidate_id)
+def addresses(candidate):
+    candidate_addresses = candidate.candidate_addresses
     return [{
         'address_line_1': candidate_address.address_line_1,
         'address_line_2': candidate_address.address_line_2,
@@ -173,9 +180,8 @@ def work_experiences(candidate_id):
     } for candidate_experience in candidate_experiences]
 
 
-def work_preference(candidate_id):
-    candidate_work_preference = db.session.query(CandidateWorkPreference).\
-        filter_by(candidate_id=candidate_id).first()
+def work_preference(candidate):
+    candidate_work_preference = candidate.candidate_work_preferences
     return {
         'authorization': candidate_work_preference.authorization,
         'employment_type': candidate_work_preference.tax_terms,
@@ -187,9 +193,8 @@ def work_preference(candidate_id):
     } if candidate_work_preference else None
 
 
-def preferred_locations(candidate_id):
-    candidate_preferred_locations = db.session.query(CandidatePreferredLocation).\
-        filter_by(candidate_id=candidate_id)
+def preferred_locations(candidate):
+    candidate_preferred_locations = candidate.candidate_preferred_locations
     return [{
         'address': preferred_location.address,
         'city': preferred_location.city,
@@ -198,9 +203,8 @@ def preferred_locations(candidate_id):
     } for preferred_location in candidate_preferred_locations]
 
 
-def educations(candidate_id):
-    candidate_educations = db.session.query(CandidateEducation).\
-        filter_by(candidate_id=candidate_id)
+def educations(candidate):
+    candidate_educations = candidate.candidate_educations
     return [{
         'school_name': education.school_name,
         'degree_details': degree_info(education_id=education.id),
@@ -221,9 +225,8 @@ def degree_info(education_id):
     } for degree in education]
 
 
-def skills(candidate_id):
-    candidate_skills = db.session.query(CandidateSkill).\
-        filter_by(candidate_id=candidate_id)
+def skills(candidate):
+    candidate_skills = candidate.candidate_skills
     return [{
         'name': skill.description,
         'month_used': skill.total_months,
@@ -240,9 +243,8 @@ def areas_of_interest(candidate_id):
     } for interest in candidate_interests]
 
 
-def military_services(candidate_id):
-    candidate_military_experience = db.session.query(CandidateMilitaryService).\
-        filter_by(candidate_id=candidate_id)
+def military_services(candidate):
+    candidate_military_experience = candidate.candidate_military_services
     return [{
         'branch': military_info.branch,
         'service_status': military_info.service_status,
@@ -254,9 +256,8 @@ def military_services(candidate_id):
     } for military_info in candidate_military_experience]
 
 
-def custom_fields(candidate_id):
-    candidate_custom_fields = db.session.query(CandidateCustomField).\
-        filter_by(candidate_id=candidate_id)
+def custom_fields(candidate):
+    candidate_custom_fields = candidate.candidate_custom_fields
     return [{
         'id': candidate_custom_field.custom_field_id,
         'name': db.session.query(CustomField).get(candidate_custom_field.custom_field_id),
@@ -265,9 +266,8 @@ def custom_fields(candidate_id):
     } for candidate_custom_field in candidate_custom_fields]
 
 
-def social_network_name_and_url(candidate_id):
-    candidate_social_networks = db.session.query(CandidateSocialNetwork).\
-        filter_by(candidate_id=candidate_id)
+def social_network_name_and_url(candidate):
+    candidate_social_networks = candidate.candidate_social_network
     return [{
         'name': social_network_name(social_network_id=social_network.social_network_id),
         'url': social_network.social_profile_url
@@ -284,11 +284,11 @@ class ContactHistoryEvent:
     EMAIL_CLICK = 'email_click'
 
 
-def contact_history(candidate_id):
+def contact_history(candidate):
     timeline = []
 
     # Campaign sends & campaigns
-    email_campaign_sends = db.session.query(EmailCampaignSend).filter_by(candidate_id=candidate_id)
+    email_campaign_sends = candidate.email_campaign_sends
     for email_campaign_send in email_campaign_sends:
         if not email_campaign_sends.email_campaign_id:
             logger.error("contact_history: email_campaign_send has no email_campaign_id: %s", email_campaign_send.id)
@@ -364,49 +364,37 @@ def retrieve_email_campaign_send(email_campaign, candidate_id):
 
 def create_candidate_from_params(
         user_id,
-        candidate_id=None,
         first_name=None,
-        middle_name=None,
         last_name=None,
+        middle_name=None,
         formatted_name=None,
-        added_time=None,
         status_id=None,
-        objective=None,
-        summary=None,
-        total_months_experience=None,
-        culture_id=None,
         emails=None,
         phones=None,
-        city=None,
-        state=None,
-        zip_code=None,
+        addresses=None,
         country_id=None,
-        university=None,
-        university_start_year=None,
-        university_start_month=None,
-        graduation_year=None,
-        graduation_month=None,
-        military_branch=None,
-        military_grade=None,
-        military_to_date=None,
+        educations=None,
+        military_services=None,
         area_of_interest_ids=None,
-        custom_field_dicts=None,
-        candidate_experience_dicts=None,
+        custom_field_ids=None,
         social_networks=None,
-        candidate_skill_dicts=None,
+        work_experiences=None,
         work_preference=None,
         preferred_locations=None,
+        skills=None,
         dice_social_profile_id=None,
         dice_profile_id=None,
-        update_if_email_exists=True,
-        # source_product_id=None,   # todo: is this field still used?
-        source_id=None,
+        added_time=None,
         domain_can_read=1,
-        domain_can_write=1
+        domain_can_write=1,
+        source_id=None,
+        objective=None,
+        summary=None
 ):
     # Format inputs
-    import datetime
     added_time = added_time or datetime.datetime.now()
+    status_id = status_id or 1
+
     # Figure out first_name, last_name, middle_name, and formatted_name from inputs
     if first_name or last_name or middle_name or formatted_name:
         if (first_name or last_name) and not formatted_name:
@@ -416,61 +404,110 @@ def create_candidate_from_params(
             # Otherwise, guess formatted_name from the other fields
             first_name, middle_name, last_name = get_name_fields_from_name(formatted_name)
 
-    is_update = False
+    # Get domain ID
     domain_id = domain_id_from_user_id(user_id=user_id)
 
-    if candidate_id:
-        is_update = True
-    elif dice_social_profile_id or dice_profile_id or (emails and update_if_email_exists):
-        # Is this an existing candidate?
-        candidate = None
+    # Check if candidate exists
+    candidate = does_candidate_exist(dice_social_profile_id, dice_profile_id, domain_id, emails)
 
-        # Check for existing dice_social_profile_id and dice_profile_id
-        if dice_social_profile_id:
-            candidate = db.session.queyr(Candidate).join(User).filter(
-                Candidate.dice_social_profile_id == dice_social_profile_id,
-                User.domain_id == domain_id
-            ).first()
-        elif dice_profile_id:
-            candidate = db.session.query(Candidate).join(User).filter(
-                Candidate.dice_profile_id == dice_profile_id,
-                User.domain_id == domain_id
-            ).first()
+    # Return error if candidate is found
+    if candidate:
+        logger.info('create_candidate_from_params: Candidate already exists: %s', candidate)
+        raise InvalidUsage(error_message="Candidate already exists; creation failed.")
 
-        # If candidate still not found, check for existing email address, if specified
-        if not candidate and emails and update_if_email_exists:
-            if isinstance(emails[0], dict):
-                email = emails[0].get('address')
-            candidate = db.session.query(CandidateEmail).join(User).filter(
-                CandidateEmail.address.in_(email),
-                CandidateEmail.candidate_id == candidate_id,
-                User.domain_id == domain_id
-            ).first()
+    # Add Candidate to db
+    candidate = Candidate(
+        first_name=first_name,
+        middle_name=middle_name,
+        last_name=last_name,
+        formatted_name=formatted_name,
+        added_time=added_time,
+        status_id=status_id,
+        user_id=user_id,
+        domain_can_read=domain_can_read,
+        domain_can_write=domain_can_write,
+        dice_profile_id=dice_profile_id,
+        dice_social_profile_id=dice_social_profile_id,
+        source_id=source_id,
+        objective=objective,
+        summary=summary
+    )
+    db.session.add(candidate)
+    db.session.commit()
+    candidate_id = candidate.id
 
-        # If candidate found, thisd is an update
-        if candidate:
-            candidate_id = candidate.id
-            is_update = True
+    # Add Candidate's email(s) to db
+    if emails:
+        for email in emails:
+            # Get email label ID
+            email_label_id = email_label_id_from_email_label(email_label=email['label'])
+            db.session.add(CandidateEmail(
+                candidate_id=candidate_id,
+                address=email.address,
+                is_default=email.is_default,
+                email_label_id=email_label_id
+            ))
+            db.session.commit()
 
-    if not is_update:
-        candidate_id = db.session.add(Candidate(
-            first_name=first_name,
-            middle_name=middle_name,
-            last_name=last_name,
-            formatted_name=formatted_name,
-            added_time=added_time,
-            status_id=1,
-            user_id=user_id,
-            domain_can_read=domain_can_read,
-            domain_can_write=domain_can_write,
-            dice_profile_id=dice_profile_id,
-            dice_social_profile_id=dice_social_profile_id,
-            source_id=source_id,
-            objective=objective,
-            summary=summary
-        ))
+    if phones:
+        for phone in phones:
+            # Get phone label ID
+            phone_label_id = phone_label_id_from_phone_label(phone_label=phone['label'])
+            db.session.add(CandidatePhone(
+                candidate_id=candidate_id,
+                value=phone.value,
+                is_default=phone.is_default,
+                phone_label_id=phone_label_id
+            ))
+            db.session.commit()
+
 
     return dict(candidate_id=candidate_id)
+
+
+def email_label_id_from_email_label(email_label):
+    """
+    Function retrieves email_label_id from email_label
+    e.g. 'Primary' => 1
+    :return:    email_label ID if email_label is recognized, otherwise 1 ('Primary')
+    """
+    email_label_row = db.session.query(EmailLabel).filter_by(description=email_label)
+    if email_label_row:
+        return email_label_row.id
+    else:
+        logger.error('email_label_id_from_email_label: email_label not recognized: %s', email_label)
+        return 1
+
+
+def phone_label_id_from_phone_label(phone_label):
+    """
+    :param phone_label:
+    :return:
+    """
+    phone_label_row = db.session.query(PhoneLabel).filter_by(description=phone_label)
+    if phone_label_row:
+        return phone_label_row.id
+    else:
+        logger.error('phone_label_id_from_phone_label: phone_label not recognized: %s', phone_label)
+        return 1
+
+
+def does_candidate_exist(dice_social_profile_id, dice_profile_id, domain_id, emails):
+    candidate = None
+    # Check for existing dice_social_profile_id and dice_profile_id
+    if dice_social_profile_id:
+        candidate = db.session.queyr(Candidate).join(User).filter(
+            Candidate.dice_social_profile_id == dice_social_profile_id,
+            User.domain_id == domain_id
+        ).first()
+    elif dice_profile_id:
+        candidate = db.session.query(Candidate).join(User).filter(
+            Candidate.dice_profile_id == dice_profile_id,
+            User.domain_id == domain_id
+        ).first()
+
+    return candidate
+
 
 
 def get_fullname_from_name_fields(first_name, middle_name, last_name):

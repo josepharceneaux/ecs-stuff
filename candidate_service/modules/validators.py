@@ -1,3 +1,6 @@
+"""
+Functions related to candidate_service/candidate_app/api validations
+"""
 from candidate_service.candidate_app import db
 from candidate_service.common.models.candidate import Candidate
 from candidate_service.common.models.user import User
@@ -24,10 +27,12 @@ def does_candidate_belong_to_user(user_row, candidate_id):
 
 def is_custom_field_authorized(user_domain_id, custom_field_ids):
     """
+    Function checks if custom_field_ids belong to the logged-in-user's domain
     :type   user_domain_id:   int
     :type   custom_field_ids: [int]
     :rtype: bool
     """
+    assert isinstance(custom_field_ids, list)
     exists = db.session.query(CustomField).\
                  filter(CustomField.id.in_(custom_field_ids),
                         CustomField.domain_id != user_domain_id).count() == 0
@@ -36,10 +41,12 @@ def is_custom_field_authorized(user_domain_id, custom_field_ids):
 
 def is_area_of_interest_authorized(user_domain_id, area_of_interest_ids):
     """
+    Function checks if area_of_interest_ids belong to the logged-in-user's domain
     :type   user_domain_id:       int
     :type   area_of_interest_ids: [int]
     :rtype: bool
     """
+    assert isinstance(area_of_interest_ids, list)
     exists = db.session.query(AreaOfInterest).\
                  filter(AreaOfInterest.id.in_(area_of_interest_ids),
                         AreaOfInterest.domain_id != user_domain_id).count() == 0
@@ -47,7 +54,8 @@ def is_area_of_interest_authorized(user_domain_id, area_of_interest_ids):
 
 
 def does_email_campaign_belong_to_domain(user_row):
-    """ Function retrieves all email campaigns belonging to user's domain
+    """
+    Function retrieves all email campaigns belonging to user's domain
     :rtype: bool
     """
     email_campaign_rows = db.session.query(EmailCampaign).join(User).\
