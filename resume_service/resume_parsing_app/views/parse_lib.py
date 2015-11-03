@@ -21,7 +21,7 @@ from xhtml2pdf import pisa
 import requests
 from BeautifulSoup import BeautifulSoup
 from bs4 import BeautifulSoup as bs4
-import magic
+# import magic
 from flask import current_app
 
 from talent_dice_client import parse_resume_with_bg
@@ -525,5 +525,28 @@ def get_coordinates(zipcode=None, city=None, state=None, address_line_1=None, lo
     latitude, longitude = get_geocoordinates(location)
     if latitude and longitude:
         coordinates = (str(latitude), str(longitude))
+
+    return coordinates
+
+
+# todo: need to remove/move this to common/utils/
+def get_coordinates_(zipcode=None, city=None, state=None, address_line_1=None, location=None):
+    """
+
+    :param location: if provided, overrides all other inputs
+    :return: string of "lat,lon" in degrees, or None if nothing found
+    """
+    coordinates = None
+
+    from GoogleGeoSearch import get_geocoordinates
+    location = location or "%s%s%s%s" % (
+        address_line_1 + ", " if address_line_1 else "",
+        city + ", " if city else "",
+        state + ", " if state else "",
+        zipcode or ""
+    )
+    latitude, longitude = get_geocoordinates(location)
+    if latitude and longitude:
+        coordinates = "%s,%s" % (latitude, longitude)
 
     return coordinates

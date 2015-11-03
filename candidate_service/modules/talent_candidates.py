@@ -23,7 +23,7 @@ from common.error_handling import InvalidUsage
 from common.utils.validators import sanitize_zip_code
 
 # Parsing
-from resume_service.resume_parsing_app.views.parse_lib import get_coordinates
+from resume_service.resume_parsing_app.views.parse_lib import get_coordinates_
 
 
 def fetch_candidate_info(candidate_id, fields=None):
@@ -428,7 +428,7 @@ def create_candidate_from_params(
         last_name=last_name,
         formatted_name=formatted_name,
         added_time=added_time,
-        status_id=status_id,
+        candidate_status_id=status_id,
         user_id=user_id,
         domain_can_read=domain_can_read,
         domain_can_write=domain_can_write,
@@ -436,7 +436,8 @@ def create_candidate_from_params(
         dice_social_profile_id=dice_social_profile_id,
         source_id=source_id,
         objective=objective,
-        summary=summary
+        summary=summary,
+        is_dirty=0 # todo: is_dirty cannot be null. This should be removed once the field is successfully removed.
     )
     db.session.add(candidate)
     db.session.commit()
@@ -445,43 +446,44 @@ def create_candidate_from_params(
     # Add Candidate's address(es)
     if addresses:
         for address in addresses:
-            # Get country ID
-            country_id = country_id_from_country_name_or_code(address['country'])
 
-            # Validate Zip Code
-            zip_code = sanitize_zip_code(address['zip_code'])
-
-            # City
-            city = address.city
-
-            # State
-            state = address.state
-
-            # Get coordinates
-            coordinates = get_coordinates(zip_code, city, state)
+            address_line_1 = address.get('address_line_1')
+            address_line_2 = address.get('address_line_2')
+            city = address.get('city')
+            state = address.get('state')
+            country_id = country_id_from_country_name_or_code(address.get('country'))
+            zip_code = sanitize_zip_code(address.get('zip_code'))
+            po_box = address.get('po_box')
+            is_default = address.get('is_default')
+            coordinates = get_coordinates_(zip_code, city, state)
 
             db.session.add(CandidateAddress(
                 candidate_id=candidate_id,
-                address_line_1=address.address_line_1,
-                address_line_2=address.address_line_2,
+                address_line_1=address_line_1,
+                address_line_2=address_line_2,
                 city=city,
                 state=state,
                 country_id=country_id,
                 zip_code=zip_code,
-                po_box=address.po_box,
-                is_default=address.is_default,
-                coordinates=coordinates
+                po_box=po_box,
+                is_default=is_default,
+                coordinates=coordinates,
+                resume_id=candidate_id # todo: this is to be removed once all tables have been added & migrated
             ))
+            db.session.commit()
 
     # Add Candidate's email(s)
     if emails:
         for email in emails:
-            # Get email label ID
+
+            email_address = email.get('address')
+            is_default = email.get('is_default')
             email_label_id = email_label_id_from_email_label(email_label=email['label'])
+
             db.session.add(CandidateEmail(
                 candidate_id=candidate_id,
-                address=email.address,
-                is_default=email.is_default,
+                address=email_address,
+                is_default=is_default,
                 email_label_id=email_label_id
             ))
             db.session.commit()
@@ -489,12 +491,15 @@ def create_candidate_from_params(
     # Add Candidate's phone(s)
     if phones:
         for phone in phones:
-            # Get phone label ID
+
+            phone_number = phone.get('value')
+            is_default = phone.get('is_default')
             phone_label_id = phone_label_id_from_phone_label(phone_label=phone['label'])
+
             db.session.add(CandidatePhone(
                 candidate_id=candidate_id,
-                value=phone.value,
-                is_default=phone.is_default,
+                value=phone_number,
+                is_default=is_default,
                 phone_label_id=phone_label_id
             ))
             db.session.commit()
@@ -525,7 +530,7 @@ def email_label_id_from_email_label(email_label):
     e.g. 'Primary' => 1
     :return:    email_label ID if email_label is recognized, otherwise 1 ('Primary')
     """
-    email_label_row = db.session.query(EmailLabel).filter_by(description=email_label)
+    email_label_row = db.session.query(EmailLabel).filter_by(description=email_label).first()
     if email_label_row:
         return email_label_row.id
     else:
@@ -538,7 +543,7 @@ def phone_label_id_from_phone_label(phone_label):
     :param phone_label:
     :return:
     """
-    phone_label_row = db.session.query(PhoneLabel).filter_by(description=phone_label)
+    phone_label_row = db.session.query(PhoneLabel).filter_by(description=phone_label).first()
     if phone_label_row:
         return phone_label_row.id
     else:

@@ -31,6 +31,9 @@ class Candidate(db.Model):
     resume_text = db.Column('resumeText', db.Text)
     culture_id = db.Column('cultureId', db.Integer, db.ForeignKey('culture.id'), default=1)
 
+    # TODO: Below are necessary for now, but should remove once all tables have been defined
+    is_dirty = db.Column('IsDirty', db.SmallInteger, default=0)
+
     # One-to-many Relationships; i.e. Candidate has many:
     candidate_phones = relationship('CandidatePhone', backref='candidate')
     candidate_emails = relationship('CandidateEmail', backref='candidate')
@@ -517,6 +520,9 @@ class CandidateAddress(db.Model):
     is_default = db.Column('IsDefault', db.Boolean, default=False)  # todo: check other is_default fields for their default values
     coordinates = db.Column('Coordinates', db.String(100))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+    # TODO: Below are necessary for now, but should remove once all tables have been defined
+    resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
 
     def __repr__(self):
         return "<CandidateAddress (candidate_id = %r)>" % self.candidate_id

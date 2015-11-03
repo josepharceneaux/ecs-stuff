@@ -56,9 +56,10 @@ def test_get_candidate_via_id_and_email():
 #######################################
 def test_post_candidate():
     import json
+    from common.tests.fake_data import generate_single_candidate_data
     r = requests.post(
         url=BASE_URI,
-        data=json.dumps('')
+        data=json.dumps(generate_single_candidate_data())
     )
     print "resp_status = %s" % r.status_code
     print "resp = %s" % r
