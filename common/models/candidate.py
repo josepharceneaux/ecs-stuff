@@ -423,6 +423,9 @@ class CandidateMilitaryService(db.Model):
     to_date = db.Column('ToDate', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
+    # TODO: Below are necessary for now, but should remove once all tables have been defined
+    resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
+
     def __repr__(self):
         return "<CandidateMilitaryService (candidate_id=' %r')>" % self.candidate_id
 

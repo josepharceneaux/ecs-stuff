@@ -575,7 +575,7 @@ def create_candidate_from_params(
                     ))
                     db.session.commit()
 
-    # Add candidate's work experience
+    # Add Candidate's work experience(s)
     if work_experiences:
         for work_experience in work_experiences:
 
@@ -624,6 +624,20 @@ def create_candidate_from_params(
                 ))
                 db.session.commit()
 
+    # Add Candidate's work preference(s)
+    if work_preference:
+        db.session.add(CandidateWorkPreference(
+            candidate_id=candidate_id,
+            relocate=work_preference.get('relocate'),
+            authorization=work_preference.get('authorization'),
+            telecommute=work_preference.get('telecommute'),
+            travel_percentage=work_preference.get('travel_percentage'),
+            hourly_rate=work_preference.get('hourly_rate'),
+            salary=work_preference.get('salary'),
+            tax_terms=work_preference.get('tax_terms')
+        ))
+        db.session.commit()
+
     # Add Candidate's email(s)
     if emails:
         emails_has_default = any([email.get('is_default') for email in emails])
@@ -662,6 +676,25 @@ def create_candidate_from_params(
             ))
             db.session.commit()
 
+    # Add Candidate's military service(s)
+    if military_services:
+        for military_service in military_services:
+
+            country_id = country_id_from_country_name_or_code(military_service.get('country'))
+
+            db.session.add(CandidateMilitaryService(
+                candidate_id=candidate_id,
+                country_id=country_id,
+                service_status=military_service.get('service_status'),
+                highest_rank=military_service.get('highest_rank'),
+                highest_grade=military_service.get('highest_grade'),
+                branch=military_service.get('branch'),
+                comments=military_service.get('comments'),
+                from_date=military_service.get('from_date'),
+                to_date=military_service.get('to_date'),
+                resume_id=candidate_id  #todo: this is to be removed once all tables have been added & migrated
+            ))
+            db.session.commit()
 
     return dict(candidate_id=candidate_id)
 
