@@ -15,7 +15,7 @@ from candidate_service.common.models.candidate import (
     CandidateExperience, CandidateEducation, CandidateEducationDegree,
     CandidateSkill, CandidateMilitaryService, CandidateCustomField,
     CandidateSocialNetwork, SocialNetwork, CandidateEducationDegreeBullet,
-    CandidateExperienceBullet
+    CandidateExperienceBullet, ClassificationType
 )
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.email_marketing import (EmailCampaign, EmailCampaignSend)
@@ -146,34 +146,31 @@ def fetch_candidate_info(candidate_id, fields=None):
 
 def email_label_and_address(candidate):
     candidate_emails = candidate.candidate_emails
-    return [{
-                'label': db.session.query(EmailLabel).get(email.email_label_id).description,
-                'address': email.address
-            } for email in candidate_emails]
+    return [{'label': email.email_label.description,
+             'address': email.address
+             } for email in candidate_emails]
 
 
 def phone_label_and_value(candidate):
     candidate_phones = candidate.candidate_phones
-    return [{
-                'label': db.session.query(PhoneLabel).get(phone.phone_label_id).description,
-                'value': phone.value
-            } for phone in candidate_phones]
+    return [{'label': phone.phone_label.description,
+             'value': phone.value
+             } for phone in candidate_phones]
 
 
 def addresses(candidate):
     candidate_addresses = candidate.candidate_addresses
-    return [{
-                'address_line_1': candidate_address.address_line_1,
-                'address_line_2': candidate_address.address_line_2,
-                'city': candidate_address.city,
-                'state': candidate_address.state,
-                'zip_code': candidate_address.zip_code,
-                'po_box': candidate_address.po_box,
-                'country': country_name_from_country_id(country_id=candidate_address.country_id),
-                'latitude': candidate_address.coordinates and candidate_address.coordinates.split(',')[0],
-                'longitude': candidate_address.coordinates and candidate_address.coordinates.split(',')[1],
-                'is_default': candidate_address.is_default
-            } for candidate_address in candidate_addresses]
+    return [{'address_line_1': candidate_address.address_line_1,
+             'address_line_2': candidate_address.address_line_2,
+             'city': candidate_address.city,
+             'state': candidate_address.state,
+             'zip_code': candidate_address.zip_code,
+             'po_box': candidate_address.po_box,
+             'country': country_name_from_country_id(country_id=candidate_address.country_id),
+             'latitude': candidate_address.coordinates and candidate_address.coordinates.split(',')[0],
+             'longitude': candidate_address.coordinates and candidate_address.coordinates.split(',')[1],
+             'is_default': candidate_address.is_default
+             } for candidate_address in candidate_addresses]
 
 
 def work_experiences(candidate_id):
@@ -182,111 +179,100 @@ def work_experiences(candidate_id):
         filter_by(candidate_id=candidate_id). \
         order_by(CandidateExperience.is_current.desc(), CandidateExperience.start_year.desc(),
                  CandidateExperience.start_month.desc())
-    return [{
-                'company': candidate_experience.organization,
-                'role': candidate_experience.position,
-                'start_date': date_of_employment(year=candidate_experience.start_year,
-                                                 month=candidate_experience.start_month or 1),
-                'end_date': date_of_employment(year=candidate_experience.end_year,
-                                               month=candidate_experience.end_month or 1),
-                'city': candidate_experience.city,
-                'country': country_name_from_country_id(country_id=candidate_experience.country_id),
-                'is_current': candidate_experience.is_current
-            } for candidate_experience in candidate_experiences]
+    return [{'company': candidate_experience.organization,
+             'role': candidate_experience.position,
+             'start_date': date_of_employment(year=candidate_experience.start_year,
+                                              month=candidate_experience.start_month or 1),
+             'end_date': date_of_employment(year=candidate_experience.end_year,
+                                            month=candidate_experience.end_month or 1),
+             'city': candidate_experience.city,
+             'country': country_name_from_country_id(country_id=candidate_experience.country_id),
+             'is_current': candidate_experience.is_current
+             } for candidate_experience in candidate_experiences]
 
 
 def work_preference(candidate):
     candidate_work_preference = candidate.candidate_work_preferences
-    return {
-        'authorization': candidate_work_preference.authorization,
-        'employment_type': candidate_work_preference.tax_terms,
-        'security_clearance': candidate_work_preference.security_clearance,
-        'willing_to_relocate': candidate_work_preference.relocate,
-        'telecommute': candidate_work_preference.telecommute,
-        'travel_percentage': candidate_work_preference.travel_percentage,
-        'third_party': candidate_work_preference.third_party
-    } if candidate_work_preference else None
+    return {'authorization': candidate_work_preference.authorization,
+            'employment_type': candidate_work_preference.tax_terms,
+            'security_clearance': candidate_work_preference.security_clearance,
+            'willing_to_relocate': candidate_work_preference.relocate,
+            'telecommute': candidate_work_preference.telecommute,
+            'travel_percentage': candidate_work_preference.travel_percentage,
+            'third_party': candidate_work_preference.third_party
+            } if candidate_work_preference else None
 
 
 def preferred_locations(candidate):
     candidate_preferred_locations = candidate.candidate_preferred_locations
-    return [{
-                'address': preferred_location.address,
-                'city': preferred_location.city,
-                'region': preferred_location.region,
-                'country': country_name_from_country_id(country_id=preferred_location.country_id)
-            } for preferred_location in candidate_preferred_locations]
+    return [{'address': preferred_location.address,
+             'city': preferred_location.city,
+             'region': preferred_location.region,
+             'country': country_name_from_country_id(country_id=preferred_location.country_id)
+             } for preferred_location in candidate_preferred_locations]
 
 
 def educations(candidate):
     candidate_educations = candidate.candidate_educations
-    return [{
-                'school_name': education.school_name,
-                'degree_details': degree_info(education_id=education.id),
-                'city': education.city,
-                'state': education.state,
-                'country': country_name_from_country_id(country_id=education.country_id)
-            } for education in candidate_educations]
+    return [{'school_name': education.school_name,
+             'degree_details': degree_info(education=education),
+             'city': education.city,
+             'state': education.state,
+             'country': country_name_from_country_id(country_id=education.country_id)
+             } for education in candidate_educations]
 
 
-def degree_info(education_id):
-    education = db.session.query(CandidateEducationDegree). \
-        filter_by(candidate_education_id=education_id)
-    return [{
-                'degree_title': degree.degree_title,
-                'degree_type': degree.degree_type,
-                'start_date': degree.start_time.date().isoformat() if degree.start_time else None,
-                'end_date': degree.end_time.date().isoformat() if degree.end_time else None
-            } for degree in education]
+def degree_info(education):
+    degrees = education.candidate_education_degrees
+    return [{'degree_title': degree.degree_title,
+             'degree_type': degree.degree_type,
+             'start_date': degree.start_time.date().isoformat() if degree.start_time else None,
+             'end_date': degree.end_time.date().isoformat() if degree.end_time else None
+             } for degree in degrees]
 
 
 def skills(candidate):
     candidate_skills = candidate.candidate_skills
-    return [{
-                'name': skill.description,
-                'month_used': skill.total_months,
-                'last_used_date': skill.last_used.isoformat() if skill.last_used else None
-            } for skill in candidate_skills]
+    return [{'name': skill.description,
+             'month_used': skill.total_months,
+             'last_used_date': skill.last_used.isoformat() if skill.last_used else None
+             } for skill in candidate_skills]
 
 
 def areas_of_interest(candidate_id):
     candidate_interests = db.session.query(CandidateAreaOfInterest). \
         filter_by(candidate_id=candidate_id)
-    return [{
-                'id': db.session.query(AreaOfInterest).get(interest.area_of_interest_id).id,
-                'name': db.session.query(AreaOfInterest).get(interest.area_of_interest_id).description
-            } for interest in candidate_interests]
+    return [{'id': db.session.query(AreaOfInterest).get(interest.area_of_interest_id).id,
+             'name': db.session.query(AreaOfInterest).get(interest.area_of_interest_id).description
+             } for interest in candidate_interests]
 
 
 def military_services(candidate):
     candidate_military_experience = candidate.candidate_military_services
-    return [{
-                'branch': military_info.branch,
-                'service_status': military_info.service_status,
-                'highest_grade': military_info.highest_grade,
-                'highest_rank': military_info.highest_rank,
-                'start_date': military_info.from_date,
-                'end_date': military_info.to_date,
-                'country': country_name_from_country_id(country_id=military_info.country_id)
-            } for military_info in candidate_military_experience]
+    return [{'branch': military_info.branch,
+             'service_status': military_info.service_status,
+             'highest_grade': military_info.highest_grade,
+             'highest_rank': military_info.highest_rank,
+             'start_date': military_info.from_date,
+             'end_date': military_info.to_date,
+             'country': country_name_from_country_id(country_id=military_info.country_id)
+             } for military_info in candidate_military_experience]
 
 
 def custom_fields(candidate):
     candidate_custom_fields = candidate.candidate_custom_fields
-    return [{
-                'id': candidate_custom_field.custom_field_id,
-                'name': db.session.query(CustomField).get(candidate_custom_field.custom_field_id),
-                'value': candidate_custom_field.value,
-                'created_at_datetime': candidate_custom_field.added_time.isoformat()
-            } for candidate_custom_field in candidate_custom_fields]
+    return [{'id': candidate_custom_field.custom_field_id,
+             'name': candidate_custom_field.custom_field.name,
+             'value': candidate_custom_field.value,
+             'created_at_datetime': candidate_custom_field.added_time.isoformat()
+             } for candidate_custom_field in candidate_custom_fields]
 
 
 def social_network_name_and_url(candidate):
     candidate_social_networks = candidate.candidate_social_network
-    return [{
-                'name': social_network_name(social_network_id=social_network.social_network_id),
-                'url': social_network.social_profile_url
-            } for social_network in candidate_social_networks]
+    return [{'name': soc_net.social_network.name,
+             'url': soc_net.social_profile_url
+             } for soc_net in candidate_social_networks]
 
 
 class ContactHistoryEvent:
@@ -338,16 +324,6 @@ def country_name_from_country_id(country_id):
         return 'United States'
 
 
-def social_network_name(social_network_id):
-    social_network = db.session.query(SocialNetwork).get(social_network_id)
-    if social_network:
-        return social_network.name
-    else:
-        logger.info('social_network_name: social_network from ID not recognized: %s',
-                    social_network_id)
-        return None
-
-
 def get_candidate_id_from_candidate_email(candidate_email):
     candidate_email_row = db.session.query(CandidateEmail). \
         filter_by(address=candidate_email).first()
@@ -366,8 +342,6 @@ def retrieve_email_campaign_send(email_campaign, candidate_id):
     :param candidate_id:
     :rtype:     list(dict)
     """
-    from candidate_service.common.models.email_marketing import EmailCampaignSend
-
     email_campaign_send_rows = db.session.query(EmailCampaignSend). \
         filter_by(EmailCampaignSend.email_campaign_id == email_campaign.id,
                   EmailCampaignSend.candidate_id == candidate_id)
@@ -888,8 +862,6 @@ def classification_type_id_from_degree_type(degree_type):
     :return:    classification_type_id or None
     """
     matching_classification_type_id = None
-    from candidate_service.common.models.candidate import ClassificationType
-
     if degree_type:
         all_classification_types = db.session.query(ClassificationType).all()
         matching_classification_type_id = next((row.id for row in all_classification_types

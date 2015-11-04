@@ -19,13 +19,13 @@ def test_get_candidate_from_forbidden_domain(sample_user, user_auth):
     """
     # todo: once POST is complete, will need to create candidate first and then retrieve it
     # auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-    candidate_id = 3
+    candidate_id = 4
     resp = requests.get(
         url=BASE_URI + "/%s" % candidate_id
         # headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
     )
-    assert resp.status_code == 403
     print "\nresp = %s" % resp.json()
+    assert resp.status_code == 403
 
 
 def test_get_candidate_via_invalid_email():
