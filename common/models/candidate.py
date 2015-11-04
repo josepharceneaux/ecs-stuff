@@ -672,6 +672,12 @@ class CandidateCustomField(db.Model):
         return "<CandidateCustomField (id = %r)>" % self.id
 
 
+class CandidateSubscription(db.Model):
+    __tablename__ = 'candidate_subscription_preference'
+    id = db.Column(db.Integer, primary_key=True)
+    candidate_id = db.Column('candidateId', db.Integer, db.ForeignKey('candidate.id'))
+    frequency_id = db.Column('frequencyId', db.Integer, db.ForeignKey('frequency.id'))
+
 
 
 

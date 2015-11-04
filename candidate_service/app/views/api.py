@@ -1,7 +1,7 @@
 """API for the Candidate Search App"""
 
 from flask import jsonify, request, Blueprint
-import TalentCloudSearch
+import talent_cloud_search
 from common.utils.auth_utils import require_oauth
 
 mod = Blueprint('candidate_search_api', __name__)
@@ -15,7 +15,7 @@ def hello_world():
 @mod.route('/candidates', methods=['GET'])
 @require_oauth
 def search():
-    TalentCloudSearch.get_cloud_search_connection()
+    talent_cloud_search.get_cloud_search_connection()
     location = request.args.get('location')
     user = request.args.get('user_ids')
     skills = request.args.get('skills')
@@ -48,6 +48,6 @@ def search():
                     "military_end_date_to": military_end_date_to, "usernameFacet": user, "q": query, "limit": limit
                     }
     # If limit is not requested then the Search limit would be taken as 15, the default value
-    candidate_search_results = TalentCloudSearch.search_candidates(1, request_vars, int(limit) if limit else 15)
+    candidate_search_results = talent_cloud_search.search_candidates(1, request_vars, int(limit) if limit else 15)
 
     return jsonify(candidate_search_results)

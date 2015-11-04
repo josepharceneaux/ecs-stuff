@@ -22,8 +22,7 @@ def get_or_create_areas_of_interest(domain_id, include_child_aois=False):
 
     # If we only want parent AOIs, must filter for all AOIs that don't have parentIds
     if not include_child_aois:
-        areas = areas.find(lambda aoi: not aoi.parentId)
-
+        areas = areas.filter(AreaOfInterest.parent_id is None)
     return areas
 
 

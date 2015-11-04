@@ -140,3 +140,13 @@ class CustomField(db.Model):
 
     def __repr__(self):
         return "<CustomField (name = %r)>" % self.name
+
+
+class Clasification(db.Model):
+    __tablename__ = 'classification_type'
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column('code', db.String(255))
+    description = db.Column('description', db.String(255))
+    notes = db.Column('notes', db.String(1000))
+    list_order = db.Column('listOrder', db.Integer)
+
