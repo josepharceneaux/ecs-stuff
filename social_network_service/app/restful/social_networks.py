@@ -501,10 +501,10 @@ class VenuesResource(Resource):
               "venues": [
                 {
                     "user_id": 1,
-                    "zipcode": "95014",
+                    "zip_code": "95014",
                     "social_network_id": 13,
-                    "address_line2": "",
-                    "address_line1": "Infinite Loop",
+                    "address_line_2": "",
+                    "address_line_1": "Infinite Loop",
                     "latitude": 0,
                     "longitude": 0,
                     "state": "CA",
@@ -534,10 +534,10 @@ class VenuesResource(Resource):
 
         :Example:
             venue_data = {
-                "zipcode": "95014",
+                "zip_code": "95014",
                 "social_network_id": 13,
-                "address_line2": "",
-                "address_line1": "Infinite Loop",
+                "address_line_2": "",
+                "address_line_1": "Infinite Loop",
                 "latitude": 0,
                 "longitude": 0,
                 "state": "CA",
@@ -658,12 +658,12 @@ class VenueByIdResource(Resource):
 
             {
               "venue": {
-                  "address_line2": "",
+                  "address_line_2": "",
                   "city": "Cupertino",
-                  "address_line1": "Infinite Loop",
+                  "address_line_1": "Infinite Loop",
                   "social_network_id": 13,
                   "country": "us",
-                  "zipcode": "95014",
+                  "zip_code": "95014",
                   "longitude": 0,
                   "social_network_venue_id": "15570022",
                   "state": "CA",
@@ -695,12 +695,12 @@ class VenueByIdResource(Resource):
 
         :Example:
             venue_data = {
-                  "address_line2": "",
+                  "address_line_2": "",
                   "city": "Cupertino",
-                  "address_line1": "Infinite Loop",
+                  "address_line_1": "Infinite Loop",
                   "social_network_id": 13,
                   "country": "us",
-                  "zipcode": "95014",
+                  "zip_code": "95014",
                   "longitude": 0,
                   "social_network_venue_id": "15570022",
                   "state": "CA",

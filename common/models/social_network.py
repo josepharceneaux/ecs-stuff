@@ -9,9 +9,9 @@ import venue
 
 class SocialNetwork(db.Model):
     __tablename__ = 'social_network'
-    id = db.Column('id', db.Integer, primary_key=True)
-    name = db.Column('name', db.String(100))
-    url = db.Column('url', db.String(255))
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
+    url = db.Column(db.String(255))
     api_url = db.Column('apiUrl', db.String(255))
     client_key = db.Column('clientKey', db.String(500))
     secret_key = db.Column('secretKey', db.String(500))

@@ -446,8 +446,11 @@ def camel_case_to_snake_case(name):
                 assert result == 'social_network_id'
 
     """
-    name_ = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name_).lower()
+    # name_ = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    # return re.sub('([a-z0-9])([A-Z0-9])', r'\1_\2', name_).lower()
+    name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    name = re.sub('(.)([0-9]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
 
 
 def camel_case_to_title_case(name):
@@ -618,8 +621,8 @@ def add_organizer_venue_data(event):
                 "url": "",
                 "user_id": 1,
                 "venue": {
-                              "address_line1": "Infinite Loop",
-                              "address_line2": "",
+                              "address_line_1": "Infinite Loop",
+                              "address_line_2": "",
                               "city": "Cupertino",
                               "country": "us",
                               "id": 1,
@@ -629,7 +632,7 @@ def add_organizer_venue_data(event):
                               "social_network_venue_id": "15570022",
                               "state": "CA",
                               "user_id": 1,
-                              "zipcode": "95014"
+                              "zip_code": "95014"
                         }
               }
 

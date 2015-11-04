@@ -285,13 +285,13 @@ class Meetup(EventBase):
             venue_data = dict(
                 social_network_venue_id=venue['id'],
                 user_id=self.user.id,
-                address_line1=venue['address_1'] if venue else '',
-                address_line2='',
+                address_line_1=venue['address_1'] if venue else '',
+                address_line_2='',
                 city=venue['city'].title().strip()
                 if venue and venue.has_key('city') else '',
                 state=venue['state'].title().strip()
                 if venue and venue.has_key('state') else '',
-                zipcode=venue['zip']
+                zip_code=venue['zip']
                 if venue and venue.has_key('zip') else None,
                 country=venue['country'].title().strip()
                 if venue and venue.has_key('country') else '',
@@ -436,12 +436,12 @@ class Meetup(EventBase):
             # So class variable 'api_url' is not used here.
             url = 'https://api.meetup.com/' + self.group_url_name + '/venues'
             payload = {
-                'address_1': venue_in_db.address_line1,
-                'address_2': venue_in_db.address_line2,
+                'address_1': venue_in_db.address_line_1,
+                'address_2': venue_in_db.address_line_2,
                 'city': venue_in_db.city,
                 'country': venue_in_db.country,
                 'state': venue_in_db.state,
-                'name': venue_in_db.address_line1
+                'name': venue_in_db.address_line_1
             }
             response = http_request('POST', url, params=payload,
                                     headers=self.headers,
