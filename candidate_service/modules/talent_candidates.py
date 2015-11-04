@@ -679,7 +679,7 @@ def create_candidate_from_params(
     # Add Candidate's military service(s)
     if military_services:
         for military_service in military_services:
-
+            # Get country_id
             country_id = country_id_from_country_name_or_code(military_service.get('country'))
 
             db.session.add(CandidateMilitaryService(
@@ -693,6 +693,25 @@ def create_candidate_from_params(
                 from_date=military_service.get('from_date'),
                 to_date=military_service.get('to_date'),
                 resume_id=candidate_id  #todo: this is to be removed once all tables have been added & migrated
+            ))
+            db.session.commit()
+
+    # Add Candidate's preferred location(s)
+    if preferred_locations:
+        for preferred_location in preferred_locations:
+
+            # Get country_id
+            country_id = country_id_from_country_name_or_code(preferred_location.get('country'))
+            # Validate Zip Code(s)
+            zip_code = sanitize_zip_code(preferred_location.get('zip_code'))
+
+            db.session.add(CandidatePreferredLocation(
+                candidate_id=candidate_id,
+                address=preferred_location.get('address'),
+                country_id=country_id,
+                city=preferred_location.get('city'),
+                region=preferred_location.get('region'),
+                zip_code=zip_code,
             ))
             db.session.commit()
 

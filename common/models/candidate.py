@@ -298,7 +298,7 @@ class CandidatePreferredLocation(db.Model):
     country_id = db.Column('countryId', db.Integer, db.ForeignKey('country.id'))
     city = db.Column(db.String(255))
     region = db.Column(db.String(255))
-    zipcode = db.Column(db.String(10))
+    zip_code = db.Column('zipcode', db.String(10))
 
     def __repr__(self):
         return "<CandidatePreferredLocation (candidate_id=' %r')>" % self.candidate_id
