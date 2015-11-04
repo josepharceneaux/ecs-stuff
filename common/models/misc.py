@@ -108,13 +108,13 @@ class City(db.Model):
     coordinates = db.Column('Coordinates', db.String(127))
 
     # Relationships
-    zipcodes = relationship('Zipcode', backref='city')
+    zip_codes = relationship('ZipCode', backref='city')
 
     def __repr__(self):
         return "<City (name=' %r')>" % self.name
 
 
-class Zipcode(db.Model):
+class ZipCode(db.Model):
     __tablename__ = 'zipcode'
     id = db.Column(db.Integer, primary_key=True)
     code = db.Column('Code', db.String(31))
@@ -140,3 +140,4 @@ class CustomField(db.Model):
 
     def __repr__(self):
         return "<CustomField (name = %r)>" % self.name
+

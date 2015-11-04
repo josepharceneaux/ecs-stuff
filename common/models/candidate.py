@@ -542,6 +542,9 @@ class CandidateEducation(db.Model):
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
+    # TODO: Below are necessary for now, but should remove once all tables have been defined
+    resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
+
     # Relationships
     candidate_education_degrees = relationship('CandidateEducationDegree', backref='candidate_education')
 
@@ -679,7 +682,17 @@ class CandidateCustomField(db.Model):
         return "<CandidateCustomField (id = %r)>" % self.id
 
 
+class ClassificationType(db.Model):
+    __tablename__ = 'classification_type'
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column('Code', db.String(100))
+    description = db.Column('Description', db.String(250))
+    notes = db.Column('Notes', db.String(500))
+    list_order = db.Column('ListOrder', db.Integer)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
+    def __repr__(self):
+        return "<ClassificationType (code = %r)>" % self.code
 
 
 

@@ -9,7 +9,7 @@ from candidate_service.common.models.candidate import (
     CandidateWorkPreference, CandidatePreferredLocation, CandidateAddress,
     CandidateExperience, CandidateEducation, CandidateEducationDegree,
     CandidateSkill, CandidateMilitaryService, CandidateCustomField,
-    CandidateSocialNetwork, SocialNetwork
+    CandidateSocialNetwork, SocialNetwork, CandidateEducationDegreeBullet
 )
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.email_marketing import (EmailCampaign, EmailCampaignSend)
@@ -383,11 +383,11 @@ def create_candidate_from_params(
         military_services=None,
         area_of_interest_ids=None,
         custom_field_ids=None,
-        social_networks=None,
+        social_networks=None, ##
         work_experiences=None,
         work_preference=None,
         preferred_locations=None,
-        skills=None,
+        skills=None, ##
         dice_social_profile_id=None,
         dice_profile_id=None,
         added_time=None,
@@ -441,11 +441,13 @@ def create_candidate_from_params(
     )
     db.session.add(candidate)
     db.session.commit()
+    db.session.flush()
     candidate_id = candidate.id
 
     # Add Candidate's address(es)
     if addresses:
-        for address in addresses:
+        address_has_default = any([address.get('is_default') for address in addresses])
+        for i, address in enumerate(addresses):
 
             address_line_1 = address.get('address_line_1')
             address_line_2 = address.get('address_line_2')
@@ -456,6 +458,8 @@ def create_candidate_from_params(
             po_box = address.get('po_box')
             is_default = address.get('is_default')
             coordinates = get_coordinates_(zip_code, city, state)
+            # If there's no is_default, the first address should be default
+            is_default = i == 0 if address_has_default else is_default
 
             db.session.add(CandidateAddress(
                 candidate_id=candidate_id,
@@ -468,7 +472,7 @@ def create_candidate_from_params(
                 po_box=po_box,
                 is_default=is_default,
                 coordinates=coordinates,
-                resume_id=candidate_id # todo: this is to be removed once all tables have been added & migrated
+                resume_id=candidate_id  #todo: this is to be removed once all tables have been added & migrated
             ))
             db.session.commit()
 
@@ -491,13 +495,96 @@ def create_candidate_from_params(
             ))
             db.session.commit()
 
+    # Add Candidate's education(s)
+    if educations:
+        for education in educations:
+
+            list_order = education.get('list_order', 1)
+            school_name = education.get('school_name')
+            school_type = education.get('school_type')
+            city = education.get('city')
+            state = education.get('state')
+            country_id = country_id_from_country_name_or_code(education.get('country'))
+            is_current = education.get('is_current')
+            candidate_education = CandidateEducation(
+                candidate_id=candidate_id,
+                list_order=list_order,
+                school_name=school_name,
+                school_type=school_type,
+                city=city,
+                state=state,
+                country_id=country_id,
+                is_current=is_current,
+                added_time=added_time,
+                resume_id=candidate_id  #todo: this is to be removed once all tables have been added & migrated
+            )
+            db.session.add(candidate_education)
+            db.session.commit()
+            # db.session.flush()
+
+            # Degree(s)
+            candidate_education_id = candidate_education.id
+            education_degrees = education.get('degrees')
+            assert isinstance(education_degrees, list)
+            for education_degree in education_degrees:
+                list_order = education_degree.get('list_order', 1)
+                degree_type = education_degree.get('type')
+                degree_title = education_degree.get('title')
+                start_year = education_degree.get('start_year')
+                start_month = education_degree.get('start_month')
+                end_year = education_degree.get('end_year')
+                end_month = education_degree.get('end_month')
+                gpa_num = education_degree.get('gpa_num')
+                gpa_denom = education_degree.get('gpa_denom')
+                classification_type_id = classification_type_id_from_degree_type(degree_type)
+                start_time = education_degree.get('start_time')
+                end_time = education_degree.get('end_time')
+                candidate_education_degree = CandidateEducationDegree(
+                    candidate_education_id=candidate_education_id,
+                    list_order=list_order,
+                    degree_type=degree_type,
+                    degree_title=degree_title,
+                    start_year=start_year,
+                    start_month=start_month,
+                    end_year=end_year,
+                    end_month=end_month,
+                    gpa_num=gpa_num,
+                    gpa_denom=gpa_denom,
+                    added_time=added_time,
+                    classification_type_id=classification_type_id,
+                    start_time=start_time,
+                    end_time=end_time
+                )
+                db.session.add(candidate_education_degree)
+                db.session.commit()
+                # db.session.flush()
+
+                # Degree Bullet(s)
+                candidate_education_degree_id = candidate_education_degree.id
+                degree_bullets = education_degree.get('degree_bullets')
+                assert isinstance(degree_bullets, list)
+                for degree_bullet in degree_bullets:
+                    concentration_type = degree_bullet.get('concentration_type')
+                    comments = degree_bullet.get('comments')
+                    db.session.add(CandidateEducationDegreeBullet(
+                        candidate_education_degree_id=candidate_education_degree_id,
+                        concentration_type=concentration_type,
+                        comments=comments,
+                        added_time=added_time
+                    ))
+                    db.session.commit()
+
+
     # Add Candidate's email(s)
     if emails:
-        for email in emails:
+        emails_has_default = any([email.get('is_default') for email in emails])
+        for i, email in enumerate(emails):
 
             email_address = email.get('address')
             is_default = email.get('is_default')
             email_label_id = email_label_id_from_email_label(email_label=email['label'])
+            # If there's no is_default, the first email should be default
+            is_default = i == 0 if emails_has_default else is_default
 
             db.session.add(CandidateEmail(
                 candidate_id=candidate_id,
@@ -505,15 +592,18 @@ def create_candidate_from_params(
                 is_default=is_default,
                 email_label_id=email_label_id
             ))
-            db.session.commit()
+            db.session.commit() # todo: commit at the end in case there is an exception
 
     # Add Candidate's phone(s)
     if phones:
-        for phone in phones:
+        phone_has_default = any([phone.get('is_default') for phone in phones])
+        for i, phone in enumerate(phones):
 
             phone_number = phone.get('value')
             is_default = phone.get('is_default')
             phone_label_id = phone_label_id_from_phone_label(phone_label=phone['label'])
+            # If there's no is_default, the first phone should be default
+            is_default = i == 0 if phone_has_default else is_default
 
             db.session.add(CandidatePhone(
                 candidate_id=candidate_id,
@@ -525,6 +615,21 @@ def create_candidate_from_params(
 
 
     return dict(candidate_id=candidate_id)
+
+
+def classification_type_id_from_degree_type(degree_type):
+    """
+    Function will return classification_type ID of the classification_type that matches
+    with degree_type. E.g. degree_type = 'Masters' => classification_type_id: 5
+    :return:    classification_type_id or None
+    """
+    matching_classification_type_id = None
+    from candidate_service.common.models.candidate import ClassificationType
+    if degree_type:
+        all_classification_types = db.session.query(ClassificationType).all()
+        matching_classification_type_id = next((row.id for row in all_classification_types
+                                                if row.code.lower() == degree_type.lower()), None)
+    return matching_classification_type_id
 
 
 def country_id_from_country_name_or_code(country_name_or_code):
@@ -539,7 +644,7 @@ def country_id_from_country_name_or_code(country_name_or_code):
     matching_country_id = next((row.id for row in all_countries
                                 if row.code.lower() == country_name_or_code.lower()
                                 or row.name.lower() == country_name_or_code.lower()), None)
-    return matching_country_id if matching_country_id else 1
+    return matching_country_id or 1
 
 
 
