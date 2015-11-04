@@ -1,9 +1,14 @@
 """
-Functions related to retrieving, creating, updating, and deleting candidates
+Helper functions related to retrieving, creating, updating, and deleting candidates
 """
+# Standard libraries
 import datetime
 from datetime import date
+
+# Database connection and logger
 from candidate_service.candidate_app import db, logger
+
+# Models
 from candidate_service.common.models.candidate import (
     Candidate, EmailLabel, CandidateEmail, CandidatePhone, PhoneLabel,
     CandidateWorkPreference, CandidatePreferredLocation, CandidateAddress,
@@ -21,12 +26,15 @@ from candidate_service.common.models.user import User
 from common.error_handling import InvalidUsage
 
 # Validations
-from common.utils.validators import sanitize_zip_code
+from common.utils.validators import (sanitize_zip_code, is_number)
 
-# Parsing
-from resume_service.resume_parsing_app.views.parse_lib import get_coordinates_
+# Common utilities
+from common.utils.common_functions import get_coordinates
 
 
+##################################################
+# Helper Functions For Retrieving Candidate Info #
+##################################################
 def fetch_candidate_info(candidate_id, fields=None):
     """
     Fetch for candidate object via candidate's id
@@ -139,52 +147,52 @@ def fetch_candidate_info(candidate_id, fields=None):
 def email_label_and_address(candidate):
     candidate_emails = candidate.candidate_emails
     return [{
-        'label': db.session.query(EmailLabel).get(email.email_label_id).description,
-        'address': email.address
-    } for email in candidate_emails]
+                'label': db.session.query(EmailLabel).get(email.email_label_id).description,
+                'address': email.address
+            } for email in candidate_emails]
 
 
 def phone_label_and_value(candidate):
     candidate_phones = candidate.candidate_phones
     return [{
-        'label': db.session.query(PhoneLabel).get(phone.phone_label_id).description,
-        'value': phone.value
-    } for phone in candidate_phones]
+                'label': db.session.query(PhoneLabel).get(phone.phone_label_id).description,
+                'value': phone.value
+            } for phone in candidate_phones]
 
 
 def addresses(candidate):
     candidate_addresses = candidate.candidate_addresses
     return [{
-        'address_line_1': candidate_address.address_line_1,
-        'address_line_2': candidate_address.address_line_2,
-        'city': candidate_address.city,
-        'state': candidate_address.state,
-        'zip_code': candidate_address.zip_code,
-        'po_box': candidate_address.po_box,
-        'country': country_name_from_country_id(country_id=candidate_address.country_id),
-        'latitude': candidate_address.coordinates and candidate_address.coordinates.split(',')[0],
-        'longitude': candidate_address.coordinates and candidate_address.coordinates.split(',')[1],
-        'is_default': candidate_address.is_default
-    } for candidate_address in candidate_addresses]
+                'address_line_1': candidate_address.address_line_1,
+                'address_line_2': candidate_address.address_line_2,
+                'city': candidate_address.city,
+                'state': candidate_address.state,
+                'zip_code': candidate_address.zip_code,
+                'po_box': candidate_address.po_box,
+                'country': country_name_from_country_id(country_id=candidate_address.country_id),
+                'latitude': candidate_address.coordinates and candidate_address.coordinates.split(',')[0],
+                'longitude': candidate_address.coordinates and candidate_address.coordinates.split(',')[1],
+                'is_default': candidate_address.is_default
+            } for candidate_address in candidate_addresses]
 
 
 def work_experiences(candidate_id):
     # Candidate experiences queried from db and returned in descending order
-    candidate_experiences = db.session.query(CandidateExperience).\
-        filter_by(candidate_id=candidate_id).\
+    candidate_experiences = db.session.query(CandidateExperience). \
+        filter_by(candidate_id=candidate_id). \
         order_by(CandidateExperience.is_current.desc(), CandidateExperience.start_year.desc(),
                  CandidateExperience.start_month.desc())
     return [{
-        'company': candidate_experience.organization,
-        'role': candidate_experience.position,
-        'start_date': date_of_employment(year=candidate_experience.start_year,
-                                         month=candidate_experience.start_month or 1),
-        'end_date': date_of_employment(year=candidate_experience.end_year,
-                                       month=candidate_experience.end_month or 1),
-        'city': candidate_experience.city,
-        'country': country_name_from_country_id(country_id=candidate_experience.country_id),
-        'is_current': candidate_experience.is_current
-    } for candidate_experience in candidate_experiences]
+                'company': candidate_experience.organization,
+                'role': candidate_experience.position,
+                'start_date': date_of_employment(year=candidate_experience.start_year,
+                                                 month=candidate_experience.start_month or 1),
+                'end_date': date_of_employment(year=candidate_experience.end_year,
+                                               month=candidate_experience.end_month or 1),
+                'city': candidate_experience.city,
+                'country': country_name_from_country_id(country_id=candidate_experience.country_id),
+                'is_current': candidate_experience.is_current
+            } for candidate_experience in candidate_experiences]
 
 
 def work_preference(candidate):
@@ -203,82 +211,82 @@ def work_preference(candidate):
 def preferred_locations(candidate):
     candidate_preferred_locations = candidate.candidate_preferred_locations
     return [{
-        'address': preferred_location.address,
-        'city': preferred_location.city,
-        'region': preferred_location.region,
-        'country': country_name_from_country_id(country_id=preferred_location.country_id)
-    } for preferred_location in candidate_preferred_locations]
+                'address': preferred_location.address,
+                'city': preferred_location.city,
+                'region': preferred_location.region,
+                'country': country_name_from_country_id(country_id=preferred_location.country_id)
+            } for preferred_location in candidate_preferred_locations]
 
 
 def educations(candidate):
     candidate_educations = candidate.candidate_educations
     return [{
-        'school_name': education.school_name,
-        'degree_details': degree_info(education_id=education.id),
-        'city': education.city,
-        'state': education.state,
-        'country': country_name_from_country_id(country_id=education.country_id)
-    } for education in candidate_educations]
+                'school_name': education.school_name,
+                'degree_details': degree_info(education_id=education.id),
+                'city': education.city,
+                'state': education.state,
+                'country': country_name_from_country_id(country_id=education.country_id)
+            } for education in candidate_educations]
 
 
 def degree_info(education_id):
-    education = db.session.query(CandidateEducationDegree).\
+    education = db.session.query(CandidateEducationDegree). \
         filter_by(candidate_education_id=education_id)
     return [{
-        'degree_title': degree.degree_title,
-        'degree_type': degree.degree_type,
-        'start_date': degree.start_time.date().isoformat() if degree.start_time else None,
-        'end_date': degree.end_time.date().isoformat() if degree.end_time else None
-    } for degree in education]
+                'degree_title': degree.degree_title,
+                'degree_type': degree.degree_type,
+                'start_date': degree.start_time.date().isoformat() if degree.start_time else None,
+                'end_date': degree.end_time.date().isoformat() if degree.end_time else None
+            } for degree in education]
 
 
 def skills(candidate):
     candidate_skills = candidate.candidate_skills
     return [{
-        'name': skill.description,
-        'month_used': skill.total_months,
-        'last_used_date': skill.last_used.isoformat() if skill.last_used else None
-    } for skill in candidate_skills]
+                'name': skill.description,
+                'month_used': skill.total_months,
+                'last_used_date': skill.last_used.isoformat() if skill.last_used else None
+            } for skill in candidate_skills]
 
 
 def areas_of_interest(candidate_id):
-    candidate_interests = db.session.query(CandidateAreaOfInterest).\
+    candidate_interests = db.session.query(CandidateAreaOfInterest). \
         filter_by(candidate_id=candidate_id)
     return [{
-        'id': db.session.query(AreaOfInterest).get(interest.area_of_interest_id).id,
-        'name': db.session.query(AreaOfInterest).get(interest.area_of_interest_id).description
-    } for interest in candidate_interests]
+                'id': db.session.query(AreaOfInterest).get(interest.area_of_interest_id).id,
+                'name': db.session.query(AreaOfInterest).get(interest.area_of_interest_id).description
+            } for interest in candidate_interests]
 
 
 def military_services(candidate):
     candidate_military_experience = candidate.candidate_military_services
     return [{
-        'branch': military_info.branch,
-        'service_status': military_info.service_status,
-        'highest_grade': military_info.highest_grade,
-        'highest_rank': military_info.highest_rank,
-        'start_date': military_info.from_date,
-        'end_date': military_info.to_date,
-        'country': country_name_from_country_id(country_id=military_info.country_id)
-    } for military_info in candidate_military_experience]
+                'branch': military_info.branch,
+                'service_status': military_info.service_status,
+                'highest_grade': military_info.highest_grade,
+                'highest_rank': military_info.highest_rank,
+                'start_date': military_info.from_date,
+                'end_date': military_info.to_date,
+                'country': country_name_from_country_id(country_id=military_info.country_id)
+            } for military_info in candidate_military_experience]
 
 
 def custom_fields(candidate):
     candidate_custom_fields = candidate.candidate_custom_fields
     return [{
-        'id': candidate_custom_field.custom_field_id,
-        'name': db.session.query(CustomField).get(candidate_custom_field.custom_field_id),
-        'value': candidate_custom_field.value,
-        'created_at_datetime': candidate_custom_field.added_time.isoformat()
-    } for candidate_custom_field in candidate_custom_fields]
+                'id': candidate_custom_field.custom_field_id,
+                'name': db.session.query(CustomField).get(candidate_custom_field.custom_field_id),
+                'value': candidate_custom_field.value,
+                'created_at_datetime': candidate_custom_field.added_time.isoformat()
+            } for candidate_custom_field in candidate_custom_fields]
 
 
 def social_network_name_and_url(candidate):
     candidate_social_networks = candidate.candidate_social_network
     return [{
-        'name': social_network_name(social_network_id=social_network.social_network_id),
-        'url': social_network.social_profile_url
-    } for social_network in candidate_social_networks]
+                'name': social_network_name(social_network_id=social_network.social_network_id),
+                'url': social_network.social_profile_url
+            } for social_network in candidate_social_networks]
 
 
 class ContactHistoryEvent:
@@ -287,7 +295,7 @@ class ContactHistoryEvent:
 
     CREATED_AT = 'created_at'
     EMAIL_SEND = 'email_send'
-    EMAIL_OPEN = 'email_open'   # Todo: Implement opens and clicks into timeline
+    EMAIL_OPEN = 'email_open'  # Todo: Implement opens and clicks into timeline
     EMAIL_CLICK = 'email_click'
 
 
@@ -341,7 +349,7 @@ def social_network_name(social_network_id):
 
 
 def get_candidate_id_from_candidate_email(candidate_email):
-    candidate_email_row = db.session.query(CandidateEmail).\
+    candidate_email_row = db.session.query(CandidateEmail). \
         filter_by(address=candidate_email).first()
     if not candidate_email_row:
         logger.info('get_candidate_id_from_candidate_email: candidate email not recognized: %s',
@@ -359,16 +367,19 @@ def retrieve_email_campaign_send(email_campaign, candidate_id):
     :rtype:     list(dict)
     """
     from candidate_service.common.models.email_marketing import EmailCampaignSend
-    email_campaign_send_rows = db.session.query(EmailCampaignSend).\
+
+    email_campaign_send_rows = db.session.query(EmailCampaignSend). \
         filter_by(EmailCampaignSend.email_campaign_id == email_campaign.id,
                   EmailCampaignSend.candidate_id == candidate_id)
 
     return [{
-        'candidate_id': email_campaign_send_row.candidate_id,
-        'sent_time': email_campaign_send_row.sent_time
-    } for email_campaign_send_row in email_campaign_send_rows]
+                'candidate_id': email_campaign_send_row.candidate_id,
+                'sent_time': email_campaign_send_row.sent_time
+            } for email_campaign_send_row in email_campaign_send_rows]
 
-
+###########################################
+# Helper Functions For Creating Candidate #
+###########################################
 def create_candidate_from_params(
         user_id,
         first_name=None,
@@ -379,28 +390,67 @@ def create_candidate_from_params(
         emails=None,
         phones=None,
         addresses=None,
-        country_id=None,
         educations=None,
         military_services=None,
         area_of_interest_ids=None,
         custom_field_ids=None,
-        social_networks=None, ##
+        social_networks=None,
         work_experiences=None,
         work_preference=None,
         preferred_locations=None,
-        skills=None, ##
+        skills=None,
         dice_social_profile_id=None,
         dice_profile_id=None,
         added_time=None,
-        domain_can_read=1,
-        domain_can_write=1,
+        domain_can_read=None,
+        domain_can_write=None,
         source_id=None,
         objective=None,
         summary=None
 ):
+    """
+    Function will parse each parameter and create a new Candidate.
+
+    If all parameters are provided, function will also create:
+        CandidateAddress, CandidateAreaOfInterest, CandidateCustomField,
+        CandidateEducation, CandidateEducationDegree, CandidateEducationDegreeBullet,
+        CandidateWorkPreference, CandidateEmail, CandidatePhone,
+        CandidateMilitaryService, CandidatePreferredLocation,
+        CandidateSkill, CandidateSocialNetwork
+
+    :type user_id:                  int
+    :type first_name:               str
+    :type last_name:                str
+    :type middle_name:              str
+    :type formatted_name:           str
+    :type status_id:                int
+    :type emails:                   list
+    :type phones:                   list
+    :type addresses:                list
+    :type educations:               list
+    :type military_services:        list
+    :type area_of_interest_ids:     list
+    :type custom_field_ids:         list
+    :type social_networks:          list
+    :type work_experiences:         list
+    :type work_preference:          dict
+    :type preferred_locations:      list
+    :type skills:                   list
+    :type dice_social_profile_id:   int
+    :type dice_profile_id:          int
+    :type added_time:               date
+    :type domain_can_read:          bool
+    :type domain_can_write:         bool
+    :type source_id:                int
+    :type objective:                str
+    :type summary:                  str
+    :return:                        dict(candidate_id=candidate_id)
+    """
     # Format inputs
     added_time = added_time or datetime.datetime.now()
     status_id = status_id or 1
+    domain_can_read = domain_can_read or 1
+    domain_can_write = domain_can_write or 1
 
     # Figure out first_name, last_name, middle_name, and formatted_name from inputs
     if first_name or last_name or middle_name or formatted_name:
@@ -415,11 +465,14 @@ def create_candidate_from_params(
     domain_id = domain_id_from_user_id(user_id=user_id)
 
     # Check if candidate exists
-    candidate = does_candidate_exist(dice_social_profile_id, dice_profile_id, domain_id, emails)
+    candidate_id = does_candidate_id_exist(dice_social_profile_id=dice_social_profile_id,
+                                           dice_profile_id=dice_profile_id,
+                                           domain_id=domain_id,
+                                           emails=emails)
 
-    # Return error if candidate is found
-    if candidate:
-        logger.info('create_candidate_from_params: Candidate already exists: %s', candidate)
+    # Return error if candidate_id is found
+    if candidate_id:
+        logger.info('create_candidate_from_params: Candidate already exists; candidate_id: %s', candidate_id)
         raise InvalidUsage(error_message="Candidate already exists; creation failed.")
 
     # Add Candidate to db
@@ -438,10 +491,9 @@ def create_candidate_from_params(
         source_id=source_id,
         objective=objective,
         summary=summary,
-        is_dirty=0 # todo: is_dirty cannot be null. This should be removed once the field is successfully removed.
+        is_dirty=0  # todo: is_dirty cannot be null. This should be removed once the field is successfully removed.
     )
     db.session.add(candidate)
-    db.session.commit()
     db.session.flush()
     candidate_id = candidate.id
 
@@ -449,7 +501,6 @@ def create_candidate_from_params(
     if addresses:
         address_has_default = any([address.get('is_default') for address in addresses])
         for i, address in enumerate(addresses):
-
             address_line_1 = address.get('address_line_1')
             address_line_2 = address.get('address_line_2')
             city = address.get('city')
@@ -458,7 +509,7 @@ def create_candidate_from_params(
             zip_code = sanitize_zip_code(address.get('zip_code'))
             po_box = address.get('po_box')
             is_default = address.get('is_default')
-            coordinates = get_coordinates_(zip_code, city, state)
+            coordinates = get_coordinates(zip_code, city, state)
             # If there's no is_default, the first address should be default
             is_default = i == 0 if address_has_default else is_default
 
@@ -473,9 +524,8 @@ def create_candidate_from_params(
                 po_box=po_box,
                 is_default=is_default,
                 coordinates=coordinates,
-                resume_id=candidate_id  #todo: this is to be removed once all tables have been added & migrated
+                resume_id=candidate_id  # todo: this is to be removed once all tables have been added & migrated
             ))
-            db.session.commit()
 
     # Add Candidate's areas_of_interest
     if area_of_interest_ids:
@@ -484,7 +534,6 @@ def create_candidate_from_params(
                 candidate_id=candidate_id,
                 area_of_interest_id=area_of_interest_id
             ))
-            db.session.commit()
 
     # Add Candidate's custom_field(s)
     if custom_field_ids:
@@ -494,7 +543,6 @@ def create_candidate_from_params(
                 custom_field_id=custom_field_id,
                 added_time=added_time
             ))
-            db.session.commit()
 
     # Add Candidate's education(s)
     if educations:
@@ -517,11 +565,10 @@ def create_candidate_from_params(
                 country_id=country_id,
                 is_current=is_current,
                 added_time=added_time,
-                resume_id=candidate_id  #todo: this is to be removed once all tables have been added & migrated
+                resume_id=candidate_id  # todo: this is to be removed once all tables have been added & migrated
             )
             db.session.add(candidate_education)
-            db.session.commit()
-            # db.session.flush()
+            db.session.flush()
 
             # Degree(s)
             candidate_education_id = candidate_education.id
@@ -557,8 +604,7 @@ def create_candidate_from_params(
                     end_time=end_time
                 )
                 db.session.add(candidate_education_degree)
-                db.session.commit()
-                # db.session.flush()
+                db.session.flush()
 
                 # Degree Bullet(s)
                 candidate_education_degree_id = candidate_education_degree.id
@@ -573,7 +619,6 @@ def create_candidate_from_params(
                         comments=comments,
                         added_time=added_time
                     ))
-                    db.session.commit()
 
     # Add Candidate's work experience(s)
     if work_experiences:
@@ -604,11 +649,10 @@ def create_candidate_from_params(
                 end_year=end_year,
                 is_current=is_current,
                 added_time=added_time,
-                resume_id=candidate_id  #todo: this is to be removed once all tables have been added & migrated
+                resume_id=candidate_id  # todo: this is to be removed once all tables have been added & migrated
             )
             db.session.add(experience)
-            # db.session.flush()
-            db.session.commit()
+            db.session.flush()
 
             experience_id = experience.id
             experience_bullets = work_experience.get('work_experience_bullets')
@@ -622,7 +666,6 @@ def create_candidate_from_params(
                     description=description,
                     added_time=added_time
                 ))
-                db.session.commit()
 
     # Add Candidate's work preference(s)
     if work_preference:
@@ -636,13 +679,11 @@ def create_candidate_from_params(
             salary=work_preference.get('salary'),
             tax_terms=work_preference.get('tax_terms')
         ))
-        db.session.commit()
 
     # Add Candidate's email(s)
     if emails:
         emails_has_default = any([email.get('is_default') for email in emails])
         for i, email in enumerate(emails):
-
             email_address = email.get('address')
             is_default = email.get('is_default')
             email_label_id = email_label_id_from_email_label(email_label=email['label'])
@@ -655,13 +696,11 @@ def create_candidate_from_params(
                 is_default=is_default,
                 email_label_id=email_label_id
             ))
-            db.session.commit() # todo: commit at the end in case there is an exception
 
     # Add Candidate's phone(s)
     if phones:
         phone_has_default = any([phone.get('is_default') for phone in phones])
         for i, phone in enumerate(phones):
-
             phone_number = phone.get('value')
             is_default = phone.get('is_default')
             phone_label_id = phone_label_id_from_phone_label(phone_label=phone['label'])
@@ -674,7 +713,6 @@ def create_candidate_from_params(
                 is_default=is_default,
                 phone_label_id=phone_label_id
             ))
-            db.session.commit()
 
     # Add Candidate's military service(s)
     if military_services:
@@ -692,14 +730,12 @@ def create_candidate_from_params(
                 comments=military_service.get('comments'),
                 from_date=military_service.get('from_date'),
                 to_date=military_service.get('to_date'),
-                resume_id=candidate_id  #todo: this is to be removed once all tables have been added & migrated
+                resume_id=candidate_id  # todo: this is to be removed once all tables have been added & migrated
             ))
-            db.session.commit()
 
     # Add Candidate's preferred location(s)
     if preferred_locations:
         for preferred_location in preferred_locations:
-
             # Get country_id
             country_id = country_id_from_country_name_or_code(preferred_location.get('country'))
             # Validate Zip Code(s)
@@ -713,90 +749,40 @@ def create_candidate_from_params(
                 region=preferred_location.get('region'),
                 zip_code=zip_code,
             ))
-            db.session.commit()
 
+    # Add Candidate's skill(s)
+    if skills:
+        for skill in skills:
+            db.session.add(CandidateSkill(
+                candidate_id=candidate_id,
+                list_order=skill.get('list_order', 1),
+                description=skill.get('description'),
+                added_time=added_time,
+                total_months=skill.get('total_months'),
+                last_used=skill.get('last_used'),
+                resume_id=candidate_id  # todo: this is to be removed once all tables have been added & migrated
+            ))
+
+    # Add Candidate's social_network(s)
+    if social_networks:
+        for social_network in social_networks:
+            # Get social_network_id
+            social_network_id = social_network_id_from_name(social_network.get('name'))
+            db.session.add(CandidateSocialNetwork(
+                candidate_id=candidate_id,
+                social_network_id=social_network_id,
+                social_profile_url=social_network.get('profile_url')
+            ))
+
+    db.session.commit()
     return dict(candidate_id=candidate_id)
 
 
-def classification_type_id_from_degree_type(degree_type):
-    """
-    Function will return classification_type ID of the classification_type that matches
-    with degree_type. E.g. degree_type = 'Masters' => classification_type_id: 5
-    :return:    classification_type_id or None
-    """
-    matching_classification_type_id = None
-    from candidate_service.common.models.candidate import ClassificationType
-    if degree_type:
-        all_classification_types = db.session.query(ClassificationType).all()
-        matching_classification_type_id = next((row.id for row in all_classification_types
-                                                if row.code.lower() == degree_type.lower()), None)
-    return matching_classification_type_id
-
-
-def country_id_from_country_name_or_code(country_name_or_code):
-    """
-    Function will find and return ID of the country matching with country_name_or_code
-    If not match is found, default return is 1 => 'United States'
-
-    :return: Country.id
-    """
-    from candidate_service.common.models.misc import Country
-    all_countries = db.session.query(Country).all()
-    if country_name_or_code:
-        matching_country_id = next((row.id for row in all_countries
-                                    if row.code.lower() == country_name_or_code.lower()
-                                    or row.name.lower() == country_name_or_code.lower()), None)
-        return matching_country_id
-    return 1
-
-
-
-def email_label_id_from_email_label(email_label):
-    """
-    Function retrieves email_label_id from email_label
-    e.g. 'Primary' => 1
-    :return:    email_label ID if email_label is recognized, otherwise 1 ('Primary')
-    """
-    email_label_row = db.session.query(EmailLabel).filter_by(description=email_label).first()
-    if email_label_row:
-        return email_label_row.id
-    else:
-        logger.error('email_label_id_from_email_label: email_label not recognized: %s', email_label)
-        return 1
-
-
-def phone_label_id_from_phone_label(phone_label):
-    """
-    :param phone_label:
-    :return:
-    """
-    phone_label_row = db.session.query(PhoneLabel).filter_by(description=phone_label).first()
-    if phone_label_row:
-        return phone_label_row.id
-    else:
-        logger.error('phone_label_id_from_phone_label: phone_label not recognized: %s', phone_label)
-        return 1
-
-
-def does_candidate_exist(dice_social_profile_id, dice_profile_id, domain_id, emails):
-    candidate = None
-    # Check for existing dice_social_profile_id and dice_profile_id
-    if dice_social_profile_id:
-        candidate = db.session.queyr(Candidate).join(User).filter(
-            Candidate.dice_social_profile_id == dice_social_profile_id,
-            User.domain_id == domain_id
-        ).first()
-    elif dice_profile_id:
-        candidate = db.session.query(Candidate).join(User).filter(
-            Candidate.dice_profile_id == dice_profile_id,
-            User.domain_id == domain_id
-        ).first()
-
-    return candidate
-
-
-
 def get_fullname_from_name_fields(first_name, middle_name, last_name):
+    """
+    Function will concatenate names if any, otherwise will return empty string
+    :rtype: str
+    """
     full_name = ''
     if first_name:
         full_name = '%s ' % first_name
@@ -825,9 +811,11 @@ def get_name_fields_from_name(formatted_name):
 # Todo: move function to user_service/module
 def domain_id_from_user_id(user_id):
     """
+    Function will return the domain ID of the user if found, else None
     :type   user_id:  int
-    :return domain_id
+    :return domain ID
     """
+    assert is_number(user_id)
     user = db.session.query(User).get(user_id)
     if not user:
         logger.error('domain_id_from_user_id: Tried to find the domain ID of the user: %s',
@@ -838,3 +826,114 @@ def domain_id_from_user_id(user_id):
         return None
 
     return user.domain_id
+
+
+def does_candidate_id_exist(dice_social_profile_id, dice_profile_id, domain_id, emails):
+    """
+    Function will search the db for a candidate with the same parameter(s) as provided
+    :return candidate_id if found, otherwise None
+    """
+    candidate = None
+    # Check for existing dice_social_profile_id and dice_profile_id
+    if dice_social_profile_id:
+        candidate = db.session.query(Candidate).join(User).filter(
+            Candidate.dice_social_profile_id == dice_social_profile_id,
+            User.domain_id == domain_id
+        ).first()
+
+    elif dice_profile_id:
+        candidate = db.session.query(Candidate).join(User).filter(
+            Candidate.dice_profile_id == dice_profile_id,
+            User.domain_id == domain_id
+        ).first()
+
+    # If candidate is found, return its ID
+    if candidate:
+        return candidate.id
+
+    # If candidate still not found, check for existing email address, if specified
+    for email in emails:
+        email_address = email.get('address')
+        candidate_email = db.session.query(CandidateEmail).join(Candidate).join(User).filter(
+            CandidateEmail.address == email_address, User.domain_id == domain_id
+        ).first()
+        if candidate_email:
+            return candidate_email.candidate_id
+
+    return None
+
+
+def country_id_from_country_name_or_code(country_name_or_code):
+    """
+    Function will find and return ID of the country matching with country_name_or_code
+    If not match is found, default return is 1 => 'United States'
+
+    :return: Country.id
+    """
+    from candidate_service.common.models.misc import Country
+
+    all_countries = db.session.query(Country).all()
+    if country_name_or_code:
+        matching_country_id = next((row.id for row in all_countries
+                                    if row.code.lower() == country_name_or_code.lower()
+                                    or row.name.lower() == country_name_or_code.lower()), None)
+        return matching_country_id
+    return 1
+
+
+def classification_type_id_from_degree_type(degree_type):
+    """
+    Function will return classification_type ID of the classification_type that matches
+    with degree_type. E.g. degree_type = 'Masters' => classification_type_id: 5
+    :return:    classification_type_id or None
+    """
+    matching_classification_type_id = None
+    from candidate_service.common.models.candidate import ClassificationType
+
+    if degree_type:
+        all_classification_types = db.session.query(ClassificationType).all()
+        matching_classification_type_id = next((row.id for row in all_classification_types
+                                                if row.code.lower() == degree_type.lower()), None)
+    return matching_classification_type_id
+
+
+def email_label_id_from_email_label(email_label):
+    """
+    Function retrieves email_label_id from email_label
+    e.g. 'Primary' => 1
+    :return:  email_label ID if email_label is recognized, otherwise 1 ('Primary')
+    """
+    email_label_row = db.session.query(EmailLabel).filter_by(description=email_label).first()
+    if email_label_row:
+        return email_label_row.id
+    else:
+        logger.error('email_label_id_from_email_label: email_label not recognized: %s', email_label)
+        return 1
+
+
+def phone_label_id_from_phone_label(phone_label):
+    """
+    Function retrieves phone_label_id from phone_label
+    e.g. 'Primary' => 1
+    :return:  phone_label ID if phone_label is recognized, otherwise 1 ('Primary')
+    """
+    phone_label_row = db.session.query(PhoneLabel).filter_by(description=phone_label).first()
+    if phone_label_row:
+        return phone_label_row.id
+    else:
+        logger.error('phone_label_id_from_phone_label: phone_label not recognized: %s', phone_label)
+        return 1
+
+
+def social_network_id_from_name(name):
+    """
+    Function gets social_network ID from social network's name
+    e.g. 'Facebook' => 1
+    :return: SocialNetwork.id
+    """
+    matching_social_network = None
+    if name:
+        all_social_networks = db.session.query(SocialNetwork).all()
+        matching_social_network = next((row for row in all_social_networks
+                                        if row.name.lower() == name.lower()), None)
+    return matching_social_network.id if matching_social_network else None

@@ -156,7 +156,6 @@ class CandidateResource(Resource):
                 emails=emails,
                 phones=phones,
                 addresses=addresses,
-                country_id=country_id,
                 educations=educations,
                 military_services=military_services,
                 area_of_interest_ids=area_of_interest_ids,

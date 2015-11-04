@@ -647,6 +647,9 @@ class CandidateSkill(db.Model):
     last_used = db.Column('LastUsed', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
+    # TODO: Below are necessary for now, but should remove once all tables have been defined
+    resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
+
     def __repr__(self):
         return "<CandidateSkill (candidate_id=' %r')>" % self.candidate_id
 
