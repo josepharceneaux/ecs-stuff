@@ -9,7 +9,8 @@ from candidate_service.common.models.candidate import (
     CandidateWorkPreference, CandidatePreferredLocation, CandidateAddress,
     CandidateExperience, CandidateEducation, CandidateEducationDegree,
     CandidateSkill, CandidateMilitaryService, CandidateCustomField,
-    CandidateSocialNetwork, SocialNetwork, CandidateEducationDegreeBullet
+    CandidateSocialNetwork, SocialNetwork, CandidateEducationDegreeBullet,
+    CandidateExperienceBullet
 )
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.email_marketing import (EmailCampaign, EmailCampaignSend)
@@ -574,6 +575,54 @@ def create_candidate_from_params(
                     ))
                     db.session.commit()
 
+    # Add candidate's work experience
+    if work_experiences:
+        for work_experience in work_experiences:
+
+            list_order = work_experience.get('list_order', 1)
+            organization = work_experience.get('organization')
+            position = work_experience.get('position')
+            city = work_experience.get('city')
+            state = work_experience.get('state')
+            end_month = work_experience.get('end_month')
+            start_year = work_experience.get('start_year')
+            country_id = country_id_from_country_name_or_code(work_experience.get('country'))
+            start_month = work_experience.get('start_month')
+            end_year = work_experience.get('end_year')
+            is_current = work_experience.get('is_current', 0)
+            experience = CandidateExperience(
+                candidate_id=candidate_id,
+                list_order=list_order,
+                organization=organization,
+                position=position,
+                city=city,
+                state=state,
+                end_month=end_month,
+                start_year=start_year,
+                country_id=country_id,
+                start_month=start_month,
+                end_year=end_year,
+                is_current=is_current,
+                added_time=added_time,
+                resume_id=candidate_id  #todo: this is to be removed once all tables have been added & migrated
+            )
+            db.session.add(experience)
+            # db.session.flush()
+            db.session.commit()
+
+            experience_id = experience.id
+            experience_bullets = work_experience.get('work_experience_bullets')
+            assert isinstance(experience_bullets, list)
+            for experience_bullet in experience_bullets:
+                list_order = experience_bullet.get('list_order', 1)
+                description = experience_bullet.get('description')
+                db.session.add(CandidateExperienceBullet(
+                    candidate_experience_id=experience_id,
+                    list_order=list_order,
+                    description=description,
+                    added_time=added_time
+                ))
+                db.session.commit()
 
     # Add Candidate's email(s)
     if emails:
@@ -641,10 +690,12 @@ def country_id_from_country_name_or_code(country_name_or_code):
     """
     from candidate_service.common.models.misc import Country
     all_countries = db.session.query(Country).all()
-    matching_country_id = next((row.id for row in all_countries
-                                if row.code.lower() == country_name_or_code.lower()
-                                or row.name.lower() == country_name_or_code.lower()), None)
-    return matching_country_id or 1
+    if country_name_or_code:
+        matching_country_id = next((row.id for row in all_countries
+                                    if row.code.lower() == country_name_or_code.lower()
+                                    or row.name.lower() == country_name_or_code.lower()), None)
+        return matching_country_id
+    return 1
 
 
 

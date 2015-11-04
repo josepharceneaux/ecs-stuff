@@ -610,6 +610,9 @@ class CandidateExperience(db.Model):
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
+    # TODO: Below are necessary for now, but should remove once all tables have been defined
+    resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
+
     # Relationships
     candidate_experience_bullets = relationship('CandidateExperienceBullet', backref='candidate_experience')
 
