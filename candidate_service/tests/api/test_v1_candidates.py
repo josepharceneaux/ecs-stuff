@@ -3,6 +3,12 @@ Test cases for candidate-restful-services
 """
 from common.tests.conftest import UserAuthentication
 from common.tests.conftest import *
+import json
+from common.tests.fake_data import generate_single_candidate_data
+
+# Models
+from candidate_service.common.models.candidate import Candidate
+from candidate_service.common.models.user import User
 
 BASE_URI = "http://127.0.0.1:8005/v1/candidates"
 
@@ -54,12 +60,19 @@ def test_get_candidate_via_id_and_email():
 #######################################
 # test cases for POSTing candidate(s) #
 #######################################
-def test_post_candidate():
-    import json
-    from common.tests.fake_data import generate_single_candidate_data
+def test_create_candidate(sample_user, user_auth):
+    """
+    Test:   create a new candidate and candidate's info
+    Expect: 200
+    :type   sample_user:  User
+    :type   user_auth:    UserAuthentication
+    :return {'candidates': [{'id': candidate_id}, ...]}
+    """
+    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
     r = requests.post(
         url=BASE_URI,
-        data=json.dumps(generate_single_candidate_data())
+        data=json.dumps(generate_single_candidate_data()),
+        headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
     )
 
     resp_object = r.json()
@@ -69,6 +82,31 @@ def test_post_candidate():
     assert 'candidates' in resp_object
     assert isinstance(resp_object, dict)
     assert isinstance(resp_object['candidates'], list)
+
+
+def test_create_candidate_without_inputs(sample_user, user_auth):
+    """
+
+    :type   sample_user:    User
+    :type   user_auth:      UserAuthentication
+    :return:
+    """
+    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+    r = requests.post(
+        url=BASE_URI,
+        data=json.dumps({'candidates': [{}]}),
+        headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
+    )
+    resp_object = r.json()
+    print "\n resp_object = %s" % resp_object
+
+    current_number_of_candidates = db.session.query(Candidate).count()
+
+    assert r.status_code == 400
+    assert 'error' in resp_object
+    # Creation was unsuccessful, number of candidates must not increase
+    assert current_number_of_candidates == db.session.query(Candidate).count() #TODO: check count in domain not overall
+
 
 #########################################
 # test cases for DELETEing candidate(s) #

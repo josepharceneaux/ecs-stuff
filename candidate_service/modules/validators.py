@@ -25,6 +25,22 @@ def does_candidate_belong_to_user(user_row, candidate_id):
     return True if candidate_row else False
 
 
+def do_candidates_belong_to_user(user_row, candidate_ids):
+    """
+    Function checks if:
+        1. Candidates belong to user AND
+        2. Candidates are in the same domain as the user
+    :type user_row:         User
+    :type candidate_ids:    list
+    :rtype  bool
+    """
+    assert isinstance(candidate_ids, list)
+    exists = db.session.query(Candidate).join(User).\
+                 filter(Candidate.id.in_(candidate_ids),
+                        User.domain_id != user_row.domain_id).count() == 0
+    return exists
+
+
 def is_custom_field_authorized(user_domain_id, custom_field_ids):
     """
     Function checks if custom_field_ids belong to the logged-in-user's domain

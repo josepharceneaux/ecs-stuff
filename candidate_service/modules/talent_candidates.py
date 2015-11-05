@@ -8,6 +8,7 @@ from datetime import date
 # Database connection and logger
 from candidate_service.candidate_app import db, logger
 
+
 # Models
 from candidate_service.common.models.candidate import (
     Candidate, EmailLabel, CandidateEmail, CandidatePhone, PhoneLabel,
@@ -909,3 +910,14 @@ def social_network_id_from_name(name):
         matching_social_network = next((row for row in all_social_networks
                                         if row.name.lower() == name.lower()), None)
     return matching_social_network.id if matching_social_network else None
+
+###########################################
+# Helper Functions For Deleting Candidate #
+###########################################
+# def _delete_candidates(candidate_ids, user_id=None, source_product_id=None):
+#     """
+#     :param candidate_ids:
+#     :param user_id:
+#     :param source_product_id:
+#     :return:
+#     """
