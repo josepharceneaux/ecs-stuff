@@ -4,7 +4,7 @@ Test cases for candidate-restful-services
 from common.tests.conftest import UserAuthentication
 from common.tests.conftest import *
 import json
-from common.tests.fake_data import generate_single_candidate_data
+from common.tests.sample_data import generate_single_candidate_data
 
 # Models
 from candidate_service.common.models.candidate import Candidate
