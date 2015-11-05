@@ -31,6 +31,9 @@ class Candidate(db.Model):
     resume_text = db.Column('resumeText', db.Text)
     culture_id = db.Column('cultureId', db.Integer, db.ForeignKey('culture.id'), default=1)
 
+    # TODO: Below are necessary for now, but should remove once all tables have been defined
+    is_dirty = db.Column('IsDirty', db.SmallInteger, default=0)
+
     # One-to-many Relationships; i.e. Candidate has many:
     candidate_phones = relationship('CandidatePhone', backref='candidate')
     candidate_emails = relationship('CandidateEmail', backref='candidate')
@@ -55,6 +58,7 @@ class Candidate(db.Model):
     candidate_unidentifieds = relationship('CandidateUnidentified', backref='candidate')
     email_campaign_sends = relationship('EmailCampaignSend', backref='candidate')
     candidate_custom_fields = relationship('CandidateCustomField', backref='candidate')
+    candidate_experiences = relationship('CandidateExperience', backref='candidate')
 
     def get_id(self):
         return unicode(self.id)
@@ -294,7 +298,7 @@ class CandidatePreferredLocation(db.Model):
     country_id = db.Column('countryId', db.Integer, db.ForeignKey('country.id'))
     city = db.Column(db.String(255))
     region = db.Column(db.String(255))
-    zipcode = db.Column(db.String(10))
+    zip_code = db.Column('zipcode', db.String(10))
 
     def __repr__(self):
         return "<CandidatePreferredLocation (candidate_id=' %r')>" % self.candidate_id
@@ -419,6 +423,9 @@ class CandidateMilitaryService(db.Model):
     to_date = db.Column('ToDate', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
+    # TODO: Below are necessary for now, but should remove once all tables have been defined
+    resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
+
     def __repr__(self):
         return "<CandidateMilitaryService (candidate_id=' %r')>" % self.candidate_id
 
@@ -517,8 +524,11 @@ class CandidateAddress(db.Model):
     coordinates = db.Column('Coordinates', db.String(100))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
+    # TODO: Below are necessary for now, but should remove once all tables have been defined
+    resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
+
     def __repr__(self):
-        return "<CandidateAddress (candidate_id=' %r')>" % self.candidate_id
+        return "<CandidateAddress (candidate_id = %r)>" % self.candidate_id
 
 
 class CandidateEducation(db.Model):
@@ -535,11 +545,14 @@ class CandidateEducation(db.Model):
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
+    # TODO: Below are necessary for now, but should remove once all tables have been defined
+    resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
+
     # Relationships
     candidate_education_degrees = relationship('CandidateEducationDegree', backref='candidate_education')
 
     def __repr__(self):
-        return "<CandidateEducation (candidate_id=' %r')>" % self.candidate_id
+        return "<CandidateEducation (candidate_id = %r)>" % self.candidate_id
 
 
 class CandidateEducationDegree(db.Model):
@@ -600,6 +613,9 @@ class CandidateExperience(db.Model):
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
+    # TODO: Below are necessary for now, but should remove once all tables have been defined
+    resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
+
     # Relationships
     candidate_experience_bullets = relationship('CandidateExperienceBullet', backref='candidate_experience')
 
@@ -630,6 +646,9 @@ class CandidateSkill(db.Model):
     total_months = db.Column('TotalMonths', db.Integer)
     last_used = db.Column('LastUsed', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+    # TODO: Below are necessary for now, but should remove once all tables have been defined
+    resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
 
     def __repr__(self):
         return "<CandidateSkill (candidate_id=' %r')>" % self.candidate_id
@@ -672,14 +691,14 @@ class CandidateCustomField(db.Model):
         return "<CandidateCustomField (id = %r)>" % self.id
 
 
-class CandidateSubscription(db.Model):
+class CandidateSubscriptionPreference(db.Model):
     __tablename__ = 'candidate_subscription_preference'
     id = db.Column(db.Integer, primary_key=True)
     candidate_id = db.Column('candidateId', db.Integer, db.ForeignKey('candidate.id'))
     frequency_id = db.Column('frequencyId', db.Integer, db.ForeignKey('frequency.id'))
 
-
-
+    def __repr__(self):
+        return "<ClassificationType (code = %r)>" % self.code
 
 
 

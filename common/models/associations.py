@@ -1,5 +1,5 @@
 from db import db
-import time
+import datetime
 
 
 # All tables below are Association Tables. SQLAlchemy docs on Association Object:
@@ -11,7 +11,7 @@ class CandidateAreaOfInterest(db.Model):
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'), primary_key=True)
     area_of_interest_id = db.Column('AreaOfInterestId', db.Integer, db.ForeignKey('area_of_interest.id'), primary_key=True)
     additional_notes = db.Column('AdditionalNotes', db.Text)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
 
 class ReferenceEmail(db.Model):
@@ -21,7 +21,7 @@ class ReferenceEmail(db.Model):
     email_label_id = db.Column('EmailLabelId', db.Integer, db.ForeignKey('email_label.id'))
     is_default = db.Column('IsDefault', db.Boolean)
     value = db.Column('Value', db.String(100))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<ReferenceEmail (reference_id=' %r')>" % self.candidate_reference_id
@@ -35,7 +35,7 @@ class ReferencePhone(db.Model):
     is_default = db.Column('IsDefault', db.Boolean)
     value = db.Column('Value', db.String(50))
     extension = db.Column('Extension', db.String(10))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<ReferencePhone (reference_id=' %r')>" % self.candidate_reference_id

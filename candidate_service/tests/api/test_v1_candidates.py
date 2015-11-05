@@ -1,44 +1,19 @@
+"""
+Test cases for candidate-restful-services
+"""
 from common.tests.conftest import UserAuthentication
 from common.tests.conftest import *
 
-USER_PASSWORD = 'Talent15'
-
-def generate_single_candidate_data():
-    data = {'candidates': [
-        {
-            'first_name': 'Wu Tang',
-            'last_name': 'Clan',
-            'emails': [{'label': 'Primary', 'address': 'wutangclan_%s@hiphop.com' % str(uuid.uuid4())[0:8]}],
-            'phones': [{'label': 'mobile', 'value': '4084096677'}],
-            'addresses': [{'address_line_1': '%s S. third St.' % random.randint(100, 9999),
-                           'city': 'San Jose', 'state': 'CA', 'zip_code': '95118', 'country': 'US'}],
-            'work_preference': {"relocate": "true", "authorization": "US Citizen", "telecommute": "true",
-                                "travel": 25, "hourly_rate": 35.50, "salary": 75000,
-                                "tax_terms": "full-time employment", "security_clearance": "none",
-                                "third_party": "false"},
-            'educations': [{'school_name': 'SJSU', 'city': 'San Jose', 'country': 'USA'}]
-        }
-    ]}
-    return data
-
-
-def generate_multiple_candidates_data():
-    data = {'candidates': [
-        {'first_name': 'John', 'last_name': 'Kennedy',
-         'emails': [{'label': 'Primary', 'address': 'j.kennedy_%s@test.com' % str(uuid.uuid4())[0:8]}]},
-        {'first_name': 'Amir', 'last_name': 'Beheshty',
-         'emails': [{'label': 'Primary', 'address': 'j.kennedy_%s@test.com' % str(uuid.uuid4())[0:8]}]},
-        {'first_name': 'Nancy', 'last_name': 'Grey',
-         'emails': [{'label': 'Primary', 'address': 'j.kennedy_%s@test.com' % str(uuid.uuid4())[0:8]}]}
-    ]}
-    return data
+BASE_URI = "http://127.0.0.1:8005/v1/candidates"
 
 ####################################
 # test cases for GETting candidate #
 ####################################
-BASE_URI = "http://127.0.0.1:8005/v1/candidates"
 def test_get_candidate_from_forbidden_domain(sample_user, user_auth):
     """
+    Test:   attempt to retrieve a candidate outside of logged-in-user's domain
+    Expect: 403 status_code
+
     :param sample_user: user-row
     :type user_auth:    UserAuthentication
     """
@@ -50,13 +25,59 @@ def test_get_candidate_from_forbidden_domain(sample_user, user_auth):
         # headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
     )
     assert resp.status_code == 403
-    print "\nresp = %s" % resp
     print "\nresp = %s" % resp.json()
 
 
-# ###############################################
-# # test cases for GETting email_campaign_sends #
-# ###############################################
+def test_get_candidate_via_invalid_email():
+    """
+    Test:   retrieve candidate via an invalid email address
+    Expect: 400
+    """
+    resp = requests.get(
+        url=BASE_URI + "/%s" % 'bad_email.com'
+    )
+    assert resp.status_code == 400
+    print "\nresp = %s" % resp.json()
+
+
+def test_get_candidate_via_id_and_email():
+    """
+    Test:   retrieve candidate via candidate's ID and candidate's Email address
+    Expect: 200 in both cases
+    """
+    resp = requests.get(
+        url=BASE_URI + '/%s' % 4
+    )
+    assert resp.status_code == 200
+    print "\n resp = %s" % resp.json()
+
+#######################################
+# test cases for POSTing candidate(s) #
+#######################################
+def test_post_candidate():
+    import json
+    from common.tests.fake_data import generate_single_candidate_data
+    r = requests.post(
+        url=BASE_URI,
+        data=json.dumps(generate_single_candidate_data())
+    )
+
+    resp_object = r.json()
+    print "\n resp_object = %s" % resp_object
+
+    assert r.status_code == 200
+    assert 'candidates' in resp_object
+    assert isinstance(resp_object, dict)
+    assert isinstance(resp_object['candidates'], list)
+
+#########################################
+# test cases for DELETEing candidate(s) #
+#########################################
+
+
+###############################################
+# test cases for GETting email_campaign_sends #
+###############################################
 # def test_get_email_campaign_sends():
 #     candidate_id = 208
 #     email_campaign_id = 3
@@ -64,20 +85,3 @@ def test_get_candidate_from_forbidden_domain(sample_user, user_auth):
 #                      % (candidate_id, email_campaign_id))
 #     print "resp = %s" % r
 #     print "resp_json = %s" % r.text
-
-
-#######################################
-# test cases for POSTing candidate(s) #
-#######################################
-def test_post_candidate():
-    import json
-    r = requests.post(
-        url=BASE_URI,
-        data=json.dumps('')
-    )
-    print "resp_status = %s" % r.status_code
-    print "resp = %s" % r
-
-#########################################
-# test cases for DELETEing candidate(s) #
-#########################################

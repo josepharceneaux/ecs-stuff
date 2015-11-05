@@ -75,7 +75,7 @@ def register_error_handlers(app, logger):
         logger.warn("Invalid API usage for app %s: %s", app.import_name, response)
         return response, error.http_status_code()
 
-    @app.errorhandler(UnauthorizedError)
+    @app.errorhandler(ForbiddenError)
     def handle_unauthorized(error):
         logger.warn("Unauthorized for app %s", app.import_name)
         response = jsonify(error.to_dict())
