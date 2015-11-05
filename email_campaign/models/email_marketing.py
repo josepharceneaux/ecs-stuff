@@ -67,3 +67,38 @@ class EmailCampaignSmartList(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     smart_list_id = db.Column('SmartListId', db.Integer, db.ForeignKey('smart_list.id'))
     email_campaign_id = db.Column('EmailCampaignId', db.Integer, db.ForeignKey('email_campaign.id'))
+
+
+class CandidateSubscriptionPreference(db.Model):
+    __tablename__='candidate_subscription_preference'
+    id = db.Column(db.Integer, primary_key=True)
+    candidate_id=db.column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
+    frequency_id=db.column('FrequencyId', db.Integer, db.ForeignKey('frequency.id'))
+    # updated_time = db.column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
+
+class EmailCampaignSend(db.Model):
+    __tablename__='email_campaign_send'
+    id=db.Column(db.Integer, primary_key=True)
+    email_campaign_id = db.Column('EmailCampaignId', db.Integer)
+    candidate_id = db.Column('CandidateId', db.Integer)
+    sent_time = db.Column('SendTime', db.DateTime)
+    ses_message_id = db.Column('sesMessageId', db.String(63))
+    ses_request_id = db.Column('sesRequestId', db.String(63))
+    is_ses_bounce = db.Column('isSesBounce', db.Boolean, default=False)
+    is_ses_complaint = db.Column('isSesComplaint', db.Boolean, default=False)
+    updated_time = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
+
+
+class EmailCampaignBlast(db.Model):
+    __tablename__ = 'email_campaign_blast'
+    id = db.Column(db.Integer, primary_key=True)
+    email_campaign_id = db.Column('EmailCampaignId', db.Integer, db.ForeignKey('email_campaign.id'))
+    sends = db.Column('Sends', db.Integer, default=0)
+    html_clicks = db.Column('HtmlClicks', db.Integer, default=0)
+    text_clicks = db.Column('TextClicks', db.Integer, default=0)
+    opens = db.Column(' Opens', db.Integer, default=0)
+    bounces = db.Column('Bounces', db.Integer, default=0)
+    complaints = db.Column('Complaints', db.Integer, default=0)
+    sent_time = db.Column('SentTime', db.DateTime)
+    updated_time = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
+

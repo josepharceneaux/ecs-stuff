@@ -2,10 +2,12 @@ import os
 import logging
 import logging.config
 
+
 # load logging configuration file
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 LOGGING_CONF = os.path.join(APP_ROOT, 'logging.conf')
 logging.config.fileConfig(LOGGING_CONF)
+
 
 # SQL ALCHEMY DB URL
 GT_ENVIRONMENT = os.environ.get('GT_ENVIRONMENT')
@@ -28,6 +30,7 @@ elif GT_ENVIRONMENT == 'prod':
     DEBUG = False
 else:
     raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")
+
 
 SECRET_KEY = os.urandom(24).encode('hex')
 OAUTH2_PROVIDER_TOKEN_EXPIRES_IN = 7200  # 2 hours expiry time for bearer token
