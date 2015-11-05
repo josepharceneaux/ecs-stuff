@@ -8,7 +8,6 @@ from datetime import date
 # Database connection and logger
 from candidate_service.candidate_app import db, logger
 
-
 # Models
 from candidate_service.common.models.candidate import (
     Candidate, EmailLabel, CandidateEmail, CandidatePhone, PhoneLabel,
@@ -347,10 +346,9 @@ def retrieve_email_campaign_send(email_campaign, candidate_id):
         filter_by(EmailCampaignSend.email_campaign_id == email_campaign.id,
                   EmailCampaignSend.candidate_id == candidate_id)
 
-    return [{
-                'candidate_id': email_campaign_send_row.candidate_id,
-                'sent_time': email_campaign_send_row.sent_time
-            } for email_campaign_send_row in email_campaign_send_rows]
+    return [{'candidate_id': email_campaign_send_row.candidate_id,
+             'sent_time': email_campaign_send_row.sent_time
+             } for email_campaign_send_row in email_campaign_send_rows]
 
 ###########################################
 # Helper Functions For Creating Candidate #
@@ -586,7 +584,7 @@ def create_candidate_from_params(
                 degree_bullets = education_degree.get('degree_bullets')
                 assert isinstance(degree_bullets, list)
                 for degree_bullet in degree_bullets:
-                    concentration_type = degree_bullet.get('concentration_type')
+                    concentration_type = degree_bullet.get('major')
                     comments = degree_bullet.get('comments')
                     db.session.add(CandidateEducationDegreeBullet(
                         candidate_education_degree_id=candidate_education_degree_id,
@@ -731,7 +729,7 @@ def create_candidate_from_params(
             db.session.add(CandidateSkill(
                 candidate_id=candidate_id,
                 list_order=skill.get('list_order', 1),
-                description=skill.get('description'),
+                description=skill.get('name'),
                 added_time=added_time,
                 total_months=skill.get('total_months'),
                 last_used=skill.get('last_used'),

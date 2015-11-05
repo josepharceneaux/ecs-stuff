@@ -1,7 +1,7 @@
-from faker import Faker
-fake = Faker()
 import random
 from random import randrange
+from faker import Faker
+fake = Faker()
 
 
 def generate_single_candidate_data():
@@ -30,7 +30,7 @@ def generate_single_candidate_data():
                                 "salary": randrange(50000, 300000),
                                 "tax_terms": "full-time employment",
                                 "security_clearance": "none",
-                                "third_party": "false"},
+                                "third_party": "false"},  # TODO boolean
             'work_experiences': [
                 {'organization': fake.company(), 'position': fake.job(), 'city': fake.city(),
                  'state': fake.state(), 'work_experience_bullets': [
@@ -40,7 +40,7 @@ def generate_single_candidate_data():
             'educations': [
                 {'school_name': 'SJSU', 'city': 'San Jose', 'country': 'USA', 'degrees': [
                     {'type': 'BS', 'title': 'dancing',
-                     'degree_bullets': [{'concentration_type': fake.job()}]
+                     'degree_bullets': [{'major': fake.job()}]   # TODO major
                      }
                 ]}
             ],
@@ -50,10 +50,10 @@ def generate_single_candidate_data():
             ],
             'preferred_locations': [
                 {'city': fake.city(), 'region': fake.state()},
-                {'city': fake.city(), 'region': fake.state()}
+                {'city': fake.city(), 'region': fake.state()}  # TODO state
             ],
             'skills': [
-                {'description': 'payroll'}, {'description': 'sql'}, {'description': 'excell'}
+                {'name': 'payroll'}, {'name': 'sql'}, {'name': 'excell'} # TODO name
             ],
             'social_networks': [
                 {'profile_url': 'http://www.facebook.com/1024359318', 'name': 'facebook'},
