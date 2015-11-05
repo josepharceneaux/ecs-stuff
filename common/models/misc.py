@@ -123,3 +123,19 @@ class Zipcode(db.Model):
 
     def __repr__(self):
         return "<Zipcode (code=' %r')>" % self.code
+
+
+class Frequency(db.Model):
+    __table_name__ = 'frequency'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column('Description', db.String(10), nullable=False)
+
+    @staticmethod
+    def get_frequency_from_name(self, name, id_only=False):
+        """ Returns frequency object filtered by the name.
+        :param name: eg. Daily, monthly, yearly etc. Case insensitive input
+        :type name: basestring
+        :param id_only: If true, it will only return id else the object
+        :return: Frequency object or frequency id
+        """
+        pass
