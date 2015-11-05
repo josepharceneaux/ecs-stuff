@@ -1,6 +1,6 @@
 from flask_restful import Resource
 from flask import request
-from user_service.common.models.user import User, Domain, db
+from common.models.user import User, Domain, db
 from user_service.user_app.user_service_utilties import check_if_user_exists, create_user_for_company
 from user_service.common.utils.validators import is_number, is_valid_email
 from user_service.common.utils.auth_utils import require_oauth, require_any_role
@@ -50,8 +50,8 @@ class UserApi(Resource):
                 return {'users': [user.id for user in User.all_user_of_domain(request.user.domain_id)]}
 
         # If nothing is returned above then simply raise the custom exception
-        raise UnauthorizedError(error_message="Either logged-in user belongs to different domain as requested_user\
-                                                  or it's not an ADMIN or DOMAIN_ADMIN user")
+        raise UnauthorizedError(error_message="Either logged-in user belongs to different domain as requested_user "
+                                              "or it's not an ADMIN or DOMAIN_ADMIN user")
 
     @require_any_role('ADMIN', 'DOMAIN_ADMIN')
     def post(self):
@@ -67,14 +67,10 @@ class UserApi(Resource):
         :rtype: dict
         """
 
+        # Even If content-type is not set to application/json it'll assume that content-type is application/json
         posted_data = request.get_json(silent=True)
-        if not posted_data:
+        if not posted_data or 'users' not in posted_data:
             raise InvalidUsage(error_message="Request body is empty or not provided")
-
-        # Logged in user must be an ADMIN or DOMAIN_ADMIN
-        if not request.is_admin_user and 'DOMAIN_ADMIN' not in request.valid_domain_roles:
-            raise UnauthorizedError(error_message="Logged-in user should be either DOMAIN_ADMIN or\
-                                                    ADMIN to add a new user")
 
         # Save user object(s)
         users = posted_data['users']
@@ -88,31 +84,42 @@ class UserApi(Resource):
             first_name = user_dict.get('first_name', "").strip()
             last_name = user_dict.get('last_name', "").strip()
             email = user_dict.get('email', "").strip()
-
-            # If logged-in user is an Admin then he can provide a domain_id or domain_name(existing)
-            if request.is_admin_user:
-                domain = user_dict.get('domain', "").strip() or request.user.domain_id
-            # If logged-in user is DOMAIN_ADMIN then domain_id of logged-in user will be used for this new user
-            else:
-                domain = request.user.domain_id
+            domain = user_dict.get('domain', "")
+            is_admin = True if user_dict.get('is_admin') == '1' else False
 
             if not first_name or not last_name or not email:
                 raise InvalidUsage(error_message="first name, last name or email is missing in request body")
+
+            # Only an ADMIN user can create another ADMIN user.
+            if not request.is_admin_user and is_admin:
+                raise UnauthorizedError(error_message="You are not authorized to create an ADMIN user")
 
             if not is_valid_email(email=email):
                 raise InvalidUsage(error_message="Email Address %s is not properly formatted" % email)
 
             # If logged-in user is an ADMIN then he can create new domain
-            if is_number(domain):
-                domain_id = int(domain)
-                # If domain doesn't exist then raise NotFound exception
-                if not domain_id or not Domain.query.get(domain_id):
-                    raise NotFoundError(error_message="Domain with domain_id %s not found in Database" % domain_id)
+            if domain:
+                if is_number(domain):
+                    domain_id = int(domain)
+                    # If domain doesn't exist then raise NotFound exception
+                    if not domain_id or not Domain.query.get(domain_id):
+                        raise NotFoundError(error_message="Domain with domain_id %s not found in Database" % domain_id)
+                else:
+                    domain = Domain.query.filter_by(name=domain).first()
+                    domain_id = domain.id if domain else None
+                    if not domain_id:
+                        raise NotFoundError(error_message="Domain with name %s doesn't exits in Database" % domain)
             else:
-                domain = Domain.query.filter_by(name=domain).first()
-                domain_id = domain.id if domain else None
-                if not domain_id:
-                    raise NotFoundError(error_message="Domain with name %s doesn't exits in Database" % domain)
+                domain_id = None
+
+            # If logged-in user is an Admin then he can provide a domain_id or domain_name(existing)
+            if request.is_admin_user:
+                domain_id = domain_id or request.user.domain_id
+            # If logged-in user is DOMAIN_ADMIN then domain_id of logged-in user will be used for this new user
+            elif not domain_id or request.user.domain_id == domain_id:
+                domain_id = request.user.domain_id
+            else:
+                raise UnauthorizedError(error_message="You are not authorized to add user to Domain %s" % domain_id)
 
             user_dict['domain_id'] = domain_id
 
@@ -127,8 +134,8 @@ class UserApi(Resource):
             email = user_dict.get('email', "").strip()
             # TODO: Phone numbers formatting should be done on client side using country information for user
             phone = user_dict.get('phone', "").strip()
-            is_admin = True if user_dict.get('is_admin') == '1' else False
             is_domain_admin = True if user_dict.get('is_domain_admin') == '1' else False
+            is_admin = True if user_dict.get('is_admin') == '1' else False
             dice_user_id = user_dict.get('dice_user_id')
             domain_id = user_dict.get('domain_id')
 
@@ -149,21 +156,17 @@ class UserApi(Resource):
         User will be prevented from deleting itself
         Last user in domain cannot be disabled
 
-        :return: {'user' {'id': user_id}}
+        :return: {'deleted_user' {'id': user_id}}
         :rtype:  dict
         """
-
-        # Logged in user must be an ADMIN or DOMAIN_ADMIN
-        if not request.is_admin_user and 'DOMAIN_ADMIN' not in request.valid_domain_roles:
-            raise UnauthorizedError(error_message="Logged-in user should be either DOMAIN_ADMIN or\
-                                                    ADMIN to add a new user")
 
         user_id_to_delete = kwargs.get('id')
 
         # Return 404 if requested user does not exist
-        user_to_delete = User.query.get(user_id_to_delete)
-        if not user_to_delete:
-            raise NotFoundError(error_message="Requested user with user_id %s doesn't exist" % user_id_to_delete)
+        if user_id_to_delete:
+            user_to_delete = User.query.filter(User.id == user_id_to_delete).first()
+            if not user_to_delete:
+                raise NotFoundError(error_message="Requested user with user id %s not found" % user_id_to_delete)
 
         # If logged-in user is a DOMAIN_ADMIN then user_to_delete should belong to same domain as logged-in user
         if not request.is_admin_user and user_to_delete.domain_id != request.user.domain_id:
@@ -181,10 +184,10 @@ class UserApi(Resource):
             raise InvalidUsage(error_message="Last user in domain %s cannot be deleted" % user_to_delete.domain_id)
 
         # Disable the user by setting is_disabled field to 1
-        User.query.get(user_id_to_delete).update({'is_disabled': '1'})
+        User.query.filter(User.id == user_id_to_delete).update({'is_disabled': '1'})
         db.session.commit()
 
-        return {'user': {'id': user_id_to_delete}}
+        return {'deleted_user': {'id': user_id_to_delete}}
 
     @require_any_role()
     def put(self, **kwargs):
@@ -196,7 +199,7 @@ class UserApi(Resource):
         Only ADMIN DOMAIN_ADMIN users can modify other users
         User will be allowed to modify itself
 
-        :return: {'user' {'id': user_id}}
+        :return: {'updated_user' {'id': user_id}}
         :rtype:  dict
         """
 
@@ -212,8 +215,8 @@ class UserApi(Resource):
         # Logged-in user should be either DOMAIN_ADMIN, ADMIN to modify a user or it can modify itself
         if requested_user_id != request.user.id and not request.is_admin_user and ('DOMAIN_ADMIN' not in request.
                 valid_domain_roles or requested_user.domain_id != request.user.domain_id):
-            raise UnauthorizedError(error_message="Logged-in user should be either DOMAIN_ADMIN,\
-                                                                    ADMIN to modify a user or it can modify itself")
+            raise UnauthorizedError(error_message="Logged-in user should be either DOMAIN_ADMIN, "
+                                                  "ADMIN to modify a user or it can modify itself")
 
         first_name = posted_data.get('first_name', '').strip()
         last_name = posted_data.get('last_name', '').strip()
@@ -224,6 +227,9 @@ class UserApi(Resource):
         if email and not is_valid_email(email=email):
             raise InvalidUsage(error_message="Email Address %s is not properly formatted" % email)
 
+        if check_if_user_exists(email, requested_user.domain_id):
+            raise InvalidUsage(error_message="Email Address %s already exists" % email)
+
         # Update user
         update_user_dict = {
             'first_name': first_name,
@@ -232,7 +238,7 @@ class UserApi(Resource):
             'phone': phone
         }
         update_user_dict = dict((k, v) for k, v in update_user_dict.iteritems() if v)
-        User.query.get(requested_user_id).update(update_user_dict)
+        User.query.filter(User.id == requested_user_id).update(update_user_dict)
         db.session.commit()
 
-        return {'user': {'id': requested_user_id}}
+        return {'updated_user': {'id': requested_user_id}}

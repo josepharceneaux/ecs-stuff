@@ -1,11 +1,12 @@
 __author__ = 'ufarooqi'
 from flask_restful import Resource
 from flask import request
+from dateutil import parser
 from user_service.common.models.user import User, Domain, db
-from user_service.common.models.misc import Organization, Culture
+from user_service.common.models.misc import Culture
 from user_service.user_app.user_service_utilties import get_or_create_domain
 from user_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
-from user_service.common.error_handling import *
+from common.error_handling import *
 
 
 class DomainApi(Resource):
@@ -23,22 +24,25 @@ class DomainApi(Resource):
 
         requested_domain_id = kwargs.get('id')
         if not requested_domain_id:
-            raise InvalidUsage(error_message="User id is not provided")
+            raise InvalidUsage(error_message="Domain id is not provided")
 
         requested_domain = Domain.query.get(requested_domain_id)
         if not requested_domain:
             raise NotFoundError(error_message="Domain with domain id %s not found" % requested_domain_id)
 
-        # Either Logged in user should be ADMIN, DOMAIN_ADMIN or should belong to same domain as requested_domain
+        # Either Logged in user should be ADMIN or should belong to same domain as requested_domain
         if requested_domain_id == request.user.domain_id or request.is_admin_user:
-            raise UnauthorizedError(error_message="Either logged-in user belongs to different domain as requested_user\
-                                                  or it's not an ADMIN or DOMAIN_ADMIN user")
-        return {'domain': {
-                'id': requested_domain.id,
-                'name': requested_domain.name,
-                'organization_id': requested_domain.organization_id,
-                'dice_company_id': requested_domain.dice_company_id
-                }}
+            return {
+                    'domain': {
+                        'id': requested_domain.id,
+                        'name': requested_domain.name,
+                        'organization_id': requested_domain.organization_id,
+                        'dice_company_id': requested_domain.dice_company_id
+                        }
+                    }
+        else:
+            raise UnauthorizedError(error_message="Either logged-in user belongs to different domain as requested_user "
+                                                  "or it's not an ADMIN user")
 
     @require_all_roles('ADMIN')
     def post(self):
@@ -55,7 +59,7 @@ class DomainApi(Resource):
         """
 
         posted_data = request.get_json(silent=True)
-        if not posted_data:
+        if not posted_data or not 'domains' in posted_data:
             raise InvalidUsage(error_message="Request body is empty or not provided")
 
         # Save domain object(s)
@@ -69,6 +73,7 @@ class DomainApi(Resource):
 
             name = domain_dict.get('name', '').strip()
             default_culture_id = domain_dict.get('default_culture_id', '').strip()
+            expiration = domain_dict.get('expiration', '').strip()
 
             if not name:
                 raise InvalidUsage(error_message="Domain name should be provided")
@@ -81,6 +86,12 @@ class DomainApi(Resource):
             if default_culture_id and not Culture.query.get(default_culture_id):
                 raise InvalidUsage(error_message="Culture %s doesn't exist" % default_culture_id)
 
+            if expiration:
+                try:
+                    parser.parse(expiration)
+                except Exception as e:
+                    raise InvalidUsage(error_message="Expiration Time is not valid as: %s" % e.message)
+
         domain_ids = []  # Newly created user object's id(s) are appended to this list
         for domain_dict in domains:
 
@@ -89,13 +100,14 @@ class DomainApi(Resource):
             default_culture_id = domain_dict.get('default_culture_id', '').strip()
             default_tracking_code = domain_dict.get('default_tracking_code', '').strip()
             dice_company_id = domain_dict.get('dice_company_Id', '').strip()
+            expiration = parser.parse(expiration) if expiration else ""
 
             domain_id = get_or_create_domain(name=name, expiration=expiration, default_culture_id=default_culture_id,
                                              default_tracking_code=default_tracking_code, dice_company_id=dice_company_id)
 
-            domain_id.append(domain_id)
+            domain_ids.append(domain_id)
 
-        return {'users': domain_ids}
+        return {'domains': domain_ids}
 
     @require_all_roles('ADMIN')
     def delete(self, **kwargs):
@@ -117,12 +129,15 @@ class DomainApi(Resource):
             raise NotFoundError(error_message="Requested domain with domain_id %s doesn't exist" % domain_id_to_delete)
 
         # Disable the domain by setting is_disabled field to 1
-        Domain.query.get(domain_id_to_delete).update({'is_disabled': '1'})
+        Domain.query.filter(Domain.id == domain_id_to_delete).update({'is_disabled': '1'})
+
+        # Disable all users of this domain as Domain has been disabled
+        User.query.filter(User.domain_id == domain_id_to_delete).update({'is_disabled': '1'})
         db.session.commit()
 
         return {'domain': {'id': domain_id_to_delete}}
 
-    @require_any_role('ADMIN', 'ADMIN_ROLE')
+    @require_any_role('ADMIN', 'DOMAIN_ADMIN')
     def put(self, **kwargs):
         """
         PUT /domains/<id>
@@ -135,7 +150,7 @@ class DomainApi(Resource):
         """
 
         requested_domain_id = kwargs.get('id')
-        requested_domain = User.query.get(requested_domain_id) if requested_domain_id else None
+        requested_domain = Domain.query.get(requested_domain_id) if requested_domain_id else None
         if not requested_domain:
             raise NotFoundError(error_message="Either domain_id is not provided or domain doesn't exist")
 
@@ -146,7 +161,8 @@ class DomainApi(Resource):
         # Logged-in user should be either DOMAIN_ADMIN, ADMIN to modify a domain
         if not request.is_admin_user and ('DOMAIN_ADMIN' not in request.valid_domain_roles or
                                                   requested_domain_id != request.user.domain_id):
-            raise UnauthorizedError(error_message="Logged-in user should be either DOMAIN_ADMIN or ADMIN")
+            raise UnauthorizedError(error_message="Logged-in user should be either ADMIN or DOMAIN_ADMIN if it belongs "
+                                                  "to same domain as requested domain")
 
         name = posted_data.get('name', '').strip()
         expiration = posted_data.get('expiration', '').strip()
@@ -154,9 +170,11 @@ class DomainApi(Resource):
         default_tracking_code = posted_data.get('default_tracking_code', '').strip()
         dice_company_id = posted_data.get('dice_company_Id', '').strip()
 
-        from dateutil import parser
         if expiration:
-            expiration = parser.parse(expiration)
+            try:
+                expiration = parser.parse(expiration)
+            except Exception as e:
+                raise InvalidUsage(error_message="Expiration Time is not valid as: %s" % e.message)
 
         # If Culture doesn't exist in database
         if default_culture_id and not Culture.query.get(default_culture_id):
@@ -171,7 +189,7 @@ class DomainApi(Resource):
             'dice_company_id': dice_company_id
         }
         update_domain_dict = dict((k, v) for k, v in update_domain_dict.iteritems() if v)
-        Domain.query.get(requested_domain_id).update(update_domain_dict)
+        Domain.query.filter(Domain.id == requested_domain_id).update(update_domain_dict)
         db.session.commit()
 
         return {'domain': {'id': requested_domain_id}}

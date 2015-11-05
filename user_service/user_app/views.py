@@ -45,8 +45,8 @@ def user_scoped_roles(user_id):
             else:
                 raise InvalidUsage(error_message='Request data is corrupt')
     else:
-        raise InvalidUsage(error_message='Either user_id is invalid or domain_id of user is \
-                                            different than that of logged-in user')
+        raise InvalidUsage(error_message='Either user_id is invalid or domain_id of user is '
+                                         'different than that of logged-in user')
 
 
 @app.route('/domain/<int:domain_id>/roles', methods=['GET'])
@@ -81,8 +81,8 @@ def user_groups(group_id):
             else:
                 raise InvalidUsage(error_message='Request data is corrupt')
     else:
-        raise InvalidUsage(error_message='Either group_id is invalid or domain of \
-                                            this group is different than that of user')
+        raise InvalidUsage(error_message='Either group_id is invalid or domain of '
+                                         'this group is different than that of user')
 
 
 @app.route('/domain/<int:domain_id>/groups', methods=['GET', 'POST', 'DELETE'])
@@ -97,8 +97,8 @@ def domain_groups(domain_id):
             return jsonify(dict(user_groups=[{'id': user_group.id, 'name': user_group.name} for user_group in
                                              all_user_groups_of_domain]))
         else:
-            raise InvalidUsage(error_message='Either domain_id is invalid or it \
-                                                is different than that of logged-in user')
+            raise InvalidUsage(error_message='Either domain_id is invalid or it '
+                                             'is different than that of logged-in user')
     posted_data = request.get_json(silent=True)
     if posted_data:
         if request.method == 'POST':
@@ -108,8 +108,8 @@ def domain_groups(domain_id):
                 UserGroup.add_groups(groups, domain_id)
                 return jsonify(success=True)
             else:
-                raise InvalidUsage(error_message='Either domain_id is invalid or it \
-                                            is different than that of logged-in user')
+                raise InvalidUsage(error_message='Either domain_id is invalid or it '
+                                                 'is different than that of logged-in user')
         else:
             # Delete groups with given group_ids
             UserGroup.delete_groups(request.user.domain_id, request.is_admin_user, posted_data.get('groups'))

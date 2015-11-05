@@ -55,6 +55,10 @@ class User(db.Model):
     def __repr__(self):
         return "<email (email=' %r')>" % self.email
 
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
     @staticmethod
     def all_user_of_domain(domain_id):
         """ Get user_ids of all users of a given domain_id

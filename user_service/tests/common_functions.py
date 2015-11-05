@@ -16,6 +16,10 @@ USER_ROLES_VERIFY = USER_SERVICE_ENDPOINT % 'roles/verify'
 USER_DOMAIN_ROLES = USER_SERVICE_ENDPOINT % 'domain/%s/roles'
 DOMAIN_GROUPS = USER_SERVICE_ENDPOINT % 'domain/%s/groups'
 USER_GROUPS = USER_SERVICE_ENDPOINT % 'groups/%s/users'
+UPDATE_PASSWORD = USER_SERVICE_ENDPOINT % 'users/%s/update_password'
+
+USER_API = USER_SERVICE_ENDPOINT % 'users'
+DOMAIN_API = USER_SERVICE_ENDPOINT % 'domains'
 
 
 def create_test_user(domain_id, password):
@@ -122,4 +126,48 @@ def user_groups(access_token, group_id=None, user_ids=[], action='GET'):
         headers['content-type'] = 'application/json'
         data = {'user_ids': user_ids}
         response = requests.post(USER_GROUPS % group_id, headers=headers, data=json.dumps(data))
+        return response.status_code
+
+
+def update_password(access_token, user_id, old_password, new_password):
+    headers = {'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'}
+    data = {"old_password": old_password, "new_password": new_password}
+    response = requests.post(url=UPDATE_PASSWORD % user_id, headers=headers, data=json.dumps(data))
+    return response.status_code
+
+
+def user_api(access_token, user_id='', data='', action='GET'):
+    headers = {'Authorization': 'Bearer %s' % access_token}
+    if action == 'GET':
+        if user_id:
+            response = requests.get(url=USER_API + '/%s' % user_id, headers=headers)
+            if response.ok:
+                response = json.loads(response.text)
+                return response.get('user').get('id')
+            return response.status_code
+        else:
+            response = requests.get(url=USER_API, headers=headers)
+            if response.ok:
+                response = json.loads(response.text)
+                return response.get('users')
+            return response.status_code
+    elif action == 'DELETE':
+        response = requests.delete(url=USER_API + '/%s' % user_id, headers=headers)
+        if response.ok:
+            response = json.loads(response.text)
+            return response.get('deleted_user').get('id')
+        return response.status_code
+    elif action == 'PUT':
+        headers['content-type'] = 'application/json'
+        response = requests.put(url=USER_API + '/%s' % user_id, headers=headers, data=json.dumps(data))
+        if response.ok:
+            response = json.loads(response.text)
+            return response.get('updated_user').get('id')
+        return response.status_code
+    elif action == 'POST':
+        headers['content-type'] = 'application/json'
+        response = requests.post(url=USER_API, headers=headers, data=json.dumps(data))
+        if response.ok:
+            response = json.loads(response.text)
+            return response.get('users')
         return response.status_code

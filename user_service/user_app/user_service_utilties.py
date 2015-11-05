@@ -1,11 +1,12 @@
 __author__ = 'ufarooqi'
 from flask import render_template
 from user_service.common.utils.amazon_ses import send_email
-from user_service.common.models.user import db, Domain, User, UserScopedRoles
+from common.models.user import db, Domain, User, UserScopedRoles
 from werkzeug.security import generate_password_hash, gen_salt
 
 
-def get_or_create_domain(name, usage_limitation=-1, organization_id=1, expiration=None, default_culture_id=1, dice_company_id=None):
+def get_or_create_domain(name, usage_limitation=-1, organization_id=1, default_tracking_code=None, expiration=None,
+                         default_culture_id=1, dice_company_id=None):
     """
     Gets or creates domain with given name.
     Returns domain id of domain found in database or newly created.
@@ -29,7 +30,8 @@ def get_or_create_domain(name, usage_limitation=-1, organization_id=1, expiratio
     else:
         # Create domain if it doesn't exist
         domain = Domain(name=name, usage_limitation=usage_limitation, organization_id=organization_id,
-                        default_culture_id=default_culture_id, dice_company_id=dice_company_id, expiration=expiration)
+                        default_tracking_code=default_tracking_code, default_culture_id=default_culture_id,
+                        dice_company_id=dice_company_id, expiration=expiration)
         db.session.add(domain)
         db.session.commit()
 
@@ -39,9 +41,8 @@ def get_or_create_domain(name, usage_limitation=-1, organization_id=1, expiratio
 
 def check_if_user_exists(email, domain_id):
     # Get user if user exists
-    domain_users = User.query.filter_by(domain_id=domain_id).all()
-    user = domain_users.find(lambda domain_user: domain_user.email == email).first()
-    return True if user else False
+    domain_users = User.query.filter(User.domain_id == domain_id, User.email == email).all()
+    return True if domain_users else False
 
 
 def create_user_for_company(first_name, last_name, email, domain_id=None, expiration_date=None, is_admin=False, phone="",
@@ -82,9 +83,9 @@ def create_user(email, domain_id, first_name, last_name, expiration, is_admin=Fa
     # Adding ADMIN or DOMAIN_ADMIN roles to newly created user
 
     if is_admin:
-        UserScopedRoles.add_roles(user.id, True, ['ADMIN'])
+        UserScopedRoles.add_roles(user, True, ['ADMIN'])
     if is_domain_admin:
-        UserScopedRoles.add_roles(user.id, True, ['DOMAIN_ADMIN'])
+        UserScopedRoles.add_roles(user, True, ['DOMAIN_ADMIN'])
 
     send_new_account_email(email, temp_password)
 
