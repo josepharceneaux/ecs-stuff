@@ -17,7 +17,7 @@ class SocialNetwork(db.Model):
     secret_key = db.Column('secretKey', db.String(500))
     redirect_uri = db.Column('redirectUri', db.String(255))
     auth_url = db.Column('authUrl', db.String(200))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    updated_time = db.Column('updatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
     candidate_social_networks = db.relationship('CandidateSocialNetwork', backref='social_network')
