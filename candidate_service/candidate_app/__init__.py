@@ -4,6 +4,7 @@ from gt_custom_restful import *
 
 
 app = Flask(__name__)
+print "Running app: %s" % app
 import config
 app.config.from_object('candidate_service.config')
 
@@ -18,7 +19,6 @@ db.app = app
 from candidate_service.candidate_app.api.v1_candidates import (
     CandidateResource, CandidateEmailCampaignResource
 )
-# api = Api(app=app)
 api = GetTalentApi(app=app)
 api.add_resource(CandidateResource,
                  '/v1/candidates/<int:id>',

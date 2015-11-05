@@ -178,11 +178,9 @@ class DomainRole(db.Model):
     __tablename__ = 'domain_role'
 
     id = db.Column(db.Integer, primary_key=True)
-    role_name = db.Column(db.String(255), nullable=False, unique=True)
+    role_name = db.Column('roleName', db.String(255), nullable=False, unique=True)
 
-    domain_id = db.Column(
-        db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE')
-    )
+    domain_id = db.Column(db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))
     domain = db.relationship('Domain', backref=db.backref('domain_role', cascade="all, delete-orphan"))
 
     def delete(self):

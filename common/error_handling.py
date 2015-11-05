@@ -76,6 +76,12 @@ def register_error_handlers(app, logger):
         return response, error.http_status_code()
 
     @app.errorhandler(ForbiddenError)
+    def handle_forbidden(error):
+        logger.warn("Unauthorized for app %s", app.import_name)
+        response = jsonify(error.to_dict())
+        return response, error.http_status_code()
+
+    @app.errorhandler(UnauthorizedError)
     def handle_unauthorized(error):
         logger.warn("Unauthorized for app %s", app.import_name)
         response = jsonify(error.to_dict())
