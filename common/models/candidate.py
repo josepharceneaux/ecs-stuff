@@ -141,7 +141,8 @@ class CandidateSource(db.Model):
 
     @classmethod
     def get_by_description_and_notes(cls, source_name, source_description):
-        assert source_description and source_name
+        assert source_name
+        # source name is event's title, description may be empty
         return cls.query.filter(
             and_(
                 CandidateSource.description == source_name,
@@ -235,6 +236,17 @@ class CandidateSocialNetwork(db.Model):
 
     def __repr__(self):
         return "<CandidateSocialNetwork (social_profile_url=' %r')>" % self.social_profile_url
+
+    @classmethod
+    def get_by_candidate_id_and_sn_id(cls, candidate_id, social_network_id):
+        assert candidate_id
+        assert social_network_id
+        return cls.query.filter(
+            and_(
+                cls.candidate_id == candidate_id,
+                cls.social_network_id == social_network_id
+            )
+        ).first()
 
 
 class CandidateWorkPreference(db.Model):

@@ -260,7 +260,7 @@ class Facebook(RSVPBase):
                 attendee.latitude = location.get('latitude')
                 attendee.longitude = location.get('longitude')
                 attendee.zip = location.get('zip')
-                attendee.profile_url = data.get('link', '')
+                attendee.social_profile_url = data.get('link', '')
                 attendee.picture_url = data['picture']['data']['url'] \
                     if 'picture' in data and 'data' in data['picture']\
                        and 'url' in data['picture']['data'] else ''

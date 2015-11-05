@@ -43,7 +43,6 @@ class Attendee(object):
         self.first_name = None  # first name of attendee
         self.last_name = None  # last name of attendee
         self.full_name = None  # full name of attendee
-        self.profile_url = None  # profile url of attendee
         self.picture_url = None  # picture url of attendee
         self.city = None  # city of attendee
         self.country = None  # country of attendee
@@ -64,6 +63,7 @@ class Attendee(object):
         self.candidate_source_id = None  # attendee's candidate_source id
         # from db
         self.source_product_id = None  # attendee's source product id in database
+        self.social_profile_url = None
 
     def __str__(self):
         return 'Name: %s, RSVP_ID: %s, EMAIL: %s' % (self.full_name,

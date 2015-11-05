@@ -11,15 +11,16 @@ from abc import ABCMeta
 from abc import abstractmethod
 
 # Application Specific
+from social_network_service import logger
+from social_network_service.custom_exceptions import ProductNotFound
+from social_network_service.custom_exceptions import UserCredentialsNotFound
 from social_network_service.common.models.rsvp import RSVP
 from social_network_service.common.models.user import User
 from social_network_service.common.models.product import Product
 from social_network_service.common.models.activity import Activity
 from social_network_service.common.models.candidate import Candidate
 from social_network_service.common.models.candidate import CandidateSource
-from social_network_service import logger
-from social_network_service.custom_exceptions import ProductNotFound
-from social_network_service.custom_exceptions import UserCredentialsNotFound
+from social_network_service.common.models.candidate import CandidateSocialNetwork
 
 
 class RSVPBase(object):
@@ -243,7 +244,7 @@ class RSVPBase(object):
                     # get RSVPs of next event
                     logger.exception('get_all_rsvps: user_id: %s, event_id: %s, '
                                      'social network: %s(id:%s)'
-                                     % (self.user.id, event['id'], self.social_network.name,
+                                     % (self.user.id, event.id, self.social_network.name,
                                         self.social_network.id))
                     if hasattr(error, 'response'):
                         if error.response.status_code == 401:
@@ -446,7 +447,7 @@ class RSVPBase(object):
             attendee.event.description)
 
         data = {'description': attendee.event.title,
-                'notes': attendee.event.description[:495],
+                'notes': attendee.event.description[:495] if attendee.event.description else None,
                 # field is 500 chars
                 'domain_id': self.user.domain_id}
         if entry_in_db:
@@ -468,8 +469,8 @@ class RSVPBase(object):
 
         - This method adds the attendee as a new candidate if it is not present
          in the database already, otherwise it updates the previous record. It
-         then appends the candidate_id to the attendee object and returns
-         attendee object.
+         then appends the candidate_id to the attendee object and add/updates record in
+         candidate_social_network db table. It then returns attendee object.
 
         - This method is called from process_rsvps() defined in
           RSVPBase class inside social_network_service/rsvp/base.py.
@@ -486,6 +487,7 @@ class RSVPBase(object):
         :return attendee:
         :rtype: object
         """
+        # TODO - May be need to use candidate_service here to save data in db
         newly_added_candidate = 1  # 1 represents entity is new candidate
         candidate_in_db = \
             Candidate.get_by_first_last_name_owner_user_id_source_id_product(
@@ -509,6 +511,18 @@ class RSVPBase(object):
             Candidate.save(candidate)
             candidate_id = candidate.id
         attendee.candidate_id = candidate_id
+        # Creating entry in CandidateSocialNetwork Table
+        candidate_social_network_in_db = \
+            CandidateSocialNetwork.get_by_candidate_id_and_sn_id(
+                candidate_id, attendee.social_network_id)
+        data = {'candidate_id': attendee.candidate_id,
+                'social_network_id': attendee.social_network_id,
+                'social_profile_url': attendee.social_profile_url}
+        if candidate_social_network_in_db:
+            candidate_social_network_in_db.update(**data)
+        else:
+            candidate_data = CandidateSocialNetwork(**data)
+            CandidateSocialNetwork.save(candidate_data)
         return attendee
 
     @staticmethod
