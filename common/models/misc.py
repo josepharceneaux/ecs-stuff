@@ -2,7 +2,6 @@ from db import db
 import datetime
 from sqlalchemy.orm import relationship
 import time
-import patent
 from candidate import CandidateMilitaryService
 
 
