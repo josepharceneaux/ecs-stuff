@@ -8,6 +8,7 @@ from common.error_handling import *
 from candidate import CandidateSource
 from associations import CandidateAreaOfInterest
 from misc import AreaOfInterest
+from email_marketing import EmailCampaign
 
 
 class User(db.Model):
@@ -39,6 +40,7 @@ class User(db.Model):
     candidates = relationship('Candidate', backref='user')
     public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
     user_group = relationship('UserGroup', backref='user')
+    email_campaigns = relationship('EmailCampaign', backref='user')
 
     def is_authenticated(self):
         return True
@@ -90,6 +92,7 @@ class Domain(db.Model):
     users = relationship('User', backref='domain')
     candidate_sources = relationship('CandidateSource', backref='domain')
     areas_of_interest = relationship('AreaOfInterest', backref='domain')
+    custom_fields = relationship('CustomField', backref='domain')
 
     def get_id(self):
         return unicode(self.id)
@@ -195,11 +198,9 @@ class DomainRole(db.Model):
     __tablename__ = 'domain_role'
 
     id = db.Column(db.Integer, primary_key=True)
-    role_name = db.Column(db.String(255), nullable=False, unique=True)
+    role_name = db.Column('roleName', db.String(255), nullable=False, unique=True)
 
-    domain_id = db.Column(
-        db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE')
-    )
+    domain_id = db.Column(db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))
     domain = db.relationship('Domain', backref=db.backref('domain_role', cascade="all, delete-orphan"))
 
     def delete(self):
