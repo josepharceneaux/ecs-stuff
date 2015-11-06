@@ -6,7 +6,6 @@ import json
 from base64 import b64decode
 from collections import defaultdict
 from datetime import datetime
-from urllib import unquote_plus
 
 # Framework specific/Third Party
 from flask import Blueprint
@@ -32,8 +31,6 @@ from widget_service.widget_app.views.utils import process_city_and_state_from_fi
 from widget_service.common.utils.db_utils import serialize_queried_sa_obj
 from widget_service.common.utils.auth_utils import get_token_by_client_and_user
 from widget_service.common.utils.auth_utils import refresh_expired_token
-
-from widget_service.widget_app.views.utils import get_widget_user_from_unique_key
 
 simplecrypt.EXPANSION_COUNT = (10000, 10000, 10000)
 mod = Blueprint('widget_api', __name__)

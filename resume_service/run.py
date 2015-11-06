@@ -1,6 +1,4 @@
 """Local run file."""
-
-# from resume_parsing_app.views import api
 from resume_parsing_app import app
 
 

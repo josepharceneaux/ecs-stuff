@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 import datetime
 import time
 
-from associations import ReferenceEmail
+from .associations import ReferenceEmail
 
 class Candidate(db.Model):
     __tablename__ = 'candidate'
