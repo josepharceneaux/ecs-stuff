@@ -8,6 +8,8 @@ from flask import url_for
 from widget_app import app
 from widget_app.flask_scripts.db import fill_db
 from widget_app.flask_scripts.db import destroy_db
+from widget_app.flask_scripts.url_encode import encode_domain_ids
+from widget_app.flask_scripts.url_encode import encode_widget_ids
 
 manager = Manager(app)
 
@@ -46,6 +48,16 @@ def list_routes():
 
     for line in sorted(output):
         print line
+
+
+@manager.command
+def get_encoded_domains():
+    encode_domain_ids()
+
+
+@manager.command
+def get_encoded_widgets():
+    encode_widget_ids()
 
 
 if __name__ == "__main__":
