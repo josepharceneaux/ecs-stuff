@@ -1,9 +1,22 @@
 import time
+import logging
 import datetime
-from sqlalchemy.orm import relationship, backref
+
 from db import db
+from sqlalchemy.orm import relationship, backref
+
+import venue
+import candidate
+import event_organizer
+import social_network
+from misc import AreaOfInterest
+from candidate import CandidateSource
+from associations import CandidateAreaOfInterest
 from common.utils.validators import is_number
 from common.error_handling import *
+
+
+logger = logging.getLogger(__file__)
 from candidate import CandidateSource
 from associations import CandidateAreaOfInterest
 from misc import AreaOfInterest
@@ -35,6 +48,12 @@ class User(db.Model):
     # TODO: Set Nullable = False after setting user_group_id for existing data
 
     # Relationships
+    candidates = db.relationship('Candidate', backref='user')
+    public_candidate_sharings = db.relationship('PublicCandidateSharing', backref='user')
+    user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
+    events = db.relationship('Event', backref='user', lazy='dynamic')
+    event_organizers = db.relationship('EventOrganizer', backref='user', lazy='dynamic')
+    venues = db.relationship('Venue', backref='user', lazy='dynamic')
     candidates = relationship('Candidate', backref='user')
     public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
     user_group = relationship('UserGroup', backref='user')
@@ -52,6 +71,10 @@ class User(db.Model):
     def get_id(self):
         return unicode(self.id)
 
+    @property
+    def name(self):
+        return (self.first_name or '') + ' ' + (self.last_name or '')
+
     def __repr__(self):
         return "<email (email=' %r')>" % self.email
 
@@ -63,11 +86,11 @@ class Domain(db.Model):
     usage_limitation = db.Column('usageLimitation', db.Integer)
     expiration = db.Column(db.DateTime)
     added_time = db.Column('addedTime', db.DateTime)
-    organization_id = db.Column('organizationId', db.Integer)
+    organization_id = db.Column('organizationId', db.Integer, db.ForeignKey('organization.id'))
     is_fair_check_on = db.Column('isFairCheckOn', db.Boolean, default=False)
     is_active = db.Column('isActive', db.Boolean, default=True)  # TODO: store as 0 or 1
     default_tracking_code = db.Column('defaultTrackingCode', db.SmallInteger)
-    default_culture_id = db.Column('defaultCultureId', db.Integer, default=1)
+    default_culture_id = db.Column('defaultCultureId', db.Integer, db.ForeignKey('culture.id'), default=1)
     default_from_name = db.Column('defaultFromName', db.String(255))
     settings_json = db.Column('settingsJson', db.Text)
     updated_time = db.Column('updatedTime', db.TIMESTAMP, default=datetime.datetime.now())
@@ -77,6 +100,13 @@ class Domain(db.Model):
     candidate_sources = relationship('CandidateSource', backref='domain')
     areas_of_interest = relationship('AreaOfInterest', backref='domain')
     custom_fields = relationship('CustomField', backref='domain')
+    # organizations = relationship('Organization', backref='domain')
+
+    def __init__(self, name=None):
+        self.name = name
+
+    def __repr__(self):
+        return '<Domain %r>' % self.name
 
     def get_id(self):
         return unicode(self.id)
@@ -97,19 +127,6 @@ class WebAuthMembership(db.Model):
 
     web_auth_group = relationship('WebAuthGroup', backref='web_auth_membership')
     user = relationship('User', backref='web_auth_membership')
-
-
-class JobOpening(db.Model):
-    __tablename__ = 'job_opening'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column('UserId', db.Integer, db.ForeignKey('user.id'))
-    job_code = db.Column('JobCode', db.String(100))
-    description = db.Column('Description', db.String(500))
-    title = db.Column('Title', db.String(150))
-    added_time = db.Column('AddedTime', db.TIMESTAMP, default=time.time())
-
-    def __repr__(self):
-        return "<JobOpening (title=' %r')>" % self.title
 
 
 class Client(db.Model):
@@ -153,6 +170,7 @@ class Token(db.Model):
     user_id = db.Column(
         db.INTEGER, db.ForeignKey('user.id', ondelete='CASCADE')
     )
+
     user = db.relationship('User', backref=db.backref('token', cascade="all, delete-orphan"))
 
     # currently only bearer is supported
@@ -440,3 +458,70 @@ class UserGroup(db.Model):
                 raise InvalidUsage("User: %s doesn't exist or either it doesn't belong to same Domain\
                                         %s as user group" % (user_id, user_group.domain_id))
         db.session.commit()
+
+
+class UserSocialNetworkCredential(db.Model):
+    """
+    This represents database table that holds user's credentials of a
+    social network.
+    """
+    __tablename__ = 'user_social_network_credential'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id'), nullable=False)
+    social_network_id = db.Column('socialNetworkId', db.Integer, db.ForeignKey('social_network.id'), nullable=False)
+    refresh_token = db.Column('refreshToken', db.String(1000))
+    webhook = db.Column(db.String(200))
+    member_id = db.Column('memberId', db.String(100))
+    access_token = db.Column('accessToken', db.String(1000))
+    social_network = db.relationship("SocialNetwork")
+
+    @classmethod
+    def get_all_credentials(cls, social_network_id=None):
+        if not social_network_id:
+            return cls.query.all()
+        else:
+            return cls.get_user_credentials_of_social_network(social_network_id)
+
+    @classmethod
+    def get_user_credentials_of_social_network(cls, social_network_id):
+        assert social_network_id
+        return cls.query.filter(
+            cls.social_network_id == social_network_id
+        ).all()
+
+    @classmethod
+    def get_by_user_id(cls, user_id):
+        assert user_id
+        return cls.query.filter(
+            cls.user_id == user_id
+        ).all()
+
+    @classmethod
+    def get_by_user_and_social_network_id(cls, user_id, social_network_id):
+        assert user_id and social_network_id
+        return cls.query.filter(
+            db.and_(
+                cls.user_id == user_id,
+                cls.social_network_id == social_network_id
+            )
+        ).first()
+
+    @classmethod
+    def update_auth_token(cls, user_id, social_network_id, access_token):
+        # TODO improve this method
+        success = False
+        user = cls.get_by_user_and_social_network(user_id, social_network_id)
+        if user:
+            user.update(access_token=access_token)
+            success = True
+        return success
+
+    @classmethod
+    def get_by_webhook_id_and_social_network_id(cls, webhook_id, social_network_id):
+        assert webhook_id and social_network_id
+        return cls.query.filter(
+            db.and_(
+                cls.webhook == webhook_id,
+                cls.social_network_id == social_network_id
+            )
+        ).one()

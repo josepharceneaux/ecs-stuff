@@ -1,9 +1,10 @@
+from sqlalchemy import and_
 from db import db
 from sqlalchemy.orm import relationship
 import datetime
-
+import culture
 from email_marketing import EmailCampaign, EmailCampaignSend
-from associations import ReferenceEmail
+from associations import ReferenceEmail, ReferencePhone
 
 
 class Candidate(db.Model):
@@ -13,9 +14,7 @@ class Candidate(db.Model):
     middle_name = db.Column('MiddleName', db.String(50))
     last_name = db.Column('LastName', db.String(50))
     formatted_name = db.Column('FormattedName', db.String(150))
-    candidate_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('candidate_status.id'))
-    is_web_hidden = db.Column('IsWebHidden', db.Boolean, default=False)
-    is_mobile_hidden = db.Column('IsMobileHidden', db.Boolean, default=False)
+    status_id = db.Column('StatusId', db.Integer, db.ForeignKey('candidate_status.id'))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
     user_id = db.Column('OwnerUserId', db.Integer, db.ForeignKey('user.id'))
     domain_can_read = db.Column('DomainCanRead', db.Boolean, default=True)
@@ -64,6 +63,22 @@ class Candidate(db.Model):
         return unicode(self.id)
 
     @classmethod
+    def get_by_first_last_name_owner_user_id_source_id_product(cls, first_name,
+                                                               last_name,
+                                                               user_id,
+                                                               source_id,
+                                                               product_id):
+        assert user_id
+        return cls.query.filter(
+            and_(
+                Candidate.first_name == first_name,
+                Candidate.last_name == last_name,
+                Candidate.user_id == user_id,
+                Candidate.source_id == source_id,
+                Candidate.source_product_id == product_id
+            )
+        ).first()
+
     def get_by_id(cls, candidate_id):
         """
         :type candidate_id: int
@@ -116,6 +131,17 @@ class CandidateSource(db.Model):
 
     def __repr__(self):
         return "<CandidateSource (description= '%r')>" % self.description
+
+    @classmethod
+    def get_by_description_and_notes(cls, source_name, source_description):
+        assert source_name
+        # source name is event's title, description may be empty
+        return cls.query.filter(
+            and_(
+                CandidateSource.description == source_name,
+                CandidateSource.notes == source_description,
+            )
+        ).first()
 
 
 class PublicCandidateSharing(db.Model):
@@ -242,25 +268,6 @@ class CandidateDocument(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
 
-class SocialNetwork(db.Model):
-    __tablename__ = 'social_network'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(100), nullable=False)
-    url = db.Column('Url', db.String(255))
-    api_url = db.Column('apiUrl', db.String(255))
-    client_key = db.Column('clientKey', db.String(500))
-    secret_key = db.Column('secretKey', db.String(500))
-    redirect_uri = db.Column('redirectUri', db.String(255))
-    auth_url = db.Column('authUrl', db.String(200))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-
-    # Relationships
-    candidate_social_networks = relationship('CandidateSocialNetwork', backref='social_network')
-
-    def __repr__(self):
-        return "<SocialNetwork (url=' %r')>" % self.url
-
-
 class CandidateSocialNetwork(db.Model):
     __tablename__ = 'candidate_social_network'
     id = db.Column(db.Integer, primary_key=True)
@@ -270,6 +277,17 @@ class CandidateSocialNetwork(db.Model):
 
     def __repr__(self):
         return "<CandidateSocialNetwork (social_profile_url=' %r')>" % self.social_profile_url
+
+    @classmethod
+    def get_by_candidate_id_and_sn_id(cls, candidate_id, social_network_id):
+        assert candidate_id
+        assert social_network_id
+        return cls.query.filter(
+            and_(
+                cls.candidate_id == candidate_id,
+                cls.social_network_id == social_network_id
+            )
+        ).first()
 
 
 class CandidateWorkPreference(db.Model):
@@ -302,19 +320,6 @@ class CandidatePreferredLocation(db.Model):
 
     def __repr__(self):
         return "<CandidatePreferredLocation (candidate_id=' %r')>" % self.candidate_id
-
-
-class Language(db.Model):
-    __tablename__ = 'language'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(200))
-    code = db.Column('Code', db.String(3), unique=True)
-
-    # Relationships
-    candidate_languages = relationship('CandidateLanguage', backref='language')
-
-    def __repr__(self):
-        return "<Language (code=' %r')>" % self.code
 
 
 class CandidateLanguage(db.Model):
@@ -361,7 +366,7 @@ class CandidateReference(db.Model):
 
     # Relationships
     reference_emails = relationship('ReferenceEmail', backref='candidate_reference')
-    reference_phones = relationship('ReferencePhone', backref='candidate_reference')
+    # reference_phones = relationship('ReferencePhone', backref='candidate_reference')
     reference_web_addresses = relationship('ReferenceWebAddress', backref='candidate_reference')
 
     def __repr__(self):
@@ -702,18 +707,4 @@ class ClassificationType(db.Model):
 
     def __repr__(self):
         return "<ClassificationType (code = %r)>" % self.code
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
