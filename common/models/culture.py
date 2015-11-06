@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 from db import db
-import domain
+# from user import Domain
 import user
 
 

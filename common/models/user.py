@@ -6,18 +6,21 @@ from db import db
 from sqlalchemy.orm import relationship, backref
 
 import venue
-import domain
 import candidate
 import event_organizer
 import social_network
 from misc import AreaOfInterest
 from candidate import CandidateSource
-from candidate import CandidateAreaOfInterest
+from associations import CandidateAreaOfInterest
 from common.utils.validators import is_number
 from common.error_handling import *
 
 
 logger = logging.getLogger(__file__)
+from candidate import CandidateSource
+from associations import CandidateAreaOfInterest
+from misc import AreaOfInterest
+from email_marketing import EmailCampaign
 
 
 class User(db.Model):
@@ -45,14 +48,16 @@ class User(db.Model):
     # TODO: Set Nullable = False after setting user_group_id for existing data
 
     # Relationships
-
     candidates = db.relationship('Candidate', backref='user')
     public_candidate_sharings = db.relationship('PublicCandidateSharing', backref='user')
     user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
     events = db.relationship('Event', backref='user', lazy='dynamic')
     event_organizers = db.relationship('EventOrganizer', backref='user', lazy='dynamic')
     venues = db.relationship('Venue', backref='user', lazy='dynamic')
-    user_group = db.relationship('UserGroup', backref='user')
+    candidates = relationship('Candidate', backref='user')
+    public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
+    user_group = relationship('UserGroup', backref='user')
+    email_campaigns = relationship('EmailCampaign', backref='user')
 
     def is_authenticated(self):
         return True
@@ -72,6 +77,39 @@ class User(db.Model):
 
     def __repr__(self):
         return "<email (email=' %r')>" % self.email
+
+
+class Domain(db.Model):
+    __tablename__ = 'domain'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50))
+    usage_limitation = db.Column('usageLimitation', db.Integer)
+    expiration = db.Column(db.DateTime)
+    added_time = db.Column('addedTime', db.DateTime)
+    organization_id = db.Column('organizationId', db.Integer, db.ForeignKey('organization.id'))
+    is_fair_check_on = db.Column('isFairCheckOn', db.Boolean, default=False)
+    is_active = db.Column('isActive', db.Boolean, default=True)  # TODO: store as 0 or 1
+    default_tracking_code = db.Column('defaultTrackingCode', db.SmallInteger)
+    default_culture_id = db.Column('defaultCultureId', db.Integer, db.ForeignKey('culture.id'), default=1)
+    default_from_name = db.Column('defaultFromName', db.String(255))
+    settings_json = db.Column('settingsJson', db.Text)
+    updated_time = db.Column('updatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+    # Relationships
+    users = relationship('User', backref='domain')
+    candidate_sources = relationship('CandidateSource', backref='domain')
+    areas_of_interest = relationship('AreaOfInterest', backref='domain')
+    custom_fields = relationship('CustomField', backref='domain')
+    # organizations = relationship('Organization', backref='domain')
+
+    def __init__(self, name=None):
+        self.name = name
+
+    def __repr__(self):
+        return '<Domain %r>' % self.name
+
+    def get_id(self):
+        return unicode(self.id)
 
 
 class WebAuthGroup(db.Model):
@@ -158,11 +196,9 @@ class DomainRole(db.Model):
     __tablename__ = 'domain_role'
 
     id = db.Column(db.Integer, primary_key=True)
-    role_name = db.Column(db.String(255), nullable=False, unique=True)
+    role_name = db.Column('roleName', db.String(255), nullable=False, unique=True)
 
-    domain_id = db.Column(
-        db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE')
-    )
+    domain_id = db.Column(db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))
     domain = db.relationship('Domain', backref=db.backref('domain_role', cascade="all, delete-orphan"))
 
     def delete(self):
@@ -386,7 +422,7 @@ class UserGroup(db.Model):
         :param list[int | str] groups: list of names or ids of user groups
         :rtype: None
         """
-        if domain.Domain.query.get(domain_id):
+        if Domain.query.get(domain_id):
             for group in groups:
                 if is_number(group):
                     group_id = group

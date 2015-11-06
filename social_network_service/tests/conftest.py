@@ -21,7 +21,7 @@ from social_network_service.common.models.user import Token
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.venue import Venue
 from social_network_service.common.models.user import Client
-from social_network_service.common.models.domain import Domain
+from social_network_service.common.models.user import Domain
 from social_network_service.common.models.culture import Culture
 from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service.common.models.organization import Organization
@@ -29,7 +29,7 @@ from social_network_service.common.models.social_network import SocialNetwork
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.utilities import process_event
 from social_network_service.utilities import delete_events
-from social_network_service.utilities import  get_random_word
+from social_network_service.utilities import get_random_word
 
 db_session = db.session
 

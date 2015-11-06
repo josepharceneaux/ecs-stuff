@@ -1,5 +1,6 @@
 from db import db
-import domain
+from user import Domain
+
 
 class Organization(db.Model):
     __tablename__ = 'organization'
