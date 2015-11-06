@@ -146,6 +146,7 @@ class CandidateResource(Resource):
             if not is_authorized:
                 raise ForbiddenError(error_message="Unauthorized area of interest IDs")
 
+            # TODO: Validate all input formats and existence
             addresses = candidate_dict.get('addresses')
             user_id = authed_user.id
             first_name = candidate_dict.get('first_name')
