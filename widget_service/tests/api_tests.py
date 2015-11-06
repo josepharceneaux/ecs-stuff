@@ -349,7 +349,7 @@ def test_military_candidate(test_widget_page, request):
         post_response = c.post('/v1/domains/potato/widgets/{}'.format(
             gt_url_encrypt(test_widget_page.id)), data=candidate_dict)
     assert post_response.status_code == 201
-    # TODO expand to check DB that are fields are there
+    # TODO expand to check DB that our fields are there
     assert 'success' in post_response.data
 
 
@@ -372,7 +372,7 @@ def test_university_candidate(test_widget_page, request):
         post_response = c.post('/v1/domains/potato/widgets/{}'.format(
             gt_url_encrypt(test_widget_page.id)), data=candidate_dict)
     assert post_response.status_code == 201
-    # TODO expand to check DB that are fields are there
+    # TODO expand to check DB that our fields are there
     assert 'success' in post_response.data
 
 
@@ -390,7 +390,7 @@ def test_corporate_candidate(test_widget_page, request):
         post_response = c.post('/v1/domains/potato/widgets/{}'.format(
             gt_url_encrypt(test_widget_page.id)), data=candidate_dict)
     assert post_response.status_code == 201
-    # TODO expand to check DB that are fields are there
+    # TODO expand to check DB that our fields are there
     assert 'success' in post_response.data
 
 
@@ -408,7 +408,7 @@ def test_expired_token_refreshes(test_widget_page, test_expired_oauth_credential
         post_response = c.post('/v1/domains/potato/widgets/{}'.format(
             gt_url_encrypt(test_widget_page.id)), data=candidate_dict)
     assert post_response.status_code == 201
-    # TODO expand to check DB that are fields are there
+    # TODO expand to check DB that our fields are there
     assert 'success' in post_response.data
 
 

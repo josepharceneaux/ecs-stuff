@@ -108,7 +108,7 @@ def authenticate_oauth_user(request, token=None):
             oauth_token = request.headers['Authorization']
         except KeyError:
             return {'error': {'code': None, 'message':'No Authorization set', 'http_code': 400}}
-    r = requests.get(app.config['OAUTH_AUTHORIZE_URI'], headers={'Authorization': oauth_token})
+    r = requests.get(app.config['OAUTH_AUTHORIZE_URI'], headers={'Authorization': 'bearer {}'.format(oauth_token)})
     if r.status_code != 200:
         return {'error': {'code': 3, 'message': 'Not authorized', 'http_code': 401}}
     valid_user_id = json.loads(r.text).get('user_id')
