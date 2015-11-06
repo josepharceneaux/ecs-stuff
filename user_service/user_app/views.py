@@ -6,6 +6,7 @@ from flask import request
 from common.error_handling import *
 from common.utils.auth_utils import require_oauth, require_any_role
 from werkzeug.security import generate_password_hash, check_password_hash
+from . import limiter
 
 
 # TODO this endpoint will be removed eventually as we have decorators for this purpose
@@ -158,3 +159,8 @@ def update_password(user_id):
             raise UnauthorizedError(error_message="Old password is not correct")
     else:
         raise InvalidUsage(error_message='No request data is found')
+
+
+@limiter.request_filter
+def ip_whitelist():
+    return request.remote_addr == "127.0.0.1"

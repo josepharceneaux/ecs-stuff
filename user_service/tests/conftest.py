@@ -63,8 +63,8 @@ def domain_admin_access_token(request, domain_admin_user, sample_client):
 
 
 @pytest.fixture()
-def sample_user(request, domain_id):
-    user = create_test_user(domain_id, PASSWORD)
+def sample_user(request, domain):
+    user = create_test_user(domain.id, PASSWORD)
 
     def tear_down():
         db.session.delete(user)
@@ -74,8 +74,8 @@ def sample_user(request, domain_id):
 
 
 @pytest.fixture()
-def admin_user(request, domain_id_second, admin_role):
-    user = create_test_user(domain_id_second, PASSWORD)
+def admin_user(request, domain_second, admin_role):
+    user = create_test_user(domain_second.id, PASSWORD)
     UserScopedRoles.add_roles(user, True, [admin_role])
     user_scoped_role = UserScopedRoles.query.filter((UserScopedRoles.user_id == user.id)
                                                                 & (UserScopedRoles.role_id == admin_role)).first()
@@ -89,8 +89,8 @@ def admin_user(request, domain_id_second, admin_role):
 
 
 @pytest.fixture()
-def domain_admin_user(request, domain_id, domain_admin_role):
-    user = create_test_user(domain_id, PASSWORD)
+def domain_admin_user(request, domain, domain_admin_role):
+    user = create_test_user(domain.id, PASSWORD)
     UserScopedRoles.add_roles(user, True, [domain_admin_role])
     user_scoped_role = UserScopedRoles.query.filter((UserScopedRoles.user_id == user.id)
                                                                 & (UserScopedRoles.role_id == domain_admin_role)).first()
@@ -130,7 +130,7 @@ def admin_role(request):
 
 
 @pytest.fixture()
-def domain_id(request):
+def domain(request):
     test_domain = Domain(
         name=gen_salt(20),
         expiration='0000-00-00 00:00:00'
@@ -142,11 +142,11 @@ def domain_id(request):
         db.session.delete(test_domain)
         db.session.commit()
     request.addfinalizer(tear_down)
-    return test_domain.get_id()
+    return test_domain
 
 
 @pytest.fixture()
-def domain_id_second(request):
+def domain_second(request):
     test_domain = Domain(
         name=gen_salt(20),
         expiration='0000-00-00 00:00:00'
@@ -158,15 +158,15 @@ def domain_id_second(request):
         db.session.delete(test_domain)
         db.session.commit()
     request.addfinalizer(tear_down)
-    return test_domain.get_id()
+    return test_domain
 
 
 @pytest.fixture()
-def domain_roles(request, domain_id):
+def domain_roles(request, domain):
     test_role_first = gen_salt(20)
-    test_role_first_id = DomainRole.save(test_role_first, domain_id)
+    test_role_first_id = DomainRole.save(test_role_first, domain.id)
     test_role_second = gen_salt(20)
-    test_role_second_id = DomainRole.save(test_role_second, domain_id)
+    test_role_second_id = DomainRole.save(test_role_second, domain.id)
 
     def tear_down():
         db.session.delete(DomainRole.query.get(test_role_first_id))
@@ -179,3 +179,17 @@ def domain_roles(request, domain_id):
 @pytest.fixture()
 def group_names():
     return {'test_groups': [gen_salt(20), gen_salt(20)]}
+
+
+@pytest.fixture()
+def culture(request):
+    culture_object = Culture(description=gen_salt(10), code=100)
+    db.session.add(culture_object)
+    db.session.commit()
+
+    def tear_down():
+        db.session.delete(culture_object)
+        db.session.commit()
+    request.addfinalizer(tear_down())
+
+    return culture_object

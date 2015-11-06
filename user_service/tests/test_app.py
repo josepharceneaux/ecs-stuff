@@ -1,7 +1,7 @@
 from conftest import *
 
 
-def test_user_scoped_roles(access_token, domain_admin_access_token, sample_user, domain_roles, domain_id):
+def test_user_scoped_roles(access_token, domain_admin_access_token, sample_user, domain_roles, domain):
 
     # Add roles to existing user
     assert user_scoped_roles(access_token=domain_admin_access_token, user_id=sample_user.id, action="POST",
@@ -25,10 +25,10 @@ def test_user_scoped_roles(access_token, domain_admin_access_token, sample_user,
     assert verify_user_scoped_role(sample_user, domain_roles['test_roles'][1])
     #
     # Get all roles of a domain
-    assert get_roles_of_domain(access_token=domain_admin_access_token, domain_id=domain_id) == domain_roles['test_roles']
+    assert get_roles_of_domain(access_token=domain_admin_access_token, domain_id=domain.id) == domain_roles['test_roles']
 
     # Get all roles of a domain using non-admin user
-    assert get_roles_of_domain(access_token=access_token, domain_id=domain_id) == 401
+    assert get_roles_of_domain(access_token=access_token, domain_id=domain.id) == 401
 
     # Delete roles from a user
     assert user_scoped_roles(access_token=domain_admin_access_token, user_id=sample_user.id, action="DELETE",
@@ -38,20 +38,20 @@ def test_user_scoped_roles(access_token, domain_admin_access_token, sample_user,
     assert not user_scoped_roles(access_token=domain_admin_access_token, user_id=sample_user.id)
 
 
-def test_user_groups(access_token, domain_admin_access_token, sample_user, group_names, domain_id):
+def test_user_groups(access_token, domain_admin_access_token, sample_user, group_names, domain):
 
     # Add Groups to domain
-    assert domain_groups(access_token=domain_admin_access_token, domain_id=domain_id, action="POST",
+    assert domain_groups(access_token=domain_admin_access_token, domain_id=domain.id, action="POST",
                          test_groups=group_names['test_groups']) == 200
 
     # Check If groups have been added successfully in a domain
-    assert domain_groups(access_token=domain_admin_access_token, domain_id=domain_id) == group_names['test_groups']
+    assert domain_groups(access_token=domain_admin_access_token, domain_id=domain.id) == group_names['test_groups']
 
     # Check If groups have been added successfully in a domain with non-admin user
-    assert domain_groups(access_token=access_token, domain_id=domain_id) == 401
+    assert domain_groups(access_token=access_token, domain_id=domain.id) == 401
 
     # Add existing groups to a domain
-    assert domain_groups(access_token=domain_admin_access_token, domain_id=domain_id, action="POST",
+    assert domain_groups(access_token=domain_admin_access_token, domain_id=domain.id, action="POST",
                          test_groups=group_names['test_groups']) == 400
 
     # Add non-admin user to a group
@@ -63,7 +63,7 @@ def test_user_groups(access_token, domain_admin_access_token, sample_user, group
                        group_id=UserGroup.get_by_name(group_names['test_groups'][0]).id) == [sample_user.id]
 
     # Delete Groups of a domain
-    assert domain_groups(access_token=domain_admin_access_token, domain_id=domain_id, action="DELETE",
+    assert domain_groups(access_token=domain_admin_access_token, domain_id=domain.id, action="DELETE",
                          test_groups=group_names['test_groups']) == 200
 
 

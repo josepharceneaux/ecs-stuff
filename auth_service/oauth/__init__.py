@@ -5,7 +5,6 @@ from flask_oauthlib.provider import OAuth2Provider
 from auth_service.common.models.db import db
 from auth_service import config
 from flask_limiter import Limiter
-
 app = Flask(__name__)
 app.config.from_object(config)
 

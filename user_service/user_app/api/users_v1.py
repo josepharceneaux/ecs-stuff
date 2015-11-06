@@ -124,7 +124,7 @@ class UserApi(Resource):
             user_dict['domain_id'] = domain_id
 
             # Check if user already exist
-            if check_if_user_exists(email, domain_id):
+            if check_if_user_exists(email):
                 raise InvalidUsage(error_message="User with email=%s already exists in Database" % email)
 
         user_ids = []  # Newly created user object's id(s) are appended to this list
@@ -227,7 +227,7 @@ class UserApi(Resource):
         if email and not is_valid_email(email=email):
             raise InvalidUsage(error_message="Email Address %s is not properly formatted" % email)
 
-        if check_if_user_exists(email, requested_user.domain_id):
+        if check_if_user_exists(email):
             raise InvalidUsage(error_message="Email Address %s already exists" % email)
 
         # Update user

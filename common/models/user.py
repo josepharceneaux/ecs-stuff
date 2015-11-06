@@ -94,6 +94,10 @@ class Domain(db.Model):
     def get_id(self):
         return unicode(self.id)
 
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
 
 class WebAuthGroup(db.Model):
     __tablename__ = 'web_auth_group'

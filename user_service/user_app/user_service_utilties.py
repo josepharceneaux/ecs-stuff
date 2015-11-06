@@ -39,9 +39,9 @@ def get_or_create_domain(name, usage_limitation=-1, organization_id=1, default_t
         return domain.id
 
 
-def check_if_user_exists(email, domain_id):
+def check_if_user_exists(email):
     # Get user if user exists
-    domain_users = User.query.filter(User.domain_id == domain_id, User.email == email).all()
+    domain_users = User.query.filter(User.email == email).all()
     return True if domain_users else False
 
 

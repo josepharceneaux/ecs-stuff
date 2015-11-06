@@ -4,6 +4,7 @@ import string
 from werkzeug.security import generate_password_hash
 from user_service.user_app import app
 from common.models.user import *
+from common.models.misc import Culture
 import requests
 import json
 
@@ -170,4 +171,36 @@ def user_api(access_token, user_id='', data='', action='GET'):
         if response.ok:
             response = json.loads(response.text)
             return response.get('users')
+        return response.status_code
+
+
+def domain_api(access_token, domain_id='', data='', action='GET'):
+    headers = {'Authorization': 'Bearer %s' % access_token}
+    if action == 'GET':
+        url = DOMAIN_API + '/%s' % domain_id if domain_id else DOMAIN_API
+        response = requests.get(url=url, headers=headers)
+        if response.ok:
+            response = json.loads(response.text)
+            return response.get('domain')
+        return response.status_code
+    elif action == 'DELETE':
+        url = DOMAIN_API + '/%s' % domain_id if domain_id else DOMAIN_API
+        response = requests.delete(url=url, headers=headers)
+        if response.ok:
+            response = json.loads(response.text)
+            return response.get('deleted_domain').get('id')
+        return response.status_code
+    elif action == 'PUT':
+        headers['content-type'] = 'application/json'
+        response = requests.put(url=DOMAIN_API + '/%s' % domain_id, headers=headers, data=json.dumps(data))
+        if response.ok:
+            response = json.loads(response.text)
+            return response.get('updated_domain').get('id')
+        return response.status_code
+    elif action == 'POST':
+        headers['content-type'] = 'application/json'
+        response = requests.post(url=DOMAIN_API, headers=headers, data=json.dumps(data))
+        if response.ok:
+            response = json.loads(response.text)
+            return response.get('domains')
         return response.status_code
