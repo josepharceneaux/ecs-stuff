@@ -353,8 +353,9 @@ def retrieve_email_campaign_send(email_campaign, candidate_id):
 ###########################################
 # Helper Functions For Creating Candidate #
 ###########################################
-def create_candidate_from_params(
+def create_or_update_candidate_from_params(
         user_id,
+        candidate_id=None,
         first_name=None,
         last_name=None,
         middle_name=None,
@@ -424,6 +425,7 @@ def create_candidate_from_params(
     status_id = status_id or 1
     domain_can_read = domain_can_read or 1
     domain_can_write = domain_can_write or 1
+    is_update = False
 
     # Figure out first_name, last_name, middle_name, and formatted_name from inputs
     if first_name or last_name or middle_name or formatted_name:
@@ -437,85 +439,40 @@ def create_candidate_from_params(
     # Get domain ID
     domain_id = domain_id_from_user_id(user_id=user_id)
 
-    # Check if candidate exists
-    candidate_id = does_candidate_id_exist(dice_social_profile_id=dice_social_profile_id,
-                                           dice_profile_id=dice_profile_id,
-                                           domain_id=domain_id,
-                                           emails=emails)
 
-    # Return error if candidate_id is found
+    # If candidate_id is not provided, Check if candidate exists
+    if not candidate_id:
+        candidate_id = does_candidate_id_exist(dice_social_profile_id=dice_social_profile_id,
+                                               dice_profile_id=dice_profile_id,
+                                               domain_id=domain_id,
+                                               emails=emails)
+
+    # If candidate_id is provided/found, then it's an update
     if candidate_id:
-        logger.info('create_candidate_from_params: Candidate already exists; candidate_id: %s', candidate_id)
-        raise InvalidUsage(error_message="Candidate already exists; creation failed.")
+        is_update = True
 
-    # Add Candidate to db
-    candidate = Candidate(
-        first_name=first_name,
-        middle_name=middle_name,
-        last_name=last_name,
-        formatted_name=formatted_name,
-        added_time=added_time,
-        candidate_status_id=status_id,
-        user_id=user_id,
-        domain_can_read=domain_can_read,
-        domain_can_write=domain_can_write,
-        dice_profile_id=dice_profile_id,
-        dice_social_profile_id=dice_social_profile_id,
-        source_id=source_id,
-        objective=objective,
-        summary=summary,
-        is_dirty=0  # todo: is_dirty cannot be null. This should be removed once the field is successfully removed.
-    )
-    db.session.add(candidate)
-    db.session.flush()
-    candidate_id = candidate.id
+    # Add or Update Candidate
+    candidate_id = _add_or_update_candidate(first_name, middle_name, last_name,
+                                            formatted_name, added_time, status_id,
+                                            user_id, domain_can_read, domain_can_write,
+                                            dice_profile_id, dice_social_profile_id,
+                                            source_id, objective, summary, candidate_id,
+                                            is_update)
 
-    # Add Candidate's address(es)
+    # Add or update Candidate's address(es)
     if addresses:
-        address_has_default = any([address.get('is_default') for address in addresses])
-        for i, address in enumerate(addresses):
-            address_line_1 = address.get('address_line_1')
-            address_line_2 = address.get('address_line_2')
-            city = address.get('city')
-            state = address.get('state')
-            country_id = country_id_from_country_name_or_code(address.get('country'))
-            zip_code = sanitize_zip_code(address.get('zip_code'))
-            po_box = address.get('po_box')
-            is_default = address.get('is_default')
-            coordinates = get_coordinates(zip_code, city, state)
-            # If there's no is_default, the first address should be default
-            is_default = i == 0 if address_has_default else is_default
+        _add_or_update_candidate_addresses(candidate_id, addresses, is_update)
 
-            db.session.add(CandidateAddress(
-                candidate_id=candidate_id,
-                address_line_1=address_line_1,
-                address_line_2=address_line_2,
-                city=city,
-                state=state,
-                country_id=country_id,
-                zip_code=zip_code,
-                po_box=po_box,
-                is_default=is_default,
-                coordinates=coordinates,
-                resume_id=candidate_id  # todo: this is to be removed once all tables have been added & migrated
-            ))
-
-    # Add Candidate's areas_of_interest
+    # Add or update Candidate's areas_of_interest
     if area_of_interest_ids:
-        for area_of_interest_id in area_of_interest_ids:
-            db.session.add(CandidateAreaOfInterest(
-                candidate_id=candidate_id,
-                area_of_interest_id=area_of_interest_id
-            ))
+        _add_or_update_candidate_areas_of_interest(candidate_id,
+                                                   area_of_interest_ids,
+                                                   is_update)
 
-    # Add Candidate's custom_field(s)
+    # Add or update Candidate's custom_field(s)
     if custom_field_ids:
-        for custom_field_id in custom_field_ids:
-            db.session.add(CandidateCustomField(
-                candidate_id=candidate_id,
-                custom_field_id=custom_field_id,
-                added_time=added_time
-            ))
+        _add_or_update_candidate_custom_field_ids(candidate_id, custom_field_ids, added_time,
+                                                  is_update)
 
     # Add Candidate's education(s)
     if educations:
@@ -909,13 +866,143 @@ def social_network_id_from_name(name):
                                         if row.name.lower() == name.lower()), None)
     return matching_social_network.id if matching_social_network else None
 
-###########################################
-# Helper Functions For Deleting Candidate #
-###########################################
-# def _delete_candidates(candidate_ids, user_id=None, source_product_id=None):
-#     """
-#     :param candidate_ids:
-#     :param user_id:
-#     :param source_product_id:
-#     :return:
-#     """
+
+def _add_or_update_candidate(first_name, middle_name, last_name, formatted_name,
+                             added_time, candidate_status_id, user_id,
+                             domain_can_read, domain_can_write, dice_profile_id,
+                             dice_social_profile_id, source_id, objective,
+                             summary, candidate_id, is_update):
+
+    # Update if it's an update
+    if is_update:
+        update_dict = {
+            'first_name': first_name,
+            'middle_name': middle_name,
+            'last_name': last_name,
+            'formatted_name': formatted_name,
+            'domain_can_read': domain_can_read,
+            'domain_can_write': domain_can_write,
+            'objective': objective,
+            'summary': summary
+        }
+        # Remove None values
+        update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
+
+        # Update if Candidate's ID is provided
+        db.session.query(Candidate).filter_by(id=candidate_id).update(update_dict)
+        db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
+
+    # Create if candidate_id is not provided
+    new_candidate = Candidate(
+        first_name=first_name,
+        middle_name=middle_name,
+        last_name=last_name,
+        formatted_name=formatted_name,
+        added_time=added_time,
+        candidate_status_id=candidate_status_id,
+        user_id=user_id,
+        domain_can_read=domain_can_read,
+        domain_can_write=domain_can_write,
+        dice_profile_id=dice_profile_id,
+        dice_social_profile_id=dice_social_profile_id,
+        source_id=source_id,
+        objective=objective,
+        summary=summary,
+        is_dirty=0  # TODO: is_dirty cannot be null. This should be removed once the field is successfully removed.
+    )
+    db.session.add(new_candidate)
+    db.session.flush()
+    candidate_id = new_candidate.id
+
+    return candidate_id
+
+def _add_or_update_candidate_addresses(candidate_id, addresses, is_update):
+    address_has_default = any([address.get('is_default') for address in addresses])
+    for i, address in enumerate(addresses):
+        address_line_1 = address.get('address_line_1')
+        address_line_2 = address.get('address_line_2')
+        city = address.get('city')
+        state = address.get('state')
+        country_id = country_id_from_country_name_or_code(address.get('country'))
+        zip_code = sanitize_zip_code(address.get('zip_code'))
+        po_box = address.get('po_box')
+        is_default = address.get('is_default')
+        coordinates = get_coordinates(zip_code, city, state)
+        # If there's no is_default, the first address should be default
+        is_default = i == 0 if address_has_default else is_default
+
+        # Update if it's an update
+        if is_update:
+            update_dict = {
+                'address_line_1': address_line_1,
+                'address_line_2': address_line_2,
+                'city': city,
+                'state': state,
+                'country_id': country_id,
+                'zip_code': zip_code,
+                'po_box': po_box,
+                'is_default': is_default,
+                'coordinates': coordinates
+            }
+            # Remove None values
+            update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
+
+            # Update candidate's address
+            db.session.query(CandidateAddress).filter_by(candidate_id=candidate_id).\
+                update(update_dict)
+            db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
+
+        # Create if candidate_id is not provided
+        db.session.add(CandidateAddress(
+            candidate_id=candidate_id,
+            address_line_1=address_line_1,
+            address_line_2=address_line_2,
+            city=city,
+            state=state,
+            country_id=country_id,
+            zip_code=zip_code,
+            po_box=po_box,
+            is_default=is_default,
+            coordinates=coordinates,
+            resume_id=candidate_id  # TODO: this is to be removed once all tables have been added & migrated
+        ))
+
+        return
+
+def _add_or_update_candidate_areas_of_interest(candidate_id, area_of_interest_ids,
+                                               is_update):
+    for area_of_interest_id in area_of_interest_ids:
+
+        # Update if it's an update
+        if is_update:
+            if area_of_interest_id:
+                db.session.query(CandidateAreaOfInterest).\
+                    filter_by(candidate_id=candidate_id).update(
+                    {'area_of_interest_id': area_of_interest_id}
+                )
+                db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
+
+        # Create if not an update
+        db.session.add(CandidateAreaOfInterest(
+            candidate_id=candidate_id,
+            area_of_interest_id=area_of_interest_id
+        ))
+
+        return
+
+
+def _add_or_update_candidate_custom_field_ids(candidate_id, custom_field_ids,
+                                              added_time, is_update):
+    # Update if it's an update
+    if is_update:
+        pass
+    for custom_field_id in custom_field_ids:
+            db.session.add(CandidateCustomField(
+                candidate_id=candidate_id,
+                custom_field_id=custom_field_id,
+                added_time=added_time
+            ))
+
+
+
+
