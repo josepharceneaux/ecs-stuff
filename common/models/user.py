@@ -10,16 +10,12 @@ import candidate
 import event_organizer
 import social_network
 from misc import AreaOfInterest
-from candidate import CandidateSource
 from associations import CandidateAreaOfInterest
 from common.utils.validators import is_number
 from common.error_handling import *
 
 
 logger = logging.getLogger(__file__)
-from candidate import CandidateSource
-from associations import CandidateAreaOfInterest
-from misc import AreaOfInterest
 from email_marketing import EmailCampaign
 
 
@@ -48,7 +44,7 @@ class User(db.Model):
     # TODO: Set Nullable = False after setting user_group_id for existing data
 
     # Relationships
-    candidates = db.relationship('Candidate', backref='user')
+    candidates = relationship('Candidate', cascade="all, delete-orphan", passive_deletes=True)
     public_candidate_sharings = db.relationship('PublicCandidateSharing', backref='user')
     user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
     events = db.relationship('Event', backref='user', lazy='dynamic')
@@ -97,13 +93,14 @@ class Domain(db.Model):
 
     # Relationships
     users = relationship('User', backref='domain')
-    candidate_sources = relationship('CandidateSource', backref='domain')
+    candidate_sources = relationship('CandidateSource', cascade="all, delete-orphan", passive_deletes=True)
     areas_of_interest = relationship('AreaOfInterest', backref='domain')
-    custom_fields = relationship('CustomField', backref='domain')
+    # The following results invalid kwarg errors:
+    # def __init__(self, name=None):
+    #     self.name = name
     # organizations = relationship('Organization', backref='domain')
 
-    def __init__(self, name=None):
-        self.name = name
+    custom_fields = relationship('CustomField', backref='domain')
 
     def __repr__(self):
         return '<Domain %r>' % self.name
@@ -168,7 +165,7 @@ class Token(db.Model):
     client = db.relationship('Client', backref=db.backref('token', cascade="all, delete-orphan"))
 
     user_id = db.Column(
-        db.INTEGER, db.ForeignKey('user.id', ondelete='CASCADE')
+        'user_id', db.INTEGER, db.ForeignKey('user.id', ondelete='CASCADE')
     )
 
     user = db.relationship('User', backref=db.backref('token', cascade="all, delete-orphan"))
@@ -197,8 +194,7 @@ class DomainRole(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     role_name = db.Column('roleName', db.String(255), nullable=False, unique=True)
-
-    domain_id = db.Column(db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))
+    domain_id = db.Column('domainId', db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))
     domain = db.relationship('Domain', backref=db.backref('domain_role', cascade="all, delete-orphan"))
 
     def delete(self):
@@ -265,10 +261,10 @@ class UserScopedRoles(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(
-        db.INTEGER, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False
+        'userId', db.INTEGER, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False
     )
     role_id = db.Column(
-        db.Integer, db.ForeignKey('domain_role.id', ondelete='CASCADE'), nullable=False
+        'roleId', db.Integer, db.ForeignKey('domain_role.id', ondelete='CASCADE'), nullable=False
     )
     domain_role = db.relationship('DomainRole', backref=db.backref('user_scoped_roles', cascade="all, delete-orphan"))
     user = db.relationship('User', backref=db.backref('user_scoped_roles', cascade="all, delete-orphan"))

@@ -16,13 +16,13 @@ class Candidate(db.Model):
     formatted_name = db.Column('FormattedName', db.String(150))
     status_id = db.Column('StatusId', db.Integer, db.ForeignKey('candidate_status.id'))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
-    user_id = db.Column('OwnerUserId', db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column('OwnerUserId', db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'))
     domain_can_read = db.Column('DomainCanRead', db.Boolean, default=True)
     domain_can_write = db.Column('DomainCanWrite', db.Boolean, default=False)
     dice_social_profile_id = db.Column('DiceSocialProfileId', db.String(128))
     dice_profile_id = db.Column('DiceProfileId', db.String(128))
     source_id = db.Column('sourceId', db.Integer, db.ForeignKey('candidate_source.id'))
-    source_product_id = db.Column('sourceProductId', db.Integer, db.ForeignKey('product.id'), nullable=False, default=2) # Web = 2
+    # source_product_id = db.Column('sourceProductId', db.Integer, db.ForeignKey('product.id'), nullable=False, default=2) # Web = 2
     filename = db.Column(db.String(100))
     objective = db.Column(db.Text)
     summary = db.Column(db.Text)
@@ -123,7 +123,8 @@ class CandidateSource(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column('Description', db.String(100))
     notes = db.Column('Notes', db.String(500))
-    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))
+    # domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id')) #TODO verify above ondelete works
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
@@ -451,7 +452,7 @@ class CandidatePatentHistory(db.Model):
 class PatentDetail(db.Model):
     __tabelname__ = 'patent_detail'
     id = db.Column(db.BigInteger, primary_key=True)
-    patent_id = db.Column('PatentId', db.BigInteger, db.ForeignKey('patent.id')) # TODO: add relationship
+    patent_id = db.Column('PatentId', db.BigInteger, db.ForeignKey('candidate_patent_history.id'))
     issuing_authority = db.Column('IssuingAuthority', db.String(255))
     country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
@@ -477,7 +478,7 @@ class PatentStatus(db.Model):
 class PatentInventor(db.Model):
     __tablename__ = 'patent_inventor'
     id = db.Column(db.BigInteger, primary_key=True)
-    patent_id = db.Column('PatentId', db.BigInteger, db.ForeignKey('patent.id')) # TODO: add relationship
+    patent_id = db.Column('PatentId', db.BigInteger, db.ForeignKey('candidate_patent_history.id')) # TODO: add relationship
     name = db.Column('Name', db.String(500))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
@@ -676,7 +677,7 @@ class University(db.Model):
     __tablename__ = 'university'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Name', db.String(255))
-    state_id = db.Column('StateId', db.Integer, db.ForeignKey('state.id'))
+    # state_id = db.Column('StateId', db.Integer, db.ForeignKey('state.id')) #TODO verify removed table
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
@@ -707,4 +708,3 @@ class ClassificationType(db.Model):
 
     def __repr__(self):
         return "<ClassificationType (code = %r)>" % self.code
-
