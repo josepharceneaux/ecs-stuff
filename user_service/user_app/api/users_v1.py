@@ -47,7 +47,7 @@ class UserApi(Resource):
         # User id is not provided so logged-in user wants to get all users of its domain
         # But for this logged in user should be ADMIN or DOMAIN_ADMIN
         elif request.is_admin_user or 'DOMAIN_ADMIN' in request.valid_domain_roles:
-                return {'users': [user.id for user in User.all_user_of_domain(request.user.domain_id)]}
+                return {'users': [user.id for user in User.all_users_of_domain(request.user.domain_id)]}
 
         # If nothing is returned above then simply raise the custom exception
         raise UnauthorizedError(error_message="Either logged-in user belongs to different domain as requested_user "

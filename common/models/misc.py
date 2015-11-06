@@ -142,3 +142,35 @@ class CustomField(db.Model):
     def __repr__(self):
         return "<CustomField (name = %r)>" % self.name
 
+
+class UserEmailTemplate(db.Model):
+    __tablename__ = 'user_email_template'
+
+    id = db.Column('Id', db.Integer, primary_key=True)
+    user_id = db.Column('UserId', db.ForeignKey(u'user.id'), index=True)
+    type = db.Column('Type', db.Integer, server_default=db.text("'0'"))
+    name = db.Column('Name', db.String(255), nullable=False)
+    email_body_html = db.Column('EmailBodyHtml', db.Text)
+    email_body_text = db.Column('EmailBodyText', db.Text)
+    email_template_folder_id = db.Column('EmailTemplateFolderId', db.ForeignKey(u'email_template_folder.id', ondelete=u'SET NULL'), index=True)
+    is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
+    updated_time = db.Column('UpdatedTime', db.DateTime, nullable=False, server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
+
+    email_template_folder = relationship(u'EmailTemplateFolder', backref=db.backref('user_email_template',
+                                                                                    cascade="all, delete-orphan"))
+    user = relationship(u'User', backref=db.backref('user_email_template', cascade="all, delete-orphan"))
+
+
+class EmailTemplateFolder(db.Model):
+    __tablename__ = 'email_template_folder'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column('Name', db.String(512))
+    parent_id = db.Column('ParentId', db.ForeignKey(u'email_template_folder.id', ondelete=u'CASCADE'), index=True)
+    is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
+    domain_id = db.Column('DomainId', db.ForeignKey(u'domain.id', ondelete=u'CASCADE'), index=True)
+    updated_time = db.Column('UpdatedTime', db.DateTime, nullable=False, server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
+
+    domain = relationship(u'Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
+    parent = relationship(u'EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
+                                                                                       cascade="all, delete-orphan"))

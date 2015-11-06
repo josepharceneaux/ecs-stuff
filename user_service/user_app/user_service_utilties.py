@@ -2,10 +2,11 @@ __author__ = 'ufarooqi'
 from flask import render_template
 from user_service.common.utils.amazon_ses import send_email
 from common.models.user import db, Domain, User, UserScopedRoles
+from common.models.misc import EmailTemplateFolder, UserEmailTemplate
 from werkzeug.security import generate_password_hash, gen_salt
 
 
-def get_or_create_domain(name, usage_limitation=-1, organization_id=1, default_tracking_code=None, expiration=None,
+def get_or_create_domain(logged_in_user_id, name, usage_limitation=-1, organization_id=1, default_tracking_code=None, expiration=None,
                          default_culture_id=1, dice_company_id=None):
     """
     Gets or creates domain with given name.
@@ -35,6 +36,8 @@ def get_or_create_domain(name, usage_limitation=-1, organization_id=1, default_t
         db.session.add(domain)
         db.session.commit()
 
+        get_or_create_default_email_templates(domain.id, logged_in_user_id)
+
         # get_or_create_rating_custom_fields(domain_id)
         return domain.id
 
@@ -58,10 +61,42 @@ def create_user_for_company(first_name, last_name, email, domain_id=None, expira
                        expiration=expiration, is_admin=is_admin, is_domain_admin=is_domain_admin,
                        dice_user_id=dice_user_id)
 
-    # TODO: If this domain doesn't contain any templates, then create the sample templates
-    # get_or_create_default_email_templates(domain_id)
-
     return user.id
+
+
+def get_or_create_default_email_templates(domain_id, admin_user_id):
+
+    sample_templates_folder = EmailTemplateFolder.query.filter(EmailTemplateFolder.domain_id == domain_id,
+                                                               EmailTemplateFolder.name == 'Sample Templates').first()
+
+    if not sample_templates_folder:
+        # Create the Sample Templates folder if it doesn't exist
+        sample_templates_folder = EmailTemplateFolder(name='Sample Templates', domain_id=domain_id, parent_id=None,
+                                                      is_immutable=0)
+        db.session.add(sample_templates_folder)
+        db.session.commit()
+
+    sample_templates = UserEmailTemplate.query.filter(UserEmailTemplate.email_template_folder_id == sample_templates_folder.id)
+    sample_template_names = [t.name for t in sample_templates]
+
+    if ('Announcement' not in sample_template_names) and ('Intro' not in sample_template_names):
+        # Create the sample templates if they don't exist
+        get_talent_special_announcement = render_template('getTalentSpecialAnnouncement.html')
+        get_talent_intro = render_template('getTalentIntro.html')
+
+        announcement_template = UserEmailTemplate(user_id=admin_user_id, type='0', name='Announcement',
+                                                  email_body_html=get_talent_special_announcement, email_body_text='',
+                                                  email_template_folder_id=sample_templates_folder.id, is_immutable='0')
+
+        intro_template = UserEmailTemplate(user_id=admin_user_id, type='0', name='Intro',
+                                           email_body_html=get_talent_intro, email_body_text='',
+                                           email_template_folder_id=sample_templates_folder.id, is_immutable='0')
+
+        db.session.add(announcement_template)
+        db.session.add(intro_template)
+        db.session.commit()
+
+    return sample_templates_folder.id
 
 
 def create_user(email, domain_id, first_name, last_name, expiration, is_admin=False, is_domain_admin=False, phone="",

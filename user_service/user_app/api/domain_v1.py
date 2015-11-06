@@ -102,8 +102,9 @@ class DomainApi(Resource):
             dice_company_id = domain_dict.get('dice_company_id', None)
             expiration = parser.parse(expiration) if expiration else ""
 
-            domain_id = get_or_create_domain(name=name, expiration=expiration, default_culture_id=default_culture_id,
-                                             default_tracking_code=default_tracking_code, dice_company_id=dice_company_id)
+            domain_id = get_or_create_domain(logged_in_user_id=request.user.id, name=name, expiration=expiration,
+                                             default_culture_id=default_culture_id, default_tracking_code=
+                                             default_tracking_code, dice_company_id=dice_company_id)
 
             domain_ids.append(domain_id)
 

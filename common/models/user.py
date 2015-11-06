@@ -62,7 +62,7 @@ class User(db.Model):
         db.session.commit()
 
     @staticmethod
-    def all_user_of_domain(domain_id):
+    def all_users_of_domain(domain_id):
         """ Get user_ids of all users of a given domain_id
         :param int domain_id: id of a domain.
         :rtype: list[User]
@@ -198,7 +198,7 @@ class DomainRole(db.Model):
     __tablename__ = 'domain_role'
 
     id = db.Column(db.Integer, primary_key=True)
-    role_name = db.Column('roleName', db.String(255), nullable=False, unique=True)
+    role_name = db.Column(db.String(255), nullable=False, unique=True)
 
     domain_id = db.Column(db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))
     domain = db.relationship('Domain', backref=db.backref('domain_role', cascade="all, delete-orphan"))
