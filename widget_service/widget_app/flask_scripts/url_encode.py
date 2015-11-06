@@ -35,6 +35,3 @@ def gt_url_encrypt(id):
     b64_id = b64encode(encrypted_id)
     url_formatted_id = quote_plus(b64_id)
     return url_formatted_id
-
-encode_domain_ids()
-encode_widget_ids()
