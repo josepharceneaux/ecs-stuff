@@ -17,7 +17,7 @@ import requests
 import simplecrypt
 
 # Module specific
-from widget_service.common.models.candidate import CustomField
+from widget_service.common.models.misc import CustomField
 from widget_service.common.models.candidate import University
 from widget_service.common.models.misc import AreaOfInterest
 from widget_service.common.models.misc import Major

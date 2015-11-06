@@ -2,7 +2,7 @@ from db import db
 import datetime
 from sqlalchemy.orm import relationship
 import time
-from candidate import CandidateMilitaryService
+import candidate
 
 
 class Activity(db.Model):
@@ -54,19 +54,6 @@ class Country(db.Model):
 
     def __repr__(self):
         return "<Country (name=' %r')>" % self.name
-
-
-class Culture(db.Model):
-    __tablename__ = 'culture'
-    id = db.Column(db.Integer, primary_key=True)
-    description = db.Column('Description', db.String(50))
-    code = db.Column(db.String(5), unique=True)
-
-    # Relationships
-    candidates = relationship('Candidate', backref='culture')
-
-    def __repr__(self):
-        return "<Culture (description=' %r')>" % self.description
 
 
 # Even though the table name is major I'm keeping the model class singular.

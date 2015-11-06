@@ -22,7 +22,7 @@ class Candidate(db.Model):
     dice_social_profile_id = db.Column('DiceSocialProfileId', db.String(128))
     dice_profile_id = db.Column('DiceProfileId', db.String(128))
     source_id = db.Column('sourceId', db.Integer, db.ForeignKey('candidate_source.id'))
-    source_product_id = db.Column('sourceProductId', db.Integer, db.ForeignKey('product.id'), nullable=False, default=2) # Web = 2
+    # source_product_id = db.Column('sourceProductId', db.Integer, db.ForeignKey('product.id'), nullable=False, default=2) # Web = 2
     filename = db.Column(db.String(100))
     objective = db.Column(db.Text)
     summary = db.Column(db.Text)
@@ -682,17 +682,6 @@ class University(db.Model):
 
     def __repr__(self):
         return "<University (name=' %r')>" % self.name
-
-
-class CustomField(db.Model):
-    __tablename__ = 'custom_field'
-    id = db.Column(db.Integer, primary_key=True)
-    domain_id = db.Column('DomainId', db.Integer)
-    name = db.Column('Name', db.String(127))
-    field_type = db.Column('Type', db.String(127))
-    category_id = db.Column('CategoryId', db.Integer)
-    added_time = db.Column('AddedTime', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
 
 class CandidateCustomField(db.Model):

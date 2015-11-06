@@ -1,15 +1,4 @@
 from sqlalchemy.sql.expression import ClauseElement
-<<<<<<< HEAD
-from activity_service.common.models.db import db
-from activity_service.activities_app import app
-from flask import current_app
-
-
-# Setting current app context
-with app.app_context():
-    db.session.commit()
-    print "current running app: %s" % current_app.name
-=======
 import requests
 
 
@@ -64,4 +53,3 @@ def get_coordinates(zipcode=None, city=None, state=None, address_line_1=None, lo
         coordinates = "%s,%s" % (latitude, longitude)
 
     return coordinates
->>>>>>> 54863c38046e03091fb59472381532ccd9219b63

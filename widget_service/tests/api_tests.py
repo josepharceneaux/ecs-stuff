@@ -6,12 +6,12 @@ import json
 import pytest
 
 from widget_service.common.models.candidate import CandidateSource
-from widget_service.common.models.candidate import CustomField
+from widget_service.common.models.misc import CustomField
 from widget_service.common.models.candidate import EmailLabel
 from widget_service.common.models.candidate import University
 from widget_service.common.models.misc import AreaOfInterest
 from widget_service.common.models.misc import Country
-from widget_service.common.models.misc import Culture
+from widget_service.common.models.culture import Culture
 from widget_service.common.models.misc import Major
 from widget_service.common.models.misc import Organization
 from widget_service.common.models.user import Client
@@ -62,7 +62,7 @@ def test_culture(request):
 
 @pytest.fixture(autouse=True)
 def test_domain(test_culture, test_org, request):
-    test_domain = Domain(name=random_word(40), usage_limitation=0,
+    test_domain = Domain(name=random_word(40),
                          expiration=datetime.datetime(2050, 4, 26),
                          added_time=datetime.datetime.today(),
                          organization_id=test_org.id, is_fair_check_on=False, is_active=1,
@@ -81,7 +81,7 @@ def test_domain(test_culture, test_org, request):
 
 @pytest.fixture(autouse=True)
 def second_domain(test_culture, test_org, request):
-    test_domain2 = Domain(name=random_word(40), usage_limitation=0,
+    test_domain2 = Domain(name=random_word(40),
                           expiration=datetime.datetime(2050, 4, 26),
                           added_time=datetime.datetime.today(),
                           organization_id=test_org.id, is_fair_check_on=False, is_active=1,
@@ -234,25 +234,25 @@ def test_widget_page(test_user, test_candidate_source, request):
 @pytest.fixture(autouse=True)
 def test_extra_fields_location(test_domain, request):
     state_field = CustomField(domain_id=test_domain.id, name='State of Interest',
-                              field_type='string', added_time=datetime.datetime.now(),
+                              type='string', added_time=datetime.datetime.now(),
                               updated_time=datetime.datetime.now())
     db.session.add(state_field)
     db.session.commit()
 
     city_field = CustomField(domain_id=test_domain.id, name='City of Interest',
-                             field_type='string', added_time=datetime.datetime.now(),
+                             type='string', added_time=datetime.datetime.now(),
                              updated_time=datetime.datetime.now())
     db.session.add(city_field)
     db.session.commit()
 
-    nuid_field = CustomField(domain_id=test_domain.id, name='NUID', field_type='string',
+    nuid_field = CustomField(domain_id=test_domain.id, name='NUID', type='string',
                              added_time=datetime.datetime.now(),
                              updated_time=datetime.datetime.now())
     db.session.add(nuid_field)
     db.session.commit()
 
     subscription_pref_field = CustomField(domain_id=test_domain.id, name='Subscription Preference',
-                                          field_type='string', added_time=datetime.datetime.now(),
+                                          type='string', added_time=datetime.datetime.now(),
                                           updated_time=datetime.datetime.now())
     db.session.add(subscription_pref_field)
     db.session.commit()

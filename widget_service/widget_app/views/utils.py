@@ -1,6 +1,6 @@
 __author__ = 'erikfarmer'
 
-from widget_service.common.models.candidate import CustomField
+from widget_service.common.models.misc import CustomField
 from widget_service.common.models.widget import WidgetPage
 from widget_service.widget_app import db
 from widget_service.common.models.misc import AreaOfInterest

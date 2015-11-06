@@ -10,16 +10,12 @@ import candidate
 import event_organizer
 import social_network
 from misc import AreaOfInterest
-from candidate import CandidateSource
 from associations import CandidateAreaOfInterest
 from common.utils.validators import is_number
 from common.error_handling import *
 
 
 logger = logging.getLogger(__file__)
-from candidate import CandidateSource
-from associations import CandidateAreaOfInterest
-from misc import AreaOfInterest
 from email_marketing import EmailCampaign
 
 
@@ -99,11 +95,12 @@ class Domain(db.Model):
     users = relationship('User', backref='domain')
     candidate_sources = relationship('CandidateSource', cascade="all, delete-orphan", passive_deletes=True)
     areas_of_interest = relationship('AreaOfInterest', backref='domain')
-    custom_fields = relationship('CustomField', backref='domain')
+    # The following results invalid kwarg errors:
+    # def __init__(self, name=None):
+    #     self.name = name
     # organizations = relationship('Organization', backref='domain')
 
-    def __init__(self, name=None):
-        self.name = name
+    custom_fields = relationship('CustomField', backref='domain')
 
     def __repr__(self):
         return '<Domain %r>' % self.name
@@ -197,7 +194,7 @@ class DomainRole(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     role_name = db.Column('roleName', db.String(255), nullable=False, unique=True)
-    domain_id = db.Column(db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))
+    domain_id = db.Column('domainId', db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))
     domain = db.relationship('Domain', backref=db.backref('domain_role', cascade="all, delete-orphan"))
 
     def delete(self):
