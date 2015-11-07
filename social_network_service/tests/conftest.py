@@ -22,10 +22,10 @@ from social_network_service.common.models.event import Event
 from social_network_service.common.models.venue import Venue
 from social_network_service.common.models.user import Client
 from social_network_service.common.models.user import Domain
-from social_network_service.common.models.culture import Culture
+from social_network_service.common.models.misc import Culture
 from social_network_service.common.models.event_organizer import EventOrganizer
-from social_network_service.common.models.organization import Organization
-from social_network_service.common.models.social_network import SocialNetwork
+from social_network_service.common.models.misc import Organization
+from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.utilities import process_event
 from social_network_service.utilities import delete_events
@@ -185,13 +185,13 @@ def test_domain(request, test_organization, test_culture):
     now_timestamp = datetime.now().strftime("%Y:%m:%d %H:%M:%S")
     mixer = Mixer(session=db_session, commit=True)
     domain = mixer.blend(Domain, organization=test_organization, culture=test_culture,
-                         name=faker.nickname(), addedTime=now_timestamp)
+                         name=faker.nickname(), addedTime=now_timestamp, expiration=datetime(2020,1,1,0,0,0))
 
     def delete_doamin():
         """
         Delete this domain object at the end of test session
         """
-        Domain.delete(domain.id)
+        Domain.delete(domain)
 
     request.addfinalizer(delete_doamin)
     return domain
@@ -217,7 +217,7 @@ def test_user(request, test_domain):
         """
         Delete this user object at the end of test session
         """
-        User.delete(user.id)
+        User.delete(user)
 
     request.addfinalizer(fin)
     return user

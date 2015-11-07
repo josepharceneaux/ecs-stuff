@@ -48,7 +48,7 @@ from social_network_service.meetup import Meetup
 from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service.common.models.venue import Venue
 from social_network_service.common.models.user import UserSocialNetworkCredential, User
-from social_network_service.common.models.social_network import SocialNetwork
+from social_network_service.common.models.candidate import SocialNetwork
 
 from social_network_service.common.talent_api import TalentApi
 from social_network_service.app.app_utils import authenticate, api_route, SocialNetworkApiResponse
@@ -520,8 +520,7 @@ class VenuesResource(Resource):
 
         """
         user_id = kwargs['user_id']
-        user = User.get_by_id(user_id)
-        venues = user.venues.all()
+        venues = Venue.get_by_user_id(user_id)
         venues = map(lambda venue: venue.to_json(), venues)
         resp = json.dumps(dict(venues=venues, count=len(venues)))
         return SocialNetworkApiResponse(resp, status=200)

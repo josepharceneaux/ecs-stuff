@@ -12,7 +12,7 @@ from base import RSVPBase
 # Application Specific
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.user import UserSocialNetworkCredential
-from social_network_service.common.models.social_network import SocialNetwork
+from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service import logger
 from social_network_service.utilities import Attendee
 from social_network_service.utilities import http_request

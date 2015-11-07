@@ -133,7 +133,7 @@ def get_by_id(cls, _id):
 
 
 @classmethod
-def delete(cls, _id):
+def delete(cls, ref):
     """
     This method deletes a record from database given by id and the calling Model class.
     :param _id: id for instance
@@ -141,8 +141,10 @@ def delete(cls, _id):
     :return: Boolean
     """
     try:
-        # get instance given by id and then delete it
-        obj = cls.query.get(_id)
+        if isinstance(ref, (int, long)):
+            obj = cls.query.get(ref)
+        else:
+            obj = ref
         db.session.delete(obj)
         db.session.commit()
     except:

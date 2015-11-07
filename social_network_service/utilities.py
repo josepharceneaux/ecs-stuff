@@ -24,7 +24,7 @@ from requests_oauthlib import OAuth2Session
 # Application Specific Imports
 from social_network_service.common.models.user import User
 from social_network_service.common.models.event import Event
-from social_network_service.common.models.social_network import SocialNetwork
+from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service import logger
 from social_network_service import flask_app as app
 from social_network_service.custom_exceptions import *

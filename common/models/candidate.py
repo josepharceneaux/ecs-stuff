@@ -4,6 +4,8 @@ import datetime
 
 from email_marketing import EmailCampaign, EmailCampaignSend
 from associations import ReferenceEmail
+from venue import Venue
+from event import Event
 
 
 class Candidate(db.Model):
@@ -256,9 +258,55 @@ class SocialNetwork(db.Model):
 
     # Relationships
     candidate_social_networks = relationship('CandidateSocialNetwork', backref='social_network')
+    events = relationship("Event", backref='social_network', lazy='dynamic')
+    user_credentials = relationship("UserSocialNetworkCredential")
+    venues = relationship('Venue', backref='social_network', lazy='dynamic')
 
     def __repr__(self):
         return "<SocialNetwork (url=' %r')>" % self.url
+
+    @classmethod
+    def get_by_name(cls, name):
+        assert name
+        return cls.query.filter(
+            SocialNetwork.name == name.strip()
+        ).one()
+
+    @classmethod
+    def get_by_id(cls, id):
+        assert id
+        return cls.query.filter(
+            SocialNetwork.id == id
+        ).one()
+
+    @classmethod
+    def get_all(cls):
+        return cls.query.all()
+
+    @classmethod
+    def get_all_except_ids(cls, ids):
+        assert isinstance(ids, list)
+        if ids:
+            return cls.query.filter(
+                db.not_(
+                    SocialNetwork.id.in_(
+                        ids
+                    )
+                )
+            ).all()
+        else:
+            # Didn't input 'ids' it means we we need list of all, the following
+            # probably help us avoid the expensive in_ with empty sequence
+            SocialNetwork.get_all()
+
+    @classmethod
+    def get_by_ids(cls, ids):
+        assert isinstance(ids, list)
+        return cls.query.filter(
+            SocialNetwork.id.in_(
+                ids
+            )
+        ).all()
 
 
 class CandidateSocialNetwork(db.Model):

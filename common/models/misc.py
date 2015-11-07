@@ -16,6 +16,18 @@ class Activity(db.Model):
     user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id'))
     params = db.Column(db.Text)
 
+    @classmethod
+    def get_by_user_id_params_type_source_id(cls, user_id, params, type, source_id):
+        assert user_id
+        return cls.query.filter(
+            db.and_(
+                Activity.user_id == user_id,
+                Activity.params == params,
+                Activity.type == type,
+                Activity.source_id == source_id,
+            )
+        ).first()
+
 
 class AreaOfInterest(db.Model):
     __tablename__ = 'area_of_interest'
@@ -37,9 +49,17 @@ class Culture(db.Model):
 
     # Relationships
     candidates = relationship('Candidate', backref='culture')
+    # domain = relationship('Domain', backref='culture')
+    user = relationship('User', backref='culture')
 
     def __repr__(self):
         return "<Culture (description=' %r')>" % self.description
+
+    @classmethod
+    def get_by_code(cls, code):
+        return cls.query.filter(
+            Culture.code == code.strip().lower()
+        ).one()
 
 
 class Organization(db.Model):
@@ -48,6 +68,13 @@ class Organization(db.Model):
     name = db.Column('Name', db.String(500), unique=True)
     notes = db.Column('Notes', db.String(1000))
     updated_time = db.Column('updatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+    # Relationships
+    # domains = db.relationship('Domain', backref='organization')
+
+    def __init__(self, name=None, notes=None):
+        self.name = name
+        self.notes = notes
 
     def __repr__(self):
         return "<Organization (name=' %r')>" % self.name
@@ -58,10 +85,19 @@ class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Name', db.String(100))
     notes = db.Column('Notes', db.String(500))
-    updated_time = db.Column('UpdatedTime', db.DateTime, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<Product (name=' %r')>" % self.name
+
+    @classmethod
+    def get_by_name(cls, vendor_name):
+        assert vendor_name
+        return cls.query.filter(
+            db.and_(
+                Product.name == vendor_name
+            )
+        ).first()
 
 
 class Country(db.Model):
