@@ -1,9 +1,4 @@
-##### IMPORTANT #####
-# Build this file ONLY when DigiCertCA.crt, star_gettalent_com.crt and star_gettalent_com.key are in this directory.
-# They are NOT in version control for security reasons.
-
-
-# Set the base image to Ubuntu
+`# Set the base image to Ubuntu
 FROM ubuntu:14.04
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
@@ -39,14 +34,14 @@ CMD ["pyenv", "local", "2.7.9"]
 # Install Python requirements common to all services
 RUN pip install -r /root/base_service_container/requirements.txt
 
-# Install nginx stuff
-RUN rm /etc/nginx/sites-enabled/default
-ADD talent-nginx.conf /etc/nginx/conf.d/
+## Install nginx stuff
+#RUN rm /etc/nginx/sites-enabled/default
+#ADD talent-nginx.conf /etc/nginx/conf.d/
 # ADD DigiCertCA.crt /usr/local/etc/ssl/DigiCertCA.crt
 # ADD star_gettalent_com.crt /usr/local/etc/ssl/star_gettalent_com.crt
 # ADD star_gettalent_com.key /usr/local/etc/ssl/star_gettalent_com.key
-ADD DigiCertCA.crt /etc/nginx/ssl/DigiCertCA.crt
-ADD star_gettalent_com.crt /etc/nginx/ssl/star_gettalent_com.crt
-ADD star_gettalent_com.key /etc/nginx/ssl/star_gettalent_com.key
+# ADD DigiCertCA.crt /etc/nginx/ssl/DigiCertCA.crt
+# ADD star_gettalent_com.crt /etc/nginx/ssl/star_gettalent_com.crt
+# ADD star_gettalent_com.key /etc/nginx/ssl/star_gettalent_com.key
 
 WORKDIR /root/base_service_container

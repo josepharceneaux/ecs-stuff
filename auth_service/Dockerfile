@@ -1,15 +1,15 @@
-############################################################
-# Dockerfile to build GetTalent Oauth2.0 Flask Service
-############################################################
-
 FROM gettalent/base-service-container:latest
 
+# Install nginx stuff
+RUN rm /etc/nginx/sites-enabled/default
+ADD talent-nginx.conf /etc/nginx/conf.d/
+
+# Add auth service stuff
 WORKDIR /root/base_service_container
 ADD . auth_service
 WORKDIR /root/base_service_container/auth_service
 
 EXPOSE 80
-EXPOSE 443
 
 # Set DB connection string
 ENV DB_STRING mysql://talent_web:s!web976892@livedb.gettalent.com/talent_core
