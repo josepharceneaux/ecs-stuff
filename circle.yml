@@ -10,7 +10,7 @@ dependencies:
     - pip install -r requirements.txt
 
 test:
-  post:
+  pre:
     - python auth_service/run.py
 
   override:
