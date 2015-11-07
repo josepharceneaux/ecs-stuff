@@ -12,7 +12,9 @@ dependencies:
 
 test:
   pre:
-    - python auth_service/run.py
+    - python auth_service/run.py:
+        background: true
+
 
   override:
     - py.test auth_service/tests/:
