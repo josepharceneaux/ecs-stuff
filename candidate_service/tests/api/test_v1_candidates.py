@@ -95,7 +95,6 @@ def test_create_candidate(sample_user, user_auth):
 
     # Update candidate
     sample_candidate_data_2 = generate_single_candidate_data()
-    sample_candidate_data_2['candidates'][0]['candidate_id'] = candidate_id
     r = requests.patch(
         url=BASE_URI,
         data=json.dumps(sample_candidate_data_2),

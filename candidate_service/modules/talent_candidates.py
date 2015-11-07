@@ -46,6 +46,10 @@ def fetch_candidate_info(candidate_id, fields=None):
     """
     assert isinstance(candidate_id, int)
     candidate = db.session.query(Candidate).get(candidate_id)
+
+    # TODO: set candidate's data type or assert that it's Candidate
+    # TODO: return id of everything and fix the logical error in emails and similar tables
+
     if not candidate:
         logger.error('Candidate not found, candidate_id: %s', candidate_id)
         return None
@@ -60,7 +64,7 @@ def fetch_candidate_info(candidate_id, fields=None):
 
     emails = None
     if get_all_fields or 'emails' in fields:
-        emails = email_label_and_address(candidate=candidate)
+        emails = candidate_emails(candidate=candidate)
 
     phones = None
     if get_all_fields or 'phones' in fields:
@@ -144,11 +148,17 @@ def fetch_candidate_info(candidate_id, fields=None):
     return return_dict
 
 
-def email_label_and_address(candidate):
-    candidate_emails = candidate.candidate_emails
-    return [{'label': email.email_label.description,
+def candidate_emails(candidate):
+    """
+    :type candidate: Candidate
+    :return:
+    """
+    assert isinstance(candidate, Candidate)
+    emails = candidate.candidate_emails
+    return [{'id': email.id,
+             'label': email.email_label.description,
              'address': email.address
-             } for email in candidate_emails]
+             } for email in emails]
 
 
 def phone_label_and_value(candidate):
