@@ -500,6 +500,11 @@ def venues(request, test_user, meetup, eventbrite):
     eventbrite_venue = Venue(**eventbrite_venue)
     Venue.save(eventbrite_venue)
     venues.append(eventbrite_venue)
+
+    def fin():
+        for venue in venues:
+            Venue.delete(venue.id)
+    request.addfinalizer(fin)
     return venues
 
 
@@ -544,6 +549,11 @@ def organizer_in_db(request, test_user):
     }
     organizer = EventOrganizer(**organizer)
     EventOrganizer.save(organizer)
+
+    def fin():
+        EventOrganizer.delete(organizer.id)
+
+    request.addfinalizer(fin)
     return organizer
 
 
