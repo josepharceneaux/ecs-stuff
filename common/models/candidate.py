@@ -1,9 +1,12 @@
+from sqlalchemy import and_
 from db import db
 from sqlalchemy.orm import relationship
 import datetime
 
 from email_marketing import EmailCampaign, EmailCampaignSend
 from associations import ReferenceEmail
+from venue import Venue
+from event import Event
 
 
 class Candidate(db.Model):
@@ -74,6 +77,23 @@ class Candidate(db.Model):
     def __repr__(self):
         return "<Candidate(formatted_name=' %r')>" % self.formatted_name
 
+    @classmethod
+    def get_by_first_last_name_owner_user_id_source_id_product(cls, first_name,
+                                                               last_name,
+                                                               user_id,
+                                                               source_id,
+                                                               product_id):
+        assert user_id
+        return cls.query.filter(
+            and_(
+                Candidate.first_name == first_name,
+                Candidate.last_name == last_name,
+                Candidate.user_id == user_id,
+                Candidate.source_id == source_id,
+                Candidate.source_product_id == product_id
+            )
+        ).first()
+
 
 class CandidateStatus(db.Model):
     __tablename = 'candidate_status'
@@ -116,6 +136,16 @@ class CandidateSource(db.Model):
 
     def __repr__(self):
         return "<CandidateSource (description= '%r')>" % self.description
+
+    @classmethod
+    def get_by_description_and_notes(cls, source_name, source_description):
+        assert source_description and source_name
+        return cls.query.filter(
+            and_(
+                cls.description == source_name,
+                cls.notes == source_description,
+            )
+        ).first()
 
 
 class PublicCandidateSharing(db.Model):
@@ -256,9 +286,55 @@ class SocialNetwork(db.Model):
 
     # Relationships
     candidate_social_networks = relationship('CandidateSocialNetwork', backref='social_network')
+    events = relationship("Event", backref='social_network', lazy='dynamic')
+    user_credentials = relationship("UserSocialNetworkCredential")
+    venues = relationship('Venue', backref='social_network', lazy='dynamic')
 
     def __repr__(self):
         return "<SocialNetwork (url=' %r')>" % self.url
+
+    @classmethod
+    def get_by_name(cls, name):
+        assert name
+        return cls.query.filter(
+            SocialNetwork.name == name.strip()
+        ).one()
+
+    @classmethod
+    def get_by_id(cls, id):
+        assert id
+        return cls.query.filter(
+            SocialNetwork.id == id
+        ).one()
+
+    @classmethod
+    def get_all(cls):
+        return cls.query.all()
+
+    @classmethod
+    def get_all_except_ids(cls, ids):
+        assert isinstance(ids, list)
+        if ids:
+            return cls.query.filter(
+                db.not_(
+                    SocialNetwork.id.in_(
+                        ids
+                    )
+                )
+            ).all()
+        else:
+            # Didn't input 'ids' it means we we need list of all, the following
+            # probably help us avoid the expensive in_ with empty sequence
+            SocialNetwork.get_all()
+
+    @classmethod
+    def get_by_ids(cls, ids):
+        assert isinstance(ids, list)
+        return cls.query.filter(
+            SocialNetwork.id.in_(
+                ids
+            )
+        ).all()
 
 
 class CandidateSocialNetwork(db.Model):
@@ -270,6 +346,17 @@ class CandidateSocialNetwork(db.Model):
 
     def __repr__(self):
         return "<CandidateSocialNetwork (social_profile_url=' %r')>" % self.social_profile_url
+
+    @classmethod
+    def get_by_candidate_id_and_sn_id(cls, candidate_id, social_network_id):
+        assert candidate_id
+        assert social_network_id
+        return cls.query.filter(
+            and_(
+                cls.candidate_id == candidate_id,
+                cls.social_network_id == social_network_id
+            )
+        ).first()
 
 
 class CandidateWorkPreference(db.Model):

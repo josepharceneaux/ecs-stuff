@@ -12,7 +12,7 @@ logging.config.fileConfig(LOGGING_CONF)
 # SQL ALCHEMY DB URL
 if os.environ.get('GT_ENVIRONMENT') == 'dev':
     APP_URL = 'http://0.0.0.0:8006'
-    OAUTH_SERVER_URI = 'http://0.0.0.0:8081/oauth2/authorize'
+    OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@localhost/talent_local'
     LOGGER = logging.getLogger("social_network_service.dev")
@@ -20,7 +20,7 @@ if os.environ.get('GT_ENVIRONMENT') == 'dev':
     DEBUG = True
 elif os.environ.get('GT_ENVIRONMENT') == 'circle':
     APP_URL = 'http://0.0.0.0:8006'
-    OAUTH_SERVER_URI = 'http://0.0.0.0:8081/oauth2/authorize'
+    OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_ci'
     LOGGER = logging.getLogger("social_network_service.ci")

@@ -16,8 +16,8 @@ from social_network_service.custom_exceptions import ProductNotFound
 from social_network_service.custom_exceptions import UserCredentialsNotFound
 from social_network_service.common.models.rsvp import RSVP
 from social_network_service.common.models.user import User
-from social_network_service.common.models.product import Product
-from social_network_service.common.models.activity import Activity
+from social_network_service.common.models.misc import Product
+from social_network_service.common.models.misc import Activity
 from social_network_service.common.models.candidate import Candidate
 from social_network_service.common.models.candidate import CandidateSource
 from social_network_service.common.models.candidate import CandidateSocialNetwork
@@ -500,7 +500,7 @@ class RSVPBase(object):
                 'last_name': attendee.last_name,
                 'added_time': attendee.added_time,
                 'user_id': attendee.gt_user_id,
-                'status_id': newly_added_candidate,
+                'candidate_status_id': newly_added_candidate,
                 'source_id': attendee.candidate_source_id,
                 'source_product_id': attendee.source_product_id}
         if candidate_in_db:

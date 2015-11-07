@@ -17,7 +17,7 @@ init_app()
 from utilities import get_class
 from social_network_service import logger
 from social_network_service.common.models.user import UserSocialNetworkCredential
-from social_network_service.common.models.social_network import SocialNetwork
+from social_network_service.common.models.candidate import SocialNetwork
 
 POOL_SIZE = 5
 
