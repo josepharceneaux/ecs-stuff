@@ -49,5 +49,4 @@ GOOGLE_URLSHORTENER_API_URL = 'https://www.googleapis.com/urlshortener/v1/url'
 
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
-# REDIRECT_URL = 'http://127.0.0.1:8010/redirect'
-REDIRECT_URL = 'http://733c98ac.ngrok.io/redirect'
+REDIRECT_URL = 'http://2ed87e65.ngrok.io/redirect'

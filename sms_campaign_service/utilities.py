@@ -1,15 +1,24 @@
 __author__ = 'basit'
 
 # Standard Library
+import re
 import json
+from datetime import datetime
 
 # Application Specific
 from config import GOOGLE_API_KEY, REDIRECT_URL
 from config import GOOGLE_URLSHORTENER_API_URL
+from sms_campaign_service import logger
 from social_network_service.utilities import http_request
 from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.candidate import CandidatePhone
 from sms_campaign_service.common.models.user import UserPhone
+from sms_campaign_service.app.app import celery
+from sms_campaign_service.app.app import sched
+
+
+def search_link_in_text(text):
+    return re.findall(r'https?://[^\s<>"]+|www\.[^\s<>"]+', text)
 
 
 def url_conversion(long_url):
@@ -53,6 +62,7 @@ from config import TWILIO_ACCOUNT_SID
 from config import TWILIO_AUTH_TOKEN
 
 
+# @celery.task()
 def send_sms_campaign(ids, body_text):
     """
     This function sends sms campaign
@@ -62,7 +72,7 @@ def send_sms_campaign(ids, body_text):
     :type body_text: str
     :return:
     """
-    # TODO: remove hard codeed value
+    # TODO: remove hard coded value
     user_phone = UserPhone.get_by_user_id(1)
     data = None
     try:
@@ -109,52 +119,44 @@ def process_link_in_body_text(body_text):
     :return: body text to be sent via sms campaign
     :rtype: str
     """
-    link_in_body_text = get_url_in_body_text(body_text)
-    if link_in_body_text:
-        url_conversion_id = save_or_update_url_conversion(link_in_body_text)
+    link_in_body_text = search_link_in_text(body_text)
+    if len(link_in_body_text) == 1:
+        # We have only one link in body text which needs to shortened.
+        url_conversion_id = save_or_update_url_conversion(link_in_body_text[0])
         url_conversion_record = UrlConversion.get_by_id(url_conversion_id)
         if not url_conversion_record.source_url:
             short_url, long_url = url_conversion(REDIRECT_URL+'?url_id=%s' % url_conversion_id)
-            save_or_update_url_conversion(link_in_body_text, source_url=short_url)
+            save_or_update_url_conversion(link_in_body_text[0], source_url=short_url)
         else:
             short_url = url_conversion_record.source_url
-        body_text = transform_body_text(body_text, short_url)
+        body_text = transform_body_text(body_text, link_in_body_text[0], short_url)
+    elif len(link_in_body_text) > 1:
+        # Got multiple links in body text
+        logger.info('Got %s links in body text. Body text is %s'
+                    % (len(link_in_body_text), body_text))
     return body_text
 
 
-def get_url_in_body_text(body_text):
-    """
-    Here we get any link present in original body text
-    :param body_text:
-    :type body_text: str
-    :return:
-    """
-    splited_text = body_text.split(' ')
-    for word in splited_text:
-        if 'www' in word or 'http' in word:
-            return word
-    return ''
-
-
-def transform_body_text(body_text, short_url):
+def transform_body_text(body_text, link_in_body_text, short_url):
     """
     - This replaces the url provided in body text with the shortened url
         to be sent via sms campaign.
     :param body_text: body text to be sent in sms campaign
+    :param link_in_body_text: link present in body text
     :param short_url: shortened url
     :type body_text: str
     :type short_url: str
     :return: transformed body text to be sent via sms campaign
     :rtype: str
     """
-    splited_text = body_text.split(' ')
+    text_split = body_text.split(' ')
     index = 0
-    for word in splited_text:
-        if 'www' in word or 'http' in word:
-            splited_text[index] = short_url
+    for word in text_split:
+        if word == link_in_body_text:
+            text_split[index] = short_url
             break
         index += 1
-    return ' '.join(splited_text)
+    return ' '.join(text_split)
 
 
 def save_or_update_url_conversion(link_in_body_text, source_url=None):
@@ -191,3 +193,38 @@ def process_redirection(url_conversion_id):
     """
     return UrlConversion.get_by_id(url_conversion_id)
 
+
+def run_func(arg1, arg2, end_date):
+    if datetime.now().hour == end_date.hour \
+            and datetime.now().minute == end_date.minute:
+        stop_job(sched.get_jobs()[0])
+    else:
+        send_sms_campaign.delay(arg1, arg2)
+
+
+def run_func_1(func, args, end_date):
+    status = True
+    for job in sched.get_jobs():
+        if job.args[2] == end_date:
+            if all([datetime.now().date() == end_date.date(),
+                   datetime.now().hour == end_date.hour,
+                   datetime.now().minute == end_date.minute]):
+                stop_job(job)
+                status = False
+    if status:
+        eval(func).delay(args[0], args[1])
+
+
+def stop_job(job):
+    sched.unschedule_job(job)
+    print 'job has stopped'
+
+
+@celery.task()
+def func_1(a, b):
+    print 'func_1'
+
+
+@celery.task()
+def func_2(a, b):
+    print 'func_2'

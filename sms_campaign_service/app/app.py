@@ -6,13 +6,24 @@
 # Standard  Library imports
 import json
 import traceback
+from datetime import datetime
 
 # Initializing App. This line should come before any imports from models
 from sms_campaign_service import init_app
 app = init_app()
 
+# create celery object
+from sms_campaign_service.celery_config import make_celery
+celery = make_celery(app)
+
+# start the scheduler
+from apscheduler.scheduler import Scheduler
+sched = Scheduler()
+sched.start()
+
 # Third party imports
 import flask
+import twilio.twiml
 from flask import request
 from flask.ext.cors import CORS
 from flask.ext.restful import Api
@@ -21,6 +32,7 @@ from werkzeug.utils import redirect
 # Application specific imports
 from restful.sms_campaign import sms_campaign_blueprint
 from sms_campaign_service import logger
+from sms_campaign_service.utilities import run_func, run_func_1
 from social_network_service.utilities import http_request
 from sms_campaign_service.utilities import url_conversion
 from sms_campaign_service.utilities import send_sms_campaign
@@ -30,7 +42,6 @@ from sms_campaign_service.utilities import process_link_in_body_text
 from sms_campaign_service.app.app_utils import ApiResponse
 from sms_campaign_service.custom_exceptions import ApiException
 from sms_campaign_service.common.error_handling import InternalServerError
-
 # Register Blueprints for different APIs
 app.register_blueprint(sms_campaign_blueprint)
 api = Api(app)
@@ -56,6 +67,13 @@ def after_request(response):
 
 @app.route('/')
 def hello_world():
+    from common.models.candidate import Candidate
+    candidate = Candidate.query.get(1)
+    social_networks = candidate.candidate_social_network
+    data = [{
+                'name': social_network.social_network.name,
+                'url': social_network.social_profile_url
+            } for social_network in social_networks]
     return 'Welcome to SMS Campaign Service'
 
 
@@ -77,9 +95,8 @@ def short_url_test(url=None):
     return flask.jsonify(**data), 200
 
 
-# @app.task
 @app.route('/sms', methods=['GET', 'POST'])
-def sms_send():
+def sms():
     """
     This is a test end point which sends sms campaign
     :return:
@@ -88,8 +105,22 @@ def sms_send():
         body_text = request.args['text']
         body_text = process_link_in_body_text(body_text)
     else:
-        body_text = 'Welcome to getTalent, Please click on given link: %s' % LONG_URL
+        body_text = 'Welcome to getTalent'
     ids = get_smart_list_ids()
+    # start_min = request.args.get('start')
+    # end_min = request.args.get('end')
+    # start_date = datetime(2015, 11, 4, 18, int(start_min), 50)
+    # end_date = datetime(2015, 11, 4, 18, int(end_min), 36)
+    # repeat_time_in_sec = 2
+    # func = request.args.get('func')
+    # arg1 = 1
+    # arg2 = 3
+    # job = sched.add_interval_job(run_func_1,
+    #                              seconds=repeat_time_in_sec,
+    #                              start_date=start_date,
+    #                              args=[func, [arg1, arg2], end_date])
+    # print 'Task has been added and will run at %s ' % start_date
+    # return 'Task has been added to queue!!!'
     response = send_sms_campaign(ids, body_text)
     if response:
         return flask.jsonify(**response), response['status_code']
@@ -104,14 +135,20 @@ def sms_receive():
     :return:
     """
     if request.values:
-        response = 'SMS received from %(From)s on %(To)s. Body text is "%(Body)s"' \
+        response = 'SMS received from %(From)s on %(To)s.\n' \
+                   'Body text is "%(Body)s"' \
                    % request.values
         print response
-    else:
-        response = 'No SMS received'
-    data = {'message': response,
-            'status_code': 200}
-    return flask.jsonify(**data)
+    return """
+        <?xml version="1.0" encoding="UTF-8"?>
+            <Response>
+            </Response>
+            """
+
+# resp = twilio.twiml.Response()
+# resp.message("Thank you for your response")
+# return str(resp)
+# <Message> Hello </Message>
 
 
 @app.route('/redirect', methods=['GET', 'POST'])
