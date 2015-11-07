@@ -14,6 +14,7 @@ test:
   pre:
     - python auth_service/run.py:
         background: true
+    - sleep 5
 
 
   override:
