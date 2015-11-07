@@ -679,45 +679,31 @@ def _add_or_update_candidate(first_name, middle_name, last_name, formatted_name,
 
     # Update if it's an update
     if is_update:
-        update_dict = {
-            'first_name': first_name,
-            'middle_name': middle_name,
-            'last_name': last_name,
-            'formatted_name': formatted_name,
-            'domain_can_read': domain_can_read,
-            'domain_can_write': domain_can_write,
-            'objective': objective,
-            'summary': summary
-        }
+        update_dict = {'first_name': first_name, 'middle_name': middle_name,
+            'last_name': last_name, 'formatted_name': formatted_name,
+            'domain_can_read': domain_can_read, 'domain_can_write': domain_can_write,
+            'objective': objective, 'summary': summary}
+
         # Remove None values
         update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
 
         # Update if Candidate's ID is provided
         db.session.query(Candidate).filter_by(id=candidate_id).update(update_dict)
         db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
-        return
 
-    # Create if candidate_id is not provided
-    new_candidate = Candidate(
-        first_name=first_name,
-        middle_name=middle_name,
-        last_name=last_name,
-        formatted_name=formatted_name,
-        added_time=added_time,
-        candidate_status_id=candidate_status_id,
-        user_id=user_id,
-        domain_can_read=domain_can_read,
-        domain_can_write=domain_can_write,
-        dice_profile_id=dice_profile_id,
-        dice_social_profile_id=dice_social_profile_id,
-        source_id=source_id,
-        objective=objective,
-        summary=summary,
-        is_dirty=0  # TODO: is_dirty cannot be null. This should be removed once the field is successfully removed.
-    )
-    db.session.add(new_candidate)
-    db.session.flush()
-    candidate_id = new_candidate.id
+    if not is_update:   # Create if not an update
+        new_candidate = Candidate(
+            first_name=first_name, middle_name=middle_name, last_name=last_name,
+            formatted_name=formatted_name, added_time=added_time,
+            candidate_status_id=candidate_status_id, user_id=user_id,
+            domain_can_read=domain_can_read, domain_can_write=domain_can_write,
+            dice_profile_id=dice_profile_id, dice_social_profile_id=dice_social_profile_id,
+            source_id=source_id, objective=objective, summary=summary,
+            is_dirty=0  # TODO: is_dirty cannot be null. This should be removed once the field is successfully removed.
+        )
+        db.session.add(new_candidate)
+        db.session.flush()
+        candidate_id = new_candidate.id
 
     return candidate_id
 
@@ -737,19 +723,11 @@ def _add_or_update_candidate_addresses(candidate_id, addresses, is_update):
         # If there's no is_default, the first address should be default
         is_default = i == 0 if address_has_default else is_default
 
-        # Update if it's an update
-        if is_update:
-            update_dict = {
-                'address_line_1': address_line_1,
-                'address_line_2': address_line_2,
-                'city': city,
-                'state': state,
-                'country_id': country_id,
-                'zip_code': zip_code,
-                'po_box': po_box,
-                'is_default': is_default,
-                'coordinates': coordinates
-            }
+        if is_update:   # Update
+            update_dict = {'address_line_1': address_line_1, 'address_line_2': address_line_2,
+                'city': city, 'state': state, 'country_id': country_id,'zip_code': zip_code,
+                'po_box': po_box, 'is_default': is_default, 'coordinates': coordinates}
+
             # Remove None values
             update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
 
@@ -757,66 +735,51 @@ def _add_or_update_candidate_addresses(candidate_id, addresses, is_update):
             db.session.query(CandidateAddress).filter_by(candidate_id=candidate_id).\
                 update(update_dict)
             db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
-            return
 
-        # Create if candidate_id is not provided
-        db.session.add(CandidateAddress(
-            candidate_id=candidate_id,
-            address_line_1=address_line_1,
-            address_line_2=address_line_2,
-            city=city,
-            state=state,
-            country_id=country_id,
-            zip_code=zip_code,
-            po_box=po_box,
-            is_default=is_default,
-            coordinates=coordinates,
-            resume_id=candidate_id  # TODO: this is to be removed once all tables have been added & migrated
-        ))
-        return
+        if not is_update:   # Create if not an update
+            db.session.add(CandidateAddress(
+                candidate_id=candidate_id, address_line_1=address_line_1,
+                address_line_2=address_line_2, city=city, state=state,
+                country_id=country_id, zip_code=zip_code, po_box=po_box,
+                is_default=is_default, coordinates=coordinates,
+                resume_id=candidate_id  # TODO: this is to be removed once all tables have been added & migrated
+            ))
+    return
 
 
-def _add_or_update_candidate_areas_of_interest(candidate_id, area_of_interest_ids,
-                                               is_update):
+def _add_or_update_candidate_areas_of_interest(candidate_id, area_of_interest_ids, is_update):
     for area_of_interest_id in area_of_interest_ids:
 
-        # Update if it's an update
-        if is_update:
+        if is_update:   # Update
             if area_of_interest_id:
                 db.session.query(CandidateAreaOfInterest).\
                     filter_by(candidate_id=candidate_id).update(
                     {'area_of_interest_id': area_of_interest_id}
                 )
                 db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
-                return
 
-        # Create if not an update
-        db.session.add(CandidateAreaOfInterest(
-            candidate_id=candidate_id,
-            area_of_interest_id=area_of_interest_id
-        ))
-        return
+        if not is_update:   # Create if not an update
+            db.session.add(CandidateAreaOfInterest(
+                candidate_id=candidate_id,
+                area_of_interest_id=area_of_interest_id
+            ))
+    return
 
 
-def _add_or_update_candidate_custom_field_ids(candidate_id, custom_field_ids,
-                                              added_time, is_update):
+def _add_or_update_candidate_custom_field_ids(candidate_id, custom_field_ids, added_time, is_update):
     for custom_field_id in custom_field_ids:
         if is_update:   # Update
             if custom_field_id:
-                db.session.query(CandidateCustomField).\
-                    filter_by(candidate_id=candidate_id).update(
-                    {'custom_field_id': custom_field_id}
-                )
-                db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
-                return
+                db.session.query(CandidateCustomField).filter_by(candidate_id=candidate_id).\
+                    update({'custom_field_id': custom_field_id})
+            db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-        # Create if not an update
-        db.session.add(CandidateCustomField(
-            candidate_id=candidate_id,
-            custom_field_id=custom_field_id,
-            added_time=added_time
-        ))
-        return
+        if not is_update:
+            db.session.add(CandidateCustomField(
+                candidate_id=candidate_id, custom_field_id=custom_field_id,
+                added_time=added_time
+            ))
+    return
 
 
 def _add_or_update_educations(candidate_id, educations, added_time, is_update):
@@ -833,19 +796,12 @@ def _add_or_update_educations(candidate_id, educations, added_time, is_update):
 
         if is_update:   # Update
             # Candidate's Education
-            update_dict = {
-                'list_order': list_order,
-                'school_name': school_name,
-                'school_type': school_type,
-                'city': city,
-                'state': state,
-                'country_id': country_id,
-                'is_current': is_current,
-                'added_time': added_time,
-                'resume_id': candidate_id
-            }
+            update_dict = {'list_order': list_order, 'school_name': school_name,
+                'school_type': school_type, 'city': city, 'state': state,
+                'country_id': country_id, 'is_current': is_current, 'added_time': added_time}
+
             # Remove None values from update_dict
-            update_dict = ((k, v) for k, v in update_dict.iteritems() if v)
+            update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
 
             candidate_education = db.session.query(CandidateEducation).filter_by(candidate_id=candidate_id)
             candidate_education.update(update_dict)
@@ -857,8 +813,7 @@ def _add_or_update_educations(candidate_id, educations, added_time, is_update):
             assert isinstance(education_degrees, list)
             for education_degree in education_degrees:
                 degree_type = education_degree.get('type')
-                update_dict = {
-                    'list_order': education_degree.get('list_order', 1),
+                update_dict = {'list_order': education_degree.get('list_order', 1),
                     'degree_type': degree_type,
                     'degree_title': education_degree.get('title'),
                     'start_year': education_degree.get('start_year'),
@@ -871,8 +826,9 @@ def _add_or_update_educations(candidate_id, educations, added_time, is_update):
                     'start_time': education_degree.get('start_time'),
                     'end_time': education_degree.get('end_time')
                 }
+
                 # Remove None values from update_dict
-                update_dict = ((k, v) for k, v in update_dict.iteritems() if v)
+                update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
 
                 candidate_education_degree = db.session.query(CandidateEducationDegree).\
                     filter_by(candidate_education_id=candidate_education_id)
@@ -880,87 +836,76 @@ def _add_or_update_educations(candidate_id, educations, added_time, is_update):
                 db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
                 # Candidate's Degree-Bullet(s)
-                candidate_education_degree_id = candidate_education_degree.id
+                candidate_education_degree_id = candidate_education_degree.first().id
                 degree_bullets = education_degree.get('degree_bullets')
                 assert isinstance(degree_bullets, list)
                 for degree_bullet in degree_bullets:
-                    update_dict = {
-                        'concentration_type': degree_bullet.get('major'),
-                        'comments': degree_bullet.get('comments'),
-                        'added_time': added_time
-                    }
-                    # Remove None values from update_dict
-                    update_dict = ((k, v) for k, v in update_dict.iteritems() if v)
+                    update_dict = {'concentration_type': degree_bullet.get('major'),
+                        'comments': degree_bullet.get('comments'), 'added_time': added_time}
 
-                    # update_dict must not be empty
-                    assert any(update_dict)
+                    # Remove None values from update_dict
+                    update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
 
                     db.session.query(CandidateEducationDegreeBullet).\
                         filter_by(candidate_education_degree_id=candidate_education_degree_id).\
                         update(update_dict)
                     db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-                return
+            return
 
-        # Create if not an update
-        for education in educations:
-            candidate_education = CandidateEducation(
-                candidate_id=candidate_id,
-                list_order=list_order,
-                school_name=school_name,
-                school_type=school_type,
-                city=city,
-                state=state,
-                country_id=country_id,
-                is_current=is_current,
-                added_time=added_time,
-                resume_id=candidate_id  # TODO: this is to be removed once all tables have been added & migrated
-            )
-            db.session.add(candidate_education)
-            db.session.flush()
-
-            # Degree(s)
-            candidate_education_id = candidate_education.id
-            education_degrees = education.get('degrees')
-            assert isinstance(education_degrees, list)
-
-            for education_degree in education_degrees:
-                degree_type = education_degree.get('type')
-                classification_type_id = classification_type_id_from_degree_type(degree_type)
-
-                candidate_education_degree = CandidateEducationDegree(
-                    candidate_education_id=candidate_education_id,
-                    list_order=education_degree.get('list_order', 1),
-                    degree_type=degree_type,
-                    degree_title=education_degree.get('title'),
-                    start_year=education_degree.get('start_year'),
-                    start_month=education_degree.get('start_month'),
-                    end_year=education_degree.get('end_year'),
-                    end_month=education_degree.get('end_month'),
-                    gpa_num=education_degree.get('gpa_num'),
-                    gpa_denom=education_degree.get('gpa_denom'),
-                    added_time=added_time,
-                    classification_type_id=classification_type_id,
-                    start_time=education_degree.get('start_time'),
-                    end_time=education_degree.get('end_time')
+        if not is_update:   # Create if not an update
+            for education in educations:
+                candidate_education = CandidateEducation(
+                    candidate_id=candidate_id, list_order=list_order,
+                    school_name=school_name, school_type=school_type,
+                    city=city, state=state, country_id=country_id,
+                    is_current=is_current, added_time=added_time,
+                    resume_id=candidate_id  # TODO: this is to be removed once all tables have been added & migrated
                 )
-                db.session.add(candidate_education_degree)
+                db.session.add(candidate_education)
                 db.session.flush()
 
-                # Degree Bullet(s)
-                candidate_education_degree_id = candidate_education_degree.id
-                degree_bullets = education_degree.get('degree_bullets')
-                assert isinstance(degree_bullets, list)
+                # Degree(s)
+                candidate_education_id = candidate_education.id
+                education_degrees = education.get('degrees')
+                assert isinstance(education_degrees, list)
 
-                for degree_bullet in degree_bullets:
-                    db.session.add(CandidateEducationDegreeBullet(
-                        candidate_education_degree_id=candidate_education_degree_id,
-                        concentration_type=degree_bullet.get('major'),
-                        comments=degree_bullet.get('comments'),
-                        added_time=added_time
-                    ))
+                for education_degree in education_degrees:
+                    degree_type = education_degree.get('type')
+                    classification_type_id = classification_type_id_from_degree_type(degree_type)
 
-            return
+                    candidate_education_degree = CandidateEducationDegree(
+                        candidate_education_id=candidate_education_id,
+                        list_order=education_degree.get('list_order', 1),
+                        degree_type=degree_type,
+                        degree_title=education_degree.get('title'),
+                        start_year=education_degree.get('start_year'),
+                        start_month=education_degree.get('start_month'),
+                        end_year=education_degree.get('end_year'),
+                        end_month=education_degree.get('end_month'),
+                        gpa_num=education_degree.get('gpa_num'),
+                        gpa_denom=education_degree.get('gpa_denom'),
+                        added_time=added_time,
+                        classification_type_id=classification_type_id,
+                        start_time=education_degree.get('start_time'),
+                        end_time=education_degree.get('end_time')
+                    )
+                    db.session.add(candidate_education_degree)
+                    db.session.flush()
+
+                    # Degree Bullet(s)
+                    candidate_education_degree_id = candidate_education_degree.id
+                    degree_bullets = education_degree.get('degree_bullets')
+                    assert isinstance(degree_bullets, list)
+
+                    for degree_bullet in degree_bullets:
+                        db.session.add(CandidateEducationDegreeBullet(
+                            candidate_education_degree_id=candidate_education_degree_id,
+                            concentration_type=degree_bullet.get('major'),
+                            comments=degree_bullet.get('comments'),
+                            added_time=added_time
+                        ))
+    return
 
 
 def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, is_update):
@@ -981,19 +926,12 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, 
 
         if is_update:   # Update
             # Candidate's Experience
-            update_dict = {
-                'list_order': list_order,
-                'organization': organization,
-                'position': position,
-                'city': city,
-                'state': state,
-                'en_month': end_month,
-                'start_year': start_year,
-                'country_id': country_id,
-                'start_month': start_month,
-                'end_year': end_year,
-                'is_current': is_current
-            }
+            update_dict = {'list_order': list_order, 'organization': organization,
+                'position': position, 'city': city, 'state': state,
+                'end_month': end_month, 'start_year': start_year,
+                'country_id': country_id, 'start_month': start_month,
+                'end_year': end_year, 'is_current': is_current}
+
             # Remove None values from update_dict
             update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
 
@@ -1001,15 +939,14 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, 
             experience.update(update_dict)
             db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-            experience_id = experience.id
+            experience_id = experience.first().id
             experience_bullets = work_experience.get('work_experience_bullets')
             assert isinstance(experience_bullets, list)
             for experience_bullet in experience_bullets:
-                update_dict = {
-                    'list_order': experience_bullet.get('list_order'),
+                update_dict = {'list_order': experience_bullet.get('list_order'),
                     'description': experience_bullet.get('description'),
-                    'added_time': added_time
-                }
+                    'added_time': added_time}
+
                 # Remove None values from update_dict
                 update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
 
@@ -1017,40 +954,29 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, 
                     update(update_dict)
                 db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-            return
+        if not is_update:   # Create if not an update
+            experience = CandidateExperience(
+                candidate_id=candidate_id, list_order=list_order,
+                organization=organization, position=position, city=city, state=state,
+                end_month=end_month, start_year=start_year, country_id=country_id,
+                start_month=start_month, end_year=end_year, is_current=is_current,
+                added_time=added_time,
+                resume_id=candidate_id  # TODO: this is to be removed once all tables have been added & migrated
+            )
+            db.session.add(experience)
+            db.session.flush()
 
-        # Create if not an update
-        experience = CandidateExperience(
-            candidate_id=candidate_id,
-            list_order=list_order,
-            organization=organization,
-            position=position,
-            city=city,
-            state=state,
-            end_month=end_month,
-            start_year=start_year,
-            country_id=country_id,
-            start_month=start_month,
-            end_year=end_year,
-            is_current=is_current,
-            added_time=added_time,
-            resume_id=candidate_id  # TODO: this is to be removed once all tables have been added & migrated
-        )
-        db.session.add(experience)
-        db.session.flush()
-
-        experience_id = experience.id
-        experience_bullets = work_experience.get('work_experience_bullets')
-        assert isinstance(experience_bullets, list)
-        for experience_bullet in experience_bullets:
-            db.session.add(CandidateExperienceBullet(
-                candidate_experience_id=experience_id,
-                list_order=experience_bullet.get('list_order', 1),
-                description=experience_bullet.get('description'),
-                added_time=added_time
-            ))
-
-        return
+            experience_id = experience.id
+            experience_bullets = work_experience.get('work_experience_bullets')
+            assert isinstance(experience_bullets, list)
+            for experience_bullet in experience_bullets:
+                db.session.add(CandidateExperienceBullet(
+                    candidate_experience_id=experience_id,
+                    list_order=experience_bullet.get('list_order', 1),
+                    description=experience_bullet.get('description'),
+                    added_time=added_time
+                ))
+    return
 
 
 def _add_or_update_work_preference(candidate_id, work_preference, is_update):
@@ -1074,15 +1000,15 @@ def _add_or_update_work_preference(candidate_id, work_preference, is_update):
         db.session.query(CandidateWorkPreference).filter_by(candidate_id=candidate_id).\
             update(update_dict)
         db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
-        return
 
-    # Create if not an update
-    db.session.add(CandidateWorkPreference(
-        candidate_id=candidate_id, relocate=relocate,
-        authorization=authorization, telecommute=telecommute,
-        travel_percentage=travel_percentage, hourly_rate=hourly_rate,
-        salary=salary, tax_terms=tax_terms
-    ))
+    if not is_update:   # Create if not an update
+        db.session.add(CandidateWorkPreference(
+            candidate_id=candidate_id, relocate=relocate,
+            authorization=authorization, telecommute=telecommute,
+            travel_percentage=travel_percentage, hourly_rate=hourly_rate,
+            salary=salary, tax_terms=tax_terms
+        ))
+
     return
 
 
@@ -1105,13 +1031,12 @@ def _add_or_update_emails(candidate_id, emails, is_update):
             db.session.query(CandidateEmail).filter_by(candidate_id=candidate_id).\
                 update(update_dict)
             db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
-            return
 
-        # Create if not an update
-        db.session.add(CandidateEmail(
-            candidate_id=candidate_id, address=email_address, is_default=is_default,
-            email_label_id=email_label_id
-        ))
+        if not is_update:   # Create if not an update
+            db.session.add(CandidateEmail(
+                candidate_id=candidate_id, address=email_address, is_default=is_default,
+                email_label_id=email_label_id
+            ))
 
     return
 
@@ -1192,7 +1117,7 @@ def _add_or_update_preferred_locations(candidate_id, preferred_locations, is_upd
 
         if is_update:   # Update
             update_dict = {'address': address, 'country_id': country_id,
-                           'city': city, 'state': state, 'zip_code': zip_code}
+                           'city': city, 'region': state, 'zip_code': zip_code}
 
             # Remove None values from update_dict
             update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
