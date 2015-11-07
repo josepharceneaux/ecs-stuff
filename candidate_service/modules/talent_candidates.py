@@ -679,8 +679,7 @@ def _add_or_update_candidate(first_name, middle_name, last_name, formatted_name,
                              dice_social_profile_id, source_id, objective,
                              summary, candidate_id, is_update):
 
-    # Update if it's an update
-    if is_update:
+    if is_update:   # Update
         update_dict = {'first_name': first_name, 'middle_name': middle_name,
             'last_name': last_name, 'formatted_name': formatted_name,
             'domain_can_read': domain_can_read, 'domain_can_write': domain_can_write,
@@ -693,7 +692,7 @@ def _add_or_update_candidate(first_name, middle_name, last_name, formatted_name,
         db.session.query(Candidate).filter_by(id=candidate_id).update(update_dict)
         db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-    if not is_update:   # Create if not an update
+    else:           # Create if not an update
         new_candidate = Candidate(
             first_name=first_name, middle_name=middle_name, last_name=last_name,
             formatted_name=formatted_name, added_time=added_time,
@@ -738,7 +737,7 @@ def _add_or_update_candidate_addresses(candidate_id, addresses, is_update):
                 update(update_dict)
             db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-        if not is_update:   # Create if not an update
+        else:           # Create if not an update
             db.session.add(CandidateAddress(
                 candidate_id=candidate_id, address_line_1=address_line_1,
                 address_line_2=address_line_2, city=city, state=state,
@@ -760,7 +759,7 @@ def _add_or_update_candidate_areas_of_interest(candidate_id, area_of_interest_id
                 )
                 db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-        if not is_update:   # Create if not an update
+        else:           # Create if not an update
             db.session.add(CandidateAreaOfInterest(
                 candidate_id=candidate_id,
                 area_of_interest_id=area_of_interest_id
@@ -776,7 +775,7 @@ def _add_or_update_candidate_custom_field_ids(candidate_id, custom_field_ids, ad
                     update({'custom_field_id': custom_field_id})
             db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-        if not is_update:
+        else:
             db.session.add(CandidateCustomField(
                 candidate_id=candidate_id, custom_field_id=custom_field_id,
                 added_time=added_time
@@ -855,7 +854,7 @@ def _add_or_update_educations(candidate_id, educations, added_time, is_update):
 
             return
 
-        if not is_update:   # Create if not an update
+        else:           # Create if not an update
             for education in educations:
                 candidate_education = CandidateEducation(
                     candidate_id=candidate_id, list_order=list_order,
@@ -956,7 +955,7 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, 
                     update(update_dict)
                 db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-        if not is_update:   # Create if not an update
+        else:           # Create if not an update
             experience = CandidateExperience(
                 candidate_id=candidate_id, list_order=list_order,
                 organization=organization, position=position, city=city, state=state,
@@ -1003,7 +1002,7 @@ def _add_or_update_work_preference(candidate_id, work_preference, is_update):
             update(update_dict)
         db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-    if not is_update:   # Create if not an update
+    else:           # Create if not an update
         db.session.add(CandidateWorkPreference(
             candidate_id=candidate_id, relocate=relocate,
             authorization=authorization, telecommute=telecommute,
@@ -1013,10 +1012,13 @@ def _add_or_update_work_preference(candidate_id, work_preference, is_update):
 
     return
 
-
+# TODO: erroneous logic! Must update email (other records too) via ID
 def _add_or_update_emails(candidate_id, emails, is_update):
     emails_has_default = any([email.get('is_default') for email in emails])
     for i, email in enumerate(emails):
+
+        # Parse data for create and update
+        email_id = email.get('id')
         email_address = email.get('address')
         is_default = email.get('is_default')
         email_label_id = email_label_id_from_email_label(email_label=email['label'])
@@ -1024,17 +1026,20 @@ def _add_or_update_emails(candidate_id, emails, is_update):
         is_default = i == 0 if emails_has_default else is_default
 
         if is_update:   # Update
+            if not (email_id and email_address):
+                raise InvalidUsage(error_message="Email ID and email address are required for update.")
+
             update_dict = {'address': email_address, 'is_default': is_default,
                            'email_label_id': email_label_id}
 
             # Remove None values from update_dict
             update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
 
-            db.session.query(CandidateEmail).filter_by(candidate_id=candidate_id).\
+            db.session.query(CandidateEmail).filter_by(id=email_id).\
                 update(update_dict)
             db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-        if not is_update:   # Create if not an update
+        else:   # Create if not an update
             db.session.add(CandidateEmail(
                 candidate_id=candidate_id, address=email_address, is_default=is_default,
                 email_label_id=email_label_id
@@ -1062,7 +1067,7 @@ def _add_or_update_phones(candidate_id, phones, is_update):
                 update(update_dict)
             db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-        if not is_update:   # Create if not an update
+        else:           # Create if not an update
             db.session.add(CandidatePhone(
                 candidate_id=candidate_id, value=value,
                 is_default=is_default, phone_label_id=phone_label_id
@@ -1096,7 +1101,7 @@ def _add_or_update_military_services(candidate_id, military_services, is_update)
                 update(update_dict)
             db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-        if not is_update:   # Create if not update
+        else:           # Create if not update
             db.session.add(CandidateMilitaryService(
                 candidate_id=candidate_id, country_id=country_id,
                 service_status=service_status, highest_rank=highest_rank,
@@ -1128,7 +1133,7 @@ def _add_or_update_preferred_locations(candidate_id, preferred_locations, is_upd
                 update(update_dict)
             db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-        if not is_update:   # Create if not an update
+        else:           # Create if not an update
             db.session.add(CandidatePreferredLocation(
                 candidate_id=candidate_id, address=address, country_id=country_id,
                 city=city, region=state, zip_code=zip_code,
@@ -1158,7 +1163,7 @@ def _add_or_update_skills(candidate_id, skills, added_time, is_update):
                 update(update_dict)
             db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-        if not is_update:   # Create if not an update
+        else:           # Create if not an update
             db.session.add(CandidateSkill(
                 candidate_id=candidate_id,
                 list_order=skill.get('list_order', 1),
@@ -1187,7 +1192,7 @@ def _add_or_update_social_networks(candidate_id, social_networks, is_update):
                         'social_profile_url': social_profile_url})
             db.session.commit()
 
-        if not is_update:   # Create if not an update
+        else:           # Create if not an update
             db.session.add(CandidateSocialNetwork(
                 candidate_id=candidate_id,
                 social_network_id=social_network_id,
