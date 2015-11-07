@@ -20,6 +20,8 @@ test:
         background: true
     - python activity_service/run.py:
         background: true
+    - python candidate_service/run.py:
+        background: true
     - sleep 5
 
 
@@ -31,4 +33,6 @@ test:
     - py.test resume_service/tests/:
         parallel: true
     - py.test activity_service/tests/:
+        parallel: true
+    - py.test candidate_service/tests/:
         parallel: true
