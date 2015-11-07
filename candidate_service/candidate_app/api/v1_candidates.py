@@ -189,7 +189,8 @@ class CandidateResource(Resource):
             if not resp_dict:
                 raise InvalidUsage(error_message="Candidate already exists, creation failed.")
 
-        return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, 201
+        return {'candidates': [{'id': candidate_id} for
+                               candidate_id in created_candidate_ids]}, 201
 
     def patch(self, **kwargs):
         """
@@ -219,6 +220,7 @@ class CandidateResource(Resource):
         if not isinstance(list_of_candidate_dicts, list):
             raise InvalidUsage(error_message="Unacceptable input: Candidate object(s) must be in a list.")
 
+        updated_candidate_ids = []
         for candidate_dict in list_of_candidate_dicts:
 
             emails = [{'label': email.get('label'), 'address': email.get('address')}
@@ -287,11 +289,13 @@ class CandidateResource(Resource):
                 dice_social_profile_id=dice_social_profile_id,
                 dice_profile_id=dice_profile_id
             )
+            updated_candidate_ids.append(resp_dict['candidate_id'])
             if not resp_dict:
                 raise InvalidUsage(error_message="Candidate already exists, creation failed.")
 
-        return {'candidates': 'updated'}, 204
-    #
+        return {'candidates': [{'id': updated_candidate_id} for
+                               updated_candidate_id in updated_candidate_ids]}
+
     # def delete(self, **kwargs):
     #     """
     #     :param kwargs:

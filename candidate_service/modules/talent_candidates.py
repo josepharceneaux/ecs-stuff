@@ -353,6 +353,7 @@ def retrieve_email_campaign_send(email_campaign, candidate_id):
 ###########################################
 # Helper Functions For Creating Candidate #
 ###########################################
+# TODO: add or create other fields too. Complete all todos
 def create_or_update_candidate_from_params(
         user_id,
         candidate_id=None,
@@ -393,6 +394,7 @@ def create_or_update_candidate_from_params(
         CandidateSkill, CandidateSocialNetwork
 
     :type user_id:                  int
+    :type candidate_id:             int
     :type first_name:               str
     :type last_name:                str
     :type middle_name:              str
@@ -471,39 +473,39 @@ def create_or_update_candidate_from_params(
     if custom_field_ids:
         _add_or_update_candidate_custom_field_ids(candidate_id, custom_field_ids, added_time, is_update)
 
-    # Add Candidate's education(s)
+    # Add or update Candidate's education(s)
     if educations:
         _add_or_update_educations(candidate_id, educations, added_time, is_update)
 
-    # Add Candidate's work experience(s)
+    # Add or update Candidate's work experience(s)
     if work_experiences:
         _add_or_update_work_experiences(candidate_id, work_experiences, added_time, is_update)
 
-    # Add Candidate's work preference(s)
+    # Add or update Candidate's work preference(s)
     if work_preference:
         _add_or_update_work_preference(candidate_id, work_preference, is_update)
 
-    # Add Candidate's email(s)
+    # Add or update Candidate's email(s)
     if emails:
         _add_or_update_emails(candidate_id, emails, is_update)
 
-    # Add Candidate's phone(s)
+    # Add or update Candidate's phone(s)
     if phones:
         _add_or_update_phones(candidate_id, phones, is_update)
 
-    # Add Candidate's military service(s)
+    # Add or update Candidate's military service(s)
     if military_services:
         _add_or_update_military_services(candidate_id, military_services, is_update)
 
-    # Add Candidate's preferred location(s)
+    # Add or update Candidate's preferred location(s)
     if preferred_locations:
         _add_or_update_preferred_locations(candidate_id, preferred_locations, is_update)
 
-    # Add Candidate's skill(s)
+    # Add or update Candidate's skill(s)
     if skills:
         _add_or_update_skills(candidate_id, skills, added_time, is_update)
 
-    # Add Candidate's social_network(s)
+    # Add or update Candidate's social_network(s)
     if social_networks:
         _add_or_update_social_networks(candidate_id, social_networks, is_update)
 
