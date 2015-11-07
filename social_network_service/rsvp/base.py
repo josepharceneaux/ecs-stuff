@@ -500,7 +500,7 @@ class RSVPBase(object):
                 'last_name': attendee.last_name,
                 'added_time': attendee.added_time,
                 'user_id': attendee.gt_user_id,
-                'status_id': newly_added_candidate,
+                'candidate_status_id': newly_added_candidate,
                 'source_id': attendee.candidate_source_id,
                 'source_product_id': attendee.source_product_id}
         if candidate_in_db:
