@@ -4,23 +4,23 @@ Test cases for candidate-restful-services
 # Standard library
 import json
 
-# Candidate Service app instance
-from candidate_service.candidate_app import app
-
 # Sample data
 from common.tests.sample_data import generate_single_candidate_data
 
 # Models
-from common.models.candidate import Candidate
-from common.models.user import User
+from candidate_service.common.models.candidate import Candidate
+from candidate_service.common.models.user import User
 
 # Conftest
 from common.tests.conftest import UserAuthentication
 from common.tests.conftest import *
 
+# Database connection. Note: This must be imported after importing * from conftest
+# to ensure the db connection is not overridden
+from candidate_service.candidate_app import db
+
 
 BASE_URI = "http://127.0.0.1:8005/v1/candidates"
-
 
 ####################################
 # test cases for GETting candidate #
@@ -44,15 +44,13 @@ def test_get_candidate_from_forbidden_domain(sample_user, user_auth):
     assert resp.status_code == 403
 
 
-def test_get_candidate_via_invalid_email(sample_user, user_auth):
+def test_get_candidate_via_invalid_email():
     """
     Test:   retrieve candidate via an invalid email address
     Expect: 400
     """
-    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
     resp = requests.get(
-        url=BASE_URI + "/%s" % 'bad_email.com',
-        headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
+        url=BASE_URI + "/%s" % 'bad_email.com'
     )
     assert resp.status_code == 400
     print "\nresp = %s" % resp.json()
@@ -129,9 +127,12 @@ def test_create_already_existing_candidate(sample_user, user_auth):
     :type   user_auth:      UserAuthentication
     :return:
     """
+    # TODO: assume db is empty. Create a candidate, and then try to recreate it
     auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+    candidate = db.session.query(Candidate).first()
+    candidate_email = candidate.candidate_emails[0].address
     data = {'candidates': [
-        {'emails': [{'label': 'work', 'address': 'temp@gettalent.com'}]}
+        {'emails': [{'label': 'work', 'address': candidate_email}]}
     ]}
     r = requests.post(
         url=BASE_URI,
@@ -139,25 +140,10 @@ def test_create_already_existing_candidate(sample_user, user_auth):
         headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
     )
     resp_object = r.json()
-
-    db.session.commit()
-
-    candidate = Candidate.query.get(resp_object.get('candidates')[0].get('id'))
-    data = {'candidates': [
-        {'emails': [{'label': 'work', 'address': candidate.candidate_emails[0].address}]}
-    ]}
-    r = requests.post(
-        url=BASE_URI,
-        data=json.dumps(data),
-        headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
-    )
-    resp_object = r.json()
+    print "\n resp_object = %s" % resp_object
 
     assert r.status_code == 400
     assert 'error' in resp_object
-
-    db.session.delete(candidate)
-    db.session.commit()
 
 ########################################
 # test cases for PATCHing candidate(s) #

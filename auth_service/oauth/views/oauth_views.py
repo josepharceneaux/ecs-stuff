@@ -6,7 +6,6 @@ from auth_service.oauth import logger
 from flask import request, jsonify
 from auth_service.common.error_handling import *
 from flask.ext.cors import CORS
-from auth_service.oauth import limiter
 
 
 # Enable CORS
@@ -48,7 +47,3 @@ def authorize():
     logger.info('User %s has been authorized to access getTalent api', user.id)
     return jsonify(user_id=user.id)
 
-
-@limiter.request_filter
-def ip_whitelist():
-    return request.remote_addr == "127.0.0.1"

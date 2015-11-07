@@ -5,9 +5,8 @@ from gt_custom_restful import *
 
 app = Flask(__name__)
 print "Running app: %s" % app
-
-from candidate_service import config
-app.config.from_object(config)
+import config
+app.config.from_object('candidate_service.config')
 
 logger = app.config['LOGGER']
 

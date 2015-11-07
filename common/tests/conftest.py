@@ -97,7 +97,6 @@ def sample_user(test_domain, request):
             db.session.delete(sample_user)
             db.session.commit()
         except Exception:
-            db.session.rollback()
             pass
 
     request.addfinalizer(fin)
@@ -121,7 +120,6 @@ def test_domain(test_org, test_culture, request):
             db.session.delete(test_domain)
             db.session.commit()
         except Exception:
-            db.session.rollback()
             pass
 
     request.addfinalizer(fin)
@@ -141,7 +139,6 @@ def test_culture(request):
             db.session.delete(test_culture)
             db.session.commit()
         except Exception:
-            db.session.rollback()
             pass
 
     request.addfinalizer(fin)
@@ -161,7 +158,6 @@ def test_org(request):
             db.session.delete(test_org)
             db.session.commit()
         except Exception:
-            db.session.rollback()
             pass
 
     request.addfinalizer(fin)
