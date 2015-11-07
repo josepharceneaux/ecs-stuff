@@ -38,6 +38,38 @@ def format_phone_number(phone_number):
         raise InvalidUsage("[%s] is an invalid or non-US/Canada Phone Number" % phone_number)
 
 
+def format_phone_number(phone_number, country_code='US'):
+    """
+    Format US/Canada phone numbers in +1 (123) 456-7899 format
+    :return: Formatted phone numbers
+    :rtype: str
+    """
+    try:
+        import phonenumbers
+
+        # Maybe the number is already internationally formatted
+        try:
+            parsed_phone_number = phonenumbers.parse(str(phone_number))
+            formatted_number = phonenumbers.format_number(parsed_phone_number, phonenumbers.PhoneNumberFormat.E164)
+            return formatted_number
+        except phonenumbers.NumberParseException:
+            pass
+
+        # Maybe the country_code is correct
+        try:
+            parsed_phone_number = phonenumbers.parse(str(phone_number), region=country_code)
+            formatted_number = phonenumbers.format_number(parsed_phone_number, phonenumbers.PhoneNumberFormat.E164)
+            return formatted_number
+        except phonenumbers.NumberParseException:
+            raise InvalidUsage(error_message="format_phone_number(%s, %s): Couldn't parse phone number" % (phone_number,
+                                                                                                           country_code))
+
+    except:
+        raise InvalidUsage(error_message="format_phone_number(%s, %s): Received other exception" % (phone_number,
+                                                                                                    country_code))
+        return False
+
+
 def sanitize_zip_code(zip_code):
     """
     :param zip_code:

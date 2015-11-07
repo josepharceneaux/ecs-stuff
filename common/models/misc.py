@@ -82,6 +82,19 @@ class Country(db.Model):
         return "<Country (name=' %r')>" % self.name
 
 
+# Even though the table name is major I'm keeping the model class singular.
+class Major(db.Model):
+    __tablename__ = 'majors'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column('Name', db.String(100), nullable=False)
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+    def serialize(self):
+        return {
+            'id': self.id,
+        }
+
 class State(db.Model):
     __tablename__ = 'state'
     id = db.Column(db.Integer, primary_key=True)

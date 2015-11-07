@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Join the Kaiser Permanente Military Talent Community</title>
+    <meta name="description" content="Join the Kaiser Military Talent Community - recruiting software by getTalent" />
+    <meta name="keywords" content="Kaiser, Recruiting, Military, Software, Cloud, Talent, Community" />
+    <meta name = "viewport" content = "width = device-width">
+    <meta name = "viewport" content = "width = 320">
+    <link rel="stylesheet" href="/static/css/bootstrap_2_3_2/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/bootstrap_3_3_5/bootstrap-tagmanager.css">
+    <link rel="stylesheet" href="/static/css/kaiser_3.css">
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+    <script src="https://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <style type="text/css">
+        #subInterestSelect {
+            margin-left: 0 !important;
+            width: 394px;
+        }
+
+        #interestSelect {
+            width: 394px;
+        }
+    </style>
+    <![endif]-->
+
+    <script type="text/javascript">
+        /** SUPPORT FOR .map() FOR IE8 **/
+        // Production steps of ECMA-262, Edition 5, 15.4.4.19
+        // Reference: http://es5.github.com/#x15.4.4.19
+        if (!Array.prototype.map) {
+          Array.prototype.map = function(callback, thisArg) {
+            var T, A, k;
+            if (this == null) {
+              throw new TypeError(" this is null or not defined");
+            }
+            var O = Object(this);
+            var len = O.length >>> 0;
+            if (typeof callback !== "function") {
+              throw new TypeError(callback + " is not a function");
+            }
+            if (thisArg) {
+              T = thisArg;
+            }
+            A = new Array(len);
+            k = 0;
+            while(k < len) {
+              var kValue, mappedValue;
+              if (k in O) {
+                kValue = O[ k ];
+                mappedValue = callback.call(T, kValue, k, O);
+                A[ k ] = mappedValue;
+              }
+              k++;
+            }
+            return A;
+          };
+        }
+    </script>
+</head>
+
+
+<body style="background-color: transparent;">
+
+<div class="container">
+    <div class="row">
+        <div class="" style="margin-left:30px;">
+            <form id="widget-form" name="widget" method="post" novalidate autocomplete="on" enctype="multipart/form-data" action="/widget/<domain-ID>">
+                <div class="control-group">
+                    <div class="controls">
+                        <h1>
+                            Please fill out the fields below and click “submit” to receive information about opportunities that relate to your selections.
+                        </h1>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <label id="firstNameLabel" class="hide">First name</label>
+                        <label id="lastNameLabel" class="hide">Last name</label>
+                        <input style="" class="span3" type="text" required id="firstName" name="firstName" aria-labelledby="firstNameLabel" placeholder="First name" value="" />
+                        <input style="float: none" class="span3" type="text" required id="lastName" name="lastName" aria-labelledby="lastNameLabel" placeholder="Last name" value="" />
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <label id="emailLabel" class="hide">Email address</label>
+                        <input style="" class="span6" type="email" data-validation-message="Must be valid email" required id="emailAdd" name="emailAdd" aria-labelledby="emailLabel" placeholder="E-mail address" value="" />
+                    </div>
+                </div>
+
+                <div class="control-group" style="margin-bottom:5px">
+                    <div class="controls controls-row">
+                        <label id="aoiLabel" class="hide">Area of Interest</label>
+                        <label id="subAoiLabel" class="hide">Sub Area of Interest</label>
+                        <select required class="span3" id="interestSelect" aria-labelledby="aoiLabel">
+                            <option title="Area of Interest" value="">Area of Interest</option>
+                        </select>
+                        <select required style="display:none;" class="span3" id="subInterestSelect" aria-labelledby="subAoiLabel">
+                            <option></option>
+                        </select>
+                        <div class="scrollable-tab-container">
+                            <input type="hidden" id="hidden-tags-aoi" name="hidden-tags-aoi" class="tm-input-aoi tm-input-success" />
+                        </div>
+                    </div>
+                    <select title="Sub area of interest" class="aoiIdToSubAoi" data-aoi-id="" style="display: none" aria-hidden="true">
+                    </select>
+                </div>
+
+
+                <div class="control-group">
+                    <div class="controls">
+                        <h2>
+                            Identify the location(s) you are interested in.
+                        </h2>
+                    </div>
+                </div>
+                <div class="control-group" style="margin-bottom:5px">
+                    <div class="controls controls-row">
+                        <select aria-labelledby="stateLabel" required class="span3" id="locationSelect">
+                            <option value="" title="State">State</option>
+                            <option value="California" title="Northern CA">Northern CA</option>
+                            <option value="California" title="Southern CA">Southern CA</option>
+                            <option value="Colorado" title="Colorado">Colorado</option>
+                            <option value="Washington, D.C." title="Washington, D.C.">Washington, D.C.</option>
+                            <option value="Georgia" title="Georgia">Georgia</option>
+                            <option value="Hawaii" title="Hawaii">Hawaii</option>
+                            <option value="Maryland" title="Maryland">Maryland</option>
+                            <option value="Oregon" title="Oregon">Oregon</option>
+                            <option value="Virginia" title="Virginia">Virginia</option>
+                            <option value="Washington" title="Washington">Washington</option>
+                        </select>
+                        <select aria-labelledby="cityLabel" required style="margin-left:14px; display:none;" class="span3" id="citySelect">
+                            <option></option>
+                        </select>
+                        <div class="scrollable-tab-container">
+                            <input type="hidden" id="hidden-tags-location" name="hidden-tags-location" class="tm-input-location tm-input-success" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="controls">
+                        <h2>
+                            Please provide your military background.
+                        </h2>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <label id="militaryBranchLabel" class="hide">Military branch</label>
+                        <label id="militaryGradeLabel" class="hide">Military rank</label>
+                        <select aria-labelledby="militaryBranchLabel" title="Military branch" class="span6" name="militaryBranch" id="militaryBranch">
+                            <option label="Branch of Service" value="">Branch of Service</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <label id="militaryServiceLabel" class="hide">Military service status</label>
+                        <label id="militaryMonthLabel" class="hide">Month of separation</label>
+                        <label id="militaryDateLabel" class="hide">Date of separation</label>
+                        <label id="militaryYearLabel" class="hide">Year of separation</label>
+                        <select title="Military status" aria-labelledby="militaryServiceLabel" class="span6" name="militaryStatus" id="militaryStatus">
+                            <option label="Veteran Status" value="">Veteran Status</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <select aria-labelledby="militaryGradeLabel" title="Military grade" class="span6" name="militaryGrade" id="militaryGrade">
+                            <option label="Rank" value="">Rank</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <div class="span6" style="margin-left: 0;">
+                            If on active duty, please indicate your anticipated future date of separation/retirement:
+                            <input style="width: 68px;text-align: center" type="text" data-widget-optional="1" data-widget-tooltip-placement="right" data-widget-must-be-future="true" id="militaryToMonthYear" aria-labelledby="militaryMonthLabel" data-validation-message="Needs to be a future date" title="Needs to be a future date" placeholder="MM/YYYY" value="" />
+                            <input type="hidden" id="militaryToDateNumber" value="1" />
+                            <input type="hidden" id="militaryToDate" name="militaryToDate" value="" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- JOB ALERTS -->
+                <div class="control-group" style="margin-bottom: 10px">
+                    <div class="controls">
+                        <label class="checkbox" style="margin-bottom: 0">
+                            <input class="checkbox-job-alerts" id="job-alerts" type="checkbox" checked="checked"> Send me job alerts&#42;:
+                        </label>
+                        <label class="checkbox inline">
+                            <input type="radio" name="jobFrequency" value="Daily"> Daily
+                        </label>
+                        <label class="checkbox inline">
+                            <input type="radio" name="jobFrequency" value="Weekly" checked="checked"> Weekly
+                        </label>
+                        <label class="checkbox inline">
+                            <input type="radio" name="jobFrequency" value="Monthly"> Monthly
+                        </label>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="controls">
+                        <p>
+                            <small style="line-height: 0">
+                                &#42;You will receive job alerts for opportunities within a 20-mile radius of your selected location(s).
+                            </small>
+                        </p>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls" style="text-align: center; margin-bottom: 5px">
+                        <button type="submit" class="btn btn-warning">Submit</button>
+                    </div>
+                </div>
+
+                <div class="control-group" style="text-align: center">
+                    <div class="controls">
+                        <p style="margin-bottom: 0px;margin-top: 12px;">
+                            Interested in internships or early career opportunities?
+                        </p>
+                        <p>
+                            <a target="_blank" href="http://kaiserpermanentejobs.org/university-connection/university-talent-network.aspx">Join our University Talent Network</a>.
+                        </p>
+                    </div>
+                </div>
+
+                <p style="text-align: center">
+                    <small>
+                        <a target="_blank" href="http://gettalent.com">Recruiting software</a> by getTalent
+                    </small>
+                </p>
+            </form>
+        </div>
+    </div>
+    <div class="row" id="form-success">
+        <div class="span6" style="margin-left:30px;margin-top:200px;">
+            <p id="submit_result" class="alert alert-success" >Your information has successfully been submitted.</p>
+            <p>Thank you for joining the Kaiser Permanente talent community.</p>
+        </div>
+    </div>
+    <div class="row" id="form-error">
+        <div class="span6" style="margin-left:30px;margin-top:30px">
+            <div class="alert alert-error">
+                <p id="submit_result">An error occurred while sending your information. Please refresh the page and try again.</p>
+            </div>
+        </div>
+    </div>
+</div> <!-- /container -->
+
+<script src="/static/js/modernizr-2-6-2-custom.js"></script>
+<script src="/static/js/jquery-1.11.3.min.js"></script>
+<script src="/static/js/bootstrap.min.js"></script>
+<script src="/static/js/jquery.simpleplaceholder.js"></script>
+<script src="/static/js/talent-widget.js"></script>
+<script src="/static/js/bootstrap-tagmanager.js"></script>
+<script src="/static/js/kaiser-military.js"></script>
+{#TODO add these files#}
+
+<!--[if lt IE 9]>
+    <script type="text/javascript">
+        $(function(){
+            $('#interestSelect').removeClass('span3');
+            $('#interestSelect').addClass('span6');
+
+            $('#subInterestSelect').removeClass('span3');
+            $('#subInterestSelect').addClass('span6');
+        });
+    </script>
+<![endif]-->
+
+</body>
+</html>
