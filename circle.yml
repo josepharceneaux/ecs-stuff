@@ -4,6 +4,7 @@ machine:
   environment:
     PYENV_VERSION: 2.7.9
     GT_ENVIRONMENT: circle
+    PYTHONPATH: .
 
 dependencies:
    override:
