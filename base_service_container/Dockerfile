@@ -1,4 +1,4 @@
-`# Set the base image to Ubuntu
+# Set the base image to Ubuntu
 FROM ubuntu:14.04
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
