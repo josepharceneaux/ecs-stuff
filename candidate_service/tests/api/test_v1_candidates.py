@@ -103,6 +103,7 @@ def test_create_candidate(sample_user, user_auth):
     )
     print "\n sample_candidate_2 = %s" % sample_candidate_data_2
     print "\n resp_status_code: %s" % r.status_code
+    print "\n resp_dict: %s" % r.json()
 
 
     # assert r.status_code == 201
