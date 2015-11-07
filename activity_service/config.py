@@ -11,7 +11,7 @@ logging.config.fileConfig(LOGGING_CONF)
 # Auth Server URI
 GT_ENVIRONMENT = os.environ.get('GT_ENVIRONMENT')
 if GT_ENVIRONMENT == 'dev':
-    OAUTH_SERVER_URI = 'http://0.0.0.0:8081/oauth2/authorize'
+    OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@localhost/talent_local'
     LOGGER = logging.getLogger("activity_service.dev")
     DEBUG = True
