@@ -16,6 +16,7 @@ if GT_ENVIRONMENT == 'dev':
     LOGGER = logging.getLogger("activity_service.dev")
     DEBUG = True
 elif GT_ENVIRONMENT == 'circle':
+    OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_ci'
     LOGGER = logging.getLogger("activity_service.ci")
     DEBUG = True
