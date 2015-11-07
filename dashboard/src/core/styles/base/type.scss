@@ -1,0 +1,113 @@
+// ---------------------------------------------------
+// Base / Type
+// ---------------------------------------------------
+
+// -----
+// Font embeds
+// -----
+
+@include helper--embed-font('gettalent-icons', '../fonts/gettalent-icons');
+
+// -----
+// Base style overrides
+// -----
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  font-size: $font-size--main;
+  color: $color--darkerGray;
+  font-family: $font--main;
+}
+
+h1,h2,h3,h4,h5,h6 {
+  font-family: $font--main;
+  font-weight: $font-weight--regular;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin-top: 0;
+  margin-bottom: 0;
+  line-height: $line-height--main;
+}
+
+h1,
+.h1 {
+  // ...
+}
+
+h2,
+.h2 {
+  // ...
+}
+
+h3,
+.h3 {
+  font-size: 1.41em;
+}
+
+h4,
+.h4 {
+  font-size: 1.05em;
+}
+
+p {
+  line-height: $line-height--main;
+
+  &.subtext {
+    font-size: $font-size--small;
+    margin: 0;
+  }
+
+  &:first-of-type {
+    margin-top: 0;
+  }
+
+  &:last-of-type {
+    margin-bottom: 0;
+  }
+}
+
+a {
+  // ...
+}
+
+ol {
+  padding-left: $padding--normal;
+  list-style-type: decimal;
+}
+
+ul {
+  padding-left: $padding--normal;
+  list-style-type: disc;
+}
+
+li {
+  margin-bottom: $margin--inline;
+}
+
+strong {
+  font-weight: $font-weight--bold;
+}
+
+em {
+  font-style: italic;
+}
+
+// -----
+// Type Colors
+// -----
+.color-white      { color: $color--white; }
+.color-black      { color: $color--black; }
+.color-gray       { color: $color--gray; }
+.color-lightGray  { color: $color--lightGray; }
+.color-medGray    { color: $color--medGray; }
+.color-darkGray   { color: $color--darkGray; }
+.color-darkerGray { color: $color--darkerGray; }
+.color-blue       { color: $color--blue; }

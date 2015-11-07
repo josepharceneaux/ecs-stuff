@@ -1,61 +1,24 @@
-<!-- App Top Navigation -->
-<header id="app-topnav">
-    <nav class="navbar navbar-default navbar-static-top">
-        <div class="container-fluid">
-            <div class="navbar-header">
-                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar"
-                        ng-click="vm.isCollapsed = !vm.isCollapsed" aria-expanded="false" aria-controls="navbar">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <div class="navbar-brand">
-                    <a ui-sref="dashboard" class="topnav-logo">
-                        <img src="images/logo.png" class="logo" alt="getTalent" />
-                    </a>
-
-                    <button type="button" class="header-toggle">
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                    </button>
-                </div>
-            </div>
-
-            <div id="navbar" class="navbar-collapse collapse" ng-class="!vm.isCollapsed && 'in'">
-                <form class="navbar-form navbar-left" role="search">
-                    <div class="form-group">
-                        <i class="fa fa-search"></i>
-                        <input type="text" class="form-control" placeholder="Search">
-                    </div>
-                </form>
-
-                <ul class="nav navbar-nav navbar-right">
-                    <li dropdown>
-                        <a class="login-nav" dropdown-toggle>
-                            <div class="avatar">
-                                <img src="images/avatar.jpg" alt="Avatar">
-                            </div>
-                            <div class="user">
-                                <span class="first-name">First Name</span>
-                                <span class="company-name">Company Name</span>
-                            </div>
-                            <div class="caret-icon">
-                                <i class="fa fa-angle-down fa-2x"></i>
-                            </div>
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a href="#">Profile</a></li>
-                            <li><a href="#">Settings</a></li>
-                            <li><a href="#">History</a></li>
-                            <li role="separator" class="divider"></li>
-                            <li><a ng-click="vm.logout()">Logout</a></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
+<!-- Header -->
+<header class="header row--expanded">
+    <figure class="header__logo col--tiny-4 col--large-12">
+        <img src="./images/logo--main--white.svg" alt="getTalent">
+    </figure>
+    <nav class="header__nav col--tiny-8 col--large-12">
+        <form class="header__search">
+            <input class="header__search__input" type="text" name="query" autocomplete="off">
+            <button class="header__search__submit">
+                <span class="icon--search"></span>
+            </button>
+        </form>
+        <a href="#" class="header__link">
+            <span class="icon--upload"></span>
+        </a>
+        <a href="#" class="header__profile">
+            <img src="./images/placeholder/profile.png" alt="Change settings">
+        </a>
+        <ul class="dropdown-menu">
+            <li><a ng-click="vm.logout()">Logout</a></li>
+        </ul>
     </nav>
 </header>
-<!-- End App Top Navigation -->
+<!-- End Header -->

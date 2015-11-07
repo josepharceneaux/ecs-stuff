@@ -2,7 +2,7 @@
   "name": "gt-dashboard",
   "description": "GetTalent Dashboard",
   "version": "0.1.0",
-  "author": "Haohong Xu",
+  "author": "Haohong Xu, Jordan Seaberg",
   "license": "MIT",
   "scripts": {
     "init": "npm install",

@@ -1,0 +1,86 @@
+// ---------------------------------------------------
+// Modules / Table
+// ---------------------------------------------------
+
+.table {
+  width: 100%;
+
+  a {
+    font-weight: $font-weight--bold;
+    display: block;
+    color: inherit;
+    text-decoration: none;
+
+    &:hover {
+      color: $color--green;
+    }
+  }
+}
+
+.table__row {
+  &:nth-of-type(odd) {
+    background-color: $color--lightGray;
+  }
+}
+
+
+.tabel__col {
+  padding-top: $padding--small;
+  padding-bottom: $padding--small;
+  padding-left: $padding--tiny;
+  padding-right: $padding--tiny;
+  line-height: 1.2em;
+}
+.table__col--1 {
+  @extend .tabel__col;
+  width: 100% * (1 / 12);
+}
+.table__col--2 {
+  @extend .tabel__col;
+  width: 100% * (2 / 12);
+}
+.table__col--3 {
+  @extend .tabel__col;
+  width: 100% * (3 / 12);
+}
+.table__col--4 {
+  @extend .tabel__col;
+  width: 100% * (4 / 12);
+}
+.table__col--5 {
+  @extend .tabel__col;
+  width: 100% * (5 / 12);
+}
+.table__col--6 {
+  @extend .tabel__col;
+  width: 100% * (6 / 12);
+}
+.table__col--7 {
+  @extend .tabel__col;
+  width: 100% * (7 / 12);
+}
+.table__col--8 {
+  @extend .tabel__col;
+  width: 100% * (8 / 12);
+}
+.table__col--9 {
+  @extend .tabel__col;
+  width: 100% * (9 / 12);
+}
+.table__col--10 {
+  @extend .tabel__col;
+  width: 100% * (10 / 12);
+}
+.table__col--11 {
+  @extend .tabel__col;
+  width: 100% * (11 / 12);
+}
+.table__col--12 {
+  @extend .tabel__col;
+  width: 100% * (12 / 12);
+}
+
+.table__col--center {
+  text-align: center;
+  vertical-align: middle;
+}

@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html data-ng-app="app" ng-strict-di>
 <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="images/favicon.ico">
+    <base href="/">
+
+    <title>getTalent - Dashboard</title>
+
     <style>
         /* This helps the ng-show/ng-hide animations start at the right place. */
         /* Since Angular has this but needs to load, this gives us the class early. */
@@ -8,15 +16,6 @@
             display: none !important;
         }
     </style>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="shortcut icon" href="images/favicon.ico">
-    <base href="/">
-
-    <title>GetTalent Dashboard</title>
-
-    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400italic,700italic,700,400' rel='stylesheet' type='text/css'>
 
     <!-- build:css styles/lib.css -->
     <link href="/bower_components/angular-toastr/dist/angular-toastr.css" rel="stylesheet" type="text/css">
@@ -32,14 +31,8 @@
 </head>
 
 <body>
-    <div id="app-wrapper" class="clearfix">
-        <div class="container">
-            <div class="row">
-                <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
-                    <gt-approot></gt-approot>
-                </div>
-            </div>
-        </div>
+    <div id="app-wrapper">
+        <gt-approot></gt-approot>
     </div>
 
     <!-- build:js js/lib.js -->

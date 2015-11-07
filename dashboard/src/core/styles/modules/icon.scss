@@ -1,0 +1,21 @@
+// ---------------------------------------------------
+// Modules / Icons
+// ---------------------------------------------------
+
+.icon {
+  font-family: $font--icons;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  speak: none;
+  display: inline;
+}
+
+.icon--campaigns { @extend .icon; &:after { content: ''; } }
+.icon--dashboard { @extend .icon; &:after { content: ''; } }
+.icon--settings  { @extend .icon; &:after { content: ''; } }
+.icon--pipeline  { @extend .icon; &:after { content: ''; } }
+.icon--tools     { @extend .icon; &:after { content: ''; } }
+.icon--upload    { @extend .icon; &:after { content: ''; } }
+.icon--search    { @extend .icon; &:after { content: ''; } }

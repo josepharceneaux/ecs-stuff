@@ -1,0 +1,39 @@
+// ---------------------------------------------------
+// Modules / Pie Graph
+// ---------------------------------------------------
+
+.pie {
+  color: inherit;
+}
+
+svg.pie__canvas {
+  margin-top: $margin--row;
+  margin-bottom: $margin--row;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+  overflow: visible;
+
+  @include helper--media($breakpoint--full) {
+    margin-bottom: 0;
+  }
+}
+
+.pie__circle {
+  fill: none;
+  stroke: $color--white;
+  stroke-dasharray: 10, 10;
+  stroke-width: 1;
+}
+
+.pie__progress {
+  fill: none;
+  stroke: $color--white;
+  stroke-width: 15;
+  stroke-linejoin: round;
+}
+
+.pie__text {
+  font-size: $font-size--mega;
+  fill: $color--white;
+}

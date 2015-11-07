@@ -30,11 +30,11 @@
                         template: '<gt-topnav></gt-topnav>'
                     },
                     content: {
-                        template: '<div id="app-sidenav-wrapper"><gt-sidenav></gt-sidenav></div><div id="app-view-wrapper"><div ui-view></div></div>'
-                    },
+                        template: '<gt-main></gt-main>'
+                    }/*,
                     footer: {
                         template: '<gt-footer></gt-footer>'
-                    }
+                    }*/
                 },
                 data: {
                     loginRequired: true
@@ -61,20 +61,20 @@
                     }
                 }
             })
-            .state('pipeline', {
+            .state('pipelines', {
                 parent: 'site',
-                url: '/pipeline',
-                redirectTo: 'pipeline.overview'
+                url: '/pipelines',
+                redirectTo: 'pipelines.overview'
             })
-            .state('pipeline.overview', {
+            .state('pipelines.overview', {
                 url: '',
                 views: {
                     '@site': {
-                        template: '<gt-pipeline-overview></gt-pipeline-overview>'
+                        template: '<gt-pipelines-overview></gt-pipelines-overview>'
                     }
                 }
             })
-            .state('pipeline.smartLists', {
+            .state('pipelines.smartLists', {
                 url: '/smartLists',
                 views: {
                     '@site': {
@@ -82,7 +82,7 @@
                     }
                 }
             })
-            .state('pipeline.candidateSearch', {
+            .state('pipelines.candidateSearch', {
                 url: '/candidateSearch',
                 views: {
                     '@site': {
@@ -90,7 +90,7 @@
                     }
                 }
             })
-            .state('pipeline.importCandidates', {
+            .state('pipelines.importCandidates', {
                 url: '/importCandidates',
                 views: {
                     '@site': {

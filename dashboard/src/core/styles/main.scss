@@ -1,0 +1,51 @@
+
+/*  GetTalent
+    Design By Cosmic 2015 */
+
+// ---------------------------------------------------
+//  This is the master import file for the SCSS stylesheets.
+//  Please preserve the order of vendor, base, pieces, and modules.
+// ---------------------------------------------------
+
+// -----
+// Vendors
+// -----
+
+@import 'vendor/normalize/normalize';
+@import 'vendor/typebase/typebase';
+
+// -----
+// Base
+// -----
+
+@import 'base/vars';
+@import 'base/helpers';
+@import 'base/layout';
+@import 'base/type';
+
+// -----
+// Pieces
+// -----
+
+@import 'includes/align';
+@import 'includes/gradients';
+@import 'includes/figure';
+@import 'includes/space';
+@import 'includes/col';
+
+// -----
+// Modules
+// -----
+
+@import 'modules/row';
+@import 'modules/col';
+@import 'modules/header';
+@import 'modules/view';
+@import 'modules/icon';
+@import 'modules/box';
+@import 'modules/graph';
+@import 'modules/label';
+@import 'modules/table';
+@import 'modules/figure';
+@import 'modules/pie';
+@import 'modules/excerpt';

@@ -1,0 +1,140 @@
+// ---------------------------------------------------
+// Modules / Header
+// ---------------------------------------------------
+
+.header {
+  background-color: $color--white;
+}
+
+// -----
+// Logo
+// -----
+
+.header__logo {
+  @include inc--space--vertpad--large;
+
+  background-color: $color--blue;
+  text-align: center;
+
+  @include helper--media($breakpoint--large) {
+    width: $misc--sidebarWidth;
+  }
+
+  img {
+    max-width: 9.5em;
+    display: inline;
+  }
+}
+
+// -----
+// Navigation
+// -----
+
+.header__nav {
+  height: $misc--headerHeight;
+  text-align: right;
+  overflow: hidden;
+
+  @include helper--media($breakpoint--large) {
+    position: absolute;
+  }
+}
+
+.header__link {
+  transition: color $easing--slow;
+  font-size: $font-size--jumbo;
+  padding: .4em;
+  line-height: 1.75em;
+  color: inherit;
+  text-decoration: inherit;
+  display: inline-block;
+
+  &:hover {
+    color: $color--blue;
+  }
+}
+
+// -----
+// Search Bar
+// -----
+
+.header__search {
+  top: -.5em;
+  display: inline-block;
+  position: relative;
+  max-width: 50%;
+}
+
+.header__search__input {
+  transition: border-color $easing--slow, color $easing--slow, top $easing--slow;
+  font-size: $font-size--large;
+  padding-bottom: $padding--tiny;
+  color: $color--gray;
+  font-weight: $font-weight--regular;
+  z-index: $z-index--1;
+  border-bottom-width: $border-width--normal;
+  border-color: $color--white;
+  top: .2em;
+  padding-right: 2em;
+  border-style: none;
+  border-bottom-style: solid;
+  display: inline-block;
+  background: none;
+  outline: none;
+  position: relative;
+
+  &:focus {
+    border-bottom-color: $color--blue;
+    color: $color--darkGray;
+    top: 0;
+  }
+
+  &:focus + .header__search__submit {
+    color: $color--blue;
+  }
+}
+
+.header__search__submit {
+  transition: color $easing--slow;
+  font-size: $font-size--jumbo;
+  padding: 0;
+  top: 0;
+  right: 0;
+  position: absolute;
+  background: none;
+  border: none;
+  outline: none;
+
+  &:hover {
+    color: $color--blue;
+    cursor: pointer;
+  }
+}
+
+// -----
+// Profile button
+// -----
+
+.header__profile {
+  padding: .9em;
+  border: none;
+  text-decoration: none;
+  outline: none;
+  overflow: hidden;
+  display: inline-block;
+  float: right;
+
+  img {
+    @include inc--figure--rounded;
+
+    transition: border-color $easing--slow;
+    border-width: $border-width--medium;
+    border-color: $color--white;
+    display: inline-block;
+    border-style: solid;
+
+    &:hover {
+      border-color: $color--blue;
+    }
+  }
+}

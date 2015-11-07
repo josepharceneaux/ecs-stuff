@@ -1,0 +1,39 @@
+// ---------------------------------------------------
+// Modules / Graphs
+// ---------------------------------------------------
+// -----
+// Line Graph
+// -----
+
+.graph--line {
+  height: 250px;
+
+  path {
+    stroke: $color--lightGreen;
+    stroke-width: 4;
+    fill: none;
+  }
+
+  .axis path,
+  .axis line {
+    fill: none;
+    stroke: $color--gray;
+    stroke-width: 1;
+    // shape-rendering: crispEdges;
+  }
+
+}
+
+.new-candidates-tooltip {
+  color: $color--lightGray;
+  font-size: .9em;
+  line-height: 42px;
+  text-align: center;
+  position: absolute;
+  padding-left: 32px;
+  padding-right: 32px;
+  background: $color--darkerGray;
+  border-radius: $border-radius--container;
+
+  .date { color: $color--medGray; }
+}

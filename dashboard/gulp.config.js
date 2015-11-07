@@ -31,12 +31,10 @@ module.exports = {
 
     // --- Utilities ---
     log: function log(msg) {
-        if (typeof(msg) === 'object') {
-            for (var item in msg) {
-                if (msg.hasOwnProperty(item)) {
-                    $.util.log($.util.colors.blue(msg[item]));
-                }
-            }
+        if (typeof msg === 'object') {
+            Object.keys(msg).forEach(function (item) {
+                $.util.log($.util.colors.blue(msg[item]));
+            });
         } else {
             $.util.log($.util.colors.blue(msg));
         }

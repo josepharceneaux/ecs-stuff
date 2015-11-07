@@ -1,0 +1,27 @@
+// ---------------------------------------------------
+// Modules / Cols
+// ---------------------------------------------------
+
+// -----
+// Define the different breakpoints
+// -----
+
+$breakpoints: (
+  teeny:  $breakpoint--teeny,
+  tiny:   $breakpoint--tiny,
+  small:  $breakpoint--small,
+  medium: $breakpoint--medium,
+  large:  $breakpoint--large,
+  full:   $breakpoint--full
+);
+
+// -----
+// Generate the columns for each breakpoint
+// -----
+
+// Create all of the columns
+@for $i from 1 through 12 {
+
+ @include helper--generate-col($i, $breakpoints);
+
+}

@@ -2,9 +2,9 @@
 
     'use strict';
 
-    angular.module('app.pipeline')
-        .directive('gtSmartLists', directiveFunction)
-        .controller('SmartListsController', ControllerFunction);
+    angular.module('app.pipelines')
+        .directive('gtImportCandidates', directiveFunction)
+        .controller('ImportCandidatesController', ControllerFunction);
 
 
     // ----- directiveFunction -----
@@ -15,10 +15,10 @@
 
         var directive = {
             restrict: 'E',
-            templateUrl: 'components/pipeline/smart-lists/smart-lists.html',
+            templateUrl: 'components/pipelines/import-candidates/import-candidates.html',
             scope: {
             },
-            controller: 'SmartListsController',
+            controller: 'ImportCandidatesController',
             controllerAs: 'vm'
         };
 
@@ -35,7 +35,7 @@
         activate();
 
         function activate() {
-            logger.log('Activated Smart Lists View');
+            logger.log('Activated Import Candidates View');
         }
     }
 

@@ -2,7 +2,7 @@
 
     'use strict';
 
-    angular.module('app.pipeline')
+    angular.module('app.pipelines')
         .directive('gtCandidateSearch', directiveFunction)
         .controller('CandidateSearchController', ControllerFunction);
 
@@ -15,7 +15,7 @@
 
         var directive = {
             restrict: 'E',
-            templateUrl: 'components/pipeline/candidate-search/candidate-search.html',
+            templateUrl: 'components/pipelines/candidate-search/candidate-search.html',
             scope: {
             },
             controller: 'CandidateSearchController',

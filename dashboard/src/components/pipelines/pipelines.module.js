@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    angular.module('app.pipeline', [
+    angular.module('app.pipelines', [
         'app.core'
     ]);
 })();

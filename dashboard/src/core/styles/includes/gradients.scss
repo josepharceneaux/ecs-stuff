@@ -1,0 +1,13 @@
+// ---------------------------------------------------
+// Includes / Colors
+// ---------------------------------------------------
+
+@mixin gradients--green {
+  background-color: $color--lightGreen; // fallback
+  background-image: linear-gradient(90deg, $color--lightGreen, $color--green);
+}
+
+@mixin gradients--red {
+  background-color: $color--red; // fallback
+  background-image: linear-gradient(90deg, $color--red, $color--darkRed);
+}

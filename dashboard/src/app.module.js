@@ -13,7 +13,8 @@
         'app.footer',
         'app.help',
         'app.login',
-        'app.pipeline',
+        'app.main',
+        'app.pipelines',
         'app.sidenav',
         'app.topnav'
     ]);
