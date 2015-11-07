@@ -11,7 +11,7 @@ from widget_service.common.models.candidate import EmailLabel
 from widget_service.common.models.candidate import University
 from widget_service.common.models.misc import AreaOfInterest
 from widget_service.common.models.misc import Country
-from widget_service.common.models.culture import Culture
+from widget_service.common.models.misc import Culture
 from widget_service.common.models.misc import Major
 from widget_service.common.models.misc import Organization
 from widget_service.common.models.user import Client
@@ -29,6 +29,7 @@ from widget_service.widget_app.views.utils import parse_interest_ids_from_form
 from widget_service.widget_app.views.utils import parse_city_and_state_ids_from_form
 
 APP = app.test_client()
+
 
 @pytest.fixture(autouse=True)
 def test_org(request):

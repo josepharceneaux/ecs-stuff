@@ -21,7 +21,7 @@ from xhtml2pdf import pisa
 import requests
 from BeautifulSoup import BeautifulSoup
 from bs4 import BeautifulSoup as bs4
-# import magic
+import magic
 from flask import current_app
 
 from talent_dice_client import parse_resume_with_bg
