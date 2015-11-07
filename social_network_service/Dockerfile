@@ -1,5 +1,5 @@
 ############################################################
-# Dockerfile to build GetTalent Event Service
+# Dockerfile to build GetTalent Social Network Service
 ############################################################
 
 # Set the base image to Ubuntu
