@@ -10,6 +10,9 @@ dependencies:
     - pip install -r requirements.txt
 
 test:
+  post:
+    - python auth_service/run.py
+
   override:
     - py.test auth_service/tests/:
         parallel: true
