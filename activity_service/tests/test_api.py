@@ -13,7 +13,7 @@ from sqlalchemy.sql.expression import ClauseElement
 
 # Application Specific
 from activity_service.activities_app import app
-from activity_service.common.models.db import db
+from activity_service.activities_app import db
 from activity_service.common.models.misc import Activity
 from activity_service.common.models.misc import Culture
 from activity_service.common.models.misc import Organization
@@ -45,6 +45,7 @@ def test_candidate(test_user, test_culture, request):
             db.session.delete(test_candidate)
             db.session.commit()
         except Exception:
+            db.session.rollback()
             pass
 
     request.addfinalizer(fin)
@@ -74,6 +75,7 @@ def test_activities(test_user, request):
             db.session.query(Activity).filter(Activity.userId == test_user.id).delete()
             db.session.commit()
         except Exception:
+            db.session.rollback()
             pass
 
     request.addfinalizer(fin)
@@ -97,6 +99,7 @@ def test_user(test_domain, request):
             db.session.delete(test_user)
             db.session.commit()
         except Exception:
+            db.session.rollback()
             pass
 
     request.addfinalizer(fin)
@@ -120,6 +123,7 @@ def test_domain(test_org, test_culture, request):
             db.session.delete(test_domain)
             db.session.commit()
         except Exception:
+            db.session.rollback()
             pass
 
     request.addfinalizer(fin)
@@ -139,6 +143,7 @@ def test_culture(request):
             db.session.delete(test_culture)
             db.session.commit()
         except Exception:
+            db.session.rollback()
             pass
 
     request.addfinalizer(fin)
@@ -158,6 +163,7 @@ def test_org(request):
             db.session.delete(test_org)
             db.session.commit()
         except Exception:
+            db.session.rollback()
             pass
 
     request.addfinalizer(fin)
@@ -177,6 +183,7 @@ def test_client(request):
             db.session.delete(test_client)
             db.session.commit()
         except Exception:
+            db.session.rollback()
             pass
 
     request.addfinalizer(fin)
@@ -200,6 +207,7 @@ def test_token(test_client, test_user, request):
             db.session.delete(test_token)
             db.session.commit()
         except Exception:
+            db.session.rollback()
             pass
 
     request.addfinalizer(fin)
