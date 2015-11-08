@@ -3,10 +3,9 @@ from flask import current_app as app
 from flask import request
 from flask import jsonify
 from flask.ext.cors import CORS
-from ..modules.email_marketing import create_email_campaign
+from ..modules.email_marketing import create_email_campaign, validate_lists_belongs_to_domain
 import json
-from common.error_handling import UnprocessableEntity
-
+from common.error_handling import UnprocessableEntity, ForbiddenError
 
 __author__ = 'jitesh'
 
@@ -33,6 +32,11 @@ def email_campaigns():
     else:
         template_id = request.form.get('selected_template_id')
 
+    # TODO: Add validations on missing inputs
+    # TODO: Add validation for list id belonging to same domain
+    if validate_lists_belongs_to_domain(list_ids, user_id):
+        return ForbiddenError("Provided list does not belong to user's domain")
+
     resp_dict = create_email_campaign(user_id=user_id,
                                       email_campaign_name=campaign_name,
                                       email_subject=email_subject,
@@ -53,5 +57,5 @@ def email_campaigns():
 @mod.errorhandler(UnprocessableEntity)
 def handle_invalid_usage(error):
     response = json.dumps(error.to_dict())
-    response.status_code = error.http_status_code
+    # response.status_code = error.status_code TODO check why this is not working
     return response

@@ -70,6 +70,9 @@ class UnprocessableEntity(TalentError):
     @classmethod
     def http_status_code(cls):
         return 422
+    @classmethod
+    def status_code(cls):
+        return 422
 
 class ResourceNotFound(TalentError):
     @classmethod
@@ -120,6 +123,12 @@ def register_error_handlers(app, logger):
     @app.errorhandler(ForbiddenError)
     def handle_forbidden(error):
         logger.warn("Forbidden request format for app %s", app.import_name)
+        response = jsonify(error.to_dict())
+        return response, error.http_status_code()
+
+    @app.errorhandler(UnprocessableEntity)
+    def handle_unprocessable(error):
+        logger.warn("Unprocessable data for app %s", app.import_name)
         response = jsonify(error.to_dict())
         return response, error.http_status_code()
 

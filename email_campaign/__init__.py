@@ -18,3 +18,4 @@ db.app = app
 register_error_handlers(app, logger)
 
 logger.info("Starting email_campaign_service in %s environment", app.config['GT_ENVIRONMENT'])
+
