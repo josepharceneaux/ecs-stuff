@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Join the Kaiser Permanente Talent Community</title>
+    <meta name="description" content="Join the Kaiser Talent Community - recruiting software by getTalent" />
+    <meta name="keywords" content="Kaiser, Recruiting, Software, Cloud, Talent, Community" />
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+    <script src="https://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <style type="text/css">
+        #subInterestSelect {
+            margin-left: 0px !important;
+            width: 394px;
+        }
+        #interestSelect {
+            width: 394px;
+        }
+
+        /* Increasing contrast for ADA compliance: http://webaim.org/resources/contrastchecker/ */
+        .tm-tag.tm-tag-success {
+            color: #3d5315;
+            background-color: #ecf7d3;
+            border-color: #a5d24a;
+        }
+
+    </style>
+    <![endif]-->
+    <link rel="stylesheet" href="/static/css/bootstrap_2_3_2/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/bootstrap_3_3_5/bootstrap-tagmanager.css">
+    <link rel="stylesheet" href="/static/css/kaiser_3.css">
+    <script type="text/javascript" src="/static/js/modernizr-2-6-2-custom.js"></script>
+    <script type="text/javascript">
+        /** SUPPORT FOR .map() FOR IE8 **/
+        // Production steps of ECMA-262, Edition 5, 15.4.4.19
+        // Reference: http://es5.github.com/#x15.4.4.19
+        if (!Array.prototype.map) {
+          Array.prototype.map = function(callback, thisArg) {
+            var T, A, k;
+            if (this == null) {
+              throw new TypeError(" this is null or not defined");
+            }
+            var O = Object(this);
+            var len = O.length >>> 0;
+            if (typeof callback !== "function") {
+              throw new TypeError(callback + " is not a function");
+            }
+            if (thisArg) {
+              T = thisArg;
+            }
+            A = new Array(len);
+            k = 0;
+            while(k < len) {
+              var kValue, mappedValue;
+              if (k in O) {
+                kValue = O[ k ];
+                mappedValue = callback.call(T, kValue, k, O);
+                A[ k ] = mappedValue;
+              }
+              k++;
+            }
+            return A;
+          };
+        }
+    </script>
+</head>
+
+
+<body style="background-color: transparent;">
+
+<div class="container">
+
+    <div class="row">
+        <div class="" style="margin-left:30px;">
+            <form id="widget-form" name="widget" method="post" novalidate autocomplete="on" enctype="multipart/form-data" action="">
+                <div class="control-group">
+                    <div class="controls">
+                        <label>
+                            Please fill out the fields below and click “submit” to receive information about opportunities that relate to your selections.
+                        </label>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <label id="firstNameLabel" class="hide">First name</label>
+                        <label id="lastNameLabel" class="hide">Last name</label>
+                        <input aria-labelledby="firstNameLabel" style="width: 175px;" class="span3" type="text" required id="firstName" name="firstName" placeholder="First name" value="" />
+                        <input aria-labelledby="lastNameLabel" style="float: none; margin-left: 15px; width:175px" class="span3" type="text" required id="lastName" name="lastName" placeholder="Last name" value="" />
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls controls-row">
+                        <label class="hide" id="emailIDLabel">Email Address</label>
+                        <input aria-labelledby="emailIDLabel" style="width: 379px;" class="span6" type="email" data-validation-message="Must be valid email" required id="emailAdd" name="emailAdd" placeholder="E-mail address" value="" />
+                    </div>
+                </div>
+                <div class="control-group" style="margin-bottom:5px">
+                    <div class="controls controls-row">
+                        <label id="aoiLabel" class="hide">Area of Interest</label>
+                        <label id="subAoiLabel" class="hide">Sub Area of Interest</label>
+                        <select required class="span3" id="interestSelect" aria-labelledby="aoiLabel">
+                            <option title="Area of Interest" value="">Area of Interest</option>
+                        </select>
+                        <select required style="display:none;" class="span3" id="subInterestSelect" aria-labelledby="subAoiLabel">
+                            <option></option>
+                        </select>
+                        <div class="scrollable-tab-container">
+                            <input type="hidden" id="hidden-tags-aoi" name="hidden-tags-aoi" class="tm-input-aoi tm-input-success" />
+                        </div>
+                    </div>
+                    <select title="Sub area of interest" class="aoiIdToSubAoi" data-aoi-id="" style="display: none" aria-hidden="true">
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <div class="controls">
+                         <label>
+                            Identify the location(s) you are interested in.
+                        </label>
+                    </div>
+                </div>
+                <div class="control-group" style="margin-bottom:5px">
+                    <div class="controls controls-row">
+                        <select aria-labelledby="stateLabel" required class="span3" id="stateOfInterest">
+                            <option value="" title="State">State</option>
+                            <option value="California" title="Northern CA">Northern CA</option>
+                            <option value="California" title="Southern CA">Southern CA</option>
+                            <option value="Colorado" title="Colorado">Colorado</option>
+                            <option value="Washington, D.C." title="Washington, D.C.">Washington, D.C.</option>
+                            <option value="Georgia" title="Georgia">Georgia</option>
+                            <option value="Hawaii" title="Hawaii">Hawaii</option>
+                            <option value="Maryland" title="Maryland">Maryland</option>
+                            <option value="Oregon" title="Oregon">Oregon</option>
+                            <option value="Virginia" title="Virginia">Virginia</option>
+                            <option value="Washington" title="Washington">Washington</option>
+                        </select>
+                        <select aria-labelledby="cityLabel" required style="margin-left:14px; display:none;" class="span3" id="cityOfInterest">
+                            <option></option>
+                        </select>
+                        <div class="scrollable-tab-container">
+                            <input type="hidden" id="hidden-tags-location" name="hidden-tags-location" class="tm-input-location tm-input-success" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- JOB ALERTS -->
+                <div class="control-group" style="margin-bottom: 10px">
+                    <div class="controls">
+                        <label class="checkbox" style="margin-bottom: 0px">
+                            <input class="checkbox-job-alerts" id="job-alerts" type="checkbox" checked="checked"> Send me job alerts&#42;:
+                        </label>
+                        <label class="checkbox inline">
+                            <input type="radio" name="jobFrequency" value="Daily"> Daily
+                        </label>
+                        <label class="checkbox inline">
+                            <input type="radio" name="jobFrequency" value="Weekly" checked="checked"> Weekly
+                        </label>
+                        <label class="checkbox inline">
+                            <input type="radio" name="jobFrequency" value="Monthly"> Monthly
+                        </label>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="controls" style="text-align: center; margin-bottom: 5px">
+                        <button type="submit" class="btn btn-warning">Submit</button>
+                    </div>
+                </div>
+
+
+                <div class="control-group">
+                    <div class="controls">
+                        <label>
+                            Interested in internships or early career opportunities? <a target="_blank" href="http://kaiserpermanentejobs.org/university-connection/university-talent-network.aspx">Click here</a> to join our University Talent Network.
+                        </label>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls">
+                        <label>
+                            <small style="line-height: 0px">
+                                &#42;You will receive job alerts for opportunities within a 20-mile radius of your selected location(s).
+                            </small>
+                        </label>
+                    </div>
+                </div>
+                <p style="text-align: center">
+                    <small>
+                        <a target="_blank" href="http://gettalent.com">Recruiting software</a> by getTalent
+                    </small>
+                </p>
+
+            </form>
+        </div>
+    </div>
+
+    <div class="row" id="form-success">
+        <div class="span6" style="margin-left:30px;margin-top:200px;">
+            <p id="submit_result" class="alert alert-success" >Your information has successfully been submitted.</p>
+            <p>Thank you for your interest in our talent community and bringing your career to Kaiser Permanente. </p>
+        </div>
+    </div>
+
+    <div class="row" id="form-error">
+        <div class="span6" style="margin-left:30px;margin-top:30px">
+            <div class="alert alert-error">
+                <p id="submit_result">An error occurred while sending your information. Please refresh the page and try again.</p>
+            </div>
+        </div>
+    </div>
+</div> <!-- /container -->
+
+<script src="/static/js/jquery-1.11.3.min.js"></script>
+<script src="/static/js/bootstrap.min.js"></script>
+<script src="/static/js/jquery.simpleplaceholder.js"></script>
+<script src="/static/js/bootstrap-tagmanager.js"></script>
+<script src="/static/js/talent-widget.js"></script>
+
+<!--[if lt IE 9]>
+    <script type="text/javascript">
+        $(function(){
+            $('#interestSelect').removeClass('span3');
+            $('#interestSelect').addClass('span6');
+
+            $('#subInterestSelect').removeClass('span3');
+            $('#subInterestSelect').addClass('span6');
+        });
+    </script>
+    <![endif]-->
+<script src="/static/js/kaiser-corp.js"></script>
+
+</body>
+</html>

@@ -4,16 +4,39 @@ machine:
   environment:
     PYENV_VERSION: 2.7.9
     GT_ENVIRONMENT: circle
+    PYTHONPATH: .
 
 dependencies:
    override:
     - pip install -r requirements.txt
 
 test:
+  pre:
+    - python auth_service/run.py:
+        background: true
+    - python user_service/run.py:
+        background: true
+    - python resume_service/run.py:
+        background: true
+    - python activity_service/run.py:
+        background: true
+    - python candidate_service/run.py:
+        background: true
+    - python social_network_service/run.py:
+        background: true
+    - sleep 5
+
+
   override:
     - py.test auth_service/tests/:
+        parallel: true
+    - py.test user_service/tests/:
         parallel: true
     - py.test resume_service/tests/:
         parallel: true
     - py.test activity_service/tests/:
+        parallel: true
+    - py.test candidate_service/tests/:
+        parallel: true
+    - py.test social_network_service/tests/:
         parallel: true

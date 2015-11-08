@@ -1,12 +1,15 @@
 import time
 import datetime
 from sqlalchemy.orm import relationship, backref
+from sqlalchemy.dialects.mysql import TINYINT
 from db import db
 from common.utils.validators import is_number
 from common.error_handling import *
 from candidate import CandidateSource
 from associations import CandidateAreaOfInterest
+from event_organizer import EventOrganizer
 from misc import AreaOfInterest
+from email_marketing import EmailCampaign
 
 
 class User(db.Model):
@@ -31,12 +34,18 @@ class User(db.Model):
     updated_time = db.Column('updatedTime', db.DateTime)
     dice_user_id = db.Column('diceUserId', db.Integer)
     user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.id', ondelete='CASCADE'))
+    is_disabled = db.Column(TINYINT, default='0', nullable=False)
     # TODO: Set Nullable = False after setting user_group_id for existing data
 
     # Relationships
     candidates = relationship('Candidate', backref='user')
     public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
     user_group = relationship('UserGroup', backref='user')
+    email_campaigns = relationship('EmailCampaign', backref='user')
+    user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
+    events = db.relationship('Event', backref='user', lazy='dynamic')
+    event_organizers = db.relationship('EventOrganizer', backref='user', lazy='dynamic')
+    venues = db.relationship('Venue', backref='user', lazy='dynamic')
 
     def is_authenticated(self):
         return True
@@ -50,8 +59,24 @@ class User(db.Model):
     def get_id(self):
         return unicode(self.id)
 
+    @property
+    def name(self):
+        return (self.first_name or '') + ' ' + (self.last_name or '')
+
     def __repr__(self):
         return "<email (email=' %r')>" % self.email
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+    @staticmethod
+    def all_users_of_domain(domain_id):
+        """ Get user_ids of all users of a given domain_id
+        :param int domain_id: id of a domain.
+        :rtype: list[User]
+        """
+        return User.query.filter_by(domain_id=domain_id).all()
 
 
 class Domain(db.Model):
@@ -69,14 +94,21 @@ class Domain(db.Model):
     default_from_name = db.Column('defaultFromName', db.String(255))
     settings_json = db.Column('settingsJson', db.Text)
     updated_time = db.Column('updatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    dice_company_id = db.Column('diceCompanyId', db.Integer, index=True)
+    is_disabled = db.Column(TINYINT, default='0', nullable=False)
 
     # Relationships
     users = relationship('User', backref='domain')
     candidate_sources = relationship('CandidateSource', backref='domain')
     areas_of_interest = relationship('AreaOfInterest', backref='domain')
+    custom_fields = relationship('CustomField', backref='domain')
 
     def get_id(self):
         return unicode(self.id)
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
 
 
 class WebAuthGroup(db.Model):
@@ -177,9 +209,7 @@ class DomainRole(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     role_name = db.Column(db.String(255), nullable=False, unique=True)
 
-    domain_id = db.Column(
-        db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE')
-    )
+    domain_id = db.Column(db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))
     domain = db.relationship('Domain', backref=db.backref('domain_role', cascade="all, delete-orphan"))
 
     def delete(self):
@@ -273,7 +303,7 @@ class UserScopedRoles(db.Model):
                     else:
                         raise InvalidUsage("Role: %s doesn't exist" % role)
                 domain_role = DomainRole.query.get(role_id)
-                # Add given role to a given user if user who sent this request is either admin or either from same domain
+                # Add given role to a given user if user who sent this request is either admin or from same domain
                 if domain_role and (is_admin_user or domain_role.domain_id == user.domain_id):
                     if not UserScopedRoles.query.filter((UserScopedRoles.user_id == user.id) &
                                                                 (UserScopedRoles.role_id == role_id)).first():
@@ -439,3 +469,70 @@ class UserGroup(db.Model):
                 raise InvalidUsage("User: %s doesn't exist or either it doesn't belong to same Domain\
                                         %s as user group" % (user_id, user_group.domain_id))
         db.session.commit()
+
+
+class UserSocialNetworkCredential(db.Model):
+    """
+    This represents database table that holds user's credentials of a
+    social network.
+    """
+    __tablename__ = 'user_social_network_credential'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id'), nullable=False)
+    social_network_id = db.Column('socialNetworkId', db.Integer, db.ForeignKey('social_network.id'), nullable=False)
+    refresh_token = db.Column('refreshToken', db.String(1000))
+    webhook = db.Column(db.String(200))
+    member_id = db.Column('memberId', db.String(100))
+    access_token = db.Column('accessToken', db.String(1000))
+    social_network = db.relationship("SocialNetwork")
+
+    @classmethod
+    def get_all_credentials(cls, social_network_id=None):
+        if not social_network_id:
+            return cls.query.all()
+        else:
+            return cls.get_user_credentials_of_social_network(social_network_id)
+
+    @classmethod
+    def get_user_credentials_of_social_network(cls, social_network_id):
+        assert social_network_id
+        return cls.query.filter(
+            cls.social_network_id == social_network_id
+        ).all()
+
+    @classmethod
+    def get_by_user_id(cls, user_id):
+        assert user_id
+        return cls.query.filter(
+            cls.user_id == user_id
+        ).all()
+
+    @classmethod
+    def get_by_user_and_social_network_id(cls, user_id, social_network_id):
+        assert user_id and social_network_id
+        return cls.query.filter(
+            db.and_(
+                cls.user_id == user_id,
+                cls.social_network_id == social_network_id
+            )
+        ).first()
+
+    @classmethod
+    def update_auth_token(cls, user_id, social_network_id, access_token):
+        # TODO improve this method
+        success = False
+        user = cls.get_by_user_and_social_network(user_id, social_network_id)
+        if user:
+            user.update(access_token=access_token)
+            success = True
+        return success
+
+    @classmethod
+    def get_by_webhook_id_and_social_network_id(cls, webhook_id, social_network_id):
+        assert webhook_id and social_network_id
+        return cls.query.filter(
+            db.and_(
+                cls.webhook == webhook_id,
+                cls.social_network_id == social_network_id
+            )
+        ).one()
