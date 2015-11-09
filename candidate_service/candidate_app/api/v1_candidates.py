@@ -9,7 +9,7 @@ from flask_restful import Resource
 from candidate_service.common.models.db import db
 
 # Validators
-from candidate_service.common.utils.validators import (is_number, is_valid_email)
+from common.utils.validators import (is_number, is_valid_email)
 from candidate_service.modules.validators import (
     does_candidate_belong_to_user, is_custom_field_authorized,
     is_area_of_interest_authorized, does_email_campaign_belong_to_domain,
@@ -17,10 +17,10 @@ from candidate_service.modules.validators import (
 )
 
 # Decorators
-from candidate_service.common.utils.auth_utils import (require_oauth, require_any_role)
+from common.utils.auth_utils import require_oauth
 
 # Error handling
-from candidate_service.common.error_handling import (ForbiddenError, InvalidUsage)
+from common.error_handling import (ForbiddenError, InvalidUsage)
 
 # Models
 from candidate_service.common.models.user import User
@@ -28,8 +28,8 @@ from candidate_service.modules.talent_candidates import (
     fetch_candidate_info, get_candidate_id_from_candidate_email
 )
 from candidate_service.common.models.email_marketing import EmailCampaign
-# Module
 
+# Module
 from candidate_service.modules.talent_candidates import create_or_update_candidate_from_params
 
 
@@ -223,8 +223,8 @@ class CandidateResource(Resource):
         updated_candidate_ids = []
         for candidate_dict in list_of_candidate_dicts:
 
-            emails = [{'label': email.get('label'), 'address': email.get('address')}
-                      for email in candidate_dict.get('emails')]
+            emails = [{'id': email['id'], 'label': email.get('label'),
+                       'address': email.get('address')} for email in candidate_dict.get('emails')]
             # Email address is required for creating a candidate
             if not any(emails):
                 raise InvalidUsage(error_message="Email address required")
@@ -250,7 +250,7 @@ class CandidateResource(Resource):
                 raise ForbiddenError(error_message="Unauthorized area of interest IDs")
 
             user_id = authed_user.id
-            candidate_id = candidate_dict.get('candidate_id')
+            candidate_id = candidate_dict.get('id')
             addresses = candidate_dict.get('addresses')
             first_name = candidate_dict.get('first_name')
             last_name = candidate_dict.get('last_name')

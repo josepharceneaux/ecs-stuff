@@ -6,7 +6,7 @@ import datetime
 from datetime import date
 
 # Database connection and logger
-from candidate_service.candidate_app import db, logger
+from candidate_service.candidate_app import (db, logger)
 
 # Models
 from candidate_service.common.models.candidate import (
@@ -75,9 +75,9 @@ def fetch_candidate_info(candidate_id, fields=None):
     if get_all_fields or 'work_experiences' in fields:
         work_experiences = candidate_experiences(candidate_id=candidate_id)
 
-    work_preference = None
+    work_preferences = None
     if get_all_fields or 'work_preferences' in fields:
-        work_preference = candidate_work_preference(candidate=candidate)
+        work_preferences = candidate_work_preferences(candidate=candidate)
 
     preferred_locations = None
     if get_all_fields or 'preferred_locations' in fields:
@@ -127,7 +127,7 @@ def fetch_candidate_info(candidate_id, fields=None):
         'phones': phones,
         'addresses': addresses,
         'work_experiences': work_experiences,
-        'work_preference': work_preference,
+        'work_preference': work_preferences,
         'preferred_locations': preferred_locations,
         'educations': educations,
         'skills': skills,
@@ -212,13 +212,13 @@ def candidate_experiences(candidate_id):
              } for experience in experiences]
 
 
-def candidate_work_preference(candidate):
+def candidate_work_preferences(candidate):
     """
     :type candidate:    Candidate
-    :rtype              dict
+    :rtype              list
     """
-    work_preference = candidate.candidate_work_preferences
-    return {'id': work_preference.id,
+    work_preferences = candidate.candidate_work_preferences
+    return [{'id': work_preference.id,
             'authorization': work_preference.authorization,
             'employment_type': work_preference.tax_terms,
             'security_clearance': work_preference.security_clearance,
@@ -226,7 +226,7 @@ def candidate_work_preference(candidate):
             'telecommute': work_preference.telecommute,
             'travel_percentage': work_preference.travel_percentage,
             'third_party': work_preference.third_party
-            } if work_preference else None
+             } for work_preference in work_preferences]
 
 
 def candidate_preferred_locations(candidate):
@@ -459,9 +459,10 @@ def create_or_update_candidate_from_params(
         summary=None
 ):
     """
-    Function will parse each parameter and create a new Candidate.
+    Function will parse each parameter and create a new Candidate or
+    update an existing one.
 
-    If all parameters are provided, function will also create:
+    If all parameters are provided, function will also create or update:
         CandidateAddress, CandidateAreaOfInterest, CandidateCustomField,
         CandidateEducation, CandidateEducationDegree, CandidateEducationDegreeBullet,
         CandidateWorkPreference, CandidateEmail, CandidatePhone,
@@ -519,10 +520,8 @@ def create_or_update_candidate_from_params(
 
     # If candidate_id is not provided, Check if candidate exists
     if not candidate_id:
-        candidate_id = does_candidate_id_exist(dice_social_profile_id=dice_social_profile_id,
-                                               dice_profile_id=dice_profile_id,
-                                               domain_id=domain_id,
-                                               emails=emails)
+        candidate_id = does_candidate_id_exist(dice_social_profile_id,
+                                               dice_profile_id, domain_id, emails)
 
     # If candidate_id is provided/found, then it's an update
     if candidate_id:
@@ -531,9 +530,10 @@ def create_or_update_candidate_from_params(
     # Add or Update Candidate
     candidate_id = _add_or_update_candidate(first_name, middle_name, last_name,
                                             formatted_name, added_time, status_id,
-                                            user_id, domain_can_read, domain_can_write,
-                                            dice_profile_id, dice_social_profile_id,
-                                            source_id, objective, summary, candidate_id,
+                                            user_id, domain_can_read,
+                                            domain_can_write, dice_profile_id,
+                                            dice_social_profile_id, source_id,
+                                            objective, summary, candidate_id,
                                             is_update)
 
     # Add or update Candidate's address(es)
@@ -542,11 +542,14 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's areas_of_interest
     if area_of_interest_ids:
-        _add_or_update_candidate_areas_of_interest(candidate_id, area_of_interest_ids, is_update)
+        _add_or_update_candidate_areas_of_interest(candidate_id,
+                                                   area_of_interest_ids,
+                                                   is_update)
 
     # Add or update Candidate's custom_field(s)
     if custom_field_ids:
-        _add_or_update_candidate_custom_field_ids(candidate_id, custom_field_ids, added_time, is_update)
+        _add_or_update_candidate_custom_field_ids(candidate_id, custom_field_ids,
+                                                  added_time, is_update)
 
     # Add or update Candidate's education(s)
     if educations:
@@ -554,7 +557,8 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's work experience(s)
     if work_experiences:
-        _add_or_update_work_experiences(candidate_id, work_experiences, added_time, is_update)
+        _add_or_update_work_experiences(candidate_id, work_experiences, added_time,
+                                        is_update)
 
     # Add or update Candidate's work preference(s)
     if work_preference:
@@ -570,11 +574,13 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's military service(s)
     if military_services:
-        _add_or_update_military_services(candidate_id, military_services, is_update)
+        _add_or_update_military_services(candidate_id, military_services,
+                                         is_update)
 
     # Add or update Candidate's preferred location(s)
     if preferred_locations:
-        _add_or_update_preferred_locations(candidate_id, preferred_locations, is_update)
+        _add_or_update_preferred_locations(candidate_id, preferred_locations,
+                                           is_update)
 
     # Add or update Candidate's skill(s)
     if skills:
@@ -746,8 +752,7 @@ def social_network_id_from_name(name):
                                         if row.name.lower() == name.lower()), None)
     return matching_social_network.id if matching_social_network else None
 
-########################################################################################################
-########################################################################################################
+
 def _add_or_update_candidate(first_name, middle_name, last_name, formatted_name,
                              added_time, candidate_status_id, user_id,
                              domain_can_read, domain_can_write, dice_profile_id,
@@ -809,6 +814,7 @@ def _add_or_update_candidate_addresses(candidate_id, addresses, is_update):
         is_default = i == 0 if address_has_default else is_default
 
         if is_update:   # Update
+            address_id = address['id']
             update_dict = {'address_line_1': address_line_1,
                            'address_line_2': address_line_2, 'city': city,
                            'state': state, 'country_id': country_id,
@@ -819,7 +825,7 @@ def _add_or_update_candidate_addresses(candidate_id, addresses, is_update):
             update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
 
             # Update candidate's address
-            db.session.query(CandidateAddress).filter_by(candidate_id=candidate_id).\
+            db.session.query(CandidateAddress).filter_by(id=address_id).\
                 update(update_dict)
             db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
@@ -831,7 +837,6 @@ def _add_or_update_candidate_addresses(candidate_id, addresses, is_update):
                 is_default=is_default, coordinates=coordinates,
                 resume_id=candidate_id  # TODO: this is to be removed once all tables have been added & migrated
             ))
-    return
 
 
 def _add_or_update_candidate_areas_of_interest(candidate_id, area_of_interest_ids,
@@ -854,7 +859,6 @@ def _add_or_update_candidate_areas_of_interest(candidate_id, area_of_interest_id
                 candidate_id=candidate_id,
                 area_of_interest_id=area_of_interest_id
             ))
-    return
 
 
 def _add_or_update_candidate_custom_field_ids(candidate_id, custom_field_ids,
@@ -874,7 +878,6 @@ def _add_or_update_candidate_custom_field_ids(candidate_id, custom_field_ids,
                 candidate_id=candidate_id, custom_field_id=custom_field_id,
                 added_time=added_time
             ))
-    return
 
 
 def _add_or_update_educations(candidate_id, educations, added_time, is_update):
@@ -1004,7 +1007,6 @@ def _add_or_update_educations(candidate_id, educations, added_time, is_update):
                             comments=degree_bullet.get('comments'),
                             added_time=added_time
                         ))
-    return
 
 
 def _add_or_update_work_experiences(candidate_id, work_experiences, added_time,
@@ -1082,7 +1084,6 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time,
                     description=experience_bullet.get('description'),
                     added_time=added_time
                 ))
-    return
 
 
 def _add_or_update_work_preference(candidate_id, work_preference, is_update):
@@ -1119,8 +1120,6 @@ def _add_or_update_work_preference(candidate_id, work_preference, is_update):
             travel_percentage=travel_percentage, hourly_rate=hourly_rate,
             salary=salary, tax_terms=tax_terms
         ))
-
-    return
 
 
 # TODO: erroneous logic! Must update email (other records too) via ID
@@ -1160,8 +1159,6 @@ def _add_or_update_emails(candidate_id, emails, is_update):
                 email_label_id=email_label_id
             ))
 
-    return
-
 
 def _add_or_update_phones(candidate_id, phones, is_update):
     """
@@ -1190,7 +1187,6 @@ def _add_or_update_phones(candidate_id, phones, is_update):
                 candidate_id=candidate_id, value=value,
                 is_default=is_default, phone_label_id=phone_label_id
             ))
-    return
 
 
 def _add_or_update_military_services(candidate_id, military_services, is_update):
@@ -1231,7 +1227,6 @@ def _add_or_update_military_services(candidate_id, military_services, is_update)
                 comments=comments, from_date=from_date, to_date=to_date,
                 resume_id=candidate_id  # todo: this is to be removed once all tables have been added & migrated
             ))
-    return
 
 
 def _add_or_update_preferred_locations(candidate_id, preferred_locations, is_update):
@@ -1263,7 +1258,6 @@ def _add_or_update_preferred_locations(candidate_id, preferred_locations, is_upd
                 candidate_id=candidate_id, address=address, country_id=country_id,
                 city=city, region=state, zip_code=zip_code,
             ))
-    return
 
 
 def _add_or_update_skills(candidate_id, skills, added_time, is_update):
@@ -1301,7 +1295,6 @@ def _add_or_update_skills(candidate_id, skills, added_time, is_update):
                 last_used=skill.get('last_used'),
                 resume_id=candidate_id  # todo: this is to be removed once all tables have been added & migrated
             ))
-    return
 
 
 def _add_or_update_social_networks(candidate_id, social_networks, is_update):
@@ -1330,4 +1323,3 @@ def _add_or_update_social_networks(candidate_id, social_networks, is_update):
                 social_network_id=social_network_id,
                 social_profile_url=social_network.get('profile_url')
             ))
-    return

@@ -362,16 +362,16 @@ class CandidateSocialNetwork(db.Model):
 class CandidateWorkPreference(db.Model):
     __tablename__ = 'candidate_work_preference'
     id = db.Column(db.Integer, primary_key=True)
-    candidate_id = db.Column('candidateId', db.Integer, db.ForeignKey('candidate.id'), nullable=False)
-    relocate = db.Column(db.Boolean, default=False)
-    authorization = db.Column(db.String(250))
-    telecommute = db.Column(db.Boolean, default=False)
+    candidate_id = db.Column('candidateId', db.Integer, db.ForeignKey('candidate.id'))
+    relocate = db.Column(db.CHAR(1), default='F')
+    authorization = db.Column(db.String(255))
+    telecommute = db.Column(db.CHAR(1), default='F')
     travel_percentage = db.Column(db.Integer, default=0)
     hourly_rate = db.Column(db.Float, default=0.0)
     salary = db.Column(db.Float, default=0.0)
     tax_terms = db.Column(db.String(255))
-    security_clearance = db.Column(db.Boolean, default=False)
-    third_party = db.Column(db.Boolean, default=False)
+    security_clearance = db.Column(db.CHAR(1), default='F')
+    third_party = db.Column(db.CHAR(1), default='F')
 
     def __repr__(self):
         return "<CandidateWorkPreference (authorization=' %r')>" % self.authorization
