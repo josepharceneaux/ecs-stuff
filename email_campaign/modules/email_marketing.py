@@ -1,10 +1,9 @@
 from email_campaign.common.error_handling import UnprocessableEntity
 
-from ..models.email_marketing import EmailCampaign, EmailCampaignSmartList, EmailCampaignBlast,CandidateSubscriptionPreference,EmailCampaignSend
+from ..models.email_marketing import EmailCampaign, EmailCampaignSmartList, EmailCampaignBlast, CandidateSubscriptionPreference,EmailCampaignSend
 from common.models.user import User, Domain
 from common.models.candidate import Candidate, CandidateEmail
 from common.models.smart_list import SmartList
-from ..common.errors import email_notification_to_admins
 from sqlalchemy import and_
 from common.models.db import db
 from common.models.misc import Frequency
@@ -17,6 +16,7 @@ from flask import current_app
 from BeautifulSoup import BeautifulSoup, Tag
 from urllib import urlencode
 from urlparse import parse_qs, urlsplit, urlunsplit
+import json
 
 __author__ = 'jitesh'
 
@@ -92,7 +92,7 @@ def create_email_campaign(user_id, email_campaign_name, email_subject,
     Schedules email campaign.
     Creates email campaign send.
 
-    :return: dict with newly created email_campaign_id
+    :return: newly created email_campaign's id
     """
     # If frequency is there then there must be a send time
     if frequency is not None and send_time is None:
@@ -114,7 +114,7 @@ def create_email_campaign(user_id, email_campaign_name, email_subject,
                                    email_body_html=email_body_html,
                                    email_body_text=email_body_text,
                                    frequency_id=frequency_obj.id if frequency_obj else None,
-                                   # email_client_id=email_client_id,
+                                   email_client_id=email_client_id,
 
                                    send_time=send_time)
 
@@ -138,7 +138,7 @@ def create_email_campaign(user_id, email_campaign_name, email_subject,
     # campaign = db.email_campaign(email_campaign_id)
     # campaign = EmailCampaign.query.get(email_campaign.id)
 
-    # if it's a client from api, we don't schedule campagin sends, we create it on the fly.
+    # if it's a client from api, we don't schedule campaign sends, we create it on the fly.
     # also we enable tracking by default for the clients.
     # TODO: Check if the following code is required
     if email_client_id:
@@ -149,6 +149,7 @@ def create_email_campaign(user_id, email_campaign_name, email_subject,
     # else:
     #     schedule_email_campaign_sends(campaign=campaign, user=user,
     #                                   email_client_id=email_client_id)
+
     user = User.query.get(user_id)
     send_emails_to_campaign(email_campaign, user, email_client_id)
     return dict(id=email_campaign.id)
@@ -236,12 +237,13 @@ def send_emails_to_campaign(campaign, user, email_client_id=None, new_candidates
 
     # Check if the smart list has more than 0 candidates
     if len(candidate_ids_and_emails) > 0:
-        email_notification_to_admins(
-            "Marketing email batch about to send, campaign.name=%s, user=%s, "
-            "new_candidates_only=%s, address list size=%s" % (
+        email_admins(
+            env=GT_ENVIRONMENT,
+            subject='Marketing batch about to send',
+            body="Marketing email batch about to send, campaign.name=%s, user=%s, \
+        new_candidates_only=%s, address list size=%s" % (
                 campaign.name, user.email, new_candidates_only, len(candidate_ids_and_emails)
-            ),
-            subject='Marketing batch about to send'
+            )
         )
         current_app.logger.info("Marketing email batch about to send, campaign.name=%s, user=%s, "
                     "new_candidates_only=%s, address list size=%s" % (
@@ -274,9 +276,9 @@ def send_emails_to_campaign(campaign, user, email_client_id=None, new_candidates
         from datetime import datetime
 
         blast_datetime = datetime.now()
-        email_campaign_blast_id = EmailCampaignBlast(EmailCampaignId=campaign.id,
-                                                                     SentTime=blast_datetime)
-        db.session.add(email_campaign_blast_id)
+        email_campaign_blast = EmailCampaignBlast(email_campaign_id=campaign.id, sent_time=blast_datetime)
+        db.session.add(email_campaign_blast)
+        db.session.commit()
         blast_params = dict(sends=0, bounces=0)
 
         # For each candidate, create URL conversions and send the email
@@ -288,11 +290,11 @@ def send_emails_to_campaign(campaign, user, email_client_id=None, new_candidates
                 candidate=candidates.find(lambda row: row.id == candidate_id).first(),
                 candidate_address=candidate_address,
                 blast_params=blast_params,
-                email_campaign_blast_id=email_campaign_blast_id,
+                email_campaign_blast_id=email_campaign_blast.id,
                 blast_datetime=blast_datetime,
                 email_client_id=email_client_id
             )
-            db.session.commit()
+            # db.session.commit()
             if was_send:
                 emails_sent += 1
 
@@ -300,15 +302,13 @@ def send_emails_to_campaign(campaign, user, email_client_id=None, new_candidates
         # So that recipients dont have to wait for all emails to be sent to read their emails. (URL conversions are stored in DB)
         # Reset sender back to normal sender
         # current.mail.settings.sender = '"getTalent Web" <no-reply@gettalent.com>'
-    # flush_campaign_send_statistics_cache(user.domainId) TODO
-    # TODO logging
-    # logger.info("Marketing email batch completed, emails sent=%s, campaign=%s, user=%s, new_candidates_only=%s",
-    #             emails_sent, campaign.name, user.email, new_candidates_only)
+    current_app.logger.info("Marketing email batch completed, emails sent=%s, campaign=%s, user=%s, new_candidates_only=%s",
+                emails_sent, campaign.name, user.email, new_candidates_only)
 
     return emails_sent
 
 
-def get_email_campaign_candidate_ids_and_emails(campaign, user,
+def get_email_campaign_candidate_ids_and_emails(campaign, user, list_ids=None,
                                                 new_candidates_only=False):
     """
     :param campaign:    email campaign row
@@ -316,9 +316,9 @@ def get_email_campaign_candidate_ids_and_emails(campaign, user,
     :return:            Returns array of candidate IDs in the campaign's smartlists.
                         Is unique.
     """
+    if list_ids is None:
     # Get smartlists of this campaign
-    smart_lists = TalentSmartListAPI.get_from_campaign(user_id=user.id,
-                                                       email_campaign_id=campaign.id)
+        smart_lists = db.session.query(EmailCampaignSmartList).filter_by(email_campaign_id=campaign.id)
 
     # Get candidate ids
     # TODO use collections.Counter class for this
@@ -331,7 +331,7 @@ def get_email_campaign_candidate_ids_and_emails(campaign, user,
             subscribed_candidate_id_rows = db.session.query(Candidate.id).join(Candidate.candidate_subscription_preference).join(Candidate.user).filter(and_(CandidateSubscriptionPreference.frequency_id==campaign_frequency_id, User.domain_id==user.domainId)).all()
             candidate_ids = [row.id for row in subscribed_candidate_id_rows]
             if not candidate_ids:
-                 logger.error("No candidates in subscription campaign %s", campaign)
+                current_app.logger.error("No candidates in subscription campaign %s", campaign)
         else:
              # Otherwise, just filter out unsubscribed candidates:
              # their subscription preference's frequencyId is NULL, which means 'Never'
@@ -417,11 +417,11 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
                                                                email_campaign_send_id=email_campaign_send_id)
         # In dev/staging, only send emails to getTalent users, in case we're impersonating a customer.
         if GT_ENVIRONMENT in ['dev', 'qa']:
-             domain = Domain.query.get(user.domainId)
-             if 'gettalent' in domain.name.lower() or 'bluth' in domain.name.lower() or 'dice' in domain.name.lower():
-                 to_addresses = user.email
-             else:
-                 to_addresses = ['gettalentmailtest@gmail.com']
+            domain = Domain.query.get(user.domainId)
+            if 'gettalent' in domain.name.lower() or 'bluth' in domain.name.lower() or 'dice' in domain.name.lower():
+                to_addresses = user.email
+            else:
+                to_addresses = ['gettalentmailtest@gmail.com']
         else:
             to_addresses = candidate_address
         # Do not send mail if email_client_id is provided
@@ -457,7 +457,6 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
         blast_params['sends'] += 1
         EmailCampaignBlast.query.filter_by(id==email_campaign_blast_id).update(blast_params)
         db.session.commit()
-
 
     except Exception as e:
         import traceback
@@ -544,6 +543,7 @@ def set_query_parameters(url, param_dict):
     new_query_string = urlencode(query_params, doseq=True)
     return urlunsplit((scheme, netloc, path, new_query_string, fragment))
 
+
 def create_email_campaign_url_conversion(destination_url, email_campaign_send_id,
                                          type, destination_url_custom_params=dict()):
     """
@@ -606,9 +606,8 @@ def create_email_campaign_url_conversions(new_html, new_text, is_track_text_clic
 
         # Fetch the custom URL params dict, if any
         if custom_url_params_json:
-            import simplejson
 
-            destination_url_custom_params = simplejson.loads(custom_url_params_json)
+            destination_url_custom_params = json.loads(custom_url_params_json)
         else:
             destination_url_custom_params = dict()
 

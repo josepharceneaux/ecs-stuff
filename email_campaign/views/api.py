@@ -33,7 +33,7 @@ def email_campaigns():
         template_id = request.form.get('selected_template_id')
 
     # TODO: Add validations on missing inputs
-    # TODO: Add validation for list id belonging to same domain
+    # Validation for list ids belonging to same domain
     if validate_lists_belongs_to_domain(list_ids, user_id):
         return ForbiddenError("Provided list does not belong to user's domain")
 
@@ -49,6 +49,7 @@ def email_campaigns():
                                       template_id=template_id,
                                       send_time=send_time,
                                       frequency=frequency)
+
     print 'inserted into database, id is %s' % resp_dict
 
     return "Success. Your name is %s, and subject is %s \n" % (campaign_name, email_subject)
