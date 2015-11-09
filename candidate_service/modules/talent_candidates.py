@@ -47,8 +47,6 @@ def fetch_candidate_info(candidate_id, fields=None):
     assert isinstance(candidate_id, int)
     candidate = db.session.query(Candidate).get(candidate_id)
 
-    # TODO: return id of everything and fix the logical error in emails and similar tables
-
     if not candidate:
         logger.error('Candidate not found, candidate_id: %s', candidate_id)
         return None
@@ -383,6 +381,10 @@ def date_of_employment(year, month, day=1):
 
 
 def country_name_from_country_id(country_id):
+    """
+    :type country_id:   int
+    :rtype              str
+    """
     if not country_id:
         return 'United States'
     country = db.session.query(Country).get(country_id)
@@ -395,6 +397,10 @@ def country_name_from_country_id(country_id):
 
 
 def get_candidate_id_from_candidate_email(candidate_email):
+    """
+    :type candidate_email:  CandidateEmail
+    :rtype                  int
+    """
     candidate_email_row = db.session.query(CandidateEmail). \
         filter_by(address=candidate_email).first()
     if not candidate_email_row:
@@ -408,11 +414,11 @@ def get_candidate_id_from_candidate_email(candidate_email):
 # TODO: move function to Email Marketing Service
 def retrieve_email_campaign_send(email_campaign, candidate_id):
     """
-    :param email_campaign:
-    :param candidate_id:
-    :rtype:     list(dict)
+    :type email_campaign:   EmailCampaign
+    :type candidate_id:     int
+    :rtype:                 list
     """
-    email_campaign_send_rows = db.session.query(EmailCampaignSend). \
+    email_campaign_send_rows = db.session.query(EmailCampaignSend).\
         filter_by(EmailCampaignSend.email_campaign_id == email_campaign.id,
                   EmailCampaignSend.candidate_id == candidate_id)
 
@@ -423,7 +429,6 @@ def retrieve_email_campaign_send(email_campaign, candidate_id):
 ###########################################
 # Helper Functions For Creating Candidate #
 ###########################################
-# TODO: add or create other fields too. Complete all todos
 def create_or_update_candidate_from_params(
         user_id,
         candidate_id=None,
@@ -748,12 +753,17 @@ def _add_or_update_candidate(first_name, middle_name, last_name, formatted_name,
                              domain_can_read, domain_can_write, dice_profile_id,
                              dice_social_profile_id, source_id, objective,
                              summary, candidate_id, is_update):
+    """
+    Function will either update Candidate or create a new one.
+    :return:    Candidate ID
+    """
 
     if is_update:   # Update
         update_dict = {'first_name': first_name, 'middle_name': middle_name,
-            'last_name': last_name, 'formatted_name': formatted_name,
-            'domain_can_read': domain_can_read, 'domain_can_write': domain_can_write,
-            'objective': objective, 'summary': summary}
+                       'last_name': last_name, 'formatted_name': formatted_name,
+                       'domain_can_read': domain_can_read,
+                       'domain_can_write': domain_can_write, 'objective': objective,
+                       'summary': summary}
 
         # Remove None values
         update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
@@ -762,13 +772,14 @@ def _add_or_update_candidate(first_name, middle_name, last_name, formatted_name,
         db.session.query(Candidate).filter_by(id=candidate_id).update(update_dict)
         db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-    else:           # Create if not an update
+    else:   # Create if not an update
         new_candidate = Candidate(
             first_name=first_name, middle_name=middle_name, last_name=last_name,
             formatted_name=formatted_name, added_time=added_time,
             candidate_status_id=candidate_status_id, user_id=user_id,
             domain_can_read=domain_can_read, domain_can_write=domain_can_write,
-            dice_profile_id=dice_profile_id, dice_social_profile_id=dice_social_profile_id,
+            dice_profile_id=dice_profile_id,
+            dice_social_profile_id=dice_social_profile_id,
             source_id=source_id, objective=objective, summary=summary,
             is_dirty=0  # TODO: is_dirty cannot be null. This should be removed once the field is successfully removed.
         )
@@ -780,6 +791,9 @@ def _add_or_update_candidate(first_name, middle_name, last_name, formatted_name,
 
 
 def _add_or_update_candidate_addresses(candidate_id, addresses, is_update):
+    """
+    Function will update CandidateAddress or create a new one.
+    """
     address_has_default = any([address.get('is_default') for address in addresses])
     for i, address in enumerate(addresses):
         address_line_1 = address.get('address_line_1')
@@ -795,9 +809,11 @@ def _add_or_update_candidate_addresses(candidate_id, addresses, is_update):
         is_default = i == 0 if address_has_default else is_default
 
         if is_update:   # Update
-            update_dict = {'address_line_1': address_line_1, 'address_line_2': address_line_2,
-                'city': city, 'state': state, 'country_id': country_id,'zip_code': zip_code,
-                'po_box': po_box, 'is_default': is_default, 'coordinates': coordinates}
+            update_dict = {'address_line_1': address_line_1,
+                           'address_line_2': address_line_2, 'city': city,
+                           'state': state, 'country_id': country_id,
+                           'zip_code': zip_code, 'po_box': po_box,
+                           'is_default': is_default, 'coordinates': coordinates}
 
             # Remove None values
             update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
@@ -807,7 +823,7 @@ def _add_or_update_candidate_addresses(candidate_id, addresses, is_update):
                 update(update_dict)
             db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-        else:           # Create if not an update
+        else:   # Create if not an update
             db.session.add(CandidateAddress(
                 candidate_id=candidate_id, address_line_1=address_line_1,
                 address_line_2=address_line_2, city=city, state=state,
@@ -818,7 +834,11 @@ def _add_or_update_candidate_addresses(candidate_id, addresses, is_update):
     return
 
 
-def _add_or_update_candidate_areas_of_interest(candidate_id, area_of_interest_ids, is_update):
+def _add_or_update_candidate_areas_of_interest(candidate_id, area_of_interest_ids,
+                                               is_update):
+    """
+    Function will update CandidateAreaOfInterest or create a new one.
+    """
     for area_of_interest_id in area_of_interest_ids:
 
         if is_update:   # Update
@@ -837,7 +857,11 @@ def _add_or_update_candidate_areas_of_interest(candidate_id, area_of_interest_id
     return
 
 
-def _add_or_update_candidate_custom_field_ids(candidate_id, custom_field_ids, added_time, is_update):
+def _add_or_update_candidate_custom_field_ids(candidate_id, custom_field_ids,
+                                              added_time, is_update):
+    """
+    Function will update CandidateCustomField or create a new one.
+    """
     for custom_field_id in custom_field_ids:
         if is_update:   # Update
             if custom_field_id:
@@ -854,6 +878,10 @@ def _add_or_update_candidate_custom_field_ids(candidate_id, custom_field_ids, ad
 
 
 def _add_or_update_educations(candidate_id, educations, added_time, is_update):
+    """
+    Function will update CandidateEducation, CandidateEducationDegree, and
+    CandidateEducationDegreeBullet or create new ones.
+    """
     for education in educations:
 
         # Parse data for update or create
@@ -866,15 +894,18 @@ def _add_or_update_educations(candidate_id, educations, added_time, is_update):
         is_current = education.get('is_current')
 
         if is_update:   # Update
+
             # Candidate's Education
             update_dict = {'list_order': list_order, 'school_name': school_name,
-                'school_type': school_type, 'city': city, 'state': state,
-                'country_id': country_id, 'is_current': is_current, 'added_time': added_time}
+                           'school_type': school_type, 'city': city, 'state': state,
+                           'country_id': country_id, 'is_current': is_current,
+                           'added_time': added_time}
 
             # Remove None values from update_dict
             update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
 
-            candidate_education = db.session.query(CandidateEducation).filter_by(candidate_id=candidate_id)
+            candidate_education = db.session.query(CandidateEducation).\
+                filter_by(candidate_id=candidate_id)
             candidate_education.update(update_dict)
             db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
@@ -885,18 +916,17 @@ def _add_or_update_educations(candidate_id, educations, added_time, is_update):
             for education_degree in education_degrees:
                 degree_type = education_degree.get('type')
                 update_dict = {'list_order': education_degree.get('list_order', 1),
-                    'degree_type': degree_type,
-                    'degree_title': education_degree.get('title'),
-                    'start_year': education_degree.get('start_year'),
-                    'start_month': education_degree.get('start_month'),
-                    'end_year': education_degree.get('end_year'),
-                    'end_month': education_degree.get('end_month'),
-                    'gpa_num': education_degree.get('gpa_num'),
-                    'gpa_denom': education_degree.get('gpa_denom'),
-                    'classification_type_id': classification_type_id_from_degree_type(degree_type),
-                    'start_time': education_degree.get('start_time'),
-                    'end_time': education_degree.get('end_time')
-                }
+                               'degree_type': degree_type,
+                               'degree_title': education_degree.get('title'),
+                               'start_year': education_degree.get('start_year'),
+                               'start_month': education_degree.get('start_month'),
+                               'end_year': education_degree.get('end_year'),
+                               'end_month': education_degree.get('end_month'),
+                               'gpa_num': education_degree.get('gpa_num'),
+                               'gpa_denom': education_degree.get('gpa_denom'),
+                               'classification_type_id': classification_type_id_from_degree_type(degree_type),
+                               'start_time': education_degree.get('start_time'),
+                               'end_time': education_degree.get('end_time')}
 
                 # Remove None values from update_dict
                 update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
@@ -912,7 +942,8 @@ def _add_or_update_educations(candidate_id, educations, added_time, is_update):
                 assert isinstance(degree_bullets, list)
                 for degree_bullet in degree_bullets:
                     update_dict = {'concentration_type': degree_bullet.get('major'),
-                        'comments': degree_bullet.get('comments'), 'added_time': added_time}
+                                   'comments': degree_bullet.get('comments'),
+                                   'added_time': added_time}
 
                     # Remove None values from update_dict
                     update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
@@ -922,9 +953,7 @@ def _add_or_update_educations(candidate_id, educations, added_time, is_update):
                         update(update_dict)
                     db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-            return
-
-        else:           # Create if not an update
+        else:   # Create if not an update
             for education in educations:
                 candidate_education = CandidateEducation(
                     candidate_id=candidate_id, list_order=list_order,
@@ -940,7 +969,6 @@ def _add_or_update_educations(candidate_id, educations, added_time, is_update):
                 candidate_education_id = candidate_education.id
                 education_degrees = education.get('degrees')
                 assert isinstance(education_degrees, list)
-
                 for education_degree in education_degrees:
                     degree_type = education_degree.get('type')
                     classification_type_id = classification_type_id_from_degree_type(degree_type)
@@ -979,7 +1007,12 @@ def _add_or_update_educations(candidate_id, educations, added_time, is_update):
     return
 
 
-def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, is_update):
+def _add_or_update_work_experiences(candidate_id, work_experiences, added_time,
+                                    is_update):
+    """
+    Function will update CandidateExperience and CandidateExperienceBullet
+    or create new ones.
+    """
     for work_experience in work_experiences:
 
         # Parse data for update or create
@@ -998,15 +1031,16 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, 
         if is_update:   # Update
             # Candidate's Experience
             update_dict = {'list_order': list_order, 'organization': organization,
-                'position': position, 'city': city, 'state': state,
-                'end_month': end_month, 'start_year': start_year,
-                'country_id': country_id, 'start_month': start_month,
-                'end_year': end_year, 'is_current': is_current}
+                           'position': position, 'city': city, 'state': state,
+                           'end_month': end_month, 'start_year': start_year,
+                           'country_id': country_id, 'start_month': start_month,
+                           'end_year': end_year, 'is_current': is_current}
 
             # Remove None values from update_dict
             update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
 
-            experience = db.session.query(CandidateExperience).filter_by(candidate_id=candidate_id)
+            experience = db.session.query(CandidateExperience).\
+                filter_by(candidate_id=candidate_id)
             experience.update(update_dict)
             db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
@@ -1014,18 +1048,19 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, 
             experience_bullets = work_experience.get('work_experience_bullets')
             assert isinstance(experience_bullets, list)
             for experience_bullet in experience_bullets:
-                update_dict = {'list_order': experience_bullet.get('list_order'),
-                    'description': experience_bullet.get('description'),
-                    'added_time': added_time}
+                update_dict = {'list_order': experience_bullet.get('list_order', 1),
+                               'description': experience_bullet.get('description'),
+                               'added_time': added_time}
 
                 # Remove None values from update_dict
                 update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
 
-                db.session.query(CandidateExperienceBullet).filter_by(candidate_experience_id=experience_id).\
+                db.session.query(CandidateExperienceBullet).\
+                    filter_by(candidate_experience_id=experience_id).\
                     update(update_dict)
                 db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-        else:           # Create if not an update
+        else:   # Create if not an update
             experience = CandidateExperience(
                 candidate_id=candidate_id, list_order=list_order,
                 organization=organization, position=position, city=city, state=state,
@@ -1051,6 +1086,9 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, 
 
 
 def _add_or_update_work_preference(candidate_id, work_preference, is_update):
+    """
+    Function will update CandidateWorkPreference or create a new one.
+    """
     # Parse data for create or update
     relocate=work_preference.get('relocate')
     authorization=work_preference.get('authorization')
@@ -1062,17 +1100,19 @@ def _add_or_update_work_preference(candidate_id, work_preference, is_update):
 
     if is_update:   # Update
         update_dict = {'relocate': relocate, 'authorization': authorization,
-                       'telecommute': telecommute, 'travel_percentage': travel_percentage,
-                       'hourly_rate': hourly_rate, 'salary': salary, 'tax_terms': tax_terms}
+                       'telecommute': telecommute,
+                       'travel_percentage': travel_percentage,
+                       'hourly_rate': hourly_rate, 'salary': salary,
+                       'tax_terms': tax_terms}
 
         # Remove None values from update_dict
         update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
 
-        db.session.query(CandidateWorkPreference).filter_by(candidate_id=candidate_id).\
-            update(update_dict)
+        db.session.query(CandidateWorkPreference).\
+            filter_by(candidate_id=candidate_id).update(update_dict)
         db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-    else:           # Create if not an update
+    else:   # Create if not an update
         db.session.add(CandidateWorkPreference(
             candidate_id=candidate_id, relocate=relocate,
             authorization=authorization, telecommute=telecommute,
@@ -1082,8 +1122,12 @@ def _add_or_update_work_preference(candidate_id, work_preference, is_update):
 
     return
 
+
 # TODO: erroneous logic! Must update email (other records too) via ID
 def _add_or_update_emails(candidate_id, emails, is_update):
+    """
+    Function will update CandidateEmail or create new one(s).
+    """
     emails_has_default = any([email.get('is_default') for email in emails])
     for i, email in enumerate(emails):
 
@@ -1097,7 +1141,8 @@ def _add_or_update_emails(candidate_id, emails, is_update):
 
         if is_update:   # Update
             if not (email_id and email_address):
-                raise InvalidUsage(error_message="Email ID and email address are required for update.")
+                error_message = "Email ID and email address are required for update."
+                raise InvalidUsage(error_message=error_message)
 
             update_dict = {'address': email_address, 'is_default': is_default,
                            'email_label_id': email_label_id}
@@ -1119,6 +1164,9 @@ def _add_or_update_emails(candidate_id, emails, is_update):
 
 
 def _add_or_update_phones(candidate_id, phones, is_update):
+    """
+    Function will update CandidatePhone or create new one(s).
+    """
     phone_has_default = any([phone.get('is_default') for phone in phones])
     for i, phone in enumerate(phones):
         value = phone.get('value')
@@ -1133,11 +1181,11 @@ def _add_or_update_phones(candidate_id, phones, is_update):
 
             # Remove None values from update_dict
             update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
-            db.session.query(CandidatePhone).filter_by(candidate_id=candidate_id). \
+            db.session.query(CandidatePhone).filter_by(candidate_id=candidate_id).\
                 update(update_dict)
             db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-        else:           # Create if not an update
+        else:   # Create if not an update
             db.session.add(CandidatePhone(
                 candidate_id=candidate_id, value=value,
                 is_default=is_default, phone_label_id=phone_label_id
@@ -1146,6 +1194,9 @@ def _add_or_update_phones(candidate_id, phones, is_update):
 
 
 def _add_or_update_military_services(candidate_id, military_services, is_update):
+    """
+    Function will update CandidateMilitaryService or create new one(s).
+    """
     for military_service in military_services:\
 
         # Parse data for create or update
@@ -1160,9 +1211,10 @@ def _add_or_update_military_services(candidate_id, military_services, is_update)
 
         if is_update:   # Update
             update_dict = {'country_id': country_id, 'service_status': service_status,
-                           'highest_rank': highest_rank, 'highest_grade': highest_grade,
-                           'branch': branch, 'comments': comments,
-                           'from_date': from_date, 'to_date': to_date}
+                           'highest_rank': highest_rank,
+                           'highest_grade': highest_grade, 'branch': branch,
+                           'comments': comments, 'from_date': from_date,
+                           'to_date': to_date}
 
             # Remove None values from update_dict
             update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
@@ -1183,6 +1235,9 @@ def _add_or_update_military_services(candidate_id, military_services, is_update)
 
 
 def _add_or_update_preferred_locations(candidate_id, preferred_locations, is_update):
+    """
+    Function will update CandidatePreferredLocation or create a new one.
+    """
     for preferred_location in preferred_locations:
 
         # Parse data for update or create
@@ -1199,8 +1254,8 @@ def _add_or_update_preferred_locations(candidate_id, preferred_locations, is_upd
             # Remove None values from update_dict
             update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
 
-            db.session.query(CandidatePreferredLocation).filter_by(candidate_id=candidate_id).\
-                update(update_dict)
+            db.session.query(CandidatePreferredLocation).\
+                filter_by(candidate_id=candidate_id).update(update_dict)
             db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
         else:           # Create if not an update
@@ -1212,6 +1267,9 @@ def _add_or_update_preferred_locations(candidate_id, preferred_locations, is_upd
 
 
 def _add_or_update_skills(candidate_id, skills, added_time, is_update):
+    """
+    Function will update CandidateSkill or create new one(s).
+    """
     for skill in skills:
 
         # Parse data for create or update
@@ -1247,6 +1305,9 @@ def _add_or_update_skills(candidate_id, skills, added_time, is_update):
 
 
 def _add_or_update_social_networks(candidate_id, social_networks, is_update):
+    """
+    Function will update CandidateSocialNetwork or create new one(s).
+    """
     for social_network in social_networks:
 
         # Parse data for create or update
@@ -1254,7 +1315,8 @@ def _add_or_update_social_networks(candidate_id, social_networks, is_update):
         social_network_id = social_network_id_from_name(name=social_network_name)
         social_profile_url=social_network.get('profile_url')
         if not social_network_name and not social_profile_url:
-            raise InvalidUsage(error_message='Social network name and corresponding profile url is required.')
+            error_message = 'Social network name and corresponding profile url is required.'
+            raise InvalidUsage(error_message=error_message)
 
         if is_update:   # Update
             db.session.query(CandidateSocialNetwork).filter_by(candidate_id=candidate_id).\
