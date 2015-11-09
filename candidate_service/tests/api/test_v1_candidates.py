@@ -3,21 +3,20 @@ Test cases for candidate-restful-services
 """
 # Standard library
 import json
-import requests
 
 # Candidate Service app instance
 from candidate_service.candidate_app import app
 
 # Sample data
-from candidate_service.common.tests.sample_data import generate_single_candidate_data
+from common.tests.sample_data import generate_single_candidate_data, candidate_data_for_update
 
 # Models
-from candidate_service.common.models.candidate import Candidate, db
+from common.models.candidate import Candidate
 from candidate_service.common.models.user import User
 
 # Conftest
-from candidate_service.common.tests.conftest import UserAuthentication
-from candidate_service.common.tests.conftest import *
+from common.tests.conftest import UserAuthentication
+from common.tests.conftest import *
 
 
 BASE_URI = "http://127.0.0.1:8005/v1/candidates"
@@ -86,20 +85,41 @@ def test_create_candidate(sample_user, user_auth):
         data=json.dumps(sample_candidate_data),
         headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
     )
+    resp_dict = r.json()
     print "\n sample_candidate_1 = %s" % sample_candidate_data
     print "\n resp_status_code = %s" % r.status_code
-    print "\n resp_object = %s" % r.json()
+    print "\n resp_object = %s" % resp_dict
 
-    candidate_id = r.json()['candidates'][0]['id']
+    r2 = requests.get(
+        url=BASE_URI + '/%s' % resp_dict['candidates'][0]['id'],
+        headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
+    )
+    resp_dict2 = r2.json()
+    print "\n resp_dict2 = %s" % resp_dict2
 
     # Update candidate
-    sample_candidate_data_2 = generate_single_candidate_data()
+    can_dict = resp_dict2['candidate']
+    sample_candidate_data_2 = candidate_data_for_update(
+        can_dict['id'],
+        can_dict['emails'][0]['id'], can_dict['emails'][1]['id'],
+        can_dict['phones'][0]['id'], can_dict['phones'][1]['id'],
+        can_dict['addresses'][0]['id'], can_dict['addresses'][1]['id'],
+        can_dict['work_preference'][0]['id'],
+        can_dict['work_experiences'][0]['id'],
+        # can_dict['work_experiences'][0]['work_experience_bullets'][0]['id'],
+        can_dict['educations'][0]['id'], can_dict['educations'][0]['degree_details'][0]['id'],
+        # can_dict['educations'][0]['degree_details'][0]['degree_bullets'][0]['id'],
+        can_dict['military_services'][0]['id'],
+        can_dict['preferred_locations'][0]['id'], can_dict['preferred_locations'][1]['id'],
+        can_dict['skills'][0]['id'], can_dict['skills'][1]['id'], can_dict['skills'][2]['id'],
+        can_dict['social_networks'][0]['id'], can_dict['social_networks'][1]['id']
+    )
+    print "\n sample_candidate_2 = %s" % sample_candidate_data_2
     r = requests.patch(
         url=BASE_URI,
         data=json.dumps(sample_candidate_data_2),
         headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
     )
-    print "\n sample_candidate_2 = %s" % sample_candidate_data_2
     print "\n resp_status_code: %s" % r.status_code
     print "\n resp_dict: %s" % r.json()
 
@@ -194,12 +214,6 @@ def test_create_already_existing_candidate(sample_user, user_auth):
 
     db.session.delete(candidate)
     db.session.commit()
-
-
-def test_health_check():
-    import requests
-    response = requests.get('http://127.0.0.1:8005/healthcheck')
-    assert response.status_code == 200
 
 ########################################
 # test cases for PATCHing candidate(s) #

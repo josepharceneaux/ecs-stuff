@@ -2,6 +2,15 @@ from sqlalchemy.sql.expression import ClauseElement
 import requests
 
 
+from common.models.db import db
+from activity_service.activities_app import app
+from flask import current_app
+
+with app.app_context():
+    db.session.commit()
+    print "current running app: %s" % current_app.name
+
+
 def get_or_create(session, model, defaults=None, **kwargs):
     instance = session.query(model).filter_by(**kwargs).first()
     if instance:
