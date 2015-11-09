@@ -50,7 +50,7 @@ class CandidateResource(Resource):
         :return:    A dict of candidate info
                     404 status if candidate is not found
         """
-        # Logged in user
+        # Authenticate user
         authed_user = request.user
 
         # Either candidate_id or candidate_email must be provided
@@ -96,7 +96,7 @@ class CandidateResource(Resource):
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
-        # Logged in user
+        # Authenticate user
         authed_user = request.user
 
         # Parse request body
@@ -194,7 +194,7 @@ class CandidateResource(Resource):
 
     def patch(self, **kwargs):
         """
-        Function updates candidate(s).
+        Function can update candidate(s).
 
         Takes a JSON dict containing:
             - a candidates key and a list of candidate-object(s) as values
@@ -203,7 +203,7 @@ class CandidateResource(Resource):
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
-        # Logged in user
+        # Authenticate user
         authed_user = request.user
 
         # Parse request body
