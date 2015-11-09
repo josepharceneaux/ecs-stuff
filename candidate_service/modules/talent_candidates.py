@@ -47,7 +47,6 @@ def fetch_candidate_info(candidate_id, fields=None):
     assert isinstance(candidate_id, int)
     candidate = db.session.query(Candidate).get(candidate_id)
 
-    # TODO: set candidate's data type or assert that it's Candidate
     # TODO: return id of everything and fix the logical error in emails and similar tables
 
     if not candidate:
@@ -68,51 +67,51 @@ def fetch_candidate_info(candidate_id, fields=None):
 
     phones = None
     if get_all_fields or 'phones' in fields:
-        phones = phone_label_and_value(candidate=candidate)
+        phones = candidate_phones(candidate=candidate)
 
-    candidate_addresses = None
+    addresses = None
     if get_all_fields or 'addresses' in fields:
-        candidate_addresses = addresses(candidate=candidate)
+        addresses = candidate_addresses(candidate=candidate)
 
-    candidate_work_experiences = None
+    work_experiences = None
     if get_all_fields or 'work_experiences' in fields:
-        candidate_work_experiences = work_experiences(candidate_id=candidate_id)
+        work_experiences = candidate_experiences(candidate_id=candidate_id)
 
-    candidate_work_preference = None
+    work_preference = None
     if get_all_fields or 'work_preferences' in fields:
-        candidate_work_preference = work_preference(candidate=candidate)
+        work_preference = candidate_work_preference(candidate=candidate)
 
-    candidate_preferred_locations = None
+    preferred_locations = None
     if get_all_fields or 'preferred_locations' in fields:
-        candidate_preferred_locations = preferred_locations(candidate=candidate)
+        preferred_locations = candidate_preferred_locations(candidate=candidate)
 
-    candidate_educations = None
+    educations = None
     if get_all_fields or 'educations' in fields:
-        candidate_educations = educations(candidate=candidate)
+        educations = candidate_educations(candidate=candidate)
 
-    candidate_skills = None
+    skills = None
     if get_all_fields or 'skills' in fields:
-        candidate_skills = skills(candidate=candidate)
+        skills = candidate_skills(candidate=candidate)
 
-    candidate_interests = None
+    areas_of_interest = None
     if get_all_fields or 'areas_of_interest' in fields:
-        candidate_interests = areas_of_interest(candidate_id=candidate_id)
+        areas_of_interest = candidate_areas_of_interest(candidate_id=candidate_id)
 
-    candidate_military_services = None
+    military_services = None
     if get_all_fields or 'military_services' in fields:
-        candidate_military_services = military_services(candidate=candidate)
+        military_services = candidate_military_services(candidate=candidate)
 
-    candidate_custom_fields = None
+    custom_fields = None
     if get_all_fields or 'custom_fields' in fields:
-        candidate_custom_fields = custom_fields(candidate=candidate)
+        custom_fields = candidate_custom_fields(candidate=candidate)
 
-    candidate_social_networks = None
+    social_networks = None
     if get_all_fields or 'social_networks' in fields:
-        candidate_social_networks = social_network_name_and_url(candidate=candidate)
+        social_networks = candidate_social_networks(candidate=candidate)
 
     history = None
     if get_all_fields or 'contact_history' in fields:
-        history = contact_history(candidate=candidate)
+        history = candidate_contact_history(candidate=candidate)
 
     openweb_id = None
     if get_all_fields or 'openweb_id' in fields:
@@ -128,16 +127,16 @@ def fetch_candidate_info(candidate_id, fields=None):
         'created_at_datetime': None,
         'emails': emails,
         'phones': phones,
-        'addresses': candidate_addresses,
-        'work_experiences': candidate_work_experiences,
-        'work_preference': candidate_work_preference,
-        'preferred_locations': candidate_preferred_locations,
-        'educations': candidate_educations,
-        'skills': candidate_skills,
-        'areas_of_interest': candidate_interests,
-        'military_services': candidate_military_services,
-        'custom_fields': candidate_custom_fields,
-        'social_networks': candidate_social_networks,
+        'addresses': addresses,
+        'work_experiences': work_experiences,
+        'work_preference': work_preference,
+        'preferred_locations': preferred_locations,
+        'educations': educations,
+        'skills': skills,
+        'areas_of_interest': areas_of_interest,
+        'military_services': military_services,
+        'custom_fields': custom_fields,
+        'social_networks': social_networks,
         'contact_history': history,
         'openweb_id': openweb_id,
         'dice_profile_id': dice_profile_id
@@ -150,8 +149,8 @@ def fetch_candidate_info(candidate_id, fields=None):
 
 def candidate_emails(candidate):
     """
-    :type candidate: Candidate
-    :return:
+    :type candidate:    Candidate
+    :rtype              list
     """
     assert isinstance(candidate, Candidate)
     emails = candidate.candidate_emails
@@ -161,128 +160,185 @@ def candidate_emails(candidate):
              } for email in emails]
 
 
-def phone_label_and_value(candidate):
-    candidate_phones = candidate.candidate_phones
-    return [{'label': phone.phone_label.description,
+def candidate_phones(candidate):
+    """
+    :type candidate:    Candidate
+    :rtype              list
+    """
+    phones = candidate.candidate_phones
+    return [{'id': phone.id,
+             'label': phone.phone_label.description,
              'value': phone.value
-             } for phone in candidate_phones]
+             } for phone in phones]
 
 
-def addresses(candidate):
-    candidate_addresses = candidate.candidate_addresses
-    return [{'address_line_1': candidate_address.address_line_1,
-             'address_line_2': candidate_address.address_line_2,
-             'city': candidate_address.city,
-             'state': candidate_address.state,
-             'zip_code': candidate_address.zip_code,
-             'po_box': candidate_address.po_box,
-             'country': country_name_from_country_id(country_id=candidate_address.country_id),
-             'latitude': candidate_address.coordinates and candidate_address.coordinates.split(',')[0],
-             'longitude': candidate_address.coordinates and candidate_address.coordinates.split(',')[1],
-             'is_default': candidate_address.is_default
-             } for candidate_address in candidate_addresses]
+def candidate_addresses(candidate):
+    """
+    :type candidate:    Candidate
+    :rtype              list
+    """
+    addresses = candidate.candidate_addresses
+    return [{'id': address.id,
+             'address_line_1': address.address_line_1,
+             'address_line_2': address.address_line_2,
+             'city': address.city,
+             'state': address.state,
+             'zip_code': address.zip_code,
+             'po_box': address.po_box,
+             'country': country_name_from_country_id(country_id=address.country_id),
+             'latitude': address.coordinates and address.coordinates.split(',')[0],
+             'longitude': address.coordinates and address.coordinates.split(',')[1],
+             'is_default': address.is_default
+             } for address in addresses]
 
 
-def work_experiences(candidate_id):
+def candidate_experiences(candidate_id):
+    """
+    :type candidate_id:     int
+    :rtype                  list
+    """
     # Candidate experiences queried from db and returned in descending order
-    candidate_experiences = db.session.query(CandidateExperience). \
-        filter_by(candidate_id=candidate_id). \
-        order_by(CandidateExperience.is_current.desc(), CandidateExperience.start_year.desc(),
+    experiences = db.session.query(CandidateExperience).\
+        filter_by(candidate_id=candidate_id).\
+        order_by(CandidateExperience.is_current.desc(),
+                 CandidateExperience.start_year.desc(),
                  CandidateExperience.start_month.desc())
-    return [{'company': candidate_experience.organization,
-             'role': candidate_experience.position,
-             'start_date': date_of_employment(year=candidate_experience.start_year,
-                                              month=candidate_experience.start_month or 1),
-             'end_date': date_of_employment(year=candidate_experience.end_year,
-                                            month=candidate_experience.end_month or 1),
-             'city': candidate_experience.city,
-             'country': country_name_from_country_id(country_id=candidate_experience.country_id),
-             'is_current': candidate_experience.is_current
-             } for candidate_experience in candidate_experiences]
+    return [{'id': experience.id,
+             'company': experience.organization,
+             'role': experience.position,
+             'start_date': date_of_employment(year=experience.start_year, month=experience.start_month or 1),
+             'end_date': date_of_employment(year=experience.end_year, month=experience.end_month or 1),
+             'city': experience.city,
+             'country': country_name_from_country_id(country_id=experience.country_id),
+             'is_current': experience.is_current
+             } for experience in experiences]
 
 
-def work_preference(candidate):
-    candidate_work_preference = candidate.candidate_work_preferences
-    return {'authorization': candidate_work_preference.authorization,
-            'employment_type': candidate_work_preference.tax_terms,
-            'security_clearance': candidate_work_preference.security_clearance,
-            'willing_to_relocate': candidate_work_preference.relocate,
-            'telecommute': candidate_work_preference.telecommute,
-            'travel_percentage': candidate_work_preference.travel_percentage,
-            'third_party': candidate_work_preference.third_party
-            } if candidate_work_preference else None
+def candidate_work_preference(candidate):
+    """
+    :type candidate:    Candidate
+    :rtype              dict
+    """
+    work_preference = candidate.candidate_work_preferences
+    return {'id': work_preference.id,
+            'authorization': work_preference.authorization,
+            'employment_type': work_preference.tax_terms,
+            'security_clearance': work_preference.security_clearance,
+            'willing_to_relocate': work_preference.relocate,
+            'telecommute': work_preference.telecommute,
+            'travel_percentage': work_preference.travel_percentage,
+            'third_party': work_preference.third_party
+            } if work_preference else None
 
 
-def preferred_locations(candidate):
-    candidate_preferred_locations = candidate.candidate_preferred_locations
-    return [{'address': preferred_location.address,
+def candidate_preferred_locations(candidate):
+    """
+    :type candidate:    Candidate
+    :rtype              list
+    """
+    preferred_locations = candidate.candidate_preferred_locations
+    return [{'id': preferred_location.id,
+             'address': preferred_location.address,
              'city': preferred_location.city,
              'region': preferred_location.region,
              'country': country_name_from_country_id(country_id=preferred_location.country_id)
-             } for preferred_location in candidate_preferred_locations]
+             } for preferred_location in preferred_locations]
 
 
-def educations(candidate):
-    candidate_educations = candidate.candidate_educations
-    return [{'school_name': education.school_name,
-             'degree_details': degree_info(education=education),
+def candidate_educations(candidate):
+    """
+    :type candidate:    Candidate
+    :rtype              list
+    """
+    educations = candidate.candidate_educations
+    return [{'id': education.id,
+             'school_name': education.school_name,
+             'degree_details': candidate_degrees(education=education),
              'city': education.city,
              'state': education.state,
              'country': country_name_from_country_id(country_id=education.country_id)
-             } for education in candidate_educations]
+             } for education in educations]
 
 
-def degree_info(education):
+def candidate_degrees(education):
+    """
+    :type education:    CandidateEducation
+    :rtype              list
+    """
     degrees = education.candidate_education_degrees
-    return [{'degree_title': degree.degree_title,
+    return [{'id': degree.id,
+             'degree_title': degree.degree_title,
              'degree_type': degree.degree_type,
              'start_date': degree.start_time.date().isoformat() if degree.start_time else None,
              'end_date': degree.end_time.date().isoformat() if degree.end_time else None
              } for degree in degrees]
 
 
-def skills(candidate):
-    candidate_skills = candidate.candidate_skills
-    return [{'name': skill.description,
+def candidate_skills(candidate):
+    """
+    :type candidate:    Candidate
+    :rtype              list
+    """
+    skills = candidate.candidate_skills
+    return [{'id': skill.id,
+             'name': skill.description,
              'month_used': skill.total_months,
              'last_used_date': skill.last_used.isoformat() if skill.last_used else None
-             } for skill in candidate_skills]
+             } for skill in skills]
 
 
-def areas_of_interest(candidate_id):
-    candidate_interests = db.session.query(CandidateAreaOfInterest). \
+def candidate_areas_of_interest(candidate_id):
+    """
+    :type candidate_id: int
+    :rtype              list
+    """
+    areas_of_interest = db.session.query(CandidateAreaOfInterest).\
         filter_by(candidate_id=candidate_id)
     return [{'id': db.session.query(AreaOfInterest).get(interest.area_of_interest_id).id,
              'name': db.session.query(AreaOfInterest).get(interest.area_of_interest_id).description
-             } for interest in candidate_interests]
+             } for interest in areas_of_interest]
 
 
-def military_services(candidate):
-    candidate_military_experience = candidate.candidate_military_services
-    return [{'branch': military_info.branch,
+def candidate_military_services(candidate):
+    """
+    :type candidate:    Candidate
+    :rtype              list
+    """
+    military_experiences = candidate.candidate_military_services
+    return [{'id': military_info.id,
+             'branch': military_info.branch,
              'service_status': military_info.service_status,
              'highest_grade': military_info.highest_grade,
              'highest_rank': military_info.highest_rank,
              'start_date': military_info.from_date,
              'end_date': military_info.to_date,
              'country': country_name_from_country_id(country_id=military_info.country_id)
-             } for military_info in candidate_military_experience]
+             } for military_info in military_experiences]
 
 
-def custom_fields(candidate):
-    candidate_custom_fields = candidate.candidate_custom_fields
-    return [{'id': candidate_custom_field.custom_field_id,
-             'name': candidate_custom_field.custom_field.name,
-             'value': candidate_custom_field.value,
-             'created_at_datetime': candidate_custom_field.added_time.isoformat()
-             } for candidate_custom_field in candidate_custom_fields]
+def candidate_custom_fields(candidate):
+    """
+    :type candidate:    Candidate
+    :rtype              list
+    """
+    custom_fields = candidate.candidate_custom_fields
+    return [{'id': custom_field.custom_field_id,
+             'name': custom_field.custom_field.name,
+             'value': custom_field.value,
+             'created_at_datetime': custom_field.added_time.isoformat()
+             } for custom_field in custom_fields]
 
 
-def social_network_name_and_url(candidate):
-    candidate_social_networks = candidate.candidate_social_network
-    return [{'name': soc_net.social_network.name,
+def candidate_social_networks(candidate):
+    """
+    :type candidate:    Candidate
+    :rtype              list
+    """
+    social_networks = candidate.candidate_social_network
+    return [{'id': soc_net.id,
+             'name': soc_net.social_network.name,
              'url': soc_net.social_profile_url
-             } for soc_net in candidate_social_networks]
+             } for soc_net in social_networks]
 
 
 class ContactHistoryEvent:
@@ -295,7 +351,11 @@ class ContactHistoryEvent:
     EMAIL_CLICK = 'email_click'
 
 
-def contact_history(candidate):
+def candidate_contact_history(candidate):
+    """
+    :type candidate:    Candidate
+    :rtype              dict
+    """
     timeline = []
 
     # Campaign sends & campaigns

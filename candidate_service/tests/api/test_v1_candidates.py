@@ -3,6 +3,7 @@ Test cases for candidate-restful-services
 """
 # Standard library
 import json
+import requests
 
 # Candidate Service app instance
 from candidate_service.candidate_app import app
@@ -58,16 +59,14 @@ def test_get_candidate_via_invalid_email(sample_user, user_auth):
     print "\nresp = %s" % resp.json()
 
 
-# def test_get_candidate_via_id_and_email():
-#     """
-#     Test:   retrieve candidate via candidate's ID and candidate's Email address
-#     Expect: 200 in both cases
-#     """
-#     resp = requests.get(
-#         url=BASE_URI + '/%s' % 4
-#     )
-#     assert resp.status_code == 200
-#     print "\n resp = %s" % resp.json()
+def test_get_candidate_via_id_and_email():
+    """
+    Test:   retrieve candidate via candidate's ID and candidate's Email address
+    Expect: 200 in both cases
+    """
+    resp = requests.get(url=BASE_URI + '/4')
+    assert resp.status_code == 200
+    print "\n resp = %s" % resp.json()
 
 #######################################
 # test cases for POSTing candidate(s) #
