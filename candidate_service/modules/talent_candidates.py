@@ -44,7 +44,7 @@ def fetch_candidate_info(candidate_id, fields=None):
     :return:    Candidate dict
     :rtype:     dict[str, T]
     """
-    assert isinstance(candidate_id, int)
+    assert isinstance(candidate_id, int) or isinstance(candidate_id, long)
     candidate = db.session.query(Candidate).get(candidate_id)
 
     if not candidate:

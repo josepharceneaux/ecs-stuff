@@ -40,13 +40,21 @@ def post_to_candidate_resource(access_token):
     return resp
 
 
-def get_from_candidate_resource(candidate_id, access_token):
+def get_from_candidate_resource(access_token, candidate_id=None,
+                                candidate_email=None):
     """
-    Function sends a get request to CandidateResource,
+    Function sends a get request to CandidateResource via candidate's ID
+    or candidate's Email
     i.e. CandidateResource/get()
     """
+    url = CandidateResourceUrl.BASE_URL
+    if candidate_id:
+        url = url + '/%s' % candidate_id
+    elif candidate_email:
+        url = url + '/%s' % candidate_email
+
     resp = requests.get(
-        url=CandidateResourceUrl.BASE_URL + '/%s' % candidate_id,
+        url=url,
         headers={'Authorization': 'Bearer %s' % access_token},
     )
     return resp

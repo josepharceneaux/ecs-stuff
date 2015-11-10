@@ -1,19 +1,12 @@
 """
 Test cases for candidate-restful-services
 """
-# Standard library
-import json
-
 # Candidate Service app instance
 from candidate_service.candidate_app import app
 
-# Sample data
-from common.tests.sample_data import (generate_single_candidate_data,
-                                      candidate_data_for_update)
-
 # Models
-from common.models.candidate import Candidate
 from candidate_service.common.models.user import User
+from candidate_service.common.models.candidate import Candidate
 
 # Conftest
 from common.tests.conftest import UserAuthentication
@@ -25,6 +18,56 @@ from helpers import (test_response, post_to_candidate_resource, get_from_candida
 ####################################
 # test cases for GETting candidate #
 ####################################
+def test_get_candidate_without_authed_user(sample_user, user_auth):
+    """
+    Test:   attempt to retrieve candidate with bad access_token
+    Expect: 401
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get auth token for sample_user
+    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+
+    # Create Candidate
+    resp = post_to_candidate_resource(access_token=auth_token_row['access_token'])
+    resp_dict = resp.json()
+    print test_response(resp.request, resp_dict, resp.status_code)
+    assert resp.status_code == 201
+
+    # Retrieve Candidate
+    resp = get_from_candidate_resource(access_token=None,
+                                       candidate_id=resp_dict['candidates'][0]['id'])
+    resp_dict = resp.json()
+    print test_response(resp.request, resp_dict, resp.status_code)
+    assert resp.status_code == 401
+    assert 'error' in resp_dict
+
+
+def test_get_candidate_without_id_or_email(sample_user, user_auth):
+    """
+    Test:   attempt to retrieve candidate without providing ID or Email
+    Expect: 400
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get auth token for sample_user
+    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+
+    # Create Candidate
+    resp = post_to_candidate_resource(access_token=auth_token_row['access_token'])
+    resp_dict = resp.json()
+    print test_response(resp.request, resp_dict, resp.status_code)
+    assert resp.status_code == 201
+
+    # Retrieve Candidate without providing ID or Email
+    resp = get_from_candidate_resource(access_token=auth_token_row['access_token'],
+                                       candidate_id=None, candidate_email=None)
+    resp_dict = resp.json()
+    print test_response(resp.request, resp_dict, resp.status_code)
+    assert resp.status_code == 400
+    assert 'error' in resp_dict
+
+
 def test_get_candidate_from_forbidden_domain(sample_user, user_auth, sample_user_2):
     """
     Test:   attempt to retrieve a candidate outside of logged-in-user's domain
@@ -34,22 +77,22 @@ def test_get_candidate_from_forbidden_domain(sample_user, user_auth, sample_user
     :type sample_user_2:    User
     :type user_auth:        UserAuthentication
     """
-    # Get Auth token for sample_user
+    # Get auth token for sample_user
     auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
 
     # Create Candidate
-    resp = post_to_candidate_resource(auth_token_row['access_token'])
+    resp = post_to_candidate_resource(access_token=auth_token_row['access_token'])
     resp_dict = resp.json()
     print test_response(resp.request, resp_dict, resp.status_code)
     assert resp.status_code == 201
     assert 'candidates' in resp_dict and 'id' in resp_dict['candidates'][0]
 
-    # Get Auth token for sample_user_2
+    # Get auth token for sample_user_2
     auth_token_row = user_auth.get_auth_token(sample_user_2, get_bearer_token=True)
 
     # Retrieve candidate from a different domain
-    resp = get_from_candidate_resource(resp_dict['candidates'][0]['id'],
-                                       auth_token_row['access_token'])
+    resp = get_from_candidate_resource(access_token=auth_token_row['access_token'],
+                                       candidate_id=resp_dict['candidates'][0]['id'])
     resp_dict = resp.json()
     print test_response(resp.request, resp_dict, resp.status_code)
     assert resp.status_code == 403
@@ -61,79 +104,100 @@ def test_get_candidate_via_invalid_email(sample_user, user_auth):
     Test:   retrieve candidate via an invalid email address
     Expect: 400
     """
+    # Get auth token for sample_user
     auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-    resp = requests.get(
-        url=BASE_URI + "/%s" % 'bad_email.com',
-        headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
-    )
+
+    # Retrieve candidate via candidate's email
+    resp = get_from_candidate_resource(access_token=auth_token_row['access_token'],
+                                       candidate_email='bad_email.com')
+    print test_response(resp.request, resp.json(), resp.status_code)
     assert resp.status_code == 400
-    print "\nresp = %s" % resp.json()
-#
-#
-# def test_get_candidate_via_id_and_email():
-#     """
-#     Test:   retrieve candidate via candidate's ID and candidate's Email address
-#     Expect: 200 in both cases
-#     """
-#     resp = requests.get(url=BASE_URI + '/4')
-#     assert resp.status_code == 200
-#     print "\n resp = %s" % resp.json()
+    assert 'error' in resp.json()
+
+
+def test_get_candidate_via_id_and_email(sample_user, user_auth):
+    """
+    Test:   retrieve candidate via candidate's ID and candidate's Email address
+    Expect: 200 in both cases
+    :type sample_user:    User
+    :type user_auth:      UserAuthentication
+    """
+    # Get auth token
+    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+
+    # Create candidate
+    resp = post_to_candidate_resource(access_token=auth_token_row['access_token'])
+    resp_dict = resp.json()
+    print test_response(resp.request, resp_dict, resp.status_code)
+
+    db.session.commit()
+
+    # Candidate ID & Email
+    candidate_id = resp_dict['candidates'][0]['id']
+    candidate_email = db.session.query(Candidate).get(candidate_id).candidate_emails[0].address
+
+    # Get candidate via Candidate ID
+    resp = get_from_candidate_resource(access_token=auth_token_row['access_token'],
+                                       candidate_id=candidate_id)
+    resp_dict = resp.json()
+    print test_response(resp.request, resp_dict, resp.status_code)
+    assert resp.status_code == 200
+    assert 'candidate' in resp_dict and 'id' in resp_dict['candidate']
+
+    # Get candidate via Candidate Email
+    resp = get_from_candidate_resource(access_token=auth_token_row['access_token'],
+                                       candidate_email=candidate_email)
+    resp_dict = resp.json()
+    print test_response(resp.request, resp_dict, resp.status_code)
+    assert resp.status_code == 200
+    assert 'candidate' in resp_dict and 'id' in resp_dict['candidate']
 
 #######################################
 # test cases for POSTing candidate(s) #
 #######################################
-# def test_create_candidate(sample_user, user_auth):
-#     """
-#     Test:   create a new candidate and candidate's info
-#     Expect: 200
-#     :type   sample_user:  User
-#     :type   user_auth:    UserAuthentication
-#     :return {'candidates': [{'id': candidate_id}, ...]}
-#     """
-#     auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-#     sample_candidate_data = generate_single_candidate_data()
-#     r = requests.post(
-#         url=BASE_URI,
-#         data=json.dumps(sample_candidate_data),
-#         headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
-#     )
-#     resp_dict = r.json()
-#     print "\n sample_candidate_1 = %s" % sample_candidate_data
-#     print "\n resp_status_code = %s" % r.status_code
-#     print "\n resp_object = %s" % resp_dict
-#
-#     r2 = requests.get(
-#         url=BASE_URI + '/%s' % resp_dict['candidates'][0]['id'],
-#         headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
-#     )
-#     resp_dict2 = r2.json()
-#     print "\n resp_dict2 = %s" % resp_dict2
-#
-#     # Update candidate
-#     can_dict = resp_dict2['candidate']
-#     sample_candidate_data_2 = candidate_data_for_update(
-#         can_dict['id'],
-#         can_dict['emails'][0]['id'], can_dict['emails'][1]['id'],
-#         can_dict['phones'][0]['id'], can_dict['phones'][1]['id'],
-#         can_dict['addresses'][0]['id'], can_dict['addresses'][1]['id'],
-#         can_dict['work_preference'][0]['id'],
-#         can_dict['work_experiences'][0]['id'],
-#         # can_dict['work_experiences'][0]['work_experience_bullets'][0]['id'],
-#         can_dict['educations'][0]['id'], can_dict['educations'][0]['degree_details'][0]['id'],
-#         # can_dict['educations'][0]['degree_details'][0]['degree_bullets'][0]['id'],
-#         can_dict['military_services'][0]['id'],
-#         can_dict['preferred_locations'][0]['id'], can_dict['preferred_locations'][1]['id'],
-#         can_dict['skills'][0]['id'], can_dict['skills'][1]['id'], can_dict['skills'][2]['id'],
-#         can_dict['social_networks'][0]['id'], can_dict['social_networks'][1]['id']
-#     )
-#     print "\n sample_candidate_2 = %s" % sample_candidate_data_2
-#     r = requests.patch(
-#         url=BASE_URI,
-#         data=json.dumps(sample_candidate_data_2),
-#         headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
-#     )
-#     print "\n resp_status_code: %s" % r.status_code
-#     print "\n resp_dict: %s" % r.json()
+def test_create_candidate(sample_user, user_auth):
+    """
+    Test:   create a new candidate and candidate's info
+    Expect: 200
+    :type   sample_user:  User
+    :type   user_auth:    UserAuthentication
+    """
+    # Get auth token
+    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+
+    # Create Candidate
+    resp = post_to_candidate_resource(access_token=auth_token_row['access_token'])
+    resp_dict = resp.json()
+    print test_response(resp.request, resp_dict, resp.status_code)
+    assert resp.status_code == 201
+    assert 'candidates' in resp_dict and 'id' in resp_dict['candidates'][0]
+
+
+    # # Update candidate
+    # can_dict = resp_dict2['candidate']
+    # sample_candidate_data_2 = candidate_data_for_update(
+    #     can_dict['id'],
+    #     can_dict['emails'][0]['id'], can_dict['emails'][1]['id'],
+    #     can_dict['phones'][0]['id'], can_dict['phones'][1]['id'],
+    #     can_dict['addresses'][0]['id'], can_dict['addresses'][1]['id'],
+    #     can_dict['work_preference'][0]['id'],
+    #     can_dict['work_experiences'][0]['id'],
+    #     # can_dict['work_experiences'][0]['work_experience_bullets'][0]['id'],
+    #     can_dict['educations'][0]['id'], can_dict['educations'][0]['degree_details'][0]['id'],
+    #     # can_dict['educations'][0]['degree_details'][0]['degree_bullets'][0]['id'],
+    #     can_dict['military_services'][0]['id'],
+    #     can_dict['preferred_locations'][0]['id'], can_dict['preferred_locations'][1]['id'],
+    #     can_dict['skills'][0]['id'], can_dict['skills'][1]['id'], can_dict['skills'][2]['id'],
+    #     can_dict['social_networks'][0]['id'], can_dict['social_networks'][1]['id']
+    # )
+    # print "\n sample_candidate_2 = %s" % sample_candidate_data_2
+    # r = requests.patch(
+    #     url=BASE_URI,
+    #     data=json.dumps(sample_candidate_data_2),
+    #     headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
+    # )
+    # print "\n resp_status_code: %s" % r.status_code
+    # print "\n resp_dict: %s" % r.json()
 
 
     # assert r.status_code == 201
