@@ -590,6 +590,7 @@ def create_or_update_candidate_from_params(
     if social_networks:
         _add_or_update_social_networks(candidate_id, social_networks, is_update)
 
+    # Commit to database after all insertions/updates are executed successfully
     db.session.commit()
     return dict(candidate_id=candidate_id)
 
@@ -775,7 +776,6 @@ def _add_or_update_candidate(first_name, middle_name, last_name, formatted_name,
 
         # Update if Candidate's ID is provided
         db.session.query(Candidate).filter_by(id=candidate_id).update(update_dict)
-        db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
     else:   # Create if not an update
         new_candidate = Candidate(
@@ -827,7 +827,6 @@ def _add_or_update_candidate_addresses(candidate_id, addresses, is_update):
             # Update candidate's address
             db.session.query(CandidateAddress).filter_by(id=address_id).\
                 update(update_dict)
-            db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
         else:   # Create if not an update
             db.session.add(CandidateAddress(
@@ -845,16 +844,14 @@ def _add_or_update_candidate_areas_of_interest(candidate_id, area_of_interest_id
     Function will update CandidateAreaOfInterest or create a new one.
     """
     for area_of_interest_id in area_of_interest_ids:
-
         if is_update:   # Update
             if area_of_interest_id:
                 db.session.query(CandidateAreaOfInterest).\
                     filter_by(candidate_id=candidate_id).update(
                     {'area_of_interest_id': area_of_interest_id}
                 )
-                db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-        else:           # Create if not an update
+        else:   # Create if not an update
             db.session.add(CandidateAreaOfInterest(
                 candidate_id=candidate_id,
                 area_of_interest_id=area_of_interest_id
@@ -871,9 +868,8 @@ def _add_or_update_candidate_custom_field_ids(candidate_id, custom_field_ids,
             if custom_field_id:
                 db.session.query(CandidateCustomField).filter_by(candidate_id=candidate_id).\
                     update({'custom_field_id': custom_field_id})
-            db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-        else:
+        else:   # Create if not an update
             db.session.add(CandidateCustomField(
                 candidate_id=candidate_id, custom_field_id=custom_field_id,
                 added_time=added_time
@@ -910,7 +906,6 @@ def _add_or_update_educations(candidate_id, educations, added_time, is_update):
             candidate_education = db.session.query(CandidateEducation).\
                 filter_by(candidate_id=candidate_id)
             candidate_education.update(update_dict)
-            db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
             # Candidate's Degree
             candidate_education_id = candidate_education.first().id
@@ -937,7 +932,6 @@ def _add_or_update_educations(candidate_id, educations, added_time, is_update):
                 candidate_education_degree = db.session.query(CandidateEducationDegree).\
                     filter_by(candidate_education_id=candidate_education_id)
                 candidate_education_degree.update(update_dict)
-                db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
                 # Candidate's Degree-Bullet(s)
                 candidate_education_degree_id = candidate_education_degree.first().id
@@ -954,7 +948,6 @@ def _add_or_update_educations(candidate_id, educations, added_time, is_update):
                     db.session.query(CandidateEducationDegreeBullet).\
                         filter_by(candidate_education_degree_id=candidate_education_degree_id).\
                         update(update_dict)
-                    db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
         else:   # Create if not an update
             for education in educations:
@@ -1031,6 +1024,7 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time,
         is_current = work_experience.get('is_current', 0)
 
         if is_update:   # Update
+
             # Candidate's Experience
             update_dict = {'list_order': list_order, 'organization': organization,
                            'position': position, 'city': city, 'state': state,
@@ -1044,7 +1038,6 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time,
             experience = db.session.query(CandidateExperience).\
                 filter_by(candidate_id=candidate_id)
             experience.update(update_dict)
-            db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
             experience_id = experience.first().id
             experience_bullets = work_experience.get('work_experience_bullets')
@@ -1060,7 +1053,6 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time,
                 db.session.query(CandidateExperienceBullet).\
                     filter_by(candidate_experience_id=experience_id).\
                     update(update_dict)
-                db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
         else:   # Create if not an update
             experience = CandidateExperience(
@@ -1111,7 +1103,6 @@ def _add_or_update_work_preference(candidate_id, work_preference, is_update):
 
         db.session.query(CandidateWorkPreference).\
             filter_by(candidate_id=candidate_id).update(update_dict)
-        db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
     else:   # Create if not an update
         db.session.add(CandidateWorkPreference(
@@ -1151,7 +1142,6 @@ def _add_or_update_emails(candidate_id, emails, is_update):
 
             db.session.query(CandidateEmail).filter_by(id=email_id).\
                 update(update_dict)
-            db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
         else:   # Create if not an update
             db.session.add(CandidateEmail(
@@ -1180,7 +1170,6 @@ def _add_or_update_phones(candidate_id, phones, is_update):
             update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
             db.session.query(CandidatePhone).filter_by(candidate_id=candidate_id).\
                 update(update_dict)
-            db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
         else:   # Create if not an update
             db.session.add(CandidatePhone(
@@ -1217,9 +1206,8 @@ def _add_or_update_military_services(candidate_id, military_services, is_update)
 
             db.session.query(CandidateMilitaryService).filter_by(candidate_id=candidate_id).\
                 update(update_dict)
-            db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-        else:           # Create if not update
+        else:   # Create if not update
             db.session.add(CandidateMilitaryService(
                 candidate_id=candidate_id, country_id=country_id,
                 service_status=service_status, highest_rank=highest_rank,
@@ -1251,9 +1239,8 @@ def _add_or_update_preferred_locations(candidate_id, preferred_locations, is_upd
 
             db.session.query(CandidatePreferredLocation).\
                 filter_by(candidate_id=candidate_id).update(update_dict)
-            db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-        else:           # Create if not an update
+        else:   # Create if not an update
             db.session.add(CandidatePreferredLocation(
                 candidate_id=candidate_id, address=address, country_id=country_id,
                 city=city, region=state, zip_code=zip_code,
@@ -1283,9 +1270,8 @@ def _add_or_update_skills(candidate_id, skills, added_time, is_update):
 
             db.session.query(CandidateSkill).filter_by(candidate_id=candidate_id).\
                 update(update_dict)
-            db.session.commit() # TODO: Do not commit until end of create_candidate_from_params()
 
-        else:           # Create if not an update
+        else:   # Create if not an update
             db.session.add(CandidateSkill(
                 candidate_id=candidate_id,
                 list_order=skill.get('list_order', 1),
@@ -1315,9 +1301,8 @@ def _add_or_update_social_networks(candidate_id, social_networks, is_update):
             db.session.query(CandidateSocialNetwork).filter_by(candidate_id=candidate_id).\
                 update({'social_network_id': social_network_id,
                         'social_profile_url': social_profile_url})
-            db.session.commit()
 
-        else:           # Create if not an update
+        else:   # Create if not an update
             db.session.add(CandidateSocialNetwork(
                 candidate_id=candidate_id,
                 social_network_id=social_network_id,
