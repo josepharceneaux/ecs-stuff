@@ -18,7 +18,7 @@ import simplecrypt
 
 # Module specific
 from widget_service.common.models.misc import CustomField
-from widget_service.common.models.candidate import University
+from widget_service.common.models.university import University
 from widget_service.common.models.misc import AreaOfInterest
 from widget_service.common.models.misc import Major
 from widget_service.common.models.user import Domain
@@ -141,7 +141,7 @@ def create_candidate_from_widget(encrypted_domain_id, encrypted_widget_id):
     payload = json.dumps({'candidates': [candidate_dict]})
     r = requests.post(app.config['CANDIDATE_CREATION_URI'], data=payload,
                       headers={'Authorization': 'bearer {}'.format(access_token)})
-    if r.status_code != 200:
+    if r.status_code != 201:
         return jsonify({'error': {'message': 'unable to create candidate from form'}}), 401
     return jsonify({'success': {'message': 'candidate successfully created'}}), 201
 

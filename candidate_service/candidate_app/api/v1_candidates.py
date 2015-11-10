@@ -84,7 +84,7 @@ class CandidateResource(Resource):
 
     def post(self, **kwargs):
         """
-        POST /web/api/candidates
+        POST /v1/candidates
         input: {'candidates': [candidateObject1, candidateObject2, ...]}
 
         Creates new candidate(s).

@@ -4,7 +4,7 @@ import os
 # Auth Server URI
 if os.environ.get('GT_ENVIRONMENT') == 'dev':
     ENVIRONMENT = 'dev'
-    CANDIDATE_CREATION_URI = 'http://127.0.0.1:8000/web/api/candidates.json'
+    CANDIDATE_CREATION_URI = 'http://127.0.0.1:8005/v1/candidates'
     OAUTH_ROOT = 'http://0.0.0.0:8001%s'
     OAUTH_AUTHORIZE_URI = OAUTH_ROOT % '/oauth2/authorize'
     OAUTH_TOKEN_URI = OAUTH_ROOT % '/oauth2/token'

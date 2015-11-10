@@ -109,20 +109,6 @@ class CandidateStatus(db.Model):
         return "<CandidateStatus(description=' %r')>" % self.description
 
 
-class PhoneLabel(db.Model):
-    __tablename__ = 'phone_label'
-    id = db.Column(db.Integer, primary_key=True)
-    description = db.Column('Description', db.String(20))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-
-    # Relationships
-    candidate_phones = relationship('CandidatePhone', backref='phone_label')
-    reference_phones = relationship('ReferencePhone', backref='phone_label')
-
-    def __repr__(self):
-        return "<PhoneLabel (description=' %r')>" % self.description
-
-
 class CandidateSource(db.Model):
     __tablename__ = 'candidate_source'
     id = db.Column(db.Integer, primary_key=True)
@@ -173,20 +159,6 @@ class CandidatePhone(db.Model):
 
     def __repr__(self):
         return "<CandidatePhone (value=' %r', extention= ' %r')>" % (self.value, self.extension)
-
-
-class EmailLabel(db.Model):
-    __tablename__ = 'email_label'
-    id = db.Column(db.Integer, primary_key=True)
-    description = db.Column('Description', db.String(50))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-
-    # Relationships
-    candidate_emails = relationship('CandidateEmail', backref='email_label')
-    reference_emails = relationship('ReferenceEmail', backref='email_label')
-
-    def __repr__(self):
-        return "<EmailLabel (description=' %r')>" % self.description
 
 
 class CandidateEmail(db.Model):
@@ -391,19 +363,6 @@ class CandidatePreferredLocation(db.Model):
         return "<CandidatePreferredLocation (candidate_id=' %r')>" % self.candidate_id
 
 
-class Language(db.Model):
-    __tablename__ = 'language'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(200))
-    code = db.Column('Code', db.String(3), unique=True)
-
-    # Relationships
-    candidate_languages = relationship('CandidateLanguage', backref='language')
-
-    def __repr__(self):
-        return "<Language (code=' %r')>" % self.code
-
-
 class CandidateLanguage(db.Model):
     __tablename__ = 'candidate_language'
     id = db.Column(db.BigInteger, primary_key=True)
@@ -530,54 +489,6 @@ class CandidatePatentHistory(db.Model):
         return "<CandidatePatentHistory (title=' %r')>" % self.title
 
 
-class PatentDetail(db.Model):
-    __tabelname__ = 'patent_detail'
-    id = db.Column(db.BigInteger, primary_key=True)
-    patent_id = db.Column('PatentId', db.BigInteger, db.ForeignKey('patent.id')) # TODO: add relationship
-    issuing_authority = db.Column('IssuingAuthority', db.String(255))
-    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-
-    def __repr__(self):
-        return "<PatentDetail (patent_id=' %r')>" % self.patent_id
-
-
-class PatentStatus(db.Model):
-    __tablename__ = 'patent_status'
-    id = db.Column(db.BigInteger, primary_key=True)
-    description = db.Column('Description', db.String(1000))
-    notes = db.Column('Notes', db.String(1000))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-
-    # Relationships
-    patent_milestones = relationship('PatentMilestone', backref='patent_status')
-
-    def __repr__(self):
-        return "<PatentStatus (id=' %r')>" % self.id
-
-
-class PatentInventor(db.Model):
-    __tablename__ = 'patent_inventor'
-    id = db.Column(db.BigInteger, primary_key=True)
-    patent_id = db.Column('PatentId', db.BigInteger, db.ForeignKey('patent.id')) # TODO: add relationship
-    name = db.Column('Name', db.String(500))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-
-    def __repr__(self):
-        return "<PatentInventor (patent_id=' %r')>" % self.patent_id
-
-
-class PatentMilestone(db.Model):
-    __tabelname__ = 'patent_milestone'
-    id = db.Column(db.BigInteger, primary_key=True)
-    patent_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('patent_status.id'))
-    issued_date = db.Column('IssuedDate', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-
-    def __repr__(self):
-        return "<PatentMilestone (patent_status_id=' %r')>" % self.patent_status_id
-
-
 class CandidatePublication(db.Model):
     __tablename__ = 'candidate_publication'
     id = db.Column(db.BigInteger, primary_key=True)
@@ -620,7 +531,7 @@ class CandidateAddress(db.Model):
 
 class CandidateEducation(db.Model):
     __tablename__ = 'candidate_education'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.BigInteger, primary_key=True)
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     list_order = db.Column('ListOrder', db.SmallInteger)    # todo: ascertain smallinteger == tinyint; also check all list_order columns in db
     school_name = db.Column('SchoolName', db.String(200))
@@ -656,7 +567,7 @@ class CandidateEducationDegree(db.Model):
     gpa_num = db.Column('GpaNum', db.DECIMAL)
     gpa_denom = db.Column('GpaDenom', db.DECIMAL)
     added_time = db.Column('AddedTime', db.DateTime)
-    classification_type_id = db.Column('ClassificationTypeId', db.Integer, db.ForeignKey('classification_type.id')) # todo: create parent table
+    classification_type_id = db.Column('ClassificationTypeId', db.Integer, db.ForeignKey('classification_type.id'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
     start_time = db.Column('StartTime', db.DateTime)
     end_time = db.Column('EndTime', db.DateTime)
@@ -752,17 +663,6 @@ class CandidateUnidentified(db.Model):
 
     def __repr__(self):
         return "<CandidateUnidentified (title=' %r')>" % self.title
-
-
-class University(db.Model):
-    __tablename__ = 'university'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(255))
-    state_id = db.Column('StateId', db.Integer, db.ForeignKey('state.id'))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-
-    def __repr__(self):
-        return "<University (name=' %r')>" % self.name
 
 
 class CandidateCustomField(db.Model):

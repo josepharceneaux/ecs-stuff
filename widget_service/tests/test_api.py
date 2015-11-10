@@ -6,14 +6,18 @@ import json
 import pytest
 
 from widget_service.common.models.candidate import CandidateSource
+from widget_service.common.models.candidate import CandidateStatus
+from widget_service.common.models.candidate import CandidateCustomField
+from widget_service.common.models.associations import CandidateAreaOfInterest
 from widget_service.common.models.misc import CustomField
-from widget_service.common.models.candidate import EmailLabel
-from widget_service.common.models.candidate import University
+from widget_service.common.models.email import EmailLabel
+from widget_service.common.models.university import University
 from widget_service.common.models.misc import AreaOfInterest
 from widget_service.common.models.misc import Country
 from widget_service.common.models.misc import Culture
 from widget_service.common.models.misc import Major
 from widget_service.common.models.misc import Organization
+from widget_service.common.models.misc import Product
 from widget_service.common.models.user import Client
 from widget_service.common.models.user import Domain
 from widget_service.common.models.user import Token
@@ -49,16 +53,16 @@ def test_org(request):
 @pytest.fixture(autouse=True)
 def test_culture(request):
     culture_attrs = dict(description='Foo {}'.format(random_word(12)), code=random_word(5))
-    test_culture, created = get_or_create(db.session, Culture, defaults=None, **culture_attrs)
+    culture, created = get_or_create(db.session, Culture, defaults=None, **culture_attrs)
     if created:
-        db.session.add(test_culture)
+        db.session.add(culture)
         db.session.commit()
 
     def fin():
-        db.session.delete(test_culture)
+        db.session.delete(culture)
         db.session.commit()
     request.addfinalizer(fin)
-    return test_culture
+    return culture
 
 
 @pytest.fixture(autouse=True)
@@ -69,7 +73,7 @@ def test_domain(test_culture, test_org, request):
                          organization_id=test_org.id, is_fair_check_on=False, is_active=1,
                          default_tracking_code=1, default_from_name=(random_word(100)),
                          default_culture_id=test_culture.id,
-                         settings_json=random_word(55), updated_time=datetime.datetime.now())
+                         settings_json=random_word(55))
     db.session.add(test_domain)
     db.session.commit()
 
@@ -88,7 +92,7 @@ def second_domain(test_culture, test_org, request):
                           organization_id=test_org.id, is_fair_check_on=False, is_active=1,
                           default_tracking_code=1, default_from_name=(random_word(100)),
                           default_culture_id=test_culture.id,
-                          settings_json=random_word(55), updated_time=datetime.datetime.now())
+                          settings_json=random_word(55))
     db.session.add(test_domain2)
     db.session.commit()
 
@@ -125,6 +129,10 @@ def areas_of_interest(test_domain, second_domain, request):
     db.session.bulk_save_objects(sub_aois)
 
     def fin():
+        db.session.query(CandidateAreaOfInterest).delete()
+        db.session.commit()
+        db.session.query(AreaOfInterest).filter(AreaOfInterest.parent_id!=None).delete()
+        db.session.commit()
         db.session.query(AreaOfInterest).delete()
         db.session.commit()
     request.addfinalizer(fin)
@@ -133,16 +141,18 @@ def areas_of_interest(test_domain, second_domain, request):
 
 
 @pytest.fixture(autouse=True)
-def test_country(request):
-    test_country = Country(name='United States', code='U.S.A')
-    db.session.add(test_country)
-    db.session.commit()
+def country_fixture(request):
+    country_attrs = dict(id = 1, name = 'United States', code = 'U.S.A')
+    country, created = get_or_create(db.session, Country, defaults=None, **country_attrs)
+    if created:
+        db.session.add(country)
+        db.session.commit()
 
     def fin():
-        db.session.delete(test_country)
+        db.session.delete(country)
         db.session.commit()
     request.addfinalizer(fin)
-    return test_country
+    return country
 
 
 @pytest.fixture(autouse=True)
@@ -259,6 +269,8 @@ def test_extra_fields_location(test_domain, request):
     db.session.commit()
 
     def fin():
+        db.session.query(CandidateCustomField).delete()
+        db.session.commit()
         db.session.query(CustomField).delete()
         db.session.commit()
     request.addfinalizer(fin)
@@ -313,6 +325,28 @@ def test_email_label(request):
     return test_email_label
 
 
+@pytest.fixture(autouse=True)
+def candidate_status_fixture(request):
+    status_attrs = dict(id=1)
+    status, created = get_or_create(db.session, CandidateStatus, defaults=None, **status_attrs)
+    if created:
+        db.session.add(status)
+        db.session.commit()
+    return status
+
+
+@pytest.fixture(autouse=True)
+def product_fixture(request):
+    product_attrs = {'id': 2}
+    product, created = get_or_create(db.session, Product, defaults=None, **product_attrs)
+    if created:
+        db.session.add(product)
+        db.session.commit()
+    return product
+
+
+
+
 def test_api_returns_domain_filtered_aois(test_domain, request):
     response = APP.get('/v1/domains/{}/interests'.format(gt_url_encrypt(test_domain.id)))
     assert response.status_code == 200
@@ -364,7 +398,7 @@ def test_university_candidate(test_widget_page, request):
         'university': random_word(10),
         'degree': random_word(10),
         'major': random_word(10),
-        'graduation': random_word(8),
+        'graduation': '{} {}'.format(random_word(8), 2016),
         'hidden-tags-aoi': aoi_string,
         'nuid': random_word(8),
         'jobFrequency': 'Monthly'
@@ -438,9 +472,6 @@ def test_parse_location_ids_from_form(test_extra_fields_location, request):
         {'id': state_custom_field_id, 'value': 'Northern California'},
         {'id': city_custom_field_id, 'value': 'Pomona'}
     ]
-
-
-
 
 
 def gen_mock_aois():

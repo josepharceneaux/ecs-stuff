@@ -61,10 +61,15 @@ def process_city_and_state_from_fields(city, state):
 
 def create_candidate_educations_dict(major, degree, school_name, grad_date):
     return {
-        'degree': degree,
-        'major': major,
         'school_name': school_name,
-        'graduation_date': grad_date
+        'degrees': [
+            {
+                'type': degree,
+                'title': major,
+                'end_year': grad_date.split(' ')[1],
+                'degree_bullets': []
+            }
+        ]
     }
 
 

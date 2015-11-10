@@ -10,13 +10,15 @@ from candidate_service.candidate_app import db, logger
 
 # Models
 from candidate_service.common.models.candidate import (
-    Candidate, EmailLabel, CandidateEmail, CandidatePhone, PhoneLabel,
+    Candidate, CandidateEmail, CandidatePhone,
     CandidateWorkPreference, CandidatePreferredLocation, CandidateAddress,
     CandidateExperience, CandidateEducation, CandidateEducationDegree,
     CandidateSkill, CandidateMilitaryService, CandidateCustomField,
     CandidateSocialNetwork, SocialNetwork, CandidateEducationDegreeBullet,
     CandidateExperienceBullet, ClassificationType
 )
+from candidate_service.common.models.email import EmailLabel
+from candidate_service.common.models.phone import PhoneLabel
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.email_marketing import (EmailCampaign, EmailCampaignSend)
 from candidate_service.common.models.misc import (Country, AreaOfInterest, CustomField)
