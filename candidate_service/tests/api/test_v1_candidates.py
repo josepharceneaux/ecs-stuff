@@ -19,55 +19,55 @@ from candidate_service.common.models.user import User
 from common.tests.conftest import UserAuthentication
 from common.tests.conftest import *
 
-
-BASE_URI = "http://127.0.0.1:8005/v1/candidates"
+# Helper functions
+from helpers import (test_response, post_to_candidate_resource, get_from_candidate_resource)
 
 ####################################
 # test cases for GETting candidate #
 ####################################
-def test_get_candidate_from_forbidden_domain(sample_user, user_auth):
+def test_get_candidate_from_forbidden_domain(sample_user, user_auth, sample_user_2):
     """
     Test:   attempt to retrieve a candidate outside of logged-in-user's domain
     Expect: 403 status_code
 
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
+    :type sample_user:      User
+    :type sample_user_2:    User
+    :type user_auth:        UserAuthentication
     """
-    # Get Auth token
+    # Get Auth token for sample_user
     auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
 
     # Create Candidate
-    resp = requests.post(
-        url=BASE_URI,
-        headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']},
-        data=json.dumps(generate_single_candidate_data())
+    resp = post_to_candidate_resource(auth_token_row['access_token'])
+    resp_dict = resp.json()
+    print test_response(resp.request, resp_dict, resp.status_code)
+    assert resp.status_code == 201
+    assert 'candidates' in resp_dict and 'id' in resp_dict['candidates'][0]
+
+    # Get Auth token for sample_user_2
+    auth_token_row = user_auth.get_auth_token(sample_user_2, get_bearer_token=True)
+
+    # Retrieve candidate from a different domain
+    resp = get_from_candidate_resource(resp_dict['candidates'][0]['id'],
+                                       auth_token_row['access_token'])
+    resp_dict = resp.json()
+    print test_response(resp.request, resp_dict, resp.status_code)
+    assert resp.status_code == 403
+    assert 'error' in resp_dict
+
+
+def test_get_candidate_via_invalid_email(sample_user, user_auth):
+    """
+    Test:   retrieve candidate via an invalid email address
+    Expect: 400
+    """
+    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+    resp = requests.get(
+        url=BASE_URI + "/%s" % 'bad_email.com',
+        headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
     )
-
-    print "Request: \n%s\nResponse JSON:\n%s" % (resp.request, resp.json())
-    print "\n resp = %s" % resp
-
-    # # todo: once POST is complete, will need to create candidate first and then retrieve it
-    # candidate_id = 4
-    # resp = requests.get(
-    #     url=BASE_URI + "/%s" % candidate_id,
-    #     headers=authorization
-    # )
-    # print "\nresp = %s" % resp.json()
-    # assert resp.status_code == 403
-
-
-# def test_get_candidate_via_invalid_email(sample_user, user_auth):
-#     """
-#     Test:   retrieve candidate via an invalid email address
-#     Expect: 400
-#     """
-#     auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-#     resp = requests.get(
-#         url=BASE_URI + "/%s" % 'bad_email.com',
-#         headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
-#     )
-#     assert resp.status_code == 400
-#     print "\nresp = %s" % resp.json()
+    assert resp.status_code == 400
+    print "\nresp = %s" % resp.json()
 #
 #
 # def test_get_candidate_via_id_and_email():
