@@ -105,7 +105,6 @@ class Country(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Name', db.String(100), nullable=False)
     code = db.Column('Code', db.String(20), nullable=False)
-
     # Relationships
     candidate_military_services = relationship('CandidateMilitaryService', backref='country')
     candidate_addresses = relationship('CandidateAddress', backref='country')
@@ -129,6 +128,7 @@ class Major(db.Model):
         return {
             'id': self.id,
         }
+
 
 class State(db.Model):
     __tablename__ = 'state'
