@@ -89,18 +89,19 @@ def sample_user(test_domain, request):
     )
     user, created = get_or_create(db.session, User, defaults=None, **user_attrs)
     if created:
+
         db.session.add(user)
         db.session.commit()
 
-    def fin():
-        try:
-            db.session.delete(sample_user)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-            pass
+    # def fin():
+    #     try:
+    #         db.session.delete(sample_user)
+    #         db.session.commit()
+    #     except Exception:
+    #         db.session.rollback()
+    #         pass
 
-    request.addfinalizer(fin)
+    # request.addfinalizer(fin)
     return user
 
 
@@ -116,15 +117,15 @@ def test_domain(test_org, test_culture, request):
         db.session.add(test_domain)
         db.session.commit()
 
-    def fin():
-        try:
-            db.session.delete(test_domain)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-            pass
-
-    request.addfinalizer(fin)
+    # def fin():
+    #     try:
+    #         db.session.delete(test_domain)
+    #         db.session.commit()
+    #     except Exception:
+    #         db.session.rollback()
+    #         pass
+    #
+    # request.addfinalizer(fin)
     return test_domain
 
 
