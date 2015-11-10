@@ -12,7 +12,7 @@ fake = Faker()
 
 def generate_single_candidate_data():
     """
-    :rtype: list
+    :rtype: dict
     """
     data = {'candidates': [
         {
@@ -113,19 +113,14 @@ def candidate_data_for_update(candidate_id, email_1_id, email_2_id, phone_1_id,
             'work_experiences': [
                 {'id': work_experience_1_id, 'organization': fake.company(),
                  'position': fake.job(), 'city': fake.city(),
-                 'state': fake.state(), 'work_experience_bullets': [
-                    # {'id': work_experience_bullet_1_id, 'description': fake.sentence()}
-                    {'description': None}
-                ]}
+                 'state': fake.state(), 'work_experience_bullets': [{'description': None}]
+                 }
             ],
             'educations': [
                 {'id': education_1_id, 'school_name': 'SJSU', 'city': 'San Jose',
                  'country': 'USA', 'degrees': [
                     {'id': degree_1_id,'type': 'BS', 'title': 'dancing',
-                     'degree_bullets': [
-                         # {'id': degree_bullet_1_id, 'major': fake.job()}
-                         {'major': None}
-                     ]
+                     'degree_bullets': [{'major': None}]
                      }
                 ]}
             ],

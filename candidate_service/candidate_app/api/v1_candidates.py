@@ -20,7 +20,7 @@ from candidate_service.modules.validators import (
 from common.utils.auth_utils import require_oauth
 
 # Error handling
-from common.error_handling import (ForbiddenError, InvalidUsage)
+from common.error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError)
 
 # Models
 from candidate_service.common.models.user import User
@@ -249,6 +249,7 @@ class CandidateResource(Resource):
             if not is_authorized:
                 raise ForbiddenError(error_message="Unauthorized area of interest IDs")
 
+            # TODO: Validate all input formats and existence
             user_id = authed_user.id
             candidate_id = candidate_dict.get('id')
             addresses = candidate_dict.get('addresses')
