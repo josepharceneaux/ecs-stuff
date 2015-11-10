@@ -1,5 +1,5 @@
 from flask import Flask
-from candidate_service.common.models.db import db
+from common.models.db import db
 from gt_custom_restful import *
 from healthcheck import HealthCheck
 
