@@ -31,6 +31,10 @@ from candidate_service.common.utils.validators import (sanitize_zip_code, is_num
 # Common utilities
 from candidate_service.common.utils.common_functions import get_coordinates
 
+# Activity service
+from activity_service.activities_app.views.api import (
+    TalentActivityManager, create_activity
+)
 
 ##################################################
 # Helper Functions For Retrieving Candidate Info #
@@ -1308,3 +1312,48 @@ def _add_or_update_social_networks(candidate_id, social_networks, is_update):
                 social_network_id=social_network_id,
                 social_profile_url=social_network.get('profile_url')
             ))
+
+################################################
+# Helper Functions For Deleting Candidate Info #
+################################################
+def _delete_candidates(candidate_ids, user_id, source_product_id):
+    """
+    Mark as web_hidden in db, then delete from search & db, then delete all candidate data from S3
+
+    :type candidate_ids: list[int]
+    :type user_id: int
+    :type source_product_id: int
+    :return: Number of deleted candidates
+    """
+    # Delete candidates from CloudSearch, 100 at a time
+    list_offset = 0
+    list_segment = candidate_ids[0:100]
+    candidates = db.session.query(Candidate).filter(Candidate.id.in_(candidate_ids))
+
+    activity_api = TalentActivityManager()
+
+    while list_segment:
+        # Add activity for every candidate deleted
+        for candidate_id in list_segment:
+            candidate = candidates.filter(Candidate.id == candidate_id).first()
+            if candidate:
+                create_activity(user_id=user_id, type_=activity_api.CANDIDATE_DELETE,
+                                source_table='candidate', source_id=candidate_id,
+                                params=dict(source_product_id=source_product_id,
+                                            formatted_name=candidate.formatted_name))
+
+        # Delete all candidates in segment
+        db.session.query(Candidate).filter(Candidate.id.in_(list_segment)).\
+            delete(synchronize_session=False)
+
+        # Get next segment
+        list_offset += 100
+        list_segment = candidate_ids[list_offset:(list_offset + 100)]
+
+    # Delete files from S3
+
+    # Delete files from CloudSearch
+
+    db.session.commit()
+    return len(candidate_ids)
+
