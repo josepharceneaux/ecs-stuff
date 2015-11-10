@@ -297,44 +297,52 @@ class CandidateResource(Resource):
         return {'candidates': [{'id': updated_candidate_id} for
                                updated_candidate_id in updated_candidate_ids]}
 
-    # def delete(self, **kwargs):
-    #     """
-    #     :param kwargs:
-    #     :return:
-    #     """
-    #     authed_user = request.user
-    #
-    #     # Parse the request body
-    #     body_dict = request.get_json(force=True)
-    #     if not any(body_dict):
-    #         raise InvalidUsage(error_message="JSON body cannot be empty.")
-    #
-    #     # Candidate objects
-    #     candidates = body_dict.get('candidates')
-    #
-    #     # Candidate object(s) must be in a list
-    #     if not isinstance(candidates, list):
-    #         raise InvalidUsage(error_message="Unacceptable input: Candidate object(s) must be in a list.")
-    #
-    #     # Candidate id(s) required
-    #     if filter(lambda candidate_dict: 'id' not in candidate_dict, candidates):
-    #         raise InvalidUsage(error_message="Missing input: Candidate ID(s) required.")
-    #
-    #     # Candidate ID(s)
-    #     candidate_ids = [candidate_dict['id'] for candidate_dict in candidates]
-    #
-    #     # All IDs must be integer
-    #     if filter(lambda candidate_id: not is_number(candidate_id), candidate_ids):
-    #         raise InvalidUsage(error_message="Candidate ID(s) must be integer.")
-    #
-    #     # Prevent user from deleting candidate(s) outside of its domain or other user's candidates
-    #     is_authorized = do_candidates_belong_to_user(authed_user, candidate_ids)
-    #     if not is_authorized:
-    #         raise ForbiddenError(error_message="Not authorized")
-    #
-    #     # Delete Candidate(s) from CloudSearch & database
-    #
-    #     return
+    def delete(self, **kwargs):
+        """ DELETE /web/api/candidates
+            {'candidates': [candidateObject1, candidateObject2, ...]}
+
+        Function will delete candidate objects from CloudSearch and database.
+
+        Only candidate's owner can delete candidate
+        Candidate must be in the same domain as the logged in user
+
+        :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
+        """
+        # Authenticate user
+        authed_user = request.user
+
+        # Parse the request body
+        body_dict = request.get_json(force=True)
+        if not any(body_dict):
+            raise InvalidUsage(error_message="JSON body cannot be empty.")
+
+        # Candidate objects
+        candidates = body_dict.get('candidates')
+
+        # Candidate object(s) must be in a list
+        if not isinstance(candidates, list):
+            error_message = "Unacceptable input: Candidate object(s) must be in a list."
+            raise InvalidUsage(error_message=error_message)
+
+        # Candidate id(s) required
+        if filter(lambda candidate_dict: 'id' not in candidate_dict, candidates):
+            raise InvalidUsage(error_message="Missing input: Candidate ID(s) required.")
+
+        # Candidate ID(s)
+        candidate_ids = [candidate_dict['id'] for candidate_dict in candidates]
+
+        # All IDs must be integer
+        if filter(lambda candidate_id: not is_number(candidate_id), candidate_ids):
+            raise InvalidUsage(error_message="Candidate ID must be an integer.")
+
+        # Prevent user from deleting candidate(s) outside of its domain; or other user's candidates
+        is_authorized = do_candidates_belong_to_user(authed_user, candidate_ids)
+        if not is_authorized:
+            raise ForbiddenError(error_message="Not authorized")
+
+        # Delete Candidate(s) from CloudSearch & database
+
+        return
 
 
 class CandidateEmailCampaignResource(Resource):
