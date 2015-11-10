@@ -121,7 +121,7 @@ def email_label_fixture(request):
 
 @pytest.fixture(autouse=True)
 def country_fixture(request):
-    country_attrs = dict(id=1, name='United States', code='U.S.A')
+    country_attrs = dict(name='United States', code='U.S.A')
     country, created = get_or_create(db.session, Country, defaults=None, **country_attrs)
     if created:
         db.session.add(country)
