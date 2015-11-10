@@ -4,6 +4,7 @@ Eventbrite contains methods like get_rsvps(), get_attendee() etc.
 """
 
 # Standard Library
+import json
 import re
 from datetime import datetime
 from base import RSVPBase
@@ -11,7 +12,7 @@ from base import RSVPBase
 # Application Specific
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.user import UserSocialNetworkCredential
-from social_network_service.common.models.social_network import SocialNetwork
+from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service import logger
 from social_network_service.utilities import Attendee
 from social_network_service.utilities import http_request
@@ -271,6 +272,20 @@ class Eventbrite(RSVPBase):
                     social_network_event_id)
                 if event:
                     attendee.event = event
+                    # Get profile url of candidate to save
+                    url = self.api_url + "/orders/" + rsvp['rsvp_id']
+                    response_orders = http_request('GET', url, headers=self.headers,
+                                                   user_id=self.user.id)
+                    url = self.api_url \
+                          + "/events/" + str(event.social_network_event_id) + '/attendees/'
+                    response_attendees = http_request('GET', url, headers=self.headers)
+                    event_attendees = json.loads(response_attendees.text)['attendees']
+                    for event_attendee in event_attendees:
+                        if event_attendee['created'] == json.loads(response_orders.text)['created']:
+                            # In case of Eventbrite, we have a Attendee object created
+                            # on Eventbrite website. We save that link as profile url.
+                            attendee.social_profile_url = event_attendee['resource_uri']
+                            break
                     return attendee
                 else:
                     raise EventNotFound('Event is not present in db, '

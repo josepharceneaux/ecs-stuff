@@ -24,11 +24,10 @@ from requests_oauthlib import OAuth2Session
 # Application Specific Imports
 from social_network_service.common.models.user import User
 from social_network_service.common.models.event import Event
-from social_network_service.common.models.social_network import SocialNetwork
+from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service import logger
 from social_network_service import flask_app as app
-from social_network_service.custom_exceptions import ApiException, SocialNetworkError
-from social_network_service.custom_exceptions import SocialNetworkNotImplemented
+from social_network_service.custom_exceptions import *
 
 
 OAUTH_SERVER = app.config['OAUTH_SERVER_URI']
@@ -44,7 +43,6 @@ class Attendee(object):
         self.first_name = None  # first name of attendee
         self.last_name = None  # last name of attendee
         self.full_name = None  # full name of attendee
-        self.profile_url = None  # profile url of attendee
         self.picture_url = None  # picture url of attendee
         self.city = None  # city of attendee
         self.country = None  # country of attendee
@@ -65,6 +63,7 @@ class Attendee(object):
         self.candidate_source_id = None  # attendee's candidate_source id
         # from db
         self.source_product_id = None  # attendee's source product id in database
+        self.social_profile_url = None
 
     def __str__(self):
         return 'Name: %s, RSVP_ID: %s, EMAIL: %s' % (self.full_name,
@@ -341,7 +340,7 @@ def process_event(data, user_id, method='Create'):
     :rtype: int
     """
     if data:
-        social_network_id = data['social_network_id']
+        social_network_id = data.get('social_network_id', 0)
         social_network = SocialNetwork.get(social_network_id)
         if social_network:
             # creating class object for respective social network
@@ -447,8 +446,11 @@ def camel_case_to_snake_case(name):
                 assert result == 'social_network_id'
 
     """
-    name_ = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name_).lower()
+    # name_ = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    # return re.sub('([a-z0-9])([A-Z0-9])', r'\1_\2', name_).lower()
+    name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    name = re.sub('(.)([0-9]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
 
 
 def camel_case_to_title_case(name):
@@ -619,8 +621,8 @@ def add_organizer_venue_data(event):
                 "url": "",
                 "user_id": 1,
                 "venue": {
-                              "address_line1": "Infinite Loop",
-                              "address_line2": "",
+                              "address_line_1": "Infinite Loop",
+                              "address_line_2": "",
                               "city": "Cupertino",
                               "country": "us",
                               "id": 1,
@@ -630,7 +632,7 @@ def add_organizer_venue_data(event):
                               "social_network_venue_id": "15570022",
                               "state": "CA",
                               "user_id": 1,
-                              "zipcode": "95014"
+                              "zip_code": "95014"
                         }
               }
 
@@ -656,3 +658,4 @@ def get_random_word(length):
     :return:
     """
     return ''.join(random.choice(string.lowercase) for i in xrange(length))
+

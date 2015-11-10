@@ -101,14 +101,16 @@ import re
 
 # Application Specific
 from dateutil.parser import parse
+from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service.common.models.user import User
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service import logger
+from social_network_service.common.models.venue import Venue
 from social_network_service.utilities import log_error
 from social_network_service.utilities import get_class
 from social_network_service.utilities import http_request
-from social_network_service.custom_exceptions import NoUserFound
+from social_network_service.custom_exceptions import NoUserFound, VenueNotFound, EventOrganizerNotFound
 from social_network_service.custom_exceptions import InvalidDatetime
 from social_network_service.custom_exceptions import EventNotSaveInDb
 from social_network_service.custom_exceptions import EventNotUnpublished
@@ -259,6 +261,22 @@ class EventBase(object):
         """
         pass
 
+    @staticmethod
+    def validate_required_fields(data):
+        social_network_id = data['social_network_id']
+        user_id = data['user_id']
+        venue_id = data['venue_id']
+        event_organizer_id = data['organizer_id']
+        venue = Venue.get_by_user_id_social_network_id_venue_id(
+            user_id, social_network_id, venue_id)
+        event_organizer = EventOrganizer.get_by_user_id_organizer_id(user_id, event_organizer_id)
+        if not venue:
+            raise VenueNotFound('Venue not found in database. Kindly create'
+                                ' venue first.')
+        if not event_organizer:
+            raise EventOrganizerNotFound('Event organizer not found in database. Kindly create'
+                                         ' event organizer first.')
+        
     @abstractmethod
     def event_gt_to_sn_mapping(self, data):
         """

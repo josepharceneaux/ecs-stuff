@@ -15,14 +15,10 @@ from utilities import get_class
 from utilities import log_error
 from utilities import http_request
 from social_network_service.common.models.user import User
-from social_network_service.common.models.social_network import SocialNetwork
+from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service import logger
-from social_network_service.custom_exceptions import NoUserFound
-from social_network_service.custom_exceptions import ApiException
-from social_network_service.custom_exceptions import AccessTokenHasExpired
-from social_network_service.custom_exceptions import UserCredentialsNotFound
-from social_network_service.custom_exceptions import MissingFieldsInUserCredentials
+from social_network_service.custom_exceptions import *
 
 
 class SocialNetworkBase(object):
@@ -249,7 +245,7 @@ class SocialNetworkBase(object):
             logger.debug('__init__: Access token has expired. '
                          'Please connect with %s again from "Profile" page. user_id: %s'
                          % (self.user.id, self.social_network.name))
-            raise AccessTokenHasExpired
+            raise AccessTokenHasExpired('Access token has expired for %s' % self.social_network.name)
         self.start_date_dt = None
         self.webhook_id = None
         if not self.user_credentials.member_id:
@@ -363,15 +359,15 @@ class SocialNetworkBase(object):
             else:
                 log_error({'user_id': user_id,
                            'error': get_token_response.json().get('error')})
-                raise ApiException('Unable to to get access token for '
-                                   'current user')
+                raise SocialNetworkApiException('Unable to to get access token for '
+                                                'current user')
 
         except:
             logger.exception('get_access_and_refresh_token: user_id: %s, '
                              'social network: %s(id: %s)'
                              % (user_id, social_network.name, social_network.id))
-            raise ApiException('Unable to create user credentials for current'
-                               ' user')
+            raise SocialNetworkApiException('Unable to create user credentials for current'
+                                            ' user')
 
     def get_member_id(self):
         """
@@ -572,4 +568,4 @@ class SocialNetworkBase(object):
         except:
             logger.exception('save_user_credentials_in_db: user_id: %s',
                              user_credentials['user_id'])
-            raise ApiException('APIError: Unable to create user credentials')
+            raise SocialNetworkApiException('APIError: Unable to create user credentials')

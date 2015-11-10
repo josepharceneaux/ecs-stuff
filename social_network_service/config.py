@@ -11,23 +11,23 @@ logging.config.fileConfig(LOGGING_CONF)
 
 # SQL ALCHEMY DB URL
 if os.environ.get('GT_ENVIRONMENT') == 'dev':
-    APP_URL = 'http://0.0.0.0:5000'
-    OAUTH_SERVER_URI = 'http://0.0.0.0:8081/oauth2/authorize'
+    APP_URL = 'http://0.0.0.0:8006'
+    OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@localhost/talent_local'
     LOGGER = logging.getLogger("social_network_service.dev")
     GT_ENVIRONMENT = os.environ.get('GT_ENVIRONMENT')
     DEBUG = True
 elif os.environ.get('GT_ENVIRONMENT') == 'circle':
-    APP_URL = 'http://0.0.0.0:5000'
-    OAUTH_SERVER_URI = 'http://0.0.0.0:8081/oauth2/authorize'
+    APP_URL = 'http://0.0.0.0:8006'
+    OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_ci'
     LOGGER = logging.getLogger("social_network_service.ci")
     GT_ENVIRONMENT = os.environ.get('GT_ENVIRONMENT')
     DEBUG = True
 elif os.environ.get('GT_ENVIRONMENT') == 'qa':
-    APP_URL = 'http://0.0.0.0:5000'
+    APP_URL = 'http://0.0.0.0:8006'
     OAUTH_SERVER_URI = 'https://secure-webdev.gettalent.com/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!web976892@devdb.gettalent.com/talent_staging'
@@ -35,7 +35,7 @@ elif os.environ.get('GT_ENVIRONMENT') == 'qa':
     GT_ENVIRONMENT = os.environ.get('GT_ENVIRONMENT')
     DEBUG = False
 elif os.environ.get('GT_ENVIRONMENT') == 'prod':
-    APP_URL = 'http://0.0.0.0:5000'
+    APP_URL = 'http://0.0.0.0:8006'
     OAUTH_SERVER_URI = 'https://secure.gettalent.com/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = os.environ.get('DB_STRING')
@@ -49,8 +49,8 @@ SECRET_KEY = os.urandom(24).encode('hex')
 OAUTH2_PROVIDER_TOKEN_EXPIRES_IN = 7200  # 2 hours expiry time for bearer token
 
 # Meetup Credentials
-MEETUP_ACCESS_TOKEN = '0ec89886c095b896bf720a350099056a'
-MEETUP_REFRESH_TOKEN = '9decaa9d80ea645590d8ecdc4961e9a1'
+MEETUP_ACCESS_TOKEN = 'b0060461e2a5b3f364744160bcccf754'
+MEETUP_REFRESH_TOKEN = 'f938d5104470553b106bff54fdc998ce'
 
 # Eventbrite Credentials
 EVENTBRITE_ACCESS_TOKEN = '4DPJ5DXTTFKSG23ZANZT'

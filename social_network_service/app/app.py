@@ -23,13 +23,13 @@ from social_network_service.rsvp.eventbrite import Eventbrite as EventbriteRsvp
 from restful.events import events_blueprint
 from social_network_service.utilities import get_class
 from restful.social_networks import social_network_blueprint
-from social_network_service.app.app_utils import CustomApi
+from social_network_service.common.talent_api import TalentApi
 
 # Register Blueprints for different APIs
 app.register_blueprint(social_network_blueprint)
 app.register_blueprint(events_blueprint)
 app.register_blueprint(data_blueprint)
-api = CustomApi(app)
+api = TalentApi(app)
 
 # Enable CORS
 CORS(app, resources={
@@ -38,14 +38,6 @@ CORS(app, resources={
         'allow_headers': ['Content-Type', 'Authorization']
     }
 })
-
-
-@app.after_request
-def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
-    return response
 
 
 @app.route('/')

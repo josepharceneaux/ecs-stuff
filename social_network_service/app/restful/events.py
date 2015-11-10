@@ -1,20 +1,21 @@
 """
 This file contains list of all API endpoints related to events.
 """
-import json
 import types
 from flask import Blueprint, request
-from flask.ext.restful import Api, Resource, abort
+from flask.ext.restful import Resource
 from flask.ext.cors import CORS
-from social_network_service.app.app_utils import api_route, authenticate, ApiResponse, CustomApi
+from social_network_service.app.app_utils import api_route, authenticate, SocialNetworkApiResponse
 from social_network_service.utilities import process_event, delete_events
+from social_network_service.common.talent_api import TalentApi
 from social_network_service.common.models.event import Event
-from social_network_service.common.error_handling import ResourceNotFound,\
-    InvalidUsage, ForbiddenError
 from social_network_service.utilities import add_organizer_venue_data
+from social_network_service.common.error_handling import *
+from social_network_service.custom_exceptions import *
+
 
 events_blueprint = Blueprint('events_api', __name__)
-api = CustomApi()
+api = TalentApi()
 api.init_app(events_blueprint)
 api.route = types.MethodType(api_route, api)
 
@@ -81,9 +82,9 @@ class Events(Resource):
         """
         events = map(add_organizer_venue_data, Event.query.filter_by(user_id=kwargs['user_id']).all())
         if events:
-            return ApiResponse(json.dumps(dict(events=events, count=len(events))))
+            return SocialNetworkApiResponse(json.dumps(dict(events=events, count=len(events))))
         else:
-            return ApiResponse(json.dumps(dict(events=[], count=0)))
+            return SocialNetworkApiResponse(json.dumps(dict(events=[], count=0)))
 
     @authenticate
     def post(self, **kwargs):
@@ -130,19 +131,18 @@ class Events(Resource):
 
         .. Error codes:
                     In case of internal server error, response contains error code which can be
-
-                    452 (Unable to determine Social Network)
-                    453 (Some required event fields are missing)
-                    455 (Event not created)
-                    456 (Event not Published on Social Network)
-                    458 (Event venue not created on Social Network)
-                    459 (Tickets for event not created)
-                    460 (Event was not save in getTalent database)
-                    461 (User credentials of user for Social Network not found)
-                    462 (No implementation for specified Social Network)
-                    464 (Invalid datetime for event)
-                    465 (Specified Venue not found in database)
-                    466 (Access token for Social Network has expired)
+                    4052 (Unable to determine Social Network)
+                    4053 (Some required event fields are missing)
+                    4055 (Event not created)
+                    4056 (Event not Published on Social Network)
+                    4058 (Event venue not created on Social Network)
+                    4059 (Tickets for event not created)
+                    4060 (Event was not saved in getTalent database)
+                    4061 (User credentials of user for Social Network not found)
+                    4062 (No implementation for specified Social Network)
+                    4064 (Invalid datetime for event)
+                    4065 (Specified Venue not found in database)
+                    4066 (Access token for Social Network has expired)
 
 
         :return: id of created event
@@ -151,7 +151,7 @@ class Events(Resource):
         event_data = request.get_json(force=True)
         gt_event_id = process_event(event_data, kwargs['user_id'])
         headers = {'Location': '/events/%s' % gt_event_id}
-        return ApiResponse(json.dumps(dict(id=gt_event_id)), status=201, headers=headers)
+        return SocialNetworkApiResponse(json.dumps(dict(id=gt_event_id)), status=201, headers=headers)
 
     @authenticate
     def delete(self, **kwargs):
@@ -194,11 +194,11 @@ class Events(Resource):
         if event_ids:
             deleted, not_deleted = delete_events(user_id, event_ids)
             if len(not_deleted) == 0:
-                return ApiResponse(json.dumps(dict(
+                return SocialNetworkApiResponse(json.dumps(dict(
                     message='%s Events deleted successfully' % len(deleted))),
                     status=200)
 
-            return ApiResponse(json.dumps(dict(message='Unable to delete %s events' % len(not_deleted),
+            return SocialNetworkApiResponse(json.dumps(dict(message='Unable to delete %s events' % len(not_deleted),
                                                deleted=deleted,
                                                not_deleted=not_deleted)), status=207)
         raise InvalidUsage('Bad request, include event_ids as list data', error_code=400)
@@ -249,7 +249,7 @@ class EventById(Resource):
             }
 
         .. Status:: 200 (OK)
-                    400 (Event not found)
+                    404 (Event not found)
                     500 (Internal Server Error)
         :param id: integer, unique id representing event in GT database
         :return: json for required event
@@ -310,18 +310,18 @@ class EventById(Resource):
         .. Error codes (returned in response's body):
                     In case of internal server error, response contains error code which can be
 
-                    452 (Unable to determine Social Network)
-                    453 (Some Required event fields are missing)
-                    455 (Event not created)
-                    456 (Event not Published on Social Network)
-                    458 (Event venue not created on Social Network)
-                    459 (Tickets for event not created)
-                    460 (Event was not save in getTalent database)
-                    461 (User credentials of user for Social Network not found)
-                    462 (No implementation for specified Social Network)
-                    464 (Invalid datetime for event)
-                    465 (Specified Venue not found in database)
-                    466 (Access token for Social Network has expired)
+                    4052 (Unable to determine Social Network)
+                    4053 (Some Required event fields are missing)
+                    4055 (Event not created)
+                    4056 (Event not Published on Social Network)
+                    4058 (Event venue not created on Social Network)
+                    4059 (Tickets for event not created)
+                    4060 (Event was not save in getTalent database)
+                    4061 (User credentials of user for Social Network not found)
+                    4062 (No implementation for specified Social Network)
+                    4064 (Invalid datetime for event)
+                    4065 (Specified Venue not found in database)
+                    4066 (Access token for Social Network has expired)
 
         """
         user_id = kwargs['user_id']
@@ -331,7 +331,7 @@ class EventById(Resource):
             user_id, event_id, event_data['social_network_event_id'])
         if event:
             process_event(event_data, user_id, method='Update')
-            return ApiResponse(json.dumps(dict(message='Event updated successfully')), status=200)
+            return SocialNetworkApiResponse(json.dumps(dict(message='Event updated successfully')), status=200)
         raise ResourceNotFound('Event not found', error_code=404)
 
     @authenticate
@@ -363,6 +363,6 @@ class EventById(Resource):
         user_id = kwargs['user_id']
         deleted, not_deleted = delete_events(user_id, [event_id])
         if len(deleted) == 1:
-            return ApiResponse(json.dumps(dict(message='Event deleted successfully')), status=200)
+            return SocialNetworkApiResponse(json.dumps(dict(message='Event deleted successfully')), status=200)
         raise ForbiddenError('Forbidden: Unable to delete event', error_code=403)
 

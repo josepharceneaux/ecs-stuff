@@ -21,15 +21,15 @@ from social_network_service.common.models.user import Token
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.venue import Venue
 from social_network_service.common.models.user import Client
-from social_network_service.common.models.domain import Domain
-from social_network_service.common.models.culture import Culture
+from social_network_service.common.models.user import Domain
+from social_network_service.common.models.misc import Culture
 from social_network_service.common.models.event_organizer import EventOrganizer
-from social_network_service.common.models.organization import Organization
-from social_network_service.common.models.social_network import SocialNetwork
+from social_network_service.common.models.misc import Organization
+from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.utilities import process_event
 from social_network_service.utilities import delete_events
-from social_network_service.utilities import  get_random_word
+from social_network_service.utilities import get_random_word
 
 db_session = db.session
 
@@ -185,13 +185,13 @@ def test_domain(request, test_organization, test_culture):
     now_timestamp = datetime.now().strftime("%Y:%m:%d %H:%M:%S")
     mixer = Mixer(session=db_session, commit=True)
     domain = mixer.blend(Domain, organization=test_organization, culture=test_culture,
-                         name=faker.nickname(), addedTime=now_timestamp)
+                         name=faker.nickname(), addedTime=now_timestamp, expiration=datetime(2020,1,1,0,0,0))
 
     def delete_doamin():
         """
         Delete this domain object at the end of test session
         """
-        Domain.delete(domain.id)
+        Domain.delete(domain)
 
     request.addfinalizer(delete_doamin)
     return domain
@@ -217,7 +217,7 @@ def test_user(request, test_domain):
         """
         Delete this user object at the end of test session
         """
-        User.delete(user.id)
+        User.delete(user)
 
     request.addfinalizer(fin)
     return user
@@ -364,7 +364,7 @@ def eventbrite_event_data(request, eventbrite, test_user, eventbrite_venue,
 
 
 @pytest.fixture(scope='function')
-def meetup_event(test_user, test_meetup_credentials, meetup,
+def meetup_event(request, test_user, test_meetup_credentials, meetup,
                  venues, organizer_in_db):
     event = EVENT_DATA.copy()
     event['title'] = 'Meetup ' + event['title']
@@ -373,6 +373,17 @@ def meetup_event(test_user, test_meetup_credentials, meetup,
     event['organizer_id'] = organizer_in_db.id
     event_id = process_event(event, test_user.id)
     event = Event.get_by_id(event_id)
+
+    def fin():
+        """
+        This is finalizer for meetup event. Once test is passed, we need to
+        delete the newly created event from website of social network. After
+        test has been passed, we call
+        delete_event() function to delete the event both from social network
+        and from our database.
+        """
+        delete_events(test_user.id, [event_id])
+    request.addfinalizer(fin)
     return event
 
 
@@ -424,7 +435,7 @@ def eventbrite_event(request, test_user, test_eventbrite_credentials,
 
     def fin():
         """
-        This is finalizer for meetup event. Once test is passed, we need to
+        This is finalizer for eventbrite event. Once test is passed, we need to
         delete the newly created event from website of social network. After
         test has been passed, we call
         delete_event() function to delete the event both from social network
@@ -460,9 +471,9 @@ def venues(request, test_user, meetup, eventbrite):
     meetup_venue = {
         "social_network_id": meetup.id,
         "user_id": test_user.id,
-        "zipcode": "95014",
-        "address_line2": "",
-        "address_line1": "Infinite Loop",
+        "zip_code": "95014",
+        "address_line_2": "",
+        "address_line_1": "Infinite Loop",
         "latitude": 0,
         "longitude": 0,
         "state": "CA",
@@ -476,9 +487,9 @@ def venues(request, test_user, meetup, eventbrite):
     eventbrite_venue = {
         "social_network_id": eventbrite.id,
         "user_id": test_user.id,
-        "zipcode": "54600",
-        "address_line2": "H# 163, Block A",
-        "address_line1": "New Muslim Town",
+        "zip_code": "54600",
+        "address_line_2": "H# 163, Block A",
+        "address_line_1": "New Muslim Town",
         "latitude": 0,
         "longitude": 0,
         "state": "Punjab",
@@ -489,6 +500,14 @@ def venues(request, test_user, meetup, eventbrite):
     eventbrite_venue = Venue(**eventbrite_venue)
     Venue.save(eventbrite_venue)
     venues.append(eventbrite_venue)
+
+    def fin():
+        try:
+            for venue in venues:
+                Venue.delete(venue.id)
+        except:
+            pass
+    request.addfinalizer(fin)
     return venues
 
 
@@ -533,6 +552,14 @@ def organizer_in_db(request, test_user):
     }
     organizer = EventOrganizer(**organizer)
     EventOrganizer.save(organizer)
+
+    def fin():
+        try:
+            EventOrganizer.delete(organizer.id)
+        except:
+            pass
+
+    request.addfinalizer(fin)
     return organizer
 
 
@@ -583,7 +610,8 @@ def test_event(request, get_test_events):
 
 @pytest.fixture(params=['title', 'description',
                         'end_datetime', 'timezone',
-                        'start_datetime', 'currency'], scope='function')
+                        'start_datetime', 'currency',
+                        'venue_id', 'organizer_id'], scope='function')
 def eventbrite_missing_data(request, eventbrite_event_data):
     """
     This fixture returns eventbrite data and a key will be deleted from data to test
@@ -596,7 +624,8 @@ def eventbrite_missing_data(request, eventbrite_event_data):
 
 
 @pytest.fixture(params=['title', 'description', 'social_network_group_id',
-                        'group_url_name', 'start_datetime', 'max_attendees'], scope='function')
+                        'group_url_name', 'start_datetime', 'max_attendees',
+                        'venue_id', 'organizer_id'], scope='function')
 def meetup_missing_data(request, meetup_event_data):
     """
     This fixture returns meetup data and a key will be deleted from data to test

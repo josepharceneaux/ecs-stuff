@@ -7,9 +7,9 @@ class EventOrganizer(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id'), nullable=False)
-    name = db.Column('name', db.String(200))
-    email = db.Column('email', db.String(200))
-    about = db.Column('about', db.String(1000))
+    name = db.Column(db.String(200))
+    email = db.Column(db.String(200))
+    about = db.Column(db.String(1000))
 
     event = db.relationship('Event', backref='event_organizer', lazy='dynamic')
 

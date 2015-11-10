@@ -1,16 +1,14 @@
 """Initializer for Social Network Service App"""
-
 __author__ = 'zohaib'
 
 from flask import Flask
 
 from social_network_service.common.models.db import db
-from social_network_service.common.error_handling import register_error_handlers
+from social_network_service.common.error_handling import *
 from social_network_service.model_helpers import add_model_helpers
 
 flask_app = Flask(__name__)
 flask_app.config.from_object('social_network_service.config')
-# TODO: Take this inside init_app()
 logger = flask_app.config['LOGGER']
 
 

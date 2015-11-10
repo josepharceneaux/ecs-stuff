@@ -201,7 +201,7 @@ class Meetup(RSVPBase):
                 attendee.city = data['city']
                 attendee.email = ''
                 attendee.country = data['country']
-                attendee.profile_url = data['link']
+                attendee.social_profile_url = data['link']
                 # attendee.picture_url = data['photo']['photo_link']
                 attendee.gt_user_id = self.user.id
                 attendee.social_network_id = self.social_network.id

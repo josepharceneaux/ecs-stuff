@@ -1,3 +1,5 @@
+import inspect
+
 __author__ = 'oamasood'
 
 from flask import jsonify
@@ -52,6 +54,12 @@ class UnauthorizedError(TalentError):
         return 401
 
 
+class NotFoundError(TalentError):
+    @classmethod
+    def http_status_code(cls):
+        return 404
+
+
 class ForbiddenError(TalentError):
     @classmethod
     def http_status_code(cls):
@@ -80,10 +88,22 @@ def register_error_handlers(app, logger):
         logger.warn("Invalid API usage for app %s: %s", app.import_name, response)
         return response, error.http_status_code()
 
-    @app.errorhandler(UnauthorizedError)
-    def handle_unauthorized(error):
+    @app.errorhandler(NotFoundError)
+    def handle_not_found(error):
+        response = jsonify(error.to_dict())
+        logger.warn("Requested resource not found for the app %s as: %s", app.import_name, response)
+        return response, error.http_status_code()
+
+    @app.errorhandler(ForbiddenError)
+    def handle_forbidden(error):
         logger.warn("Unauthorized for app %s", app.import_name)
         response = jsonify(error.to_dict())
+        return response, error.http_status_code()
+
+    @app.errorhandler(UnauthorizedError)
+    def handle_unauthorized(error):
+        response = jsonify(error.to_dict())
+        logger.warn("Unauthorized for app %s as: %s", app.import_name, response)
         return response, error.http_status_code()
 
     @app.errorhandler(ResourceNotFound)

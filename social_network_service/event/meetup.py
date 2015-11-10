@@ -105,9 +105,9 @@ class Meetup(EventBase):
         self.social_network_group_ids = []
         self.social_network_event_id = None
         self.start_date = kwargs.get('start_date') \
-                          or (datetime.now() - timedelta(days=60))
+                          or (datetime.now() - timedelta(days=5))
         self.end_date = kwargs.get('end_date') \
-                        or (datetime.now() + timedelta(days=60))
+                        or (datetime.now() + timedelta(days=5))
         self.start_time_since_epoch = milliseconds_since_epoch_local_time(self.start_date)
         self.end_time_since_epoch = milliseconds_since_epoch_local_time(self.end_date)
 
@@ -285,13 +285,13 @@ class Meetup(EventBase):
             venue_data = dict(
                 social_network_venue_id=venue['id'],
                 user_id=self.user.id,
-                address_line1=venue['address_1'] if venue else '',
-                address_line2='',
+                address_line_1=venue['address_1'] if venue else '',
+                address_line_2='',
                 city=venue['city'].title().strip()
                 if venue and venue.has_key('city') else '',
                 state=venue['state'].title().strip()
                 if venue and venue.has_key('state') else '',
-                zipcode=venue['zip']
+                zip_code=venue['zip']
                 if venue and venue.has_key('zip') else None,
                 country=venue['country'].title().strip()
                 if venue and venue.has_key('country') else '',
@@ -436,12 +436,12 @@ class Meetup(EventBase):
             # So class variable 'api_url' is not used here.
             url = 'https://api.meetup.com/' + self.group_url_name + '/venues'
             payload = {
-                'address_1': venue_in_db.address_line1,
-                'address_2': venue_in_db.address_line2,
+                'address_1': venue_in_db.address_line_1,
+                'address_2': venue_in_db.address_line_2,
                 'city': venue_in_db.city,
                 'country': venue_in_db.country,
                 'state': venue_in_db.state,
-                'name': venue_in_db.address_line1
+                'name': venue_in_db.address_line_1
             }
             response = http_request('POST', url, params=payload,
                                     headers=self.headers,
@@ -511,7 +511,7 @@ class Meetup(EventBase):
         """
         # these are required fields for Meetup event
         mandatory_input_data = ['title', 'description', 'social_network_group_id',
-                                'group_url_name', 'start_datetime',
+                                'group_url_name', 'start_datetime', 'timezone',
                                 'max_attendees', 'venue_id', 'organizer_id']
         # gets fields which are missing
         missing_items = [key for key in mandatory_input_data if
@@ -519,6 +519,7 @@ class Meetup(EventBase):
         if missing_items:
             raise EventInputMissing(
                 "Mandatory Input Missing: %s" % missing_items)
+        EventBase.validate_required_fields(data)
 
     def event_gt_to_sn_mapping(self, data):
         """
@@ -565,10 +566,9 @@ class Meetup(EventBase):
         """
         assert data, 'Data should not be None/empty'
         assert isinstance(data, dict), 'Data should be a dictionary'
-        super(Meetup, self).event_gt_to_sn_mapping(data)
         self.data = data
         self.validate_required_fields(data)
-        # assert whether data['start_datetime'] is instance of dt
+        super(Meetup, self).event_gt_to_sn_mapping(data)
         # converting Datetime object to epoch for API call
         start_time = int(milliseconds_since_epoch_local_time(data['start_datetime']))
         self.payload = {

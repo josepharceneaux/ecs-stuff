@@ -284,11 +284,11 @@ class Eventbrite(EventBase):
             venue_data = dict(
                 social_network_venue_id=event['venue_id'],
                 user_id=self.user.id,
-                address_line1=venue['address']['address_1'] if venue and venue.has_key('address') else '',
-                address_line2=venue['address']['address_2'] if venue and venue.has_key('address') else '',
+                address_line_1=venue['address']['address_1'] if venue and venue.has_key('address') else '',
+                address_line_2=venue['address']['address_2'] if venue and venue.has_key('address') else '',
                 city=venue['address']['city'] if venue and venue.has_key('address') else '',
                 state=venue['address']['region'] if venue and venue.has_key('address') else '',
-                zipcode=None,
+                zip_code=None,
                 country=venue['address']['country'] if venue and venue.has_key('address') else '',
                 longitude=float(venue['address']['longitude']) if venue and venue.has_key('address') else 0,
                 latitude=float(venue['address']['latitude']) if venue and venue.has_key('address') else 0,
@@ -493,13 +493,13 @@ class Eventbrite(EventBase):
                 return venue.social_network_venue_id
             # This dict is used to create venue
             payload = {
-                'venue.name': venue.address_line1,
-                'venue.address.address_1': venue.address_line1,
-                'venue.address.address_2': venue.address_line2,
+                'venue.name': venue.address_line_1,
+                'venue.address.address_1': venue.address_line_1,
+                'venue.address.address_2': venue.address_line_2,
                 'venue.address.region': venue.state,
                 'venue.address.city': venue.city,
                 # 'venue.address.country': venue.country,
-                'venue.address.postal_code': venue.zipcode,
+                'venue.address.postal_code': venue.zip_code,
                 'venue.address.latitude': venue.latitude,
                 'venue.address.longitude': venue.longitude,
             }
@@ -676,7 +676,7 @@ class Eventbrite(EventBase):
         :exception EventInputMissing: raises exception if all required fields
             are not found
         """
-        mandatory_input_data = ['title', 'description', 'end_datetime',
+        mandatory_input_data = ['title', 'description', 'end_datetime', 'max_attendees',
                                 'timezone', 'start_datetime', 'currency', 'venue_id', 'organizer_id']
         # gets fields which are missing
         missing_items = [key for key in mandatory_input_data
@@ -684,6 +684,7 @@ class Eventbrite(EventBase):
         if missing_items:
             raise EventInputMissing("Mandatory Input Missing: %s"
                                     % missing_items)
+        EventBase.validate_required_fields(data)
 
     def event_gt_to_sn_mapping(self, data):
         """
@@ -736,10 +737,10 @@ class Eventbrite(EventBase):
         """
         assert data, 'Data should not be None/empty'
         assert isinstance(data, dict), 'Data should be a dictionary'
-        # convert datetime strings to datetime objects
-        super(Eventbrite, self).event_gt_to_sn_mapping(data)
         self.data = data
         self.validate_required_fields(data)
+        # convert datetime strings to datetime objects
+        super(Eventbrite, self).event_gt_to_sn_mapping(data)
         # Eventbrite assumes that provided start and end DateTime is in UTC
         # So, form given Timezone, (eventTimeZone in our case), it changes the
         # provided DateTime accordingly.

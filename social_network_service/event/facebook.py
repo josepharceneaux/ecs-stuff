@@ -205,13 +205,13 @@ class Facebook(EventBase):
             venue_data = dict(
                 social_network_venue_id=venue['id'],
                 user_id=self.user.id,
-                address_line1=location['street'] if location.has_key(
+                address_line_1=location['street'] if location.has_key(
                     'street') else '',
-                address_line2='',
+                address_line_2='',
                 city=location['city'].title() if location.has_key(
                     'city') else '',
                 state='',
-                zipcode=location['zip'] if location.has_key('zip') else None,
+                zip_code=location['zip'] if location.has_key('zip') else None,
                 country=location['country'].title() if location.has_key(
                     'country') else '',
                 longitude=float(location['longitude']) if location.has_key(

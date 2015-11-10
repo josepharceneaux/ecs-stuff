@@ -1,7 +1,7 @@
 """
 This modules contains helper methods and classes which we are using in Social Network Service API app.
 
-        * ApiResponse:
+        * SocialNetworkApiResponse:
             This class is used to create API response object to return json response.
 
         * authenticate:
@@ -15,36 +15,13 @@ import json
 import flask
 import traceback
 from flask import Response
-from flask.ext.restful import abort, Api
 from requests_oauthlib import OAuth2Session
-from common.error_handling import TalentError
+from social_network_service.common.error_handling import *
 from social_network_service import logger
 from flask import current_app as app
 
 
-class CustomApi(Api):
-    """
-    This class extends error handling functionality for flask.restful.Api class.
-    flask.restful.Api does not provide a good way of handling custom exceptions and
-    returning dynamic response.
-
-    In flask.restful.Api.handle_error(e) method, it just says "Internal Server Error" for
-    our custom exceptions so we are overriding this method and now it raises again out custom
-    exceptions which will be caught by error handlers in error_handling.py module.
-     and if it is some other exception then actual method will handle it.
-    """
-    def handle_error(self, e):
-        # if it is our custom exception or its subclass instance then raise it
-        # so it error_handlers for app can catch this error and can send proper response
-        # in required format
-        if isinstance(e, TalentError):
-            raise
-        else:
-            # if it is not a custom exception then let the Api class handle it.
-            return super(CustomApi, self).handle_error(e)
-
-
-class ApiResponse(Response):
+class SocialNetworkApiResponse(Response):
     """
     Override default_mimetype to 'application/json' to return proper json api response
     """
@@ -77,7 +54,8 @@ def authenticate(func):
                 kwargs['user_id'] = response.json()['user_id']
                 return func(*args, **kwargs)
             else:
-                abort(401)
+                # abort(401)
+                raise UnauthorizedError('User not recognized. Invalid access token', error_code=401)
         except Exception as e:
             user_id = kwargs.get('user_id', 'Not given')
             logger.debug('User ID: %s\nError : %s\n\nTraceback: %s' % (

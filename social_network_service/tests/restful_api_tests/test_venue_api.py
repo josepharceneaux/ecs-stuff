@@ -26,9 +26,9 @@ class TestVenues:
     def test_post_with_valid_token(self, auth_data):
         venue = {
             "social_network_id": 18,
-            "zipcode": "54600",
-            "address_line2": "H# 163, Block A",
-            "address_line1": "New Muslim Town",
+            "zip_code": "54600",
+            "address_line_2": "H# 163, Block A",
+            "address_line_1": "New Muslim Town",
             "latitude": 0,
             "longitude": 0,
             "state": "CA",
