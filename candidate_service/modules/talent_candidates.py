@@ -1350,9 +1350,8 @@ def _delete_candidates(candidate_ids, user_id, source_product_id):
         list_offset += 100
         list_segment = candidate_ids[list_offset:(list_offset + 100)]
 
-    # Delete files from S3
-
-    # Delete files from CloudSearch
+    # TODO: Delete files from S3
+    # TODO: Delete files from CloudSearch
 
     db.session.commit()
     return len(candidate_ids)

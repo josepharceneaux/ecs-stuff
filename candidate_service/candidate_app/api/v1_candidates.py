@@ -20,7 +20,7 @@ from candidate_service.modules.validators import (
 from common.utils.auth_utils import require_oauth
 
 # Error handling
-from common.error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError)
+from common.error_handling import (ForbiddenError, InvalidUsage)
 
 # Models
 from candidate_service.common.models.user import User
@@ -30,7 +30,9 @@ from candidate_service.modules.talent_candidates import (
 from candidate_service.common.models.email_marketing import EmailCampaign
 
 # Module
-from candidate_service.modules.talent_candidates import create_or_update_candidate_from_params
+from candidate_service.modules.talent_candidates import (
+    create_or_update_candidate_from_params, _delete_candidates
+)
 
 
 class CandidateResource(Resource):
@@ -298,13 +300,12 @@ class CandidateResource(Resource):
                                updated_candidate_id in updated_candidate_ids]}
 
     def delete(self, **kwargs):
-        """ DELETE /web/api/candidates
-            {'candidates': [candidateObject1, candidateObject2, ...]}
-
+        """
         Function will delete candidate objects from CloudSearch and database.
 
-        Only candidate's owner can delete candidate
-        Candidate must be in the same domain as the logged in user
+        Caveats:
+        - Only candidate's owner can delete candidate.
+        - Candidate must be in the same domain as authed_user
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
@@ -328,8 +329,9 @@ class CandidateResource(Resource):
         if filter(lambda candidate_dict: 'id' not in candidate_dict, candidates):
             raise InvalidUsage(error_message="Missing input: Candidate ID(s) required.")
 
-        # Candidate ID(s)
+        # Candidate ID(s) & source_product_id
         candidate_ids = [candidate_dict['id'] for candidate_dict in candidates]
+        source_product_id = body_dict.get('source_product_id', 0)
 
         # All IDs must be integer
         if filter(lambda candidate_id: not is_number(candidate_id), candidate_ids):
@@ -341,8 +343,10 @@ class CandidateResource(Resource):
             raise ForbiddenError(error_message="Not authorized")
 
         # Delete Candidate(s) from CloudSearch & database
+        _delete_candidates(candidate_ids=candidate_ids, user_id=authed_user.id,
+                           source_product_id=source_product_id)
 
-        return
+        return {'candidates': [{'id': candidate_id} for candidate_id in candidate_ids]}
 
 
 class CandidateEmailCampaignResource(Resource):
