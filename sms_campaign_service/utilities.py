@@ -53,9 +53,10 @@ def url_conversion(long_url):
 # shortener = Shortener('TinyurlShortener')
 # print "My short url is {}".format(shortener.short(url))
 
-
+# Third Party Imports
 import twilio
 import twilio.rest
+from twilio.rest import TwilioRestClient
 
 # Application Specific
 from config import TWILIO_ACCOUNT_SID
@@ -96,7 +97,7 @@ def send_sms_campaign(ids, body_text):
 
 def get_smart_list_ids():
     # TODO: get smart list ids from cloud service maybe
-    return [86]
+    return [1]
 
 
 def process_link_in_body_text(body_text):
@@ -228,3 +229,52 @@ def func_1(a, b):
 @celery.task()
 def func_2(a, b):
     print 'func_2'
+
+
+def get_available_numbers():
+    # --------------------------------------
+    # get list of available numbers
+    # -------------------------------------
+    client = TwilioRestClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+    phone_numbers = client.phone_numbers.search(
+        country="US",
+        type="local",
+        sms_enabled=True,
+    )
+    return phone_numbers if phone_numbers else dict()
+
+# --------------------------------------
+# Purchase a number
+# --------------------------------------
+
+
+def purchase_twilio_number(phone_number):
+    # Your Account Sid and Auth Token from twilio.com/user/account
+    client = TwilioRestClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+    number = client.phone_numbers.purchase(friendly_name="My Number",
+                                           phone_number=phone_number,
+                                           sms_url='http://demo.twilio.com/docs/sms.xml',
+                                           sms_method='POST',
+                                           )
+    print number.sid
+
+
+def update_sms_call_back_url(phone_number_sid):
+    client = TwilioRestClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+    number = client.phone_numbers.update(phone_number_sid,
+                                         sms_url="http://demo.twilio.com/docs/sms.xml")
+    print 'SMS call back url has been set to: %s' % number.sms_url
+
+
+def get_sid(phone_number):
+    client = TwilioRestClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+    number = client.phone_numbers.list(phone_number=phone_number)
+    if len(number) == 1:
+        return 'SID of Phone Number %s is %s' % (phone_number, number[0].sid)
+
+# phone_number_sid = get_sid("+15039255479")
+# update_sms_call_back_url(phone_number_sid)
+# number_object = get_available_numbers()[0]
+# number_to_buy = number_object.phone_number
+# print number_to_buy
+# purchase_twilio_number(number_to_buy)
