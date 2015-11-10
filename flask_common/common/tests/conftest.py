@@ -87,21 +87,21 @@ def sample_user(test_domain, request):
         password=USER_HASHED_PASSWORD,
         email='sample_user@{}.com'.format(randomword(7)), added_time=datetime(2050, 4, 26)
     )
-    user, created = get_or_create(db.session, User, defaults=None, **user_attrs)
+    user, created = get_or_create(session=db.session, model=User, defaults=None, **user_attrs)
     if created:
 
         db.session.add(user)
         db.session.commit()
 
-    # def fin():
-    #     try:
-    #         db.session.delete(sample_user)
-    #         db.session.commit()
-    #     except Exception:
-    #         db.session.rollback()
-    #         pass
+    def fin():
+        try:
+            db.session.delete(sample_user)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            pass
 
-    # request.addfinalizer(fin)
+    request.addfinalizer(fin)
     return user
 
 
@@ -112,20 +112,20 @@ def test_domain(test_org, test_culture, request):
         organization_id=test_org.id, is_fair_check_on=0, is_active=1,
         default_culture_id=test_culture.id, expiration=datetime(2050, 4, 26)
     )
-    test_domain, created = get_or_create(db.session, Domain, defaults=None, **domain_attrs)
+    test_domain, created = get_or_create(session=db.session, model=Domain, defaults=None, **domain_attrs)
     if created:
         db.session.add(test_domain)
         db.session.commit()
 
-    # def fin():
-    #     try:
-    #         db.session.delete(test_domain)
-    #         db.session.commit()
-    #     except Exception:
-    #         db.session.rollback()
-    #         pass
-    #
-    # request.addfinalizer(fin)
+    def fin():
+        try:
+            db.session.delete(test_domain)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            pass
+
+    request.addfinalizer(fin)
     return test_domain
 
 

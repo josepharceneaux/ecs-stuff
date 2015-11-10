@@ -8,7 +8,8 @@ import json
 from candidate_service.candidate_app import app
 
 # Sample data
-from common.tests.sample_data import generate_single_candidate_data, candidate_data_for_update
+from common.tests.sample_data import (generate_single_candidate_data,
+                                      candidate_data_for_update)
 
 # Models
 from common.models.candidate import Candidate
