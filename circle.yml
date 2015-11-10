@@ -40,3 +40,11 @@ test:
         parallel: true
     - py.test social_network_service/tests/:
         parallel: true
+
+
+experimental:
+  notify:
+    branches:
+      only:
+        - master
+        - develop
