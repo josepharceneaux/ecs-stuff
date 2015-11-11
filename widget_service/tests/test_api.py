@@ -142,7 +142,7 @@ def areas_of_interest(domain_fixture, second_domain, request):
 
 @pytest.fixture(autouse=True)
 def country_fixture(request):
-    country_attrs = dict(id = 1, name = 'United States', code = 'U.S.A')
+    country_attrs = dict(id = 1, name = 'United States', code = 'US')
     country, created = get_or_create(db.session, Country, defaults=None, **country_attrs)
     if created:
         db.session.add(country)

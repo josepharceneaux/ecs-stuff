@@ -203,8 +203,8 @@ def fetch_resume_fp_key_response(token_fixture, fp_key):
 
 def keys_formatted_test(json_obj):
     assert all(k in json_obj['work_experiences'][0] for k in WORK_EXPERIENCES_KEYS if json_obj['work_experiences'])
-    assert 'text' in json_obj['work_experiences'][0]['work_experience_bullets'][0].keys()\
-        if json_obj['work_experiences'][0]['work_experience_bullets'] else False
+    work_experience_bullet = json_obj['work_experiences'][0]['work_experience_bullets'][0]
+    assert 'text' in work_experience_bullet.keys() if work_experience_bullet else False
     assert all(k in json_obj['addresses'][0] for k in ADDRESS_KEYS if json_obj['addresses'])
     assert all(k in json_obj['skills'][0] for k in SKILLS_KEYS if json_obj['skills'])
     assert all(k in json_obj['emails'][0] for k in EMAILS_KEYS if json_obj['emails'])
