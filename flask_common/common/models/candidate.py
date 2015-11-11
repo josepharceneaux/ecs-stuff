@@ -46,7 +46,7 @@ class Candidate(db.Model):
     candidate_documents = relationship('CandidateDocument', backref='candidate')
     candidate_work_preferences = relationship('CandidateWorkPreference', backref='candidate')
     candidate_preferred_locations = relationship('CandidatePreferredLocation', backref='candidate')
-    candidate_social_network = relationship('CandidateSocialNetwork', backref='candidate')
+    candidate_social_networks = relationship('CandidateSocialNetwork', backref='candidate')
     candidate_languages = relationship('CandidateLanguage', backref='candidate')
     candidate_license_certifications = relationship('CandidateLicenseCertification', backref='candidate')
     candidate_references = relationship('CandidateReference', backref='candidate')

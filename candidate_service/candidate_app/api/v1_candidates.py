@@ -20,10 +20,9 @@ from candidate_service.modules.validators import (
 from common.utils.auth_utils import require_oauth
 
 # Error handling
-from common.error_handling import (ForbiddenError, InvalidUsage)
+from common.error_handling import ForbiddenError, InvalidUsage
 
 # Models
-from candidate_service.common.models.user import User
 from candidate_service.modules.talent_candidates import (
     fetch_candidate_info, get_candidate_id_from_candidate_email
 )
@@ -108,12 +107,20 @@ class CandidateResource(Resource):
 
         # Retrieve candidate object(s)
         list_of_candidate_dicts = body_dict.get('candidates')
-        if not any(list_of_candidate_dicts):
-            raise InvalidUsage(error_message="Missing input: At least one Candidate-object is required for candidate creation")
 
-        # Candidate dict(s) must be in a list
+        # Retrieve candidate object if a single Candidate is sent in
+        if not list_of_candidate_dicts:
+            list_of_candidate_dicts = body_dict.get('candidate')
+
+        # list_of_candidate_dicts must be in a list
         if not isinstance(list_of_candidate_dicts, list):
-            raise InvalidUsage(error_message="Unacceptable input: Candidate object(s) must be in a list")
+            list_of_candidate_dicts = [list_of_candidate_dicts]
+
+        # List of Candidate dicts must not be empty
+        if not any(list_of_candidate_dicts):
+            error_message = "Missing input: At least one Candidate-object is" \
+                            " required for candidate creation"
+            raise InvalidUsage(error_message=error_message)
 
         created_candidate_ids = []
         for candidate_dict in list_of_candidate_dicts:
@@ -149,8 +156,8 @@ class CandidateResource(Resource):
                 raise ForbiddenError(error_message="Unauthorized area of interest IDs")
 
             # TODO: Validate all input formats and existence
-            addresses = candidate_dict.get('addresses')
             user_id = authed_user.id
+            addresses = candidate_dict.get('addresses')
             first_name = candidate_dict.get('first_name')
             last_name = candidate_dict.get('last_name')
             full_name = candidate_dict.get('full_name')
@@ -168,6 +175,7 @@ class CandidateResource(Resource):
 
             resp_dict = create_or_update_candidate_from_params(
                 user_id=user_id,
+                posting=True,
                 first_name=first_name,
                 last_name=last_name,
                 formatted_name=full_name,
@@ -188,8 +196,6 @@ class CandidateResource(Resource):
                 dice_profile_id=dice_profile_id
             )
             created_candidate_ids.append(resp_dict['candidate_id'])
-            if not resp_dict:
-                raise InvalidUsage(error_message="Candidate already exists, creation failed.")
 
         return {'candidates': [{'id': candidate_id} for
                                candidate_id in created_candidate_ids]}, 201
@@ -272,6 +278,7 @@ class CandidateResource(Resource):
 
             resp_dict = create_or_update_candidate_from_params(
                 user_id=user_id,
+                patching=True,
                 candidate_id=candidate_id,
                 first_name=first_name,
                 last_name=last_name,
@@ -293,8 +300,6 @@ class CandidateResource(Resource):
                 dice_profile_id=dice_profile_id
             )
             updated_candidate_ids.append(resp_dict['candidate_id'])
-            if not resp_dict:
-                raise InvalidUsage(error_message="Candidate already exists, creation failed.")
 
         return {'candidates': [{'id': updated_candidate_id} for
                                updated_candidate_id in updated_candidate_ids]}

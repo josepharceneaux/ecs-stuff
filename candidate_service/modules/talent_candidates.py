@@ -31,10 +31,6 @@ from candidate_service.common.utils.validators import (sanitize_zip_code, is_num
 # Common utilities
 from candidate_service.common.utils.common_functions import get_coordinates
 
-# Activity service
-from activity_service.activities_app.views.api import (
-    TalentActivityManager, create_activity
-)
 
 ##################################################
 # Helper Functions For Retrieving Candidate Info #
@@ -336,7 +332,7 @@ def candidate_social_networks(candidate):
     :type candidate:    Candidate
     :rtype              list
     """
-    social_networks = candidate.candidate_social_network
+    social_networks = candidate.candidate_social_networks
     return [{'id': soc_net.id,
              'name': soc_net.social_network.name,
              'url': soc_net.social_profile_url
@@ -435,6 +431,8 @@ def retrieve_email_campaign_send(email_campaign, candidate_id):
 ###########################################
 def create_or_update_candidate_from_params(
         user_id,
+        posting=False,
+        patching=False,
         candidate_id=None,
         first_name=None,
         last_name=None,
@@ -463,8 +461,11 @@ def create_or_update_candidate_from_params(
         summary=None
 ):
     """
-    Function will parse each parameter and create a new Candidate or
-    update an existing one.
+    Function will parse each parameter and:
+        I. Create a Candidate if posting is True
+           A 400 will be returned if candidate_id is found
+        Or
+        II. Update a Candidate if patching is True and candidate_id is provided/found
 
     If all parameters are provided, function will also create or update:
         CandidateAddress, CandidateAreaOfInterest, CandidateCustomField,
@@ -474,6 +475,8 @@ def create_or_update_candidate_from_params(
         CandidateSkill, CandidateSocialNetwork
 
     :type user_id:                  int
+    :type posting:                  bool
+    :type patching:                 bool
     :type candidate_id:             int
     :type first_name:               str
     :type last_name:                str
@@ -527,8 +530,11 @@ def create_or_update_candidate_from_params(
         candidate_id = does_candidate_id_exist(dice_social_profile_id,
                                                dice_profile_id, domain_id, emails)
 
-    # If candidate_id is provided/found, then it's an update
-    if candidate_id:
+    # Raise an error if creation is requested and candidate_id is provided/found
+    if candidate_id and posting:
+        raise InvalidUsage(error_message="Candidate already exists, creation failed.")
+    # Update if an update is requested and candidate_id is provided/found
+    elif candidate_id and patching:
         is_update = True
 
     # Add or Update Candidate
@@ -1330,6 +1336,8 @@ def _delete_candidates(candidate_ids, user_id, source_product_id):
     list_segment = candidate_ids[0:100]
     candidates = db.session.query(Candidate).filter(Candidate.id.in_(candidate_ids))
 
+    from activity_service.activities_app.views.api import (TalentActivityManager,
+                                                           create_activity)
     activity_api = TalentActivityManager()
 
     while list_segment:
