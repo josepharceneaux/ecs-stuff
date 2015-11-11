@@ -5,15 +5,17 @@ from candidate_service.common.models.candidate import (
     Candidate, EmailLabel, CandidateEmail, CandidatePhone, PhoneLabel, CandidateSource,
     CandidateWorkPreference, CandidatePreferredLocation, CandidateAddress,
     CandidateExperience, CandidateEducation, CandidateEducationDegree,
-    CandidateSkill, CandidateMilitaryService, CandidateCustomField,CandidateSubscription,
-    CandidateSocialNetwork, SocialNetwork, CandidateTextComment, CandidateEducationDegreeBullet
-)
+    CandidateSkill, CandidateMilitaryService, CandidateCustomField, CandidateSubscriptionPreference,
+    CandidateSocialNetwork, SocialNetwork, CandidateTextComment, CandidateEducationDegreeBullet, ClassificationType,
+    CandidateExperienceBullet)
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.email_marketing import (EmailCampaign, EmailCampaignSend)
-from candidate_service.common.models.misc import (Country, AreaOfInterest, CustomField, Clasification)
+from candidate_service.common.models.misc import (Country, AreaOfInterest, CustomField)
 from sqlalchemy import and_, or_
 from flask import current_app
 from datetime import datetime
+# Error handling
+from common.error_handling import InvalidUsage
 
 
 def users_in_domain(domain_id):
@@ -30,7 +32,7 @@ def domain_id_from_user_id(user_id):
     :type   user_id:  int
     :return domain_id
     """
-    user = db.session.query(User).get(user_id)
+    user = db.session.query(User).filter_by(id=user_id).first()
     if not user:
         logger.error('domain_id_from_user_id: Tried to find the domain ID of the user: %s',
                      user_id)
@@ -136,17 +138,15 @@ def create_candidate_from_params(
         middle_name=None,
         last_name=None,
         formatted_name=None,
-        status_id=None,
+        status_id=1,
         added_time=None,
         objective=None,
         summary=None,
         domain_can_read=1,
         domain_can_write=1,
-        source_product_id=2,
         email=None,
         dice_social_profile_id=None,
         dice_profile_id=None,
-        update_if_email_exists=True,
         phone=None,
         current_company=None,
         current_title=None,
@@ -159,8 +159,6 @@ def create_candidate_from_params(
         latitude=None,
         longitude=None,
         country_id=1,
-        interest_id=None,
-        interest_info=None,
         university=None,
         major=None,
         degree=None,
@@ -175,16 +173,13 @@ def create_candidate_from_params(
         area_of_interest_ids=None,
         custom_fields_dict=None,
         subscription_preference_frequency_id=None,
-        job_alert_subscription_preference_frequency_id=None,
-        # -1 means "Never", None means "don't change"  # TODO should really make another frequency called Never
         social_networks=None,
         candidate_skill_dicts=None,
         do_index_deltas=True,
         do_db_commit=True,
-        update_if_exists=True,
-        import_from_socialcv=True,
         work_preference=None,
-        preferred_locations=None
+        preferred_locations=None,
+        resume_id=None
 ):
     """
     If you want to update the candidate, pass in the candidate_id.  Or, pass in the email address and
@@ -249,83 +244,46 @@ def create_candidate_from_params(
         current_title = candidate_experience_dicts[0].get('position')
 
     # Check if candidate already exists via id or email
-    is_update = False
 
     domain_id = domain_id_from_user_id(owner_user_id)
 
+    # Return error if candidate_id is found
     if candidate_id:
-        is_update = True
-    elif dice_social_profile_id or dice_profile_id or (email and update_if_email_exists):
-        # Is this an existing candidate?
-        candidate = None
-        # Check for existing Dice social profile ID and Dice profile ID
-        if dice_social_profile_id:
-            candidate = db.session.query(Candidate).join(User).filter(
-                Candidate.dice_social_profile_id == dice_social_profile_id, Candidate.user_id == User.id,
-            User.domain_id == domain_id).first()
-
-        elif dice_profile_id:
-            candidate = db.session.query(Candidate).join(User).filter(
-                Candidate.dice_profile_id == dice_profile_id,
-                User.domain_id == domain_id
-            ).first()
-
-        # If candidate still not found, check for existing email address, if specified
-        if not candidate and email and update_if_email_exists:
-            if isinstance(email[0], dict):
-                email = email[0].get('address')
-            candidate = db.session.query(CandidateEmail).join(User).filter(
-                CandidateEmail.address.in_(email),
-                CandidateEmail.candidate_id == candidate_id,
-                User.domain_id == domain_id
-            ).first()
-
-        # If candidate found, this is an update
-        if candidate:
-            candidate_id = candidate.id
-            is_update = True
+        logger.info('create_candidate_from_params: Candidate already exists; candidate_id: %s', candidate_id)
+        raise InvalidUsage(error_message="Candidate already exists; creation failed.")
 
     # If source_id has not been specified, set it to the domain's 'Unassigned' candidate_source
     if not source_id:
         unassigned_candidate_source = get_or_create_unassigned_candidate_source(domain_id)
         source_id = unassigned_candidate_source.id
-    # Create the candidate if it doesn't exist
-    if not is_update:
-        candidate_id = db.session.add(Candidate(
-            first_name=first_name,
-            last_name=last_name,
-            middle_name=middle_name,
-            added_time=added_time,
-            formatted_name=formatted_name,
-            candidate_status_id=1,
-            user_id=owner_user_id,
-            domain_can_write=domain_can_write,
-            domain_can_read=domain_can_read,
-            dice_profile_id=dice_profile_id,
-            dice_social_profile_id=dice_social_profile_id,
-            source_product_id=source_product_id,
-            source_id=source_id,
-            objective=objective,
-            summary=summary
-        ))
-    logger.info("create_candidate_from_params: candidate_id=%s, is_update=%s", candidate_id, is_update)
 
-    # Update firstName, middleName, lastName, formattedName
-    if is_update and formatted_name:
-        db.session.query(Candidate).filter_by(candidate_id=candidate_id).update(
-            dict(first_name=first_name, middle_name=middle_name, last_name=last_name, formatted_name=formatted_name))
-        db.session.commit()
-    # Update objective/summary if necessary
-    if (objective or summary) and is_update:
-        db.session.query(Candidate).filter_by(id=candidate_id).update(dict(objective=objective, summary=summary))
-        db.session.commit()
+    # Add Candidate to db
+    candidate = Candidate(
+        first_name=first_name,
+        middle_name=middle_name,
+        last_name=last_name,
+        formatted_name=formatted_name,
+        added_time=added_time,
+        candidate_status_id=status_id,
+        user_id=owner_user_id,
+        domain_can_read=domain_can_read,
+        domain_can_write=domain_can_write,
+        dice_profile_id=dice_profile_id,
+        dice_social_profile_id=dice_social_profile_id,
+        source_id=source_id,
+        objective=objective,
+        summary=summary,
+    )
+    db.session.add(candidate)
+    db.session.commit()
+    candidate_id = candidate.id
+    logger.info("create_candidate_from_params: candidate_id=%s", candidate_id)
+
     # Make candidate's email/phone
     if email:
         for i, address in enumerate(email):
-            existing_email_addresses = [row.address for row in db.session.query(CandidateEmail).filter_by(
-                candidate_id=candidate_id)] if is_update else []
-            if address and (address not in existing_email_addresses):
-                is_default = i == 0 and not existing_email_addresses
+            if address:
+                is_default = i == 0
                 db.session.add(CandidateEmail(address=address, candidate_id=candidate_id,
                                               is_default=is_default, email_label_id=1))
 
@@ -334,145 +292,81 @@ def create_candidate_from_params(
             # Converting number into canonical form
             number = canonicalize_phonenumber(number)
 
-            existing_phone_numbers = [row.value for row in
-                                      db.session.query(CandidatePhone).fiter_by(candidate_id == candidate_id)] \
-                if is_update else []
-            if number and (number not in existing_phone_numbers):
-                is_default = i == 0 and not existing_phone_numbers
+            if number:
+                is_default = i == 0
                 db.session.add(CandidatePhone(value=number, candidate_id=candidate_id,
                                               is_default=is_default, phone_label_id=1))
 
-    # If it's an update and the candidate's diceProfileId or diceSocialProfileId weren't previously set, then set them.
-    if is_update and (dice_social_profile_id or dice_profile_id):
-        candidate = db.session.query(Candidate).get(candidate_id)
-        if dice_social_profile_id and (dice_social_profile_id != candidate.diceSocialProfileId):
-            candidate.update_record(dice_social_profile_id=dice_social_profile_id)
-        if dice_profile_id and (dice_profile_id != candidate.diceProfileId):
-            candidate.update_record(dice_profile_id=dice_profile_id)
-
-    # Experience
+        # Add Candidate's work experience(s)
     if candidate_experience_dicts:
-        expected_candidate_experience_dict_keys = ('organization', 'position', 'startYear', 'startMonth', 'endYear',
-                                                   'endMonth', 'isCurrent', 'candidate_experience_bullets')
-        if is_update:
-            existing_candidate_experiences = db.session.query(CandidateExperience).filter_by(candidate_id=candidate_id)
-        else:
-            existing_candidate_experiences = db.session.query(CandidateExperience).all().as_dict()
-        #existing_candidate_experiences = db(db.candidate_experience.candidateId == candidate_id).select() if is_update else Rows()
-        current_candidate_experience_id = None
-        for candidate_experience_dict in candidate_experience_dicts:
+        for work_experience in candidate_experience_dicts:
+            organization = work_experience.get('organization')
+            position = work_experience.get('position')
+            city = work_experience.get('city')
+            state = work_experience.get('state')
+            end_month = work_experience.get('end_month')
+            start_year = work_experience.get('start_year')
+            country_id = country_id_from_country_name_or_code(work_experience.get('country'))
+            start_month = work_experience.get('start_month')
+            end_year = work_experience.get('end_year')
+            is_current = work_experience.get('is_current', 0)
+            experience = CandidateExperience(
+                candidate_id=candidate_id,
+                organization=organization,
+                position=position,
+                city=city,
+                state=state,
+                end_month=end_month,
+                start_year=start_year,
+                country_id=country_id,
+                start_month=start_month,
+                end_year=end_year,
+                is_current=is_current,
+                added_time=added_time,
+                resume_id=resume_id  # todo: this is to be removed once all tables have been added & migrated
+            )
+            db.session.add(experience)
+            db.session.flush()
 
-            # Dict key name validation
-            if not candidate_experience_dict.get('organization') and not candidate_experience_dict.get('position'):
-                logger.error("create_candidate_from_params(%s): Got candidate_experience_dict without organization or "
-                             "position: %s",
-                             candidate_id, candidate_experience_dict)
-                continue
-            if any(filter(lambda key: key not in expected_candidate_experience_dict_keys, candidate_experience_dict.keys())):
-                logger.error("create_candidate_from_params(%s): Got unknown keys in candidate_experience_dict: %s",
-                             candidate_id, candidate_experience_dict)
+            experience_id = experience.id
+            experience_bullets = work_experience.get('work_experience_bullets')
+            if isinstance(experience_bullets, list):
+                for experience_bullet in experience_bullets:
+                    list_order = experience_bullet.get('list_order', 1)
+                    description = experience_bullet.get('description')
+                    db.session.add(CandidateExperienceBullet(
+                        candidate_experience_id=experience_id,
+                        list_order=list_order,
+                        description=description,
+                        added_time=added_time
+                    ))
 
-            # Make sure the start/end month/year are all integers
-            try:
-                start_year = int(candidate_experience_dict.get('startYear')) if \
-                    candidate_experience_dict.get('startYear') else None
-                start_month = int(candidate_experience_dict.get('startMonth')) if \
-                    candidate_experience_dict.get('startMonth') else None
-                end_year = int(candidate_experience_dict.get('endYear')) if \
-                    candidate_experience_dict.get('endYear') else None
-                end_month = int(candidate_experience_dict.get('endMonth')) if \
-                    candidate_experience_dict.get('endMonth') else None
-                is_current = 1 if candidate_experience_dict.get('isCurrent') else 0
-            except Exception:
-                logger.exception("create_candidate_from_params(%s): Error parsing the start/end month/year from "
-                                 "the candidate_experience_dict: %s", candidate_id, candidate_experience_dict)
-                continue
-
-            # TODO come up with a more intelligent way of detecting duplicate candidate_experiences.
-            # Currently we're only checking to see if the below
-            # fields match, but we can be smarter about it w/ some common sense
-
-            # Search for a duplicate candidate_experience, and don't add it if it's already there
-            matching_candidate_experience = existing_candidate_experiences.any(
-                lambda re_row: (re_row.organization == candidate_experience_dict.get('organization')) and
-                               (re_row.position == candidate_experience_dict.get('position')) and
-                               (re_row.startYear == start_year) and
-                               (re_row.startMonth == start_month) and
-                               (re_row.endYear == end_year) and
-                               (re_row.endMonth == end_month)).first()
-            if not matching_candidate_experience:
-                candidate_experience_id = db.session.add(CandidateExperience(candidate_id=candidate_id,
-                                                                             organization=candidate_experience_dict.get('organization'),
-                                                                             position=candidate_experience_dict.get('position'),
-                                                                             start_year=start_year,
-                                                                             start_month=start_month,
-                                                                             end_year=end_year,
-                                                                             end_month=end_month,
-                                                                             is_current=is_current))
-                if is_current:
-                    current_candidate_experience_id = is_current
-
-                # Insert the candidate_experience_bullets
-                if candidate_experience_dict.get('candidate_experience_bullets'):
-                    for i, candidate_experience_bullet_dict in enumerate(candidate_experience_dict[
-                                                                             'candidate_experience_bullets']):
-                        # Dict validation
-                        if any(filter(lambda key: key != 'description', candidate_experience_bullet_dict.keys())):
-                            logger.error("create_candidate_from_params(%s): "
-                                         "Got unknown keys in candidate_experience_bullet_dict: %s",
-                                         candidate_id, candidate_experience_bullet_dict)
-                        # Insert the candidate_experience_bullet
-                        db.candidate_experience_bullet.insert(candidateExperienceId=candidate_experience_id,
-                                                              listOrder=i + 1,
-                                                              description=candidate_experience_bullet_dict.get(
-                                                                  'description'))
-
-        # Set isCurrent to 0 for all candidate_experiences (of this resume), except the current one
-        if current_candidate_experience_id:
-            db.session.query(CandidateExperience).filter(candidate_id == candidate_id,
-                                                         CandidateExperience.id != current_candidate_experience_id).\
-                update({"isCurrent": 0})
-
-    # Text comments
-    if len(candidate_text_comment):
+    # Add Text comments
+    if candidate_text_comment:
         if isinstance(candidate_text_comment, basestring):
-            existing_candidate_text_comments = [row.comment for row in
-                                                db.session.query(CandidateTextComment).filter_by(
-                                                    candidate_id == candidate_id)] if is_update else []
-            if candidate_text_comment not in existing_candidate_text_comments:
-                db.session.add(CandidateTextComment(candidate_id=candidate_id, list_order=0 if
-                existing_candidate_text_comments else 1, comment=candidate_text_comment))
+            db.session.add(CandidateTextComment(candidate_id=candidate_id, list_order=1, comment=candidate_text_comment))
 
         else:
             # just insert them for now, no need to update
             for comment in candidate_text_comment:
                 db.session.add(CandidateTextComment(candidate_id=candidate_id, list_order=0, comment=comment))
-    # Address
+    # Add Address
     if city or state or zip_code:
-        existing_address_tuples = [(row.city, row.state, row.zipCode) for row in
-                                   db.session.query(CandidateAddress).filter_by(
-                                       candidate_id=candidate_id)]if is_update else []
-        if (city, state, zip_code) not in existing_address_tuples:
+        lat_lon = get_coordinates(zip_code, city, state) if (not latitude or not longitude) else "%s,%s" % (latitude, longitude)
 
-            lat_lon = get_coordinates(zip_code, city, state) if (not latitude or not longitude) else "%s,%s" % (latitude, longitude)
-
-            # Validate US zip codes
-            zip_code = sanitize_zip_code(zip_code)
-            db.session.add(CandidateAddress(candidate_id=candidate_id,
-                                            city=city,
-                                            state=state,
-                                            zip_code=zip_code,
-                                            country_id=country_id,
-                                            coordinates=lat_lon,
-                                            is_default=0 if existing_address_tuples else 1))
-
-    elif latitude and longitude:  # If only lat & lon provided, do reverse geolocation
-        # TODO reverse-geolocate this and set other fields in candidate_address
-        existing_addresses = db.session.query(CandidateAddress).filter_by(candidate_id == candidate_id)
+        # Validate US zip codes
+        zip_code = sanitize_zip_code(zip_code)
+        db.session.add(CandidateAddress(candidate_id=candidate_id,
+                                        city=city,
+                                        state=state,
+                                        zip_code=zip_code,
+                                        country_id=country_id,
+                                        coordinates=lat_lon,
+                                        is_default=1))
+    # If only lat & lon provided, do reverse geolocation
+    elif latitude and longitude:
         lat_lon_str = "%s,%s" % (latitude, longitude)
-        matching_address = existing_addresses.filter(CandidateAddress.coordinates == lat_lon_str).first()
-        if not matching_address:
-            db.session.add(CandidateAddress(coordinates=lat_lon_str, candidate_id=candidate_id))
+        db.session.add(CandidateAddress(coordinates=lat_lon_str, candidate_id=candidate_id))
 
     # Education fields
     from datetime import datetime
@@ -488,110 +382,53 @@ def create_candidate_from_params(
     if graduation_month and (graduation_month < 1 or graduation_month > 12):
         graduation_month = 1
 
+    # Add University
     if university:
         from datetime import datetime
-        # Find existing candidate_education (university) id, if any
-        candidate_education_id = None
-        if is_update:
-            existing_candidate_educations = db.session.query(CandidateEducation).filter_by(candidate_id == candidate_id)
-            if existing_candidate_educations:
-                existing_candidate_education = existing_candidate_educations.filter(
-                    CandidateEducation.school_name == university).first()
-                candidate_education_id = existing_candidate_education.id if existing_candidate_education else None
-        else:
-            existing_candidate_educations = []
-
-        # Insert new university, unless it already exists
-        if not candidate_education_id:
-            candidate_education_id = db.session.add(CandidateEducation(candidate_id=candidate_id,
-                                                                       list_order=1 if not existing_candidate_educations
-                                                                       else len(existing_candidate_educations) + 1,
-                                                                       schoolName=university,
-                                                                       countryId=country_id))
+        candidate_education = CandidateEducation(candidate_id=candidate_id, list_order=1, school_name=university,
+                                                 country_id=country_id)
+        db.session.add(candidate_education)
+        db.session.flush()
+        candidate_education_id = candidate_education.id
 
         # Insert new degree, unless it already exists
-        classification_type = classification_type_code_to_classification_type(degree) or {}
-        classification_type_id = classification_type.get('id')
-        classification_type_description = classification_type.get('description')
+        classification_type = classification_type_id_from_degree_type(degree)
+        classification_type_id = classification_type.get('id') if classification_type else None
+        classification_type_description = classification_type.get('description') if classification_type else None
 
-        candidate_education_degree_id = None
-        if is_update:
-            existing_candidate_education_degrees = db.session.query(CandidateEducationDegree).filter_by(
-                candidate_education_id == candidate_education_id)
-            existing_candidate_education_degree = existing_candidate_education_degrees.filter(and_(
-                CandidateEducationDegree.degree_type == degree,
-                CandidateEducationDegree.classification_type_id == classification_type_id)).first()
-
-            # If degree's start/end dates are different, update them
-            if existing_candidate_education_degree and (graduation_year or graduation_month or university_start_month
-                                                        or university_start_year):
-                existing_candidate_education_degree.update_record(
-                    end_time=datetime(year=graduation_year, month=graduation_month, day=1) if
-                    graduation_year and graduation_month else None,
-                    start_time=datetime(year=university_start_year, month=university_start_month, day=1) if
-                    university_start_year and university_start_month else None)
-            candidate_education_degree_id = existing_candidate_education_degree.id if \
-                existing_candidate_education_degree else None
-        else:
-            existing_candidate_education_degrees = []
-
-        if not candidate_education_degree_id:
-            candidate_education_degree_id = db.session.add(CandidateEducationDegree(
+        # Add candidate education degree
+        candidate_education_degree = CandidateEducationDegree(
                 candidate_education_id=candidate_education_id,
                 degree_type=degree,
                 degree_title=classification_type_description,
-                list_order=1 if not existing_candidate_education_degrees else
-                len(existing_candidate_education_degrees) + 1,
+                list_order=1,
                 end_time=datetime(year=graduation_year, month=graduation_month, day=1) if graduation_year and
-                                                                                          graduation_month else None,
+                graduation_month else None,
                 start_time=datetime(year=university_start_year, month=university_start_month, day=1) if
                 university_start_year and university_start_month else None,
-                classification_type_id=classification_type_id))
+                classification_type_id=classification_type_id)
+        db.session.add(candidate_education_degree)
+        db.session.flush()
+        candidate_education_degree_id = candidate_education_degree.id
 
-        # Insert new degree bullet, unless already exists
-        if is_update:
-            existing_candidate_education_degree_bullets = db.session.add(CandidateEducationDegreeBullet).filter_by(
-                candidate_education_degree_id == candidate_education_degree_id)
-            existing_candidate_education_degree_bullet = existing_candidate_education_degree_bullets.filter(
-                CandidateEducationDegreeBullet.concentration_type == major).first()
-            candidate_education_degree_bullet_id = existing_candidate_education_degree_bullet.id if \
-                existing_candidate_education_degree_bullet else None
-        else:
-            existing_candidate_education_degree_bullets = []
-            candidate_education_degree_bullet_id = None
-
-        if not candidate_education_degree_bullet_id:
-            db.session.add(CandidateEducationDegreeBullet(
-                candidate_education_degree_id=candidate_education_degree_id,
-                list_order=1 if not existing_candidate_education_degree_bullets else
-                len(existing_candidate_education_degree_bullets) + 1,
-                concentration_type=major))
-
-    elif graduation_month or graduation_year:  # If no university name provided, but graduation date provided
-        # TODO make the create/update logic behind the education fields smarter
-        if is_update:
-            # Currently, this looks for an existing candidate_education_degree that's missing a graduation year & month,
-            # and updates that.
-            existing_candidate_education_degrees = db.session.query(CandidateEducationDegree).join(CandidateEducation).\
-                filter(and_(CandidateEducationDegree.candidate_education_id == CandidateEducation.id,
-                            CandidateEducation.candidate_id == candidate_id)).all()
-            candidate_education_degree_without_graduation = existing_candidate_education_degrees.filter(
-                CandidateEducationDegree.end_time is None).first()
-            if candidate_education_degree_without_graduation:
-                candidate_education_degree_without_graduation.update_record(
-                    end_time=datetime(year=graduation_year, month=graduation_month, day=1) if
-                    graduation_year and graduation_month else None)
-        else:
+        # Insert new degree bullet
+        db.session.add(CandidateEducationDegreeBullet(candidate_education_degree_id=candidate_education_degree_id,
+                                                      list_order=1, concentration_type=major))
+        db.session.flush()
+    # If no university name provided, but graduation date provided
+    elif graduation_month or graduation_year:
             # Create new candidate_education and candidate_education_degree
-            candidate_education_id = db.session.add(CandidateEducation(candidate_id=candidate_id,
-                                                                       list_order=1, country_id=country_id))
+            candidate_education = CandidateEducation(candidate_id=candidate_id, list_order=1, country_id=country_id)
+            db.session.add(candidate_education)
+            db.session.flush()
+            candidate_education_id = candidate_education.id
 
-            # Insert new degree, unless it already exists
-            classification_type = classification_type_code_to_classification_type(degree)
+            # Insert new degree
+            classification_type = classification_type_id_from_degree_type(degree)
             classification_type_id = classification_type.get('id')
             classification_type_description = classification_type.get('description')
 
-            db.session.add(CandidateEducationDegree(
+            candidate_education_degree = CandidateEducationDegree(
                 candidate_education_id=candidate_education_id,
                 degree_type=degree,
                 degree_title=classification_type_description,
@@ -600,167 +437,73 @@ def create_candidate_from_params(
                                                                                           graduation_month else None,
                 start_time=datetime(year=university_start_year, month=university_start_month, day=1) if
                 university_start_year and university_start_month else None,
-                classification_type_id=classification_type_id))
+                classification_type_id=classification_type_id)
+            db.session.add(candidate_education_degree)
+            db.session.flush()
+            candidate_education_degree_id = candidate_education_degree.id
+            # Insert new degree bullet
+            db.session.add(CandidateEducationDegreeBullet(candidate_education_degree_id=candidate_education_degree_id,
+                                                          list_order=1, concentration_type=major))
+            db.session.flush()
 
-    # Candidate Interest
-    if interest_id:
-        interest_id = "%d" % interest_id if isinstance(interest_id, int) else interest_id
-        interest_ids = [interest_id] if isinstance(interest_id, basestring) else interest_id
-        for interest_id in interest_ids:
-            candidate_area_of_interest_set = db.session.query(CandidateAreaOfInterest).filter(
-                and_(CandidateAreaOfInterest.area_of_interest_id == interest_id,
-                     CandidateAreaOfInterest.candidate_id == candidate_id))
-
-            existing_candidate_area_of_interest = candidate_area_of_interest_set.first()
-            # If updating notes (additional notes), only update record. otherwise create
-            if existing_candidate_area_of_interest and existing_candidate_area_of_interest.additionalNotes != interest_info:
-                candidate_area_of_interest_set.update({"additionalNotes": interest_info})
-            elif not existing_candidate_area_of_interest:
-                try:
-                    db.session.add(CandidateAreaOfInterest(area_of_interest_id=interest_id,
-                                                           additional_notes=interest_info,
-                                                           candidate_id=candidate_id))
-                except Exception:
-                    logger.exception("Error inserting candidate_area_of_interest. aoi ID=%s, candidateId=%s", interest_id, candidate_id)
-
-    # Military service
+    # Add Military service
     if military_branch or military_grade or military_status or military_to_date:
-        # key on candidateId and branch
-        existing_candidate_military_service = db.session.query(CandidateMilitaryService).filter(and_(
-            CandidateMilitaryService.candidate_id == candidate_id,
-            CandidateMilitaryService.branch == military_branch)).first()
-        if is_update and existing_candidate_military_service:
-            existing_fields_tuple = (existing_candidate_military_service.serviceStatus,
-                                     existing_candidate_military_service.highestGrade,
-                                     existing_candidate_military_service.toDate)
-            if existing_fields_tuple != (military_status, military_grade,
-                                         military_to_date):  # if updating military information of same branch...
-                existing_candidate_military_service.update_record(service_status=military_status,
-                                                                  highest_grade=military_grade, to_date=military_to_date)
-
-        else:  # if creating new military record...
-            db.session.add(CandidateMilitaryService(candidate_id=candidate_id,
-                                                    country_id=country_id,
-                                                    service_status=military_status,
-                                                    highest_grade=military_grade,
-                                                    branch=military_branch,
-                                                    to_date=military_to_date))
+        # creating new military record
+        db.session.add(CandidateMilitaryService(candidate_id=candidate_id, country_id=country_id,
+                                                service_status=military_status, highest_grade=military_grade,
+                                                branch=military_branch, to_date=military_to_date))
 
     # Custom fields
     if custom_fields_dict:
-        current_custom_fields = db.session.query(CandidateCustomField).filter_by(candidate_id == candidate_id) if \
-            is_update else []
-        add_candidate_custom_fields(candidate_id, current_candidate_custom_fields=current_custom_fields,
-                                    candidate_custom_fields_dict=custom_fields_dict)
+        for custom_field_id in custom_fields_dict:
+            db.session.add(CandidateCustomField(candidate_id=candidate_id, custom_field_id=custom_field_id,
+                                                added_time=added_time))
 
     # Areas of interest
     if area_of_interest_ids:
-        from candidate_service.modules.talent_area_of_interest import add_aoi_to_candidate
+        from candidate_service.app.views.talent_areas_of_interest import add_aoi_to_candidate
         add_aoi_to_candidate(candidate_id, area_of_interest_ids)
-
     # Normal/Job Alert subscription preference
     if subscription_preference_frequency_id:
-        normal_subscription_pref = get_subscription_preference(candidate_id)
+        db.session.add(CandidateSubscriptionPreference(candidate_id=candidate_id,
+                                                       frequency_id=subscription_preference_frequency_id))
 
-        # Create/update normal subscription preference
-        if subscription_preference_frequency_id:
-            if subscription_preference_frequency_id < 0:
-                subscription_preference_frequency_id = None
-            if not normal_subscription_pref:  # If unsubscribing...
-                db.session.add(CandidateSubscription(candidate_id=candidate_id,
-                                                     frequency_id=subscription_preference_frequency_id))
-            else:
-                normal_subscription_pref.update_record(frequencyId=subscription_preference_frequency_id)
-
-    # Social networks
+    # Add Candidate's social_network(s)
     if social_networks:
-        for social_network_id, social_profile_url in social_networks.items():
-            if not social_network_id or not social_profile_url:
-                logger.warn("create_candidate_from_params(%s): social_network_id=%s, social_profile_url=%s",
-                            candidate_id, social_network_id, social_profile_url)
-                continue
+        for social_network in social_networks:
+            # Get social_network_id
+            social_network_id = social_network_id_from_name(social_network.get('name'))
+            db.session.add(CandidateSocialNetwork(
+                candidate_id=candidate_id,
+                social_network_id=social_network_id,
+                social_profile_url=social_network.get('profile_url')
+            ))
 
-            # Update the profile URL if candidate already has a profile in this social network.
-            # Or, create a new one
-            existing_candidate_social_network = db.session.query(CandidateSocialNetwork).filter(and_(
-                CandidateSocialNetwork.social_network_id == social_network_id,
-                CandidateSocialNetwork.candidate_id == candidate_id
-            )).first() if is_update else None
-            if existing_candidate_social_network:
-                existing_candidate_social_network.update({"social_profile_url": social_profile_url})
-            else:
-                db.session.add(CandidateSocialNetwork(social_network_id=social_network_id,
-                                                      social_profile_url=social_profile_url,
-                                                      candidate_id=candidate_id))
-
-    # Skills
+    # Add Candidate's skill(s)
     if candidate_skill_dicts:
-        expected_candidate_skill_dict_keys = ('description', 'totalMonths', 'lastUsed')
-
-        # Get all existing skills of candidate so we can dedup
-        if is_update:
-            existing_candidate_skills = db.session.query(CandidateSkill).filter_by(candidate_id == candidate_id)
-        else:
-            existing_candidate_skills = db.session.query(CandidateSkill).all()
-        next_list_order = len(existing_candidate_skills) + 1
-
-        for candidate_skill_dict in candidate_skill_dicts:
-            # Dict validation
-            if not candidate_skill_dict.get('description'):
-                logger.error("create_candidate_from_params: candidate_skill_dict did not have description: %s", candidate_skill_dict)
-                continue
-            if any(filter(lambda key: key not in expected_candidate_skill_dict_keys, candidate_skill_dict.keys())):
-                logger.error("create_candidate_from_params(%s): Got unknown keys in candidate_skill_dict: %s",
-                             candidate_id, candidate_skill_dict)
-
-            # Update the existing skill, if it exists
-            existing_skill = existing_candidate_skills.filter(
-                CandidateSkill.description == candidate_skill_dict['description']).first()
-            if existing_skill:
-                existing_skill.update(dict(description=candidate_skill_dict['description'],
-                                           total_months=candidate_skill_dict.get('totalMonths') or
-                                           existing_skill.total_months,
-                                           last_used=candidate_skill_dict.get('lastUsed') or existing_skill.last_used))
-            else:
-                # Create new skill
-                db.session.add(CandidateSkill(candidate_id=candidate_id,
-                                              list_order=next_list_order,
-                                              description=candidate_skill_dict['description'],
-                                              total_months=candidate_skill_dict.get('totalMonths'),
-                                              last_used=candidate_skill_dict.get('lastUsed')))
-            # Increment list order
-            next_list_order += 1
-
+        for skill in candidate_skill_dicts:
+            db.session.add(CandidateSkill(
+                candidate_id=candidate_id,
+                list_order=skill.get('list_order', 1),
+                description=skill.get('description'),
+                added_time=added_time,
+                total_months=skill.get('total_months'),
+                last_used=skill.get('last_used'),
+                resume_id=resume_id  # todo: this is to be removed once all tables have been added & migrated
+            ))
+            db.session.commit()
     # work preferences
     if work_preference:
-        existing_work_preference = db.session.query(CandidateWorkPreference).filter_by(candidate_id=candidate_id).first()
-        if existing_work_preference:
-            existing_work_preference.update(dict(relocate=work_preference.get(
-                                                    'relocate') or work_preference.get("willing_to_relocate"),
-                                                 authorization=work_preference['authorization'],
-                                                 telecommute=work_preference['telecommute'],
-                                                 travel_percentage=work_preference.get(
-                                                    'travel') or work_preference.get('travel_percentage'),
-                                                 hourly_rate=work_preference['hourly_rate'],
-                                                 salary=work_preference['salary'],
-                                                 tax_terms=work_preference.get(
-                                                    'tax_terms') or work_preference.get('employment_type'),
-                                                 security_clearance=work_preference['security_clearance'],
-                                                 third_party=work_preference['third_party']))
-        else:
-            db.session.add(CandidateWorkPreference(candidateId=candidate_id,
-                                                   relocate=work_preference.get(
-                                                       'relocate') or work_preference.get("willing_to_relocate"),
-                                                   authorization=work_preference['authorization'],
-                                                   telecommute=work_preference['telecommute'],
-                                                   travel_percentage=work_preference.get(
-                                                       'travel') or work_preference.get('travel_percentage'),
-                                                   hourly_rate=work_preference['hourly_rate'],
-                                                   salary=work_preference['salary'],
-                                                   tax_terms=work_preference.get(
-                                                       'tax_terms') or work_preference.get('employment_type'),
-                                                   security_clearance=work_preference['security_clearance'],
-                                                   third_party=work_preference['third_party']))
+        db.session.add(CandidateWorkPreference(candidateId=candidate_id, relocate=work_preference.get(
+            'relocate') or work_preference.get("willing_to_relocate"), authorization=work_preference['authorization'],
+                                               telecommute=work_preference['telecommute'],
+                                               travel_percentage=work_preference.get(
+                                                   'travel') or work_preference.get('travel_percentage'),
+                                               hourly_rate=work_preference['hourly_rate'],
+                                               salary=work_preference['salary'], tax_terms=work_preference.get(
+                'tax_terms') or work_preference.get('employment_type'),
+                                               security_clearance=work_preference['security_clearance'],
+                                               third_party=work_preference['third_party']))
 
         # Add preferred locations
         if preferred_locations:
@@ -776,12 +519,12 @@ def create_candidate_from_params(
                     region=fix_caps(loc.get('region')),
                     zipcode=loc.get('zip_code')))
 
-    # If the user is a Dice user, use the SocialCV API to get more data about the candidate
-    if import_from_socialcv and email:
-        owner_user = db.session.query(User).get(owner_user_id)
-        if owner_user.diceUserId:
-            queue_task("merge_candidate_data_from_socialcv",
-                       function_vars=dict(candidate_email=email, owner_user_id=owner_user_id))
+    # # If the user is a Dice user, use the SocialCV API to get more data about the candidate
+    # if import_from_socialcv and email:
+    #     owner_user = db.session.query(User).get(owner_user_id)
+    #     if owner_user.dice_user_id:
+    #         queue_task("merge_candidate_data_from_socialcv",
+    #                    function_vars=dict(candidate_email=email, owner_user_id=owner_user_id))
 
     if do_db_commit:
         db.session.commit()
@@ -814,14 +557,14 @@ def canonicalize_phonenumber(phonenumber):
 
 def get_or_create_unassigned_candidate_source(domain_id):
     unassigned_candidate_source = db.session.query(CandidateSource).filter(
-        CandidateSource.description == 'Unassigned', CandidateSource.domain_id == domain_id)
+        CandidateSource.description == 'Unassigned', CandidateSource.domain_id == domain_id).first()
     if unassigned_candidate_source:
         return unassigned_candidate_source
     else:
         db.session.add(CandidateSource(description='Unassigned', domain_id=domain_id))
         unassigned_candidate_source = db.session.query(CandidateSource).filter(
-        CandidateSource.description == 'Unassigned', CandidateSource.domain_id == domain_id)
-        return db.candidate_source(unassigned_candidate_source)
+            CandidateSource.description == 'Unassigned', CandidateSource.domain_id == domain_id).first()
+        return unassigned_candidate_source
 
 
 def sanitize_zip_code(zip_code):
@@ -836,9 +579,18 @@ def sanitize_zip_code(zip_code):
     return None
 
 
-def classification_type_code_to_classification_type(code):
-    code_hash = db.session.query(Clasification).all().as_dist('code')
-    return code_hash.get(code) or code_hash.get('UNSPECIFIED')
+def classification_type_id_from_degree_type(degree_type):
+    """
+    Function will return classification_type ID of the classification_type that matches
+    with degree_type. E.g. degree_type = 'Masters' => classification_type_id: 5
+    :return:    classification_type_id or None
+    """
+    matching_classification_type_id = None
+    if degree_type:
+        all_classification_types = db.session.query(ClassificationType).all()
+        matching_classification_type_id = next((row.id for row in all_classification_types
+                                                if row.code.lower() == degree_type.lower()), None)
+    return matching_classification_type_id
 
 
 def add_candidate_custom_fields(candidate_id, candidate_custom_fields_dict, current_candidate_custom_fields=None,
@@ -898,34 +650,34 @@ def get_subscription_preference(candidate_id):
     Otherwise, if any one is NULL, keep it and delete the rest.
     Otherwise, if any one is 7, delete all of them.
     """
-    email_prefs = db.session.query(CandidateSubscription).filter_by(candidate_id == candidate_id)
-    non_custom_pref = email_prefs.filter(and_(CandidateSubscription.frequency_id,
-                                              CandidateSubscription.frequency_id < 7)).first()
-    null_pref = email_prefs.filter(CandidateSubscription.frequency_id).first()
-    custom_pref = email_prefs.filter(and_(CandidateSubscription.frequency_id,
-                                          CandidateSubscription.frequency_id == 7)).first()
+    email_prefs = db.session.query(CandidateSubscriptionPreference).filter_by(candidate_id == candidate_id)
+    non_custom_pref = email_prefs.filter(and_(CandidateSubscriptionPreference.frequency_id,
+                                              CandidateSubscriptionPreference.frequency_id < 7)).first()
+    null_pref = email_prefs.filter(CandidateSubscriptionPreference.frequency_id).first()
+    custom_pref = email_prefs.filter(and_(CandidateSubscriptionPreference.frequency_id,
+                                          CandidateSubscriptionPreference.frequency_id == 7)).first()
     if non_custom_pref:
-        all_other_prefs = email_prefs.filter(CandidateSubscription.id != non_custom_pref.id)
+        all_other_prefs = email_prefs.filter(CandidateSubscriptionPreference.id != non_custom_pref.id)
         all_other_prefs_ids = [cs_id for cs_id in all_other_prefs]
         logger.info("get_subscription_preference: Deleting non-custom prefs for candidate %s: %s",
                     candidate_id, all_other_prefs_ids)
         for cs_id in all_other_prefs_ids:
-            cs_row = db.session.query(CandidateSubscription).filter_by(id=cs_id)
+            cs_row = db.session.query(CandidateSubscriptionPreference).filter_by(id=cs_id)
             cs_row.delete()
         return non_custom_pref
     elif null_pref:
-        non_null_prefs = email_prefs.filter(CandidateSubscription.id != null_pref.id)
+        non_null_prefs = email_prefs.filter(CandidateSubscriptionPreference.id != null_pref.id)
         non_null_prefs_id = [cs_id for cs_id in non_null_prefs]
         logger.info("get_subscription_preference: Deleting non-null prefs for candidate %s: %s", candidate_id, non_null_prefs_id)
         for cs_id in non_null_prefs_id:
-            cs_row = db.session.query(CandidateSubscription).filter_by(id=cs_id)
+            cs_row = db.session.query(CandidateSubscriptionPreference).filter_by(id=cs_id)
             cs_row.delete()
         return null_pref
     elif custom_pref:
         email_prefs_ids = [cs_id for cs_id in email_prefs]
         logger.info("get_subscription_preference: Deleting all prefs for candidate %s: %s", candidate_id, email_prefs_ids)
         for cs_id in email_prefs_ids:
-            cs_row = db.session.query(CandidateSubscription).filter_by(id=cs_id)
+            cs_row = db.session.query(CandidateSubscriptionPreference).filter_by(id=cs_id)
             cs_row.delete()
         return None
 
@@ -979,23 +731,34 @@ def fix_caps(string):
     return string
 
 
-def queue_task(function_name, function_vars, timeout_seconds=3600 * 24 * 14, task_name=None):
-    return schedule_task(function_name, function_vars, start_time=datetime.datetime.utcnow(),
-                         stop_time=None, period=0, repeats=1, timeout_seconds=timeout_seconds)
+def country_id_from_country_name_or_code(country_name_or_code):
+    """
+    Function will find and return ID of the country matching with country_name_or_code
+    If not match is found, default return is 1 => 'United States'
+
+    :return: Country.id
+    """
+    from candidate_service.common.models.misc import Country
+
+    all_countries = db.session.query(Country).all()
+    if country_name_or_code:
+        matching_country_id = next((row.id for row in all_countries
+                                    if row.code.lower() == country_name_or_code.lower()
+                                    or row.name.lower() == country_name_or_code.lower()), None)
+        return matching_country_id
+    return 1
 
 
-def schedule_task(function_name, function_vars, start_time, stop_time, period,
-                  repeats, timeout_seconds=3600 * 24 * 14):
-    scheduler = current_app.scheduler
-    scheduler_task_row = scheduler.queue_task(function_name,
-                                              task_name=function_name,
-                                              pvars=function_vars,
-                                              timeout=timeout_seconds,
-                                              start_time=start_time,
-                                              stop_time=stop_time,
-                                              period=period,
-                                              repeats=repeats)
-    if scheduler_task_row.errors:
-        logger.error("Error scheduling task %s with vars %s: %s", function_name, function_vars, scheduler_task_row.errors)
+def social_network_id_from_name(name):
+    """
+    Function gets social_network ID from social network's name
+    e.g. 'Facebook' => 1
+    :return: SocialNetwork.id
+    """
+    matching_social_network = None
+    if name:
+        all_social_networks = db.session.query(SocialNetwork).all()
+        matching_social_network = next((row for row in all_social_networks
+                                        if row.name.lower() == name.lower()), None)
+    return matching_social_network.id if matching_social_network else None
 
-    return scheduler_task_row.id

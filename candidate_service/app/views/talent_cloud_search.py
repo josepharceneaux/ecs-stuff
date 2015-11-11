@@ -12,8 +12,7 @@ import boto
 import boto.exception
 import simplejson
 from flask import request
-
-from candidate_service.app import db
+from candidate_service.candidate_app import db, logger
 from flask import current_app
 from candidate_service.config import GT_ENVIRONMENT
 from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateStatus
@@ -227,7 +226,7 @@ def _build_candidate_documents(candidate_ids):
 
     """
     if not candidate_ids:
-        current_app.logger.warn("Attempted to build candidate documents when candidate_ids=%s", candidate_ids)
+        logger.warn("Attempted to build candidate documents when candidate_ids=%s", candidate_ids)
         return []
     group_concat_separator = '~~~'
 
@@ -308,7 +307,7 @@ def _build_candidate_documents(candidate_ids):
                sep=group_concat_separator,
                date_format=MYSQL_DATE_FORMAT)
 
-    results = db.executesql(sql_query, as_dict=True)
+    results = db.session.execute(sql_query)
 
     # Go through results & build action dicts
     action_dicts = []
@@ -340,8 +339,9 @@ def _build_candidate_documents(candidate_ids):
                 field_name_to_sql_value[field_name] = sql_value_array
 
         # Add the required values we didn't get from DB
-        field_name_to_sql_value['domain_id'] = db.user(field_name_to_sql_value['user_id']).domainId
-
+        field_name_to_sql_value_row = db.session.query(User).filter_by(
+            id=field_name_to_sql_value['user_id']).first()
+        field_name_to_sql_value['domain_id'] = field_name_to_sql_value_row.domain_id
         action_dict['fields'] = field_name_to_sql_value
         action_dicts.append(action_dict)
 
@@ -352,14 +352,14 @@ def upload_candidate_documents(candidate_ids):
     import time
     if isinstance(candidate_ids, int) or isinstance(candidate_ids, long):
         candidate_ids = [candidate_ids]
-    current_app.logger.info("Uploading %s candidate documents. Generating action dicts...", len(candidate_ids))
+    logger.info("Uploading %s candidate documents. Generating action dicts...", len(candidate_ids))
     start_time = time.time()
     action_dicts = _build_candidate_documents(candidate_ids)
-    current_app.logger.info("Action dicts generated (took %ss). Sending %s action dicts", time.time() - start_time,
+    logger.info("Action dicts generated (took %ss). Sending %s action dicts", time.time() - start_time,
                             len(action_dicts))
     adds, deletes = _send_batch_request(action_dicts)
     if deletes:
-        current_app.logger.error("Shouldn't have gotten any deletes in a batch add operation.Got %s deletes."
+        logger.error("Shouldn't have gotten any deletes in a batch add operation.Got %s deletes."
                                  "candidate_ids: %s", deletes, candidate_ids)
     return adds
 
@@ -452,7 +452,7 @@ def _send_batch_request(action_dicts):
         action_dict_json = simplejson.dumps(action_dict)
         if len(action_dict_json) > DOCUMENT_SIZE_LIMIT_BYTES:
             # Individual doc size shouldn't exceed 1MB
-            current_app.logger.error("_send_batch_request: action dict was > 1MB, so couldn't send: %s" % action_dict)
+            logger.error("_send_batch_request: action dict was > 1MB, so couldn't send: %s" % action_dict)
             continue
         elif max_possible_request_size_bytes < BATCH_REQUEST_LIMIT_BYTES:
             # Add doc to aggregated string if it fits
@@ -478,7 +478,7 @@ def _send_batch_request(action_dicts):
             document_service_connection.clear_sdf()
             max_possible_request_size_bytes = 2
             if result.errors:
-                current_app.logger.error("Received errors committing action_dicts to CloudSearch: %s", result.errors)
+                logger.error("Received errors committing action_dicts to CloudSearch: %s", result.errors)
                 adds += result.adds
                 deletes += result.deletes
 
@@ -780,10 +780,9 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
         if 'cf-' in key:  # 'cf-' is for custom fields, it is explicitly prefixed for custom fields
             cf_id = key.split('-')[1]
             # This is for handling kaiser's NUID custom field
-            if int(cf_id) == 14 and value == 'Has NUID':
+            if int(cf_id) and value == 'Has NUID':
                 cf_value = cf_id + '|'
                 filter_queries.append("(prefix field=custom_field_id_and_value '%s')" % cf_value)
-                continue
             # This is for handling standard custom values (not for email preferences)
             if isinstance(value, list):
                 # To avoid REQUEST TOO LONG error we are limiting the search to 50 items
@@ -796,29 +795,27 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
             else:
                 cf_value = cf_id + '|' + value
                 custom_field_request_vars.append(cf_value)
-    if len(custom_field_request_vars):
+    if custom_field_request_vars:
         import re
-        custom_field_request_vars = ["'%s'" % custom_field for custom_field in custom_field_request_vars]
+        custom_field_request_vars = ["%s" % custom_field for custom_field in custom_field_request_vars]
+        custom_fields_facets = ["custom_field_id_and_value:%s" % custom_field_facet for custom_field_facet
+                        in custom_field_request_vars]
+        filter_queries.append("%s" % " ".join(custom_fields_facets))
 
         # special case for kaiser custom fields, 38 is the custom field id = State of Interest
         city_of_interest_custom_fields_index = [i for i, x in enumerate(custom_field_request_vars)
                                                 if re.findall(r'\"38\|(.*?)\"', x)]
 
-        if len(city_of_interest_custom_fields_index):
-            for i in sorted(city_of_interest_custom_fields_index, reverse=True):
-                city_of_interest_custom_fields.append(custom_field_request_vars[i])
-                del custom_field_request_vars[i]
+        for i in sorted(city_of_interest_custom_fields_index, reverse=True):
+            city_of_interest_custom_fields.append(custom_field_request_vars[i])
+            del custom_field_request_vars[i]
 
-        if len(custom_field_request_vars):
-            custom_fields_facets = ["custom_field_id_and_value:%s" % custom_field_facet for custom_field_facet
-                                    in custom_field_request_vars]
-            filter_queries.append("(or %s)" % " ".join(custom_fields_facets))
-        if len(city_of_interest_custom_fields):
+        if city_of_interest_custom_fields:
             city_of_interest_custom_fields_facets = ["custom_field_id_and_value:%s" %
                                                      city_of_interest_custom_fields_facet
                                                      for city_of_interest_custom_fields_facet
                                                      in city_of_interest_custom_fields]
-            filter_queries.append("(or %s)" % " " . join(city_of_interest_custom_fields_facets))
+            filter_queries.append(" %s" % " " . join(city_of_interest_custom_fields_facets))
 
     """
     Two funnel search modes:
@@ -927,8 +924,8 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     # Special flag for kaiser's NUID custom field
     has_kaiser_nuid = False
     num_kaiser_nuids = 0
+    custom_fields = dict()
     if len(facets.get('custom_field_id_and_value', dict())):
-        custom_fields = dict()
         for cf_facet_row in facets['custom_field_id_and_value']:
             # cf_hash example: 9|Top Gun
             # 9 = id of custom field (in this case, Movies)
@@ -946,18 +943,18 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
                 Since cf_id 14 is requested as a facet, we'll handle it as a special case:
                 facet.query={!ex=dt key="has NUID"}customFieldKP:14|*
             """
-            if int(cf_id) == 14:
+            if cf_id:
                 has_kaiser_nuid = True
                 num_kaiser_nuids += cf_facet_count
                 continue
 
-            if not custom_fields.get('cf-'+cf_id):
-                custom_fields['cf-'+cf_id] = list()
+            if not custom_fields.get('cf-%d' % cf_id):
+                custom_fields['cf-%d' % cf_id] = list()
 
-            custom_fields['cf-'+cf_id].append((cf_value, cf_facet_count))
+            custom_fields['cf-%d' % cf_id].append((cf_value, cf_facet_count))
 
         if has_kaiser_nuid:
-            custom_fields['cf-14'] = [('Has NUID', num_kaiser_nuids)]
+            custom_fields['cf-%d' % cf_id] = [('Has NUID', num_kaiser_nuids)]
 
         facets = dict(facets.items() + custom_fields.items())
 
@@ -984,7 +981,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     search_data = dict(descriptions=matches, facets=facets, error=dict(), request_vars=request_vars, mode='search')
     max_pages = int(math.ceil(total_found / float(search_limit))) if search_limit else 1
     fields_data = [data['fields'] for data in matches]
-    if request.args.get('fields'):
+    if request_vars.get('fields'):
         # Checks the fields is requested by client or not
         requested_data = request.args.get('fields').split(',')
         required_context_data = {}
@@ -1003,22 +1000,17 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     else:
         search_results = dict()
         search_results['candidates'] = fields_data
+        search_results['candidate_ids'] = candidate_ids
+        search_results['max_score'] = max_score
+        search_results['total_found'] = total_found
+        search_results['percentage_matches'] = percentage_matches
+        search_results['max_pages'] = max_pages
+        search_results['search_data'] = search_data
         for values in search_results['candidates']:
             if 'email' in values:
                 values['email'] = {"address": values['email']}
         # Returns a dictionary with all the candidates data
         return search_results
-
-    # Update return dictionary with search results
-    context_data['candidate_ids'] = candidate_ids
-    context_data['percentage_matches'] = percentage_matches
-    context_data['search_data'] = search_data
-    context_data['total_found'] = total_found
-    context_data['descriptions'] = []
-    context_data['max_score'] = max_score
-    context_data['max_pages'] = max_pages
-
-    return context_data
 
 
 # Get the facet information from database with given ids
