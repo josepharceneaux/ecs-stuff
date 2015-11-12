@@ -6,7 +6,8 @@ import datetime
 from datetime import date
 
 # Database connection and logger
-from candidate_service.candidate_app import (db, logger)
+from common.models.db import db
+from candidate_service.candidate_app import logger
 
 # Models
 from candidate_service.common.models.candidate import (
