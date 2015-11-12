@@ -21,8 +21,5 @@
         state: reloaded
         ports:
           - "80:80"
-          - "443:443"
         env:
             GT_ENVIRONMENT: "{{GT_ENVIRONMENT}}"
-        volumes:
-          - "/usr/local/etc/ssl:/etc/nginx/ssl"
