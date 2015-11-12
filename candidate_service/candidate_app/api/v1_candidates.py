@@ -6,7 +6,7 @@ from flask import request
 from flask_restful import Resource
 
 # Database connection
-from candidate_service.common.models.db import db
+from common.models.db import db
 
 # Validators
 from common.utils.validators import (is_number, is_valid_email)
