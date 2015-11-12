@@ -94,7 +94,8 @@ def update_candidate(access_token):
 
     # Fetch Candidate
     candidate_id = create_candidate['candidates'][0]['id']
-    candidate_dict = get_from_candidate_resource(access_token, candidate_id).json()['candidate']
+    candidate_dict = get_from_candidate_resource(access_token,
+                                                 candidate_id).json()['candidate']
 
     data = candidate_data_for_update(
         candidate_id=candidate_id,

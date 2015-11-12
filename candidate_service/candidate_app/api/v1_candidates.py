@@ -221,12 +221,20 @@ class CandidateResource(Resource):
 
         # Retrieve candidate object(s)
         list_of_candidate_dicts = body_dict.get('candidates')
-        if not any(list_of_candidate_dicts):
-            raise InvalidUsage(error_message="Missing input: At least one Candidate-object is required.")
 
-        # Candidate dict(s) must be in a list
+        # Retrieve candidate object if a single Candidate is sent in
+        if not list_of_candidate_dicts:
+            list_of_candidate_dicts = body_dict.get('candidate')
+
+        # list_of_candidate_dicts must be in a list
         if not isinstance(list_of_candidate_dicts, list):
-            raise InvalidUsage(error_message="Unacceptable input: Candidate object(s) must be in a list.")
+            list_of_candidate_dicts = [list_of_candidate_dicts]
+
+        # List of Candidate dicts must not be empty
+        if not any(list_of_candidate_dicts):
+            error_message = "Missing input: At least one Candidate-object is" \
+                            " required for candidate creation"
+            raise InvalidUsage(error_message=error_message)
 
         updated_candidate_ids = []
         for candidate_dict in list_of_candidate_dicts:
