@@ -11,11 +11,14 @@ SERVICE_TO_DOCKERHUB_REPO = {'activity_service': 'activities-service',
                              'auth_service': 'authservice',
                              'resume_service': 'resume-parsing-service',
                              'candidate_service': 'candidate-service',
-                             'base_service_container': 'base-service-container'}
+                             'base_service_container': 'base-service-container',
+                             'social_network_service': 'social-network-service'}
 
-SERVICE_TO_PORT_NUMBER = {'activity_service': 8002,
-                          'auth_service': 8001,
-                          'resume_service': 8003}
+SERVICE_TO_PORT_NUMBER = {'auth_service': 8001,
+                          'activity_service': 8002,
+                          'resume_service': 8003,
+                          'user_service': 8004,
+                          'social_network_service': 8006}
 
 parser = argparse.ArgumentParser(description='Common files administrator for Docker building.')
 parser.add_argument('--build', nargs=1, choices=SERVICE_TO_DOCKERHUB_REPO.keys(), help='Invokes the Docker build action for given service')
@@ -70,7 +73,7 @@ if args.build:
 
     # Build Dockerfile
     print 'Building Docker file for service %(service_name)s, repo %(repo_name)s:' % locals()
-    command = 'tar -czh . | docker build --rm=false -t %(repo_name)s:latest -' % locals()
+    command = 'tar -czh . | docker build -t %(repo_name)s:latest -' % locals()
     print ' > ', command
     call(command, shell=True)
 
@@ -91,9 +94,8 @@ if args.run:
     import socket
     my_ip = socket.gethostbyname(socket.gethostname())
 
-    command = 'docker run -p %s:80 -p %s:443 -e "GT_ENVIRONMENT=dev" --add-host=mysql_host:%s %s' % (
+    command = 'docker run -p %s:80 -p -e "GT_ENVIRONMENT=dev" --add-host=mysql_host:%s %s' % (
         SERVICE_TO_PORT_NUMBER[service_name],
-        SERVICE_TO_PORT_NUMBER[service_name] + 1000,
         my_ip,
         repo_name)
 
