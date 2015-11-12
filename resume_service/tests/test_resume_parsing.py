@@ -9,9 +9,8 @@ import os
 # Third party/module
 import pytest
 from resume_service.resume_parsing_app import app
-from resume_service.resume_parsing_app import db
+from common.models.db import db
 from resume_service.common.models.candidate import Candidate
-from resume_service.common.models.candidate import CandidateEmail
 from resume_service.common.models.candidate import EmailLabel
 from resume_service.common.models.misc import Culture
 from resume_service.common.models.misc import Organization
