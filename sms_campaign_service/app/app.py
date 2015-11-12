@@ -17,8 +17,17 @@ from sms_campaign_service.celery_config import make_celery
 celery = make_celery(app)
 
 # start the scheduler
+from apscheduler.jobstores.shelve_store import ShelveJobStore
+from apscheduler.jobstores.redis_store import RedisJobStore
 from apscheduler.scheduler import Scheduler
+# config = {'apscheduler.jobstores.file.class': 'apscheduler.jobstores.shelve_store:ShelveJobStore',
+#           'apscheduler.jobstores.file.path': '/tmp/dbfile'}
+# sched = Scheduler(config)
 sched = Scheduler()
+# sched.add_jobstore(ShelveJobStore('/tmp/dbfile'), 'file')
+# jobstore = RedisJobStore(jobs_key='example.jobs', run_times_key='example.run_times')
+# sched.add_jobstore(jobstore)
+sched.add_jobstore(RedisJobStore(), 'redisJobStore')
 sched.start()
 
 # Third party imports
@@ -101,27 +110,27 @@ def sms():
     This is a test end point which sends sms campaign
     :return:
     """
-    if request.args.has_key('text'):
-        body_text = request.args['text']
-        body_text = process_link_in_body_text(body_text)
-    else:
-        body_text = 'Welcome to getTalent'
-    ids = get_smart_list_ids()
-    # start_min = request.args.get('start')
-    # end_min = request.args.get('end')
-    # start_date = datetime(2015, 11, 4, 18, int(start_min), 50)
-    # end_date = datetime(2015, 11, 4, 18, int(end_min), 36)
-    # repeat_time_in_sec = 2
-    # func = request.args.get('func')
-    # arg1 = 1
-    # arg2 = 3
-    # job = sched.add_interval_job(run_func_1,
-    #                              seconds=repeat_time_in_sec,
-    #                              start_date=start_date,
-    #                              args=[func, [arg1, arg2], end_date])
-    # print 'Task has been added and will run at %s ' % start_date
-    # return 'Task has been added to queue!!!'
-    response = send_sms_campaign(ids, body_text)
+    # if request.args.has_key('text'):
+    #     body_text = request.args['text']
+    #     body_text = process_link_in_body_text(body_text)
+    # else:
+    #     body_text = 'Welcome to getTalent'
+    # ids = get_smart_list_ids()
+    start_min = request.args.get('start')
+    end_min = request.args.get('end')
+    start_date = datetime(2015, 11, 12, 20, int(start_min), 50)
+    end_date = datetime(2015, 11, 12, 20, int(end_min), 36)
+    repeat_time_in_sec = int(request.args.get('frequency'))
+    func = request.args.get('func')
+    arg1 = request.args.get('arg1')
+    arg2 = request.args.get('arg2')
+    job = sched.add_interval_job(run_func_1,
+                                 seconds=repeat_time_in_sec,
+                                 start_date=start_date,
+                                 args=[func, [arg1, arg2], end_date], jobstore='redisJobStore')
+    print 'Task has been added and will run at %s ' % start_date
+    return 'Task has been added to queue!!!'
+    # response = send_sms_campaign(ids, body_text)
     if response:
         return flask.jsonify(**response), response['status_code']
     else:

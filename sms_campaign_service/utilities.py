@@ -209,11 +209,13 @@ def run_func_1(func, args, end_date):
         if job.args[2] == end_date:
             if all([datetime.now().date() == end_date.date(),
                    datetime.now().hour == end_date.hour,
-                   datetime.now().minute == end_date.minute]):
+                   datetime.now().minute == end_date.minute]) \
+                    or end_date < datetime.now():
                 stop_job(job)
                 status = False
     if status:
-        eval(func).delay(args[0], args[1])
+        # eval(func).delay(args[0], args[1])
+        func_1(args[0], args[1])
 
 
 def stop_job(job):
@@ -221,12 +223,12 @@ def stop_job(job):
     print 'job has stopped'
 
 
-@celery.task()
+# @celery.task()
 def func_1(a, b):
-    print 'func_1'
+    print a, b
 
 
-@celery.task()
+# @celery.task()
 def func_2(a, b):
     print 'func_2'
 
@@ -243,12 +245,11 @@ def get_available_numbers():
     )
     return phone_numbers if phone_numbers else dict()
 
-# --------------------------------------
-# Purchase a number
-# --------------------------------------
-
 
 def purchase_twilio_number(phone_number):
+    # --------------------------------------
+    # Purchase a number
+    # --------------------------------------
     # Your Account Sid and Auth Token from twilio.com/user/account
     client = TwilioRestClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
     number = client.phone_numbers.purchase(friendly_name="My Number",
