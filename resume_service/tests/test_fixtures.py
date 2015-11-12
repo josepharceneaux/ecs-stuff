@@ -16,6 +16,7 @@ from resume_service.common.models.user import Token
 from resume_service.common.models.user import User
 from resume_service.resume_parsing_app import db
 from resume_service.common.models.misc import Country
+from resume_service.common.models.misc import Product
 
 
 @pytest.fixture(autouse=True)
@@ -35,7 +36,8 @@ def org_fixture(request):
 
 @pytest.fixture(autouse=True)
 def culture_fixture(request):
-    culture_attrs = dict(description='Foo {}'.format(random_word(12)), code=random_word(5))
+    # culture_attrs = dict(description='Foo {}'.format(random_word(12)), code=random_word(5))
+    culture_attrs = dict(id=1)
     culture, created = get_or_create(db.session, Culture, defaults=None, **culture_attrs)
     if created:
         db.session.add(culture)
@@ -121,7 +123,7 @@ def email_label_fixture(request):
 
 @pytest.fixture(autouse=True)
 def country_fixture(request):
-    country_attrs = dict(name='United States', code='US')
+    country_attrs = dict(id=1, name='United States', code='US')
     country, created = get_or_create(db.session, Country, defaults=None, **country_attrs)
     if created:
         db.session.add(country)
@@ -151,3 +153,18 @@ def phone_label_fixture(request):
     #     db.session.commit()
     # request.addfinalizer(fin)
     return phone_labels
+
+
+@pytest.fixture(autouse=True)
+def product_fixture(request):
+    product_attrs = dict(id=2, name='Web')
+    product, created = get_or_create(db.session, Product, defaults=None, **product_attrs)
+    if created:
+        db.session.add(product)
+        db.session.commit()
+
+    # def fin():
+    #     db.session.delete(product)
+    #     db.session.commit()
+    # request.addfinalizer(fin)
+    return product

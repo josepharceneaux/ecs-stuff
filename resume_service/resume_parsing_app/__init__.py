@@ -3,18 +3,16 @@ __author__ = 'erikfarmer'
 
 from views import api
 from flask import Flask
-# from flask_sqlalchemy import SQLAlchemy
-from resume_service.common.models.db import db
+from common.models.db import db
 
 import config
 
 app = Flask(__name__)
 app.config.from_object(config)
-# db = SQLAlchemy(app)
 db.init_app(app)
 db.app = app
 
-app.register_blueprint(api.mod)
+app.register_blueprint(api.mod, url_prefix='/v1')
 
 logger = app.config['LOGGER']
 

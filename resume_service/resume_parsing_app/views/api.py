@@ -19,7 +19,7 @@ from .utils import create_candidate_from_parsed_resume
 from boto.s3.connection import S3Connection
 from common.utils.auth_utils import require_oauth
 
-mod = Blueprint('activities_api', __name__)
+mod = Blueprint('resume_api', __name__)
 
 
 # Enable CORS
