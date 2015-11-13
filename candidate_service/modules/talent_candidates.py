@@ -789,6 +789,10 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name,
    # Remove None values from update_dict
     update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
 
+    # Candidate will not be updated if update_dict is empty
+    if not any(update_dict):
+        return candidate_id
+
     # Candidate ID must be recognized
     candidate_query = db.session.query(Candidate).filter_by(id=candidate_id)
     if not candidate_query.first():

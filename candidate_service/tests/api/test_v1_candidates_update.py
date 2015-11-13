@@ -50,9 +50,6 @@ def test_update_candidate_without_id(sample_user, user_auth):
     token = user_auth.get_auth_token(
         sample_user, get_bearer_token=True)['access_token']
 
-    # Create Candidate
-    resp = post_to_candidate_resource(access_token=token)
-
     # Update Candidate's first_name
     data = {'candidate': {'first_name': 'larry'}}
     resp = patch_to_candidate_resource(token, data)
@@ -93,3 +90,83 @@ def test_update_candidate_names(sample_user, user_auth):
 
     # Assert on updated field
     assert candidate_dict['candidate']['full_name'] == 'Larry David'
+
+
+def test_add_new_candidate_address(sample_user, user_auth):
+    """
+    Test:   Add a new address to an existing Candidate
+    Expect: 200
+    :type   sample_user:  User
+    :type   user_auth:    UserAuthentication
+    """
+    # Get auth token
+    token = user_auth.get_auth_token(
+        sample_user, get_bearer_token=True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(access_token=token)
+
+    # Add a new address to the existing Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    data = {'candidate': {'id': candidate_id, 'addresses': [
+        {'address_line_1': '225 W. Santa Clara St.', 'city': 'san jose',
+         'state': 'ca', 'zip_code': '95113'}
+    ]}}
+    update_resp = patch_to_candidate_resource(token, data)
+    print response_info(update_resp.request, update_resp.json(),
+                        update_resp.status_code)
+
+    # Retrieve Candidate after update
+    updated_candidate = get_from_candidate_resource(token, candidate_id).json()
+
+    # Since this is a new address, it will the last object in candidate_address
+    candidate_address = updated_candidate['candidate']['addresses'][-1]
+    assert updated_candidate['candidate']['id'] == candidate_id
+    assert candidate_address['address_line_1'] == '225 W. Santa Clara St.'
+    assert candidate_address['city'] == 'san jose'
+    assert candidate_address['state'] == 'ca'
+    assert candidate_address['zip_code'] == '95113'
+    assert candidate_address['country'] == 'United States'
+
+
+def test_update_an_existing_address(sample_user, user_auth):
+    """
+    Test:   Add a new address to an existing Candidate
+    Expect: 200
+    :type   sample_user:  User
+    :type   user_auth:    UserAuthentication
+    """
+    # Get auth token
+    token = user_auth.get_auth_token(
+        sample_user, get_bearer_token=True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(access_token=token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()
+    candidate_address = candidate_dict['candidate']['addresses'][0]
+
+    # Update one of Candidate's addresses
+    data = {'candidate': {'id': candidate_id, 'addresses': [
+        {'id': candidate_address['id'],
+         'address_line_1': '225 W. Santa Clara St.', 'city': 'san jose',
+         'state': 'ca', 'zip_code': '95113'}
+    ]}}
+    update_resp = patch_to_candidate_resource(token, data)
+    print response_info(update_resp.request, update_resp.json(),
+                        update_resp.status_code)
+
+    # Retrieve Candidate after updating
+    updated_candidate = get_from_candidate_resource(token, candidate_id).json()
+    # Updated address
+    updated_address = updated_candidate['candidate']['addresses'][0]
+
+    assert updated_candidate['candidate']['id'] == candidate_id
+    assert updated_address['address_line_1'] == '225 W. Santa Clara St.'
+    assert updated_address['city'] == 'san jose'
+    assert updated_address['state'] == 'ca'
+    assert updated_address['zip_code'] == '95113'
+    assert updated_address['country'] == 'United States'
+
