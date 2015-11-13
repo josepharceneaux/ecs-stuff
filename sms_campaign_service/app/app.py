@@ -66,14 +66,6 @@ CORS(app, resources={
 })
 
 
-@app.after_request
-def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
-    return response
-
-
 @app.route('/')
 def hello_world():
     from common.models.candidate import Candidate
@@ -118,8 +110,8 @@ def sms():
     # ids = get_smart_list_ids()
     start_min = request.args.get('start')
     end_min = request.args.get('end')
-    start_date = datetime(2015, 11, 12, 20, int(start_min), 50)
-    end_date = datetime(2015, 11, 12, 20, int(end_min), 36)
+    start_date = datetime(2015, 11, 13, 17, int(start_min), 50)
+    end_date = datetime(2015, 11, 13, 17, int(end_min), 36)
     repeat_time_in_sec = int(request.args.get('frequency'))
     func = request.args.get('func')
     arg1 = request.args.get('arg1')
