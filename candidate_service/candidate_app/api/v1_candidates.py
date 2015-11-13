@@ -51,12 +51,11 @@ class CandidateResource(Resource):
         :return:    A dict of candidate info
                     404 status if candidate is not found
         """
-        # Authenticate user
+        # Authenticated user
         authed_user = request.user
 
         # Either candidate_id or candidate_email must be provided
-        candidate_id = kwargs.get('id')
-        candidate_email = kwargs.get('email')
+        candidate_id, candidate_email = kwargs.get('id'), kwargs.get('email')
         if not candidate_id and not candidate_email:
             raise InvalidUsage(error_message="Candidate's ID or candidate's email is required")
 
@@ -106,11 +105,8 @@ class CandidateResource(Resource):
             raise InvalidUsage(error_message="JSON body cannot be empty.")
 
         # Retrieve candidate object(s)
-        list_of_candidate_dicts = body_dict.get('candidates')
-
-        # Retrieve candidate object if a single Candidate is sent in
-        if not list_of_candidate_dicts:
-            list_of_candidate_dicts = body_dict.get('candidate')
+        list_of_candidate_dicts = body_dict.get('candidates') or\
+                                  [body_dict.get('candidate')]
 
         # list_of_candidate_dicts must be in a list
         if not isinstance(list_of_candidate_dicts, list):
@@ -175,7 +171,7 @@ class CandidateResource(Resource):
 
             resp_dict = create_or_update_candidate_from_params(
                 user_id=user_id,
-                posting=True,
+                is_creating=True,
                 first_name=first_name,
                 last_name=last_name,
                 formatted_name=full_name,
@@ -211,7 +207,7 @@ class CandidateResource(Resource):
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
-        # Authenticate user
+        # Authenticated user
         authed_user = request.user
 
         # Parse request body
@@ -220,11 +216,8 @@ class CandidateResource(Resource):
             raise InvalidUsage(error_message="JSON body cannot be empty.")
 
         # Retrieve candidate object(s)
-        list_of_candidate_dicts = body_dict.get('candidates')
-
-        # Retrieve candidate object if a single Candidate is sent in
-        if not list_of_candidate_dicts:
-            list_of_candidate_dicts = body_dict.get('candidate')
+        list_of_candidate_dicts = body_dict.get('candidates') or\
+                                  [body_dict.get('candidate')]
 
         # list_of_candidate_dicts must be in a list
         if not isinstance(list_of_candidate_dicts, list):
@@ -239,15 +232,15 @@ class CandidateResource(Resource):
         updated_candidate_ids = []
         for candidate_dict in list_of_candidate_dicts:
 
-            emails = [{'id': email['id'], 'label': email.get('label'),
-                       'address': email.get('address')} for email in candidate_dict.get('emails')]
-            # Email address is required for creating a candidate
-            if not any(emails):
-                raise InvalidUsage(error_message="Email address required")
+            emails = candidate_dict.get('emails')
+            if emails:
+                emails = [{'id': email['id'], 'label': email.get('label'),
+                           'address': email.get('address')}
+                          for email in candidate_dict.get('emails')]
 
-            # Validate email addresses' format
-            if filter(lambda email: not is_valid_email(email['address']), emails):
-                raise InvalidUsage(error_message="Invalid email address/format")
+                # Validate email addresses' format
+                if filter(lambda email: not is_valid_email(email['address']), emails):
+                    raise InvalidUsage(error_message="Invalid email address/format")
 
             # Prevent user from updating custom field(s) from other domains
             custom_fields = candidate_dict.get('custom_fields', [])
@@ -284,9 +277,10 @@ class CandidateResource(Resource):
             dice_social_profile_id = body_dict.get('openweb_id')
             dice_profile_id=body_dict.get('dice_profile_id')
 
+            # TODO: what if we want to add a new email to an existing candidate?
             resp_dict = create_or_update_candidate_from_params(
                 user_id=user_id,
-                patching=True,
+                is_updating=True,
                 candidate_id=candidate_id,
                 first_name=first_name,
                 last_name=last_name,

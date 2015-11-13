@@ -64,8 +64,8 @@ def create_same_candidate(access_token):
     return resp
 
 
-def get_from_candidate_resource(access_token, candidate_id=None,
-                                candidate_email=None):
+def get_from_candidate_resource(access_token, candidate_id='',
+                                candidate_email=''):
     """
     Function sends a get request to CandidateResource via candidate's ID
     or candidate's Email
@@ -82,6 +82,22 @@ def get_from_candidate_resource(access_token, candidate_id=None,
         headers={'Authorization': 'Bearer %s' % access_token},
     )
     return resp
+
+
+def patch_to_candidate_resource(access_token, data):
+    """
+
+    :param access_token:
+    :param data:
+    :return:
+    """
+    resp = requests.patch(
+        url=CandidateResourceUrl.BASE_URL,
+        headers={'Authorization': 'Bearer %s' % access_token},
+        data=json.dumps(data)
+    )
+    return resp
+
 
 
 def update_candidate(access_token):
