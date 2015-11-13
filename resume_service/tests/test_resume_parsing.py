@@ -7,7 +7,6 @@ import os
 # Third party/module
 import requests as r
 from resume_service.common.models.candidate import Candidate
-# from resume_service.resume_parsing_app import app
 from resume_service.resume_parsing_app import db
 from test_fixtures import client_fixture
 from test_fixtures import country_fixture
