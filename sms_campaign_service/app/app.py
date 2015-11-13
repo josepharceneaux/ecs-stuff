@@ -9,34 +9,36 @@ import traceback
 from datetime import datetime
 
 # Initializing App. This line should come before any imports from models
-from apscheduler.events import EVENT_JOB_EXECUTED
-from apscheduler.events import EVENT_JOB_ERROR
-from sms_campaign_service import init_app, db
-
+from sms_campaign_service import init_app
 app = init_app()
 
 # create celery object
 from sms_campaign_service.celery_config import make_celery
 celery = make_celery(app)
 
-#  celery -A sms_campaign_service.app.app.celery worker
+# Run Celery from terminal as
+# celery -A sms_campaign_service.app.app.celery worker
 
 # start the scheduler
-from apscheduler.jobstores.shelve_store import ShelveJobStore
-from apscheduler.scheduler import Scheduler
+from sms_campaign_service.gt_scheduler import GTScheduler
+from apscheduler.events import EVENT_JOB_ERROR
+from apscheduler.events import EVENT_JOB_EXECUTED
+from apscheduler.jobstores.redis_store import RedisJobStore
 
+
+sched = GTScheduler()
+sched.add_jobstore(RedisJobStore(), 'redisJobStore')
+
+# from apscheduler.jobstores.shelve_store import ShelveJobStore
+# from apscheduler.scheduler import Scheduler
 # from common.utils.apscheduler.jobstores.redis_store import RedisJobStore
 # from common.utils.apscheduler.scheduler import Scheduler
 # config = {'apscheduler.jobstores.file.class': 'apscheduler.jobstores.shelve_store:ShelveJobStore',
 #           'apscheduler.jobstores.file.path': '/tmp/dbfile'}
 # sched = Scheduler(config)
-from apscheduler.jobstores.redis_store import RedisJobStore
-from sms_campaign_service.gt_scheduler import GTScheduler
-sched = GTScheduler()
 # sched.add_jobstore(ShelveJobStore('/tmp/dbfile'), 'file')
 # jobstore = RedisJobStore(jobs_key='example.jobs', run_times_key='example.run_times')
 # sched.add_jobstore(jobstore)
-sched.add_jobstore(RedisJobStore(), 'redisJobStore')
 
 
 def my_listener(event):
@@ -71,6 +73,7 @@ from sms_campaign_service.utilities import process_link_in_body_text
 from sms_campaign_service.app.app_utils import ApiResponse
 from sms_campaign_service.custom_exceptions import ApiException
 from sms_campaign_service.common.error_handling import InternalServerError
+
 # Register Blueprints for different APIs
 app.register_blueprint(sms_campaign_blueprint)
 api = Api(app)
@@ -119,7 +122,7 @@ def short_url_test(url=None):
     This is a test end point which converts given URL to short URL
     :return:
     """
-    url = 'http://127.0.0.1:8010/convert_url'
+    url = 'http://127.0.0.1:8007/convert_url'
     response = http_request('GET', url, params={'url': LONG_URL})
     if response.ok:
         short_url, long_url = url_conversion(url)
