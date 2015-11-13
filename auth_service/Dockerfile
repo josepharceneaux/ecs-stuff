@@ -9,6 +9,9 @@ RUN sed -i -e 's/TAG/AuthService/g' /etc/syslog-ng/syslog-ng.conf
 
 WORKDIR /root/base_service_container/auth_service
 
+# Replace FLASK_APP_NAME with AuthService in newrelic.ini
+RUN sed -i -e 's/FLASK_APP_NAME/AuthService/g' newrelic.ini
+
 EXPOSE 80
 
 # Set DB connection string
@@ -24,4 +27,6 @@ CMD\
 
     /etc/init.d/syslog-ng restart && \
 
-    uwsgi --env GT_ENVIRONMENT=$GT_ENVIRONMENT --env DB_STRING=$DB_STRING --ini ./talent-uwsgi.ini
+    export NEW_RELIC_ENVIRONMENT=$GT_ENVIRONMENT && export NEW_RELIC_CONFIG_FILE=newrelic.ini && \
+
+    newrelic-admin run-program uwsgi --env GT_ENVIRONMENT=$GT_ENVIRONMENT --env DB_STRING=$DB_STRING --ini ./talent-uwsgi.ini

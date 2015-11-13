@@ -14,7 +14,7 @@
       docker:
         image: "{{image}}"
         state: absent
-
+        
     - name: Start flask service docker container
       docker:
         image: "{{image}}"
