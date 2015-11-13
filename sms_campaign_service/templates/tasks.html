@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+{% if tasks %}
+<table border="1" style="margin-left: 200px">
+    <thead>
+    <th>Id</th>
+    <th>Scheduled Job ID</th>
+    <th>End Time</th>
+    <th>Next Run Time</th>
+    <th>Status</th>
+    {% for task in tasks %}
+    <tr>
+        <td>{{ task.id }}</td>
+        <td>{{ task.job_id }}</td>
+        <td>{{ task.end_time }}</td>
+        <td>{{ task.next_run_time }}</td>
+        <td>{{ task.status }}</td>
+    </tr>
+    {% endfor %}
+    </thead>
+</table>
+{% else %}
+<h1 align="center"> No tasks are scheduled </h1>
+    {% endif %}
+
+</body>
+</html>

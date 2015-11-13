@@ -230,7 +230,7 @@ class UserEmailTemplate(db.Model):
 
     email_template_folder = relationship(u'EmailTemplateFolder', backref=db.backref('user_email_template',
                                                                                     cascade="all, delete-orphan"))
-    user = relationship(u'User', backref=db.backref('user_email_template', cascade="all, delete-orphan"))
+    user = relationship('User', backref=db.backref('user_email_template', cascade="all, delete-orphan"))
 
 
 class EmailTemplateFolder(db.Model):
@@ -246,3 +246,4 @@ class EmailTemplateFolder(db.Model):
     domain = relationship(u'Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
     parent = relationship(u'EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
                                                                                        cascade="all, delete-orphan"))
+

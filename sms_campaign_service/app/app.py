@@ -9,31 +9,51 @@ import traceback
 from datetime import datetime
 
 # Initializing App. This line should come before any imports from models
-from sms_campaign_service import init_app
+from apscheduler.events import EVENT_JOB_EXECUTED
+from apscheduler.events import EVENT_JOB_ERROR
+from sms_campaign_service import init_app, db
+
 app = init_app()
 
 # create celery object
 from sms_campaign_service.celery_config import make_celery
 celery = make_celery(app)
 
+#  celery -A sms_campaign_service.app.app.celery worker
+
 # start the scheduler
 from apscheduler.jobstores.shelve_store import ShelveJobStore
-from apscheduler.jobstores.redis_store import RedisJobStore
 from apscheduler.scheduler import Scheduler
+
+# from common.utils.apscheduler.jobstores.redis_store import RedisJobStore
+# from common.utils.apscheduler.scheduler import Scheduler
 # config = {'apscheduler.jobstores.file.class': 'apscheduler.jobstores.shelve_store:ShelveJobStore',
 #           'apscheduler.jobstores.file.path': '/tmp/dbfile'}
 # sched = Scheduler(config)
-sched = Scheduler()
+from apscheduler.jobstores.redis_store import RedisJobStore
+from sms_campaign_service.gt_scheduler import GTScheduler
+sched = GTScheduler()
 # sched.add_jobstore(ShelveJobStore('/tmp/dbfile'), 'file')
 # jobstore = RedisJobStore(jobs_key='example.jobs', run_times_key='example.run_times')
 # sched.add_jobstore(jobstore)
 sched.add_jobstore(RedisJobStore(), 'redisJobStore')
+
+
+def my_listener(event):
+    if event.exception:
+        print('The job crashed :(\n')
+        print str(event.exception.message) + '\n'
+    else:
+        print('The job worked :)')
+
+sched.add_listener(my_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 sched.start()
 
 # Third party imports
 import flask
 import twilio.twiml
 from flask import request
+from flask import render_template
 from flask.ext.cors import CORS
 from flask.ext.restful import Api
 from werkzeug.utils import redirect
@@ -41,7 +61,7 @@ from werkzeug.utils import redirect
 # Application specific imports
 from restful.sms_campaign import sms_campaign_blueprint
 from sms_campaign_service import logger
-from sms_campaign_service.utilities import run_func, run_func_1
+from sms_campaign_service.utilities import run_func, run_func_1, get_all_tasks
 from social_network_service.utilities import http_request
 from sms_campaign_service.utilities import url_conversion
 from sms_campaign_service.utilities import send_sms_campaign
@@ -76,14 +96,20 @@ def after_request(response):
 
 @app.route('/')
 def hello_world():
-    from common.models.candidate import Candidate
-    candidate = Candidate.query.get(1)
-    social_networks = candidate.candidate_social_network
-    data = [{
-                'name': social_network.social_network.name,
-                'url': social_network.social_profile_url
-            } for social_network in social_networks]
+    # from common.models.candidate import Candidate
+    # candidate = Candidate.query.get(1)
+    # social_networks = candidate.candidate_social_network
+    # data = [{
+    #             'name': social_network.social_network.name,
+    #             'url': social_network.social_profile_url
+    #         } for social_network in social_networks]
     return 'Welcome to SMS Campaign Service'
+
+
+@app.route('/tasks')
+def tasks():
+    data = get_all_tasks()
+    return render_template('tasks.html', tasks=data)
 
 
 @app.route('/url_conversion', methods=['GET', 'POST'])
@@ -118,16 +144,18 @@ def sms():
     # ids = get_smart_list_ids()
     start_min = request.args.get('start')
     end_min = request.args.get('end')
-    start_date = datetime(2015, 11, 12, 20, int(start_min), 50)
-    end_date = datetime(2015, 11, 12, 20, int(end_min), 36)
+    start_date = datetime(2015, 11, 13, 17, int(start_min), 50)
+    end_date = datetime(2015, 11, 13, 17, int(end_min), 36)
     repeat_time_in_sec = int(request.args.get('frequency'))
     func = request.args.get('func')
     arg1 = request.args.get('arg1')
     arg2 = request.args.get('arg2')
+    # for x in range (1,50):
     job = sched.add_interval_job(run_func_1,
                                  seconds=repeat_time_in_sec,
                                  start_date=start_date,
-                                 args=[func, [arg1, arg2], end_date], jobstore='redisJobStore')
+                                 args=[func, [arg1, arg2], end_date],
+                                 jobstore='redisJobStore')
     print 'Task has been added and will run at %s ' % start_date
     return 'Task has been added to queue!!!'
     # response = send_sms_campaign(ids, body_text)

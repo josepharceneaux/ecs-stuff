@@ -3,13 +3,16 @@ __author__ = 'basit'
 # Standard Library
 import re
 import json
+import time
 from datetime import datetime
+
 
 # Application Specific
 from config import GOOGLE_API_KEY, REDIRECT_URL
 from config import GOOGLE_URLSHORTENER_API_URL
-from sms_campaign_service import logger
+from sms_campaign_service import logger, db
 from social_network_service.utilities import http_request
+from common.models.scheduler import SchedulerTask
 from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.candidate import CandidatePhone
 from sms_campaign_service.common.models.user import UserPhone
@@ -203,7 +206,9 @@ def run_func(arg1, arg2, end_date):
         send_sms_campaign.delay(arg1, arg2)
 
 
+# @celery.task()
 def run_func_1(func, args, end_date):
+    # current_job = args[2]
     status = True
     for job in sched.get_jobs():
         if job.args[2] == end_date:
@@ -211,22 +216,40 @@ def run_func_1(func, args, end_date):
                    datetime.now().hour == end_date.hour,
                    datetime.now().minute == end_date.minute]) \
                     or end_date < datetime.now():
+                # job_status = 'Completed'
                 stop_job(job)
                 status = False
-    if status:
+    # if status:
         # eval(func).delay(args[0], args[1])
+    if status:
+        # job_status = 'Running'
         func_1(args[0], args[1])
+        # add_or_update_job_in_db(current_job, status=job_status)
 
 
 def stop_job(job):
     sched.unschedule_job(job)
-    print 'job has stopped'
+    print 'job(id: %s) has stopped' % job.id
+
+
+def get_all_tasks():
+    tasks = SchedulerTask.query.all()
+    return [task.to_json() for task in tasks]
 
 
 # @celery.task()
+# /sms_camp_service/scheduled_camp_process/
 def func_1(a, b):
-    print a, b
+    # pre processing
+    #
+    # for x in range(1, 10):
+    #     send_sms()
+    print a, '\n',  b
 
+
+# @celery.task()
+def send_sms():
+    pass
 
 # @celery.task()
 def func_2(a, b):
