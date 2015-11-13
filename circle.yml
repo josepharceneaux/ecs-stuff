@@ -12,17 +12,17 @@ dependencies:
 
 test:
   pre:
-    - python auth_service/run.py:
+    - sudo python auth_service/run.py:
         background: true
-    - python user_service/run.py:
+    - sudo python user_service/run.py:
         background: true
-    - python resume_service/run.py:
+    - sudo python resume_service/run.py:
         background: true
-    - python activity_service/run.py:
+    - sudo python activity_service/run.py:
         background: true
-    - python candidate_service/run.py:
+    - sudo python candidate_service/run.py:
         background: true
-    - python social_network_service/run.py:
+    - sudo python social_network_service/run.py:
         background: true
     - sleep 5
 
