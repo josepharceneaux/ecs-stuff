@@ -1,5 +1,5 @@
 from flask import Flask
-from common.models.db import db
+from candidate_service.common.models.db import db
 from gt_custom_restful import *
 
 
@@ -11,7 +11,7 @@ app.config.from_object(config)
 
 logger = app.config['LOGGER']
 
-from common.error_handling import register_error_handlers
+from candidate_service.common.error_handling import register_error_handlers
 register_error_handlers(app=app, logger=logger)
 
 db.init_app(app=app)
