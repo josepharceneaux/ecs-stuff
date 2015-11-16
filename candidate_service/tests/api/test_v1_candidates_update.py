@@ -6,7 +6,6 @@ from candidate_service.candidate_app import app
 
 # Models
 from candidate_service.common.models.user import User
-from candidate_service.common.models.candidate import Candidate
 
 # Conftest
 from common.tests.conftest import UserAuthentication
@@ -19,19 +18,18 @@ from helpers import (
 )
 
 ########################################################################
-########################################################################
 def test_update_candidate(sample_user, user_auth):
     """
-    Test:   update an existing candidate
+    Test:   Update an existing Candidate
     Expect: 200
     :type   sample_user:  User
     :type   user_auth:    UserAuthentication
     """
     # Get auth token
-    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Update Candidate
-    resp = update_candidate(access_token=auth_token_row['access_token'])
+    resp = update_candidate(access_token=token)
 
     resp_dict = resp.json()
     print response_info(resp.request, resp_dict, resp.status_code)
@@ -41,14 +39,13 @@ def test_update_candidate(sample_user, user_auth):
 
 def test_update_candidate_without_id(sample_user, user_auth):
     """
-    Test:   attempt to update a candidate without providing the ID
+    Test:   Attempt to update a Candidate without providing the ID
     Expect: 400
     :type   sample_user:  User
     :type   user_auth:    UserAuthentication
     """
     # Get auth token
-    token = user_auth.get_auth_token(
-        sample_user, get_bearer_token=True)['access_token']
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Update Candidate's first_name
     data = {'candidate': {'first_name': 'larry'}}
@@ -61,14 +58,13 @@ def test_update_candidate_without_id(sample_user, user_auth):
 
 def test_update_candidate_names(sample_user, user_auth):
     """
-    Test:   update candidate's first, middle, and last names
+    Test:   Update candidate's first, middle, and last names
     Expect: 200
     :type   sample_user:  User
     :type   user_auth:    UserAuthentication
     """
     # Get auth token
-    token = user_auth.get_auth_token(
-        sample_user, get_bearer_token=True)['access_token']
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create Candidate
     create_resp = post_to_candidate_resource(access_token=token)
@@ -94,14 +90,13 @@ def test_update_candidate_names(sample_user, user_auth):
 
 def test_add_new_candidate_address(sample_user, user_auth):
     """
-    Test:   Add a new address to an existing Candidate
+    Test:   Add a new CandidateAddress to an existing Candidate
     Expect: 200
     :type   sample_user:  User
     :type   user_auth:    UserAuthentication
     """
     # Get auth token
-    token = user_auth.get_auth_token(
-        sample_user, get_bearer_token=True)['access_token']
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create Candidate
     create_resp = post_to_candidate_resource(access_token=token)
@@ -131,14 +126,13 @@ def test_add_new_candidate_address(sample_user, user_auth):
 
 def test_update_an_existing_address(sample_user, user_auth):
     """
-    Test:   Add a new address to an existing Candidate
+    Test:   Update an existing CandidateAddress
     Expect: 200
     :type   sample_user:  User
     :type   user_auth:    UserAuthentication
     """
     # Get auth token
-    token = user_auth.get_auth_token(
-        sample_user, get_bearer_token=True)['access_token']
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create Candidate
     create_resp = post_to_candidate_resource(access_token=token)
@@ -155,8 +149,7 @@ def test_update_an_existing_address(sample_user, user_auth):
          'state': 'ca', 'zip_code': '95113'}
     ]}}
     update_resp = patch_to_candidate_resource(token, data)
-    print response_info(update_resp.request, update_resp.json(),
-                        update_resp.status_code)
+    print response_info(update_resp.request, update_resp.json(), update_resp.status_code)
 
     # Retrieve Candidate after updating
     updated_candidate = get_from_candidate_resource(token, candidate_id).json()
@@ -169,4 +162,79 @@ def test_update_an_existing_address(sample_user, user_auth):
     assert updated_address['state'] == 'ca'
     assert updated_address['zip_code'] == '95113'
     assert updated_address['country'] == 'United States'
+
+
+def test_add_address_to_existing_candidate(sample_user, user_auth):
+    """
+    Test:   Add CandidateAddress to existing Candidate
+    Expect: 200
+    :type   sample_user:  User
+    :type   user_auth:    UserAuthentication
+    """
+    # Get auth token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(access_token=token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()
+
+    # Add new CandidateAddress
+    data = {'candidate': {'id': candidate_id, 'addresses': [
+        {'address_line_1': '675 Saratoga Ave', 'city': 'san jose', 'state': 'ca', 'zip_code': '95129'}
+    ]}}
+    print "\ndata = %s" % data
+    add_resp = patch_to_candidate_resource(token, data)
+    print response_info(add_resp.request, add_resp.json(), add_resp.status_code)
+
+    # Retrieve Candidate after adding new address
+    updated_candidate = get_from_candidate_resource(token, candidate_id).json()
+    # Newly added address
+    address = updated_candidate['candidate']['addresses'][-1]
+
+    assert updated_candidate['candidate']['id'] == candidate_id
+    assert address['address_line_1'] == '675 Saratoga Ave'
+    assert address['city'] == 'san jose'
+    assert address['state'] == 'ca'
+    assert address['zip_code'] == '95129'
+    assert address['country'] == 'United States'
+
+
+def test_add_new_area_of_interest(sample_user, user_auth):
+    """
+    Test:   Add a new CandidateAreaOfInterest
+    Expect: 200
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+
+    # Add new CandidateAreaOfInterest
+    data = {'candidate': {'id': candidate_id, 'areas_of_interest': [
+        {'description': 'programming'}, {'description': 'teaching'}
+    ]}}
+    updated_resp = patch_to_candidate_resource(token, data)
+    print response_info(updated_resp.request, updated_resp.json(),
+                        updated_resp.status_code)
+
+    # Retrieve Candidate after updating
+    updated_resp_dict = get_from_candidate_resource(token, candidate_id).json()
+    updated_candidate_dict = updated_resp_dict['candidate']
+    updated_aoi_list = updated_candidate_dict['areas_of_interest']
+
+    assert candidate_id == updated_candidate_dict['id']
+    assert 'teaching' or 'programming' in updated_aoi_list[0].values()
+    assert 'teaching' or 'programming' in updated_aoi_list[1].values()
+
+
+
 
