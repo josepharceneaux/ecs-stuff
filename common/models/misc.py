@@ -5,6 +5,7 @@ from sqlalchemy.orm import relationship
 import time
 
 from candidate import CandidateMilitaryService
+from sms_campaign import SmsCampaign
 
 
 class Activity(db.Model):
@@ -117,6 +118,20 @@ class Country(db.Model):
 
     def __repr__(self):
         return "<Country (name=' %r')>" % self.name
+
+
+class Frequency(db.Model):
+    __tablename__ = 'frequency'
+    id = db.Column(db.Integer, primary_key=True)
+    description = db.Column('Description', db.String(10))
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+    # Relationships
+    email_campaigns = relationship('EmailCampaign', backref='frequency')
+    sms_campaigns = relationship('SmsCampaign', backref='frequency')
+
+    def __repr__(self):
+        return "<Frequency (id = %r)>" % self.id
 
 
 # Even though the table name is major I'm keeping the model class singular.

@@ -45,8 +45,8 @@ class TwilioSMS(object):
         try:
             message = self.client.messages.create(
                 body=body_text,
-                to=receiver_phone.value,
-                from_=sender_phone.value
+                to=receiver_phone,
+                from_=sender_phone
             )
             return message
         except twilio.TwilioRestException as e:
@@ -130,6 +130,16 @@ def url_conversion(long_url):
         print e.message
 
 
+def process_redirection(url_conversion_id):
+    """
+    Gets the record from url_conversion db table using provided id.
+    :param url_conversion_id: id of the record
+    :type url_conversion_id: int
+    :return: record from url_conversion
+    :rtype: common.misc.UrlConversion
+    """
+    return UrlConversion.get_by_id(url_conversion_id)
+
 # from pyshorteners import Shortener
 # url = 'https://webdev.gettalent.com/web/user/login?_next=/web/default/angular#!/'
 # # url = 'http://www.google.com'
@@ -169,101 +179,6 @@ def send_sms_campaign(ids, body_text):
 def get_smart_list_ids():
     # TODO: get smart list ids from cloud service maybe
     return [1]
-
-
-def process_link_in_body_text(body_text):
-    """
-    - Once we have the body text of sms to be sent via sms campaign,
-        we check if it contains any link in it.
-        If it has any link, we do the followings:
-
-            1- Save that link in db table "url_conversion".
-            2- Checks if the db record has source url or not. If it has no source url,
-               we convert the url(to redirect to our app) into shortened url and update
-               the db record. Otherwise we move on to transform body text.
-            3. Replace the link in original body text with the shortened url
-                (which we created in step 2)
-            4. Return the updated body text
-
-        Otherwise we return the body text as it is
-    :param body_text: body text to be sent via sms campaign containing any link.
-    :type body_text: str
-    :return: body text to be sent via sms campaign
-    :rtype: str
-    """
-    link_in_body_text = search_link_in_text(body_text)
-    if len(link_in_body_text) == 1:
-        # We have only one link in body text which needs to shortened.
-        url_conversion_id = save_or_update_url_conversion(link_in_body_text[0])
-        url_conversion_record = UrlConversion.get_by_id(url_conversion_id)
-        if not url_conversion_record.source_url:
-            short_url, long_url = url_conversion(REDIRECT_URL + '?url_id=%s' % url_conversion_id)
-            save_or_update_url_conversion(link_in_body_text[0], source_url=short_url)
-        else:
-            short_url = url_conversion_record.source_url
-        body_text = transform_body_text(body_text, link_in_body_text[0], short_url)
-    elif len(link_in_body_text) > 1:
-        # Got multiple links in body text
-        logger.info('Got %s links in body text. Body text is %s'
-                    % (len(link_in_body_text), body_text))
-    return body_text
-
-
-def transform_body_text(body_text, link_in_body_text, short_url):
-    """
-    - This replaces the url provided in body text with the shortened url
-        to be sent via sms campaign.
-    :param body_text: body text to be sent in sms campaign
-    :param link_in_body_text: link present in body text
-    :param short_url: shortened url
-    :type body_text: str
-    :type short_url: str
-    :return: transformed body text to be sent via sms campaign
-    :rtype: str
-    """
-    text_split = body_text.split(' ')
-    index = 0
-    for word in text_split:
-        if word == link_in_body_text:
-            text_split[index] = short_url
-            break
-        index += 1
-    return ' '.join(text_split)
-
-
-def save_or_update_url_conversion(link_in_body_text, source_url=None):
-    """
-    - Here we save the url(provided in body text) and the shortened url
-        to redirect to our endpoint in db table "url_conversion".
-    :param link_in_body_text: link present in body text
-    :param source_url: shortened url of the link present in body text
-    :type link_in_body_text: str
-    :type source_url: str
-    :return: id of the record in database
-    :rtype: int
-    """
-    data = {'destination_url': link_in_body_text}
-    data.update({'source_url': source_url}) if source_url else ''
-    record_in_db = UrlConversion.get_by_destination_url(link_in_body_text)
-    if record_in_db:
-        record_in_db.update(**data)
-        url_record_id = record_in_db.id
-    else:
-        new_record = UrlConversion(**data)
-        UrlConversion.save(new_record)
-        url_record_id = new_record.id
-    return url_record_id
-
-
-def process_redirection(url_conversion_id):
-    """
-    Gets the record from url_conversion db table using provided id.
-    :param url_conversion_id: id of the record
-    :type url_conversion_id: int
-    :return: record from url_conversion
-    :rtype: common.misc.UrlConversion
-    """
-    return UrlConversion.get_by_id(url_conversion_id)
 
 
 def run_func(arg1, arg2, end_date):

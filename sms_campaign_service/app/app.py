@@ -89,17 +89,20 @@ CORS(app, resources={
 })
 
 
-@app.after_request
-def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
-    return response
-
-
 @app.route('/')
 def hello_world():
-    # from common.models.candidate import Candidate
+
+    from sms_campaign_service.common.models.sms_campaign import SmsCampaign, \
+        SmsCampaignBlast, SmsCampaignSend, SmsCampaignReply
+    from sms_campaign_service.common.models.misc import Frequency
+    from sms_campaign_service.common.models.user import UserPhone
+    print SmsCampaign.query.all()
+    print SmsCampaignBlast.query.all()
+    print SmsCampaignSend.query.all()
+    print SmsCampaignReply.query.all()
+    print Frequency.query.all()
+    print UserPhone.query.all()
+    # from sms_campaign_service.common.models.candidate import Candidate
     # candidate = Candidate.query.get(1)
     # social_networks = candidate.candidate_social_network
     # data = [{
