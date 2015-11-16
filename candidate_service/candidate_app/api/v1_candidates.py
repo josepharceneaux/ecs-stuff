@@ -105,8 +105,7 @@ class CandidateResource(Resource):
             raise InvalidUsage(error_message="JSON body cannot be empty.")
 
         # Retrieve candidate object(s)
-        list_of_candidate_dicts = body_dict.get('candidates') or\
-                                  [body_dict.get('candidate')]
+        list_of_candidate_dicts = body_dict.get('candidates') or [body_dict.get('candidate')]
 
         # list_of_candidate_dicts must be in a list
         if not isinstance(list_of_candidate_dicts, list):
@@ -216,8 +215,7 @@ class CandidateResource(Resource):
             raise InvalidUsage(error_message="JSON body cannot be empty.")
 
         # Retrieve candidate object(s)
-        list_of_candidate_dicts = body_dict.get('candidates') or\
-                                  [body_dict.get('candidate')]
+        list_of_candidate_dicts = body_dict.get('candidates') or [body_dict.get('candidate')]
 
         # list_of_candidate_dicts must be in a list
         if not isinstance(list_of_candidate_dicts, list):
@@ -225,8 +223,7 @@ class CandidateResource(Resource):
 
         # List of Candidate dicts must not be empty
         if not any(list_of_candidate_dicts):
-            error_message = "Missing input: At least one Candidate-object is" \
-                            " required for candidate creation"
+            error_message = "Missing input: At least one Candidate-object is required for candidate creation"
             raise InvalidUsage(error_message=error_message)
 
         updated_candidate_ids = []
@@ -282,7 +279,6 @@ class CandidateResource(Resource):
             dice_social_profile_id = body_dict.get('openweb_id')
             dice_profile_id=body_dict.get('dice_profile_id')
 
-            # TODO: what if we want to add a new email to an existing candidate?
             resp_dict = create_or_update_candidate_from_params(
                 user_id=user_id,
                 is_updating=True,

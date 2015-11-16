@@ -223,10 +223,9 @@ def test_add_new_area_of_interest(sample_user, user_auth):
         {'description': 'programming'}, {'description': 'teaching'}
     ]}}
     updated_resp = patch_to_candidate_resource(token, data)
-    print response_info(updated_resp.request, updated_resp.json(),
-                        updated_resp.status_code)
+    print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
 
-    # Retrieve Candidate after updating
+    # Retrieve Candidate after update
     updated_resp_dict = get_from_candidate_resource(token, candidate_id).json()
     updated_candidate_dict = updated_resp_dict['candidate']
     updated_aoi_list = updated_candidate_dict['areas_of_interest']
@@ -234,6 +233,108 @@ def test_add_new_area_of_interest(sample_user, user_auth):
     assert candidate_id == updated_candidate_dict['id']
     assert 'teaching' or 'programming' in updated_aoi_list[0].values()
     assert 'teaching' or 'programming' in updated_aoi_list[1].values()
+
+
+# def test_add_new_custom_field(sample_user, user_auth):
+#     """
+#     Test:   Add a new CandidateAreaOfInterest
+#     Expect: 200
+#     :type sample_user:  User
+#     :type user_auth:    UserAuthentication
+#     """
+#     # Get access token
+#     token = user_auth.get_auth_token(sample_user, True)['access_token']
+#
+#     # Create Candidate
+#     create_resp = post_to_candidate_resource(token)
+#
+#     # Retrieve Candidate
+#     candidate_id = create_resp.json()['candidates'][0]['id']
+#
+#     # Add new CandidateCustomField
+#     data = {'candidate': {'id': candidate_id, 'custom_fields': [
+#         {''}
+#     ]}}
+
+
+def test_add_new_education(sample_user, user_auth):
+    """
+    Test:   Add a new CandidateAreaOfInterest
+    Expect: 200
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+
+    # Add new CandidateEducation
+    data = {'candidate': {'id': candidate_id, 'educations': [
+        {'school_name': 'uc berkeley', 'city': 'berkeley', 'degrees': [
+            {'type': 'bs', 'title': 'science', 'degree_bullets': [
+                {'major': 'biology'}
+            ]}
+        ]}
+    ]}}
+    updated_resp = patch_to_candidate_resource(token, data)
+    print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    updated_can_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+    education_dict = updated_can_dict['educations'][-1]
+
+    assert candidate_id == updated_can_dict['id']
+    assert education_dict['city'] == 'berkeley'
+    assert education_dict['country'] == 'United States'
+    assert education_dict['school_name'] == 'uc berkeley'
+    assert education_dict['degrees'][-1]['type'] == 'bs'
+    assert education_dict['degrees'][-1]['title'] == 'science'
+    assert education_dict['degrees'][-1]['degree_bullets'][-1]['major'] == 'biology'
+
+
+def test_update_education_primary_info(sample_user, user_auth):
+    """
+    Test:   Updates candidate's education's city, school_name, and state
+            Since this is an update only, total number of candidate's education
+            must remain unchanged.
+    Expect: 200
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    candidate_education_count = len(candidate_dict['educations'])
+
+    # Update existing CandidateEducation
+    data = {'candidate': {'id':  candidate_id, 'educations': [
+        {'id': candidate_dict['educations'][0]['id'], 'school_name': 'chico state',
+         'city': 'chico', 'state': 'ca', 'country': 'us'}
+    ]}}
+    updated_resp = patch_to_candidate_resource(token, data)
+    print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    updated_can_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+    education_dict = updated_can_dict['educations'][0]
+
+    assert education_dict['city'] == 'chico'
+    assert education_dict['state'] == 'ca'
+    assert education_dict['country'] == 'United States'
+    assert education_dict['school_name'] == 'chico state'
+    assert len(updated_can_dict['educations']) == candidate_education_count
 
 
 
