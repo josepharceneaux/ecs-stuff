@@ -8,15 +8,15 @@ import json
 from candidate_service.candidate_app import app
 
 # Sample data
-from common.tests.sample_data import generate_single_candidate_data
+from candidate_service.common.tests.sample_data import generate_single_candidate_data
 
 # Models
-from common.models.candidate import Candidate
-from common.models.user import User
+from candidate_service.common.models.candidate import Candidate
+from candidate_service.common.models.user import User
 
 # Conftest
-from common.tests.conftest import UserAuthentication
-from common.tests.conftest import *
+from candidate_service.common.tests.conftest import UserAuthentication
+from candidate_service.common.tests.conftest import *
 
 
 BASE_URI = "http://127.0.0.1:8005/v1/candidates"

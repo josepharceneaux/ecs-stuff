@@ -18,7 +18,7 @@ app.register_blueprint(api.mod)
 
 logger = app.config['LOGGER']
 
-from common.error_handling import register_error_handlers
+from resume_service.common.error_handling import register_error_handlers
 
 register_error_handlers(app, logger)
 
