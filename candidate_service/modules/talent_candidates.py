@@ -32,7 +32,6 @@ from candidate_service.common.utils.validators import (sanitize_zip_code, is_num
 # Common utilities
 from candidate_service.common.utils.common_functions import get_coordinates
 
-
 ##################################################
 # Helper Functions For Retrieving Candidate Info #
 ##################################################
@@ -445,7 +444,7 @@ def create_or_update_candidate_from_params(
         addresses=None,
         educations=None,
         military_services=None,
-        area_of_interest_ids=None,
+        areas_of_interest=None,
         custom_field_ids=None,
         social_networks=None,
         work_experiences=None,
@@ -492,7 +491,7 @@ def create_or_update_candidate_from_params(
     :type addresses:                list
     :type educations:               list
     :type military_services:        list
-    :type area_of_interest_ids:     list
+    :type areas_of_interest:        list
     :type custom_field_ids:         list
     :type social_networks:          list
     :type work_experiences:         list
@@ -512,8 +511,6 @@ def create_or_update_candidate_from_params(
     # Format inputs
     added_time = added_time or datetime.datetime.now()
     status_id = status_id or 1
-    domain_can_read = domain_can_read or 1
-    domain_can_write = domain_can_write or 1
     is_update = False
 
     # Figure out first_name, last_name, middle_name, and formatted_name from inputs
@@ -538,9 +535,11 @@ def create_or_update_candidate_from_params(
     if candidate_id and is_creating:
         error_message = "Candidate already exists, creation failed."
         raise InvalidUsage(error_message=error_message)
+
     # Update if an update is requested and candidate_id is provided/found
     elif candidate_id and is_updating:
         is_update = True
+
     # Update is not possible without candidate ID
     elif not candidate_id and is_updating:
         error_message = "Candidate ID is required for updating."
@@ -558,13 +557,12 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's address(es)
     if addresses:
-        _add_or_update_candidate_addresses(candidate_id, addresses, is_update)
+        _add_or_update_candidate_addresses(candidate_id, addresses)
 
     # Add or update Candidate's areas_of_interest
-    if area_of_interest_ids:
-        _add_or_update_candidate_areas_of_interest(candidate_id,
-                                                   area_of_interest_ids,
-                                                   is_update)
+    if areas_of_interest:
+        _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest,
+                                                   domain_id, is_update)
 
     # Add or update Candidate's custom_field(s)
     if custom_field_ids:
@@ -701,24 +699,7 @@ def does_candidate_id_exist(dice_social_profile_id, dice_profile_id, domain_id, 
     return None
 
 
-def country_id_from_country_name_or_code(country_name_or_code):
-    """
-    Function will find and return ID of the country matching with country_name_or_code
-    If not match is found, default return is 1 => 'United States'
-
-    :return: Country.id
-    """
-    from candidate_service.common.models.misc import Country
-
-    all_countries = db.session.query(Country).all()
-    if country_name_or_code:
-        matching_country_id = next((row.id for row in all_countries
-                                    if row.code.lower() == country_name_or_code.lower()
-                                    or row.name.lower() == country_name_or_code.lower()), None)
-        return matching_country_id
-    return 1
-
-
+# TODO: convert to classmethod in models
 def classification_type_id_from_degree_type(degree_type):
     """
     Function will return classification_type ID of the classification_type that matches
@@ -732,7 +713,7 @@ def classification_type_id_from_degree_type(degree_type):
                                                 if row.code.lower() == degree_type.lower()), None)
     return matching_classification_type_id
 
-
+# TODO: convert to classmethod in models
 def email_label_id_from_email_label(email_label):
     """
     Function retrieves email_label_id from email_label
@@ -746,7 +727,7 @@ def email_label_id_from_email_label(email_label):
         logger.error('email_label_id_from_email_label: email_label not recognized: %s', email_label)
         return 1
 
-
+# TODO: convert to classmethod in models
 def phone_label_id_from_phone_label(phone_label):
     """
     Function retrieves phone_label_id from phone_label
@@ -760,7 +741,7 @@ def phone_label_id_from_phone_label(phone_label):
         logger.error('phone_label_id_from_phone_label: phone_label not recognized: %s', phone_label)
         return 1
 
-
+# TODO: convert to classmethod in models
 def social_network_id_from_name(name):
     """
     Function gets social_network ID from social network's name
@@ -827,91 +808,76 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
     return candidate.id
 
 
-def _add_or_update_candidate_addresses(candidate_id, addresses, is_update):
+def _add_or_update_candidate_addresses(candidate_id, addresses):
     """
     Function will update CandidateAddress or create a new one.
+
+    :type addresses: list[dict[str, T]]
     """
     address_has_default = any([address.get('is_default') for address in addresses])
     for i, address in enumerate(addresses):
-        address_line_1 = address.get('address_line_1')
-        address_line_2 = address.get('address_line_2')
-        city = address.get('city')
-        state = address.get('state')
-        country_id = country_id_from_country_name_or_code(address.get('country'))
-        zip_code = sanitize_zip_code(address.get('zip_code'))
-        po_box = address.get('po_box')
-        is_default = address.get('is_default')
-        coordinates = get_coordinates(zip_code, city, state)
-        # If there's no is_default, the first address should be default
-        is_default = i == 0 if address_has_default else is_default
+        address_dict = address.copy()  # TODO: assert 'address' has no fields that shouldn't be there!
+        address_dict.update({
+            'country_id': Country.country_id_from_name_or_code(address.get('country')),
+            'zip_code': sanitize_zip_code(address.get('zip_code')),
+            'coordinates': get_coordinates(address.get('zip_code'), address.get('city'), address.get('state')),
+            'is_default': i == 0 if address_has_default else address.get('is_default'),
+            'country': None,
+            'candidate_id': candidate_id,
+            'resume_id': candidate_id   # TODO: this is to be removed once all tables have been added & migrated
+        })
 
-        if is_update:    # Update
-            update_dict = {'address_line_1': address_line_1,
-                           'address_line_2': address_line_2, 'city': city,
-                           'state': state, 'country_id': country_id,
-                           'zip_code': zip_code, 'po_box': po_box,
-                           'is_default': is_default, 'coordinates': coordinates}
+        # No fields in particular are required for address, i.e. dict is empty; just continue
+        if not address_dict:
+            continue
 
-            # Remove None values
-            update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
+        # Remove keys that have None values
+        address_dict = dict((k, v) for k, v in address_dict.iteritems() if v)
 
-            address_id = address.get('id')
+        address_id = address.get('id')
+        if address_id:    # Update
 
-            if not address_id:  # Add address
-                db.session.add(CandidateAddress(
-                    candidate_id=candidate_id, address_line_1=address_line_1,
-                    address_line_2=address_line_2, city=city, state=state,
-                    country_id=country_id, zip_code=zip_code, po_box=po_box,
-                    is_default=is_default, coordinates=coordinates,
-                    resume_id=candidate_id  # TODO: this is to be removed once all tables have been added & migrated
-                ))
-            else:   # Update address
-                # CandidateAddress.id must be recognized
-                candidate_address_query = db.session.query(CandidateAddress).\
-                    filter_by(id=address_id)
-                if not candidate_address_query.first():
-                    error_message = "Candidate address you are requesting to update does not exist."
-                    raise InvalidUsage(error_message=error_message)
+            # CandidateAddress must be recognized before updating
+            candidate_address_query = db.session.query(CandidateAddress).filter_by(id=address_id)
+            if not candidate_address_query.first():
+                error_message = "Candidate address you are requesting to update does not exist."
+                raise InvalidUsage(error_message=error_message)
 
-                candidate_address_query.update(update_dict)
+            candidate_address_query.update(address_dict)
 
         else:   # Create if not an update
-            db.session.add(CandidateAddress(
-                candidate_id=candidate_id, address_line_1=address_line_1,
-                address_line_2=address_line_2, city=city, state=state,
-                country_id=country_id, zip_code=zip_code, po_box=po_box,
-                is_default=is_default, coordinates=coordinates,
-                resume_id=candidate_id  # TODO: this is to be removed once all tables have been added & migrated
-            ))
+            db.session.add(CandidateAddress(**address_dict))
 
 
-def _add_or_update_candidate_areas_of_interest(candidate_id, area_of_interest_ids,
-                                               is_update):
+def _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest,
+                                               domain_id, is_update):
     """
     Function will update CandidateAreaOfInterest or create a new one.
     """
-    for area_of_interest_id in area_of_interest_ids:
-        if is_update:   # Update
-            if area_of_interest_id:
+    for area_of_interest in areas_of_interest:
 
-                candidate_area_of_interest_query = db.session.query(CandidateAreaOfInterest).\
-                    filter_by(candidate_id=candidate_id)
-                if not candidate_area_of_interest_query.first():
-                    error_message = "Area of interest you are requesting to update does not exist."
-                    raise InvalidUsage(error_message=error_message)
+        description = area_of_interest.get('description')
+        aoi = AreaOfInterest.get_area_of_interest(domain_id, description)
 
-                db.session.query(CandidateAreaOfInterest).\
-                    filter_by(candidate_id=candidate_id).update(
-                    {'area_of_interest_id': area_of_interest_id}
-                )
-            else:
-                error_message = "Area of interest ID is required for updating."
-                raise InvalidUsage(error_message=error_message)
+        if aoi and is_update:   # Update
+            aoi_id = aoi.id
 
-        else:   # Create if not an update
+            candidate_area_of_interest_query = db.session.query\
+                (CandidateAreaOfInterest).filter_by(candidate_id=candidate_id)
+            # if not candidate_area_of_interest_query.first():
+            #     error_message = "Area of interest you are requesting to update does not exist."
+            #     raise InvalidUsage(error_message=error_message)
+
+            candidate_area_of_interest_query.update({'area_of_interest_id': aoi_id})
+
+        else:   # Add
+            new_aoi = AreaOfInterest(domain_id=domain_id, description=description)
+            db.session.add(new_aoi)
+            db.session.flush()
+
             db.session.add(CandidateAreaOfInterest(
                 candidate_id=candidate_id,
-                area_of_interest_id=area_of_interest_id
+                area_of_interest_id=new_aoi.id
             ))
 
 
@@ -947,7 +913,7 @@ def _add_or_update_educations(candidate_id, educations, added_time, is_update):
         school_type = education.get('school_type')
         city = education.get('city')
         state = education.get('state')
-        country_id = country_id_from_country_name_or_code(education.get('country'))
+        country_id = Country.country_id_from_name_or_code(education.get('country'))
         is_current = education.get('is_current')
 
         if is_update:   # Update
@@ -1178,7 +1144,7 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time,
         state = work_experience.get('state')
         end_month = work_experience.get('end_month')
         start_year = work_experience.get('start_year')
-        country_id = country_id_from_country_name_or_code(work_experience.get('country'))
+        country_id = Country.country_id_from_name_or_code(work_experience.get('country'))
         start_month = work_experience.get('start_month')
         end_year = work_experience.get('end_year')
         is_current = work_experience.get('is_current', 0)
@@ -1344,7 +1310,7 @@ def _add_or_update_military_services(candidate_id, military_services, is_update)
     for military_service in military_services:\
 
         # Parse data for create or update
-        country_id = country_id_from_country_name_or_code(military_service.get('country'))
+        country_id = Country.country_id_from_name_or_code(military_service.get('country'))
         service_status = military_service.get('service_status')
         highest_rank = military_service.get('highest_rank')
         highest_grade = military_service.get('highest_grade')
@@ -1384,7 +1350,7 @@ def _add_or_update_preferred_locations(candidate_id, preferred_locations, is_upd
 
         # Parse data for update or create
         address=preferred_location.get('address')
-        country_id = country_id_from_country_name_or_code(preferred_location.get('country'))
+        country_id = Country.country_id_from_name_or_code(preferred_location.get('country'))
         city = preferred_location.get('city')
         state = preferred_location.get('region')
         zip_code = sanitize_zip_code(preferred_location.get('zip_code'))

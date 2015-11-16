@@ -181,7 +181,7 @@ class CandidateResource(Resource):
                 addresses=addresses,
                 educations=educations,
                 military_services=military_services,
-                area_of_interest_ids=area_of_interest_ids,
+                areas_of_interest=areas_of_interest,
                 custom_field_ids=custom_field_ids,
                 social_networks=social_networks,
                 work_experiences=work_experiences,
@@ -250,11 +250,16 @@ class CandidateResource(Resource):
             if not is_authorized:
                 raise ForbiddenError(error_message="Unauthorized custom field IDs")
 
-            # Prevent user from updating area(s) of interest from other domains
+            # Retrieve areas_of_interest
             areas_of_interest = candidate_dict.get('areas_of_interest', [])
-            area_of_interest_ids = [area_of_interest['id'] for area_of_interest in areas_of_interest]
-            is_authorized = is_area_of_interest_authorized(area_of_interest_ids=area_of_interest_ids,
-                                                           user_domain_id=authed_user.domain_id)
+            area_of_interest_ids = [area_of_interest.get('id') for area_of_interest in areas_of_interest]
+
+            # If AreaOfInterest ID is not provided, assume it needs to be created
+            if not any(area_of_interest_ids):
+                pass
+
+            # Prevent user from updating area(s) of interest from other domains
+            is_authorized = is_area_of_interest_authorized(authed_user.domain_id, area_of_interest_ids)
             if not is_authorized:
                 raise ForbiddenError(error_message="Unauthorized area of interest IDs")
 
@@ -291,7 +296,7 @@ class CandidateResource(Resource):
                 addresses=addresses,
                 educations=educations,
                 military_services=military_services,
-                area_of_interest_ids=area_of_interest_ids,
+                areas_of_interest=areas_of_interest,
                 custom_field_ids=custom_field_ids,
                 social_networks=social_networks,
                 work_experiences=work_experiences,
