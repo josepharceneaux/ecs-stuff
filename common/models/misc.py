@@ -5,6 +5,7 @@ from sqlalchemy.orm import relationship
 import time
 
 from candidate import CandidateMilitaryService
+from sms_campaign import SmsCampaign
 
 
 class Activity(db.Model):
@@ -119,6 +120,20 @@ class Country(db.Model):
         return "<Country (name=' %r')>" % self.name
 
 
+class Frequency(db.Model):
+    __tablename__ = 'frequency'
+    id = db.Column(db.Integer, primary_key=True)
+    description = db.Column('Description', db.String(10))
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+    # Relationships
+    email_campaigns = relationship('EmailCampaign', backref='frequency')
+    sms_campaigns = relationship('SmsCampaign', backref='frequency')
+
+    def __repr__(self):
+        return "<Frequency (id = %r)>" % self.id
+
+
 # Even though the table name is major I'm keeping the model class singular.
 class Major(db.Model):
     __tablename__ = 'majors'
@@ -230,7 +245,7 @@ class UserEmailTemplate(db.Model):
 
     email_template_folder = relationship(u'EmailTemplateFolder', backref=db.backref('user_email_template',
                                                                                     cascade="all, delete-orphan"))
-    user = relationship(u'User', backref=db.backref('user_email_template', cascade="all, delete-orphan"))
+    user = relationship('User', backref=db.backref('user_email_template', cascade="all, delete-orphan"))
 
 
 class EmailTemplateFolder(db.Model):
@@ -246,3 +261,4 @@ class EmailTemplateFolder(db.Model):
     domain = relationship(u'Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
     parent = relationship(u'EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
                                                                                        cascade="all, delete-orphan"))
+

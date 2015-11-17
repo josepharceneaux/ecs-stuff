@@ -88,7 +88,7 @@ class UserPhone(db.Model):
     value = db.Column(db.String(50), nullable=False)
 
     def __repr__(self):
-        return "<Phone (value=' %r')>" % self.Value
+        return "<Phone (value=' %r')>" % self.value
 
     @classmethod
     def get_by_user_id(cls, user_id):

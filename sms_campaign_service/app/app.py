@@ -16,24 +16,46 @@ app = init_app()
 from sms_campaign_service.celery_config import make_celery
 celery = make_celery(app)
 
+# Run Celery from terminal as
+# celery -A sms_campaign_service.app.app.celery worker
+
 # start the scheduler
-from apscheduler.jobstores.shelve_store import ShelveJobStore
+from sms_campaign_service.gt_scheduler import GTScheduler
+from apscheduler.events import EVENT_JOB_ERROR
+from apscheduler.events import EVENT_JOB_EXECUTED
 from apscheduler.jobstores.redis_store import RedisJobStore
-from apscheduler.scheduler import Scheduler
+
+
+sched = GTScheduler()
+sched.add_jobstore(RedisJobStore(), 'redisJobStore')
+
+# from apscheduler.jobstores.shelve_store import ShelveJobStore
+# from apscheduler.scheduler import Scheduler
+# from common.utils.apscheduler.jobstores.redis_store import RedisJobStore
+# from common.utils.apscheduler.scheduler import Scheduler
 # config = {'apscheduler.jobstores.file.class': 'apscheduler.jobstores.shelve_store:ShelveJobStore',
 #           'apscheduler.jobstores.file.path': '/tmp/dbfile'}
 # sched = Scheduler(config)
-sched = Scheduler()
 # sched.add_jobstore(ShelveJobStore('/tmp/dbfile'), 'file')
 # jobstore = RedisJobStore(jobs_key='example.jobs', run_times_key='example.run_times')
 # sched.add_jobstore(jobstore)
-sched.add_jobstore(RedisJobStore(), 'redisJobStore')
+
+
+def my_listener(event):
+    if event.exception:
+        print('The job crashed :(\n')
+        print str(event.exception.message) + '\n'
+    else:
+        print('The job worked :)')
+
+sched.add_listener(my_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 sched.start()
 
 # Third party imports
 import flask
 import twilio.twiml
 from flask import request
+from flask import render_template
 from flask.ext.cors import CORS
 from flask.ext.restful import Api
 from werkzeug.utils import redirect
@@ -41,7 +63,7 @@ from werkzeug.utils import redirect
 # Application specific imports
 from restful.sms_campaign import sms_campaign_blueprint
 from sms_campaign_service import logger
-from sms_campaign_service.utilities import run_func, run_func_1
+from sms_campaign_service.utilities import run_func, run_func_1, get_all_tasks
 from social_network_service.utilities import http_request
 from sms_campaign_service.utilities import url_conversion
 from sms_campaign_service.utilities import send_sms_campaign
@@ -51,6 +73,7 @@ from sms_campaign_service.utilities import process_link_in_body_text
 from sms_campaign_service.app.app_utils import ApiResponse
 from sms_campaign_service.custom_exceptions import ApiException
 from sms_campaign_service.common.error_handling import InternalServerError
+
 # Register Blueprints for different APIs
 app.register_blueprint(sms_campaign_blueprint)
 api = Api(app)
@@ -68,14 +91,31 @@ CORS(app, resources={
 
 @app.route('/')
 def hello_world():
-    from common.models.candidate import Candidate
-    candidate = Candidate.query.get(1)
-    social_networks = candidate.candidate_social_network
-    data = [{
-                'name': social_network.social_network.name,
-                'url': social_network.social_profile_url
-            } for social_network in social_networks]
+
+    from sms_campaign_service.common.models.sms_campaign import SmsCampaign, \
+        SmsCampaignBlast, SmsCampaignSend, SmsCampaignReply
+    from sms_campaign_service.common.models.misc import Frequency
+    from sms_campaign_service.common.models.user import UserPhone
+    print SmsCampaign.query.all()
+    print SmsCampaignBlast.query.all()
+    print SmsCampaignSend.query.all()
+    print SmsCampaignReply.query.all()
+    print Frequency.query.all()
+    print UserPhone.query.all()
+    # from sms_campaign_service.common.models.candidate import Candidate
+    # candidate = Candidate.query.get(1)
+    # social_networks = candidate.candidate_social_network
+    # data = [{
+    #             'name': social_network.social_network.name,
+    #             'url': social_network.social_profile_url
+    #         } for social_network in social_networks]
     return 'Welcome to SMS Campaign Service'
+
+
+@app.route('/tasks')
+def tasks():
+    data = get_all_tasks()
+    return render_template('tasks.html', tasks=data)
 
 
 @app.route('/url_conversion', methods=['GET', 'POST'])
@@ -85,7 +125,7 @@ def short_url_test(url=None):
     This is a test end point which converts given URL to short URL
     :return:
     """
-    url = 'http://127.0.0.1:8010/convert_url'
+    url = 'http://127.0.0.1:8007/convert_url'
     response = http_request('GET', url, params={'url': LONG_URL})
     if response.ok:
         short_url, long_url = url_conversion(url)
@@ -116,10 +156,12 @@ def sms():
     func = request.args.get('func')
     arg1 = request.args.get('arg1')
     arg2 = request.args.get('arg2')
+    # for x in range (1,50):
     job = sched.add_interval_job(run_func_1,
                                  seconds=repeat_time_in_sec,
                                  start_date=start_date,
-                                 args=[func, [arg1, arg2], end_date], jobstore='redisJobStore')
+                                 args=[func, [arg1, arg2], end_date],
+                                 jobstore='redisJobStore')
     print 'Task has been added and will run at %s ' % start_date
     return 'Task has been added to queue!!!'
     # response = send_sms_campaign(ids, body_text)
