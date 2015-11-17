@@ -1,10 +1,10 @@
 from flask_restful import Resource
 from flask import request
-from common.models.user import User, Domain, db
+from user_service.common.models.user import User, Domain, db
 from user_service.user_app.user_service_utilties import check_if_user_exists, create_user_for_company
 from user_service.common.utils.validators import is_number, is_valid_email
 from user_service.common.utils.auth_utils import require_oauth, require_any_role
-from common.error_handling import *
+from user_service.common.error_handling import *
 
 
 class UserApi(Resource):

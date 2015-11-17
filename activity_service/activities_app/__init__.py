@@ -2,9 +2,9 @@
 __author__ = 'Erik Farmer'
 
 from flask import Flask
-from common.models.db import db
+from activity_service.common.models.db import db
 from views import api
-from common.error_handling import register_error_handlers
+from activity_service.common.error_handling import register_error_handlers
 from healthcheck import HealthCheck
 
 app = Flask(__name__)

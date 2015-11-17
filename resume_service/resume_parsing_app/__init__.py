@@ -21,8 +21,7 @@ logger = app.config['LOGGER']
 # wrap the flask app and give a heathcheck url
 health = HealthCheck(app, "/healthcheck")
 
-from common.error_handling import register_error_handlers
-
+from resume_service.common.error_handling import register_error_handlers
 register_error_handlers(app, logger)
 
 logger.info("Starting resume_service in %s environment", app.config['GT_ENVIRONMENT'])

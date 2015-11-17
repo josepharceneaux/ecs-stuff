@@ -1,5 +1,5 @@
 import re
-from common.error_handling import *
+from ..error_handling import *
 
 
 def is_number(s):
