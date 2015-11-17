@@ -5,7 +5,6 @@ import datetime
 from _mysql_exceptions import IntegrityError
 import pytest
 # Module Specific
-from flask import current_app
 from resume_service.common.models.email import EmailLabel
 from resume_service.common.models.misc import Country
 from resume_service.common.models.misc import Culture
@@ -24,7 +23,6 @@ from resume_service.resume_parsing_app import db
 def require_integrity(func):
     def wrapped(*args, **kwargs):
         try:
-            print 'OH HAI {} - {} - {}'.format( func.__name__, args, kwargs)
             func(*args, **kwargs)
         except IntegrityError:
             db.session.rollback()
@@ -54,11 +52,6 @@ def culture_fixture(request):
     if created:
         db.session.add(culture)
         db.session.commit()
-    @require_integrity
-    def fin():
-        db.session.delete(culture)
-        db.session.commit()
-    request.addfinalizer(fin)
     return culture
 
 
@@ -140,11 +133,6 @@ def country_fixture(request):
     if created:
         db.session.add(country)
         db.session.commit()
-    @require_integrity
-    def fin():
-        db.session.delete(country)
-        db.session.commit()
-    request.addfinalizer(fin)
     return country
 
 
@@ -158,12 +146,6 @@ def phone_label_fixture(request):
     ]
     db.session.bulk_save_objects(phone_labels)
     db.session.commit()
-
-    #needs to delete candidate phone
-    # def fin():
-    #     db.session.query(PhoneLabel).delete()
-    #     db.session.commit()
-    # request.addfinalizer(fin)
     return phone_labels
 
 
@@ -174,9 +156,4 @@ def product_fixture(request):
     if created:
         db.session.add(product)
         db.session.commit()
-
-    # def fin():
-    #     db.session.delete(product)
-    #     db.session.commit()
-    # request.addfinalizer(fin)
     return product
