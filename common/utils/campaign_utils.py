@@ -14,9 +14,9 @@ class CampaignBase(object):
     __metaclass__ = ABCMeta
 
     def __init__(self,  *args, **kwargs):
-        self.body_text = kwargs.get('body_text', '')
         self.campaign_id = kwargs.get('campaign_id', None)
         self.user_id = kwargs.get('user_id', None)
+        self.body_text = None
 
     @abstractmethod
     def process_send(self):
@@ -25,10 +25,6 @@ class CampaignBase(object):
         according to specific campaign. Child class will implement this.
         :return:
         """
-        pass
-
-    @abstractmethod
-    def get_campaign_data(self):
         pass
 
     @abstractmethod

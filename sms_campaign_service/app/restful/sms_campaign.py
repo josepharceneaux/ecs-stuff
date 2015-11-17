@@ -16,7 +16,7 @@ from flask import Blueprint
 from flask.ext.restful import Api
 from flask.ext.restful import Resource
 from flask.ext.cors import CORS
-from sms_campaign_service.utilities import url_conversion
+# from sms_campaign_service.utilities import url_conversion
 from sms_campaign_service.app.app_utils import authenticate, api_route, ApiResponse
 
 sms_campaign_blueprint = Blueprint('sms_campaign_api', __name__)

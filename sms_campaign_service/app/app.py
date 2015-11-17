@@ -63,13 +63,12 @@ from werkzeug.utils import redirect
 # Application specific imports
 from restful.sms_campaign import sms_campaign_blueprint
 from sms_campaign_service import logger
-from sms_campaign_service.utilities import run_func, run_func_1, get_all_tasks
-from social_network_service.utilities import http_request
-from sms_campaign_service.utilities import url_conversion
-from sms_campaign_service.utilities import send_sms_campaign
-from sms_campaign_service.utilities import get_smart_list_ids
-from sms_campaign_service.utilities import process_redirection
-from sms_campaign_service.utilities import process_link_in_body_text
+# from sms_campaign_service.utilities import run_func, run_func_1, get_all_tasks
+# from social_network_service.utilities import http_request
+# from sms_campaign_service.utilities import url_conversion
+# from sms_campaign_service.utilities import send_sms_campaign
+# from sms_campaign_service.utilities import get_smart_list_ids
+# from sms_campaign_service.utilities import process_redirection
 from sms_campaign_service.app.app_utils import ApiResponse
 from sms_campaign_service.custom_exceptions import ApiException
 from sms_campaign_service.common.error_handling import InternalServerError
@@ -91,17 +90,12 @@ CORS(app, resources={
 
 @app.route('/')
 def hello_world():
-
-    from sms_campaign_service.common.models.sms_campaign import SmsCampaign, \
-        SmsCampaignBlast, SmsCampaignSend, SmsCampaignReply
-    from sms_campaign_service.common.models.misc import Frequency
-    from sms_campaign_service.common.models.user import UserPhone
-    print SmsCampaign.query.all()
-    print SmsCampaignBlast.query.all()
-    print SmsCampaignSend.query.all()
-    print SmsCampaignReply.query.all()
-    print Frequency.query.all()
-    print UserPhone.query.all()
+    from sms_campaign_service.common.models.smart_list import SmartList
+    from sms_campaign_service.common.models.smart_list import SmartListCandidate
+    from sms_campaign_service.common.models.sms_campaign import SmsCampaignSmartList
+    print SmsCampaignSmartList.query.all()
+    print SmartList.query.all()
+    print SmartListCandidate.query.all()
     # from sms_campaign_service.common.models.candidate import Candidate
     # candidate = Candidate.query.get(1)
     # social_networks = candidate.candidate_social_network

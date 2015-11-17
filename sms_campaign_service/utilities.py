@@ -42,6 +42,8 @@ class TwilioSMS(object):
         # -------------------------------------
         # sends sms to given number
         # -------------------------------------
+        # print 'sms_sent'
+        # return {'sent_time': datetime.now()}
         try:
             message = self.client.messages.create(
                 body=body_text,
@@ -145,6 +147,7 @@ def process_redirection(url_conversion_id):
 # # url = 'http://www.google.com'
 # shortener = Shortener('TinyurlShortener')
 # print "My short url is {}".format(shortener.short(url))
+
 
 # @celery.task()
 def send_sms_campaign(ids, body_text):
