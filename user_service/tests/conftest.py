@@ -2,6 +2,8 @@ __author__ = 'ufarooqi'
 import pytest
 from werkzeug.security import gen_salt
 from common_functions import *
+from user_service.common.models.misc import Culture
+
 
 PASSWORD = gen_salt(20)
 CHANGED_PASSWORD = gen_salt(20)

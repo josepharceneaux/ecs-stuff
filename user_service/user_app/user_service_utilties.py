@@ -1,8 +1,8 @@
 __author__ = 'ufarooqi'
 from flask import render_template
 from user_service.common.utils.amazon_ses import send_email
-from common.models.user import db, Domain, User, UserScopedRoles
-from common.models.misc import EmailTemplateFolder, UserEmailTemplate
+from user_service.common.models.user import db, Domain, User, UserScopedRoles
+from user_service.common.models.misc import EmailTemplateFolder, UserEmailTemplate
 from werkzeug.security import generate_password_hash, gen_salt
 
 

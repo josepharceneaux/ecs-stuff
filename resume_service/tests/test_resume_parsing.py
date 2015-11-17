@@ -272,6 +272,11 @@ def test_invalid_token_fails():
     assert 'error' in json_obj
 
 
+def test_health_check():
+    import requests
+    response = requests.get('http://127.0.0.1:8003/healthcheck')
+    assert response.status_code == 200
+
 
 # def test_v15_pdf_by_post(test_token):
 #     """Test that v1.5 pdf files can be posted."""

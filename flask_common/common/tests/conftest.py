@@ -4,12 +4,12 @@ import random, string, uuid
 
 # Third Party
 import pytest, requests
-from common.utils.common_functions import get_or_create
+from ..utils.common_functions import get_or_create
 
 # Application Specific
-from common.models.db import db
-from common.models.user import (Client, Domain, User, Token)
-from common.models.misc import (Culture, Organization)
+from ..models.db import db
+from ..models.user import (Client, Domain, User, Token)
+from ..models.misc import (Culture, Organization)
 
 ISO_FORMAT = '%Y-%m-%d %H:%M'
 USER_HASHED_PASSWORD = 'pbkdf2(1000,64,sha512)$a97efdd8d6b0bf7f$55de0d7bafb29a88e7596542aa927ac0e1fbc30e94db2c5215851c72294ebe01fb6461b27f0c01b9bd7d3ce4a180707b6652ba2334c7a2b0fcb93c946aa8b4ec'
