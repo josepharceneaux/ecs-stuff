@@ -337,6 +337,52 @@ def test_update_education_primary_info(sample_user, user_auth):
     assert len(updated_can_dict['educations']) == candidate_education_count
 
 
+def test_add_education_degree(sample_user, user_auth):
+    """
+    Test:   Add CandidateEducationDegree to an existing candidate's education.
+            The number of CandidateEducationDegree must increase by 1 for this candidate.
+    Expect: 200
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    print "\ncan_dict = %s" % candidate_dict
+
+    candidate_education_count = len(candidate_dict['educations'][0]['degrees'])
+
+    # Update existing CandidateEducation
+    data = {'candidate': {'id':  candidate_id, 'educations': [
+        {'id': candidate_dict['educations'][0]['id'], 'degrees': [
+            {'type': 'AA', 'title': 'associate', 'degree_bullets': [
+                {'major': 'mathematics', 'comments': 'obtained a high GPA whilst working full time'}
+            ]}
+        ]}
+    ]}}
+    updated_resp = patch_to_candidate_resource(token, data)
+    print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    updated_can_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+    education_dict = updated_can_dict['educations'][0]
+    print "\neducation_dict = %s" % education_dict
+
+    assert candidate_id == updated_can_dict['id']
+    assert len(education_dict['degrees']) == candidate_education_count + 1
+    assert education_dict['degrees'][-1]['type'] == 'AA'
+    assert education_dict['degrees'][-1]['title'] == 'associate'
+    assert education_dict['degrees'][-1]['degree_bullets'][-1]['major'] == 'mathematics'
+
+
+
 def test_add_experience_bullet(sample_user, user_auth):
     """
     Test:   Adds a CandidateExperienceBullet to an existing CandidateExperience
