@@ -25,6 +25,7 @@ from activity_service.common.models.user import User
 
 ISO_FORMAT = '%Y-%m-%d %H:%M'
 APP = app.test_client()
+ACTIVITY_SERVICE_ENDPOINT = 'http://127.0.0.1:8002/%s'
 
 
 @pytest.fixture(autouse=True)
@@ -252,6 +253,12 @@ def test_recent_readable():
     assert json.loads(response.data)['activities'][0]['count'] == 4
     assert json.loads(response.data)['activities'][0]['image'] == 'notification.png'
     assert json.loads(response.data)['activities'][0]['readable_text'] == '4 users have joined'
+
+
+def test_health_check():
+    import requests
+    response = requests.get(ACTIVITY_SERVICE_ENDPOINT % 'healthcheck')
+    assert response.status_code == 200
 
 
 def get_or_create(session, model, defaults=None, **kwargs):

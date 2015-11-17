@@ -55,3 +55,4 @@ python-dateutil==2.4.2
 pytz==2015.4
 simple-crypt==4.1.7
 Flask-Limiter
+healthcheck

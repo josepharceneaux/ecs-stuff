@@ -4,6 +4,7 @@ from flask import Flask
 from user_service.common.models.db import db
 from gt_custom_restful import *
 from flask_limiter import Limiter
+from healthcheck import HealthCheck
 
 app = Flask(__name__)
 app.config.from_object('user_service.config')
@@ -19,6 +20,9 @@ limiter = Limiter(app, global_limits=["60 per minute"])
 
 from api.users_v1 import UserApi
 from api.domain_v1 import DomainApi
+
+# wrap the flask app and give a heathcheck url
+health = HealthCheck(app, "/healthcheck")
 
 api = GetTalentApi(app)
 api.add_resource(UserApi, "/users", "/users/<int:id>")

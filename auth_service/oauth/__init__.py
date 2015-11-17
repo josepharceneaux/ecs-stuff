@@ -6,6 +6,8 @@ from flask_oauthlib.provider import OAuth2Provider
 from auth_service.common.models.db import db
 from auth_service import config
 from flask_limiter import Limiter
+from healthcheck import HealthCheck
+
 app = Flask(__name__)
 app.config.from_object(config)
 
@@ -16,6 +18,9 @@ register_error_handlers(app, logger)
 
 db.init_app(app)
 db.app = app
+
+# wrap the flask app and give a heathcheck url
+health = HealthCheck(app, "/healthcheck")
 
 limiter = Limiter(app, global_limits=["60 per minute"])
 

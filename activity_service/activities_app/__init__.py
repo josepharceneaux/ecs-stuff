@@ -5,7 +5,7 @@ from flask import Flask
 from activity_service.common.models.db import db
 from views import api
 from activity_service.common.error_handling import register_error_handlers
-
+from healthcheck import HealthCheck
 
 app = Flask(__name__)
 app.config.from_object('activity_service.config')
@@ -15,6 +15,9 @@ logger = app.config['LOGGER']
 
 db.init_app(app)
 db.app = app
+
+# wrap the flask app and give a heathcheck url
+health = HealthCheck(app, "/healthcheck")
 
 register_error_handlers(app, logger)
 
