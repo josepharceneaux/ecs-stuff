@@ -344,7 +344,8 @@ def candidate_military_services(candidate):
              'highest_rank': military_info.highest_rank,
              'start_date': military_info.from_date,
              'end_date': military_info.to_date,
-             'country': country_name_from_country_id(country_id=military_info.country_id)
+             'country': country_name_from_country_id(country_id=military_info.country_id),
+             'comments': military_info.comments
              } for military_info in military_experiences]
 
 
@@ -369,7 +370,7 @@ def candidate_social_networks(candidate):
     social_networks = candidate.candidate_social_networks
     return [{'id': soc_net.id,
              'name': soc_net.social_network.name,
-             'url': soc_net.social_profile_url
+             'profile_url': soc_net.social_profile_url
              } for soc_net in social_networks]
 
 
@@ -614,29 +615,27 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's email(s)
     if emails:
-        _add_or_update_emails(candidate_id, emails, is_update)
+        _add_or_update_emails(candidate_id, emails)
 
     # Add or update Candidate's phone(s)
     if phones:
-        _add_or_update_phones(candidate_id, phones, is_update)
+        _add_or_update_phones(candidate_id, phones)
 
     # Add or update Candidate's military service(s)
     if military_services:
-        _add_or_update_military_services(candidate_id, military_services,
-                                         is_update)
+        _add_or_update_military_services(candidate_id, military_services)
 
     # Add or update Candidate's preferred location(s)
     if preferred_locations:
-        _add_or_update_preferred_locations(candidate_id, preferred_locations,
-                                           is_update)
+        _add_or_update_preferred_locations(candidate_id, preferred_locations)
 
     # Add or update Candidate's skill(s)
     if skills:
-        _add_or_update_skills(candidate_id, skills, added_time, is_update)
+        _add_or_update_skills(candidate_id, skills, added_time)
 
     # Add or update Candidate's social_network(s)
     if social_networks:
-        _add_or_update_social_networks(candidate_id, social_networks, is_update)
+        _add_or_update_social_networks(candidate_id, social_networks)
 
     # Commit to database after all insertions/updates are executed successfully
     db.session.commit()
@@ -742,36 +741,6 @@ def classification_type_id_from_degree_type(degree_type):
         matching_classification_type_id = next((row.id for row in all_classification_types
                                                 if row.code.lower() == degree_type.lower()), None)
     return matching_classification_type_id
-
-
-# TODO: convert to classmethod in models
-def email_label_id_from_email_label(email_label):
-    """
-    Function retrieves email_label_id from email_label
-    e.g. 'Primary' => 1
-    :return:  email_label ID if email_label is recognized, otherwise 1 ('Primary')
-    """
-    email_label_row = db.session.query(EmailLabel).filter_by(description=email_label).first()
-    if email_label_row:
-        return email_label_row.id
-    else:
-        logger.error('email_label_id_from_email_label: email_label not recognized: %s', email_label)
-        return 1
-
-
-# TODO: convert to classmethod in models
-def phone_label_id_from_phone_label(phone_label):
-    """
-    Function retrieves phone_label_id from phone_label
-    e.g. 'Primary' => 1
-    :return:  phone_label ID if phone_label is recognized, otherwise 1 ('Primary')
-    """
-    phone_label_row = db.session.query(PhoneLabel).filter_by(description=phone_label).first()
-    if phone_label_row:
-        return phone_label_row.id
-    else:
-        logger.error('phone_label_id_from_phone_label: phone_label not recognized: %s', phone_label)
-        return 1
 
 
 # TODO: convert to classmethod in models
@@ -1169,200 +1138,179 @@ def _add_or_update_work_preference(candidate_id, work_preference):
         db.session.add(CandidateWorkPreference(**work_preference_dict))
 
 
-def _add_or_update_emails(candidate_id, emails, is_update):
+def _add_or_update_emails(candidate_id, emails):
     """
     Function will update CandidateEmail or create new one(s).
     """
     emails_has_default = any([email.get('is_default') for email in emails])
     for i, email in enumerate(emails):
 
-        # Parse data for create and update
-        email_id = email.get('id')
-        email_address = email.get('address')
-        is_default = email.get('is_default')
-        email_label_id = email_label_id_from_email_label(email_label=email['label'])
         # If there's no is_default, the first email should be default
+        is_default = email.get('is_default')
         is_default = i == 0 if emails_has_default else is_default
+        email_address = email.get('address')
 
-        if is_update:  # Update
-            if not (email_id and email_address):
-                error_message = "Email ID and email address are required for update."
-                raise InvalidUsage(error_message=error_message)
+        email_dict = dict(
+            address=email_address,
+            email_label_id=EmailLabel.email_label_id_from_email_label(email_label=email['label']),
+            is_default=is_default
+        )
 
-            update_dict = {'address': email_address, 'is_default': is_default,
-                           'email_label_id': email_label_id}
+        email_id = email.get('id')
+        if email_id:  # Update
+            if not email_address:
+                raise InvalidUsage(error_message="Email address is required for update.")
 
-            # Remove None values from update_dict
-            update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
+            # Remove keys with None values
+            email_dict = dict((k, v) for k, v in email_dict.iteritems() if v)
 
-            db.session.query(CandidateEmail).filter_by(id=email_id). \
-                update(update_dict)
+            # Update CandidateEamil
+            db.session.query(CandidateEmail).filter_by(id=email_id).update(email_dict)
 
-        else:  # Create if not an update
-            db.session.add(CandidateEmail(
-                candidate_id=candidate_id, address=email_address, is_default=is_default,
-                email_label_id=email_label_id
-            ))
+        else:  # Add
+            email_dict.update(dict(candidate_id=candidate_id))
+            db.session.add(CandidateEmail(**email_dict))
 
 
-def _add_or_update_phones(candidate_id, phones, is_update):
+def _add_or_update_phones(candidate_id, phones):
     """
     Function will update CandidatePhone or create new one(s).
     """
     phone_has_default = any([phone.get('is_default') for phone in phones])
     for i, phone in enumerate(phones):
-        value = phone.get('value')
-        is_default = phone.get('is_default')
-        phone_label_id = phone_label_id_from_phone_label(phone_label=phone['label'])
+
         # If there's no is_default, the first phone should be default
+        is_default = phone.get('is_default')
         is_default = i == 0 if phone_has_default else is_default
 
-        if is_update:  # Update
-            update_dict = {'value': value, 'is_default': is_default,
-                           'phone_label_id': phone_label_id}
+        phone_dict = dict(
+            value=phone.get('value'),
+            phone_label_id = PhoneLabel.phone_label_id_from_phone_label(phone_label=phone['label']),
+            is_default=is_default
+        )
 
-            # Remove None values from update_dict
-            update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
-            db.session.query(CandidatePhone).filter_by(candidate_id=candidate_id). \
-                update(update_dict)
+        candidate_phone_id = phone.get('id')
+        if candidate_phone_id:  # Update
 
-        else:  # Create if not an update
-            db.session.add(CandidatePhone(
-                candidate_id=candidate_id, value=value,
-                is_default=is_default, phone_label_id=phone_label_id
-            ))
+            # Remove keys with None values
+            phone_dict = dict((k, v) for k, v in phone_dict.iteritems() if v)
+
+            # Update CandidatePhone
+            db.session.query(CandidatePhone).filter_by(candidate_id=candidate_id).update(phone_dict)
+
+        else:  # Add
+            phone_dict.update(dict(candidate_id=candidate_id))
+            db.session.add(CandidatePhone(**phone_dict))
 
 
-def _add_or_update_military_services(candidate_id, military_services, is_update):
+def _add_or_update_military_services(candidate_id, military_services):
     """
     Function will update CandidateMilitaryService or create new one(s).
     """
-    for military_service in military_services: \
- \
-            # Parse data for create or update
-        country_id = Country.country_id_from_name_or_code(military_service.get('country'))
-        service_status = military_service.get('service_status')
-        highest_rank = military_service.get('highest_rank')
-        highest_grade = military_service.get('highest_grade')
-        branch = military_service.get('branch')
-        comments = military_service.get('comments')
-        from_date = military_service.get('from_date')
-        to_date = military_service.get('to_date')
+    for military_service in military_services:
+        military_service_dict = dict(
+            country_id=Country.country_id_from_name_or_code(military_service.get('country')),
+            service_status=military_service.get('service_status'),
+            highest_rank=military_service.get('highest_rank'),
+            highest_grade=military_service.get('highest_grade'),
+            branch=military_service.get('branch'),
+            comments=military_service.get('comments'),
+            from_date=military_service.get('from_date'),
+            to_date=military_service.get('to_date')
+        )
 
-        if is_update:  # Update
-            update_dict = {'country_id': country_id, 'service_status': service_status,
-                           'highest_rank': highest_rank,
-                           'highest_grade': highest_grade, 'branch': branch,
-                           'comments': comments, 'from_date': from_date,
-                           'to_date': to_date}
+        military_service_id = military_service.get('id')
+        if military_service_id:  # Update
 
-            # Remove None values from update_dict
-            update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
+            # Remove keys with None values
+            military_service_dict = dict((k, v) for k, v in military_service_dict.iteritems() if v)
 
-            db.session.query(CandidateMilitaryService).filter_by(candidate_id=candidate_id). \
-                update(update_dict)
+            # Update CandidateMilitaryService
+            db.session.query(CandidateMilitaryService).filter_by(candidate_id=candidate_id).\
+                update(military_service_dict)
 
-        else:  # Create if not update
-            db.session.add(CandidateMilitaryService(
-                candidate_id=candidate_id, country_id=country_id,
-                service_status=service_status, highest_rank=highest_rank,
-                highest_grade=highest_grade, branch=branch,
-                comments=comments, from_date=from_date, to_date=to_date,
-                resume_id=candidate_id  # todo: this is to be removed once all tables have been added & migrated
-            ))
+        else:  # Add
+            military_service_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id))
+            db.session.add(CandidateMilitaryService(**military_service_dict))
 
 
-def _add_or_update_preferred_locations(candidate_id, preferred_locations, is_update):
+def _add_or_update_preferred_locations(candidate_id, preferred_locations):
     """
     Function will update CandidatePreferredLocation or create a new one.
     """
     for preferred_location in preferred_locations:
 
-        # Parse data for update or create
-        address = preferred_location.get('address')
-        country_id = Country.country_id_from_name_or_code(preferred_location.get('country'))
-        city = preferred_location.get('city')
-        state = preferred_location.get('region')
-        zip_code = sanitize_zip_code(preferred_location.get('zip_code'))
+        preferred_location_dict = dict(
+            address=preferred_location.get('address'),
+            country_id=Country.country_id_from_name_or_code(preferred_location.get('country')),
+            city=preferred_location.get('city'),
+            region=preferred_location.get('region'),
+            zip_code=sanitize_zip_code(preferred_location.get('zip_code'))
+        )
 
-        if is_update:  # Update
-            update_dict = {'address': address, 'country_id': country_id,
-                           'city': city, 'region': state, 'zip_code': zip_code}
+        preferred_location_id = preferred_location.get('id')
+        if preferred_location_id:  # Update
 
-            # Remove None values from update_dict
-            update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
+            # Remove keys with None values
+            preferred_location_dict = dict((k, v) for k, v in preferred_location_dict.iteritems() if v)
 
-            db.session.query(CandidatePreferredLocation). \
-                filter_by(candidate_id=candidate_id).update(update_dict)
+            # Update CandidatePreferredLocation
+            db.session.query(CandidatePreferredLocation).\
+                filter_by(candidate_id=candidate_id).update(preferred_location_dict)
 
-        else:  # Create if not an update
-            db.session.add(CandidatePreferredLocation(
-                candidate_id=candidate_id, address=address, country_id=country_id,
-                city=city, region=state, zip_code=zip_code,
-            ))
+        else:  # Add
+            preferred_location_dict.update(dict(candidate_id=candidate_id))
+            db.session.add(CandidatePreferredLocation(**preferred_location_dict))
 
 
-def _add_or_update_skills(candidate_id, skills, added_time, is_update):
+def _add_or_update_skills(candidate_id, skills, added_time):
     """
     Function will update CandidateSkill or create new one(s).
     """
     for skill in skills:
 
-        # Parse data for create or update
-        list_order = skill.get('list_order', 1)
-        description = skill.get('name')
-        added_time = added_time
-        total_months = skill.get('total_months')
-        last_used = skill.get('last_used')
+        skills_dict = dict(
+            list_order=skill.get('list_order'),
+            description=skill.get('name'),
+            total_months=skill.get('total_months'),
+            last_used=skill.get('last_used')
+        )
 
-        if is_update:  # Update
-            update_dict = {'list_order': list_order, 'description': description,
-                           'added_time': added_time, 'total_months': total_months,
-                           'last_used': last_used}
+        skill_id = skill.get('id')
+        if skill_id:  # Update
 
-            # Remove None values from update_dict
-            update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
+            # Remove keys with None values
+            skills_dict = dict((k, v) for k, v in skills_dict.iteritems() if v)
 
-            db.session.query(CandidateSkill).filter_by(candidate_id=candidate_id). \
-                update(update_dict)
+            # Update CandidateSkill
+            db.session.query(CandidateSkill).filter_by(candidate_id=candidate_id).update(skills_dict)
 
-        else:  # Create if not an update
-            db.session.add(CandidateSkill(
-                candidate_id=candidate_id,
-                list_order=skill.get('list_order', 1),
-                description=skill.get('name'),
-                added_time=added_time,
-                total_months=skill.get('total_months'),
-                last_used=skill.get('last_used'),
-                resume_id=candidate_id  # todo: this is to be removed once all tables have been added & migrated
-            ))
+        else:  # Add
+            skills_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id,
+                                    added_time=added_time))
+            db.session.add(CandidateSkill(**skills_dict))
 
 
-def _add_or_update_social_networks(candidate_id, social_networks, is_update):
+def _add_or_update_social_networks(candidate_id, social_networks):
     """
     Function will update CandidateSocialNetwork or create new one(s).
     """
     for social_network in social_networks:
 
-        # Parse data for create or update
-        social_network_name = social_network.get('name')
-        social_network_id = social_network_id_from_name(name=social_network_name)
-        social_profile_url = social_network.get('profile_url')
-        if not social_network_name and not social_profile_url:
-            error_message = 'Social network name and corresponding profile url is required.'
-            raise InvalidUsage(error_message=error_message)
+        social_network_dict = dict(
+            social_network_id=social_network_id_from_name(name=social_network.get('name')),
+            social_profile_url=social_network.get('profile_url')
+        )
 
-        if is_update:  # Update
-            db.session.query(CandidateSocialNetwork).filter_by(candidate_id=candidate_id). \
-                update({'social_network_id': social_network_id,
-                        'social_profile_url': social_profile_url})
+        # Todo: what if url and/or name is not provided?
+        social_network_id = social_network.get('id')
+        if social_network_id:  # Update
+            db.session.query(CandidateSocialNetwork).filter_by(candidate_id=candidate_id).\
+                update(social_network_dict)
 
-        else:  # Create if not an update
-            db.session.add(CandidateSocialNetwork(
-                candidate_id=candidate_id,
-                social_network_id=social_network_id,
-                social_profile_url=social_network.get('profile_url')
-            ))
+        else:  # Add
+            social_network_dict.update(dict(candidate_id=candidate_id))
+            db.session.add(CandidateSocialNetwork(**social_network_dict))
 
 
 ################################################

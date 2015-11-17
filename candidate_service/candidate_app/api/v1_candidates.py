@@ -229,10 +229,9 @@ class CandidateResource(Resource):
         updated_candidate_ids = []
         for candidate_dict in list_of_candidate_dicts:
 
-            emails = candidate_dict.get('emails')
+            emails = candidate_dict.get('emails') # TODO: validate emails and format
             if emails:
-                emails = [{'id': email['id'], 'label': email.get('label'),
-                           'address': email.get('address')}
+                emails = [{'id': email.get('id'), 'label': email.get('label'), 'address': email.get('address')}
                           for email in candidate_dict.get('emails')]
 
                 # Validate email addresses' format

@@ -1,5 +1,5 @@
 """
-Test cases for CandidateResource/delete()
+Test cases for CandidateResource/patch()
 """
 # Candidate Service app instance
 from candidate_service.candidate_app import app
@@ -17,7 +17,7 @@ from helpers import (
     update_candidate, patch_to_candidate_resource
 )
 
-########################################################################
+######################## Candidate ########################
 def test_update_candidate(sample_user, user_auth):
     """
     Test:   Update an existing Candidate
@@ -87,7 +87,7 @@ def test_update_candidate_names(sample_user, user_auth):
     # Assert on updated field
     assert candidate_dict['candidate']['full_name'] == 'Larry David'
 
-
+######################## CandidateAddress ########################
 def test_add_new_candidate_address(sample_user, user_auth):
     """
     Test:   Add a new CandidateAddress to an existing Candidate
@@ -201,7 +201,7 @@ def test_add_address_to_existing_candidate(sample_user, user_auth):
     assert address['zip_code'] == '95129'
     assert address['country'] == 'United States'
 
-
+######################## CandidateAreaOfInterest ########################
 def test_add_new_area_of_interest(sample_user, user_auth):
     """
     Test:   Add a new CandidateAreaOfInterest
@@ -234,7 +234,7 @@ def test_add_new_area_of_interest(sample_user, user_auth):
     assert 'teaching' or 'programming' in updated_aoi_list[0].values()
     assert 'teaching' or 'programming' in updated_aoi_list[1].values()
 
-
+######################## CandidateCustomField ########################
 # def test_add_new_custom_field(sample_user, user_auth):
 #     """
 #     Test:   Add a new CandidateAreaOfInterest
@@ -256,7 +256,7 @@ def test_add_new_area_of_interest(sample_user, user_auth):
 #         {''}
 #     ]}}
 
-
+######################## CandidateEducation ########################
 def test_add_new_education(sample_user, user_auth):
     """
     Test:   Add a new CandidateAreaOfInterest
@@ -381,8 +381,7 @@ def test_add_education_degree(sample_user, user_auth):
     assert education_dict['degrees'][-1]['title'] == 'associate'
     assert education_dict['degrees'][-1]['degree_bullets'][-1]['major'] == 'mathematics'
 
-
-
+######################## CandidateWorkExperience ########################
 def test_add_experience_bullet(sample_user, user_auth):
     """
     Test:   Adds a CandidateExperienceBullet to an existing CandidateExperience
@@ -459,7 +458,7 @@ def test_update_experience_bullet(sample_user, user_auth):
     assert candidate_experience_bullet_count == len(experience_bullet_dict)
     assert experience_bullet_dict[0]['description'] == 'ruby on rails'
 
-
+######################## CandidateWorkPreference ########################
 def test_add_multiple_work_preference(sample_user, user_auth):
     """
     Test:   Attempt to add two CandidateWorkPreference
@@ -501,11 +500,11 @@ def test_update_work_preference(sample_user, user_auth):
     create_resp = post_to_candidate_resource(token)
 
     # Retrieve Candidate
-    candiadte_id = create_resp.json()['candidates'][0]['id']
-    candidate_dict = get_from_candidate_resource(token, candiadte_id).json()['candidate']
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
 
     # Update CandidateWorkPreference
-    data = {'candidate': {'id': candiadte_id, 'work_preference': {
+    data = {'candidate': {'id': candidate_id, 'work_preference': {
         'id': candidate_dict['work_preference']['id'], 'telecommute': True,
         'travel_percentage': 10, 'hourly_rate': 35, 'salary': 70000, 'third_party': 'true'
     }}}
@@ -513,13 +512,492 @@ def test_update_work_preference(sample_user, user_auth):
     print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
 
     # Retrieve Candidate after update
-    candidate_dict = get_from_candidate_resource(token, candiadte_id).json()['candidate']
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
     work_preference_dict = candidate_dict['work_preference']
 
-    print "\nwork_pref_dict = %s" % work_preference_dict
-
-    assert candiadte_id == candidate_dict['id']
+    assert candidate_id == candidate_dict['id']
     assert work_preference_dict['salary'] == 70000.0
     assert work_preference_dict['hourly_rate'] == 35.0
     assert work_preference_dict['travel_percentage'] == 10
 
+######################## CandidateEmail ########################
+def test_add_eamils(sample_user, user_auth):
+    """
+    Test:   Add two emails to an existing Candidate. Number of candidate's emails must increase by 2
+    Expect: 200
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+
+    emails = get_from_candidate_resource(token, candidate_id).json()['candidate']['emails']
+    emails_count = len(emails)
+
+    # Add new email
+    data = {'candidate': {'id': candidate_id, 'emails': [
+        {'label': 'work', 'address': 'amir@gettalent.com'},
+        {'label': 'primary', 'address': 'amir@baws.com'}
+    ]}}
+    updated_resp = patch_to_candidate_resource(token, data)
+    print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    emails = candidate_dict['emails']
+    assert candidate_id == candidate_dict['id']
+    assert emails[-1]['label'] == 'Primary'
+    assert emails[-1]['address'] == 'amir@baws.com'
+    assert emails[-2]['label'] == 'Work'
+    assert emails[-2]['address'] == 'amir@gettalent.com'
+    assert len(emails) == emails_count + 2
+
+
+def test_update_existing_email(sample_user, user_auth):
+    """
+    Test:   Update an existing CandidateEmail. Number of candidate's emails must remain unchanged
+    Expect: 200
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+
+    emails_before_update = get_from_candidate_resource(token, candidate_id).json()['candidate']['emails']
+    emails_count_before_update = len(emails_before_update)
+
+    # Update first email
+    data = {'candidate': {'id': candidate_id, 'emails': [
+        {'id': emails_before_update[0]['id'], 'label': 'primary', 'address': 'karen@karen.com'}
+    ]}}
+    updated_resp = patch_to_candidate_resource(token, data)
+    print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    emails_after_update = candidate_dict['emails']
+    assert candidate_id == candidate_dict['id']
+    assert emails_before_update[0]['id'] == emails_after_update[0]['id']
+    assert emails_before_update[0]['address'] != emails_after_update[0]['address']
+    assert emails_after_update[0]['address'] == 'karen@karen.com'
+    assert emails_count_before_update == len(emails_after_update)
+
+
+def test_update_existing_email_with_bad_email_address(sample_user, user_auth):
+    """
+    Test:   Use a bad email address to update and existing CandidateEmail
+    Expect: 400
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+
+    emails_before_update = get_from_candidate_resource(token, candidate_id).json()['candidate']['emails']
+    emails_count_before_update = len(emails_before_update)
+
+    # Update first email with an invalid email address
+    data = {'candidate': {'id': candidate_id, 'emails': [
+        {'id': emails_before_update[0]['id'], 'label': 'primary', 'address': 'bad_email.com'}
+    ]}}
+    updated_resp = patch_to_candidate_resource(token, data)
+    print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    emails_after_update = candidate_dict['emails']
+    assert updated_resp.status_code == 400
+    assert candidate_id == candidate_dict['id']
+    assert emails_count_before_update == len(emails_after_update)
+    assert emails_before_update[0]['address'] == emails_after_update[0]['address']
+
+######################## CandidatePhone ########################
+def test_add_phones(sample_user, user_auth):
+    """
+    Test:   Add two phones to an existing Candidate. Number of candidate's phones must increase by 2
+    Expect: 200
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+
+    phones_before_update = get_from_candidate_resource(token, candidate_id).json()['candidate']['phones']
+    phones_count_before_update = len(phones_before_update)
+
+    # Add new email
+    data = {'candidate': {'id': candidate_id, 'phones': [
+        {'label': 'mobile', 'value': '4087756787'},
+        {'label': 'home', 'value': '5109989845'}
+    ]}}
+    updated_resp = patch_to_candidate_resource(token, data)
+    print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    phones_after_update = candidate_dict['phones']
+    assert candidate_id == candidate_dict['id']
+    assert phones_after_update[-1]['label'] == 'Home'
+    assert phones_after_update[-1]['value'] == '5109989845'
+    assert phones_after_update[-2]['label'] == 'Mobile'
+    assert phones_after_update[-2]['value'] == '4087756787'
+    assert len(phones_after_update) == phones_count_before_update + 2
+
+
+def test_update_existing_phone(sample_user, user_auth):
+    """
+    Test:   Update an existing CandidatePhone. Number of candidate's phones must remain unchanged
+    Expect: 200
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+
+    phones_before_update = get_from_candidate_resource(token, candidate_id).json()['candidate']['phones']
+    phones_count_before_update = len(phones_before_update)
+
+    # Update first email
+    data = {'candidate': {'id': candidate_id, 'phones': [
+        {'id': phones_before_update[0]['id'], 'label': 'other', 'value': '1-800-9346489'}
+    ]}}
+    updated_resp = patch_to_candidate_resource(token, data)
+    print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    phones_after_update = candidate_dict['phones']
+    assert candidate_id == candidate_dict['id']
+    assert phones_before_update[0]['id'] == phones_after_update[0]['id']
+    assert phones_before_update[0]['value'] != phones_after_update[0]['value']
+    assert phones_after_update[0]['value'] == '1-800-9346489'
+    assert phones_count_before_update == len(phones_after_update)
+
+######################## CandidateMilitaryService ########################
+def test_add_military_service(sample_user, user_auth):
+    """
+    Test:   Add a CandidateMilitaryService to an existing Candidate.
+            Number of candidate's military_services should increase by 1.
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+
+    military_services_before_update = get_from_candidate_resource(token, candidate_id).\
+        json()['candidate']['military_services']
+    military_services_count_before_update = len(military_services_before_update)
+
+    # Add CandidateMilitaryService
+    data = {'candidate': {'id': candidate_id, 'military_services': [
+        {'country': 'gb', 'branch': 'air force', 'comments': 'adept at killing cows with mad-cow-disease'}
+    ]}}
+    updated_resp = patch_to_candidate_resource(token, data)
+    print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    military_services_after_update = candidate_dict['military_services']
+    assert candidate_id == candidate_dict['id']
+    assert len(military_services_after_update) == military_services_count_before_update + 1
+    assert military_services_after_update[-1]['country'] == 'United Kingdom'
+    assert military_services_after_update[-1]['branch'] == 'air force'
+    assert military_services_after_update[-1]['comments'] == 'adept at killing cows with mad-cow-disease'
+
+
+def test_update_military_service(sample_user, user_auth):
+    """
+    Test:   Update an existing CandidateMilitaryService.
+            Number of candidate's military_services should remain unchanged.
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+
+    military_services_before_update = get_from_candidate_resource(token, candidate_id).\
+        json()['candidate']['military_services']
+    military_services_count_before_update = len(military_services_before_update)
+
+    # Add CandidateMilitaryService
+    data = {'candidate': {'id': candidate_id, 'military_services': [
+        {'id': military_services_before_update[0]['id'], 'country': 'gb', 'branch': 'air force',
+         'comments': 'adept at killing cows with mad-cow-disease'}
+    ]}}
+    updated_resp = patch_to_candidate_resource(token, data)
+    print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    military_services_after_update = candidate_dict['military_services']
+    assert candidate_id == candidate_dict['id']
+    assert len(military_services_after_update) == military_services_count_before_update
+    assert military_services_after_update[0]['country'] == 'United Kingdom'
+    assert military_services_after_update[0]['branch'] == 'air force'
+    assert military_services_after_update[0]['comments'] == 'adept at killing cows with mad-cow-disease'
+
+######################## CandidatePreferredLocation ########################
+def test_add_preferred_location(sample_user, user_auth):
+    """
+    Test:   Add a CandidatePreferredLocation to an existing Candidate.
+            Number of candidate's preferred_location should increase by 1.
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+
+    preferred_location_before_update = get_from_candidate_resource(token, candidate_id).\
+        json()['candidate']['preferred_locations']
+    preferred_locations_count_before_update = len(preferred_location_before_update)
+
+    # Add CandidatePreferredLocation
+    data = {'candidate': {'id': candidate_id, 'preferred_locations': [
+        {'city': 'austin', 'region': 'texas'}
+    ]}}
+    updated_resp = patch_to_candidate_resource(token, data)
+    print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    preferred_locations_after_update = candidate_dict['preferred_locations']
+    assert candidate_id == candidate_dict['id']
+    assert len(preferred_locations_after_update) == preferred_locations_count_before_update + 1
+    assert preferred_locations_after_update[-1]['city'] == 'austin'
+    assert preferred_locations_after_update[-1]['region'] == 'texas'
+
+
+def test_update_preferred_location(sample_user, user_auth):
+    """
+    Test:   Update an existing CandidatePreferredLocation.
+            Number of candidate's preferred_location should remain unchanged.
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+
+    preferred_location_before_update = get_from_candidate_resource(token, candidate_id).\
+        json()['candidate']['preferred_locations']
+    preferred_locations_count_before_update = len(preferred_location_before_update)
+
+    # Add CandidatePreferredLocation
+    data = {'candidate': {'id': candidate_id, 'preferred_locations': [
+        {'id': preferred_location_before_update[0]['id'], 'city': 'austin', 'region': 'texas'}
+    ]}}
+    updated_resp = patch_to_candidate_resource(token, data)
+    print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    preferred_locations_after_update = candidate_dict['preferred_locations']
+    assert candidate_id == candidate_dict['id']
+    assert len(preferred_locations_after_update) == preferred_locations_count_before_update + 0
+    assert preferred_locations_after_update[0]['city'] == 'austin'
+    assert preferred_locations_after_update[0]['region'] == 'texas'
+
+######################## CandidateSkill ########################
+def test_add_skill(sample_user, user_auth):
+    """
+    Test:   Add a CandidateSkill to an existing Candidate.
+            Number of candidate's preferred_location should increase by 1.
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+
+    skills_before_update = get_from_candidate_resource(token, candidate_id).json()['candidate']['skills']
+    skills_count_before_update = len(skills_before_update)
+
+    # Add CandidateSkill
+    data = {'candidate': {'id': candidate_id, 'skills': [{'name': 'pos'}]}}
+    updated_resp = patch_to_candidate_resource(token, data)
+    print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    skills_after_update = candidate_dict['skills']
+    assert candidate_id == candidate_dict['id']
+    assert len(skills_after_update) ==  skills_count_before_update + 1
+    assert skills_after_update[-1]['name'] == 'pos'
+
+
+def test_update_skill(sample_user, user_auth):
+    """
+    Test:   Update an existing CandidateSkill.
+            Number of candidate's preferred_location should remain unchanged.
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+
+    skills_before_update = get_from_candidate_resource(token, candidate_id).json()['candidate']['skills']
+    skills_count_before_update = len(skills_before_update)
+
+    # Update CandidateSkill
+    data = {'candidate': {'id': candidate_id, 'skills': [
+        {'id': skills_before_update[0]['id'], 'name': 'pos'}
+    ]}}
+    updated_resp = patch_to_candidate_resource(token, data)
+    print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    skills_after_update = candidate_dict['skills']
+    assert candidate_id == candidate_dict['id']
+    assert len(skills_after_update) ==  skills_count_before_update
+    assert skills_after_update[0]['name'] == 'pos'
+
+######################## CandidateSkill ########################
+def test_add_social_network(sample_user, user_auth):
+    """
+    Test:   Add a CandidateSocialNetwork to an existing Candidate.
+            Number of candidate's social_networks should increase by 1.
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+
+    social_networks_before_update = get_from_candidate_resource(token, candidate_id).\
+        json()['candidate']['social_networks']
+    social_networks_count_before_update = len(social_networks_before_update)
+
+    # Add CandidateSocialNework
+    data = {'candidate': {'id': candidate_id, 'social_networks': [
+        {'name': 'linkedin', 'profile_url': 'https://www.linkedin.com/company/sara'}
+    ]}}
+    updated_resp = patch_to_candidate_resource(token, data)
+    print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    social_networks_after_update = candidate_dict['social_networks']
+    assert candidate_id == candidate_dict['id']
+    assert len(social_networks_after_update) ==  social_networks_count_before_update + 1
+    assert social_networks_after_update[-1]['name'] == 'LinkedIn'
+    assert social_networks_after_update[-1]['profile_url'] == 'https://www.linkedin.com/company/sara'
+
+
+def test_update_social_network(sample_user, user_auth):
+    """
+    Test:   Update a CandidateSocialNetwork.
+            Number of candidate's social_networks should remain unchanged.
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+
+    social_networks_before_update = get_from_candidate_resource(token, candidate_id).\
+        json()['candidate']['social_networks']
+    social_networks_count_before_update = len(social_networks_before_update)
+
+    # Add CandidateSocialNework
+    data = {'candidate': {'id': candidate_id, 'social_networks': [
+        {'id': social_networks_before_update[0]['id'],
+         'name': 'linkedin', 'profile_url': 'https://www.linkedin.com/company/sara'}
+    ]}}
+    updated_resp = patch_to_candidate_resource(token, data)
+    print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    social_networks_after_update = candidate_dict['social_networks']
+    assert candidate_id == candidate_dict['id']
+    assert len(social_networks_after_update) ==  social_networks_count_before_update
+    assert social_networks_after_update[0]['name'] == 'LinkedIn'
+    assert social_networks_after_update[0]['profile_url'] == 'https://www.linkedin.com/company/sara'
