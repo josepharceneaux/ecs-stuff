@@ -4,11 +4,11 @@ from flask import Flask
 from flask_oauthlib.provider import OAuth2Provider
 
 from auth_service.common.models.db import db
-from auth_service import config
+from auth_service.common import common_config
 from healthcheck import HealthCheck
 
 app = Flask(__name__)
-app.config.from_object(config)
+app.config.from_object(common_config)
 
 logger = app.config['LOGGER']
 from auth_service.common.error_handling import register_error_handlers
