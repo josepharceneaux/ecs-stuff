@@ -237,6 +237,8 @@ def candidate_work_preference(candidate):
             'security_clearance': work_preference[0].security_clearance,
             'willing_to_relocate': work_preference[0].relocate,
             'telecommute': work_preference[0].telecommute,
+            'hourly_rate': work_preference[0].hourly_rate,
+            'salary': work_preference[0].salary,
             'travel_percentage': work_preference[0].travel_percentage,
             'third_party': work_preference[0].third_party
             } if work_preference else dict()
@@ -608,7 +610,7 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's work preference(s)
     if work_preference:
-        _add_or_update_work_preference(candidate_id, work_preference, is_update)
+        _add_or_update_work_preference(candidate_id, work_preference)
 
     # Add or update Candidate's email(s)
     if emails:
@@ -1136,39 +1138,35 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time):
                 ))
 
 
-def _add_or_update_work_preference(candidate_id, work_preference, is_update):
+def _add_or_update_work_preference(candidate_id, work_preference):
     """
     Function will update CandidateWorkPreference or create a new one.
     """
-    # Parse data for create or update
-    relocate = work_preference.get('relocate')
-    authorization = work_preference.get('authorization')
-    telecommute = work_preference.get('telecommute')
-    travel_percentage = work_preference.get('travel_percentage')
-    hourly_rate = work_preference.get('hourly_rate')
-    salary = work_preference.get('salary')
-    tax_terms = work_preference.get('tax_terms')
+    work_preference_dict = dict(
+        relocate=work_preference.get('relocate'),
+        authorization=work_preference.get('authorization'),
+        telecommute=work_preference.get('telecommute'),
+        travel_percentage=work_preference.get('travel_percentage'),
+        hourly_rate=work_preference.get('hourly_rate'),
+        salary=work_preference.get('salary'),
+        tax_terms=work_preference.get('tax_terms')
+    )
 
-    if is_update:  # Update
-        update_dict = {'relocate': relocate, 'authorization': authorization,
-                       'telecommute': telecommute,
-                       'travel_percentage': travel_percentage,
-                       'hourly_rate': hourly_rate, 'salary': salary,
-                       'tax_terms': tax_terms}
+    # Remove None values from update_dict
+    work_preference_dict = dict((k, v) for k, v in work_preference_dict.iteritems() if v)
 
-        # Remove None values from update_dict
-        update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
+    work_preference_id = work_preference.get('id')
+    if work_preference_id:  # Update
+        db.session.query(CandidateWorkPreference).\
+            filter_by(candidate_id=candidate_id).update(work_preference_dict)
 
-        db.session.query(CandidateWorkPreference). \
-            filter_by(candidate_id=candidate_id).update(update_dict)
+    else:  # Add
+        # Only 1 CandidateWorkPreference is permitted for each Candiadte
+        if db.session.query(CandidateWorkPreference).filter_by(candidate_id=candidate_id).first():
+            raise InvalidUsage(error_message="Candidate work preference already exists.")
 
-    else:  # Create if not an update
-        db.session.add(CandidateWorkPreference(
-            candidate_id=candidate_id, relocate=relocate,
-            authorization=authorization, telecommute=telecommute,
-            travel_percentage=travel_percentage, hourly_rate=hourly_rate,
-            salary=salary, tax_terms=tax_terms
-        ))
+        work_preference_dict.update(dict(candidate_id=candidate_id))
+        db.session.add(CandidateWorkPreference(**work_preference_dict))
 
 
 def _add_or_update_emails(candidate_id, emails, is_update):
