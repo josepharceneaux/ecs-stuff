@@ -42,7 +42,7 @@ def generate_single_candidate_data():
                                 "third_party": "false"},  # TODO boolean
             'work_experiences': [
                 {'organization': fake.company(), 'position': fake.job(), 'city': fake.city(),
-                 'state': fake.state(), 'work_experience_bullets': [
+                 'state': fake.state(), 'experience_bullets': [
                     {'description': fake.sentence()}
                 ]}
             ],
@@ -68,8 +68,6 @@ def generate_single_candidate_data():
                 {'profile_url': 'http://www.facebook.com/1024359318', 'name': 'facebook'},
                 {'profile_url': 'https://twitter.com/dmcnulla', 'name': 'twitter'}
             ]
-            # 'areas_of_interest': [{'id': 7}, {'id': 8}],
-            # 'custom_fields': [{'id': 7}, {'id': 8}]
         }
     ]}
 
