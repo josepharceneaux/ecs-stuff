@@ -122,6 +122,20 @@ class PhoneLabel(db.Model):
     def __repr__(self):
         return "<PhoneLabel (description=' %r')>" % self.description
 
+    @classmethod
+    def phone_label_id_from_phone_label(cls, phone_label):
+        """
+        Function retrieves phone_label_id from phone_label
+        e.g. 'Primary' => 1
+        :return:  phone_label ID if phone_label is recognized, otherwise 1 ('Primary')
+        """
+        assert phone_label
+        phone_label_row = cls.query.filter_by(description=phone_label).first()
+        if phone_label_row:
+            return phone_label_row.id
+
+        return 1
+
 
 class CandidateSource(db.Model):
     __tablename__ = 'candidate_source'
@@ -187,6 +201,19 @@ class EmailLabel(db.Model):
 
     def __repr__(self):
         return "<EmailLabel (description=' %r')>" % self.description
+
+    @classmethod
+    def email_label_id_from_email_label(cls, email_label):
+        """
+        Function retrieves email_label_id from email_label
+        e.g. 'Primary' => 1
+        :return:  email_label ID if email_label is recognized, otherwise 1 ('Primary')
+        """
+        assert email_label
+        email_label_row = cls.query.filter(EmailLabel.description == email_label).first()
+        if email_label_row:
+            return email_label_row.id
+        return 1
 
 
 class CandidateEmail(db.Model):

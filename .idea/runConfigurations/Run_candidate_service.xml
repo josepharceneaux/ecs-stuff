@@ -3,8 +3,8 @@
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
-      <env name="GT_ENVIRONMENT" value="dev" />
       <env name="PYTHONUNBUFFERED" value="1" />
+      <env name="GT_ENVIRONMENT" value="dev" />
     </envs>
     <option name="SDK_HOME" value="$USER_HOME$/.pyenv/versions/talent-flask-2.7.9/bin/python2.7" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/candidate_service" />
