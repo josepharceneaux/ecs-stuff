@@ -337,5 +337,79 @@ def test_update_education_primary_info(sample_user, user_auth):
     assert len(updated_can_dict['educations']) == candidate_education_count
 
 
+def test_add_experience_bullet(sample_user, user_auth):
+    """
+    Test:   Adds a CandidateExperienceBullet to an existing CandidateExperience
+            Since this is a new addition, total number of candidate's experience_bullet
+            must increase by 1.
+    Expect: 200
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    candidate_experience_bullet_count = len(candidate_dict['work_experiences'][0]['experience_bullets'])
+
+    # Add CandidateExperienceBullet to existing CandidateExperience
+    data = {'candidate': {'id': candidate_id, 'work_experiences': [
+        {'id': candidate_dict['work_experiences'][0]['id'],
+         'experience_bullets': [{'description': 'managing group lunch orders'}]}
+    ]}}
+    updated_resp = patch_to_candidate_resource(token, data)
+    print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    updated_can_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+    experience_dict = updated_can_dict['work_experiences'][0]
+
+    assert candidate_id == updated_can_dict['id']
+    assert experience_dict['experience_bullets'][-1]['description'] == 'managing group lunch orders'
+    assert len(experience_dict['experience_bullets']) == candidate_experience_bullet_count + 1
 
 
+def test_update_experience_bullet(sample_user, user_auth):
+    """
+    Test:   Update an existing CandidateExperienceBullet
+            Since this is an update only, the number of candidate's experience_bullets
+            must remain unchanged.
+    Expect: 200
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+
+    experience_dict = candidate_dict['work_experiences'][0]
+    candidate_experience_bullet_count = len(experience_dict['experience_bullets'])
+
+    # Update CandidateExperienceBullet
+    data = {'candidate': {'id': candidate_id, 'work_experiences': [
+        {'id': experience_dict['id'], 'experience_bullets': [
+            {'id': experience_dict['experience_bullets'][0]['id'], 'description': 'ruby on rails'}
+        ]}
+    ]}}
+    updated_resp = patch_to_candidate_resource(token, data)
+    print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    updated_can_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+    experience_bullet_dict = updated_can_dict['work_experiences'][0]['experience_bullets']
+
+    assert candidate_experience_bullet_count == len(experience_bullet_dict)
+    assert experience_bullet_dict[0]['description'] == 'ruby on rails'
