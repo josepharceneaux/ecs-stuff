@@ -440,7 +440,6 @@ def test_update_experience_bullet(sample_user, user_auth):
     candidate_id = create_resp.json()['candidates'][0]['id']
     candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
 
-
     experience_dict = candidate_dict['work_experiences'][0]
     candidate_experience_bullet_count = len(experience_dict['experience_bullets'])
 
@@ -459,3 +458,68 @@ def test_update_experience_bullet(sample_user, user_auth):
 
     assert candidate_experience_bullet_count == len(experience_bullet_dict)
     assert experience_bullet_dict[0]['description'] == 'ruby on rails'
+
+
+def test_add_multiple_work_preference(sample_user, user_auth):
+    """
+    Test:   Attempt to add two CandidateWorkPreference
+    Expect: 400
+    :type sample_user:  User
+    :type  user_auth:   UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+
+    # Add CandidateWorkPreference
+    data = {'candidate': {'id': candidate_id, 'work_preference': {
+        'work_preference': {'telecommute': True, 'travel_percentage': 10, 'hourly_rate': 35}
+    }}}
+    updated_resp = patch_to_candidate_resource(token, data)
+    print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+
+    assert updated_resp.status_code == 400
+
+
+def test_update_work_preference(sample_user, user_auth):
+    """
+    Test:   Update existing CandidateWorkPreference. Since this is an update,
+            number of CandidateWorkPreference must remain unchanged.
+    Expect: 200
+    :type sample_user:  User
+    :type  user_auth:   UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candiadte_id = create_resp.json()['candidates'][0]['id']
+    candidate_dict = get_from_candidate_resource(token, candiadte_id).json()['candidate']
+
+    # Update CandidateWorkPreference
+    data = {'candidate': {'id': candiadte_id, 'work_preference': {
+        'id': candidate_dict['work_preference']['id'], 'telecommute': True,
+        'travel_percentage': 10, 'hourly_rate': 35, 'salary': 70000, 'third_party': 'true'
+    }}}
+    updated_resp = patch_to_candidate_resource(token, data)
+    print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    candidate_dict = get_from_candidate_resource(token, candiadte_id).json()['candidate']
+    work_preference_dict = candidate_dict['work_preference']
+
+    print "\nwork_pref_dict = %s" % work_preference_dict
+
+    assert candiadte_id == candidate_dict['id']
+    assert work_preference_dict['salary'] == 70000.0
+    assert work_preference_dict['hourly_rate'] == 35.0
+    assert work_preference_dict['travel_percentage'] == 10
+

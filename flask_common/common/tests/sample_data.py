@@ -107,7 +107,7 @@ def candidate_data_for_update(candidate_id, email_1_id, email_2_id, phone_1_id,
                                 "salary": randrange(50000, 300000),
                                 "tax_terms": "full-time employment",
                                 "security_clearance": "none",
-                                "third_party": "false"},  # TODO boolean
+                                "third_party": "false"},
             'work_experiences': [
                 {'id': work_experience_1_id, 'organization': fake.company(),
                  'position': fake.job(), 'city': fake.city(),
