@@ -25,7 +25,7 @@ from widget_service.common.models.widget import WidgetPage
 from widget_service.common.utils.db_utils import get_or_create
 from widget_service.common.utils.handy_functions import random_word
 
-from common.models.db import db
+from widget_service.common.models.db import db
 from widget_service.widget_app import app
 db.init_app(app)
 db.app = app

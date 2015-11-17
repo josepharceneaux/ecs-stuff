@@ -11,7 +11,6 @@ from .fixtures import candidate_status_fixture
 from .fixtures import country_fixture
 from .fixtures import culture_fixture
 from .fixtures import domain_fixture
-from .fixtures import db
 from .fixtures import email_label_fixture
 from .fixtures import expired_oauth_credentials
 from .fixtures import extra_field_fixtures
@@ -28,7 +27,12 @@ from widget_service.common.utils.handy_functions import random_word
 from widget_service.widget_app.flask_scripts.url_encode import gt_url_encrypt
 from widget_service.widget_app.views.utils import parse_city_and_state_ids_from_form
 from widget_service.widget_app.views.utils import parse_interest_ids_from_form
+from widget_service.common.models.db import db
+from widget_service.widget_app import app
 
+
+db.init_app(app)
+db.app = app
 APP_URL = 'http://0.0.0.0:8006/v1'
 
 
