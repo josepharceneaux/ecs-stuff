@@ -177,6 +177,12 @@ def test_v15_pdf_by_post(token_fixture):
     keys_formatted_test(json_obj)
 
 
+def test_health_check():
+    import requests
+    response = requests.get('http://127.0.0.1:8003/healthcheck')
+    assert response.status_code == 200
+
+
 def fetch_resume_post_response(token_fixture, file_name, create_mode=''):
     """Posts file to local test auth server for json formatted resumes."""
     current_dir = os.path.dirname(__file__)

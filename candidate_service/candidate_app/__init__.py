@@ -1,7 +1,7 @@
 from flask import Flask
-from common.models.db import db
+from candidate_service.common.models.db import db
 from gt_custom_restful import *
-
+from healthcheck import HealthCheck
 
 app = Flask(__name__)
 print "Running app: %s" % app
@@ -11,11 +11,14 @@ app.config.from_object(config)
 
 logger = app.config['LOGGER']
 
-from common.error_handling import register_error_handlers
+from candidate_service.common.error_handling import register_error_handlers
 register_error_handlers(app=app, logger=logger)
 
 db.init_app(app=app)
 db.app = app
+
+# wrap the flask app and give a heathcheck url
+health = HealthCheck(app, "/healthcheck")
 
 from candidate_service.candidate_app.api.v1_candidates import (
     CandidateResource, CandidateEmailCampaignResource

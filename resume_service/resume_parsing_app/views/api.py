@@ -17,7 +17,7 @@ from .app_constants import Constants as current
 from .parse_lib import parse_resume
 from .utils import create_candidate_from_parsed_resume
 from boto.s3.connection import S3Connection
-from common.utils.auth_utils import require_oauth
+from resume_service.common.utils.auth_utils import require_oauth
 
 mod = Blueprint('resume_api', __name__)
 

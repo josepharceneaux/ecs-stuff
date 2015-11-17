@@ -3,8 +3,7 @@ import random
 import string
 from werkzeug.security import generate_password_hash
 from user_service.user_app import app
-from common.models.user import *
-from common.models.misc import Culture
+from user_service.common.models.user import *
 import requests
 import json
 

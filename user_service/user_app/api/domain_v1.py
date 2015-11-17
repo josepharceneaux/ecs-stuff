@@ -2,11 +2,11 @@ __author__ = 'ufarooqi'
 from flask_restful import Resource
 from flask import request
 from dateutil import parser
-from common.models.user import User, Domain, db
-from common.models.misc import Culture
+from user_service.common.models.user import User, Domain, db
+from user_service.common.models.misc import Culture
 from user_service.user_app.user_service_utilties import get_or_create_domain
 from user_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
-from common.error_handling import *
+from user_service.common.error_handling import *
 
 
 class DomainApi(Resource):

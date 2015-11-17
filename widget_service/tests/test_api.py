@@ -159,6 +159,12 @@ def test_parse_location_ids_from_form(extra_field_fixtures, request):
     ]
 
 
+def test_health_check():
+    import requests
+    response = requests.get('http://127.0.0.1:8006/healthcheck')
+    assert response.status_code == 200
+
+
 def gen_mock_aois():
     subcategory = db.session.query(AreaOfInterest).filter(AreaOfInterest.parent_id != None).first()
     parent_category_1 = db.session.query(AreaOfInterest).get(subcategory.parent_id)

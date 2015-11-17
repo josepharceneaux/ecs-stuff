@@ -150,3 +150,8 @@ def test_auth_service(app_context):
     status_code, authorized_user_id = app_context.authorize_token()
     assert status_code == 401
 
+
+def test_health_check():
+    import requests
+    response = requests.get(OAUTH_ENDPOINT % 'healthcheck')
+    assert response.status_code == 200

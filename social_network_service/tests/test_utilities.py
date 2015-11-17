@@ -225,3 +225,9 @@ def test_milliseconds_since_epoch_to_dt():
     converted_date_2 = milliseconds_since_epoch_to_dt(
         EPOCH_LOCAL_TEST_DATE_IN_MILLISECONDS, tz=LOCAL_TIMEZONE)
     assert converted_date_2 == LOCAL_TEST_DATE
+
+
+def test_health_check():
+    import requests
+    response = requests.get('http://127.0.0.1:8006/healthcheck')
+    assert response.status_code == 200
