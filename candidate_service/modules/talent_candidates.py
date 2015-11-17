@@ -945,7 +945,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
         )
 
         education_id = education.get('id')
-        if education_id:  # Update CandidateEducation
+        if education_id:  # Update
 
             # Remove keys with None values
             education_dict = dict((k, v) for k, v in education_dict.iteritems() if v)
@@ -983,8 +983,8 @@ def _add_or_update_educations(candidate_id, educations, added_time):
                     education_degree_bullets = education_degree.get('degree_bullets', [])
                     for education_degree_bullet in education_degree_bullets:
                         education_degree_bullet_dict = dict(
-                            concentration_type=degree_bullet.get('major'),
-                            comments=degree_bullet.get('comments')
+                            concentration_type=education_degree_bullet.get('major'),
+                            comments=education_degree_bullet.get('comments')
                         )
 
                         # Remove keys with None values
@@ -1002,12 +1002,25 @@ def _add_or_update_educations(candidate_id, educations, added_time):
 
                 else:   # Add CandidateEducationDegree
                     education_degree_dict.update(dict(candidate_education_id=education_id))
-                    db.session.add(CandidateEducationDegree(**education_degree_dict))
+                    candidate_education_degree = CandidateEducationDegree(**education_degree_dict)
+                    db.session.add(candidate_education_degree)
+                    db.session.flush()
 
+                    can_edu_degree_id = candidate_education_degree.id
 
-        else:  # Add CandidateEducation
-            education_dict.update(
-                {'resume_id': candidate_id})  # TODO: this is to be removed once all tables have been added & migrated
+                    # Add CandidateEducationDegreeBullets
+                    education_degree_bullets = education_degree.get('degree_bullets', [])
+                    for education_degree_bullet in education_degree_bullets:
+                        db.session.add(CandidateEducationDegreeBullet(
+                            candidate_education_degree_id= can_edu_degree_id,
+                            concentration_type=education_degree_bullet.get('major'),
+                            comments=education_degree_bullet.get('comments'),
+                            added_time=added_time
+                        ))
+
+        else:  # Add
+            # CandidateEducation
+            education_dict.update(dict(resume_id=candidate_id))  # TODO: this is to be removed once all tables have been added & migrated
             candidate_education = CandidateEducation(**education_dict)
             db.session.add(candidate_education)
             db.session.flush()
@@ -1015,60 +1028,42 @@ def _add_or_update_educations(candidate_id, educations, added_time):
             education_id = candidate_education.id
 
             # CandidateEducationDegree
-            degrees = education.get('degrees')
-            for degree in degrees:
-                degree_dict = dict(
+            education_degrees = education.get('degrees')
+            for education_degree in education_degrees:
+
+                # Add CandidateEducationDegree
+                candidate_education_degree = CandidateEducationDegree(
                     candidate_education_id=education_id,
-                    list_order=degree.get('list_order'),
-                    degree_type=degree.get('type'),
-                    degree_title=degree.get('title'),
-                    start_year=degree.get('start_year'),
-                    start_month=degree.get('start_month'),
-                    end_year=degree.get('end_year'),
-                    end_month=degree.get('end_month'),
-                    gpa_num=degree.get('gpa'),
+                    list_order=education_degree.get('list_order'),
+                    degree_type=education_degree.get('type'),
+                    degree_title=education_degree.get('title'),
+                    start_year=education_degree.get('start_year'),
+                    start_month=education_degree.get('start_month'),
+                    end_year=education_degree.get('end_year'),
+                    end_month=education_degree.get('end_month'),
+                    gpa_num=education_degree.get('gpa'),
                     added_time=added_time,
-                    classification_type_id=classification_type_id_from_degree_type(degree.get('type')),
-                    start_time=degree.get('start_time'),
-                    end_time=degree.get('end_time')
+                    classification_type_id=classification_type_id_from_degree_type(education_degree.get('type')),
+                    start_time=education_degree.get('start_time'),
+                    end_time=education_degree.get('end_time')
                 )
+                db.session.add(candidate_education_degree)
+                db.session.flush()
 
-                degree_id = degree.get('id')
-                if degree_id:  # Update
+                education_degree_id = candidate_education_degree.id
 
-                    # Remove keys with None values
-                    degree_dict = dict((k, v) for k, v in degree_dict.iteritems() if v)
+                # CandidateEducationDegreeBullet
+                degree_bullets = education_degree.get('degree_bullets', [])
+                for degree_bullet in degree_bullets:
 
-                    # Update CandidateEducationDegree
-                    can_edu_degree_query = db.session.query(CandidateEducationDegree). \
-                        filter_by(id=degree_id)
-                    can_edu_degree_query.update(degree_dict)
-                else:  # Add
-                    can_edu_degree = CandidateEducationDegree(**degree_dict)
-                    db.session.add(can_edu_degree)
-                    db.session.flush()
-
-                    degree_id = can_edu_degree.id
-
-                    # CandidateEducationDegreeBullet
-                    degree_bullets = degree.get('degree_bullets')
-                    for degree_bullet in degree_bullets:
-                        degree_bullet_dict = dict(
-                            candidate_education_degree_id=degree_id,
-                            concentration_type=degree_bullet.get('major'),
-                            comments=degree_bullet.get('comments'),
-                            added_time=added_time
-                        )
-
-                        degree_bullet_id = degree_bullet.get('id')
-                        if degree_bullet_id:  # Update
-
-                            # Remove keys with None values
-                            can_edu_degree_bullet = db.session.query(CandidateEducationDegreeBullet). \
-                                filter_by(id=degree_bullet_id)
-                            can_edu_degree_bullet.update(degree_bullet_dict)
-                        else:  # Add
-                            db.session.add(CandidateEducationDegreeBullet(**degree_bullet_dict))
+                    # Add CandidateEducationDegreeBullet
+                    db.session.add(CandidateEducationDegreeBullet(
+                        candidate_education_degree_id=education_degree_id,
+                        list_order=degree_bullet.get('list_order'),
+                        concentration_type=degree_bullet.get('major'),
+                        comments=degree_bullet.get('comments'),
+                        added_time=added_time
+                    ))
 
 
 def _add_or_update_work_experiences(candidate_id, work_experiences, added_time):
