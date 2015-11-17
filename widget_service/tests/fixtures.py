@@ -3,11 +3,13 @@ __author__ = 'erik@getTalent.com'
 # Standard Library
 import datetime
 # Third Party/Module specific.
+from _mysql_exceptions import IntegrityError
 import pytest
 from widget_service.common.models.associations import CandidateAreaOfInterest
 from widget_service.common.models.candidate import CandidateCustomField
 from widget_service.common.models.candidate import CandidateSource
 from widget_service.common.models.candidate import CandidateStatus
+from widget_service.common.models.db import db
 from widget_service.common.models.email import EmailLabel
 from widget_service.common.models.misc import AreaOfInterest
 from widget_service.common.models.misc import Country
@@ -24,11 +26,19 @@ from widget_service.common.models.user import User
 from widget_service.common.models.widget import WidgetPage
 from widget_service.common.utils.db_utils import get_or_create
 from widget_service.common.utils.handy_functions import random_word
-
-from widget_service.common.models.db import db
 from widget_service.widget_app import app
+
 db.init_app(app)
 db.app = app
+
+
+def requireIntegrity(func):
+  def wrapped(*args, **kwargs):
+    try:
+      return func(*args, **kwargs)
+    except IntegrityError:
+      db.session.rollback()
+  return wrapped
 
 @pytest.fixture(autouse=True)
 def org_fixture(request):
@@ -37,7 +47,7 @@ def org_fixture(request):
     if created:
         db.session.add(org)
         db.session.commit()
-
+    @requireIntegrity
     def fin():
         db.session.delete(org)
         db.session.commit()
@@ -52,7 +62,7 @@ def culture_fixture(request):
     if created:
         db.session.add(culture)
         db.session.commit()
-
+    @requireIntegrity
     def fin():
         db.session.delete(culture)
         db.session.commit()
@@ -71,7 +81,7 @@ def domain_fixture(culture_fixture, org_fixture, request):
                          settings_json=random_word(55))
     db.session.add(domain)
     db.session.commit()
-
+    @requireIntegrity
     def fin():
         db.session.delete(domain)
         db.session.commit()
@@ -90,7 +100,7 @@ def second_domain(culture_fixture, org_fixture, request):
                           settings_json=random_word(55))
     db.session.add(domain2)
     db.session.commit()
-
+    @requireIntegrity
     def fin():
         db.session.delete(domain2)
         db.session.commit()
@@ -122,7 +132,7 @@ def areas_of_interest(domain_fixture, second_domain, request):
                                parent_id=parent_id)
             )
     db.session.bulk_save_objects(sub_aois)
-
+    @requireIntegrity
     def fin():
         db.session.query(CandidateAreaOfInterest).delete()
         db.session.commit()
@@ -142,7 +152,7 @@ def country_fixture(request):
     if created:
         db.session.add(country)
         db.session.commit()
-
+    @requireIntegrity
     def fin():
         db.session.delete(country)
         db.session.commit()
@@ -158,7 +168,7 @@ def university_fixtures(request):
             University(name=random_word(35))
         )
     db.session.bulk_save_objects(universities)
-
+    @requireIntegrity
     def fin():
         db.session.query(University).delete()
         db.session.commit()
@@ -177,7 +187,7 @@ def user_fixture(domain_fixture, request):
     if created:
         db.session.add(user)
         db.session.commit()
-
+    @requireIntegrity
     def fin():
         db.session.delete(user)
         db.session.commit()
@@ -191,7 +201,7 @@ def candidate_source_fixture(domain_fixture, request):
                                   domain_id=domain_fixture.id)
     db.session.add(test_source)
     db.session.commit()
-
+    @requireIntegrity
     def fin():
         db.session.delete(test_source)
         db.session.commit()
@@ -205,7 +215,7 @@ def major_fixtures(domain_fixture, request):
     for i in xrange(5):
         majors.append(Major(name=random_word(18), domain_id=domain_fixture.id))
     db.session.bulk_save_objects(majors)
-
+    @requireIntegrity
     def fin():
         db.session.query(Major).delete()
         db.session.commit()
@@ -229,7 +239,7 @@ def widget_page_fixture(user_fixture, candidate_source_fixture, request):
                              )
     db.session.add(widget_page)
     db.session.commit()
-
+    @requireIntegrity
     def fin():
         db.session.delete(widget_page)
         db.session.commit()
@@ -262,7 +272,7 @@ def extra_field_fixtures(domain_fixture, request):
                                           updated_time=datetime.datetime.now())
     db.session.add(subscription_pref_field)
     db.session.commit()
-
+    @requireIntegrity
     def fin():
         db.session.query(CandidateCustomField).delete()
         db.session.commit()
@@ -279,7 +289,7 @@ def valid_oauth_credentials(request):
     if created:
         db.session.add(client)
         db.session.commit()
-
+    @requireIntegrity
     def fin():
         db.session.query(Token).delete()
         db.session.commit()
@@ -299,7 +309,7 @@ def expired_oauth_credentials(user_fixture, request):
                        expires=datetime.datetime.now() - datetime.timedelta(days=30))
     db.session.add(token)
     db.session.commit()
-
+    @requireIntegrity
     def fin():
         db.session.query(Token).delete()
         db.session.commit()
