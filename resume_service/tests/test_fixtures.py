@@ -24,7 +24,7 @@ from resume_service.resume_parsing_app import db
 def require_integrity(func):
     def wrapped(*args, **kwargs):
         try:
-            current_app.logger.info('OH HAI {} - {} - {}'.format( func.__name__, args, kwargs))
+            print 'OH HAI {} - {} - {}'.format( func.__name__, args, kwargs)
             func(*args, **kwargs)
         except IntegrityError:
             db.session.rollback()
