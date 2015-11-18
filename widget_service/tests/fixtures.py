@@ -62,11 +62,6 @@ def culture_fixture(request):
     if created:
         db.session.add(culture)
         db.session.commit()
-    @requireIntegrity
-    def fin():
-        db.session.delete(culture)
-        db.session.commit()
-    request.addfinalizer(fin)
     return culture
 
 
@@ -152,11 +147,6 @@ def country_fixture(request):
     if created:
         db.session.add(country)
         db.session.commit()
-    @requireIntegrity
-    def fin():
-        db.session.delete(country)
-        db.session.commit()
-    request.addfinalizer(fin)
     return country
 
 
