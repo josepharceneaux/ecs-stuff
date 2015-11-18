@@ -180,15 +180,24 @@ class Frequency(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Description', db.String(10), nullable=False)
 
-    @staticmethod
-    def get_frequency_from_name(self, name, id_only=False):
-        """ Returns frequency object filtered by the name.
-        :param name: eg. Daily, monthly, yearly etc. Case insensitive input
-        :type name: basestring
-        :param id_only: If true, it will only return id else the object
-        :return: Frequency object or frequency id
+    @property
+    def in_seconds(self):
+        """ Returns frequency in seconds, if not found in defined dict (frequency_in_seconds), will return 0.
         """
-        pass
+        frequency_in_seconds = self.standard_frequencies()
+        return frequency_in_seconds.get(self.name.lower(), 0)
+
+    @classmethod
+    def standard_frequencies(self):
+        """Returns a dict of system wide standard frequency names and period in seconds"""
+        return {'once': 0, 'daily': 24 * 3600, 'weekly': 7 * 24 * 3600, 'biweekly': 2 * 7 * 24 * 3600,
+                'monthly': 30 * 24 * 3600, 'yearly': 365 * 24 * 3600}
+
+    @classmethod
+    def get_frequency_from_name(cls, frequency_name):
+        return cls.query.filter_by(name=frequency_name).first()
+
+
 
 class CustomField(db.Model):
     __tablename__ = 'custom_field'

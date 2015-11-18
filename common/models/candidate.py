@@ -3,7 +3,6 @@ from db import db
 from sqlalchemy.orm import relationship
 import datetime
 
-from email_marketing import EmailCampaign, EmailCampaignSend
 from associations import ReferenceEmail
 from venue import Venue
 from event import Event
@@ -59,7 +58,7 @@ class Candidate(db.Model):
     candidate_educations = relationship('CandidateEducation', backref='candidate')
     candidate_skills = relationship('CandidateSkill', backref='candidate')
     candidate_unidentifieds = relationship('CandidateUnidentified', backref='candidate')
-    email_campaign_sends = relationship('EmailCampaignSend', backref='candidate')
+    # email_campaign_sends = relationship('EmailCampaignSend', backref='candidate')
     candidate_custom_fields = relationship('CandidateCustomField', backref='candidate')
     candidate_experiences = relationship('CandidateExperience', backref='candidate')
 

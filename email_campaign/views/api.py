@@ -15,7 +15,7 @@ mod = Blueprint('email_campaign', __name__)
 @mod.route('/', methods=['POST'])
 def email_campaigns():
     # TODO: Authentication
-    user_id = 1
+    user_id = 1553
     # Get post data
     campaign_name = request.form.get('email_campaign_name')
     email_subject = request.form.get('email_subject')
@@ -31,11 +31,13 @@ def email_campaigns():
         template_id = None
     else:
         template_id = request.form.get('selected_template_id')
-
+    # convert list_ids (unicode, separated by comma) to list
+    if isinstance(list_ids, basestring):
+        list_ids = [long(list_id) for list_id in list_ids.split(',')]
     # TODO: Add validations on missing inputs
     # Validation for list ids belonging to same domain
-    if validate_lists_belongs_to_domain(list_ids, user_id):
-        return ForbiddenError("Provided list does not belong to user's domain")
+    if not validate_lists_belongs_to_domain(list_ids, user_id):
+        raise ForbiddenError("Provided list does not belong to user's domain")
 
     resp_dict = create_email_campaign(user_id=user_id,
                                       email_campaign_name=campaign_name,

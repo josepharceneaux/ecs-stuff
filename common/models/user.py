@@ -5,11 +5,9 @@ from sqlalchemy.dialects.mysql import TINYINT
 from db import db
 from common.utils.validators import is_number
 from common.error_handling import *
-from candidate import CandidateSource
 from associations import CandidateAreaOfInterest
 from event_organizer import EventOrganizer
 from misc import AreaOfInterest
-from email_marketing import EmailCampaign
 
 
 class User(db.Model):
