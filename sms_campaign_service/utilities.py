@@ -11,6 +11,10 @@ import twilio.rest
 from twilio.rest import TwilioRestClient
 
 # Application Specific
+from config import TWILIO_ACCOUNT_SID
+from config import TWILIO_AUTH_TOKEN
+from config import GOOGLE_API_KEY, REDIRECT_URL
+from config import GOOGLE_URLSHORTENER_API_URL
 from sms_campaign_service import logger
 from social_network_service.utilities import http_request
 from sms_campaign_service.common.models.user import UserPhone
@@ -19,10 +23,6 @@ from sms_campaign_service.common.models.scheduler import SchedulerTask
 from sms_campaign_service.common.models.candidate import CandidatePhone
 from sms_campaign_service.app.app import celery
 from sms_campaign_service.app.app import sched
-from config import TWILIO_ACCOUNT_SID
-from config import TWILIO_AUTH_TOKEN
-from config import GOOGLE_API_KEY, REDIRECT_URL
-from config import GOOGLE_URLSHORTENER_API_URL
 
 
 class TwilioSMS(object):
@@ -42,18 +42,18 @@ class TwilioSMS(object):
         # -------------------------------------
         # sends sms to given number
         # -------------------------------------
-        # print 'sms_sent'
-        # return {'sent_time': datetime.now()}
-        try:
-            message = self.client.messages.create(
-                body=body_text,
-                to=receiver_phone,
-                from_=sender_phone
-            )
-            return message
-        except twilio.TwilioRestException as e:
-            return {'message': e.message,
-                    'status_code': 500}
+        print 'sms_sent'
+        return {'sent_time': datetime.now()}
+        # try:
+        #     message = self.client.messages.create(
+        #         body=body_text,
+        #         to=receiver_phone,
+        #         from_=sender_phone
+        #     )
+        #     return message
+        # except twilio.TwilioRestException as e:
+        #     return {'message': e.message,
+        #             'status_code': 500}
 
     def get_available_numbers(self):
         # -------------------------------------
@@ -124,8 +124,8 @@ def url_conversion(long_url):
         data = response.json()
         short_url = data['id']
         long_url = data['longUrl']
-        print "Long URL was: %s" % long_url
-        print "Shortened URL is: %s" % short_url
+        logger.info("url_conversion: Long URL was: %s" % long_url)
+        logger.info("url_conversion: Shortened URL is: %s" % short_url)
         return short_url, long_url
 
     except Exception as e:

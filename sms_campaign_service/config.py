@@ -44,10 +44,10 @@ GOOGLE_URLSHORTENER_API_URL = 'https://www.googleapis.com/urlshortener/v1/url'
 
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
-REDIRECT_URL = 'http://2ed87e65.ngrok.io/redirect'
+REDIRECT_URL = 'http://127.0.0.1:8007/redirect'
 CAMPAIGN_SEND = 6
 CAMPAIGN_SMS_SEND = 24
 PHONE_LABEL_ID = 1
-ACTIVITY_SERVICE_API_URL = 'http://127.0.0.1:8002/activities/'
+ACTIVITY_SERVICE_API_URL = 'http://127.0.0.1:8002'
 AUTH_HEADER = {'Authorization': 'Bearer gulqrgtuucodxdrijqwy'}
 

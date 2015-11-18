@@ -14,12 +14,13 @@ class CampaignBase(object):
     __metaclass__ = ABCMeta
 
     def __init__(self,  *args, **kwargs):
-        self.campaign_id = kwargs.get('campaign_id', None)
         self.user_id = kwargs.get('user_id', None)
-        self.body_text = None
+        self.campaign = None
+        self.body_text = None  # Child classes will get this from respective
+        # campaign table. e.g. in case of sms campaign, this is get from sms_campaign db table.
 
     @abstractmethod
-    def process_send(self):
+    def process_send(self, campaign_id=None):
         """
         This will be used to do the processing to send campaign to candidates
         according to specific campaign. Child class will implement this.
