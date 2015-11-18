@@ -6,7 +6,7 @@ import datetime
 from datetime import date
 
 # Database connection and logger
-from common.models.db import db
+from candidate_service.common.models.db import db
 from candidate_service.candidate_app import logger
 
 # Models
@@ -196,8 +196,7 @@ def candidate_experiences(candidate_id):
     :rtype                  list
     """
     # Candidate experiences queried from db and returned in descending order
-    experiences = db.session.query(CandidateExperience). \
-        filter_by(candidate_id=candidate_id). \
+    experiences = db.session.query(CandidateExperience).filter_by(candidate_id=candidate_id).\
         order_by(CandidateExperience.is_current.desc(),
                  CandidateExperience.start_year.desc(),
                  CandidateExperience.start_month.desc())
@@ -562,13 +561,11 @@ def create_or_update_candidate_from_params(
 
     # If candidate_id is not provided, Check if candidate exists
     if not candidate_id:
-        candidate_id = does_candidate_id_exist(dice_social_profile_id,
-                                               dice_profile_id, domain_id, emails)
+        candidate_id = does_candidate_id_exist(dice_social_profile_id, dice_profile_id, domain_id, emails)
 
     # Raise an error if creation is requested and candidate_id is provided/found
     if candidate_id and is_creating:
-        error_message = "Candidate already exists, creation failed."
-        raise InvalidUsage(error_message=error_message)
+        raise InvalidUsage(error_message="Candidate already exists, creation failed.")
 
     # Update if an update is requested and candidate_id is provided/found
     elif candidate_id and is_updating:
@@ -904,7 +901,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
     for education in educations:
         # CandidateEducation
         education_dict = dict(
-            candidate_id=candidate_id,
+            # candidate_id=candidate_id,
             list_order=education.get('list_order', 1),
             school_name=education.get('school_name'),
             school_type=education.get('school_type'),
@@ -983,7 +980,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
                     education_degree_bullets = education_degree.get('degree_bullets', [])
                     for education_degree_bullet in education_degree_bullets:
                         db.session.add(CandidateEducationDegreeBullet(
-                            candidate_education_degree_id= can_edu_degree_id,
+                            candidate_education_degree_id=can_edu_degree_id,
                             concentration_type=education_degree_bullet.get('major'),
                             comments=education_degree_bullet.get('comments'),
                             added_time=added_time
@@ -991,7 +988,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
 
         else:  # Add
             # CandidateEducation
-            education_dict.update(dict(resume_id=candidate_id))  # TODO: this is to be removed once all tables have been added & migrated
+            education_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id))  # TODO: this is to be removed once all tables have been added & migrated
             candidate_education = CandidateEducation(**education_dict)
             db.session.add(candidate_education)
             db.session.flush()
@@ -1045,7 +1042,6 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time):
     for work_experience in work_experiences:
         # CandidateExperience
         experience_dict = dict(
-            candidate_id=candidate_id,
             list_order=work_experience.get('list_order', 1),
             organization=work_experience.get('organization'),
             position=work_experience.get('position'),
@@ -1089,7 +1085,8 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time):
                     db.session.add(CandidateExperienceBullet(**experience_bullet_dict))
 
         else:  # Add
-            experience_dict.update(dict(added_time=added_time, resume_id=candidate_id))
+            experience_dict.update(dict(candidate_id=candidate_id, added_time=added_time,
+                                        resume_id=candidate_id))
             experience = CandidateExperience(**experience_dict)
             db.session.add(experience)
             db.session.flush()

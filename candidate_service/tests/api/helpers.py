@@ -6,7 +6,7 @@ import requests
 import json
 
 # Candidate's sample data
-from common.tests.sample_data import (
+from candidate_service.common.tests.sample_data import (
     generate_single_candidate_data, candidate_data_for_update
 )
 
@@ -77,10 +77,7 @@ def get_from_candidate_resource(access_token, candidate_id='',
     elif candidate_email:
         url = url + '/%s' % candidate_email
 
-    resp = requests.get(
-        url=url,
-        headers={'Authorization': 'Bearer %s' % access_token},
-    )
+    resp = requests.get(url=url, headers={'Authorization': 'Bearer %s' % access_token})
     return resp
 
 
@@ -110,8 +107,7 @@ def update_candidate(access_token):
 
     # Fetch Candidate
     candidate_id = create_candidate['candidates'][0]['id']
-    candidate_dict = get_from_candidate_resource(access_token,
-                                                 candidate_id).json()['candidate']
+    candidate_dict = get_from_candidate_resource(access_token, candidate_id).json()['candidate']
 
     data = candidate_data_for_update(
         candidate_id=candidate_id,
@@ -121,10 +117,10 @@ def update_candidate(access_token):
         phone_2_id=candidate_dict['phones'][1]['id'],
         address_1_id=candidate_dict['addresses'][0]['id'],
         address_2_id=candidate_dict['addresses'][1]['id'],
-        work_preference_id=candidate_dict['work_preference'][0]['id'],
+        work_preference_id=candidate_dict['work_preference']['id'],
         work_experience_1_id=candidate_dict['work_experiences'][0]['id'],
         education_1_id=candidate_dict['educations'][0]['id'],
-        degree_1_id=candidate_dict['educations'][0]['degree_details'][0]['id'],
+        degree_1_id=candidate_dict['educations'][0]['degrees'][0]['id'],
         military_1_id=candidate_dict['military_services'][0]['id'],
         preferred_location_1_id=candidate_dict['preferred_locations'][0]['id'],
         preferred_location_2_id=candidate_dict['preferred_locations'][1]['id'],

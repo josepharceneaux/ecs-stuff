@@ -9,30 +9,30 @@ from candidate_service.common.models.user import User
 from candidate_service.common.models.candidate import Candidate
 
 # Conftest
-from common.tests.conftest import UserAuthentication
-from common.tests.conftest import *
+from candidate_service.common.tests.conftest import UserAuthentication
+from candidate_service.common.tests.conftest import *
 
 # Helper functions
 from helpers import (
     response_info, post_to_candidate_resource, get_from_candidate_resource
 )
 
-########################################################################
+######################## Candidate ########################
 def test_get_candidate_without_authed_user(sample_user, user_auth):
     """
-    Test:   attempt to retrieve candidate with bad access_token
+    Test:   Attempt to retrieve candidate with bad access_token
     Expect: 401
     :type sample_user:  User
     :type user_auth:    UserAuthentication
     """
-    # Get auth token for sample_user
-    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create Candidate
-    resp = post_to_candidate_resource(access_token=auth_token_row['access_token'])
-    resp_dict = resp.json()
-    print response_info(resp.request, resp_dict, resp.status_code)
-    assert resp.status_code == 201
+    create_resp = post_to_candidate_resource(token)
+    resp_dict = create_resp.json()
+    print response_info(create_resp.request, resp_dict, create_resp.status_code)
+    assert create_resp.status_code == 201
 
     # Retrieve Candidate
     candidate_id = resp_dict['candidates'][0]['id']
@@ -46,22 +46,22 @@ def test_get_candidate_without_authed_user(sample_user, user_auth):
 
 def test_get_candidate_without_id_or_email(sample_user, user_auth):
     """
-    Test:   attempt to retrieve candidate without providing ID or Email
+    Test:   Attempt to retrieve candidate without providing ID or Email
     Expect: 400
     :type sample_user:  User
     :type user_auth:    UserAuthentication
     """
-    # Get auth token for sample_user
-    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create Candidate
-    resp = post_to_candidate_resource(access_token=auth_token_row['access_token'])
+    resp = post_to_candidate_resource(token)
     resp_dict = resp.json()
     print response_info(resp.request, resp_dict, resp.status_code)
     assert resp.status_code == 201
 
     # Retrieve Candidate without providing ID or Email
-    resp = get_from_candidate_resource(access_token=auth_token_row['access_token'])
+    resp = get_from_candidate_resource(token)
 
     resp_dict = resp.json()
     print response_info(resp.request, resp_dict, resp.status_code)
@@ -71,30 +71,29 @@ def test_get_candidate_without_id_or_email(sample_user, user_auth):
 
 def test_get_candidate_from_forbidden_domain(sample_user, user_auth, sample_user_2):
     """
-    Test:   attempt to retrieve a candidate outside of logged-in-user's domain
+    Test:   Attempt to retrieve a candidate outside of logged-in-user's domain
     Expect: 403 status_code
 
     :type sample_user:      User
     :type sample_user_2:    User
     :type user_auth:        UserAuthentication
     """
-    # Get auth token for sample_user
-    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create Candidate
-    resp = post_to_candidate_resource(access_token=auth_token_row['access_token'])
+    resp = post_to_candidate_resource(token)
     resp_dict = resp.json()
     print response_info(resp.request, resp_dict, resp.status_code)
     assert resp.status_code == 201
     assert 'candidates' in resp_dict and 'id' in resp_dict['candidates'][0]
 
-    # Get auth token for sample_user_2
-    auth_token_row = user_auth.get_auth_token(sample_user_2, get_bearer_token=True)
+    # Get access token for sample_user_2
+    token_2 = user_auth.get_auth_token(sample_user_2, get_bearer_token=True)['access_token']
 
     # Retrieve candidate from a different domain
     candidate_id = resp_dict['candidates'][0]['id']
-    resp = get_from_candidate_resource(access_token=auth_token_row['access_token'],
-                                       candidate_id=candidate_id)
+    resp = get_from_candidate_resource(access_token=token_2, candidate_id=candidate_id)
 
     resp_dict = resp.json()
     print response_info(resp.request, resp_dict, resp.status_code)
@@ -104,15 +103,14 @@ def test_get_candidate_from_forbidden_domain(sample_user, user_auth, sample_user
 
 def test_get_candidate_via_invalid_email(sample_user, user_auth):
     """
-    Test:   retrieve candidate via an invalid email address
+    Test:   Retrieve candidate via an invalid email address
     Expect: 400
     """
-    # Get auth token for sample_user
-    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
 
-    # Retrieve candidate via candidate's email
-    resp = get_from_candidate_resource(access_token=auth_token_row['access_token'],
-                                       candidate_email='bad_email.com')
+    # Retrieve Candidate via candidate's email
+    resp = get_from_candidate_resource(access_token=token, candidate_email='bad_email.com')
 
     print response_info(resp.request, resp.json(), resp.status_code)
     assert resp.status_code == 400
@@ -121,16 +119,16 @@ def test_get_candidate_via_invalid_email(sample_user, user_auth):
 
 def test_get_candidate_via_id_and_email(sample_user, user_auth):
     """
-    Test:   retrieve candidate via candidate's ID and candidate's Email address
+    Test:   Retrieve candidate via candidate's ID and candidate's Email address
     Expect: 200 in both cases
     :type sample_user:    User
     :type user_auth:      UserAuthentication
     """
-    # Get auth token
-    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create candidate
-    resp = post_to_candidate_resource(access_token=auth_token_row['access_token'])
+    resp = post_to_candidate_resource(token)
     resp_dict = resp.json()
     print response_info(resp.request, resp_dict, resp.status_code)
 
@@ -141,8 +139,7 @@ def test_get_candidate_via_id_and_email(sample_user, user_auth):
     candidate_email = db.session.query(Candidate).get(candidate_id).candidate_emails[0].address
 
     # Get candidate via Candidate ID
-    resp = get_from_candidate_resource(access_token=auth_token_row['access_token'],
-                                       candidate_id=candidate_id)
+    resp = get_from_candidate_resource(access_token=token, candidate_id=candidate_id)
 
     resp_dict = resp.json()
     print response_info(resp.request, resp_dict, resp.status_code)
@@ -150,8 +147,7 @@ def test_get_candidate_via_id_and_email(sample_user, user_auth):
     assert 'candidate' in resp_dict and 'id' in resp_dict['candidate']
 
     # Get candidate via Candidate Email
-    resp = get_from_candidate_resource(access_token=auth_token_row['access_token'],
-                                       candidate_email=candidate_email)
+    resp = get_from_candidate_resource(access_token=token, candidate_email=candidate_email)
 
     resp_dict = resp.json()
     print response_info(resp.request, resp_dict, resp.status_code)

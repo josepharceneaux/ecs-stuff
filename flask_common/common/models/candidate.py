@@ -817,6 +817,18 @@ class ClassificationType(db.Model):
     def __repr__(self):
         return "<ClassificationType (code = %r)>" % self.code
 
+    @classmethod
+    def classification_type_id_from_degree_type(cls, degree_type):
+        """
+        Function will return classification_type ID of the ClassificationType that
+        matches degree_type. E.g. degree_type = 'Masters' => ClassificationType.id: 5
+        """
+        classification_type = None
+        if degree_type:
+            classification_type = cls.query.filter(ClassificationType.code == degree_type).first()
+
+        return classification_type.id if classification_type else None
+
 
 
 

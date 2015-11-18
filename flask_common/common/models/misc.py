@@ -140,8 +140,18 @@ class Country(db.Model):
                                                   Country.code == name_or_code)).first()
             if country_row:
                 return country_row.id
-
         return 1
+
+    @classmethod
+    def country_name_from_country_id(cls, country_id):
+        if not country_id:
+            return 'United States'
+
+        country = cls.query.filter(Country.id == country_id).first()
+        if country:
+            return country.name
+        else:
+            return 'United States'
 
 
 # Even though the table name is major I'm keeping the model class singular.
