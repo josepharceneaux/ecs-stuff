@@ -233,13 +233,13 @@ def candidate_work_preference(candidate):
     return {'id': work_preference[0].id,
             'authorization': work_preference[0].authorization,
             'employment_type': work_preference[0].tax_terms,
-            'security_clearance': work_preference[0].security_clearance,
-            'willing_to_relocate': work_preference[0].relocate,
-            'telecommute': work_preference[0].telecommute,
+            'security_clearance': work_preference[0].bool_security_clearance,
+            'relocate': work_preference[0].bool_relocate,
+            'telecommute': bool(work_preference[0].telecommute),
             'hourly_rate': work_preference[0].hourly_rate,
             'salary': work_preference[0].salary,
             'travel_percentage': work_preference[0].travel_percentage,
-            'third_party': work_preference[0].third_party
+            'third_party': work_preference[0].bool_third_party
             } if work_preference else dict()
 
 
@@ -480,7 +480,7 @@ def create_or_update_candidate_from_params(
         educations=None,
         military_services=None,
         areas_of_interest=None,
-        custom_field_ids=None,
+        custom_fields=None,
         social_networks=None,
         work_experiences=None,
         work_preference=None,
@@ -525,7 +525,7 @@ def create_or_update_candidate_from_params(
     :type educations:               list
     :type military_services:        list
     :type areas_of_interest:        list
-    :type custom_field_ids:         list
+    :type custom_fields:            list
     :type social_networks:          list
     :type work_experiences:         list
     :type work_preference:          dict
@@ -595,8 +595,8 @@ def create_or_update_candidate_from_params(
         _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest, domain_id)
 
     # Add or update Candidate's custom_field(s)
-    if custom_field_ids:
-        _add_or_update_candidate_custom_field_ids(candidate_id, custom_field_ids, added_time)
+    if custom_fields:
+        _add_or_update_candidate_custom_field_ids(candidate_id, custom_fields, added_time)
 
     # Add or update Candidate's education(s)
     if educations:
@@ -876,21 +876,29 @@ def _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest, 
             ))
 
 
-def _add_or_update_candidate_custom_field_ids(candidate_id, custom_field_ids, added_time):
+def _add_or_update_candidate_custom_field_ids(candidate_id, custom_fields, added_time):
     """
     Function will update CandidateCustomField or create a new one.
     """
-    # TODO: add values
-    for custom_field_id in custom_field_ids:
-        if custom_field_id:
-            db.session.query(CandidateCustomField).filter_by(candidate_id=candidate_id). \
-                update({'custom_field_id': custom_field_id})
+    for custom_field in custom_fields:
+        custom_field_dict = dict(
+            value=custom_field.get('value'),
+            custom_field_id=custom_field.get('custom_field_id')
+        )
 
-        else:  # Create if not an update
-            db.session.add(CandidateCustomField(
-                candidate_id=candidate_id, custom_field_id=custom_field_id,
-                added_time=added_time
-            ))
+        candidate_custom_field_id = custom_field.get('id')
+        if candidate_custom_field_id:   # Update
+
+            # Remove keys with None values
+            custom_field_dict = dict((k, v) for k, v in custom_field_dict.iteritems() if v)
+
+            # Update CandidateCustomField
+            db.session.query(CandidateCustomField).filter_by(candidate_id=candidate_id).\
+                update(custom_field_dict)
+
+        else:  # Add
+            custom_field_dict.update(dict(added_time=added_time, candidate_id=candidate_id))
+            db.session.add(CandidateCustomField(**custom_field_dict))
 
 
 def _add_or_update_educations(candidate_id, educations, added_time):

@@ -135,7 +135,7 @@ class CandidateResource(Resource):
 
             # Prevent user from adding custom field(s) to other domains
             custom_fields = candidate_dict.get('custom_fields', [])
-            custom_field_ids = [custom_field['id'] for custom_field in custom_fields]
+            custom_field_ids = [custom_field.get('id') for custom_field in custom_fields]
             is_authorized = is_custom_field_authorized(custom_field_ids=custom_field_ids,
                                                        user_domain_id=authed_user.domain_id)
             if not is_authorized:
@@ -180,7 +180,7 @@ class CandidateResource(Resource):
                 educations=educations,
                 military_services=military_services,
                 areas_of_interest=areas_of_interest,
-                custom_field_ids=custom_field_ids,
+                custom_fields=custom_fields,
                 social_networks=social_networks,
                 work_experiences=work_experiences,
                 work_preference=work_preference,
@@ -238,7 +238,7 @@ class CandidateResource(Resource):
 
             # Prevent user from updating custom field(s) from other domains
             custom_fields = candidate_dict.get('custom_fields', [])
-            custom_field_ids = [custom_field['id'] for custom_field in custom_fields]
+            custom_field_ids = [custom_field.get('id') for custom_field in custom_fields]
             is_authorized = is_custom_field_authorized(custom_field_ids=custom_field_ids,
                                                        user_domain_id=authed_user.domain_id)
             if not is_authorized:
@@ -290,7 +290,7 @@ class CandidateResource(Resource):
                 educations=educations,
                 military_services=military_services,
                 areas_of_interest=areas_of_interest,
-                custom_field_ids=custom_field_ids,
+                custom_fields=custom_fields,
                 social_networks=social_networks,
                 work_experiences=work_experiences,
                 work_preference=work_preference,
