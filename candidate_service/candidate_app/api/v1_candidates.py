@@ -6,10 +6,10 @@ from flask import request
 from flask_restful import Resource
 
 # Database connection
-from common.models.db import db
+from candidate_service.common.models.db import db
 
 # Validators
-from common.utils.validators import (is_number, is_valid_email)
+from candidate_service.common.utils.validators import (is_number, is_valid_email)
 from candidate_service.modules.validators import (
     does_candidate_belong_to_user, is_custom_field_authorized,
     is_area_of_interest_authorized, does_email_campaign_belong_to_domain,
@@ -17,10 +17,10 @@ from candidate_service.modules.validators import (
 )
 
 # Decorators
-from common.utils.auth_utils import require_oauth
+from candidate_service.common.utils.auth_utils import require_oauth
 
 # Error handling
-from common.error_handling import ForbiddenError, InvalidUsage
+from candidate_service.common.error_handling import ForbiddenError, InvalidUsage
 
 # Models
 from candidate_service.modules.talent_candidates import (
@@ -113,8 +113,7 @@ class CandidateResource(Resource):
 
         # List of Candidate dicts must not be empty
         if not any(list_of_candidate_dicts):
-            error_message = "Missing input: At least one Candidate-object is" \
-                            " required for candidate creation"
+            error_message = "Missing input: At least one Candidate-object is required for candidate creation"
             raise InvalidUsage(error_message=error_message)
 
         created_candidate_ids = []
@@ -192,8 +191,7 @@ class CandidateResource(Resource):
             )
             created_candidate_ids.append(resp_dict['candidate_id'])
 
-        return {'candidates': [{'id': candidate_id} for
-                               candidate_id in created_candidate_ids]}, 201
+        return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, 201
 
     def patch(self, **kwargs):
         """
@@ -303,8 +301,7 @@ class CandidateResource(Resource):
             )
             updated_candidate_ids.append(resp_dict['candidate_id'])
 
-        return {'candidates': [{'id': updated_candidate_id} for
-                               updated_candidate_id in updated_candidate_ids]}
+        return {'candidates': [{'id': updated_candidate_id} for updated_candidate_id in updated_candidate_ids]}
 
     def delete(self, **kwargs):
         """

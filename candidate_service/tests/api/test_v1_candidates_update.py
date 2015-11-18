@@ -8,13 +8,13 @@ from candidate_service.candidate_app import app
 from candidate_service.common.models.user import User
 
 # Conftest
-from common.tests.conftest import UserAuthentication
-from common.tests.conftest import *
+from candidate_service.common.tests.conftest import UserAuthentication
+from candidate_service.common.tests.conftest import *
 
 # Helper functions
 from helpers import (
     response_info, post_to_candidate_resource, get_from_candidate_resource,
-    update_candidate, patch_to_candidate_resource
+    update_candidate, patch_to_candidate_resource, candidate_data_for_update
 )
 
 ######################## Candidate ########################
@@ -25,16 +25,41 @@ def test_update_candidate(sample_user, user_auth):
     :type   sample_user:  User
     :type   user_auth:    UserAuthentication
     """
-    # Get auth token
+    # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
 
-    # Update Candidate
-    resp = update_candidate(access_token=token)
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+    candidate_id = create_resp.json()['candidates'][0]['id']
 
-    resp_dict = resp.json()
-    print response_info(resp.request, resp_dict, resp.status_code)
-    assert resp.status_code == 200
-    assert 'candidates' in resp_dict and 'id' in resp_dict['candidates'][0]
+    # Retrieve Candidate
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    data = candidate_data_for_update(
+        candidate_id=candidate_id,
+        email_1_id=candidate_dict['emails'][0]['id'],
+        email_2_id=candidate_dict['emails'][1]['id'],
+        phone_1_id=candidate_dict['phones'][0]['id'],
+        phone_2_id=candidate_dict['phones'][1]['id'],
+        address_1_id=candidate_dict['addresses'][0]['id'],
+        address_2_id=candidate_dict['addresses'][1]['id'],
+        work_preference_id=candidate_dict['work_preference']['id'],
+        work_experience_1_id=candidate_dict['work_experiences'][0]['id'],
+        education_1_id=candidate_dict['educations'][0]['id'],
+        degree_1_id=candidate_dict['educations'][0]['degrees'][0]['id'],
+        military_1_id=candidate_dict['military_services'][0]['id'],
+        preferred_location_1_id=candidate_dict['preferred_locations'][0]['id'],
+        preferred_location_2_id=candidate_dict['preferred_locations'][1]['id'],
+        skill_1_id=candidate_dict['skills'][0]['id'],
+        skill_2_id=candidate_dict['skills'][1]['id'],
+        skill_3_id=candidate_dict['skills'][2]['id'],
+        social_1_id=candidate_dict['social_networks'][0]['id'],
+        social_2_id=candidate_dict['social_networks'][1]['id']
+    )
+    update_resp = patch_to_candidate_resource(token, data)
+
+    print response_info(update_resp.request, update_resp.json(), update_resp.status_code)
+    assert update_resp.status_code == 200
 
 
 def test_update_candidate_without_id(sample_user, user_auth):
@@ -44,7 +69,7 @@ def test_update_candidate_without_id(sample_user, user_auth):
     :type   sample_user:  User
     :type   user_auth:    UserAuthentication
     """
-    # Get auth token
+    # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Update Candidate's first_name
@@ -63,7 +88,7 @@ def test_update_candidate_names(sample_user, user_auth):
     :type   sample_user:  User
     :type   user_auth:    UserAuthentication
     """
-    # Get auth token
+    # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create Candidate
@@ -95,7 +120,7 @@ def test_add_new_candidate_address(sample_user, user_auth):
     :type   sample_user:  User
     :type   user_auth:    UserAuthentication
     """
-    # Get auth token
+    # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create Candidate
@@ -131,7 +156,7 @@ def test_update_an_existing_address(sample_user, user_auth):
     :type   sample_user:  User
     :type   user_auth:    UserAuthentication
     """
-    # Get auth token
+    # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create Candidate
@@ -171,7 +196,7 @@ def test_add_address_to_existing_candidate(sample_user, user_auth):
     :type   sample_user:  User
     :type   user_auth:    UserAuthentication
     """
-    # Get auth token
+    # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create Candidate

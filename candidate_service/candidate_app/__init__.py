@@ -1,5 +1,5 @@
 from flask import Flask
-from common.models.db import db
+from candidate_service.common.models.db import db
 from gt_custom_restful import *
 from healthcheck import HealthCheck
 
@@ -29,7 +29,8 @@ api.add_resource(CandidateResource,
                  '/v1/candidates/<email>',
                  '/v1/candidates')
 api.add_resource(CandidateEmailCampaignResource,
-                 '/v1/candidates/<int:id>/email_campaigns/<int:email_campaign_id>/email_campaign_sends', endpoint='candidates')
+                 '/v1/candidates/<int:id>/email_campaigns/<int:email_campaign_id>/email_campaign_sends',
+                 endpoint='candidates')
 
 db.create_all()
 db.session.commit()

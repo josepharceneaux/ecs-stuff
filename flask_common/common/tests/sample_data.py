@@ -117,9 +117,7 @@ def candidate_data_for_update(candidate_id, email_1_id, email_2_id, phone_1_id,
             'educations': [
                 {'id': education_1_id, 'school_name': 'SJSU', 'city': 'San Jose',
                  'country': 'USA', 'degrees': [
-                    {'id': degree_1_id,'type': 'BS', 'title': 'dancing',
-                     'degree_bullets': [{'major': None}]
-                     }
+                    {'id': degree_1_id,'type': 'BS', 'title': 'dancing'}
                 ]}
             ],
             'military_services': [
