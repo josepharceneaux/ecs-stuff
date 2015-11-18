@@ -15,10 +15,10 @@ from flask import request
 from flask.ext.cors import CORS
 
 # application specific
-from common.models.db import db
-from common.models.user import User
-from common.models.misc import Activity
-from common.utils.auth_utils import require_oauth
+from activity_service.common.models.db import db
+from activity_service.common.models.user import User
+from activity_service.common.models.misc import Activity
+from activity_service.common.utils.auth_utils import require_oauth
 
 ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
 POSTS_PER_PAGE = 20

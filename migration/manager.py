@@ -1,7 +1,7 @@
 from flask import Flask
 from flask.ext.script import Manager
 from flask.ext.migrate import Migrate, MigrateCommand
-from common.models.user import *
+from candidate_service.common.models.user import *
 
 app = Flask(__name__)
 app.config.from_object('config')

@@ -23,13 +23,13 @@ from candidate_service.common.models.misc import (Country, AreaOfInterest, Custo
 from candidate_service.common.models.user import User
 
 # Error handling
-from common.error_handling import InvalidUsage
+from candidate_service.common.error_handling import InvalidUsage
 
 # Validations
-from common.utils.validators import (sanitize_zip_code, is_number)
+from candidate_service.common.utils.validators import (sanitize_zip_code, is_number)
 
 # Common utilities
-from common.utils.common_functions import get_coordinates
+from candidate_service.common.utils.common_functions import get_coordinates
 
 
 ##################################################

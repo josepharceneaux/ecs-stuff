@@ -1,10 +1,10 @@
 __author__ = 'ufarooqi'
 
 from . import app
-from common.models.user import *
+from user_service.common.models.user import *
 from flask import request
-from common.error_handling import *
-from common.utils.auth_utils import require_oauth, require_any_role
+from user_service.common.error_handling import *
+from user_service.common.utils.auth_utils import require_oauth, require_any_role
 from werkzeug.security import generate_password_hash, check_password_hash
 from . import limiter
 
