@@ -58,7 +58,7 @@ class SmsCampaignBlast(db.Model):
             db.and_(
                 cls.sms_campaign_id == campaign_id,
             )
-        ).first()
+        ).one()
 
 
 class SmsCampaignSend(db.Model):

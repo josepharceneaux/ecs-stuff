@@ -11,6 +11,7 @@ methods like
 
 # Standard Library
 import json
+from datetime import datetime
 
 # Application Specific
 from sms_campaign_service import logger
@@ -70,7 +71,8 @@ class SmsCampaignBase(CampaignBase):
     * transform_body_text(self, link_in_body_text, short_url):
         This replaces the original URL present in "body_text" with the shorted URL.
 
-    * save_or_update_url_conversion(link_in_body_text, source_url=None, hit_count=0): [static]
+    * create_or_update_url_conversion(url_conversion_id=None, destination_url=None,
+                                        source_url=None, hit_count=0): [static]
         Here we save/update record of url_conversion in db table "url_conversion".
 
     * send_sms_campaign_to_candidates(self, candidates, sends=0):
@@ -143,6 +145,10 @@ class SmsCampaignBase(CampaignBase):
 
     def process_send(self, campaign_id=None):
         """
+        :param campaign_id: id of sms_campaign
+        :type campaign_id: int
+        :return: number of sends
+        :rtype: int
         This does the following steps to send campaign to candidates.
 
         1- Transform the body text to be sent in sms, add entry in
@@ -192,17 +198,17 @@ class SmsCampaignBase(CampaignBase):
             if all_candidates:
                 logger.debug('process_send: Campaign(id:%s) will be sent to %s candidate(s)'
                              % (campaign_id, len(all_candidates)))
-                sends_total = 0
                 # create sms campaign blast
                 self.sms_campaign_blast_id = self.create_or_update_sms_campaign_blast(
-                    campaign_id=self.campaign.id,
-                    sends=sends_total)
+                    campaign_id=self.campaign.id)
                 if all_candidates:
-                    sends_total += self.send_sms_campaign_to_candidates(all_candidates,
-                                                                        sends=0)
-                self.create_campaign_send_activity(sends_total) if sends_total else ''
+                    self.send_sms_campaign_to_candidates(all_candidates)
+                sms_campaign_blast_row = SmsCampaignBlast.get_by_campaign_id(self.campaign.id)
+                total_sends = sms_campaign_blast_row.sends
+                self.create_campaign_send_activity(total_sends) if total_sends else ''
                 logger.debug('process_send: Campaign(id:%s) has been sent to %s candidate(s).'
-                             % (campaign_id, sends_total))
+                             % (campaign_id, total_sends))
+                return total_sends
             else:
                 logger.error('process_send: No Candidate associated to campaign(id:%s)'
                              % self.campaign.id)
@@ -254,13 +260,15 @@ class SmsCampaignBase(CampaignBase):
         link_in_body_text = search_link_in_text(self.body_text)
         if len(link_in_body_text) == 1:
             # We have only one link in body text which needs to shortened.
-            self.url_conversion_id = self.save_or_update_url_conversion(link_in_body_text[0])
+            self.url_conversion_id = \
+                self.create_or_update_url_conversion(destination_url=link_in_body_text[0])
             url_conversion_record = UrlConversion.get_by_id(self.url_conversion_id)
             if not url_conversion_record.source_url:
                 short_url, long_url = url_conversion(REDIRECT_URL +
                                                      '?campaign_id=%s&url_conversion_id=%s'
                                                      % (self.campaign.id, self.url_conversion_id))
-                self.save_or_update_url_conversion(link_in_body_text[0], source_url=long_url)
+                self.create_or_update_url_conversion(destination_url=link_in_body_text[0],
+                                                     source_url=long_url)
             else:
                 short_url = url_conversion_record.source_url
             self.modified_body_text = self.transform_body_text(link_in_body_text[0], short_url)
@@ -296,28 +304,40 @@ class SmsCampaignBase(CampaignBase):
         return ' '.join(text_split)
 
     @staticmethod
-    def save_or_update_url_conversion(link_in_body_text, source_url=None, hit_count=0):
+    def create_or_update_url_conversion(destination_url=None, source_url='', hit_count=0,
+                                        url_conversion_id=None, hit_count_update=None):
         """
         - Here we save the source_url(provided in body text) and the shortened_url
             to redirect to our endpoint in db table "url_conversion".
 
-        :param link_in_body_text: link present in body text
+        :param destination_url: link present in body text
         :param source_url: shortened url of the link present in body text
         :param hit_count: Count of hits
-        :type link_in_body_text: str
+        :param url_conversion_id: id of url conversion record if needs to update
+        :param hit_count_update: True if needs to increase "hit_count" by 1, False otherwise
+        :type destination_url: str
         :type source_url: str
         :type hit_count: int
+        :type url_conversion_id: int
+        :type hit_count_update: bool
         :return: id of the url_conversion record in database
         :rtype: int
 
         **See Also**
         .. see also:: process_link_in_body_text() method in SmsCampaignBase class.
         """
-        data = {'destination_url': link_in_body_text,
-                'source_url': source_url if source_url else '',
+        if url_conversion_id:  # record is already present in database
+            record_in_db = UrlConversion.get_by_id(url_conversion_id)
+        else:
+            record_in_db = UrlConversion.get_by_destination_url(destination_url)
+        data = {'destination_url': destination_url,
+                'source_url': source_url,
                 'hit_count': hit_count}
-        record_in_db = UrlConversion.get_by_destination_url(link_in_body_text)
-        if record_in_db:
+        if record_in_db or url_conversion_id:
+            data['destination_url'] = record_in_db.destination_url
+            data['source_url'] = source_url if source_url else record_in_db.source_url
+            data['hit_count'] = record_in_db.hit_count + 1 if hit_count_update else record_in_db.hit_count
+            data.update({'last_hit_time': datetime.now()}) if hit_count_update else ''
             record_in_db.update(**data)
             url_conversion_id = record_in_db.id
         else:
@@ -326,7 +346,7 @@ class SmsCampaignBase(CampaignBase):
             url_conversion_id = new_record.id
         return url_conversion_id
 
-    def send_sms_campaign_to_candidates(self, candidates, sends=0):
+    def send_sms_campaign_to_candidates(self, candidates):
         """
         Once we have the candidates, we iterate them and do the followings:
 
@@ -339,9 +359,7 @@ class SmsCampaignBase(CampaignBase):
                 3-3- Update sms campaign blast
                 3-4- Add activity (%(candidate_name)s received sms of campaign %(campaign_name)s")
         :param candidates: Candidates associated to a smart list
-        :param sends: count of sent sms
         :type candidates: list
-        :type sends: int
         :return: number of sms sends
         :rtype: int
 
@@ -366,10 +384,9 @@ class SmsCampaignBase(CampaignBase):
                 # create sms_send_url_conversion entry
                 self.create_or_update_sms_send_url_conversion(sms_campaign_send_id,
                                                               self.url_conversion_id)
-                sends += 1
                 # update sms campaign blast
                 self.create_or_update_sms_campaign_blast(campaign_id=self.campaign.id,
-                                                         sends=sends)
+                                                         sends_update=True)
                 self.create_sms_send_activity(candidate, source_id=sms_campaign_send_id)
             elif len(candidate_mobile_phone) > 1:
                 logger.error('process_send: SMS cannot be sent as candidate(id:%s) '
@@ -377,19 +394,23 @@ class SmsCampaignBase(CampaignBase):
             else:
                 logger.error('process_send: SMS cannot be sent as candidate(id:%s) '
                              'has no phone number associated.' % candidate.id)
-        return sends
 
     @staticmethod
     def create_or_update_sms_campaign_blast(campaign_id=None,
-                                            sends=0, clicks=0, replies=0):
+                                            sends=0, clicks=0, replies=0,
+                                            clicks_update=False, sends_update=False,
+                                            replies_update=False):
         """
         - Here we create sms blast for a campaign. We also use this to update
             record with every new send. This gives the statistics about a campaign.
 
         :param campaign_id: id of "sms_campaign"
-        :param sends: numbers of sends
-        :param clicks: number of clicks on a sent sms
-        :param replies: number of replies on a sent sms
+        :param sends: numbers of sends, default 0
+        :param clicks: number of clicks on a sent sms, default 0
+        :param replies: number of replies on a sent sms, default 0
+        :param sends_update: True if sends to be updated ,False otherwise
+        :param clicks_update: True if clicks to be updated ,False otherwise
+        :param replies_update: True if replies to be updated ,False otherwise
         :type campaign_id: int
         :type sends: int
         :type clicks: int
@@ -402,12 +423,16 @@ class SmsCampaignBase(CampaignBase):
 
         .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
         """
+        record_in_db = SmsCampaignBlast.get_by_campaign_id(campaign_id)
         data = {'sms_campaign_id': campaign_id,
                 'sends': sends,
                 'clicks': clicks,
-                'replies': replies}
-        record_in_db = SmsCampaignBlast.get_by_campaign_id(campaign_id)
+                'replies': replies,
+                'sent_time': datetime.now()}
         if record_in_db:
+            data['sends'] = record_in_db.sends + 1 if sends_update else record_in_db.sends
+            data['clicks'] = record_in_db.clicks + 1 if clicks_update else record_in_db.clicks
+            data['replies'] = record_in_db.replies + 1 if replies_update else record_in_db.replies
             record_in_db.update(**data)
             sms_campaign_blast_id = record_in_db.id
         else:
@@ -555,6 +580,42 @@ class SmsCampaignBase(CampaignBase):
                      data=data,
                      user_id=self.user_id)
 
-if __name__ == '__main__':
-    camp_obj = SmsCampaignBase(user_id=1)
-    camp_obj.process_send(campaign_id=1)
+    def process_url_redirect(self, campaign_id=None, url_conversion_id=None):
+        """
+        :param campaign_id: id of sms_campaign
+        :param url_conversion_id: id of url_conversion record
+        :type campaign_id: int
+        :type url_conversion_id: int
+        :return: URL where to redirect the candidate
+        :rtype: str
+
+        This does the following steps to send campaign to candidates.
+
+        1- Get the "url_conversion" row from db.
+        2- Get the "sms_campaign_blast" row from db.
+        3- Increase "hit_count" by 1 for "url_conversion" record.
+        4- increase "clicks" by 1 for "sms_campaign_blast" record.
+        5- return the destination url where we want our candidate to be redirected.
+
+        :Example:
+
+            1- Create class object
+                from sms_campaign_service.sms_campaign_base import SmsCampaignBase
+                camp_obj = SmsCampaignBase(user_id=1)
+
+            2- Call method process_send with campaign_id
+                redirection_url = camp_obj.process_url_redirect(campaign_id=1, url_conversion_id=1)
+        :return:
+        """
+        if campaign_id and url_conversion_id:
+            logger.debug('process_url_redirect: Processing for URL redirection.')
+            self.create_or_update_sms_campaign_blast(campaign_id=campaign_id,
+                                                     clicks_update=True)
+            self.create_or_update_url_conversion(url_conversion_id=url_conversion_id,
+                                                 hit_count_update=True)
+            url_conversion_row = UrlConversion.get_by_id(url_conversion_id)
+            return url_conversion_row.destination_url
+        else:
+            logger.error('process_url_redirect: campaign_id or url_conversion_id is not provided.')
+            return None
+

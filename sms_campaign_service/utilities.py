@@ -120,27 +120,16 @@ def url_conversion(long_url):
     headers = {'Content-Type': 'application/json'}
     payload = json.dumps({'longUrl': long_url})
     response = http_request('POST', url, headers=headers, data=payload)
-    try:
-        data = response.json()
+    data = response.json()
+    if not data.has_key('error'):
         short_url = data['id']
         long_url = data['longUrl']
         logger.info("url_conversion: Long URL was: %s" % long_url)
         logger.info("url_conversion: Shortened URL is: %s" % short_url)
         return short_url, long_url
-
-    except Exception as e:
-        print e.message
-
-
-def process_redirection(url_conversion_id):
-    """
-    Gets the record from url_conversion db table using provided id.
-    :param url_conversion_id: id of the record
-    :type url_conversion_id: int
-    :return: record from url_conversion
-    :rtype: common.misc.UrlConversion
-    """
-    return UrlConversion.get_by_id(url_conversion_id)
+    else:
+        logger.error("url_conversion: Error while shortening URL. Error dict is %s "
+                     % data['error']['errors'][0])
 
 # from pyshorteners import Shortener
 # url = 'https://webdev.gettalent.com/web/user/login?_next=/web/default/angular#!/'
