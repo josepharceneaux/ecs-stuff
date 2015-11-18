@@ -83,10 +83,7 @@ def get_from_candidate_resource(access_token, candidate_id='',
 
 def patch_to_candidate_resource(access_token, data):
     """
-
-    :param access_token:
-    :param data:
-    :return:
+    Function sends a patch request to CandidateResource
     """
     resp = requests.patch(
         url=CandidateResourceUrl.BASE_URL,
@@ -94,7 +91,6 @@ def patch_to_candidate_resource(access_token, data):
         data=json.dumps(data)
     )
     return resp
-
 
 
 def update_candidate(access_token):

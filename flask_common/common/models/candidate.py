@@ -403,6 +403,18 @@ class CandidateWorkPreference(db.Model):
     def __repr__(self):
         return "<CandidateWorkPreference (authorization=' %r')>" % self.authorization
 
+    @property
+    def bool_third_party(self):
+        return False if self.third_party == 'F' else True
+
+    @property
+    def bool_security_clearance(self):
+        return False if self.security_clearance == 'F' else True
+
+    @property
+    def bool_relocate(self):
+        return False if self.relocate == 'F' else True
+
 
 class CandidatePreferredLocation(db.Model):
     __tablename__ = 'candidate_preferred_location'

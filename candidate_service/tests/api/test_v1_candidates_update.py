@@ -210,7 +210,6 @@ def test_add_address_to_existing_candidate(sample_user, user_auth):
     data = {'candidate': {'id': candidate_id, 'addresses': [
         {'address_line_1': '675 Saratoga Ave', 'city': 'san jose', 'state': 'ca', 'zip_code': '95129'}
     ]}}
-    print "\ndata = %s" % data
     add_resp = patch_to_candidate_resource(token, data)
     print response_info(add_resp.request, add_resp.json(), add_resp.status_code)
 
@@ -260,9 +259,11 @@ def test_add_new_area_of_interest(sample_user, user_auth):
     assert 'teaching' or 'programming' in updated_aoi_list[1].values()
 
 ######################## CandidateCustomField ########################
+# TODO: complete test after user-api is available
 # def test_add_new_custom_field(sample_user, user_auth):
 #     """
-#     Test:   Add a new CandidateAreaOfInterest
+#     Test:   Add a new CandidateCustomField to an existing Candidate.
+#             Candidate's custom_field should increase by 1.
 #     Expect: 200
 #     :type sample_user:  User
 #     :type user_auth:    UserAuthentication
@@ -275,11 +276,22 @@ def test_add_new_area_of_interest(sample_user, user_auth):
 #
 #     # Retrieve Candidate
 #     candidate_id = create_resp.json()['candidates'][0]['id']
+#     candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+#     custom_fields_before_update = candidate_dict['custom_fields']
+#     custom_fields_count_before_update = len(custom_fields_before_update)
 #
 #     # Add new CandidateCustomField
 #     data = {'candidate': {'id': candidate_id, 'custom_fields': [
-#         {''}
+#         {'custom_field_id':'', 'value': 'entrepreneur'}
 #     ]}}
+#     updated_resp = patch_to_candidate_resource(token, data)
+#     print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+#
+#     # Retrieve updated Candidate
+#     candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+#     custom_fileds_after_update = candidate_dict['custom_fields']
+#     print "\nbefore = %s" % custom_fields_before_update
+#     print "\nafter = %s" % custom_fileds_after_update
 
 ######################## CandidateEducation ########################
 def test_add_new_education(sample_user, user_auth):
@@ -379,8 +391,6 @@ def test_add_education_degree(sample_user, user_auth):
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
     candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
-
-    print "\ncan_dict = %s" % candidate_dict
 
     candidate_education_count = len(candidate_dict['educations'][0]['degrees'])
 
@@ -538,6 +548,7 @@ def test_update_work_preference(sample_user, user_auth):
 
     # Retrieve Candidate after update
     candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+    print "\ncan_dict = %s" % candidate_dict
     work_preference_dict = candidate_dict['work_preference']
 
     assert candidate_id == candidate_dict['id']
