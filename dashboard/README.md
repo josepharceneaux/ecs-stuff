@@ -1,6 +1,6 @@
 # GetTalent Dashboard
 This app is the dashboard of GetTalent made using AngularJS.
-This app has been built from [Angular Template](https://github.com/archfirst/angular-template) 
+This app has been built from [Angular Template](https://github.com/archfirst/angular-template)
 This template provides a starter project that implements best practices in coding, building and testing AngularJS applications. Features include:
 - A well-organized component hierarchy starting from `approot`. Components are implemented using directives (no dangling controllers). This provides a good architectural direction until Angular 2.0 becomes available.
 - Follows AngularJS style guidelines (e.g. `controller as` syntax).
@@ -25,17 +25,17 @@ Visit our [wiki](https://github.com/archfirst/angular-template/wiki) for detaile
 
 ## Quick Start
 Go to this directory and run the content locally:
-```bash
-$ npm install
-$ gulp serve-dev
-```
+
+    $ npm install
+    $ bower install
+    $ gulp serve-dev
+
 - `npm install` will install the required node libraries under `node_modules` and then call `bower install` which will install the required client-side libraries under `bower_components`.
 - `gulp serve-dev` will serve up the Angular application in a browser window. It is designed for an efficient development process. As you make changes to the code, the browser will update to reflect the changes immediately.
 
 When you are ready to build the application for production, run the following command:
-```bash
-$ gulp serve-build
-```
+
+    $ gulp serve-build
 
 This will build a production-ready package in the `/build` folder.
 
@@ -99,19 +99,17 @@ Below this level you will find various folders that arrange the application's fu
 - `gulp help`
 
     Displays all of the available gulp tasks.
-    
+
 ### App Config
 - `gulp config`
 
-    Builds environment constants using GT_NODE_ENV env variable
+    Builds environment constants using GT\_NODE\_ENV env variable
     Default environment is `development`.
-    
-    ```bash
-    $ GT_NODE_ENV=development gulp config
-    $ GT_NODE_ENV=production gulp config
-    $ GT_NODE_ENV=local gulp config
-    ```
-    
+
+        $ GT_NODE_ENV=development gulp config
+        $ GT_NODE_ENV=production gulp config
+        $ GT_NODE_ENV=local gulp config
+
     Running `gulp serve-dev` simply will run the app with development environment variable.
     Running `GT_NODE_ENV=production gulp serve-dev` will run the app with production environment variable.
 
