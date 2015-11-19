@@ -8,13 +8,11 @@ import json
 # Third Party
 import requests
 # Application/Module Specific
-from flask import current_app as app
-from common.models.user import Token
-from common.utils.handy_functions import random_letter_digit_string
+from ..utils.handy_functions import random_letter_digit_string
 from flask import current_app as app
 from flask import request
-from common.models.user import *
-from common.error_handling import *
+from ..models.user import *
+from ..error_handling import *
 
 
 def require_oauth(func):

@@ -321,7 +321,6 @@ def get_email_campaign_candidate_ids_and_emails(campaign, user, list_ids=None,
         list_ids = db.session.query(EmailCampaignSmartList.smart_list_id).filter_by(email_campaign_id=campaign.id).all()
         list_ids = [list_id[0] for list_id in list_ids]
     # Get candidate ids
-    # TODO use collections.Counter class for this
     candidate_ids_dict = dict()  # Store in hash to avoid duplicate candidate ids
     for list_id in list_ids:
         # If the campaign is a subscription campaign,
@@ -485,10 +484,11 @@ def _mark_email_bounced(email_campaign_send, candidate, to_addresses, blast_para
     email_campaign_send.is_ses_bounce = 1
     email_campaign_send.ses_request_id = request_id
     db.session.commit()
-        # db.session.query(EmailCampaignSend).filter(email_campaign_send==email_campaign_send_id).update(isSesBounce=1, sesRequestId=request_id)
     # Update blast
     blast_params['bounces'] += 1
-    EmailCampaignBlast.query.get(email_campaign_blast_id).update(blast_params)
+    email_campaign_blast = EmailCampaignBlast.query.get(email_campaign_blast_id)
+    email_campaign_blast.bounces = blast_params['bounces']
+    db.session.commit()
     # Send failure message to email marketing admin, just to notify for verification
     current_app.logger.exception(
         "Failed to send marketing email to candidate_id=%s, to_addresses=%s" % (candidate.id, to_addresses))
@@ -536,7 +536,6 @@ def do_prefs_url_replacement(text, candidate_id):
     # The normal case
     text = text.replace(DEFAULT_PREFERENCES_URL_MERGETAG, unsubscribe_url)
     return text
-
 
 
 def set_query_parameters(url, param_dict):
@@ -588,14 +587,6 @@ def create_email_campaign_url_conversions(new_html, new_text, is_track_text_clic
                                           email_campaign_send_id):
     soup = None
 
-    # TODO Text tracking has been disabled for now because there is no option for it on the frontend, and parse_urls_from_text() does not work properly
-    # Text click tracking
-    # if new_text and is_track_text_clicks:
-    #     for destination_url in parse_urls_from_text(new_text):
-    #         source_url = create_email_campaign_url_conversion(destination_url, email_campaign_send_id,
-    #                                                           TEXT_CLICK_URL_TYPE)
-    #         new_text = new_text.replace(destination_url, source_url)
-
     # HTML open tracking
     if new_html and is_email_open_tracking:
         soup = BeautifulSoup(new_html)
@@ -627,7 +618,6 @@ def create_email_campaign_url_conversions(new_html, new_text, is_track_text_clic
             destination_url_custom_params = dict()
 
         # Convert all of soup's <a href=> attributes
-        TEMPLATE_EMAIL_MARKETING = 0
 
         convert_html_tag_attributes(
             soup,
@@ -651,8 +641,8 @@ def create_email_campaign_url_conversions(new_html, new_text, is_track_text_clic
             body_tag.insert(0, custom_html_soup)
         else:
             current_app.logger.error("Email campaign HTML did not have a body or html tag, "
-                                 "so couldn't insert custom_html! email_campaign_send_id=%s",
-                                 email_campaign_send_id)
+                                     "so couldn't insert custom_html! email_campaign_send_id=%s",
+                                     email_campaign_send_id)
 
     # Convert soup object into new HTML
     if new_html and soup:

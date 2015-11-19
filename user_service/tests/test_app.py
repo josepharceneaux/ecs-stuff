@@ -91,3 +91,8 @@ def test_update_password(access_token, domain_admin_access_token, sample_user, d
     # revoked. So 401 status code should be returned
     assert update_password(access_token, sample_user.id, CHANGED_PASSWORD, PASSWORD) == 401
 
+
+def test_health_check():
+    import requests
+    response = requests.get('http://127.0.0.1:8004/healthcheck')
+    assert response.status_code == 200

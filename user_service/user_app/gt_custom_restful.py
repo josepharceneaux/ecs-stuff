@@ -1,5 +1,5 @@
 __author__ = 'ufarooqi'
-from flask_restful import (Api, reqparse)
+from flask_restful import (Api)
 
 
 class GetTalentApi(Api):

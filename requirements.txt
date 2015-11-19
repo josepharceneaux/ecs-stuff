@@ -60,3 +60,5 @@ pytz==2015.4
 simple-crypt==4.1.7
 Flask-Limiter
 
+newrelic
+healthcheck

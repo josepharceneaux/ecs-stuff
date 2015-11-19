@@ -12,19 +12,19 @@ logging.config.fileConfig(LOGGING_CONF)
 GT_ENVIRONMENT = os.environ.get('GT_ENVIRONMENT')
 if GT_ENVIRONMENT == 'dev':
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@127.0.0.1/talent_local'
-    LOGGER = logging.getLogger("auth_service.dev")
+    LOGGER = logging.getLogger("flask_service.dev")
     DEBUG = True
 elif GT_ENVIRONMENT == 'circle':
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_ci'
-    LOGGER = logging.getLogger("auth_service.ci")
+    LOGGER = logging.getLogger("flask_service.ci")
     DEBUG = True
 elif GT_ENVIRONMENT == 'qa':
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!web976892@devdb.gettalent.com/talent_staging'
-    LOGGER = logging.getLogger("auth_service.qa")
+    LOGGER = logging.getLogger("flask_service.qa")
     DEBUG = False
 elif GT_ENVIRONMENT == 'prod':
     SQLALCHEMY_DATABASE_URI = os.environ.get('DB_STRING')
-    LOGGER = logging.getLogger("auth_service.prod")
+    LOGGER = logging.getLogger("flask_service.prod")
     DEBUG = False
 else:
     raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")
