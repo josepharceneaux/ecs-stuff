@@ -122,6 +122,15 @@ class PhoneLabel(db.Model):
     def __repr__(self):
         return "<PhoneLabel (description=' %r')>" % self.description
 
+    @classmethod
+    def get_by_label(cls, phone_label):
+        assert phone_label
+        return cls.query.filter(
+            and_(
+                cls.description == phone_label.strip()
+            )
+        ).one()
+
 
 class CandidateSource(db.Model):
     __tablename__ = 'candidate_source'

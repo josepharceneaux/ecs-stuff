@@ -28,6 +28,9 @@ from apscheduler.jobstores.redis_store import RedisJobStore
 sched = GTScheduler()
 sched.add_jobstore(RedisJobStore(), 'redisJobStore')
 
+from sms_campaign_service.utilities import working_environment
+IS_DEV = working_environment()
+
 # from apscheduler.jobstores.shelve_store import ShelveJobStore
 # from apscheduler.scheduler import Scheduler
 # from common.utils.apscheduler.jobstores.redis_store import RedisJobStore
@@ -40,15 +43,15 @@ sched.add_jobstore(RedisJobStore(), 'redisJobStore')
 # sched.add_jobstore(jobstore)
 
 
-def my_listener(event):
-    if event.exception:
-        print('The job crashed :(\n')
-        print str(event.exception.message) + '\n'
-    else:
-        print('The job worked :)')
-
-sched.add_listener(my_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
-sched.start()
+# def my_listener(event):
+#     if event.exception:
+#         print('The job crashed :(\n')
+#         print str(event.exception.message) + '\n'
+#     else:
+#         print('The job worked :)')
+#
+# sched.add_listener(my_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
+# sched.start()
 
 # Third party imports
 import flask
@@ -62,7 +65,7 @@ from werkzeug.utils import redirect
 # Application specific imports
 from restful.sms_campaign import sms_campaign_blueprint
 from sms_campaign_service import logger
-from sms_campaign_service.utilities import run_func, run_func_1, get_all_tasks
+from sms_campaign_service.utilities import run_func, run_func_1, get_all_tasks, working_environment
 from social_network_service.utilities import http_request
 from sms_campaign_service.utilities import url_conversion
 from sms_campaign_service.utilities import send_sms_campaign
@@ -90,6 +93,15 @@ CORS(app, resources={
 @app.route('/')
 def hello_world():
     return 'Welcome to SMS Campaign Service'
+
+
+@app.route('/sms_campaign/', methods=['POST'])
+def sms_campaign_create():
+    try:
+        user_id = request.args.get('user_id')
+    except:
+        logger.exception("Error occurred while sending SMS campaign.")
+    return ''
 
 
 @app.route('/sms_campaign/<int:campaign_id>/send/', methods=['POST'])

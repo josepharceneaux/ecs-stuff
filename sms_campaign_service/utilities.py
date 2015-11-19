@@ -11,7 +11,7 @@ import twilio.rest
 from twilio.rest import TwilioRestClient
 
 # Application Specific
-from config import TWILIO_ACCOUNT_SID
+from config import TWILIO_ACCOUNT_SID, GT_ENVIRONMENT
 from config import TWILIO_AUTH_TOKEN
 from config import GOOGLE_API_KEY, REDIRECT_URL
 from config import GOOGLE_URLSHORTENER_API_URL
@@ -42,18 +42,16 @@ class TwilioSMS(object):
         # -------------------------------------
         # sends sms to given number
         # -------------------------------------
-        print 'sms_sent'
-        return {'sent_time': datetime.now()}
-        # try:
-        #     message = self.client.messages.create(
-        #         body=body_text,
-        #         to=receiver_phone,
-        #         from_=sender_phone
-        #     )
-        #     return message
-        # except twilio.TwilioRestException as e:
-        #     return {'message': e.message,
-        #             'status_code': 500}
+        try:
+            message = self.client.messages.create(
+                body=body_text,
+                to=receiver_phone,
+                from_=sender_phone
+            )
+            return message
+        except twilio.TwilioRestException as e:
+            return {'message': e.message,
+                    'status_code': 500}
 
     def get_available_numbers(self):
         # -------------------------------------
@@ -64,7 +62,7 @@ class TwilioSMS(object):
             type=self.phone_type,
             sms_enabled=self.sms_enabled,
         )
-        return phone_numbers if phone_numbers else dict()
+        return phone_numbers
 
     def purchase_twilio_number(self, phone_number):
         # --------------------------------------
@@ -93,12 +91,12 @@ class TwilioSMS(object):
         if len(number) == 1:
             return 'SID of Phone Number %s is %s' % (phone_number, number[0].sid)
 
-    # phone_number_sid = get_sid("+15039255479")
-    # update_sms_call_back_url(phone_number_sid)
-    # number_object = get_available_numbers()[0]
-    # number_to_buy = number_object.phone_number
-    # print number_to_buy
-    # purchase_twilio_number(number_to_buy)
+
+def working_environment():
+    if GT_ENVIRONMENT in['dev']:
+        return True
+    else:
+        return False
 
 
 def search_link_in_text(text):
