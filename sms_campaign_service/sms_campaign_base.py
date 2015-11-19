@@ -15,12 +15,11 @@ from datetime import datetime
 # Application Specific
 from sms_campaign_service import logger
 from sms_campaign_service.app.app import IS_DEV
-from sms_campaign_service.config import REDIRECT_URL, CAMPAIGN_SMS_SEND,\
-    CAMPAIGN_SEND, PHONE_LABEL_ID, GT_ENVIRONMENT, TWILIO
+from sms_campaign_service.config import REDIRECT_URL, CAMPAIGN_SMS_SEND, \
+    CAMPAIGN_SEND, PHONE_LABEL_ID, TWILIO
 from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.common.models.misc import UrlConversion
-from sms_campaign_service.common.models.candidate import Candidate, PhoneLabel
-from sms_campaign_service.common.models.smart_list import SmartListCandidate
+from sms_campaign_service.common.models.candidate import PhoneLabel
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign,\
     SmsCampaignSend, SmsCampaignBlast, SmsCampaignSmartList, SmsCampaignSendUrlConversion
 from sms_campaign_service.common.utils.campaign_utils import CampaignBase
@@ -136,22 +135,60 @@ class SmsCampaignBase(CampaignBase):
         self.sms_campaign_blast_id = None
         self.url_conversion_id = None
 
-    @staticmethod
     def save(self, form_data):
         """
         This saves the campaign in database table sms_campaign
         :return:
         """
-        campaign_data = self.get_campaign_data(form_data)
-        pass
+        if form_data:
+            campaign_data = self.get_campaign_data(form_data)
+            return self.create_or_update_sms_campaign(campaign_data)
+        else:
+            logger.error('save: No data received from UI')
+
+    def get_campaign_data(self, form_data):
+        """
+        This will map the data from the UI for sms campaign and returns a dictionary
+        to save campaign data in db table 'sms_campaign'.
+        :param form_data: data from the UI
+        :type form_data: dict
+        :return: mapped data to be saved in db
+        :rtype: dict
+        """
+        return dict(name=form_data['campaign_name'],
+                    user_phone_id=self.user_phone.id,
+                    sms_body_text=form_data['body_text'],
+                    frequency_id=form_data['frequency_id'],
+                    added_time=datetime.now())
 
     @staticmethod
-    def get_campaign_data(self):
+    def create_or_update_sms_campaign(sms_campaign_data, campaign_id=None):
         """
-        This will get the data from the UI for sms campaign.
-        :return:
+        - Here we save/update sms_campaign in db.
+
+        - This method is called from save() method of class
+            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
+
+        :param sms_campaign_data: data of sms campaign to save
+        :param campaign_id: id of "sms_campaign" row, default None
+        :type sms_campaign_data: dict
+        :type campaign_id: int
+        :return: id of the "sms_campaign" record in database
+        :rtype: int
+
+        **See Also**
+        .. see also:: save() method in SmsCampaignBase class.
         """
-        pass
+
+        if campaign_id:
+            record_in_db = SmsCampaign.get_by_campaign_id(campaign_id)
+            record_in_db.update(**sms_campaign_data)
+            sms_campaign_id = record_in_db.id
+        else:
+            new_record = SmsCampaign(**sms_campaign_data)
+            SmsCampaign.save(new_record)
+            sms_campaign_id = new_record.id
+        return sms_campaign_id
 
     def get_user_phone(self):
         """

@@ -30,14 +30,14 @@ class CampaignBase(object):
         This method is called by creating the class object.
         - It takes "user_id" as keyword argument and sets it in self.user_id.
 
-    * save(self, form_data): [abstract][static]
+    * save(self, form_data): [abstract]
         This method is used to save the campaign in db table according to campaign type.
         i.e. sms_campaign or push_notification_campaign etc. and returns the ID of
         new record in db.
 
     * get_campaign_data(self): [abstract]
-        This will basically get the campaign data from UI and separate it from
-        scheduling data. Child classes will implement this.
+        This will basically get the campaign data from UI and will map it to save in database.
+         Child classes will implement this.
 
     * process_send(self, campaign_id=None): [abstract]
         This method is used send the campaign to candidates. Child classes will implement this.
@@ -63,16 +63,6 @@ class CampaignBase(object):
         # campaign table. e.g. in case of sms campaign, this is get from sms_campaign db table.
 
     @abstractmethod
-    def get_campaign_data(self):
-        """
-        This will get the data from the UI according to specific campaign.
-        Child class will implement this.
-        :return:
-        """
-        pass
-
-    @staticmethod
-    @abstractmethod
     def save(self, form_data):
         """
         This saves the campaign in database table.
@@ -82,7 +72,16 @@ class CampaignBase(object):
         """
         pass
 
-    @staticmethod
+    @abstractmethod
+    def get_campaign_data(self, form_data):
+        """
+        This will get the data from the UI according to specific campaign.
+        Child class will implement this.
+        :return:
+        """
+        pass
+
+    @classmethod
     def schedule(self):
         """
         This actually POST on scheduler_service to schedule a given task.

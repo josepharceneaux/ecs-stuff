@@ -103,7 +103,7 @@ class UserPhone(db.Model):
 
     @classmethod
     def get_by_user_id_and_phone_label_id(cls, user_id, phone_label_id):
-        assert user_id
+        assert user_id and phone_label_id
         return cls.query.filter(
             and_(
                 UserPhone.user_id == user_id,

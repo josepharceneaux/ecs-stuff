@@ -54,6 +54,7 @@ IS_DEV = working_environment()
 # sched.start()
 
 # Third party imports
+import json
 import flask
 import twilio.twiml
 from flask import request
@@ -98,9 +99,12 @@ def hello_world():
 @app.route('/sms_campaign/', methods=['POST'])
 def sms_campaign_create():
     try:
-        user_id = request.args.get('user_id')
+        camp_obj = SmsCampaignBase(user_id=int(request.form['user_id']))
+        campaign_id = camp_obj.save(request.form)
+        logger.debug('Campaign(id:%s) has been saved.' % campaign_id)
+        return 'Campaign(id:%s) has been saved.' % campaign_id
     except:
-        logger.exception("Error occurred while sending SMS campaign.")
+        logger.exception("Error occurred while saving SMS campaign.")
     return ''
 
 
