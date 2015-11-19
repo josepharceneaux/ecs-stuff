@@ -44,7 +44,7 @@ def fetch_candidate_info(candidate_id, fields=None):
     :return:    Candidate dict
     :rtype:     dict[str, T]
     """
-    assert isinstance(candidate_id, int) or isinstance(candidate_id, long)
+    assert isinstance(candidate_id, (int, long))
     candidate = db.session.query(Candidate).get(candidate_id)
 
     if not candidate:
@@ -313,7 +313,7 @@ def candidate_skills(candidate):
     skills = candidate.candidate_skills
     return [{'id': skill.id,
              'name': skill.description,
-             'month_used': skill.total_months,
+             'months_used': skill.total_months,
              'last_used_date': skill.last_used.isoformat() if skill.last_used else None
              } for skill in skills]
 
@@ -425,8 +425,7 @@ def country_name_from_country_id(country_id):
     if country:
         return country.name
     else:
-        logger.info('country_name_from_country_id: country_id is not recognized: %s',
-                    country_id)
+        logger.info('country_name_from_country_id: country_id is not recognized: %s', country_id)
         return 'United States'
 
 

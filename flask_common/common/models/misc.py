@@ -131,10 +131,6 @@ class Country(db.Model):
 
     @classmethod
     def country_id_from_name_or_code(cls, name_or_code):
-        """
-        Function will find and return ID of the country matching with country's name or code.
-        If no match is found, default return is 1 => 'United States'
-        """
         if name_or_code:
             country_row = cls.query.filter(db.or_(Country.name == name_or_code,
                                                   Country.code == name_or_code)).first()
