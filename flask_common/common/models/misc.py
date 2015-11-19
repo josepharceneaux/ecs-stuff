@@ -195,6 +195,7 @@ class Frequency(db.Model):
 
     @classmethod
     def get_frequency_from_name(cls, frequency_name):
+        """Returns frequency object wrt given name(case insensitive) """
         return cls.query.filter_by(name=frequency_name).first()
 
 

@@ -1,5 +1,5 @@
 from email_campaign import app
-from common.talent_config import DEBUG
+from common.common_config import DEBUG
 
 __author__ = 'jitesh'
 

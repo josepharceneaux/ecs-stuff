@@ -6,21 +6,21 @@ from urllib import urlencode
 from urlparse import parse_qs, urlsplit, urlunsplit
 from flask import current_app
 from BeautifulSoup import BeautifulSoup, Tag
-from common.talent_config import GT_ENVIRONMENT
+from email_campaign.common.common_config import GT_ENVIRONMENT
 from sqlalchemy import and_
 from sqlalchemy import desc
-from common.models.db import db
-from common.models.email_marketing import EmailCampaign, EmailCampaignSmartList, EmailCampaignBlast, \
+from email_campaign.common.models.db import db
+from email_campaign.common.models.email_marketing import EmailCampaign, EmailCampaignSmartList, EmailCampaignBlast, \
     CandidateSubscriptionPreference, EmailCampaignSend, UrlConversion, EmailCampaignSendUrlConversion
-from common.models.misc import Frequency
-from common.models.user import User, Domain
-from common.models.candidate import Candidate, CandidateEmail
-from common.models.smart_list import SmartList, SmartListCandidate
-from common.error_handling import *
+from email_campaign.common.models.misc import Frequency
+from email_campaign.common.models.user import User, Domain
+from email_campaign.common.models.candidate import Candidate, CandidateEmail
+from email_campaign.common.models.smart_list import SmartList, SmartListCandidate
+from email_campaign.common.error_handling import *
 from email_campaign.common.error_handling import UnprocessableEntity
 from email_campaign.modules.tasks import send_scheduled_campaign
-from common.emails.admin_reporting import email_admins
-from common.emails.AWS_SES import send_email
+from email_campaign.common.emails.admin_reporting import email_admins
+from email_campaign.common.emails.AWS_SES import send_email
 
 __author__ = 'jitesh'
 
@@ -31,24 +31,7 @@ HTML_CLICK_URL_TYPE = 2
 TRACKING_URL_TYPE = 0
 
 
-def validate_lists_belongs_to_domain(list_ids, user_id):
-    """
-
-    :param list_ids:
-    :param user_id:
-    :return:False, if any of list given not belongs to current user domain else True
-    """
-    user = User.query.get(user_id)
-    smart_lists = db.session.query(SmartList.id).join(User, SmartList.user_id == User.id).filter(User.domain_id==user.domain_id).all()
-
-    smart_list_ids = [smart_list[0] for smart_list in smart_lists]
-    result_of_list_belong_domain = set(list_ids) - set(smart_list_ids)
-    if len(result_of_list_belong_domain) == 0:
-        return True
-    return False
-
-
-def _create_email_campaign_smart_lists(smart_list_ids, email_campaign_id):
+def create_email_campaign_smart_lists(smart_list_ids, email_campaign_id):
     """ Maps smart lists to email campaign
     :param smart_list_ids:
     :type smart_list_ids: list[int | long]
@@ -61,26 +44,6 @@ def _create_email_campaign_smart_lists(smart_list_ids, email_campaign_id):
         email_campaign_smart_list = EmailCampaignSmartList(smart_list_id=smart_list_id,
                                                            email_campaign_id=email_campaign_id)
         db.session.add(email_campaign_smart_list)
-
-
-def _send_campaign_emails(campaign, user, new_candidates_only):
-    # Get all candidates associated with smartlists
-    # Mail admins notifying the start of email campaign. (if the smart list has more than 0 candidates)
-    candidate_ids_and_emails = 0  # TODO
-    email_admins(
-        env=GT_ENVIRONMENT,
-        subject='Marketing batch about to send',
-        body="Marketing email batch about to send, campaign.name=%s, user=%s, \
-        new_candidates_only=%s, address list size=%s" % (
-            campaign.name, user.email, new_candidates_only, len(candidate_ids_and_emails)
-        )
-    )
-    # Add activity email campaign send
-    # Create the email_campaign_blast for this blast
-    email_campaign_blast = EmailCampaignBlast(email_campaign_id=campaign.id, sent_time=datetime.datetime.now())
-    db.session.add(email_campaign_blast)
-    blast_params = {'sends': 0, 'bounces': 0}
-    # For each candidate, create URL conversions and send the email
 
 
 def create_email_campaign(user_id, email_campaign_name, email_subject,
@@ -97,16 +60,7 @@ def create_email_campaign(user_id, email_campaign_name, email_subject,
 
     :return: newly created email_campaign's id
     """
-    # If frequency is there then there must be a send time
-    if frequency is not None and send_time is None:
-        # 422 - Unprocessable Entity. Server understands the request but cannot process
-        # because along with frequency it needs send time.
-        # https://tools.ietf.org/html/rfc4918#section-11.2
-        # 400 or 422? Will decide it later.
-        raise UnprocessableEntity("Frequency requires send time.")
-
-    # Case insensitive filter
-    frequency_obj = db.session.query(Frequency).filter(Frequency.name == frequency).first() if frequency else None
+    frequency_obj = Frequency.get_frequency_from_name(frequency) if frequency else None
 
     email_campaign = EmailCampaign(user_id=user_id,
                                    name=email_campaign_name,
@@ -118,28 +72,19 @@ def create_email_campaign(user_id, email_campaign_name, email_subject,
                                    email_body_text=email_body_text,
                                    frequency_id=frequency_obj.id if frequency_obj else None,
                                    email_client_id=email_client_id,
-
+                                   stop_time=stop_time,
                                    send_time=send_time)
 
     db.session.add(email_campaign)
     db.session.commit()
 
     # TODO: Add activity
-    # activity_api.create(user_id, activity_api.CAMPAIGN_CREATE,
-    #                     source_table='email_campaign',
-    #                     source_id=email_campaign_id,
-    #                     params=dict(id=email_campaign_id,
-    #                                 name=email_campaign_name))
 
-    # Make email_campaign_smart_list records
-    _create_email_campaign_smart_lists(smart_list_ids=list_ids,
-                                       email_campaign_id=email_campaign.id)
+    # create email_campaign_smart_list record
+    create_email_campaign_smart_lists(smart_list_ids=list_ids,
+                                      email_campaign_id=email_campaign.id)
 
     db.session.commit()
-
-    # Schedule the sending of emails & update email_campaign_send fields
-    # campaign = db.email_campaign(email_campaign_id)
-    # campaign = EmailCampaign.query.get(email_campaign.id)
 
     # if it's a client from api, we don't schedule campaign sends, we create it on the fly.
     # also we enable tracking by default for the clients.
@@ -150,82 +95,17 @@ def create_email_campaign(user_id, email_campaign_name, email_subject,
         email_campaign.isTrackTextClicks = 1
         db.session.commit()
 
+    # TODO: Schedule the sending of emails & update email_campaign_send fields
     # else:
     #     schedule_email_campaign_sends(campaign=campaign, user=user,
     #                                   email_client_id=email_client_id)
 
     user = User.query.get(user_id)
-    send_emails_to_campaign(email_campaign, user, email_client_id)
+    send_emails_to_campaign(email_campaign, user, email_client_id, list_ids)
     return dict(id=email_campaign.id)
 
 
-def schedule_email_campaign_sends(campaign, user, email_client_id=None, send_time=None, stop_time=None):
-    """
-    NOT USED
-    :param campaign:            email_campaign row
-    :param user:                user row
-    :param email_client_id:     email client's unique id,
-                                which references the source of the email client
-    """
-    # repeats = 0 means unlimited
-    repeats = 0
-    start_time = send_time if send_time else campaign.sendTime
-    stop_time = stop_time if stop_time else campaign.stopTime
-
-    if campaign.frequency.id == 1:
-        repeats = 1
-    period = campaign.frequency.in_seconds
-    function_vars = dict(campaign_id=campaign.id, user_id=user.id,
-                         email_client_id=email_client_id)
-
-    if period == 0:
-        # Celery task run now (as soon as worker is free)
-        send_scheduled_campaign.delay(function_vars)
-    # If campaign to be sent in future
-    # scheduler_task_id = schedule_task(function_name='email_campaign_scheduled',
-    #                                   function_vars=function_vars,
-    #                                   start_time=start_time,
-    #                                   stop_time=stop_time,
-    #                                   period=period, repeats=repeats)
-    # campaign.update_record(schedulerTaskIds=[scheduler_task_id])
-
-
-def frequency_to_seconds(frequency_name):
-    """ Get frequency name from given frequency id and converts it into seconds
-    Frequency other then below mentioned names will return 0 seconds.
-    'Once', 'Daily', 'Weekly', 'Biweekly', 'Monthly', 'Yearly'
-    :param frequency_name:
-    :return:frequency in seconds
-    """
-    frequency_name = frequency_name.lower()
-    frequency_in_seconds = {'once': 0, 'daily': 24 * 3600, 'weekly': 7 * 24 * 3600, 'biweekly': 2 * 7 * 24 * 3600,
-                            'monthly': 30 * 24 * 3600, 'yearly': 365 * 24 * 3600}
-    if frequency_name not in frequency_in_seconds.keys():
-        # For unknown frequency names return 0 seconds.
-        # Log error TODO
-        return 0
-    return frequency_in_seconds.get(frequency_name, 0)
-
-    # if not frequency_id or frequency_id == 1:
-    #     period = 0
-    # elif frequency_id == 2:
-    #     period = 24 * 3600
-    # elif frequency_id == 3:
-    #     period = 7 * 24 * 3600
-    # elif frequency_id == 4:
-    #     period = 14 * 24 * 3600
-    # elif frequency_id == 5:
-    #     period = 30 * 24 * 3600
-    # elif frequency_id == 6:
-    #     period = 365 * 24 * 3600
-    # else:
-    #     current.logger.error("Unknown number of seconds for frequency ID: %s", frequency_id)
-    #     period = 0
-    #
-    # return period
-
-
-def send_emails_to_campaign(campaign, user, email_client_id=None, new_candidates_only=False):
+def send_emails_to_campaign(campaign, user, email_client_id=None, list_ids=None, new_candidates_only=False):
     """
     new_candidates_only sends the emails only to candidates who haven't yet
     received any as part of this campaign.
@@ -235,9 +115,8 @@ def send_emails_to_campaign(campaign, user, email_client_id=None, new_candidates
     :return:            number of emails sent
     """
     emails_sent = 0
-    candidate_ids_and_emails = get_email_campaign_candidate_ids_and_emails(
-        campaign=campaign, user=user, new_candidates_only=new_candidates_only
-    )
+    candidate_ids_and_emails = get_email_campaign_candidate_ids_and_emails(campaign=campaign, user=user, list_ids=list_ids,
+                                                                           new_candidates_only=new_candidates_only)
 
     # Check if the smart list has more than 0 candidates
     if len(candidate_ids_and_emails) > 0:
@@ -253,25 +132,7 @@ def send_emails_to_campaign(campaign, user, email_client_id=None, new_candidates
                                 "new_candidates_only=%s, address list size=%s" % (
                                     campaign.name, user.email, new_candidates_only, len(candidate_ids_and_emails)))
 
-        # Get candidates id with their email address
-        # candidate_ids = [id_and_email[0] for id_and_email in candidate_ids_and_emails]
-
-        # candidates = db.session.query(Candidate.id).filter_by(Candidate.id.in_(candidate_ids)).all()
-
-        # Add activity
-        #  from TalentActivityAPI import TalentActivityAPI
-        #  activity_api = TalentActivityAPI()
-        #  activity_api.create(
-        #     user.id,
-        #     activity_api.CAMPAIGN_SEND,
-        #     source_table='email_campaign',
-        #     source_id=campaign.id,
-        #     params=dict(
-        #         id=campaign.id,
-        #         name=campaign.name,
-        #         num_candidates=len(candidate_ids)
-        #     )
-        # )
+        # TODO: Add activity
 
         # Create the email_campaign_blast for this blast
         blast_datetime = datetime.datetime.now()
@@ -317,7 +178,7 @@ def get_email_campaign_candidate_ids_and_emails(campaign, user, list_ids=None,
                         Is unique.
     """
     if list_ids is None:
-    # Get smartlists of this campaign
+        # Get smartlists of this campaign
         list_ids = db.session.query(EmailCampaignSmartList.smart_list_id).filter_by(email_campaign_id=campaign.id).all()
         list_ids = [list_id[0] for list_id in list_ids]
     # Get candidate ids
@@ -327,7 +188,6 @@ def get_email_campaign_candidate_ids_and_emails(campaign, user, list_ids=None,
         # only get candidates subscribed to the campaign's frequency
         if campaign.is_subscription:
             campaign_frequency_id = campaign.frequency_id
-            # subscribed_candidate_id_rows = db.session.query(Candidate.id).join(Candidate.candidate_subscription_preference).join(Candidate.user).filter(and_(CandidateSubscriptionPreference.frequency_id==campaign_frequency_id, User.domain_id==user.domainId)).all()
             subscribed_candidate_id_rows = db.session.query(Candidate.id)\
                 .join(CandidateSubscriptionPreference, Candidate.id == CandidateSubscriptionPreference.candidate_id)\
                 .join(User, Candidate.user_id == User.id)\
@@ -340,11 +200,11 @@ def get_email_campaign_candidate_ids_and_emails(campaign, user, list_ids=None,
             # Otherwise, just filter out unsubscribed candidates:
             # their subscription preference's frequencyId is NULL, which means 'Never'
             candidate_ids = get_candidates(list_id, candidate_ids_only=True)['candidate_ids']
-            print "candidate_ids: " + str(candidate_ids)
+            current_app.logger.debug("candidate_ids: " + str(candidate_ids))
             unsubscribed_candidate_ids = []
             for candidate_id in candidate_ids:
                 campaign_subscription_preference = get_subscription_preference(candidate_id)
-                print "campaign_subscription_preference: " + str(campaign_subscription_preference)
+                current_app.logger.debug("campaign_subscription_preference: %s" + str(campaign_subscription_preference))
                 if campaign_subscription_preference and not campaign_subscription_preference.frequency_id:
                     unsubscribed_candidate_ids.append(candidate_id)
             for unsubscribed_candidate_id in unsubscribed_candidate_ids:
@@ -352,7 +212,8 @@ def get_email_campaign_candidate_ids_and_emails(campaign, user, list_ids=None,
                     candidate_ids.remove(unsubscribed_candidate_id)
         # If only getting candidates that haven't been emailed before...
         if new_candidates_only:
-            emailed_candidate_ids = EmailCampaignSend.query.filter(EmailCampaignSend.email_campaign_id==campaign.id).group_by(EmailCampaignSend.candidate_id).all()
+            emailed_candidate_ids = db.session.query(EmailCampaignSend).filter(
+                EmailCampaignSend.email_campaign_id == campaign.id).group_by(EmailCampaignSend.candidate_id).all()
             emailed_candidate_ids_dict = dict( emailed_candidate_ids)
             for candidate_id in candidate_ids:
                  if not candidate_ids_dict.get(candidate_id) and not emailed_candidate_ids_dict.get(candidate_id):
@@ -456,13 +317,7 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
         email_campaign_send.ses_message_id=message_id
         email_campaign_send.ses_request_id=request_id
         db.session.commit()
-    # Add activity
-    # from TalentActivityAPI import TalentActivityAPI
-    # activity_api = TalentActivityAPI()
-    # candidate_name = candidate.name()
-    # activity_api.create(user.id, activity_api.CAMPAIGN_EMAIL_SEND, source_table='email_campaign_send',
-    #                 source_id=email_campaign_send_id,
-    #                 params=dict(candidateId=candidate.id, campaign_name=campaign.name, candidate_name=candidate_name))
+    # TODO: Add activity
 
     # Update blast
     blast_params['sends'] += 1
@@ -748,3 +603,91 @@ def get_subscription_preference(candidate_id):
             CandidateSubscriptionPreference.id.in_(email_prefs_ids)).delete(synchronize_session='fetch')
         # db(db.candidate_subscription_preference.id.belongs(email_prefs_ids)).delete()
         return None
+
+
+
+# def schedule_email_campaign_sends(campaign, user, email_client_id=None, send_time=None, stop_time=None):
+#     """
+#     NOT USED
+#     :param campaign:            email_campaign row
+#     :param user:                user row
+#     :param email_client_id:     email client's unique id,
+#                                 which references the source of the email client
+#     """
+#     # repeats = 0 means unlimited
+#     repeats = 0
+#     start_time = send_time if send_time else campaign.sendTime
+#     stop_time = stop_time if stop_time else campaign.stopTime
+#
+#     if campaign.frequency.id == 1:
+#         repeats = 1
+#     period = campaign.frequency.in_seconds
+#     function_vars = dict(campaign_id=campaign.id, user_id=user.id,
+#                          email_client_id=email_client_id)
+#
+#     if period == 0:
+#         # Celery task run now (as soon as worker is free)
+#         send_scheduled_campaign.delay(function_vars)
+#     # If campaign to be sent in future
+#     # scheduler_task_id = schedule_task(function_name='email_campaign_scheduled',
+#     #                                   function_vars=function_vars,
+#     #                                   start_time=start_time,
+#     #                                   stop_time=stop_time,
+#     #                                   period=period, repeats=repeats)
+#     # campaign.update_record(schedulerTaskIds=[scheduler_task_id])
+
+
+# def frequency_to_seconds(frequency_name):
+#     """ Get frequency name from given frequency id and converts it into seconds
+#     Frequency other then below mentioned names will return 0 seconds.
+#     'Once', 'Daily', 'Weekly', 'Biweekly', 'Monthly', 'Yearly'
+#     :param frequency_name:
+#     :return:frequency in seconds
+#     """
+#     frequency_name = frequency_name.lower()
+#     frequency_in_seconds = {'once': 0, 'daily': 24 * 3600, 'weekly': 7 * 24 * 3600, 'biweekly': 2 * 7 * 24 * 3600,
+#                             'monthly': 30 * 24 * 3600, 'yearly': 365 * 24 * 3600}
+#     if frequency_name not in frequency_in_seconds.keys():
+#         # For unknown frequency names return 0 seconds.
+#         # Log error TODO
+#         return 0
+#     return frequency_in_seconds.get(frequency_name, 0)
+#
+#     # if not frequency_id or frequency_id == 1:
+#     #     period = 0
+#     # elif frequency_id == 2:
+#     #     period = 24 * 3600
+#     # elif frequency_id == 3:
+#     #     period = 7 * 24 * 3600
+#     # elif frequency_id == 4:
+#     #     period = 14 * 24 * 3600
+#     # elif frequency_id == 5:
+#     #     period = 30 * 24 * 3600
+#     # elif frequency_id == 6:
+#     #     period = 365 * 24 * 3600
+#     # else:
+#     #     current.logger.error("Unknown number of seconds for frequency ID: %s", frequency_id)
+#     #     period = 0
+#     #
+#     # return period
+
+
+# def _send_campaign_emails(campaign, user, new_candidates_only):
+#     # Get all candidates associated with smartlists
+#     # Mail admins notifying the start of email campaign. (if the smart list has more than 0 candidates)
+#     candidate_ids_and_emails = 0  # TODO
+#     email_admins(
+#         env=GT_ENVIRONMENT,
+#         subject='Marketing batch about to send',
+#         body="Marketing email batch about to send, campaign.name=%s, user=%s, \
+#         new_candidates_only=%s, address list size=%s" % (
+#             campaign.name, user.email, new_candidates_only, len(candidate_ids_and_emails)
+#         )
+#     )
+#     # Add activity email campaign send
+#     # Create the email_campaign_blast for this blast
+#     email_campaign_blast = EmailCampaignBlast(email_campaign_id=campaign.id, sent_time=datetime.datetime.now())
+#     db.session.add(email_campaign_blast)
+#     blast_params = {'sends': 0, 'bounces': 0}
+#     # For each candidate, create URL conversions and send the email
+

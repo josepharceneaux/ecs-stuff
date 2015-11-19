@@ -1,7 +1,7 @@
 from email_campaign.common.celery import celery_app
 
-from common.models.email_marketing import EmailCampaign
-from common.models.user import User
+from email_campaign.common.models.email_marketing import EmailCampaign
+from email_campaign.common.models.user import User
 __author__ = 'jitesh'
 
 

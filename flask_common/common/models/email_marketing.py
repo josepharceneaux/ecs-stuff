@@ -1,7 +1,6 @@
-from common.models.db import db
-import common.models.user
-from common.models.misc import Frequency
-from common.models.smart_list import SmartList
+from db import db
+from misc import Frequency
+from smart_list import SmartList
 from sqlalchemy.orm import relationship, backref
 
 import datetime

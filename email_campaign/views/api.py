@@ -1,60 +1,54 @@
 from flask import Blueprint
 from flask import current_app as app
 from flask import request
-from flask import jsonify
 from flask.ext.cors import CORS
-from ..modules.email_marketing import create_email_campaign, validate_lists_belongs_to_domain
+from ..modules.email_marketing import create_email_campaign
+from ..modules.validations import validate_lists_belongs_to_domain, validate_and_format_request_data
 import json
-from common.error_handling import UnprocessableEntity, ForbiddenError
+from email_campaign.common.error_handling import UnprocessableEntity, ForbiddenError
+from email_campaign.common.utils.auth_utils import require_oauth
 
 __author__ = 'jitesh'
 
 mod = Blueprint('email_campaign', __name__)
 
 
-@mod.route('/', methods=['POST'])
+@mod.route('/', methods=['POST'])  # TODO: flask restful?
+@require_oauth
 def email_campaigns():
-    # TODO: Authentication
-    user_id = 1553
-    # Get post data
-    campaign_name = request.form.get('email_campaign_name')
-    email_subject = request.form.get('email_subject')
-    email_from = request.form.get('email_from')
-    reply_to = request.form.get('email_reply_to')
-    email_body_html = request.form.get('email_body_html')
-    email_body_text = request.form.get('email_body_text')
-    list_ids = request.form.get('list_ids')
-    email_client_id = request.form.get('email_client_id')
-    send_time = request.form.get('send_time')
-    frequency = request.form.get('frequency')
-    if email_client_id:
+    user_id = request.user.id  # 1553
+    # Get and validate request data
+    data = validate_and_format_request_data(request.form)
+
+    if data['email_client_id']:
         template_id = None
     else:
         template_id = request.form.get('selected_template_id')
     # convert list_ids (unicode, separated by comma) to list
+    list_ids = data['list_ids']
     if isinstance(list_ids, basestring):
         list_ids = [long(list_id) for list_id in list_ids.split(',')]
-    # TODO: Add validations on missing inputs
     # Validation for list ids belonging to same domain
     if not validate_lists_belongs_to_domain(list_ids, user_id):
         raise ForbiddenError("Provided list does not belong to user's domain")
 
-    resp_dict = create_email_campaign(user_id=user_id,
-                                      email_campaign_name=campaign_name,
-                                      email_subject=email_subject,
-                                      email_from=email_from,
-                                      email_reply_to=reply_to,
-                                      email_body_html=email_body_html,
-                                      email_body_text=email_body_text,
-                                      list_ids=list_ids,
-                                      email_client_id=email_client_id,
-                                      template_id=template_id,
-                                      send_time=send_time,
-                                      frequency=frequency)
+    campaign_id = create_email_campaign(user_id=user_id,
+                                        email_campaign_name=data['campaign_name'],
+                                        email_subject=data['email_subject'],
+                                        email_from=data['email_from'],
+                                        email_reply_to=data['reply_to'],
+                                        email_body_html=data['email_body_html'],
+                                        email_body_text=data['email_body_text'],
+                                        list_ids=data['list_ids'],
+                                        email_client_id=data['email_client_id'],
+                                        template_id=template_id,
+                                        send_time=data['send_time'],
+                                        stop_time=data['stop_time'],
+                                        frequency=data['frequency'])
 
-    print 'inserted into database, id is %s' % resp_dict
+    app.logger.info('Email campaign created, campaign id is %s.' % campaign_id)
 
-    return "Success. Your name is %s, and subject is %s \n" % (campaign_name, email_subject)
+    return json.dumps({'campaign': campaign_id})
 
 
 @mod.errorhandler(UnprocessableEntity)

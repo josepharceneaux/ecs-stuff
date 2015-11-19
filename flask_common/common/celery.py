@@ -11,7 +11,7 @@ import os
 # For now hardcoding it because this script needs to be run as celery command from terminal.
 os.environ['GT_ENVIRONMENT'] = 'dev'  # TODO
 
-from common.talent_config import BROKER_URL
+from email_campaign.common.common_config import BROKER_URL
 
 
 __author__ = 'jitesh'
