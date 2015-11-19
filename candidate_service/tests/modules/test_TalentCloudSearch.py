@@ -17,7 +17,7 @@ VARIOUS_US_LOCATIONS = (('San Jose', 'CA', '95132'), ('Providence', 'Rhode Islan
                         ('Seattle', 'Washington', '98158'))
 
 
-def _populate_candidates(owner_user_id, count=1, first_name=True, last_name=True, added_time=True, objective=False,
+def populate_candidates(owner_user_id, count=1, first_name=True, last_name=True, added_time=True, objective=False,
                          phone=False, current_company=False, current_title=False, candidate_text_comment=False,
                          source_id=None, city=False, state=False, zip_code=False, area_of_interest_ids=None,
                          university=False, major=False, degree=False, university_start_year=False,
@@ -89,12 +89,10 @@ def _populate_candidates(owner_user_id, count=1, first_name=True, last_name=True
             'first_name': {True: uuid.uuid4().__str__()[0:8], False: None}.get(first_name, first_name),
             'last_name': {True: uuid.uuid4().__str__()[0:8], False: None}.get(last_name, last_name),
             'added_time': {True: datetime.datetime.now(), False: None}.get(added_time, added_time),
-            # 'objective': {True: loremipsum.get_sentence(), False: None}.get(objective, objective),
             'email': '%s@candidate.example.com' % (uuid.uuid4().__str__()),
             'city': {True: VARIOUS_US_LOCATIONS[0][0], False: None}.get(city, city),
             'state': {True: VARIOUS_US_LOCATIONS[0][1], False: None}.get(state, state),
             'zip_code': {True: VARIOUS_US_LOCATIONS[0][2], False: None}.get(zip_code, zip_code),
-            # 'candidate_text_comment': {True: '\n'.join(loremipsum.get_sentences(2)), False: None}.get(candidate_text_comment, candidate_text_comment),
             'current_company': {True: uuid.uuid4().__str__()[0:8], False: None}.get(current_company, current_company),
             'current_title': {True: uuid.uuid4().__str__()[0:8], False: None}.get(current_title, current_title),
             'university': {True: uuid.uuid4().__str__()[0:8], False: None}.get(university, university),
@@ -115,14 +113,12 @@ def _populate_candidates(owner_user_id, count=1, first_name=True, last_name=True
             first_name=data['first_name'],
             last_name=data['last_name'],
             added_time=data['added_time'],
-            # objective=data['objective'],
             domain_can_read=1,
             domain_can_write=1,
             email=data['email'],
             phone=None,
             current_company=data['current_company'],
             current_title=data['current_title'],
-            # candidate_text_comment=data['candidate_text_comment'],
             source_id=data['source_id'],
             city=data['city'],
             state=data['state'],
@@ -131,10 +127,10 @@ def _populate_candidates(owner_user_id, count=1, first_name=True, last_name=True
             area_of_interest_ids=data['area_of_interest_ids'],
             university=data['university'],
             major=data['major_name'],
-            # degree=data['degree'],
             candidate_skill_dicts=data['candidate_skill_dicts'],
             custom_fields_dict=data['custom_fields_dict'],
             candidate_experience_dicts=data['candidate_experience_dicts'],
+            degree=data['degree'],
             military_branch=data['military_branch'],
             military_status=data['military_status'],
             military_grade=data['military_grade'],
@@ -144,14 +140,14 @@ def _populate_candidates(owner_user_id, count=1, first_name=True, last_name=True
     if update_now:
         # Will immediately updated candidates in db and cloudsearch
         db.session.commit()
-        # Update cloudsearch
+        # Update cloud_search
         upload_candidate_documents(candidate_ids)
     return sorted(candidate_ids)
 
 
 def _update_now(candidate_ids):
     """
-    If update_now is set to False in _populate_candidates function, then call this function to update them all at once.
+    If update_now is set to False in populate_candidates function, then call this function to update them all at once.
     :param candidate_ids: list of candidate ids to sent to cloudsearch to update candidate.
     :return:
     """
@@ -166,25 +162,25 @@ def test_search_by_nothing(domain_id, admin_user):
     Test search functionality should return all inserted candidates for domain
     """
 
-    candidate_ids = _populate_candidates(owner_user_id=admin_user, first_name=True, last_name=True)
+    candidate_ids = populate_candidates(owner_user_id=admin_user, first_name=True, last_name=True)
     _assert_search_results(domain_id, {'query': ''}, candidate_ids)
 
 
 def test_search_by_first_name(domain_id, admin_user):
     # Create candidate with first name and last name
-    candidate_ids = _populate_candidates(owner_user_id=admin_user, first_name='Marilyn', last_name=True)
+    candidate_ids = populate_candidates(owner_user_id=admin_user, first_name='Marilyn', last_name=True)
     _assert_search_results(domain_id, {'query': 'Marilyn'}, candidate_ids)
 
 
 def test_search_by_last_name(domain_id, admin_user):
     # Create candidate with last name
-    candidate_ids = _populate_candidates(owner_user_id=admin_user, last_name='Lynn')
+    candidate_ids = populate_candidates(owner_user_id=admin_user, last_name='Lynn')
     _assert_search_results(domain_id, {'query': 'Lynn'}, candidate_ids)
 
 
 def test_search_by_current_company(domain_id, sample_user):
     company_name = "Google"
-    candidate_ids = _populate_candidates(count=1, owner_user_id=sample_user, objective=True, phone=True,
+    candidate_ids = populate_candidates(count=1, owner_user_id=sample_user, objective=True, phone=True,
                                          current_company=company_name)
     _assert_search_results(domain_id, {'query': company_name}, candidate_ids, check_for_equality=True)
 
@@ -192,7 +188,7 @@ def test_search_by_current_company(domain_id, sample_user):
 def test_search_by_position_facet(domain_id, admin_user):
     """current_title > sent as > 'positionFacet' from UI frontend"""
     current_title = "Senior Developer"
-    candidate_ids = _populate_candidates(count=1, owner_user_id=admin_user, objective=True, phone=True,
+    candidate_ids = populate_candidates(count=1, owner_user_id=admin_user, objective=True, phone=True,
                                          current_company=True, current_title=current_title)
     _assert_search_results(domain_id, {'positionFacet': current_title}, candidate_ids)
 
@@ -201,8 +197,8 @@ def test_position_and_company(domain_id, admin_user):
     company = "Apple"
     position = "CEO"
     # 10 other candidates at apple
-    _populate_candidates(count=10, owner_user_id=admin_user, current_company=company, current_title=True)
-    ceo_at_apple = _populate_candidates(count=1, owner_user_id=admin_user, current_company=company,
+    populate_candidates(count=10, owner_user_id=admin_user, current_company=company, current_title=True)
+    ceo_at_apple = populate_candidates(count=1, owner_user_id=admin_user, current_company=company,
                                         current_title=position)
     # Query for company Apple and position CEO, it should only return 1 candidate although Apple has 10 other employees
     search_vars = {'query': company, 'positionFacet': position}
@@ -212,9 +208,9 @@ def test_position_and_company(domain_id, admin_user):
 def test_owner_facet(domain_id, admin_user, sample_user):
     """Search by usernameFacet"""
     # Populate 8 candidates for user_manager
-    user_manager_candidates = _populate_candidates(count=8, owner_user_id=admin_user, current_company=True, current_title=True)
+    user_manager_candidates = populate_candidates(count=8, owner_user_id=admin_user, current_company=True, current_title=True)
     # Populate 4 candidates for passive user
-    normal_user_candidates = _populate_candidates(count=4, owner_user_id=sample_user, current_company=True, current_title=True)
+    normal_user_candidates = populate_candidates(count=4, owner_user_id=sample_user, current_company=True, current_title=True)
     # Search for user_manager_candidates
     _assert_search_results(domain_id, {'usernameFacet': admin_user}, user_manager_candidates, check_for_equality=True)
     # Search for normal user candidates
@@ -227,7 +223,7 @@ def test_owner_facet(domain_id, admin_user, sample_user):
 def test_search_by_text_note(domain_id, sample_user):
     """Search based on text note or comment added to candidate"""
     comment = "awesome, perfact match"
-    candidate_ids = _populate_candidates(owner_user_id=sample_user, candidate_text_comment=comment)
+    candidate_ids = populate_candidates(owner_user_id=sample_user, candidate_text_comment=comment)
     _assert_search_results(domain_id, {'query': comment}, candidate_ids)
     # search by text comment query and owner
     _assert_search_results(domain_id, {'query': comment, 'usernameFacet': sample_user}, candidate_ids)
@@ -237,9 +233,9 @@ def test_search_by_university(domain_id, admin_user):
     """university > schoolNameFacet"""
     university1 = 'University Of Washington'
     university2 = 'Oklahoma State University'
-    university1_candidates = _populate_candidates(owner_user_id=admin_user, university=university1)
+    university1_candidates = populate_candidates(owner_user_id=admin_user, university=university1)
     # Create other candidates with other university, check
-    university2_candidates = _populate_candidates(count=2, owner_user_id=admin_user, university=university2)
+    university2_candidates = populate_candidates(count=2, owner_user_id=admin_user, university=university2)
     _assert_search_results(domain_id, {'schoolNameFacet': university1}, university1_candidates)
     total_candidates = university1_candidates + university2_candidates
     _assert_search_results(domain_id, {'schoolNameFacet': [university1, university2]}, total_candidates, no_wait=True)
@@ -251,7 +247,7 @@ def test_search_by_university(domain_id, admin_user):
 def test_search_by_location(domain_id, admin_user):
     """Search by City name, State name"""
     city, state, zip_code = random.choice(VARIOUS_US_LOCATIONS)
-    candidate_ids = _populate_candidates(count=2, owner_user_id=admin_user, city=city, state=state, zip_code=zip_code)
+    candidate_ids = populate_candidates(count=2, owner_user_id=admin_user, city=city, state=state, zip_code=zip_code)
     # With city and state only
     _assert_search_results(domain_id, {'location': '%s, %s' % (city, state)}, candidate_ids)
     # With city, state and zip
@@ -274,23 +270,23 @@ def test_location_with_radius(domain_id, admin_user):
     location_within_100_miles = {'city': 'Sacramento', "state": "CA", "zip_code": "95405"}       # >95
     location_more_than_100_miles = {'city': "Arden-Arcade", "state": "CA", "zip_code": "95864"}  # 129
     # 10 mile candidates with city & state
-    _10_mile_candidate = _populate_candidates(owner_user_id=admin_user, update_now=False,
+    _10_mile_candidate = populate_candidates(owner_user_id=admin_user, update_now=False,
                                               **location_within_10_miles)
-    _10_mile_candidate_2 = _populate_candidates(owner_user_id=admin_user, update_now=False,
+    _10_mile_candidate_2 = populate_candidates(owner_user_id=admin_user, update_now=False,
                                                 **location_within_10_miles_2)
     # 25 mile candiates with city state
-    _25_mile_candidate = _populate_candidates(owner_user_id=admin_user, update_now=False,
+    _25_mile_candidate = populate_candidates(owner_user_id=admin_user, update_now=False,
                                               **location_within_25_miles)
-    _25_mile_candidate_2 = _populate_candidates(owner_user_id=admin_user, update_now=False,
+    _25_mile_candidate_2 = populate_candidates(owner_user_id=admin_user, update_now=False,
                                                 **location_within_25_miles_2)
-    _50_mile_candidate = _populate_candidates(owner_user_id=admin_user, update_now=False,
+    _50_mile_candidate = populate_candidates(owner_user_id=admin_user, update_now=False,
                                               **location_within_50_miles)
-    _75_mile_candidate = _populate_candidates(owner_user_id=admin_user, update_now=False,
+    _75_mile_candidate = populate_candidates(owner_user_id=admin_user, update_now=False,
                                               **location_within_75_miles)
-    _100_mile_candidate = _populate_candidates(owner_user_id=admin_user, update_now=False,
+    _100_mile_candidate = populate_candidates(owner_user_id=admin_user, update_now=False,
                                                **location_within_100_miles)
     # The following candidate will not appear in search with radius
-    _more_than_100_mile_candidate = _populate_candidates(owner_user_id=admin_user, update_now=False,
+    _more_than_100_mile_candidate = populate_candidates(owner_user_id=admin_user, update_now=False,
                                                          **location_more_than_100_miles)
 
     candidates_within_10_miles = _10_mile_candidate + _10_mile_candidate_2
@@ -338,18 +334,18 @@ def test_sort_by_proximity(domain_id, admin_user):
     location_within_75_miles = {"city": "Modesto", "state": "CA", "zip_code": "95350"}           # >60
 
     # 10 mile candidates with city & state
-    _10_mile_candidate = _populate_candidates(owner_user_id=admin_user, update_now=False,
+    _10_mile_candidate = populate_candidates(owner_user_id=admin_user, update_now=False,
                                               **location_within_10_miles)
-    _10_mile_candidate_2 = _populate_candidates(owner_user_id=admin_user, update_now=False,
+    _10_mile_candidate_2 = populate_candidates(owner_user_id=admin_user, update_now=False,
                                                 **location_within_10_miles_2)
     # 25 mile candiates with city state
-    _25_mile_candidate = _populate_candidates(owner_user_id=admin_user, update_now=False,
+    _25_mile_candidate = populate_candidates(owner_user_id=admin_user, update_now=False,
                                               **location_within_25_miles)
-    _25_mile_candidate_2 = _populate_candidates(owner_user_id=admin_user, update_now=False,
+    _25_mile_candidate_2 = populate_candidates(owner_user_id=admin_user, update_now=False,
                                                 **location_within_25_miles_2)
-    _50_mile_candidate = _populate_candidates(owner_user_id=admin_user, update_now=False,
+    _50_mile_candidate = populate_candidates(owner_user_id=admin_user, update_now=False,
                                               **location_within_50_miles)
-    _75_mile_candidate = _populate_candidates(owner_user_id=admin_user, update_now=False,
+    _75_mile_candidate = populate_candidates(owner_user_id=admin_user, update_now=False,
                                               **location_within_75_miles)
     candidates_within_10_miles = [_10_mile_candidate[0], _10_mile_candidate_2[0]]
     closest_to_furthest = [_10_mile_candidate[0], _10_mile_candidate_2[0], _25_mile_candidate[0],
@@ -385,9 +381,9 @@ def test_search_by_major(domain_id, sample_user):
     """
     major1 = 'Post Graduate'
     major2 = 'Graduate'
-    major1_candidates = _populate_candidates(count=2, owner_user_id=sample_user, major=major1,
+    major1_candidates = populate_candidates(count=2, owner_user_id=sample_user, major=major1,
                                              university=True, update_now=False)
-    major2_candidates = _populate_candidates(count=7, owner_user_id=sample_user, major=major2,
+    major2_candidates = populate_candidates(count=7, owner_user_id=sample_user, major=major2,
                                              university=True, update_now=False)
     _update_now(major1_candidates + major2_candidates)
     _assert_search_results(domain_id, {'concentrationTypeFacet': major1}, major1_candidates)
@@ -396,13 +392,13 @@ def test_search_by_major(domain_id, sample_user):
     # TODO: Check if concentrationTypeFacet will be 'and query' or 'or query'
 
 
-def test_search_by_degree(domain_id, sample_user): # FAIL
+def test_search_by_degree(domain_id, sample_user):
     """degreeTypeFacet"""
     degree1 = 'Masters'
     degree2 = 'Bachelors'
-    degree1_candidates = _populate_candidates(count=3, owner_user_id=sample_user, degree=degree1,
+    degree1_candidates = populate_candidates(count=3, owner_user_id=sample_user, degree=degree1,
                                               university=True)
-    degree2_candidates = _populate_candidates(count=4, owner_user_id=sample_user, degree=degree2,
+    degree2_candidates = populate_candidates(count=4, owner_user_id=sample_user, degree=degree2,
                                               university=True)
     _assert_search_results(domain_id, {'degreeTypeFacet': degree1}, degree1_candidates)
     _assert_search_results(domain_id, {'degreeTypeFacet': degree2}, degree2_candidates, no_wait=False)
@@ -412,16 +408,16 @@ def test_search_by_degree(domain_id, sample_user): # FAIL
 
 def test_search_by_added_date(domain_id, admin_user):
     # Candidate added on 01 Dec 2014 at 14:30:00
-    candidate1 = _populate_candidates(admin_user, added_time=datetime.datetime(2014, 12, 01, 14, 30, 00),
+    candidate1 = populate_candidates(admin_user, added_time=datetime.datetime(2014, 12, 01, 14, 30, 00),
                                       update_now=False)
     # Candidate added on 20 Mar 2015 at 10:00:00
-    candidate2 = _populate_candidates(admin_user, added_time=datetime.datetime(2015, 03, 20, 10, 00, 00),
+    candidate2 = populate_candidates(admin_user, added_time=datetime.datetime(2015, 03, 20, 10, 00, 00),
                                       update_now=False)
     # Candidate added on 25 May 2010 at 00:00:00
-    candidate3 = _populate_candidates(admin_user, added_time=datetime.datetime(2010, 05, 25, 00, 00, 00),
+    candidate3 = populate_candidates(admin_user, added_time=datetime.datetime(2010, 05, 25, 00, 00, 00),
                                       update_now=False)
     # Candidate added today (now)
-    candidate4 = _populate_candidates(admin_user, added_time=datetime.datetime.now(), update_now=False)
+    candidate4 = populate_candidates(admin_user, added_time=datetime.datetime.now(), update_now=False)
     _update_now(candidate1+candidate2+candidate3+candidate4)
     # Get candidates from within range 1 jan'14 to 30 May'15 (format mm/dd/yyyy) -> Will include candidates 1 & 2
     _assert_search_results(domain_id, {'date_from': '01/01/2014', 'date_to': '05/30/2015'},
@@ -443,16 +439,16 @@ def test_sort_by_added_date(domain_id, admin_user):
     Most recent -->  sort_by:added_time-desc
     """
     # Candidate added on 25 May 2010 at 00:00:00
-    candidate1 = _populate_candidates(admin_user, added_time=datetime.datetime(2010, 05, 25, 00, 00, 00),
+    candidate1 = populate_candidates(admin_user, added_time=datetime.datetime(2010, 05, 25, 00, 00, 00),
                                       update_now=False)
     # Candidate added on 01 Dec 2014 at 14:30:00
-    candidate2 = _populate_candidates(admin_user, added_time=datetime.datetime(2014, 12, 01, 14, 30, 00),
+    candidate2 = populate_candidates(admin_user, added_time=datetime.datetime(2014, 12, 01, 14, 30, 00),
                                       update_now=False)
     # Candidate added on 20 Mar 2015 at 10:00:00
-    candidate3 = _populate_candidates(admin_user, added_time=datetime.datetime(2015, 03, 20, 10, 00, 00),
+    candidate3 = populate_candidates(admin_user, added_time=datetime.datetime(2015, 03, 20, 10, 00, 00),
                                       update_now=False)
     # Candidate added today (now)
-    candidate4 = _populate_candidates(admin_user, added_time=datetime.datetime.now(), update_now=False)
+    candidate4 = populate_candidates(admin_user, added_time=datetime.datetime.now(), update_now=False)
     sorted_in_ascending_order_of_added_time = candidate1+candidate2+candidate3+candidate4
     _update_now(sorted_in_ascending_order_of_added_time)
     sorted_in_descending_order_of_added_time = sorted_in_ascending_order_of_added_time[::-1]
@@ -469,15 +465,15 @@ def test_sort_by_added_date(domain_id, admin_user):
                            no_wait=True)
 
 
-def test_sort_by_match(domain_id, sample_user):  # FAIL
+def test_sort_by_match(domain_id, sample_user):
     """
     Best match -->  sort_by:_score-desc
     Worst match --> sort_by:_score-asc
     """
-    candidate1 = _populate_candidates(sample_user, current_company="Newvision", update_now=False)
-    candidate2 = _populate_candidates(sample_user, current_company="Newvision",
+    candidate1 = populate_candidates(sample_user, current_company="Newvision", update_now=False)
+    candidate2 = populate_candidates(sample_user, current_company="Newvision",
                                       objective="Willing to join Newvision", update_now=False)
-    candidate3 = _populate_candidates(sample_user, current_company="Newvision",
+    candidate3 = populate_candidates(sample_user, current_company="Newvision",
                                       objective="Willing to join Newvision",
                                       candidate_text_comment="Eligible for joining Newvision", update_now=False)
     worst_match_order = candidate1+candidate2+candidate3
@@ -492,24 +488,24 @@ def test_sort_by_match(domain_id, sample_user):  # FAIL
                            check_for_sorting=True, no_wait=True)
 
 
-def test_area_of_interest_facet(domain_id, admin_user): # FAIL
+def test_area_of_interest_facet(domain_id, admin_user):
     """Test areaOfInterestIdFacet by passing aoi values as list and as single select
     areaOfInterestIdFacet:<id>
     """
     all_aoi_ids = create_area_of_interest_facets(db, domain_id)
     print "Total area of interest facets present: %s" % len(all_aoi_ids)
-    aoi_ids_list_1 = all_aoi_ids[0:5]  # 5 area of interest ids
-    aoi_ids_list_2 = all_aoi_ids[-4:-1]  # last 3 aoi ids
-    candidate1 = _populate_candidates(admin_user, area_of_interest_ids=aoi_ids_list_1, update_now=False)
-    candidate2 = _populate_candidates(admin_user, area_of_interest_ids=aoi_ids_list_2, update_now=False)
+    aoi_ids_list_1 = all_aoi_ids[0:5]
+    aoi_ids_list_2 = all_aoi_ids[-4:-1]
+    candidate1 = populate_candidates(admin_user, area_of_interest_ids=aoi_ids_list_1, update_now=False)
+    candidate2 = populate_candidates(admin_user, area_of_interest_ids=aoi_ids_list_2, update_now=False)
     _update_now(candidate1+candidate2)
     _assert_search_results(domain_id, {"areaOfInterestIdFacet": aoi_ids_list_1[0:3]}, candidate1,
-                           check_for_equality=True)
+                           check_for_equality=True, no_wait=False)
     _assert_search_results(domain_id, {"areaOfInterestIdFacet": aoi_ids_list_2[0]}, candidate2,
-                           check_for_equality=True, no_wait=True)
+                           check_for_equality=True, no_wait=False)
     _assert_search_results(domain_id, {"areaOfInterestIdFacet": [aoi_ids_list_2[-1], aoi_ids_list_1[-2]]},
                            candidate1+candidate2,
-                           check_for_equality=True, no_wait=True)
+                           check_for_equality=True, no_wait=False)
 
 
 def test_status_facet(domain_id, sample_user):
@@ -518,9 +514,9 @@ def test_status_facet(domain_id, sample_user):
     statusFacet: <status_id>
     """
     # By default every candidate has "New" status
-    candidate1 = _populate_candidates(sample_user)
-    candidate2 = _populate_candidates(sample_user)
-    candidate3 = _populate_candidates(sample_user)
+    candidate1 = populate_candidates(sample_user)
+    candidate2 = populate_candidates(sample_user)
+    candidate3 = populate_candidates(sample_user)
     new_status_id = get_or_create_status(db, status_name="New")
     _assert_search_results(domain_id, {'statusFacet': new_status_id}, candidate1+candidate2+candidate3)
     status1_id = get_or_create_status(db, status_name="Qualified")
@@ -528,7 +524,7 @@ def test_status_facet(domain_id, sample_user):
     # Change status of candidate1
     db.session.query(Candidate).filter_by(id=candidate1[0]).update(dict(candidate_status_id=status1_id))
     db.session.query(Candidate).filter_by(id=candidate2[0]).update(dict(candidate_status_id=status2_id))
-    # Update cloudsearch for status changes
+    # Update cloud_search for status changes
     _update_now(candidate1+candidate2)
     # search for qualified candidates
     _assert_search_results(domain_id, {'statusFacet': status1_id}, candidate1, check_for_equality=True)
@@ -544,11 +540,11 @@ def test_source_facet(domain_id, sample_user):
     sourceFacet:<source id>
     """
     # by default all candidates have "Unassigned" source
-    candidate_ids1 = _populate_candidates(sample_user, count=5, update_now=False)
+    candidate_ids1 = populate_candidates(sample_user, count=5, update_now=False)
     # Create a new source
     source_id = db.session.add(CandidateSource(description="Test source-%s" % uuid.uuid4().__str__()[0:8],
                                                domain_id=domain_id, notes="Source created for functional tests"))
-    candidate_ids2 = _populate_candidates(sample_user, count=5, source_id=source_id, update_now=False)
+    candidate_ids2 = populate_candidates(sample_user, count=5, source_id=source_id, update_now=False)
     # Update database and cloudsearch
     all_candidates = candidate_ids1+candidate_ids2
     _update_now(all_candidates)
@@ -584,13 +580,13 @@ def test_search_based_on_years_of_experience(domain_id, admin_user):
                            'endYear': 2015, 'endMonth': '06'}]  # 24 months exp
     experience_0_years = [{'organization': 'Audi', 'position': 'Mechanic', 'startYear': 2015, 'startMonth': 01,
                            'endYear': 2015, 'endMonth': 02}]  # 2 month exp
-    candidate_with_0_years_exp = _populate_candidates(admin_user, candidate_experience_dicts=experience_0_years,
+    candidate_with_0_years_exp = populate_candidates(admin_user, candidate_experience_dicts=experience_0_years,
                                                       update_now=False)
-    candidate_with_2_years_exp = _populate_candidates(admin_user, candidate_experience_dicts=experience_2_years,
+    candidate_with_2_years_exp = populate_candidates(admin_user, candidate_experience_dicts=experience_2_years,
                                                       update_now=False)
-    candidate_with_5_years_exp = _populate_candidates(admin_user, candidate_experience_dicts=experience_5_years,
+    candidate_with_5_years_exp = populate_candidates(admin_user, candidate_experience_dicts=experience_5_years,
                                                       update_now=False)
-    candidate_above_10_years_exp = _populate_candidates(admin_user,
+    candidate_above_10_years_exp = populate_candidates(admin_user,
                                                         candidate_experience_dicts=experience_above_10_years,
                                                         update_now=False)
 
@@ -601,7 +597,7 @@ def test_search_based_on_years_of_experience(domain_id, admin_user):
     db.session.query(Candidate).filter_by(id=candidate_above_10_years_exp[0]).update(dict(total_months_experience=11*12))
     # Update cloudsearch
     all_candidates = candidate_with_0_years_exp+candidate_with_2_years_exp+candidate_with_5_years_exp + \
-                     candidate_above_10_years_exp
+        candidate_above_10_years_exp
     _update_now(all_candidates)
 
     # Search for candidates with more than 10 years
@@ -620,23 +616,23 @@ def test_skill_description_facet(domain_id, sample_user):
     """
     skillDescriptionFacet
     """
-    network_candidates = _populate_candidates(sample_user,
+    network_candidates = populate_candidates(sample_user,
                                               count=2,
                                               candidate_skill_dicts=[{'description': 'Network', 'total_months': 12}],
                                               update_now=True)
 
-    excel_candidates = _populate_candidates(sample_user, candidate_skill_dicts=[{'description': 'Excel',
-                                                                                     'total_months': 26}],
+    excel_candidates = populate_candidates(sample_user, candidate_skill_dicts=[{'description': 'Excel',
+                                                                                 'total_months': 26}],
                                             update_now=True)
-    network_and_excel_candidates = _populate_candidates(sample_user, count=3,
+    network_and_excel_candidates = populate_candidates(sample_user, count=3,
                                                         candidate_skill_dicts=[{'description': 'Excel',
                                                                                 'total_months': 10},
-                                                                            {'description': 'Network',
-                                                                             'totalMonths': 5}], update_now=True)
+                                                                               {'description': 'Network',
+                                                                                'totalMonths': 5}], update_now=True)
     # Update db and cloudsearch
     _update_now(network_candidates+excel_candidates+network_and_excel_candidates)
     _assert_search_results(domain_id, {'skillDescriptionFacet': 'Network'}, candidate_ids=network_candidates +
-                                                                                          network_and_excel_candidates)
+                                                                            network_and_excel_candidates)
     _assert_search_results(domain_id, {'skillDescriptionFacet': 'Excel'}, candidate_ids=excel_candidates +
                                                                                         network_and_excel_candidates,
                            no_wait=True)
@@ -651,13 +647,13 @@ def test_date_of_separation(domain_id, admin_user):
     military_end_date_to
     """
 
-    candidates_today = _populate_candidates(admin_user, count=5, military_to_date=datetime.datetime.now(),
+    candidates_today = populate_candidates(admin_user, count=5, military_to_date=datetime.datetime.now(),
                                             military_grade=True,
                                             military_status=True, military_branch=True, update_now=False)
-    candidates_2014 = _populate_candidates(admin_user, count=2, military_to_date=datetime.date(year=2014, month=03,
+    candidates_2014 = populate_candidates(admin_user, count=2, military_to_date=datetime.date(year=2014, month=03,
                                                                                                     day=31),
                                            update_now=False)
-    candidates_2012 = _populate_candidates(admin_user, military_to_date=datetime.date(2012, 07, 15),
+    candidates_2012 = populate_candidates(admin_user, military_to_date=datetime.date(2012, 07, 15),
                                            update_now=False)
 
     # Update db and cloudsearch
@@ -681,11 +677,11 @@ def test_service_status(domain_id, admin_user):
     service_status1 = "Veteran"
     service_status2 = "Guard"
     service_status3 = "Retired"
-    candidates_status1 = _populate_candidates(admin_user, count=4, military_status=service_status1,
+    candidates_status1 = populate_candidates(admin_user, count=4, military_status=service_status1,
                                               update_now=False)
-    candidates_status2 = _populate_candidates(admin_user, count=7, military_status=service_status2,
+    candidates_status2 = populate_candidates(admin_user, count=7, military_status=service_status2,
                                               update_now=False)
-    candidates_status3 = _populate_candidates(admin_user, count=2, military_status=service_status3,
+    candidates_status3 = populate_candidates(admin_user, count=2, military_status=service_status3,
                                               update_now=False)
     # Update all candidates at once
     all_candidates = candidates_status1+candidates_status2+candidates_status3
@@ -705,11 +701,11 @@ def test_military_branch(domain_id, admin_user):
     service_branch1 = "Army"
     service_branch2 = "Coast Guard"
     service_branch3 = "Air Force"
-    candidates_branch1 = _populate_candidates(admin_user, count=4, military_branch=service_branch1,
+    candidates_branch1 = populate_candidates(admin_user, count=4, military_branch=service_branch1,
                                               update_now=False)
-    candidates_branch2 = _populate_candidates(admin_user, count=7, military_branch=service_branch2,
+    candidates_branch2 = populate_candidates(admin_user, count=7, military_branch=service_branch2,
                                               update_now=False)
-    candidates_branch3 = _populate_candidates(admin_user, count=2, military_branch=service_branch3,
+    candidates_branch3 = populate_candidates(admin_user, count=2, military_branch=service_branch3,
                                               update_now=False)
     all_candidates = candidates_branch1+candidates_branch2+candidates_branch3
     # Update all candidates at once
@@ -731,9 +727,9 @@ def test_search_by_military_grade(domain_id, admin_user):
     service_grade1 = "E-2"
     service_grade2 = "O-4"
     service_grade3 = "W-1"
-    candidates_grade1 = _populate_candidates(admin_user, count=3, military_grade=service_grade1, update_now=False)
-    candidates_grade2 = _populate_candidates(admin_user, count=2, military_grade=service_grade2, update_now=False)
-    candidates_grade3 = _populate_candidates(admin_user, count=5, military_grade=service_grade3, update_now=False)
+    candidates_grade1 = populate_candidates(admin_user, count=3, military_grade=service_grade1, update_now=False)
+    candidates_grade2 = populate_candidates(admin_user, count=2, military_grade=service_grade2, update_now=False)
+    candidates_grade3 = populate_candidates(admin_user, count=5, military_grade=service_grade3, update_now=False)
     all_candidates = candidates_grade1+candidates_grade2+candidates_grade3
     # Update all candidates at once
     _update_now(all_candidates)
@@ -749,23 +745,21 @@ def test_search_by_military_grade(domain_id, admin_user):
 def test_custom_fields_kaiser_nuid(domain_id, admin_user):
     """
     Test kaiser specific custom field "Has NUID"
-    There is special custom field which has id=14 on production, name is Has NUID, no category is associated with it.
-    This test is testing special case in search_candidate where it is checked for cf_id==14 and value is 'Has NUID',
-    hard coding is there in the function so specifically hard coding the id, and search for that condition.
-    TODO: Remove the hardcoading for id=19 in code then reformat this test.
     """
     custom_field_obj = db.session.query(CustomField).filter(CustomField.name == "NUID").first()
-    custom_field_obj_id = custom_field_obj.id
-    # if custom_field with id=14 not exists create a new one.
-    # If id=19 is there and field name is different then NUID TODO: check what to do?
-    if not custom_field_obj:
-        print "Creating custom field with id=19 and name=NUID"
-        db.session.add(CustomField(id=19, domain_id=domain_id, name="NUID", type='string'))
+    if custom_field_obj:
+        custom_field_obj_id = custom_field_obj.id
+    else:
+        print "Creating custom field with name=NUID"
+        new_custom_field_obj = CustomField(domain_id=domain_id, name="NUID", type='string',
+                                           added_time=datetime.datetime.now())
+        db.session.add(new_custom_field_obj)
         db.session.commit()
-    other_candidates = _populate_candidates(admin_user, count=5, update_now=False)
-    candidate_cf1 = _populate_candidates(admin_user, custom_fields_dict={custom_field_obj_id: 'S264964'}, update_now=False)
-    candidate_cf2 = _populate_candidates(admin_user, custom_fields_dict={custom_field_obj_id: 'D704398'}, update_now=False)
-    candidate_cf3 = _populate_candidates(admin_user, custom_fields_dict={custom_field_obj_id: 'X073423'}, update_now=False)
+        custom_field_obj_id = new_custom_field_obj.id
+    other_candidates = populate_candidates(admin_user, count=2, update_now=False)
+    candidate_cf1 = populate_candidates(admin_user, custom_fields_dict={custom_field_obj_id: 'S264964'}, update_now=False)
+    candidate_cf2 = populate_candidates(admin_user, custom_fields_dict={custom_field_obj_id: 'D704398'}, update_now=False)
+    candidate_cf3 = populate_candidates(admin_user, custom_fields_dict={custom_field_obj_id: 'X073423'}, update_now=False)
 
     # Update all candidates in db and cloudsearch
     nuid_candidates = candidate_cf1+candidate_cf2+candidate_cf3
@@ -777,52 +771,54 @@ def test_custom_fields_kaiser_nuid(domain_id, admin_user):
     _assert_search_results(domain_id, {"cf-%d" % custom_field_obj_id: "Has NUID"}, nuid_candidates, no_wait=True)
 
 
-def test_custom_fields(domain_id, admin_user):  # FAIL
+def test_custom_fields(domain_id, admin_user):
     """
     Test various custom_fields
     """
     # Create custom field category named as 'Certifications'
     custom_field_cat = CustomFieldCategory(domain_id=domain_id, name="Certifications")
     db.session.add(custom_field_cat)
-    db.session.commit()
     custom_field_cat_id = custom_field_cat.id
     # Create custom fields under 'Certifications'
-    custom_field1 = 'SCJP'
-    custom_field2 = '.net certified professional'
+    custom_field1 = 'hadoop'
+    custom_field2 = 'MangoDB'
     new_custom_field1 = CustomField(domain_id=domain_id, name=custom_field1, type='string',
                                     category_id=custom_field_cat_id)
     db.session.add(new_custom_field1)
-    db.session.commit()
-    custom_field1_id = new_custom_field1.id
+
     new_custom_field2 = CustomField(domain_id=domain_id, name=custom_field2, type='string',
                                     category_id=custom_field_cat_id)
     db.session.add(new_custom_field2)
-    db.session.flush()
+    db.session.commit()
+    custom_field1_id = new_custom_field1.id
     custom_field2_id = new_custom_field2.id
     # refresh_custom_fields_cache
-    candidates_cf1 = _populate_candidates(admin_user, count=3, custom_fields_dict={custom_field1_id: custom_field1},
+    candidates_cf1 = populate_candidates(admin_user, count=3, custom_fields_dict={custom_field1_id: custom_field1},
                                           update_now=False)
-    candidates_cf2 = _populate_candidates(admin_user, count=4, custom_fields_dict={custom_field2_id: custom_field2},
+    candidates_cf2 = populate_candidates(admin_user, count=4, custom_fields_dict={custom_field2_id: custom_field2},
                                           update_now=False)
     all_candidates = candidates_cf1+candidates_cf2
     _update_now(all_candidates)
-    _assert_search_results(domain_id, {"cf-%s"%custom_field1_id: custom_field1}, candidates_cf1)
-    _assert_search_results(domain_id, {"cf-%s"%custom_field2_id: custom_field2}, candidates_cf2, no_wait=True)
-    _assert_search_results(domain_id, {"cf-%s"%custom_field1_id: custom_field1, "cf-%s" %
-                                                                                custom_field2_id: custom_field2},
+    _assert_search_results(domain_id, {"cf-%s" % custom_field1_id: custom_field1}, candidates_cf1)
+    _assert_search_results(domain_id, {"cf-%s" % custom_field2_id: custom_field2}, candidates_cf2, no_wait=True)
+    _assert_search_results(domain_id, {"cf-%s" % custom_field1_id: custom_field1, "cf-%s" %
+                                                                                  custom_field2_id: custom_field2},
                            all_candidates, no_wait=True)
 
 
 def test_paging(domain_id, admin_user):
-    candidate_ids = _populate_candidates(admin_user, count=50, objective=True,added_time=True, phone=True,
-                                         current_company=True, current_title=True, candidate_text_comment=True,
-                                         city=True, state=True,
-                                         zip_code=True, university=True, major=True, degree=True,
-                                         university_start_year=True,
-                                         university_start_month=True, graduation_year=True, graduation_month=True,
-                                         military_branch=True,
-                                         military_status=True, military_grade=True,
-                                         military_to_date=datetime.datetime.now())
+    """
+    Test candidates on all pages
+    """
+    candidate_ids = populate_candidates(admin_user, count=50, objective=True,added_time=True, phone=True,
+                                        current_company=True, current_title=True, candidate_text_comment=True,
+                                        city=True, state=True,
+                                        zip_code=True, university=True, major=True, degree=True,
+                                        university_start_year=True,
+                                        university_start_month=True, graduation_year=True, graduation_month=True,
+                                        military_branch=True,
+                                        military_status=True, military_grade=True,
+                                        military_to_date=datetime.datetime.now())
     # page 1 -> first 15 candidates
     _assert_search_results(domain_id, {'sort_by': 'added_time-asc'}, candidate_ids[0:15], check_for_sorting=True)
     _assert_search_results(domain_id, {'sort_by': 'added_time-asc', 'page': 1}, candidate_ids[0:15],
@@ -840,7 +836,7 @@ def test_paging(domain_id, admin_user):
 
 def test_paging_with_facet_search(domain_id, admin_user):
     current_title = "Sr. Manager"
-    candidate_ids = _populate_candidates(count=30, owner_user_id=admin_user, objective=True, phone=True,
+    candidate_ids = populate_candidates(count=30, owner_user_id=admin_user, objective=True, phone=True,
                                          added_time=True, current_company=True, current_title=current_title)
     # Search by applying sorting so that candidates can be easily asserted
     _assert_search_results(domain_id, {'positionFacet': current_title, 'sort_by': 'added_time-asc'},
@@ -849,13 +845,13 @@ def test_paging_with_facet_search(domain_id, admin_user):
                            candidate_ids[15:30], no_wait=True)
 
 
-def test_id_in_request_vars(domain_id, admin_user):  # PASSED
+def test_id_in_request_vars(domain_id, admin_user):
     """
     There is a case where id can be passed as parameter in search_candidates
     It can be used to check if a certain candidate ID is in a smartlist.
     """
     # Insert 10 candidates
-    candidate_ids = _populate_candidates(admin_user, count=10, objective=True, phone=True, current_company=True,
+    candidate_ids = populate_candidates(admin_user, count=10, objective=True, phone=True, current_company=True,
                                          current_title=True, candidate_text_comment=True, city=True, state=True,
                                          zip_code=True, university=True, major=True, degree=True,
                                          university_start_year=True, university_start_month=True, graduation_year=True,
@@ -880,8 +876,8 @@ def test_facets_are_returned_with_search_results(domain_id, admin_user, sample_u
     manager_candidate_count = 2
     user_candidate_count = 1
     total_candidates = manager_candidate_count + user_candidate_count
-    manager_candidate_ids = _populate_candidates(admin_user, count=manager_candidate_count, update_now=False)
-    user_candidate_ids = _populate_candidates(sample_user, count=user_candidate_count, update_now=False)
+    manager_candidate_ids = populate_candidates(admin_user, count=manager_candidate_count, update_now=False)
+    user_candidate_ids = populate_candidates(sample_user, count=user_candidate_count, update_now=False)
     all_candidates = manager_candidate_ids + user_candidate_ids
     # Update
     _update_now(all_candidates)
@@ -893,8 +889,8 @@ def test_facets_are_returned_with_search_results(domain_id, admin_user, sample_u
                                                                            CandidateSource.domain_id == domain_id).first()
     # By default each candidate is assigned 'New' status
     new_status_id = get_or_create_status(db, status_name="New")
-    facets = {'usernameFacet': [((user_manager.first_name, unicode(admin_user)), manager_candidate_count),
-                                ((passive_user.first_name, unicode(sample_user)), user_candidate_count)],
+    facets = {'usernameFacet': [(((user_manager.first_name + ' ' + user_manager.last_name), unicode(admin_user)), manager_candidate_count),
+                                (((passive_user.first_name + ' ' + passive_user.last_name), unicode(sample_user)), user_candidate_count)],
               'sourceFacet': [((unassigned_candidate_source.description, unicode(unassigned_candidate_source.id)),
                                total_candidates)], 'statusFacet': [(('New', unicode(new_status_id)), total_candidates)]
                    }
@@ -902,28 +898,27 @@ def test_facets_are_returned_with_search_results(domain_id, admin_user, sample_u
 
 
 def test_candidate_ids_only(domain_id, admin_user):
-    """Test for candidates_ids_only feature. It should return only candidate ids
     """
-    count = 15
-    candidate_ids = _populate_candidates(admin_user, count=count, objective="software", phone=True, current_company=True,
-                                         current_title=True, candidate_text_comment=True, city=True, state=True, zip_code=True,
-                                         university=True, major=True, degree=True, university_start_year=True,
-                                         university_start_month=True, graduation_year=True, graduation_month=True,
-                                         military_branch=True, military_status=True, military_grade=True, military_to_date=True)
+    Test for candidates_ids_only feature. It should return only candidate ids
+    """
+    candidate_ids = populate_candidates(admin_user, count=15, objective="software", phone=True, current_company=True,
+                                        current_title=True, candidate_text_comment=True, city=True, state=True,
+                                        zip_code=True, university=True, major=True, degree=True,
+                                        university_start_year=True,university_start_month=True, graduation_year=True,
+                                        graduation_month=True, military_branch=True, military_status=True,
+                                        military_grade=True, military_to_date=datetime.datetime.now())
     time.sleep(30)
     response = search_candidates(domain_id=domain_id, request_vars={'query': 'software'}, candidate_ids_only=True)
     # As per implementation only candidate_ids and total number of candidates should be there in response
-    assert compare_dictionaries(response, {'total_found': count, 'candidate_ids': map(lambda x: unicode(x), candidate_ids)})
+    assert compare_dictionaries(response, {'total_found': 15, 'candidate_ids': map(lambda x: unicode(x), candidate_ids)})
 
 
 def test_get_percentage_match(domain_id, sample_user):
     """Test for get_percentage_match feature. It should return percent matches as well.
-    Keeping it hear for now, ideally this test should go in controllers, where it can be checked against % shown in html.
-    TODO: Once angularJS implementation of search page is done, move this test in controllers.
     """
-    candidate1 = _populate_candidates(sample_user, current_company="Nike", update_now=False)
-    candidate2 = _populate_candidates(sample_user, current_company="Nike", objective="Willing to join Nike", update_now=False)
-    candidate3 = _populate_candidates(sample_user, current_company="Nike", objective="Willing to join Nike",
+    candidate1 = populate_candidates(sample_user, current_company="Nike", update_now=False)
+    candidate2 = populate_candidates(sample_user, current_company="Nike", objective="Willing to join Nike", update_now=False)
+    candidate3 = populate_candidates(sample_user, current_company="Nike", objective="Willing to join Nike",
                                       candidate_text_comment="Eligible for joining Nike", update_now=False)
     _update_now(candidate1+candidate2+candidate3)
     time.sleep(30)
@@ -945,9 +940,9 @@ def _assert_search_results(domain_id, search_vars, candidate_ids, no_wait=False,
                            check_for_sorting=False, facets_dict=None):
     # sometimes when asserting same uploaded candidates in a domain with several different queries,
     # its not worth waiting
-    # so don't sleep as cloudsearch is already updated
+    # so don't sleep as cloud_search is already updated
     if not no_wait:
-        time.sleep(30)  # Wait for cloudsearch to update
+        time.sleep(30)  # Wait for cloud_search to update
 
     response = search_candidates(domain_id=domain_id, request_vars=search_vars)
     resultant_candidate_ids = map(lambda x: long(x), response['candidate_ids'])

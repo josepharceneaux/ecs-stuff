@@ -201,8 +201,6 @@ def create_candidate_from_params(
     :type domain_can_write: int
     :type phone: None | basestring | list[basestring] | list[{str: str}]
     :type email: None | basestring | list[basestring]
-
-    :type interest_id: None | str | int | list[int]
     :type area_of_interest_ids: list[int] | None
 
     :param custom_fields_dict: custom_field_id -> value
@@ -272,7 +270,7 @@ def create_candidate_from_params(
         dice_social_profile_id=dice_social_profile_id,
         source_id=source_id,
         objective=objective,
-        summary=summary,
+        summary=summary
     )
     db.session.add(candidate)
     db.session.commit()
@@ -391,10 +389,10 @@ def create_candidate_from_params(
         db.session.flush()
         candidate_education_id = candidate_education.id
 
-        # Insert new degree, unless it already exists
+        # Insert new degree
         classification_type = classification_type_id_from_degree_type(degree)
-        classification_type_id = classification_type.get('id') if classification_type else None
-        classification_type_description = classification_type.get('description') if classification_type else None
+        classification_type_id = classification_type['id']
+        classification_type_description = classification_type['desc']
 
         # Add candidate education degree
         candidate_education_degree = CandidateEducationDegree(
@@ -425,8 +423,8 @@ def create_candidate_from_params(
 
             # Insert new degree
             classification_type = classification_type_id_from_degree_type(degree)
-            classification_type_id = classification_type.get('id')
-            classification_type_description = classification_type.get('description')
+            classification_type_id = classification_type['id']
+            classification_type_description = classification_type['desc']
 
             candidate_education_degree = CandidateEducationDegree(
                 candidate_education_id=candidate_education_id,
@@ -457,7 +455,8 @@ def create_candidate_from_params(
     if custom_fields_dict:
         for custom_field_id in custom_fields_dict:
             db.session.add(CandidateCustomField(candidate_id=candidate_id, custom_field_id=custom_field_id,
-                                                added_time=added_time))
+                                                value=custom_fields_dict[custom_field_id], added_time=added_time))
+            db.session.commit()
 
     # Areas of interest
     if area_of_interest_ids:
@@ -586,11 +585,14 @@ def classification_type_id_from_degree_type(degree_type):
     :return:    classification_type_id or None
     """
     matching_classification_type_id = None
+    matching_classification_type_description = None
     if degree_type:
         all_classification_types = db.session.query(ClassificationType).all()
         matching_classification_type_id = next((row.id for row in all_classification_types
                                                 if row.code.lower() == degree_type.lower()), None)
-    return matching_classification_type_id
+        matching_classification_type_description = next((row.description for row in all_classification_types
+                                                         if row.code.lower() == degree_type.lower()), None)
+    return dict(id=matching_classification_type_id, desc=matching_classification_type_description)
 
 
 def add_candidate_custom_fields(candidate_id, candidate_custom_fields_dict, current_candidate_custom_fields=None,

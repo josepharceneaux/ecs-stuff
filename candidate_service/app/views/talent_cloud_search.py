@@ -17,6 +17,7 @@ from flask import current_app
 from candidate_service.config import GT_ENVIRONMENT
 from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateStatus
 from candidate_service.common.models.user import User
+from candidate_service.common.models.misc import AreaOfInterest
 API_VERSION = "2013-01-01"
 MYSQL_DATE_FORMAT = '%Y-%m-%dT%H:%i:%S.%fZ'
 BATCH_REQUEST_LIMIT_BYTES = 5 * 1024 * 1024
@@ -463,8 +464,8 @@ def _send_batch_request(action_dicts):
                 document_service_connection.add(action_dict['id'], fields=action_dict['fields'])
                 max_possible_request_size_bytes += 40 + len(action_dict_json)  # approx. add dict size
 
-        if (len(action_dicts) == i + 1) or (max_possible_request_size_bytes +
-                                                DOCUMENT_SIZE_LIMIT_BYTES > BATCH_REQUEST_LIMIT_BYTES):
+        if (len(action_dicts) == i + 1) or \
+                (max_possible_request_size_bytes + DOCUMENT_SIZE_LIMIT_BYTES > BATCH_REQUEST_LIMIT_BYTES):
             """
             If we're at the end of the loop, or once 4MB is reached, send out the request.
             We sent it out at 4MB (not 5MB) because the last
@@ -516,7 +517,6 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     Set search_limit = 0 for no limit, candidate_ids_only returns dict of candidate_ids.
     Parameters in 'request_vars' could be single values or arrays.
     """
-    # Remove the [] from inputs ending with []
     for var_name in request_vars.keys():
         if "[]" == var_name[-2:]: request_vars[var_name[:-2]] = request_vars[var_name]
 
@@ -546,7 +546,6 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
         search_queries.append(q)
     elif request_vars.get('q'):
         q = request_vars.get('q')
-        # search_queries.append(' AND '.join(query.split(' ')))  # kathleen cook -> kathleen AND cook
         search_queries.append(q)
 
     """ TODO check if we can use weights (^) instead of following logic
@@ -682,9 +681,11 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     # Set filter range for years experience, if given
     if request_vars.get('minimum_years_experience') or request_vars.get('maximum_years_experience'):
         # set default to 0 because * doesn't works with cloudsearch
-        min_months = int(request_vars.get('minimum_years_experience')) * 12 if request_vars.get('minimum_years_experience') else 0
+        min_months = int(request_vars.get('minimum_years_experience')) * 12 if \
+            request_vars.get('minimum_years_experience') else 0
         # set default to 480 (max for 40 years)
-        max_months = int(request_vars.get('maximum_years_experience')) * 12 if request_vars.get('maximum_years_experience') else 480
+        max_months = int(request_vars.get('maximum_years_experience')) * 12 if \
+            request_vars.get('maximum_years_experience') else 480
         filter_queries.append("(range field=total_months_experience [%s,%s])" % (min_months, max_months))
 
     # date filtering
@@ -708,7 +709,8 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
 
     if isinstance(request_vars.get('skillDescriptionFacet'), list):
         # search for exact values in facets
-        skill_facets = ["skill_description:'%s'" % skill_facet for skill_facet in request_vars.get('skillDescriptionFacet')]
+        skill_facets = ["skill_description:'%s'" % skill_facet for skill_facet in
+                        request_vars.get('skillDescriptionFacet')]
         filter_queries.append("(and %s )" % " ".join(skill_facets))
     elif request_vars.get('skillDescriptionFacet'):
         filter_queries.append("(term field=skill_description '%s')" % request_vars.get('skillDescriptionFacet'))
@@ -736,8 +738,8 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
         filter_queries.append("(term field=concentration_type '%s')" % request_vars.get('concentrationTypeFacet'))
 
     if request_vars.get('degree_end_year_from') or request_vars.get('degree_end_year_to'):
-        from_datetime_str, to_datetime_str = _convert_date_range_in_cloudsearch_format(request_vars.get('degree_end_year_from'),
-                                                                                       request_vars.get('degree_end_year_to'))
+        from_datetime_str, to_datetime_str = _convert_date_range_in_cloudsearch_format(request_vars.get(
+            'degree_end_year_from'), request_vars.get('degree_end_year_to'))
         if from_datetime_str and to_datetime_str:
             filter_queries.append("degree_end_date:%s,%s" % (from_datetime_str, to_datetime_str))
 
@@ -759,7 +761,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     if isinstance(request_vars.get('highestGrade'), list):
         # search for exact values in facets
         grade_facets = ["military_highest_grade:'%s'" % grade_facet for grade_facet in request_vars.get('highestGrade')]
-        filter_queries.append("(or %s)" % " ".join( grade_facets ))
+        filter_queries.append("(or %s)" % " ".join(grade_facets))
     elif request_vars.get('highestGrade'):
         filter_queries.append("(term field=military_highest_grade '%s')" % request_vars.get('highestGrade'))
 
@@ -769,53 +771,55 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
             request_vars.get('military_end_date_from'), request_vars.get('military_end_date_to'))
         if from_datetime_str is not None and to_datetime_str is not None:
             filter_queries.append("military_end_date:%s,%s" % (from_datetime_str, to_datetime_str))
+
     # handling custom fields
-    custom_field_request_vars = list()
-    # kaiser_custom_cities_list = list()
-    """TODO we should actually use some Google geocoding/maps API to verify the City of Interest & State of Interest
-    values. We should then re-implement the filtering using kaiser_custom_cities_list. We could also use their
-    Places Autocomplete API on the frontend, instead."""
+    custom_field_vars = list()
     city_of_interest_custom_fields = []
     for key, value in request_vars.items():
-        if 'cf-' in key:  # 'cf-' is for custom fields, it is explicitly prefixed for custom fields
+        if 'cf-' in key:
             cf_id = key.split('-')[1]
+
             # This is for handling kaiser's NUID custom field
-            if int(cf_id) and value == 'Has NUID':
-                cf_value = cf_id + '|'
+            if int(cf_id) == 14 and value == 'Has NUID':
+                cf_value = cf_id+'|'
                 filter_queries.append("(prefix field=custom_field_id_and_value '%s')" % cf_value)
+                continue
+
             # This is for handling standard custom values (not for email preferences)
-            if isinstance(value, list):
+            if type(value) == list:
                 # To avoid REQUEST TOO LONG error we are limiting the search to 50 items
-                # TODO: When Kaiser city of interest and state of interest is merged,
-                # remove the logic to truncate to 50.
+                # TODO: When Kaiser city of interest and state of interest is merged,remove the logic to truncate to 50.
                 value = value[0:50]
                 for val in value:
-                    cf_value = cf_id + '|'+val
-                    custom_field_request_vars.append(cf_value)
+                    cf_value = cf_id+'|'+val
+                    custom_field_vars.append(cf_value)
             else:
-                cf_value = cf_id + '|' + value
-                custom_field_request_vars.append(cf_value)
-    if custom_field_request_vars:
+                cf_value = cf_id+'|'+value
+                custom_field_vars.append(cf_value)
+
+    if len(custom_field_vars):
         import re
-        custom_field_request_vars = ["%s" % custom_field for custom_field in custom_field_request_vars]
-        custom_fields_facets = ["custom_field_id_and_value:%s" % custom_field_facet for custom_field_facet
-                        in custom_field_request_vars]
-        filter_queries.append("%s" % " ".join(custom_fields_facets))
+        custom_field_vars = ["'%s'" % custom_field for custom_field in custom_field_vars]
 
         # special case for kaiser custom fields, 38 is the custom field id = State of Interest
-        city_of_interest_custom_fields_index = [i for i, x in enumerate(custom_field_request_vars)
-                                                if re.findall(r'\"38\|(.*?)\"', x)]
+        city_of_interest_custom_fields_index = [i for i, x in enumerate(custom_field_vars) if
+                                                re.findall(r'\"38\|(.*?)\"', x)]
 
-        for i in sorted(city_of_interest_custom_fields_index, reverse=True):
-            city_of_interest_custom_fields.append(custom_field_request_vars[i])
-            del custom_field_request_vars[i]
+        if len(city_of_interest_custom_fields_index):
+            for i in sorted(city_of_interest_custom_fields_index, reverse=True):
+                city_of_interest_custom_fields.append(custom_field_vars[i])
+                del custom_field_vars[i]
 
-        if city_of_interest_custom_fields:
+        if len(custom_field_vars):
+            custom_fields_facets = ["custom_field_id_and_value:%s" % custom_field_facet for custom_field_facet in
+                                    custom_field_vars]
+            filter_queries.append("(or %s)" % " ".join(custom_fields_facets))
+        if len(city_of_interest_custom_fields):
             city_of_interest_custom_fields_facets = ["custom_field_id_and_value:%s" %
-                                                     city_of_interest_custom_fields_facet
-                                                     for city_of_interest_custom_fields_facet
-                                                     in city_of_interest_custom_fields]
-            filter_queries.append(" %s" % " " . join(city_of_interest_custom_fields_facets))
+                                                     city_of_interest_custom_fields_facet for
+                                                     city_of_interest_custom_fields_facet in
+                                                     city_of_interest_custom_fields]
+            filter_queries.append("(or %s)" % " " . join(city_of_interest_custom_fields_facets))
 
     """
     Two funnel search modes:
@@ -869,15 +873,11 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
         params = dict(params.items() + geo_params.items())
 
     # Return data dictionary. Initializing here, to have standard return type across the function
-    context_data = dict(candidate_ids=[],
-                        percentage_matches=[],
-                        search_data=dict(descriptions=[], facets=dict(), error=dict(), request_vars=request_vars, mode='search'),
-                        total_found=0,
-                        descriptions=[],
-                        max_score=0,
-                        max_pages=0)
+    context_data = dict(candidate_ids=[], percentage_matches=[],
+                        search_data=dict(descriptions=[], facets=dict(), error=dict(), request_vars=request_vars,
+                                         mode='search'), total_found=0, descriptions=[], max_score=0, max_pages=0)
 
-    # Looks like cloudsearch does not have something like return only count predefined
+    # Looks like cloud_search does not have something like return only count predefined
     # removing fields and returned content should speed up network request
     if count_only:
         params['ret'] = "_no_fields,_score"
@@ -925,7 +925,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     has_kaiser_nuid = False
     num_kaiser_nuids = 0
     custom_fields = dict()
-    if len(facets.get('custom_field_id_and_value', dict())):
+    if facets.get('custom_field_id_and_value', dict()):
         for cf_facet_row in facets['custom_field_id_and_value']:
             # cf_hash example: 9|Top Gun
             # 9 = id of custom field (in this case, Movies)
@@ -954,7 +954,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
             custom_fields['cf-%d' % cf_id].append((cf_value, cf_facet_count))
 
         if has_kaiser_nuid:
-            custom_fields['cf-%d' % cf_id] = [('Has NUID', num_kaiser_nuids)]
+            custom_fields['cf-14'] = [('Has NUID', num_kaiser_nuids)]
 
         facets = dict(facets.items() + custom_fields.items())
 
@@ -964,7 +964,8 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
         # if sorting is other than "_score, desc", fire another query with _score, desc sorting so as to get
         # max relevance score.
         default_sorting = "%s %s" % (DEFAULT_SORT_FIELD, DEFAULT_SORT_ORDER)
-        params['sort'] = default_sorting  # Update the sort parameter, to have sorting based on _score, desc
+        params['sort'] = default_sorting
+        # Update the sort parameter, to have sorting based on _score, desc
         # Limit search to one result, we only want max_score which is top most row when sorted with above criteria
         params['size'] = 1
         params['ret'] = "_score"
@@ -1035,7 +1036,6 @@ def get_faceting_information(facets):
         search_facets_values['usernameFacet'] = get_username_facet_info_with_ids(facet_owner)
 
     if facet_aoi:
-        from candidate_service.common.models.misc import AreaOfInterest
         search_facets_values['areaOfInterestIdFacet'] = get_facet_info_with_ids(AreaOfInterest, facet_aoi,
                                                                                 'description')
 
@@ -1100,8 +1100,6 @@ def get_facet_info_with_ids(table_name, facet, field_name):
     """
 
     tmp_dict = {}
-    if isinstance(table_name, basestring):
-        table_name = table_name.split("'")
     for bucket in facet:
         row = db.session.query(table_name).filter_by(id=int(bucket['value'])).first()
         if row:
@@ -1150,16 +1148,15 @@ def _update_facet_counts(filter_queries, params_fq, existing_facets, query_strin
                                             'ret': '_no_fields', 'facet': "{area_of_interest_id: {size:500}}"}
             result_area_of_interest_facet = search_service.search(**query_area_of_interest_facet)
             facet_aoi = result_area_of_interest_facet['facets']['area_of_interest_id']['buckets']
-            existing_facets['areaOfInterestIdFacet'] = get_facet_info_with_ids("area_of_interest", facet_aoi,
+            existing_facets['areaOfInterestIdFacet'] = get_facet_info_with_ids(AreaOfInterest, facet_aoi,
                                                                                'description')
         if 'source_id' in filter_query:
             fq_without_source_id = params_fq.replace(filter_query, '')
             query_source_id_facet = {'query': query_string, 'size': 0, 'filter_query': fq_without_source_id,
                                      'query_parser': 'lucene', 'ret': '_no_fields', 'facet': "{source_id: {size:50}}"}
             result_source_id_facet = search_service.search(**query_source_id_facet)
-            # domain_candidate_source = db(db.candidate_source.domainId == domain_id).select(cache=(cache.ram, 120))
             facet_source = result_source_id_facet['facets']['source_id']['buckets']
-            existing_facets['sourceFacet'] = get_facet_info_with_ids('candidate_source', facet_source, 'description')
+            existing_facets['sourceFacet'] = get_facet_info_with_ids(CandidateSource, facet_source, 'description')
         if 'school_name' in filter_query:
             fq_without_school_name = params_fq.replace(filter_query, '')
             query_school_name_facet = {'query': query_string, 'size':0, 'filter_query': fq_without_school_name,
@@ -1169,7 +1166,7 @@ def _update_facet_counts(filter_queries, params_fq, existing_facets, query_strin
             facet_school = result_school_name_facet['facets']['school_name']['buckets']
             existing_facets['schoolNameFacet'] = get_bucket_facet_value_count(facet_school)
         if 'degree_type' in filter_query:
-            fq_without_degree_type = params_fq.replace(filter_query,'')
+            fq_without_degree_type = params_fq.replace(filter_query, '')
             query_degree_type_facet = {'query': query_string, 'size': 0, 'filter_query': fq_without_degree_type,
                                        'query_parser': 'lucene', 'ret': '_no_fields', 'facet':
                                            "{degree_type: {size:50}}"}
@@ -1193,7 +1190,7 @@ def _cloud_search_fetch_all(params):
     total_found = 0
     candidate_ids = []
     error = False
-    # If size is more than 10000, cloudsearch will give error, so set size to chunk of 10000 candidates and fetch all
+    # If size is more than 10000, cloud_search will give error, so set size to chunk of 10000 candidates and fetch all
     if params['size'] > CLOUD_SEARCH_MAX_LIMIT:
         params['size'] = CLOUD_SEARCH_MAX_LIMIT
     while not no_more_candidates:

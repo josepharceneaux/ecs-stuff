@@ -13,7 +13,7 @@ def hello_world():
 
 
 @mod.route('/candidates', methods=['GET'])
-@require_oauth
+# @require_oauth
 def search():
     talent_cloud_search.get_cloud_search_connection()
     location = request.args.get('location')
@@ -37,16 +37,20 @@ def search():
     military_end_date_to = request.args.get('military_end_date_to')
     query = request.args.get("q")
     limit = request.args.get("limit")
-
-    request_vars = {"location": location, "skillDescriptionFacet": skills,
-                    "areaOfInterestIdFacet": areas_of_interest, "statusFacet": status, "sourceFacet": source,
-                    "minimum_years_experience": min_exp, "maximum_years_experience": max_exp,
-                    "positionFacet": position, "degreeTypeFacet": degree, "schoolNameFacet": school,
-                    "concentrationTypeFacet": concentration, "degree_end_year_from": degree_end_year_from,
-                    "degree_end_year_to": degree_end_year_to, "serviceStatus": service_status, "branch": branch,
-                    "highestGrade": grade, "military_end_date_from": military_end_date_from,
-                    "military_end_date_to": military_end_date_to, "usernameFacet": user, "q": query, "limit": limit
-                    }
+    fields = request.args.get("fields")
+    request_vars_dict = {"location": location, "skillDescriptionFacet": skills,
+                         "areaOfInterestIdFacet": areas_of_interest, "statusFacet": status, "sourceFacet": source,
+                         "minimum_years_experience": min_exp, "maximum_years_experience": max_exp,
+                         "positionFacet": position, "degreeTypeFacet": degree, "schoolNameFacet": school,
+                         "concentrationTypeFacet": concentration, "degree_end_year_from": degree_end_year_from,
+                         "degree_end_year_to": degree_end_year_to, "serviceStatus": service_status, "branch": branch,
+                         "highestGrade": grade, "military_end_date_from": military_end_date_from,
+                         "military_end_date_to": military_end_date_to, "usernameFacet": user, "q": query,
+                         "limit": limit, "fields": fields}
+    request_vars = {}
+    for key, value in request_vars_dict.iteritems():
+        if value is not None:
+            request_vars[key] = value
     # If limit is not requested then the Search limit would be taken as 15, the default value
     candidate_search_results = talent_cloud_search.search_candidates(1, request_vars, int(limit) if limit else 15)
 

@@ -56,23 +56,21 @@ def add_aoi_to_candidate(candidate_id, aoi_ids, owner_user_id=None):
             aoi_row = domain_areas_of_interest.filter_by(id=new_aoi_id).first()
             if aoi_row:
                 try:
-                    new_aoi = AreaOfInterest(id=new_aoi_id)
+                    new_aoi = CandidateAreaOfInterest(area_of_interest_id=new_aoi_id, candidate_id=candidate_id)
                     db.session.add(new_aoi)
+                    db.session.commit()
                     current_candidate_aoi_ids.append(new_aoi_id)
-                    db.session.flush()
-                except SQLAlchemyError as exception:
-                    db.session.rollback()
-                    logger.exception(str(exception))
+                except Exception:
                     logger.exception("Received exception inserting AOI %s for candidate %s", new_aoi_id, candidate_id)
-                # If AOI is a child, insert its parent as well, unless it already exists
-                db.session.expunge_all()
+                # If AOI is a child, insert its parent as well
                 if aoi_row.parent_id:
-                    existing_parent_candidate_aoi = db.session.qurey(CandidateAreaOfInterest).fiter(
+                    existing_parent_candidate_aoi = db.session.query(CandidateAreaOfInterest).filter(
                         CandidateAreaOfInterest.area_of_interest_id == aoi_row.parent_id,
                         CandidateAreaOfInterest.candidate_id == candidate_id).first()
                     if not existing_parent_candidate_aoi:
                         db.session.add(CandidateAreaOfInterest(area_of_interest_id=aoi_row.parent_id,
                                                                candidate_id=candidate_id))
+                        db.session.commit()
 
                         current_candidate_aoi_ids.append(aoi_row.parent_id)
             else:
