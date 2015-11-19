@@ -14,7 +14,8 @@ from candidate_service.common.tests.conftest import *
 
 # Helper functions
 from helpers import (
-    response_info, post_to_candidate_resource, get_from_candidate_resource
+    response_info, post_to_candidate_resource, get_from_candidate_resource,
+    check_for_id
 )
 
 ######################## Candidate ########################
@@ -145,7 +146,7 @@ def test_get_candidate_via_id_and_email(sample_user, user_auth):
     print response_info(resp.request, resp_dict, resp.status_code)
     assert resp.status_code == 200
     assert isinstance(resp_dict, dict)
-    assert 'candidate' in resp_dict and 'id' in resp_dict['candidate']
+    assert check_for_id(_dict=resp_dict['candidate']) is not False
 
     # Get candidate via Candidate Email
     resp = get_from_candidate_resource(access_token=token, candidate_email=candidate_email)
@@ -154,5 +155,5 @@ def test_get_candidate_via_id_and_email(sample_user, user_auth):
     print response_info(resp.request, resp_dict, resp.status_code)
     assert resp.status_code == 200
     assert isinstance(resp_dict, dict)
-    assert 'candidate' in resp_dict and 'id' in resp_dict['candidate']
+    assert check_for_id(_dict=resp_dict['candidate']) is not False
 

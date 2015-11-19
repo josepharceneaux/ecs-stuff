@@ -14,7 +14,7 @@ def generate_single_candidate_data():
     """
     :rtype: dict
     """
-    data = {'candidates': [
+    data = {'candidate':
         {
             'first_name': fake.first_name(),
             'middle_name': fake.first_name(),
@@ -69,7 +69,7 @@ def generate_single_candidate_data():
                 {'profile_url': 'https://twitter.com/dmcnulla', 'name': 'twitter'}
             ]
         }
-    ]}
+    }
 
     return data
 
