@@ -132,3 +132,61 @@ def update_candidate(access_token):
         data=json.dumps(data)
     )
     return resp
+
+
+def check_for_id(candidate_dict):
+    """
+    Checks for id-key in candidate_dict and all its nested objects that must have an id-key
+    :return False if an id-key is missing in candidate_dict or any of its nested objects
+    """
+    # Get top level keys
+    top_level_keys = candidate_dict.keys()
+
+    # Top level dict must have an id-key
+    if not 'id' in top_level_keys:
+        return False
+
+    # Remove id-key from top level keys
+    top_level_keys.remove('id')
+
+    # Remove contact_history key since it will not have an id-key to begin with
+    if 'contact_history' in top_level_keys:
+        top_level_keys.remove('contact_history')
+
+    for key in top_level_keys:
+        obj = candidate_dict[key]
+        if isinstance(obj, dict):
+            if not any(obj):
+                continue
+            check = id_exists(_dict=obj)
+            if check is False:
+                return check
+
+        if isinstance(obj, list):
+            list_of_dicts = obj
+            for _dict in list_of_dicts:
+                for el in _dict:
+                    if type(_dict[el]) == list:
+                        for i in range(0, len(_dict[el])):
+                            check = check_for_id(candidate_dict=_dict[el][i]) # recurse
+                            if check is False:
+                                return check
+
+                check = id_exists(_dict=_dict)
+                if check is False:
+                    return check
+
+def id_exists(_dict):
+    """
+    :return True if id-key is found in _dict, otherwise False
+    """
+    assert isinstance(_dict, dict)
+    check = True
+    # Get _dict's keys
+    keys = _dict.keys()
+
+    # Ensure 'id' key exists
+    if not 'id' in keys:
+        check = False
+
+    return check

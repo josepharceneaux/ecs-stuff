@@ -20,7 +20,7 @@ from helpers import (
 ######################## Candidate ########################
 def test_get_candidate_without_authed_user(sample_user, user_auth):
     """
-    Test:   Attempt to retrieve candidate with bad access_token
+    Test:   Attempt to retrieve candidate with no access token
     Expect: 401
     :type sample_user:  User
     :type user_auth:    UserAuthentication
@@ -144,6 +144,7 @@ def test_get_candidate_via_id_and_email(sample_user, user_auth):
     resp_dict = resp.json()
     print response_info(resp.request, resp_dict, resp.status_code)
     assert resp.status_code == 200
+    assert isinstance(resp_dict, dict)
     assert 'candidate' in resp_dict and 'id' in resp_dict['candidate']
 
     # Get candidate via Candidate Email
@@ -152,4 +153,6 @@ def test_get_candidate_via_id_and_email(sample_user, user_auth):
     resp_dict = resp.json()
     print response_info(resp.request, resp_dict, resp.status_code)
     assert resp.status_code == 200
+    assert isinstance(resp_dict, dict)
     assert 'candidate' in resp_dict and 'id' in resp_dict['candidate']
+
