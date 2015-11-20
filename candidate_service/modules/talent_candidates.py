@@ -4,6 +4,7 @@ Helper functions related to retrieving, creating, updating, and deleting candida
 # Standard libraries
 import datetime
 from datetime import date
+import simplejson as json
 
 # Database connection and logger
 from candidate_service.common.models.db import db
@@ -140,7 +141,7 @@ def fetch_candidate_info(candidate_id, fields=None):
         'dice_profile_id': dice_profile_id
     }
 
-    # Remove all values that are empty
+    # Remove keys with None values
     return_dict = dict((k, v) for k, v in return_dict.iteritems() if v is not None)
     return return_dict
 
@@ -235,9 +236,10 @@ def candidate_work_preference(candidate):
             'employment_type': work_preference[0].tax_terms,
             'security_clearance': work_preference[0].bool_security_clearance,
             'relocate': work_preference[0].bool_relocate,
-            'telecommute': bool(work_preference[0].telecommute),
+            'telecommute': work_preference[0].bool_telecommute,
             'hourly_rate': work_preference[0].hourly_rate,
             'salary': work_preference[0].salary,
+            'tax_terms': work_preference[0].tax_terms,
             'travel_percentage': work_preference[0].travel_percentage,
             'third_party': work_preference[0].bool_third_party
             } if work_preference else dict()
@@ -265,6 +267,8 @@ def candidate_educations(candidate):
     educations = candidate.candidate_educations
     return [{'id': education.id,
              'school_name': education.school_name,
+             'school_type': education.school_type,
+             'is_current': education.is_current,
              'degrees': candidate_degrees(education=education),
              'city': education.city,
              'state': education.state,
@@ -285,7 +289,7 @@ def candidate_degrees(education):
              'start_month': str(degree.start_month) if degree.start_month else None,
              'end_year': str(degree.end_year) if degree.start_year else None,
              'end_month': str(degree.end_month) if degree.start_month else None,
-             'gpa': degree.gpa_num,
+             'gpa': json.dumps(degree.gpa_num, use_decimal=True),
              'start_date': degree.start_time.date().isoformat() if degree.start_time else None,
              'end_date': degree.end_time.date().isoformat() if degree.end_time else None,
              'degree_bullets': candidate_degree_bullets(degree=degree),
@@ -572,8 +576,7 @@ def create_or_update_candidate_from_params(
 
     # Update is not possible without candidate ID
     elif not candidate_id and is_updating:
-        error_message = "Candidate ID is required for updating."
-        raise InvalidUsage(error_message=error_message)
+        raise InvalidUsage(error_message="Candidate ID is required for updating.")
 
     if is_update:  # Update Candidate
         candidate_id = _update_candidate(first_name, middle_name, last_name,
@@ -766,7 +769,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name,
                    'summary': summary}
 
     # Remove None values from update_dict
-    update_dict = dict((k, v) for k, v in update_dict.iteritems() if v)
+    update_dict = dict((k, v) for k, v in update_dict.iteritems() if v is not None)
 
     # Candidate will not be updated if update_dict is empty
     if not any(update_dict):
@@ -815,10 +818,11 @@ def _add_or_update_candidate_addresses(candidate_id, addresses):
     address_has_default = any([address.get('is_default') for address in addresses])
     for i, address in enumerate(addresses):
         address_dict = address.copy()  # TODO: assert 'address' has no fields that shouldn't be there!
+        zip_code = sanitize_zip_code(address.get('zip_code'))
         address_dict.update({
             'country_id': Country.country_id_from_name_or_code(address.get('country')),
-            'zip_code': sanitize_zip_code(address.get('zip_code')),
-            'coordinates': get_coordinates(address.get('zip_code'), address.get('city'), address.get('state')),
+            'zip_code': zip_code,
+            'coordinates': get_coordinates(zip_code, address.get('city'), address.get('state')),
             'is_default': i == 0 if address_has_default else address.get('is_default'),
             'country': None,
             'candidate_id': candidate_id,
@@ -830,7 +834,7 @@ def _add_or_update_candidate_addresses(candidate_id, addresses):
             continue
 
         # Remove keys that have None values
-        address_dict = dict((k, v) for k, v in address_dict.iteritems() if v)
+        address_dict = dict((k, v) for k, v in address_dict.iteritems() if v is not None)
 
         address_id = address.get('id')
         if address_id:  # Update
@@ -889,7 +893,7 @@ def _add_or_update_candidate_custom_field_ids(candidate_id, custom_fields, added
         if candidate_custom_field_id:   # Update
 
             # Remove keys with None values
-            custom_field_dict = dict((k, v) for k, v in custom_field_dict.iteritems() if v)
+            custom_field_dict = dict((k, v) for k, v in custom_field_dict.iteritems() if v is not None)
 
             # Update CandidateCustomField
             db.session.query(CandidateCustomField).filter_by(candidate_id=candidate_id).\
@@ -923,7 +927,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
         if education_id:  # Update
 
             # Remove keys with None values
-            education_dict = dict((k, v) for k, v in education_dict.iteritems() if v)
+            education_dict = dict((k, v) for k, v in education_dict.iteritems() if v is not None)
 
             # Update CandidateEducation
             db.session.query(CandidateEducation).filter_by(id=education_id).update(education_dict)
@@ -947,7 +951,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
                 )
 
                 # Remove keys with None values
-                education_degree_dict = dict((k, v) for k, v in education_degree_dict.iteritems() if v)
+                education_degree_dict = dict((k, v) for k, v in education_degree_dict.iteritems() if v is not None)
 
                 education_degree_id = education_degree.get('id')
                 if education_degree_id:  # Update CandidateEducationDegree
@@ -964,7 +968,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
 
                         # Remove keys with None values
                         education_degree_bullet_dict = dict((k, v) for k, v in
-                                                            education_degree_bullet_dict.iteritems() if v)
+                                                            education_degree_bullet_dict.iteritems() if v is not None)
 
                         education_degree_bullet_id = education_degree_bullet.get('id')
                         if education_degree_bullet_id:  # Update CandidateEducationDegreeBullet
@@ -1066,7 +1070,7 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time):
         if experience_id:  # Update
 
             # Remove keys with None values
-            experience_dict = dict((k, v) for k, v in experience_dict.iteritems() if v)
+            experience_dict = dict((k, v) for k, v in experience_dict.iteritems() if v is not None)
 
             # Update CandidateExperience
             db.session.query(CandidateExperience).filter_by(candidate_id=candidate_id).update(experience_dict)
@@ -1081,7 +1085,7 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time):
                 )
 
                 # Remove keys with None values
-                experience_bullet_dict = dict((k, v) for k, v in experience_bullet_dict.iteritems() if v)
+                experience_bullet_dict = dict((k, v) for k, v in experience_bullet_dict.iteritems() if v is not None)
 
                 experience_bullet_id = experience_bullet.get('id')
                 if experience_bullet_id:  # Update
@@ -1126,15 +1130,15 @@ def _add_or_update_work_preference(candidate_id, work_preference):
     )
 
     # Remove None values from update_dict
-    work_preference_dict = dict((k, v) for k, v in work_preference_dict.iteritems() if v)
+    work_preference_dict = dict((k, v) for k, v in work_preference_dict.iteritems() if v is not None)
 
     work_preference_id = work_preference.get('id')
     if work_preference_id:  # Update
-        db.session.query(CandidateWorkPreference).\
-            filter_by(candidate_id=candidate_id).update(work_preference_dict)
+        db.session.query(CandidateWorkPreference).filter_by(candidate_id=candidate_id)\
+            .update(work_preference_dict)
 
     else:  # Add
-        # Only 1 CandidateWorkPreference is permitted for each Candiadte
+        # Only 1 CandidateWorkPreference is permitted for each Candidate
         if db.session.query(CandidateWorkPreference).filter_by(candidate_id=candidate_id).first():
             raise InvalidUsage(error_message="Candidate work preference already exists.")
 
@@ -1156,7 +1160,7 @@ def _add_or_update_emails(candidate_id, emails):
 
         email_dict = dict(
             address=email_address,
-            email_label_id=EmailLabel.email_label_id_from_email_label(email_label=email['label']),
+            email_label_id=EmailLabel.email_label_id_from_email_label(email_label=email.get('label')),
             is_default=is_default
         )
 
@@ -1166,7 +1170,7 @@ def _add_or_update_emails(candidate_id, emails):
                 raise InvalidUsage(error_message="Email address is required for update.")
 
             # Remove keys with None values
-            email_dict = dict((k, v) for k, v in email_dict.iteritems() if v)
+            email_dict = dict((k, v) for k, v in email_dict.iteritems() if v is not None)
 
             # Update CandidateEamil
             db.session.query(CandidateEmail).filter_by(id=email_id).update(email_dict)
@@ -1197,7 +1201,7 @@ def _add_or_update_phones(candidate_id, phones):
         if candidate_phone_id:  # Update
 
             # Remove keys with None values
-            phone_dict = dict((k, v) for k, v in phone_dict.iteritems() if v)
+            phone_dict = dict((k, v) for k, v in phone_dict.iteritems() if v is not None)
 
             # Update CandidatePhone
             db.session.query(CandidatePhone).filter_by(candidate_id=candidate_id).update(phone_dict)
@@ -1227,7 +1231,7 @@ def _add_or_update_military_services(candidate_id, military_services):
         if military_service_id:  # Update
 
             # Remove keys with None values
-            military_service_dict = dict((k, v) for k, v in military_service_dict.iteritems() if v)
+            military_service_dict = dict((k, v) for k, v in military_service_dict.iteritems() if v is not None)
 
             # Update CandidateMilitaryService
             db.session.query(CandidateMilitaryService).filter_by(candidate_id=candidate_id).\
@@ -1256,7 +1260,7 @@ def _add_or_update_preferred_locations(candidate_id, preferred_locations):
         if preferred_location_id:  # Update
 
             # Remove keys with None values
-            preferred_location_dict = dict((k, v) for k, v in preferred_location_dict.iteritems() if v)
+            preferred_location_dict = dict((k, v) for k, v in preferred_location_dict.iteritems() if v is not None)
 
             # Update CandidatePreferredLocation
             db.session.query(CandidatePreferredLocation).\
@@ -1284,7 +1288,7 @@ def _add_or_update_skills(candidate_id, skills, added_time):
         if skill_id:  # Update
 
             # Remove keys with None values
-            skills_dict = dict((k, v) for k, v in skills_dict.iteritems() if v)
+            skills_dict = dict((k, v) for k, v in skills_dict.iteritems() if v is not None)
 
             # Update CandidateSkill
             db.session.query(CandidateSkill).filter_by(candidate_id=candidate_id).update(skills_dict)

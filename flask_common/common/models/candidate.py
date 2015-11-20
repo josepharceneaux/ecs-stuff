@@ -203,13 +203,12 @@ class EmailLabel(db.Model):
         return "<EmailLabel (description=' %r')>" % self.description
 
     @classmethod
-    def email_label_id_from_email_label(cls, email_label):
+    def email_label_id_from_email_label(cls, email_label=None):
         """
         Function retrieves email_label_id from email_label
         e.g. 'Primary' => 1
         :return:  email_label ID if email_label is recognized, otherwise 1 ('Primary')
         """
-        assert email_label
         email_label_row = cls.query.filter(EmailLabel.description == email_label).first()
         if email_label_row:
             return email_label_row.id
@@ -410,6 +409,10 @@ class CandidateWorkPreference(db.Model):
     @property
     def bool_security_clearance(self):
         return False if self.security_clearance == 'F' else True
+
+    @property
+    def bool_telecommute(self):
+        return False if self.telecommute == 'F' or unicode(0) else True
 
     @property
     def bool_relocate(self):
