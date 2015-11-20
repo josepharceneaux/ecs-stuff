@@ -4,6 +4,7 @@ var watch = require('gulp-watch');
 var modRewrite = require('connect-modrewrite');
 
 module.exports = function (config) {
+    config.log('Importing serve.js...');
 
     var args = config.args,
         log = config.log,
@@ -11,6 +12,13 @@ module.exports = function (config) {
         $ = config.$;
 
     gulp.task('serve-dev', ['inject'], function () {
+        var msg = {
+            title: 'gulp serve',
+            subtitle: 'Serving from tmp folder',
+            message: 'Running `gulp serve-dev`'
+        };
+        log(msg);
+        notify(msg);
         //serve(true /*isDev*/);
         startBrowserSync(true /*isDev*/);
     });
@@ -57,7 +65,7 @@ module.exports = function (config) {
                 log('files changed:\n' + ev);
                 setTimeout(function () {
                     browserSync.notify('reloading now ...');
-                    browserSync.reload({stream: false});
+                    browserSync.reload({ stream: false });
                 }, config.browserReloadDelay);
             })
             .on('start', function () {
@@ -88,9 +96,15 @@ module.exports = function (config) {
         // If dev: watches sass, compiles it to css, browser-sync handles reload
         var files = [].concat(config.js, config.html, config.sass);
         if (isDev) {
-            watch(files, { readDelay: 3000 }, function(){ gulp.start('inject', browserSync.reload); });
+            watch(files, {
+                readDelay: 3000
+            }, function () {
+                gulp.start('inject', browserSync.reload);
+            });
         } else {
-            watch(files, function(){ gulp.start('optimize', browserSync.reload); });
+            watch(files, function () {
+                gulp.start('optimize', browserSync.reload);
+            });
         }
 
         var options = {
@@ -124,6 +138,4 @@ module.exports = function (config) {
 
         browserSync(options);
     }
-
 };
-

@@ -1,9 +1,9 @@
 var gulp = require('gulp');
 
 module.exports = function (config) {
+    config.log('Importing config.js...');
 
     gulp.task('config', function () {
-
         var env = process.env.GT_NODE_ENV || 'development';
 
         return gulp
@@ -15,4 +15,3 @@ module.exports = function (config) {
             .pipe(gulp.dest(config.tempDir));
     });
 };
-
