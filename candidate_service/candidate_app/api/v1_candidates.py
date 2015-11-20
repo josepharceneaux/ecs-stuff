@@ -121,7 +121,7 @@ class CandidateResource(Resource):
 
             # Ensure emails list is provided
             if not candidate_dict.get('emails'):
-                raise InvalidUsage(error_message="Emails list is required")
+                raise InvalidUsage(error_message="Email address is required for creating candidate")
 
             emails = [{'label': email.get('label'), 'address': email.get('address')}
                       for email in candidate_dict.get('emails')]
@@ -159,11 +159,11 @@ class CandidateResource(Resource):
             phones = candidate_dict.get('phones')
             educations = candidate_dict.get('educations')
             military_services = candidate_dict.get('military_services')
-            social_networks = candidate_dict.get('social_networks', [])
-            work_experiences = candidate_dict.get('work_experiences', [])
+            social_networks = candidate_dict.get('social_networks')
+            work_experiences = candidate_dict.get('work_experiences')
             work_preference = candidate_dict.get('work_preference')
             preferred_locations = candidate_dict.get('preferred_locations')
-            skills = candidate_dict.get('skills', [])
+            skills = candidate_dict.get('skills')
             dice_social_profile_id = body_dict.get('openweb_id')
             dice_profile_id=body_dict.get('dice_profile_id')
 

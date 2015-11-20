@@ -64,8 +64,7 @@ def create_same_candidate(access_token):
     return resp
 
 
-def get_from_candidate_resource(access_token, candidate_id='',
-                                candidate_email=''):
+def get_from_candidate_resource(access_token, candidate_id='', candidate_email=''):
     """
     Function sends a get request to CandidateResource via candidate's ID
     or candidate's Email
@@ -171,7 +170,7 @@ def check_for_id(_dict):
                 for _key in dictionary:
                     if type(dictionary[_key]) == list:
                         for i in range(0, len(dictionary[_key])):
-                            check = check_for_id(_dict=dictionary[_key][i]) # recurse
+                            check = check_for_id(_dict=dictionary[_key][i])  # recurse
                             if check is False:
                                 return check
 
@@ -236,5 +235,5 @@ def remove_id_key(_dict):
                             remove_id_key(_dict=dictionary[_key][i])  # recurse
     return _dict
 
-# TODO: remove keys that have None values (can be done in remove_id_key, or maybe a better idea to keep it separate)
-# TODO: check if two objects are identical
+    # TODO: remove keys that have None values (can be done in remove_id_key, or maybe a better idea to keep it separate)
+    # TODO: check if two objects are identical
