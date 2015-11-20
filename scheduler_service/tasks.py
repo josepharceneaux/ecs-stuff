@@ -19,7 +19,15 @@ def send_email_campaign(*args, **kwargs):
     # time.sleep(5)
     return 'Email Campaign sent successfully'
 
+
+@celery.task(name='raise_exception')
+def raise_exception(*args, **kwargs):
+    print('raise_exception')
+    # time.sleep(5)
+    raise Exception('Intentional exception raised')
+
 methods = {
     'send_sms_campaign': send_sms_campaign,
-    'send_email_campaign': send_email_campaign
+    'send_email_campaign': send_email_campaign,
+    'raise_exception': raise_exception
 }
