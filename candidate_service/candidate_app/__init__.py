@@ -23,6 +23,8 @@ health = HealthCheck(app, "/healthcheck")
 from candidate_service.candidate_app.api.v1_candidates import (
     CandidateResource, CandidateEmailCampaignResource
 )
+from candidate_service.candidate_app.api.smartlists_api import SmartlistCandidates
+
 api = GetTalentApi(app=app)
 api.add_resource(CandidateResource,
                  '/v1/candidates/<int:id>',
@@ -30,6 +32,8 @@ api.add_resource(CandidateResource,
                  '/v1/candidates')
 api.add_resource(CandidateEmailCampaignResource,
                  '/v1/candidates/<int:id>/email_campaigns/<int:email_campaign_id>/email_campaign_sends', endpoint='candidates')
+api.add_resource(SmartlistCandidates,
+                 '/v1/smartlist/<int:id>/get_candidates/')
 
 db.create_all()
 db.session.commit()
