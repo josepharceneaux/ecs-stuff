@@ -1,6 +1,7 @@
 from celery import Celery
-from scheduler_service.tasks import app, celery, send_campaign
-from scheduler_service.utilities import get_all_tasks
+from scheduler_service.common.models.scheduler import SchedulerTask
+from  scheduler_service import tasks
+from scheduler_service.tasks import app, send_sms_campaign, methods
 
 __author__ = 'zohaib'
 
@@ -67,46 +68,38 @@ CORS(app, resources={
     }
 })
 
-@app.route('/')
-def hello_world():
+
+@app.route('/index')
+def index():
     return 'Welcome to SMS Campaign Service'
 
 
-@app.route('/tasks')
+@app.route('/tasks/')
 def tasks():
-    data = get_all_tasks()
-    return render_template('tasks.html', tasks=data)
+    tasks = SchedulerTask.query.all()
+    tasks = [task.to_json() for task in tasks]
+    return render_template('tasks.html', tasks=tasks)
 
 
 @app.route('/schedule/', methods=['GET', 'POST'])
-def sms():
+def task():
     """
     This is a test end point which sends sms campaign
     :return:
     """
-    # if request.args.has_key('text'):
-    #     body_text = request.args['text']
-    #     body_text = process_link_in_body_text(body_text)
-    # else:
-    #     body_text = 'Welcome to getTalent'
-    # ids = get_smart_list_ids()
-    # start_min = request.args.get('start')
-    # end_min = request.args.get('end')
     start_date = datetime.now()
     start_date.replace(minute=(start_date.minute + 1))
     end_date = start_date + timedelta(minutes=5)
     repeat_time_in_sec = int(request.args.get('frequency', 10))
-    func = request.args.get('func')
+    func = request.args.get('func', 'send_sms_campaign')
     arg1 = request.args.get('arg1')
     arg2 = request.args.get('arg2')
-    # for x in range (1,50):
-    # send_campaign()
-    # return 'Jon ran'
     job = scheduler.add_interval_job(callback,
-                                 seconds=repeat_time_in_sec,
-                                 start_date=start_date,
-                                 args=[func, [arg1, arg2], end_date],
-                                 jobstore='redisJobStore')
+                                     seconds=repeat_time_in_sec,
+                                     start_date=start_date,
+                                     args=[arg1, arg2, end_date],
+                                     kwargs=dict(func=func, end_date=end_date),
+                                     jobstore='redisJobStore')
     print 'Task has been added and will run at %s ' % start_date
     return 'Task has been added to queue!!!'
     # response = send_sms_campaign(ids, body_text)
@@ -117,8 +110,11 @@ def sms():
 
 
 def callback(*args, **kwargs):
-    print('asas')
-    send_campaign.apply_async()
+    print('args', args)
+    if kwargs['func'] in methods:
+        methods[kwargs['func']].apply_async(args, kwargs)
+    else:
+        send_sms_campaign.apply_async(args, kwargs)
 
 
 @app.errorhandler(Exception)

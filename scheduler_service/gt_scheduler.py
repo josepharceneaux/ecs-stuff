@@ -1,4 +1,5 @@
 # from common.models.scheduler import SchedulerTask
+from scheduler_service.common.models.scheduler import SchedulerTask
 
 __author__ = 'basit'
 
