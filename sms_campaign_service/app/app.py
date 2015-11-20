@@ -119,22 +119,27 @@ def sms_campaign_send(campaign_id=None):
     return ''
 
 
-@app.route('/sms_campaign/<int:campaign_id>/url_redirection/', methods=['GET'])
-def sms_campaign_url_redirection(campaign_id=None):
+@app.route('/sms_campaign/<int:campaign_id>/url_redirection/<int:url_conversion_id>/', methods=['GET'])
+def sms_campaign_url_redirection(campaign_id=None, url_conversion_id=None):
     try:
         user_id = request.args.get('user_id')
-        url_conversion_id = request.args.get('url_conversion_id')
-        assert user_id and campaign_id and url_conversion_id
-
-        camp_obj = SmsCampaignBase(user_id=user_id)
-        redirection_url = camp_obj.process_url_redirect(campaign_id=campaign_id,
-                                                        url_conversion_id=url_conversion_id)
-        if redirection_url:
-            return redirect(redirection_url)
+        candidate_id = request.args.get('candidate_id')
+        if all([user_id and campaign_id and url_conversion_id and candidate_id]):
+            camp_obj = SmsCampaignBase(user_id=user_id)
+            redirection_url = camp_obj.process_url_redirect(campaign_id=campaign_id,
+                                                            url_conversion_id=url_conversion_id,
+                                                            candidate_id=candidate_id)
+            if redirection_url:
+                return redirect(redirection_url)
+            else:
+                return "Couldn't find redirection URL"
         else:
-            return "Couldn't find redirection URL"
-    except:
+            return "Required field is missing from requested URL." \
+                   "user_id:%s, campaign_id:%s, url_conversion_id:%s, candidate_id:%s" \
+                   % (user_id, campaign_id, url_conversion_id, candidate_id)
+    except Exception as error:
         logger.exception("Error occurred while URL redirection for SMS campaign.")
+        return error.message
 
 
 @app.route('/url_conversion/', methods=['GET'])

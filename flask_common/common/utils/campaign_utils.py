@@ -156,12 +156,13 @@ class CampaignBase(object):
         """
         job_pool = Pool(POOL_SIZE)
         for candidate in candidates:
-            job_pool.spawn(self.send_campaign_to_candidate, candidate)
-        job_pool.join()
+            self.send_campaign_to_candidate(candidate)
+        #     job_pool.spawn(self.send_campaign_to_candidate, candidate)
+        # job_pool.join()
 
     @abstractmethod
     def send_campaign_to_candidate(self, candidate):
-        time.sleep(5)
+        pass
 
     @staticmethod
     def create_or_update_url_conversion(destination_url=None, source_url='', hit_count=0,
@@ -189,14 +190,11 @@ class CampaignBase(object):
         **See Also**
         .. see also:: process_link_in_body_text() method in SmsCampaignBase class.
         """
-        if url_conversion_id:  # record is already present in database
-            record_in_db = UrlConversion.get_by_id(url_conversion_id)
-        else:
-            record_in_db = UrlConversion.get_by_destination_url(destination_url)
         data = {'destination_url': destination_url,
                 'source_url': source_url,
                 'hit_count': hit_count}
-        if record_in_db or url_conversion_id:
+        if url_conversion_id:  # record is already present in database
+            record_in_db = UrlConversion.get_by_id(url_conversion_id)
             data['destination_url'] = record_in_db.destination_url
             data['source_url'] = source_url if source_url else record_in_db.source_url
             data['hit_count'] = record_in_db.hit_count + 1 if hit_count_update else \

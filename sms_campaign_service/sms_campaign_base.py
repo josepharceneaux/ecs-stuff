@@ -15,11 +15,11 @@ from datetime import datetime
 # Application Specific
 from sms_campaign_service import logger
 from sms_campaign_service.app.app import IS_DEV
-from sms_campaign_service.config import REDIRECT_URL, CAMPAIGN_SMS_SEND, \
-    CAMPAIGN_SEND, PHONE_LABEL_ID, TWILIO
+from sms_campaign_service.config import SMS_URL_REDIRECT, CAMPAIGN_SMS_SEND, \
+    CAMPAIGN_SEND, PHONE_LABEL_ID, TWILIO, CAMPAIGN_SMS_CLICK
 from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.common.models.misc import UrlConversion
-from sms_campaign_service.common.models.candidate import PhoneLabel
+from sms_campaign_service.common.models.candidate import PhoneLabel, Candidate
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign,\
     SmsCampaignSend, SmsCampaignBlast, SmsCampaignSmartList, SmsCampaignSendUrlConversion
 from sms_campaign_service.common.utils.campaign_utils import CampaignBase
@@ -64,7 +64,7 @@ class SmsCampaignBase(CampaignBase):
     * process_send(self, campaign_id=None):
         This method is used send the campaign to candidates.
 
-    * process_link_in_body_text(self):
+    * process_link_in_body_text(self, candidate_id):
         If "body_text" contains any link in it, then we need to transform the
         "body_text" by replacing long url with shorter version using Google's Shorten
         URL API. If body text does does not contain any link, it returns the body_text
@@ -105,6 +105,10 @@ class SmsCampaignBase(CampaignBase):
         hit and it updates "clicks" in "sms_campaign_blast" table and "hit_count" in
         "url_conversion" table. Finally it returns the destination url to redirect the
         candidate to actual link provided by recruiter.
+
+    * create_campaign_url_click_activity(self, candidate):
+        When a candidate clicks on URL present in the sent sms, we create an activity
+        that "%(candidate_name)s clicked url of campaign %(campaign_name)s".
 
     - An example of sending campaign to candidates will be like this.
         :Example:
@@ -310,10 +314,6 @@ class SmsCampaignBase(CampaignBase):
             self.campaign = SmsCampaign.get_by_campaign_id(campaign_id)
             self.body_text = self.campaign.sms_body_text.strip()
 
-            # Transform body text to be sent in sms
-            self.process_link_in_body_text()
-            assert self.modified_body_text
-
             # Get smart_lists of this campaign
             smart_lists = SmsCampaignSmartList.get_by_campaign_id(self.campaign.id)
             all_candidates = []
@@ -343,7 +343,7 @@ class SmsCampaignBase(CampaignBase):
         else:
             logger.error('process_send: SMS Campaign id is not given.')
 
-    def process_link_in_body_text(self):
+    def process_link_in_body_text(self, candidate_id):
         """
         - Once we have the body text of sms to be sent via sms campaign,
             we check if it contains any link in it.
@@ -365,16 +365,17 @@ class SmsCampaignBase(CampaignBase):
         **See Also**
         .. see also:: process_send() method in SmsCampaignBase class.
         """
-        logger.debug('process_link_in_body_text: Processing any link present in sms_body_text. '
-                     'SMS Campaign id is %s.' % self.campaign.id)
+        logger.debug('process_link_in_body_text: Processing any link present in sms_body_text for '
+                     'SMS Campaign(id:%s) and Candidate(id:%s)' % (self.campaign.id, candidate_id))
         link_in_body_text = search_link_in_text(self.body_text)
         if len(link_in_body_text) == 1:
             # We have only one link in body text which needs to shortened.
             self.url_conversion_id = self.create_or_update_url_conversion(
                 destination_url=link_in_body_text[0])
             # URL to redirect candidates to our end point
-            long_url = REDIRECT_URL.format(self.campaign.id) + '?url_conversion_id=%s' \
-                                                               % self.url_conversion_id
+            long_url = (SMS_URL_REDIRECT+'?candidate_id={}').format(self.campaign.id,
+                                                                    self.url_conversion_id,
+                                                                    candidate_id)
             # Use Google's API to shorten the long Url
             short_url = url_conversion(long_url)
             # update the "url_conversion" record
@@ -433,6 +434,7 @@ class SmsCampaignBase(CampaignBase):
         .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
         """
         super(SmsCampaignBase, self).send_campaign_to_candidate(candidate)
+
         # get candidate phones
         candidate_phones = candidate.candidate_phones
         # filter only mobile numbers
@@ -440,6 +442,9 @@ class SmsCampaignBase(CampaignBase):
                                         candidate_phone.phone_label_id == PHONE_LABEL_ID,
                                         candidate_phones)
         if len(candidate_mobile_phone) == 1:
+            # Transform body text to be sent in sms
+            self.process_link_in_body_text(candidate.id)
+            assert self.modified_body_text
             # send sms
             message_sent_time = self.send_sms(candidate_mobile_phone[0].value)
             # Create sms_campaign_send
@@ -646,7 +651,8 @@ class SmsCampaignBase(CampaignBase):
                              source_table='sms_campaign',
                              params=params)
 
-    def process_url_redirect(self, campaign_id=None, url_conversion_id=None):
+    def process_url_redirect(self, campaign_id=None, url_conversion_id=None,
+                             candidate_id=None):
         """
         This does the following steps to send campaign to candidates.
 
@@ -654,7 +660,8 @@ class SmsCampaignBase(CampaignBase):
         2- Get the "sms_campaign_blast" row from db.
         3- Increase "hit_count" by 1 for "url_conversion" record.
         4- Increase "clicks" by 1 for "sms_campaign_blast" record.
-        5-
+        5- Add activity that abc candidate clicked on xyz campaign.
+            "%(candidate_name)s clicked url of campaign %(campaign_name)s"
         6- return the destination url where we want our candidate to be redirected.
 
         :Example:
@@ -675,12 +682,44 @@ class SmsCampaignBase(CampaignBase):
         """
         if campaign_id and url_conversion_id:
             logger.debug('process_url_redirect: Processing for URL redirection.')
+
+            # Update sms campaign blast
             self.create_or_update_sms_campaign_blast(campaign_id=campaign_id,
                                                      clicks_update=True)
+            # Update hit count
             self.create_or_update_url_conversion(url_conversion_id=url_conversion_id,
                                                  hit_count_update=True)
+            # Create Activity
+            self.campaign = SmsCampaign.get_by_campaign_id(campaign_id)
+            candidate = Candidate.get_by_id(candidate_id)
+            self.create_campaign_url_click_activity(candidate)
+            # Get Url to redirect candidate to actual url
             url_conversion_row = UrlConversion.get_by_id(url_conversion_id)
+            logger.error('process_url_redirect: candidate(id:%s) clicked on sms '
+                         'campaign(id:%s)' % (candidate_id, self.campaign.id))
             return url_conversion_row.destination_url
         else:
-            logger.error('process_url_redirect: campaign_id or url_conversion_id is not provided.')
+            logger.error('process_url_redirect: campaign_id or url_conversion_id '
+                         'is not provided.')
             return None
+
+    def create_campaign_url_click_activity(self, candidate):
+        """
+        - Here we set "params" and "type" of activity to be stored in db table "Activity"
+            for Campaign sent.
+
+        - This method is called from process_url_redirect() method of class
+            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
+
+        :param candidate: Candidate row
+
+        **See Also**
+        .. see also:: process_url_redirect() method in SmsCampaignBase class.
+        """
+        assert candidate
+        params = {'candidate_name': candidate.first_name + ' ' + candidate.last_name,
+                  'campaign_name': self.campaign.name}
+        self.create_activity(type_=CAMPAIGN_SMS_CLICK,
+                             source_id=self.campaign.id,
+                             source_table='email_campaign',
+                             params=params)
