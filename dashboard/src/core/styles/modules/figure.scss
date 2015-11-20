@@ -5,8 +5,11 @@
 .figure {}
 
 .figure--circle {
-
   img {
     border-radius: 50%;
   }
+}
+
+.figure--bufferRight {
+  padding-right: 2em;
 }

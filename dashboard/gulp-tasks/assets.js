@@ -5,7 +5,7 @@ module.exports = function (config) {
     gulp.task('fonts', ['clean-fonts'], function () {
         config.log('Copying fonts');
 
-        var fontDir = './bower_components/bootstrap-sass/assets/fonts/**/*.*';
+        var fontDir = config.sourceDir + 'core/icon-font/gettalent-icons.*';
 
         return gulp
             .src(fontDir)

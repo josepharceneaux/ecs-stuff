@@ -2,12 +2,27 @@
 // Includes / Colors
 // ---------------------------------------------------
 
+@mixin no-gradient--lightGray { // used in instances where you need to animate from lightGray to another gradient
+  background-color: $color--lightGray; // fallback
+  background-image: linear-gradient(90deg, $color--lightGray, $color--lightGray);
+}
+
 @mixin gradients--green {
-  background-color: $color--lightGreen; // fallback
-  background-image: linear-gradient(90deg, $color--lightGreen, $color--green);
+  background-color: $color--teal; // fallback
+  background-image: linear-gradient(90deg, $color--teal, $color--green);
 }
 
 @mixin gradients--red {
   background-color: $color--red; // fallback
   background-image: linear-gradient(90deg, $color--red, $color--darkRed);
+}
+
+@mixin gradients--blue {
+  background-color: $color--blue; // fallback
+  background-image: linear-gradient(90deg, $color--lightBlue, $color--blue);
+}
+
+@mixin gradients--yellow {
+  background-color: $color--yellow; // fallback
+  background-image: linear-gradient(90deg, $color--yellow, $color--darkYellow);
 }

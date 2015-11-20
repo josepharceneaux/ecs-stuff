@@ -33,19 +33,33 @@
 @import 'includes/space';
 @import 'includes/col';
 
+@import 'vendor/tagsinput/tagsinput';
+@import 'vendor/pickadate/pickadate';
+
 // -----
 // Modules
 // -----
 
+@import 'modules/align';
 @import 'modules/row';
 @import 'modules/col';
 @import 'modules/header';
 @import 'modules/view';
 @import 'modules/icon';
 @import 'modules/box';
-@import 'modules/graph';
 @import 'modules/label';
 @import 'modules/table';
 @import 'modules/figure';
-@import 'modules/pie';
+@import 'modules/graph';
 @import 'modules/excerpt';
+@import 'modules/form';
+@import 'modules/button';
+@import 'modules/tabs';
+@import 'modules/responsive';
+@import 'modules/dragDrop';
+@import 'modules/list';
+@import 'modules/progress';
+@import 'modules/code';
+@import 'modules/hero';
+@import 'modules/notifications';
+// @import 'modules/login';

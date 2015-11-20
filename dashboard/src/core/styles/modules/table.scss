@@ -4,6 +4,17 @@
 
 .table {
   width: 100%;
+  white-space: nowrap;
+
+  th {
+    color: $color--blue;
+    font-size: $font-size--main;
+    font-weight: $font-weight--regular;
+    text-align: left;
+    padding-bottom: $padding--normal;
+    padding-left: $padding--small;
+    padding-right: $padding--small;
+  }
 
   a {
     font-weight: $font-weight--bold;
@@ -18,13 +29,24 @@
 }
 
 .table__row {
-  &:nth-of-type(odd) {
+  border-bottom: 2px solid $color--white;
+
+  &:nth-of-type(even) {
     background-color: $color--lightGray;
   }
 }
 
+.table__row--active,
+.table_row--hover:hover {
+  @include gradients--green;
+  color: $color--white;
+}
 
-.tabel__col {
+// -----
+// Table Column
+// -----
+
+.table__col {
   padding-top: $padding--small;
   padding-bottom: $padding--small;
   padding-left: $padding--tiny;
@@ -32,55 +54,77 @@
   line-height: 1.2em;
 }
 .table__col--1 {
-  @extend .tabel__col;
+  @extend .table__col;
   width: 100% * (1 / 12);
 }
 .table__col--2 {
-  @extend .tabel__col;
+  @extend .table__col;
   width: 100% * (2 / 12);
 }
 .table__col--3 {
-  @extend .tabel__col;
+  @extend .table__col;
   width: 100% * (3 / 12);
 }
 .table__col--4 {
-  @extend .tabel__col;
+  @extend .table__col;
   width: 100% * (4 / 12);
 }
 .table__col--5 {
-  @extend .tabel__col;
+  @extend .table__col;
   width: 100% * (5 / 12);
 }
 .table__col--6 {
-  @extend .tabel__col;
+  @extend .table__col;
   width: 100% * (6 / 12);
 }
 .table__col--7 {
-  @extend .tabel__col;
+  @extend .table__col;
   width: 100% * (7 / 12);
 }
 .table__col--8 {
-  @extend .tabel__col;
+  @extend .table__col;
   width: 100% * (8 / 12);
 }
 .table__col--9 {
-  @extend .tabel__col;
+  @extend .table__col;
   width: 100% * (9 / 12);
 }
 .table__col--10 {
-  @extend .tabel__col;
+  @extend .table__col;
   width: 100% * (10 / 12);
 }
 .table__col--11 {
-  @extend .tabel__col;
+  @extend .table__col;
   width: 100% * (11 / 12);
 }
 .table__col--12 {
-  @extend .tabel__col;
+  @extend .table__col;
   width: 100% * (12 / 12);
 }
 
 .table__col--center {
   text-align: center;
   vertical-align: middle;
+}
+
+.table__col--morePadding {
+  padding-top: $padding--normal;
+  padding-bottom: $padding--normal;
+  padding-left: $padding--small;
+  padding-right: $padding--small;
+}
+
+.table__col--check {
+  text-align: center;
+  padding-right: $padding--tiny;
+}
+
+.table__row--active {
+  .icon--unchecked {
+    display: none;
+  }
+
+  .icon--checked {
+    display: inline-block;
+  }
 }

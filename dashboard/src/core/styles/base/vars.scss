@@ -10,18 +10,26 @@ $color--white:      #ffffff;
 $color--black:      #000000;
 $color--gray:       #828282;
 $color--lightGray:  #f2f4f5;
-$color--medGray:    #828282;
+$color--medGray:    #bbbbbb;
 $color--darkGray:   #494f51;
 $color--darkerGray: #414546;
-$color--nearBlack : #333638;
+$color--nearBlack:  #333638;
 
 $color--blue:       #009ccc;
+$color--lightBlue:  #17c6fc;
+
+$color--teal:       #9ef6dc;
 
 $color--green:      #21bd58;
-$color--lightGreen: #44c196;
+$color--lightGreen: #50ca7d;
+
+$color--teal:       #44c196;
 
 $color--red:        #de4f11;
 $color--darkRed:    #a82b2b;
+
+$color--yellow:     #f5fa6b;
+$color--darkYellow: #ecf32f;
 
 // -----
 // Fonts
@@ -36,9 +44,11 @@ $font--icons: 'gettalent-icons', sans-serif;
 
 $font-size--small: .85em;
 $font-size--main:  1em;
+$font-size--big:   1.2em;
 $font-size--large: 1.5em;
 $font-size--jumbo: 2em;
 $font-size--mega:  2.5em;
+$font-size--damn:  2.65em;
 
 // -----
 // Line Heights
@@ -51,6 +61,7 @@ $line-height--main: 1.5em;
 // -----
 
 $font-weight--bold:    600;
+$font-weight--medium:  500;
 $font-weight--regular: 400;
 $font-weight--light:   300;
 
@@ -75,6 +86,7 @@ $padding--large:  1.25em;
 $padding--huge:   1.5em;
 $padding--jumbo:  1.75em;
 $padding--giant:  2em;
+$padding--mega:   2.5em; // don't use often
 
 // -----
 // Border
@@ -87,7 +99,7 @@ $border-width--medium: .2em;
 // Border Radius
 // -----
 
-$border-radius--button: 2em;
+$border-radius--button: 8px;
 $border-radius--container: 5px;
 
 // -----
@@ -100,7 +112,7 @@ $opacity--mute: .3;
 // Breakpoints
 // -----
 
-$breakpoint--full:   75em;
+$breakpoint--full:   80em;
 $breakpoint--large:  56.25em;
 $breakpoint--medium: 48em;
 $breakpoint--small:  37.5em;

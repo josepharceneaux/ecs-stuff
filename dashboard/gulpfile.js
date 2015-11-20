@@ -23,6 +23,7 @@ var buildTask = (function buildTask(config, taskFile) {
 [
     'serve',
     'vet',
+    'icon-font',
     'styles',
     'clean',
     'plato',

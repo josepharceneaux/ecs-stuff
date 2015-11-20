@@ -3,6 +3,17 @@
 // ---------------------------------------------------
 
 .view {}
+.view--login {
+  @extend .view;
+
+  display: table;
+  width: 100%;
+  height: 100%;
+  background-color: $color--blue;
+  background-image: url('../images/backgrounds/login-peaks.png');
+  background-position: bottom;
+  background-size: cover;
+}
 
 // -----
 // Main
@@ -21,6 +32,12 @@
     padding-left: 0;
   }
 }
+.view__main--login {
+  display: table-cell;
+  width: 100%;
+  height: 100%;
+  vertical-align: middle;
+}
 
 // -----
 // Sidebar
@@ -31,13 +48,14 @@
   z-index: $z-index--2;
   width: 100%;
   overflow: hidden;
+  position: static;
 
   @include helper--media($breakpoint--large) {
     width: $misc--sidebarWidth;
-    top: $misc--headerHeight;
+    top: 0;
     height: 100%;
     left: 0;
-    position: absolute;
+    position: fixed;
   }
 }
 
@@ -52,8 +70,8 @@
   overflow: hidden;
 
   @include helper--media($breakpoint--large) {
-    padding-top: $padding--jumbo;
     padding-bottom: $padding--jumbo;
+    padding-top: $misc--headerHeight;
     height: 100%;
     position: absolute;
   }
@@ -72,10 +90,10 @@
   overflow: hidden;
 
   @include helper--media($breakpoint--large) {
+    padding-top: $misc--headerHeight;
+    padding-bottom: $padding--jumbo;
     height: 100%;
     position: absolute;
-    padding-top: $padding--jumbo;
-    padding-bottom: $padding--jumbo;
   }
 
   .view__sidebar__navItem {
@@ -158,7 +176,6 @@
 
 .view__sidebar__navChild {
   @include inc--align--left;
-  // @include inc--space--vertpad--small;
 
   color: $color--medGray;
   width: 100%;
@@ -187,4 +204,20 @@
 .view__sidebar__subNav {
   display: none;
   opacity: 0;
+}
+
+.view__sidebar__subNav--active {
+  @extend .view__sidebar__subNav;
+
+  a {
+    transition: color $easing--slow;
+
+    &:hover {
+      color: $color--white;
+    }
+  }
+
+  @include helper--media($breakpoint--large) {
+    padding-top: $misc--headerHeight + $padding--large;
+  }
 }

@@ -13,6 +13,12 @@
   margin-bottom: $margin--row;
 }
 
+.row--skinny {
+  @extend .row;
+
+  max-width: $breakpoint--small;
+}
+
 .row--table {
   width: 100%;
   display: table;
@@ -32,28 +38,29 @@
   }
 }
 
-.row--squeezed {
-  @extend .row;
-  @include inc--space--squeezed;
-}
+.row--expanded {
+  @include inc--align--clearfix;
 
-.row--pressed {
-  @extend .row;
-  @include inc--space--pressed;
-}
-
-.row--stretched {
-  @extend .row;
-
+  margin-top: 0;
+  margin-bottom: 0;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
+  padding-right: 0;
   max-width: none;
 }
 
-.row--fluid {
-  @extend .row--pressed;
-  @extend .row--stretched;
+.row--green {
+  @extend .row;
+  @include gradients--green;
+
+  overflow: hidden;
+  color: $color--white;
 }
 
-.row--expanded {
-  @extend .row--fluid;
-  @extend .row--squeezed;
+.row--blue {
+  @extend .row;
+
+  color: $color--white;
+  background-color: $color--blue;
 }

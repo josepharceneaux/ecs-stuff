@@ -1,0 +1,21 @@
+@font-face {
+  font-family: "<%= fontName %>", sans-serif;
+  src: url('<%= fontPath %><%= fontName %>.eot'); // IE9 compat
+  src: url('<%= fontPath %><%= fontName %>.eot?#iefix') format('embedded-opentype'), // IE8 and below
+    url('<%= fontPath %><%= fontName %>.woff') format('woff'), // standards
+    url('<%= fontPath %><%= fontName %>.ttf') format('truetype'), // Safari, Android, iOS
+    url('<%= fontPath %><%= fontName %>.svg#<%= fontName %>') format('svg'); // legacy iOS
+}
+
+.<%= className %> {
+  font-family: "<%= fontName %>";
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  speak: none;
+  display: inline;
+}
+
+<% _.each(glyphs, function(glyph) { %>.<%= className %>--<%= glyph.name %> { @extend .<%= className %>; &:after { content: "<%= glyph.unicode %>" } }
+<% }); %>

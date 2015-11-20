@@ -6,12 +6,19 @@
   padding: $padding--normal;
   background-color: $color--white;
   border-radius: $border-radius--container;
+  color: $color--nearBlack;
+  margin-top: $margin--row;
   box-shadow: 0px 2px 5px 0px rgba($color--black, 0.1);
   vertical-align: top;
   position: relative;
+  overflow: hidden;
 
   h4 {
     color: $color--blue;
+  }
+
+  &:first-of-type {
+    margin-top: 0;
   }
 }
 
@@ -26,10 +33,71 @@
   }
 }
 
+.box--blue {
+  @extend .box;
+
+  background-color: $color--blue;
+  color: $color--white;
+
+  h4 {
+    color: inherit;
+  }
+}
+
+.box--lightGreen {
+  @extend .box;
+
+  background-color: $color--lightGreen;
+  color: $color--white;
+}
+
 .box--padless {
   @extend .box;
 
   padding: 0;
+}
+
+.box--basic {
+  @extend .box;
+
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.box--clear {
+  @extend .box--basic;
+
+  background: none;
+  color: inherit;
+}
+
+.box--dashed {
+  @extend .box;
+
+  box-shadow: none;
+  background: none;
+  color: inherit;
+  border: 2px dashed;
+}
+
+.box--outline {
+  @extend .box--dashed;
+
+  border-style: solid;
+}
+
+.box--person {
+  background-image: url('../images/backgrounds/typical-candidate.svg');
+  background-position: 120% -10%;
+  background-repeat: no-repeat;
+}
+
+// -----
+// Box Headers
+// -----
+
+.box__header {
+  margin-bottom: $margin--line;
 }
 
 // -----
@@ -91,4 +159,13 @@
       border-top-style: solid;
     }
   }
+}
+
+// -----
+// Box Table
+// -----
+
+.box__table {
+  width: 100%;
+  overflow: auto;
 }
