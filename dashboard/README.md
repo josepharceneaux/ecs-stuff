@@ -20,8 +20,18 @@ Visit our [wiki](https://github.com/archfirst/angular-template/wiki) for detaile
     - on OSX, install [home brew](http://brew.sh/) and type `brew install node`
     - on Windows, use the installer available at [nodejs.org](http://nodejs.org/)
     - On OSX you can alleviate the need to run as sudo by [following John Papa's instructions](http://jpapa.me/nomoresudo)
-- Open terminal
-- Type `npm install -g node-inspector bower gulp`
+- Install Sass tools
+    - Install [Ruby](https://www.ruby-lang.org/en/installation/) (most Macs come with Ruby installed)
+    - Update Ruby - `gem update --system`
+    - Install SASS Gem - `gem install sass`
+    - Install SCSS Lint Gem - `gem install scss-lint`
+    - Install Compass - `gem install compass --pre`
+    - Install SASS CSS Importer Gem - `gem install --pre sass-css-importer`
+- Install Font Tools (**Optional: only needed for icon font edits**)
+    - Install XQuartz http://xquartz.macosforge.org/landing/
+    - Install ttfautohint
+        - on OSX, `brew install ttfautohint fontforge --with-python`
+- Install helpful global npm tools: `npm install -g node-inspector bower gulp`
 
 ## Quick Start
 Go to this directory and run the content locally:
