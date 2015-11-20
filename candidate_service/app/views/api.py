@@ -3,7 +3,7 @@
 from flask import jsonify, request, Blueprint
 import talent_cloud_search
 from common.utils.auth_utils import require_oauth
-
+from candidate_service.candidate_app import db, logger
 mod = Blueprint('candidate_search_api', __name__)
 
 
@@ -13,7 +13,7 @@ def hello_world():
 
 
 @mod.route('/candidates', methods=['GET'])
-# @require_oauth
+@require_oauth
 def search():
     talent_cloud_search.get_cloud_search_connection()
     location = request.args.get('location')
@@ -51,7 +51,11 @@ def search():
     for key, value in request_vars_dict.iteritems():
         if value is not None:
             request_vars[key] = value
+
+    domain_id = request.user.domain_id
+    logger.info("Searching candidates in the domain:%s" % domain_id)
     # If limit is not requested then the Search limit would be taken as 15, the default value
-    candidate_search_results = talent_cloud_search.search_candidates(1, request_vars, int(limit) if limit else 15)
+    candidate_search_results = talent_cloud_search.search_candidates(domain_id, request_vars,
+                                                                     int(limit) if limit else 15)
 
     return jsonify(candidate_search_results)

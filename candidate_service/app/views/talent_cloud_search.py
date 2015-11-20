@@ -983,7 +983,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     max_pages = int(math.ceil(total_found / float(search_limit))) if search_limit else 1
     fields_data = [data['fields'] for data in matches]
     if request_vars.get('fields'):
-        # Checks the fields is requested by client or not
+        # Checks the fields is requested or not
         requested_data = request.args.get('fields').split(',')
         required_context_data = {}
         response_candidates_data = []
@@ -996,7 +996,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
             if 'email' in values:
                 values['email'] = {"address": values['email']}
         if required_context_data:
-            # Returns the filtered data which has requested by the client
+            # Returns the filtered data which has requested by the user
             return required_context_data
     else:
         search_results = dict()

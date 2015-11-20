@@ -324,7 +324,7 @@ def create_candidate_from_params(
                 resume_id=resume_id  # todo: this is to be removed once all tables have been added & migrated
             )
             db.session.add(experience)
-            db.session.flush()
+            db.session.commit()
 
             experience_id = experience.id
             experience_bullets = work_experience.get('work_experience_bullets')
