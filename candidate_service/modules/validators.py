@@ -92,7 +92,8 @@ def validate_and_parse_request_data(data):
         count_only = True
     if not list_id or list_id.strip() == '':
         raise InvalidUsage('list_id is required')
-    return {'list_id': data.get('id').strip() if data.get('id') else data.get('id'),
+
+    return {'list_id': long(list_id.strip() if list_id else list_id),
             'candidate_ids_only': candidate_ids_only,
             'count_only': count_only
             }

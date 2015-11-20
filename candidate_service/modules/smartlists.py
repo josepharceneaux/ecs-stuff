@@ -2,7 +2,7 @@ import json
 
 from candidate_service.candidate_app import db, logger
 from candidate_service.common.models.smart_list import SmartListCandidate
-from candidate_service.common.models.candidate import Candidate, CandidateEmail, CandidateSocialNetwork
+from candidate_service.common.models.candidate import Candidate, CandidateEmail, CandidateSocialNetwork, CandidatePhone
 
 __author__ = 'jitesh'
 
@@ -57,11 +57,13 @@ def create_candidates_dict(candidate_ids):
         candidate_dict = {}
         candidate_id = candidate.id
         candidate_dict["id"] = candidate_id
-        candidate_dict["emails"] = [email.address for email in
-                                    db.session.query(CandidateEmail.address).filter_by(candidate_id=candidate_id).all()]
+        candidate_dict["emails"] = [{email.email_label.description: email.address} for email in
+                                    db.session.query(CandidateEmail).filter_by(candidate_id=candidate_id).all()]
         candidate_dict["social_network"] = [{"url": sn.social_profile_url, "id": sn.social_network_id} for sn in
                                             db.session.query(CandidateSocialNetwork).filter_by(
                                                 candidate_id=candidate_id).all()]
+        candidate_dict["phone_numbers"] = [{phone.phone_label.description: phone.value} for phone in
+                                    db.session.query(CandidatePhone).filter_by(candidate_id=candidate_id).all()]
         # TODO: Add more fields
         # Finally append all candidates in list and return it
         candidates_dict["candidates"].append(candidate_dict)

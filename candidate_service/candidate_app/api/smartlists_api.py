@@ -19,7 +19,7 @@ class SmartlistCandidates(Resource):
         Use this endpoint to retrieve all candidates present in list (smart or dumb list)
         Input:
             Accepts:
-                id :: list id (int)
+                id :: list id
                 return :: comma separated values
                         candidate_ids_only --> returns only list of candidate ids not all candidate fields
                         count_only --> returns only the count of candidates present in list
@@ -29,7 +29,7 @@ class SmartlistCandidates(Resource):
         :rtype: json
         """
         auth_user = request.user
-        data = validate_and_parse_request_data(kwargs)
+        data = validate_and_parse_request_data(request.args)
         smart_list = SmartList.query.get(data['list_id'])
         if not validate_list_belongs_to_domain(smart_list, auth_user.id):
             raise ForbiddenError("Provided list does not belong to user's domain")

@@ -33,7 +33,7 @@ api.add_resource(CandidateResource,
 api.add_resource(CandidateEmailCampaignResource,
                  '/v1/candidates/<int:id>/email_campaigns/<int:email_campaign_id>/email_campaign_sends', endpoint='candidates')
 api.add_resource(SmartlistCandidates,
-                 '/v1/smartlist/<int:id>/get_candidates/')
+                 '/v1/smartlist/get_candidates/')
 
 db.create_all()
 db.session.commit()
