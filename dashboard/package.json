@@ -1,9 +1,17 @@
 {
   "name": "gt-dashboard",
-  "description": "GetTalent Dashboard",
   "version": "0.1.0",
-  "author": "Haohong Xu, Jordan Seaberg",
+  "description": "GetTalent Dashboard",
+  "authors": [
+    "Haohong Xu",
+    "Jordan Seaberg"
+  ],
   "license": "MIT",
+  "homepage": "https://github.com/gettalent/talent-flask-services",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gettalent/talent-flask-services.git"
+  },
   "scripts": {
     "init": "npm install",
     "install": "bower install",
