@@ -208,7 +208,9 @@ class CampaignBase(object):
             url_conversion_id = new_record.id
         return url_conversion_id
 
-    def create_activity(self, type_=None, source_table=None, source_id=None, params=None):
+    @staticmethod
+    def create_activity(user_id=None, type_=None, source_table=None, source_id=None,
+                        params=None):
         """
         - Once we have all the parameters to save the activity, we call "activity_service"'s
             endpoint /activities/ with HTTP POST call to save the activity in db.
@@ -217,10 +219,12 @@ class CampaignBase(object):
             create_campaign_send_activity() methods of class SmsCampaignBase inside
             sms_campaign_service/sms_campaign_base.py.
 
+        :param user_id: id of user
         :param type_: type of activity
         :param source_table: source table name of activity
         :param source_id: source id of activity
         :param params: params to store for activity
+        :type user_id; int
         :type type_; int
         :type source_table: str
         :type source_id: int
@@ -232,11 +236,11 @@ class CampaignBase(object):
         data = {'source_table': source_table,
                 'source_id': source_id,
                 'type': type_,
-                'user_id': self.user_id,
+                'user_id': user_id,
                 'params': json.dumps(params)}
         # POST call to activity service to create activity
         url = ACTIVITY_SERVICE_API_URL + '/activities/'
         http_request('POST', url,
                      headers=AUTH_HEADER,
                      data=data,
-                     user_id=self.user_id)
+                     user_id=user_id)

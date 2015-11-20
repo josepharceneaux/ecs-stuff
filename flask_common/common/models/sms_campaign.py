@@ -33,6 +33,15 @@ class SmsCampaign(db.Model):
             )
         ).one()
 
+    @classmethod
+    def get_by_user_phone_id(cls, user_phone_id):
+        assert user_phone_id
+        return cls.query.filter(
+            db.and_(
+                cls.user_phone_id == user_phone_id,
+            )
+        ).one()
+
 
 class SmsCampaignBlast(db.Model):
     __tablename__ = 'sms_campaign_blast'
@@ -82,13 +91,22 @@ class SmsCampaignSend(db.Model):
             )
         ).first()
 
+    @classmethod
+    def get_by_candidate_id(cls, candidate_id):
+        assert candidate_id
+        return cls.query.order_by(-cls.sent_time).filter(
+            db.and_(
+                cls.candidate_id == candidate_id,
+            )
+        ).first()
+
 
 class SmsCampaignReply(db.Model):
     __tablename__ = 'sms_campaign_reply'
     id = db.Column(db.Integer, primary_key=True)
     sms_campaign_blast_id = db.Column('SmsCampaignBlastId', db.Integer,
                                       db.ForeignKey('sms_campaign_blast.id'))
-    reply_text = db.Column('SmsBodyText', db.Text)
+    reply_body_text = db.Column('SmsBodyText', db.Text)
     candidate_phone_id = db.Column('CandidatePhoneId', db.Integer,
                                    db.ForeignKey('candidate_phone.id'))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
@@ -96,6 +114,15 @@ class SmsCampaignReply(db.Model):
     def __repr__(self):
         return "<SmsCampaignReply (id = %r)>" % self.id
 
+    @classmethod
+    def get_by_blast_id_and_candidate_phone_id(cls, campaign_blast_id, candidate_phone_id):
+        assert campaign_blast_id and candidate_phone_id
+        return cls.query.filter(
+            db.and_(
+                cls.sms_campaign_blast_id == campaign_blast_id,
+                cls.candidate_phone_id == candidate_phone_id
+            )
+        ).first()
 
 class SmsCampaignSmartList(db.Model):
     __tablename__ = 'sms_campaign_smart_list'

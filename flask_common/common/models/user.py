@@ -111,6 +111,15 @@ class UserPhone(db.Model):
             )
         ).one()
 
+    @classmethod
+    def get_by_phone_value(cls, phone_value):
+        assert phone_value
+        return cls.query.filter(
+            and_(
+                cls.value == phone_value
+            )
+        ).one()
+
 
 class Domain(db.Model):
     __tablename__ = 'domain'

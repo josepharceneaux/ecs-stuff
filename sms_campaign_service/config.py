@@ -50,6 +50,7 @@ SMS_URL_REDIRECT = 'http://2ed87e65.ngrok.io/sms_campaign/{}/url_redirection/{}/
 CAMPAIGN_SEND = 6
 CAMPAIGN_SMS_SEND = 24
 CAMPAIGN_SMS_CLICK = 25
+CAMPAIGN_SMS_REPLY = 26
 PHONE_LABEL_ID = 1
 ACTIVITY_SERVICE_API_URL = 'http://127.0.0.1:8002'
 AUTH_HEADER = {'Authorization': 'Bearer gulqrgtuucodxdrijqwy'}

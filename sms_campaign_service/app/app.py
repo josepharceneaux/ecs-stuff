@@ -200,17 +200,16 @@ def sms():
         raise InternalServerError
 
 
-@app.route("/sms_receive", methods=['GET', 'POST'])
+@app.route("/sms_receive/", methods=['POST'])
 def sms_receive():
     """
     This is a test end point to receive sms
     :return:
     """
     if request.values:
-        response = 'SMS received from %(From)s on %(To)s.\n' \
-                   'Body text is "%(Body)s"' \
-                   % request.values
-        print response
+        logger.debug('SMS received from %(From)s on %(To)s.\n '
+                     'Body text is "%(Body)s"' % request.values)
+        SmsCampaignBase.process_candidate_reply(request.values)
     return """
         <?xml version="1.0" encoding="UTF-8"?>
             <Response>
