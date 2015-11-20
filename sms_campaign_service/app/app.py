@@ -66,7 +66,7 @@ from werkzeug.utils import redirect
 # Application specific imports
 from restful.sms_campaign import sms_campaign_blueprint
 from sms_campaign_service import logger
-from sms_campaign_service.utilities import run_func, run_func_1, get_all_tasks, working_environment
+from sms_campaign_service.utilities import run_func, run_func_1, get_all_tasks
 from social_network_service.utilities import http_request
 from sms_campaign_service.utilities import url_conversion
 from sms_campaign_service.utilities import send_sms_campaign
@@ -79,8 +79,6 @@ from sms_campaign_service.common.error_handling import InternalServerError
 # Register Blueprints for different APIs
 app.register_blueprint(sms_campaign_blueprint)
 api = Api(app)
-
-LONG_URL = 'https://webdev.gettalent.com/web/user/login?_next=/web/default/angular#!/'
 
 # Enable CORS
 CORS(app, resources={

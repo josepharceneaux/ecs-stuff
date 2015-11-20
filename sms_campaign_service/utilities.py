@@ -11,18 +11,15 @@ import twilio.rest
 from twilio.rest import TwilioRestClient
 
 # Application Specific
-from config import TWILIO_ACCOUNT_SID, GT_ENVIRONMENT
-from config import TWILIO_AUTH_TOKEN
-from config import GOOGLE_API_KEY, REDIRECT_URL
-from config import GOOGLE_URLSHORTENER_API_URL
 from sms_campaign_service import logger
 from social_network_service.utilities import http_request
 from sms_campaign_service.common.models.user import UserPhone
-from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.scheduler import SchedulerTask
 from sms_campaign_service.common.models.candidate import CandidatePhone
 from sms_campaign_service.app.app import celery
 from sms_campaign_service.app.app import sched
+from config import TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, GT_ENVIRONMENT,\
+    GOOGLE_URL_SHORTENER_API_URL
 
 
 class TwilioSMS(object):
@@ -111,29 +108,22 @@ def url_conversion(long_url):
     :param long_url: The url which we want to be shortened
     :type long_url: str
     :param long_url:
-    :return: id of db record
-    :rtype: int
+    :return: shortened url
+    :rtype: str
     """
-    url = GOOGLE_URLSHORTENER_API_URL + '?key=' + GOOGLE_API_KEY
     headers = {'Content-Type': 'application/json'}
     payload = json.dumps({'longUrl': long_url})
-    response = http_request('POST', url, headers=headers, data=payload)
+    response = http_request('POST', GOOGLE_URL_SHORTENER_API_URL, headers=headers, data=payload)
     data = response.json()
     if not data.has_key('error'):
         short_url = data['id']
-        long_url = data['longUrl']
+        # long_url = data['longUrl']
         logger.info("url_conversion: Long URL was: %s" % long_url)
         logger.info("url_conversion: Shortened URL is: %s" % short_url)
-        return short_url, long_url
+        return short_url
     else:
         logger.error("url_conversion: Error while shortening URL. Error dict is %s "
                      % data['error']['errors'][0])
-
-# from pyshorteners import Shortener
-# url = 'https://webdev.gettalent.com/web/user/login?_next=/web/default/angular#!/'
-# # url = 'http://www.google.com'
-# shortener = Shortener('TinyurlShortener')
-# print "My short url is {}".format(shortener.short(url))
 
 
 # @celery.task()

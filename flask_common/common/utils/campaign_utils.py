@@ -7,16 +7,23 @@ Any service can inherit from this class to implement functionality accordingly.
 
 # Standard Library
 import json
+import time
 from abc import ABCMeta
 from datetime import datetime
 from abc import abstractmethod
+
+# Third Party
+import gevent
+from gevent import monkey
+gevent.monkey.patch_all()
+from gevent.pool import Pool
 
 # Application Specific
 from social_network_service.utilities import http_request
 from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.candidate import Candidate
 from sms_campaign_service.common.models.smart_list import SmartListCandidate
-from sms_campaign_service.config import ACTIVITY_SERVICE_API_URL, AUTH_HEADER
+from sms_campaign_service.config import ACTIVITY_SERVICE_API_URL, AUTH_HEADER, POOL_SIZE
 
 
 class CampaignBase(object):
@@ -46,6 +53,13 @@ class CampaignBase(object):
         This method gets the candidates associated with the given smart_list_id.
         It may search candidates in database/cloud. It is common for all the campaigns.
 
+    * send_sms_campaign_to_candidates(self, candidates):
+        This loops over candidates and call send_sms_campaign_to_candidate to be send
+        campaign asynchronously.
+
+    * send_sms_campaign_to_candidate(self, candidates): [abstract]
+        This does the sending part and update "sms_campaign_blast" and "sms_campaign_send".
+
     * create_or_update_url_conversion(destination_url=None, source_url='', hit_count=0,
                                     url_conversion_id=None, hit_count_update=None): [static]
         Here we save/update record of url_conversion in db table "url_conversion".
@@ -59,8 +73,11 @@ class CampaignBase(object):
     def __init__(self,  *args, **kwargs):
         self.user_id = kwargs.get('user_id', None)
         self.campaign = None
-        self.body_text = None  # Child classes will get this from respective
-        # campaign table. e.g. in case of sms campaign, this is get from sms_campaign db table.
+        self.body_text = None
+        # Child classes will get this from respective campaign table. e.g. in case of
+        # sms campaign, this is get from sms_campaign
+        # db table.
+        self.smart_list_id = None
 
     @abstractmethod
     def save(self, form_data):
@@ -81,7 +98,6 @@ class CampaignBase(object):
         """
         pass
 
-    @classmethod
     def schedule(self):
         """
         This actually POST on scheduler_service to schedule a given task.
@@ -100,7 +116,7 @@ class CampaignBase(object):
         pass
 
     @staticmethod
-    def get_candidates(smart_list_id):
+    def get_candidates(smart_list_id=None):
         """
         This will get the candidates associated to a provided smart list.
 
@@ -122,6 +138,30 @@ class CampaignBase(object):
         records = SmartListCandidate.get_by_smart_list_id(smart_list_id)
         candidates = [Candidate.get_by_id(record.candidate_id) for record in records]
         return candidates
+
+    def send_campaign_to_candidates(self, candidates):
+        """
+        Once we have the candidates, we iterate them and call
+            self.send_campaign_to_candidate() to send the campaign to all candidates
+            asynchronously.
+
+        - This method is called from process_send() method of class
+            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
+
+        :param candidates: Candidates associated to a smart list
+        :type candidates: list
+
+        **See Also**
+        .. see also:: process_send() method in SmsCampaignBase class.
+        """
+        job_pool = Pool(POOL_SIZE)
+        for candidate in candidates:
+            job_pool.spawn(self.send_campaign_to_candidate, candidate)
+        job_pool.join()
+
+    @abstractmethod
+    def send_campaign_to_candidate(self, candidate):
+        time.sleep(5)
 
     @staticmethod
     def create_or_update_url_conversion(destination_url=None, source_url='', hit_count=0,
