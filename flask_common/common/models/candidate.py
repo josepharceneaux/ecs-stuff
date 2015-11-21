@@ -209,9 +209,10 @@ class EmailLabel(db.Model):
         e.g. 'Primary' => 1
         :return:  email_label ID if email_label is recognized, otherwise 1 ('Primary')
         """
-        email_label_row = cls.query.filter(EmailLabel.description == email_label).first()
-        if email_label_row:
-            return email_label_row.id
+        if email_label:
+            email_label_row = cls.query.filter(EmailLabel.description == email_label).first()
+            if email_label_row:
+                return email_label_row.id
         return 1
 
 
