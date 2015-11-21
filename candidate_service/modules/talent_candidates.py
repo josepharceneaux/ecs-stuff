@@ -254,7 +254,7 @@ def candidate_preferred_locations(candidate):
     return [{'id': preferred_location.id,
              'address': preferred_location.address,
              'city': preferred_location.city,
-             'region': preferred_location.region,
+             'state': preferred_location.region,
              'country': country_name_from_country_id(country_id=preferred_location.country_id)
              } for preferred_location in preferred_locations]
 
@@ -1252,7 +1252,7 @@ def _add_or_update_preferred_locations(candidate_id, preferred_locations):
             address=preferred_location.get('address'),
             country_id=Country.country_id_from_name_or_code(preferred_location.get('country')),
             city=preferred_location.get('city'),
-            region=preferred_location.get('region'),
+            region=preferred_location.get('state'),
             zip_code=sanitize_zip_code(preferred_location.get('zip_code'))
         )
 
@@ -1280,7 +1280,7 @@ def _add_or_update_skills(candidate_id, skills, added_time):
         skills_dict = dict(
             list_order=skill.get('list_order'),
             description=skill.get('name'),
-            total_months=skill.get('total_months'),
+            total_months=skill.get('months_used'),
             last_used=skill.get('last_used')
         )
 

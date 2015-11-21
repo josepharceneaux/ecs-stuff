@@ -844,7 +844,7 @@ def test_add_preferred_location(sample_user, user_auth):
 
     # Add CandidatePreferredLocation
     data = {'candidate': {'id': candidate_id, 'preferred_locations': [
-        {'city': 'austin', 'region': 'texas'}
+        {'city': 'austin', 'state': 'texas'}
     ]}}
     updated_resp = patch_to_candidate_resource(token, data)
     print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
@@ -856,7 +856,7 @@ def test_add_preferred_location(sample_user, user_auth):
     assert candidate_id == candidate_dict['id']
     assert len(preferred_locations_after_update) == preferred_locations_count_before_update + 1
     assert preferred_locations_after_update[-1]['city'] == 'austin'
-    assert preferred_locations_after_update[-1]['region'] == 'texas'
+    assert preferred_locations_after_update[-1]['state'] == 'texas'
 
 
 def test_update_preferred_location(sample_user, user_auth):
@@ -881,7 +881,7 @@ def test_update_preferred_location(sample_user, user_auth):
 
     # Add CandidatePreferredLocation
     data = {'candidate': {'id': candidate_id, 'preferred_locations': [
-        {'id': preferred_location_before_update[0]['id'], 'city': 'austin', 'region': 'texas'}
+        {'id': preferred_location_before_update[0]['id'], 'city': 'austin', 'state': 'texas'}
     ]}}
     updated_resp = patch_to_candidate_resource(token, data)
     print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
@@ -893,7 +893,7 @@ def test_update_preferred_location(sample_user, user_auth):
     assert candidate_id == candidate_dict['id']
     assert len(preferred_locations_after_update) == preferred_locations_count_before_update + 0
     assert preferred_locations_after_update[0]['city'] == 'austin'
-    assert preferred_locations_after_update[0]['region'] == 'texas'
+    assert preferred_locations_after_update[0]['state'] == 'texas'
 
 ######################## CandidateSkill ########################
 def test_add_skill(sample_user, user_auth):
