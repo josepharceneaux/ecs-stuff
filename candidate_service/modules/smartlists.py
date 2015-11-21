@@ -45,7 +45,7 @@ def get_candidates(smart_list, candidate_ids_only=False, count_only=False, max_c
 def search_candidates(domain_id, search_params, search_limit, candidate_ids_only, count_only):
     """Call search API with search params to retrieve candidates"""
     # TODO: Call search API
-    return {}
+    return {"candidates": [], "total_found": 0}
 
 
 def create_candidates_dict(candidate_ids):
