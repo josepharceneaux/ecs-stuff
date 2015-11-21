@@ -52,7 +52,7 @@ def create_candidates_dict(candidate_ids):
     """Given candidate ids, function will return respective candidates in formatted dict"""
     # TODO: Add pagination
     candidates = db.session.query(Candidate).filter(Candidate.id.in_(candidate_ids)).all()
-    candidates_dict = {"candidates": [], "count": 0}
+    candidates_dict = {"candidates": [], "total_found": 0}
     for candidate in candidates:
         candidate_dict = {}
         candidate_id = candidate.id
@@ -63,11 +63,26 @@ def create_candidates_dict(candidate_ids):
                                             db.session.query(CandidateSocialNetwork).filter_by(
                                                 candidate_id=candidate_id).all()]
         candidate_dict["phone_numbers"] = [{phone.phone_label.description: phone.value} for phone in
-                                    db.session.query(CandidatePhone).filter_by(candidate_id=candidate_id).all()]
+                                           db.session.query(CandidatePhone).filter_by(candidate_id=candidate_id).all()]
         # TODO: Add more fields
         # Finally append all candidates in list and return it
         candidates_dict["candidates"].append(candidate_dict)
         # increment the counter
-        candidates_dict["count"] += 1
+        candidates_dict["total_found"] += 1
     return candidates_dict
 
+
+def create_smartlist_dict(smart_list):
+    """
+    Given smart_list object returns the formatted smartlist dict.
+    """
+    candidate_count = get_candidates(smart_list, count_only=True)['total_found']
+
+    return {
+        "list": {
+            "candidate_count": candidate_count,
+            "user_id": smart_list.user_id,
+            "id": smart_list.id,
+            "name": smart_list.name
+        }
+    }

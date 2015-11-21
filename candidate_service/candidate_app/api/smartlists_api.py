@@ -2,7 +2,7 @@ from flask import request
 from flask_restful import Resource
 
 from candidate_service.common.utils.auth_utils import require_oauth
-from ...modules.smartlists import get_candidates
+from ...modules.smartlists import get_candidates, create_smartlist_dict
 from ...modules.validators import validate_and_parse_request_data, validate_list_belongs_to_domain
 from candidate_service.common.error_handling import ForbiddenError
 from candidate_service.common.models.smart_list import SmartList
@@ -17,7 +17,7 @@ class SmartlistCandidates(Resource):
     def get(self, **kwargs):
         """
         Use this endpoint to retrieve all candidates present in list (smart or dumb list)
-        Input:
+        Input (query parameters):
             Accepts:
                 id :: list id
                 return :: comma separated values
@@ -37,6 +37,29 @@ class SmartlistCandidates(Resource):
 
 
 class SmartlistResource(Resource):
+    decorators = [require_oauth]
+
+    def get(self, **kwargs):
+        """Retrieve list information
+        List must belong to auth user's domain
+        Call this resource from url: /v1/smartlist/<int:id>
+        example: http://localhost:8005/v1/smartlist/2
+        Returns: List in following json format
+            {
+              "list": {
+                "candidate_count": 3,
+                "user_id": 1,
+                "id": 1,
+                "name": "my list"
+              }
+            }
+        """
+        list_id = kwargs.get('id')
+        auth_user = request.user
+        smart_list = SmartList.query.get(list_id)
+        if not validate_list_belongs_to_domain(smart_list, auth_user.id):
+            raise ForbiddenError("List does not belong to user's domain")
+        return create_smartlist_dict(smart_list)
 
     def post(self, **kwargs):
         """

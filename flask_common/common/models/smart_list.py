@@ -17,6 +17,8 @@ class SmartList(db.Model):
 
     user = relationship("User", backref="user")
 
+    def __repr__(self):
+        return "<SmartList(name= %r)>" % self.name
 
 class SmartListCandidate(db.Model):
     __tablename__ = 'smart_list_candidate'
