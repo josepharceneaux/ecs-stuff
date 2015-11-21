@@ -110,12 +110,14 @@ def domain_admin_role(request):
     role = DomainRole.get_by_name('DOMAIN_ADMIN') or ''
     if not role:
         role = DomainRole.save('DOMAIN_ADMIN')
+    else:
+        role = role.id
 
         def tear_down():
-            db.session.delete(role)
+            db.session.delete(DomainRole.query.get(role))
             db.session.commit()
         request.addfinalizer(tear_down)
-    return role.id
+    return role
 
 
 @pytest.fixture()
@@ -123,12 +125,14 @@ def admin_role(request):
     role = DomainRole.get_by_name('ADMIN') or ''
     if not role:
         role = DomainRole.save('ADMIN')
+    else:
+        role = role.id
 
         def tear_down():
-            db.session.delete(role)
+            db.session.delete(DomainRole.query.get(role))
             db.session.commit()
         request.addfinalizer(tear_down)
-    return role.id
+    return role
 
 
 @pytest.fixture()

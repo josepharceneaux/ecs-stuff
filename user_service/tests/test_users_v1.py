@@ -99,8 +99,7 @@ def test_user_service_put(access_token, admin_access_token, domain_admin_access_
 
 
 # Test POST operation of user API
-def test_user_service_post(access_token, admin_access_token, domain_admin_access_token, sample_user, admin_user,
-                          domain_admin_user):
+def test_user_service_post(access_token, admin_access_token, domain_admin_access_token, sample_user):
 
     first_user = {
         'first_name': gen_salt(6),
