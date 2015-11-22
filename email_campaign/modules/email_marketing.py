@@ -1,34 +1,21 @@
 import datetime
-import json
 import re
 
-from urllib import urlencode
-from urlparse import parse_qs, urlsplit, urlunsplit
 from flask import current_app
-from BeautifulSoup import BeautifulSoup, Tag
-from email_campaign.common.common_config import GT_ENVIRONMENT
 from sqlalchemy import and_
 from sqlalchemy import desc
 from email_campaign.common.models.db import db
 from email_campaign.common.models.email_marketing import EmailCampaign, EmailCampaignSmartList, EmailCampaignBlast, \
-    CandidateSubscriptionPreference, EmailCampaignSend, UrlConversion, EmailCampaignSendUrlConversion
+    CandidateSubscriptionPreference, EmailCampaignSend
 from email_campaign.common.models.misc import Frequency
 from email_campaign.common.models.user import User, Domain
 from email_campaign.common.models.candidate import Candidate, CandidateEmail
-from email_campaign.common.models.smart_list import SmartList, SmartListCandidate
 from email_campaign.common.error_handling import *
-from email_campaign.common.error_handling import UnprocessableEntity
-from email_campaign.modules.tasks import send_scheduled_campaign
 from email_campaign.common.emails.admin_reporting import email_admins
 from email_campaign.common.emails.AWS_SES import send_email
+from email_campaign.modules.utils import create_email_campaign_url_conversions, do_mergetag_replacements, get_candidates
 
 __author__ = 'jitesh'
-
-DEFAULT_FIRST_NAME_MERGETAG = "*|FIRSTNAME|*"
-DEFAULT_LAST_NAME_MERGETAG = "*|LASTNAME|*"
-DEFAULT_PREFERENCES_URL_MERGETAG = "*|PREFERENCES_URL|*"
-HTML_CLICK_URL_TYPE = 2
-TRACKING_URL_TYPE = 0
 
 
 def create_email_campaign_smart_lists(smart_list_ids, email_campaign_id):
@@ -36,7 +23,7 @@ def create_email_campaign_smart_lists(smart_list_ids, email_campaign_id):
     :param smart_list_ids:
     :type smart_list_ids: list[int | long]
     :param email_campaign_id: id of email campaign to which smart lists will be associated.
-    :return:
+
     """
     if type(smart_list_ids) in (int, long):
         smart_list_ids = [smart_list_ids]
@@ -46,7 +33,7 @@ def create_email_campaign_smart_lists(smart_list_ids, email_campaign_id):
         db.session.add(email_campaign_smart_list)
 
 
-def create_email_campaign(user_id, email_campaign_name, email_subject,
+def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subject,
                           email_from, email_reply_to, email_body_html,
                           email_body_text, list_ids, email_client_id=None,
                           frequency=None,
@@ -88,7 +75,6 @@ def create_email_campaign(user_id, email_campaign_name, email_subject,
 
     # if it's a client from api, we don't schedule campaign sends, we create it on the fly.
     # also we enable tracking by default for the clients.
-    # TODO: Check if the following code is required
     if email_client_id:
         email_campaign.isEmailOpenTracking = 1
         email_campaign.isTrackHtmlClicks = 1
@@ -101,11 +87,11 @@ def create_email_campaign(user_id, email_campaign_name, email_subject,
     #                                   email_client_id=email_client_id)
 
     user = User.query.get(user_id)
-    send_emails_to_campaign(email_campaign, user, email_client_id, list_ids)
+    send_emails_to_campaign(oauth_token, email_campaign, user, email_client_id, list_ids)
     return dict(id=email_campaign.id)
 
 
-def send_emails_to_campaign(campaign, user, email_client_id=None, list_ids=None, new_candidates_only=False):
+def send_emails_to_campaign(oauth_token, campaign, user, email_client_id=None, list_ids=None, new_candidates_only=False):
     """
     new_candidates_only sends the emails only to candidates who haven't yet
     received any as part of this campaign.
@@ -115,13 +101,13 @@ def send_emails_to_campaign(campaign, user, email_client_id=None, list_ids=None,
     :return:            number of emails sent
     """
     emails_sent = 0
-    candidate_ids_and_emails = get_email_campaign_candidate_ids_and_emails(campaign=campaign, user=user, list_ids=list_ids,
+    candidate_ids_and_emails = get_email_campaign_candidate_ids_and_emails(oauth_token, campaign=campaign, user=user, list_ids=list_ids,
                                                                            new_candidates_only=new_candidates_only)
 
     # Check if the smart list has more than 0 candidates
     if len(candidate_ids_and_emails) > 0:
         email_admins(
-            env=GT_ENVIRONMENT,
+            env=current_app.config['GT_ENVIRONMENT'],
             subject='Marketing batch about to send',
             body="Marketing email batch about to send, campaign.name=%s, user=%s, \
         new_candidates_only=%s, address list size=%s" % (
@@ -159,9 +145,6 @@ def send_emails_to_campaign(campaign, user, email_client_id=None, list_ids=None,
                 emails_sent += 1
 
             db.session.commit()
-        # So that recipients dont have to wait for all emails to be sent to read their emails. (URL conversions are stored in DB)
-        # Reset sender back to normal sender
-        # current.mail.settings.sender = '"getTalent Web" <no-reply@gettalent.com>'
     current_app.logger.info(
         "Marketing email batch completed, emails sent=%s, campaign=%s, user=%s, new_candidates_only=%s", emails_sent,
         campaign.name, user.email, new_candidates_only)
@@ -169,7 +152,7 @@ def send_emails_to_campaign(campaign, user, email_client_id=None, list_ids=None,
     return emails_sent
 
 
-def get_email_campaign_candidate_ids_and_emails(campaign, user, list_ids=None,
+def get_email_campaign_candidate_ids_and_emails(oauth_token, campaign, user, list_ids=None,
                                                 new_candidates_only=False):
     """
     :param campaign:    email campaign row
@@ -199,12 +182,12 @@ def get_email_campaign_candidate_ids_and_emails(campaign, user, list_ids=None,
         else:
             # Otherwise, just filter out unsubscribed candidates:
             # their subscription preference's frequencyId is NULL, which means 'Never'
-            candidate_ids = get_candidates(list_id, candidate_ids_only=True)['candidate_ids']
-            current_app.logger.debug("candidate_ids: " + str(candidate_ids))
+            candidate_ids = get_candidates(oauth_token, list_id, candidate_ids_only=True)
+            current_app.logger.debug("candidate_ids: %s" % candidate_ids)
             unsubscribed_candidate_ids = []
             for candidate_id in candidate_ids:
                 campaign_subscription_preference = get_subscription_preference(candidate_id)
-                current_app.logger.debug("campaign_subscription_preference: %s" + str(campaign_subscription_preference))
+                current_app.logger.debug("campaign_subscription_preference: %s" % campaign_subscription_preference)
                 if campaign_subscription_preference and not campaign_subscription_preference.frequency_id:
                     unsubscribed_candidate_ids.append(candidate_id)
             for unsubscribed_candidate_id in unsubscribed_candidate_ids:
@@ -216,7 +199,7 @@ def get_email_campaign_candidate_ids_and_emails(campaign, user, list_ids=None,
                 EmailCampaignSend.email_campaign_id == campaign.id).group_by(EmailCampaignSend.candidate_id).all()
             emailed_candidate_ids_dict = dict( emailed_candidate_ids)
             for candidate_id in candidate_ids:
-                 if not candidate_ids_dict.get(candidate_id) and not emailed_candidate_ids_dict.get(candidate_id):
+                if not candidate_ids_dict.get(candidate_id) and not emailed_candidate_ids_dict.get(candidate_id):
                     candidate_ids_dict[candidate_id] = True
         else:
             for candidate_id in candidate_ids:
@@ -281,7 +264,7 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
                                                                custom_html=campaign.custom_html,
                                                                email_campaign_send_id=email_campaign_send.id)
     # In dev/staging, only send emails to getTalent users, in case we're impersonating a customer.
-    if GT_ENVIRONMENT in ['deva', 'qa']:
+    if current_app.config['GT_ENVIRONMENT'] in ['dev', 'qa']:
         domain = Domain.query.get(user.domain_id)
         if 'gettalent' in domain.name.lower() or 'bluth' in domain.name.lower() or 'dice' in domain.name.lower():
             to_addresses = user.email
@@ -349,219 +332,6 @@ def _mark_email_bounced(email_campaign_send, candidate, to_addresses, blast_para
         "Failed to send marketing email to candidate_id=%s, to_addresses=%s" % (candidate.id, to_addresses))
 
 
-def do_mergetag_replacements(texts, candidate=None):
-    """
-    If no candidate, name is "John Doe"
-    """
-    first_name = "John"
-    last_name = "Doe"
-    if candidate:
-        first_name = candidate.first_name if candidate.first_name else "John"
-        last_name = candidate.last_name if candidate.last_name else "Doe"
-
-    new_texts = []
-    for text in texts:
-        # Do first/last name replacements
-        text = text.replace(DEFAULT_FIRST_NAME_MERGETAG, first_name) if text and (
-            DEFAULT_FIRST_NAME_MERGETAG in text) else text
-        text = text.replace(DEFAULT_LAST_NAME_MERGETAG, last_name) if text and (
-            DEFAULT_LAST_NAME_MERGETAG in text) else text
-
-        # Do 'Unsubscribe' link replacements
-        if candidate and text and (DEFAULT_PREFERENCES_URL_MERGETAG in text):
-            text = do_prefs_url_replacement(text, candidate.id)
-
-        new_texts.append(text)
-
-    return new_texts
-
-
-def do_prefs_url_replacement(text, candidate_id):
-    unsubscribe_url = 'http://localhost:8007/unsubscribe'
-    # TODO: check for unsubscribe url
-    # unsubscribe_url = current.HOST_NAME + URL(scheme=False, host=False, a='web',
-    #                                           c='candidate', f='prefs',
-    #                                           args=[candidate_id],
-    #                                           hmac_key=current.HMAC_KEY)
-
-    # In case the user accidentally wrote http://*|PREFERENCES_URL|* or https://*|PREFERENCES_URL|*
-    text = text.replace("http://" + DEFAULT_PREFERENCES_URL_MERGETAG, unsubscribe_url)
-    text = text.replace("https://" + DEFAULT_PREFERENCES_URL_MERGETAG, unsubscribe_url)
-
-    # The normal case
-    text = text.replace(DEFAULT_PREFERENCES_URL_MERGETAG, unsubscribe_url)
-    return text
-
-
-def set_query_parameters(url, param_dict):
-    """
-    Given a URL, set or replace a query parameter and return the modified URL.
-    Taken & modified from:
-    http://stackoverflow.com/questions/4293460/how-to-add-custom-parameters-to-an-url-query-string-with-python
-
-    :param url:
-    :param param_dict:
-    :return:
-    """
-    scheme, netloc, path, query_string, fragment = urlsplit(url)
-    query_params = parse_qs(query_string)
-
-    for param_name, param_value in param_dict.items():
-        if not query_params.get(param_name):
-            query_params[param_name] = []
-        query_params[param_name].append(param_value)
-
-    new_query_string = urlencode(query_params, doseq=True)
-    return urlunsplit((scheme, netloc, path, new_query_string, fragment))
-
-
-def create_email_campaign_url_conversion(destination_url, email_campaign_send_id,
-                                         type_, destination_url_custom_params=None):
-    """
-    Creates url_conversion in DB and returns source url
-    """
-
-    # Insert url_conversion
-    if destination_url_custom_params:
-        destination_url = set_query_parameters(destination_url, destination_url_custom_params)
-
-    # source_url = current.HOST_NAME + str(URL(a='web', c='default', f='url_redirect', args=url_conversion_id, hmac_key=current.HMAC_KEY))
-    source_url = 'http://localhost:8007/source_url'  # TODO
-    url_conversion = UrlConversion(destination_url=destination_url, source_url=source_url)
-    db.session.add(url_conversion)
-    db.session.commit()
-    # Insert email_campaign_send_url_conversion
-    EmailCampaignSendUrlConversion(email_campaign_send_id=email_campaign_send_id, url_conversion_id=url_conversion.id,
-                                   type=type_)
-    return source_url
-
-
-def create_email_campaign_url_conversions(new_html, new_text, is_track_text_clicks,
-                                          is_track_html_clicks, custom_url_params_json,
-                                          is_email_open_tracking, custom_html,
-                                          email_campaign_send_id):
-    soup = None
-
-    # HTML open tracking
-    if new_html and is_email_open_tracking:
-        soup = BeautifulSoup(new_html)
-        num_conversions = convert_html_tag_attributes(
-            soup,
-            lambda url: create_email_campaign_url_conversion(url, email_campaign_send_id, TRACKING_URL_TYPE),
-            tag="img",
-            attribute="src",
-            convert_first_only=True
-        )
-
-        # If no images found, add a tracking pixel
-        if not num_conversions:
-            # image_url = URL('static', 'images/pixel.png', host=True)
-            image_url = "http://localhost:8007/images/pixel.png"
-            new_image_url = create_email_campaign_url_conversion(image_url, email_campaign_send_id, TRACKING_URL_TYPE)
-            new_image_tag = Tag(soup, "img", [("src", new_image_url)])
-            soup.insert(0, new_image_tag)
-
-    # HTML click tracking
-    if new_html and is_track_html_clicks:
-        soup = soup or BeautifulSoup(new_html)
-
-        # Fetch the custom URL params dict, if any
-        if custom_url_params_json:
-
-            destination_url_custom_params = json.loads(custom_url_params_json)
-        else:
-            destination_url_custom_params = dict()
-
-        # Convert all of soup's <a href=> attributes
-
-        convert_html_tag_attributes(
-            soup,
-            lambda url: create_email_campaign_url_conversion(url,
-                                                             email_campaign_send_id,
-                                                             HTML_CLICK_URL_TYPE,
-                                                             destination_url_custom_params),
-            tag="a",
-            attribute="href"
-        )
-
-    # Add custom HTML. Doesn't technically belong in this function, but since we have access to the BeautifulSoup object, let's do it here.
-    if new_html and custom_html:
-        soup = soup or BeautifulSoup(new_html)
-        body_tag = soup.find(name="body") or soup.find(name="html")
-        """
-        :type: Tag | None
-        """
-        if body_tag:
-            custom_html_soup = BeautifulSoup(custom_html)
-            body_tag.insert(0, custom_html_soup)
-        else:
-            current_app.logger.error("Email campaign HTML did not have a body or html tag, "
-                                     "so couldn't insert custom_html! email_campaign_send_id=%s",
-                                     email_campaign_send_id)
-
-    # Convert soup object into new HTML
-    if new_html and soup:
-        new_html = soup.prettify()
-
-    return new_text, new_html
-
-
-def convert_html_tag_attributes(soup, conversion_function, tag="a",
-                                attribute="href", convert_first_only=False):
-    """
-    Takes in BeautifulSoup object and calls conversion_function on every given
-    attribute of given tag.
-
-    :return:    Number of conversions done. (BeautifulSoup object is modified.)
-    """
-    items = soup.findAll(tag)
-    replacements = 0
-    for item in items:
-        if item[attribute]:
-            item[attribute] = conversion_function(item[attribute])
-            replacements += 1
-            if convert_first_only: break
-    return replacements
-
-
-def get_candidates(list_id, candidate_ids_only=False, count_only=False, max_candidates=0):
-    """
-    Gets the candidates of a smart or dumb list.
-
-    :param max_candidates: If set to 0, will have no limit.
-    :return:  dict of 'candidate_ids, total_found' if candidate_ids_only=True, otherwise returns
-    what TalentSearch.search_candidates returns
-    """
-    smart_list = SmartList.query.get(list_id)
-    domain_id = smart_list.user.domain_id
-
-    # If it is a smartlist, perform the dynamic search
-    if smart_list.search_params:
-        search_params = json.loads(smart_list.search_params)
-        # TODO: Get candidates from candidate search service
-        search_results = search_candidates(domainId=domain_id, vars=search_params, search_limit=max_candidates,
-                                           candidate_ids_only=candidate_ids_only,
-                                           count_only=count_only)  # returns total_found, candidate_ids
-    # If a dumblist & getting count only, just do count
-    elif count_only:
-        count = db.session.query(SmartListCandidate.candidate_id).filter_by(smart_list_id=smart_list.id).count()
-        search_results = dict(candidate_ids=[], total_found=count)
-    # If a dumblist and not doing count only, simply return all smart_list_candidates
-    else:
-        smart_list_candidate_rows = db.session.query(SmartListCandidate.candidate_id)\
-            .filter_by(smart_list_id=smart_list.id)
-        if max_candidates:
-            smart_list_candidate_rows = smart_list_candidate_rows.limit(max_candidates)
-            # count = get_candidates(smart_list, candidate_ids_only=candidate_ids_only, count_only=True)['total_found']
-
-        count = smart_list_candidate_rows.count()
-        candidate_ids = [smart_list_candidate_row.candidate_id for smart_list_candidate_row in smart_list_candidate_rows]
-
-        search_results = dict(candidate_ids=candidate_ids, total_found=count)
-    print "get_candidates_result: " + str(search_results)
-    return search_results
-
-
 def get_subscription_preference(candidate_id):
     """
     If there are multiple subscription preferences (due to legacy reasons),
@@ -585,7 +355,6 @@ def get_subscription_preference(candidate_id):
                                 candidate_id, all_other_prefs_ids)
         db.session.query(CandidateSubscriptionPreference)\
             .filter(CandidateSubscriptionPreference.id.in_(all_other_prefs_ids)).delete(synchronize_session='fetch')
-        # db(db.candidate_subscription_preference.id.belongs(all_other_prefs_ids)).delete()
         return non_custom_pref
     elif null_pref:
         non_null_prefs = email_prefs.filter(CandidateSubscriptionPreference.id != null_pref.id)
@@ -594,100 +363,10 @@ def get_subscription_preference(candidate_id):
                                 candidate_id, non_null_prefs_ids)
         db.session.query(CandidateSubscriptionPreference).filter(
             CandidateSubscriptionPreference.id.in_(non_null_prefs_ids)).delete(synchronize_session='fetch')
-        # db(db.candidate_subscription_preference.id.belongs(non_null_prefs_id)).delete()
         return null_pref
     elif custom_pref:
         email_prefs_ids = [row.id for row in email_prefs]
         current_app.logger.info("get_subscription_preference: Deleting all prefs for candidate %s: %s", candidate_id, email_prefs_ids)
         db.session.query(CandidateSubscriptionPreference).filter(
             CandidateSubscriptionPreference.id.in_(email_prefs_ids)).delete(synchronize_session='fetch')
-        # db(db.candidate_subscription_preference.id.belongs(email_prefs_ids)).delete()
         return None
-
-
-
-# def schedule_email_campaign_sends(campaign, user, email_client_id=None, send_time=None, stop_time=None):
-#     """
-#     NOT USED
-#     :param campaign:            email_campaign row
-#     :param user:                user row
-#     :param email_client_id:     email client's unique id,
-#                                 which references the source of the email client
-#     """
-#     # repeats = 0 means unlimited
-#     repeats = 0
-#     start_time = send_time if send_time else campaign.sendTime
-#     stop_time = stop_time if stop_time else campaign.stopTime
-#
-#     if campaign.frequency.id == 1:
-#         repeats = 1
-#     period = campaign.frequency.in_seconds
-#     function_vars = dict(campaign_id=campaign.id, user_id=user.id,
-#                          email_client_id=email_client_id)
-#
-#     if period == 0:
-#         # Celery task run now (as soon as worker is free)
-#         send_scheduled_campaign.delay(function_vars)
-#     # If campaign to be sent in future
-#     # scheduler_task_id = schedule_task(function_name='email_campaign_scheduled',
-#     #                                   function_vars=function_vars,
-#     #                                   start_time=start_time,
-#     #                                   stop_time=stop_time,
-#     #                                   period=period, repeats=repeats)
-#     # campaign.update_record(schedulerTaskIds=[scheduler_task_id])
-
-
-# def frequency_to_seconds(frequency_name):
-#     """ Get frequency name from given frequency id and converts it into seconds
-#     Frequency other then below mentioned names will return 0 seconds.
-#     'Once', 'Daily', 'Weekly', 'Biweekly', 'Monthly', 'Yearly'
-#     :param frequency_name:
-#     :return:frequency in seconds
-#     """
-#     frequency_name = frequency_name.lower()
-#     frequency_in_seconds = {'once': 0, 'daily': 24 * 3600, 'weekly': 7 * 24 * 3600, 'biweekly': 2 * 7 * 24 * 3600,
-#                             'monthly': 30 * 24 * 3600, 'yearly': 365 * 24 * 3600}
-#     if frequency_name not in frequency_in_seconds.keys():
-#         # For unknown frequency names return 0 seconds.
-#         # Log error TODO
-#         return 0
-#     return frequency_in_seconds.get(frequency_name, 0)
-#
-#     # if not frequency_id or frequency_id == 1:
-#     #     period = 0
-#     # elif frequency_id == 2:
-#     #     period = 24 * 3600
-#     # elif frequency_id == 3:
-#     #     period = 7 * 24 * 3600
-#     # elif frequency_id == 4:
-#     #     period = 14 * 24 * 3600
-#     # elif frequency_id == 5:
-#     #     period = 30 * 24 * 3600
-#     # elif frequency_id == 6:
-#     #     period = 365 * 24 * 3600
-#     # else:
-#     #     current.logger.error("Unknown number of seconds for frequency ID: %s", frequency_id)
-#     #     period = 0
-#     #
-#     # return period
-
-
-# def _send_campaign_emails(campaign, user, new_candidates_only):
-#     # Get all candidates associated with smartlists
-#     # Mail admins notifying the start of email campaign. (if the smart list has more than 0 candidates)
-#     candidate_ids_and_emails = 0  # TODO
-#     email_admins(
-#         env=GT_ENVIRONMENT,
-#         subject='Marketing batch about to send',
-#         body="Marketing email batch about to send, campaign.name=%s, user=%s, \
-#         new_candidates_only=%s, address list size=%s" % (
-#             campaign.name, user.email, new_candidates_only, len(candidate_ids_and_emails)
-#         )
-#     )
-#     # Add activity email campaign send
-#     # Create the email_campaign_blast for this blast
-#     email_campaign_blast = EmailCampaignBlast(email_campaign_id=campaign.id, sent_time=datetime.datetime.now())
-#     db.session.add(email_campaign_blast)
-#     blast_params = {'sends': 0, 'bounces': 0}
-#     # For each candidate, create URL conversions and send the email
-

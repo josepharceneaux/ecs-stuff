@@ -37,7 +37,7 @@ def validate_and_format_request_data(data):
     if list_ids is None or list_ids.strip() == '':
         raise InvalidUsage('list_ids are required to send email campaigns')
 
-    # TODO: Validate send_time
+    # TODO: Validate send_time & stop time
 
     # If frequency is there then there must be a send time
     if frequency is not None and send_time is None:

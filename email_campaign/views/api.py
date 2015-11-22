@@ -1,10 +1,11 @@
+import json
+
 from flask import Blueprint
 from flask import current_app as app
 from flask import request
 from flask.ext.cors import CORS
 from ..modules.email_marketing import create_email_campaign
 from ..modules.validations import validate_lists_belongs_to_domain, validate_and_format_request_data
-import json
 from email_campaign.common.error_handling import UnprocessableEntity, ForbiddenError
 from email_campaign.common.utils.auth_utils import require_oauth
 
@@ -13,7 +14,7 @@ __author__ = 'jitesh'
 mod = Blueprint('email_campaign', __name__)
 
 
-@mod.route('/', methods=['POST'])  # TODO: flask restful?
+@mod.route('/email_campaign', methods=['POST'])
 @require_oauth
 def email_campaigns():
     user_id = request.user.id  # 1553
@@ -33,6 +34,7 @@ def email_campaigns():
         raise ForbiddenError("Provided list does not belong to user's domain")
 
     campaign_id = create_email_campaign(user_id=user_id,
+                                        oauth_token=request.oauth_token,
                                         email_campaign_name=data['campaign_name'],
                                         email_subject=data['email_subject'],
                                         email_from=data['email_from'],
