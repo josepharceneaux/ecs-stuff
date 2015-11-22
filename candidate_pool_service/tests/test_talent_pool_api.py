@@ -1,14 +1,15 @@
-from conftest import *
+from candidate_pool_service.candidate_pool_app import app
+from candidate_pool_service.common.tests.conftest import *
+from common_functions import *
 
-
-def test_talent_pool_api_post(access_token, domain_admin_access_token, domain, domain_second):
+def test_talent_pool_api_post(access_token, domain_admin_access_token, domain_first, domain_second):
 
     data = {
         'talent_pools': [
             {
                 'name': gen_salt(20),
                 'description': gen_salt(20),
-                'domain_id': domain.id
+                'domain_id': domain_first.id
             }
         ]
     }
@@ -37,20 +38,20 @@ def test_talent_pool_api_post(access_token, domain_admin_access_token, domain, d
     assert status_code == 404
 
     # Add a new talent-pool in a domain using domain_admin_user but with empty name
-    data['talent_pools'][0]['domain_id'] = domain.id
+    data['talent_pools'][0]['domain_id'] = domain_first.id
     data['talent_pools'][0]['name'] = ''
     response, status_code = talent_pool_api(domain_admin_access_token, data=data, action='POST')
     assert status_code == 400
 
     # Add a new talent-pool in a domain using domain_admin_user
-    data['talent_pools'][0]['domain_id'] = domain.id
+    data['talent_pools'][0]['domain_id'] = domain_first.id
     data['talent_pools'][0]['name'] = gen_salt(20)
     response, status_code = talent_pool_api(domain_admin_access_token, data=data, action='POST')
     assert status_code == 200
     assert len(response.get('talent_pools')) == 1
 
     # Add a new talent-pool in a domain using domain_admin_user with existing name
-    data['talent_pools'][0]['domain_id'] = domain.id
+    data['talent_pools'][0]['domain_id'] = domain_first.id
     response, status_code = talent_pool_api(domain_admin_access_token, data=data, action='POST')
     assert status_code == 400
 
@@ -317,8 +318,9 @@ def test_talent_pool_group_api_delete(access_token, admin_access_token, domain_a
     assert response['deleted_talent_pools'] == [talent_pool.id]
 
 
-def test_talent_pool_group_api(access_token, admin_access_token, domain_admin_access_token, manage_talent_pool_access_token,
-                               talent_pool, talent_pool_second, candidate_first, candidate_second):
+def test_talent_pool_candidate_api_post(access_token, admin_access_token, domain_admin_access_token,
+                                        manage_talent_pool_access_token, talent_pool, talent_pool_second, candidate_first,
+                                        candidate_second):
 
     data = {
         'talent_pool_candidates': ['a', candidate_second.id]
@@ -366,6 +368,19 @@ def test_talent_pool_group_api(access_token, admin_access_token, domain_admin_ac
     response, status_code = talent_pool_candidate_api(access_token, talent_pool.id, data=data, action='POST')
     assert status_code == 400
 
+
+def test_talent_pool_candidate_api_get(access_token, admin_access_token, domain_admin_access_token,
+                                       manage_talent_pool_access_token, talent_pool, talent_pool_second, candidate_first,
+                                       candidate_second):
+
+    data = {
+        'talent_pool_candidates': [candidate_first.id, candidate_second.id]
+    }
+
+    # Add candidates to a talent_pool using ordinary user
+    response, status_code = talent_pool_candidate_api(access_token, talent_pool.id, data=data, action='POST')
+    assert status_code == 200
+
     # Get candidates from non-existing talent_pool
     response, status_code = talent_pool_candidate_api(access_token, talent_pool.id + 100)
     assert status_code == 404
@@ -392,6 +407,19 @@ def test_talent_pool_group_api(access_token, admin_access_token, domain_admin_ac
     response, status_code = talent_pool_candidate_api(admin_access_token, talent_pool_second.id)
     assert status_code == 200
     assert len(response['talent_pool_candidates']) == 0
+
+
+def test_talent_pool_candidate_api_delete(access_token, admin_access_token, domain_admin_access_token,
+                                          manage_talent_pool_access_token, talent_pool, talent_pool_second,
+                                          candidate_first, candidate_second):
+
+    data = {
+        'talent_pool_candidates': [candidate_first.id, candidate_second.id]
+    }
+
+    # Add candidates to a talent_pool using ordinary user
+    response, status_code = talent_pool_candidate_api(access_token, talent_pool.id, data=data, action='POST')
+    assert status_code == 200
 
     # Delete candidates from a talent_pool using admin user but with empty request body
     response, status_code = talent_pool_candidate_api(admin_access_token, talent_pool.id, action='DELETE')

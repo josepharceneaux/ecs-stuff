@@ -1,14 +1,8 @@
 __author__ = 'ufarooqi'
-import random
-import string
-from werkzeug.security import generate_password_hash
-from user_service.user_app import app
-from user_service.common.models.user import *
 import requests
 import json
-
-OAUTH_ENDPOINT = 'http://127.0.0.1:8001/%s'
-TOKEN_URL = OAUTH_ENDPOINT % 'oauth2/token'
+from candidate_pool_service.candidate_pool_app import db
+from candidate_pool_service.common.models.user import DomainRole
 
 USER_SERVICE_ENDPOINT = 'http://127.0.0.1:8004/%s'
 USER_ROLES = USER_SERVICE_ENDPOINT % 'users/%s/roles'
@@ -20,34 +14,6 @@ UPDATE_PASSWORD = USER_SERVICE_ENDPOINT % 'users/%s/update_password'
 
 USER_API = USER_SERVICE_ENDPOINT % 'users'
 DOMAIN_API = USER_SERVICE_ENDPOINT % 'domains'
-
-
-def create_test_user(domain_id, password):
-    random_email = ''.join([random.choice(string.ascii_letters + string.digits) for n in xrange(12)])
-    email = '%s.sample@example.com' % random_email
-    first_name = 'John'
-    last_name = 'Sample'
-    test_user = User(
-        email=email,
-        password=generate_password_hash(password, method='pbkdf2:sha512'),
-        domain_id=domain_id,
-        first_name=first_name,
-        last_name=last_name,
-        expiration=None
-    )
-    db.session.add(test_user)
-    db.session.commit()
-    return test_user
-
-
-def get_access_token(user, password, client_id, client_secret):
-    params = dict(grant_type="password", username=user.email, password=password)
-    auth_service_token_response = requests.post(TOKEN_URL,
-                                                params=params, auth=(client_id, client_secret)).json()
-    if not (auth_service_token_response.get(u'access_token') and auth_service_token_response.get(u'refresh_token')):
-        raise Exception("Either Access Token or Refresh Token is missing")
-    else:
-        return auth_service_token_response.get(u'access_token')
 
 
 def user_scoped_roles(access_token, user_id, test_roles=None, action="GET", false_case=False):
