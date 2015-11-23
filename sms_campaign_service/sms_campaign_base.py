@@ -15,9 +15,8 @@ from datetime import datetime
 # Application Specific
 from sms_campaign_service import logger
 from sms_campaign_service.app.app import IS_DEV
-from sms_campaign_service.config import SMS_URL_REDIRECT, CAMPAIGN_SMS_SEND, \
-    CAMPAIGN_SEND, PHONE_LABEL_ID, TWILIO, CAMPAIGN_SMS_CLICK, CAMPAIGN_SMS_REPLY
-from sms_campaign_service.common.models.user import UserPhone
+from sms_campaign_service.config import SMS_URL_REDIRECT, PHONE_LABEL_ID, TWILIO
+from sms_campaign_service.common.models.user import UserPhone, User
 from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.candidate import PhoneLabel, Candidate, CandidatePhone
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign,\
@@ -25,6 +24,8 @@ from sms_campaign_service.common.models.sms_campaign import SmsCampaign,\
     SmsCampaignReply
 from sms_campaign_service.common.utils.campaign_utils import CampaignBase
 from sms_campaign_service.utilities import TwilioSMS, search_link_in_text, url_conversion
+from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_CLICK,\
+    CAMPAIGN_SMS_REPLY, CAMPAIGN_SMS_SEND, CAMPAIGN_SEND, CAMPAIGN_SMS_CREATE
 
 
 class SmsCampaignBase(CampaignBase):
@@ -54,6 +55,9 @@ class SmsCampaignBase(CampaignBase):
     * get_campaign_data(self):
         This will basically get the campaign data from UI and separate it from
         scheduling data.
+
+    * campaign_create_activity(self, sms_campaign)
+        This creates activity that SMS campaign created by xyz user
 
     * buy_twilio_mobile_number(self, phone_label_id=None):
         To send sms_campaign, we need to reserve a unique number for each user.
@@ -95,11 +99,14 @@ class SmsCampaignBase(CampaignBase):
 
     * create_sms_send_activity(self, candidate, source_id=None):
         Here we set params and type to be saved in db table 'Activity' for each sent sms.
+        Activity will appear as
+            "SMS Campaign <b>%(campaign_name)s</b> has been sent to %(candidate_name)s.".
 
-    * create_sms_campaign_send_activity(self, num_candidates):
+    * create_campaign_send_activity(self, num_candidates):
         Once the campaign has been sent to all candidates, here we set params and type
         to be saved in db table 'Activity' that campaign has been sent to (say)
         40(num_candidates) candidates.
+        Activity will appear as "%(campaign_name)s has been sent to %(num_candidates)s.".
 
     * process_url_redirect(self, campaign_id=None, url_conversion_id=None):
         When a candidate clicks on the link present in the body text of sms, this code is
@@ -107,15 +114,20 @@ class SmsCampaignBase(CampaignBase):
         "url_conversion" table. Finally it returns the destination url to redirect the
         candidate to actual link provided by recruiter.
 
+    *  create_campaign_url_click_activity(self, candidate):
+        If candidate clicks on link present in sms body text, we create an activity,
+        Activity will appear as
+            "%(candidate_name)s clicked on SMS Campaign <b>%(campaign_name)s</b>."
+
     * process_candidate_reply(self, candidate):
-        When a candidate replies to a recruiter's number, here we do the necassary processing.
+        When a candidate replies to a recruiter's number, here we do the necessary processing.
 
     * save_candidate_reply(self, candidate):
         In this method, we save the reply of candidate in db table 'sms_campaign_reply"
 
     * create_campaign_reply_activity(self, candidate):
-        When a candidate replies to a recruiter's phone number, we create an activity
-        that "%(candidate_name)s replied %(body_text)s on campaign %(campaign_name)s".
+        When a candidate replies to a recruiter's phone number, we create an activity that
+        "%(candidate_name)s replied <b>%(reply_text)s</b> on SMS campaign %(campaign_name)s.".
 
     - An example of sending campaign to candidates will be like this.
         :Example:
@@ -149,12 +161,25 @@ class SmsCampaignBase(CampaignBase):
 
     def save(self, form_data):
         """
-        This saves the campaign in database table sms_campaign
-        :return:
+        This saves the campaign in database table sms_campaign in following steps:
+
+            1- Get Mapped data (from UI to save in db)
+            2- Save campaign in database
+            3 Create activity that
+                "%(user_name)s created an SMS campaign: '%(campaign_name)s'"
+
+        :param form_data: data from UI
+        :type form_data: dict
+        :return: id of sms_campaign in db
+        :rtype: int
         """
         if form_data:
             campaign_data = self.get_campaign_data(form_data)
-            return self.create_or_update_sms_campaign(campaign_data)
+            # Save Campaign in database table "sms_campaign"
+            sms_campaign = self.create_or_update_sms_campaign(campaign_data)
+            # Create Activity
+            self.campaign_create_activity(sms_campaign)
+            return sms_campaign.id
         else:
             logger.error('save: No data received from UI.')
 
@@ -185,21 +210,48 @@ class SmsCampaignBase(CampaignBase):
         :param campaign_id: id of "sms_campaign" row, default None
         :type sms_campaign_data: dict
         :type campaign_id: int
-        :return: id of the "sms_campaign" record in database
-        :rtype: int
+        :return: "sms_campaign" row
+        :rtype: row
 
         **See Also**
         .. see also:: save() method in SmsCampaignBase class.
         """
         if campaign_id:
-            record_in_db = SmsCampaign.get_by_campaign_id(campaign_id)
-            record_in_db.update(**sms_campaign_data)
-            sms_campaign_id = record_in_db.id
+            sms_campaign = SmsCampaign.get_by_campaign_id(campaign_id)
+            sms_campaign.update(**sms_campaign_data)
         else:
-            new_record = SmsCampaign(**sms_campaign_data)
-            SmsCampaign.save(new_record)
-            sms_campaign_id = new_record.id
-        return sms_campaign_id
+            sms_campaign = SmsCampaign(**sms_campaign_data)
+            SmsCampaign.save(sms_campaign)
+        return sms_campaign
+
+    def campaign_create_activity(self, source):
+        """
+        - Here we set "params" and "type" of activity to be stored in db table "Activity"
+            for Campaign create.
+
+        - Activity will appear as
+           "%(user_name)s created an SMS campaign: '%(campaign_name)s'"
+
+        - This method is called from save() method of class
+            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
+
+        :param source: "sms_campaign" row
+        :type source: row
+
+        **See Also**
+        .. see also:: save() method in SmsCampaignBase class.
+        """
+        # get User row
+        user = User.get_by_id(self.user_id)
+        # set params
+        params = {'user_name': user.name,
+                  'campaign_name': source.name}
+
+        self.create_activity(user_id=self.user_id,
+                             type_=CAMPAIGN_SMS_CREATE,
+                             source_id=source.id,
+                             source_table='',
+                             params=params)
 
     def get_user_phone(self):
         """
@@ -618,6 +670,9 @@ class SmsCampaignBase(CampaignBase):
         - Here we set "params" and "type" of activity to be stored in db table "Activity"
             for each send.
 
+        - Activity will appear as
+            "SMS Campaign <b>%(campaign_name)s</b> has been sent to %(candidate_name)s."
+
         - This method is called from send_sms_campaign_to_candidates() method of class
             SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
 
@@ -643,6 +698,8 @@ class SmsCampaignBase(CampaignBase):
         - Here we set "params" and "type" of activity to be stored in db table "Activity"
             for Campaign sent.
 
+        - Activity will appear as "%(campaign_name)s has been sent to %(num_candidates)s".
+
         - This method is called from send_sms_campaign_to_candidates() method of class
             SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
 
@@ -652,7 +709,7 @@ class SmsCampaignBase(CampaignBase):
         **See Also**
         .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
         """
-        params = {'campaign_name': self.campaign.name,
+        params = {'name': self.campaign.name,
                   'num_candidates': num_candidates}
         self.create_activity(user_id=self.user_id,
                              type_=CAMPAIGN_SEND,
@@ -717,6 +774,9 @@ class SmsCampaignBase(CampaignBase):
         - Here we set "params" and "type" of activity to be stored in db table "Activity"
             for Campaign URL click.
 
+        - Activity will appear as
+            "%(candidate_name)s clicked on SMS Campaign <b>%(campaign_name)s</b>."
+
         - This method is called from process_url_redirect() method of class
             SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
 
@@ -731,7 +791,7 @@ class SmsCampaignBase(CampaignBase):
         self.create_activity(user_id=self.user_id,
                              type_=CAMPAIGN_SMS_CLICK,
                              source_id=self.campaign.id,
-                             source_table='email_campaign',
+                             source_table='sms_campaign',
                              params=params)
 
     @classmethod
@@ -815,6 +875,9 @@ class SmsCampaignBase(CampaignBase):
         """
         - Here we set "params" and "type" of activity to be stored in db table "Activity"
             for Campaign reply.
+
+        - Activity will appear as
+            "%(candidate_name)s replied <b>%(reply_text)s</b> on SMS campaign %(campaign_name)s.".
 
         - This method is called from process_candidate_reply() method of class
             SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.

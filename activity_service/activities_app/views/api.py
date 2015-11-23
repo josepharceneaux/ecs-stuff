@@ -134,7 +134,10 @@ class TalentActivityManager(object):
     CAMPAIGN_EMAIL_OPEN = 16
     CAMPAIGN_EMAIL_CLICK = 17
     RSVP_EVENT = 23
-    # RSVP_MEETUP = 24
+    CAMPAIGN_SMS_SEND = 24
+    CAMPAIGN_SMS_CLICK = 25
+    CAMPAIGN_SMS_REPLY = 26
+    CAMPAIGN_SMS_CREATE = 27
 
     MESSAGES = {
         RSVP_EVENT: ("%(firstName)s  %(lastName)s responded <b>%(response)s</b> "
@@ -191,7 +194,19 @@ class TalentActivityManager(object):
         CAMPAIGN_EMAIL_OPEN: ("%(candidate_name)s opened email of campaign %(campaign_name)s",
                               "%(count)s candidates opened email of campaign %(campaign_name)s", "campaign.png"),
         CAMPAIGN_EMAIL_CLICK: ("%(candidate_name)s clicked email of campaign %(campaign_name)s",
-                               "Campaign %(campaign_name)s was clicked %(count)s times", "campaign.png")
+                               "Campaign %(campaign_name)s was clicked %(count)s times", "campaign.png"),
+        CAMPAIGN_SMS_CREATE: ("%(user_name)s created an SMS campaign: '%(campaign_name)s'",
+                              "%(user_name)s created an SMS campaign: '%(campaign_name)s'",
+                              "campaign.png"),
+        CAMPAIGN_SMS_SEND: ("SMS Campaign <b>%(campaign_name)s</b> has been sent to %(candidate_name)s.",
+                     "SMS Campaign %(campaign_name)s has been sent to %(candidate_name)s.",
+                     "campaign.png"),
+        CAMPAIGN_SMS_CLICK: ("%(candidate_name)s clicked on SMS Campaign <b>%(campaign_name)s</b>.",
+                     "%(candidate_name)s clicked on %(campaign_name)s.",
+                     "campaign.png"),
+        CAMPAIGN_SMS_REPLY: ("%(candidate_name)s replied <b>%(reply_text)s</b> on campaign %(campaign_name)s.",
+                     "%(candidate_name)s replied '%(reply_text)s' on campaign %(campaign_name)s.",
+                     "campaign.png"),
     }
 
     def __init__(self):

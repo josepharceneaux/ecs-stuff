@@ -19,9 +19,9 @@ gevent.monkey.patch_all()
 from gevent.pool import Pool
 
 # Application Specific
-from social_network_service.utilities import http_request
 from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.candidate import Candidate
+from sms_campaign_service.common.utils.common_functions import http_request
 from sms_campaign_service.common.models.smart_list import SmartListCandidate
 from sms_campaign_service.config import ACTIVITY_SERVICE_API_URL, AUTH_HEADER, POOL_SIZE
 
@@ -94,6 +94,15 @@ class CampaignBase(object):
         """
         This will get the data from the UI according to specific campaign.
         Child class will implement this.
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    def campaign_create_activity(self, source):
+        """
+        Child classes will use this to set type, source_id, source_table, params
+        to create an activity for newly created campaign.
         :return:
         """
         pass

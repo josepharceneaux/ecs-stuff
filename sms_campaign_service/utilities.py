@@ -12,10 +12,11 @@ from twilio.rest import TwilioRestClient
 
 # Application Specific
 from sms_campaign_service import logger
-from social_network_service.utilities import http_request
+
 from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.common.models.scheduler import SchedulerTask
 from sms_campaign_service.common.models.candidate import CandidatePhone
+from sms_campaign_service.common.utils.common_functions import http_request
 from sms_campaign_service.app.app import celery
 from sms_campaign_service.app.app import sched
 from config import TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, GT_ENVIRONMENT,\
