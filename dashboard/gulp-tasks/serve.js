@@ -112,7 +112,7 @@ module.exports = function (config) {
                 baseDir: isDev ? config.tempDir : config.buildDir,
                 routes: isDev ? {
                     '/bower_components': './bower_components',
-                    '/fonts': './bower_components/bootstrap-sass/assets/fonts',
+                    '/fonts': config.sourceDir + 'core/icon-font',
                     '/src': config.sourceDir,
                     '/images': config.sourceDir + 'images',
                     '/.tmp': config.tempDir
