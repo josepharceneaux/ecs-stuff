@@ -21,3 +21,4 @@ loggly-python-handler==1.0.0
 pytest==2.7.2
 requests-oauthlib==0.5.0
 python-dateutil==2.4.2
+flask-cors=2.1.0

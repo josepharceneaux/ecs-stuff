@@ -1,7 +1,7 @@
 from flask import Flask
 from flask.ext.script import Manager
 from flask.ext.migrate import Migrate, MigrateCommand
-from common.models.user import *
+from candidate_service.common.models.user import *
 
 app = Flask(__name__)
 app.config.from_object('config')
@@ -50,6 +50,19 @@ def add_groups_to_user():
         ALTER TABLE user\
         ADD userGroupId int(11),\
         ADD FOREIGN KEY (`userGroupId`) REFERENCES `user_group` (`id`) ON UPDATE CASCADE ON DELETE CASCADE;')
+    except Exception as e:
+        print e.message
+
+
+@manager.command
+def add_is_disabled_field_to_user_domain_table():
+    try:
+        db.engine.execute("\
+        ALTER TABLE user\
+        ADD is_disabled tinyint(1) NOT NULL DEFAULT '0';")
+        db.engine.execute("\
+        ALTER TABLE domain\
+        ADD is_disabled tinyint(1) NOT NULL DEFAULT '0';")
     except Exception as e:
         print e.message
 

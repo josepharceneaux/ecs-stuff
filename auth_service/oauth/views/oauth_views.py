@@ -46,4 +46,3 @@ def authorize():
     user = request.oauth.user
     logger.info('User %s has been authorized to access getTalent api', user.id)
     return jsonify(user_id=user.id)
-

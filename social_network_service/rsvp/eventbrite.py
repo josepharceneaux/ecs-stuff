@@ -1,125 +1,250 @@
+"""
+This modules contains Eventbrite class. It inherits from RSVPBase class.
+Eventbrite contains methods like get_rsvps(), get_attendee() etc.
+"""
+
+# Standard Library
+import json
+import re
+from datetime import datetime
 from base import RSVPBase
-from datetime import datetime, timedelta
-from gt_common.models.event import Event
-from social_network_service.utilities import http_request, Attendee, \
-    log_exception, log_error, get_message_to_log
-from gt_common.models.user import UserCredentials
+
+# Application Specific
+from social_network_service.common.models.event import Event
+from social_network_service.common.models.user import UserSocialNetworkCredential
+from social_network_service.common.models.candidate import SocialNetwork
+from social_network_service import logger
+from social_network_service.utilities import Attendee
+from social_network_service.utilities import http_request
+from social_network_service.custom_exceptions import NoUserFound
+from social_network_service.custom_exceptions import EventNotFound
 
 
 class Eventbrite(RSVPBase):
     """
-    Here we implement the code related to RSVPs of meetup event
-    """
+    - This class is inherited from RSVPBase class.
+        RSVPBase class is defined inside social_network_service/rsvp/base.py
+
+    - This implements the following abstract methods
+
+        1- get_rsvps() and
+        2- get_attendee() defined in interface.
+
+    - This overrides the process_rsvp() method of base class to raise an
+        exception that RSVPs for eventbrite are not imported via manager,
+        rather they are imported via webhook.
+
+    - It also defines method process_rsvp_via_webhook() to process the rsvp of
+        an event (present on Eventbrite website) using webhook.
+
+    :Example:
+
+        To process rsvp of an eventbrite event (via webhook) you have to do
+        following steps:
+
+        1- Import this class
+            from social_network_service.rsvp.eventbrite import Eventbrite
+                                                            as EventbriteRsvp
+
+        2. First get the user_credentials using webhook_id
+            user_credentials =
+            EventbriteRsvp.get_user_credentials_by_webhook(webhook_id)
+
+        3. Get the social network class for auth purpose
+            user_id = user_credentials.user_id
+        social_network_class = get_class(
+                    user_credentials.social_network.name.lower(),
+                   'social_network')
+        we call social network class here for auth purpose, If token is
+        expired, access token is refreshed and we use fresh token
+        sn = social_network_class(
+                        user_id=user_credentials.userId,
+                        social_network_id=user_credentials.social_network.id)
+
+        4. Get the Eventbrite rsvp class imported and creates rsvp object
+            rsvp_class = get_class(
+                            user_credentials.social_network.name.lower(),
+                            'rsvp')
+            rsvp_obj = rsvp_class(
+            user_credentials=user_credentials,
+            social_network=user_credentials.social_network,headers=sn.headers)
+
+        5. Call method process_rsvp_via_webhook on rsvp object to process RSVP
+            rsvp_obj.process_rsvp_via_webhook(social_network_rsvp_id)
+
+        **See Also**
+            .. seealso:: handle_rsvp() function in
+                social_network_service/app/app.py for more insight.
+
+        .. note::
+            You can learn more about webhook and eventbrite API from following
+            link - https://www.eventbrite.com/developer/v3/
+        """
+
     def __init__(self, *args, **kwargs):
         super(Eventbrite, self).__init__(*args, **kwargs)
-        self.start_date_in_utc = (datetime.now() -
-                                  timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     @classmethod
     def get_user_credentials_by_webhook(cls, webhook_id):
         """
-        This gives the Owner user's data using following class variables
-        webhook_id: is the id of webhook of the Get Talent user
-        social_network_id: is the id of social network of Get Talent user
+        :param webhook_id: id of webhook extracted from received data
+                        of an rsvp.
+        :type webhook_id: str
+        :return: user's social network credentials
+        :rtype: common.models.user.UserCredentials
+        - user credentials db table have a field webhook_id. we pass
+            webhook_id in this method and this gives the user's
+            (owner of the event for which we are processing rsvp) data.
+
+        - This is a class method which is called from handle_rsvp() function in
+            social_network_service/app/app.py
+
+        - We have made this a @classmethod as initially we do not have any
+            user credentials to proceed. So we first get the user credentials
+            by calling this method on class itself as given in following
+            example.
+
+        :Example:
+
+            from social_network_service.rsvp.eventbrite import Eventbrite
+            user_credentials =
+                    Eventbrite.get_user_credentials_by_webhook(webhook_id)
+
+        **See Also**
+            .. seealso:: handle_rsvp() function in
+                social_network_service/app/app.py for more understanding.
         """
-        user = None
-        webhook = None
-        function_name = 'get_user_credentials_by_webhook()'
-        message_to_log = get_message_to_log(function_name=function_name,
-                                            file_name=__file__,
-                                            class_name=cls.__class__.__name__,)
+        webhook_id_dict = {'webhook_id': webhook_id}
         if webhook_id:
-            try:
-                # gets gt-user object
-                user = UserCredentials.get_by_webhook_id(webhook_id)
-                webhook = {'webhook_id': webhook_id}
-            except Exception as e:
-                error_message = e.message
-                message_to_log.update({'error': error_message})
-                log_exception(message_to_log)
+            # gets gt-user object
+            social_network = SocialNetwork.get_by_name(cls.__name__)
+            user_credentials = UserSocialNetworkCredential.\
+                get_by_webhook_id_and_social_network_id(webhook_id,
+                                                        social_network.id)
         else:
-            error_message = 'Webhook Id is None. Can not Process RSVP'
-            message_to_log.update({'error': error_message})
-            log_error(message_to_log)
-        if user:
-            return user
+            raise NoUserFound('Webhook is "%(webhook_id)s"' % webhook_id_dict)
+        if user_credentials:
+            return user_credentials
         else:
-            error_message = "No User found in database corresponding to webhook id " \
-                            "%(webhook_id)s" % webhook
-            message_to_log.update({'error': error_message})
-            log_error(message_to_log)
+            raise NoUserFound("No User found in database that corresponds to "
+                              "webhook id %(webhook_id)s" % webhook_id_dict)
 
-    def _process_rsvp_via_webhook(self, rsvp):
+    def process_rsvp_via_webhook(self, rsvp_data):
         """
-        Here we handle the RSVP of an event through webhook
-        :param rsvp:
-        :return:
+        :param rsvp_data: is a dict we make using rsvp_social_network_id
+            getting from response of RSVP via webhook.
+
+        ** Working **
+        - This method does the following steps to incorporate RSVP:
+            1- It gets the url of RSVP (for Eventbrite, this is the url of
+                order placed by some person on some Event).
+            2- It then gets the id of RSVP (id of order) by using method
+                get_rsvp_id() by passing url(which we got in first step)
+                as argument.
+            3- It then calls post_process_rsvp() by passing rsvp id in
+                it. See functionality of post_process_rsvp() defined in
+                RSVPBase class inside social_network_service/rsvp/base.py.
+
+        - This method is called from process_events_rsvps() method in
+            social_network_service/event/eventbrite.py
+
+        :Example:
+
+            - rsvp_obj = rsvp_class(
+                user_credentials=user_credentials,
+                social_network=user_credentials.social_network, headers=sn.headers
+            )
+            # calls class method to process RSVP
+            - rsvp_obj.process_rsvp_via_webhook(social_network_rsvp_id)
+
+        **See Also**
+            .. seealso:: process_events_rsvps() function in
+                social_network_service/event/eventbrite.py for more insight.
         """
-        function_name = '_process_rsvp_via_webhook()'
-        message_to_log = get_message_to_log(function_name=function_name,
-                                            class_name=self.__class__.__name__,
-                                            gt_user=self.user.name,
-                                            file_name=__file__)
-        try:
-            attendee = self.get_attendee(rsvp)
+        if rsvp_data:
+            url_of_rsvp = rsvp_data['api_url']
+            # gets dictionary object of social_network_rsvp_id
+            social_network_rsvp_id = self.get_rsvp_id(url_of_rsvp)
+            attendee = self.post_process_rsvp(social_network_rsvp_id)
             if attendee:
-                # base class method to pick the source product id for
-                # attendee
-                # and appends in attendee
-                attendee = self.pick_source_product(attendee)
-                # base class method to store attendees's source event in
-                # candidate_source DB table
-                attendee = self.save_attendee_source(attendee)
-                # base class method to save attendee as candidate in DB
-                # table candidate
-                attendee = self.save_attendee_as_candidate(attendee)
-                # base class method to save rsvp data in DB table rsvp
-                attendee = self.save_rsvp(attendee)
-                # base class method to save entry in candidate_event_rsvp
-                # DB table
-                attendee = self.save_candidate_event_rsvp(attendee)
-                # base class method to save rsvp data in DB table activity
-                self.save_rsvp_in_activity_table(attendee)
-        except Exception as e:
-            # Shouldn't raise an exception, just log it and move to process
-            # process next RSVP
-            error_message = e.message
-            message_to_log.update({'error': error_message})
-            log_exception(message_to_log)
+                logger.debug('\nRSVP for event "%s" of %s(UserId: %s) has been'
+                             ' processed and saved successfully in database. '
+                             '\nCandidate name is %s.'
+                             % (attendee.event.title, self.user.name,
+                                self.user.id, attendee.full_name))
+            else:
+                logger.debug('RSVP(social_network_rsvp_id:%s) of '
+                             '%s(UserId: %s) failed to process.'
+                             % (social_network_rsvp_id['rsvp_id'],
+                                self.user.name,
+                                self.user.id))
+        else:
+            self.process_rsvps(rsvp_data)
 
-    def _process_rsvps(self):
+    @staticmethod
+    def get_rsvp_id(url):
         """
-        Here we process the rsvp for rsvp importer
+        :param url: url we get from the response of RSVP via webhook
+        :type url: str
+
+        This gets the social_network_rsvp_id by comparing url of response of
+        rsvp and defined regular expression
+        :return: social_network_rsvp_id
+        :rtype: dict
         """
-        function_name = '_process_rsvps()'
-        message_to_log = get_message_to_log(
-            function_name=function_name,
-            class_name=self.__class__.__name__,
-            gt_user=self.user.name,
-            file_name=__file__,
-            error=NotImplementedError("Eventbrite RSVPs are "
-                                      "handled via webhook"))
-        log_exception(message_to_log)
-        raise
+        regex_to_get_rsvp_id = \
+            '^https:\/\/www.eventbriteapi.com\/v3\/orders\/(?P<rsvp_id>[0-9]+)'
+        match = re.match(regex_to_get_rsvp_id, url)
+        social_network_rsvp_id = match.groupdict()['rsvp_id']
+        rsvp = {'rsvp_id': social_network_rsvp_id}
+        return rsvp
+
+    def process_rsvps(self, events):
+        """
+        - As we do not import RSVPs for eventbrite via rsvp importer rather we
+          do this via webhook. So, log error if someone tries to run rsvp
+          importer for eventbrite.
+
+        - This overrides the base class method process_rsvps().
+        """
+        raise NotImplementedError("RSVPs for social network %s are handled via"
+                                  " webhook." % self.social_network.name)
 
     def get_rsvps(self, event):
         pass
 
     def get_attendee(self, rsvp):
         """
-        Here Data about attendee is gathered by api_call to the vendor
-        :param rsvp: contains the id of rsvp for (eventbrite) in dictionary format
-        :return: attendee object which contains data of the attendee
+        :param rsvp: rsvp is likely the response of social network API.
+        :type rsvp: dict
+        :return: attendee
+        :rtype: object
+
+        - This function is used to get the data of candidate related
+          to given rsvp. It attaches all the information in attendee object.
+          attendees is a utility object we share in calls that contains
+          pertinent data.
+
+        - This method is called from process_rsvps() defined in
+          RSVPBase class.
+
+        - It is also called from process_rsvps_via_webhook() in
+          rsvp/eventbrite.py
+
+        :Example:
+
+            attendee = self.get_attendee(rsvp)
+
+        **See Also**
+            .. seealso:: process_rsvps() method in RSVPBase class inside
+                social_network_service/rsvp/base.py
+
+            .. seealso:: process_rsvps_via_webhook() method in class Eventbrite
+                inside social_network_service/rsvp/eventbrite.py
         """
-        function_name = 'get_attendee()'
-        message_to_log = get_message_to_log(function_name=function_name,
-                                            class_name=self.__class__.__name__,
-                                            gt_user=self.user.name,
-                                            file_name=__file__)
-        attendee = None
         url = self.api_url + "/orders/" + rsvp['rsvp_id']
         response = http_request('GET', url, headers=self.headers,
-                                message_to_log=message_to_log)
+                                user_id=self.user.id)
         if response.ok:
             try:
                 data = response.json()
@@ -130,28 +255,43 @@ class Eventbrite(RSVPBase):
                 attendee.full_name = data['name']
                 attendee.last_name = data['last_name']
                 attendee.added_time = created_datetime
-                attendee.rsvp_status = 'yes' if data['status'] == 'placed' else data['status']
+                attendee.rsvp_status = 'yes' \
+                    if data['status'] == 'placed' else data['status']
                 attendee.email = data['email']
                 attendee.vendor_rsvp_id = rsvp['rsvp_id']
                 attendee.gt_user_id = self.user.id
-                attendee.social_network_id = self.social_network_id
+                attendee.social_network_id = self.social_network.id
                 attendee.vendor_img_link = \
                     "<img class='pull-right'" \
                     " style='width:60px;height:30px' " \
                     "src='/web/static/images/activities/eventbrite_logo.png'/>"
                 # get event_id
-                vendor_event_id = data['event_id']
+                social_network_event_id = data['event_id']
                 event = Event.get_by_user_id_social_network_id_vendor_event_id(
-                    self.user.id, self.social_network_id, vendor_event_id)
+                    self.user.id, self.social_network.id,
+                    social_network_event_id)
                 if event:
                     attendee.event = event
+                    # Get profile url of candidate to save
+                    url = self.api_url + "/orders/" + rsvp['rsvp_id']
+                    response_orders = http_request('GET', url, headers=self.headers,
+                                                   user_id=self.user.id)
+                    url = self.api_url \
+                          + "/events/" + str(event.social_network_event_id) + '/attendees/'
+                    response_attendees = http_request('GET', url, headers=self.headers)
+                    event_attendees = json.loads(response_attendees.text)['attendees']
+                    for event_attendee in event_attendees:
+                        if event_attendee['created'] == json.loads(response_orders.text)['created']:
+                            # In case of Eventbrite, we have a Attendee object created
+                            # on Eventbrite website. We save that link as profile url.
+                            attendee.social_profile_url = event_attendee['resource_uri']
+                            break
+                    return attendee
                 else:
-                    error_message = 'Event is not present in db, VendorEventId is %s' \
-                                    % vendor_event_id
-                    message_to_log.update({'error': error_message})
-                    log_error(message_to_log)
-            except Exception as e:
-                error_message = e.message
-                message_to_log.update({'error': error_message})
-                log_exception(message_to_log)
-            return attendee
+                    raise EventNotFound('Event is not present in db, '
+                                        'social_network_event_id is '
+                                        '%s. User Id: %s'
+                                        % (social_network_event_id,
+                                           self.user.id))
+            except Exception:
+                raise
