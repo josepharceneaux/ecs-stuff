@@ -11,6 +11,7 @@
         'app.campaigns',
         'app.dashboard',
         'app.footer',
+        'app.forgot-password',
         'app.login',
         'app.main',
         'app.pipelines',

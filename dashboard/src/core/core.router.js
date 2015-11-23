@@ -23,6 +23,14 @@
                     }
                 }
             })
+            .state('forgot-password', {
+                url: '/forgot-password',
+                views: {
+                    content: {
+                        template: '<gt-forgot-password></gt-forgot-password'
+                    }
+                }
+            })
             .state('site', {
                 abstract: true,
                 views: {
@@ -74,24 +82,24 @@
                     }
                 }
             })
-            .state('pipelines.smartLists', {
-                url: '/smartLists',
+            .state('pipelines.smart-lists', {
+                url: '/smart-lists',
                 views: {
                     '@site': {
                         template: '<gt-smart-lists></gt-smart-lists>'
                     }
                 }
             })
-            .state('pipelines.candidateSearch', {
-                url: '/candidateSearch',
+            .state('pipelines.candidate-search', {
+                url: '/candidate-search',
                 views: {
                     '@site': {
                         template: '<gt-candidate-search></gt-candidate-search>'
                     }
                 }
             })
-            .state('pipelines.importCandidates', {
-                url: '/importCandidates',
+            .state('pipelines.import-candidates', {
+                url: '/import-candidates',
                 views: {
                     '@site': {
                         template: '<gt-import-candidates></gt-import-candidates>'
@@ -111,48 +119,48 @@
                     }
                 }
             })
-            .state('campaigns.emailCampaigns', {
-                url: '/emailCampaigns',
+            .state('campaigns.email-campaigns', {
+                url: '/email-campaigns',
                 views: {
                     '@site': {
                         template: '<gt-email-campaigns></gt-email-campaigns>'
                     }
                 }
             })
-            .state('campaigns.eventCampaigns', {
-                url: '/eventCampaigns',
+            .state('campaigns.event-campaigns', {
+                url: '/event-campaigns',
                 views: {
                     '@site': {
                         template: '<gt-event-campaigns></gt-event-campaigns>'
                     }
                 }
             })
-            .state('campaigns.smsCampaigns', {
-                url: '/smsCampaigns',
+            .state('campaigns.sms-campaigns', {
+                url: '/sms-campaigns',
                 views: {
                     '@site': {
                         template: '<gt-sms-campaigns></gt-sms-campaigns>'
                     }
                 }
             })
-            .state('campaigns.socialMediaCampaigns', {
-                url: '/socialMediaCampaigns',
+            .state('campaigns.social-media-campaigns', {
+                url: '/social-media-campaigns',
                 views: {
                     '@site': {
                         template: '<gt-social-media-campaigns></gt-social-media-campaigns>'
                     }
                 }
             })
-            .state('campaigns.contentCampaigns', {
-                url: '/contentCampaigns',
+            .state('campaigns.content-campaigns', {
+                url: '/content-campaigns',
                 views: {
                     '@site': {
                         template: '<gt-content-campaigns></gt-content-campaigns>'
                     }
                 }
             })
-            .state('campaigns.pushNotifications', {
-                url: '/pushNotifications',
+            .state('campaigns.push-notifications', {
+                url: '/push-notifications',
                 views: {
                     '@site': {
                         template: '<gt-push-notifications></gt-push-notifications>'
