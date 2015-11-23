@@ -6,14 +6,14 @@ app = Flask('scheduler_service')
 celery = Celery(app.import_name, broker='redis://localhost:6379', backend='redis://localhost:6379')
 
 
-# @celery.task(name='send_sms_campaign')
+@celery.task(name='send_sms_campaign')
 def send_sms_campaign(*args, **kwargs):
     print('Sending SMS campaign')
     # time.sleep(5)
     return 'SMS Campaign sent successfully'
 
 
-# @celery.task(name='send_email_campaign')
+@celery.task(name='send_email_campaign')
 def send_email_campaign(*args, **kwargs):
     print('Sending Email campaign')
     # time.sleep(5)
@@ -37,10 +37,7 @@ def send_email_campaign(*args, **kwargs):
     #     # add_or_update_job_in_db(current_job, status=job_status)
 
 
-
-
-
-# @celery.task(name='raise_exception')
+@celery.task(name='raise_exception')
 def raise_exception(*args, **kwargs):
     print('raise_exception')
     # time.sleep(5)

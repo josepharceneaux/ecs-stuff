@@ -1,3 +1,4 @@
+from apscheduler.executors.pool import ThreadPoolExecutor
 from celery import Celery
 from scheduler_service.common.models.scheduler import SchedulerTask
 from  scheduler_service import tasks
@@ -26,12 +27,20 @@ from datetime import datetime, timedelta
 # from sms_campaign_service.gt_scheduler import GTScheduler
 from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.events import EVENT_JOB_EXECUTED
-from apscheduler.jobstores.redis_store import RedisJobStore
+from apscheduler.jobstores.redis import RedisJobStore
+from apscheduler.jobstores.memory import MemoryJobStore
 
-from apscheduler.scheduler import Scheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 job_store = RedisJobStore()
-scheduler = Scheduler()
-scheduler.add_jobstore(job_store, 'redisJobStore')
+jobstores = {
+    'redis': job_store
+}
+executors = {
+    'default': ThreadPoolExecutor(20)
+}
+scheduler = BackgroundScheduler(jobstore=jobstores, executors=executors)
+# scheduler.add_jobstore(job_store, 'redisJobStore')
+scheduler.add_jobstore(job_store)
 
 
 def my_listener(event):
@@ -119,17 +128,18 @@ def task():
     """
     start_date = datetime.now()
     start_date.replace(second=(start_date.second + 15) % 60)
-    end_date = start_date + timedelta(minutes=5)
+    end_date = start_date + timedelta(minutes=2)
     repeat_time_in_sec = int(request.args.get('frequency', 10))
     func = request.args.get('func', 'send_sms_campaign')
     arg1 = request.args.get('arg1')
     arg2 = request.args.get('arg2')
-    job = scheduler.add_interval_job(callback,
-                                     seconds=repeat_time_in_sec,
-                                     start_date=start_date,
-                                     args=[arg1, arg2, end_date],
-                                     kwargs=dict(func=func, end_date=end_date),
-                                     jobstore='redisJobStore')
+    job = scheduler.add_job(callback,
+                            'interval',
+                            seconds=repeat_time_in_sec,
+                            start_date=start_date,
+                            end_date=end_date,
+                            args=[arg1, arg2, end_date],
+                            kwargs=dict(func=func, end_date=end_date))
     print 'Task has been added and will run at %s ' % start_date
     return 'Task has been added to queue!!!'
     # response = send_sms_campaign(ids, body_text)
@@ -142,9 +152,9 @@ def task():
 def callback(*args, **kwargs):
     print('args', args)
     if kwargs['func'] in methods:
-        methods[kwargs['func']].asyn_apply(args, kwargs)
+        methods[kwargs['func']].apply_async(args, kwargs)
     else:
-        send_sms_campaign.asyn_apply(args, kwargs)
+        send_sms_campaign.apply_async(args, kwargs)
 
 
 @app.errorhandler(Exception)
