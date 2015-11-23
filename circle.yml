@@ -25,6 +25,8 @@ test:
         background: true
     - python social_network_service/run.py:
         background: true
+    - python email_campaign/run.py:
+        background: true
     - sleep 5
 
 
@@ -40,6 +42,8 @@ test:
     - py.test candidate_service/tests/:
         parallel: true
     - py.test social_network_service/tests/:
+        parallel: true
+    - py.test email_campaign/tests/:
         parallel: true
 
 
