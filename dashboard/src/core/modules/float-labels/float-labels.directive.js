@@ -39,7 +39,7 @@
         //var vm = this;
     }
 
-    // ----- ControllerFunction -----
+    // ----- linkFunction -----
     linkFunction.$inject = [];
 
     /* @ngInject */
