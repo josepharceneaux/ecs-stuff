@@ -16,6 +16,7 @@
         var directive = {
             restrict: 'E',
             templateUrl: 'components/dashboard/dashboard-customize/dashboard-customize.html',
+            replace: true,
             scope: {
             },
             controller: 'DashboardCustomizeController',

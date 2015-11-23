@@ -16,6 +16,7 @@
         var directive = {
             restrict: 'E',
             templateUrl: 'components/admin/admin.html',
+            replace: true,
             scope: {
             },
             controller: 'AdminController',

@@ -16,6 +16,7 @@
         var directive = {
             restrict: 'E',
             templateUrl: 'components/sidenav/sidenav.html',
+            replace: true,
             scope: {
             },
             controller: 'SidenavController',

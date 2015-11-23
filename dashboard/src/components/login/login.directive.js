@@ -16,6 +16,7 @@
         var directive = {
             restrict: 'E',
             templateUrl: 'components/login/login.html',
+            replace: true,
             scope: {
             },
             controller: 'LoginController',

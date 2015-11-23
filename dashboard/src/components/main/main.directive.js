@@ -16,6 +16,7 @@
         var directive = {
             restrict: 'E',
             templateUrl: 'components/main/main.html',
+            replace: true,
             scope: {
             },
             controller: 'MainController',

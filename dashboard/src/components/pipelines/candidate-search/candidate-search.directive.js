@@ -16,6 +16,7 @@
         var directive = {
             restrict: 'E',
             templateUrl: 'components/pipelines/candidate-search/candidate-search.html',
+            replace: true,
             scope: {
             },
             controller: 'CandidateSearchController',

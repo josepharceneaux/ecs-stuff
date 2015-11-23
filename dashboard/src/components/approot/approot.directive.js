@@ -12,6 +12,7 @@
         var directive = {
             restrict: 'E',
             templateUrl: 'components/approot/approot.html',
+            replace: true,
             scope: {
             }
         };

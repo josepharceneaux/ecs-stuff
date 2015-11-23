@@ -16,6 +16,7 @@
         var directive = {
             restrict: 'E',
             templateUrl: 'components/pipelines/import-candidates/import-candidates.html',
+            replace: true,
             scope: {
             },
             controller: 'ImportCandidatesController',

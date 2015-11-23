@@ -16,6 +16,7 @@
         var directive = {
             restrict: 'E',
             templateUrl: 'components/pipelines/smart-lists/smart-lists.html',
+            replace: true,
             scope: {
             },
             controller: 'SmartListsController',
