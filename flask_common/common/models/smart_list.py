@@ -1,8 +1,9 @@
-__author__ = 'basit'
-
-import datetime
-
 from db import db
+import datetime
+from candidate import Candidate
+from sqlalchemy.orm import relationship, backref
+
+__author__ = 'jitesh'
 
 
 class SmartList(db.Model):
@@ -11,13 +12,14 @@ class SmartList(db.Model):
     name = db.Column('Name', db.String(127))
     user_id = db.Column('UserId', db.Integer, db.ForeignKey("user.id"), nullable=False)
     search_params = db.Column('SearchParams', db.String(1023))
-    candidate_count = db.Column('CandidateCount', db.Integer)
     is_hidden = db.Column('IsHidden', db.Integer)
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
+    user = relationship("User", backref="user")
+
     def __repr__(self):
-        return '<SmartList (id = %r)>' % self.id
+        return "<SmartList(name= %r)>" % self.name
 
     @classmethod
     def get_by_user_id(cls, user_id):
