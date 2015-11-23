@@ -9,7 +9,7 @@ from flask_restful import Resource
 from candidate_service.common.models.db import db
 
 # Validators
-from common.utils.validators import (is_number, is_valid_email)
+from candidate_service.common.utils.validators import (is_number, is_valid_email)
 from candidate_service.modules.validators import (
     does_candidate_belong_to_user, is_custom_field_authorized,
     is_area_of_interest_authorized, does_email_campaign_belong_to_domain,
@@ -17,10 +17,10 @@ from candidate_service.modules.validators import (
 )
 
 # Decorators
-from common.utils.auth_utils import (require_oauth, require_any_role)
+from candidate_service.common.utils.auth_utils import (require_oauth, require_any_role)
 
 # Error handling
-from common.error_handling import (ForbiddenError, InvalidUsage)
+from candidate_service.common.error_handling import (ForbiddenError, InvalidUsage)
 
 # Models
 from candidate_service.common.models.user import User

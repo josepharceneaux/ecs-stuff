@@ -440,7 +440,10 @@ def test_parse_location_ids_from_form(test_extra_fields_location, request):
     ]
 
 
-
+def test_health_check():
+    import requests
+    response = requests.get('http://127.0.0.1:8006/healthcheck')
+    assert response.status_code == 200
 
 
 def gen_mock_aois():
