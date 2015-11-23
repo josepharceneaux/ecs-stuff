@@ -55,20 +55,14 @@
         function init() {
             if (ngModel) {
 
-                // Element and model value isn't initialized yet,
-                // watch value until it changes once.
-                unregister = scope.$watch(function () {
-                    return ngModel.$viewValue;
-                }, valueChangeListener);
-
-                // If input has any validators (e.g. ngPattern, type="email"),
-                // viewChangeListeners will never fire, so also add a listener
-                // for parsing.
+                // Watch view changes
                 ngModel.$parsers.push(checkInput);
-                ngModel.$viewChangeListeners.push(checkInput);
+
+                // Watch model changes
+                ngModel.$formatters.push(checkInput);
             } else {
 
-                // Element and model value isn't initialized yet,
+                // Input value isn't initialized yet,
                 // watch value until it changes once.
                 unregister = scope.$watch(function () {
                     return elem.val();
