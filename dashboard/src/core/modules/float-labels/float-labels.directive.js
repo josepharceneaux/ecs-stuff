@@ -47,6 +47,7 @@
         var vm = ctrls[0];
         var ngModel = ctrls[1];
         var parents = elem.parents('.form__col');
+        var watchCount = 0;
         var unregister;
 
         init();
@@ -61,8 +62,11 @@
                 unregister = scope.$watch(function () {
                     return ngModel.$viewValue;
                 }, function (value) {
-                    unregister();
+                    if (watchCount) {
+                        unregister();
+                    }
                     checkInput(value);
+                    watchCount++;
                 });
 
                 // If input has any validators (e.g. ngPattern, type="email"),
@@ -81,8 +85,11 @@
                 unregister = scope.$watch(function () {
                     return elem.val();
                 }, function (value) {
-                    unregister();
+                    if (watchCount) {
+                        unregister();
+                    }
                     checkInput(value);
+                    watchCount++;
                 });
 
                 elem.on('keyup change', function () {
