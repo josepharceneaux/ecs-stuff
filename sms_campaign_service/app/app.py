@@ -12,9 +12,9 @@ from datetime import datetime
 from sms_campaign_service import init_app
 app = init_app()
 
-# create celery object
-from sms_campaign_service.celery_config import make_celery
-celery = make_celery(app)
+# # create celery object
+# from sms_campaign_service.celery_config import make_celery
+# celery = make_celery(app)
 
 # Run Celery from terminal as
 # celery -A sms_campaign_service.app.app.celery worker

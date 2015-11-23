@@ -3,10 +3,16 @@ This module contains SmsCampaignBase class inherited from CampaignBase.
 This is used to send sms campaign to candidates.
 This implements abstract methods of CampaignBase class and defines its own
 methods like
-    - process_link_in_body_text()
-    - transform_body_text()
-    - create_activity()
-- send_sms() etc.
+     - save()
+     - buy_twilio_mobile_number()
+     - create_or_update_user_phone()
+     - process_send()
+     - process_link_in_body_text()
+     - transform_body_text()
+     - send_sms_campaign_to_candidate()
+     - send_sms()
+     - process_url_redirect()
+     - process_candidate_reply() etc.
 """
 
 # Standard Library
@@ -15,14 +21,15 @@ from datetime import datetime
 # Application Specific
 from sms_campaign_service import logger
 from sms_campaign_service.app.app import IS_DEV
-from sms_campaign_service.config import SMS_URL_REDIRECT, PHONE_LABEL_ID, TWILIO
-from sms_campaign_service.common.models.user import UserPhone, User
 from sms_campaign_service.common.models.misc import UrlConversion
-from sms_campaign_service.common.models.candidate import PhoneLabel, Candidate, CandidatePhone
+from sms_campaign_service.common.models.user import UserPhone, User
+from sms_campaign_service.common.utils.campaign_utils import CampaignBase
+from sms_campaign_service.config import SMS_URL_REDIRECT, PHONE_LABEL_ID, TWILIO
+from sms_campaign_service.common.models.candidate import PhoneLabel, Candidate, \
+    CandidatePhone
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign,\
     SmsCampaignSend, SmsCampaignBlast, SmsCampaignSmartList, SmsCampaignSendUrlConversion, \
     SmsCampaignReply
-from sms_campaign_service.common.utils.campaign_utils import CampaignBase
 from sms_campaign_service.utilities import TwilioSMS, search_link_in_text, url_conversion
 from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_CLICK,\
     CAMPAIGN_SMS_REPLY, CAMPAIGN_SMS_SEND, CAMPAIGN_SEND, CAMPAIGN_SMS_CREATE

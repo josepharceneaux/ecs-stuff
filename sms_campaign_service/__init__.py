@@ -1,8 +1,9 @@
 """Initializer for Social Network Service App"""
+
 # Third Party
 from datetime import timedelta
 from flask import Flask
-from flask.ext.celery import Celery
+# from flask.ext.celery import Celery
 
 # Application Specific
 from sms_campaign_service.common.models.db import db
@@ -14,9 +15,9 @@ flask_app.config.from_object('sms_campaign_service.config')
 logger = flask_app.config['LOGGER']
 
 # Configuration for celery
-flask_app.config.update(
-    CELERY_BROKER_URL='redis://localhost:6379',
-    CELERY_RESULT_BACKEND='redis://localhost:6379',
+# flask_app.config.update(
+#     CELERY_BROKER_URL='redis://localhost:6379',
+#     CELERY_RESULT_BACKEND='redis://localhost:6379',
     # CELERYBEAT_SCHEDULE={
     #     '3-seconds': {
     #         'task': 'celery_task',
@@ -24,7 +25,7 @@ flask_app.config.update(
     #         'args': (16, 16)
     #     },
     # }
-)
+# )
 
 # flask_app.config['CELERY_BROKER_URL'] = 'redis://localhost'
 # flask_app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost'

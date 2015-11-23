@@ -16,7 +16,7 @@ class SmartList(db.Model):
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
-    user = relationship("User", backref="user")
+    # user = relationship("User", backref="user") # relation added in uer model
 
     def __repr__(self):
         return "<SmartList(name= %r)>" % self.name

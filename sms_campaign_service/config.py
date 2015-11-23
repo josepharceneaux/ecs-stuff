@@ -15,25 +15,25 @@ if GT_ENVIRONMENT == 'dev':
     APP_URL = 'http://0.0.0.0:8007'
     OAUTH_SERVER_URI = 'http://0.0.0.0:8081/oauth2/authorize'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@localhost/talent_local'
-    LOGGER = logging.getLogger("social_network_service.dev")
+    LOGGER = logging.getLogger("sms_campaign_service.dev")
 elif GT_ENVIRONMENT == 'circle':
     APP_URL = 'http://0.0.0.0:5000'
     OAUTH_SERVER_URI = 'http://0.0.0.0:8081/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_ci'
-    LOGGER = logging.getLogger("social_network_service.ci")
+    LOGGER = logging.getLogger("sms_campaign_service.ci")
 elif GT_ENVIRONMENT == 'qa':
     APP_URL = 'http://0.0.0.0:5000'
     OAUTH_SERVER_URI = 'https://secure-webdev.gettalent.com/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!web976892@devdb.gettalent.com/talent_staging'
-    LOGGER = logging.getLogger("social_network_service.qa")
+    LOGGER = logging.getLogger("sms_campaign_service.qa")
 elif GT_ENVIRONMENT == 'prod':
     APP_URL = 'http://0.0.0.0:5000'
     OAUTH_SERVER_URI = 'https://secure.gettalent.com/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = os.environ.get('DB_STRING')
-    LOGGER = logging.getLogger("social_network_service.prod")
+    LOGGER = logging.getLogger("sms_campaign_service.prod")
 else:
     raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")
 if LOGGER:
@@ -47,6 +47,8 @@ GOOGLE_URL_SHORTENER_API_URL = 'https://www.googleapis.com/urlshortener/v1/url?k
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
 SMS_URL_REDIRECT = 'http://2ed87e65.ngrok.io/sms_campaign/{}/url_redirection/{}/'
+ACTIVITY_SERVICE_API_URL = 'http://127.0.0.1:8002'
+CANDIDATE_SERVICE_API_URL = 'http://127.0.0.1:8002'
 AUTH_HEADER = {'Authorization': 'Bearer gulqrgtuucodxdrijqwy'}
 POOL_SIZE = 5
 TWILIO = 'Twilio'

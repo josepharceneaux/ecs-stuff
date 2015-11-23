@@ -7,7 +7,6 @@ Any service can inherit from this class to implement functionality accordingly.
 
 # Standard Library
 import json
-import time
 from abc import ABCMeta
 from datetime import datetime
 from abc import abstractmethod
@@ -23,7 +22,6 @@ from sms_campaign_service.config import AUTH_HEADER, POOL_SIZE
 from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.candidate import Candidate
 from sms_campaign_service.common.utils.common_functions import http_request
-from sms_campaign_service.common.models.smart_list import SmartListCandidate
 from sms_campaign_service.common.utils.app_api_urls import ACTIVITY_SERVICE_API_URL, \
     CANDIDATE_SERVICE_API_URL
 
@@ -145,16 +143,16 @@ class CampaignBase(object):
         **See Also**
         .. see also:: process_send() method in SmsCampaignBase class.
         """
-        data = {'id': smart_list_id}
-        # GET call to activity service to create activity
-        url = CANDIDATE_SERVICE_API_URL + '/v1/smartlist/'
-        response = http_request('GET', url, headers=AUTH_HEADER,
-                                data=data, user_id=self.user_id)
-        return response
+        params = {'id': smart_list_id,
+                  'return': 'all'}
+        # HTTP GET call to activity service to create activity
+        url = CANDIDATE_SERVICE_API_URL + '/v1/smartlist/get_candidates/'
+        response = http_request('GET', url, headers=AUTH_HEADER, params=params,
+                                user_id=self.user_id)
         # get candidate ids
-        # records = SmartListCandidate.get_by_smart_list_id(smart_list_id)
-        # candidates = [Candidate.get_by_id(record.candidate_id) for record in records]
-        # return candidates
+        candidate_ids = [candidate['id'] for candidate in json.loads(response.text)['candidates']]
+        candidates = [Candidate.get_by_id(_id) for _id in candidate_ids]
+        return candidates
 
     def send_campaign_to_candidates(self, candidates):
         """
@@ -171,7 +169,7 @@ class CampaignBase(object):
         **See Also**
         .. see also:: process_send() method in SmsCampaignBase class.
         """
-        job_pool = Pool(POOL_SIZE)
+        # job_pool = Pool(POOL_SIZE)
         for candidate in candidates:
             self.send_campaign_to_candidate(candidate)
         #     job_pool.spawn(self.send_campaign_to_candidate, candidate)
