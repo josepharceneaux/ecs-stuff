@@ -6,7 +6,7 @@ from common.error_handling import register_error_handlers
 __author__ = 'jitesh'
 
 app = Flask(__name__)
-app.config.from_object('common.common_config')
+app.config.from_object('email_campaign.common.common_config')
 
 app.register_blueprint(api.mod)
 

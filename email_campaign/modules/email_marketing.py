@@ -49,18 +49,19 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
     """
     frequency_obj = Frequency.get_frequency_from_name(frequency) if frequency else None
 
-    email_campaign = EmailCampaign(user_id=user_id,
-                                   name=email_campaign_name,
+    email_campaign = EmailCampaign(name=email_campaign_name,
+                                   user_id=user_id,
                                    is_hidden=0,
                                    email_subject=email_subject,
                                    email_from=email_from,
                                    email_reply_to=email_reply_to,
                                    email_body_html=email_body_html,
                                    email_body_text=email_body_text,
-                                   frequency_id=frequency_obj.id if frequency_obj else None,
-                                   email_client_id=email_client_id,
+                                   send_time=send_time,
                                    stop_time=stop_time,
-                                   send_time=send_time)
+                                   frequency_id=frequency_obj.id if frequency_obj else None,
+                                   email_client_id=email_client_id
+                                   )
 
     db.session.add(email_campaign)
     db.session.commit()
@@ -275,7 +276,7 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
     # Do not send mail if email_client_id is provided
     if email_client_id:
         current_app.logger.info("Marketing email added through client %s", email_client_id)
-        # TODO: Add activity required?
+        # TODO: Add activity
         return new_html, new_text
     else:
         try:

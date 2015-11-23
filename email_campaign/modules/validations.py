@@ -40,7 +40,7 @@ def validate_and_format_request_data(data):
     # TODO: Validate send_time & stop time
 
     # If frequency is there then there must be a send time
-    if frequency is not None and send_time is None:
+    if frequency and not send_time:
         # 422 - Unprocessable Entity. Server understands the request but cannot process
         # because along with frequency it needs send time.
         # https://tools.ietf.org/html/rfc4918#section-11.2
@@ -78,15 +78,3 @@ def validate_lists_belongs_to_domain(list_ids, user_id):
     if len(result_of_list_belong_domain) == 0:
         return True
     return False
-
-
-def validate_inputs(campaign_name, email_subject, email_from, email_body_html, list_ids, frequency, send_time):
-    if not campaign_name:
-        raise InvalidUsage('email_campaign_name is a required field')  # 400 Bad request
-    # If frequency is there then there must be a send time
-    if frequency is not None and send_time is None:
-        # 422 - Unprocessable Entity. Server understands the request but cannot process
-        # because along with frequency it needs send time.
-        # https://tools.ietf.org/html/rfc4918#section-11.2
-        # 400 or 422? Will decide it later.
-        raise UnprocessableEntity("Frequency requires send time.")

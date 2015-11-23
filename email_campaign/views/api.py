@@ -52,9 +52,3 @@ def email_campaigns():
 
     return json.dumps({'campaign': campaign_id})
 
-
-@mod.errorhandler(UnprocessableEntity)
-def handle_invalid_usage(error):
-    response = json.dumps(error.to_dict())
-    # response.status_code = error.status_code TODO check why this is not working
-    return response
