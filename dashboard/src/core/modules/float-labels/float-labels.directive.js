@@ -36,7 +36,7 @@
 
     /* @ngInject */
     function ControllerFunction() {
-        var vm = this;
+        //var vm = this;
     }
 
     // ----- ControllerFunction -----
@@ -44,7 +44,6 @@
 
     /* @ngInject */
     function linkFunction(scope, elem, attrs, ctrls) {
-        var vm = ctrls[0];
         var ngModel = ctrls[1];
         var parents = elem.parents('.form__col');
         var watchCount = 0;
