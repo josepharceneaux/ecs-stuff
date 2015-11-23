@@ -1,24 +1,33 @@
 <!-- Header -->
 <header class="header row--expanded">
-    <figure class="header__logo col--tiny-4 col--large-12">
+    <figure class="header__logo col--medium-4 col--large-12">
         <img src="./images/logo--main--white.svg" alt="getTalent">
     </figure>
-    <nav class="header__nav col--tiny-8 col--large-12">
-        <form class="header__search">
-            <input class="header__search__input" type="text" name="query" autocomplete="off">
-            <button class="header__search__submit">
-                <span class="icon--search"></span>
-            </button>
-        </form>
-        <a href="#" class="header__link">
-            <span class="icon--upload"></span>
-        </a>
-        <a href="#" class="header__profile">
-            <img src="./images/placeholder/profile.png" alt="Change settings">
-        </a>
-        <ul class="dropdown-menu">
-            <li><a ng-click="vm.logout()">Logout</a></li>
-        </ul>
+    <nav class="header__nav col--medium-8 col--large-12">
+        <div class="row--expanded row--table header__inner">
+            <div class="col--tiny-4--cell col--vmiddle header__select">
+                <select id="dashboardScope" class="js-fancy" name="dashboardScope">
+                    <option value="sr-java-developers">Sr Java Developers</option>
+                    <option value="jr-java-engineers">Jr Java Engineers</option>
+                    <option value="developers-in-nevada">Developers in Nevada</option>
+                </select>
+            </div>
+            <div class="col--tiny-8--cell col--vmiddle header__actions">
+                <form class="header__search">
+                    <input class="header__search__input" type="text" name="query" autocomplete="off">
+                    <button class="header__search__submit">
+                        <span class="icon--search"></span>
+                    </button>
+                </form>
+                <a href="#" class="header__upload">
+                    <span class="icon--upload"></span>
+                </a>
+                <a href="#" class="header__profile">
+                    <img src="./images/placeholder/profile.png" alt="Change settings">
+                </a>
+                <a ng-click="vm.logout()">Logout</a>
+            </div>
+        </div>
     </nav>
 </header>
 <!-- End Header -->
