@@ -46,7 +46,6 @@
     function linkFunction(scope, elem, attrs, ctrls) {
         var ngModel = ctrls[1];
         var parents = elem.parents('.form__col');
-        var watchCount = 0;
         var unregister;
 
         init();
@@ -60,41 +59,32 @@
                 // watch value until it changes once.
                 unregister = scope.$watch(function () {
                     return ngModel.$viewValue;
-                }, function (value) {
-                    if (watchCount) {
-                        unregister();
-                    }
-                    checkInput(value);
-                    watchCount++;
-                });
+                }, valueChangeListener);
 
                 // If input has any validators (e.g. ngPattern, type="email"),
                 // viewChangeListeners will never fire, so also add a listener
                 // for parsing.
-                ngModel.$parsers.push(function (value) {
-                    checkInput(value);
-                });
-                ngModel.$viewChangeListeners.push(function (value) {
-                    checkInput(value);
-                });
+                ngModel.$parsers.push(checkInput);
+                ngModel.$viewChangeListeners.push(checkInput);
             } else {
 
                 // Element and model value isn't initialized yet,
                 // watch value until it changes once.
                 unregister = scope.$watch(function () {
                     return elem.val();
-                }, function (value) {
-                    if (watchCount) {
-                        unregister();
-                    }
-                    checkInput(value);
-                    watchCount++;
-                });
+                }, valueChangeListener);
 
                 elem.on('keyup change', function () {
                     checkInput(elem.val());
                 });
             }
+        }
+
+        function valueChangeListener(value, oldValue) {
+            if (value !== oldValue) {
+                unregister();
+            }
+            checkInput(value);
         }
 
         function checkInput(inputValue) {
