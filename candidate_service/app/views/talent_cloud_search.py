@@ -1,12 +1,12 @@
 
 import math
 import operator
-from datetime import datetime
 import os
-
+import time
 import boto
 import boto.exception
 import simplejson
+from datetime import datetime
 from flask import request
 from candidate_service.candidate_app import db, logger
 from candidate_service.config import GT_ENVIRONMENT
@@ -14,6 +14,7 @@ from candidate_service.common.models.candidate import Candidate, CandidateSource
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import AreaOfInterest
 from common_functions import get_geo_coordinates_bounding
+
 
 API_VERSION = "2013-01-01"
 MYSQL_DATE_FORMAT = '%Y-%m-%dT%H:%i:%S.%fZ'
@@ -544,13 +545,18 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     Set search_limit = 0 for no limit, candidate_ids_only returns dict of candidate_ids.
     Parameters in 'request_vars' could be single values or arrays.
     """
-    # Clear if there is any filter queries in the list
-    if filter_queries:
+    # Clear all queries and filters for new search
+    # when running tests, found that filter_queries is holding some value from previous search. So, clearing them all
+    if filter_queries or search_queries:
         filter_queries[:] = []
+        search_queries[:] = []
     if request_vars:
         for var_name in request_vars.keys():
             if "[]" == var_name[-2:]: request_vars[var_name[:-2]] = request_vars[var_name]
         get_filter_query_from_request_vars(request_vars, domain_id)
+    else:
+        # Search all candidates under domain
+        filter_queries.append("(term field=domain_id %s)" % domain_id)
 
     # Sorting
     sort = '%s %s'
@@ -638,6 +644,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     # Make search request with error handling
 
     search_service = _cloud_search_domain_connection()
+    time.sleep(30)
     try:
         results = search_service.search(**params)
     except Exception:

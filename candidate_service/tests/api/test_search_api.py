@@ -1,7 +1,7 @@
 """
 Test cases for candidate-search-service-API
 """
-from candidate_service.tests.modules.test_TalentCloudSearch import populate_candidates, VARIOUS_US_LOCATIONS, \
+from candidate_service.tests.modules.test_talent_cloud_search import populate_candidates, VARIOUS_US_LOCATIONS, \
     create_area_of_interest_facets, get_or_create_status
 from common.tests.conftest import *
 from candidate_service.candidate_app import db
@@ -39,7 +39,6 @@ def test_search_all_candidates(sample_user, user_auth):
     )
     resultant_candidates = response.json()['candidate_ids']
     _assert_results(candidate_ids, resultant_candidates)
-    assert response.status_code == 200
 
 
 def test_search_location(sample_user, user_auth):
@@ -55,7 +54,6 @@ def test_search_location(sample_user, user_auth):
     response = get_response_from_authorized_user(user_auth, sample_user, '?location=%s' % city)
     resultant_candidates = response.json()['candidate_ids']
     _assert_results(candidate_ids, resultant_candidates)
-    assert response.status_code == 200
 
 
 def test_search_user_ids(sample_user, user_auth):
@@ -86,7 +84,6 @@ def test_search_skills(sample_user, user_auth):
     response = get_response_from_authorized_user(user_auth, sample_user, '?skills=hadoop')
     resultant_candidates = response.json()['candidate_ids']
     _assert_results(candidate_ids, resultant_candidates)
-    assert response.status_code == 200
 
 
 def test_search_aoi(sample_user, user_auth):
@@ -124,7 +121,6 @@ def test_search_status(sample_user, user_auth):
     response = get_response_from_authorized_user(user_auth, sample_user, '?status_ids=%d' % status_id)
     resultant_candidates = response.json()['candidate_ids']
     _assert_results(candidate_ids, resultant_candidates)
-    assert response.status_code == 200
 
 
 def test_search_source(sample_user, user_auth):
@@ -142,7 +138,6 @@ def test_search_source(sample_user, user_auth):
     response = get_response_from_authorized_user(user_auth, sample_user, '?source_ids=%d' % source_id)
     resultant_candidates = response.json()['candidate_ids']
     _assert_results(candidate_ids, resultant_candidates)
-    assert response.status_code == 200
 
 
 def test_search_candidate_experience(sample_user, user_auth):
@@ -173,7 +168,6 @@ def test_search_candidate_experience(sample_user, user_auth):
     response = get_response_from_authorized_user(user_auth, sample_user, '?minimum_experience=0&maximum_experience=2')
     resultant_candidates = response.json()['candidate_ids']
     _assert_results(candidate_ids, resultant_candidates)
-    assert response.status_code == 200
 
 
 def test_search_position(sample_user, user_auth):
@@ -185,7 +179,6 @@ def test_search_position(sample_user, user_auth):
     response = get_response_from_authorized_user(user_auth, sample_user, '?job_title=Developer')
     resultant_candidates = response.json()['candidate_ids']
     _assert_results(candidate_ids, resultant_candidates)
-    assert response.status_code == 200
 
 
 def test_search_degree(sample_user, user_auth):
@@ -197,7 +190,6 @@ def test_search_degree(sample_user, user_auth):
     response = get_response_from_authorized_user(user_auth, sample_user, '?degree_type=Masters')
     resultant_candidates = response.json()['candidate_ids']
     _assert_results(candidate_ids, resultant_candidates)
-    assert response.status_code == 200
 
 
 def test_search_school_name(sample_user, user_auth):
@@ -209,7 +201,6 @@ def test_search_school_name(sample_user, user_auth):
     response = get_response_from_authorized_user(user_auth, sample_user, '?school_name=Oklahoma State University')
     resultant_candidates = response.json()['candidate_ids']
     _assert_results(candidate_ids, resultant_candidates)
-    assert response.status_code == 200
 
 
 def test_search_concentration(sample_user, user_auth):
@@ -220,7 +211,6 @@ def test_search_concentration(sample_user, user_auth):
     response = get_response_from_authorized_user(user_auth, sample_user, '?major=Post Graduate')
     resultant_candidates = response.json()['candidate_ids']
     _assert_results(candidate_ids, resultant_candidates)
-    assert response.status_code == 200
 
 
 def test_search_military_service_status(sample_user, user_auth):
@@ -234,7 +224,6 @@ def test_search_military_service_status(sample_user, user_auth):
     response = get_response_from_authorized_user(user_auth, sample_user, '?military_service_status=Retired')
     resultant_candidates = response.json()['candidate_ids']
     _assert_results(candidate_ids, resultant_candidates)
-    assert response.status_code == 200
 
 
 def test_search_military_branch(sample_user, user_auth):
@@ -248,7 +237,6 @@ def test_search_military_branch(sample_user, user_auth):
     response = get_response_from_authorized_user(user_auth, sample_user, '?military_branch=Army')
     resultant_candidates = response.json()['candidate_ids']
     _assert_results(candidate_ids, resultant_candidates)
-    assert response.status_code == 200
 
 
 def test_search_military_highest_grade(sample_user, user_auth):
@@ -262,7 +250,6 @@ def test_search_military_highest_grade(sample_user, user_auth):
     response = get_response_from_authorized_user(user_auth, sample_user, '?military_highest_grade=W-1')
     resultant_candidates = response.json()['candidate_ids']
     _assert_results(candidate_ids, resultant_candidates)
-    assert response.status_code == 200
 
 
 def test_search_military_date_of_separation(sample_user, user_auth):
@@ -329,7 +316,7 @@ def test_search_get_only_requested_fields(sample_user, user_auth):
     :param user_auth:
     :return:
     """
-    populate_candidates(count=5, owner_user_id=sample_user.id)
+    populate_candidates(count=2, owner_user_id=sample_user.id)
     response = get_response_from_authorized_user(user_auth, sample_user, '?fields=email')
     resultant_keys = response.json()['candidates'][0].keys()
     assert len(resultant_keys) == 1
