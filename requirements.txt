@@ -50,8 +50,6 @@ fake-factory==0.5.2
 greenlet==0.4.7
 loggly-python-handler==1.0.0
 
-Flask-Script
-
 celery[redis]
 
 mixer==5.2.2
