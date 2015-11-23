@@ -43,7 +43,6 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
     """
     Creates a new email campaign.
     Schedules email campaign.
-    Creates email campaign send.
 
     :return: newly created email_campaign's id
     """

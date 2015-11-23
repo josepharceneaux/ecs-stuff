@@ -6,7 +6,7 @@ from flask import request
 from flask.ext.cors import CORS
 from ..modules.email_marketing import create_email_campaign
 from ..modules.validations import validate_lists_belongs_to_domain, validate_and_format_request_data
-from email_campaign.common.error_handling import UnprocessableEntity, ForbiddenError
+from email_campaign.common.error_handling import ForbiddenError
 from email_campaign.common.utils.auth_utils import require_oauth
 
 __author__ = 'jitesh'
@@ -17,6 +17,21 @@ mod = Blueprint('email_campaign', __name__)
 @mod.route('/email_campaign', methods=['POST'])
 @require_oauth
 def email_campaigns():
+    """Creates new email campaign
+    Requires: Bearer token for Authorization in headers
+    Input: (post data)
+        email_campaign_name
+        email_subject
+        email_from: no-reply@gettalent.com  [Currently it sends emails with this email id only]
+        email_reply_to
+        email_body_html
+        email_body_text
+        selectedTemplateId
+        send_time
+        frequency
+        list_ids : One or more (comma separated) smartlist ids to which email campaign will be sent (Currently only supports dumblists)
+    Returns: campaign id
+    """
     user_id = request.user.id  # 1553
     # Get and validate request data
     data = validate_and_format_request_data(request.form)
