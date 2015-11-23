@@ -93,6 +93,7 @@
             } else {
                 parents.removeClass('form__col--has-value');
             }
+            return inputValue;
         }
     }
 })();
