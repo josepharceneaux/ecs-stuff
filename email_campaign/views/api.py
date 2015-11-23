@@ -13,6 +13,13 @@ __author__ = 'jitesh'
 
 mod = Blueprint('email_campaign', __name__)
 
+# Enable CORS
+CORS(mod, resources={
+    r'/email_campaign/*': {
+        'origins': '*',
+        'allow_headers': ['Content-Type', 'Authorization']
+    }
+})
 
 @mod.route('/email_campaign', methods=['POST'])
 @require_oauth

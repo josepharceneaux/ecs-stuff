@@ -18,8 +18,9 @@ if GT_ENVIRONMENT == 'dev':
     BROKER_URL = 'redis://localhost:6379/0'
     DEBUG = True
 elif GT_ENVIRONMENT == 'circle':
-    SQLALCHEMY_DATABASE_URI = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_ci'
+    OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
     CANDIDATE_SERVICE_BASE_URI = 'http://0.0.0.0:8005'
+    SQLALCHEMY_DATABASE_URI = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_ci'
     LOGGER = logging.getLogger("flask_service.ci")
     DEBUG = True
 elif GT_ENVIRONMENT == 'qa':
