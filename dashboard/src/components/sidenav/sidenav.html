@@ -34,14 +34,6 @@
                     Admin
                 </div>
             </a>
-            <a ui-sref="help" ui-sref-active="active" class="js--navItem view__sidebar__navItem row--table" data-target="js--subnav-help" ng-click="vm.isCollapsed = !vm.isCollapsed">
-                <div class="col--large-4--cell view__sidebar__navIcon">
-                    <span class="icon--tools"></span>
-                </div>
-                <div class="col--large-8--cell view__sidebar__navText">
-                    Help
-                </div>
-            </a>
         </div>
         <div class="view__sidebar__navChild col--large-9">
             <div class="js--subnav-{{menu}} view__sidebar__subNav" ng-repeat="(menu, subMenus) in vm.menuItems"> <!--ng-if="vm.state.includes(menu)"-->

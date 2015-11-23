@@ -167,15 +167,6 @@
                         template: '<gt-admin></gt-admin>'
                     }
                 }
-            })
-            .state('help', {
-                parent: 'site',
-                url: '/help',
-                views: {
-                    '@site': {
-                        template: '<gt-help></gt-help>'
-                    }
-                }
             });
     }
 })();

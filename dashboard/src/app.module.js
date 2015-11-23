@@ -11,7 +11,6 @@
         'app.campaigns',
         'app.dashboard',
         'app.footer',
-        'app.help',
         'app.login',
         'app.main',
         'app.pipelines',
