@@ -24,7 +24,7 @@
             scope: {
             },
             controller: 'FloatLabelController',
-            controllerAs: 'vm',
+            controllerAs: 'floatLabel',
             link: linkFunction
         };
 
