@@ -264,7 +264,7 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
                                                                custom_html=campaign.custom_html,
                                                                email_campaign_send_id=email_campaign_send.id)
     # In dev/staging, only send emails to getTalent users, in case we're impersonating a customer.
-    if current_app.config['GT_ENVIRONMENT'] in ['dev', 'qa']:
+    if current_app.config['GT_ENVIRONMENT'] in ['dev', 'qa', 'circle']:
         domain = Domain.query.get(user.domain_id)
         if 'gettalent' in domain.name.lower() or 'bluth' in domain.name.lower() or 'dice' in domain.name.lower():
             to_addresses = user.email
