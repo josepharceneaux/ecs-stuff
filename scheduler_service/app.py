@@ -29,8 +29,9 @@ from apscheduler.events import EVENT_JOB_EXECUTED
 from apscheduler.jobstores.redis_store import RedisJobStore
 
 from apscheduler.scheduler import Scheduler
+job_store = RedisJobStore()
 scheduler = Scheduler()
-scheduler.add_jobstore(RedisJobStore(), 'redisJobStore')
+scheduler.add_jobstore(job_store, 'redisJobStore')
 
 
 def my_listener(event):
@@ -39,10 +40,19 @@ def my_listener(event):
         print str(event.exception.message) + '\n'
     else:
         print('The job worked :)')
+        if event.job.next_run_time > event.job.kwargs['end_date']:
+            stop_job(event.job)
 
+
+def stop_job(job):
+    scheduler.unschedule_job(job)
+    print 'job(id: %s) has stopped' % job.id
 
 scheduler.add_listener(my_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 scheduler.start()
+jobs = scheduler.get_jobs()
+
+
 
 
 # Third party imports
@@ -81,6 +91,26 @@ def tasks():
     return render_template('tasks.html', tasks=tasks)
 
 
+@app.route('/shutdown/')
+def shutdown():
+    print('scheduler is going to shutdown')
+    try:
+        scheduler.shutdown()
+    except Exception as e:
+        return str(e)
+    return "Scheduler shutdown successfully"
+
+
+@app.route('/start/')
+def start():
+    print('scheduler is going to restart')
+    try:
+        scheduler.start()
+    except Exception as e:
+        return str(e)
+    return "Scheduler restarted successfully"
+
+
 @app.route('/schedule/', methods=['GET', 'POST'])
 def task():
     """
@@ -88,7 +118,7 @@ def task():
     :return:
     """
     start_date = datetime.now()
-    start_date.replace(minute=(start_date.minute + 1))
+    start_date.replace(second=(start_date.second + 15) % 60)
     end_date = start_date + timedelta(minutes=5)
     repeat_time_in_sec = int(request.args.get('frequency', 10))
     func = request.args.get('func', 'send_sms_campaign')
@@ -112,9 +142,9 @@ def task():
 def callback(*args, **kwargs):
     print('args', args)
     if kwargs['func'] in methods:
-        methods[kwargs['func']].apply_async(args, kwargs)
+        methods[kwargs['func']].asyn_apply(args, kwargs)
     else:
-        send_sms_campaign.apply_async(args, kwargs)
+        send_sms_campaign.asyn_apply(args, kwargs)
 
 
 @app.errorhandler(Exception)
