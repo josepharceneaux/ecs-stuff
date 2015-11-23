@@ -6,7 +6,6 @@
         .directive('gtCandidateSearch', directiveFunction)
         .controller('CandidateSearchController', ControllerFunction);
 
-
     // ----- directiveFunction -----
     directiveFunction.$inject = [];
 
@@ -26,7 +25,6 @@
         return directive;
     }
 
-
     // ----- ControllerFunction -----
     ControllerFunction.$inject = ['logger'];
 
@@ -39,5 +37,4 @@
             logger.log('Activated Candidate Search View');
         }
     }
-
 })();

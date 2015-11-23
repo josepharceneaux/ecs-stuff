@@ -1,10 +1,8 @@
 (function () {
-
     'use strict';
 
     angular.module('app.approot')
         .directive('gtApproot', directiveFunction);
-
 
     // ----- directiveFunction -----
     function directiveFunction() {
@@ -19,5 +17,4 @@
 
         return directive;
     }
-
 })();

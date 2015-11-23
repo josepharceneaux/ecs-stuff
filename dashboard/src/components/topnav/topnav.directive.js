@@ -6,7 +6,6 @@
         .directive('gtTopnav', directiveFunction)
         .controller('TopnavController', ControllerFunction);
 
-
     // ----- directiveFunction -----
     directiveFunction.$inject = [];
 
@@ -40,5 +39,4 @@
             $state.go('login');
         }
     }
-
 })();

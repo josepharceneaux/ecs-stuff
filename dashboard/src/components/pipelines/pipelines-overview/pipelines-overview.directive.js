@@ -1,11 +1,9 @@
 (function () {
-
     'use strict';
 
     angular.module('app.pipelines')
         .directive('gtPipelinesOverview', directiveFunction)
         .controller('PipelinesOverviewController', ControllerFunction);
-
 
     // ----- directiveFunction -----
     directiveFunction.$inject = [];
@@ -26,7 +24,6 @@
         return directive;
     }
 
-
     // ----- ControllerFunction -----
     ControllerFunction.$inject = ['logger'];
 
@@ -39,5 +36,4 @@
             logger.log('Activated Pipelines Overview View');
         }
     }
-
 })();

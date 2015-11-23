@@ -1,11 +1,9 @@
 (function () {
-
     'use strict';
 
     angular.module('app.dashboard')
         .directive('gtDashboardCustomize', directiveFunction)
         .controller('DashboardCustomizeController', ControllerFunction);
-
 
     // ----- directiveFunction -----
     directiveFunction.$inject = [];
@@ -26,7 +24,6 @@
         return directive;
     }
 
-
     // ----- ControllerFunction -----
     ControllerFunction.$inject = ['logger'];
 
@@ -39,5 +36,4 @@
             logger.log('Activated Dashboard Customize View');
         }
     }
-
 })();

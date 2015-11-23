@@ -6,7 +6,6 @@
         .directive('gtSidenav', directiveFunction)
         .controller('SidenavController', ControllerFunction);
 
-
     // ----- directiveFunction -----
     directiveFunction.$inject = [];
 
@@ -57,5 +56,4 @@
             help: {}
         };
     }
-
 })();

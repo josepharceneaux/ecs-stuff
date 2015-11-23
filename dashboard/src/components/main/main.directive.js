@@ -6,7 +6,6 @@
         .directive('gtMain', directiveFunction)
         .controller('MainController', ControllerFunction);
 
-
     // ----- directiveFunction -----
     directiveFunction.$inject = [];
 
@@ -40,5 +39,4 @@
             $state.go('login');
         }
     }
-
 })();
