@@ -19,11 +19,13 @@ gevent.monkey.patch_all()
 from gevent.pool import Pool
 
 # Application Specific
+from sms_campaign_service.config import AUTH_HEADER, POOL_SIZE
 from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.candidate import Candidate
 from sms_campaign_service.common.utils.common_functions import http_request
 from sms_campaign_service.common.models.smart_list import SmartListCandidate
-from sms_campaign_service.config import ACTIVITY_SERVICE_API_URL, AUTH_HEADER, POOL_SIZE
+from sms_campaign_service.common.utils.app_api_urls import ACTIVITY_SERVICE_API_URL, \
+    CANDIDATE_SERVICE_API_URL
 
 
 class CampaignBase(object):
@@ -124,16 +126,16 @@ class CampaignBase(object):
         """
         pass
 
-    @staticmethod
-    def get_candidates(smart_list_id=None):
+    def get_candidates(self, smart_list_id=None):
         """
-        This will get the candidates associated to a provided smart list.
+        This will get the candidates associated to a provided smart list. This makes
+        HTTP GET call on candidate service API to get the candidate associated candidates.
 
         - This method is called from process_send() method of class
             SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
 
         :Example:
-                SmsCampaignBase.get_candidates(1)
+                SmsCampaignBase.get_candidates(smart_list_id=1)
 
         :param smart_list_id: id of smart list.
         :type smart_list_id: int
@@ -143,10 +145,16 @@ class CampaignBase(object):
         **See Also**
         .. see also:: process_send() method in SmsCampaignBase class.
         """
+        data = {'id': smart_list_id}
+        # GET call to activity service to create activity
+        url = CANDIDATE_SERVICE_API_URL + '/v1/smartlist/'
+        response = http_request('GET', url, headers=AUTH_HEADER,
+                                data=data, user_id=self.user_id)
+        return response
         # get candidate ids
-        records = SmartListCandidate.get_by_smart_list_id(smart_list_id)
-        candidates = [Candidate.get_by_id(record.candidate_id) for record in records]
-        return candidates
+        # records = SmartListCandidate.get_by_smart_list_id(smart_list_id)
+        # candidates = [Candidate.get_by_id(record.candidate_id) for record in records]
+        # return candidates
 
     def send_campaign_to_candidates(self, candidates):
         """
