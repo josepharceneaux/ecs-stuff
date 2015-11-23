@@ -1,3 +1,4 @@
+from apscheduler.executors.pool import ThreadPoolExecutor
 from celery import Celery
 from scheduler_service.common.models.scheduler import SchedulerTask
 from  scheduler_service import tasks
@@ -36,16 +37,26 @@ scheduler.add_jobstore(SQLAlchemyJobStore(url='sqlite:///job_store_new.sqlite'),
 # scheduler.add_jobstore(ShelveJobStore('job_store'), 'shelve')
 
 
+
 def my_listener(event):
     if event.exception:
         print('The job crashed :(\n')
         print str(event.exception.message) + '\n'
     else:
         print('The job worked :)')
+        if event.job.next_run_time > event.job.kwargs['end_date']:
+            stop_job(event.job)
 
+
+def stop_job(job):
+    scheduler.unschedule_job(job)
+    print 'job(id: %s) has stopped' % job.id
 
 scheduler.add_listener(my_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 scheduler.start()
+# jobs = scheduler.get_jobs()
+
+
 
 
 # Third party imports
@@ -99,6 +110,26 @@ def get_jobs():
         data.append(job_data)
     return json.dumps(data)
 
+@app.route('/shutdown/')
+def shutdown():
+    print('scheduler is going to shutdown')
+    try:
+        scheduler.shutdown()
+    except Exception as e:
+        return str(e)
+    return "Scheduler shutdown successfully"
+
+
+@app.route('/start/')
+def start():
+    print('scheduler is going to restart')
+    try:
+        scheduler.start()
+    except Exception as e:
+        return str(e)
+    return "Scheduler restarted successfully"
+
+
 @app.route('/schedule/', methods=['GET', 'POST'])
 def task():
     """
@@ -112,7 +143,7 @@ def task():
     func = request.args.get('func', 'send_sms_campaign')
     arg1 = request.args.get('arg1')
     arg2 = request.args.get('arg2')
-    job = scheduler.add_job(callback, 'interval', jobstore='shelve', func=send_sms_campaign, minutes=2, misfire_grace_time=60)
+    job = scheduler.add_job(callback, 'interval', jobstore='shelve', kwargs={'func': func}, minutes=2, misfire_grace_time=60)
     # job = scheduler.add_interval_job(callback,
     #                                  seconds=repeat_time_in_sec,
     #                                  start_date=start_date,
@@ -120,6 +151,7 @@ def task():
     #                                  kwargs=dict(func=func, end_date=end_date),
     #                                  misfire_grace_time=60,
     #                                  jobstore='shelve')
+
     print 'Task has been added and will run at %s ' % start_date
     return 'Task has been added to queue!!!'
     # response = send_sms_campaign(ids, body_text)
