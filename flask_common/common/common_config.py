@@ -19,6 +19,7 @@ if GT_ENVIRONMENT == 'dev':
     DEBUG = True
 elif GT_ENVIRONMENT == 'circle':
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_ci'
+    CANDIDATE_SERVICE_BASE_URI = 'http://0.0.0.0:8005'
     LOGGER = logging.getLogger("flask_service.ci")
     DEBUG = True
 elif GT_ENVIRONMENT == 'qa':
