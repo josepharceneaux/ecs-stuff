@@ -1,9 +1,9 @@
-"""API for the Candidate Search App"""
+"""API for the Candidate Search Service App"""
 
 from flask import jsonify, request, Blueprint
 import talent_cloud_search
 from common.utils.auth_utils import require_oauth
-from candidate_service.candidate_app import db, logger
+from candidate_service.candidate_app import logger
 mod = Blueprint('candidate_search_api', __name__)
 
 
@@ -15,7 +15,14 @@ def hello_world():
 @mod.route('/candidates', methods=['GET'])
 @require_oauth
 def search():
+    """
+    Search candidates with different search filters
+    :return: Candidate data in json format
+    """
+    # Get cloud_search connection
     talent_cloud_search.get_cloud_search_connection()
+
+    # Get the parameters passed in the url
     location = request.args.get('location')
     user = request.args.get('user_ids')
     skills = request.args.get('skills')
@@ -38,6 +45,8 @@ def search():
     query = request.args.get("q")
     limit = request.args.get("limit")
     fields = request.args.get("fields")
+
+    # Dictionary with all searchable filters
     request_vars_dict = {"location": location, "skillDescriptionFacet": skills,
                          "areaOfInterestIdFacet": areas_of_interest, "statusFacet": status, "sourceFacet": source,
                          "minimum_years_experience": min_exp, "maximum_years_experience": max_exp,
@@ -47,13 +56,17 @@ def search():
                          "highestGrade": grade, "military_end_date_from": military_end_date_from,
                          "military_end_date_to": military_end_date_to, "usernameFacet": user, "q": query,
                          "limit": limit, "fields": fields}
+
+    # Shortlist all the params passed in url
     request_vars = {}
     for key, value in request_vars_dict.iteritems():
         if value is not None:
             request_vars[key] = value
 
+    # Get domain_id from auth_user
     domain_id = request.user.domain_id
     logger.info("Searching candidates in the domain:%s" % domain_id)
+
     # If limit is not requested then the Search limit would be taken as 15, the default value
     candidate_search_results = talent_cloud_search.search_candidates(domain_id, request_vars,
                                                                      int(limit) if limit else 15)

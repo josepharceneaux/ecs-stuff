@@ -2,14 +2,13 @@ import math
 
 
 class GeoLocation:
-    '''
+    """
     Class representing a coordinate on a sphere, most likely Earth.
 
     This class is based from the code sample in this paper:
         http://janmatuschek.de/LatitudeLongitudeBoundingCoordinates
 
-
-    '''
+    """
 
     MIN_LAT = math.radians(-90)
     MAX_LAT = math.radians(90)
@@ -45,21 +44,22 @@ class GeoLocation:
 
     def __str__(self):
         degree_sign= u'\N{DEGREE SIGN}'
-        return ("({0:.4f}deg, {1:.4f}deg) = ({2:.6f}rad, {3:.6f}rad)").format(
+        return "({0:.4f}deg, {1:.4f}deg) = ({2:.6f}rad, {3:.6f}rad)".format(
             self.deg_lat, self.deg_lon, self.rad_lat, self.rad_lon)
 
     def _check_bounds(self):
-        if (self.rad_lat < GeoLocation.MIN_LAT
-                or self.rad_lat > GeoLocation.MAX_LAT
-                or self.rad_lon < GeoLocation.MIN_LON
-                or self.rad_lon > GeoLocation.MAX_LON):
+        if (self.rad_lat < GeoLocation.MIN_LAT or self.rad_lat > GeoLocation.MAX_LAT
+        or self.rad_lon < GeoLocation.MIN_LON
+        or self.rad_lon > GeoLocation.MAX_LON):
             raise Exception("Illegal arguments")
 
     def distance_to(self, other, radius=EARTH_RADIUS):
-        '''
+        """
         Computes the great circle distance between this GeoLocation instance
         and the other.
-        '''
+        :param other
+        :param radius
+        """
         return radius * math.acos(
                 math.sin(self.rad_lat) * math.sin(other.rad_lat) +
                 math.cos(self.rad_lat) *
@@ -68,7 +68,7 @@ class GeoLocation:
             )
 
     def bounding_locations(self, distance, radius=EARTH_RADIUS):
-        '''
+        """
         Computes the bounding coordinates of all points on the surface
         of a sphere that has a great circle distance to the point represented
         by this GeoLocation instance that is less or equal to the distance argument.
@@ -82,7 +82,10 @@ class GeoLocation:
 
         Returns a list of two GeoLoations - the SW corner and the NE corner - that
         represents the bounding box.
-        '''
+        :param distance:
+        :param radius:
+        :return:
+        """
 
         if radius < 0 or distance < 0:
             raise Exception("Illegal arguments")
@@ -110,15 +113,14 @@ class GeoLocation:
             min_lon = GeoLocation.MIN_LON
             max_lon = GeoLocation.MAX_LON
 
-        return [ GeoLocation.from_radians(min_lat, min_lon) ,
-            GeoLocation.from_radians(max_lat, max_lon) ]
+        return [GeoLocation.from_radians(min_lat, min_lon),  GeoLocation.from_radians(max_lat, max_lon)]
 
 if __name__ == '__main__':
     # Test degree to radian conversion
     loc1 = GeoLocation.from_degrees(26.062951, -80.238853)
     loc2 = GeoLocation.from_radians(loc1.rad_lat, loc1.rad_lon)
-    assert (loc1.rad_lat == loc2.rad_lat and loc1.rad_lon == loc2.rad_lon
-        and loc1.deg_lat == loc2.deg_lat and loc1.deg_lon == loc2.deg_lon)
+    assert (loc1.rad_lat == loc2.rad_lat and loc1.rad_lon == loc2.rad_lon and loc1.deg_lat == loc2.deg_lat and
+            loc1.deg_lon == loc2.deg_lon)
 
     # Test distance between two locations
     loc1 = GeoLocation.from_degrees(26.062951, -80.238853)

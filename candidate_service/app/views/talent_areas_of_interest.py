@@ -2,7 +2,7 @@ from candidate_service.candidate_app import db, logger
 from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.candidate import Candidate
-from sqlalchemy.exc import SQLAlchemyError
+
 
 DEFAULT_AREAS_OF_INTEREST = ['Production & Development', 'Marketing', 'Sales', 'Design', 'Finance',
                              'Business & Legal Affairs', 'Human Resources', 'Technology', 'Other']
@@ -10,6 +10,12 @@ DEFAULT_AREAS_OF_INTEREST = ['Production & Development', 'Marketing', 'Sales', '
 
 # Gets or creates AOIs
 def get_or_create_areas_of_interest(domain_id, include_child_aois=False):
+    """
+    Get or create areas of interest for candidates
+    :param domain_id:
+    :param include_child_aois:
+    :return: area_of_interest row object
+    """
     if not domain_id:
         logger.error("get_or_create_areas_of_interest: domain_id is %s!", domain_id)
     areas = db.session.query(AreaOfInterest).filter_by(domain_id=domain_id).order_by(AreaOfInterest.id.asc())
@@ -26,6 +32,11 @@ def get_or_create_areas_of_interest(domain_id, include_child_aois=False):
 
 
 def get_area_of_interest_id_to_sub_areas_of_interest(domain_id):
+    """
+    Get area of interest is to sub area of interest
+    :param domain_id:
+    :return:
+    """
     sub_areas_of_interest = db.session.query(AreaOfInterest).filter(AreaOfInterest.domain_id == domain_id,
                                                                     AreaOfInterest.parent_id is not None).sorted(
         lambda row: AreaOfInterest.description)
@@ -40,6 +51,13 @@ def get_area_of_interest_id_to_sub_areas_of_interest(domain_id):
 
 
 def add_aoi_to_candidate(candidate_id, aoi_ids, owner_user_id=None):
+    """
+    Add area of interest to created candidate
+    :param candidate_id:
+    :param aoi_ids:
+    :param owner_user_id:
+    :return:
+    """
     if not isinstance(aoi_ids, list):
         aoi_ids = [aoi_ids]
     from common_functions import domain_id_from_user_id
@@ -81,7 +99,7 @@ def add_aoi_to_candidate(candidate_id, aoi_ids, owner_user_id=None):
                              domain_id,
                              [aoi.id for aoi in domain_areas_of_interest])
 
-
+# All the available Areas of interests
 KAISER_PARENT_TO_CHILD_AOIS = {
     'Accounting, Finance and Actuarial Services': ['Actuarial',
                                                    'Audit',
