@@ -31,16 +31,17 @@ class User(db.Model):
     first_name = db.Column('firstName', db.String(255))
     last_name = db.Column('lastName', db.String(255))
     added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
-    updated_time = db.Column('updatedTime', db.DateTime)
+    # updated_time = db.Column('updatedTime', db.DateTime)
     dice_user_id = db.Column('diceUserId', db.Integer)
     user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.id', ondelete='CASCADE'))
     is_disabled = db.Column(TINYINT, default='0', nullable=False)
+
     # TODO: Set Nullable = False after setting user_group_id for existing data
 
     # Relationships
     candidates = relationship('Candidate', backref='user')
-    public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
-    user_group = relationship('UserGroup', backref='user')
+    # public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
+    # user_group = relationship('UserGroup', backref='user')
     email_campaigns = relationship('EmailCampaign', backref='user')
     user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
     events = db.relationship('Event', backref='user', lazy='dynamic')
@@ -209,7 +210,9 @@ class DomainRole(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     role_name = db.Column(db.String(255), nullable=False, unique=True)
 
-    domain_id = db.Column(db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))
+    domain_id = db.Column(
+        db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE')
+    )
     domain = db.relationship('Domain', backref=db.backref('domain_role', cascade="all, delete-orphan"))
 
     def delete(self):

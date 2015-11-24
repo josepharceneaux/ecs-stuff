@@ -11,7 +11,7 @@ class CandidateAreaOfInterest(db.Model):
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'), primary_key=True)
     area_of_interest_id = db.Column('AreaOfInterestId', db.Integer, db.ForeignKey('area_of_interest.id'), primary_key=True)
     additional_notes = db.Column('AdditionalNotes', db.Text)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
 
 class ReferenceEmail(db.Model):
@@ -39,4 +39,3 @@ class ReferencePhone(db.Model):
 
     def __repr__(self):
         return "<ReferencePhone (reference_id=' %r')>" % self.candidate_reference_id
-

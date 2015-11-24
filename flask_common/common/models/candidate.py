@@ -12,19 +12,19 @@ from event import Event
 class Candidate(db.Model):
     __tablename__ = 'candidate'
     id = db.Column(db.Integer, primary_key=True)
-    first_name = db.Column('FirstName', db.String(50))
-    middle_name = db.Column('MiddleName', db.String(50))
-    last_name = db.Column('LastName', db.String(50))
-    formatted_name = db.Column('FormattedName', db.String(150))
-    candidate_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('candidate_status.id'))
-    is_web_hidden = db.Column('IsWebHidden', db.Boolean, default=False)
-    is_mobile_hidden = db.Column('IsMobileHidden', db.Boolean, default=False)
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
-    user_id = db.Column('OwnerUserId', db.Integer, db.ForeignKey('user.id'))
-    domain_can_read = db.Column('DomainCanRead', db.Boolean, default=True)
-    domain_can_write = db.Column('DomainCanWrite', db.Boolean, default=False)
-    dice_social_profile_id = db.Column('DiceSocialProfileId', db.String(128))
-    dice_profile_id = db.Column('DiceProfileId', db.String(128))
+    first_name = db.Column('firstName', db.String(50))
+    middle_name = db.Column('middleName', db.String(50))
+    last_name = db.Column('lastName', db.String(50))
+    formatted_name = db.Column('formattedName', db.String(150))
+    candidate_status_id = db.Column('statusId', db.Integer, db.ForeignKey('candidate_status.id'))
+    is_web_hidden = db.Column('isWebHidden', db.Boolean, default=False)
+    is_mobile_hidden = db.Column('isMobileHidden', db.Boolean, default=False)
+    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
+    user_id = db.Column('ownerUserId', db.Integer, db.ForeignKey('user.id'))
+    domain_can_read = db.Column('domainCanRead', db.Boolean, default=True)
+    domain_can_write = db.Column('domainCanWrite', db.Boolean, default=False)
+    dice_social_profile_id = db.Column('diceSocialProfileId', db.String(128))
+    dice_profile_id = db.Column('diceProfileId', db.String(128))
     source_id = db.Column('sourceId', db.Integer, db.ForeignKey('candidate_source.id'))
     source_product_id = db.Column('sourceProductId', db.Integer, db.ForeignKey('product.id'), nullable=False, default=2) # Web = 2
     filename = db.Column(db.String(100))
@@ -35,7 +35,7 @@ class Candidate(db.Model):
     culture_id = db.Column('cultureId', db.Integer, db.ForeignKey('culture.id'), default=1)
 
     # TODO: Below are necessary for now, but should remove once all tables have been defined
-    is_dirty = db.Column('IsDirty', db.SmallInteger, default=0)
+    # is_dirty = db.Column('IsDirty', db.SmallInteger, default=0)
 
     # One-to-many Relationships; i.e. Candidate has many:
     candidate_phones = relationship('CandidatePhone', backref='candidate')
@@ -74,8 +74,8 @@ class Candidate(db.Model):
         """
         return db.session.query(Candidate).get(candidate_id)
 
-    def __repr__(self):
-        return "<Candidate(formatted_name=' %r')>" % self.formatted_name
+    # def __repr__(self):
+    #     return "<Candidate(formatted_name=' %r')>" % self.formatted_name
 
     @classmethod
     def get_by_first_last_name_owner_user_id_source_id_product(cls, first_name,
@@ -100,7 +100,7 @@ class CandidateStatus(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column('Description', db.String(100))
     notes = db.Column('Notes', db.String(500))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
     candidates = relationship('Candidate', backref='candidate_status')
@@ -113,7 +113,7 @@ class PhoneLabel(db.Model):
     __tablename__ = 'phone_label'
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column('Description', db.String(20))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
     candidate_phones = relationship('CandidatePhone', backref='phone_label')
@@ -126,16 +126,16 @@ class PhoneLabel(db.Model):
 class CandidateSource(db.Model):
     __tablename__ = 'candidate_source'
     id = db.Column(db.Integer, primary_key=True)
-    description = db.Column('Description', db.String(100))
-    notes = db.Column('Notes', db.String(500))
-    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    description = db.Column('description', db.String(100))
+    notes = db.Column('notes', db.String(500))
+    domain_id = db.Column('domainId', db.Integer, db.ForeignKey('domain.id'))
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
     candidates = relationship('Candidate', backref='candidate_source')
 
-    def __repr__(self):
-        return "<CandidateSource (description= '%r')>" % self.description
+    # def __repr__(self):
+    #     return "<CandidateSource (description= '%r')>" % self.description
 
     @classmethod
     def get_by_description_and_notes(cls, source_name, source_description):
@@ -192,11 +192,11 @@ class EmailLabel(db.Model):
 class CandidateEmail(db.Model):
     __tablename__ = 'candidate_email'
     id = db.Column(db.Integer, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'), nullable=False)
-    email_label_id = db.Column('EmailLabelId', db.Integer, db.ForeignKey('email_label.id')) # 1 = Primary
-    address = db.Column('Address', db.String(100))
-    is_default = db.Column('IsDefault', db.Boolean)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    candidate_id = db.Column('candidateId', db.Integer, db.ForeignKey('candidate.id'), nullable=False)
+    email_label_id = db.Column('emailLabelId', db.Integer, db.ForeignKey('email_label.id')) # 1 = Primary
+    address = db.Column('address', db.String(100))
+    is_default = db.Column('isDefault', db.Boolean)
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<CandidateEmail (address='%r')" % self.address
@@ -220,14 +220,14 @@ class CandidateRating(db.Model):
     rating_tag_id = db.Column('RatingTagId', db.Integer, db.ForeignKey('rating_tag.id'), primary_key=True)
     value = db.Column('Value', db.Integer, default=0)
     added_time = db.Column('AddedTime', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
 
 class RatingTag(db.Model):
     __tablename__ = 'rating_tag'
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column('Description', db.String(100))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
     candidates = relationship('Candidate', secondary="candidate_rating")
@@ -250,7 +250,7 @@ class CandidateTextComment(db.Model):
     list_order = db.Column('ListOrder', db.Integer)
     comment = db.Column(db.String(5000))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
 
 class VoiceComment(db.Model):
@@ -260,7 +260,7 @@ class VoiceComment(db.Model):
     list_order = db.Column('ListOrder', db.Integer)
     filename = db.Column('Filename', db.String(260))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
 
 class CandidateDocument(db.Model):
@@ -269,7 +269,7 @@ class CandidateDocument(db.Model):
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     filename = db.Column('Filename', db.String(260))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
 
 class SocialNetwork(db.Model):
@@ -282,7 +282,7 @@ class SocialNetwork(db.Model):
     secret_key = db.Column('secretKey', db.String(500))
     redirect_uri = db.Column('redirectUri', db.String(255))
     auth_url = db.Column('authUrl', db.String(200))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
     candidate_social_networks = relationship('CandidateSocialNetwork', backref='social_network')
@@ -415,7 +415,7 @@ class CandidateLanguage(db.Model):
     read = db.Column('Read', db.Boolean)
     write = db.Column('Write', db.Boolean)
     speak = db.Column('Speak', db.Boolean)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<CandidateLanguage (candidate_id=' %r')>" % self.candidate_id
@@ -431,7 +431,7 @@ class CandidateLicenseCertification(db.Model):
     valid_from = db.Column('ValidFrom', db.String(30))
     valid_to = db.Column('ValidTo', db.String(30))
     first_issued_date = db.Column('FirstIssuedDate', db.String(30))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<CandidateLicenseCertification (name=' %r')>" % self.name
@@ -444,7 +444,7 @@ class CandidateReference(db.Model):
     person_name = db.Column('PersonName', db.String(150))
     position_title = db.Column('PositionTitle', db.String(150))
     comments = db.Column('Comments', db.String(5000))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
     reference_emails = relationship('ReferenceEmail', backref='candidate_reference')
@@ -461,7 +461,7 @@ class ReferenceWebAddress(db.Model):
     candidate_reference_id = db.Column('ReferenceId', db.BigInteger, db.ForeignKey('candidate_reference.id'))
     url = db.Column('Url', db.String(200))
     description = db.Column('Description', db.String(1000))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<ReferenceWebAddress (url=' %r')>" % self.url
@@ -477,7 +477,7 @@ class CandidateAssociation(db.Model):
     start_date = db.Column('StartDate', db.DateTime)
     end_date = db.Column('EndDate', db.DateTime)
     comments = db.Column('Comments', db.String(10000))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<CandidateAssociation (candidate_id=' %r')>" % self.candidate_id
@@ -489,7 +489,7 @@ class CandidateAchievement(db.Model):
     date = db.Column('Date', db.DateTime)
     issuing_authority = db.Column('IssuingAuthority', db.String(150))
     description = db.Column('Description', db.String(10000))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
 
     def __repr__(self):
@@ -508,7 +508,7 @@ class CandidateMilitaryService(db.Model):
     comments = db.Column('Comments', db.String(5000))
     from_date = db.Column('FromDate', db.DateTime)
     to_date = db.Column('ToDate', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # TODO: Below are necessary for now, but should remove once all tables have been defined
     resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
@@ -524,7 +524,7 @@ class CandidatePatentHistory(db.Model):
     title = db.Column('Title', db.String(255))
     description = db.Column('Description', db.String(10000))
     link = db.Column('Link', db.String(150))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<CandidatePatentHistory (title=' %r')>" % self.title
@@ -536,7 +536,7 @@ class PatentDetail(db.Model):
     patent_id = db.Column('PatentId', db.BigInteger, db.ForeignKey('patent.id')) # TODO: add relationship
     issuing_authority = db.Column('IssuingAuthority', db.String(255))
     country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<PatentDetail (patent_id=' %r')>" % self.patent_id
@@ -547,7 +547,7 @@ class PatentStatus(db.Model):
     id = db.Column(db.BigInteger, primary_key=True)
     description = db.Column('Description', db.String(1000))
     notes = db.Column('Notes', db.String(1000))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
     patent_milestones = relationship('PatentMilestone', backref='patent_status')
@@ -561,7 +561,7 @@ class PatentInventor(db.Model):
     id = db.Column(db.BigInteger, primary_key=True)
     patent_id = db.Column('PatentId', db.BigInteger, db.ForeignKey('patent.id')) # TODO: add relationship
     name = db.Column('Name', db.String(500))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<PatentInventor (patent_id=' %r')>" % self.patent_id
@@ -572,7 +572,7 @@ class PatentMilestone(db.Model):
     id = db.Column(db.BigInteger, primary_key=True)
     patent_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('patent_status.id'))
     issued_date = db.Column('IssuedDate', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<PatentMilestone (patent_status_id=' %r')>" % self.patent_status_id
@@ -590,7 +590,7 @@ class CandidatePublication(db.Model):
     description = db.Column('Description', db.String(10000))
     added_time = db.Column('AddedTime', db.DateTime)
     link = db.Column('Link', db.String(200))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<CandidatePublication (title=' %r')>" % self.title
@@ -609,7 +609,7 @@ class CandidateAddress(db.Model):
     po_box = db.Column('POBox', db.String(20))
     is_default = db.Column('IsDefault', db.Boolean, default=False)  # todo: check other is_default fields for their default values
     coordinates = db.Column('Coordinates', db.String(100))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # TODO: Below are necessary for now, but should remove once all tables have been defined
     resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
@@ -621,25 +621,25 @@ class CandidateAddress(db.Model):
 class CandidateEducation(db.Model):
     __tablename__ = 'candidate_education'
     id = db.Column(db.Integer, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
-    list_order = db.Column('ListOrder', db.SmallInteger)    # todo: ascertain smallinteger == tinyint; also check all list_order columns in db
-    school_name = db.Column('SchoolName', db.String(200))
-    school_type = db.Column('SchoolType', db.String(100))
-    city = db.Column('City', db.String(50))
-    state = db.Column('State', db.String(50))
-    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
-    is_current = db.Column('IsCurrent', db.Boolean)
-    added_time = db.Column('AddedTime', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    candidate_id = db.Column('candidateId', db.Integer, db.ForeignKey('candidate.id'))
+    list_order = db.Column('listOrder', db.SmallInteger)    # todo: ascertain smallinteger == tinyint; also check all list_order columns in db
+    school_name = db.Column('schoolName', db.String(200))
+    school_type = db.Column('schoolType', db.String(100))
+    city = db.Column('city', db.String(50))
+    state = db.Column('state', db.String(50))
+    country_id = db.Column('countryId', db.Integer, db.ForeignKey('country.id'))
+    # is_current = db.Column('IsCurrent', db.Boolean)
+    added_time = db.Column('addedTime', db.DateTime)
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # TODO: Below are necessary for now, but should remove once all tables have been defined
-    resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
+    resume_id = db.Column('resumeId', db.BigInteger, nullable=True)
 
     # Relationships
     candidate_education_degrees = relationship('CandidateEducationDegree', backref='candidate_education')
 
-    def __repr__(self):
-        return "<CandidateEducation (candidate_id = %r)>" % self.candidate_id
+    # def __repr__(self):
+    #     return "<CandidateEducation (candidate_id = %r)>" % self.candidate_id
 
 
 class CandidateEducationDegree(db.Model):
@@ -657,7 +657,7 @@ class CandidateEducationDegree(db.Model):
     gpa_denom = db.Column('GpaDenom', db.DECIMAL)
     added_time = db.Column('AddedTime', db.DateTime)
     classification_type_id = db.Column('ClassificationTypeId', db.Integer, db.ForeignKey('classification_type.id')) # todo: create parent table
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
     start_time = db.Column('StartTime', db.DateTime)
     end_time = db.Column('EndTime', db.DateTime)
 
@@ -676,7 +676,7 @@ class CandidateEducationDegreeBullet(db.Model):
     concentration_type = db.Column('ConcentrationType', db.String(200))
     comments = db.Column('Comments', db.String(5000))
     added_time = db.Column('AddedTime', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<CandidateEducationDegreeBullet (candidate_education_degree_id=' %r')>" % self.candidate_education_degree_id
@@ -686,7 +686,7 @@ class CandidateExperience(db.Model):
     __tablename__ = 'candidate_experience'
     id = db.Column(db.BigInteger, primary_key=True)
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
-    list_order = db.Column('ListOrder', db.SmallInteger)
+    # list_order = db.Column('ListOrder', db.SmallInteger)
     organization = db.Column('Organization', db.String(150))
     position = db.Column('Position', db.String(150))
     city = db.Column('City', db.String(50))
@@ -698,7 +698,7 @@ class CandidateExperience(db.Model):
     end_year = db.Column('EndYear', db.Integer)
     is_current = db.Column('IsCurrent', db.Boolean, default=False)
     added_time = db.Column('AddedTime', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # TODO: Below are necessary for now, but should remove once all tables have been defined
     resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
@@ -706,8 +706,8 @@ class CandidateExperience(db.Model):
     # Relationships
     candidate_experience_bullets = relationship('CandidateExperienceBullet', backref='candidate_experience')
 
-    def __repr__(self):
-        return "<CandidateExperience (candidate_id=' %r)>" % self.candidate_id
+    # def __repr__(self):
+    #     return "<CandidateExperience (candidate_id=' %r)>" % self.candidate_id
 
 
 class CandidateExperienceBullet(db.Model):
@@ -717,7 +717,7 @@ class CandidateExperienceBullet(db.Model):
     list_order = db.Column('ListOrder', db.SmallInteger)
     description = db.Column('Description', db.String(10000))
     added_time = db.Column('AddedTime', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<CandidateExperienceBullet (candidate_experience_id=' %r')>" % self.candidate_experience_id
@@ -732,7 +732,7 @@ class CandidateSkill(db.Model):
     added_time = db.Column('AddedTime', db.DateTime)
     total_months = db.Column('TotalMonths', db.Integer)
     last_used = db.Column('LastUsed', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # TODO: Below are necessary for now, but should remove once all tables have been defined
     resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
@@ -748,7 +748,7 @@ class CandidateUnidentified(db.Model):
     title = db.Column('Title', db.String(100))
     description = db.Column('Description', db.Text)
     added_time = db.Column('AddedTime', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<CandidateUnidentified (title=' %r')>" % self.title
@@ -759,7 +759,7 @@ class University(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Name', db.String(255))
     state_id = db.Column('StateId', db.Integer, db.ForeignKey('state.id'))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<University (name=' %r')>" % self.name
@@ -772,7 +772,7 @@ class CandidateCustomField(db.Model):
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     custom_field_id = db.Column('CustomFieldId', db.Integer, db.ForeignKey('custom_field.id'))
     added_time = db.Column('AddedTime', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<CandidateCustomField (id = %r)>" % self.id
@@ -788,8 +788,13 @@ class CandidateSubscriptionPreference(db.Model):
         return "<ClassificationType (code = %r)>" % self.code
 
 
-
-
+class ClassificationType(db.Model):
+    __tablename__ = 'classification_type'
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column('code', db.String(255))
+    description = db.Column('description', db.String(255))
+    notes = db.Column('notes', db.String(1000))
+    list_order = db.Column('listOrder', db.Integer)
 
 
 
