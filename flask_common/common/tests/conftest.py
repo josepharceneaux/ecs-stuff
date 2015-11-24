@@ -5,12 +5,14 @@ import random, string, uuid
 # Third Party
 import pytest, requests
 from ..utils.common_functions import get_or_create
+from faker import Faker
 
 # Application Specific
 from ..models.db import db
 from ..models.user import (Client, Domain, User, Token)
-from ..models.misc import (Culture, Organization)
+from ..models.misc import (Culture, Organization, AreaOfInterest)
 
+fake = Faker()
 ISO_FORMAT = '%Y-%m-%d %H:%M'
 USER_HASHED_PASSWORD = 'pbkdf2(1000,64,sha512)$a97efdd8d6b0bf7f$55de0d7bafb29a88e7596542aa927ac0e1fbc30e94db2c5215851c72294ebe01fb6461b27f0c01b9bd7d3ce4a180707b6652ba2334c7a2b0fcb93c946aa8b4ec'
 USER_PASSWORD = 'Talent15'
@@ -87,7 +89,31 @@ def sample_user(test_domain, request):
         password=USER_HASHED_PASSWORD,
         email='sample_user@{}.com'.format(randomword(7)), added_time=datetime(2050, 4, 26)
     )
-    user, created = get_or_create(db.session, User, defaults=None, **user_attrs)
+    user, created = get_or_create(session=db.session, model=User, defaults=None, **user_attrs)
+    if created:
+        db.session.add(user)
+        db.session.commit()
+
+    def fin():
+        try:
+            db.session.delete(sample_user)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            pass
+
+    request.addfinalizer(fin)
+    return user
+
+
+@pytest.fixture(autouse=True)
+def sample_user_2(test_domain, request):
+    user_attrs = dict(
+        domain_id=test_domain.id, first_name='Jamtry', last_name='Jonas',
+        password=USER_HASHED_PASSWORD,
+        email='sample_user@{}.com'.format(randomword(7)), added_time=datetime(2050, 4, 26)
+    )
+    user, created = get_or_create(session=db.session, model=User, defaults=None, **user_attrs)
     if created:
         db.session.add(user)
         db.session.commit()
@@ -111,7 +137,7 @@ def test_domain(test_org, test_culture, request):
         organization_id=test_org.id, is_fair_check_on=0, is_active=1,
         default_culture_id=test_culture.id, expiration=datetime(2050, 4, 26)
     )
-    test_domain, created = get_or_create(db.session, Domain, defaults=None, **domain_attrs)
+    test_domain, created = get_or_create(session=db.session, model=Domain, defaults=None, **domain_attrs)
     if created:
         db.session.add(test_domain)
         db.session.commit()
@@ -168,7 +194,19 @@ def test_org(request):
     return test_org
 
 
+def areas_of_interest_for_domain(user):
+    """
+    Function will add AreaOfInterest to db and return their IDs
+    :type user: User
+    :rtype      [AreaOfInterest]
+    """
+    areas_of_interest = [{'name': fake.job()}, {'name': fake.job()}]
+    for area_of_interest in areas_of_interest:
+        db.session.add(AreaOfInterest(domain_id=user.domain_id, name=area_of_interest['name']))
+
+    db.session.commit()
+    return AreaOfInterest.get_domain_areas_of_interest(user.domain_id)
+
+
 def randomword(length):
     return ''.join(random.choice(string.lowercase) for i in xrange(length))
-
-

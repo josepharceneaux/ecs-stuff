@@ -37,8 +37,25 @@ class AreaOfInterest(db.Model):
     parent_id = db.Column('parentId', db.BigInteger, db.ForeignKey('area_of_interest.id'))
     # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
 
-    # def __repr__(self):
-    #     return "<AreaOfInterest (parent_id=' %r')>" % self.parent_id
+    def __repr__(self):
+        return "<AreaOfInterest (name='%r')>" % self.name
+
+    @classmethod
+    def get_area_of_interest(cls, domain_id, name):
+        """
+        :rtype  AreaOfInterest
+        """
+        return cls.query.filter(db.and_(
+            AreaOfInterest.domain_id == domain_id,
+            AreaOfInterest.name == name
+        )).first()
+
+    @classmethod
+    def get_domain_areas_of_interest(cls, domain_id):
+        """
+        :rtype  [AreaOfInterest]
+        """
+        return cls.query.filter(AreaOfInterest.domain_id == domain_id).all()
 
 
 class Culture(db.Model):
@@ -116,6 +133,26 @@ class Country(db.Model):
 
     def __repr__(self):
         return "<Country (name=' %r')>" % self.name
+
+    @classmethod
+    def country_id_from_name_or_code(cls, name_or_code):
+        if name_or_code:
+            country_row = cls.query.filter(db.or_(Country.name == name_or_code,
+                                                  Country.code == name_or_code)).first()
+            if country_row:
+                return country_row.id
+        return 1
+
+    @classmethod
+    def country_name_from_country_id(cls, country_id):
+        if not country_id:
+            return 'United States'
+
+        country = cls.query.filter(Country.id == country_id).first()
+        if country:
+            return country.name
+        else:
+            return 'United States'
 
 
 # Even though the table name is major I'm keeping the model class singular.
