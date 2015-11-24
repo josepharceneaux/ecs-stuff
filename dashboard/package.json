@@ -1,9 +1,17 @@
 {
   "name": "gt-dashboard",
-  "description": "GetTalent Dashboard",
   "version": "0.1.0",
-  "author": "Haohong Xu",
+  "description": "GetTalent Dashboard",
+  "authors": [
+    "Haohong Xu",
+    "Jordan Seaberg"
+  ],
   "license": "MIT",
+  "homepage": "https://github.com/gettalent/talent-flask-services",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gettalent/talent-flask-services.git"
+  },
   "scripts": {
     "init": "npm install",
     "install": "bower install",
@@ -33,9 +41,11 @@
     "gulp-bump": "^0.3.1",
     "gulp-bytediff": "^0.2.1",
     "gulp-concat": "^2.6.0",
+    "gulp-consolidate": "^0.1.2",
     "gulp-csso": "^1.0.0",
     "gulp-filter": "^2.0.2",
     "gulp-header": "^1.2.2",
+    "gulp-iconfont": "^5.0.0",
     "gulp-if": "^1.2.5",
     "gulp-imagemin": "^2.3.0",
     "gulp-inject": "^1.3.1",
@@ -48,6 +58,7 @@
     "gulp-nodemon": "^2.0.3",
     "gulp-plumber": "^1.0.1",
     "gulp-print": "^1.1.0",
+    "gulp-rename": "^1.2.2",
     "gulp-rev": "^5.0.1",
     "gulp-rev-replace": "^0.4.2",
     "gulp-sass": "^2.0.1",
@@ -79,6 +90,7 @@
     "q": "^1.4.1",
     "sinon": "^1.15.3",
     "sinon-chai": "^2.8.0",
+    "wiredep": "^2.2.2",
     "yargs": "^3.12.0"
   }
 }

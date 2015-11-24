@@ -1,11 +1,9 @@
 (function () {
-
     'use strict';
 
     angular.module('app.admin')
         .directive('gtAdmin', directiveFunction)
         .controller('AdminController', ControllerFunction);
-
 
     // ----- directiveFunction -----
     directiveFunction.$inject = [];
@@ -16,6 +14,7 @@
         var directive = {
             restrict: 'E',
             templateUrl: 'components/admin/admin.html',
+            replace: true,
             scope: {
             },
             controller: 'AdminController',
@@ -24,7 +23,6 @@
 
         return directive;
     }
-
 
     // ----- ControllerFunction -----
     ControllerFunction.$inject = ['logger'];
@@ -38,5 +36,4 @@
             logger.log('Activated Admin View');
         }
     }
-
 })();

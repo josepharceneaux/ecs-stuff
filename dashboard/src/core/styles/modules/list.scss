@@ -1,0 +1,55 @@
+// ---------------------------------------------------
+// Modules / Lists
+// ---------------------------------------------------
+
+.list {
+  padding-top: $padding--normal;
+  margin: 0;
+  padding: 0;
+
+  li {
+    padding-bottom: $padding--tiny;
+    list-style-type: none;
+    margin: 0;
+  }
+}
+
+.list--sideBySide {
+  float: left;
+  width: 100%;
+  margin: $margin--line 0;
+
+  li {
+    display: block;
+    float: left;
+    width: 50%;
+    padding-bottom: $padding--tiny;
+  }
+}
+
+.list--spaced {
+  @extend .list;
+
+  li {
+    padding-bottom: $padding--large;
+  }
+}
+
+.list--buffer {
+  @extend .list;
+
+  padding-top: $padding--large;
+  padding-bottom: $padding--large;
+}
+
+.list--blocks {
+  @extend .list--spaced;
+
+  h3 {
+    color: $color--blue;
+  }
+
+  p {
+    color: $color--gray;
+  }
+}
