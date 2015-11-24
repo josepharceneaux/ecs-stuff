@@ -23,7 +23,7 @@ from helpers import (
 
 # Sample data
 from candidate_sample_data import (
-    generate_single_candidate_data, candidate_educations, candidate_work_experience,
+    generate_single_candidate_data, candidate_educations, candidate_experience,
     candidate_work_preference, candidate_phones, candidate_military_service,
     candidate_preferred_locations, candidate_skills, candidate_social_network
 )
@@ -204,7 +204,7 @@ def test_create_candidate_educations(sample_user, user_auth):
     assert can_edu_degree_bullets[0]['major'] == 'mathematics'
 
 ######################## CandidateExperience ########################
-def test_create_candidate_work_experience(sample_user, user_auth):
+def test_create_candidate_experience(sample_user, user_auth):
     """
     Test:   Create CandidateExperience for Candidate
     Expect: 201
@@ -215,7 +215,7 @@ def test_create_candidate_work_experience(sample_user, user_auth):
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
 
     # Create Candidate
-    data = candidate_work_experience()
+    data = candidate_experience()
     create_resp = post_to_candidate_resource(token, data=data)
     print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
     assert create_resp.status_code == 201
@@ -230,7 +230,7 @@ def test_create_candidate_work_experience(sample_user, user_auth):
     can_exp_data = data['candidate']['work_experiences'][0]
     assert isinstance(can_experience, list)
     assert can_experience[0]['company'] == can_exp_data['organization']
-    assert can_experience[0]['role'] == can_exp_data['position']
+    assert can_experience[0]['position'] == can_exp_data['position']
     assert can_experience[0]['city'] == can_exp_data['city']
     assert can_experience[0]['country'] == 'United States'
     assert can_experience[0]['is_current'] == can_exp_data['is_current']
@@ -343,8 +343,6 @@ def test_create_candidate_phones(sample_user, user_auth):
     assert isinstance(can_phones, list)
     assert can_phones[0]['label'] == can_phones_data[0]['label'].capitalize()
     assert can_phones[0]['value'] == can_phones_data[0]['value']
-    assert can_phones[1]['label'] == can_phones_data[1]['label'].capitalize()
-    assert can_phones[1]['value'] == can_phones_data[1]['value']
 
 # TODO: test with invalid phone numbers, bad lables, e.g. label: vork, number: sdgfka
 

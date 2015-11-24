@@ -14,8 +14,7 @@ from candidate_service.common.tests.conftest import *
 
 # Helper functions
 from helpers import (
-    response_info, post_to_candidate_resource, get_from_candidate_resource,
-    check_for_id
+    response_info, post_to_candidate_resource, get_from_candidate_resource, check_for_id
 )
 
 ######################## Candidate ########################

@@ -143,7 +143,7 @@ class CandidateResource(Resource):
 
             # Prevent user from adding area(s) of interest to other domains
             areas_of_interest = candidate_dict.get('areas_of_interest', [])
-            area_of_interest_ids = [area_of_interest['id'] for area_of_interest in areas_of_interest]
+            area_of_interest_ids = [area_of_interest.get('id') for area_of_interest in areas_of_interest]
             is_authorized = is_area_of_interest_authorized(area_of_interest_ids=area_of_interest_ids,
                                                            user_domain_id=authed_user.domain_id)
             if not is_authorized:

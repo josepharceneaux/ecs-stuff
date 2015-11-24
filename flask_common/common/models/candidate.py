@@ -658,7 +658,7 @@ class CandidateAddress(db.Model):
     resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
 
     def __repr__(self):
-        return "<CandidateAddress (candidate_id = %r)>" % self.candidate_id
+        return "<CandidateAddress (id = %r)>" % self.id
 
 
 class CandidateEducation(db.Model):
