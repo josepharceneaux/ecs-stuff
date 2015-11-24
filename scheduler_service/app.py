@@ -23,39 +23,6 @@ from datetime import datetime, timedelta
 # Run Celery from terminal as
 # celery -A scheduler_service.app.app.celery worker
 
-# start the scheduler
-# from sms_campaign_service.gt_scheduler import GTScheduler
-from apscheduler.events import EVENT_JOB_ERROR
-from apscheduler.events import EVENT_JOB_EXECUTED
-# from apscheduler.jobstores.redis_store import RedisJobStore
-
-from apscheduler.schedulers.background import BackgroundScheduler as Scheduler
-from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
-scheduler = Scheduler()
-# scheduler.add_jobstore(RedisJobStore(), 'redisJobStore')
-scheduler.add_jobstore(SQLAlchemyJobStore(url='sqlite:///job_store_new.sqlite'), 'shelve')
-# scheduler.add_jobstore(ShelveJobStore('job_store'), 'shelve')
-
-
-
-def my_listener(event):
-    if event.exception:
-        print('The job crashed :(\n')
-        print str(event.exception.message) + '\n'
-    else:
-        print('The job worked :)')
-        if event.job.next_run_time > event.job.kwargs['end_date']:
-            stop_job(event.job)
-
-
-def stop_job(job):
-    scheduler.unschedule_job(job)
-    print 'job(id: %s) has stopped' % job.id
-
-scheduler.add_listener(my_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
-scheduler.start()
-# jobs = scheduler.get_jobs()
-
 
 
 
@@ -63,24 +30,7 @@ scheduler.start()
 import flask
 from flask import request, Flask
 from flask import render_template
-from flask.ext.cors import CORS
-from flask.ext.restful import Api
-from werkzeug.utils import redirect
 
-# Application specific imports
-# from utilities import get_all_tasks
-# from utilities import http_request
-# from scheduler_service.utilities import get_smart_list_ids
-
-
-
-# Enable CORS
-CORS(app, resources={
-    r'/*': {
-        'origins': '*',
-        'allow_headers': ['Content-Type', 'Authorization']
-    }
-})
 
 
 @app.route('/index')
@@ -96,7 +46,8 @@ def tasks():
 
 @app.route('/jobs/', methods=['GET'])
 def get_jobs():
-    jobs = scheduler.get_jobs()
+
+    jobs = app.aps_scheduler.get_jobs(jobstore='shelve')
     print 'Jobs'
     print jobs
     if jobs:
@@ -114,7 +65,7 @@ def get_jobs():
 def shutdown():
     print('scheduler is going to shutdown')
     try:
-        scheduler.shutdown()
+        app.aps_scheduler.shutdown()
     except Exception as e:
         return str(e)
     return "Scheduler shutdown successfully"
@@ -124,11 +75,32 @@ def shutdown():
 def start():
     print('scheduler is going to restart')
     try:
-        scheduler.start()
+        app.aps_scheduler.start()
     except Exception as e:
         return str(e)
     return "Scheduler restarted successfully"
 
+
+@app.route('/stop/job/', methods=['GET'])
+def stop_job():
+    job_id = request.args.get('job_id')
+    app.aps_scheduler.remove_job(job_id, 'shelve')
+    print 'It seems job is stopped'
+    return "It seems job is stopped"
+
+@app.route('/pause/job/', methods=['GET'])
+def pause_job():
+    job_id = request.args.get('job_id')
+    app.aps_scheduler.pause_job(job_id, 'shelve')
+    print 'It seems job is paused'
+    return "It seems job is paused"
+
+@app.route('/resume/job/', methods=['GET'])
+def resume_job():
+    job_id = request.args.get('job_id')
+    app.aps_scheduler.resume_job(job_id, 'shelve')
+    print 'It seems job is resumed'
+    return "It seems job is resumed"
 
 @app.route('/schedule/', methods=['GET', 'POST'])
 def task():
@@ -143,7 +115,9 @@ def task():
     func = request.args.get('func', 'send_sms_campaign')
     arg1 = request.args.get('arg1')
     arg2 = request.args.get('arg2')
-    job = scheduler.add_job(callback, 'interval', jobstore='shelve', kwargs={'func': func}, minutes=2, misfire_grace_time=60)
+    job = app.aps_scheduler.add_job(callback, 'interval', jobstore='shelve', kwargs={'func': func}, minutes=1,
+                            start_date=start_date.strftime("%Y-%m-%d %H:%M:%S"), end_date=end_date.strftime("%Y-%m-%d %H:%M:%S"))
+                            # misfire_grace_time=10)
     # job = scheduler.add_interval_job(callback,
     #                                  seconds=repeat_time_in_sec,
     #                                  start_date=start_date,
@@ -160,6 +134,35 @@ def task():
     else:
         raise InternalServerError
 
+@app.route('/schedulenew/', methods=['GET', 'POST'])
+def tasknew():
+    """
+    This is a test end point which sends sms campaign
+    :return:
+    """
+    start_date = datetime.now()
+    start_date.replace(minute=(start_date.minute + 1))
+    end_date = start_date + timedelta(minutes=5)
+    repeat_time_in_sec = int(request.args.get('frequency', 20))
+    func = request.args.get('func', 'send_sms_campaign')
+    arg1 = request.args.get('arg1')
+    arg2 = request.args.get('arg2')
+    job = app.aps_scheduler.add_job(callback, 'interval', jobstore='shelve', kwargs={'func': func}, minutes=2, misfire_grace_time=60)
+    # job = scheduler.add_interval_job(callback,
+    #                                  seconds=repeat_time_in_sec,
+    #                                  start_date=start_date,
+    #                                  args=[arg1, arg2, end_date],
+    #                                  kwargs=dict(func=func, end_date=end_date),
+    #                                  misfire_grace_time=60,
+    #                                  jobstore='shelve')
+
+    print 'Task has been added and will run at %s ' % start_date
+    return 'Task has been added to queue!!!'
+    # response = send_sms_campaign(ids, body_text)
+    if response:
+        return flask.jsonify(**response), response['status_code']
+    else:
+        raise InternalServerError
 
 def callback(*args, **kwargs):
     print('args', args)
@@ -173,6 +176,7 @@ def callback(*args, **kwargs):
 def error_handler(e):
     return str(e)
 
-if __name__ == '__main__':
-    app.run(port=8009)
 
+if __name__ == '__main__':
+    app.debug = True
+    app.run(port=8009, use_reloader=False)
