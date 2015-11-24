@@ -1,0 +1,51 @@
+// ---------------------------------------------------
+// Modules / Login
+// ---------------------------------------------------
+.login__view {
+  display: table;
+  width: 100%;
+  height: 100%;
+  background-color: $color--blue;
+  background-image: url('../images/backgrounds/login-peaks.png');
+  background-position: bottom;
+  background-size: cover;
+}
+
+.login__view--content {
+  display: table-cell;
+  width: 100%;
+  height: 100%;
+  vertical-align: middle;
+}
+
+.login__view--form-container {
+  position: relative;
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.login__view--logo-container {
+  text-align: center;
+  position: relative;
+  display: block;
+  padding-bottom: $padding--giant;
+}
+
+.login__view--logo {
+  text-indent: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  display: inline-block;
+  width: 254px;
+  height: 67px;
+  background-image: url('../images/logo--main--white.svg');
+}
+
+.login__view--form-title {
+  font-size: $font-size--jumbo;
+  margin-bottom: $padding--small;
+}
+
+.login__view--forgot-password {
+  margin-left: $padding--normal;
+}

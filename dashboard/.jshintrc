@@ -18,7 +18,7 @@
 
     // true: Require adherance to ECMAScript 3 specification
     // Set to true if you need your program to be executable in older browsers such as IE 6-9
-    "es3": true,
+    "es3": false,
 
     // true: Require filtering for..in loops with obj.hasOwnProperty()
     "forin": true,

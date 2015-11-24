@@ -1,0 +1,31 @@
+// ---------------------------------------------------
+// Modules / Exceprt
+// ---------------------------------------------------
+//
+
+.dragDrop {
+  padding: $padding--mega $padding--giant;
+  text-align: center;
+  cursor: pointer;
+
+  a {
+    color: inherit;
+  }
+}
+
+.dragDrop__icon {
+  font-size: $font-size--damn;
+  display: block;
+  padding-top: $padding--tiny;
+  padding-bottom: $padding--tiny;
+}
+
+.dragDrop__icon--link {
+  font-size: $font-size--damn;
+  display: inline-block;
+  padding: $padding--teeny;
+
+  span {
+    vertical-align: middle;
+  }
+}

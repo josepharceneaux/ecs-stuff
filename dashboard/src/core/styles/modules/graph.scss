@@ -1,0 +1,163 @@
+// ---------------------------------------------------
+// Modules / Graph
+// ---------------------------------------------------
+
+// -----
+// Area Graph
+// -----
+
+.areaGraph {
+  color: inherit;
+  margin-bottom: -7px;
+  cursor: pointer;
+}
+
+.areaGraph__point {
+  transition: opacity $easing--slow;
+  opacity: 0;
+  fill: none;
+  stroke: $color--white;
+  stroke-width: 1;
+  stroke-opacity: 0.50;
+}
+
+.areaGraph__point__text {
+  font-size: 1.55em;
+  stroke: none;
+  fill: $color--white;
+}
+
+svg.areaGraph__canvas {
+  overflow: visible;
+}
+
+.areaGraph__area {
+  fill: #78cbe4;
+  fill-opacity: 0.48;
+}
+
+.areaGraph__area--alt {
+  fill: #9ef6dc;
+  fill-opacity: 0.40;
+}
+
+.areaGraph__notch {
+  fill: $color--white;
+  fill-opacity: .45;
+}
+
+.areaGraph__bar {
+  stroke-width: 1;
+  stroke: $color--white;
+  stroke-opacity: 0.30;
+}
+
+.areaGraph__xAxis__label {
+  font-size: .9em;
+  opacity: 0;
+
+  @include helper--media($breakpoint--medium) {
+    opacity: 1;
+  }
+}
+
+.areaGraph__notch {
+  opacity: 0;
+
+  @include helper--media($breakpoint--medium) {
+    opacity: 1;
+  }
+}
+
+
+// -----
+// Line Graph
+// -----
+
+svg.lineGraph__canvas {
+  margin-bottom: $margin--row;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+  overflow: visible;
+
+  @include helper--media($breakpoint--full) {
+    margin-bottom: 0;
+  }
+}
+
+.lineGraph__line {
+  stroke: $color--green;
+  stroke-width: 4;
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.lineGraph__xAxis__line {
+  stroke: #f2f4f5;
+  stroke-width: 2;
+  fill: none;
+}
+
+.lineGraph__point {
+  transition: fill $easing--normal, stroke $easing--normal;
+  fill: transparent;
+
+  &:hover {
+    fill: $color--green;
+    stroke: transparent;
+  }
+}
+
+.lineGraph__pointGroup {
+  &:hover {
+    cursor: pointer;
+  }
+}
+
+.lineGraph__marker {
+  stroke: #DCE6EF;
+  stroke-width: 2;
+  fill: none;
+}
+
+// -----
+// Circle Graph
+// -----
+
+.circleGraph {
+  color: inherit;
+}
+
+svg.circleGraph__canvas {
+  margin-top: $margin--row;
+  margin-bottom: $margin--row;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+  overflow: visible;
+
+  @include helper--media($breakpoint--full) {
+    margin-bottom: 0;
+  }
+}
+
+.circleGraph__circle {
+  fill: none;
+  stroke: $color--white;
+  stroke-dasharray: 10, 10;
+  stroke-width: 1;
+}
+
+.circleGraph__progress {
+  fill: none;
+  stroke: $color--white;
+  stroke-width: 15;
+  stroke-linejoin: round;
+}
+
+.circleGraph__text {
+  font-size: $font-size--mega;
+  fill: $color--white;
+}

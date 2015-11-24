@@ -1,0 +1,43 @@
+// ---------------------------------------------------
+// Modules / Icons
+// ---------------------------------------------------
+
+@include helper--embed-font('gettalent-icons', '../fonts/gettalent-icons');
+
+.icon {
+  font-family: $font--icons;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  speak: none;
+  display: inline;
+}
+
+.icon--campaigns    { @extend .icon; &:after { content: ''; } }
+.icon--dashboard    { @extend .icon; &:after { content: ''; } }
+.icon--settings     { @extend .icon; &:after { content: ''; } }
+.icon--pipeline     { @extend .icon; &:after { content: ''; } }
+.icon--tools        { @extend .icon; &:after { content: ''; } }
+.icon--upload       { @extend .icon; &:after { content: ''; } }
+.icon--search       { @extend .icon; &:after { content: ''; } }
+.icon--checked      { @extend .icon; &:after { content: ''; } }
+.icon--unchecked    { @extend .icon; &:after { content: ''; } }
+.icon--file         { @extend .icon; &:after { content: ''; } }
+.icon--computer     { @extend .icon; &:after { content: ''; } }
+.icon--close        { @extend .icon; &:after { content: ''; } }
+.icon--save         { @extend .icon; &:after { content: ''; } }
+.icon--twitter      { @extend .icon; &:after { content: ''; } }
+.icon--linkedin     { @extend .icon; &:after { content: ''; } }
+.icon--rasiedHand   { @extend .icon; &:after { content: ''; } }
+.icon--calander     { @extend .icon; &:after { content: ''; } }
+.icon--mailOpen     { @extend .icon; &:after { content: ''; } }
+.icon--mail         { @extend .icon; &:after { content: ''; } }
+.icon--thumbsUp     { @extend .icon; &:after { content: ''; } }
+.icon--speech       { @extend .icon; &:after { content: ''; } }
+.icon--work         { @extend .icon; &:after { content: ''; } }
+.icon--education    { @extend .icon; &:after { content: ''; } }
+.icon--dropbox      { @extend .icon; &:after { content: ''; } }
+.icon--box          { @extend .icon; &:after { content: ''; } }
+.icon--googleDrive  { @extend .icon; &:after { content: ''; } }
+.icon--lock         { @extend .icon; &:after { content: ''; } }

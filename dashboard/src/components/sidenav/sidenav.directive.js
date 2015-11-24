@@ -6,7 +6,6 @@
         .directive('gtSidenav', directiveFunction)
         .controller('SidenavController', ControllerFunction);
 
-
     // ----- directiveFunction -----
     directiveFunction.$inject = [];
 
@@ -16,6 +15,7 @@
         var directive = {
             restrict: 'E',
             templateUrl: 'components/sidenav/sidenav.html',
+            replace: true,
             scope: {
             },
             controller: 'SidenavController',
@@ -52,9 +52,7 @@
                 contentCampaigns: 'Content Campaigns',
                 pushNotifications: 'Push Notifications'
             },
-            admin: {},
-            help: {}
+            admin: {}
         };
     }
-
 })();

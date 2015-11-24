@@ -11,9 +11,10 @@
         'app.campaigns',
         'app.dashboard',
         'app.footer',
-        'app.help',
+        'app.forgot-password',
         'app.login',
-        'app.pipeline',
+        'app.main',
+        'app.pipelines',
         'app.sidenav',
         'app.topnav'
     ]);
