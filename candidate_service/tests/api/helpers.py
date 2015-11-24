@@ -6,9 +6,7 @@ import requests
 import json
 
 # Candidate's sample data
-from candidate_service.common.tests.sample_data import (
-    generate_single_candidate_data, candidate_data_for_update
-)
+from candidate_sample_data import generate_single_candidate_data, candidate_data_for_update
 
 
 class CandidateResourceUrl():

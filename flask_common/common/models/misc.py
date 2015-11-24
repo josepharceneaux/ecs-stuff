@@ -33,24 +33,29 @@ class AreaOfInterest(db.Model):
     __tablename__ = 'area_of_interest'
     id = db.Column(db.BigInteger, primary_key=True)
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
-    description = db.Column('Description', db.String(255))
+    name = db.Column('Description', db.String(255))
     parent_id = db.Column('ParentId', db.BigInteger, db.ForeignKey('area_of_interest.id'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
-        return "<AreaOfInterest (parent_id=' %r')>" % self.parent_id
+        return "<AreaOfInterest (name='%r')>" % self.name
 
     @classmethod
-    def get_area_of_interest(cls, domain_id, description):
+    def get_area_of_interest(cls, domain_id, name):
         """
-        Function fetches and returns the AreaOfInterest matching description
-        in the specified domain
         :rtype  AreaOfInterest
         """
         return cls.query.filter(db.and_(
-            AreaOfInterest.description == domain_id,
-            AreaOfInterest.description == description
+            AreaOfInterest.domain_id == domain_id,
+            AreaOfInterest.name == name
         )).first()
+
+    @classmethod
+    def get_domain_areas_of_interest(cls, domain_id):
+        """
+        :rtype  [AreaOfInterest]
+        """
+        return cls.query.filter(AreaOfInterest.domain_id == domain_id).all()
 
 
 class Culture(db.Model):

@@ -70,7 +70,7 @@ def fetch_candidate_info(candidate_id, fields=None):
 
     addresses = None
     if get_all_fields or 'addresses' in fields:
-        addresses = candidate_addresses(candidate=candidate)
+        addresses = candidate_addresses(candidate_id=candidate_id)
 
     work_experiences = None
     if get_all_fields or 'work_experiences' in fields:
@@ -171,12 +171,14 @@ def candidate_phones(candidate):
              } for phone in phones]
 
 
-def candidate_addresses(candidate):
+def candidate_addresses(candidate_id):
     """
-    :type candidate:    Candidate
-    :rtype              list
+    :type candidate_id:     int
+    :rtype                  list
     """
-    addresses = candidate.candidate_addresses
+    # Default CandidateAddress must be returned first
+    addresses = db.session.query(CandidateAddress).filter_by(candidate_id=candidate_id).\
+        order_by(CandidateAddress.is_default.desc())
     return [{'id': address.id,
              'address_line_1': address.address_line_1,
              'address_line_2': address.address_line_2,
@@ -203,10 +205,11 @@ def candidate_experiences(candidate_id):
                  CandidateExperience.start_month.desc())
     return [{'id': experience.id,
              'company': experience.organization,
-             'role': experience.position,
+             'position': experience.position,
              'start_date': date_of_employment(year=experience.start_year, month=experience.start_month or 1),
              'end_date': date_of_employment(year=experience.end_year, month=experience.end_month or 1),
              'city': experience.city,
+             'state': experience.state,
              'country': country_name_from_country_id(country_id=experience.country_id),
              'is_current': experience.is_current,
              'experience_bullets': candidate_experience_bullets(experience=experience),
@@ -327,10 +330,9 @@ def candidate_areas_of_interest(candidate_id):
     :type candidate_id: int
     :rtype              list
     """
-    areas_of_interest = db.session.query(CandidateAreaOfInterest). \
-        filter_by(candidate_id=candidate_id)
+    areas_of_interest = db.session.query(CandidateAreaOfInterest).filter_by(candidate_id=candidate_id)
     return [{'id': db.session.query(AreaOfInterest).get(interest.area_of_interest_id).id,
-             'name': db.session.query(AreaOfInterest).get(interest.area_of_interest_id).description
+             'name': db.session.query(AreaOfInterest).get(interest.area_of_interest_id).name
              } for interest in areas_of_interest]
 
 
@@ -594,7 +596,7 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's areas_of_interest
     if areas_of_interest:
-        _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest, domain_id)
+        _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest)
 
     # Add or update Candidate's custom_field(s)
     if custom_fields:
@@ -851,32 +853,22 @@ def _add_or_update_candidate_addresses(candidate_id, addresses):
             db.session.add(CandidateAddress(**address_dict))
 
 
-def _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest, domain_id):
+def _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest):
     """
     Function will update CandidateAreaOfInterest or create a new one.
     """
     for area_of_interest in areas_of_interest:
 
-        description = area_of_interest.get('description')
-        aoi = AreaOfInterest.get_area_of_interest(domain_id, description)
+        aoi_id = area_of_interest['id']
+        candidate_aoi = CandidateAreaOfInterest.get_areas_of_interest(candidate_id=candidate_id,
+                                                                      area_of_interest_id=aoi_id)
 
-        if aoi:  # Update
-            aoi_id = aoi.id
-
-            candidate_area_of_interest_query = db.session.query(CandidateAreaOfInterest). \
-                filter_by(candidate_id=candidate_id)
-
-            candidate_area_of_interest_query.update({'area_of_interest_id': aoi_id})
+        if candidate_aoi:  # Update
+            can_aoi_query = db.session.query(CandidateAreaOfInterest).filter_by(candidate_id=candidate_id)
+            can_aoi_query.update({'area_of_interest_id': aoi_id})
 
         else:  # Add
-            new_aoi = AreaOfInterest(domain_id=domain_id, description=description)
-            db.session.add(new_aoi)
-            db.session.flush()
-
-            db.session.add(CandidateAreaOfInterest(
-                candidate_id=candidate_id,
-                area_of_interest_id=new_aoi.id
-            ))
+            db.session.add(CandidateAreaOfInterest(candidate_id=candidate_id, area_of_interest_id=aoi_id))
 
 
 def _add_or_update_candidate_custom_field_ids(candidate_id, custom_fields, added_time):
@@ -1096,8 +1088,7 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time):
                     db.session.add(CandidateExperienceBullet(**experience_bullet_dict))
 
         else:  # Add
-            experience_dict.update(dict(candidate_id=candidate_id, added_time=added_time,
-                                        resume_id=candidate_id))
+            experience_dict.update(dict(candidate_id=candidate_id, added_time=added_time, resume_id=candidate_id))
             experience = CandidateExperience(**experience_dict)
             db.session.add(experience)
             db.session.flush()

@@ -5,12 +5,14 @@ import random, string, uuid
 # Third Party
 import pytest, requests
 from ..utils.common_functions import get_or_create
+from faker import Faker
 
 # Application Specific
 from ..models.db import db
 from ..models.user import (Client, Domain, User, Token)
-from ..models.misc import (Culture, Organization)
+from ..models.misc import (Culture, Organization, AreaOfInterest)
 
+fake = Faker()
 ISO_FORMAT = '%Y-%m-%d %H:%M'
 USER_HASHED_PASSWORD = 'pbkdf2(1000,64,sha512)$a97efdd8d6b0bf7f$55de0d7bafb29a88e7596542aa927ac0e1fbc30e94db2c5215851c72294ebe01fb6461b27f0c01b9bd7d3ce4a180707b6652ba2334c7a2b0fcb93c946aa8b4ec'
 USER_PASSWORD = 'Talent15'
@@ -190,6 +192,20 @@ def test_org(request):
 
     request.addfinalizer(fin)
     return test_org
+
+
+def areas_of_interest_for_domain(user):
+    """
+    Function will add AreaOfInterest to db and return their IDs
+    :type user: User
+    :rtype      [AreaOfInterest]
+    """
+    areas_of_interest = [{'name': fake.job()}, {'name': fake.job()}]
+    for area_of_interest in areas_of_interest:
+        db.session.add(AreaOfInterest(domain_id=user.domain_id, name=area_of_interest['name']))
+
+    db.session.commit()
+    return AreaOfInterest.get_domain_areas_of_interest(user.domain_id)
 
 
 def randomword(length):
