@@ -72,6 +72,8 @@ from sms_campaign_service.utilities import url_conversion
 from sms_campaign_service.utilities import send_sms_campaign
 from sms_campaign_service.utilities import get_smart_list_ids
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
+from sms_campaign_service.common.models.sms_campaign import SmsCampaign, SmsCampaignSend, \
+    SmsCampaignBlast
 from sms_campaign_service.app.app_utils import ApiResponse
 from sms_campaign_service.custom_exceptions import ApiException
 from sms_campaign_service.common.error_handling import InternalServerError
@@ -94,29 +96,114 @@ def hello_world():
     return 'Welcome to SMS Campaign Service'
 
 
-@app.route('/sms_campaign/', methods=['POST'])
+@app.route('/campaigns/', methods=['GET'])
+def get_sms_campaigns():
+    try:
+        user_id = int(request.args['user_id'])
+        camp_obj = SmsCampaignBase(user_id=user_id)
+        campaigns = camp_obj.get_all_campaigns()
+        all_campaigns = [campaign.to_json() for campaign in campaigns]
+        data = {'count': len(all_campaigns),
+                'campaigns': all_campaigns}
+        return flask.jsonify(**data), 200
+    except Exception as error:
+        logger.exception("Error occurred while retrieving SMS campaigns.")
+        return error.message
+
+
+@app.route('/campaigns/', methods=['POST'])
 def sms_campaign_create():
     try:
         camp_obj = SmsCampaignBase(user_id=int(request.form['user_id']))
         campaign_id = camp_obj.save(request.form)
         logger.debug('Campaign(id:%s) has been saved.' % campaign_id)
         return 'Campaign(id:%s) has been saved.' % campaign_id
-    except:
+    except Exception as error:
         logger.exception("Error occurred while saving SMS campaign.")
-    return ''
+        return error.message
 
 
-@app.route('/sms_campaign/<int:campaign_id>/send/', methods=['POST'])
-def sms_campaign_send(campaign_id=None):
+@app.route('/campaigns/', methods=['DELETE'])
+def delete_campaigns():
+    try:
+        camp_obj = SmsCampaignBase(user_id=int(request.args['user_id']))
+        delete_status = camp_obj.delete_all_campaigns()
+        if delete_status:
+            result = {'message': 'All campaigns have been deleted from database',
+                      'status_code': 200}
+            return flask.jsonify(**result), 200
+        else:
+            'Error while deleting campaigns from database'
+    except Exception as error:
+        logger.exception("Error occurred while deleting SMS campaign.")
+        return error.message
+
+
+@app.route('/campaigns/<int:campaign_id>/', methods=['GET'])
+def get_campaign_by_id(campaign_id=None):
+    try:
+        campaign = SmsCampaign.get_by_id(campaign_id)
+        return flask.jsonify(**campaign.to_json()), 200
+    except Exception as error:
+        logger.exception("Error occurred while retrieving SMS campaign.")
+        return error.message
+
+
+@app.route('/campaigns/<int:campaign_id>/', methods=['POST'])
+def post_campaign_by_id(campaign_id=None):
+    try:
+        camp_obj = SmsCampaignBase(user_id=int(request.args['user_id']))
+        camp_obj.create_or_update_sms_campaign(request.form, campaign_id=campaign_id)
+        result = {'message': 'SMS Campaign(id:%s) has been updated in database' % campaign_id,
+                  'status_code': 200}
+        return flask.jsonify(**result), 200
+    except Exception as error:
+        logger.exception("Error occurred while retrieving SMS campaign.")
+        return error.message
+
+
+@app.route('/campaigns/<int:campaign_id>/', methods=['DELETE'])
+def delete_campaign_by_id(campaign_id=None):
+    try:
+        delete_status = SmsCampaign.delete(campaign_id)
+        if delete_status:
+            result = {'message': 'SMS Campaign(id:%s) has been deleted in database' % campaign_id,
+                      'status_code': 200}
+            return flask.jsonify(**result), 200
+        else:
+            'Error while deleting campaign from database'
+    except Exception as error:
+        logger.exception("Error occurred while deleting SMS campaign.")
+        return error.message
+
+
+@app.route('/campaigns/<int:campaign_id>/sms_campaign_sends/', methods=['GET'])
+def sms_campaign_sends(campaign_id=None):
+    try:
+        user_id = request.args.get('user_id')
+        assert user_id and campaign_id
+        campaign_blasts = SmsCampaignBlast.get_by_campaign_id(campaign_id)
+        campaign_sends = SmsCampaignSend.get_by_campaign_id(campaign_blasts.id)
+        campaign_sends_json = [campaign_send.to_json() for campaign_send in campaign_sends]
+        data = {'count': len(campaign_sends_json),
+                'campaigns': campaign_sends_json}
+        return flask.jsonify(**data), 200
+    except Exception as error:
+        logger.exception("Error occurred while sending SMS campaign.")
+        return error.message
+
+
+@app.route('/campaigns/<int:campaign_id>/send/', methods=['POST'])
+def send_campaign(campaign_id=None):
     try:
         user_id = request.args.get('user_id')
         assert user_id and campaign_id
         camp_obj = SmsCampaignBase(user_id=user_id)
         total_sends = camp_obj.process_send(campaign_id=campaign_id)
         return 'Campaign(id:%s) has been sent to %s candidate(s).' % (campaign_id, total_sends)
-    except:
+    except Exception as error:
         logger.exception("Error occurred while sending SMS campaign.")
-    return ''
+        return error.message
 
 
 @app.route('/sms_campaign/<int:campaign_id>/url_redirection/<int:url_conversion_id>/', methods=['GET'])

@@ -42,10 +42,6 @@ class CampaignBase(object):
         i.e. sms_campaign or push_notification_campaign etc. and returns the ID of
         new record in db.
 
-    * get_campaign_data(self): [abstract]
-        This will basically get the campaign data from UI and will map it to save in database.
-         Child classes will implement this.
-
     * process_send(self, campaign_id=None): [abstract]
         This method is used send the campaign to candidates. Child classes will implement this.
 
@@ -84,15 +80,6 @@ class CampaignBase(object):
         """
         This saves the campaign in database table.
         e.g. in sms_campaign or email_campaign etc.
-        Child class will implement this.
-        :return:
-        """
-        pass
-
-    @abstractmethod
-    def get_campaign_data(self, form_data):
-        """
-        This will get the data from the UI according to specific campaign.
         Child class will implement this.
         :return:
         """

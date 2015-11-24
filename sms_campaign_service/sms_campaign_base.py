@@ -55,13 +55,15 @@ class SmsCampaignBase(CampaignBase):
             provided "user_id".
         - Sets total_sends to 0.
 
-    * save(self, form_data):
+    *  get_all_campaigns(self)
+       This gets all the campaigns created by current user
+
+    *  delete_all_campaigns(self)
+        This deletes all the campaings of a user from database
+
+    * save(self, form_data)
         This method is used to save the campaign in db table 'sms_campaign' and
         returns the ID of fresh record in db.
-
-    * get_campaign_data(self):
-        This will basically get the campaign data from UI and separate it from
-        scheduling data.
 
     * campaign_create_activity(self, sms_campaign)
         This creates activity that SMS campaign created by xyz user
@@ -166,13 +168,32 @@ class SmsCampaignBase(CampaignBase):
         self.url_conversion_id = None
         self.total_sends = 0
 
+    def get_all_campaigns(self):
+        """
+        This gets all the campaigns created by current user
+        :return: all campaigns associated to with user
+        :rtype: list
+        """
+        return SmsCampaign.get_by_user_phone_id(self.user_phone.id)
+
+    def delete_all_campaigns(self):
+        """
+        This deletes all the campaigns of a user from database table "sms_campaign"
+        :return:
+        """
+        campaigns = self.get_all_campaigns()
+        status_list = [SmsCampaign.delete(campaign) for campaign in campaigns]
+        if all(status_list):
+            return True
+        else:
+            return False
+
     def save(self, form_data):
         """
         This saves the campaign in database table sms_campaign in following steps:
 
-            1- Get Mapped data (from UI to save in db)
-            2- Save campaign in database
-            3 Create activity that
+            1- Save campaign in database
+            2 Create activity that
                 "%(user_name)s created an SMS campaign: '%(campaign_name)s'"
 
         :param form_data: data from UI
@@ -181,32 +202,15 @@ class SmsCampaignBase(CampaignBase):
         :rtype: int
         """
         if form_data:
-            campaign_data = self.get_campaign_data(form_data)
             # Save Campaign in database table "sms_campaign"
-            sms_campaign = self.create_or_update_sms_campaign(campaign_data)
+            sms_campaign = self.create_or_update_sms_campaign(form_data)
             # Create Activity
             self.campaign_create_activity(sms_campaign)
             return sms_campaign.id
         else:
             logger.error('save: No data received from UI.')
 
-    def get_campaign_data(self, form_data):
-        """
-        This will map the data from the UI for sms campaign and returns a dictionary
-        to save campaign data in db table 'sms_campaign'.
-        :param form_data: data from the UI
-        :type form_data: dict
-        :return: mapped data to be saved in db
-        :rtype: dict
-        """
-        return dict(name=form_data['campaign_name'],
-                    user_phone_id=self.user_phone.id,
-                    sms_body_text=form_data['body_text'],
-                    frequency_id=form_data['frequency_id'],
-                    added_time=datetime.now())
-
-    @staticmethod
-    def create_or_update_sms_campaign(sms_campaign_data, campaign_id=None):
+    def create_or_update_sms_campaign(self, sms_campaign_data, campaign_id=None):
         """
         - Here we save/update sms_campaign in db.
 
@@ -223,11 +227,21 @@ class SmsCampaignBase(CampaignBase):
         **See Also**
         .. see also:: save() method in SmsCampaignBase class.
         """
+        data = dict(name=sms_campaign_data.get('name'),
+                    user_phone_id=self.user_phone.id,
+                    sms_body_text=sms_campaign_data.get('sms_body_text'),
+                    frequency_id=sms_campaign_data.get('frequency_id'),
+                    added_time=datetime.now(),
+                    send_time=sms_campaign_data.get('send_time'),
+                    stop_time=sms_campaign_data.get('stop_time'))
         if campaign_id:
             sms_campaign = SmsCampaign.get_by_campaign_id(campaign_id)
-            sms_campaign.update(**sms_campaign_data)
+            for key, value in data.iteritems():
+                # update old values with new ones if provided, else preserve old ones.
+                data[key] = value if value else getattr(sms_campaign, key)
+            sms_campaign.update(**data)
         else:
-            sms_campaign = SmsCampaign(**sms_campaign_data)
+            sms_campaign = SmsCampaign(**data)
             SmsCampaign.save(sms_campaign)
         return sms_campaign
 

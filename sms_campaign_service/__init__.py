@@ -7,7 +7,7 @@ from flask import Flask
 
 # Application Specific
 from sms_campaign_service.common.models.db import db
-from sms_campaign_service.model_helpers import add_model_helpers
+from sms_campaign_service.models_utils import add_model_helpers
 from sms_campaign_service.common.error_handling import register_error_handlers
 
 flask_app = Flask(__name__)

@@ -40,7 +40,7 @@ class SmsCampaign(db.Model):
             db.and_(
                 cls.user_phone_id == user_phone_id,
             )
-        ).one()
+        ).all()
 
 
 class SmsCampaignBlast(db.Model):
@@ -99,6 +99,15 @@ class SmsCampaignSend(db.Model):
                 cls.candidate_id == candidate_id,
             )
         ).first()
+
+    @classmethod
+    def get_by_campaign_id(cls, campaign_blast_id):
+        assert campaign_blast_id
+        return cls.query.filter(
+            db.and_(
+                cls.sms_campaign_blast_id == campaign_blast_id,
+            )
+        ).all()
 
 
 class SmsCampaignReply(db.Model):
