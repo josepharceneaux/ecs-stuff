@@ -43,11 +43,9 @@ class CandidateResource(Resource):
             1. Fetch a candidate via two methods:
                 I.  GET /v1/candidates/:id
                     Takes an integer as candidate's ID, parsed from kwargs
-
                 OR
                 II. GET /v1/candidates/:email
                     Takes a valid email address, parsed from kwargs
-
         :return:    A dict of candidate info
                     404 status if candidate is not found
         """
@@ -86,14 +84,11 @@ class CandidateResource(Resource):
         """
         POST /web/api/candidates
         input: {'candidates': [candidateObject1, candidateObject2, ...]}
-
         Creates new candidate(s).
-
         Takes a JSON dict containing:
             - a candidates key and a list of candidate-object(s) as values
         Function only accepts JSON dict.
         JSON dict must contain candidate's email address(s).
-
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
         # Authenticate user
@@ -196,12 +191,10 @@ class CandidateResource(Resource):
     def patch(self, **kwargs):
         """
         Function can update candidate(s).
-
         Takes a JSON dict containing:
             - a candidates key and a list of candidate-object(s) as values
         Function only accepts JSON dict.
         JSON dict must contain candidate's ID.
-
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
         # Authenticated user
@@ -306,11 +299,9 @@ class CandidateResource(Resource):
     def delete(self, **kwargs):
         """
         Function will delete candidate objects from CloudSearch and database.
-
         Caveats:
         - Only candidate's owner can delete candidate.
         - Candidate must be in the same domain as authed_user
-
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
         # Authenticate user
