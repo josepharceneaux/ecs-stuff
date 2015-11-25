@@ -2,8 +2,9 @@ from scheduler_service.common.error_handling import register_error_handlers
 from scheduler_service.common.models import db
 from scheduler_service.model_helpers import add_model_helpers
 from tasks import app
-__author__ = 'saad'
 import logging as logger
+
+__author__ = 'saad'
 
 logger.basicConfig()
 

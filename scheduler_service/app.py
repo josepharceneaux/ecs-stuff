@@ -14,9 +14,6 @@ __author__ = 'zohaib'
     Error handlers are added at the end of file.
 """
 # Standard  Library imports
-import json
-import time
-import traceback
 from datetime import datetime, timedelta
 
 # Initializing App. This line should come before any imports from models
@@ -26,11 +23,9 @@ from datetime import datetime, timedelta
 # celery -A scheduler_service.app.app.celery worker
 
 # start the scheduler
-# from sms_campaign_service.gt_scheduler import GTScheduler
 from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.events import EVENT_JOB_EXECUTED
 from apscheduler.jobstores.redis import RedisJobStore
-from apscheduler.jobstores.memory import MemoryJobStore
 
 from apscheduler.schedulers.background import BackgroundScheduler
 job_store = RedisJobStore()
@@ -41,7 +36,6 @@ executors = {
     'default': ThreadPoolExecutor(20)
 }
 scheduler = BackgroundScheduler(jobstore=jobstores, executors=executors)
-# scheduler.add_jobstore(job_store, 'redisJobStore')
 scheduler.add_jobstore(job_store)
 
 
@@ -52,29 +46,16 @@ def my_listener(event):
     else:
         print('The job worked :)')
         if event.job.next_run_time > event.job.kwargs['end_date']:
-            stop_job(event.job)
+            print 'Stopping job'
 
-
-def stop_job(job):
-    scheduler.unschedule_job(job)
-    print 'job(id: %s) has stopped' % job.id
 
 scheduler.add_listener(my_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
-scheduler.start()
 
 
 # Third party imports
-import flask
-from flask import request, Flask
+from flask import request
 from flask import render_template
 from flask.ext.cors import CORS
-from flask.ext.restful import Api
-from werkzeug.utils import redirect
-
-# Application specific imports
-# from utilities import get_all_tasks
-# from utilities import http_request
-# from scheduler_service.utilities import get_smart_list_ids
 
 app = init_app()
 
@@ -99,56 +80,68 @@ def tasks():
     return render_template('tasks.html', tasks=tasks)
 
 
-@app.route('/shutdown/')
-def shutdown():
-    print('scheduler is going to shutdown')
+@app.route('/resume/<job_id>')
+def job_resume(job_id):
     try:
-        scheduler.shutdown()
+        scheduler.resume_job(job_id=job_id)
     except Exception as e:
         return str(e)
-    return "Scheduler shutdown successfully"
+    return "Job resumed successfully"
 
 
-@app.route('/start/')
-def start():
-    print('scheduler is going to restart')
+@app.route('/stop/<job_id>')
+def job_stop(job_id):
     try:
-        scheduler.start()
+        scheduler.pause_job(job_id=job_id)
     except Exception as e:
         return str(e)
-    return "Scheduler restarted successfully"
+    return "Job stopped successfully"
+
+
+@app.route('/unschedule/<job_id>')
+def unschedule(job_id):
+    try:
+        scheduler.remove_job(job_id=job_id)
+    except Exception as e:
+        return str(e)
+    return "Job removed successfully"
 
 
 @app.route('/schedule/', methods=['GET', 'POST'])
-def task():
+def schedule_job():
     """
     This is a test end point which sends sms campaign
     :return:
     """
     start_date = datetime.now()
     start_date.replace(second=(start_date.second + 15) % 60)
-    end_date = start_date + timedelta(minutes=2)
+    end_date = start_date + timedelta(hours=2)
     repeat_time_in_sec = int(request.args.get('frequency', 10))
     func = request.args.get('func', 'send_sms_campaign')
     arg1 = request.args.get('arg1')
     arg2 = request.args.get('arg2')
-    job = scheduler.add_job(callback_function,
+    try:
+        scheduler.add_job(on_task_added,
                             'interval',
                             seconds=repeat_time_in_sec,
                             start_date=start_date,
                             end_date=end_date,
                             args=[arg1, arg2, end_date],
                             kwargs=dict(func=func, end_date=end_date))
+    except Exception as e:
+        print e
+        return e
     print 'Task has been added and will run at %s ' % start_date
     return 'Task has been added to queue!!!'
-    # response = send_sms_campaign(ids, body_text)
-    if response:
-        return flask.jsonify(**response), response['status_code']
-    else:
-        raise InternalServerError
 
 
-def callback_function(*args, **kwargs):
+@app.route("/get-task/<job_id>")
+def get_tasks(job_id):
+    task = scheduler.get_job(job_id=job_id)
+    return task
+
+
+def on_task_added(*args, **kwargs):
     print('args', args)
     if kwargs['func'] in methods:
         methods[kwargs['func']].apply_async(args, kwargs)
@@ -168,8 +161,10 @@ app.jinja_loader = my_loader
 def error_handler(e):
     return str(e)
 
+
+scheduler.start()
+
 if __name__ == '__main__':
     app.run(port=8009)
-    jobs = scheduler.get_jobs()
-    pass
+
 
