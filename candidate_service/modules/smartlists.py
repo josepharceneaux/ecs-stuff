@@ -1,7 +1,7 @@
 import json
 
 from candidate_service.candidate_app import db, logger
-from candidate_service.common.models.smart_list import SmartListCandidate
+from candidate_service.common.models.smart_list import SmartListCandidate, SmartList
 from candidate_service.common.models.candidate import Candidate, CandidateEmail, CandidateSocialNetwork, CandidatePhone
 
 __author__ = 'jitesh'
@@ -86,3 +86,32 @@ def create_smartlist_dict(smart_list):
             "name": smart_list.name
         }
     }
+
+
+def save_smartlist(user_id, name, search_params=None, candidate_ids=None):
+    """
+    Creates a smart or dumb list.
+
+    :param user_id: list owner
+    :param name: name of list
+    :param search_params *: if None, will be dumb list
+    :param candidate_ids *: only set if dumb list
+    * only one parameter should be present: either `search_params` or `candidate_ids`
+    :return: Newly created smartlist row object
+    """
+    smart_list = SmartList(name=name,
+                           user_id=user_id,
+                           search_params=search_params)
+    db.session.add(smart_list)
+    db.session.flush()
+
+    if candidate_ids:
+        # if candidate_ids are there store in SmartListCandidate table.
+        for candidate_id in candidate_ids:
+            row = SmartListCandidate(smart_list_id=smart_list.id, candidate_id=candidate_id)
+            db.session.add(row)
+    db.session.commit()
+
+    # TODO Add activity
+    return smart_list
+

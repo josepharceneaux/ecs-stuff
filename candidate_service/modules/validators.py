@@ -1,13 +1,13 @@
 """
 Functions related to candidate_service/candidate_app/api validations
 """
+from sqlalchemy import and_
 from candidate_service.candidate_app import db
 from candidate_service.common.models.candidate import Candidate
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
 from candidate_service.common.models.email_marketing import EmailCampaign
-from candidate_service.common.models.smart_list import SmartList
-from candidate_service.common.error_handling import InvalidUsage
+from candidate_service.common.error_handling import InvalidUsage, ForbiddenError
 
 def does_candidate_belong_to_user(user_row, candidate_id):
     """
@@ -110,7 +110,6 @@ def validate_list_belongs_to_domain(smart_list, user_id):
         # if user id is same then smart list belongs to user
         return True
     user = User.query.get(user_id)
-    domain_id = user.domain_id
     # TODO: Revisit; check for alternate query.
     domain_users = db.session.query(User.id).filter_by(domain_id=user.domain_id).all()
     domain_user_ids = [row[0] for row in domain_users]
@@ -118,3 +117,50 @@ def validate_list_belongs_to_domain(smart_list, user_id):
         # if user belongs to same domain i.e. smartlist belongs to domain
         return True
     return False
+
+
+def _validate_and_format_smartlist_post_data(data, user_id):
+    """Validates request.form data against required parameters
+    strips unwanted whitespaces (if present)
+    creates list of candidate ids (if present)
+    returns list of candidate ids or search params
+    """
+    smartlist_name = data.get('name')
+    candidate_ids = data.get('candidate_ids')  # comma separated ids
+    search_params = data.get('search_params')
+    # TODO: check if not and if not smart_list_name.strip() if both are equal. Check 400 error code
+    if not smartlist_name:
+        raise InvalidUsage(error_message="Missing input: `name` is required for creating list", error_code=400)
+    # any of the parameters "search_params" or "candidate_ids" should be present
+    if not candidate_ids and not search_params:
+        raise InvalidUsage(error_message="Missing input: Either `search_params` or `candidate_ids` are required",
+                           error_code=400)
+    # Both the parameters will create a confusion, so only one parameter should be present. Its better to notify user.
+    if candidate_ids and search_params:
+        raise InvalidUsage(
+            error_message="Bad input: `search_params` and `candidate_ids` both are present. Service accepts only one",
+            error_code=400)
+
+    formatted_request_data = {'name': smartlist_name.strip(),
+                              'candidate_ids': None,
+                              'search_params': None}
+    if candidate_ids:
+        try:
+            # Remove duplicate ids, in case user accidentally added duplicates
+            # remove unwanted whitespaces and convert unicode to long
+            candidate_ids = [long(candidate_id.strip()) for candidate_id in set(candidate_ids.split(',')) if candidate_id]
+        except ValueError:
+            raise InvalidUsage("Incorrect input: Candidate ids must be numeric value and separated by comma")
+        # Check if provided candidate ids are present in our database and also belongs to auth user's domain
+        if not validate_candidate_ids_belongs_to_user_domain(candidate_ids, user_id):
+            raise ForbiddenError("Provided list of candidates does not belong to user's domain")
+        formatted_request_data['candidate_ids'] = candidate_ids
+    else:  # if not candidate_ids then it is search_params
+        formatted_request_data['search_params'] = search_params.strip()
+    return formatted_request_data
+
+
+def validate_candidate_ids_belongs_to_user_domain(candidate_ids, user_id):
+    user = User.query.get(user_id)
+    return db.session.query(Candidate.id).join(User, Candidate.user_id == User.id).filter(
+        and_(User.domain_id == user.domain_id, Candidate.id.in_(candidate_ids))).count() == len(candidate_ids)

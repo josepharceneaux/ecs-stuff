@@ -2,8 +2,9 @@ from flask import request
 from flask_restful import Resource
 
 from candidate_service.common.utils.auth_utils import require_oauth
-from ...modules.smartlists import get_candidates, create_smartlist_dict
-from ...modules.validators import validate_and_parse_request_data, validate_list_belongs_to_domain
+from ...modules.smartlists import get_candidates, create_smartlist_dict, save_smartlist
+from ...modules.validators import (validate_and_parse_request_data, validate_list_belongs_to_domain,
+                                   _validate_and_format_smartlist_post_data)
 from candidate_service.common.error_handling import ForbiddenError
 from candidate_service.common.models.smart_list import SmartList
 
@@ -61,10 +62,18 @@ class SmartlistResource(Resource):
             raise ForbiddenError("List does not belong to user's domain")
         return create_smartlist_dict(smart_list)
 
-    def post(self, **kwargs):
+    def post(self):
         """
         Creates list with search params or with list of candidate ids
-        :param kwargs:
-        :return:
+        Input data:
+            "name": Name with which smart list will be created
+            "search_params": search parameters for smart list
+                or  "candidate_ids": if not search_params then candidate_ids should be present
+        :return: smartlist id
         """
-        pass
+        user_id = request.user.id
+        # request.form data must pass through this function, as this will create data in desired format
+        data = _validate_and_format_smartlist_post_data(request.form, user_id)
+        smart_list = save_smartlist(user_id=user_id, name=data.get('name'), search_params=data.get('search_params'),
+                                    candidate_ids=data.get('candidate_ids'))
+        return {'smartlist': {'id': smart_list.id}}
