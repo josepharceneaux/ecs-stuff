@@ -644,7 +644,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     # Make search request with error handling
 
     search_service = _cloud_search_domain_connection()
-    time.sleep(30)
+
     try:
         results = search_service.search(**params)
     except Exception:
@@ -683,7 +683,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     max_pages = int(math.ceil(total_found / float(search_limit))) if search_limit else 1
     fields_data = [data['fields'] for data in matches]
     if request_vars.get('fields'):
-        return _get_candidates_fields_with_given_filters(request_vars, fields_data)
+        return _get_candidates_fields_with_given_filters(fields_data)
     else:
         search_results = dict()
         search_results['candidates'] = fields_data
@@ -1150,7 +1150,7 @@ def _get_max_score(params, search_service):
     return max_score
 
 
-def _get_candidates_fields_with_given_filters(request_vars, fields_data):
+def _get_candidates_fields_with_given_filters(fields_data):
     """
     Get only the filtered candidate fields
     :param request_vars:

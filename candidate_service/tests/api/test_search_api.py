@@ -3,14 +3,13 @@ Test cases for candidate-search-service-API
 """
 from candidate_service.tests.modules.test_talent_cloud_search import populate_candidates, VARIOUS_US_LOCATIONS, \
     create_area_of_interest_facets, get_or_create_status
-from common.tests.conftest import *
-from candidate_service.candidate_app import db
+from candidate_service.common.tests.conftest import *
 from candidate_service.common.models.candidate import Candidate, CandidateSource
 from candidate_service.app.views.talent_cloud_search import upload_candidate_documents
 import requests
 import random
 import datetime
-
+import uuid
 
 BASE_URI = "http://127.0.0.1:8005/candidates"
 
@@ -306,7 +305,6 @@ def test_search_query_with_name(sample_user, user_auth):
     response = get_response_from_authorized_user(user_auth, sample_user, '?q=Naveen')
     resultant_candidates = response.json()['candidate_ids']
     _assert_results(candidate_ids, resultant_candidates)
-    assert response.status_code == 200
 
 
 def test_search_get_only_requested_fields(sample_user, user_auth):

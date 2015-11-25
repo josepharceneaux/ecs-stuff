@@ -2,8 +2,10 @@
 
 from flask import jsonify, request, Blueprint
 import talent_cloud_search
-from common.utils.auth_utils import require_oauth
+from candidate_service.common.utils.auth_utils import require_oauth
 from candidate_service.candidate_app import logger
+import time
+
 mod = Blueprint('candidate_search_api', __name__)
 
 
@@ -24,11 +26,11 @@ def search():
 
     # Get the parameters passed in the url
     location = request.args.get('location')
-    user = request.args.get('user_ids')
+    owner_ids = request.args.get('user_ids')
     skills = request.args.get('skills')
     areas_of_interest = request.args.get('area_of_interest_ids')
-    status = request.args.get("status_ids")
-    source = request.args.get('source_ids')
+    status_ids = request.args.get("status_ids")
+    source_ids = request.args.get('source_ids')
     min_exp = request.args.get('minimum_experience')
     max_exp = request.args.get('maximum_experience')
     position = request.args.get('job_title')
@@ -48,14 +50,14 @@ def search():
 
     # Dictionary with all searchable filters
     request_vars_dict = {"location": location, "skillDescriptionFacet": skills,
-                         "areaOfInterestIdFacet": areas_of_interest, "statusFacet": status, "sourceFacet": source,
-                         "minimum_years_experience": min_exp, "maximum_years_experience": max_exp,
-                         "positionFacet": position, "degreeTypeFacet": degree, "schoolNameFacet": school,
-                         "concentrationTypeFacet": concentration, "degree_end_year_from": degree_end_year_from,
-                         "degree_end_year_to": degree_end_year_to, "serviceStatus": service_status, "branch": branch,
-                         "highestGrade": grade, "military_end_date_from": military_end_date_from,
-                         "military_end_date_to": military_end_date_to, "usernameFacet": user, "q": query,
-                         "limit": limit, "fields": fields}
+                         "areaOfInterestIdFacet": areas_of_interest, "statusFacet": status_ids,
+                         "sourceFacet": source_ids, "minimum_years_experience": min_exp,
+                         "maximum_years_experience": max_exp, "positionFacet": position, "degreeTypeFacet": degree,
+                         "schoolNameFacet": school, "concentrationTypeFacet": concentration,
+                         "degree_end_year_from": degree_end_year_from, "degree_end_year_to": degree_end_year_to,
+                         "serviceStatus": service_status, "branch": branch, "highestGrade": grade,
+                         "military_end_date_from": military_end_date_from, "military_end_date_to": military_end_date_to,
+                         "usernameFacet": owner_ids, "q": query, "limit": limit, "fields": fields}
 
     # Shortlist all the params passed in url
     request_vars = {}
@@ -66,9 +68,10 @@ def search():
     # Get domain_id from auth_user
     domain_id = request.user.domain_id
     logger.info("Searching candidates in the domain:%s" % domain_id)
+    search_limit = int(limit) if limit else 15
 
     # If limit is not requested then the Search limit would be taken as 15, the default value
     candidate_search_results = talent_cloud_search.search_candidates(domain_id, request_vars,
-                                                                     int(limit) if limit else 15)
+                                                                     search_limit)
 
     return jsonify(candidate_search_results)

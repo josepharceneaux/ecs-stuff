@@ -14,7 +14,7 @@ from sqlalchemy import and_, or_
 
 
 def users_in_domain(domain_id):
-        """Returns all the users for provided domain id, Uses cache
+        """ Returns all the users for provided domain id, Uses cache
         params: domain_id: Domain id
         returns: database users in given domain
         :param domain_id
@@ -316,7 +316,7 @@ def create_candidate_from_params(owner_user_id, candidate_id=None, first_name=No
                 end_year=end_year,
                 is_current=is_current,
                 added_time=added_time,
-                resume_id=resume_id  # todo: this is to be removed once all tables have been added & migrated
+                resume_id=candidate_id  # todo: this is to be removed once all tables have been added & migrated
             )
             db.session.add(experience)
             db.session.commit()
@@ -348,7 +348,8 @@ def create_candidate_from_params(owner_user_id, candidate_id=None, first_name=No
         lat_lon = get_coordinates(zip_code, city, state) if (not latitude or not longitude) else "%s,%s" % (latitude, longitude)
         # Validate US zip codes
         zip_code = sanitize_zip_code(zip_code)
-        db.session.add(CandidateAddress(candidate_id=candidate_id,
+        db.session.add(CandidateAddress(resume_id=candidate_id,  # TODO: this is to be removed once all tables have been added & migrated
+                                        candidate_id=candidate_id,
                                         city=city,
                                         state=state,
                                         zip_code=zip_code,
@@ -377,8 +378,12 @@ def create_candidate_from_params(owner_user_id, candidate_id=None, first_name=No
     # Add University
     if university:
         from datetime import datetime
-        candidate_education = CandidateEducation(candidate_id=candidate_id, list_order=1, school_name=university,
-                                                 country_id=country_id)
+        candidate_education = CandidateEducation(candidate_id=candidate_id,
+                                                 list_order=1,
+                                                 school_name=university,
+                                                 country_id=country_id,
+                                                 resume_id=candidate_id,
+                                                 added_time=added_time)
         db.session.add(candidate_education)
         db.session.flush()
         candidate_education_id = candidate_education.id
@@ -398,7 +403,7 @@ def create_candidate_from_params(owner_user_id, candidate_id=None, first_name=No
                 graduation_month else None,
                 start_time=datetime(year=university_start_year, month=university_start_month, day=1) if
                 university_start_year and university_start_month else None,
-                classification_type_id=classification_type_id)
+                classification_type_id=classification_type_id, added_time=added_time)
         db.session.add(candidate_education_degree)
         db.session.flush()
         candidate_education_degree_id = candidate_education_degree.id
@@ -435,7 +440,7 @@ def create_candidate_from_params(owner_user_id, candidate_id=None, first_name=No
             candidate_education_degree_id = candidate_education_degree.id
             # Insert new degree bullet
             db.session.add(CandidateEducationDegreeBullet(candidate_education_degree_id=candidate_education_degree_id,
-                                                          list_order=1, concentration_type=major))
+                                                          list_order=1, concentration_type=major, added_time=added_time))
             db.session.flush()
 
     # Add Military service
@@ -443,8 +448,8 @@ def create_candidate_from_params(owner_user_id, candidate_id=None, first_name=No
         # creating new military record
         db.session.add(CandidateMilitaryService(candidate_id=candidate_id, country_id=country_id,
                                                 service_status=military_status, highest_grade=military_grade,
-                                                branch=military_branch, to_date=military_to_date))
-
+                                                branch=military_branch, to_date=military_to_date, resume_id=candidate_id))
+        db.session.flush()
     # Custom fields
     if custom_fields_dict:
         for custom_field_id in custom_fields_dict:
@@ -483,7 +488,7 @@ def create_candidate_from_params(owner_user_id, candidate_id=None, first_name=No
                 added_time=added_time,
                 total_months=skill.get('total_months'),
                 last_used=skill.get('last_used'),
-                resume_id=resume_id  # todo: this is to be removed once all tables have been added & migrated
+                resume_id=candidate_id  # todo: this is to be removed once all tables have been added & migrated
             ))
             db.session.commit()
     # work preferences
@@ -737,7 +742,6 @@ def country_id_from_country_name_or_code(country_name_or_code):
 
     :return: Country.id
     """
-    from candidate_service.common.models.misc import Country
 
     all_countries = db.session.query(Country).all()
     if country_name_or_code:

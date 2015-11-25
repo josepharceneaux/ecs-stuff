@@ -16,13 +16,13 @@ logging.config.fileConfig(LOGGING_CONF)
 GT_ENVIRONMENT = os.environ.get('GT_ENVIRONMENT')
 if GT_ENVIRONMENT == 'dev':
     OAUTH_SERVER_URI = 'http://127.0.0.1:8001/oauth2/authorize'
-    CANDIDATE_CREATION_URI = 'http://127.0.0.1:8000/web/api/candidates.json'
+    CANDIDATE_CREATION_URI = 'http://127.0.0.1:8005/web/api/candidates.json'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@localhost/talent_local'
     LOGGER = logging.getLogger("candidate_service.dev")
     DEBUG = True
 elif GT_ENVIRONMENT == 'circle':
     OAUTH_SERVER_URI = 'http://127.0.0.1:8001/oauth2/authorize'
-    CANDIDATE_CREATION_URI = 'http://127.0.0.1:8000/web/api/candidates.json'
+    CANDIDATE_CREATION_URI = 'http://127.0.0.1:8005/web/api/candidates.json'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_ci'
     LOGGER = logging.getLogger("candidate_service.ci")
     DEBUG = True
