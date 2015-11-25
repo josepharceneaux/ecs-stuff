@@ -279,7 +279,8 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
         return new_html, new_text
     else:
         try:
-            email_response = send_email(source=campaign.email_from,
+            email_response = send_email(source='"%s" <no-reply@gettalent.com>' % campaign.email_from,
+                                        # Emails will be sent from <no-reply@gettalent.com> (verified by Amazon SES)
                                         subject=subject,
                                         html_body=new_html or None,
                                         # Can't be '', otherwise, text_body will not show in email

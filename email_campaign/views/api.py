@@ -29,7 +29,7 @@ def email_campaigns():
     Input: (post data)
         email_campaign_name
         email_subject
-        email_from: no-reply@gettalent.com  [Currently it sends emails with this email id only]
+        email_from: Name of email sender
         email_reply_to
         email_body_html
         email_body_text
