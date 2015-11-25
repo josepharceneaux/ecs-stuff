@@ -31,9 +31,3 @@ methods = {
     'send_email_campaign': send_email_campaign,
     'raise_exception': raise_exception
 }
-
-
-@celery.task(name="send_request")
-def send_request(data):
-    print(data)
-    return "data sent"

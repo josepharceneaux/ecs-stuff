@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import os
 from apscheduler.executors.pool import ThreadPoolExecutor
 import jinja2
@@ -9,40 +8,20 @@ from scheduler_service.utils import jsonify
 
 __author__ = 'zohaib'
 
-=======
->>>>>>> 85ac2aa91f35b0c62811d87bb993b4f163b3c68f
 """
     This module contains flask app startup.
     We register blueprints for different APIs with this app.
     Error handlers are added at the end of file.
 """
 # Standard  Library imports
-<<<<<<< HEAD
 from datetime import datetime
-=======
-import os
-from datetime import datetime, timedelta
->>>>>>> 85ac2aa91f35b0c62811d87bb993b4f163b3c68f
-
-# 3rd party imports
-from flask import request
-from flask import render_template
-from flask.ext.cors import CORS
 
 # Initializing App. This line should come before any imports from models
-from scheduler_service import init_app
-app = init_app()
-
-from scheduler_service.common.models.scheduler import SchedulerTask
-from scheduler_service.api.scheduler_api import scheduler_blueprint
-from scheduler_service.scheduler import scheduler
-from scheduler_service.tasks import send_sms_campaign, methods
 
 
 # Run Celery from terminal as
 # celery -A scheduler_service.app.app.celery worker
 
-<<<<<<< HEAD
 # start the scheduler
 from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.events import EVENT_JOB_EXECUTED
@@ -76,12 +55,13 @@ def my_listener(event):
 scheduler.add_listener(my_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 
 
-=======
->>>>>>> 85ac2aa91f35b0c62811d87bb993b4f163b3c68f
 # Third party imports
+from flask import request
+from flask import render_template
+from flask.ext.cors import CORS
 
+app = init_app()
 
-app.register_blueprint(scheduler_blueprint)
 # Enable CORS
 CORS(app, resources={
     r'/*': {
@@ -100,18 +80,7 @@ def index():
     return 'Welcome to SMS Campaign Service'
 
 
-<<<<<<< HEAD
 @app.route('/resume/<job_id>', methods=['POST'])
-=======
-# @app.route('/tasks/')
-# def tasks():
-#     scheduled_tasks = SchedulerTask.query.all()
-#     tasks = [task for task in scheduled_tasks]
-#     return render_template('tasks.html', tasks=tasks)
-
-
-@app.route('/resume/<job_id>')
->>>>>>> 85ac2aa91f35b0c62811d87bb993b4f163b3c68f
 def job_resume(job_id):
     """
     Resume already stopped job
@@ -246,23 +215,11 @@ def get_tasks(job_id):
     return task
 
 
-<<<<<<< HEAD
 def on_task_added(*args, **kwargs):
     if kwargs['func'] in methods:
         methods[kwargs['func']].apply_async(args, kwargs)
     else:
         raise_exception.apply_async(args, kwargs)
-=======
-
-
-
-# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# my_loader = jinja2.ChoiceLoader([
-#     app.jinja_loader,
-#     jinja2.FileSystemLoader(os.path.join(BASE_DIR, 'templates')),
-# ])
-# app.jinja_loader = my_loader
->>>>>>> 85ac2aa91f35b0c62811d87bb993b4f163b3c68f
 
 
 @app.errorhandler(Exception)
@@ -274,6 +231,6 @@ scheduler.start()
 
 
 if __name__ == '__main__':
-    app.run(port=8000)
+    app.run(port=8009)
 
 
