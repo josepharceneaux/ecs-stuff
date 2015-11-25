@@ -1,6 +1,7 @@
 var gulp = require('gulp');
 
 module.exports = function (config) {
+    config.log('Importing bump.js...');
 
     var args = config.args,
         log = config.log,
@@ -37,6 +38,4 @@ module.exports = function (config) {
             .pipe($.bump(options))
             .pipe(gulp.dest('../'));
     });
-
 };
-

@@ -25,7 +25,6 @@
     "angular-ui-router": "~0.2.15",
     "angular-oauth2": "~3.0.1",
     "bootstrap-sass": "~3.3.4",
-    "lodash": "~3.9.3",
-    "font-awesome": "~4.4.0"
+    "lodash": "~3.9.3"
   }
 }

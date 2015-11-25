@@ -1,0 +1,22 @@
+// ---------------------------------------------------
+// Modules / Code & Preformatted Text
+// ---------------------------------------------------
+
+code {
+  box-sizing: border-box;
+  margin: 0;
+  padding: $padding--teeny;
+  background-color: $color--lightGray;
+}
+
+pre {
+  code {
+    display: block;
+    padding: $padding--small $padding--tiny;
+    border-radius: $border-radius--container;
+  }
+}
+
+.code__wrap {
+  overflow-wrap: break-word;
+}
