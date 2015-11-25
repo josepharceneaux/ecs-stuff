@@ -15,7 +15,7 @@ def validate_and_format_request_data(data):
     """
     campaign_name = data.get('email_campaign_name')  # required
     email_subject = data.get('email_subject')        # required
-    email_from = data.get('email_from')              # required
+    email_from = data.get('email_from')
     reply_to = data.get('email_reply_to')
     email_body_html = data.get('email_body_html')    # required
     email_body_text = data.get('email_body_text')
@@ -30,8 +30,6 @@ def validate_and_format_request_data(data):
         raise InvalidUsage('email_campaign_name is required')  # 400 Bad request
     if email_subject is None or email_subject.strip() == '':
         raise InvalidUsage('email_subject is required')
-    if email_from is None or email_from.strip() == '':
-        raise InvalidUsage('email_from is required')
     if email_body_html is None or email_body_html.strip() == '':
         raise InvalidUsage('email_body_html is required')
     if list_ids is None or list_ids.strip() == '':
