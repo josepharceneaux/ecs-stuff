@@ -26,14 +26,14 @@ elif os.environ.get('GT_ENVIRONMENT') == 'circle':
     LOGGER = logging.getLogger("social_network_service.ci")
     DEBUG = True
 elif os.environ.get('GT_ENVIRONMENT') == 'qa':
-    APP_URL = 'http://0.0.0.0:5000'
+    APP_URL = 'http://0.0.0.0:8009'
     OAUTH_SERVER_URI = 'https://secure-webdev.gettalent.com/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!web976892@devdb.gettalent.com/talent_staging'
     LOGGER = logging.getLogger("social_network_service.qa")
     DEBUG = False
 elif os.environ.get('GT_ENVIRONMENT') == 'prod':
-    APP_URL = 'http://0.0.0.0:5000'
+    APP_URL = 'http://0.0.0.0:8009'
     OAUTH_SERVER_URI = 'https://secure.gettalent.com/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = os.environ.get('DB_STRING')
@@ -42,12 +42,5 @@ elif os.environ.get('GT_ENVIRONMENT') == 'prod':
 else:
     raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")
 if LOGGER:
-    LOGGER.info("sms_campaign_service is running in %s environment"
+    LOGGER.info("Scheduling Service is running in %s environment"
                 % os.environ.get('GT_ENVIRONMENT'))
-
-GOOGLE_API_KEY = 'AIzaSyCT7Gg3zfB0yXaBXSPNVhFCZRJzu9WHo4o'
-GOOGLE_URLSHORTENER_API_URL = 'https://www.googleapis.com/urlshortener/v1/url'
-
-TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"
-TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
-REDIRECT_URL = 'http://2ed87e65.ngrok.io/redirect'

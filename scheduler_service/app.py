@@ -1,64 +1,34 @@
-import os
-from apscheduler.executors.pool import ThreadPoolExecutor
-from celery import Celery
-import jinja2
-from scheduler_service.common.models.scheduler import SchedulerTask
-from  scheduler_service import tasks
-from scheduler_service.tasks import send_sms_campaign, methods, celery
-from scheduler_service import init_app
-__author__ = 'zohaib'
-
 """
     This module contains flask app startup.
     We register blueprints for different APIs with this app.
     Error handlers are added at the end of file.
 """
 # Standard  Library imports
+import os
 from datetime import datetime, timedelta
 
+# 3rd party imports
+from flask import request
+from flask import render_template
+from flask.ext.cors import CORS
+
 # Initializing App. This line should come before any imports from models
+from scheduler_service import init_app
+app = init_app()
+
+from scheduler_service.common.models.scheduler import SchedulerTask
+from scheduler_service.api.scheduler_api import scheduler_blueprint
+from scheduler_service.scheduler import scheduler
+from scheduler_service.tasks import send_sms_campaign, methods
 
 
 # Run Celery from terminal as
 # celery -A scheduler_service.app.app.celery worker
 
-# start the scheduler
-from apscheduler.events import EVENT_JOB_ERROR
-from apscheduler.events import EVENT_JOB_EXECUTED
-from apscheduler.jobstores.redis import RedisJobStore
-
-from apscheduler.schedulers.background import BackgroundScheduler
-job_store = RedisJobStore()
-jobstores = {
-    'redis': job_store
-}
-executors = {
-    'default': ThreadPoolExecutor(20)
-}
-scheduler = BackgroundScheduler(jobstore=jobstores, executors=executors)
-scheduler.add_jobstore(job_store)
-
-
-def my_listener(event):
-    if event.exception:
-        print('The job crashed :(\n')
-        print str(event.exception.message) + '\n'
-    else:
-        print('The job worked :)')
-        if event.job.next_run_time > event.job.kwargs['end_date']:
-            print 'Stopping job'
-
-
-scheduler.add_listener(my_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
-
-
 # Third party imports
-from flask import request
-from flask import render_template
-from flask.ext.cors import CORS
 
-app = init_app()
 
+app.register_blueprint(scheduler_blueprint)
 # Enable CORS
 CORS(app, resources={
     r'/*': {
@@ -73,11 +43,11 @@ def index():
     return 'Welcome to SMS Campaign Service'
 
 
-@app.route('/tasks/')
-def tasks():
-    scheduled_tasks = SchedulerTask.query.all()
-    tasks = [task for task in scheduled_tasks]
-    return render_template('tasks.html', tasks=tasks)
+# @app.route('/tasks/')
+# def tasks():
+#     scheduled_tasks = SchedulerTask.query.all()
+#     tasks = [task for task in scheduled_tasks]
+#     return render_template('tasks.html', tasks=tasks)
 
 
 @app.route('/resume/<job_id>')
@@ -141,20 +111,15 @@ def get_tasks(job_id):
     return task
 
 
-def on_task_added(*args, **kwargs):
-    print('args', args)
-    if kwargs['func'] in methods:
-        methods[kwargs['func']].apply_async(args, kwargs)
-    else:
-        send_sms_campaign.apply_async(args, kwargs)
 
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-my_loader = jinja2.ChoiceLoader([
-    app.jinja_loader,
-    jinja2.FileSystemLoader(os.path.join(BASE_DIR, 'templates')),
-])
-app.jinja_loader = my_loader
+
+# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# my_loader = jinja2.ChoiceLoader([
+#     app.jinja_loader,
+#     jinja2.FileSystemLoader(os.path.join(BASE_DIR, 'templates')),
+# ])
+# app.jinja_loader = my_loader
 
 
 @app.errorhandler(Exception)
@@ -165,6 +130,6 @@ def error_handler(e):
 scheduler.start()
 
 if __name__ == '__main__':
-    app.run(port=8009)
+    app.run(port=8000)
 
 
