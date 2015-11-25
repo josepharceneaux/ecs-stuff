@@ -438,7 +438,7 @@
                     <!-- Form: Select Template -->
                     <div class="col--medium-6 form__col">
                         <label class="form__label" for="selectTemplate">Select Tempalte *</label>
-                        <select class="js-fancy js-floatLabel form__input--select" name="selectTemplate" id="selectTemplate">
+                        <select gt-float-label class="js-fancy form__input--select" name="selectTemplate" id="selectTemplate">
                             <option value="">Select Template *</option>
                             <option value="zack">Template – Zack</option>
                             <option value="greg">Template – Greg</option>
@@ -497,7 +497,7 @@
                         <!-- Form: Date Needed -->
                         <div class="col--medium-6 form__col">
                             <label class="form__label" for="dateNeed">Date Needed *</label>
-                            <input gt-float-label class="js-datePicker form__input" id="dateNeed" name="dateNeed" type="text" placeholder="Date Needed *">
+                            <input gt-float-label pick-a-date="vm.dateNeeded" pick-a-date-options="{ format: 'mmmm dd, yyyy' }" ng-model="vm.dateNeededText" class="form__input" id="dateNeed" name="dateNeed" type="text" placeholder="Date Needed *">
                         </div>
                     </div>
                     <div class="form__fieldset row--expanded">
@@ -558,6 +558,186 @@
 
             </div>
         </section>
+    </div>
+
+    <div class="row--widget">
+        <form class="col--full-12 box" action="#">
+
+            <header class="box__header">
+                <h2>Create Event</h2>
+            </header>
+
+            <div class="row--expanded">
+                <!-- left half of form -->
+                <div class="col--medium-6 form__fieldset--column">
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col--stacked">
+                            <label class="form__label" for="eventTitle">Event Title</label>
+                            <input gt-float-label class="form__input" id="eventTitle" name="eventTitle" type="text" placeholder="Event Title">
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-8 form__col">
+                            <label class="form__label" for="eventType">Event Type</label>
+                            <div class="fancy-select"><select id="eventType" class="js-fancy fancified" name="eventType" style="width: 1px; height: 1px; display: block; position: absolute; top: 0px; left: 0px; opacity: 0;">
+                                <option value="">Event Type</option>
+                                <option value="eventbrite">Eventbrite</option>
+                                <option value="eventbrite02">Eventbrite 01</option>
+                            </select><div class="trigger">Event Type</div><ul class="options"><li data-raw-value="eventbrite">Eventbrite</li><li data-raw-value="eventbrite02">Eventbrite 01</li></ul></div>
+                        </div>
+
+                        <div class="col--medium-4 form__col">
+                            <h4 class="form__label--shown">Active Event?</h4>
+                            <label gt-float-label class="form__input--toggle">
+                                <input type="checkbox">
+                                <span></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col--stacked">
+                            <label class="form__label" for="eventDetails">Event Details</label>
+                            <textarea gt-float-label class="form__input--textarea" name="eventDetails" placeholder="Event Details"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-6 form__col">
+                            <label class="form__label" for="eventOrganizer">Event Organizer</label>
+                            <input gt-float-label class="form__input" id="eventOrganizer" name="eventOrganizer" type="text" placeholder="Event Organizer">
+                        </div>
+
+                        <div class="col--medium-6 form__col">
+                            <label class="form__label" for="eventOrganizerContentEmail">Event Organizer Content Email</label>
+                            <input gt-float-label class="form__input" id="eventOrganizerContentEmail" name="eventOrganizerContentEmail" type="text" placeholder="Event Organizer Content Email">
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col--stacked">
+                            <label class="form__label" for="aboutEventOrganizer">About Event Organizer</label>
+                            <label class="form__label--shown" for="aboutEventOrganizer">About Event Organizer <small class="form__instruction">Enter info here about who is organizing the event</small></label>
+                            <textarea gt-float-label class="form__input--textarea" name="aboutEventOrganizer"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col--stacked">
+                            <label class="form__label--shown" for="eventRegistrationInstructions">Event Registration Instructions</label>
+                            <textarea gt-float-label class="form__input--shortTextarea" name="eventDetails"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <!-- /left half of form -->
+
+                <!-- right half of form -->
+                <div class="col--medium-6 form__fieldset--column">
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-6 form__col">
+                            <label class="form__label" for="eventStartDate">Event Start Date</label>
+                            <input gt-float-label pick-a-date="vm.eventStartDate" pick-a-date-options="{ format: 'mmmm dd, yyyy' }" ng-model="eventStartDateText" class="form__input picker__input" id="eventStartDate" name="eventStartDate" type="text" placeholder="Event Start Date">
+                        </div>
+
+                        <div class="col--medium-6 form__col">
+                            <label class="form__label" for="eventEndDate">Event End Date</label>
+                            <input gt-float-label pick-a-date="vm.eventEndDate" pick-a-date-options="{ format: 'mmmm dd, yyyy' }" ng-model="eventEndDateText" class="form__input picker__input" id="eventEndDate" name="eventEndDate" type="text" placeholder="Event End Date">
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-6 form__col">
+                            <label class="form__label" for="eventStartTime">Event Start Time</label>
+                            <input gt-float-label pick-a-time="vm.eventStartDate" ng-model="eventStartTimeText" class="form__input picker__input" id="eventStartTime" name="eventStartTime" type="text" placeholder="Event Start Time">
+                        </div>
+
+                        <div class="col--medium-6 form__col">
+                            <label class="form__label" for="eventEndTime">Event End Time</label>
+                            <input gt-float-label pick-a-time="vm.eventEndDate" ng-model="eventEndTimeText" class="form__input picker__input" id="eventEndTime" name="eventEndTime" type="text" placeholder="Event End Time">
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col--stacked">
+                            <label class="form__label" for="locationName">Location Name</label>
+                            <input gt-float-label class="form__input" id="locationName" name="locationName" type="text" placeholder="Location Name">
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col--stacked">
+                            <label class="form__label" for="streetAddress">Street Address</label>
+                            <input gt-float-label class="form__input" id="streetAddress" name="streetAddress" type="text" placeholder="Street Address">
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-6 form__col">
+                            <label class="form__label" for="city">City</label>
+                            <input gt-float-label class="form__input" id="city" name="city" type="text" placeholder="City">
+                        </div>
+
+                        <div class="col--medium-6 form__col">
+                            <label class="form__label" for="state">State</label>
+                            <input gt-float-label class="form__input" id="state" name="state" type="text" placeholder="State">
+                        </div>
+
+                        <div class="col--medium-6 form__col">
+                            <label class="form__label" for="zip">Zip</label>
+                            <input gt-float-label class="form__input" id="zip" name="zip" type="text" placeholder="Zip">
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-6 form__col">
+                            <label class="form__label" for="eventCost">Event Cost</label>
+                            <input gt-float-label class="form__input" id="eventCost" name="eventCost" type="text" placeholder="Event Cost">
+                        </div>
+
+                        <div class="col--medium-6 form__col">
+                            <label class="form__label" for="maxAttendees">Max Attendees</label>
+                            <input gt-float-label class="form__input" id="maxAttendees" name="maxAttendees" type="number" placeholder="Max Attendees">
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col--stacked">
+                            <label class="form__label" for="SelectSmartListsToInvites">Select Smart Lists to Invite</label>
+                            <div class="fancy-select"><select id="activeEngagementCharts" class="js-fancy fancified" name="activeEngagementCharts" style="width: 1px; height: 1px; display: block; position: absolute; top: 0px; left: 0px; opacity: 0;">
+                                <option value="">Select Smart Lists to Invite</option>
+                                <option value="candidate-count-by-pipelines">Candidate Count by Pipelines</option>
+                                <option value="candidate-growth-by-pipelines">Candidate Growth by Pipelines</option>
+                                <option value="candidate-growth-by-user">Candidate Growth by User</option>
+                                <option value="candidate-opt-outs-by-pipelines">Candidate Opt-Outs by Pipelines</option>
+                                <option value="engagement-by-pipelines">Engagement by Pipelines</option>
+                            </select><div class="trigger">Select Smart Lists to Invite</div><ul class="options overflowing"><li data-raw-value="candidate-count-by-pipelines">Candidate Count by Pipelines</li><li data-raw-value="candidate-growth-by-pipelines">Candidate Growth by Pipelines</li><li data-raw-value="candidate-growth-by-user" class="">Candidate Growth by User</li><li data-raw-value="candidate-opt-outs-by-pipelines" class="">Candidate Opt-Outs by Pipelines</li><li data-raw-value="engagement-by-pipelines" class="">Engagement by Pipelines</li></ul></div>
+                            <small class="form__input-info">Candidate Leads <span class="pill">457</span></small>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col--stacked">
+                            <h4 class="form__label--shown">Event Header Image</h4>
+
+                            <label class="js-inputFile form__input--file">
+                                <input type="file" aria-label="File browser">
+                                <span data-placeholder="Choose file..."></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <!-- /right half of form -->
+            </div>
+
+            <div class="form__fieldset--footer row--expanded">
+                <div class="col--medium-12">
+                    <a class="button--blue" href="#">Save Event</a>
+                    <a class="button--blueOutline" href="#">View Event</a>
+                </div>
+            </div>
+
+        </form>
     </div>
 
     <div class="row--widget">

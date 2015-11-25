@@ -12,6 +12,7 @@
         'app.config',
 
         // 3rd Party modules
+        'pickadate',
         'toastr',
         'ui.router'
     ]);
