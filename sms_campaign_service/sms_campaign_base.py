@@ -20,7 +20,7 @@ from datetime import datetime
 
 # Application Specific
 from sms_campaign_service import logger
-from sms_campaign_service.app.app import IS_DEV
+from sms_campaign_service.common.error_handling import ResourceNotFound, ForbiddenError
 from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.user import UserPhone, User
 from sms_campaign_service.common.utils.campaign_utils import CampaignBase
@@ -235,7 +235,12 @@ class SmsCampaignBase(CampaignBase):
                     send_time=sms_campaign_data.get('send_time'),
                     stop_time=sms_campaign_data.get('stop_time'))
         if campaign_id:
-            sms_campaign = SmsCampaign.get_by_campaign_id(campaign_id)
+            try:
+                sms_campaign = SmsCampaign.get_by_campaign_id(campaign_id)
+            except:
+                logger.error('create_or_update_sms_campaign: '
+                             'Campaign(id=%s) not found.' % campaign_id)
+                raise ResourceNotFound
             for key, value in data.iteritems():
                 # update old values with new ones if provided, else preserve old ones.
                 data[key] = value if value else getattr(sms_campaign, key)

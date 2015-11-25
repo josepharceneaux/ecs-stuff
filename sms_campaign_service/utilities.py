@@ -90,13 +90,6 @@ class TwilioSMS(object):
             return 'SID of Phone Number %s is %s' % (phone_number, number[0].sid)
 
 
-def working_environment():
-    if GT_ENVIRONMENT in['dev']:
-        return True
-    else:
-        return False
-
-
 def search_link_in_text(text):
     return re.findall(r'https?://[^\s<>"]+|www\.[^\s<>"]+', text)
 
@@ -194,11 +187,6 @@ def run_func_1(func, args, end_date):
 def stop_job(job):
     sched.unschedule_job(job)
     print 'job(id: %s) has stopped' % job.id
-
-
-def get_all_tasks():
-    tasks = SchedulerTask.query.all()
-    return [task.to_json() for task in tasks]
 
 
 # @celery.task()

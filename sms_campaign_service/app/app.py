@@ -28,9 +28,6 @@ from apscheduler.jobstores.redis_store import RedisJobStore
 sched = GTScheduler()
 sched.add_jobstore(RedisJobStore(), 'redisJobStore')
 
-from sms_campaign_service.utilities import working_environment
-IS_DEV = working_environment()
-
 # from apscheduler.jobstores.shelve_store import ShelveJobStore
 # from apscheduler.scheduler import Scheduler
 # from common.utils.apscheduler.jobstores.redis_store import RedisJobStore
@@ -64,9 +61,10 @@ from flask.ext.restful import Api
 from werkzeug.utils import redirect
 
 # Application specific imports
-from restful.sms_campaign import sms_campaign_blueprint
 from sms_campaign_service import logger
-from sms_campaign_service.utilities import run_func, run_func_1, get_all_tasks
+from sms_campaign_service.app.restful.sms_campaign_api import sms_campaign_blueprint
+from sms_campaign_service.app.restful.url_conversion_api import url_conversion_blueprint
+from sms_campaign_service.utilities import run_func, run_func_1
 from social_network_service.utilities import http_request
 from sms_campaign_service.utilities import url_conversion
 from sms_campaign_service.utilities import send_sms_campaign
@@ -80,6 +78,7 @@ from sms_campaign_service.common.error_handling import InternalServerError
 
 # Register Blueprints for different APIs
 app.register_blueprint(sms_campaign_blueprint)
+app.register_blueprint(url_conversion_blueprint)
 api = Api(app)
 
 # Enable CORS
@@ -94,87 +93,6 @@ CORS(app, resources={
 @app.route('/')
 def hello_world():
     return 'Welcome to SMS Campaign Service'
-
-
-@app.route('/campaigns/', methods=['GET'])
-def get_sms_campaigns():
-    try:
-        user_id = int(request.args['user_id'])
-        camp_obj = SmsCampaignBase(user_id=user_id)
-        campaigns = camp_obj.get_all_campaigns()
-        all_campaigns = [campaign.to_json() for campaign in campaigns]
-        data = {'count': len(all_campaigns),
-                'campaigns': all_campaigns}
-        return flask.jsonify(**data), 200
-    except Exception as error:
-        logger.exception("Error occurred while retrieving SMS campaigns.")
-        return error.message
-
-
-@app.route('/campaigns/', methods=['POST'])
-def sms_campaign_create():
-    try:
-        camp_obj = SmsCampaignBase(user_id=int(request.form['user_id']))
-        campaign_id = camp_obj.save(request.form)
-        logger.debug('Campaign(id:%s) has been saved.' % campaign_id)
-        return 'Campaign(id:%s) has been saved.' % campaign_id
-    except Exception as error:
-        logger.exception("Error occurred while saving SMS campaign.")
-        return error.message
-
-
-@app.route('/campaigns/', methods=['DELETE'])
-def delete_campaigns():
-    try:
-        camp_obj = SmsCampaignBase(user_id=int(request.args['user_id']))
-        delete_status = camp_obj.delete_all_campaigns()
-        if delete_status:
-            result = {'message': 'All campaigns have been deleted from database',
-                      'status_code': 200}
-            return flask.jsonify(**result), 200
-        else:
-            'Error while deleting campaigns from database'
-    except Exception as error:
-        logger.exception("Error occurred while deleting SMS campaign.")
-        return error.message
-
-
-@app.route('/campaigns/<int:campaign_id>/', methods=['GET'])
-def get_campaign_by_id(campaign_id=None):
-    try:
-        campaign = SmsCampaign.get_by_id(campaign_id)
-        return flask.jsonify(**campaign.to_json()), 200
-    except Exception as error:
-        logger.exception("Error occurred while retrieving SMS campaign.")
-        return error.message
-
-
-@app.route('/campaigns/<int:campaign_id>/', methods=['POST'])
-def post_campaign_by_id(campaign_id=None):
-    try:
-        camp_obj = SmsCampaignBase(user_id=int(request.args['user_id']))
-        camp_obj.create_or_update_sms_campaign(request.form, campaign_id=campaign_id)
-        result = {'message': 'SMS Campaign(id:%s) has been updated in database' % campaign_id,
-                  'status_code': 200}
-        return flask.jsonify(**result), 200
-    except Exception as error:
-        logger.exception("Error occurred while retrieving SMS campaign.")
-        return error.message
-
-
-@app.route('/campaigns/<int:campaign_id>/', methods=['DELETE'])
-def delete_campaign_by_id(campaign_id=None):
-    try:
-        delete_status = SmsCampaign.delete(campaign_id)
-        if delete_status:
-            result = {'message': 'SMS Campaign(id:%s) has been deleted in database' % campaign_id,
-                      'status_code': 200}
-            return flask.jsonify(**result), 200
-        else:
-            'Error while deleting campaign from database'
-    except Exception as error:
-        logger.exception("Error occurred while deleting SMS campaign.")
-        return error.message
 
 
 @app.route('/campaigns/<int:campaign_id>/sms_campaign_sends/', methods=['GET'])
@@ -229,27 +147,21 @@ def sms_campaign_url_redirection(campaign_id=None, url_conversion_id=None):
         return error.message
 
 
-@app.route('/url_conversion/', methods=['GET'])
-def short_url_test():
+@app.route("/sms_receive/", methods=['POST'])
+def sms_receive():
     """
-    This is a test end point which converts given URL to short URL
+    This is a test end point to receive sms
     :return:
     """
-    url = request.args.get('url')
-    if url:
-        short_url, long_url = url_conversion(url)
-        data = {'short_url': short_url,
-                'status_code': 200}
-    else:
-        data = {'message': 'No URL given in request',
-                'status_code': 200}
-    return flask.jsonify(**data), 200
-
-
-@app.route('/tasks')
-def tasks():
-    data = get_all_tasks()
-    return render_template('tasks.html', tasks=data)
+    if request.values:
+        logger.debug('SMS received from %(From)s on %(To)s.\n '
+                     'Body text is "%(Body)s"' % request.values)
+        SmsCampaignBase.process_candidate_reply(request.values)
+    return """
+        <?xml version="1.0" encoding="UTF-8"?>
+            <Response>
+            </Response>
+            """
 
 
 @app.route('/sms', methods=['GET', 'POST'])
@@ -285,23 +197,6 @@ def sms():
         return flask.jsonify(**response), response['status_code']
     else:
         raise InternalServerError
-
-
-@app.route("/sms_receive/", methods=['POST'])
-def sms_receive():
-    """
-    This is a test end point to receive sms
-    :return:
-    """
-    if request.values:
-        logger.debug('SMS received from %(From)s on %(To)s.\n '
-                     'Body text is "%(Body)s"' % request.values)
-        SmsCampaignBase.process_candidate_reply(request.values)
-    return """
-        <?xml version="1.0" encoding="UTF-8"?>
-            <Response>
-            </Response>
-            """
 
 # resp = twilio.twiml.Response()
 # resp.message("Thank you for your response")
