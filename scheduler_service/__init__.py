@@ -15,8 +15,5 @@ def init_app():
     :return:
     """
     app.config.from_object('config')
-    add_model_helpers(db.db.Model)
-    db.db.init_app(app)
-    db.db.app = app
     register_error_handlers(app, logger=None)
     return app

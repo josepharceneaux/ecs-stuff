@@ -24,7 +24,7 @@ def send_email_campaign(*args, **kwargs):
 def raise_exception(*args, **kwargs):
     print('raise_exception')
     #implement method here
-    raise Exception('Intentional exception raised')
+    raise Exception('Internal exception raised')
 
 methods = {
     'send_sms_campaign': send_sms_campaign,
