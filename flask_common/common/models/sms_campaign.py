@@ -1,8 +1,8 @@
 __author__ = 'basit'
 
+import datetime
 from db import db
 from sqlalchemy.orm import relationship
-import datetime
 
 
 class SmsCampaign(db.Model):
@@ -23,15 +23,6 @@ class SmsCampaign(db.Model):
 
     def __repr__(self):
         return "<SmsCampaign (name = %r)>" % self.name
-
-    @classmethod
-    def get_by_campaign_id(cls, campaign_id):
-        assert campaign_id
-        return cls.query.filter(
-            db.and_(
-                cls.id == campaign_id,
-            )
-        ).one()
 
     @classmethod
     def get_by_user_phone_id(cls, user_phone_id):
@@ -67,7 +58,7 @@ class SmsCampaignBlast(db.Model):
             db.and_(
                 cls.sms_campaign_id == campaign_id,
             )
-        ).one()
+        ).first()
 
 
 class SmsCampaignSend(db.Model):

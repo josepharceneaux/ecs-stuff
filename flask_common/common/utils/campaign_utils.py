@@ -173,7 +173,7 @@ class CampaignBase(object):
         - Here we save the source_url(provided in body text) and the shortened_url
             to redirect to our endpoint in db table "url_conversion".
 
-        - This method is called from process_link_in_body_text() method of class
+        - This method is called from process_urls_in_sms_body_text() method of class
             SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
 
         :param destination_url: link present in body text
@@ -190,7 +190,7 @@ class CampaignBase(object):
         :rtype: int
 
         **See Also**
-        .. see also:: process_link_in_body_text() method in SmsCampaignBase class.
+        .. see also:: process_urls_in_sms_body_text() method in SmsCampaignBase class.
         """
         data = {'destination_url': destination_url,
                 'source_url': source_url,

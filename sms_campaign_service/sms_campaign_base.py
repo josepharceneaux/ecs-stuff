@@ -14,6 +14,7 @@ methods like
      - process_url_redirect()
      - process_candidate_reply() etc.
 """
+__author__ = 'basit.gettalent@gmail.com'
 
 # Standard Library
 from datetime import datetime
@@ -22,7 +23,7 @@ from datetime import datetime
 from sms_campaign_service import logger
 from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.user import UserPhone, User
-from sms_campaign_service.common.error_handling import ResourceNotFound
+from sms_campaign_service.common.error_handling import ResourceNotFound, ForbiddenError
 from sms_campaign_service.common.utils.campaign_utils import CampaignBase
 from sms_campaign_service.config import SMS_URL_REDIRECT, PHONE_LABEL_ID, TWILIO, IS_DEV
 from sms_campaign_service.common.models.candidate import PhoneLabel, Candidate, \
@@ -30,6 +31,8 @@ from sms_campaign_service.common.models.candidate import PhoneLabel, Candidate, 
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign,\
     SmsCampaignSend, SmsCampaignBlast, SmsCampaignSmartList, SmsCampaignSendUrlConversion, \
     SmsCampaignReply
+from sms_campaign_service.custom_exceptions import EmptySmsBody, MultipleMobileNumbers, \
+    TwilioAPIError, EmptyDestinationUrl
 from sms_campaign_service.utilities import TwilioSMS, search_link_in_text, url_conversion
 from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_CLICK,\
     CAMPAIGN_SMS_REPLY, CAMPAIGN_SMS_SEND, CAMPAIGN_SEND, CAMPAIGN_SMS_CREATE
@@ -78,7 +81,7 @@ class SmsCampaignBase(CampaignBase):
     * process_send(self, campaign_id=None)
         This method is used send the campaign to candidates.
 
-    * process_link_in_body_text(self, candidate_id)
+    * process_urls_in_sms_body_text(self, candidate_id)
         If "body_text" contains any link in it, then we need to transform the
         "body_text" by replacing long url with shorter version using Google's Shorten
         URL API. If body text does does not contain any link, it returns the body_text
@@ -162,7 +165,8 @@ class SmsCampaignBase(CampaignBase):
         """
         # sets the user_id
         super(SmsCampaignBase, self).__init__(*args, **kwargs)
-        self.user_phone = self.get_user_phone()
+        self.buy_new_number = kwargs.get('buy_new_number', True)
+        self.user_phone = self.get_user_phone() if self.buy_new_number else None
         self.modified_body_text = None
         self.sms_campaign_blast_id = None
         self.url_conversion_id = None
@@ -236,11 +240,9 @@ class SmsCampaignBase(CampaignBase):
                     stop_time=sms_campaign_data.get('stop_time'))
         if campaign_id:
             try:
-                sms_campaign = SmsCampaign.get_by_campaign_id(campaign_id)
+                sms_campaign = SmsCampaign.get_by_id(campaign_id)
             except:
-                logger.error('create_or_update_sms_campaign: '
-                             'Campaign(id=%s) not found.' % campaign_id)
-                raise ResourceNotFound
+                raise ResourceNotFound(error_message='SMS Campaign(id=%s) not found.' % campaign_id)
             for key, value in data.iteritems():
                 # update old values with new ones if provided, else preserve old ones.
                 data[key] = value if value else getattr(sms_campaign, key)
@@ -291,16 +293,20 @@ class SmsCampaignBase(CampaignBase):
         :return: UserPhone row
         """
         phone_label_id = PhoneLabel.phone_label_id_from_phone_label(TWILIO)
-        try:
-            user_phone = UserPhone.get_by_user_id_and_phone_label_id(self.user_id,
-                                                                     phone_label_id)
-            assert user_phone.value
-            return user_phone
-        except:
+        user_phone = UserPhone.get_by_user_id_and_phone_label_id(self.user_id,
+                                                                 phone_label_id)
+        if len(user_phone) == 1:
+            if user_phone[0].value:
+                return user_phone
+        elif len(user_phone) > 1:
+            raise MultipleMobileNumbers(error_message='User(id:%s) has multiple phone numbers '
+                                                      'for phone label: %s'
+                                                      % (self.user_id, TWILIO))
+        else:
             # User has no associated twilio number, need to buy one
-            logger.debug('get_user_phone: User(id:%s) has no Twilio number '
-                         'associated.' % self.user_id)
-            return self.buy_twilio_mobile_number(phone_label_id=phone_label_id)
+            logger.debug('get_user_phone: User(id:%s) has no Twilio number associated.'
+                         % self.user_id)
+        return self.buy_twilio_mobile_number(phone_label_id=phone_label_id)
 
     def buy_twilio_mobile_number(self, phone_label_id=None):
         """
@@ -325,8 +331,8 @@ class SmsCampaignBase(CampaignBase):
             else:
                 logger.debug('buy_twilio_mobile_number: Going to buy Twilio number for '
                              'user(id:%s).' % self.user_id)
-                number_to_buy = available_phone_numbers[0]
-                twilio_obj.purchase_twilio_number(available_phone_numbers[0])
+                number_to_buy = available_phone_numbers[0].phone_number
+                twilio_obj.purchase_twilio_number(number_to_buy)
             user_phone = self.create_or_update_user_phone(number_to_buy,
                                                           phone_label_id=phone_label_id)
             return user_phone
@@ -394,22 +400,35 @@ class SmsCampaignBase(CampaignBase):
         :return:
         """
         if campaign_id:
-            logger.debug('process_send: SMS Campaign(id:%s) is being sent.' % campaign_id)
-            self.campaign = SmsCampaign.get_by_campaign_id(campaign_id)
+            campaign = SmsCampaign.get_by_id(campaign_id)
+            if campaign:
+                self.campaign = campaign
+                logger.debug('process_send: SMS Campaign(id:%s) is being sent.' % campaign_id)
+            else:
+                raise ResourceNotFound(error_message='SMS Campaign(id=%s) Not found.' % campaign_id)
             self.body_text = self.campaign.sms_body_text.strip()
-
-            # Get smart_lists of this campaign
-            smart_lists = SmsCampaignSmartList.get_by_campaign_id(self.campaign.id)
+            if not self.body_text:
+                # SMS body text is empty
+                raise EmptySmsBody(error_message='SMS Body text is empty for Campaign(id:%s)'
+                                                 % campaign_id)
+            # Get smart_lists associated to this campaign
+            smart_lists = SmsCampaignSmartList.get_by_campaign_id(campaign_id)
             all_candidates = []
-            for smart_list in smart_lists:
-                self.smart_list_id = smart_list.id
-                # get candidates associated with smart list
-                candidates = self.get_candidates(smart_list_id=smart_list.id)
-                if candidates:
-                    all_candidates.extend(candidates)
-                else:
-                    logger.error('process_send: No Candidate found. Smart list id is %s.'
-                                 % smart_list.id)
+            if smart_lists:
+                for smart_list in smart_lists:
+                    self.smart_list_id = smart_list.smart_list_id
+                    # get candidates associated with smart list
+                    candidates = self.get_candidates(smart_list_id=smart_list.smart_list_id)
+                    if candidates:
+                        all_candidates.extend(candidates)
+                    else:
+                        logger.error('process_send: No Candidate found. Smart list id is %s.'
+                                     % smart_list.smart_list_id)
+            else:
+                logger.error('process_send: No Smart list is associated with SMS '
+                             'Campaign(id:%s)' % campaign_id)
+                raise ForbiddenError(error_message='No Smart list is associated with SMS '
+                                                   'Campaign(id:%s)' % campaign_id)
             if all_candidates:
                 logger.debug('process_send: SMS Campaign(id:%s) will be sent to %s candidate(s).'
                              % (campaign_id, len(all_candidates)))
@@ -422,83 +441,12 @@ class SmsCampaignBase(CampaignBase):
                              % (campaign_id, self.total_sends))
                 return self.total_sends
             else:
-                logger.error('process_send: No Candidate associated to SMS campaign(id:%s).'
-                             % self.campaign.id)
+                logger.error('process_send: No Candidate is associated to SMS Campaign(id:%s)'
+                             % campaign_id)
+                raise ForbiddenError(error_message='No Candidate is associated to SMS '
+                                                   'Campaign(id:%s)' % campaign_id)
         else:
             logger.error('process_send: SMS Campaign id is not given.')
-
-    def process_link_in_body_text(self, candidate_id):
-        """
-        - Once we have the body text of sms to be sent via sms campaign,
-            we check if it contains any link in it.
-            If it has any link, we do the followings:
-
-                1- Save that link in db table "url_conversion".
-                2- Checks if the db record has source url or not. If it has no source url,
-                   we convert the url(to redirect to our app) into shortened url and update
-                   the db record. Otherwise we move on to transform body text.
-                3. Replace the link in original body text with the shortened url
-                    (which we created in step 2)
-                4. Return the updated body text
-
-            Otherwise we save the body text in self.modified_body_text
-
-        - This method is called from process_send() method of class SmsCampaignBase inside
-            sms_campaign_service/sms_campaign_base.py.
-
-        **See Also**
-        .. see also:: process_send() method in SmsCampaignBase class.
-        """
-        logger.debug('process_link_in_body_text: Processing any link present in sms_body_text for '
-                     'SMS Campaign(id:%s) and Candidate(id:%s)' % (self.campaign.id, candidate_id))
-        link_in_body_text = search_link_in_text(self.body_text)
-        if len(link_in_body_text) == 1:
-            # We have only one link in body text which needs to shortened.
-            self.url_conversion_id = self.create_or_update_url_conversion(
-                destination_url=link_in_body_text[0])
-            # URL to redirect candidates to our end point
-            long_url = (SMS_URL_REDIRECT+'?candidate_id={}').format(self.campaign.id,
-                                                                    self.url_conversion_id,
-                                                                    candidate_id)
-            # Use Google's API to shorten the long Url
-            short_url = url_conversion(long_url)
-            # update the "url_conversion" record
-            self.create_or_update_url_conversion(url_conversion_id=self.url_conversion_id,
-                                                 source_url=long_url)
-            self.modified_body_text = self.transform_body_text(link_in_body_text[0], short_url)
-        elif len(link_in_body_text) > 1:
-            # Got multiple links in body text
-            logger.info('Got %s links in body text. Body text is %s.'
-                        % (len(link_in_body_text), self.body_text))
-        else:
-            # No link is present in body text
-            self.modified_body_text = self.body_text
-
-    def transform_body_text(self, link_in_body_text, short_url):
-        """
-        - This replaces the url provided in "body_text" with the "shortened url"
-            to be sent via sms campaign.
-
-        - This method is called from process_link_in_body_text() method of class
-            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
-
-        :param link_in_body_text: link present in body text
-        :param short_url: shortened url to redirect candidate to our app
-        :type short_url: str
-        :return: transformed body text to be sent via sms campaign
-        :rtype: str
-
-        **See Also**
-        .. see also:: process_link_in_body_text() method in SmsCampaignBase class.
-        """
-        text_split = self.body_text.split(' ')
-        index = 0
-        for word in text_split:
-            if word == link_in_body_text:
-                text_split[index] = short_url
-                break
-            index += 1
-        return ' '.join(text_split)
 
     def send_campaign_to_candidate(self, candidate):
         """
@@ -517,8 +465,6 @@ class SmsCampaignBase(CampaignBase):
         **See Also**
         .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
         """
-        super(SmsCampaignBase, self).send_campaign_to_candidate(candidate)
-
         # get candidate phones
         candidate_phones = candidate.candidate_phones
         # filter only mobile numbers
@@ -527,7 +473,7 @@ class SmsCampaignBase(CampaignBase):
                                         candidate_phones)
         if len(candidate_mobile_phone) == 1:
             # Transform body text to be sent in sms
-            self.process_link_in_body_text(candidate.id)
+            self.process_urls_in_sms_body_text(candidate.id)
             assert self.modified_body_text
             # send sms
             message_sent_time = self.send_sms(candidate_mobile_phone[0].value)
@@ -536,9 +482,10 @@ class SmsCampaignBase(CampaignBase):
                 campaign_blast_id=self.sms_campaign_blast_id,
                 candidate_id=candidate.id,
                 sent_time=message_sent_time)
-            # create sms_send_url_conversion entry
-            self.create_or_update_sms_send_url_conversion(sms_campaign_send_id,
-                                                          self.url_conversion_id)
+            if self.url_conversion_id:
+                # create sms_send_url_conversion entry
+                self.create_or_update_sms_send_url_conversion(sms_campaign_send_id,
+                                                              self.url_conversion_id)
             # update sms campaign blast
             self.create_or_update_sms_campaign_blast(campaign_id=self.campaign.id,
                                                      sends_update=True)
@@ -551,9 +498,88 @@ class SmsCampaignBase(CampaignBase):
                          'has multiple mobile phone numbers. Campaign(id:%s).'
                          % (candidate.id, self.campaign.id))
         else:
-            logger.error('send_sms_campaign_to_candidate: SMS cannot be sent as candidate(id:%s) '
-                         'has no phone number associated. Campaign(id:%s).'
-                         % (candidate.id, self.campaign.id))
+            logger.error('send_sms_campaign_to_candidate: SMS cannot be sent as '
+                         'candidate(id:%s) has no phone number associated. '
+                         'Campaign(id:%s).'% (candidate.id, self.campaign.id))
+
+    def process_urls_in_sms_body_text(self, candidate_id):
+        """
+        - Once we have the body text of sms to be sent via sms campaign,
+            we check if it contains any link in it.
+            If it has any link, we do the followings:
+
+                1- Save that link in db table "url_conversion".
+                2- Checks if the db record has source url or not. If it has no source url,
+                   we convert the url(to redirect to our app) into shortened url using Google's
+                   shorten URL API and update the db record.
+                   Otherwise we move on to transform body text.
+                3. Replace the link in original body text with the shortened url
+                    (which we created in step 2)
+                4. Set the updated body text
+
+            Otherwise we save the body text in self.modified_body_text
+
+        - This method is called from process_send() method of class SmsCampaignBase inside
+            sms_campaign_service/sms_campaign_base.py.
+
+        **See Also**
+        .. see also:: process_send() method in SmsCampaignBase class.
+        """
+        logger.debug('process_urls_in_sms_body_text: Processing any link present in sms_body_text for '
+                     'SMS Campaign(id:%s) and Candidate(id:%s)' % (self.campaign.id, candidate_id))
+        urls_in_body_text = search_link_in_text(self.body_text)
+        short_urls = []
+        for url in urls_in_body_text:
+            # We have only one link in body text which needs to shortened.
+            self.url_conversion_id = self.create_or_update_url_conversion(
+                destination_url=url)
+            # URL to redirect candidates to our end point
+            long_url = (SMS_URL_REDIRECT+'?candidate_id={}').format(self.campaign.id,
+                                                                    self.url_conversion_id,
+                                                                    candidate_id)
+            # Use Google's API to shorten the long Url
+            short_url = url_conversion(long_url)
+            # update the "url_conversion" record
+            self.create_or_update_url_conversion(url_conversion_id=self.url_conversion_id,
+                                                 source_url=long_url)
+            short_urls.append(short_url)
+        self.transform_body_text(urls_in_body_text, short_urls)
+
+    def transform_body_text(self, urls_in_sms_body_text, short_urls):
+        """
+        - This replaces the urls provided in "body_text" (destination urls) with the
+            "shortened urls" to be sent via sms campaign. These shortened urls will
+            redirect candidate to our endpoint to keep track of clicks and hit_count,
+            then we redirect the candidate to actual destination urls
+
+        - It sets the value of self.modified_body_text.
+
+        - This method is called from process_urls_in_sms_body_text() method of class
+            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
+
+        :param urls_in_sms_body_text: URLs present in sms body text
+        :param short_urls: shortened url to redirect candidate to our app
+        :type short_urls: list
+        :type urls_in_sms_body_text: list
+
+        **See Also**
+        .. see also:: process_urls_in_sms_body_text() method in SmsCampaignBase class.
+        """
+        logger.debug('transform_body_text: Replacing original URL with shorted URL')
+        if urls_in_sms_body_text:
+            text_split = self.body_text.split(' ')
+            short_urls_index = 0
+            for url in urls_in_sms_body_text:
+                text_split_index = 0
+                for word in text_split:
+                    if word == url:
+                        text_split[text_split_index] = short_urls[short_urls_index]
+                        break
+                    text_split_index += 1
+                short_urls_index += 1
+            self.modified_body_text = ' '.join(text_split)
+        else:
+            self.modified_body_text = self.body_text
 
     @staticmethod
     def create_or_update_sms_campaign_blast(campaign_id=None,
@@ -764,6 +790,11 @@ class SmsCampaignBase(CampaignBase):
             2- Call method process_send with campaign_id
                 redirection_url = camp_obj.process_url_redirect(campaign_id=1, url_conversion_id=1)
 
+        .. Status:: 200 (OK)
+                    404 (Resource not found)
+                    500 (Internal Server Error)
+                    5005 (EmptyDestinationUrl)
+
         :param campaign_id: id of sms_campaign
         :param url_conversion_id: id of url_conversion record
         :type campaign_id: int
@@ -773,26 +804,39 @@ class SmsCampaignBase(CampaignBase):
         """
         if campaign_id and url_conversion_id:
             logger.debug('process_url_redirect: Processing for URL redirection.')
+            # check if campaign exists
+            self.campaign = SmsCampaign.get_by_id(campaign_id)
+            if self.campaign:
+                # Update sms campaign blast
+                self.create_or_update_sms_campaign_blast(campaign_id=campaign_id,
+                                                         clicks_update=True)
+                # Update hit count
+                self.create_or_update_url_conversion(url_conversion_id=url_conversion_id,
+                                                     hit_count_update=True)
+                # Create Activity
 
-            # Update sms campaign blast
-            self.create_or_update_sms_campaign_blast(campaign_id=campaign_id,
-                                                     clicks_update=True)
-            # Update hit count
-            self.create_or_update_url_conversion(url_conversion_id=url_conversion_id,
-                                                 hit_count_update=True)
-            # Create Activity
-            self.campaign = SmsCampaign.get_by_campaign_id(campaign_id)
-            candidate = Candidate.get_by_id(candidate_id)
-            self.create_campaign_url_click_activity(candidate)
-            # Get Url to redirect candidate to actual url
-            url_conversion_row = UrlConversion.get_by_id(url_conversion_id)
-            logger.error('process_url_redirect: candidate(id:%s) clicked on sms '
-                         'campaign(id:%s)' % (candidate_id, self.campaign.id))
-            return url_conversion_row.destination_url
+                candidate = Candidate.get_by_id(candidate_id)
+                if candidate:
+                    self.create_campaign_url_click_activity(candidate)
+                    # Get Url to redirect candidate to actual url
+                    url_conversion_row = UrlConversion.get_by_id(url_conversion_id)
+                    logger.info('process_url_redirect: candidate(id:%s) clicked on sms '
+                                'campaign(id:%s)' % (candidate_id, self.campaign.id))
+                    if url_conversion_row.destination_url:
+                        return url_conversion_row.destination_url
+                    else:
+                        raise EmptyDestinationUrl(
+                            error_message='process_url_redirect: Destination_url is empty for '
+                                          'url_conversion(id:%s)' % url_conversion_id)
+                else:
+                    logger.error('process_url_redirect: Candidate(id:%s) not found.'
+                                 % candidate_id)
+            else:
+                logger.error('process_url_redirect: SMS Campaign(id=%s) Not found.' % campaign_id)
         else:
             logger.error('process_url_redirect: campaign_id or url_conversion_id '
                          'is not provided.')
-            return None
+        raise ResourceNotFound
 
     def create_campaign_url_click_activity(self, candidate):
         """

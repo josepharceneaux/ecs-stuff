@@ -6,7 +6,7 @@ This file contains API endpoints related to Url Conversion.
                       Google's Shorten URL API.
 
 """
-__author__ = 'basit'
+__author__ = 'basit.gettalent@gmail.com'
 
 # Standard Library
 import json
@@ -16,29 +16,27 @@ import types
 from flask import request
 from flask import Blueprint
 from flask.ext.cors import CORS
-from flask.ext.restful import Api
 from flask.ext.restful import Resource
 
 # Application Specific
-from sms_campaign_service import logger
 from sms_campaign_service.utilities import url_conversion
+from sms_campaign_service.common.talent_api import TalentApi
+from sms_campaign_service.sms_campaign_app.app_utils import api_route, ApiResponse
 from sms_campaign_service.common.utils.auth_utils import require_oauth
-from sms_campaign_service.app.app_utils import api_route, ApiResponse
-from sms_campaign_service.common.error_handling import InternalServerError
 
+# creating blueprint
 url_conversion_blueprint = Blueprint('url_conversion_api', __name__)
-api = Api()
+api = TalentApi()
 api.init_app(url_conversion_blueprint)
 api.route = types.MethodType(api_route, api)
 
-
-# Enable CORS
-CORS(url_conversion_blueprint, resources={
-    r'/(url_conversion)/*': {
-        'origins': '*',
-        'allow_headers': ['Content-Type', 'Authorization']
-    }
-})
+# # Enable CORS
+# CORS(url_conversion_blueprint, resources={
+#     r'/(url_conversion)/*': {
+#         'origins': '*',
+#         'allow_headers': ['Content-Type', 'Authorization']
+#     }
+# })
 
 
 @api.route('/url_conversion')
@@ -69,14 +67,11 @@ class ConvertUrl(Resource):
         .. Status:: 200 (OK)
                     500 (Internal Server Error)
                     401 (Unauthorized to access getTalent)
+                    5004 (GoogleShortenUrlAPIError)
         """
         if request.values.get('url'):
-            try:
-                short_url = url_conversion(request.values['url'])
-                data = {'short_url': short_url}
-            except:
-                logger.exception('ConvertUrl:')
-                raise InternalServerError
+            short_url = url_conversion(request.values['url'])
+            data = {'short_url': short_url}
         else:
             data = {'message': 'No URL given in request'}
-        return ApiResponse(json.dumps(data), status=200)
+        return data, 200

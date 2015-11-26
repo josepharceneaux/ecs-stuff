@@ -15,7 +15,7 @@ This file contains API endpoints related to sms_campaign_service.
             DELETE  : Deletes sms campaign from db for given id
 
 """
-__author__ = 'basit'
+__author__ = 'basit.gettalent@gmail.com'
 
 # Standard Library
 import json
@@ -25,30 +25,32 @@ import types
 from flask import request
 from flask import Blueprint
 from flask.ext.cors import CORS
-from flask.ext.restful import Api
 from flask.ext.restful import Resource
 
 # Application Specific
 from sms_campaign_service import logger
 from sms_campaign_service.common.error_handling import *
+from sms_campaign_service.common.talent_api import TalentApi
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
-from sms_campaign_service.app.app_utils import api_route, ApiResponse
+from sms_campaign_service.sms_campaign_app.app_utils import api_route, ApiResponse
 from sms_campaign_service.common.utils.auth_utils import require_oauth
-from sms_campaign_service.common.models.sms_campaign import SmsCampaign
+from sms_campaign_service.common.models.sms_campaign import SmsCampaign, SmsCampaignBlast, \
+    SmsCampaignSend
 
+# creating blueprint
 sms_campaign_blueprint = Blueprint('sms_campaign_api', __name__)
-api = Api()
+api = TalentApi()
 api.init_app(sms_campaign_blueprint)
 api.route = types.MethodType(api_route, api)
 
 
-# Enable CORS
-CORS(sms_campaign_blueprint, resources={
-    r'/(campaigns)/*': {
-        'origins': '*',
-        'allow_headers': ['Content-Type', 'Authorization']
-    }
-})
+# # Enable CORS
+# CORS(sms_campaign_blueprint, resources={
+#     r'/(campaigns)/*': {
+#         'origins': '*',
+#         'allow_headers': ['Content-Type', 'Authorization']
+#     }
+# })
 
 
 @api.route('/campaigns/')
@@ -106,17 +108,13 @@ class SMSCampaigns(Resource):
                     500 (Internal Server Error)
                     401 (Unauthorized to access getTalent)
         """
-        try:
-            camp_obj = SmsCampaignBase(user_id=request.user.id)
-            campaigns = camp_obj.get_all_campaigns()
-            all_campaigns = [campaign.to_json() for campaign in campaigns]
-            data = {'count': len(all_campaigns),
-                    'campaigns': all_campaigns}
-        except Exception as error:
-            logger.exception("Error occurred while retrieving SMS campaigns of "
-                             "user(id:%s)." % request.user.id)
-            raise InternalServerError(error.message)
-        return ApiResponse(json.dumps(data), status=200)
+
+        camp_obj = SmsCampaignBase(user_id=request.user.id)
+        campaigns = camp_obj.get_all_campaigns()
+        all_campaigns = [campaign.to_json() for campaign in campaigns]
+        data = {'count': len(all_campaigns),
+                'campaigns': all_campaigns}
+        return data, 200
 
     def post(self, *args, **kwargs):
         """
@@ -160,17 +158,14 @@ class SMSCampaigns(Resource):
 
         """
         # TODO: Update custom error handler status codes
-        try:
-            # get json post request data
-            campaign_data = request.get_json(force=True)
-            campaign_obj = SmsCampaignBase(user_id=request.user.id)
-            campaign_id = campaign_obj.save(campaign_data)
-            headers = {'Location': '/campaigns/%s' % campaign_id}
-            logger.debug('Campaign(id:%s) has been saved.' % campaign_id)
-            return ApiResponse(json.dumps(dict(id=campaign_id)), status=201, headers=headers)
-        except Exception as error:
-            logger.exception("Error occurred while saving SMS campaign")
-            raise InternalServerError(error.message)
+
+        # get json post request data
+        campaign_data = request.get_json(force=True)
+        campaign_obj = SmsCampaignBase(user_id=request.user.id)
+        campaign_id = campaign_obj.save(campaign_data)
+        headers = {'Location': '/campaigns/%s' % campaign_id}
+        logger.debug('Campaign(id:%s) has been saved.' % campaign_id)
+        return ApiResponse(json.dumps(dict(id=campaign_id)), status=201, headers=headers)
 
     def delete(self):
         """
@@ -211,21 +206,13 @@ class SMSCampaigns(Resource):
             raise InvalidUsage('Bad request, include campaign_ids as list data', error_code=400)
         # check if campaigns_ids list is not empty
         if campaign_ids:
-            try:
-                status_list = [SmsCampaign.delete(_id) for _id in campaign_ids]
-                if all(status_list):
-                    return ApiResponse(json.dumps(dict(message='%s Campaigns deleted successfully'
-                                                               % len(campaign_ids))), status=200)
-                else:
-                    return ApiResponse(json.dumps(dict(message='Unable to delete %s campaigns'
-                                                               % status_list.count(False))),
-                                       status=207)
-            except Exception as error:
-                logger.exception("Error occurred while deleting SMS campaign.")
-                raise InternalServerError(error.message)
+            status_list = [SmsCampaign.delete(_id) for _id in campaign_ids]
+            if all(status_list):
+                return dict(message='%s Campaigns deleted successfully' % len(campaign_ids)), 200
+            else:
+                return dict(message='Unable to delete %s campaigns' % status_list.count(False)), 207
         else:
-            return ApiResponse(json.dumps(dict(message='No campaign id provided to delete')),
-                               status=200)
+            return dict(message='No campaign id provided to delete'), 200
 
 
 @api.route('/campaigns/<int:campaign_id>')
@@ -273,10 +260,10 @@ class CampaignById(Resource):
         """
         campaign = SmsCampaign.get_by_id(campaign_id)
         if campaign:
-            return ApiResponse(json.dumps(dict(campaign=campaign.to_json())), status=200)
+            return dict(campaign=campaign.to_json()), 200
         else:
-            raise ResourceNotFound('Campaign does not exist with id %s' % campaign_id,
-                                   error_code=404)
+            raise ResourceNotFound(error_message='SMS Campaign does not exist with id %s'
+                                                 % campaign_id)
 
     def post(self, campaign_id):
         """
@@ -324,11 +311,9 @@ class CampaignById(Resource):
         campaign_data = request.get_json(force=True)
         camp_obj = SmsCampaignBase(user_id=int(request.user.id))
         camp_obj.create_or_update_sms_campaign(campaign_data, campaign_id=campaign_id)
-        return ApiResponse(json.dumps(dict(message='SMS Campaign(id:%s) has been updated '
-                                                   'successfully' % campaign_id,)),
-                           status=200)
+        return dict(message='SMS Campaign(id:%s) has been updated successfully' % campaign_id,), 200
 
-    def delete(self, campaign_id, **kwargs):
+    def delete(self, campaign_id):
         """
         Removes a single campaign from getTalent's database.
         :param id: (Integer) unique id in sms_campaign table on GT database.
@@ -358,10 +343,112 @@ class CampaignById(Resource):
         if campaign:
             delete_status = SmsCampaign.delete(campaign_id)
             if delete_status:
-                return ApiResponse(json.dumps(dict(message='Campaign(id:%s) deleted successfully'
-                                                           % campaign_id)), status=200)
+                return dict(message='Campaign(id:%s) deleted successfully' % campaign_id), 200
             else:
                 raise ForbiddenError
         else:
-            logger.error('Unable to delete campaign. Campaign(id=%s) not found.' % campaign_id)
-            raise ResourceNotFound
+            raise ResourceNotFound(error_message='SMS Campaign(id=%s) not found.' % campaign_id)
+
+
+@api.route('/campaigns/<int:campaign_id>/sms_campaign_sends')
+class SmsCampaignSends(Resource):
+    """
+    This resource is used to Get Campaign sends [GET]
+    """
+    decorators = [require_oauth]
+
+    def get(self, campaign_id):
+        """
+        Returns Campaign sends for given campaign id
+
+        :Example:
+            headers = {'Authorization': 'Bearer <access_token>'}
+            campaign_id = 1
+            response = requests.get(API_URL + '/campaigns/' + str(campaign_id)
+                                + '/sms_campaign_sends/', headers=headers)
+
+        .. Response::
+
+            {
+                "campaign_sends":
+                                    [
+                                        {
+                                          "candidate_id": 1,
+                                          "id": 9,
+                                          "sent_time": "2015-11-23 18:25:09",
+                                          "sms_campaign_blast_id": 1,
+                                          "updated_time": "2015-11-23 18:25:08"
+                                        },
+                                        {
+                                          "candidate_id": 2,
+                                          "id": 10,
+                                          "sent_time": "2015-11-23 18:25:13",
+                                          "sms_campaign_blast_id": 1,
+                                          "updated_time": "2015-11-23 18:25:13"
+                                       }
+                                    ],
+                "count": 2
+
+            }
+
+        .. Status:: 200 (OK)
+                    401 (Unauthorized to access getTalent)
+                    404 (Campaign not found)
+                    500 (Internal Server Error)
+
+        :param campaign_id: integer, unique id representing campaign in GT database
+        :return: json for required campaign
+        """
+        campaign_blasts = SmsCampaignBlast.get_by_campaign_id(campaign_id)
+        if campaign_blasts:
+            campaign_sends = SmsCampaignSend.get_by_campaign_id(campaign_blasts.id)
+            campaign_sends_json = [campaign_send.to_json() for campaign_send in campaign_sends]
+            data = {'count': len(campaign_sends_json),
+                    'campaign_sends': campaign_sends_json}
+            return data, 200
+        else:
+            raise ResourceNotFound(error_message='SMS Campaign id=%s not found.'
+                                                 % campaign_id)
+
+
+@api.route('/campaigns/<int:campaign_id>/send')
+class SendSmsCampaign(Resource):
+    """
+    This resource is used to send SMS Campaign to candidates [POST]
+    """
+    decorators = [require_oauth]
+
+    def post(self, campaign_id):
+        """
+        It sends given Campaign (from given campaign id) to the smart list candidates
+            associated with given campaign.
+
+        :Example:
+            headers = {'Authorization': 'Bearer <access_token>'}
+            campaign_id = 1
+            response = requests.post(API_URL + '/campaigns/' + str(campaign_id)
+                                + '/send', headers=headers)
+
+        .. Response::
+
+                {
+                    "total_sends": 2,
+                    "message": "Campaign(id:1) has been sent successfully"
+                }
+
+        .. Status:: 200 (OK)
+                    401 (Unauthorized to access getTalent)
+                    404 (Campaign not found)
+                    500 (Internal Server Error)
+                    5001 (Empty message body to send)
+                    5002 (User has MultipleMobileNumbers)
+                    5003 (TwilioAPIError)
+                    5004 (GoogleShortenUrlAPIError)
+
+        :param campaign_id: integer, unique id representing campaign in GT database
+        :return: json for required campaign containing message and total sends.
+        """
+        camp_obj = SmsCampaignBase(user_id=request.user.id)
+        total_sends = camp_obj.process_send(campaign_id=campaign_id)
+        return dict(message='Campaign(id:%s) has been sent successfully'
+                            % campaign_id, total_sends=total_sends), 200

@@ -57,29 +57,19 @@ import twilio.twiml
 from flask import request
 from flask import render_template
 from flask.ext.cors import CORS
-from flask.ext.restful import Api
 from werkzeug.utils import redirect
 
 # Application specific imports
 from sms_campaign_service import logger
-from sms_campaign_service.app.restful.sms_campaign_api import sms_campaign_blueprint
-from sms_campaign_service.app.restful.url_conversion_api import url_conversion_blueprint
 from sms_campaign_service.utilities import run_func, run_func_1
-from social_network_service.utilities import http_request
-from sms_campaign_service.utilities import url_conversion
-from sms_campaign_service.utilities import send_sms_campaign
-from sms_campaign_service.utilities import get_smart_list_ids
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
-from sms_campaign_service.common.models.sms_campaign import SmsCampaign, SmsCampaignSend, \
-    SmsCampaignBlast
-from sms_campaign_service.app.app_utils import ApiResponse
-from sms_campaign_service.custom_exceptions import ApiException
-from sms_campaign_service.common.error_handling import InternalServerError
+from sms_campaign_service.common.error_handling import InternalServerError, ResourceNotFound
+from sms_campaign_service.sms_campaign_app.restful_API.sms_campaign_api import sms_campaign_blueprint
+from sms_campaign_service.sms_campaign_app.restful_API.url_conversion_api import url_conversion_blueprint
 
 # Register Blueprints for different APIs
 app.register_blueprint(sms_campaign_blueprint)
 app.register_blueprint(url_conversion_blueprint)
-api = Api(app)
 
 # Enable CORS
 CORS(app, resources={
@@ -95,56 +85,26 @@ def hello_world():
     return 'Welcome to SMS Campaign Service'
 
 
-@app.route('/campaigns/<int:campaign_id>/sms_campaign_sends/', methods=['GET'])
-def sms_campaign_sends(campaign_id=None):
-    try:
-        user_id = request.args.get('user_id')
-        assert user_id and campaign_id
-        campaign_blasts = SmsCampaignBlast.get_by_campaign_id(campaign_id)
-        campaign_sends = SmsCampaignSend.get_by_campaign_id(campaign_blasts.id)
-        campaign_sends_json = [campaign_send.to_json() for campaign_send in campaign_sends]
-        data = {'count': len(campaign_sends_json),
-                'campaigns': campaign_sends_json}
-        return flask.jsonify(**data), 200
-    except Exception as error:
-        logger.exception("Error occurred while sending SMS campaign.")
-        return error.message
-
-
-@app.route('/campaigns/<int:campaign_id>/send/', methods=['POST'])
-def send_campaign(campaign_id=None):
-    try:
-        user_id = request.args.get('user_id')
-        assert user_id and campaign_id
-        camp_obj = SmsCampaignBase(user_id=user_id)
-        total_sends = camp_obj.process_send(campaign_id=campaign_id)
-        return 'Campaign(id:%s) has been sent to %s candidate(s).' % (campaign_id, total_sends)
-    except Exception as error:
-        logger.exception("Error occurred while sending SMS campaign.")
-        return error.message
-
-
 @app.route('/sms_campaign/<int:campaign_id>/url_redirection/<int:url_conversion_id>/', methods=['GET'])
 def sms_campaign_url_redirection(campaign_id=None, url_conversion_id=None):
     try:
         user_id = request.args.get('user_id')
         candidate_id = request.args.get('candidate_id')
         if all([user_id and campaign_id and url_conversion_id and candidate_id]):
-            camp_obj = SmsCampaignBase(user_id=user_id)
+            camp_obj = SmsCampaignBase(user_id=user_id, buy_new_number=False)
             redirection_url = camp_obj.process_url_redirect(campaign_id=campaign_id,
                                                             url_conversion_id=url_conversion_id,
                                                             candidate_id=candidate_id)
-            if redirection_url:
-                return redirect(redirection_url)
-            else:
-                return "Couldn't find redirection URL"
+            return redirect(redirection_url)
         else:
-            return "Required field is missing from requested URL." \
-                   "user_id:%s, campaign_id:%s, url_conversion_id:%s, candidate_id:%s" \
-                   % (user_id, campaign_id, url_conversion_id, candidate_id)
-    except Exception as error:
+            logger.error("Required field is missing from requested URL. "
+                         "user_id:%s, campaign_id:%s, url_conversion_id:%s, candidate_id:%s"
+                         % (user_id, campaign_id, url_conversion_id, candidate_id))
+            raise InternalServerError
+    except:
         logger.exception("Error occurred while URL redirection for SMS campaign.")
-        return error.message
+        data = {'message': 'Internal Server Error'}
+        return flask.jsonify(**data), 500
 
 
 @app.route("/sms_receive/", methods=['POST'])
@@ -172,7 +132,7 @@ def sms():
     """
     # if request.args.has_key('text'):
     #     body_text = request.args['text']
-    #     body_text = process_link_in_body_text(body_text)
+    #     body_text = process_urls_in_sms_body_text(body_text)
     # else:
     #     body_text = 'Welcome to getTalent'
     # ids = get_smart_list_ids()
@@ -202,30 +162,4 @@ def sms():
 # resp.message("Thank you for your response")
 # return str(resp)
 # <Message> Hello </Message>
-
-
-@app.errorhandler(ApiException)
-def handle_api_exception(error):
-    """
-    This handler handles ApiException error
-    :param error: exception object containing error info
-    :type error:  ApiException
-    :return: json response
-    """
-    logger.debug('Error: %s\nTraceback: %s' % (error, traceback.format_exc()))
-    response = json.dumps(error.to_dict())
-    return ApiResponse(response, status=error.status_code)
-
-
-@app.errorhandler(Exception)
-def handle_any_errors(error):
-    """
-    This handler handles any kind of error in app.
-    :param error: exception object containing error info
-    :type error:  Exception
-    :return: json response
-    """
-    logger.debug('Error: %s\nTraceback: %s' % (error, traceback.format_exc()))
-    response = json.dumps(dict(message='Ooops! Internal server error occurred..' + str(error.message)))
-    return ApiResponse(response, status=500)
 

@@ -1,5 +1,5 @@
 """Run Sms Campaign Service APP"""
-from sms_campaign_service.app.app import app
+from sms_campaign_service.sms_campaign_app.app import app
 
 import os
 

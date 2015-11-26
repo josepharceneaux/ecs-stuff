@@ -1,4 +1,4 @@
-__author__ = 'basit'
+__author__ = 'basit.gettalent@gmail.com'
 
 # Standard Library
 import re
@@ -12,15 +12,12 @@ from twilio.rest import TwilioRestClient
 
 # Application Specific
 from sms_campaign_service import logger
-
-from sms_campaign_service.common.models.user import UserPhone
-from sms_campaign_service.common.models.scheduler import SchedulerTask
-from sms_campaign_service.common.models.candidate import CandidatePhone
 from sms_campaign_service.common.utils.common_functions import http_request
+from sms_campaign_service.sms_campaign_app.app import sched
+from config import TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, GOOGLE_URL_SHORTENER_API_URL
+from sms_campaign_service.custom_exceptions import TwilioAPIError, GoogleShortenUrlAPIError
+
 # from sms_campaign_service.app.app import celery
-from sms_campaign_service.app.app import sched
-from config import TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, GT_ENVIRONMENT,\
-    GOOGLE_URL_SHORTENER_API_URL
 
 
 class TwilioSMS(object):
@@ -47,47 +44,68 @@ class TwilioSMS(object):
                 from_=sender_phone
             )
             return message
-        except twilio.TwilioRestException as e:
-            return {'message': e.message,
-                    'status_code': 500}
+        except twilio.TwilioRestException as error:
+            raise TwilioAPIError(error_message=
+                                 'Cannot get available number. Error is "%s"'
+                                 % error.msg if hasattr(error, 'msg') else error.message)
 
     def get_available_numbers(self):
         # -------------------------------------
         # get list of available numbers
         # -------------------------------------
-        phone_numbers = self.client.phone_numbers.search(
-            country=self.country,
-            type=self.phone_type,
-            sms_enabled=self.sms_enabled,
-        )
+        try:
+            phone_numbers = self.client.phone_numbers.search(
+                country=self.country,
+                type=self.phone_type,
+                sms_enabled=self.sms_enabled,
+            )
+        except Exception as error:
+            raise TwilioAPIError(error_message=
+                                 'Cannot get available number. Error is "%s"'
+                                 % error.msg if hasattr(error, 'msg') else error.message)
         return phone_numbers
 
     def purchase_twilio_number(self, phone_number):
         # --------------------------------------
         # Purchase a number
         # --------------------------------------
-        number = self.client.phone_numbers.purchase(friendly_name=phone_number,
-                                                    phone_number=phone_number,
-                                                    sms_url=self.sms_call_back_url,
-                                                    sms_method=self.sms_method,
-                                                    )
-        print number.sid
+        try:
+            number = self.client.phone_numbers.purchase(friendly_name=phone_number,
+                                                        phone_number=phone_number,
+                                                        sms_url=self.sms_call_back_url,
+                                                        sms_method=self.sms_method,
+                                                        )
+            logger.info('Bought new Twilio number %s' % number.sid)
+        except Exception as error:
+            raise TwilioAPIError(error_message=
+                                 'Cannot buy new number. Error is "%s"'
+                                 % error.msg if hasattr(error, 'msg') else error.message)
 
     def update_sms_call_back_url(self, phone_number_sid):
         # --------------------------------------
         # Updates SMS callback url of a number
         # --------------------------------------
-        number = self.client.phone_numbers.update(phone_number_sid,
-                                                  sms_url=self.sms_call_back_url)
-        print 'SMS call back url has been set to: %s' % number.sms_url
+        try:
+            number = self.client.phone_numbers.update(phone_number_sid,
+                                                      sms_url=self.sms_call_back_url)
+            logger.info('SMS call back url has been set to: %s' % number.sms_url)
+        except Exception as error:
+            raise TwilioAPIError(error_message=
+                                 'Cannot buy new number. Error is "%s"'
+                                 % error.msg if hasattr(error, 'msg') else error.message)
 
     def get_sid(self, phone_number):
         # --------------------------------------
         # Gets sid of a given number
         # --------------------------------------
-        number = self.client.phone_numbers.list(phone_number=phone_number)
-        if len(number) == 1:
-            return 'SID of Phone Number %s is %s' % (phone_number, number[0].sid)
+        try:
+            number = self.client.phone_numbers.list(phone_number=phone_number)
+            if len(number) == 1:
+                return 'SID of Phone Number %s is %s' % (phone_number, number[0].sid)
+        except Exception as error:
+            raise TwilioAPIError(error_message=
+                                 'Cannot buy new number. Error is "%s"'
+                                 % error.msg if hasattr(error, 'msg') else error.message)
 
 
 def search_link_in_text(text):
@@ -116,38 +134,8 @@ def url_conversion(long_url):
         logger.info("url_conversion: Shortened URL is: %s" % short_url)
         return short_url
     else:
-        logger.error("url_conversion: Error while shortening URL. Error dict is %s "
-                     % data['error']['errors'][0])
-
-
-# @celery.task()
-def send_sms_campaign(ids, body_text):
-    """
-    This function sends sms campaign
-    :param ids: list of candidate ids to send sms campaign
-    :type ids: list
-    :param body_text:
-    :type body_text: str
-    :return:
-    """
-    # TODO: remove hard coded value
-    user_phone = UserPhone.get_by_user_id(1)
-    data = None
-    try:
-        for _id in ids:
-            candidate_phone = CandidatePhone.get_by_candidate_id(_id)
-            twilio_obj = TwilioSMS()
-            result = twilio_obj.send_sms(receiver_phone=candidate_phone,
-                                         sender_phone=user_phone,
-                                         body_text=body_text)
-            data = {'message': 'SMS has been sent successfully to %s candidate(s) '
-                               'from %s. Body text is %s.'
-                               % (len(ids), result.from_, result.body),
-                    'status_code': 200}
-    except twilio.TwilioRestException as e:
-        data = {'message': e.message,
-                'status_code': 500}
-    return data
+        raise GoogleShortenUrlAPIError(error_message="Error while shortening URL. "
+                                       "Error dict is %s" % data['error']['errors'][0])
 
 
 def get_smart_list_ids():
@@ -160,7 +148,8 @@ def run_func(arg1, arg2, end_date):
             and datetime.now().minute == end_date.minute:
         stop_job(sched.get_jobs()[0])
     else:
-        send_sms_campaign.delay(arg1, arg2)
+        # send_sms_campaign.delay(arg1, arg2)
+        pass
 
 
 # @celery.task()

@@ -1,93 +1,37 @@
-from sms_campaign_service.common.error_handling import TalentError
+import json
+import sms_campaign_service.common.error_handling
 
 
-class InvalidUsage(Exception):
-    status_code = 400
-
-    def __init__(self, message, status_code=None, payload=None):
-        Exception.__init__(self)
-        self.message = message
-        if status_code is not None:
-            self.status_code = status_code
-        self.payload = payload
+class SmsCampaignApiException(sms_campaign_service.common.error_handling.InternalServerError):
+    status_code = 5000
 
     def to_dict(self):
-        rv = dict(self.payload or ())
-        rv['message'] = self.message
-        return rv
+        error_dict = super(SmsCampaignApiException, self).to_dict()
+        error_dict['error']['code'] = self.__class__.status_code
+        return error_dict
+
+    def __str__(self):
+        error_dict = super(SmsCampaignApiException, self).to_dict()
+        error_dict['error']['code'] = self.__class__.status_code
+        return json.dumps(error_dict)
 
 
-class ApiException(TalentError):
-    status_code = 500
+class EmptySmsBody(SmsCampaignApiException):
+    status_code = 5001
 
 
-class SocialNetworkError(ApiException):
-    status_code = 452
+class MultipleMobileNumbers(SmsCampaignApiException):
+    status_code = 5002
 
 
-class EventInputMissing(ApiException):
-    status_code = 453
+class TwilioAPIError(SmsCampaignApiException):
+    status_code = 5003
 
 
-class EventNotCreated(ApiException):
-    status_code = 455
+class GoogleShortenUrlAPIError(SmsCampaignApiException):
+    status_code = 5004
 
 
-class EventNotPublished(ApiException):
-    status_code = 456
+class EmptyDestinationUrl(SmsCampaignApiException):
+    status_code = 5005
 
-
-class EventNotUnpublished(ApiException):
-    status_code = 457
-
-
-class EventLocationNotCreated(ApiException):
-    status_code = 458
-
-
-class TicketsNotCreated(ApiException):
-    status_code = 459
-
-
-class EventNotSaveInDb(ApiException):
-    status_code = 460
-
-
-class UserCredentialsNotFound(ApiException):
-    status_code = 461
-
-
-class SocialNetworkNotImplemented(ApiException):
-    status_code = 462
-
-
-class InvalidAccessToken(ApiException):
-    status_code = 463
-
-
-class InvalidDatetime(ApiException):
-    status_code = 464
-
-
-class VenueNotFound(ApiException):
-    status_code = 465
-
-
-class AccessTokenHasExpired(ApiException):
-    status_code = 466
-
-
-class NoUserFound(ApiException):
-    status_code = 467
-
-
-class MissingFieldsInUserCredentials(ApiException):
-    status_code = 468
-
-
-class EventNotFound(ApiException):
-    status_code = 469
-
-
-class ProductNotFound(ApiException):
-    status_code = 470

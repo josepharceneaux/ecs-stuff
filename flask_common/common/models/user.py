@@ -109,7 +109,7 @@ class UserPhone(db.Model):
                 UserPhone.user_id == user_id,
                 UserPhone.phone_label_id == phone_label_id
             )
-        ).one()
+        ).all()
 
     @classmethod
     def get_by_phone_value(cls, phone_value):
