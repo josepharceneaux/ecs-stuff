@@ -25,12 +25,13 @@ from helpers import (
 from candidate_sample_data import (
     generate_single_candidate_data, candidate_educations, candidate_experience,
     candidate_work_preference, candidate_phones, candidate_military_service,
-    candidate_preferred_locations, candidate_skills, candidate_social_network
+    candidate_preferred_locations, candidate_skills, candidate_social_network,
+    candidate_areas_of_interest, candidate_custom_fields
 )
 
 # TODO: Implement server side custom error codes and add necessary assertions
 ######################## Candidate ########################
-def test_create_candidate(sample_user, user_auth):
+def test_create_candidate_successfully(sample_user, user_auth):
     """
     Test:   Create a new candidate and candidate's info
     Expect: 201
@@ -41,7 +42,7 @@ def test_create_candidate(sample_user, user_auth):
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
 
     # Create Candidate
-    create_resp = post_to_candidate_resource(token)
+    create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
 
     resp_dict = create_resp.json()
     print response_info(create_resp.request, resp_dict, create_resp.status_code)
@@ -69,8 +70,8 @@ def test_create_candidate_and_retrieve_it(sample_user, user_auth):
 
     # Retreive Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    candidate_dict = get_from_candidate_resource(token, candidate_id)
-    # TODO: get-object must be identical to data after removing all ids & none values
+    resp = get_from_candidate_resource(token, candidate_id)
+    print response_info(resp.request, resp.json(), resp.status_code)
 
 
 def test_create_an_existing_candidate(sample_user, user_auth):
@@ -89,7 +90,7 @@ def test_create_an_existing_candidate(sample_user, user_auth):
     resp_dict = create_resp.json()
     print response_info(create_resp.request, resp_dict, create_resp.status_code)
     assert create_resp.status_code == 400
-    assert 'error' in resp_dict
+    assert 'error' in resp_dict # TODO: assert on server side custom errors
 
 
 def test_create_candidate_with_missing_keys(sample_user, user_auth):
@@ -159,10 +160,56 @@ def test_create_candidate_with_bad_zip_code(sample_user, user_auth):
     assert candidate_dict['addresses'][0]['zip_code'] == None
 
 ######################## CandidateAreaOfInterest ########################
-# TODO: create test once user service is available
+def test_create_candidate_area_of_interest(sample_user, user_auth):
+    """
+    Test:   Create CandidateAreaOfInterest
+    Expect: 201
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
 
-######################## CandidateCustomFields ########################
-# TODO: create test once user service is available
+    # Create Candidate + CandidateAreaOfInterest
+    data = candidate_areas_of_interest(domain_id=sample_user.domain_id)
+    create_resp = post_to_candidate_resource(access_token=token, data=data)
+    print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    resp = get_from_candidate_resource(token, candidate_id)
+    print response_info(resp.request, resp.json(), resp.status_code)
+
+    candidate_aoi = resp.json()['candidate']['areas_of_interest']
+    assert isinstance(candidate_aoi, list)
+    assert candidate_aoi[0]['name'] == db.session.query(AreaOfInterest).get(candidate_aoi[0]['id']).name
+    assert candidate_aoi[1]['name'] == db.session.query(AreaOfInterest).get(candidate_aoi[1]['id']).name
+
+######################## CandidateCustomField ########################
+def test_create_candidate_custom_fields(sample_user, user_auth):
+    """
+    Test:   Create CandidateCustomField
+    Expect: 201
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate + CandidateCustomField
+    data = candidate_custom_fields(domain_id=sample_user.domain_id)
+    create_resp = post_to_candidate_resource(access_token=token, data=data)
+    print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    resp = get_from_candidate_resource(token, candidate_id)
+    print response_info(resp.request, resp.json(), resp.status_code)
+
+    can_custom_fields = resp.json()['candidate']['custom_fields']
+    assert isinstance(can_custom_fields, list)
+    assert can_custom_fields[0]['value'] == data['candidate']['custom_fields'][0]['value']
+    assert can_custom_fields[1]['value'] == data['candidate']['custom_fields'][1]['value']
 
 ######################## CandidateEducations ########################
 def test_create_candidate_educations(sample_user, user_auth):

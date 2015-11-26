@@ -22,6 +22,15 @@ class CandidateAreaOfInterest(db.Model):
                                 (CandidateAreaOfInterest.candidate_id == candidate_id,
                                  CandidateAreaOfInterest.area_of_interest_id == area_of_interest_id)).first()
 
+    def __repr__(self):
+        return "<CandidateAreaOfInterest (area_of_interest_id=%r)" % self.area_of_interest_id
+
+    @classmethod
+    def get_areas_of_interest(cls, candidate_id, area_of_interest_id):
+        return cls.query.filter(db.and_
+                                (CandidateAreaOfInterest.candidate_id == candidate_id,
+                                 CandidateAreaOfInterest.area_of_interest_id == area_of_interest_id)).first()
+
 
 class ReferenceEmail(db.Model):
     __tablename__ = 'reference_email'

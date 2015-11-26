@@ -62,7 +62,7 @@ class CandidateResource(Resource):
             if not is_number(candidate_id):
                 raise InvalidUsage(error_message="Candidate ID must be an integer")
 
-        if candidate_email:
+        elif candidate_email:
             # Email address must be valid
             if not is_valid_email(candidate_email):
                 raise InvalidUsage(error_message="A valid email address is required")
@@ -82,7 +82,7 @@ class CandidateResource(Resource):
 
     def post(self, **kwargs):
         """
-        POST /web/api/candidates
+        POST /v1/candidates
         input: {'candidates': [candidateObject1, candidateObject2, ...]}
         Creates new candidate(s).
         Takes a JSON dict containing:
@@ -191,10 +191,12 @@ class CandidateResource(Resource):
     def patch(self, **kwargs):
         """
         Function can update candidate(s).
+
         Takes a JSON dict containing:
             - a candidates key and a list of candidate-object(s) as values
         Function only accepts JSON dict.
         JSON dict must contain candidate's ID.
+
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
         # Authenticated user
@@ -299,9 +301,11 @@ class CandidateResource(Resource):
     def delete(self, **kwargs):
         """
         Function will delete candidate objects from CloudSearch and database.
+
         Caveats:
         - Only candidate's owner can delete candidate.
         - Candidate must be in the same domain as authed_user
+
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
         # Authenticate user

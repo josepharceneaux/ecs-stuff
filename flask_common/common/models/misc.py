@@ -32,10 +32,10 @@ class Activity(db.Model):
 class AreaOfInterest(db.Model):
     __tablename__ = 'area_of_interest'
     id = db.Column(db.BigInteger, primary_key=True)
-    domain_id = db.Column('domainId', db.Integer, db.ForeignKey('domain.id'))
-    description = db.Column('description', db.String(255))
-    parent_id = db.Column('parentId', db.BigInteger, db.ForeignKey('area_of_interest.id'))
-    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
+    name = db.Column('Description', db.String(255))
+    parent_id = db.Column('ParentId', db.BigInteger, db.ForeignKey('area_of_interest.id'))
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<AreaOfInterest (name='%r')>" % self.name
@@ -215,12 +215,12 @@ class ZipCode(db.Model):
 class CustomField(db.Model):
     __tablename__ = 'custom_field'
     id = db.Column(db.Integer, primary_key=True)
-    domain_id = db.Column('domainId', db.Integer, db.ForeignKey('domain.id'))
-    name = db.Column('name', db.String(255))
-    type = db.Column('type', db.String(127))
-    category_id = db.Column('categoryId', db.Integer)
-    added_time = db.Column('addedTime', db.DateTime)
-    # updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
+    name = db.Column('Name', db.String(255))
+    type = db.Column('Type', db.String(127))
+    category_id = db.Column('CategoryId', db.Integer)
+    added_time = db.Column('AddedTime', db.DateTime)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationship
     candidate_custom_fields = relationship('CandidateCustomField', backref='custom_field')
@@ -228,15 +228,9 @@ class CustomField(db.Model):
     def __repr__(self):
         return "<CustomField (name = %r)>" % self.name
 
-
-class CustomFieldCategory(db.Model):
-        __tablename__ = 'custom_field_category'
-        id = db.Column(db.Integer, primary_key=True)
-        domain_id = db.Column('domainId', db.Integer, db.ForeignKey('domain.id'))
-        name = db.Column('name', db.String(255))
-
-        def __repr__(self):
-            return "<CustomFieldCategory (name = %r)>" % self.name
+    @classmethod
+    def get_domain_custom_fields(cls, domain_id):
+        return cls.query.filter(CustomField.domain_id==domain_id).all()
 
 
 class UserEmailTemplate(db.Model):
@@ -270,4 +264,3 @@ class EmailTemplateFolder(db.Model):
     domain = relationship(u'Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
     parent = relationship(u'EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
                                                                                        cascade="all, delete-orphan"))
-

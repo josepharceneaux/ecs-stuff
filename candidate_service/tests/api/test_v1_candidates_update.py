@@ -14,18 +14,18 @@ from candidate_service.common.tests.conftest import *
 # Helper functions
 from helpers import (
     response_info, post_to_candidate_resource, get_from_candidate_resource,
-    update_candidate, patch_to_candidate_resource
+    patch_to_candidate_resource
 )
 
 # Candidate sample data
 from candidate_sample_data import (
-    fake, generate_single_candidate_data, candidate_addresses, candidate_areas_of_interest,
-    candidate_educations, candidate_experience, candidate_work_preference, candidate_emails,
-    candidate_phones
+    fake, generate_single_candidate_data, candidate_data_for_update, candidate_addresses,
+    candidate_areas_of_interest, candidate_educations, candidate_experience,
+    candidate_work_preference, candidate_emails, candidate_phones, candidate_custom_fields
 )
 
 ######################## Candidate ########################
-def test_update_candidate(sample_user, user_auth):
+def test_update_existing_candidate(sample_user, user_auth):
     """
     Test:   Update an existing Candidate
     Expect: 200
@@ -35,8 +35,36 @@ def test_update_candidate(sample_user, user_auth):
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
 
+    # Create a candidate
+    create_candidate = post_to_candidate_resource(token).json()
+
+    # Retrieve Candidate
+    candidate_id = create_candidate['candidates'][0]['id']
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    data = candidate_data_for_update(
+        candidate_id=candidate_id,
+        email_1_id=candidate_dict['emails'][0]['id'],
+        email_2_id=candidate_dict['emails'][1]['id'],
+        phone_1_id=candidate_dict['phones'][0]['id'],
+        phone_2_id=candidate_dict['phones'][1]['id'],
+        address_1_id=candidate_dict['addresses'][0]['id'],
+        address_2_id=candidate_dict['addresses'][1]['id'],
+        work_preference_id=candidate_dict['work_preference']['id'],
+        work_experience_1_id=candidate_dict['work_experiences'][0]['id'],
+        education_1_id=candidate_dict['educations'][0]['id'],
+        degree_1_id=candidate_dict['educations'][0]['degrees'][0]['id'],
+        military_1_id=candidate_dict['military_services'][0]['id'],
+        preferred_location_1_id=candidate_dict['preferred_locations'][0]['id'],
+        preferred_location_2_id=candidate_dict['preferred_locations'][1]['id'],
+        skill_1_id=candidate_dict['skills'][0]['id'],
+        skill_2_id=candidate_dict['skills'][1]['id'],
+        social_1_id=candidate_dict['social_networks'][0]['id'],
+        social_2_id=candidate_dict['social_networks'][1]['id']
+    )
+
     # Create and update a Candidate
-    update_resp = update_candidate(token)
+    update_resp = patch_to_candidate_resource(token, data)
     print response_info(update_resp.request, update_resp.json(), update_resp.status_code)
     assert update_resp.status_code == 200
 
@@ -210,7 +238,8 @@ def test_update_candidate_current_address(sample_user, user_auth):
 ######################## CandidateAreaOfInterest ########################
 def test_add_new_area_of_interest(sample_user, user_auth):
     """
-    Test:   Add a new CandidateAreaOfInterest. Number of CandidateAreaOfInterest should increase by 1.
+    Test:   Add a new CandidateAreaOfInterest to existing Candidate.
+            Number of CandidateAreaOfInterest should increase by 1.
     Expect: 200
     :type sample_user:  User
     :type user_auth:    UserAuthentication
@@ -218,12 +247,8 @@ def test_add_new_area_of_interest(sample_user, user_auth):
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
 
-    # Create AreaOfInterest in domain
-    areas_of_interest_in_domain = areas_of_interest_for_domain(user=sample_user)
-
     # Create Candidate
-    data = generate_single_candidate_data(areas_of_interest=areas_of_interest_in_domain[0])
-    create_resp = post_to_candidate_resource(token, data)
+    create_resp = post_to_candidate_resource(token)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
@@ -232,16 +257,19 @@ def test_add_new_area_of_interest(sample_user, user_auth):
     candidate_area_of_interest_count = len(candidate_dict['areas_of_interest'])
 
     # Add new CandidateAreaOfInterest
-    data = candidate_areas_of_interest(aoi=areas_of_interest_in_domain[1], candidate_id=candidate_id)
-    updated_resp = patch_to_candidate_resource(token, data)
-    print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+    data = candidate_areas_of_interest(sample_user.domain_id, candidate_id)
+    print "\narea_of_interest = %s" % data
+    resp = patch_to_candidate_resource(token, data)
+    print response_info(resp.request, resp.json(), resp.status_code)
 
     # Retrieve Candidate after update
-    updated_candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
-
-    assert candidate_id == updated_candidate_dict['id']
-    assert isinstance(updated_candidate_dict['areas_of_interest'], list)
-    assert len(updated_candidate_dict['areas_of_interest']) == candidate_area_of_interest_count + 1
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+    candidate_aois = candidate_dict['areas_of_interest']
+    print "\ncan_aois = %s" % candidate_aois
+    assert isinstance(candidate_aois, list)
+    assert candidate_aois[0]['name'] == db.session.query(AreaOfInterest).get(candidate_aois[0]['id']).name
+    assert candidate_aois[1]['name'] == db.session.query(AreaOfInterest).get(candidate_aois[1]['id']).name
+    assert len(candidate_aois) == candidate_area_of_interest_count + 2
 
 
 # def test_update_candidate_area_of_interest(sample_user, user_auth):
@@ -255,11 +283,8 @@ def test_add_new_area_of_interest(sample_user, user_auth):
 #     # Get access token
 #     token = user_auth.get_auth_token(sample_user, True)['access_token']
 #
-#     # Create AreaOfInterest in domain
-#     areas_of_interest_in_domain = areas_of_interest_for_domain(user=sample_user)
-#
 #     # Create Candidate
-#     can_data = generate_single_candidate_data(areas_of_interest=areas_of_interest_in_domain[0])
+#     can_data = generate_single_candidate_data(domain_id=sample_user.domain_id)
 #     create_resp = post_to_candidate_resource(token, can_data)
 #
 #     # Retrieve Candidate
@@ -271,24 +296,17 @@ def test_add_new_area_of_interest(sample_user, user_auth):
 #     can_aoi_count = len(candidate_dict['areas_of_interest'])
 #
 #     # Update CandidateAreaOfInterest
-#     data = candidate_area_of_interest_for_updating(candidate_id, aoi=areas_of_interest_in_domain[1])
+#     data = candidate_areas_of_interest(domain_id=sample_user.domain_id, candidate_id=candidate_id)
 #     updated_resp = patch_to_candidate_resource(token, data)
 #     print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
-#
-#     # Retrieve Candidate after update
-#     updated_candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
-#     print "aoi_after_update = %s" % updated_candidate_dict['areas_of_interest']
-#
-#     assert candidate_id == updated_candidate_dict['id']
+
 
 # TODO: Send in erroneous request to add/update CandidateAreaOfInterest
 # TODO: How do we know if an updated is requested for CandidateAreaOfInterest
 ######################## CandidateCustomField ########################
-# TODO: complete test after user-api is available
-# def test_add_new_custom_field(sample_user, user_auth):
+# def test_add_custom_field(sample_user, user_auth):
 #     """
-#     Test:   Add a new CandidateCustomField to an existing Candidate.
-#             Candidate's custom_field should increase by 1.
+#     Test:   Add CandidateCustomField to an existing Candidate.
 #     Expect: 200
 #     :type sample_user:  User
 #     :type user_auth:    UserAuthentication
@@ -297,26 +315,27 @@ def test_add_new_area_of_interest(sample_user, user_auth):
 #     token = user_auth.get_auth_token(sample_user, True)['access_token']
 #
 #     # Create Candidate
-#     create_resp = post_to_candidate_resource(token)
+#     create_resp = post_to_candidate_resource(token, data=None, domain_id=sample_user.domain_id)
+#     print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
 #
 #     # Retrieve Candidate
 #     candidate_id = create_resp.json()['candidates'][0]['id']
-#     candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
-#     custom_fields_before_update = candidate_dict['custom_fields']
-#     custom_fields_count_before_update = len(custom_fields_before_update)
+#     can_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+#     print "\ncan_dict = %s" % can_dict
 #
-#     # Add new CandidateCustomField
-#     data = {'candidate': {'id': candidate_id, 'custom_fields': [
-#         {'custom_field_id':'', 'value': 'entrepreneur'}
-#     ]}}
-#     updated_resp = patch_to_candidate_resource(token, data)
-#     print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
+#     # Add CandidateCustomField
+#     data = candidate_custom_fields(domain_id=sample_user.domain_id, candidate_id=candidate_id)
+#     print "\ndata = %s" % data
+#     patch_to_candidate_resource(token, data)
 #
-#     # Retrieve updated Candidate
-#     candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
-#     custom_fileds_after_update = candidate_dict['custom_fields']
-#     print "\nbefore = %s" % custom_fields_before_update
-#     print "\nafter = %s" % custom_fileds_after_update
+#     # Retrieve Candidate after update
+#     updated_resp = get_from_candidate_resource(token, candidate_id)
+#     can_custom_fields_after_update = updated_resp.json()['candidate']['custom_fields']
+#     print "\ncan_custom_fields = {}".format(can_custom_fields_after_update)
+
+    # assert isinstance(can_custom_fields_after_update, list)
+    # assert can_custom_fields_after_update[0]['value'] == data['candidate']['custom_fields'][0]['value']
+    # assert can_custom_fields_after_update[1]['value'] == data['candidate']['custom_fields'][1]['value']
 
 ######################## CandidateEducation ########################
 def test_add_new_education(sample_user, user_auth):
