@@ -64,7 +64,7 @@ class CandidateResource(Resource):
             if not is_number(candidate_id):
                 raise InvalidUsage(error_message="Candidate ID must be an integer")
 
-        if candidate_email:
+        elif candidate_email:
             # Email address must be valid
             if not is_valid_email(candidate_email):
                 raise InvalidUsage(error_message="A valid email address is required")
@@ -84,7 +84,7 @@ class CandidateResource(Resource):
 
     def post(self, **kwargs):
         """
-        POST /web/api/candidates
+        POST /v1/candidates
         input: {'candidates': [candidateObject1, candidateObject2, ...]}
 
         Creates new candidate(s).

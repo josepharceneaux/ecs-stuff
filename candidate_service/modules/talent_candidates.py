@@ -3,8 +3,9 @@ Helper functions related to retrieving, creating, updating, and deleting candida
 """
 # Standard libraries
 import datetime
-from datetime import date
+import dateutil.parser
 import simplejson as json
+from datetime import date
 
 # Database connection and logger
 from candidate_service.common.models.db import db
@@ -38,7 +39,7 @@ from candidate_service.common.utils.common_functions import get_coordinates
 ##################################################
 def fetch_candidate_info(candidate_id, fields=None):
     """
-    Fetch for candidate object via candidate's id
+    Fetch Candidate and candidate related objects via Candidate's id
     :type       candidate_id: int
     :type       fields: None | str
 
@@ -59,6 +60,10 @@ def fetch_candidate_info(candidate_id, fields=None):
         first_name = candidate.first_name or ''
         last_name = candidate.last_name or ''
         full_name = (first_name.capitalize() + ' ' + last_name.capitalize()).strip()
+
+    created_at_datetime = None
+    if get_all_fields or 'created_at_datetime' in fields:
+        created_at_datetime = str(candidate.added_time)
 
     emails = None
     if get_all_fields or 'emails' in fields:
@@ -90,7 +95,7 @@ def fetch_candidate_info(candidate_id, fields=None):
 
     skills = None
     if get_all_fields or 'skills' in fields:
-        skills = candidate_skills(candidate=candidate)
+        skills = candidate_skills(candidate_id=candidate_id)
 
     areas_of_interest = None
     if get_all_fields or 'areas_of_interest' in fields:
@@ -98,7 +103,7 @@ def fetch_candidate_info(candidate_id, fields=None):
 
     military_services = None
     if get_all_fields or 'military_services' in fields:
-        military_services = candidate_military_services(candidate=candidate)
+        military_services = candidate_military_services(candidate_id=candidate_id)
 
     custom_fields = None
     if get_all_fields or 'custom_fields' in fields:
@@ -123,7 +128,7 @@ def fetch_candidate_info(candidate_id, fields=None):
     return_dict = {
         'id': candidate_id,
         'full_name': full_name,
-        'created_at_datetime': None,
+        'created_at_datetime': created_at_datetime,
         'emails': emails,
         'phones': phones,
         'addresses': addresses,
@@ -149,32 +154,36 @@ def fetch_candidate_info(candidate_id, fields=None):
 def candidate_emails(candidate):
     """
     :type candidate:    Candidate
-    :rtype              list
+    :rtype              [dict]
     """
     assert isinstance(candidate, Candidate)
     emails = candidate.candidate_emails
     return [{'id': email.id,
              'label': email.email_label.description,
-             'address': email.address
+             'address': email.address,
+             'is_default': email.is_default
              } for email in emails]
 
 
 def candidate_phones(candidate):
     """
     :type candidate:    Candidate
-    :rtype              list
+    :rtype              [dict]
     """
+    assert isinstance(candidate, Candidate)
     phones = candidate.candidate_phones
     return [{'id': phone.id,
              'label': phone.phone_label.description,
-             'value': phone.value
+             'value': phone.value,
+             'extension': phone.extension,
+             'is_default': phone.is_default
              } for phone in phones]
 
 
 def candidate_addresses(candidate_id):
     """
     :type candidate_id:     int
-    :rtype                  list
+    :rtype                  [dict]
     """
     # Default CandidateAddress must be returned first
     addresses = db.session.query(CandidateAddress).filter_by(candidate_id=candidate_id).\
@@ -186,7 +195,7 @@ def candidate_addresses(candidate_id):
              'state': address.state,
              'zip_code': address.zip_code,
              'po_box': address.po_box,
-             'country': country_name_from_country_id(country_id=address.country_id),
+             'country': Country.country_name_from_country_id(country_id=address.country_id),
              'latitude': address.coordinates and address.coordinates.split(',')[0],
              'longitude': address.coordinates and address.coordinates.split(',')[1],
              'is_default': address.is_default
@@ -196,9 +205,9 @@ def candidate_addresses(candidate_id):
 def candidate_experiences(candidate_id):
     """
     :type candidate_id:     int
-    :rtype                  list
+    :rtype                  [dict]
     """
-    # Candidate experiences queried from db and returned in descending order
+    # Query CandidateExperience from db in descending order based on start_date & is_current
     experiences = db.session.query(CandidateExperience).filter_by(candidate_id=candidate_id).\
         order_by(CandidateExperience.is_current.desc(),
                  CandidateExperience.start_year.desc(),
@@ -210,16 +219,16 @@ def candidate_experiences(candidate_id):
              'end_date': date_of_employment(year=experience.end_year, month=experience.end_month or 1),
              'city': experience.city,
              'state': experience.state,
-             'country': country_name_from_country_id(country_id=experience.country_id),
+             'country': Country.country_name_from_country_id(country_id=experience.country_id),
              'is_current': experience.is_current,
-             'experience_bullets': candidate_experience_bullets(experience=experience),
+             'experience_bullets': _candidate_experience_bullets(experience=experience),
              } for experience in experiences]
 
 
-def candidate_experience_bullets(experience):
+def _candidate_experience_bullets(experience):
     """
     :type experience:   CandidateExperience
-    :rtype              list
+    :rtype              [dict]
     """
     experience_bullets = experience.candidate_experience_bullets
     return [{'id': experience_bullet.id,
@@ -231,8 +240,9 @@ def candidate_experience_bullets(experience):
 def candidate_work_preference(candidate):
     """
     :type candidate:    Candidate
-    :rtype              list
+    :rtype              dict
     """
+    assert isinstance(candidate, Candidate)
     work_preference = candidate.candidate_work_preferences
     return {'id': work_preference[0].id,
             'authorization': work_preference[0].authorization,
@@ -251,38 +261,41 @@ def candidate_work_preference(candidate):
 def candidate_preferred_locations(candidate):
     """
     :type candidate:    Candidate
-    :rtype              list
+    :rtype              [dict]
     """
+    assert isinstance(candidate, Candidate)
     preferred_locations = candidate.candidate_preferred_locations
     return [{'id': preferred_location.id,
              'address': preferred_location.address,
              'city': preferred_location.city,
              'state': preferred_location.region,
-             'country': country_name_from_country_id(country_id=preferred_location.country_id)
+             'country': Country.country_name_from_country_id(country_id=preferred_location.country_id)
              } for preferred_location in preferred_locations]
 
 
 def candidate_educations(candidate):
     """
     :type candidate:    Candidate
-    :rtype              list
+    :rtype              [dict]
     """
+    assert isinstance(candidate, Candidate)
     educations = candidate.candidate_educations
     return [{'id': education.id,
              'school_name': education.school_name,
              'school_type': education.school_type,
              'is_current': education.is_current,
-             'degrees': candidate_degrees(education=education),
+             'degrees': _candidate_degrees(education=education),
              'city': education.city,
              'state': education.state,
-             'country': country_name_from_country_id(country_id=education.country_id)
+             'country': Country.country_name_from_country_id(country_id=education.country_id),
+             'added_time': str(education.added_time)
              } for education in educations]
 
 
-def candidate_degrees(education):
+def _candidate_degrees(education):
     """
     :type education:    CandidateEducation
-    :rtype              list
+    :rtype              [dict]
     """
     degrees = education.candidate_education_degrees
     return [{'id': degree.id,
@@ -295,14 +308,14 @@ def candidate_degrees(education):
              'gpa': json.dumps(degree.gpa_num, use_decimal=True),
              'start_date': degree.start_time.date().isoformat() if degree.start_time else None,
              'end_date': degree.end_time.date().isoformat() if degree.end_time else None,
-             'degree_bullets': candidate_degree_bullets(degree=degree),
+             'degree_bullets': _candidate_degree_bullets(degree=degree),
              } for degree in degrees]
 
 
-def candidate_degree_bullets(degree):
+def _candidate_degree_bullets(degree):
     """
     :type degree:  CandidateEducationDegree
-    :rtype          list
+    :rtype          [dict]
     """
     degree_bullets = degree.candidate_education_degree_bullets
     return [{'id': degree_bullet.id,
@@ -312,23 +325,26 @@ def candidate_degree_bullets(degree):
              } for degree_bullet in degree_bullets]
 
 
-def candidate_skills(candidate):
+def candidate_skills(candidate_id):
     """
-    :type candidate:    Candidate
-    :rtype              list
+    :type candidate_id: int
+    :rtype              [dict]
     """
-    skills = candidate.candidate_skills
+    # Query CandidateSkill in descending order based on last_used
+    skills = db.session.query(CandidateSkill).filter_by(candidate_id=candidate_id).\
+        order_by(CandidateSkill.last_used.desc())
     return [{'id': skill.id,
              'name': skill.description,
              'months_used': skill.total_months,
-             'last_used_date': skill.last_used.isoformat() if skill.last_used else None
+             'last_used_date': skill.last_used.isoformat() if skill.last_used else None,
+             'added_time': str(skill.added_time)
              } for skill in skills]
 
 
 def candidate_areas_of_interest(candidate_id):
     """
     :type candidate_id: int
-    :rtype              list
+    :rtype              [dict]
     """
     areas_of_interest = db.session.query(CandidateAreaOfInterest).filter_by(candidate_id=candidate_id)
     return [{'id': db.session.query(AreaOfInterest).get(interest.area_of_interest_id).id,
@@ -336,20 +352,22 @@ def candidate_areas_of_interest(candidate_id):
              } for interest in areas_of_interest]
 
 
-def candidate_military_services(candidate):
+def candidate_military_services(candidate_id):
     """
-    :type candidate:    Candidate
-    :rtype              list
+    :type candidate_id:  int
+    :rtype              [dict]
     """
-    military_experiences = candidate.candidate_military_services
+    military_experiences = db.session.query(CandidateMilitaryService).\
+        filter_by(candidate_id=candidate_id).order_by(CandidateMilitaryService.to_date.desc())
+    # military_experiences = candidate.candidate_military_services
     return [{'id': military_info.id,
              'branch': military_info.branch,
              'service_status': military_info.service_status,
              'highest_grade': military_info.highest_grade,
              'highest_rank': military_info.highest_rank,
-             'start_date': military_info.from_date,
-             'end_date': military_info.to_date,
-             'country': country_name_from_country_id(country_id=military_info.country_id),
+             'start_date': str(military_info.from_date),
+             'end_date': str(military_info.to_date),
+             'country': Country.country_name_from_country_id(country_id=military_info.country_id),
              'comments': military_info.comments
              } for military_info in military_experiences]
 
@@ -357,11 +375,11 @@ def candidate_military_services(candidate):
 def candidate_custom_fields(candidate):
     """
     :type candidate:    Candidate
-    :rtype              list
+    :rtype              [dict]
     """
+    can_custom_fields = []
     custom_fields = candidate.candidate_custom_fields
     return [{'id': custom_field.custom_field_id,
-             'name': custom_field.custom_field.name,
              'value': custom_field.value,
              'created_at_datetime': custom_field.added_time.isoformat()
              } for custom_field in custom_fields]
@@ -370,7 +388,7 @@ def candidate_custom_fields(candidate):
 def candidate_social_networks(candidate):
     """
     :type candidate:    Candidate
-    :rtype              list
+    :rtype              [dict]
     """
     social_networks = candidate.candidate_social_networks
     return [{'id': soc_net.id,
@@ -420,31 +438,15 @@ def date_of_employment(year, month, day=1):
     return str(date(year, month, day)) if year else None
 
 
-def country_name_from_country_id(country_id):
-    """
-    :type country_id:   int
-    :rtype              str
-    """
-    if not country_id:
-        return 'United States'
-    country = db.session.query(Country).get(country_id)
-    if country:
-        return country.name
-    else:
-        logger.info('country_name_from_country_id: country_id is not recognized: %s', country_id)
-        return 'United States'
-
-
 def get_candidate_id_from_candidate_email(candidate_email):
     """
     :type candidate_email:  CandidateEmail
     :rtype                  int
     """
-    candidate_email_row = db.session.query(CandidateEmail). \
-        filter_by(address=candidate_email).first()
+    candidate_email_row = db.session.query(CandidateEmail).filter_by(address=candidate_email).first()
     if not candidate_email_row:
-        logger.info('get_candidate_id_from_candidate_email: '
-                    'candidate email not recognized: %s', candidate_email)
+        logger.info('get_candidate_id_from_candidate_email: candidate email not recognized: %s',
+                    candidate_email)
         return None
 
     return candidate_email_row.candidate_id
@@ -859,16 +861,16 @@ def _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest):
     """
     for area_of_interest in areas_of_interest:
 
-        aoi_id = area_of_interest['id']
-        candidate_aoi = CandidateAreaOfInterest.get_areas_of_interest(candidate_id=candidate_id,
-                                                                      area_of_interest_id=aoi_id)
+        aoi_id = area_of_interest['area_of_interest_id']
+        # candidate_aoi = CandidateAreaOfInterest.get_areas_of_interest(candidate_id=candidate_id,
+        #                                                               area_of_interest_id=aoi_id)
 
-        if candidate_aoi:  # Update
-            can_aoi_query = db.session.query(CandidateAreaOfInterest).filter_by(candidate_id=candidate_id)
-            can_aoi_query.update({'area_of_interest_id': aoi_id})
+        # if candidate_aoi:  # Update
+        #     can_aoi_query = db.session.query(CandidateAreaOfInterest).filter_by(candidate_id=candidate_id)
+        #     can_aoi_query.update({'area_of_interest_id': aoi_id})
 
-        else:  # Add
-            db.session.add(CandidateAreaOfInterest(candidate_id=candidate_id, area_of_interest_id=aoi_id))
+        # else:  # Add
+        db.session.add(CandidateAreaOfInterest(candidate_id=candidate_id, area_of_interest_id=aoi_id))
 
 
 def _add_or_update_candidate_custom_field_ids(candidate_id, custom_fields, added_time):
@@ -888,8 +890,7 @@ def _add_or_update_candidate_custom_field_ids(candidate_id, custom_fields, added
             custom_field_dict = dict((k, v) for k, v in custom_field_dict.iteritems() if v is not None)
 
             # Update CandidateCustomField
-            db.session.query(CandidateCustomField).filter_by(candidate_id=candidate_id).\
-                update(custom_field_dict)
+            db.session.query(CandidateCustomField).filter_by(candidate_id=candidate_id).update(custom_field_dict)
 
         else:  # Add
             custom_field_dict.update(dict(added_time=added_time, candidate_id=candidate_id))
@@ -1146,7 +1147,7 @@ def _add_or_update_emails(candidate_id, emails):
 
         # If there's no is_default, the first email should be default
         is_default = email.get('is_default')
-        is_default = i == 0 if emails_has_default else is_default
+        is_default = i == 0 if not emails_has_default else is_default
         email_address = email.get('address')
 
         email_dict = dict(
@@ -1175,12 +1176,13 @@ def _add_or_update_phones(candidate_id, phones):
     """
     Function will update CandidatePhone or create new one(s).
     """
+    # TODO: parse out phone extension. Currently the value + extension are being added to the phone's value in the db
     phone_has_default = any([phone.get('is_default') for phone in phones])
     for i, phone in enumerate(phones):
 
         # If there's no is_default, the first phone should be default
         is_default = phone.get('is_default')
-        is_default = i == 0 if phone_has_default else is_default
+        is_default = i == 0 if not phone_has_default else is_default
 
         phone_dict = dict(
             value=phone.get('value'),
@@ -1207,6 +1209,14 @@ def _add_or_update_military_services(candidate_id, military_services):
     Function will update CandidateMilitaryService or create new one(s).
     """
     for military_service in military_services:
+
+        # Convert ISO 8061 date object to datetime object
+        from_date, to_date = military_service.get('from_date'), military_service.get('to_date')
+        if from_date:
+            from_date = dateutil.parser.parse(from_date)
+        if to_date:
+            to_date = dateutil.parser.parse(to_date)
+
         military_service_dict = dict(
             country_id=Country.country_id_from_name_or_code(military_service.get('country')),
             service_status=military_service.get('service_status'),
@@ -1214,8 +1224,8 @@ def _add_or_update_military_services(candidate_id, military_services):
             highest_grade=military_service.get('highest_grade'),
             branch=military_service.get('branch'),
             comments=military_service.get('comments'),
-            from_date=military_service.get('from_date'),
-            to_date=military_service.get('to_date')
+            from_date=from_date,
+            to_date=to_date
         )
 
         military_service_id = military_service.get('id')
@@ -1268,11 +1278,16 @@ def _add_or_update_skills(candidate_id, skills, added_time):
     """
     for skill in skills:
 
+        # Convert ISO 8601 date format to datetime object
+        last_used = skill.get('last_used')
+        if last_used:
+            last_used = dateutil.parser.parse(skill.get('last_used'))
+
         skills_dict = dict(
             list_order=skill.get('list_order'),
             description=skill.get('name'),
             total_months=skill.get('months_used'),
-            last_used=skill.get('last_used')
+            last_used=last_used
         )
 
         skill_id = skill.get('id')
@@ -1285,8 +1300,7 @@ def _add_or_update_skills(candidate_id, skills, added_time):
             db.session.query(CandidateSkill).filter_by(candidate_id=candidate_id).update(skills_dict)
 
         else:  # Add
-            skills_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id,
-                                    added_time=added_time))
+            skills_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id, added_time=added_time))
             db.session.add(CandidateSkill(**skills_dict))
 
 
@@ -1329,8 +1343,7 @@ def _delete_candidates(candidate_ids, user_id, source_product_id):
     list_segment = candidate_ids[0:100]
     candidates = db.session.query(Candidate).filter(Candidate.id.in_(candidate_ids))
 
-    from activity_service.activities_app.views.api import (TalentActivityManager,
-                                                           create_activity)
+    from activity_service.activities_app.views.api import (TalentActivityManager, create_activity)
 
     activity_api = TalentActivityManager()
 
@@ -1345,8 +1358,7 @@ def _delete_candidates(candidate_ids, user_id, source_product_id):
                                             formatted_name=candidate.formatted_name))
 
         # Delete all candidates in segment
-        db.session.query(Candidate).filter(Candidate.id.in_(list_segment)). \
-            delete(synchronize_session=False)
+        db.session.query(Candidate).filter(Candidate.id.in_(list_segment)).delete(synchronize_session=False)
 
         # Get next segment
         list_offset += 100

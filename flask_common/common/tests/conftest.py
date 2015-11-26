@@ -10,7 +10,7 @@ from faker import Faker
 # Application Specific
 from ..models.db import db
 from ..models.user import (Client, Domain, User, Token)
-from ..models.misc import (Culture, Organization, AreaOfInterest)
+from ..models.misc import (Culture, Organization, AreaOfInterest, CustomField)
 
 fake = Faker()
 ISO_FORMAT = '%Y-%m-%d %H:%M'
@@ -194,18 +194,33 @@ def test_org(request):
     return test_org
 
 
-def areas_of_interest_for_domain(user):
+def areas_of_interest_for_domain(domain_id):
     """
-    Function will add AreaOfInterest to db and return their IDs
+    Function will add AreaOfInterest to user's domain
     :type user: User
     :rtype      [AreaOfInterest]
     """
     areas_of_interest = [{'name': fake.job()}, {'name': fake.job()}]
     for area_of_interest in areas_of_interest:
-        db.session.add(AreaOfInterest(domain_id=user.domain_id, name=area_of_interest['name']))
+        db.session.add(AreaOfInterest(domain_id=domain_id, name=area_of_interest['name']))
 
     db.session.commit()
-    return AreaOfInterest.get_domain_areas_of_interest(user.domain_id)
+    return AreaOfInterest.get_domain_areas_of_interest(domain_id=domain_id)
+
+
+def custom_field_for_domain(domain_id):
+    """
+    Function will add CustomField to user's domain
+    :type user: User
+    :rtype  [CustomField]
+    """
+    import datetime
+    custom_fields = [{'name': fake.word(), 'type': 'string'}, {'name': fake.word(), 'type': 'string'}]
+    for custom_field in custom_fields:
+        db.session.add(CustomField(domain_id=domain_id, name=custom_field['name'],
+                                   type=custom_field['type'], added_time=datetime.datetime.now()))
+    db.session.commit()
+    return CustomField.get_domain_custom_fields(domain_id=domain_id)
 
 
 def randomword(length):

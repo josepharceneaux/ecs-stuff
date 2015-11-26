@@ -41,7 +41,7 @@ def test_get_candidate_without_authed_user(sample_user, user_auth):
     resp_dict = resp.json()
     print response_info(resp.request, resp_dict, resp.status_code)
     assert resp.status_code == 401
-    assert 'error' in resp_dict
+    assert 'error' in resp_dict # TODO: assert on server side custom errors
 
 
 def test_get_candidate_without_id_or_email(sample_user, user_auth):
@@ -66,7 +66,7 @@ def test_get_candidate_without_id_or_email(sample_user, user_auth):
     resp_dict = resp.json()
     print response_info(resp.request, resp_dict, resp.status_code)
     assert resp.status_code == 400
-    assert 'error' in resp_dict
+    assert 'error' in resp_dict # TODO: assert on server side custom errors
 
 
 def test_get_candidate_from_forbidden_domain(sample_user, user_auth, sample_user_2):
@@ -85,8 +85,6 @@ def test_get_candidate_from_forbidden_domain(sample_user, user_auth, sample_user
     resp = post_to_candidate_resource(token)
     resp_dict = resp.json()
     print response_info(resp.request, resp_dict, resp.status_code)
-    assert resp.status_code == 201
-    assert 'candidates' in resp_dict and 'id' in resp_dict['candidates'][0]
 
     # Get access token for sample_user_2
     token_2 = user_auth.get_auth_token(sample_user_2, get_bearer_token=True)['access_token']
@@ -98,7 +96,7 @@ def test_get_candidate_from_forbidden_domain(sample_user, user_auth, sample_user
     resp_dict = resp.json()
     print response_info(resp.request, resp_dict, resp.status_code)
     assert resp.status_code == 403
-    assert 'error' in resp_dict
+    assert 'error' in resp_dict # TODO: assert on server side custom errors
 
 
 def test_get_candidate_via_invalid_email(sample_user, user_auth):
@@ -114,7 +112,7 @@ def test_get_candidate_via_invalid_email(sample_user, user_auth):
 
     print response_info(resp.request, resp.json(), resp.status_code)
     assert resp.status_code == 400
-    assert 'error' in resp.json()
+    assert 'error' in resp.json() # TODO: assert on server side custom errors
 
 
 def test_get_candidate_via_id_and_email(sample_user, user_auth):
@@ -128,7 +126,7 @@ def test_get_candidate_via_id_and_email(sample_user, user_auth):
     token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create candidate
-    resp = post_to_candidate_resource(token)
+    resp = post_to_candidate_resource(access_token=token, data=None, domain_id=sample_user.domain_id)
     resp_dict = resp.json()
     print response_info(resp.request, resp_dict, resp.status_code)
 
@@ -154,5 +152,4 @@ def test_get_candidate_via_id_and_email(sample_user, user_auth):
     print response_info(resp.request, resp_dict, resp.status_code)
     assert resp.status_code == 200
     assert isinstance(resp_dict, dict)
-    assert check_for_id(_dict=resp_dict['candidate']) is not False
-
+    assert check_for_id(_dict=resp_dict['candidate']) is not False # assert every object has an id-key

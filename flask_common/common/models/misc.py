@@ -228,6 +228,10 @@ class CustomField(db.Model):
     def __repr__(self):
         return "<CustomField (name = %r)>" % self.name
 
+    @classmethod
+    def get_domain_custom_fields(cls, domain_id):
+        return cls.query.filter(CustomField.domain_id==domain_id).all()
+
 
 class UserEmailTemplate(db.Model):
     __tablename__ = 'user_email_template'
