@@ -63,3 +63,4 @@ simple-crypt==4.1.7
 Flask-Limiter
 newrelic
 healthcheck
+simplejson==3.8.0

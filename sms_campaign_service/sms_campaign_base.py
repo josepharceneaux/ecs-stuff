@@ -20,11 +20,11 @@ from datetime import datetime
 
 # Application Specific
 from sms_campaign_service import logger
-from sms_campaign_service.common.error_handling import ResourceNotFound, ForbiddenError
 from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.user import UserPhone, User
+from sms_campaign_service.common.error_handling import ResourceNotFound
 from sms_campaign_service.common.utils.campaign_utils import CampaignBase
-from sms_campaign_service.config import SMS_URL_REDIRECT, PHONE_LABEL_ID, TWILIO
+from sms_campaign_service.config import SMS_URL_REDIRECT, PHONE_LABEL_ID, TWILIO, IS_DEV
 from sms_campaign_service.common.models.candidate import PhoneLabel, Candidate, \
     CandidatePhone
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign,\
@@ -46,7 +46,7 @@ class SmsCampaignBase(CampaignBase):
 
     This class contains following methods:
 
-    * __init__():
+    * __init__()
         This method is called by creating the class object.
 
         - It takes "user_id" as keyword argument.
@@ -59,7 +59,7 @@ class SmsCampaignBase(CampaignBase):
        This gets all the campaigns created by current user
 
     *  delete_all_campaigns(self)
-        This deletes all the campaings of a user from database
+        This deletes all the campaigns of a user from database
 
     * save(self, form_data)
         This method is used to save the campaign in db table 'sms_campaign' and
@@ -68,33 +68,33 @@ class SmsCampaignBase(CampaignBase):
     * campaign_create_activity(self, sms_campaign)
         This creates activity that SMS campaign created by xyz user
 
-    * buy_twilio_mobile_number(self, phone_label_id=None):
+    * buy_twilio_mobile_number(self, phone_label_id=None)
         To send sms_campaign, we need to reserve a unique number for each user.
         This method is used to reserve a unique number for getTalent user.
 
-    * create_or_update_user_phone(self, phone_number, phone_label_id=None):
+    * create_or_update_user_phone(self, phone_number, phone_label_id=None)
         This method is used to create/update user_phone record.
 
-    * process_send(self, campaign_id=None):
+    * process_send(self, campaign_id=None)
         This method is used send the campaign to candidates.
 
-    * process_link_in_body_text(self, candidate_id):
+    * process_link_in_body_text(self, candidate_id)
         If "body_text" contains any link in it, then we need to transform the
         "body_text" by replacing long url with shorter version using Google's Shorten
         URL API. If body text does does not contain any link, it returns the body_text
         as it is.
 
-    * transform_body_text(self, link_in_body_text, short_url):
+    * transform_body_text(self, link_in_body_text, short_url)
         This replaces the original URL present in "body_text" with the shorted URL.
 
-    * send_sms_campaign_to_candidate(self, candidate):
+    * send_sms_campaign_to_candidate(self, candidate)
         This does the sending part and update "sms_campaign_blast" and "sms_campaign_send".
 
     * create_or_update_sms_campaign_blast(campaign_id=None, send=0, clicks=0, replies=0,
                             sends_update=False, clicks_update=False, replies=False): [static]
         For each campaign, here we create/update stats of that particular campaign.
 
-    * send_sms(self, candidate_phone_value):
+    * send_sms(self, candidate_phone_value)
         This finally sends the sms to candidate using Twilio API.
 
     * create_or_update_sms_campaign_send(campaign_blast_id=None,
@@ -106,35 +106,35 @@ class SmsCampaignBase(CampaignBase):
         This adds an entry in db table "sms_campaign_send_url_conversion" for
         each sms send.
 
-    * create_sms_send_activity(self, candidate, source_id=None):
+    * create_sms_send_activity(self, candidate, source_id=None)
         Here we set params and type to be saved in db table 'Activity' for each sent sms.
         Activity will appear as
             "SMS Campaign <b>%(campaign_name)s</b> has been sent to %(candidate_name)s.".
 
-    * create_campaign_send_activity(self, num_candidates):
+    * create_campaign_send_activity(self, num_candidates)
         Once the campaign has been sent to all candidates, here we set params and type
         to be saved in db table 'Activity' that campaign has been sent to (say)
         40(num_candidates) candidates.
         Activity will appear as "%(campaign_name)s has been sent to %(num_candidates)s.".
 
-    * process_url_redirect(self, campaign_id=None, url_conversion_id=None):
+    * process_url_redirect(self, campaign_id=None, url_conversion_id=None)
         When a candidate clicks on the link present in the body text of sms, this code is
         hit and it updates "clicks" in "sms_campaign_blast" table and "hit_count" in
         "url_conversion" table. Finally it returns the destination url to redirect the
         candidate to actual link provided by recruiter.
 
-    *  create_campaign_url_click_activity(self, candidate):
+    *  create_campaign_url_click_activity(self, candidate)
         If candidate clicks on link present in sms body text, we create an activity,
         Activity will appear as
             "%(candidate_name)s clicked on SMS Campaign <b>%(campaign_name)s</b>."
 
-    * process_candidate_reply(self, candidate):
+    * process_candidate_reply(self, candidate)
         When a candidate replies to a recruiter's number, here we do the necessary processing.
 
-    * save_candidate_reply(self, candidate):
+    * save_candidate_reply(self, candidate)
         In this method, we save the reply of candidate in db table 'sms_campaign_reply"
 
-    * create_campaign_reply_activity(self, candidate):
+    * create_campaign_reply_activity(self, candidate)
         When a candidate replies to a recruiter's phone number, we create an activity that
         "%(candidate_name)s replied <b>%(reply_text)s</b> on SMS campaign %(campaign_name)s.".
 
@@ -290,8 +290,7 @@ class SmsCampaignBase(CampaignBase):
 
         :return: UserPhone row
         """
-        phone_label = PhoneLabel.get_by_label(TWILIO)
-        phone_label_id = phone_label.id
+        phone_label_id = PhoneLabel.phone_label_id_from_phone_label(TWILIO)
         try:
             user_phone = UserPhone.get_by_user_id_and_phone_label_id(self.user_id,
                                                                      phone_label_id)

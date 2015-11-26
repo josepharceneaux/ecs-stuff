@@ -46,7 +46,7 @@ class Candidate(db.Model):
     candidate_documents = relationship('CandidateDocument', backref='candidate')
     candidate_work_preferences = relationship('CandidateWorkPreference', backref='candidate')
     candidate_preferred_locations = relationship('CandidatePreferredLocation', backref='candidate')
-    candidate_social_network = relationship('CandidateSocialNetwork', backref='candidate')
+    candidate_social_networks = relationship('CandidateSocialNetwork', backref='candidate')
     candidate_languages = relationship('CandidateLanguage', backref='candidate')
     candidate_license_certifications = relationship('CandidateLicenseCertification', backref='candidate')
     candidate_references = relationship('CandidateReference', backref='candidate')
@@ -123,13 +123,18 @@ class PhoneLabel(db.Model):
         return "<PhoneLabel (description=' %r')>" % self.description
 
     @classmethod
-    def get_by_label(cls, phone_label):
+    def phone_label_id_from_phone_label(cls, phone_label):
+        """
+        Function retrieves phone_label_id from phone_label
+        e.g. 'Primary' => 1
+        :return:  phone_label ID if phone_label is recognized, otherwise 1 ('Primary')
+        """
         assert phone_label
-        return cls.query.filter(
-            and_(
-                cls.description == phone_label.strip()
-            )
-        ).one()
+        phone_label_row = cls.query.filter_by(description=phone_label).first()
+        if phone_label_row:
+            return phone_label_row.id
+
+        return 1
 
 
 class CandidateSource(db.Model):
@@ -214,6 +219,19 @@ class EmailLabel(db.Model):
 
     def __repr__(self):
         return "<EmailLabel (description=' %r')>" % self.description
+
+    @classmethod
+    def email_label_id_from_email_label(cls, email_label=None):
+        """
+        Function retrieves email_label_id from email_label
+        e.g. 'Primary' => 1
+        :return:  email_label ID if email_label is recognized, otherwise 1 ('Primary')
+        """
+        if email_label:
+            email_label_row = cls.query.filter(EmailLabel.description == email_label).first()
+            if email_label_row:
+                return email_label_row.id
+        return 1
 
 
 class CandidateEmail(db.Model):
@@ -389,19 +407,35 @@ class CandidateSocialNetwork(db.Model):
 class CandidateWorkPreference(db.Model):
     __tablename__ = 'candidate_work_preference'
     id = db.Column(db.Integer, primary_key=True)
-    candidate_id = db.Column('candidateId', db.Integer, db.ForeignKey('candidate.id'), nullable=False)
-    relocate = db.Column(db.Boolean, default=False)
-    authorization = db.Column(db.String(250))
-    telecommute = db.Column(db.Boolean, default=False)
+    candidate_id = db.Column('candidateId', db.Integer, db.ForeignKey('candidate.id'))
+    relocate = db.Column(db.CHAR(1), default='F')
+    authorization = db.Column(db.String(255))
+    telecommute = db.Column(db.CHAR(1), default='F')
     travel_percentage = db.Column(db.Integer, default=0)
     hourly_rate = db.Column(db.Float, default=0.0)
     salary = db.Column(db.Float, default=0.0)
     tax_terms = db.Column(db.String(255))
-    security_clearance = db.Column(db.Boolean, default=False)
-    third_party = db.Column(db.Boolean, default=False)
+    security_clearance = db.Column(db.CHAR(1), default='F')
+    third_party = db.Column(db.CHAR(1), default='F')
 
     def __repr__(self):
         return "<CandidateWorkPreference (authorization=' %r')>" % self.authorization
+
+    @property
+    def bool_third_party(self):
+        return False if self.third_party == 'F' else True
+
+    @property
+    def bool_security_clearance(self):
+        return False if self.security_clearance == 'F' else True
+
+    @property
+    def bool_telecommute(self):
+        return False if self.telecommute == 'F' or unicode(0) else True
+
+    @property
+    def bool_relocate(self):
+        return False if self.relocate == 'F' else True
 
 
 class CandidatePreferredLocation(db.Model):
@@ -642,7 +676,7 @@ class CandidateAddress(db.Model):
     resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
 
     def __repr__(self):
-        return "<CandidateAddress (candidate_id = %r)>" % self.candidate_id
+        return "<CandidateAddress (id = %r)>" % self.id
 
 
 class CandidateEducation(db.Model):
@@ -816,6 +850,18 @@ class ClassificationType(db.Model):
 
     def __repr__(self):
         return "<ClassificationType (code = %r)>" % self.code
+
+    @classmethod
+    def classification_type_id_from_degree_type(cls, degree_type):
+        """
+        Function will return classification_type ID of the ClassificationType that
+        matches degree_type. E.g. degree_type = 'Masters' => ClassificationType.id: 5
+        """
+        classification_type = None
+        if degree_type:
+            classification_type = cls.query.filter(ClassificationType.code == degree_type).first()
+
+        return classification_type.id if classification_type else None
 
 
 
