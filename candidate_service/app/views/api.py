@@ -4,7 +4,6 @@ from flask import jsonify, request, Blueprint
 import talent_cloud_search
 from candidate_service.common.utils.auth_utils import require_oauth
 from candidate_service.candidate_app import logger
-import time
 
 mod = Blueprint('candidate_search_api', __name__)
 
@@ -24,11 +23,12 @@ def search():
     # Get cloud_search connection
     talent_cloud_search.get_cloud_search_connection()
 
+    # status_names = ['New', 'Contacted', 'Unqualified', 'Qualified', 'Prospect', 'Candidate', 'Hired']
     # Get the parameters passed in the url
     location = request.args.get('location')
     owner_ids = request.args.get('user_ids')
     skills = request.args.get('skills')
-    areas_of_interest = request.args.get('area_of_interest_ids')
+    area_of_interest_ids = request.args.get('area_of_interest_ids')
     status_ids = request.args.get("status_ids")
     source_ids = request.args.get('source_ids')
     min_exp = request.args.get('minimum_experience')
@@ -50,7 +50,7 @@ def search():
 
     # Dictionary with all searchable filters
     request_vars_dict = {"location": location, "skillDescriptionFacet": skills,
-                         "areaOfInterestIdFacet": areas_of_interest, "statusFacet": status_ids,
+                         "areaOfInterestIdFacet": area_of_interest_ids, "statusFacet": status_ids,
                          "sourceFacet": source_ids, "minimum_years_experience": min_exp,
                          "maximum_years_experience": max_exp, "positionFacet": position, "degreeTypeFacet": degree,
                          "schoolNameFacet": school, "concentrationTypeFacet": concentration,
