@@ -24,10 +24,16 @@ def send_email_campaign(*args, **kwargs):
 def raise_exception(*args, **kwargs):
     print('raise_exception')
     #implement method here
-    raise Exception('Internal exception raised')
+    raise Exception('Intentional exception raised')
 
 methods = {
     'send_sms_campaign': send_sms_campaign,
     'send_email_campaign': send_email_campaign,
     'raise_exception': raise_exception
 }
+
+
+@celery.task(name="send_request")
+def send_request(data):
+    print(data)
+    return "data sent"
