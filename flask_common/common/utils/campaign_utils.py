@@ -258,4 +258,3 @@ class CampaignBase(object):
         # POST call to activity service to create activity
         url = ACTIVITY_SERVICE_API_URL + '/activities/'
         http_request('POST', url, headers=headers, data=data, user_id=user_id)
-

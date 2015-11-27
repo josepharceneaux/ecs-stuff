@@ -117,3 +117,26 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     else:
         print 'Unknown Method type %s ' % method_type
 
+
+def find_missing_items(data_dict, required_fields=None, verify_all_keys=False):
+    """
+    This function is used to find the missing items in given data_dict. If verify_all
+    is true, this function checks all the keys present in data_dict if they are empty or not.
+    Otherwise it verify only those fields as given in required_fields.
+
+    :param data_dict: given dictionary to be examined
+    :param required_fields: keys which need to be checked
+    :param verify_all_keys: indicator if we want to check values of all keys or only keys
+                            present in required_fields
+    :type data_dict: dict
+    :type required_fields: list | None
+    :type verify_all_keys: bool
+    :return: list of missing items
+    :rtype: list
+    """
+    if verify_all_keys:
+        missing_items = [{key: value} for key, value in data_dict.iteritems() if not value]
+    else:
+        missing_items = [{key: value} for key, value in data_dict.iteritems()
+                         if key in required_fields and not value]
+    return [missing_item for missing_item in missing_items]

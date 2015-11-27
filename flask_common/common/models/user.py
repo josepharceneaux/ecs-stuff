@@ -118,7 +118,7 @@ class UserPhone(db.Model):
             and_(
                 cls.value == phone_value
             )
-        ).one()
+        ).all()
 
 
 class Domain(db.Model):

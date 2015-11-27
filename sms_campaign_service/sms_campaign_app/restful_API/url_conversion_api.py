@@ -65,8 +65,8 @@ class ConvertUrl(Resource):
             }
 
         .. Status:: 200 (OK)
-                    500 (Internal Server Error)
                     401 (Unauthorized to access getTalent)
+                    500 (Internal Server Error)
                     5004 (GoogleShortenUrlAPIError)
         """
         if request.values.get('url'):

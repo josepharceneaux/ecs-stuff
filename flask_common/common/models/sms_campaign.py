@@ -124,6 +124,7 @@ class SmsCampaignReply(db.Model):
             )
         ).first()
 
+
 class SmsCampaignSmartList(db.Model):
     __tablename__ = 'sms_campaign_smart_list'
     id = db.Column(db.Integer, primary_key=True)

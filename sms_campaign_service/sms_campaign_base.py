@@ -13,7 +13,12 @@ methods like
      - send_sms()
      - process_url_redirect()
      - process_candidate_reply() etc.
+
+It also contains private methods for this module as
+    - _get_valid_user_phone_value()
+    - _get_valid_user_phone_value()
 """
+
 __author__ = 'basit.gettalent@gmail.com'
 
 # Standard Library
@@ -22,20 +27,23 @@ from datetime import datetime
 # Application Specific
 from sms_campaign_service import logger
 from sms_campaign_service.common.models.misc import UrlConversion
-from sms_campaign_service.common.models.user import UserPhone, User, Token
-from sms_campaign_service.common.error_handling import ResourceNotFound, ForbiddenError
+from sms_campaign_service.common.models.user import (UserPhone, User)
 from sms_campaign_service.common.utils.campaign_utils import CampaignBase
-from sms_campaign_service.config import SMS_URL_REDIRECT, PHONE_LABEL_ID, TWILIO, IS_DEV, POOL_SIZE
-from sms_campaign_service.common.models.candidate import PhoneLabel, Candidate, \
-    CandidatePhone
-from sms_campaign_service.common.models.sms_campaign import SmsCampaign,\
-    SmsCampaignSend, SmsCampaignBlast, SmsCampaignSmartList, SmsCampaignSendUrlConversion, \
-    SmsCampaignReply
-from sms_campaign_service.custom_exceptions import EmptySmsBody, MultipleMobileNumbers, \
-    EmptyDestinationUrl, MissingRequiredField
+from sms_campaign_service.common.error_handling import (ResourceNotFound, ForbiddenError)
 from sms_campaign_service.utilities import TwilioSMS, search_link_in_text, url_conversion
-from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_CLICK,\
-    CAMPAIGN_SMS_REPLY, CAMPAIGN_SMS_SEND, CAMPAIGN_SEND, CAMPAIGN_SMS_CREATE
+from sms_campaign_service.common.utils.common_functions import find_missing_items
+from sms_campaign_service.config import (SMS_URL_REDIRECT, PHONE_LABEL_ID,
+                                         TWILIO, IS_DEV, POOL_SIZE)
+from sms_campaign_service.custom_exceptions import \
+    (EmptySmsBody, MultipleMobileNumbers, EmptyDestinationUrl, MissingRequiredField,
+     MultipleUsersFound, MultipleCandidatesFound, ErrorSavingSMSCampaign)
+from sms_campaign_service.common.models.candidate import (PhoneLabel, Candidate, CandidatePhone)
+from sms_campaign_service.common.models.sms_campaign import \
+    (SmsCampaign, SmsCampaignSend, SmsCampaignBlast, SmsCampaignSmartList,
+     SmsCampaignSendUrlConversion,SmsCampaignReply)
+from sms_campaign_service.common.utils.activity_utils import \
+    (CAMPAIGN_SMS_CLICK, CAMPAIGN_SMS_REPLY, CAMPAIGN_SMS_SEND, CAMPAIGN_SEND,
+     CAMPAIGN_SMS_CREATE)
 
 
 class SmsCampaignBase(CampaignBase):
@@ -250,8 +258,11 @@ class SmsCampaignBase(CampaignBase):
                 data[key] = value if value else getattr(sms_campaign, key)
             sms_campaign.update(**data)
         else:
-            sms_campaign = SmsCampaign(**data)
-            SmsCampaign.save(sms_campaign)
+            try:
+                sms_campaign = SmsCampaign(**data)
+                SmsCampaign.save(sms_campaign)
+            except Exception as error:
+                raise ErrorSavingSMSCampaign(error_message=error.message)
         return sms_campaign
 
     def campaign_create_activity(self, source):
@@ -860,18 +871,18 @@ class SmsCampaignBase(CampaignBase):
         assert candidate
         params = {'candidate_name': candidate.first_name + ' ' + candidate.last_name,
                   'campaign_name': self.campaign.name}
-        return self.create_activity(user_id=self.user_id,
-                                    type_=CAMPAIGN_SMS_CLICK,
-                                    source_id=self.campaign.id,
-                                    source_table='sms_campaign',
-                                    params=params,
-                                    headers=self.oauth_header)
+        self.create_activity(user_id=self.user_id,
+                             type_=CAMPAIGN_SMS_CLICK,
+                             source_id=self.campaign.id,
+                             source_table='sms_campaign',
+                             params=params,
+                             headers=self.oauth_header)
 
     @classmethod
     def process_candidate_reply(cls, reply_data):
         """
-        When candidate replies to user'phone number, we do the following at our
-            redirected endpoint.
+        - When candidate replies to user'phone number, we do the following at our App's
+            endpoint '/sms_receive'
 
             1- Gets "user_phone" record
             2- Gets "candidate_phone" record
@@ -881,18 +892,27 @@ class SmsCampaignBase(CampaignBase):
             6- Creates Activity that "abc" candidate has replied "123" to campaign "xyz"
             7- Updates the count of replies in "sms_campaign_blast" by 1
 
+        .. Status:: 200 (OK)
+                    403 (ForbiddenError)
+                    404 (Resource not found)
+                    500 (Internal Server Error)
+                    5007 (MultipleUsersFound)
+                    5008 (MultipleCandidatesFound)
+
         :param reply_data:
         :type reply_data: dict
         :return:
+
+        **See Also**
+        .. see also:: sms_receive() function in sms_campaign_app/app.py
         """
-        candidate_phone_value = reply_data.get('From')
-        user_phone_value = reply_data.get('To')
-        reply_body_text = reply_data.get('Body')
-        if all([candidate_phone_value, user_phone_value]):
+        required_fields = ['From', 'To', 'Body']
+        missing_items = find_missing_items(reply_data, required_fields)
+        if not missing_items:
             # get "user_phone" row
-            user_phone = UserPhone.get_by_phone_value(user_phone_value)
+            user_phone = _get_valid_user_phone_value(reply_data.get('To'))
             # get "candidate_phone" row
-            candidate_phone = CandidatePhone.get_by_phone_value(candidate_phone_value)
+            candidate_phone = _get_valid_candidate_phone_value(reply_data.get('From'))
             # get latest campaign send
             sms_campaign_send = SmsCampaignSend.get_by_candidate_id(candidate_phone.candidate_id)
             # get sms campaign blast
@@ -901,7 +921,7 @@ class SmsCampaignBase(CampaignBase):
             sms_campaign_reply = cls.save_candidate_reply(
                 campaign_blast_id=sms_campaign_blast.id,
                 candidate_phone_id=candidate_phone.id,
-                reply_body_text=reply_body_text)
+                reply_body_text=reply_data.get('Body'))
             # create Activity
             cls.create_campaign_reply_activity(sms_campaign_reply,
                                                sms_campaign_blast,
@@ -911,8 +931,10 @@ class SmsCampaignBase(CampaignBase):
             cls.create_or_update_sms_campaign_blast(campaign_id=sms_campaign_blast.sms_campaign_id,
                                                     replies_update=True)
             logger.debug('Candidate(id:%s) replied "%s" to Campaign(id:%s).'
-                         % (candidate_phone.candidate_id, reply_body_text,
+                         % (candidate_phone.candidate_id, reply_data.get('Body'),
                             sms_campaign_blast.sms_campaign_id))
+        else:
+            raise MissingRequiredField(error_message='%s' % missing_items)
 
     @classmethod
     def save_candidate_reply(cls, campaign_blast_id=None, candidate_phone_id=None,
@@ -928,18 +950,11 @@ class SmsCampaignBase(CampaignBase):
         :type reply_body_text: str
         :return:
         """
-        data = {'sms_campaign_blast_id': campaign_blast_id,
-                'candidate_phone_id': candidate_phone_id,
-                'reply_body_text': reply_body_text,
-                'added_time': datetime.now()}
-        record_in_db = SmsCampaignReply.get_by_blast_id_and_candidate_phone_id(campaign_blast_id,
-                                                                               candidate_phone_id)
-        if record_in_db:
-            record_in_db.update(**data)
-            sms_campaign_reply_row = record_in_db
-        else:
-            sms_campaign_reply_row = SmsCampaignReply(**data)
-            SmsCampaignReply.save(sms_campaign_reply_row)
+        sms_campaign_reply_row = SmsCampaignReply(sms_campaign_blast_id=campaign_blast_id,
+                                                  candidate_phone_id=candidate_phone_id,
+                                                  reply_body_text=reply_body_text,
+                                                  added_time=datetime.now())
+        SmsCampaignReply.save(sms_campaign_reply_row)
         return sms_campaign_reply_row
 
     @classmethod
@@ -967,7 +982,7 @@ class SmsCampaignBase(CampaignBase):
         """
         # get Candidate
         candidate = Candidate.get_by_id(candidate_id)
-        campaign = SmsCampaign.get_by_campaign_id(campaign_blast.sms_campaign_id)
+        campaign = SmsCampaign.get_by_id(campaign_blast.sms_campaign_id)
         params = {'candidate_name': candidate.first_name + ' ' + candidate.last_name,
                   'reply_text': sms_campaign_reply.reply_body_text,
                   'campaign_name': campaign.name}
@@ -978,3 +993,60 @@ class SmsCampaignBase(CampaignBase):
                             source_table='sms_campaign_reply',
                             params=params,
                             headers=user_access_token)
+
+
+def _get_valid_user_phone_value(user_phone_value):
+    """
+    - This ensures that given phone number is associated with only one user.
+
+    - This function is called from class method process_candidate_reply() of
+    SmsCampaignBase class to get user_phone db record.
+
+    :param user_phone_value: Phone number by which we want to get user.
+    :type user_phone_value: str
+    :exception: If Multiple users found, it raises "MultipleUsersFound".
+    :exception: If no user is found, it raises "ResourceNotFound".
+    :return: User row
+    """
+    user_phone_rows = UserPhone.get_by_phone_value(user_phone_value)
+    if len(user_phone_rows) == 1:
+        user_phone = user_phone_rows[0]
+    elif len(user_phone_rows) > 1:
+        raise MultipleUsersFound(
+            error_message='%s phone number is associated with %s users. User ids are %s'
+                          % (user_phone_value,
+                             len(user_phone_rows),
+                             [user_phone.user_id for user_phone in user_phone_rows]))
+    else:
+        raise ResourceNotFound(error_message='No User is associated with '
+                                             '%s phone number' % user_phone_value)
+    return user_phone
+
+
+def _get_valid_candidate_phone_value(candidate_phone_value):
+    """
+    - This ensures that given phone number is associated with only one candidate.
+
+    - This function is called from class method process_candidate_reply() of
+    SmsCampaignBase class to get candidate_phone db record.
+
+    :param candidate_phone_value: Phone number by which we want to get user.
+    :type candidate_phone_value: str
+    :exception: If Multiple Candidates found, it raises "MultipleCandidatesFound".
+    :exception: If no Candidate is found, it raises "ResourceNotFound".
+    :return: Candidate row
+    """
+    candidate_phone_records = CandidatePhone.get_by_phone_value(candidate_phone_value)
+    if len(candidate_phone_records) == 1:
+        candidate_phone = candidate_phone_records[0]
+    elif len(candidate_phone_records) > 1:
+        raise MultipleCandidatesFound(
+            error_message='%s phone number is associated with %s candidates. Candidate ids are %s'
+                          % (candidate_phone_value,
+                             len(candidate_phone_records),
+                             [candidate_phone.candidate_id for candidate_phone
+                              in candidate_phone_records]))
+    else:
+        raise ResourceNotFound(error_message='No Candidate is associated with '
+                                             '%s phone number' % candidate_phone_value)
+    return candidate_phone

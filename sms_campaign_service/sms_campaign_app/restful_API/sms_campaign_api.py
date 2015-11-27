@@ -153,6 +153,9 @@ class SMSCampaigns(Resource):
         .. Status:: 201 (Resource Created)
                     500 (Internal Server Error)
                     401 (Unauthorized to access getTalent)
+                    5002 (MultipleMobileNumbers)
+                    5003 (TwilioAPIError)
+                    5009 (ErrorSavingSMSCampaign)
 
         .. Error Codes::
 

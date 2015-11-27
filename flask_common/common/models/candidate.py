@@ -204,7 +204,7 @@ class CandidatePhone(db.Model):
             and_(
                 cls.value == phone_value
             )
-        ).one()
+        ).all()
 
 
 class EmailLabel(db.Model):

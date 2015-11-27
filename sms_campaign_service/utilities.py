@@ -3,7 +3,6 @@ __author__ = 'basit.gettalent@gmail.com'
 # Standard Library
 import re
 import json
-from datetime import datetime
 
 # Third Party Imports
 import twilio
@@ -13,11 +12,8 @@ from twilio.rest import TwilioRestClient
 # Application Specific
 from sms_campaign_service import logger
 from sms_campaign_service.common.utils.common_functions import http_request
-from sms_campaign_service.sms_campaign_app.app import sched
 from config import TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, GOOGLE_URL_SHORTENER_API_URL
 from sms_campaign_service.custom_exceptions import TwilioAPIError, GoogleShortenUrlAPIError
-
-# from sms_campaign_service.app.app import celery
 
 
 class TwilioSMS(object):
@@ -30,7 +26,8 @@ class TwilioSMS(object):
         self.country = 'US'
         self.phone_type = 'local'
         self.sms_enabled = True
-        self.sms_call_back_url = 'http://demo.twilio.com/docs/sms.xml'
+        # self.sms_call_back_url = 'http://demo.twilio.com/docs/sms.xml'
+        self.sms_call_back_url = 'http://74cf4bd2.ngrok.io/sms_receive'
         self.sms_method = 'POST'
 
     def send_sms(self, body_text=None, receiver_phone=None, sender_phone=None):
@@ -109,6 +106,13 @@ class TwilioSMS(object):
 
 
 def search_link_in_text(text):
+    """
+    This checks if given text has any URL link present in it and returns all urls in a list.
+    :param text: string in which we want to search URL
+    :type text: str
+    :return: list of all URLs present in given text | []
+    :rtype: list
+    """
     return re.findall(r'https?://[^\s<>"]+|www\.[^\s<>"]+', text)
 
 
@@ -136,54 +140,3 @@ def url_conversion(long_url):
     else:
         raise GoogleShortenUrlAPIError(error_message="Error while shortening URL. "
                                        "Error dict is %s" % data['error']['errors'][0])
-
-
-def get_smart_list_ids():
-    # TODO: get smart list ids from cloud service maybe
-    return [1]
-
-
-def run_func(arg1, arg2, end_date):
-    if datetime.now().hour == end_date.hour \
-            and datetime.now().minute == end_date.minute:
-        stop_job(sched.get_jobs()[0])
-    else:
-        # send_sms_campaign.delay(arg1, arg2)
-        pass
-
-
-# @celery.task()
-def run_func_1(func, args, end_date):
-    # current_job = args[2]
-    status = True
-    for job in sched.get_jobs():
-        if job.args[2] == end_date:
-            if all([datetime.now().date() == end_date.date(),
-                    datetime.now().hour == end_date.hour,
-                    datetime.now().minute == end_date.minute]) \
-                    or end_date < datetime.now():
-                # job_status = 'Completed'
-                stop_job(job)
-                status = False
-                # if status:
-                # eval(func).delay(args[0], args[1])
-    if status:
-        # job_status = 'Running'
-        func_1(args[0], args[1])
-        # add_or_update_job_in_db(current_job, status=job_status)
-
-
-def stop_job(job):
-    sched.unschedule_job(job)
-    print 'job(id: %s) has stopped' % job.id
-
-
-# @celery.task()
-# /sms_camp_service/scheduled_camp_process/
-def func_1(a, b):
-    print a, '\n', b
-
-
-# @celery.task()
-def func_2(a, b):
-    print 'func_2'

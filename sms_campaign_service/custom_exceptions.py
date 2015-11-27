@@ -40,3 +40,13 @@ class MissingRequiredField(SmsCampaignApiException):
     status_code = 5006
 
 
+class MultipleUsersFound(SmsCampaignApiException):
+    status_code = 5007
+
+
+class MultipleCandidatesFound(SmsCampaignApiException):
+    status_code = 5008
+
+
+class ErrorSavingSMSCampaign(SmsCampaignApiException):
+    status_code = 5009
