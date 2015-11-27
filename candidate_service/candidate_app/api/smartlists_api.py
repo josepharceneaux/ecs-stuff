@@ -76,4 +76,4 @@ class SmartlistResource(Resource):
         data = _validate_and_format_smartlist_post_data(request.form, user_id)
         smart_list = save_smartlist(user_id=user_id, name=data.get('name'), search_params=data.get('search_params'),
                                     candidate_ids=data.get('candidate_ids'))
-        return {'smartlist': {'id': smart_list.id}}
+        return {'smartlist': {'id': smart_list.id}}, 201

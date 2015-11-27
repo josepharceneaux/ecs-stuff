@@ -1,96 +1,220 @@
 import requests
 import json
+import random
 from faker import Faker
-from candidate_service.common.models.smart_list import SmartList, SmartListCandidate
 from candidate_service.common.tests.conftest import UserAuthentication
 from candidate_service.common.tests.conftest import *
-from candidate_service.common.tests.sample_data import generate_single_candidate_data
 from candidate_service.tests import populate_candidates
+from helpers import get_smart_list_candidates, create_smartlist_with_candidate_ids, create_smartlist_with_search_params
+from helpers import SMARTLIST_CANDIDATES_GET_URL, SMARTLIST_GET_URL, SMARTLIST_POST_URL
 
 __author__ = 'jitesh'
-
-BASE_URI = "http://127.0.0.1:8005/"
-SMARTLIST_API_URI = "v1/smartlist"
-CANDIDATE_API_URI = "v1/candidates"
 
 fake = Faker()
 
 
-def teast_get_smart_list(sample_user, user_auth):
+class TestSmartlistResource(object):
+    class TestSmartlistResourcePOST(object):
+        def call_post_api(self, data, access_token):
+            return requests.post(
+                url=SMARTLIST_POST_URL,
+                data=data,
+                headers={'Authorization': 'Bearer %s' % access_token}
+            )
 
-    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-    list_id, list_name = create_smartlist_with_candidate_ids(auth_token_row)
-    resp = requests.get(
-        url="%s%s/%s" % (BASE_URI, SMARTLIST_API_URI, list_id),
-        headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
-    )
+        def test_create_smartlist_with_search_params(self, sample_user, user_auth):
+            auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+            name = fake.word()
+            search_params = '{"maximum_years_experience": "5", "location": "San Jose, CA", "minimum_years_experience": "2"}'
+            data = {'name': name,
+                    'search_params': search_params}
+            resp = self.call_post_api(data, auth_token_row['access_token'])
+            assert resp.status_code == 201  # Successfully created
+            response = json.loads(resp.content)
+            assert 'smartlist' in response
+            assert 'id' in response['smartlist']
 
-    assert resp.status_code == 200
-    assert json.loads(resp.content)['list']['name'] == list_name
+        def test_create_smartlist_with_candidate_ids(self, sample_user, user_auth):
+            auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+            candidate_id_list = populate_candidates(auth_token_row['user_id'], count=5)
+            candidate_ids = ','.join(map(str, candidate_id_list))
+            name = fake.word()
+            data = {'name': name,
+                    'candidate_ids': candidate_ids}
+            resp = self.call_post_api(data, auth_token_row['access_token'])
+            assert resp.status_code == 201  # Successfully created
+            response = json.loads(resp.content)
+            assert 'smartlist' in response
+            assert 'id' in response['smartlist']
+            # Get candidates from SmartListCandidates and assert with candidate ids used to create the smartlist
+            r = get_smart_list_candidates(access_token=auth_token_row['access_token'], list_id=response['smartlist']['id'], candidate_ids_only=True)
+            output = json.loads(r.content)
+            assert sorted(candidate_id_list) == sorted(output['candidate_ids'])
+
+        def test_create_smartlist_with_blank_search_params(self, sample_user, user_auth):
+            auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+            name = 'smart list with blank search params'
+            search_params = ''
+            data = {'name': name, 'search_params': search_params}
+            resp = self.call_post_api(data, auth_token_row['access_token'])
+            assert resp.status_code == 400
+
+        def test_create_smartlist_without_candidate_ids_and_search_params(self, sample_user, user_auth):
+            auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+            name = fake.word()
+            data = {'name': name}
+            resp = self.call_post_api(data, auth_token_row['access_token'])
+            assert resp.status_code == 400
+
+        def test_create_smartlist_with_blank_candidate_ids(self, sample_user, user_auth):
+            auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+            data = {'name': fake.word(), 'candidate_ids': ''}
+            resp = self.call_post_api(data, auth_token_row['access_token'])
+            assert resp.status_code == 400
+
+        def test_create_smartlist_with_characters_in_candidate_ids(self, sample_user, user_auth):
+            auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+            data = {'name': fake.word(), 'candidate_ids': '1, 2, "abcd", 5'}
+            resp = self.call_post_api(data, auth_token_row['access_token'])
+            assert resp.status_code == 400
+
+        def test_create_smartlist_with_both_search_params_and_candidate_ids(self, sample_user, user_auth):
+            auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+            data = {'name': fake.word(), 'candidate_ids': '1', 'search_params': '{"maximum_years_experience": "5"}'}
+            resp = self.call_post_api(data, auth_token_row['access_token'])
+            assert resp.status_code == 400
+            assert json.loads(resp.content)['error']['message'] == "Bad input: `search_params` and `candidate_ids` both are present. Service accepts only one"
+
+        def test_create_smartlist_without_name(self, sample_user, user_auth):
+            auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+            name = "    "
+            data = {'name': name, 'candidate_ids': '1'}
+            resp = self.call_post_api(data, auth_token_row['access_token'])
+            assert resp.status_code == 400
+            assert json.loads(resp.content)['error']['message'] == "Missing input: `name` is required for creating list"
+
+        def test_create_smartlist_presence_of_oauth_decorator(self):
+            data = {'name': fake.word(), 'candidate_ids': '1'}
+            resp = self.call_post_api(data, access_token='')
+            assert resp.status_code == 401
+
+    class TestSmartlistResourceGET(object):
+        def call_get_api(self, list_id, access_token):
+            """Calls GET API of SmartListResource"""
+            return requests.get(
+                url=SMARTLIST_GET_URL + str(list_id),
+                headers={'Authorization': 'Bearer %s' % access_token}
+            )
+
+        def test_get_api_with_candidate_ids(self, sample_user, user_auth):
+            """
+            Create candidates => create smartlist with these candidates
+            Test GET api returns correct list_name, count and user_id
+            """
+            auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+            list_name = fake.name()
+            num_of_candidates = 4
+            candidate_ids = populate_candidates(auth_token_row['user_id'], count=num_of_candidates)
+            smart_list = create_smartlist_with_candidate_ids(user_id=auth_token_row['user_id'],
+                                                             list_name=list_name,
+                                                             candidate_ids=candidate_ids)
+            resp = self.call_get_api(smart_list.id, auth_token_row['access_token'])
+            assert resp.status_code == 200
+            response = json.loads(resp.content)
+            assert response['list']['name'] == list_name
+            assert response['list']['candidate_count'] == num_of_candidates
+            assert response['list']['user_id'] == auth_token_row["user_id"]
+
+        def test_get_api_with_search_params(self, sample_user, user_auth):
+            """
+            Create candidates => create smartlist with search_params
+            Test GET api returns correct list_name, user_id
+            """
+            auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+            list_name = fake.name()
+            smart_list = create_smartlist_with_search_params(user_id=auth_token_row['user_id'],
+                                                             list_name=list_name,
+                                                             search_params='{"location": "San Jose, CA"}')
+            resp = self.call_get_api(smart_list.id, auth_token_row['access_token'])
+            assert resp.status_code == 200
+            response = json.loads(resp.content)
+            assert response['list']['name'] == list_name
+            assert response['list']['user_id'] == auth_token_row["user_id"]
+
+        def test_presence_of_oauth_decorator(self):
+            resp = self.call_get_api(list_id=1, access_token='')
+            assert resp.status_code == 401
 
 
-def create_smartlist_with_candidate_ids(auth_token_row):
-    # create candidate
-    r = requests.post(
-        url=BASE_URI + CANDIDATE_API_URI,
-        data=json.dumps(generate_single_candidate_data()),
-        headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
-    )
-    resp_object = r.json()
-    candidate_id = resp_object['candidates'][0]['id']
-    # Create smartlist
-    # TODO: Add create function once it is created
-    list_obj = SmartList(name=fake.word(), user_id=auth_token_row['user_id'])
-    db.session.add(list_obj)
-    db.session.commit()
-    smartlist_candidate = SmartListCandidate(smart_list_id=list_obj.id, candidate_id=candidate_id)
-    db.session.add(smartlist_candidate)
-    db.session.commit()
-    return list_obj.id, list_obj.name
+class TestSmartlistCandidatesApi(object):
+    def call_smartlist_candidates_get_api(self, params, access_token):
+        return requests.get(
+                url=SMARTLIST_CANDIDATES_GET_URL,
+                params=params,
+                headers={'Authorization': 'Bearer %s' % access_token})
+
+    def test_return_candidate_ids_only(self, sample_user, user_auth):
+        auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+        num_of_candidates = random.choice(range(1, 10))
+        candidate_ids = populate_candidates(auth_token_row['user_id'], count=num_of_candidates)
+        smart_list = create_smartlist_with_candidate_ids(user_id=auth_token_row['user_id'],
+                                                         list_name=fake.name(),
+                                                         candidate_ids=candidate_ids)
+        params = {'id': smart_list.id, 'return': 'candidate_ids_only'}
+        resp = self.call_smartlist_candidates_get_api(params, auth_token_row['access_token'])
+        assert resp.status_code == 200
+        response = json.loads(resp.content)
+        assert response['total_found'] == num_of_candidates
+        assert sorted(response['candidate_ids']) == sorted(candidate_ids)
+
+    def test_return_count_only(self, sample_user, user_auth):
+        auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+        num_of_candidates = random.choice(range(1, 10))
+        candidate_ids = populate_candidates(auth_token_row['user_id'], count=num_of_candidates)
+        smart_list = create_smartlist_with_candidate_ids(user_id=auth_token_row['user_id'],
+                                                         list_name=fake.name(),
+                                                         candidate_ids=candidate_ids)
+        params = {'id': smart_list.id, 'return': 'count_only'}
+        resp = self.call_smartlist_candidates_get_api(params, auth_token_row['access_token'])
+        assert resp.status_code == 200
+        response = json.loads(resp.content)
+        assert response['total_found'] == num_of_candidates
+        assert response['candidate_ids'] == []
+
+    def test_return_all_fields(self, sample_user, user_auth):
+        auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+        num_of_candidates = random.choice(range(1, 10))
+        candidate_ids = populate_candidates(auth_token_row['user_id'], count=num_of_candidates)
+        smart_list = create_smartlist_with_candidate_ids(user_id=auth_token_row['user_id'],
+                                                         list_name=fake.name(),
+                                                         candidate_ids=candidate_ids)
+        params = {'id': smart_list.id, 'return': 'all'}
+        resp = self.call_smartlist_candidates_get_api(params, auth_token_row['access_token'])
+        assert resp.status_code == 200
+        response = json.loads(resp.content)
+        assert response['total_found'] == num_of_candidates
+        assert 'emails' in response['candidates'][0]
+        assert 'phone_numbers' in response['candidates'][0]
+        # TODO: assert candidate emails and phone_numbers once populate_candidates function is fixed
+
+    def test_without_list_id(self, sample_user, user_auth):
+        auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+        params = {'return': 'candidate_ids_only'}
+        resp = self.call_smartlist_candidates_get_api(params, auth_token_row['access_token'])
+        assert resp.status_code == 400
+
+    def test_presence_of_oauth_decorator(self):
+        params = {'id': 1, 'return': 'all'}
+        resp = self.call_smartlist_candidates_get_api(params, access_token='')
+        assert resp.status_code == 401
+
+    def test_get_candidates_from_search_params(self):
+        # TODO
+        pass
 
 
-def teast_create_smartlist_with_search_params(sample_user, user_auth):
-    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-    name = fake.word()
-    search_params = '{"maximum_years_experience": "5", "location": "San Jose, CA", "minimum_years_experience": "2"}'
-    data = {'name': name,
-            'search_params': search_params}
-    resp = requests.post(
-        url="%s%s" % (BASE_URI, SMARTLIST_API_URI),
-        data=data,
-        headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
-    )
-    # assert resp.status_code == 200
-    response = json.loads(resp.content)
-    assert 'smartlist' in response
-    assert 'id' in response['smartlist']
 
 
-def test_create_smartlist_with_blank_search_params(sample_user, user_auth):
-    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-    name = 'smart list with blank search params'
-    search_params = ''
-    data = {'name': name,
-            'search_params': search_params}
-    resp = requests.post(
-        url="%s%s" % (BASE_URI, SMARTLIST_API_URI),
-        data=data,
-        headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
-    )
-    assert resp.status_code == 400
 
 
-def test_create_smartlist_with_candidate_ids(sample_user, user_auth):
-    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-    candidate_ids = populate_candidates(auth_token_row['user_id'], count=5)
-    name = fake.word()
-    data = {'name': name,
-            'candidate_ids': candidate_ids}
-    resp = requests.post(
-        url="%s%s" % (BASE_URI, SMARTLIST_API_URI),
-        data=data,
-        headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
-    )
-    response = json.loads(resp.content)
-    assert 'smartlist' in response
-    assert 'id' in response['smartlist']
+

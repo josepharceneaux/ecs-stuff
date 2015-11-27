@@ -5,8 +5,15 @@ Helper functions for tests pertaining to candidate_service's restful services
 import requests
 import json
 
+from candidate_service.modules.smartlists import save_smartlist
+
 # Candidate's sample data
 from candidate_sample_data import generate_single_candidate_data
+
+BASE_URL = "http://127.0.0.1:8005"
+SMARTLIST_CANDIDATES_GET_URL = BASE_URL + "/v1/smartlist/get_candidates/"
+SMARTLIST_GET_URL = BASE_URL + "/v1/smartlist/"
+SMARTLIST_POST_URL = BASE_URL + "/v1/smartlist"
 
 
 class CandidateResourceUrl:
@@ -216,3 +223,57 @@ def is_candidate_experience_ordered_correctly(experiences):
             return False
 
     return True
+
+
+# SmartList helper functions ===================>
+def get_smart_list_candidates(access_token, list_id, candidate_ids_only=False, count_only=False):
+    """
+    Get all candidates present in smartlist
+    :param access_token: authenticated users' access token, will be passed in headers for authorization
+    :type access_token: basestring
+    :param list_id: smartlist id whose candidates are required
+    :type list_id: long | int
+    :param candidate_ids_only: if True, will only return candidate ids and count of candidates present in smartlist.
+        If False it will return whole candidate's object of candidates present in smartlist
+    :type candidate_ids_only: bool
+    :param count_only: will only return count of candidates in smartlist
+    :type count_only: bool
+    :return: response object of GET request
+    """
+    if candidate_ids_only:
+        return_fields = 'candidate_ids_only'
+    elif count_only:
+        return_fields = 'count_only'
+    else:
+        return_fields = 'all'
+    response = requests.get(
+        url= SMARTLIST_CANDIDATES_GET_URL,
+        params={'id': list_id,
+                'return': return_fields},
+        headers={'Authorization': 'Bearer %s' % access_token}
+    )
+    assert response.status_code == 200
+    return response
+
+
+def create_smartlist_with_candidate_ids(user_id, list_name, candidate_ids):
+    """ Creates smartlist with candidate_ids
+    :param user_id: smartlist owner id
+    :param list_name: smartlist name
+    :param candidate_ids: List of candidate_ids
+    :type candidate_ids: list[int|long]
+    :return: Newly created smartlist object
+    """
+    return save_smartlist(user_id=user_id, name=list_name, candidate_ids=candidate_ids)
+
+
+def create_smartlist_with_search_params(user_id, list_name, search_params):
+    """
+    Creates smartlist with search params
+    :param user_id: smartlist owner id
+    :param list_name: smartlist name
+    :param search_params: search parameters
+    :type search_params: basestring[dict]
+    :return: Newly created smartlist object
+    """
+    return save_smartlist(user_id=user_id, name=list_name, search_params=search_params)

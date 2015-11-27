@@ -2,7 +2,7 @@ import uuid
 import datetime
 
 from candidate_service.candidate_app import db
-from candidate_service.modules.talent_candidates import create_candidate_from_params
+from candidate_service.modules.talent_candidates import create_or_update_candidate_from_params
 
 # Various U.S. locations in (city, state, zipcode) format, which can be used to populate candidate locations
 VARIOUS_US_LOCATIONS = (('San Jose', 'CA', '95132'), ('Providence', 'Rhode Island', '02905'),
@@ -76,9 +76,9 @@ def populate_candidates(owner_user_id, count=1, first_name=True, last_name=True,
     :type candidate_experience_dicts: None | list[dict[basestring, int | basestring | list]]
     :param update_now: Will update immediately after creating all candidates. Set it to False, if willing to create
     different combination of candidates and update at last to save time.
-    # TODO: Update data dictionary according to new create_candidate_from_params()
     :return:
     """
+    # TODO: Update function as search service is merged
     candidate_ids = []
     for i in range(count):
         data = {
@@ -106,14 +106,14 @@ def populate_candidates(owner_user_id, count=1, first_name=True, last_name=True,
             'custom_fields_dict': custom_fields_dict,
             'candidate_experience_dicts': candidate_experience_dicts,
         }
-        candidate = create_candidate_from_params(
+        candidate = create_or_update_candidate_from_params(
             owner_user_id,
             first_name=data['first_name'],
             last_name=data['last_name'],
             added_time=data['added_time'],
             objective=data['objective'],
-            domain_can_read=True,
-            domain_can_write=True,
+            # domain_can_read=True,
+            # domain_can_write=True,
             emails=data['email'],
             phones=None,
             # current_company=data['current_company'],
@@ -123,7 +123,7 @@ def populate_candidates(owner_user_id, count=1, first_name=True, last_name=True,
             # state=data['state'],
             # zip_code=data['zip_code'],
             # country_id=1,
-            area_of_interest_ids=data['area_of_interest_ids'],
+            # area_of_interest_ids=data['area_of_interest_ids'],
             # university=data['university'],
             # major=data['major_name'],
             # candidate_skill_dicts=data['candidate_skill_dicts'],

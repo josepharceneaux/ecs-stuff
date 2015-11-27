@@ -10,6 +10,7 @@ __author__ = 'jitesh'
 def get_candidates(smart_list, candidate_ids_only=False, count_only=False, max_candidates=0):
     """
     Get the candidates of a smart or dumb list.
+    :param smart_list: SmartList row object
     :param max_candidates: If set to 0, will have no limit.
     :return:  dict of 'candidate_ids, total_found' if candidate_ids_only=True, otherwise returns
     what TalentSearch.search_candidates returns
@@ -26,7 +27,7 @@ def get_candidates(smart_list, candidate_ids_only=False, count_only=False, max_c
     # If a dumblist & getting count only, just do count
     elif count_only:
         count = db.session.query(SmartListCandidate.candidate_id).filter_by(smart_list_id=smart_list.id).count()
-        search_results = dict(candidate_ids=[], total_found=count)
+        return dict(candidate_ids=[], total_found=count)
     # If a dumblist and not doing count only, simply return all smart_list_candidates
     else:
         smart_list_candidate_rows = db.session.query(SmartListCandidate.candidate_id)\
@@ -36,7 +37,8 @@ def get_candidates(smart_list, candidate_ids_only=False, count_only=False, max_c
 
         # count = smart_list_candidate_rows.count()
         candidate_ids = [smart_list_candidate_row.candidate_id for smart_list_candidate_row in smart_list_candidate_rows]
-
+        if candidate_ids_only:
+            return {'candidate_ids': candidate_ids, 'total_found':len(candidate_ids)}
         search_results = create_candidates_dict(candidate_ids)
 
     return search_results
@@ -64,11 +66,10 @@ def create_candidates_dict(candidate_ids):
                                                 candidate_id=candidate_id).all()]
         candidate_dict["phone_numbers"] = [{phone.phone_label.description: phone.value} for phone in
                                            db.session.query(CandidatePhone).filter_by(candidate_id=candidate_id).all()]
-        # TODO: Add more fields
+        # TODO: Add more fields if required
         # Finally append all candidates in list and return it
         candidates_dict["candidates"].append(candidate_dict)
-        # increment the counter
-        candidates_dict["total_found"] += 1
+    candidates_dict["total_found"] = len(candidates)
     return candidates_dict
 
 
@@ -94,9 +95,10 @@ def save_smartlist(user_id, name, search_params=None, candidate_ids=None):
 
     :param user_id: list owner
     :param name: name of list
-    :param search_params *: if None, will be dumb list
-    :param candidate_ids *: only set if dumb list
-    * only one parameter should be present: either `search_params` or `candidate_ids`
+    :param search_params *:
+    :param candidate_ids *: only set if you want to create a dumb list
+    :type candidate_ids: list[long|int] | None
+    * only one parameter should be present: either `search_params` or `candidate_ids` (Should be validated by 'calling' function)
     :return: Newly created smartlist row object
     """
     smart_list = SmartList(name=name,
