@@ -31,7 +31,8 @@ api.add_resource(CandidateResource,
                  '/v1/candidates/<email>',
                  '/v1/candidates')
 api.add_resource(CandidateEmailCampaignResource,
-                 '/v1/candidates/<int:id>/email_campaigns/<int:email_campaign_id>/email_campaign_sends', endpoint='candidates')
+                 '/v1/candidates/<int:id>/email_campaigns/<int:email_campaign_id>/email_campaign_sends',
+                 endpoint='candidates')
 
 api.add_resource(SmartlistResource,
                  '/v1/smartlist/<int:id>',  # GET

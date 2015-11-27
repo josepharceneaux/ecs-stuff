@@ -2,16 +2,17 @@ var gulp = require('gulp');
 var del = require('del');
 
 module.exports = function (config) {
+    config.log('Importing optimize.js...');
 
-    var $ = config.$,
-        log = config.log;
+    var $ = config.$;
+    var log = config.log;
 
-    gulp.task('build', [ 'optimize', 'images', 'fonts' ], function () {
+    gulp.task('build', ['optimize', 'images', 'fonts'], function () {
         log('Building everything');
         del(config.tempDir);
     });
 
-    gulp.task('optimize', [ 'inject', 'test' ], function () {
+    gulp.task('optimize', ['inject', 'test'], function () {
         log('Optimizing the js, css, and html');
 
         var assets = $.useref.assets({ searchPath: './' });
@@ -24,35 +25,46 @@ module.exports = function (config) {
         return gulp
             .src(config.tempDir + 'index.html')
             .pipe($.plumber())
-            .pipe(assets) // Gather all assets from the html with useref
+
+            // Gather all assets from the html with useref
+            .pipe(assets)
+
             // Get the css
             .pipe(cssFilter)
             .pipe($.csso())
             .pipe(cssFilter.restore())
+
             // Get the custom javascript
             .pipe(jsAppFilter)
             .pipe($.ngAnnotate({ add: true }))
             .pipe($.uglify())
             .pipe(getHeader())
             .pipe(jsAppFilter.restore())
+
             // Get the vendor javascript
             .pipe(jslibFilter)
             .pipe($.uglify())
             .pipe(jslibFilter.restore())
+
             // Take inventory of the file names for future rev numbers
             .pipe($.rev())
+
             // Apply the concat and file replacement with useref
             .pipe(assets.restore())
             .pipe($.useref())
+
             // Replace the file names in the html with rev numbers
             .pipe($.revReplace())
             .pipe(gulp.dest(config.buildDir));
     });
 
-
+    /**
+     * Format and return the header for files
+     * @return {String}           Formatted file header
+     */
     function getHeader() {
         var pkg = require('../package.json');
-        var template = [ '/**',
+        var template = ['/**',
             ' * <%= pkg.name %> - <%= pkg.description %>',
             ' * @authors <%= pkg.authors %>',
             ' * @version v<%= pkg.version %>',
@@ -61,10 +73,9 @@ module.exports = function (config) {
             ' */',
             ''
         ].join('\n');
+
         return $.header(template, {
             pkg: pkg
         });
     }
-
 };
-

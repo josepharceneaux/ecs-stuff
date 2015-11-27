@@ -32,7 +32,7 @@
                 };
 
                 // If the user is not authenticated and tries to browse the pages restricted
-                if (angular.isDefined(to.data.loginRequired) && to.data.loginRequired) {
+                if (angular.isDefined(to.data) && angular.isDefined(to.data.loginRequired) && to.data.loginRequired) {
                     if (!OAuth.isAuthenticated()) {
                         $state.go('login', {errorMessage: 'Please log in!'});
 

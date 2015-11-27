@@ -20,6 +20,7 @@ class SmartList(db.Model):
     def __repr__(self):
         return "<SmartList(name= %r)>" % self.name
 
+
 class SmartListCandidate(db.Model):
     __tablename__ = 'smart_list_candidate'
     id = db.Column(db.Integer, primary_key=True)
