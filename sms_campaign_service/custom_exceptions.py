@@ -35,3 +35,8 @@ class GoogleShortenUrlAPIError(SmsCampaignApiException):
 class EmptyDestinationUrl(SmsCampaignApiException):
     status_code = 5005
 
+
+class MissingRequiredField(SmsCampaignApiException):
+    status_code = 5006
+
+

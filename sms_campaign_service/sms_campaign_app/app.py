@@ -63,7 +63,9 @@ from werkzeug.utils import redirect
 from sms_campaign_service import logger
 from sms_campaign_service.utilities import run_func, run_func_1
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
+from sms_campaign_service.custom_exceptions import MissingRequiredField
 from sms_campaign_service.common.error_handling import InternalServerError, ResourceNotFound
+from sms_campaign_service.common.models.candidate import Candidate
 from sms_campaign_service.sms_campaign_app.restful_API.sms_campaign_api import sms_campaign_blueprint
 from sms_campaign_service.sms_campaign_app.restful_API.url_conversion_api import url_conversion_blueprint
 
@@ -85,22 +87,50 @@ def hello_world():
     return 'Welcome to SMS Campaign Service'
 
 
-@app.route('/sms_campaign/<int:campaign_id>/url_redirection/<int:url_conversion_id>/', methods=['GET'])
+@app.route('/campaigns/<int:campaign_id>/url_redirection/<int:url_conversion_id>/', methods=['GET'])
 def sms_campaign_url_redirection(campaign_id=None, url_conversion_id=None):
+    """
+    When recruiter(user) adds some url in sms body text, we save the original URL as
+    destination URL in "url_conversion" database table. Then we create a new url (long_url) to
+    redirect the candidate to our app. This long_url looks like
+
+            http://127.0.0.1:8008/sms_campaign/2/url_redirection/67/?candidate_id=2
+
+    For this we first convert this long_url in shorter URL (using Google's shorten URL API) and
+    send in sms body text to candidate. This is the endpoint which redirect the candidate. Short
+    URL looks like
+
+            https://goo.gl/CazBJG
+
+    When candidate clicks on above url, it is redirected to this endpoint, where we keep track
+    of number of clicks and hit_counts for a URL. We then create activity that 'this' candidate
+    has clicked on 'this' campaign. Finally we redirect the candidate to destination url (Original
+    URL provided by the recruiter)
+
+    :param campaign_id: id of sms_campaign in db
+    :param url_conversion_id: id of url_conversion record in db
+    :type campaign_id: int
+    :type url_conversion_id: int
+    :return: redirects to the destination URL else raises exception
+    """
     try:
-        user_id = request.args.get('user_id')
         candidate_id = request.args.get('candidate_id')
-        if all([user_id and campaign_id and url_conversion_id and candidate_id]):
-            camp_obj = SmsCampaignBase(user_id=user_id, buy_new_number=False)
-            redirection_url = camp_obj.process_url_redirect(campaign_id=campaign_id,
-                                                            url_conversion_id=url_conversion_id,
-                                                            candidate_id=candidate_id)
-            return redirect(redirection_url)
+        if all([campaign_id and url_conversion_id and candidate_id]):
+            candidate = Candidate.get_by_id(candidate_id)
+            if candidate:
+                user_id = candidate.user_id
+                camp_obj = SmsCampaignBase(user_id=user_id, buy_new_number=False)
+                redirection_url = camp_obj.process_url_redirect(campaign_id=campaign_id,
+                                                                url_conversion_id=url_conversion_id,
+                                                                candidate=candidate)
+                return redirect(redirection_url)
+            else:
+                ResourceNotFound(error_message='Candidate(id:%s) not found.' % candidate_id)
         else:
-            logger.error("Required field is missing from requested URL. "
-                         "user_id:%s, campaign_id:%s, url_conversion_id:%s, candidate_id:%s"
-                         % (user_id, campaign_id, url_conversion_id, candidate_id))
-            raise InternalServerError
+            raise MissingRequiredField(
+                error_message="Required field is missing from requested URL. "
+                              "campaign_id:%s, url_conversion_id:%s, candidate_id:%s"
+                              % (campaign_id, url_conversion_id, candidate_id))
     except:
         logger.exception("Error occurred while URL redirection for SMS campaign.")
         data = {'message': 'Internal Server Error'}

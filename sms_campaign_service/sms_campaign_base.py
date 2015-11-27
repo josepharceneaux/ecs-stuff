@@ -22,17 +22,17 @@ from datetime import datetime
 # Application Specific
 from sms_campaign_service import logger
 from sms_campaign_service.common.models.misc import UrlConversion
-from sms_campaign_service.common.models.user import UserPhone, User
+from sms_campaign_service.common.models.user import UserPhone, User, Token
 from sms_campaign_service.common.error_handling import ResourceNotFound, ForbiddenError
 from sms_campaign_service.common.utils.campaign_utils import CampaignBase
-from sms_campaign_service.config import SMS_URL_REDIRECT, PHONE_LABEL_ID, TWILIO, IS_DEV
+from sms_campaign_service.config import SMS_URL_REDIRECT, PHONE_LABEL_ID, TWILIO, IS_DEV, POOL_SIZE
 from sms_campaign_service.common.models.candidate import PhoneLabel, Candidate, \
     CandidatePhone
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign,\
     SmsCampaignSend, SmsCampaignBlast, SmsCampaignSmartList, SmsCampaignSendUrlConversion, \
     SmsCampaignReply
 from sms_campaign_service.custom_exceptions import EmptySmsBody, MultipleMobileNumbers, \
-    TwilioAPIError, EmptyDestinationUrl
+    EmptyDestinationUrl, MissingRequiredField
 from sms_campaign_service.utilities import TwilioSMS, search_link_in_text, url_conversion
 from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_CLICK,\
     CAMPAIGN_SMS_REPLY, CAMPAIGN_SMS_SEND, CAMPAIGN_SEND, CAMPAIGN_SMS_CREATE
@@ -164,6 +164,8 @@ class SmsCampaignBase(CampaignBase):
         :return:
         """
         # sets the user_id
+
+        kwargs['pool_size'] = POOL_SIZE
         super(SmsCampaignBase, self).__init__(*args, **kwargs)
         self.buy_new_number = kwargs.get('buy_new_number', True)
         self.user_phone = self.get_user_phone() if self.buy_new_number else None
@@ -279,7 +281,8 @@ class SmsCampaignBase(CampaignBase):
                              type_=CAMPAIGN_SMS_CREATE,
                              source_id=source.id,
                              source_table='',
-                             params=params)
+                             params=params,
+                             headers=self.oauth_header)
 
     def get_user_phone(self):
         """
@@ -525,8 +528,10 @@ class SmsCampaignBase(CampaignBase):
         **See Also**
         .. see also:: process_send() method in SmsCampaignBase class.
         """
-        logger.debug('process_urls_in_sms_body_text: Processing any link present in sms_body_text for '
-                     'SMS Campaign(id:%s) and Candidate(id:%s)' % (self.campaign.id, candidate_id))
+        logger.debug('process_urls_in_sms_body_text: Processing any '
+                     'link present in sms_body_text for '
+                     'SMS Campaign(id:%s) and Candidate(id:%s)'
+                     % (self.campaign.id, candidate_id))
         urls_in_body_text = search_link_in_text(self.body_text)
         short_urls = []
         for url in urls_in_body_text:
@@ -742,7 +747,8 @@ class SmsCampaignBase(CampaignBase):
                              type_=CAMPAIGN_SMS_SEND,
                              source_id=source_id,
                              source_table='sms_campaign_send',
-                             params=params)
+                             params=params,
+                             headers=self.oauth_header)
 
     def create_campaign_send_activity(self, num_candidates):
         """
@@ -766,10 +772,11 @@ class SmsCampaignBase(CampaignBase):
                              type_=CAMPAIGN_SEND,
                              source_id=self.campaign.id,
                              source_table='sms_campaign',
-                             params=params)
+                             params=params,
+                             headers=self.oauth_header)
 
     def process_url_redirect(self, campaign_id=None, url_conversion_id=None,
-                             candidate_id=None):
+                             candidate=None):
         """
         This does the following steps to send campaign to candidates.
 
@@ -779,7 +786,8 @@ class SmsCampaignBase(CampaignBase):
         4- Increase "clicks" by 1 for "sms_campaign_blast" record.
         5- Add activity that abc candidate clicked on xyz campaign.
             "%(candidate_name)s clicked url of campaign %(campaign_name)s"
-        6- return the destination url where we want our candidate to be redirected.
+        6- return the destination url (actual URL provided by recruiter(user)
+            where we want our candidate to be redirected.
 
         :Example:
 
@@ -797,46 +805,41 @@ class SmsCampaignBase(CampaignBase):
 
         :param campaign_id: id of sms_campaign
         :param url_conversion_id: id of url_conversion record
+        :param candidate: Campaign object form db
         :type campaign_id: int
         :type url_conversion_id: int
+        :type candidate: common.models.candidate.Candidate
         :return: URL where to redirect the candidate
         :rtype: str
-        """
-        if campaign_id and url_conversion_id:
-            logger.debug('process_url_redirect: Processing for URL redirection.')
-            # check if campaign exists
-            self.campaign = SmsCampaign.get_by_id(campaign_id)
-            if self.campaign:
-                # Update sms campaign blast
-                self.create_or_update_sms_campaign_blast(campaign_id=campaign_id,
-                                                         clicks_update=True)
-                # Update hit count
-                self.create_or_update_url_conversion(url_conversion_id=url_conversion_id,
-                                                     hit_count_update=True)
-                # Create Activity
 
-                candidate = Candidate.get_by_id(candidate_id)
-                if candidate:
-                    self.create_campaign_url_click_activity(candidate)
-                    # Get Url to redirect candidate to actual url
-                    url_conversion_row = UrlConversion.get_by_id(url_conversion_id)
-                    logger.info('process_url_redirect: candidate(id:%s) clicked on sms '
-                                'campaign(id:%s)' % (candidate_id, self.campaign.id))
-                    if url_conversion_row.destination_url:
-                        return url_conversion_row.destination_url
-                    else:
-                        raise EmptyDestinationUrl(
-                            error_message='process_url_redirect: Destination_url is empty for '
-                                          'url_conversion(id:%s)' % url_conversion_id)
-                else:
-                    logger.error('process_url_redirect: Candidate(id:%s) not found.'
-                                 % candidate_id)
+        **See Also**
+        .. see also:: sms_campaign_url_redirection() function in sms_campaign_app/app.py
+        """
+        logger.debug('process_url_redirect: Processing for URL redirection.')
+        # check if campaign exists
+        self.campaign = SmsCampaign.get_by_id(campaign_id)
+        if self.campaign:
+            # Update sms campaign blast
+            self.create_or_update_sms_campaign_blast(campaign_id=campaign_id,
+                                                     clicks_update=True)
+            # Update hit count
+            self.create_or_update_url_conversion(url_conversion_id=url_conversion_id,
+                                                 hit_count_update=True)
+            # Create Activity
+            self.create_campaign_url_click_activity(candidate)
+            logger.info('process_url_redirect: candidate(id:%s) clicked on sms '
+                        'campaign(id:%s)' % (candidate.id, self.campaign.id))
+            # Get Url to redirect candidate to actual url
+            url_conversion_row = UrlConversion.get_by_id(url_conversion_id)
+            if url_conversion_row.destination_url:
+                return url_conversion_row.destination_url
             else:
-                logger.error('process_url_redirect: SMS Campaign(id=%s) Not found.' % campaign_id)
+                raise EmptyDestinationUrl(
+                    error_message='process_url_redirect: Destination_url is empty for '
+                                  'url_conversion(id:%s)' % url_conversion_id)
         else:
-            logger.error('process_url_redirect: campaign_id or url_conversion_id '
-                         'is not provided.')
-        raise ResourceNotFound
+            raise ResourceNotFound(error_message='process_url_redirect: SMS Campaign(id=%s) '
+                                                 'Not found.' % campaign_id)
 
     def create_campaign_url_click_activity(self, candidate):
         """
@@ -857,11 +860,12 @@ class SmsCampaignBase(CampaignBase):
         assert candidate
         params = {'candidate_name': candidate.first_name + ' ' + candidate.last_name,
                   'campaign_name': self.campaign.name}
-        self.create_activity(user_id=self.user_id,
-                             type_=CAMPAIGN_SMS_CLICK,
-                             source_id=self.campaign.id,
-                             source_table='sms_campaign',
-                             params=params)
+        return self.create_activity(user_id=self.user_id,
+                                    type_=CAMPAIGN_SMS_CLICK,
+                                    source_id=self.campaign.id,
+                                    source_table='sms_campaign',
+                                    params=params,
+                                    headers=self.oauth_header)
 
     @classmethod
     def process_candidate_reply(cls, reply_data):
@@ -967,9 +971,10 @@ class SmsCampaignBase(CampaignBase):
         params = {'candidate_name': candidate.first_name + ' ' + candidate.last_name,
                   'reply_text': sms_campaign_reply.reply_body_text,
                   'campaign_name': campaign.name}
-
+        user_access_token = cls.get_user_access_token(user_id)
         cls.create_activity(user_id=user_id,
                             type_=CAMPAIGN_SMS_REPLY,
                             source_id=sms_campaign_reply.id,
                             source_table='sms_campaign_reply',
-                            params=params)
+                            params=params,
+                            headers=user_access_token)

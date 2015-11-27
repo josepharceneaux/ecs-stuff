@@ -244,6 +244,15 @@ class Token(db.Model):
             return self._scopes.split()
         return []
 
+    @classmethod
+    def get_by_user_id(cls, user_id):
+        assert user_id
+        return cls.query.filter(
+            db.and_(
+                cls.user_id == user_id
+            )
+        ).first()
+
 
 class DomainRole(db.Model):
     __tablename__ = 'domain_role'

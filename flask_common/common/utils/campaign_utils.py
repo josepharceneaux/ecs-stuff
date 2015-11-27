@@ -14,16 +14,17 @@ from abc import abstractmethod
 # Third Party
 import gevent
 from gevent import monkey
+
 gevent.monkey.patch_all()
 from gevent.pool import Pool
 
 # Application Specific
-from sms_campaign_service.config import AUTH_HEADER, POOL_SIZE
-from sms_campaign_service.common.models.misc import UrlConversion
-from sms_campaign_service.common.models.candidate import Candidate
-from sms_campaign_service.common.utils.common_functions import http_request
-from sms_campaign_service.common.utils.app_api_urls import ACTIVITY_SERVICE_API_URL, \
-    CANDIDATE_SERVICE_API_URL
+from ..models.user import Token
+from ..models.misc import UrlConversion
+from ..models.candidate import Candidate
+from ..error_handling import ForbiddenError
+from ..utils.common_functions import http_request
+from ..utils.app_api_urls import ACTIVITY_SERVICE_API_URL, CANDIDATE_SERVICE_API_URL
 
 
 class CampaignBase(object):
@@ -67,13 +68,27 @@ class CampaignBase(object):
     __metaclass__ = ABCMeta
 
     def __init__(self,  *args, **kwargs):
-        self.user_id = kwargs.get('user_id', None)
+        if kwargs.get('user_id'):
+            self.user_id = kwargs.get('user_id')
+            self.oauth_header = self.get_user_access_token(self.user_id)
+        else:
+            raise ForbiddenError(error_message='User id is missing.')
         self.campaign = None
         self.body_text = None
         # Child classes will get this from respective campaign table. e.g. in case of
         # sms campaign, this is get from sms_campaign
         # db table.
         self.smart_list_id = None
+        self.pool_size = None
+
+    @staticmethod
+    def get_user_access_token(user_id):
+        user_token_row = Token.get_by_user_id(user_id)
+        user_access_token = user_token_row.access_token
+        if user_access_token:
+            return {'Authorization': 'Bearer %s' % user_access_token}
+        else:
+            raise ForbiddenError(error_message='User(id:%s) has no auth token.' % user_id)
 
     @abstractmethod
     def save(self, form_data):
@@ -134,7 +149,7 @@ class CampaignBase(object):
                   'return': 'all'}
         # HTTP GET call to activity service to create activity
         url = CANDIDATE_SERVICE_API_URL + '/v1/smartlist/get_candidates/'
-        response = http_request('GET', url, headers=AUTH_HEADER, params=params,
+        response = http_request('GET', url, headers=self.oauth_header, params=params,
                                 user_id=self.user_id)
         # get candidate ids
         candidate_ids = [candidate['id'] for candidate in json.loads(response.text)['candidates']]
@@ -212,7 +227,7 @@ class CampaignBase(object):
 
     @staticmethod
     def create_activity(user_id=None, type_=None, source_table=None, source_id=None,
-                        params=None):
+                        params=None, headers=None):
         """
         - Once we have all the parameters to save the activity, we call "activity_service"'s
             endpoint /activities/ with HTTP POST call to save the activity in db.
@@ -242,7 +257,5 @@ class CampaignBase(object):
                 'params': json.dumps(params)}
         # POST call to activity service to create activity
         url = ACTIVITY_SERVICE_API_URL + '/activities/'
-        http_request('POST', url,
-                     headers=AUTH_HEADER,
-                     data=data,
-                     user_id=user_id)
+        http_request('POST', url, headers=headers, data=data, user_id=user_id)
+

@@ -1,6 +1,8 @@
 import json
-from sqlalchemy.sql.expression import ClauseElement
 import requests
+
+from ..error_handling import ForbiddenError
+from sqlalchemy.sql.expression import ClauseElement
 
 
 def get_or_create(session, model, defaults=None, **kwargs):
@@ -97,9 +99,14 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                     else:
                         error_message = e.message
                 else:
-                    # raise any Server error occurred on social network website
+                    # raise any Server error
                     raise
             except requests.RequestException as e:
+                if hasattr(e.message, 'args'):
+                    if 'Connection aborted' in e.message.args[0]:
+                        print "Couldn't make %s call on %s. Make sure " \
+                              "requested server is running." % (method_type, url)
+                        raise ForbiddenError
                 error_message = e.message
             if error_message:
                 print 'http_request: HTTP request failed, %s, user_id: %s', error_message, user_id
