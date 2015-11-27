@@ -4,7 +4,7 @@ from flask import Flask
 from candidate_pool_service.common.models.db import db
 from candidate_pool_service.common import common_config
 from healthcheck import HealthCheck
-from gt_custom_restful import *
+from candidate_pool_service.common.talent_api import TalentApi
 
 app = Flask(__name__)
 app.config.from_object(common_config)
@@ -21,7 +21,7 @@ db.app = app
 health = HealthCheck(app, "/healthcheck")
 
 from api.talent_pools import *
-api = GetTalentApi(app=app)
+api = TalentApi(app=app)
 
 api.add_resource(TalentPoolApi, '/talent-pools/<int:id>', '/talent-pools')
 api.add_resource(TalentPoolGroupApi, '/groups/<int:group_id>/talent_pools')

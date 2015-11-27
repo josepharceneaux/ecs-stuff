@@ -5,17 +5,16 @@ from flask_restful import Resource
 from sqlalchemy import and_
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.talent_pools_pipelines import *
-from candidate_pool_service.common.utils.auth_utils import require_oauth, require_any_role
+from candidate_pool_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
 from candidate_pool_service.common.error_handling import *
-from candidate_pool_utilities import is_user_authenticated_to_access_talent_pool
 
 
 class TalentPoolApi(Resource):
 
-    # Access token and role authentication decorators
+    # Access token decorator
     decorators = [require_oauth]
 
-    @require_any_role()
+    @require_all_roles('CAN_GET_TALENT_POOLS')
     def get(self, **kwargs):
         """
         GET /talent-pools/<id>          Fetch talent-pool object
@@ -31,17 +30,16 @@ class TalentPoolApi(Resource):
             talent_pool = TalentPool.query.get(talent_pool_id)
             if not talent_pool:
                 raise NotFoundError(error_message="Talent pool with id %s doesn't exist in database" % talent_pool_id)
-            elif is_user_authenticated_to_access_talent_pool(talent_pool=talent_pool):
-                return {
-                    'talent_pool': {
-                        'id': talent_pool.id,
-                        'name': talent_pool.name,
-                        'description': talent_pool.description,
-                        'domain_id': talent_pool.domain_id,
-                        'user_id': talent_pool.owner_user_id
-                    }
+            return {
+                'talent_pool': {
+                    'id': talent_pool.id,
+                    'name': talent_pool.name,
+                    'description': talent_pool.description,
+                    'domain_id': talent_pool.domain_id,
+                    'user_id': talent_pool.owner_user_id
                 }
-        elif is_user_authenticated_to_access_talent_pool():
+            }
+        else:
             talent_pools = TalentPool.query.filter_by(domain_id=request.user.domain_id).all()
             return {
                 'talent_pools': [
@@ -55,8 +53,6 @@ class TalentPoolApi(Resource):
                     } for talent_pool in talent_pools
                 ]
             }
-        raise UnauthorizedError(error_message="Either logged-in user is not admin or it doesn't belong to same domain "
-                                              "as talent-pool")
 
     @require_any_role('ADMIN', 'DOMAIN_ADMIN', 'CAN_MANAGE_TALENT_POOLS')
     def put(self, **kwargs):

@@ -3,7 +3,7 @@ import random
 import string
 from werkzeug.security import generate_password_hash
 from sqlalchemy.sql.expression import ClauseElement
-from ..models.user import User
+from ..models.user import User, UserScopedRoles
 
 OAUTH_ENDPOINT = 'http://127.0.0.1:8001/%s'
 TOKEN_URL = OAUTH_ENDPOINT % 'oauth2/token'
@@ -88,3 +88,13 @@ def get_access_token(user, password, client_id, client_secret):
         raise Exception("Either Access Token or Refresh Token is missing")
     else:
         return auth_service_token_response.get(u'access_token')
+
+
+def add_role_to_test_user(test_user, role_names):
+    """
+    This function will add roles to a test_user just for testing purpose
+    :param User test_user: User object
+    :param list[str] role_names: List of role names
+    :return:
+    """
+    UserScopedRoles.add_roles(test_user, role_names)

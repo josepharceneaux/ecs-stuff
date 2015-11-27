@@ -6,8 +6,7 @@ import random, string, uuid
 import pytest, requests
 from werkzeug.security import gen_salt
 from ..models.candidate import Candidate
-from ..models.user import UserGroup, UserScopedRoles, DomainRole
-from ..models.talent_pools_pipelines import TalentPool, TalentPoolGroup
+from ..models.user import UserGroup, DomainRole
 from ..utils.common_functions import get_or_create, get_access_token, create_test_user
 
 # Application Specific
@@ -22,6 +21,7 @@ USER_PASSWORD = 'Talent15'
 # TODO: Above fixed passwords should be removed and random passwords should be used
 PASSWORD = gen_salt(20)
 CHANGED_PASSWORD = gen_salt(20)
+
 
 class UserAuthentication():
     def __init__(self, db):
@@ -101,7 +101,7 @@ def sample_user(test_domain, request):
 
     def fin():
         try:
-            db.session.delete(sample_user)
+            db.session.delete(user)
             db.session.commit()
         except Exception:
             db.session.rollback()
@@ -198,70 +198,31 @@ def sample_client(request):
 
 
 @pytest.fixture()
-def access_token(request, ordinary_user, sample_client):
-    ordinary_user_access_token = get_access_token(ordinary_user, PASSWORD, sample_client.client_id, sample_client.client_secret)
+def access_token_first(request, user_first, sample_client):
+    access_token = get_access_token(user_first, PASSWORD, sample_client.client_id, sample_client.client_secret)
 
     def tear_down():
-        token = Token.query.filter_by(access_token=ordinary_user_access_token).first()
+        token = Token.query.filter_by(access_token=access_token).first()
         if token:
             token.delete()
     request.addfinalizer(tear_down)
-    return ordinary_user_access_token
+    return access_token
 
 
 @pytest.fixture()
-def admin_access_token(request, admin_user, sample_client):
-    admin_user_access_token = get_access_token(admin_user, PASSWORD, sample_client.client_id, sample_client.client_secret)
+def access_token_second(request, user_second, sample_client):
+    access_token = get_access_token(user_second, PASSWORD, sample_client.client_id, sample_client.client_secret)
 
     def tear_down():
-        token = Token.query.filter_by(access_token=admin_user_access_token).first()
+        token = Token.query.filter_by(access_token=access_token).first()
         if token:
             token.delete()
     request.addfinalizer(tear_down)
-    return admin_user_access_token
+    return access_token
 
 
 @pytest.fixture()
-def domain_admin_access_token(request, domain_admin_user, sample_client):
-    domain_admin_user_access_token = get_access_token(domain_admin_user, PASSWORD,
-                                                      sample_client.client_id, sample_client.client_secret)
-
-    def tear_down():
-        token = Token.query.filter_by(access_token=domain_admin_user_access_token).first()
-        if token:
-            token.delete()
-    request.addfinalizer(tear_down)
-    return domain_admin_user_access_token
-
-
-@pytest.fixture()
-def group_admin_access_token(request, group_admin_user, sample_client):
-    group_admin_user_access_token = get_access_token(group_admin_user, PASSWORD, sample_client.client_id,
-                                                     sample_client.client_secret)
-
-    def tear_down():
-        token = Token.query.filter_by(access_token=group_admin_user_access_token).first()
-        if token:
-            token.delete()
-    request.addfinalizer(tear_down)
-    return group_admin_user_access_token
-
-
-@pytest.fixture()
-def manage_talent_pool_access_token(request, manage_talent_pool_user, sample_client):
-    manage_talent_pool_user_access_token = get_access_token(manage_talent_pool_user, PASSWORD, sample_client.client_id,
-                                                            sample_client.client_secret)
-
-    def tear_down():
-        token = Token.query.filter_by(access_token=manage_talent_pool_user_access_token).first()
-        if token:
-            token.delete()
-    request.addfinalizer(tear_down)
-    return manage_talent_pool_user_access_token
-
-
-@pytest.fixture()
-def ordinary_user(request, domain_first, first_group):
+def user_first(request, domain_first, first_group):
     user = create_test_user(db.session, domain_first.id, PASSWORD)
     UserGroup.add_users_to_group(first_group, [user.id])
 
@@ -276,9 +237,8 @@ def ordinary_user(request, domain_first, first_group):
 
 
 @pytest.fixture()
-def admin_user(request, domain_second, admin_role, second_group):
+def user_second(request, domain_second, second_group):
     user = create_test_user(db.session, domain_second.id, PASSWORD)
-    UserScopedRoles.add_roles(user, True, [admin_role])
     UserGroup.add_users_to_group(second_group, [user.id])
 
     def tear_down():
@@ -289,126 +249,6 @@ def admin_user(request, domain_second, admin_role, second_group):
             db.session.rollback()
     request.addfinalizer(tear_down)
     return user
-
-
-@pytest.fixture()
-def domain_admin_user(request, domain_first, domain_admin_role, first_group):
-    user = create_test_user(db.session, domain_first.id, PASSWORD)
-    UserScopedRoles.add_roles(user, True, [domain_admin_role])
-    UserGroup.add_users_to_group(first_group, [user.id])
-
-    def tear_down():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return user
-
-
-@pytest.fixture()
-def group_admin_user(request, domain_second, group_admin_role, second_group):
-    user = create_test_user(db.session, domain_second.id, PASSWORD)
-    UserScopedRoles.add_roles(user, True, [group_admin_role])
-    UserGroup.add_users_to_group(second_group, [user.id])
-
-    def tear_down():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return user
-
-
-@pytest.fixture()
-def manage_talent_pool_user(request, domain_first, manage_talent_pool_role, first_group):
-    user = create_test_user(db.session, domain_first.id, PASSWORD)
-    UserScopedRoles.add_roles(user, True, [manage_talent_pool_role])
-    UserGroup.add_users_to_group(first_group, [user.id])
-
-    def tear_down():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return user
-
-
-@pytest.fixture()
-def domain_admin_role(request):
-    role = DomainRole.get_by_name('DOMAIN_ADMIN') or ''
-    if not role:
-        role = DomainRole.save('DOMAIN_ADMIN')
-    else:
-        role = role.id
-
-        def tear_down():
-            try:
-                db.session.delete(DomainRole.query.get(role))
-                db.session.commit()
-            except:
-                db.session.rollback()
-        request.addfinalizer(tear_down)
-    return role
-
-
-@pytest.fixture()
-def group_admin_role(request):
-    role = DomainRole.get_by_name('GROUP_ADMIN') or ''
-    if not role:
-        role = DomainRole.save('GROUP_ADMIN')
-    else:
-        role = role.id
-
-        def tear_down():
-            try:
-                db.session.delete(DomainRole.query.get(role))
-                db.session.commit()
-            except:
-                db.session.rollback()
-        request.addfinalizer(tear_down)
-    return role
-
-
-@pytest.fixture()
-def manage_talent_pool_role(request):
-    role = DomainRole.get_by_name('CAN_MANAGE_TALENT_POOLS') or ''
-    if not role:
-        role = DomainRole.save('CAN_MANAGE_TALENT_POOLS')
-    else:
-        role = role.id
-
-        def tear_down():
-            try:
-                db.session.delete(DomainRole.query.get(role))
-                db.session.commit()
-            except:
-                db.session.rollback()
-        request.addfinalizer(tear_down)
-    return role
-
-
-@pytest.fixture()
-def admin_role(request):
-    role = DomainRole.get_by_name('ADMIN') or ''
-    if not role:
-        role = DomainRole.save('ADMIN')
-    else:
-        role = role.id
-
-        def tear_down():
-            try:
-                db.session.delete(DomainRole.query.get(role))
-                db.session.commit()
-            except:
-                db.session.rollback()
-        request.addfinalizer(tear_down)
-    return role
 
 
 @pytest.fixture()
@@ -450,16 +290,19 @@ def domain_second(request):
 
 
 @pytest.fixture()
-def domain_roles(request, domain_first):
+def domain_roles(request):
     test_role_first = gen_salt(20)
-    test_role_first_id = DomainRole.save(test_role_first, domain_first.id)
+    test_role_first_id = DomainRole.save(test_role_first)
     test_role_second = gen_salt(20)
-    test_role_second_id = DomainRole.save(test_role_second, domain_first.id)
+    test_role_second_id = DomainRole.save(test_role_second)
 
     def tear_down():
-        db.session.delete(DomainRole.query.get(test_role_first_id))
-        db.session.delete(DomainRole.query.get(test_role_second_id))
-        db.session.commit()
+        try:
+            db.session.delete(DomainRole.query.get(test_role_first_id))
+            db.session.delete(DomainRole.query.get(test_role_second_id))
+            db.session.commit()
+        except:
+            db.session.rollback()
     request.addfinalizer(tear_down)
     return {'test_roles': [test_role_first, test_role_second]}
 
@@ -496,39 +339,39 @@ def second_group(request, domain_second):
     return user_group
 
 
-@pytest.fixture()
-def talent_pool(request, domain_first, first_group, admin_user):
-    talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_first.id, owner_user_id=admin_user.id)
-    db.session.add(talent_pool)
-    db.session.commit()
+# @pytest.fixture()
+# def talent_pool(request, domain_first, first_group, admin_user):
+#     talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_first.id, owner_user_id=admin_user.id)
+#     db.session.add(talent_pool)
+#     db.session.commit()
+#
+#     db.session.add(TalentPoolGroup(talent_pool_id=talent_pool.id, user_group_id=first_group.id))
+#     db.session.commit()
+#
+#     def tear_down():
+#         try:
+#             db.session.delete(talent_pool)
+#             db.session.commit()
+#         except:
+#             db.session.rollback()
+#     request.addfinalizer(tear_down)
+#     return talent_pool
 
-    db.session.add(TalentPoolGroup(talent_pool_id=talent_pool.id, user_group_id=first_group.id))
-    db.session.commit()
 
-    def tear_down():
-        try:
-            db.session.delete(talent_pool)
-            db.session.commit()
-        except:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return talent_pool
-
-
-@pytest.fixture()
-def talent_pool_second(request, domain_second, admin_user):
-    talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_second.id, owner_user_id=admin_user.id)
-    db.session.add(talent_pool)
-    db.session.commit()
-
-    def tear_down():
-        try:
-            db.session.delete(talent_pool)
-            db.session.commit()
-        except:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return talent_pool
+# @pytest.fixture()
+# def talent_pool_second(request, domain_second, admin_user):
+#     talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_second.id, owner_user_id=admin_user.id)
+#     db.session.add(talent_pool)
+#     db.session.commit()
+#
+#     def tear_down():
+#         try:
+#             db.session.delete(talent_pool)
+#             db.session.commit()
+#         except:
+#             db.session.rollback()
+#     request.addfinalizer(tear_down)
+#     return talent_pool
 
 
 @pytest.fixture()
