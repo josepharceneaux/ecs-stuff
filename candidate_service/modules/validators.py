@@ -129,7 +129,7 @@ def _validate_and_format_smartlist_post_data(data, user_id):
     candidate_ids = data.get('candidate_ids')  # comma separated ids
     search_params = data.get('search_params')
     # TODO: check if not and if not smart_list_name.strip() if both are equal. Check 400 error code
-    if not smartlist_name:
+    if not smartlist_name or not smartlist_name.strip():
         raise InvalidUsage(error_message="Missing input: `name` is required for creating list", error_code=400)
     # any of the parameters "search_params" or "candidate_ids" should be present
     if not candidate_ids and not search_params:
