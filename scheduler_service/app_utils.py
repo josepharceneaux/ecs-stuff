@@ -16,8 +16,8 @@ import flask
 import traceback
 from flask import Response
 from requests_oauthlib import OAuth2Session
-from social_network_service.common.error_handling import *
-from social_network_service import logger
+from scheduler_service.common.error_handling import *
+from scheduler_service import logger
 from flask import current_app as app
 
 

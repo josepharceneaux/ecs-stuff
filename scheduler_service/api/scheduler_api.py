@@ -31,7 +31,7 @@ class Tasks(Resource):
         This resource returns a list of tasks or it can be used to create or schedule a task using POST.
     """
 
-    # @authenticate
+    @authenticate
     def get(self, **kwargs):
         """
         This action returns a list of user tasks and their count
@@ -78,7 +78,7 @@ class Tasks(Resource):
         response = json.dumps(dict(tasks=tasks, count=len(tasks)))
         return JsonResponse(response)
 
-    # @authenticate
+    @authenticate
     def post(self, **kwargs):
         """
         This method takes data to create or schedule a task for scheduler.
@@ -129,7 +129,7 @@ class Tasks(Resource):
         response = json.dumps(dict(id=task_id))
         return JsonResponse(response, status=201, headers=headers)
 
-    #@authenticate
+    @authenticate
     def delete(self, **kwargs):
         """
         Deletes multiple tasks whose ids are given in list in request data.
@@ -186,7 +186,7 @@ class TaskById(Resource):
         This resource returns a specific task based on id or update a task
     """
 
-    # @authenticate
+    @authenticate
     def get(self, id, **kwargs):
         """
         This action returns a task owned by a this user
@@ -240,7 +240,7 @@ class TaskById(Resource):
             return JsonResponse(response)
         return JsonResponse(dict(error=dict(message="Task not found")), 404)
 
-    # @authenticate
+    @authenticate
     def post(self, **kwargs):
         """
         This method takes data to update/reschedules an existing task
@@ -292,7 +292,7 @@ class TaskById(Resource):
         response = json.dumps(dict(message="Task updated successfully"))
         return JsonResponse(response, status=200)
 
-    # @authenticate
+    @authenticate
     def delete(self, id, **kwargs):
         """
         Deletes/removes a tasks from scheduler store
@@ -340,7 +340,7 @@ class ResumeTask(Resource):
         This resource resumes a previously paused job/task
     """
 
-    # @authenticate
+    @authenticate
     def get(self, id, **kwargs):
         """
         Resume a previously paused task/job
@@ -377,7 +377,7 @@ class PauseTask(Resource):
         This resource pauses job/task which can be resumed again
     """
 
-    # @authenticate
+    @authenticate
     def get(self, id, **kwargs):
         """
         Pause a task which is currently running.

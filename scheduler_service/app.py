@@ -5,6 +5,8 @@
 """
 # Standard  Library imports
 # Initializing App. This line should come before any imports from models
+import os
+
 from scheduler_service import init_app
 from scheduler_service.scheduler import scheduler
 
@@ -24,6 +26,7 @@ app.register_blueprint(scheduler_blueprint)
 scheduler.start()
 
 if __name__ == '__main__':
+    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
     app.run(port=8009)
 
 

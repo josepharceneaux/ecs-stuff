@@ -31,7 +31,6 @@ class TestAPScheduler:
         """
         sleep(1)
         job = resource_apscheduler_setup.add_job(add_job_callback)
-
         assert resource_apscheduler_setup.get_job(job_id=job.id).id == job.id
 
     def test_scheduler_job_remove(self, resource_apscheduler_setup):
