@@ -48,8 +48,8 @@ def schedule_job(data, user_id):
     end_date = data['end_date']
     frequency = data['frequency']
     post_data = data['post_data']
-    timezone = data.get('timezone', 'Asia/Karachi')
     url = data['url']
+    timezone = data.get('timezone', 'Asia/Karachi')
     try:
         job = scheduler.add_job(run_job,
                                 'interval',
@@ -77,8 +77,8 @@ def run_job(user_id, url, **kwargs):
 
 def remove_tasks(ids, user_id):
     jobs = scheduler.get_jobs()
-    jobs = filter(lambda job: job.args[0] == user_id, jobs)
-    removed = map(lambda job: (scheduler.remove_job(job.id), job.id) , jobs)
+    jobs = filter(lambda job: job.args[0] == user_id and job.id in ids, jobs)
+    removed = map(lambda job: (scheduler.remove_job(job.id), job.id), jobs)
     return removed
 
 

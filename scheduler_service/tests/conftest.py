@@ -1,7 +1,7 @@
 """
 Test cases for scheduling service
 """
-
+from scheduler_service.common.models.db import db
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.redis import RedisJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -15,6 +15,12 @@ __author__ = 'saad'
 """
 Redis db for data storage
 """
+
+db_session = db.session
+
+TESTDB = 'test_project.db'
+TESTDB_PATH = "/tmp/{}".format(TESTDB)
+TEST_DATABASE_URI = 'sqlite:///' + TESTDB_PATH
 
 
 @pytest.fixture(scope='session')
@@ -72,4 +78,5 @@ def resource_apscheduler_setup(request, resource_redis_jobstore_setup):
 
     request.addfinalizer(resource_apscheduler_teardown)
     return scheduler
+
 

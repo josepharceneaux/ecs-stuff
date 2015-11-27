@@ -8,6 +8,8 @@ from scheduler_service.app_utils import api_route, authenticate, JsonResponse
 from social_network_service.common.talent_api import TalentApi
 from scheduler_service.common.error_handling import *
 from scheduler_service.scheduler import scheduler, schedule_job, serialize_task, remove_tasks
+from scheduler_service.custom_exceptions import SchedulerApiException, NoJobFound, PendingStatus, JobAlreadyPaused, \
+    JobAlreadyRunning
 
 scheduler_blueprint = Blueprint('scheduling_api', __name__)
 api = TalentApi()
@@ -88,15 +90,14 @@ class Tasks(Resource):
                     "hour": 6
                 },
                 "start_time": "2015-12-05T08:00:00-05:00",
-                "end_time": "2016-01-05T08:00:00-05:00"
+                "end_time": "2016-01-05T08:00:00-05:00",
+                "url": "http://getTalent.com/sms/send/",
                 "post_data": {
                     "campaign_name": "SMS Campaign",
-                    "url": "http://getTalent.com/sms/send/",
                     "phone_number": "09230862348",
                     "smart_list_id": 123456,
                     "content": "text to be sent as sms"
                 }
-
             }
 
             headers = {
@@ -128,7 +129,7 @@ class Tasks(Resource):
         response = json.dumps(dict(id=task_id))
         return JsonResponse(response, status=201, headers=headers)
 
-    @authenticate
+    #@authenticate
     def delete(self, **kwargs):
         """
         Deletes multiple tasks whose ids are given in list in request data.
@@ -161,7 +162,7 @@ class Tasks(Resource):
                     500 (Internal Server Error)
 
         """
-        # user_id = kwargs['user_id']
+        #user_id = kwargs['user_id']
         # get task_ids for tasks to be removed
         req_data = request.get_json(force=True)
         task_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else []
@@ -330,7 +331,7 @@ class TaskById(Resource):
                 response = json.dumps(dict(message="Unable to remove task"))
                 return JsonResponse(response, 404)
 
-        return JsonResponse(dict(error=dict(message="Task not found")), 404)g
+        return JsonResponse(dict(error=dict(message="Task not found")), 404)
 
 
 @api.route('/tasks/<string:id>/resume/')
@@ -362,7 +363,10 @@ class ResumeTask(Resource):
                     500 (Internal Server Error)
 
         """
-        scheduler.resume_job(id)
+        try:
+            scheduler.resume_job(job_id=id)
+        except Exception as e:
+            raise job_state_exceptions(job_id=id)
         response = json.dumps(dict(message="Task has been successfully resumed"))
         return JsonResponse(response)
 
@@ -396,6 +400,23 @@ class PauseTask(Resource):
                     500 (Internal Server Error)
 
         """
-        scheduler.pause_job(id)
+        try:
+            scheduler.pause_job(job_id=id)
+        except Exception as e:
+            raise job_state_exceptions(job_id=id)
+
         response = json.dumps(dict(message="Task has been successfully paused"))
         return JsonResponse(response)
+
+
+def job_state_exceptions(job_id=None):
+    job = scheduler.get_job(job_id=job_id)
+    if job is None:
+        return NoJobFound("Job not found")
+    if job.pending:
+        return PendingStatus("Job is in pending state. Scheduler not running")
+    if job.next_run_time is None:
+        return JobAlreadyPaused("Job is already in paused state")
+    if job.next_run_time is not None:
+        return JobAlreadyRunning("Job is already in running state")
+    return SchedulerApiException("Scheduling Service error")

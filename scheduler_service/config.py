@@ -15,8 +15,7 @@ if os.environ.get('GT_ENVIRONMENT') == 'dev':
     APP_URL = 'http://0.0.0.0:8009'
     OAUTH_SERVER_URI = 'http://0.0.0.0:8081/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
-    SQLALCHEMY_DATABASE_URI = 'mysql://root:fastian123@localhost/talent_local'
-    LOGGER = logging.getLogger("social_network_service.dev")
+    LOGGER = logging.getLogger("scheduler_service.dev")
     DEBUG = True
 elif os.environ.get('GT_ENVIRONMENT') == 'circle':
     APP_URL = 'http://0.0.0.0:5000'
