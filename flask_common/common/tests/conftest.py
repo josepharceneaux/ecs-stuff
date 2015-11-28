@@ -12,6 +12,7 @@ from ..utils.common_functions import get_or_create, get_access_token, create_tes
 # Application Specific
 from ..models.db import db
 from ..models.user import (Client, Domain, User, Token)
+from ..models.talent_pools_pipelines import (TalentPool, TalentPoolGroup)
 from ..models.misc import (Culture, Organization)
 
 ISO_FORMAT = '%Y-%m-%d %H:%M'
@@ -339,39 +340,39 @@ def second_group(request, domain_second):
     return user_group
 
 
-# @pytest.fixture()
-# def talent_pool(request, domain_first, first_group, admin_user):
-#     talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_first.id, owner_user_id=admin_user.id)
-#     db.session.add(talent_pool)
-#     db.session.commit()
-#
-#     db.session.add(TalentPoolGroup(talent_pool_id=talent_pool.id, user_group_id=first_group.id))
-#     db.session.commit()
-#
-#     def tear_down():
-#         try:
-#             db.session.delete(talent_pool)
-#             db.session.commit()
-#         except:
-#             db.session.rollback()
-#     request.addfinalizer(tear_down)
-#     return talent_pool
+@pytest.fixture()
+def talent_pool(request, domain_first, first_group, user_first):
+    talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_first.id, owner_user_id=user_first.id)
+    db.session.add(talent_pool)
+    db.session.commit()
+
+    db.session.add(TalentPoolGroup(talent_pool_id=talent_pool.id, user_group_id=first_group.id))
+    db.session.commit()
+
+    def tear_down():
+        try:
+            db.session.delete(talent_pool)
+            db.session.commit()
+        except:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return talent_pool
 
 
-# @pytest.fixture()
-# def talent_pool_second(request, domain_second, admin_user):
-#     talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_second.id, owner_user_id=admin_user.id)
-#     db.session.add(talent_pool)
-#     db.session.commit()
-#
-#     def tear_down():
-#         try:
-#             db.session.delete(talent_pool)
-#             db.session.commit()
-#         except:
-#             db.session.rollback()
-#     request.addfinalizer(tear_down)
-#     return talent_pool
+@pytest.fixture()
+def talent_pool_second(request, domain_second, user_second):
+    talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_second.id, owner_user_id=user_second.id)
+    db.session.add(talent_pool)
+    db.session.commit()
+
+    def tear_down():
+        try:
+            db.session.delete(talent_pool)
+            db.session.commit()
+        except:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return talent_pool
 
 
 @pytest.fixture()
