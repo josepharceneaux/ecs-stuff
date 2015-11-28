@@ -477,13 +477,15 @@ class UserSocialNetworkCredential(db.Model):
     """
     __tablename__ = 'user_social_network_credential'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id'), nullable=False)
-    social_network_id = db.Column('socialNetworkId', db.Integer, db.ForeignKey('social_network.id'), nullable=False)
+    user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    social_network_id = db.Column('socialNetworkId', db.Integer, db.ForeignKey('social_network.id', ondelete='CASCADE'),
+                                  nullable=False)
     refresh_token = db.Column('refreshToken', db.String(1000))
     webhook = db.Column(db.String(200))
     member_id = db.Column('memberId', db.String(100))
     access_token = db.Column('accessToken', db.String(1000))
-    social_network = db.relationship("SocialNetwork")
+    social_network = db.relationship("SocialNetwork", backref=db.backref('user_social_network_credential',
+                                                                         cascade="all, delete-orphan"))
 
     @classmethod
     def get_all_credentials(cls, social_network_id=None):
