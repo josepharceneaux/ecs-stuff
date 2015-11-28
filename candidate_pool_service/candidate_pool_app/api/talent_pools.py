@@ -73,7 +73,7 @@ class TalentPoolApi(Resource):
         PUT /talent-pools/<id>      Modify an already existing talent-pool
         input: {'name': 'facebook-recruiting', 'description': ''}
 
-        :return {'updated_talent_pool': {'id': talent_pool_id}}
+        :return {'talent_pool': {'id': talent_pool_id}}
         :rtype: dict
         """
 
@@ -109,7 +109,7 @@ class TalentPoolApi(Resource):
         db.session.commit()
 
         return {
-            'updated_talent_pool': {'id': talent_pool.id}
+            'talent_pool': {'id': talent_pool.id}
         }
 
     @require_all_roles('CAN_DELETE_TALENT_POOLS')
