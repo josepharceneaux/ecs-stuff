@@ -10,6 +10,7 @@ class UserScopedRolesApi(Resource):
     # Access token decorator
     decorators = [require_oauth]
 
+    # 'SELF' is for readability. It means this endpoint will be accessible to any user
     @require_any_role('SELF', 'CAN_GET_USER_ROLES')
     def get(self, **kwargs):
         """

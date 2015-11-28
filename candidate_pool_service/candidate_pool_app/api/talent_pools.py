@@ -14,6 +14,7 @@ class TalentPoolApi(Resource):
     # Access token decorator
     decorators = [require_oauth]
 
+    # 'SELF' is for readability. It means this endpoint will be accessible to any user
     @require_any_role('SELF', 'CAN_GET_TALENT_POOLS')
     def get(self, **kwargs):
         """
@@ -187,6 +188,7 @@ class TalentPoolGroupApi(Resource):
     # Access token decorator
     decorators = [require_oauth]
 
+    # 'SELF' is for readability. It means this endpoint will be accessible to any user
     @require_any_role('SELF', 'CAN_GET_TALENT_POOLS_OF_GROUP')
     def get(self, **kwargs):
         """
@@ -335,6 +337,7 @@ class TalentPoolCandidateApi(Resource):
     # Access token decorator
     decorators = [require_oauth]
 
+    # 'SELF' is for readability. It means this endpoint will be accessible to any user
     @require_any_role('SELF', 'CAN_GET_CANDIDATES_FROM_TALENT_POOL')
     def get(self, **kwargs):
         """
@@ -370,6 +373,7 @@ class TalentPoolCandidateApi(Resource):
             ]
         }
 
+    # 'SELF' is for readability. It means this endpoint will be accessible to any user
     @require_any_role('SELF', 'CAN_ADD_CANDIDATES_TO_TALENT_POOL')
     def post(self, **kwargs):
 
@@ -434,6 +438,7 @@ class TalentPoolCandidateApi(Resource):
         return {'added_talent_pool_candidates': [int(talent_pool_candidate_id) for talent_pool_candidate_id in
                                                  talent_pool_candidate_ids]}
 
+    # 'SELF' is for readability. It means this endpoint will be accessible to any user
     @require_any_role('SELF', 'CAN_DELETE_CANDIDATES_FROM_TALENT_POOL')
     def delete(self, **kwargs):
         """

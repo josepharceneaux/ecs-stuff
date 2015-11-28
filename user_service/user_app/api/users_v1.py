@@ -12,6 +12,7 @@ class UserApi(Resource):
     # Access token and role authentication decorators
     decorators = [require_oauth]
 
+    # 'SELF' is for readability. It means this endpoint will be accessible to any user
     @require_any_role('SELF', 'CAN_GET_USERS')
     def get(self, **kwargs):
         """
@@ -47,7 +48,6 @@ class UserApi(Resource):
                         }}
 
         # User id is not provided so logged-in user wants to get all users of its domain
-        # But for this logged in user should be ADMIN or DOMAIN_ADMIN
         elif 'CAN_GET_USERS' in request.valid_domain_roles:
                 return {'users': [user.id for user in User.all_users_of_domain(request.user.domain_id)]}
 
@@ -149,6 +149,7 @@ class UserApi(Resource):
 
         return {'deleted_user': {'id': user_id_to_delete}}
 
+    # 'SELF' is for readability. It means this endpoint will be accessible to any user
     @require_any_role('SELF', 'CAN_EDIT_USERS')
     def put(self, **kwargs):
         """
