@@ -2,7 +2,6 @@
 
 'use strict';
 
-
 /**
  * yargs variables can be passed in to alter the behavior, when present.
  * Example: gulp serve-dev
@@ -14,18 +13,17 @@
  * --startServers: Will start servers for midway tests on the test task.
  */
 
-var gulp = require('gulp'),
-    $ = require('gulp-load-plugins')({lazy: true}),
-    src = './src/',
-    config = require('./gulp.config'),
-    buildTask = (function (config, taskFile) {
-        require('./gulp-tasks/' + taskFile)(config);
-    }).bind(null, config);
+var gulp = require('gulp');
+var config = require('./gulp.config')();
+
+var buildTask = (function buildTask(config, taskFile) {
+    require('./gulp-tasks/' + taskFile)(config);
+}).bind(null, config);
 
 [
-    'help',
     'serve',
     'vet',
+    'icon-font',
     'styles',
     'clean',
     'plato',
@@ -38,7 +36,7 @@ var gulp = require('gulp'),
     'config'
 ].forEach(buildTask);
 
-
+gulp.task('help', config.$.taskListing);
 gulp.task('default', ['help']);
 
 module.exports = gulp;

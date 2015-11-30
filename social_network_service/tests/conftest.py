@@ -1,5 +1,6 @@
 # Standard Library
 import os
+import requests
 
 # Third Party
 import pytest
@@ -37,6 +38,9 @@ TESTDB = 'test_project.db'
 TESTDB_PATH = "/tmp/{}".format(TESTDB)
 TEST_DATABASE_URI = 'sqlite:///' + TESTDB_PATH
 APP_URL = app.config['APP_URL']
+
+OAUTH_ENDPOINT = 'http://127.0.0.1:8001/%s'
+TOKEN_URL = OAUTH_ENDPOINT % 'oauth2/token'
 
 OAUTH_SERVER = app.config['OAUTH_SERVER_URI']
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
@@ -124,7 +128,8 @@ def test_client(request):
         client_id=client_id,
         client_secret=client_secret
     )
-    Client.save(client)
+    db.session.add(client)
+    db.session.commit()
 
     def delete_client():
         """
@@ -231,20 +236,21 @@ def test_token(request, test_user, test_client):
     :param test_user:
     :return:
     """
-    mixer = Mixer(session=db_session, commit=True)
-    token = Token(user_id=test_user.id,
-                  token_type='Bearer',
-                  access_token=get_random_word(20),
-                  refresh_token=get_random_word(20),
-                  client_id=test_client.client_id,
-                  expires=datetime(year=2050, month=1, day=1))
-    Token.save(token)
+    params = dict(grant_type="password", username=test_user.email, password='A123456')
+    auth_service_token_response = requests.post(TOKEN_URL,
+                                                params=params, auth=(test_client.client_id, test_client.client_secret)).json()
+    if not (auth_service_token_response.get(u'access_token') and auth_service_token_response.get(u'refresh_token')):
+        raise Exception("Either Access Token or Refresh Token is missing")
+    else:
+        db.session.commit()
+        token = Token.query.filter_by(access_token=auth_service_token_response.get(u'access_token')).first()
 
     def fin():
         """
         Delete this token object at the end of test session
         """
-        Token.delete(token)
+        db.session.delete(token)
+        db.session.commit()
 
     request.addfinalizer(fin)
     return token
@@ -645,7 +651,11 @@ def is_subscribed_test_data(request, test_user):
     """
     old_records = SocialNetwork.query.filter(SocialNetwork.name.in_(['SN1', 'SN2'])).all()
     for sn in old_records:
-        SocialNetwork.delete(sn.id)
+        if sn.id is not None:
+            try:
+                SocialNetwork.delete(sn.id)
+            except:
+                db.session.rollback()
     test_social_network1 = SocialNetwork(name='SN1', url='www.SN1.com')
     SocialNetwork.save(test_social_network1)
     test_social_network2 = SocialNetwork(name='SN2', url='www.SN1.com')
