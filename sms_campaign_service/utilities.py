@@ -105,15 +105,16 @@ class TwilioSMS(object):
                                  % error.msg if hasattr(error, 'msg') else error.message)
 
 
-def search_link_in_text(text):
+def search_urls_in_text(text):
     """
     This checks if given text has any URL link present in it and returns all urls in a list.
+    This checks for URLs starting with either http or https or www.
     :param text: string in which we want to search URL
     :type text: str
     :return: list of all URLs present in given text | []
     :rtype: list
     """
-    return re.findall(r'https?://[^\s<>"]+|www\.[^\s<>"]+', text)
+    return re.findall(r'https?://[^\s<>"]+|ftps?://[^\s<>"]+|www\.[^\s<>"]+', text)
 
 
 def url_conversion(long_url):

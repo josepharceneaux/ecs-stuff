@@ -21,7 +21,8 @@ from flask.ext.restful import Resource
 # Application Specific
 from sms_campaign_service.utilities import url_conversion
 from sms_campaign_service.common.talent_api import TalentApi
-from sms_campaign_service.sms_campaign_app.app_utils import api_route, ApiResponse
+from sms_campaign_service.common.error_handling import InvalidUsage
+from sms_campaign_service.sms_campaign_app.app_utils import api_route
 from sms_campaign_service.common.utils.auth_utils import require_oauth
 
 # creating blueprint
@@ -55,7 +56,8 @@ class ConvertUrl(Resource):
 
         :Example:
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/url_conversion/', headers=headers)
+            response = requests.get(API_URL + '/url_conversion/', headers=headers,
+                        data={"long_url": 'https://webdev.gettalent.com/web/default/angular#!/'})
 
         .. Response::
 
@@ -65,13 +67,15 @@ class ConvertUrl(Resource):
             }
 
         .. Status:: 200 (OK)
+                    400 (Bad request)
                     401 (Unauthorized to access getTalent)
                     500 (Internal Server Error)
-                    5004 (GoogleShortenUrlAPIError)
+
+        .. Error codes:: 5004 (GoogleShortenUrlAPIError)
         """
-        if request.values.get('url'):
-            short_url = url_conversion(request.values['url'])
+        if request.values.get('long_url'):
+            short_url = url_conversion(request.values['long_url'])
             data = {'short_url': short_url}
+            return data
         else:
-            data = {'message': 'No URL given in request'}
-        return data, 200
+            raise InvalidUsage(error_message='No URL given in request')

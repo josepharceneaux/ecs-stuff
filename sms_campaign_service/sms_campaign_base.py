@@ -30,7 +30,7 @@ from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.user import (UserPhone, User)
 from sms_campaign_service.common.utils.campaign_utils import CampaignBase
 from sms_campaign_service.common.error_handling import (ResourceNotFound, ForbiddenError)
-from sms_campaign_service.utilities import TwilioSMS, search_link_in_text, url_conversion
+from sms_campaign_service.utilities import TwilioSMS, search_urls_in_text, url_conversion
 from sms_campaign_service.common.utils.common_functions import find_missing_items
 from sms_campaign_service.config import (SMS_URL_REDIRECT, PHONE_LABEL_ID,
                                          TWILIO, IS_DEV, POOL_SIZE)
@@ -543,7 +543,7 @@ class SmsCampaignBase(CampaignBase):
                      'link present in sms_body_text for '
                      'SMS Campaign(id:%s) and Candidate(id:%s)'
                      % (self.campaign.id, candidate_id))
-        urls_in_body_text = search_link_in_text(self.body_text)
+        urls_in_body_text = search_urls_in_text(self.body_text)
         short_urls = []
         for url in urls_in_body_text:
             # We have only one link in body text which needs to shortened.

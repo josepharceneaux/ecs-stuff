@@ -3,6 +3,7 @@ __author__ = 'basit'
 import os
 import logging
 import logging.config
+from sms_campaign_service.common.utils.app_api_urls import SMS_CAMPAIGN_SERVICE_API_URL
 
 # load logging configuration file
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -12,27 +13,27 @@ logging.config.fileConfig(LOGGING_CONF)
 # SQL ALCHEMY DB URL
 GT_ENVIRONMENT = os.environ.get('GT_ENVIRONMENT')
 if GT_ENVIRONMENT == 'dev':
-    APP_URL = 'http://0.0.0.0:8008'
+    APP_URL = SMS_CAMPAIGN_SERVICE_API_URL
     OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@localhost/talent_local'
     LOGGER = logging.getLogger("social_network_service.dev")
     IS_DEV = True
 elif GT_ENVIRONMENT == 'circle':
-    APP_URL = 'http://0.0.0.0:8008'
+    APP_URL = SMS_CAMPAIGN_SERVICE_API_URL
     OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_ci'
     LOGGER = logging.getLogger("sms_campaign_service.ci")
     IS_DEV = True
 elif GT_ENVIRONMENT == 'qa':
-    APP_URL = 'http://0.0.0.0:8008'
+    APP_URL = SMS_CAMPAIGN_SERVICE_API_URL
     OAUTH_SERVER_URI = 'https://secure-webdev.gettalent.com/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!web976892@devdb.gettalent.com/talent_staging'
     LOGGER = logging.getLogger("sms_campaign_service.qa")
     IS_DEV = True
 elif GT_ENVIRONMENT == 'prod':
-    APP_URL = 'http://0.0.0.0:8008'
+    APP_URL = SMS_CAMPAIGN_SERVICE_API_URL
     OAUTH_SERVER_URI = 'https://secure.gettalent.com/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = os.environ.get('DB_STRING')
