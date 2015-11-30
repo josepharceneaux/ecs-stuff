@@ -1,75 +1,77 @@
+"""
+Test cases for APScheduler code.
+"""
 import datetime
 from time import sleep
 import pytest
 
-__author__ = 'saad'
-
-"""
-Test Cases for APScheduler
-"""
-
 
 def add_job_callback():
     """
-    temporary callback function called when job time comes
+    Temporary callback function called when job time is up.
     :return:
     """
     pass
 
 
-@pytest.mark.usefixtures('resource_apscheduler_setup')
+@pytest.mark.usefixtures('apscheduler_setup')
 class TestAPScheduler:
     """
-    Test class for testing add job, remove job, get job, bulk jobs added, bulk jobs removed
+    Test class that includes tests for:
+    - adding a job
+    - removing a job
+    - get a job
+    - adding bulk jobs
+    - removing bulk jobs
     """
 
-    def test_scheduler_job_add(self, resource_apscheduler_setup):
+    def test_scheduler_job_add(self, apscheduler_setup):
         """
         Create and add job in scheduler
-        :param resource_apscheduler_setup: start the scheduler
+        :param apscheduler_setup: start the scheduler
         :return:
         """
         sleep(1)
-        job = resource_apscheduler_setup.add_job(add_job_callback)
-        assert resource_apscheduler_setup.get_job(job_id=job.id).id == job.id
+        job = apscheduler_setup.add_job(add_job_callback)
+        assert apscheduler_setup.get_job(job_id=job.id).id == job.id
 
-    def test_scheduler_job_remove(self, resource_apscheduler_setup):
+    def test_scheduler_job_remove(self, apscheduler_setup):
         """
         Create and add job and then remove job using job id
-        :param resource_apscheduler_setup:
+        :param apscheduler_setup:
         :return:
         """
         sleep(1)
         start_date = datetime.datetime.now() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
-        job = resource_apscheduler_setup.add_job(add_job_callback,
+        job = apscheduler_setup.add_job(add_job_callback,
                                                  start_date=start_date,
                                                  end_date=end_date,
                                                  trigger='interval'
                                                  )
-        resource_apscheduler_setup.remove_job(job_id=job.id)
-        assert resource_apscheduler_setup.get_job(job_id=job.id) is None
+        apscheduler_setup.remove_job(job_id=job.id)
+        assert apscheduler_setup.get_job(job_id=job.id) is None
 
-    def test_scheduler_get_job(self, resource_apscheduler_setup):
+    def test_scheduler_get_job(self, apscheduler_setup):
         """
         Create job and then get it using job id
-        :param resource_apscheduler_setup:
+        :param apscheduler_setup:
         :return:
         """
-        job = resource_apscheduler_setup.add_job(add_job_callback)
-        assert resource_apscheduler_setup.get_job(job_id=job.id) == job
+        job = apscheduler_setup.add_job(add_job_callback)
+        assert apscheduler_setup.get_job(job_id=job.id) == job
 
-    def test_scheduler_jobs_add(self, resource_apscheduler_setup):
+    def test_scheduler_jobs_add(self, apscheduler_setup):
         """
         Create and add jobs in scheduler in bulk and check if job is added one by one
-        :param resource_apscheduler_setup:
+        :param apscheduler_setup:
         :return:
         """
         jobs = []
         start_date = datetime.datetime.now() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
         for i in range(3):
-            jobs.append((resource_apscheduler_setup.add_job(add_job_callback,
+            jobs.append((apscheduler_setup.add_job(add_job_callback,
                                                             start_date=start_date,
                                                             end_date=end_date,
                                                             trigger='interval'
@@ -77,25 +79,25 @@ class TestAPScheduler:
             sleep(1)
 
         for job_id in jobs:
-            assert resource_apscheduler_setup.get_job(job_id=job_id).id == job_id
+            assert apscheduler_setup.get_job(job_id=job_id).id == job_id
 
-    def test_scheduler_jobs_remove(self, resource_apscheduler_setup):
+    def test_scheduler_jobs_remove(self, apscheduler_setup):
         """
-        add the jobs and then remove all of them. then check if job is none
-        :param resource_apscheduler_setup:
+        Add the jobs and then remove all of them. then check if they are nomore.
+        :param apscheduler_setup:
         :return:
         """
         jobs = []
         start_date = datetime.datetime.now() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
         for i in range(10):
-            jobs.append(resource_apscheduler_setup.add_job(add_job_callback,
+            jobs.append(apscheduler_setup.add_job(add_job_callback,
                                                            start_date=start_date,
                                                            end_date=end_date,
                                                            trigger='interval'
                                                            ).id)
-        resource_apscheduler_setup.remove_all_jobs()
+        apscheduler_setup.remove_all_jobs()
 
         for job_id in jobs:
-            assert resource_apscheduler_setup.get_job(job_id=job_id) is None
+            assert apscheduler_setup.get_job(job_id=job_id) is None
 

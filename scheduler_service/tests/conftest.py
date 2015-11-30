@@ -8,21 +8,13 @@ from datetime import datetime
 
 import pytest
 from mixer._faker import faker
-from redis import Redis
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.redis import RedisJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 from werkzeug.security import gen_salt
 from mixer.backend.sqlalchemy import Mixer
 from werkzeug.security import generate_password_hash
-
-from flask import request, Flask
 from scheduler_service import init_app
-from scheduler_service.scheduler import schedule_job, scheduler
-
-APP = init_app()
-APP_URL = APP.config['APP_URL']
-__author__ = 'saad'
 
 # Application Specific
 from scheduler_service.common.models.db import db as _db
@@ -32,33 +24,15 @@ from scheduler_service.common.models.user import Client
 from scheduler_service.common.models.user import Domain
 from scheduler_service.common.models.misc import Culture
 from scheduler_service.common.models.misc import Organization
-from scheduler_service.common.utils.handy_functions import random_word
 
+
+
+APP = init_app()
+APP_URL = APP.config['APP_URL']
 db_session = _db.session
 
 OAUTH_SERVER = APP.config['OAUTH_SERVER_URI']
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-
-
-"""
-Redis db for data storage
-"""
-JOB = {
-    "frequency": {
-        "day": 5,
-        "hour": 6
-    },
-    "start_date": "2015-12-05 08:00:00",
-    "end_date": "2016-01-05 08:00:00",
-    "timezone": "Asia/Karachi",
-    "url": "http://test_url.com",
-    "post_data": {
-        "campaign_name": "SMS Campaign",
-        "phone_number": "09230862348",
-        "smart_list_id": 123456,
-        "content": "text to be sent as sms"
-    }
-}
 
 
 def get_random_word(length):
@@ -111,6 +85,23 @@ def test_culture(request):
     request.addfinalizer(fin)
     return culture
 
+@pytest.fixture(scope='session')
+def job_config(request):
+    return {
+        "frequency": {
+            "day": 5,
+            "hour": 6
+        },
+        "url": "http://getTalent.com/sms/send/",
+        "start_time": "2015-12-05T08:00:00-05:00",
+        "end_time": "2016-01-05T08:00:00-05:00",
+        "post_data": {
+            "campaign_name": "SMS Campaign",
+            "phone_number": "09230862348",
+            "smart_list_id": 123456,
+            "content": "text to be sent as sms"
+        }
+    }
 
 @pytest.fixture(scope='session')
 def test_organization(request):
@@ -223,33 +214,13 @@ def auth_data(test_user, test_token):
     return token.to_json()
 
 
-@pytest.fixture(scope='session')
-def test_task_json():
-    """
-    This fixture returns a sample task json object
-    """
-    return JOB.copy()
-
-
-@pytest.fixture(scope='session')
-def test_task_id(request, test_task_json, test_user):
-    task_id = schedule_job(test_task_json, test_user.id)
-
-    def remove_task():
-        scheduler.remove_job(task_id)
-
-    request.addfinalizer(remove_task)
-    return task_id
-
-
-"""
-APScheduler for creating, resuming, stopping, removings jobs
-"""
+# APScheduler for creating, resuming, stopping, removing jobs
 
 
 @pytest.fixture(scope='function')
-def resource_redis_jobstore_setup(request):
+def redis_jobstore_setup(request):
     """
+    Sets up a Redis based job store to be used by APSCheduler
     :param request:
     :return: redis jobstore dictionary object
     {
@@ -268,7 +239,7 @@ def resource_redis_jobstore_setup(request):
 
 
 @pytest.fixture(scope='function')
-def resource_apscheduler_setup(request, resource_redis_jobstore_setup):
+def apscheduler_setup(request, redis_jobstore_setup):
     """
     :param request:
     :return: APScheduler object initialized with redis job store and default executor
@@ -276,8 +247,8 @@ def resource_apscheduler_setup(request, resource_redis_jobstore_setup):
     executors = {
         'default': ThreadPoolExecutor(20)
     }
-    scheduler = BackgroundScheduler(jobstore=resource_redis_jobstore_setup, executors=executors)
-    scheduler.add_jobstore(resource_redis_jobstore_setup['redis'])
+    scheduler = BackgroundScheduler(jobstore=redis_jobstore_setup, executors=executors)
+    scheduler.add_jobstore(redis_jobstore_setup['redis'])
     scheduler.start()
 
     def resource_apscheduler_teardown():
