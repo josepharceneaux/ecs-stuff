@@ -1,5 +1,13 @@
 import json
 import requests
+import random
+import string
+from werkzeug.security import generate_password_hash
+from sqlalchemy.sql.expression import ClauseElement
+from ..models.user import User, UserScopedRoles
+
+OAUTH_ENDPOINT = 'http://127.0.0.1:8001/%s'
+TOKEN_URL = OAUTH_ENDPOINT % 'oauth2/token'
 
 from ..error_handling import ForbiddenError
 from sqlalchemy.sql.expression import ClauseElement
@@ -140,3 +148,41 @@ def find_missing_items(data_dict, required_fields=None, verify_all_keys=False):
         missing_items = [{key: value} for key, value in data_dict.iteritems()
                          if key in required_fields and not value]
     return [missing_item for missing_item in missing_items]
+
+
+def create_test_user(session, domain_id, password):
+    random_email = ''.join([random.choice(string.ascii_letters + string.digits) for n in xrange(12)])
+    email = '%s.sample@example.com' % random_email
+    first_name = 'John'
+    last_name = 'Sample'
+    test_user = User(
+        email=email,
+        password=generate_password_hash(password, method='pbkdf2:sha512'),
+        domain_id=domain_id,
+        first_name=first_name,
+        last_name=last_name,
+        expiration=None
+    )
+    session.add(test_user)
+    session.commit()
+    return test_user
+
+
+def get_access_token(user, password, client_id, client_secret):
+    params = dict(grant_type="password", username=user.email, password=password)
+    auth_service_token_response = requests.post(TOKEN_URL,
+                                                params=params, auth=(client_id, client_secret)).json()
+    if not (auth_service_token_response.get(u'access_token') and auth_service_token_response.get(u'refresh_token')):
+        raise Exception("Either Access Token or Refresh Token is missing")
+    else:
+        return auth_service_token_response.get(u'access_token')
+
+
+def add_role_to_test_user(test_user, role_names):
+    """
+    This function will add roles to a test_user just for testing purpose
+    :param User test_user: User object
+    :param list[str] role_names: List of role names
+    :return:
+    """
+    UserScopedRoles.add_roles(test_user, role_names)

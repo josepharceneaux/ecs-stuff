@@ -14,6 +14,14 @@ This file contains API endpoints related to sms_campaign_service.
             POST    : Updates existing campaign using given id
             DELETE  : Deletes sms campaign from db for given id
 
+        - SmsCampaignSends:  /campaigns/:id/sms_campaign_sends
+
+            GET    : Gets the "sends" records for given sms campaign id
+                    from db table sms_campaign_sends
+
+        - SendSmsCampaign: /campaigns/:id/send
+
+            POST    : Sends the SMS Campaign by campaign id
 """
 __author__ = 'basit.gettalent@gmail.com'
 
@@ -105,8 +113,8 @@ class SMSCampaigns(Resource):
             }
 
         .. Status:: 200 (OK)
-                    500 (Internal Server Error)
                     401 (Unauthorized to access getTalent)
+                    500 (Internal Server Error)
         """
 
         camp_obj = SmsCampaignBase(user_id=request.user.id)
@@ -151,17 +159,14 @@ class SMSCampaigns(Resource):
             }
 
         .. Status:: 201 (Resource Created)
-                    500 (Internal Server Error)
                     401 (Unauthorized to access getTalent)
-                    5002 (MultipleMobileNumbers)
-                    5003 (TwilioAPIError)
-                    5009 (ErrorSavingSMSCampaign)
+                    500 (Internal Server Error)
 
-        .. Error Codes::
+        ..Error Codes:: 5002 (MultipleMobileNumbers)
+                        5003 (TwilioAPIError)
+                        5009 (ErrorSavingSMSCampaign)
 
         """
-        # TODO: Update custom error handler status codes
-
         # get json post request data
         campaign_data = request.get_json(force=True)
         campaign_obj = SmsCampaignBase(user_id=request.user.id)
@@ -303,12 +308,9 @@ class CampaignById(Resource):
             No Content
 
         .. Status:: 200 (Resource Modified)
-                    500 (Internal Server Error)
                     401 (Unauthorized to access getTalent)
                     404 (Campaign not found)
-
-        .. Error codes (returned in response's body):
-
+                    500 (Internal Server Error)
         """
         # TODO: Update custom error handler status codes
         campaign_data = request.get_json(force=True)
@@ -443,10 +445,11 @@ class SendSmsCampaign(Resource):
                     401 (Unauthorized to access getTalent)
                     404 (Campaign not found)
                     500 (Internal Server Error)
-                    5001 (Empty message body to send)
-                    5002 (User has MultipleMobileNumbers)
-                    5003 (TwilioAPIError)
-                    5004 (GoogleShortenUrlAPIError)
+
+        .. Error Codes:: 5001 (Empty message body to send)
+                         5002 (User has MultipleMobileNumbers)
+                         5003 (TwilioAPIError)
+                         5004 (GoogleShortenUrlAPIError)
 
         :param campaign_id: integer, unique id representing campaign in GT database
         :return: json for required campaign containing message and total sends.

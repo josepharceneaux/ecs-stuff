@@ -336,10 +336,9 @@ class UserScopedRoles(db.Model):
     user = db.relationship('User', backref=db.backref('user_scoped_roles', cascade="all, delete-orphan"))
 
     @staticmethod
-    def add_roles(user, is_admin_user, roles_list):
+    def add_roles(user, roles_list):
         """ Add a role for user
         :param User user: user object
-        :param bool is_admin_user: either user has ADMIN role
         :param list[int | str] roles_list: list of role_ids or role_names or both
         :rtype: None
         """
@@ -354,8 +353,7 @@ class UserScopedRoles(db.Model):
                     else:
                         raise InvalidUsage("Role: %s doesn't exist" % role)
                 domain_role = DomainRole.query.get(role_id)
-                # Add given role to a given user if user who sent this request is either admin or from same domain
-                if domain_role and (is_admin_user or domain_role.domain_id == user.domain_id):
+                if domain_role and (not domain_role.domain_id or domain_role.domain_id == user.domain_id):
                     if not UserScopedRoles.query.filter((UserScopedRoles.user_id == user.id) &
                                                                 (UserScopedRoles.role_id == role_id)).first():
                         user_scoped_role = UserScopedRoles(user_id=user.id, role_id=role_id)
@@ -369,10 +367,9 @@ class UserScopedRoles(db.Model):
             raise InvalidUsage("User %s doesn't exist" % user.id)
 
     @staticmethod
-    def delete_roles(user, is_admin_user, roles_list):
+    def delete_roles(user, roles_list):
         """ Delete a role for user
         :param User user: user object
-        :param bool is_admin_user: either user has ADMIN role
         :param list[int | str] roles_list: list of role_ids or role_names or both
         :rtype: None
         """
@@ -388,8 +385,7 @@ class UserScopedRoles(db.Model):
 
             user_scoped_role = UserScopedRoles.query.filter((UserScopedRoles.user_id == user.id)
                                                             & (UserScopedRoles.role_id == role_id)).first()
-            # Delete a given role only if user who sent this request is either ADMIN or it has same domain_id as given role
-            if user_scoped_role and (is_admin_user or DomainRole.query.get(role_id).domain_id == user.domain_id):
+            if user_scoped_role:
                 db.session.delete(user_scoped_role)
             else:
                 raise InvalidUsage("User %s doesn't have any role %s or " % (user.id, role_id))
@@ -446,9 +442,11 @@ class UserGroup(db.Model):
     def add_groups(groups, domain_id):
         """ Add new user groups.
         :param list[dict] groups: List of the user groups
-        :param int domain_id: Domain Id of the user groups.
-        :rtype: None
+        :param int domain_id: Domain Id of the user groups
+        :return: An array consisting of all UserGroup objects which have been added to a domain successfully
+        :rtype: list[UserGroup]
         """
+        user_groups = []
         for group in groups:
             name = group.get('name')
             description = group.get('description')
@@ -458,7 +456,9 @@ class UserGroup(db.Model):
             else:
                 raise InvalidUsage("Group '%s' already exists in same domain so it cannot be added again" % name)
             db.session.add(user_group)
+            user_groups.append(user_group)
         db.session.commit()
+        return user_groups
 
     @staticmethod
     def all_groups_of_domain(domain_id):
@@ -477,10 +477,9 @@ class UserGroup(db.Model):
         return User.query.filter_by(user_group_id=group_id).all()
 
     @staticmethod
-    def delete_groups(domain_id, is_admin_user, groups):
+    def delete_groups(domain_id, groups):
         """ Delete few or all groups of a domain
         :param int domain_id: id of a domain
-        :param bool is_admin_user: either user has ADMIN role
         :param list[int | str] groups: list of names or ids of user groups
         :rtype: None
         """
@@ -489,14 +488,14 @@ class UserGroup(db.Model):
                 if is_number(group):
                     group_id = group
                 else:
-                    user_group = UserGroup.query.filter_by(name=group).first()
+                    user_group = UserGroup.query.filter_by(name=group, domain_id=domain_id).first()
                     if user_group:
                         group_id = user_group.id
                     else:
                         group_id = None
 
-                group = UserGroup.query.get(group_id) or None if group_id else None
-                if group and (is_admin_user or group.domain_id == domain_id):
+                group = UserGroup.query.filter_by(id=group_id, domain_id=domain_id).first() or None if group_id else None
+                if group:
                     db.session.delete(group)
                 else:
                     raise InvalidUsage("Group %s doesn't exist or either it doesn't belong to\
@@ -529,13 +528,15 @@ class UserSocialNetworkCredential(db.Model):
     """
     __tablename__ = 'user_social_network_credential'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id'), nullable=False)
-    social_network_id = db.Column('socialNetworkId', db.Integer, db.ForeignKey('social_network.id'), nullable=False)
+    user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    social_network_id = db.Column('socialNetworkId', db.Integer, db.ForeignKey('social_network.id', ondelete='CASCADE'),
+                                  nullable=False)
     refresh_token = db.Column('refreshToken', db.String(1000))
     webhook = db.Column(db.String(200))
     member_id = db.Column('memberId', db.String(100))
     access_token = db.Column('accessToken', db.String(1000))
-    social_network = db.relationship("SocialNetwork")
+    social_network = db.relationship("SocialNetwork", backref=db.backref('user_social_network_credential',
+                                                                         cascade="all, delete-orphan"))
 
     @classmethod
     def get_all_credentials(cls, social_network_id=None):
