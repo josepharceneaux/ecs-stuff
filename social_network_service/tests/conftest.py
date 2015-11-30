@@ -652,7 +652,10 @@ def is_subscribed_test_data(request, test_user):
     old_records = SocialNetwork.query.filter(SocialNetwork.name.in_(['SN1', 'SN2'])).all()
     for sn in old_records:
         if sn.id is not None:
-            SocialNetwork.delete(sn.id)
+            try:
+                SocialNetwork.delete(sn.id)
+            except:
+                db.session.rollback()
     test_social_network1 = SocialNetwork(name='SN1', url='www.SN1.com')
     SocialNetwork.save(test_social_network1)
     test_social_network2 = SocialNetwork(name='SN2', url='www.SN1.com')
