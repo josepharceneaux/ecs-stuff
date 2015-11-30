@@ -43,6 +43,7 @@ class User(db.Model):
     candidates = relationship('Candidate', backref='user')
     public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
     user_group = relationship('UserGroup', backref='user')
+    user_phones = relationship('UserPhone', cascade="all,delete",  backref='user')
     email_campaigns = relationship('EmailCampaign', backref='user')
     user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
     events = db.relationship('Event', backref='user', lazy='dynamic')
@@ -85,8 +86,8 @@ class User(db.Model):
 class UserPhone(db.Model):
     __tablename__ = 'user_phone'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column('Userid', db.Integer, db.ForeignKey('user.id'))
-    phone_label_id = db.Column('PhoneLabelId', db.Integer, db.ForeignKey('phone_label.id'))
+    user_id = db.Column('Userid', db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'))
+    phone_label_id = db.Column('PhoneLabelId', db.Integer, db.ForeignKey('phone_label.id', ondelete='CASCADE'))
     value = db.Column(db.String(50), nullable=False)
 
     def __repr__(self):

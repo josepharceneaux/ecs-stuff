@@ -69,9 +69,6 @@ class SmsCampaignBase(CampaignBase):
     *  get_all_campaigns(self)
        This gets all the campaigns created by current user
 
-    *  delete_all_campaigns(self)
-        This deletes all the campaigns of a user from database
-
     * save(self, form_data)
         This method is used to save the campaign in db table 'sms_campaign' and
         returns the ID of fresh record in db.
@@ -190,18 +187,6 @@ class SmsCampaignBase(CampaignBase):
         """
         return SmsCampaign.get_by_user_phone_id(self.user_phone.id)
 
-    def delete_all_campaigns(self):
-        """
-        This deletes all the campaigns of a user from database table "sms_campaign"
-        :return:
-        """
-        campaigns = self.get_all_campaigns()
-        status_list = [SmsCampaign.delete(campaign) for campaign in campaigns]
-        if all(status_list):
-            return True
-        else:
-            return False
-
     def save(self, form_data):
         """
         This saves the campaign in database table sms_campaign in following steps:
@@ -311,7 +296,7 @@ class SmsCampaignBase(CampaignBase):
                                                                  phone_label_id)
         if len(user_phone) == 1:
             if user_phone[0].value:
-                return user_phone
+                return user_phone[0]
         elif len(user_phone) > 1:
             raise MultipleMobileNumbers(error_message='User(id:%s) has multiple phone numbers '
                                                       'for phone label: %s'
@@ -320,7 +305,7 @@ class SmsCampaignBase(CampaignBase):
             # User has no associated twilio number, need to buy one
             logger.debug('get_user_phone: User(id:%s) has no Twilio number associated.'
                          % self.user_id)
-        return self.buy_twilio_mobile_number(phone_label_id=phone_label_id)
+            return self.buy_twilio_mobile_number(phone_label_id=phone_label_id)
 
     def buy_twilio_mobile_number(self, phone_label_id=None):
         """
@@ -347,11 +332,12 @@ class SmsCampaignBase(CampaignBase):
                              'user(id:%s).' % self.user_id)
                 number_to_buy = available_phone_numbers[0].phone_number
                 twilio_obj.purchase_twilio_number(number_to_buy)
-            user_phone = self.create_or_update_user_phone(number_to_buy,
+            user_phone = self.create_or_update_user_phone(self.user_id, number_to_buy,
                                                           phone_label_id=phone_label_id)
             return user_phone
 
-    def create_or_update_user_phone(self, phone_number, phone_label_id=None):
+    @staticmethod
+    def create_or_update_user_phone(user_id, phone_number, phone_label_id=None):
         """
         - For each user (recruiter) we need to reserve a unique phone number to send
             sms campaign. Here we create a new user_phone record or update the previous
@@ -369,10 +355,10 @@ class SmsCampaignBase(CampaignBase):
         **See Also**
         .. see also:: __int__() method of SmsCampaignBase class.
         """
-        data = {'user_id': self.user_id,
+        data = {'user_id': user_id,
                 'phone_label_id': phone_label_id,
                 'value': phone_number}
-        user_phone_row = UserPhone.get_by_user_id_and_phone_label_id(self.user_id,
+        user_phone_row = UserPhone.get_by_user_id_and_phone_label_id(user_id,
                                                                      phone_label_id)
         if user_phone_row:
             user_phone_row.update(**data)
