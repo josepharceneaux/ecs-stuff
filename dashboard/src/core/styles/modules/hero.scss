@@ -1,0 +1,36 @@
+// ---------------------------------------------------
+// Modules / Hero
+// ---------------------------------------------------
+
+.hero {
+}
+
+.hero__header {
+  padding-top: $margin--row;
+  padding-bottom: $margin--row;
+  z-index: $z-index--1;
+  position: relative;
+  margin-top: 0;
+  margin-bottom: 0;
+
+  h2 {
+    font-size: $font-size--jumbo;
+
+    @include helper--media($breakpoint--large) {
+      font-size: $font-size--mega;
+    }
+  }
+}
+
+.hero__header__action {
+  @include helper--media($breakpoint--large) {
+    vertical-align: middle;
+    text-align: right
+  }
+}
+
+.hero__graph {
+  @include helper--media($breakpoint--large) {
+    margin-top: -8em;
+  }
+}

@@ -1,0 +1,42 @@
+// ---------------------------------------------------
+// Includes / Align
+// ---------------------------------------------------
+
+@mixin inc--align--center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@mixin inc--align--abscenter {
+  left: 0;
+  right: 0;
+  position: absolute;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@mixin inc--align--clearfix {
+  &:after {
+    content: '';
+    display: table;
+    clear: both;
+  }
+}
+
+@mixin inc--align--break {
+  width: 100%;
+  clear: both;
+  float: none;
+  display: block;
+}
+
+@mixin inc--align--left {
+  display: block;
+  float: left;
+}
+
+@mixin inc--align--right {
+  display: block;
+  float: right;
+}

@@ -1,0 +1,252 @@
+// ---------------------------------------------------
+// Modules / Header
+// ---------------------------------------------------
+
+.header {
+  background-color: $color--white;
+}
+.header--login {
+  text-align: center;
+  position: relative;
+  display: block;
+  padding-bottom: $padding--giant;
+}
+
+// -----
+// Logo
+// -----
+
+.header__logo {
+  @include inc--space--vertpad--large;
+
+  background-color: $color--blue;
+  text-align: center;
+  padding-right: 3em;
+
+  @include helper--media($breakpoint--tiny) {
+    padding-right: 0;
+  }
+
+  @include helper--media($breakpoint--large) {
+    width: $misc--sidebarWidth;
+    z-index: $z-index--3;
+    position: fixed;
+  }
+
+  img {
+    max-width: 9.5em;
+    display: inline;
+  }
+}
+.header__logo--login {
+  text-indent: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  display: inline-block;
+  width: 254px;
+  height: 67px;
+  background-image: url('../images/logo--main--white.svg');
+}
+
+// -----
+// Navigation
+// -----
+
+.header__nav {
+  z-index: $z-index--3;
+
+  @include helper--media($breakpoint--tiny) {
+    text-align: right;
+    height: $misc--headerHeight + .1em;
+  }
+
+  @include helper--media($breakpoint--large) {
+    position: relative;
+  }
+}
+
+.header__upload {
+  transition: color $easing--slow;
+  font-size: $font-size--jumbo;
+  width: 25%;
+  padding: .4em;
+  line-height: 1.7em;
+  text-align: center;
+  color: inherit;
+  text-decoration: inherit;
+  display: inline-block;
+
+  @include helper--media($breakpoint--tiny) {
+    width: auto;
+    text-align: center;
+  }
+
+  &:hover {
+    color: $color--white;
+
+    @include helper--media($breakpoint--tiny) {
+      color: $color--blue;
+    }
+  }
+}
+
+// -----
+// Inner
+// -----
+
+.header__inner {
+  @include helper--media($breakpoint--large) {
+    padding-left: $misc--sidebarWidth;
+  }
+}
+
+// -----
+// Search Bar
+// -----
+
+.header__search {
+  width: 73%;
+  top: -0.6em;
+  position: relative;
+  display: inline-block;
+  padding-left: $padding--normal;
+  padding-right: $padding--normal;
+
+  @include helper--media($breakpoint--tiny) {
+    max-width: 48%;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+.header__search__input {
+  transition: border-color $easing--slow, color $easing--slow, top $easing--slow;
+  font-size: $font-size--large;
+  padding-bottom: $padding--tiny;
+  color: $color--gray;
+  font-weight: $font-weight--regular;
+  z-index: $z-index--1;
+  border-bottom-width: $border-width--normal;
+  border-color: $color--gray;
+  width: 100%;
+  padding-right: 2em;
+  border-style: none;
+  border-bottom-style: solid;
+  display: inline-block;
+  background: none;
+  outline: none;
+  position: relative;
+
+  @include helper--media($breakpoint--tiny) {
+    border-color: $color--white;
+    top: .2em;
+  }
+
+  &:focus {
+    border-bottom-color: $color--white;
+    color: $color--gray;
+    top: 0;
+
+    @include helper--media($breakpoint--tiny) {
+      border-bottom-color: $color--blue;
+      color: $color--darkGray;
+    }
+  }
+
+  &:focus + .header__search__submit {
+    color: $color--white;
+
+    @include helper--media($breakpoint--tiny) {
+      color: $color--blue;
+    }
+  }
+}
+
+.header__search__submit {
+  transition: color $easing--slow;
+  font-size: 1.9em;
+  line-height: 1.35em;
+  padding: 0;
+  top: 0;
+  right: 0;
+  position: absolute;
+  background: none;
+  border: none;
+  outline: none;
+
+  &:hover {
+    color: $color--white;
+    cursor: pointer;
+
+    @include helper--media($breakpoint--tiny) {
+      color: $color--blue;
+    }
+  }
+}
+
+// -----
+// Select
+// -----
+
+.header__select {
+
+  padding-left: $padding--large;
+  padding-right: $padding--large;
+
+  .fancy-select .trigger {
+    margin-bottom: 0;
+  }
+
+  .fancy-select .options {
+    text-align: left;
+  }
+}
+
+// -----
+// Actions
+// -----
+
+.header__actions {
+  background-color: $color--darkGray;
+  color: $color--gray;
+
+  @include helper--media($breakpoint--tiny) {
+    background-color: $color--white;
+    color: $color--darkGray;
+  }
+}
+
+// -----
+// Profile button
+// -----
+
+.header__profile {
+  padding: .7em;
+  padding-left: 0;
+  position: absolute;
+  top: 0;
+  border: none;
+  text-decoration: none;
+  outline: none;
+  overflow: hidden;
+  display: inline-block;
+  float: right;
+
+  @include helper--media($breakpoint--tiny) {
+    position: relative;
+  }
+
+  img {
+    @include inc--figure--rounded;
+
+    transition: border-color $easing--slow;
+    border-width: $border-width--medium;
+    border-color: $color--white;
+    display: inline-block;
+    border-style: solid;
+
+    &:hover {
+      border-color: $color--blue;
+    }
+  }
+}

@@ -1,0 +1,232 @@
+// ---------------------------------------------------
+// Modules / View
+// ---------------------------------------------------
+
+.app__wrapper,
+.app__root,
+.app__content,
+.view__wrapper {
+    display: table;
+    width: 100%;
+    height: 100%;
+}
+
+.view {}
+.view--login {
+  @extend .view;
+
+  display: table;
+  width: 100%;
+  height: 100%;
+  background-color: $color--blue;
+  background-image: url('../images/backgrounds/login-peaks.png');
+  background-position: bottom;
+  background-size: cover;
+}
+
+// -----
+// Main
+// -----
+
+.view__main {
+  background-color: $color--lightGray;
+  z-index: $z-index--1;
+  padding-left: $misc--sidebarWidth;
+  position: absolute;
+  overflow: hidden;
+  min-height: 100%;
+  width: 100%;
+
+  @media(max-width: $breakpoint--large) {
+    padding-left: 0;
+  }
+}
+.view__main--login {
+  display: table-cell;
+  width: 100%;
+  height: 100%;
+  vertical-align: middle;
+}
+
+// -----
+// Sidebar
+// -----
+
+.view__sidebar {
+  background-color: $color--darkGray;
+  z-index: $z-index--2;
+  width: 100%;
+  overflow: hidden;
+  position: static;
+
+  @include helper--media($breakpoint--large) {
+    width: $misc--sidebarWidth;
+    top: 0;
+    height: 100%;
+    left: 0;
+    position: fixed;
+  }
+}
+
+.view__sidebar__nav {}
+
+.view__sidebar__navParent {
+  transition: width $easing--normal, color $easing--normal, background $easing--normal;
+  background-color: $color--darkerGray;
+  font-size: $font-size--large;
+  color: $color--white;
+  width: 100%;
+  overflow: hidden;
+
+  @include helper--media($breakpoint--large) {
+    padding-bottom: $padding--jumbo;
+    padding-top: $misc--headerHeight;
+    height: 100%;
+    position: absolute;
+  }
+
+  .icon {
+    font-size: $font-size--large;
+    display: inline-block;
+    width: 20%;
+  }
+}
+
+.view__sidebar__navParent--active {
+  transition: width $easing--normal, color $easing--normal, background $easing--normal;
+  color: $color--medGray;
+  background-color: $color--darkerGray;
+  overflow: hidden;
+
+  @include helper--media($breakpoint--large) {
+    padding-top: $misc--headerHeight;
+    padding-bottom: $padding--jumbo;
+    height: 100%;
+    position: absolute;
+  }
+
+  .view__sidebar__navItem {
+    padding-left: 0;
+    padding-right: 0;
+    margin: 0;
+
+    @include helper--media($breakpoint--large) {
+      padding-top: $padding--small;
+      padding-bottom: $padding--small;
+    }
+  }
+
+  .view__sidebar__navText {
+    display: none;
+  }
+
+  .view__sidebar__navIcon {
+    font-size: $font-size--jumbo;
+    text-align: center;
+
+    span {
+      position: relative;
+      top: .2em;
+    }
+  }
+}
+
+.view__sidebar__navItem {
+  transition: background $easing--slow;
+  padding-top: $padding--small;
+  padding-bottom: $padding--tiny;
+  width: 25%;
+  color: inherit;
+  text-decoration: inherit;
+  float: left;
+  text-align: center;
+
+  @include helper--media($breakpoint--large) {
+    padding-top: $padding--tiny;
+    padding-bottom: $padding--tiny;
+    padding-left: $padding--jumbo;
+    padding-right: $padding--jumbo;
+    width: 100%;
+    float: none;
+    display: table;
+    text-align: left;
+  }
+
+  &:hover {
+    background-color: $color--nearBlack;
+  }
+}
+
+.view__sidebar__navItem--active {
+  @extend .view__sidebar__navItem;
+
+  color: $color--blue;
+
+  @include helper--media($breakpoint--large) {
+    border-width: $border-width--normal;
+    border-color: $color--blue;
+    color: inherit;
+    border-right-style: solid;
+  }
+}
+
+.view__sidebar__navIcon {
+  margin: 0;
+}
+
+.view__sidebar__navText {
+  display: none;
+
+  @include helper--media($breakpoint--large) {
+    display: table-cell;
+    vertical-align: middle;
+  }
+}
+
+.view__sidebar__navChild {
+  @include inc--align--left;
+
+  color: $color--medGray;
+  width: 100%;
+  vertical-align: top;
+
+  @include helper--media($breakpoint--large) {
+    margin-left: 100% * (3 / 12);
+    width: auto;
+  }
+
+  a {
+    font-size: $font-size--large;
+    padding: $padding--small;
+    padding-left: $padding--large;
+    padding-right: $padding--large;
+    display: block;
+    color: inherit;
+    text-decoration: inherit;
+
+    @include helper--media($breakpoint--large) {
+      font-size: $font-size--main;
+    }
+  }
+}
+
+.view__sidebar__subNav {
+  display: none;
+  opacity: 0;
+}
+
+.view__sidebar__subNav--active {
+  @extend .view__sidebar__subNav;
+
+  a {
+    transition: color $easing--slow;
+
+    &:hover {
+      color: $color--white;
+    }
+  }
+
+  @include helper--media($breakpoint--large) {
+    padding-top: $misc--headerHeight + $padding--large;
+  }
+}

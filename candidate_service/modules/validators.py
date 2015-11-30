@@ -1,7 +1,7 @@
 """
 Functions related to candidate_service/candidate_app/api validations
 """
-from candidate_service.candidate_app import db
+from candidate_service.common.models.db import db
 from candidate_service.common.models.candidate import Candidate
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import (AreaOfInterest, CustomField)

@@ -2,10 +2,10 @@ var del = require('del');
 var gulp = require('gulp');
 
 module.exports = function (config) {
+    config.log('Importing clean.js...');
 
     gulp.task('clean', function () {
         var delconfig = [].concat(config.buildDir, './.sass-cache/', config.tempDir, './report/');
-
         return clean(delconfig);
     });
 
@@ -42,7 +42,4 @@ module.exports = function (config) {
         config.log('Cleaning: ' + config.$.util.colors.blue(path));
         return del(path);
     }
-
-
 };
-

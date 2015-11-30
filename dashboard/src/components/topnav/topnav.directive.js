@@ -6,7 +6,6 @@
         .directive('gtTopnav', directiveFunction)
         .controller('TopnavController', ControllerFunction);
 
-
     // ----- directiveFunction -----
     directiveFunction.$inject = [];
 
@@ -16,6 +15,7 @@
         var directive = {
             restrict: 'E',
             templateUrl: 'components/topnav/topnav.html',
+            replace: true,
             scope: {
             },
             controller: 'TopnavController',
@@ -39,5 +39,4 @@
             $state.go('login');
         }
     }
-
 })();

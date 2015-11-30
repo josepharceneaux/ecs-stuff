@@ -12,18 +12,28 @@ dependencies:
 
 test:
   pre:
-    - sudo chown -R ubuntu /var/log
+    - sudo chown -R ubuntu /var/log:
+        parallel: true
     - python auth_service/run.py:
+        parallel: true
         background: true
     - python user_service/run.py:
+        parallel: true
         background: true
     - python resume_service/run.py:
+        parallel: true
         background: true
     - python activity_service/run.py:
+        parallel: true
         background: true
     - python candidate_service/run.py:
+        parallel: true
         background: true
     - python social_network_service/run.py:
+        parallel: true
+        background: true
+    - python candidate_pool_service/run.py:
+        parallel: true
         background: true
     - python email_campaign/run.py:
         background: true
@@ -44,6 +54,8 @@ test:
     - py.test social_network_service/tests/:
         parallel: true
     - py.test email_campaign/tests/:
+        parallel: true
+    - py.test candidate_pool_service/tests/:
         parallel: true
 
 

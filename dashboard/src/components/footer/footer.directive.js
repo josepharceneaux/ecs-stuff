@@ -16,6 +16,7 @@
         var directive = {
             restrict: 'E',
             templateUrl: 'components/footer/footer.html',
+            replace: true,
             scope: {
             },
             controller: 'FooterController',

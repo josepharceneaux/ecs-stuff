@@ -1,147 +1,214 @@
-from conftest import *
+from user_service.user_app import app
+from user_service.common.tests.conftest import *
+from user_service.common.utils.common_functions import add_role_to_test_user
+from common_functions import *
 
 
 # Test GET operation of user API
-def test_user_service_get(access_token, admin_access_token, domain_admin_access_token, sample_user, admin_user,
-                          domain_admin_user):
+def test_user_service_get(access_token_first, user_first, user_second):
 
-    # Get info of ordinary user when logged-in user is DOMAIN_ADMIN
-    assert user_api(domain_admin_access_token, sample_user.id) == sample_user.id
+    # Logged-in user trying to get info of non-existing user
+    response, status_code = user_api(access_token_first, user_first.id + 100)
+    assert status_code == 404
 
-    # Ordinary user getting his own info
-    assert user_api(access_token, sample_user.id) == sample_user.id
+    # Logged-in user trying to get info of user of different domain
+    response, status_code = user_api(access_token_first, user_second.id)
+    assert status_code == 401
 
-    # DOMAIN_ADMIN getting ADMIN user's info
-    assert user_api(domain_admin_access_token, admin_user.id) == 401
+    # Changing domain of user_second
+    user_second.domain_id = user_first.domain_id
+    db.session.commit()
 
-    # ADMIN getting DOMAIN_ADMIN user's info
-    assert user_api(admin_access_token, domain_admin_user.id) == domain_admin_user.id
+    # Logged-in user trying to get info of user of different domain
+    response, status_code = user_api(access_token_first, user_second.id)
+    assert status_code == 401
 
-    # ADMIN getting info of some non-existing user
-    assert user_api(admin_access_token, domain_admin_user.id + 100) == 404
+    # Logged-in user trying to get info of user
+    response, status_code = user_api(access_token_first, user_first.id)
+    assert status_code == 200
+    assert response['user'].get('id') == user_first.id
 
-    # Ordinary User getting all user ids of its domain
-    assert user_api(access_token) == 401
+    # Logged-in user trying to get all users of a domain
+    response, status_code = user_api(access_token_first)
+    assert status_code == 401
 
-    # DOMAIN_ADMIN getting all user ids of its domain
-    assert user_api(domain_admin_access_token) == [sample_user.id, domain_admin_user.id]
+    # Adding 'CAN_GET_USERS' to user_first
+    add_role_to_test_user(user_first, ['CAN_GET_USERS'])
+
+    # Logged-in user trying to get info of user
+    response, status_code = user_api(access_token_first, user_first.id)
+    assert status_code == 200
+    assert response['user'].get('id') == user_first.id
+
+    # Logged-in user trying to get info of user
+    response, status_code = user_api(access_token_first, user_second.id)
+    assert status_code == 200
+    assert response['user'].get('id') == user_second.id
+
+    # Logged-in user trying to get all users of a domain
+    response, status_code = user_api(access_token_first)
+    assert status_code == 200
+    assert len(response['users']) == 2
 
 
 # Test DELETE operation of user API
-def test_user_service_delete(access_token, admin_access_token, domain_admin_access_token, sample_user, admin_user,
-                          domain_admin_user):
+def test_user_service_delete(access_token_first, user_first, user_second):
 
-    # Non-admin user trying to delete some user
-    assert user_api(access_token, sample_user.id, action='DELETE') == 401
+    # User trying to delete user
+    response, status_code = user_api(access_token_first, user_first.id, action='DELETE')
+    assert status_code == 401
 
-    # DOMAIN_ADMIN user trying to delete itself
-    assert user_api(domain_admin_access_token, domain_admin_user.id, action='DELETE') == 401
+    # Adding 'CAN_DELETE_USERS' to user_first
+    add_role_to_test_user(user_first, ['CAN_DELETE_USERS'])
 
-    # DOMAIN_ADMIN user trying to delete some non-existing user
-    assert user_api(domain_admin_access_token, domain_admin_user.id + 100, action='DELETE') == 404
+    # User trying to delete non-existing user
+    response, status_code = user_api(access_token_first, user_first.id + 100, action='DELETE')
+    assert status_code == 404
 
-    # DOMAIN_ADMIN trying to delete a role of different domain
-    assert user_api(domain_admin_access_token, admin_user.id, action='DELETE') == 401
+    # User trying to delete user of different domain
+    response, status_code = user_api(access_token_first, user_second.id, action='DELETE')
+    assert status_code == 401
 
-    # DOMAIN_ADMIN trying to delete a user in its domain where there are only 2 users in that domain
-    assert user_api(domain_admin_access_token, sample_user.id, action='DELETE') == 400
+    # User trying to delete itself
+    response, status_code = user_api(access_token_first, user_first.id, action='DELETE')
+    assert status_code == 401
 
-    # ADMIN trying to delete a DOMAIN_ADMIN
-    assert user_api(admin_access_token, domain_admin_user.id, action='DELETE') == domain_admin_user.id
-
-    # Refresh domain_admin user object
-    db.session.refresh(domain_admin_user)
+    # Changing domain of user_second
+    user_second.domain_id = user_first.domain_id
     db.session.commit()
 
-    # Check either domain_admin_user has been deleted/disabled or not
-    assert domain_admin_user.is_disabled == 1
+    # User trying to delete user but as there are only two users in Domain so this user cannot be deleted
+    response, status_code = user_api(access_token_first, user_second.id, action='DELETE')
+    assert status_code == 400
+
+    temp_user = User(domain_id=user_first.domain_id, email='%s@gettalent.com' % gen_salt(20))
+    db.session.add(temp_user)
+    db.session.commit()
+
+    # User trying to delete user
+    response, status_code = user_api(access_token_first, user_second.id, action='DELETE')
+    assert status_code == 200
+    db.session.refresh(user_second)
+    db.session.commit()
+    assert user_second.is_disabled == 1
+
+    db.session.delete(temp_user)
+    db.session.commit()
 
 
 # Test PUT operation of user API
-def test_user_service_put(access_token, admin_access_token, domain_admin_access_token, sample_user, admin_user,
-                          domain_admin_user):
+def test_user_service_put(access_token_first, user_first, user_second):
 
     data = {'first_name': gen_salt(6), 'last_name': gen_salt(6), 'phone': '+1 226-581-1027', 'email': ''}
 
-    # ADMIN user trying to update non-existing user
-    assert user_api(domain_admin_access_token, sample_user.id + 100, data=data, action='PUT') == 404
+    # Logged-in user trying to update non-existing user
+    response, status_code = user_api(access_token_first, user_first.id + 100, data=data, action='PUT')
+    assert status_code == 404
 
-    # ADMIN user trying to update a DOMAIN_ADMIN user but with empty request body
-    assert user_api(admin_access_token, domain_admin_user.id, action='PUT') == 400
+    # Logged-in user trying to update user with empty request body
+    response, status_code = user_api(access_token_first, user_first.id, action='PUT')
+    assert status_code == 400
 
-    # DOMAIN_ADMIN user trying to update a user in different domain
-    assert user_api(domain_admin_user, admin_user.id, data=data, action='PUT') == 401
+    # Logged-in user trying to update user of different domain
+    response, status_code = user_api(access_token_first, user_second.id, data=data, action='PUT')
+    assert status_code == 401
 
-    # Ordinary user trying to delete some user other than itself
-    assert user_api(access_token, domain_admin_user.id, data=data, action='PUT') == 401
+    # Changing domain of user_second
+    user_second.domain_id = user_first.domain_id
+    db.session.commit()
 
-    # DOMAIN_ADMIN user trying to update ordinary user but with invalid email
+    # Logged-in user trying to update a different user
+    response, status_code = user_api(access_token_first, user_second.id, data=data, action='PUT')
+    assert status_code == 401
+
+    # Logged-in user trying to update user with invalid email
     data['email'] = 'INVALID_EMAIL'
-    assert user_api(domain_admin_access_token, sample_user.id, data=data, action='PUT') == 400
+    response, status_code = user_api(access_token_first, user_first.id, data=data, action='PUT')
+    assert status_code == 400
 
-    # DOMAIN_ADMIN user trying to update ordinary user but with already existing email in ordinary user's domain
-    data['email'] = domain_admin_user.email
-    assert user_api(domain_admin_access_token, sample_user.id, data=data, action='PUT') == 400
+    # Logged-in user trying to update user with an existing email
+    data['email'] = user_second.email
+    response, status_code = user_api(access_token_first, user_first.id, data=data, action='PUT')
+    assert status_code == 400
 
-    # DOMAIN_ADMIN user trying to update ordinary user
+    # Logged-in user trying to update user
     data['email'] = 'sample_%s@gettalent.com' % gen_salt(15)
-    assert user_api(domain_admin_access_token, sample_user.id, data=data, action='PUT') == sample_user.id
+    response, status_code = user_api(access_token_first, user_first.id, data=data, action='PUT')
+    assert status_code == 200
 
-    # Refresh ordinary user
-    db.session.refresh(sample_user)
+    # Refresh user
+    db.session.refresh(user_first)
     db.session.commit()
 
     # Check if ordinary user has been updated successfully
-    assert sample_user.email == data['email']
-    assert sample_user.first_name == data['first_name']
-    assert sample_user.last_name == data['last_name']
-    assert sample_user.phone == data['phone']
+    assert user_first.email == data['email']
+    assert user_first.first_name == data['first_name']
+    assert user_first.last_name == data['last_name']
+    assert user_first.phone == data['phone']
+
+    # Adding 'CAN_EDIT_USERS' in user_first
+    add_role_to_test_user(user_first, ['CAN_EDIT_USERS'])
+
+    # Logged-in user trying to update a different user
+    data['email'] = 'sample_%s@gettalent.com' % gen_salt(15)
+    response, status_code = user_api(access_token_first, user_second.id, data=data, action='PUT')
+    assert status_code == 200
 
 
 # Test POST operation of user API
-def test_user_service_post(access_token, admin_access_token, domain_admin_access_token, sample_user, admin_user,
-                          domain_admin_user):
+def test_user_service_post(access_token_first, user_first):
 
     first_user = {
-        'first_name': gen_salt(6),
+        'first_name': '',
         'last_name': gen_salt(6),
-        'phone': '+1 226-581-1027',
-        'domain': sample_user.domain_id,
-        'is_admin': '1'
+        'phone': '+1 226-581-1027'
     }
-
     second_user = {
         'first_name': gen_salt(6),
-        'last_name': gen_salt(6),
-        'phone': '+1 226-581-1027',
-        'is_domain_admin': '1'
+        'last_name': '',
+        'phone': '+1 226-581-1027'
     }
 
     data = {'users': [first_user, second_user]}
 
-    # ADMIN user trying to add a new users but with empty request body
-    assert user_api(admin_access_token, action='POST') == 400
+    # Logged-in user trying to add new users
+    response, status_code = user_api(access_token_first, data=data, action='POST')
+    assert status_code == 401
 
-    # Ordinary user trying to add new users
-    assert user_api(access_token, data=data, action='POST') == 401
+    # Adding 'CAN_ADD_USERS' role to user_first
+    add_role_to_test_user(user_first, ['CAN_ADD_USERS'])
 
-    # ADMIN user trying to add new users but without a email address
-    assert user_api(admin_access_token, data=data, action='POST') == 400
+    # Logged-in user trying to add new users with empty request body
+    response, status_code = user_api(access_token_first, action='POST')
+    assert status_code == 400
+
+    # Logged-in user trying to add new users but without an email address
+    response, status_code = user_api(access_token_first, data=data, action='POST')
+    assert status_code == 400
 
     # Adding missing email address in request body
     data['users'][0]['email'] = '%s.sample@example.com' % gen_salt(15)
-    data['users'][1]['email'] = sample_user.email
+    data['users'][1]['email'] = user_first.email
 
-    # DOMAIN_ADMIN is trying to add a new admin user
-    assert user_api(domain_admin_access_token, data=data, action='POST') == 401
+    # Logged-in user trying to add new users but without first_names and last_names
+    response, status_code = user_api(access_token_first, data=data, action='POST')
+    assert status_code == 400
 
-    # DOMAIN_ADMIN trying to add a new user with already existing email
-    assert user_api(domain_admin_access_token,  data={'users': [second_user]}, action='POST') == 400
+    # Adding missing first_name and last_name in request body
+    data['users'][0]['first_name'] = gen_salt(6)
+    data['users'][1]['last_name'] = gen_salt(6)
+
+    # Logged-in user trying to add  new users but with an existing email address
+    response, status_code = user_api(access_token_first, data=data, action='POST')
+    assert status_code == 400
 
     data['users'][1]['email'] = '%s.sample@example.com' % gen_salt(15)
 
-    # ADMIN trying to add new users
-    user_ids = user_api(admin_access_token,  data=data, action='POST')
+    # Logged-in user trying to add new users
+    response, status_code = user_api(access_token_first, data=data, action='POST')
+    assert status_code == 200
+
+    user_ids = response['users']
     assert len(user_ids) == 2
 
     db.session.commit()
