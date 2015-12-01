@@ -29,6 +29,9 @@
 
     /* @ngInject */
     function ControllerFunction(logger) {
+        var vm = this;
+
+        vm.eventStartDate = new Date(2015, 11, 1, 17, 0);
 
         activate();
 
