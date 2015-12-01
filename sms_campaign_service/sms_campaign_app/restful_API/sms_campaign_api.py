@@ -39,9 +39,9 @@ from flask.ext.restful import Resource
 from sms_campaign_service import logger
 from sms_campaign_service.common.error_handling import *
 from sms_campaign_service.common.talent_api import TalentApi
-from sms_campaign_service.sms_campaign_base import SmsCampaignBase
-from sms_campaign_service.sms_campaign_app.app_utils import api_route, ApiResponse
 from sms_campaign_service.common.utils.auth_utils import require_oauth
+from sms_campaign_service.sms_campaign_app.app_utils import api_route, ApiResponse
+from sms_campaign_service.sms_campaign_base import SmsCampaignBase, delete_sms_campaign
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign, SmsCampaignBlast, \
     SmsCampaignSend
 
@@ -114,6 +114,7 @@ class SMSCampaigns(Resource):
 
         .. Status:: 200 (OK)
                     401 (Unauthorized to access getTalent)
+                    403 (Forbidden error)
                     500 (Internal Server Error)
         """
 
@@ -143,7 +144,7 @@ class SMSCampaigns(Resource):
 
             headers = {
                         'Authorization': 'Bearer <access_token>',
-                        'Content-Type': 'application/json'
+
                        }
             data = json.dumps(campaign_data)
             response = requests.post(
@@ -160,16 +161,19 @@ class SMSCampaigns(Resource):
 
         .. Status:: 201 (Resource Created)
                     401 (Unauthorized to access getTalent)
+                    403 (Forbidden error)
                     500 (Internal Server Error)
 
         ..Error Codes:: 5002 (MultipleMobileNumbers)
                         5003 (TwilioAPIError)
+                        5006 (MissingRequiredField)
                         5009 (ErrorSavingSMSCampaign)
 
         """
         # get json post request data
         campaign_data = request.get_json(force=True)
-        campaign_obj = SmsCampaignBase(user_id=request.user.id)
+        campaign_obj = SmsCampaignBase(user_id=request.user.id,
+                                       buy_new_number=campaign_data.get('buy_new_number'))
         campaign_id = campaign_obj.save(campaign_data)
         headers = {'Location': '/campaigns/%s' % campaign_id}
         logger.debug('Campaign(id:%s) has been saved.' % campaign_id)
@@ -187,7 +191,6 @@ class SMSCampaigns(Resource):
             }
             headers = {
                         'Authorization': 'Bearer <access_token>',
-                        'Content-Type': 'application/json'
                        }
             data = json.dumps(campaign_ids)
             response = requests.delete(
@@ -204,6 +207,7 @@ class SMSCampaigns(Resource):
         .. Status:: 200 (Resource deleted)
                     207 (Not all deleted)
                     400 (Bad request)
+                    403 (Forbidden error)
                     500 (Internal Server Error)
 
         """
@@ -214,7 +218,10 @@ class SMSCampaigns(Resource):
             raise InvalidUsage('Bad request, include campaign_ids as list data', error_code=400)
         # check if campaigns_ids list is not empty
         if campaign_ids:
-            status_list = [SmsCampaign.delete(_id) for _id in campaign_ids]
+            if not all([isinstance(campaign_id, (int, long)) for campaign_id in campaign_ids]):
+                raise InvalidUsage('Bad request, campaign_ids must be integer', error_code=400)
+            status_list = [delete_sms_campaign(campaign_id, request.user.id)
+                           for campaign_id in campaign_ids]
             if all(status_list):
                 return dict(message='%s Campaigns deleted successfully' % len(campaign_ids)), 200
             else:
@@ -293,7 +300,7 @@ class CampaignById(Resource):
 
             headers = {
                         'Authorization': 'Bearer <access_token>',
-                        'Content-Type': 'application/json'
+
                        }
             data = json.dumps(campaign_data)
             campaign_id = campaign_data['id']
@@ -308,11 +315,13 @@ class CampaignById(Resource):
             No Content
 
         .. Status:: 200 (Resource Modified)
+                    400 (Bad request)
                     401 (Unauthorized to access getTalent)
                     404 (Campaign not found)
                     500 (Internal Server Error)
+
+        .. Error codes:: 5006 (MissingRequiredField)
         """
-        # TODO: Update custom error handler status codes
         campaign_data = request.get_json(force=True)
         camp_obj = SmsCampaignBase(user_id=int(request.user.id))
         camp_obj.create_or_update_sms_campaign(campaign_data, campaign_id=campaign_id)
@@ -326,7 +335,7 @@ class CampaignById(Resource):
         :Example:
             headers = {
                         'Authorization': 'Bearer <access_token>',
-                        'Content-Type': 'application/json'
+
                        }
             campaign_id = 1
             response = requests.delete(
@@ -340,19 +349,14 @@ class CampaignById(Resource):
                 'message': 'Campaign(id:%s) deleted successfully' % campaign_id
             }
         .. Status:: 200 (Resource Deleted)
-                    403 (Forbidden: Campaign not found for this user)
+                    403 (Forbidden: Current user cannot delete SMS campaign)
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
-        campaign = SmsCampaign.get_by_id(campaign_id)
-        if campaign:
-            delete_status = SmsCampaign.delete(campaign_id)
-            if delete_status:
-                return dict(message='Campaign(id:%s) deleted successfully' % campaign_id), 200
-            else:
-                raise ForbiddenError
-        else:
-            raise ResourceNotFound(error_message='SMS Campaign(id=%s) not found.' % campaign_id)
+
+        delete_status = delete_sms_campaign(campaign_id, request.user.id)
+        if delete_status:
+            return dict(message='Campaign(id:%s) deleted successfully' % campaign_id), 200
 
 
 @api.route('/campaigns/<int:campaign_id>/sms_campaign_sends')

@@ -17,6 +17,9 @@ methods like
 It also contains private methods for this module as
     - _get_valid_user_phone_value()
     - _get_valid_user_phone_value()
+
+It has delete_sms_campaign() function to delete only that campaign
+    for which the current user is an owner.
 """
 
 __author__ = 'basit.gettalent@gmail.com'
@@ -172,8 +175,10 @@ class SmsCampaignBase(CampaignBase):
 
         kwargs['pool_size'] = POOL_SIZE
         super(SmsCampaignBase, self).__init__(*args, **kwargs)
-        self.buy_new_number = kwargs.get('buy_new_number', True)
-        self.user_phone = self.get_user_phone() if self.buy_new_number else None
+        self.buy_new_number = kwargs.get('buy_new_number', False)
+        self.user_phone = self.get_user_phone()
+        if not self.user_phone:
+            raise ForbiddenError(error_message='User(id:%s) has no phone number' % self.user_id)
         self.modified_body_text = None
         self.sms_campaign_blast_id = None
         self.url_conversion_id = None
@@ -233,22 +238,25 @@ class SmsCampaignBase(CampaignBase):
                     added_time=datetime.now(),
                     send_time=sms_campaign_data.get('send_time'),
                     stop_time=sms_campaign_data.get('stop_time'))
+        required_fields = ['name', 'user_phone_id', 'sms_body_text']
+        missing_items = find_missing_items(data, required_fields)
+        if missing_items:
+            raise MissingRequiredField(error_message='%s' % missing_items)
         if campaign_id:
-            try:
-                sms_campaign = SmsCampaign.get_by_id(campaign_id)
-            except:
+            sms_campaign_row = SmsCampaign.get_by_id(campaign_id)
+            if not sms_campaign_row:
                 raise ResourceNotFound(error_message='SMS Campaign(id=%s) not found.' % campaign_id)
             for key, value in data.iteritems():
                 # update old values with new ones if provided, else preserve old ones.
-                data[key] = value if value else getattr(sms_campaign, key)
-            sms_campaign.update(**data)
+                data[key] = value if value else getattr(sms_campaign_row, key)
+            sms_campaign_row.update(**data)
         else:
             try:
-                sms_campaign = SmsCampaign(**data)
-                SmsCampaign.save(sms_campaign)
+                sms_campaign_row = SmsCampaign(**data)
+                SmsCampaign.save(sms_campaign_row)
             except Exception as error:
                 raise ErrorSavingSMSCampaign(error_message=error.message)
-        return sms_campaign
+        return sms_campaign_row
 
     def campaign_create_activity(self, source):
         """
@@ -305,7 +313,8 @@ class SmsCampaignBase(CampaignBase):
             # User has no associated twilio number, need to buy one
             logger.debug('get_user_phone: User(id:%s) has no Twilio number associated.'
                          % self.user_id)
-            return self.buy_twilio_mobile_number(phone_label_id=phone_label_id)
+            if self.buy_new_number:
+                return self.buy_twilio_mobile_number(phone_label_id=phone_label_id)
 
     def buy_twilio_mobile_number(self, phone_label_id=None):
         """
@@ -1036,3 +1045,27 @@ def _get_valid_candidate_phone_value(candidate_phone_value):
         raise ResourceNotFound(error_message='No Candidate is associated with '
                                              '%s phone number' % candidate_phone_value)
     return candidate_phone
+
+
+def delete_sms_campaign(campaign_id, current_user_id):
+    """
+    This function is used to delete sms campaign of a user. If current user is the
+    creator of given campaign id, it will delete the campaign, otherwise it will
+    raise the Forbidden error.
+    :param campaign_id: id of sms campaign to be deleted
+    :param current_user_id: id of current user
+    :exception: Forbidden error (status_code = 403)
+    :exception: Resource not found error (status_code = 404)
+    :return: True if record deleted successfully, False otherwise.
+    :rtype: bool
+    """
+    campaign_row = SmsCampaign.get_by_id(campaign_id)
+    if campaign_row:
+        campaign_user_id = UserPhone.get_by_id(campaign_row.user_phone_id).user_id
+        if campaign_user_id == current_user_id:
+            return SmsCampaign.delete(campaign_id)
+        else:
+            raise ForbiddenError(error_message='You are not authorized '
+                                               'to delete SMS campaign(id:%s)' % campaign_id)
+    else:
+        raise ResourceNotFound(error_message='SMS Campaign(id=%s) not found.' % campaign_id)
