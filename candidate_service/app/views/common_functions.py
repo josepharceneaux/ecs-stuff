@@ -8,8 +8,9 @@ from candidate_service.common.models.candidate import (
     CandidateSkill, CandidateMilitaryService, CandidateCustomField, CandidateSubscriptionPreference,
     CandidateSocialNetwork, SocialNetwork, CandidateTextComment, CandidateEducationDegreeBullet, ClassificationType,
     CandidateExperienceBullet)
-
+from candidate_service.app.views.geo_coordinates import *
 from candidate_service.common.models.misc import Country
+from datetime import datetime
 from sqlalchemy import and_, or_
 
 
@@ -21,92 +22,6 @@ def users_in_domain(domain_id):
         """
         user_domain = db.session.query(User).filter_by(User.domain_id == domain_id)
         return user_domain
-
-
-def domain_id_from_user_id(user_id):
-    """
-    :type   user_id:  int
-    :return domain_id
-    """
-    user = db.session.query(User).filter_by(id=user_id).first()
-    if not user:
-        logger.error('domain_id_from_user_id: Tried to find the domain ID of the user: %s',
-                     user_id)
-        return None
-    if not user.domain_id:
-        logger.error('domain_id_from_user_id: user.domain_id was None!', user_id)
-        return None
-
-    return user.domain_id
-
-
-def get_geo_coordinates(location):
-    """Google location (lat/lon) service.
-    :param location
-    """
-    import requests
-    url = 'http://maps.google.com/maps/api/geocode/json'
-    r = requests.get(url, params=dict(address=location, sensor='false'))
-    try:
-        geo_data = r.json()
-    except Exception:
-        geo_data = r.json
-
-    results = geo_data.get('results')
-    if results:
-        location = results[0].get('geometry', {}).get('location', {})
-
-        lat = location.get('lat')
-        lng = location.get('lng')
-    else:
-        lat, lng = None, None
-
-    return lat, lng
-
-
-def get_coordinates(zipcode=None, city=None, state=None, address_line_1=None, location=None):
-    """
-
-    :param location: if provided, overrides all other inputs
-    :param city
-    :param state
-    :param zipcode
-    :param address_line_1
-    :return: string of "lat,lon" in degrees, or None if nothing found
-    """
-    coordinates = None
-
-    location = location or "%s%s%s%s" % (
-        address_line_1 + ", " if address_line_1 else "",
-        city + ", " if city else "",
-        state + ", " if state else "",
-        zipcode or ""
-    )
-    latitude, longitude = get_geo_coordinates(location)
-    if latitude and longitude:
-        coordinates = "%s,%s" % (latitude, longitude)
-
-    return coordinates
-
-
-def get_geo_coordinates_bounding(address, distance):
-    """
-    Using google maps api get coordinates, get coordinates, and bounding box with top left and bottom right coordinates
-    :param address
-    :param distance
-    :return: coordinates and bounding box coordinates
-    """
-    from geo_location import GeoLocation
-    lat, lng = get_geo_coordinates(address)
-    if lat and lng:
-        # get bounding box based on location coordinates and distance given
-        loc = GeoLocation.from_degrees(lat, lng)
-        sw_loc, ne_loc = loc.bounding_locations(distance)
-        # cloud search requires top left and bottom right coordinates
-        north_west = ne_loc.deg_lat, sw_loc.deg_lon
-        south_east = sw_loc.deg_lat, ne_loc.deg_lon
-        return {'top_left':north_west, 'bottom_right': south_east, 'point':(lat, lng)}
-    return False
 
 
 def get_name_fields_from_name(formatted_name):
@@ -147,7 +62,7 @@ def get_fullname_from_name_fields(first_name, middle_name, last_name):
     return full_name
 
 
-def create_candidate_from_params(owner_user_id, candidate_id=None, first_name=None, middle_name=None, last_name=None,
+def create_candidate_from_params(owner_user, candidate_id=None, first_name=None, middle_name=None, last_name=None,
                                  formatted_name=None, status_id=1, added_time=None, objective=None, summary=None,
                                  domain_can_read=1, domain_can_write=1, email=None, dice_social_profile_id=None,
                                  dice_profile_id=None, phone=None, current_company=None, current_title=None,
@@ -224,7 +139,9 @@ def create_candidate_from_params(owner_user_id, candidate_id=None, first_name=No
     :return: dict of candidate info
 
     """
-    import datetime
+    owner_user_id = owner_user.id
+    domain_id = owner_user.domain_id
+
     # Format inputs
     email = [email] if isinstance(email, basestring) else email
     phone = [phone] if isinstance(phone, basestring) else phone
@@ -242,8 +159,6 @@ def create_candidate_from_params(owner_user_id, candidate_id=None, first_name=No
     # Set current_company and current_title based on candidate_experience_dicts, and vice versa.
     if (current_company or current_title) and not candidate_experience_dicts:
         candidate_experience_dicts = [dict(organization=current_company, position=current_title)]
-
-    domain_id = domain_id_from_user_id(owner_user_id)
 
     # If source_id has not been specified, set it to the domain's 'Unassigned' candidate_source
     if not source_id:
@@ -362,7 +277,6 @@ def create_candidate_from_params(owner_user_id, candidate_id=None, first_name=No
         db.session.add(CandidateAddress(coordinates=lat_lon_str, candidate_id=candidate_id))
 
     # Add Education fields
-    from datetime import datetime
     current_year = datetime.utcnow().year
     if university_start_year and ((university_start_year < current_year - 100) or (university_start_year > current_year + 50)):
         # Filter out invalid university start year
@@ -377,7 +291,6 @@ def create_candidate_from_params(owner_user_id, candidate_id=None, first_name=No
 
     # Add University
     if university:
-        from datetime import datetime
         candidate_education = CandidateEducation(candidate_id=candidate_id,
                                                  list_order=1,
                                                  school_name=university,
@@ -764,4 +677,3 @@ def social_network_id_from_name(name):
         matching_social_network = next((row for row in all_social_networks
                                         if row.name.lower() == name.lower()), None)
     return matching_social_network.id if matching_social_network else None
-

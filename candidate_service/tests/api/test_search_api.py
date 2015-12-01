@@ -5,6 +5,7 @@ from candidate_service.tests.modules.test_talent_cloud_search import populate_ca
     create_area_of_interest_facets, get_or_create_status
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.models.candidate import Candidate, CandidateSource
+from candidate_service.common.models.misc import CustomFieldCategory
 from candidate_service.app.views.talent_cloud_search import upload_candidate_documents
 import requests
 import random
@@ -174,7 +175,7 @@ def test_search_position(sample_user, user_auth):
     Test to search candidates by job_title/position
 
     """
-    candidate_ids = populate_candidates(count=4, owner_user_id=sample_user.id, current_title="Developer")
+    candidate_ids = populate_candidates(count=4, owner_user_id=sample_user, current_title="Developer")
     response = get_response_from_authorized_user(user_auth, sample_user, '?job_title=Developer')
     resultant_candidates = response.json()['candidate_ids']
     _assert_results(candidate_ids, resultant_candidates)
@@ -185,7 +186,7 @@ def test_search_degree(sample_user, user_auth):
     Test to search candidates by degree type
 
     """
-    candidate_ids = populate_candidates(count=3, owner_user_id=sample_user.id, degree="Masters", university=True)
+    candidate_ids = populate_candidates(count=3, owner_user_id=sample_user, degree="Masters", university=True)
     response = get_response_from_authorized_user(user_auth, sample_user, '?degree_type=Masters')
     resultant_candidates = response.json()['candidate_ids']
     _assert_results(candidate_ids, resultant_candidates)
@@ -319,6 +320,68 @@ def test_search_get_only_requested_fields(sample_user, user_auth):
     resultant_keys = response.json()['candidates'][0].keys()
     assert len(resultant_keys) == 1
     assert 'email' in resultant_keys
+
+
+def test_search_paging(sample_user, user_auth):
+    """
+
+    :param sample_user:
+    :param user_auth:
+    :return:
+    """
+    candidate_ids = populate_candidates(count=2, owner_user_id=sample_user.id, objective=True, added_time=True,
+                                        current_company=True, current_title=True, candidate_text_comment=True,
+                                        city=True, state=True, phone=True,
+                                        zip_code=True, university=True, major=True, degree=True,
+                                        university_start_year=True,
+                                        university_start_month=True, graduation_year=True, graduation_month=True,
+                                        military_branch=True,
+                                        military_status=True, military_grade=True,
+                                        military_to_date=datetime.datetime.now())
+    response1 = get_response_from_authorized_user(user_auth, sample_user, '?sort_by=added_time-asc')
+    resultant_candidates = response1.json()['candidate_ids']
+    _assert_results(candidate_ids[0:15], resultant_candidates)
+
+
+def test_search_custom_fields(sample_user, user_auth):
+    """
+
+    :param sample_user:
+    :param user_auth:
+    :return:
+    """
+    # Create custom field category named as 'Certifications'
+    domain_id = sample_user.domain_id
+    custom_field_cat = CustomFieldCategory(domain_id=domain_id, name="Certifications")
+    db.session.add(custom_field_cat)
+    custom_field_cat_id = custom_field_cat.id
+    # Create custom fields under 'Certifications'
+    custom_field1 = 'hadoop'
+    custom_field2 = 'MongoDB'
+    new_custom_field1 = CustomField(domain_id=domain_id, name=custom_field1, type='string',
+                                    category_id=custom_field_cat_id, added_time=datetime.datetime.now())
+    db.session.add(new_custom_field1)
+
+    new_custom_field2 = CustomField(domain_id=domain_id, name=custom_field2, type='string',
+                                    category_id=custom_field_cat_id, added_time=datetime.datetime.now())
+    db.session.add(new_custom_field2)
+    db.session.commit()
+    custom_field1_id = new_custom_field1.id
+    custom_field2_id = new_custom_field2.id
+    # refresh_custom_fields_cache
+    candidates_cf1 = populate_candidates(sample_user, count=3, custom_fields_dict={custom_field1_id: custom_field1})
+    candidates_cf2 = populate_candidates(sample_user, count=4, custom_fields_dict={custom_field2_id: custom_field2})
+    all_candidates = candidates_cf1+candidates_cf2
+    response1 = get_response_from_authorized_user(user_auth, sample_user, '?cf-%d=hadoop' % custom_field1_id)
+    resultant_candidates1 = response1.json()['candidate_ids']
+    _assert_results(candidates_cf1, resultant_candidates1)
+    response2 = get_response_from_authorized_user(user_auth, sample_user, '?cf-%d=MongoDB' % custom_field2_id)
+    resultant_candidates2 = response2.json()['candidate_ids']
+    _assert_results(candidates_cf2, resultant_candidates2)
+    response = get_response_from_authorized_user(user_auth, sample_user,
+                                                 '?cf-[%d=hadoop,%d=MongoDB]' % custom_field1_id % custom_field2_id)
+    resultant_candidates = response.json()['candidate_ids']
+    _assert_results(all_candidates, resultant_candidates)
 
 
 def _assert_results(candidate_ids, resultant_candidates):

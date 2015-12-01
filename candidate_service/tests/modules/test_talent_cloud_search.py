@@ -1,7 +1,7 @@
 """
 Test cases for Talent Cloud Search functionality
 """
-from candidate_service.tests.conftest import *
+from candidate_service.common.tests.conftest import *
 from candidate_service.app.views.talent_cloud_search import search_candidates, upload_candidate_documents
 from candidate_service.app.views.common_functions import create_candidate_from_params
 from candidate_service.common.models.candidate import (Candidate, CandidateAddress, CandidateStatus, CandidateSource)
@@ -261,11 +261,11 @@ def test_owner_facet(domain_id, admin_user, sample_user):
     # Search for user_manager_candidates
     _assert_search_results(domain_id, {'usernameFacet': admin_user}, user_manager_candidates, check_for_equality=True)
     # Search for normal user candidates
-    _assert_search_results(domain_id, {'usernameFacet': sample_user}, normal_user_candidates, check_for_equality=True,
+    _assert_search_results(domain_id, {'usernameFacet': sample_user.id}, normal_user_candidates, check_for_equality=True,
                            no_wait=True)
     # All 8+4 = 12 candidates should appear in search if searched by both users
     total_candidates = user_manager_candidates + normal_user_candidates
-    _assert_search_results(domain_id, {'usernameFacet': [admin_user, sample_user]}, total_candidates,
+    _assert_search_results(domain_id, {'usernameFacet': [admin_user, sample_user.id]}, total_candidates,
                            check_for_equality=True, no_wait=True)
 
 
@@ -905,11 +905,11 @@ def test_custom_fields_kaiser_nuid(domain_id, admin_user):
     _assert_search_results(domain_id, {"cf-%d" % custom_field_obj_id: "Has NUID"}, nuid_candidates, no_wait=True)
 
 
-def test_custom_fields(domain_id, admin_user):
+def test_custom_fields(domain_id, sample_user):
     """
     Test various custom_fields
     :param domain_id:
-    :param admin_user:
+    :param sample_user:
     :return:
     """
 
@@ -921,20 +921,20 @@ def test_custom_fields(domain_id, admin_user):
     custom_field1 = 'hadoop'
     custom_field2 = 'MangoDB'
     new_custom_field1 = CustomField(domain_id=domain_id, name=custom_field1, type='string',
-                                    category_id=custom_field_cat_id)
+                                    category_id=custom_field_cat_id, added_time=datetime.datetime.now())
     db.session.add(new_custom_field1)
 
     new_custom_field2 = CustomField(domain_id=domain_id, name=custom_field2, type='string',
-                                    category_id=custom_field_cat_id)
+                                    category_id=custom_field_cat_id, added_time=datetime.datetime.now())
     db.session.add(new_custom_field2)
     db.session.commit()
     custom_field1_id = new_custom_field1.id
     custom_field2_id = new_custom_field2.id
     # refresh_custom_fields_cache
-    candidates_cf1 = populate_candidates(admin_user, count=3, custom_fields_dict={custom_field1_id: custom_field1},
-                                          update_now=False)
-    candidates_cf2 = populate_candidates(admin_user, count=4, custom_fields_dict={custom_field2_id: custom_field2},
-                                          update_now=False)
+    candidates_cf1 = populate_candidates(sample_user, count=3, custom_fields_dict={custom_field1_id: custom_field1},
+                                         update_now=False)
+    candidates_cf2 = populate_candidates(sample_user, count=4, custom_fields_dict={custom_field2_id: custom_field2},
+                                         update_now=False)
     all_candidates = candidates_cf1+candidates_cf2
     _update_now(all_candidates)
     _assert_search_results(domain_id, {"cf-%s" % custom_field1_id: custom_field1}, candidates_cf1)

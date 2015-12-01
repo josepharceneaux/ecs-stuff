@@ -23,7 +23,6 @@ def search():
     # Get cloud_search connection
     talent_cloud_search.get_cloud_search_connection()
 
-    # status_names = ['New', 'Contacted', 'Unqualified', 'Qualified', 'Prospect', 'Candidate', 'Hired']
     # Get the parameters passed in the url
     location = request.args.get('location')
     owner_ids = request.args.get('user_ids')
@@ -44,9 +43,20 @@ def search():
     grade = request.args.get('military_highest_grade')
     military_end_date_from = request.args.get('military_end_date_from')
     military_end_date_to = request.args.get('military_end_date_to')
+    sort_by = request.args.get("sort_by")
+    pages = request.args.get("page")
+    radius = request.args.get('radius')
     query = request.args.get("q")
     limit = request.args.get("limit")
     fields = request.args.get("fields")
+
+    # Handling custom fields
+    custom_field_with_id = None
+    cf_id = None
+    for value in request.args.iteritems():
+        cf_str = [cf for cf in value if 'cf-' in cf]
+        cf_id = int(cf_str[0].split('-')[1])
+        custom_field_with_id = request.args.get("cf-%d" % cf_id)
 
     # Dictionary with all searchable filters
     request_vars_dict = {"location": location, "skillDescriptionFacet": skills,
@@ -57,7 +67,8 @@ def search():
                          "degree_end_year_from": degree_end_year_from, "degree_end_year_to": degree_end_year_to,
                          "serviceStatus": service_status, "branch": branch, "highestGrade": grade,
                          "military_end_date_from": military_end_date_from, "military_end_date_to": military_end_date_to,
-                         "usernameFacet": owner_ids, "q": query, "limit": limit, "fields": fields}
+                         "usernameFacet": owner_ids, "q": query, "limit": limit, "fields": fields, "page": pages,
+                         "sort_by": sort_by, "cf-%d" % cf_id: custom_field_with_id, 'radius': radius}
 
     # Shortlist all the params passed in url
     request_vars = {}

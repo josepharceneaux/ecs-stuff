@@ -6,6 +6,8 @@ import time
 import boto
 import boto.exception
 import simplejson
+import re
+from copy import deepcopy
 from datetime import datetime
 from flask import request
 from candidate_service.candidate_app import db, logger
@@ -138,6 +140,12 @@ coordinates = []
 geo_params = dict()
 
 
+# Clear all queries and filters for fresh search
+if filter_queries or search_queries:
+    filter_queries[:] = []
+    search_queries[:] = []
+
+
 def get_cloud_search_connection():
     """
     Get cloud search connection
@@ -200,8 +208,6 @@ def define_index_fields():
      * to delete index fields call delete_index_fields
     :return:
     """
-    import time
-    from copy import deepcopy
     conn = get_cloud_search_connection()
     for index_field_name, index_field_options in INDEX_FIELD_NAME_TO_OPTIONS.iteritems():
         logger.info("Defining index field %s", index_field_name)
@@ -367,7 +373,6 @@ def upload_candidate_documents(candidate_ids):
     :param candidate_ids: id of candidates for documents to be uploaded
     :return:
     """
-    import time
     if isinstance(candidate_ids, int) or isinstance(candidate_ids, long):
         candidate_ids = [candidate_ids]
     logger.info("Uploading %s candidate documents. Generating action dicts...", len(candidate_ids))
@@ -545,11 +550,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     Set search_limit = 0 for no limit, candidate_ids_only returns dict of candidate_ids.
     Parameters in 'request_vars' could be single values or arrays.
     """
-    # Clear all queries and filters for new search
-    # when running tests, found that filter_queries is holding some value from previous search. So, clearing them all
-    if filter_queries or search_queries:
-        filter_queries[:] = []
-        search_queries[:] = []
+
     if request_vars:
         for var_name in request_vars.keys():
             if "[]" == var_name[-2:]: request_vars[var_name[:-2]] = request_vars[var_name]
@@ -622,8 +623,8 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
 
     # Return data dictionary. Initializing here, to have standard return type across the function
     search_result = dict(candidate_ids=[], percentage_matches=[],
-                        search_data=dict(descriptions=[], facets=dict(), error=dict(), request_vars=request_vars,
-                                         mode='search'), total_found=0, descriptions=[], max_score=0, max_pages=0)
+                         search_data=dict(descriptions=[], facets=dict(), error=dict(), request_vars=request_vars,
+                         mode='search'), total_found=0, descriptions=[], max_score=0, max_pages=0)
 
     # Looks like cloud_search does not have something like return only count predefined
     # removing fields and returned content should speed up network request
@@ -634,7 +635,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
         params['ret'] = "_all_fields,_score"
 
     # If only candidate id is required then return candidate ids and total candidates found.
-    # Max cloudsearch search limit, then implement cursor (paging beyond 10000 limit)
+    # Max cloud_search search limit, then implement cursor (paging beyond 10000 limit)
     if search_limit >= CLOUD_SEARCH_MAX_LIMIT and candidate_ids_only:
         candidate_ids, total_found, error = _cloud_search_fetch_all(params)
         if error:
@@ -970,15 +971,12 @@ def _get_search_queries(request_vars):
     return search_queries
 
 
-def _search_with_location(request_vars, location, coordiantes, domain_id):
+def _search_with_location(request_vars, location):
     """
-    If you're doing radius-based searching, you must get geo-coordinates from Yahoo or db
     :param request_vars:
     :param location:
-    :param domain_id:
     :return:
     """
-    import re
     location = location.strip()
     radius = request_vars.get('radius')
     # If zipcode and radius provided, get coordinates & do a geo search
@@ -1153,7 +1151,6 @@ def _get_max_score(params, search_service):
 def _get_candidates_fields_with_given_filters(fields_data):
     """
     Get only the filtered candidate fields
-    :param request_vars:
     :param fields_data:
     :return: search result with candidates filterd fields
     """
@@ -1174,10 +1171,11 @@ def _get_candidates_fields_with_given_filters(fields_data):
         return required_search_result
 
 
-def get_filter_query_from_request_vars(request_vars,domain_id):
+def get_filter_query_from_request_vars(request_vars, domain_id):
     """
     Get the filter query from requested filters
     :param request_vars:
+    :param domain_id
     :return: filter_query
     """
     # If source_id has product_id in it, then remove it and add product_id to filter request_vars
@@ -1189,7 +1187,7 @@ def get_filter_query_from_request_vars(request_vars,domain_id):
 
     if request_vars.get('location'):
         location = request_vars.get('location')
-        _search_with_location(request_vars, location, coordinates, domain_id)
+        _search_with_location(request_vars, location)
     if isinstance(request_vars.get('usernameFacet'), list):
         filter_queries.append("(or %s)" % ' '.join("user_id:%s" % uid for uid in request_vars.get('usernameFacet')))
     elif request_vars.get('usernameFacet'):
