@@ -55,8 +55,9 @@ def search():
     cf_id = None
     for value in request.args.iteritems():
         cf_str = [cf for cf in value if 'cf-' in cf]
-        cf_id = int(cf_str[0].split('-')[1])
-        custom_field_with_id = request.args.get("cf-%d" % cf_id)
+        if cf_str:
+            cf_id = int(cf_str[0].split('-')[1])
+            custom_field_with_id = request.args.get("cf-%d" % cf_id)
 
     # Dictionary with all searchable filters
     request_vars_dict = {"location": location, "skillDescriptionFacet": skills,
@@ -68,7 +69,9 @@ def search():
                          "serviceStatus": service_status, "branch": branch, "highestGrade": grade,
                          "military_end_date_from": military_end_date_from, "military_end_date_to": military_end_date_to,
                          "usernameFacet": owner_ids, "q": query, "limit": limit, "fields": fields, "page": pages,
-                         "sort_by": sort_by, "cf-%d" % cf_id: custom_field_with_id, 'radius': radius}
+                         "sort_by": sort_by, 'radius': radius}
+    if custom_field_with_id:
+        request_vars_dict["cf-%d" % cf_id] = custom_field_with_id
 
     # Shortlist all the params passed in url
     request_vars = {}

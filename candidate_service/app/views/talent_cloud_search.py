@@ -140,12 +140,6 @@ coordinates = []
 geo_params = dict()
 
 
-# Clear all queries and filters for fresh search
-if filter_queries or search_queries:
-    filter_queries[:] = []
-    search_queries[:] = []
-
-
 def get_cloud_search_connection():
     """
     Get cloud search connection
@@ -550,7 +544,8 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     Set search_limit = 0 for no limit, candidate_ids_only returns dict of candidate_ids.
     Parameters in 'request_vars' could be single values or arrays.
     """
-
+    # Clear all queries and filters for fresh search
+    _clear_filter_queries_and_search_queries()
     if request_vars:
         for var_name in request_vars.keys():
             if "[]" == var_name[-2:]: request_vars[var_name[:-2]] = request_vars[var_name]
@@ -724,7 +719,7 @@ def get_faceting_information(facets):
 
     if facet_aoi:
         search_facets_values['areaOfInterestIdFacet'] = get_facet_info_with_ids(AreaOfInterest, facet_aoi,
-                                                                                'description')
+                                                                                'name')
 
     if facet_source:
         search_facets_values['sourceFacet'] = get_facet_info_with_ids(CandidateSource, facet_source,
@@ -836,7 +831,7 @@ def _update_facet_counts(filter_queries, params_fq, existing_facets, query_strin
             result_area_of_interest_facet = search_service.search(**query_area_of_interest_facet)
             facet_aoi = result_area_of_interest_facet['facets']['area_of_interest_id']['buckets']
             existing_facets['areaOfInterestIdFacet'] = get_facet_info_with_ids(AreaOfInterest, facet_aoi,
-                                                                               'description')
+                                                                               'name')
         if 'source_id' in filter_query:
             fq_without_source_id = params_fq.replace(filter_query, '')
             query_source_id_facet = {'query': query_string, 'size': 0, 'filter_query': fq_without_source_id,
@@ -1039,7 +1034,7 @@ def _search_custom_fields(request_vars):
             cf_id = key.split('-')[1]
 
             # This is for handling kaiser's NUID custom field
-            if int(cf_id) == 14 and value == 'Has NUID':
+            if int(cf_id) == 15 and value == 'Has NUID':
                 cf_value = cf_id+'|'
                 filter_queries.append("(prefix field=custom_field_id_and_value '%s')" % cf_value)
                 continue
@@ -1100,12 +1095,12 @@ def _kaiser_custom_fields_facets(request_vars, facets):
             cf_facet_count = cf_facet_row[1]
 
             """
-            If the cf_id is 14 (NUID's for Kaiser),
+            If the cf_id is 15 (NUID's for Kaiser),
                 Do not add values to the custom_fields list,
                 they just want facets for whether the candidate has a NUID or not
 
-                Since cf_id 14 is requested as a facet, we'll handle it as a special case:
-                facet.query={!ex=dt key="has NUID"}customFieldKP:14|*
+                Since cf_id 15 is requested as a facet, we'll handle it as a special case:
+                facet.query={!ex=dt key="has NUID"}customFieldKP:15|*
             """
             if cf_id:
                 has_kaiser_nuid = True
@@ -1118,7 +1113,7 @@ def _kaiser_custom_fields_facets(request_vars, facets):
             custom_fields['cf-%d' % cf_id].append((cf_value, cf_facet_count))
 
         if has_kaiser_nuid:
-            custom_fields['cf-14'] = [('Has NUID', num_kaiser_nuids)]
+            custom_fields['cf-15'] = [('Has NUID', num_kaiser_nuids)]
 
         facets = dict(facets.items() + custom_fields.items())
 
@@ -1306,3 +1301,9 @@ def get_filter_query_from_request_vars(request_vars, domain_id):
     filter_queries.append("(term field=domain_id %s)" % domain_id)
 
     return filter_queries
+
+
+def _clear_filter_queries_and_search_queries():
+    if filter_queries or search_queries:
+        filter_queries[:] = []
+        search_queries[:] = []

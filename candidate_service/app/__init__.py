@@ -1,8 +1,8 @@
 """Initializer for Search Candidates App"""
 
 from flask import Flask
-from common.models.db import db
-from common.error_handling import register_error_handlers
+from candidate_service.common.models.db import db
+from candidate_service.common.error_handling import register_error_handlers
 from views import api
 from candidate_service import config
 

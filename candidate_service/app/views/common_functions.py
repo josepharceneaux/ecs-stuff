@@ -5,13 +5,15 @@ from candidate_service.common.models.candidate import (
     Candidate, CandidateEmail, CandidatePhone, CandidateSource,
     CandidateWorkPreference, CandidatePreferredLocation, CandidateAddress,
     CandidateExperience, CandidateEducation, CandidateEducationDegree,
-    CandidateSkill, CandidateMilitaryService, CandidateCustomField, CandidateSubscriptionPreference,
-    CandidateSocialNetwork, SocialNetwork, CandidateTextComment, CandidateEducationDegreeBullet, ClassificationType,
-    CandidateExperienceBullet)
+    CandidateSkill, CandidateMilitaryService, CandidateCustomField, CandidateSubscriptionPreference, ClassificationType,
+    CandidateSocialNetwork, CandidateTextComment, CandidateEducationDegreeBullet, CandidateExperienceBullet)
 from candidate_service.app.views.geo_coordinates import *
 from candidate_service.common.models.misc import Country
 from datetime import datetime
-from sqlalchemy import and_, or_
+from sqlalchemy import and_
+from candidate_service.modules.talent_candidates import domain_id_from_user_id, social_network_id_from_name, \
+    get_name_fields_from_name, get_fullname_from_name_fields
+from candidate_service.common.utils.validators import sanitize_zip_code
 
 
 def users_in_domain(domain_id):
@@ -24,45 +26,7 @@ def users_in_domain(domain_id):
         return user_domain
 
 
-def get_name_fields_from_name(formatted_name):
-    """
-    Get the name fields from formatted name
-    :param formatted_name:
-    :return:
-    """
-    names = formatted_name.split(' ') if formatted_name else []
-    first_name, middle_name, last_name = '', '', ''
-    if len(names) == 1:
-        last_name = names[0]
-    elif len(names) > 1:
-        first_name, last_name = names[0], names[-1]
-        # middle_name is everything between first_name and last_name
-        # middle_name = '' if only first_name and last_name are provided
-        middle_name = ' '.join(names[1:-1])
-
-    return first_name, middle_name, last_name
-
-
-def get_fullname_from_name_fields(first_name, middle_name, last_name):
-    """
-    Get the full name from first_name, middle_name, last_name
-    :param first_name:
-    :param middle_name:
-    :param last_name:
-    :return:
-    """
-    full_name = ''
-    if first_name:
-        full_name = '%s ' % first_name
-    if middle_name:
-        full_name = '%s%s ' % (full_name, middle_name)
-    if last_name:
-        full_name = '%s%s' % (full_name, last_name)
-
-    return full_name
-
-
-def create_candidate_from_params(owner_user, candidate_id=None, first_name=None, middle_name=None, last_name=None,
+def create_candidate_from_params(owner_user_id, candidate_id=None, first_name=None, middle_name=None, last_name=None,
                                  formatted_name=None, status_id=1, added_time=None, objective=None, summary=None,
                                  domain_can_read=1, domain_can_write=1, email=None, dice_social_profile_id=None,
                                  dice_profile_id=None, phone=None, current_company=None, current_title=None,
@@ -139,8 +103,7 @@ def create_candidate_from_params(owner_user, candidate_id=None, first_name=None,
     :return: dict of candidate info
 
     """
-    owner_user_id = owner_user.id
-    domain_id = owner_user.domain_id
+    domain_id = domain_id_from_user_id(owner_user_id)
 
     # Format inputs
     email = [email] if isinstance(email, basestring) else email
@@ -214,7 +177,7 @@ def create_candidate_from_params(owner_user, candidate_id=None, first_name=None,
             state = work_experience.get('state')
             end_month = work_experience.get('end_month')
             start_year = work_experience.get('start_year')
-            country_id = country_id_from_country_name_or_code(work_experience.get('country'))
+            country_id = Country.country_id_from_name_or_code(work_experience.get('country'))
             start_month = work_experience.get('start_month')
             end_year = work_experience.get('end_year')
             is_current = work_experience.get('is_current', 0)
@@ -426,7 +389,7 @@ def create_candidate_from_params(owner_user, candidate_id=None, first_name=None,
                     candidate_id=candidate_id,
                     address="%s %s" % (loc.get('addrOne') or loc.get('address_line_1'),
                                        loc.get('addrTwo') or loc.get('address_line_2')),
-                    country_id=country_code_or_name_to_id(loc.get('country')),
+                    country_id=Country.country_id_from_name_or_code(loc.get('country')),
                     city=fix_caps(loc.get('municipality') or loc.get('city')),
                     region=fix_caps(loc.get('region')),
                     zipcode=loc.get('zip_code')))
@@ -477,36 +440,6 @@ def get_or_create_unassigned_candidate_source(domain_id):
         unassigned_candidate_source = db.session.query(CandidateSource).filter(
             CandidateSource.description == 'Unassigned', CandidateSource.domain_id == domain_id).first()
         return unassigned_candidate_source
-
-
-def sanitize_zip_code(zip_code):
-    # Following expression will validate US zip codes e.g 12345 and 12345-6789
-    zip_code = str(zip_code)
-    zip_code = ''.join(filter(lambda character: character not in ' -', zip_code))  # Dashed and Space filtered Zip Code
-    if zip_code and not ''.join(filter(lambda character: not character.isdigit(), zip_code)):
-        zip_code = zip_code.zfill(5) if len(zip_code) <= 5 else zip_code.zfill(9) if len(zip_code) <= 9 else ''
-        if zip_code:
-            return (zip_code[:5] + ' ' + zip_code[5:]).strip()
-    logger.info("[%s] is not a valid US Zip Code", zip_code)
-    return None
-
-
-def classification_type_id_from_degree_type(degree_type):
-    """
-    Function will return classification_type ID of the classification_type that matches
-    with degree_type. E.g. degree_type = 'Masters' => classification_type_id: 5
-    :param degree_type
-    :return:    classification_type_id or None
-    """
-    matching_classification_type_id = None
-    matching_classification_type_description = None
-    if degree_type:
-        all_classification_types = db.session.query(ClassificationType).all()
-        matching_classification_type_id = next((row.id for row in all_classification_types
-                                                if row.code.lower() == degree_type.lower()), None)
-        matching_classification_type_description = next((row.description for row in all_classification_types
-                                                         if row.code.lower() == degree_type.lower()), None)
-    return dict(id=matching_classification_type_id, desc=matching_classification_type_description)
 
 
 def add_candidate_custom_fields(candidate_id, candidate_custom_fields_dict, current_candidate_custom_fields=None,
@@ -607,26 +540,6 @@ def is_number(s):
         return False
 
 
-def country_code_or_name_to_id(code_or_name):
-    """
-
-    :param code_or_name: country code or name (or ID)
-    :type code_or_name: None | str | int
-    :return: The country_id
-    :rtype: int | None
-    """
-    if not code_or_name:
-        return None
-    if is_number(code_or_name):
-        return int(code_or_name)
-    all_countries = db.session.query(Country).filter_by(Country.id > 0)
-    matching_country = all_countries.filter(or_(Country.code.lower()) == code_or_name.lower(),
-                                            Country.name.lower() == code_or_name.lower(), limitby=(0, 1)).first()
-    if matching_country:
-        return matching_country.id
-    return None
-
-
 def fix_caps(string):
     """
 
@@ -648,32 +561,19 @@ def fix_caps(string):
     return string
 
 
-def country_id_from_country_name_or_code(country_name_or_code):
+def classification_type_id_from_degree_type(degree_type):
     """
-    Function will find and return ID of the country matching with country_name_or_code
-    If not match is found, default return is 1 => 'United States'
-
-    :return: Country.id
+    Function will return classification_type ID of the classification_type that matches
+    with degree_type. E.g. degree_type = 'Masters' => classification_type_id: 5
+    :param degree_type
+    :return:    classification_type_id or None
     """
-
-    all_countries = db.session.query(Country).all()
-    if country_name_or_code:
-        matching_country_id = next((row.id for row in all_countries
-                                    if row.code.lower() == country_name_or_code.lower()
-                                    or row.name.lower() == country_name_or_code.lower()), None)
-        return matching_country_id
-    return 1
-
-
-def social_network_id_from_name(name):
-    """
-    Function gets social_network ID from social network's name
-    e.g. 'Facebook' => 1
-    :return: SocialNetwork.id
-    """
-    matching_social_network = None
-    if name:
-        all_social_networks = db.session.query(SocialNetwork).all()
-        matching_social_network = next((row for row in all_social_networks
-                                        if row.name.lower() == name.lower()), None)
-    return matching_social_network.id if matching_social_network else None
+    matching_classification_type_id = None
+    matching_classification_type_description = None
+    if degree_type:
+        all_classification_types = db.session.query(ClassificationType).all()
+        matching_classification_type_id = next((row.id for row in all_classification_types
+                                                if row.code.lower() == degree_type.lower()), None)
+        matching_classification_type_description = next((row.description for row in all_classification_types
+                                                         if row.code.lower() == degree_type.lower()), None)
+    return dict(id=matching_classification_type_id, desc=matching_classification_type_description)
