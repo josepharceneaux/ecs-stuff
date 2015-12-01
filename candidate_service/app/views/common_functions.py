@@ -172,6 +172,7 @@ def create_candidate_from_params(owner_user_id, candidate_id=None, first_name=No
     if candidate_experience_dicts:
         for work_experience in candidate_experience_dicts:
             organization = work_experience.get('organization')
+            list_order = work_experience.get('list_order', 1)
             position = work_experience.get('position')
             city = work_experience.get('city')
             state = work_experience.get('state')
@@ -184,6 +185,7 @@ def create_candidate_from_params(owner_user_id, candidate_id=None, first_name=No
             experience = CandidateExperience(
                 candidate_id=candidate_id,
                 organization=organization,
+                list_order=list_order,
                 position=position,
                 city=city,
                 state=state,
