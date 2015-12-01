@@ -54,11 +54,10 @@ def require_all_roles(*role_names):
             if not role_names:
                 # Roles list is empty so it means func is not roles protected
                 return func(*args, **kwargs)
-            user_roles = UserScopedRoles.get_all_roles_of_user(request.user.id)
-            user_roles = [user_role.role_id for user_role in user_roles]
-            domain_roles = DomainRole.get_by_names(role_names) or ''
-            for domain_role in domain_roles:
-                if not domain_role or domain_role.id not in user_roles:
+            user_roles = [DomainRole.query.get(user_role.role_id).role_name for user_role in
+                          UserScopedRoles.get_all_roles_of_user(request.user.id)]
+            for role_name in role_names:
+                if role_name not in user_roles:
                     raise UnauthorizedError(error_message="User doesn't have appropriate permissions to "
                                                           "perform this operation")
             return func(*args, **kwargs)
@@ -76,24 +75,21 @@ def require_any_role(*role_names):
         def authenticate_roles(*args, **kwargs):
             user_roles = [DomainRole.query.get(user_role.role_id).role_name for user_role in
                           UserScopedRoles.get_all_roles_of_user(request.user.id)]
+            user_roles.append('SELF')
             if not role_names:
                 # Roles list is empty so it means func is not roles protected
-                request.valid_domain_roles = user_roles
-                request.is_admin_user = True if 'ADMIN' in request.valid_domain_roles else False
                 return func(*args, **kwargs)
             else:
-                # Roles which a requesting user possess
                 valid_domain_roles = []
+                # Roles which a logged-in user possess
                 for role_name in role_names:
                     if role_name in user_roles:
                         valid_domain_roles.append(role_name)
                 if valid_domain_roles:
-                    request.valid_domain_roles = valid_domain_roles
-                    request.is_admin_user = True if 'ADMIN' in valid_domain_roles else False
-                    return func(*args, **kwargs)
-                else:
-                    raise UnauthorizedError(error_message="User doesn't have appropriate permissions to "
-                                                          "perform this operation")
+                        request.valid_domain_roles = valid_domain_roles
+                        return func(*args, **kwargs)
+                raise UnauthorizedError(error_message="User doesn't have appropriate permissions to "
+                                                      "perform this operation")
         return authenticate_roles
     return domain_roles
 
