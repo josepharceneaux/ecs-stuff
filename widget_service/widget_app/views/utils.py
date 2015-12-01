@@ -20,8 +20,8 @@ def parse_interest_ids_from_form(interests_string):
         subcategory = subcategory.lstrip()
         interest_to_query = category if subcategory == 'All Subcategories' else subcategory
         processed_interest_ids.append(
-            {'id': db.session.query(AreaOfInterest.id).filter(
-                AreaOfInterest.description==interest_to_query).first().id})
+            {'area_of_interest_id': db.session.query(AreaOfInterest.id).filter(
+                AreaOfInterest.name==interest_to_query).first().id})
     return processed_interest_ids
 
 

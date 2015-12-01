@@ -143,12 +143,12 @@ def test_parse_interest_ids_from_form(request):
         AreaOfInterest.id!=parent_category_1.id).filter(
         AreaOfInterest.parent_id == None).first()
     test_string = "{parent_category_without_sub}: All Subcategories|{parent_category_with_sub}: {subcategory}".format(
-        parent_category_without_sub=parent_category_2.description,
-        parent_category_with_sub=parent_category_1.description,
-        subcategory=subcategory.description)
+        parent_category_without_sub=parent_category_2.name,
+        parent_category_with_sub=parent_category_1.name,
+        subcategory=subcategory.name)
     processed_ids = parse_interest_ids_from_form(test_string)
     assert processed_ids == [
-        {'id': parent_category_2.id}, {'id': subcategory.id}
+        {'area_of_interest_id': parent_category_2.id}, {'area_of_interest_id': subcategory.id}
     ]
 
 
@@ -176,6 +176,6 @@ def gen_mock_aois():
         AreaOfInterest.id!=parent_category_1.id).filter(
         AreaOfInterest.parent_id == None).first()
     return "{parent_category_without_sub}: All Subcategories|{parent_category_with_sub}: {subcategory}".format(
-        parent_category_without_sub=parent_category_2.description,
-        parent_category_with_sub=parent_category_1.description,
-        subcategory=subcategory.description)
+        parent_category_without_sub=parent_category_2.name,
+        parent_category_with_sub=parent_category_1.name,
+        subcategory=subcategory.name)

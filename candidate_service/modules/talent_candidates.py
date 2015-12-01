@@ -20,8 +20,8 @@ from candidate_service.common.models.candidate import (
     CandidateSocialNetwork, SocialNetwork, CandidateEducationDegreeBullet,
     CandidateExperienceBullet, ClassificationType
 )
-from candidate_service.common.models.email import EmailLabel
-from candidate_service.common.models.phone import PhoneLabel
+from candidate_service.common.models.candidate import EmailLabel
+from candidate_service.common.models.candidate import PhoneLabel
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.email_marketing import (EmailCampaign, EmailCampaignSend)
 from candidate_service.common.models.misc import (Country, AreaOfInterest, CustomField)

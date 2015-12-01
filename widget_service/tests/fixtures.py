@@ -9,8 +9,8 @@ from widget_service.common.models.associations import CandidateAreaOfInterest
 from widget_service.common.models.candidate import CandidateCustomField
 from widget_service.common.models.candidate import CandidateSource
 from widget_service.common.models.candidate import CandidateStatus
+from widget_service.common.models.candidate import EmailLabel
 from widget_service.common.models.db import db
-from widget_service.common.models.email import EmailLabel
 from widget_service.common.models.misc import AreaOfInterest
 from widget_service.common.models.misc import Country
 from widget_service.common.models.misc import Culture
@@ -110,21 +110,19 @@ def areas_of_interest(domain_fixture, second_domain, request):
     # Create our parent categories.
     for i in xrange(10):
         aois.append(
-            AreaOfInterest(domain_id=domain_fixture.id, description=random_word(16),
-                           parent_id=None)
+            AreaOfInterest(domain_id=domain_fixture.id, parent_id=None, name=random_word(16))
         )
     for i in xrange(2):
             aois.append(
-                AreaOfInterest(domain_id=second_domain.id, description=random_word(16),
-                               parent_id=None)
+                AreaOfInterest(domain_id=second_domain.id, parent_id=None, name=random_word(16))
             )
     db.session.bulk_save_objects(aois)
     # Create our sub-categories.
     parent_id = db.session.query(AreaOfInterest).filter_by(domain_id=domain_fixture.id).first().id
     for i in xrange(2):
             sub_aois.append(
-                AreaOfInterest(domain_id=domain_fixture.id, description=random_word(16),
-                               parent_id=parent_id)
+                AreaOfInterest(domain_id=domain_fixture.id, parent_id=parent_id,
+                               name=random_word(16))
             )
     db.session.bulk_save_objects(sub_aois)
     @requireIntegrity
