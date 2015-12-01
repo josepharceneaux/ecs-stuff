@@ -1,14 +1,14 @@
 import json
 import types
-from apscheduler.jobstores.base import JobLookupError
 from flask import Blueprint, request
 from flask.ext.restful import Resource
 from flask.ext.cors import CORS
+from scheduler_service import logger
 from scheduler_service.app_utils import api_route, authenticate, JsonResponse
 from social_network_service.common.talent_api import TalentApi
 from scheduler_service.common.error_handling import *
 from scheduler_service.scheduler import scheduler, schedule_job, serialize_task, remove_tasks
-from scheduler_service.custom_exceptions import SchedulerApiException, NoJobFound, PendingStatus, JobAlreadyPaused, \
+from scheduler_service.custom_exceptions import NoJobFound, PendingStatus, JobAlreadyPaused, \
     JobAlreadyRunning
 
 scheduler_blueprint = Blueprint('scheduling_api', __name__)
@@ -168,15 +168,18 @@ class Tasks(Resource):
         task_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else []
         # check if tasks_ids list is not empty
         if task_ids:
-            removed, not_removed = remove_tasks(task_ids, 1)
-            if len(not_removed) == 0:
+            removed = remove_tasks(task_ids, 1)
+            if len(removed) == len(task_ids):
                 return JsonResponse(json.dumps(dict(
                     message='%s Tasks removed successfully' % len(removed))),
                     status=200)
 
-            return JsonResponse(json.dumps(dict(message='Unable to remove %s tasks' % len(not_removed),
-                                                removed=removed,
-                                                not_removed=not_removed)), status=207)
+            removed_jobs = map(lambda job: job[1], removed)
+            not_removed = list(set(task_ids) - set(removed_jobs))
+            if not_removed:
+                return JsonResponse(json.dumps(dict(message='Unable to remove %s tasks' % len(not_removed),
+                                                    removed=removed,
+                                                    not_removed=not_removed)), status=207)
         raise InvalidUsage('Bad request, include ids as list data', error_code=400)
 
 
@@ -230,10 +233,10 @@ class TaskById(Resource):
                     500 (Internal Server Error)
 
         """
-        try:
-            task = scheduler.get_job(id)
-        except Exception as e:
-            return JsonResponse(dict(message=str(e)), 500)
+        res = job_state_exceptions(job_id=id)
+        if res is not None:
+            return JsonResponse(json.dumps(res))
+        task = scheduler.get_job(id)
         if task:
             task = serialize_task(task)
             response = json.dumps(dict(task=task))
@@ -322,20 +325,105 @@ class TaskById(Resource):
         # user_id = kwargs['user_id']
         task = scheduler.get_job(id)
         if task:
-            try:
-                scheduler.remove_job(task.id)
-                response = json.dumps(dict(message="Task has been removed successfully"))
-                return JsonResponse(response, 200)
-            except JobLookupError as e:
-                print(e)
-                response = json.dumps(dict(message="Unable to remove task"))
-                return JsonResponse(response, 404)
+            scheduler.remove_job(task.id)
+            response = json.dumps(dict(message="Task has been removed successfully"))
+            return JsonResponse(response, 200)
 
         return JsonResponse(dict(error=dict(message="Task not found")), 404)
 
 
+@api.route('/tasks-resume/')
+class ResumeTasks(Resource):
+    """
+        This resource resumes a previously paused jobs/tasks
+    """
+
+    @authenticate
+    def get(self, **kwargs):
+        """
+        Resume a previously paused tasks/jobs
+        :param id: id of task
+        :type id: str
+        :keyword user_id: user_id of tasks' owner
+        :type user_id: int
+        :rtype json
+
+        :Example:
+            task_ids = {
+                'ids': [1,2,3]
+            }
+            headers = {'Authorization': 'Bearer <access_token>'}
+            response = requests.get(API_URL + '/tasks/resume/', headers=headers, data=json.dumps(task_ids))
+
+        .. Response::
+            {
+               "message":"Tasks has been resumed successfully"
+            }
+
+        .. Status:: 200 (OK)
+                    6054(Job Already running)
+                    500 (Internal Server Error)
+
+        """
+        req_data = request.get_json(force=True)
+        task_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else []
+        for id in task_ids:
+            res = job_state_exceptions(job_id=id, func='RUNNING')
+            if res is not None:
+                return JsonResponse(json.dumps(res))
+            scheduler.resume_job(job_id=id)
+        response = json.dumps(dict(message="Tasks has been successfully resumed"))
+        return JsonResponse(response)
+
+
+@api.route('/tasks-pause/')
+class PauseTasks(Resource):
+    """
+        This resource pauses jobs/tasks which can be resumed again
+    """
+
+    @authenticate
+    def get(self, **kwargs):
+        """
+        Pause tasks which is currently running.
+        :param id: id of task
+        :type id: str
+        :keyword user_id: user_id of tasks' owner
+        :type user_id: int
+        :rtype json
+
+        :Example:
+            task_ids = {
+                'ids': [1,2,3]
+            }
+            headers = {'Authorization': 'Bearer <access_token>'}
+            response = requests.get(API_URL + '/tasks/resume/', headers=headers, data=json.dumps(task_ids))
+
+        .. Response::
+            {
+               "message":"Tasks have been paused successfully"
+            }
+
+        .. Status:: 200 (OK)
+                    6053(Job already running
+                    500 (Internal Server Error)
+
+        """
+        req_data = request.get_json(force=True)
+        task_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else []
+        for id in task_ids:
+            # check and raise exception if job is already paused or not present
+            res = job_state_exceptions(job_id=id, func='PAUSED')
+            if res is not None:
+                return JsonResponse(json.dumps(res))
+            scheduler.pause_job(job_id=id)
+
+        response = json.dumps(dict(message="Tasks have been successfully paused"))
+        return JsonResponse(response)
+
+
 @api.route('/tasks/<string:id>/resume/')
-class ResumeTask(Resource):
+class ResumeTaskById(Resource):
     """
         This resource resumes a previously paused job/task
     """
@@ -360,19 +448,21 @@ class ResumeTask(Resource):
             }
 
         .. Status:: 200 (OK)
+                    6054 (Job Already Running)
                     500 (Internal Server Error)
 
         """
-        try:
-            scheduler.resume_job(job_id=id)
-        except Exception as e:
-            raise job_state_exceptions(job_id=id)
+        # check and raise exception if job is already paused or not present
+        res = job_state_exceptions(job_id=id, func='RUNNING')
+        if res is not None:
+            return JsonResponse(json.dumps(res), status=200)
+        scheduler.resume_job(job_id=id)
         response = json.dumps(dict(message="Task has been successfully resumed"))
         return JsonResponse(response)
 
 
 @api.route('/tasks/<string:id>/pause/')
-class PauseTask(Resource):
+class PauseTaskById(Resource):
     """
         This resource pauses job/task which can be resumed again
     """
@@ -393,30 +483,53 @@ class PauseTask(Resource):
 
         .. Response::
             {
-               "message":"Task has been resumed successfully"
+               "message":"Task has been paused successfully"
             }
 
         .. Status:: 200 (OK)
+                    6053 (Job Already Paused)
                     500 (Internal Server Error)
 
         """
-        try:
-            scheduler.pause_job(job_id=id)
-        except Exception as e:
-            raise job_state_exceptions(job_id=id)
+        # check and raise exception if job is already paused or not present
+        res = job_state_exceptions(job_id=id, func='PAUSED')
+        if res is not None:
+            return JsonResponse(json.dumps(res), status=200)
+        scheduler.pause_job(job_id=id)
 
         response = json.dumps(dict(message="Task has been successfully paused"))
         return JsonResponse(response)
 
 
-def job_state_exceptions(job_id=None):
+def job_state_exceptions(job_id=None, func='GET'):
+    """
+    raise exception if condition matched
+    :param job_id: job_id of task which is in apscheduler
+    :param func: the state to check, if doesn't meet with requirement then raise exception
+    :return:
+    """
+    # get job from scheduler by job_id
     job = scheduler.get_job(job_id=job_id)
+
+    # if job is None => throw job not found exception
     if job is None:
-        return NoJobFound("Job not found")
+        logger.exception("Job with id '%s' not found" % job_id)
+        return NoJobFound("Job with id '%s' not found" % job_id).to_dict()
+
+    # if job is pending => throw pending state exception
     if job.pending:
-        return PendingStatus("Job is in pending state. Scheduler not running")
-    if job.next_run_time is None:
-        return JobAlreadyPaused("Job is already in paused state")
-    if job.next_run_time is not None:
-        return JobAlreadyRunning("Job is already in running state")
-    return SchedulerApiException("Scheduling Service error")
+        logger.exception("Job with id '%s' is in pending state. Scheduler not running" % job_id)
+        return PendingStatus("Job with id '%s' is in pending state. Scheduler not running" % job_id).to_dict()
+
+    # if job has next_run_time none, then job is in paused state
+    if job.next_run_time is None and func == 'PAUSED':
+        logger.exception("Job with id '%s' is already in paused state" % job_id)
+        return JobAlreadyPaused("Job with id '%s' is already in paused state" % job_id).to_dict()
+
+    # if job has_next_run_time is not None, then job is in running state
+    if job.next_run_time is not None and func == 'RUNNING':
+        logger.exception("Job with id '%s' is already in running state" % job_id)
+        return JobAlreadyRunning("Job with id '%s' is already in running state" % job_id).to_dict()
+
+    # if no exception found, then simply return and proceed
+    return None

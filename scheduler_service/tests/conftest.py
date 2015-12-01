@@ -85,6 +85,7 @@ def test_culture(request):
     request.addfinalizer(fin)
     return culture
 
+
 @pytest.fixture(scope='session')
 def job_config(request):
     return {
@@ -99,9 +100,11 @@ def job_config(request):
             "campaign_name": "SMS Campaign",
             "phone_number": "09230862348",
             "smart_list_id": 123456,
-            "content": "text to be sent as sms"
+            "content": "text to be sent as sms",
+            "content-type": "application/json"
         }
     }
+
 
 @pytest.fixture(scope='session')
 def test_organization(request):

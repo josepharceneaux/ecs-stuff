@@ -1,6 +1,8 @@
 from celery import Celery
 from flask import Flask
 import time
+import requests
+from scheduler_service.app_utils import JsonResponse
 
 app = Flask('scheduler_service')
 celery = Celery(app.import_name, broker='redis://localhost:6379', backend='redis://localhost:6379')
@@ -34,6 +36,6 @@ methods = {
 
 
 @celery.task(name="send_request")
-def send_request(data):
-    print(data)
-    return "data sent"
+def send_request(user_id, url, **kwargs):
+    response = requests.post(url, data=kwargs)
+    return JsonResponse(response.json())

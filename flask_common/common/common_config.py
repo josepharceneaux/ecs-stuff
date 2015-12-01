@@ -11,7 +11,7 @@ logging.config.fileConfig(LOGGING_CONF)
 # SQL ALCHEMY DB URL
 GT_ENVIRONMENT = os.environ.get('GT_ENVIRONMENT')
 if GT_ENVIRONMENT == 'dev':
-    SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@127.0.0.1/talent_local'
+    SQLALCHEMY_DATABASE_URI = 'mysql://root:fastian123@127.0.0.1/talent_local'
     LOGGER = logging.getLogger("flask_service.dev")
     DEBUG = True
 elif GT_ENVIRONMENT == 'circle':

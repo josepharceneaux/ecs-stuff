@@ -1,34 +1,41 @@
-import json
-from scheduler_service.common.error_handling import InternalServerError
+__author__ = 'saad'
 
 
-class SchedulerApiException(InternalServerError):
-    status_code = 6000
+class JobAlreadyPaused:
+    def __init__(self, message):
+        self.message = message
+        self.code = 6053
 
     def to_dict(self):
-        error_dict = super(SchedulerApiException, self).to_dict()
-        error_dict['error']['code'] = self.__class__.status_code
-        return error_dict
-
-    def __str__(self):
-        error_dict = super(SchedulerApiException, self).to_dict()
-        error_dict['error']['code'] = self.__class__.status_code
-        return json.dumps(error_dict)
+        return dict(message=self.message,
+                    code=self.code)
 
 
-class NoJobFound(SchedulerApiException):
-    status_code = 6052
+class PendingStatus:
+    def __init__(self, message):
+        self.message = message
+        self.code = 6052
+
+    def to_dict(self):
+        return dict(message=self.message,
+                    code=self.code)
 
 
-class PendingStatus(SchedulerApiException):
-    status_code = 6052
+class JobAlreadyRunning:
+    def __init__(self, message):
+        self.message = message
+        self.code = 6054
+
+    def to_dict(self):
+        return dict(message=self.message,
+                    code=self.code)
 
 
-class JobAlreadyPaused(SchedulerApiException):
-    status_code = 6053
+class NoJobFound:
+    def __init__(self, message):
+        self.message = message
+        self.code = 6050
 
-
-class JobAlreadyRunning(SchedulerApiException):
-    status_code = 6054
-
-
+    def to_dict(self):
+        return dict(message=self.message,
+                    code=self.code)

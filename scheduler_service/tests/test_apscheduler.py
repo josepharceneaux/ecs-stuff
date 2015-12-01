@@ -31,7 +31,6 @@ class TestAPScheduler:
         :param apscheduler_setup: start the scheduler
         :return:
         """
-        sleep(1)
         job = apscheduler_setup.add_job(add_job_callback)
         assert apscheduler_setup.get_job(job_id=job.id).id == job.id
 
@@ -41,13 +40,12 @@ class TestAPScheduler:
         :param apscheduler_setup:
         :return:
         """
-        sleep(1)
         start_date = datetime.datetime.now() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
         job = apscheduler_setup.add_job(add_job_callback,
-                                                 start_date=start_date,
-                                                 end_date=end_date,
-                                                 trigger='interval'
+                                        start_date=start_date,
+                                        end_date=end_date,
+                                        trigger='interval'
                                                  )
         apscheduler_setup.remove_job(job_id=job.id)
         assert apscheduler_setup.get_job(job_id=job.id) is None
@@ -72,9 +70,9 @@ class TestAPScheduler:
         end_date = start_date + datetime.timedelta(hours=2)
         for i in range(3):
             jobs.append((apscheduler_setup.add_job(add_job_callback,
-                                                            start_date=start_date,
-                                                            end_date=end_date,
-                                                            trigger='interval'
+                                                   start_date=start_date,
+                                                   end_date=end_date,
+                                                   trigger='interval'
                                                             )).id)
             sleep(1)
 
@@ -92,9 +90,9 @@ class TestAPScheduler:
         end_date = start_date + datetime.timedelta(hours=2)
         for i in range(10):
             jobs.append(apscheduler_setup.add_job(add_job_callback,
-                                                           start_date=start_date,
-                                                           end_date=end_date,
-                                                           trigger='interval'
+                                                  start_date=start_date,
+                                                  end_date=end_date,
+                                                  trigger='interval'
                                                            ).id)
         apscheduler_setup.remove_all_jobs()
 

@@ -3,8 +3,6 @@ from flask import Flask
 from scheduler_service.common.error_handling import register_error_handlers
 from scheduler_service.common.models.db import db
 from scheduler_service.model_helpers import add_model_helpers
-from tasks import app
-import logging as logger
 
 __author__ = 'saad'
 
@@ -16,7 +14,7 @@ logger = flask_app.config['LOGGER']
 
 def init_app():
     """
-    Call this method at the start of app or manager for Events/RSVPs
+    Call this method at the start of app
     :return:
     """
     add_model_helpers(db.Model)

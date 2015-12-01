@@ -6,6 +6,7 @@ from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.redis import RedisJobStore
 
 from apscheduler.schedulers.background import BackgroundScheduler
+from scheduler_service import logger
 from scheduler_service.tasks import send_request
 
 job_store = RedisJobStore()
@@ -21,19 +22,20 @@ scheduler.add_jobstore(job_store)
 
 def my_listener(event):
     if event.exception:
-        print('The job crashed :(\n')
-        print str(event.exception.message) + '\n'
+        logger.error('The job crashed :(\n')
+        logger.exception(str(event.exception.message) + '\n')
     else:
-        print('The job worked :)')
+        logger.info('The job worked :)')
         job = scheduler.get_job(event.job_id)
         if job.next_run_time > job.trigger.end_date:
-            print 'Stopping job'
+            logger.info( 'Stopping job' )
             try:
                 scheduler.remove_job(job_id=job.id)
             except Exception as e:
-                print(e)
+                logger.exception(e.message)
+                raise e
             else:
-                print("Job removed successfully")
+                logger.info("Job removed successfully")
 
 
 scheduler.add_listener(my_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
@@ -64,20 +66,23 @@ def schedule_job(data, user_id):
                                 args=[user_id, url],
                                 kwargs=post_data)
     except Exception as e:
-        print e
-        return e
-    print 'Task has been added and will run at %s ' % start_date
+        logger.exception(e.message)
+        raise e
+    logger.info('Task has been added and will run at %s ' % start_date)
     return job.id
 
 
 def run_job(user_id, url, **kwargs):
-    print('User ID: %s, Url: %s' % (user_id, url))
+    logger.info('User ID: %s, Url: %s' % (user_id, url))
     send_request.apply_async([user_id, url, kwargs])
 
 
 def remove_tasks(ids, user_id):
-    jobs = scheduler.get_jobs()
-    jobs = filter(lambda job: job.args[0] == user_id and job.id in ids, jobs)
+    jobs_aps = scheduler.get_jobs()
+    jobs_av = filter(lambda job_id: scheduler.get_job(job_id=job_id) in jobs_aps, ids)
+    jobs_ = map(lambda job_id: scheduler.get_job(job_id=job_id), jobs_av)
+    jobs = filter(lambda job: job.args[0] == user_id, jobs_)
+
     removed = map(lambda job: (scheduler.remove_job(job.id), job.id), jobs)
     return removed
 
