@@ -1,41 +1,38 @@
+"""
+TODO comment here
+"""
+import json
+import scheduler_service.common.error_handling
+
 __author__ = 'saad'
 
 
-class JobAlreadyPaused:
-    def __init__(self, message):
-        self.message = message
-        self.code = 6053
+class SchedulerServiceApiException(scheduler_service.common.error_handling.InternalServerError):
+    status_code = 6000
 
     def to_dict(self):
-        return dict(message=self.message,
-                    code=self.code)
+        error_dict = super(SchedulerServiceApiException, self).to_dict()
+        error_dict['error']['code'] = self.__class__.status_code
+        return error_dict
+
+    def __str__(self):
+        error_dict = super(SchedulerServiceApiException, self).to_dict()
+        error_dict['error']['code'] = self.__class__.status_code
+        return json.dumps(error_dict)
 
 
-class PendingStatus:
-    def __init__(self, message):
-        self.message = message
-        self.code = 6052
-
-    def to_dict(self):
-        return dict(message=self.message,
-                    code=self.code)
+class JobAlreadyPaused(SchedulerServiceApiException):
+    status_code = 6053
 
 
-class JobAlreadyRunning:
-    def __init__(self, message):
-        self.message = message
-        self.code = 6054
-
-    def to_dict(self):
-        return dict(message=self.message,
-                    code=self.code)
+class PendingStatus(SchedulerServiceApiException):
+    status_code = 6052
 
 
-class NoJobFound:
-    def __init__(self, message):
-        self.message = message
-        self.code = 6050
+class JobAlreadyRunning(SchedulerServiceApiException):
+    status_code = 6054
 
-    def to_dict(self):
-        return dict(message=self.message,
-                    code=self.code)
+
+class NoJobFound(SchedulerServiceApiException):
+    status_code = 6050
+

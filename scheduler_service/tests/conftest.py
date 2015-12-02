@@ -96,6 +96,7 @@ def job_config(request):
         "url": "http://getTalent.com/sms/send/",
         "start_time": "2015-12-05T08:00:00-05:00",
         "end_time": "2016-01-05T08:00:00-05:00",
+        "timezone": "Asia/Karachi",
         "post_data": {
             "campaign_name": "SMS Campaign",
             "phone_number": "09230862348",

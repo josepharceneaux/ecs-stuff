@@ -22,7 +22,7 @@ def init_app():
     db.app = flask_app
     db.create_all()
     register_error_handlers(flask_app, logger)
-    logger.info("Starting scheduling_service in %s environment",
-                os.environ['GT_ENVIRONMENT'])
+    #logger.info("Starting scheduling_service in %s environment",
+    #            os.environ['GT_ENVIRONMENT'])
 
     return flask_app

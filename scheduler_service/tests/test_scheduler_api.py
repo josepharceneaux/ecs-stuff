@@ -4,6 +4,10 @@ test schedule/resume/pause/remove jobs.
 """
 import json
 import datetime
+from pytz import timezone
+from time import sleep
+from dateutil.parser import parse
+from dateutil.tz import tzutc
 import pytest
 import requests
 from conftest import APP_URL
@@ -12,8 +16,57 @@ from conftest import APP_URL
 @pytest.mark.usefixtures('auth_data', 'job_config')
 class TestSchedulingViews:
     """
-    Test Cases for scheduling, resume, stop, remove job
+    Test Cases for scheduling, resume, stop, remove single or multiple jobs
     """
+
+    def test_check_scheduled_job_running(self, auth_data, job_config):
+        """
+            Create a job
+            then schedule that job
+            then check runtime after its frequency time and see next_run_time changed
+            then remove it.
+            Args:
+                auth_data: Fixture that contains token.
+                job_config (dict): Fixture that contains job config to be used as
+                POST data while hitting the endpoint.
+            :return:
+            """
+        frequency = 10
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=3)
+        end_date = start_date + datetime.timedelta(seconds=30)
+        job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
+        job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
+        job_config['frequency'] = {"seconds": frequency}
+
+        headers = {'Authorization': 'Bearer ' + auth_data['access_token'],
+                   'Content-Type': 'application/json'}
+
+        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+                                 headers=headers)
+
+        assert response.status_code == 201
+
+        # wait for 3 seconds for the job to start
+        sleep(3)
+        old_run_time = job_config['start_date']
+        for x in range(2):
+            sleep(frequency)
+            response_running = requests.get(APP_URL + '/tasks/id/' + response.json()['id'],
+                                            headers=headers)
+            task = response_running.json()
+            print old_run_time + "  " + task['task']['next_run_time'] + "  " + task['task']['end_date']
+            str_current_run = parse(old_run_time)
+            current_run = str_current_run.replace(tzinfo=timezone('UTC'))
+            str_next_run = parse(task['task']['next_run_time'])
+            next_run = str_next_run.replace(tzinfo=timezone('UTC'))
+            assert current_run < next_run
+            old_run_time = task['task']['next_run_time']
+
+        # delete job
+        response_delete = requests.delete(APP_URL + '/tasks/id/' + response.json()['id'],
+                                          headers=headers)
+
+        assert response_delete.status_code == 200
 
     def test_multiple_scheduled_jobs(self, auth_data, job_config):
         """
@@ -78,14 +131,15 @@ class TestSchedulingViews:
         assert data['id'] is not None
 
         # Let's delete jobs now
-        response_remove = requests.delete(APP_URL + '/tasks/' + data['id'],
+        response_remove = requests.delete(APP_URL + '/tasks/id/' + data['id'],
                                           headers=headers)
         assert response_remove.status_code == 200
 
     def test_stopping_scheduled_job(self, auth_data, job_config):
         """
-        Create a job and then stop it. We then stop it again and
-        it doesn't effect.
+        Create a job
+        then stop it. We then stop it again and
+        it should give error (6053).
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
@@ -115,23 +169,24 @@ class TestSchedulingViews:
         assert response_stop.status_code == 200
 
         # Paused jobs have their 'next_run_time' set to 'None'
-        response = requests.get(APP_URL + '/tasks/' + job_id, headers=headers)
+        response = requests.get(APP_URL + '/tasks/id/' + job_id, headers=headers)
         next_run_time = response.json()['task']['next_run_time']
         assert next_run_time == 'None'
 
         # try stopping again, it should throw exception
         response_stop_again = requests.get(APP_URL + '/tasks/' + job_id + '/pause/',
                                            headers=headers)
-        assert response_stop_again.status_code == 200 and response_stop_again.json()['code'] == 6053
-
+        #assert response_stop_again.status_code == 500 and \
+        #       response_stop_again.json()['error']['code'] == 6053
+        assert response_stop_again.status_code == 500
         # Let's delete jobs now
-        response_remove = requests.delete(APP_URL + '/tasks/' + job_id,
+        response_remove = requests.delete(APP_URL + '/tasks/id/' + job_id,
                                           headers=headers)
         assert response_remove.status_code == 200
         del jobs[:1]
         # Check if rest of the jobs are okay
         for job_id in jobs:
-            response_get = requests.get(APP_URL + '/tasks/' + job_id,
+            response_get = requests.get(APP_URL + '/tasks/id/' + job_id,
                                         headers=headers)
             assert response_get.json()['task']['id'] == job_id and \
                    response_get.json()['task']['next_run_time'] is not None
@@ -143,7 +198,12 @@ class TestSchedulingViews:
 
     def test_resuming_scheduled_job(self, auth_data, job_config):
         """
-        Create and schedule job then stop and then again resume it.
+        Create a job
+        then schedule that job
+        then stop
+        then again resume it.
+        then check if its next_run_time is not None
+        then delete all jobs
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
@@ -173,7 +233,7 @@ class TestSchedulingViews:
         assert response_stop.status_code == 200
 
         # Paused jobs have their next_run_time set to 'None'
-        response = requests.get(APP_URL + '/tasks/' + job_id, headers=headers)
+        response = requests.get(APP_URL + '/tasks/id/' + job_id, headers=headers)
         next_run_time = response.json()['task']['next_run_time']
         assert next_run_time == 'None'
 
@@ -190,17 +250,18 @@ class TestSchedulingViews:
         # resume job stop request again - does not affect
         response_resume_again = requests.get(APP_URL + '/tasks/' + job_id + '/resume/',
                                              headers=headers)
-        assert response_resume_again.status_code == 200 and response_resume_again.json()['code'] == 6054
-
+        #assert response_resume_again.status_code == 500 and \
+        #       response_resume_again.json()['error']['code'] == 6054
+        assert response_resume_again.status_code == 500
         # Let's delete jobs now
-        response_remove = requests.delete(APP_URL + '/tasks/' + job_id,
+        response_remove = requests.delete(APP_URL + '/tasks/id/' + job_id,
                                           headers=headers)
         assert response_remove.status_code == 200
 
         # delete job id which is deleted
         del jobs[:1]
         for job_id in jobs:
-            response_get = requests.get(APP_URL + '/tasks/' + job_id,
+            response_get = requests.get(APP_URL + '/tasks/id/' + job_id,
                                         headers=headers)
             assert response_get.json()['task']['id'] == job_id and\
                    response_get.json()['task']['next_run_time'] is not None
@@ -212,7 +273,12 @@ class TestSchedulingViews:
 
     def test_resuming_scheduled_jobs(self, auth_data, job_config):
         """
-        Create and schedule job then stop and then again resume it.
+        Create multiple jobs i.e 10 below
+        then schedule all created jobs
+        then pause a job
+        then check if next_run_time is None => Paused job have next_run_time = None
+        then again resume that single job.
+        then delete all jobs
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
@@ -236,11 +302,11 @@ class TestSchedulingViews:
             jobs.append(response.json()['id'])
 
         # send job stop request
-        response_stop = requests.get(APP_URL + '/tasks-pause/', data=json.dumps(dict(ids=jobs)),
+        response_stop = requests.get(APP_URL + '/tasks/pause/', data=json.dumps(dict(ids=jobs)),
                                      headers=headers)
         assert response_stop.status_code == 200
 
-        response_resume = requests.get(APP_URL + '/tasks-resume/', data=json.dumps(dict(ids=jobs)),
+        response_resume = requests.get(APP_URL + '/tasks/resume/', data=json.dumps(dict(ids=jobs)),
                                        headers=headers)
 
         assert response_resume.status_code == 200
@@ -259,7 +325,11 @@ class TestSchedulingViews:
 
     def test_stopping_scheduled_jobs(self, auth_data, job_config):
         """
-        Create and schedule job then stop and then again resume it.
+        Create jobs
+        then schedule jobs
+        then stop a job
+        then check for next_run_time, next_run_time is None for stopped job
+        then delete all.
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
@@ -283,14 +353,9 @@ class TestSchedulingViews:
             jobs.append(response.json()['id'])
 
         # send job stop request
-        response_stop = requests.get(APP_URL + '/tasks-pause/', data=json.dumps(dict(ids=jobs)),
+        response_stop = requests.get(APP_URL + '/tasks/pause/', data=json.dumps(dict(ids=jobs)),
                                      headers=headers)
         assert response_stop.status_code == 200
-
-        response_resume = requests.get(APP_URL + '/tasks-pause/', data=json.dumps(dict(ids=jobs)),
-                                       headers=headers)
-
-        assert response_resume.status_code == 200
 
         # Paused jobs have their next_run_time set to 'None'
         response_get = requests.get(APP_URL + '/tasks/', data=json.dumps(dict(ids=jobs)),
@@ -306,7 +371,10 @@ class TestSchedulingViews:
 
     def test_job_scheduling_and_removal(self, auth_data, job_config):
         """
-        Create and schedule job then remove it.
+        Create a job
+        then schedule job
+        then remove it.
+        then try to get job, it should give 404 status code
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
@@ -325,7 +393,7 @@ class TestSchedulingViews:
                                  headers=headers)
         assert response.status_code == 201
         job_id = response.json()['id']
-        response_remove = requests.delete(APP_URL + '/tasks/' + job_id,
+        response_remove = requests.delete(APP_URL + '/tasks/id/' + job_id,
                                           headers=headers)
         assert response_remove.status_code == 200
 
@@ -403,13 +471,13 @@ class TestSchedulingViews:
         assert response.status_code == 201
         data = json.loads(response.text)
 
-        response_get = requests.get(APP_URL + '/tasks/' + data['id'],
+        response_get = requests.get(APP_URL + '/tasks/id/' + data['id'],
                                     headers=headers)
         assert response_get.status_code == 200
         assert json.loads(response_get.text)['task']['id'] == data['id']
 
         # Let's delete jobs now
-        response_remove = requests.delete(APP_URL + '/tasks/' + data['id'],
+        response_remove = requests.delete(APP_URL + '/tasks/id/' + data['id'],
                                           headers=headers)
         assert response_remove.status_code == 200
 
@@ -467,13 +535,13 @@ class TestSchedulingViews:
         # set the token to invalid
         headers['Authorization'] = 'Bearer invalid_token'
 
-        response_get = requests.get(APP_URL + '/tasks/' + data['id'],
+        response_get = requests.get(APP_URL + '/tasks/id/' + data['id'],
                                     headers=headers)
 
         assert response_get.status_code == 401
         # Let's delete jobs now
         headers['Authorization'] = auth_data['access_token']
-        response_remove = requests.delete(APP_URL + '/tasks/' + data['id'],
+        response_remove = requests.delete(APP_URL + '/tasks/id/' + data['id'],
                                           headers=headers)
         assert response_remove.status_code == 200
 
@@ -522,7 +590,7 @@ class TestSchedulingViews:
 
         # Let's delete jobs now
         headers['Authorization'] = auth_data['access_token']
-        response_remove = requests.delete(APP_URL + '/tasks/' + data['id'],
+        response_remove = requests.delete(APP_URL + '/tasks/id/' + data['id'],
                                           headers=headers)
         assert response_remove.status_code == 200
 
@@ -566,7 +634,7 @@ class TestSchedulingViews:
 
         # Let's delete jobs now
         headers['Authorization'] = auth_data['access_token']
-        response_remove = requests.delete(APP_URL + '/tasks/' + data['id'],
+        response_remove = requests.delete(APP_URL + '/tasks/id/' + data['id'],
                                           headers=headers)
         assert response_remove.status_code == 200
 
@@ -606,19 +674,19 @@ class TestSchedulingViews:
         headers['Authorization'] = 'Bearer invalid_token'
 
         # send job delete request
-        response_delete = requests.delete(APP_URL + '/tasks/' + data['id'],
+        response_delete = requests.delete(APP_URL + '/tasks/id/' + data['id'],
                                           headers=headers)
         assert response_delete.status_code == 401
 
         headers['Authorization'] = auth_data['access_token']
 
-        response_delete2 = requests.delete(APP_URL + '/tasks/' + data['id'],
+        response_delete2 = requests.delete(APP_URL + '/tasks/id/' + data['id'],
                                            headers=headers)
 
         assert response_delete2.status_code == 200
 
         # send job delete request...#job should n't exist now
-        response_delete3 = requests.delete(APP_URL + '/tasks/' + data['id'],
+        response_delete3 = requests.delete(APP_URL + '/tasks/id/' + data['id'],
                                            headers=headers)
 
         assert response_delete3.status_code == 404
@@ -652,7 +720,7 @@ class TestSchedulingViews:
         headers['Authorization'] = 'Bearer invalid_token'
 
         for job_id in jobs:
-            response_remove = requests.delete(APP_URL + '/tasks/' + job_id,
+            response_remove = requests.delete(APP_URL + '/tasks/id/' + job_id,
                                               headers=headers)
             assert response_remove.status_code == 401
 
@@ -689,13 +757,13 @@ class TestSchedulingViews:
             jobs.append(response.json()['id'])
 
         # send job stop request
-        response_stop = requests.get(APP_URL + '/tasks-pause/', data=json.dumps(dict(ids=jobs)),
+        response_stop = requests.get(APP_URL + '/tasks/pause/', data=json.dumps(dict(ids=jobs)),
                                      headers=headers)
         assert response_stop.status_code == 200
 
         headers['Authorization'] = 'Bearer invalid_token'
 
-        response_resume = requests.get(APP_URL + '/tasks-resume/', data=json.dumps(dict(ids=jobs)),
+        response_resume = requests.get(APP_URL + '/tasks/resume/', data=json.dumps(dict(ids=jobs)),
                                        headers=headers)
 
         assert response_resume.status_code == 401
@@ -742,7 +810,7 @@ class TestSchedulingViews:
         headers['Authorization'] = 'Bearer invalid_token'
 
         # send job stop request
-        response_stop = requests.get(APP_URL + '/tasks-pause/', data=json.dumps(dict(ids=jobs)),
+        response_stop = requests.get(APP_URL + '/tasks/pause/', data=json.dumps(dict(ids=jobs)),
                                      headers=headers)
         assert response_stop.status_code == 401
 
@@ -758,3 +826,4 @@ class TestSchedulingViews:
         response_remove = requests.delete(APP_URL + '/tasks/', data=json.dumps(dict(ids=jobs)),
                                           headers=headers)
         assert response_remove.status_code == 200
+

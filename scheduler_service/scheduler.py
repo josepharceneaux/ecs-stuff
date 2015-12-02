@@ -16,7 +16,8 @@ jobstores = {
 executors = {
     'default': ThreadPoolExecutor(20)
 }
-scheduler = BackgroundScheduler(jobstore=jobstores, executors=executors)
+scheduler = BackgroundScheduler(jobstore=jobstores, executors=executors,
+                                timezone='UTC')
 scheduler.add_jobstore(job_store)
 
 
@@ -28,7 +29,7 @@ def my_listener(event):
         logger.info('The job worked :)')
         job = scheduler.get_job(event.job_id)
         if job.next_run_time > job.trigger.end_date:
-            logger.info( 'Stopping job' )
+            logger.info('Stopping job')
             try:
                 scheduler.remove_job(job_id=job.id)
             except Exception as e:
@@ -51,7 +52,6 @@ def schedule_job(data, user_id):
     frequency = data['frequency']
     post_data = data['post_data']
     url = data['url']
-    timezone = data.get('timezone', 'Asia/Karachi')
     try:
         job = scheduler.add_job(run_job,
                                 'interval',
@@ -62,7 +62,6 @@ def schedule_job(data, user_id):
                                 weeks=frequency.get('weeks', 0),
                                 start_date=start_date,
                                 end_date=end_date,
-                                timezone=timezone,
                                 args=[user_id, url],
                                 kwargs=post_data)
     except Exception as e:
