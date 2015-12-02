@@ -9,6 +9,7 @@ from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
 from candidate_service.common.models.email_marketing import EmailCampaign
 from candidate_service.common.error_handling import InvalidUsage, ForbiddenError
 
+
 def does_candidate_belong_to_user(user_row, candidate_id):
     """
     Function checks if:
@@ -82,36 +83,31 @@ def does_email_campaign_belong_to_domain(user_row):
 
 
 def validate_and_parse_request_data(data):
-    list_id = data.get('id')
-    return_fields = data.get('return').split(',') if data.get('return') else []
+    return_fields = data.get('fields').split(',') if data.get('fields') else []
     candidate_ids_only = False
     count_only = False
     if 'candidate_ids_only' in return_fields:
         candidate_ids_only = True
     if 'count_only' in return_fields:
         count_only = True
-    if not list_id or list_id.strip() == '':
-        raise InvalidUsage('list_id is required', 400)
 
-    return {'list_id': long(list_id.strip() if list_id else list_id),
-            'candidate_ids_only': candidate_ids_only,
-            'count_only': count_only
-            }
+    return {'candidate_ids_only': candidate_ids_only,
+            'count_only': count_only}
 
 
-def validate_list_belongs_to_domain(smart_list, user_id):
+def validate_list_belongs_to_domain(smartlist, user_id):
     """
     Validates if given list belongs to user's domain
-    :param smart_list: smart list database row
+    :param smartlist: smart list database row
     :param user_id:
     :return:False, if list does not belongs to current user's domain else True
     """
-    if smart_list.user_id == user_id:
+    if smartlist.user_id == user_id:
         # if user id is same then smart list belongs to user
         return True
     user = User.query.get(user_id)
     # TODO: Revisit; check for alternate query.
-    domain_users = db.session.query(User.id).filter_by(domain_id=user.domain_id).all()
+    domain_users = User.query.with_entities(User.id).filter_by(domain_id=user.domain_id).all()
     domain_user_ids = [row[0] for row in domain_users]
     if user_id in domain_user_ids:
         # if user belongs to same domain i.e. smartlist belongs to domain
@@ -128,7 +124,6 @@ def _validate_and_format_smartlist_post_data(data, user_id):
     smartlist_name = data.get('name')
     candidate_ids = data.get('candidate_ids')  # comma separated ids
     search_params = data.get('search_params')
-    # TODO: check if not and if not smart_list_name.strip() if both are equal. Check 400 error code
     if not smartlist_name or not smartlist_name.strip():
         raise InvalidUsage(error_message="Missing input: `name` is required for creating list", error_code=400)
     # any of the parameters "search_params" or "candidate_ids" should be present

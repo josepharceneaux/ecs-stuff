@@ -34,11 +34,11 @@ api.add_resource(CandidateEmailCampaignResource,
                  endpoint='candidates')
 
 api.add_resource(SmartlistResource,
-                 '/v1/smartlist/<int:id>',  # GET
-                 '/v1/smartlist')           # POST (create smartlist)
+                 '/v1/smartlists/<int:id>',  # GET
+                 '/v1/smartlists')           # POST (create smartlist)
 
 api.add_resource(SmartlistCandidates,
-                 '/v1/smartlist/get_candidates/')
+                 '/v1/smartlists/<int:smartlist_id>/candidates')
 
 db.create_all()
 db.session.commit()

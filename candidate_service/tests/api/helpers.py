@@ -11,9 +11,9 @@ from candidate_service.modules.smartlists import save_smartlist
 from candidate_sample_data import generate_single_candidate_data
 
 BASE_URL = "http://127.0.0.1:8005"
-SMARTLIST_CANDIDATES_GET_URL = BASE_URL + "/v1/smartlist/get_candidates/"
-SMARTLIST_GET_URL = BASE_URL + "/v1/smartlist/"
-SMARTLIST_POST_URL = BASE_URL + "/v1/smartlist"
+SMARTLIST_CANDIDATES_GET_URL = BASE_URL + "/v1/smartlists/%s/candidates"
+SMARTLIST_GET_URL = BASE_URL + "/v1/smartlists/"
+SMARTLIST_POST_URL = BASE_URL + "/v1/smartlists"
 
 
 class CandidateResourceUrl:
@@ -225,8 +225,8 @@ def is_candidate_experience_ordered_correctly(experiences):
     return True
 
 
-# SmartList helper functions ===================>
-def get_smart_list_candidates(access_token, list_id, candidate_ids_only=False, count_only=False):
+# Smartlist helper functions ===================>
+def get_smartlist_candidates(access_token, list_id, candidate_ids_only=False, count_only=False):
     """
     Get all candidates present in smartlist
     :param access_token: authenticated users' access token, will be passed in headers for authorization
@@ -247,9 +247,9 @@ def get_smart_list_candidates(access_token, list_id, candidate_ids_only=False, c
     else:
         return_fields = 'all'
     response = requests.get(
-        url= SMARTLIST_CANDIDATES_GET_URL,
+        url= SMARTLIST_CANDIDATES_GET_URL % list_id,
         params={'id': list_id,
-                'return': return_fields},
+                'fields': return_fields},
         headers={'Authorization': 'Bearer %s' % access_token}
     )
     assert response.status_code == 200

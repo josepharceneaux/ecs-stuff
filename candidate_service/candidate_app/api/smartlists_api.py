@@ -5,8 +5,8 @@ from candidate_service.common.utils.auth_utils import require_oauth
 from ...modules.smartlists import get_candidates, create_smartlist_dict, save_smartlist
 from ...modules.validators import (validate_and_parse_request_data, validate_list_belongs_to_domain,
                                    _validate_and_format_smartlist_post_data)
-from candidate_service.common.error_handling import ForbiddenError
-from candidate_service.common.models.smart_list import SmartList
+from candidate_service.common.error_handling import ForbiddenError, NotFoundError
+from candidate_service.common.models.smartlist import Smartlist
 
 __author__ = 'jitesh'
 
@@ -18,23 +18,26 @@ class SmartlistCandidates(Resource):
     def get(self, **kwargs):
         """
         Use this endpoint to retrieve all candidates present in list (smart or dumb list)
-        Input (query parameters):
-            Accepts:
-                id :: list id
-                return :: comma separated values
-                        candidate_ids_only --> returns only list of candidate ids not all candidate fields
-                        count_only --> returns only the count of candidates present in list
-                        all  --> returns candidates (all attributes) belonging to list
-                        'return' parameter not present --> same as 'all' parameter --> returns candidates of list
+        Input:
+            URL Arguments `smartlist_id` (Required): id of smartlist
+            Accepts (query string parameters):
+                fields :: comma separated values
+                        `candidate_ids_only` --> returns only list of candidate ids not all candidate fields
+                        `count_only` --> returns only the count of candidates present in list
+                        `all`  --> returns candidates (all attributes) belonging to list
+                        'fields' parameter not present --> same as 'all' parameter --> returns candidates of list
         :return : candidates present in list (smart list or dumb list)
         :rtype: json
         """
         auth_user = request.user
+        smartlist_id = kwargs['smartlist_id']
         data = validate_and_parse_request_data(request.args)
-        smart_list = SmartList.query.get(data['list_id'])
-        if not validate_list_belongs_to_domain(smart_list, auth_user.id):
-            raise ForbiddenError("Provided list does not belong to user's domain")
-        return get_candidates(smart_list, data['candidate_ids_only'], data['count_only'])
+        smartlist = Smartlist.query.get(smartlist_id)
+        if not smartlist:
+            raise NotFoundError("List id does not exists.", 404)
+        if not validate_list_belongs_to_domain(smartlist, auth_user.id):
+            raise ForbiddenError("Provided list does not belong to user's domain", 403)
+        return get_candidates(smartlist, data['candidate_ids_only'], data['count_only'])
 
 
 class SmartlistResource(Resource):
@@ -47,20 +50,23 @@ class SmartlistResource(Resource):
         example: http://localhost:8005/v1/smartlist/2
         Returns: List in following json format
             {
-              "list": {
+              "smartlist": {
                 "candidate_count": 3,
                 "user_id": 1,
                 "id": 1,
                 "name": "my list"
+                "search_params": {"location": "San Jose, CA"}
               }
             }
         """
         list_id = kwargs.get('id')
         auth_user = request.user
-        smart_list = SmartList.query.get(list_id)
-        if not validate_list_belongs_to_domain(smart_list, auth_user.id):
-            raise ForbiddenError("List does not belong to user's domain")
-        return create_smartlist_dict(smart_list)
+        smartlist = Smartlist.query.get(list_id)
+        if not smartlist:
+            raise NotFoundError("List id does not exists", 404)
+        if not validate_list_belongs_to_domain(smartlist, auth_user.id):
+            raise ForbiddenError("List does not belong to user's domain", 403)
+        return create_smartlist_dict(smartlist)
 
     def post(self):
         """
@@ -74,6 +80,6 @@ class SmartlistResource(Resource):
         user_id = request.user.id
         # request.form data must pass through this function, as this will create data in desired format
         data = _validate_and_format_smartlist_post_data(request.form, user_id)
-        smart_list = save_smartlist(user_id=user_id, name=data.get('name'), search_params=data.get('search_params'),
-                                    candidate_ids=data.get('candidate_ids'))
-        return {'smartlist': {'id': smart_list.id}}, 201
+        smartlist = save_smartlist(user_id=user_id, name=data.get('name'), search_params=data.get('search_params'),
+                                   candidate_ids=data.get('candidate_ids'))
+        return {'smartlist': {'id': smartlist.id}}, 201
