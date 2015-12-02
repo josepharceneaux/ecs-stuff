@@ -1,4 +1,7 @@
 """
+Author: Hafiz Muhammad Basit, QC-Technologies,
+        Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
+
 This module contains CampaignBase class which provides common methods for
 all campaigns. Methods are
 - schedule()
@@ -28,8 +31,8 @@ from gevent.pool import Pool
 from ..models.user import Token
 from ..models.misc import UrlConversion
 from ..models.candidate import Candidate
-from ..error_handling import ForbiddenError
-from ..utils.common_functions import http_request
+from ..error_handling import ForbiddenError, InvalidUsage
+from ..utils.common_functions import http_request, find_missing_items
 from ..utils.app_api_urls import ACTIVITY_SERVICE_API_URL, CANDIDATE_SERVICE_API_URL
 
 
@@ -73,17 +76,13 @@ class CampaignBase(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self,  *args, **kwargs):
-        if kwargs.get('user_id'):
-            self.user_id = kwargs.get('user_id')
-            self.oauth_header = self.get_user_access_token(self.user_id)
-        else:
-            raise ForbiddenError(error_message='User id is missing.')
+    def __init__(self,  user_id, *args, **kwargs):
+        self.user_id = user_id
+        self.oauth_header = self.get_user_access_token(self.user_id)
         self.campaign = None
-        self.body_text = None
-        # Child classes will get this from respective campaign table. e.g. in case of
-        # sms campaign, this is get from sms_campaign
-        # db table.
+        self.body_text = None  # This is 'text' to be sent to candidates as part of campaign.
+        # Child classes will get this from respective campaign table.
+        # e.g. in case of SMS campaign, this is get from "sms_campaign" database table.
         self.smart_list_id = None
         self.pool_size = None
 
@@ -110,11 +109,12 @@ class CampaignBase(object):
     def campaign_create_activity(self, source):
         """
         Child classes will use this to set type, source_id, source_table, params
-        to create an activity for newly created campaign.
+        to create an activity in  database table "Activity" for newly created campaign.
         :return:
         """
         pass
 
+    # TODO: implement after scheduler service is ready
     def schedule(self):
         """
         This actually POST on scheduler_service to schedule a given task.
@@ -132,7 +132,7 @@ class CampaignBase(object):
         """
         pass
 
-    def get_candidates(self, smart_list_id=None):
+    def get_candidates_from_candidate_service(self, smart_list_id):
         """
         This will get the candidates associated to a provided smart list. This makes
         HTTP GET call on candidate service API to get the candidate associated candidates.
@@ -158,9 +158,12 @@ class CampaignBase(object):
         response = http_request('GET', url, headers=self.oauth_header, params=params,
                                 user_id=self.user_id)
         # get candidate ids
-        candidate_ids = [candidate['id'] for candidate in json.loads(response.text)['candidates']]
-        candidates = [Candidate.get_by_id(_id) for _id in candidate_ids]
-        return candidates
+        try:
+            candidate_ids = [candidate['id'] for candidate in json.loads(response.text)['candidates']]
+            candidates = [Candidate.get_by_id(_id) for _id in candidate_ids]
+            return candidates
+        except:
+            raise
 
     def send_campaign_to_candidates(self, candidates):
         """
@@ -184,11 +187,17 @@ class CampaignBase(object):
         # job_pool.join()
 
     @abstractmethod
+    # TODO: This will run on celery (after celery is configured)
     def send_campaign_to_candidate(self, candidate):
+        """
+        This sends the campaign to given candidate. Child classes will implement this.
+        :param candidate: Candidate row
+        :return:
+        """
         pass
 
     @staticmethod
-    def create_or_update_url_conversion(destination_url=None, source_url='', hit_count=0,
+    def create_or_update_url_conversion(destination_url=None, source_url=None, hit_count=0,
                                         url_conversion_id=None, hit_count_update=None):
         """
         - Here we save the source_url(provided in body text) and the shortened_url
@@ -198,9 +207,9 @@ class CampaignBase(object):
             SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
 
         :param destination_url: link present in body text
-        :param source_url: shortened url of the link present in body text
+        :param source_url: shortened URL of the link present in body text
         :param hit_count: Count of hits
-        :param url_conversion_id: id of url conversion record if needs to update
+        :param url_conversion_id: id of URL conversion record if needs to update
         :param hit_count_update: True if needs to increase "hit_count" by 1, False otherwise
         :type destination_url: str
         :type source_url: str
@@ -226,24 +235,29 @@ class CampaignBase(object):
             record_in_db.update(**data)
             url_conversion_id = record_in_db.id
         else:
-            new_record = UrlConversion(**data)
-            UrlConversion.save(new_record)
-            url_conversion_id = new_record.id
+            missing_required_fields = find_missing_items(data, verify_all_keys=True)
+            if len(missing_required_fields) == len(data.keys()):
+                raise ForbiddenError(error_message='destination_url/source_url cannot be None.')
+            else:
+                new_record = UrlConversion(**data)
+                UrlConversion.save(new_record)
+                url_conversion_id = new_record.id
         return url_conversion_id
 
     @staticmethod
-    def create_activity(user_id=None, type_=None, source_table=None, source_id=None,
+    def create_activity(user_id, type_=None, source_table=None, source_id=None,
                         params=None, headers=None):
         """
-        - Once we have all the parameters to save the activity, we call "activity_service"'s
-            endpoint /activities/ with HTTP POST call to save the activity in db.
+        - Once we have all the parameters to save the activity in database table "Activity",
+            we call "activity_service"'s endpoint /activities/ with HTTP POST call
+            to save the activity in db.
 
         - This method is called from create_sms_send_activity() and
             create_campaign_send_activity() methods of class SmsCampaignBase inside
             sms_campaign_service/sms_campaign_base.py.
 
         :param user_id: id of user
-        :param type_: type of activity
+        :param type_: type of activity (using underscore with type as "type" reflects built in name)
         :param source_table: source table name of activity
         :param source_id: source id of activity
         :param params: params to store for activity
@@ -254,13 +268,21 @@ class CampaignBase(object):
         :type params: dict
 
         **See Also**
-        .. see also:: create_sms_send_activity() method in SmsCampaignBase class.
+            .. see also:: create_sms_send_activity() method in SmsCampaignBase class.
         """
+        if isinstance(params, dict):
+            try:
+                json_params = json.dumps(params)
+            except Exception as error:
+                raise ForbiddenError(error_message='Error while serializing activity params '
+                                                   'into JSON. Error is: %s' % error.message)
+        else:
+            raise InvalidUsage(error_message='params should be dictionary.')
         data = {'source_table': source_table,
                 'source_id': source_id,
                 'type': type_,
                 'user_id': user_id,
-                'params': json.dumps(params)}
+                'params': json_params}
         # POST call to activity service to create activity
         url = ACTIVITY_SERVICE_API_URL + '/activities/'
         http_request('POST', url, headers=headers, data=data, user_id=user_id)

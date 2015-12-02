@@ -3,12 +3,13 @@ import pytest
 
 # App Settings
 from sms_campaign_service import init_app
+from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 
 app = init_app()
 
 
 # Application Specific
-# Common conftest
+# common conftest
 from sms_campaign_service.common.tests.conftest import *
 
 # App specific
@@ -131,3 +132,28 @@ def _create_user_twilio_phone(user, phone_value):
                            value=phone_value)
     UserPhone.save(user_phone)
     return user_phone
+
+
+@pytest.fixture()
+def create_sms_campaign_blast(sms_campaign_of_current_user):
+    """
+    This creates a record in database table "sms_campaign_blast"
+    :param sms_campaign_of_current_user:
+    :return:
+    """
+    return SmsCampaignBase.create_or_update_sms_campaign_blast(campaign_id=
+                                                               sms_campaign_of_current_user.id)
+
+
+@pytest.fixture()
+def create_campaign_send(candidate_first, candidate_second, create_sms_campaign_blast):
+    """
+    This creates a record in database table "sms_campaign_send"
+    :param candidate_first: fixture to create test candidate
+    :param candidate_second: fixture to create another test candidate
+    :return:
+    """
+    campaign_send_1 = SmsCampaignBase.create_or_update_sms_campaign_send(create_sms_campaign_blast,
+                                                                         candidate_first.id, datetime.now())
+    campaign_send_2 = SmsCampaignBase.create_or_update_sms_campaign_send(create_sms_campaign_blast,
+                                                                         candidate_second.id, datetime.now())

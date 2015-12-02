@@ -1,4 +1,6 @@
-__author__ = 'basit.getalent@gmail.com'
+"""
+This module contains pytest for utility functions
+"""
 
 # Application Specific
 from sms_campaign_service.utilities import search_urls_in_text

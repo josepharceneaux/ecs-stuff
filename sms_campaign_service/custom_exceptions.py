@@ -1,3 +1,9 @@
+"""
+Author: Hafiz Muhammad Basit, QC-Technologies,
+        Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
+
+This file contains custom exceptions for SMS campaign service.
+"""
 import json
 import sms_campaign_service.common.error_handling
 
@@ -50,3 +56,8 @@ class MultipleCandidatesFound(SmsCampaignApiException):
 
 class ErrorSavingSMSCampaign(SmsCampaignApiException):
     status_code = 5009
+
+
+class ErrorDeletingSMSCampaign(SmsCampaignApiException):
+    status_code = 5010
+

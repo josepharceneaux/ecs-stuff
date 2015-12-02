@@ -23,6 +23,8 @@ This file contains API endpoints related to sms_campaign_service.
 
             POST    : Sends the SMS Campaign by campaign id
 """
+from sms_campaign_service.custom_exceptions import ErrorDeletingSMSCampaign
+
 __author__ = 'basit.gettalent@gmail.com'
 
 # Standard Library
@@ -118,7 +120,7 @@ class SMSCampaigns(Resource):
                     500 (Internal Server Error)
         """
 
-        camp_obj = SmsCampaignBase(user_id=request.user.id)
+        camp_obj = SmsCampaignBase(request.user.id)
         campaigns = camp_obj.get_all_campaigns()
         all_campaigns = [campaign.to_json() for campaign in campaigns]
         data = {'count': len(all_campaigns),
@@ -175,7 +177,7 @@ class SMSCampaigns(Resource):
             campaign_data = request.get_json(force=True)
         except:
             raise InvalidUsage(error_message='Given data in not in json format')
-        campaign_obj = SmsCampaignBase(user_id=request.user.id,
+        campaign_obj = SmsCampaignBase(request.user.id,
                                        buy_new_number=campaign_data.get('buy_new_number'))
         campaign_id = campaign_obj.save(campaign_data)
         headers = {'Location': '/campaigns/%s' % campaign_id}
@@ -332,7 +334,7 @@ class CampaignById(Resource):
             campaign_data = request.get_json(force=True)
         except:
             raise InvalidUsage(error_message='Given data in not in json format')
-        camp_obj = SmsCampaignBase(user_id=int(request.user.id))
+        camp_obj = SmsCampaignBase(request.user.id)
         camp_obj.create_or_update_sms_campaign(campaign_data, campaign_id=campaign_id)
         return dict(message='SMS Campaign(id:%s) has been updated successfully' % campaign_id,), 200
 
@@ -361,11 +363,17 @@ class CampaignById(Resource):
                     403 (Forbidden: Current user cannot delete SMS campaign)
                     404 (Campaign not found)
                     500 (Internal Server Error)
+
+        ..Error codes::
+                    5010 (ErrorDeletingSMSCampaign)
         """
 
         delete_status = delete_sms_campaign(campaign_id, request.user.id)
         if delete_status:
             return dict(message='Campaign(id:%s) deleted successfully' % campaign_id), 200
+        else:
+            raise ErrorDeletingSMSCampaign(error_message="Campaign(id:%s) couldn't be deleted."
+                                                         % campaign_id)
 
 
 @api.route('/campaigns/<int:campaign_id>/sms_campaign_sends')
@@ -417,16 +425,17 @@ class SmsCampaignSends(Resource):
         :param campaign_id: integer, unique id representing campaign in GT database
         :return: 1- count of campaign sends and 2- sms campaign sends records in as dict
         """
-        campaign_blasts = SmsCampaignBlast.get_by_campaign_id(campaign_id)
-        if campaign_blasts:
-            campaign_sends = SmsCampaignSend.get_by_campaign_id(campaign_blasts.id)
-            campaign_sends_json = [campaign_send.to_json() for campaign_send in campaign_sends]
-            data = {'count': len(campaign_sends_json),
-                    'campaign_sends': campaign_sends_json}
-            return data, 200
+        campaign = SmsCampaign.get_by_id(campaign_id)
+        if campaign:
+            campaign_blasts = SmsCampaignBlast.get_by_campaign_id(campaign_id)
+            campaign_sends_json = []
+            if campaign_blasts:
+                campaign_sends = SmsCampaignSend.get_by_campaign_id(campaign_blasts.id)
+                campaign_sends_json = [campaign_send.to_json() for campaign_send in campaign_sends]
+            return {'count': len(campaign_sends_json),
+                    'campaign_sends': campaign_sends_json}, 200
         else:
-            raise ResourceNotFound(error_message='SMS Campaign id=%s not found.'
-                                                 % campaign_id)
+            raise ResourceNotFound(error_message='SMS Campaign(id=%s) not found.' % campaign_id)
 
 
 @api.route('/campaigns/<int:campaign_id>/send')
@@ -467,7 +476,7 @@ class SendSmsCampaign(Resource):
         :param campaign_id: integer, unique id representing campaign in GT database
         :return: json for required campaign containing message and total sends.
         """
-        camp_obj = SmsCampaignBase(user_id=request.user.id)
+        camp_obj = SmsCampaignBase(request.user.id)
         total_sends = camp_obj.process_send(campaign_id=campaign_id)
         return dict(message='Campaign(id:%s) has been sent successfully'
                             % campaign_id, total_sends=total_sends), 200

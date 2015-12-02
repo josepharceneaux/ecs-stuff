@@ -1,4 +1,7 @@
 """
+Author: Zohaib Ijaz, QC-Technologies,
+        Lahore, Punjab, Pakistan <mzohaib.qc@gmail.com>
+
 This modules contains helper methods for Flask-SqlAlchemy models.
 On app creation and startup these methods are added in Base Model class from which all
 other model classes inherit. But this changes will only effect this app or the app which is calling
@@ -40,7 +43,6 @@ other model classes inherit. But this changes will only effect this app or the a
              This will add all these method on db.Model and all its child classes.
 
 """
-__author__ = 'zohaib'
 from types import MethodType
 from sms_campaign_service.common.models.db import db
 

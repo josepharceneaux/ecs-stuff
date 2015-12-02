@@ -143,10 +143,11 @@ def find_missing_items(data_dict, required_fields=None, verify_all_keys=False):
     :rtype: list
     """
     if verify_all_keys:
-        missing_items = [{key: value} for key, value in data_dict.iteritems() if not value]
+        missing_items = [{key: value} for key, value in data_dict.iteritems()
+                         if not value and not value == 0]
     else:
         missing_items = [{key: value} for key, value in data_dict.iteritems()
-                         if key in required_fields and not value]
+                         if key in required_fields and not value and not value == 0]
     return [missing_item for missing_item in missing_items]
 
 
