@@ -16,12 +16,18 @@ jobstores = {
 executors = {
     'default': ThreadPoolExecutor(20)
 }
+# set timezone to UTC
 scheduler = BackgroundScheduler(jobstore=jobstores, executors=executors,
                                 timezone='UTC')
 scheduler.add_jobstore(job_store)
 
 
-def my_listener(event):
+def apscheduler_listener(event):
+    """
+    apschudler listener for logging on job crashed or job time expires
+    :param event:
+    :return:
+    """
     if event.exception:
         logger.error('The job crashed :(\n')
         logger.exception(str(event.exception.message) + '\n')
@@ -39,18 +45,19 @@ def my_listener(event):
                 logger.info("Job removed successfully")
 
 
-scheduler.add_listener(my_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
+scheduler.add_listener(apscheduler_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 
 
-def schedule_job(data, user_id):
+def schedule_job(data, user_id, access_token):
     """
-    This is a test end point which sends sms campaign
+    schedule job using post data and add it to apscheduler
     :return:
     """
     start_date = data['start_date']
     end_date = data['end_date']
     frequency = data['frequency']
     post_data = data['post_data']
+    content_type = data.get('content_type', 'application/json')
     url = data['url']
     try:
         job = scheduler.add_job(run_job,
@@ -62,7 +69,7 @@ def schedule_job(data, user_id):
                                 weeks=frequency.get('weeks', 0),
                                 start_date=start_date,
                                 end_date=end_date,
-                                args=[user_id, url],
+                                args=[user_id, access_token, url, content_type],
                                 kwargs=post_data)
     except Exception as e:
         logger.exception(e.message)
@@ -71,12 +78,26 @@ def schedule_job(data, user_id):
     return job.id
 
 
-def run_job(user_id, url, **kwargs):
-    logger.info('User ID: %s, Url: %s' % (user_id, url))
-    send_request.apply_async([user_id, url, kwargs])
+def run_job(user_id, access_token, url, content_type, **kwargs):
+    """
+    function callback to run when job time comes
+    :param user_id:
+    :param url: url to send post request
+    :param content_type: format of post data
+    :param kwargs: post data like campaign name, smartlist ids etc
+    :return:
+    """
+    logger.info('User ID: %s, Url: %s, Content-Type: %s' % (user_id, url, content_type))
+    send_request.apply_async([user_id, access_token, url, content_type, kwargs])
 
 
 def remove_tasks(ids, user_id):
+    """
+    remove jobs from apscheduler redisStore
+    :param ids: ids of tasks which are in apscheduler
+    :param user_id: tasks owned by user
+    :return: tasks which are removed
+    """
     jobs_aps = scheduler.get_jobs()
     jobs_av = filter(lambda job_id: scheduler.get_job(job_id=job_id) in jobs_aps, ids)
     jobs_ = map(lambda job_id: scheduler.get_job(job_id=job_id), jobs_av)
@@ -87,13 +108,17 @@ def remove_tasks(ids, user_id):
 
 
 def serialize_task(task):
+    """
+    serialize task data to json object
+    :param task:
+    :return: json converted dict object
+    """
     task_dict = dict(
         id=task.id,
         url=task.args[1],
         start_date=str(task.trigger.start_date),
         end_date=str(task.trigger.end_date),
         next_run_time=str(task.next_run_time),
-        timezone=task.trigger.timezone.zone,
         frequency=dict(days=task.trigger.interval.days, seconds=task.trigger.interval.seconds),
         post_data=task.kwargs,
         pending=task.pending

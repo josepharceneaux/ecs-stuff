@@ -1,3 +1,8 @@
+"""
+Scheduler Restful-API which has endpoints to schedule, remove, delete single or multiple jobs
+This API also checks for authentication token
+"""
+
 import json
 import types
 from flask import Blueprint, request
@@ -31,9 +36,8 @@ class Tasks(Resource):
         This resource returns a list of tasks or it can be used to create or schedule a task using POST.
     """
 
-    #@authenticate
+    @authenticate
     def get(self, **kwargs):
-        # raise JobAlreadyPaused('sdsdsds')
         """
         This action returns a list of user tasks and their count
         :keyword user_id: user_id of tasks' owner
@@ -125,7 +129,9 @@ class Tasks(Resource):
         """
         # get json post request data
         task = request.get_json(force=True)
-        task_id = schedule_job(task, 1)  # kwargs['user_id'])
+        bearer = request.headers.get('Authorization')
+        access_token = bearer.lower().replace('bearer ', '')
+        task_id = schedule_job(task, 1, access_token)  # kwargs['user_id'])
         headers = {'Location': '/tasks/%s' % task_id}
         response = json.dumps(dict(id=task_id))
         return JsonResponse(response, status=201, headers=headers)
@@ -163,7 +169,6 @@ class Tasks(Resource):
                     500 (Internal Server Error)
 
         """
-        #user_id = kwargs['user_id']
         # get task_ids for tasks to be removed
         req_data = request.get_json(force=True)
         task_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else []

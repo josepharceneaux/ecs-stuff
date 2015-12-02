@@ -49,17 +49,24 @@ class TestSchedulingViews:
         # wait for 3 seconds for the job to start
         sleep(3)
         old_run_time = job_config['start_date']
+
+        # wait for the next runtime and then check if runtime changed and is greater
         for x in range(2):
             sleep(frequency)
             response_running = requests.get(APP_URL + '/tasks/id/' + response.json()['id'],
                                             headers=headers)
             task = response_running.json()
-            print old_run_time + "  " + task['task']['next_run_time'] + "  " + task['task']['end_date']
+
+            # parse date into UTC format
             str_current_run = parse(old_run_time)
             current_run = str_current_run.replace(tzinfo=timezone('UTC'))
             str_next_run = parse(task['task']['next_run_time'])
             next_run = str_next_run.replace(tzinfo=timezone('UTC'))
+
+            # current run time should be lower than next run time to ensure job is running in interval
             assert current_run < next_run
+
+            # set the old_run_time to the next_run_time
             old_run_time = task['task']['next_run_time']
 
         # delete job
@@ -78,7 +85,7 @@ class TestSchedulingViews:
             POST data while hitting the endpoint.
         :return:
         """
-        start_date = datetime.datetime.now() + datetime.timedelta(seconds=15)
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
         job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
         job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
@@ -116,7 +123,7 @@ class TestSchedulingViews:
             POST data while hitting the endpoint.
         :return:
         """
-        start_date = datetime.datetime.now() + datetime.timedelta(seconds=15)
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
         job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
         job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
@@ -137,8 +144,8 @@ class TestSchedulingViews:
 
     def test_stopping_scheduled_job(self, auth_data, job_config):
         """
-        Create a job
-        then stop it. We then stop it again and
+        Create a job by hitting endpoint
+        then stop it using endpoint. We then stop it again and
         it should give error (6053).
         Args:
             auth_data: Fixture that contains token.
@@ -146,7 +153,7 @@ class TestSchedulingViews:
             POST data while hitting the endpoint.
         :return:
         """
-        start_date = datetime.datetime.now() + datetime.timedelta(seconds=15)
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
         job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
         job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
@@ -198,10 +205,10 @@ class TestSchedulingViews:
 
     def test_resuming_scheduled_job(self, auth_data, job_config):
         """
-        Create a job
-        then schedule that job
-        then stop
-        then again resume it.
+        Create a job by hitting endpoint
+        then schedule that job using endpoint
+        then stop by endpoint
+        then again resume it using endpoint.
         then check if its next_run_time is not None
         then delete all jobs
         Args:
@@ -210,7 +217,7 @@ class TestSchedulingViews:
             POST data while hitting the endpoint.
         :return:
         """
-        start_date = datetime.datetime.now() + datetime.timedelta(seconds=15)
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
         job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
         job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
@@ -285,7 +292,7 @@ class TestSchedulingViews:
             POST data while hitting the endpoint.
         :return:
         """
-        start_date = datetime.datetime.now() + datetime.timedelta(seconds=15)
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
         job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
         job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
@@ -325,7 +332,7 @@ class TestSchedulingViews:
 
     def test_stopping_scheduled_jobs(self, auth_data, job_config):
         """
-        Create jobs
+        Create jobs using endpoint
         then schedule jobs
         then stop a job
         then check for next_run_time, next_run_time is None for stopped job
@@ -336,7 +343,7 @@ class TestSchedulingViews:
             POST data while hitting the endpoint.
         :return:
         """
-        start_date = datetime.datetime.now() + datetime.timedelta(seconds=15)
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
         job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
         job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
@@ -371,7 +378,7 @@ class TestSchedulingViews:
 
     def test_job_scheduling_and_removal(self, auth_data, job_config):
         """
-        Create a job
+        Create a job using endpoint
         then schedule job
         then remove it.
         then try to get job, it should give 404 status code
@@ -381,7 +388,7 @@ class TestSchedulingViews:
             POST data while hitting the endpoint.
         :return:
         """
-        start_date = datetime.datetime.now() + datetime.timedelta(seconds=15)
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
         job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
         job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
@@ -404,14 +411,16 @@ class TestSchedulingViews:
 
     def test_multiple_job_scheduling_and_removal(self, auth_data, job_config):
         """
-        Create and schedule jobs then remove all jobs
+        Create multiple jobs
+        then schedule jobs
+        then remove all jobs
          Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
             POST data while hitting the endpoint.
         :return:
         """
-        start_date = datetime.datetime.now() + datetime.timedelta(seconds=15)
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
         job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
         job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
@@ -451,14 +460,16 @@ class TestSchedulingViews:
 
     def test_scheduled_get_job(self, auth_data, job_config):
         """
-        Create a job and schedule it and then get that scheduled job
+        Create a job using endpoint
+        then schedule it
+        then get that scheduled job
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
             POST data while hitting the endpoint.
         :return:
         """
-        start_date = datetime.datetime.now() + datetime.timedelta(seconds=15)
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
         job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
         job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
@@ -489,13 +500,13 @@ class TestSchedulingViews:
     def test_schedule_job_creation_without_token(self, job_config):
         """
         Create a job without a token, it shouldn't be created and we should get a
-        401.
+        401 when endpoint hit
         Args:
             job_config (dict): Fixture that contains job config to be used as
             POST data while hitting the endpoint.
         :return:
         """
-        start_date = datetime.datetime.now() + datetime.timedelta(seconds=15)
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
         job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
         job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
@@ -509,7 +520,9 @@ class TestSchedulingViews:
 
     def test_scheduled_job_retrieval_without_token(self, auth_data, job_config):
         """
-        Create a job and schedule it and then get that scheduled job without token
+        Create a job using endpoint
+        then schedule it
+        then get that scheduled job without token
         and it should result in a 401.
         Args:
             auth_data: Fixture that contains token.
@@ -517,7 +530,7 @@ class TestSchedulingViews:
             POST data while hitting the endpoint.
         :return:
         """
-        start_date = datetime.datetime.now() + datetime.timedelta(seconds=15)
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
         job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
         job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
@@ -560,7 +573,7 @@ class TestSchedulingViews:
             POST data while hitting the endpoint.
         :return:
         """
-        start_date = datetime.datetime.now() + datetime.timedelta(seconds=15)
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
         job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
         job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
@@ -609,7 +622,7 @@ class TestSchedulingViews:
             POST data while hitting the endpoint.
         :return:
         """
-        start_date = datetime.datetime.now() + datetime.timedelta(seconds=15)
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
         job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
         job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
@@ -655,7 +668,7 @@ class TestSchedulingViews:
             POST data while hitting the endpoint.
         :return:
         """
-        start_date = datetime.datetime.now() + datetime.timedelta(seconds=15)
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
         job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
         job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
@@ -693,7 +706,7 @@ class TestSchedulingViews:
 
     def test_deleting_multiple_scheduled_jobs_without_token(self, auth_data, job_config):
         """
-        Create 10 jobs an dthen try to delete them without token and we get 401s.
+        Create 10 jobs and then try to delete them without token and we get 401s.
         Create and schedule jobs then remove all jobs
         Args:
             auth_data: Fixture that contains token.
@@ -701,7 +714,7 @@ class TestSchedulingViews:
             POST data while hitting the endpoint.
         :return:
         """
-        start_date = datetime.datetime.now() + datetime.timedelta(seconds=15)
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
         job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
         job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
@@ -733,14 +746,17 @@ class TestSchedulingViews:
 
     def test_resuming_scheduled_jobs_without_token(self, auth_data, job_config):
         """
-        Create and schedule job then stop and then again resume it.
+        Create a job
+        then schedule job
+        then stop job
+        then again resume job.
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
             POST data while hitting the endpoint.
         :return:
         """
-        start_date = datetime.datetime.now() + datetime.timedelta(seconds=15)
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
         job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
         job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
@@ -784,14 +800,17 @@ class TestSchedulingViews:
 
     def test_stopping_scheduled_jobs_without_token(self, auth_data, job_config):
         """
-        Create and schedule job then stop and then again resume it.
+        Create a job
+        then schedule job
+        then stop job
+        then again resume it.
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
             POST data while hitting the endpoint.
         :return:
         """
-        start_date = datetime.datetime.now() + datetime.timedelta(seconds=15)
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
         job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
         job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
