@@ -95,8 +95,8 @@ def job_config(request):
         },
         "content_type": "application/json",
         "url": "http://getTalent.com/sms/send/",
-        "start_time": "2015-12-05T08:00:00-05:00",
-        "end_time": "2016-01-05T08:00:00-05:00",
+        "start_datetime": "2015-12-05T08:00:00-05:00",
+        "end_datetime": "2016-01-05T08:00:00-05:00",
         "post_data": {
             "campaign_name": "SMS Campaign",
             "phone_number": "09230862348",

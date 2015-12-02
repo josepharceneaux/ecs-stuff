@@ -53,8 +53,8 @@ def schedule_job(data, user_id, access_token):
     schedule job using post data and add it to apscheduler
     :return:
     """
-    start_date = data['start_date']
-    end_date = data['end_date']
+    start_datetime = data['start_datetime']
+    end_datetime = data['end_datetime']
     frequency = data['frequency']
     post_data = data['post_data']
     content_type = data.get('content_type', 'application/json')
@@ -67,14 +67,14 @@ def schedule_job(data, user_id, access_token):
                                 hours=frequency.get('hours', 0),
                                 days=frequency.get('days', 0),
                                 weeks=frequency.get('weeks', 0),
-                                start_date=start_date,
-                                end_date=end_date,
+                                start_date=start_datetime,
+                                end_date=end_datetime,
                                 args=[user_id, access_token, url, content_type],
                                 kwargs=post_data)
     except Exception as e:
         logger.exception(e.message)
         raise e
-    logger.info('Task has been added and will run at %s ' % start_date)
+    logger.info('Task has been added and will run at %s ' % start_datetime)
     return job.id
 
 
@@ -116,8 +116,8 @@ def serialize_task(task):
     task_dict = dict(
         id=task.id,
         url=task.args[1],
-        start_date=str(task.trigger.start_date),
-        end_date=str(task.trigger.end_date),
+        start_datetime=str(task.trigger.start_date),
+        end_datetime=str(task.trigger.end_date),
         next_run_time=str(task.next_run_time),
         frequency=dict(days=task.trigger.interval.days, seconds=task.trigger.interval.seconds),
         post_data=task.kwargs,

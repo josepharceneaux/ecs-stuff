@@ -19,62 +19,6 @@ class TestSchedulingViews:
     Test Cases for scheduling, resume, stop, remove single or multiple jobs
     """
 
-    def test_check_scheduled_job_running(self, auth_data, job_config):
-        """
-            Create a job
-            then schedule that job
-            then check runtime after its frequency time and see next_run_time changed
-            then remove it.
-            Args:
-                auth_data: Fixture that contains token.
-                job_config (dict): Fixture that contains job config to be used as
-                POST data while hitting the endpoint.
-            :return:
-            """
-        frequency = 10
-        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=3)
-        end_date = start_date + datetime.timedelta(seconds=30)
-        job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
-        job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
-        job_config['frequency'] = {"seconds": frequency}
-
-        headers = {'Authorization': 'Bearer ' + auth_data['access_token'],
-                   'Content-Type': 'application/json'}
-
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
-                                 headers=headers)
-
-        assert response.status_code == 201
-
-        # wait for 3 seconds for the job to start
-        sleep(3)
-        old_run_time = job_config['start_date']
-
-        # wait for the next runtime and then check if runtime changed and is greater
-        for x in range(2):
-            sleep(frequency)
-            response_running = requests.get(APP_URL + '/tasks/id/' + response.json()['id'],
-                                            headers=headers)
-            task = response_running.json()
-
-            # parse date into UTC format
-            str_current_run = parse(old_run_time)
-            current_run = str_current_run.replace(tzinfo=timezone('UTC'))
-            str_next_run = parse(task['task']['next_run_time'])
-            next_run = str_next_run.replace(tzinfo=timezone('UTC'))
-
-            # current run time should be lower than next run time to ensure job is running in interval
-            assert current_run < next_run
-
-            # set the old_run_time to the next_run_time
-            old_run_time = task['task']['next_run_time']
-
-        # delete job
-        response_delete = requests.delete(APP_URL + '/tasks/id/' + response.json()['id'],
-                                          headers=headers)
-
-        assert response_delete.status_code == 200
-
     def test_multiple_scheduled_jobs(self, auth_data, job_config):
         """
         Create 10 jobs by hitting the endpoint. Once jobs are created then we
@@ -87,8 +31,8 @@ class TestSchedulingViews:
         """
         start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
-        job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
-        job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
+        job_config['start_datetime'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
+        job_config['end_datetime'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
 
         jobs = []
 
@@ -125,8 +69,8 @@ class TestSchedulingViews:
         """
         start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
-        job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
-        job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
+        job_config['start_datetime'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
+        job_config['end_datetime'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
 
         headers = {'Authorization': 'Bearer ' + auth_data['access_token'],
                    'Content-Type': 'application/json'}
@@ -155,8 +99,8 @@ class TestSchedulingViews:
         """
         start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
-        job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
-        job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
+        job_config['start_datetime'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
+        job_config['end_datetime'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
 
         headers = {'Authorization': 'Bearer ' + auth_data['access_token'],
                    'Content-Type': 'application/json'}
@@ -183,9 +127,9 @@ class TestSchedulingViews:
         # try stopping again, it should throw exception
         response_stop_again = requests.get(APP_URL + '/tasks/' + job_id + '/pause/',
                                            headers=headers)
-        #assert response_stop_again.status_code == 500 and \
-        #       response_stop_again.json()['error']['code'] == 6053
-        assert response_stop_again.status_code == 500
+        assert response_stop_again.status_code == 500 and \
+              response_stop_again.json()['error']['code'] == 6053
+
         # Let's delete jobs now
         response_remove = requests.delete(APP_URL + '/tasks/id/' + job_id,
                                           headers=headers)
@@ -219,8 +163,8 @@ class TestSchedulingViews:
         """
         start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
-        job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
-        job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
+        job_config['start_datetime'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
+        job_config['end_datetime'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
 
         headers = {'Authorization': 'Bearer ' + auth_data['access_token'],
                    'Content-Type': 'application/json'}
@@ -257,9 +201,9 @@ class TestSchedulingViews:
         # resume job stop request again - does not affect
         response_resume_again = requests.get(APP_URL + '/tasks/' + job_id + '/resume/',
                                              headers=headers)
-        #assert response_resume_again.status_code == 500 and \
-        #       response_resume_again.json()['error']['code'] == 6054
-        assert response_resume_again.status_code == 500
+        assert response_resume_again.status_code == 500 and \
+              response_resume_again.json()['error']['code'] == 6054
+        #assert response_resume_again.status_code == 500
         # Let's delete jobs now
         response_remove = requests.delete(APP_URL + '/tasks/id/' + job_id,
                                           headers=headers)
@@ -294,8 +238,8 @@ class TestSchedulingViews:
         """
         start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
-        job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
-        job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
+        job_config['start_datetime'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
+        job_config['end_datetime'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
 
         headers = {'Authorization': 'Bearer ' + auth_data['access_token'],
                    'Content-Type': 'application/json'}
@@ -345,8 +289,8 @@ class TestSchedulingViews:
         """
         start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
-        job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
-        job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
+        job_config['start_datetime'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
+        job_config['end_datetime'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
 
         headers = {'Authorization': 'Bearer ' + auth_data['access_token'],
                    'Content-Type': 'application/json'}
@@ -390,8 +334,8 @@ class TestSchedulingViews:
         """
         start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
-        job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
-        job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
+        job_config['start_datetime'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
+        job_config['end_datetime'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
 
         headers = {'Authorization': 'Bearer ' + auth_data['access_token'],
                    'Content-Type': 'application/json'}
@@ -422,8 +366,8 @@ class TestSchedulingViews:
         """
         start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
-        job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
-        job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
+        job_config['start_datetime'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
+        job_config['end_datetime'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
         jobs = []
 
         headers = {'Authorization': 'Bearer ' + auth_data['access_token'],
@@ -471,8 +415,8 @@ class TestSchedulingViews:
         """
         start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
-        job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
-        job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
+        job_config['start_datetime'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
+        job_config['end_datetime'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
 
         headers = {'Authorization': 'Bearer ' + auth_data['access_token'],
                    'Content-Type': 'application/json'}
@@ -508,8 +452,8 @@ class TestSchedulingViews:
         """
         start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
-        job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
-        job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
+        job_config['start_datetime'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
+        job_config['end_datetime'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
 
         headers = {'Authorization': 'Bearer invalid_token',
                    'Content-Type': 'application/json'}
@@ -532,8 +476,8 @@ class TestSchedulingViews:
         """
         start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
-        job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
-        job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
+        job_config['start_datetime'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
+        job_config['end_datetime'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
 
         headers = {'Authorization': 'Bearer ' + auth_data['access_token'],
                    'Content-Type': 'application/json'}
@@ -575,8 +519,8 @@ class TestSchedulingViews:
         """
         start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
-        job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
-        job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
+        job_config['start_datetime'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
+        job_config['end_datetime'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
 
         headers = {'Authorization': 'Bearer ' + auth_data['access_token'],
                    'Content-Type': 'application/json'}
@@ -624,8 +568,8 @@ class TestSchedulingViews:
         """
         start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
-        job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
-        job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
+        job_config['start_datetime'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
+        job_config['end_datetime'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
 
         headers = {'Authorization': 'Bearer ' + auth_data['access_token'],
                    'Content-Type': 'application/json'}
@@ -670,8 +614,8 @@ class TestSchedulingViews:
         """
         start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
-        job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
-        job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
+        job_config['start_datetime'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
+        job_config['end_datetime'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
 
         headers = {'Authorization': 'Bearer ' + auth_data['access_token'],
                    'Content-Type': 'application/json'}
@@ -716,8 +660,8 @@ class TestSchedulingViews:
         """
         start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
-        job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
-        job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
+        job_config['start_datetime'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
+        job_config['end_datetime'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
         jobs = []
 
         headers = {'Authorization': 'Bearer ' + auth_data['access_token'],
@@ -758,8 +702,8 @@ class TestSchedulingViews:
         """
         start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
-        job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
-        job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
+        job_config['start_datetime'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
+        job_config['end_datetime'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
 
         headers = {'Authorization': 'Bearer ' + auth_data['access_token'],
                    'Content-Type': 'application/json'}
@@ -812,8 +756,8 @@ class TestSchedulingViews:
         """
         start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(hours=2)
-        job_config['start_date'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
-        job_config['end_date'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
+        job_config['start_datetime'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
+        job_config['end_datetime'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
 
         headers = {'Authorization': 'Bearer ' + auth_data['access_token'],
                    'Content-Type': 'application/json'}
@@ -845,4 +789,60 @@ class TestSchedulingViews:
         response_remove = requests.delete(APP_URL + '/tasks/', data=json.dumps(dict(ids=jobs)),
                                           headers=headers)
         assert response_remove.status_code == 200
+
+    def test_check_scheduled_job_running(self, auth_data, job_config):
+        """
+            Create a job
+            then schedule that job
+            then check runtime after its frequency time and see next_run_time changed
+            then remove it.
+            Args:
+                auth_data: Fixture that contains token.
+                job_config (dict): Fixture that contains job config to be used as
+                POST data while hitting the endpoint.
+            :return:
+            """
+        frequency = 10
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=3)
+        end_date = start_date + datetime.timedelta(seconds=30)
+        job_config['start_datetime'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
+        job_config['end_datetime'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
+        job_config['frequency'] = {"seconds": frequency}
+
+        headers = {'Authorization': 'Bearer ' + auth_data['access_token'],
+                   'Content-Type': 'application/json'}
+
+        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+                                 headers=headers)
+
+        assert response.status_code == 201
+
+        # wait for 3 seconds for the job to start
+        sleep(3)
+        old_run_time = job_config['start_datetime']
+
+        # wait for the next runtime and then check if runtime changed and is greater
+        for x in range(2):
+            sleep(frequency)
+            response_running = requests.get(APP_URL + '/tasks/id/' + response.json()['id'],
+                                            headers=headers)
+            task = response_running.json()
+
+            # parse date into UTC format
+            str_current_run = parse(old_run_time)
+            current_run = str_current_run.replace(tzinfo=timezone('UTC'))
+            str_next_run = parse(task['task']['next_run_time'])
+            next_run = str_next_run.replace(tzinfo=timezone('UTC'))
+
+            # current run time should be lower than next run time to ensure job is running in interval
+            assert current_run < next_run
+
+            # set the old_run_time to the next_run_time
+            old_run_time = task['task']['next_run_time']
+
+        # delete job
+        response_delete = requests.delete(APP_URL + '/tasks/id/' + response.json()['id'],
+                                          headers=headers)
+
+        assert response_delete.status_code == 200
 

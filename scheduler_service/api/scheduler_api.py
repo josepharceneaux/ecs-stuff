@@ -65,8 +65,8 @@ class Tasks(Resource):
                             "some_other_kwarg": "abc"
                         },
                         "frequency": "0:00:10",
-                        "start_time": "2015-11-05T08:00:00-05:00",
-                        "end_time": "2015-12-05T08:00:00-05:00"
+                        "start_datetime": "2015-11-05T08:00:00-05:00",
+                        "end_datetime": "2015-12-05T08:00:00-05:00"
                         "next_run_time": "2015-11-05T08:20:30-05:00",
                         "campaign_name": "SMS Campaign"
 
@@ -78,7 +78,9 @@ class Tasks(Resource):
                     500 (Internal Server Error)
 
         """
+        user_id = kwargs['user_id']
         tasks = scheduler.get_jobs()
+        tasks = filter(lambda task: task.args[0] == user_id, tasks)
         tasks = [serialize_task(task) for task in tasks]
         response = json.dumps(dict(tasks=tasks, count=len(tasks)))
         return JsonResponse(response)
@@ -94,8 +96,8 @@ class Tasks(Resource):
                     "day": 5,
                     "hour": 6
                 },
-                "start_time": "2015-12-05T08:00:00-05:00",
-                "end_time": "2016-01-05T08:00:00-05:00",
+                "start_datetime": "2015-12-05T08:00:00-05:00",
+                "end_datetime": "2016-01-05T08:00:00-05:00",
                 "url": "http://getTalent.com/sms/send/",
                 "post_data": {
                     "campaign_name": "SMS Campaign",
@@ -128,10 +130,11 @@ class Tasks(Resource):
         :return: id of created task
         """
         # get json post request data
+        user_id = kwargs['user_id']
         task = request.get_json(force=True)
         bearer = request.headers.get('Authorization')
         access_token = bearer.lower().replace('bearer ', '')
-        task_id = schedule_job(task, 1, access_token)  # kwargs['user_id'])
+        task_id = schedule_job(task, user_id, access_token)
         headers = {'Location': '/tasks/%s' % task_id}
         response = json.dumps(dict(id=task_id))
         return JsonResponse(response, status=201, headers=headers)
@@ -171,10 +174,11 @@ class Tasks(Resource):
         """
         # get task_ids for tasks to be removed
         req_data = request.get_json(force=True)
+        user_id =kwargs['user_id']
         task_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else []
         # check if tasks_ids list is not empty
         if task_ids:
-            removed = remove_tasks(task_ids, 1)
+            removed = remove_tasks(task_ids, user_id=user_id)
             if len(removed) == len(task_ids):
                 return JsonResponse(json.dumps(dict(
                     message='%s Tasks removed successfully' % len(removed))),
@@ -311,8 +315,8 @@ class TaskById(Resource):
                                 "days": 0,
                                 "seconds": 10
                             }
-                            "start_time": "2015-11-05T08:00:00-05:00",
-                            "end_time": "2015-12-05T08:00:00-05:00"
+                            "start_datetime": "2015-11-05T08:00:00-05:00",
+                            "end_datetime": "2015-12-05T08:00:00-05:00"
                             "next_run_time": "2015-11-05T08:20:30-05:00",
                             "timezone": "Asia/Karachi"
 
@@ -349,8 +353,8 @@ class TaskById(Resource):
                     "day": 5,
                     "hour": 6
                 },
-                "start_time": "2015-12-05T08:00:00-05:00",
-                "end_time": "2016-01-05T08:00:00-05:00",
+                "start_datetime": "2015-12-05T08:00:00-05:00",
+                "end_datetime": "2016-01-05T08:00:00-05:00",
                 "timezone": "Asia/Karachi"
 
             }

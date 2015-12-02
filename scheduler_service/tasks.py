@@ -1,27 +1,13 @@
+import json
 from celery import Celery
-from flask import Flask
-import time
 import requests
-from scheduler_service import logger
-from scheduler_service.app_utils import JsonResponse
-
-app = Flask('scheduler_service')
-celery = Celery(app.import_name, broker='redis://localhost:6379', backend='redis://localhost:6379')
 
 
-@celery.task(name='raise_exception')
-def raise_exception(*args, **kwargs):
-    logger.error('raise_exception')
-    #implement method here
-    raise Exception('Intentional exception raised')
-
-methods = {
-    'raise_exception': raise_exception
-}
+celery = Celery('scheduler_service', broker='redis://localhost:6379', backend='redis://localhost:6379')
 
 
 @celery.task(name="send_request")
-def send_request(user_id, access_token, url, content_type, **kwargs):
+def send_request(user_id, access_token, url, content_type, kwargs):
     """
     :param user_id: the user_id of user who is sending post request
     :param url: the url where to send post requests
@@ -31,12 +17,12 @@ def send_request(user_id, access_token, url, content_type, **kwargs):
     """
     headers = {
         'Content-Type': content_type,
-        'Authentication': 'Bearer %s' % access_token
+        'Authorization': 'Bearer %s' % access_token
     }
-    try:
-        response = requests.post(url, data=kwargs, headers=headers)
-        return JsonResponse(response.json())
-    except Exception as e:
-        logger.error(e.message)
-        raise e
+    if content_type == 'application/json':
+        kwargs = json.dumps(kwargs)
+
+    response = requests.post(url, data=kwargs, headers=headers)
+    return response.json()
+
 
