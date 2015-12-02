@@ -24,6 +24,6 @@
     "angular-ui-router": "~0.2.15",
     "jquery": "~2.1.4",
     "lodash": "~3.9.3",
-    "ng-pickadate": "~0.2.4"
+    "ng-pickadate": "https://github.com/jayellsbrg/ng-pickadate.git#~0.2.3"
   }
 }
