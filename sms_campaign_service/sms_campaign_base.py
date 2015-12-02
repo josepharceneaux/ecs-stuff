@@ -51,7 +51,7 @@ from sms_campaign_service.common.utils.activity_utils import \
 
 class SmsCampaignBase(CampaignBase):
     """
-    - This is the base class for sending sms campaign to candidates and  to keep track
+    - This is the base class for sending SMS campaign to candidates and to keep track
         of their responses. It uses Twilio API to send sms.
 
     - This is inherited from CampaignBase defined inside
@@ -61,7 +61,6 @@ class SmsCampaignBase(CampaignBase):
     This class contains following methods:
 
     * __init__()
-        This method is called by creating the class object.
 
         - It takes "user_id" as keyword argument.
         - It calls super class __init__ to set user_id.
@@ -70,14 +69,15 @@ class SmsCampaignBase(CampaignBase):
         - Sets total_sends to 0.
 
     *  get_all_campaigns(self)
-       This gets all the campaigns created by current user
+        This gets all the campaigns created by current user
 
     * save(self, form_data)
         This method is used to save the campaign in db table 'sms_campaign' and
         returns the ID of fresh record in db.
 
     * campaign_create_activity(self, sms_campaign)
-        This creates activity that SMS campaign created by xyz user
+        TODO:
+        This creates activity that "User xyz created an SMS campaign".
 
     * buy_twilio_mobile_number(self, phone_label_id=None)
         To send sms_campaign, we need to reserve a unique number for each user.
@@ -87,19 +87,19 @@ class SmsCampaignBase(CampaignBase):
         This method is used to create/update user_phone record.
 
     * process_send(self, campaign_id=None)
-        This method is used send the campaign to candidates.
+        This method is used to send the campaign to candidates.
 
     * process_urls_in_sms_body_text(self, candidate_id)
         If "body_text" contains any link in it, then we need to transform the
-        "body_text" by replacing long url with shorter version using Google's Shorten
-        URL API. If body text does does not contain any link, it returns the body_text
+        "body_text" by replacing long URL with shorter version using Google's Shorten
+        URL API. If body text does not contain any link, it returns the body_text
         as it is.
 
     * transform_body_text(self, link_in_body_text, short_url)
-        This replaces the original URL present in "body_text" with the shorted URL.
+        This replaces the original URL present in "body_text" with the shortened URL.
 
     * send_sms_campaign_to_candidate(self, candidate)
-        This does the sending part and update "sms_campaign_blast" and "sms_campaign_send".
+        This does the sending part and updates database tables "sms_campaign_blast" and "sms_campaign_send".
 
     * create_or_update_sms_campaign_blast(campaign_id=None, send=0, clicks=0, replies=0,
                             sends_update=False, clicks_update=False, replies=False): [static]
@@ -110,15 +110,14 @@ class SmsCampaignBase(CampaignBase):
 
     * create_or_update_sms_campaign_send(campaign_blast_id=None,
                                         candidate_id=None, sent_time=None): [static]
-        For each sms, send, here we add an entry that abc campaign has been sent to xyz candidate
-        at this time.
+        For each sms sent to the candidate, here we add an entry that abc campaign has been sent to
+         xyz candidate at this time.
 
     * create_or_update_sms_send_url_conversion(campaign_send_id, url_conversion_id): [static]
-        This adds an entry in db table "sms_campaign_send_url_conversion" for
-        each sms send.
+        This adds an entry in db table "sms_campaign_send_url_conversion" for each sms send.
 
     * create_sms_send_activity(self, candidate, source_id=None)
-        Here we set params and type to be saved in db table 'Activity' for each sent sms.
+        Here we set "params" and "type" to be saved in db table 'Activity' for each sent sms.
         Activity will appear as
             "SMS Campaign <b>%(campaign_name)s</b> has been sent to %(candidate_name)s.".
 
@@ -172,7 +171,7 @@ class SmsCampaignBase(CampaignBase):
         :return:
         """
         # sets the user_id
-
+        # TODO: remove pool_size after celery config
         kwargs['pool_size'] = POOL_SIZE
         super(SmsCampaignBase, self).__init__(*args, **kwargs)
         self.buy_new_number = kwargs.get('buy_new_number', False)
@@ -275,6 +274,7 @@ class SmsCampaignBase(CampaignBase):
         **See Also**
         .. see also:: save() method in SmsCampaignBase class.
         """
+        # TODO: assert
         # get User row
         user = User.get_by_id(self.user_id)
         # set params
@@ -290,8 +290,8 @@ class SmsCampaignBase(CampaignBase):
 
     def get_user_phone(self):
         """
-        Her we check if current user has twilio number in "user_phone" table.
-        If user has no twilio number associated, we buy a new number for this user,
+        Her we check if current user has Twilio number in "user_phone" table.
+        If user has no Twilio number associated, we buy a new number for this user,
         saves it in database and returns it.
 
         - This method is called from __int__() method of class SmsCampaignBase inside
@@ -299,6 +299,7 @@ class SmsCampaignBase(CampaignBase):
 
         :return: UserPhone row
         """
+        # TWILIO is a name defined in config
         phone_label_id = PhoneLabel.phone_label_id_from_phone_label(TWILIO)
         user_phone = UserPhone.get_by_user_id_and_phone_label_id(self.user_id,
                                                                  phone_label_id)
