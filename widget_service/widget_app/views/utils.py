@@ -20,8 +20,8 @@ def parse_interest_ids_from_form(interests_string):
         subcategory = subcategory.lstrip()
         interest_to_query = category if subcategory == 'All Subcategories' else subcategory
         processed_interest_ids.append(
-            {'id': db.session.query(AreaOfInterest.id).filter(
-                AreaOfInterest.description==interest_to_query).first().id})
+            {'area_of_interest_id': db.session.query(AreaOfInterest.id).filter(
+                AreaOfInterest.name==interest_to_query).first().id})
     return processed_interest_ids
 
 
@@ -61,10 +61,15 @@ def process_city_and_state_from_fields(city, state):
 
 def create_candidate_educations_dict(major, degree, school_name, grad_date):
     return {
-        'degree': degree,
-        'major': major,
         'school_name': school_name,
-        'graduation_date': grad_date
+        'degrees': [
+            {
+                'type': degree,
+                'title': major,
+                'end_year': grad_date.split(' ')[1],
+                'degree_bullets': []
+            }
+        ]
     }
 
 

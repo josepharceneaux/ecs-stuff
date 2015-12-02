@@ -74,6 +74,8 @@ def sms_campaign_url_redirection(campaign_id=None, url_conversion_id=None):
     .. Status:: 200 (OK)
                 404 (Resource not found)
                 500 (Internal Server Error)
+
+    ., Error codes::
                 5005 (EmptyDestinationUrl)
                 5006 (MissingRequiredField)
 
@@ -137,6 +139,16 @@ def sms_receive():
             3- Stores the candidate's reply in database table "sms_campaign_reply"
             4- Create's activity that 'abc' candidate has replied "Body"(key value)
                 on 'xyz' SMS campaign.
+
+    .. Status:: 200 (OK)
+                403 (ForbiddenError)
+                404 (Resource not found)
+                500 (Internal Server Error)
+
+    .. Error codes:
+                5006 (MissingRequiredField)
+                5007 (MultipleUsersFound)
+                5008 (MultipleCandidatesFound)
 
     :return: xml response to Twilio API
     """

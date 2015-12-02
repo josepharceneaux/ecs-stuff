@@ -20,7 +20,7 @@ class EmptySmsBody(SmsCampaignApiException):
     status_code = 5001
 
 
-class MultipleMobileNumbers(SmsCampaignApiException):
+class MultipleTwilioNumbers(SmsCampaignApiException):
     status_code = 5002
 
 

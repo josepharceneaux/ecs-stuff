@@ -164,14 +164,17 @@ class SMSCampaigns(Resource):
                     403 (Forbidden error)
                     500 (Internal Server Error)
 
-        ..Error Codes:: 5002 (MultipleMobileNumbers)
+        ..Error Codes:: 5002 (MultipleTwilioNumbers)
                         5003 (TwilioAPIError)
                         5006 (MissingRequiredField)
                         5009 (ErrorSavingSMSCampaign)
 
         """
         # get json post request data
-        campaign_data = request.get_json(force=True)
+        try:
+            campaign_data = request.get_json(force=True)
+        except:
+            raise InvalidUsage(error_message='Given data in not in json format')
         campaign_obj = SmsCampaignBase(user_id=request.user.id,
                                        buy_new_number=campaign_data.get('buy_new_number'))
         campaign_id = campaign_obj.save(campaign_data)
@@ -212,7 +215,10 @@ class SMSCampaigns(Resource):
 
         """
         # get campaign_ids for campaigns to be deleted
-        req_data = request.get_json(force=True)
+        try:
+            req_data = request.get_json(force=True)
+        except:
+            raise InvalidUsage(error_message='id(s) of campaign should be in a list')
         campaign_ids = req_data['ids'] if 'ids' in req_data else []
         if not isinstance(req_data['ids'], list):
             raise InvalidUsage('Bad request, include campaign_ids as list data', error_code=400)
@@ -322,7 +328,10 @@ class CampaignById(Resource):
 
         .. Error codes:: 5006 (MissingRequiredField)
         """
-        campaign_data = request.get_json(force=True)
+        try:
+            campaign_data = request.get_json(force=True)
+        except:
+            raise InvalidUsage(error_message='Given data in not in json format')
         camp_obj = SmsCampaignBase(user_id=int(request.user.id))
         camp_obj.create_or_update_sms_campaign(campaign_data, campaign_id=campaign_id)
         return dict(message='SMS Campaign(id:%s) has been updated successfully' % campaign_id,), 200
@@ -451,7 +460,7 @@ class SendSmsCampaign(Resource):
                     500 (Internal Server Error)
 
         .. Error Codes:: 5001 (Empty message body to send)
-                         5002 (User has MultipleMobileNumbers)
+                         5002 (User has MultipleTwilioNumbers)
                          5003 (TwilioAPIError)
                          5004 (GoogleShortenUrlAPIError)
 

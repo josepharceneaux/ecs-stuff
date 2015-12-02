@@ -57,7 +57,7 @@ class TestSmsCampaign:
                                                           user_phone_2):
         """
         User has multiple phone value of type Twilio, it should get internal server error.
-        Error code should be 5002 (MultipleMobileNumbers)
+        Error code should be 5002 (MultipleTwilioNumbers)
         :param auth_token: access token of user
         :param user_phone_1: fixture to assign one test phone number to user
         :param user_phone_2: fixture to assign another test phone number to user
@@ -169,7 +169,7 @@ class TestSmsCampaign:
                                                                           user_phone_2):
         """
         User has multiple phone values, and valid data. It should get internal server error.
-        Error code should be 5002 (MultipleMobileNumbers)
+        Error code should be 5002 (MultipleTwilioNumbers)
         :param auth_token: access token of user
         :return:
         """

@@ -38,7 +38,7 @@ from sms_campaign_service.common.utils.common_functions import find_missing_item
 from sms_campaign_service.config import (SMS_URL_REDIRECT, PHONE_LABEL_ID,
                                          TWILIO, IS_DEV, POOL_SIZE)
 from sms_campaign_service.custom_exceptions import \
-    (EmptySmsBody, MultipleMobileNumbers, EmptyDestinationUrl, MissingRequiredField,
+    (EmptySmsBody, MultipleTwilioNumbers, EmptyDestinationUrl, MissingRequiredField,
      MultipleUsersFound, MultipleCandidatesFound, ErrorSavingSMSCampaign)
 from sms_campaign_service.common.models.candidate import (PhoneLabel, Candidate, CandidatePhone)
 from sms_campaign_service.common.models.sms_campaign import \
@@ -306,7 +306,7 @@ class SmsCampaignBase(CampaignBase):
             if user_phone[0].value:
                 return user_phone[0]
         elif len(user_phone) > 1:
-            raise MultipleMobileNumbers(error_message='User(id:%s) has multiple phone numbers '
+            raise MultipleTwilioNumbers(error_message='User(id:%s) has multiple phone numbers '
                                                       'for phone label: %s'
                                                       % (self.user_id, TWILIO))
         else:
@@ -887,16 +887,11 @@ class SmsCampaignBase(CampaignBase):
             6- Creates Activity that "abc" candidate has replied "123" to campaign "xyz"
             7- Updates the count of replies in "sms_campaign_blast" by 1
 
-        .. Status:: 200 (OK)
-                    403 (ForbiddenError)
-                    404 (Resource not found)
-                    500 (Internal Server Error)
-                    5007 (MultipleUsersFound)
-                    5008 (MultipleCandidatesFound)
-
         :param reply_data:
         :type reply_data: dict
-        :return:
+        :exception: MissingRequiredField (5006)
+        :exception: MultipleUsersFound(5007)
+        :exception: MultipleCandidatesFound(5008)
 
         **See Also**
         .. see also:: sms_receive() function in sms_campaign_app/app.py

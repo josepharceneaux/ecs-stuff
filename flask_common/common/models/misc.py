@@ -33,7 +33,7 @@ class Activity(db.Model):
 
 class AreaOfInterest(db.Model):
     __tablename__ = 'area_of_interest'
-    id = db.Column(db.BigInteger, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
     name = db.Column('Description', db.String(255))
     parent_id = db.Column('ParentId', db.BigInteger, db.ForeignKey('area_of_interest.id'))
@@ -84,8 +84,8 @@ class Culture(db.Model):
 class Organization(db.Model):
     __tablename__ = 'organization'
     id = db.Column('Id', db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(500), unique=True)
-    notes = db.Column('Notes', db.String(1000))
+    name = db.Column('Name', db.String(255), unique=True)
+    notes = db.Column('Notes', db.String(255))
     updated_time = db.Column('updatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
@@ -124,10 +124,8 @@ class Country(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Name', db.String(100), nullable=False)
     code = db.Column('Code', db.String(20), nullable=False)
-
     # Relationships
     candidate_military_services = relationship('CandidateMilitaryService', backref='country')
-    patent_details = relationship('PatentDetail', backref='country')
     candidate_addresses = relationship('CandidateAddress', backref='country')
     candidate_educations = relationship('CandidateEducation', backref='country')
     candidate_experiences = relationship('CandidateExperience', backref='country')
@@ -183,6 +181,7 @@ class Major(db.Model):
         return {
             'id': self.id,
         }
+
 
 class State(db.Model):
     __tablename__ = 'state'

@@ -123,8 +123,8 @@ class CandidateResource(Resource):
             if not candidate_dict.get('emails'):
                 raise InvalidUsage(error_message="Email address is required for creating candidate")
 
-            emails = [{'label': email.get('label'), 'address': email.get('address')}
-                      for email in candidate_dict.get('emails')]
+            emails = [{'label': email.get('label'), 'address': email.get('address'),
+                       'is_default': email.get('is_default')} for email in candidate_dict.get('emails')]
             # Email address is required for creating a candidate
             if not any(emails):
                 raise InvalidUsage(error_message="Email address required")
@@ -195,6 +195,7 @@ class CandidateResource(Resource):
 
     def patch(self, **kwargs):
         """
+        PATCH /v1/candidates
         Function can update candidate(s).
 
         Takes a JSON dict containing:
@@ -229,8 +230,8 @@ class CandidateResource(Resource):
 
             emails = candidate_dict.get('emails') # TODO: validate emails and format
             if emails:
-                emails = [{'id': email.get('id'), 'label': email.get('label'), 'address': email.get('address')}
-                          for email in candidate_dict.get('emails')]
+                emails = [{'id': email.get('id'), 'label': email.get('label'), 'address': email.get('address'),
+                           'is_default': email.get('is_default')} for email in candidate_dict.get('emails')]
 
                 # Validate email addresses' format
                 if filter(lambda email: not is_valid_email(email['address']), emails):
