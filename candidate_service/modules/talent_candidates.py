@@ -223,7 +223,7 @@ def candidate_experiences(candidate_id):
              'state': experience.state,
              'country': Country.country_name_from_country_id(country_id=experience.country_id),
              'is_current': experience.is_current,
-             'experience_bullets': _candidate_experience_bullets(experience=experience),
+             'bullets': _candidate_experience_bullets(experience=experience),
              } for experience in experiences]
 
 
@@ -254,7 +254,6 @@ def candidate_work_preference(candidate):
             'telecommute': work_preference[0].bool_telecommute,
             'hourly_rate': work_preference[0].hourly_rate,
             'salary': work_preference[0].salary,
-            'tax_terms': work_preference[0].tax_terms,
             'travel_percentage': work_preference[0].travel_percentage,
             'third_party': work_preference[0].bool_third_party
             } if work_preference else dict()
@@ -310,7 +309,7 @@ def _candidate_degrees(education):
              'gpa': json.dumps(degree.gpa_num, use_decimal=True),
              'start_date': degree.start_time.date().isoformat() if degree.start_time else None,
              'end_date': degree.end_time.date().isoformat() if degree.end_time else None,
-             'degree_bullets': _candidate_degree_bullets(degree=degree),
+             'bullets': _candidate_degree_bullets(degree=degree),
              } for degree in degrees]
 
 
@@ -361,14 +360,13 @@ def candidate_military_services(candidate_id):
     """
     military_experiences = db.session.query(CandidateMilitaryService).\
         filter_by(candidate_id=candidate_id).order_by(CandidateMilitaryService.to_date.desc())
-    # military_experiences = candidate.candidate_military_services
     return [{'id': military_info.id,
              'branch': military_info.branch,
-             'service_status': military_info.service_status,
+             'status': military_info.service_status,
              'highest_grade': military_info.highest_grade,
              'highest_rank': military_info.highest_rank,
-             'start_date': str(military_info.from_date),
-             'end_date': str(military_info.to_date),
+             'from_date': military_info.from_date.strftime('%Y-%m-%d') if military_info.from_date else None,
+             'to_date': military_info.to_date.strftime('%Y-%m-%d') if military_info.from_date else None,
              'country': Country.country_name_from_country_id(country_id=military_info.country_id),
              'comments': military_info.comments
              } for military_info in military_experiences]
@@ -379,7 +377,6 @@ def candidate_custom_fields(candidate):
     :type candidate:    Candidate
     :rtype              [dict]
     """
-    can_custom_fields = []
     custom_fields = candidate.candidate_custom_fields
     return [{'id': custom_field.custom_field_id,
              'value': custom_field.value,
@@ -818,10 +815,13 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
 def _add_or_update_candidate_addresses(candidate_id, addresses):
     """
     Function will update CandidateAddress or create a new one.
-
     :type addresses: list[dict[str, T]]
     """
+    # If any of addresses is_default, set candidate's addresses' is_default to False
     address_has_default = any([address.get('is_default') for address in addresses])
+    if address_has_default:
+        CandidateAddress.set_is_default_to_false(candidate_id=candidate_id)
+
     for i, address in enumerate(addresses):
         address_dict = address.copy()  # TODO: assert 'address' has no fields that shouldn't be there!
         zip_code = sanitize_zip_code(address.get('zip_code'))
@@ -862,16 +862,7 @@ def _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest):
     Function will update CandidateAreaOfInterest or create a new one.
     """
     for area_of_interest in areas_of_interest:
-
         aoi_id = area_of_interest['area_of_interest_id']
-        # candidate_aoi = CandidateAreaOfInterest.get_areas_of_interest(candidate_id=candidate_id,
-        #                                                               area_of_interest_id=aoi_id)
-
-        # if candidate_aoi:  # Update
-        #     can_aoi_query = db.session.query(CandidateAreaOfInterest).filter_by(candidate_id=candidate_id)
-        #     can_aoi_query.update({'area_of_interest_id': aoi_id})
-
-        # else:  # Add
         db.session.add(CandidateAreaOfInterest(candidate_id=candidate_id, area_of_interest_id=aoi_id))
 
 
@@ -904,10 +895,13 @@ def _add_or_update_educations(candidate_id, educations, added_time):
     Function will update CandidateEducation, CandidateEducationDegree, and
     CandidateEducationDegreeBullet or create new ones.
     """
+    # If any of educations is_current, set all of Candidate's educations' is_current to False
+    if any([education.get('is_current') for education in educations]):
+        CandidateEducation.set_is_current_to_false(candidate_id=candidate_id)
+
     for education in educations:
         # CandidateEducation
         education_dict = dict(
-            # candidate_id=candidate_id,
             list_order=education.get('list_order', 1),
             school_name=education.get('school_name'),
             school_type=education.get('school_type'),
@@ -954,7 +948,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
                         filter_by(candidate_education_id=education_id).update(education_degree_dict)
 
                     # CandidateEducationDegreeBullet
-                    education_degree_bullets = education_degree.get('degree_bullets', [])
+                    education_degree_bullets = education_degree.get('bullets', [])
                     for education_degree_bullet in education_degree_bullets:
                         education_degree_bullet_dict = dict(
                             concentration_type=education_degree_bullet.get('major'),
@@ -983,7 +977,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
                     can_edu_degree_id = candidate_education_degree.id
 
                     # Add CandidateEducationDegreeBullets
-                    education_degree_bullets = education_degree.get('degree_bullets', [])
+                    education_degree_bullets = education_degree.get('bullets', [])
                     for education_degree_bullet in education_degree_bullets:
                         db.session.add(CandidateEducationDegreeBullet(
                             candidate_education_degree_id=can_edu_degree_id,
@@ -1027,7 +1021,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
                 education_degree_id = candidate_education_degree.id
 
                 # CandidateEducationDegreeBullet
-                degree_bullets = education_degree.get('degree_bullets', [])
+                degree_bullets = education_degree.get('bullets', [])
                 for degree_bullet in degree_bullets:
 
                     # Add CandidateEducationDegreeBullet
@@ -1045,6 +1039,10 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time):
     Function will update CandidateExperience and CandidateExperienceBullet
     or create new ones.
     """
+    # If any of work_experiences' is_current is True, set all of candidate's experiences' is_current to False
+    if any([experience.get('is_current') for experience in work_experiences]):
+        CandidateExperience.set_is_current_to_false(candidate_id=candidate_id)
+
     for work_experience in work_experiences:
         # CandidateExperience
         experience_dict = dict(
@@ -1058,7 +1056,7 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time):
             country_id=Country.country_id_from_name_or_code(work_experience.get('country')),
             start_month=work_experience.get('start_month'),
             end_year=work_experience.get('end_year'),
-            is_current=work_experience.get('is_current', 0)
+            is_current=work_experience.get('is_current')
         )
 
         experience_id = work_experience.get('id')
@@ -1071,7 +1069,7 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time):
             db.session.query(CandidateExperience).filter_by(candidate_id=candidate_id).update(experience_dict)
 
             # CandidateExperienceBullet
-            experience_bullets = work_experience.get('experience_bullets', [])
+            experience_bullets = work_experience.get('bullets', [])
             for experience_bullet in experience_bullets:
                 experience_bullet_dict = dict(
                     list_order=experience_bullet.get('list_order'),
@@ -1099,7 +1097,7 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time):
             experience_id = experience.id
 
             # CandidateExperienceBullet
-            experience_bullets = work_experience.get('experience_bullets', [])
+            experience_bullets = work_experience.get('bullets', [])
             for experience_bullet in experience_bullets:
                 db.session.add(CandidateExperienceBullet(
                     candidate_experience_id=experience_id,
@@ -1114,13 +1112,15 @@ def _add_or_update_work_preference(candidate_id, work_preference):
     Function will update CandidateWorkPreference or create a new one.
     """
     work_preference_dict = dict(
-        relocate=work_preference.get('relocate'),
+        relocate=work_preference.get('relocate', False),
         authorization=work_preference.get('authorization'),
-        telecommute=work_preference.get('telecommute'),
+        telecommute=work_preference.get('telecommute', False),
         travel_percentage=work_preference.get('travel_percentage'),
         hourly_rate=work_preference.get('hourly_rate'),
         salary=work_preference.get('salary'),
-        tax_terms=work_preference.get('tax_terms')
+        tax_terms=work_preference.get('employment_type'),
+        security_clearance=work_preference.get('security_clearance', False),
+        third_party=work_preference.get('third_party', False)
     )
 
     # Remove None values from update_dict
@@ -1144,6 +1144,10 @@ def _add_or_update_emails(candidate_id, emails):
     """
     Function will update CandidateEmail or create new one(s).
     """
+    # If any of emails' is_default is True, set all of candidate's emails' is_default to False
+    if any([email.get('is_default') for email in emails]):
+        CandidateEmail.set_is_default_to_false(candidate_id=candidate_id)
+
     emails_has_default = any([email.get('is_default') for email in emails])
     for i, email in enumerate(emails):
 
@@ -1178,6 +1182,10 @@ def _add_or_update_phones(candidate_id, phones):
     """
     Function will update CandidatePhone or create new one(s).
     """
+    # If any of phones' is_default is True, set all of candidate's phones' is_default to False
+    if any([phone.get('is_default') for phone in phones]):
+        CandidatePhone.set_is_default_to_false(candidate_id=candidate_id)
+
     # TODO: parse out phone extension. Currently the value + extension are being added to the phone's value in the db
     phone_has_default = any([phone.get('is_default') for phone in phones])
     for i, phone in enumerate(phones):
@@ -1221,7 +1229,7 @@ def _add_or_update_military_services(candidate_id, military_services):
 
         military_service_dict = dict(
             country_id=Country.country_id_from_name_or_code(military_service.get('country')),
-            service_status=military_service.get('service_status'),
+            service_status=military_service.get('status'),
             highest_rank=military_service.get('highest_rank'),
             highest_grade=military_service.get('highest_grade'),
             branch=military_service.get('branch'),
@@ -1281,15 +1289,15 @@ def _add_or_update_skills(candidate_id, skills, added_time):
     for skill in skills:
 
         # Convert ISO 8601 date format to datetime object
-        last_used = skill.get('last_used')
-        if last_used:
-            last_used = dateutil.parser.parse(skill.get('last_used'))
+        last_used_date = skill.get('last_used_date')
+        if last_used_date:
+            last_used_date = dateutil.parser.parse(skill.get('last_used_date'))
 
         skills_dict = dict(
             list_order=skill.get('list_order'),
             description=skill.get('name'),
             total_months=skill.get('months_used'),
-            last_used=last_used
+            last_used=last_used_date
         )
 
         skill_id = skill.get('id')
