@@ -16,8 +16,8 @@ from scheduler_service.scheduler import scheduler, schedule_job, serialize_task,
 from scheduler_service.custom_exceptions import NoJobFound, PendingStatus, JobAlreadyPaused, \
     JobAlreadyRunning
 
-scheduler_blueprint = Blueprint('scheduling_api', __name__)
 api = TalentApi()
+scheduler_blueprint = Blueprint('scheduling_api', __name__)
 api.init_app(scheduler_blueprint)
 api.route = types.MethodType(api_route, api)
 

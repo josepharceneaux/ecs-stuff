@@ -14,7 +14,7 @@ os.environ['GT_ENVIRONMENT'] = 'dev'
 if os.environ.get('GT_ENVIRONMENT') == 'dev':
     APP_URL = 'http://0.0.0.0:8009'
     OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
-    SQLALCHEMY_DATABASE_URI = 'mysql://root:fastian123@localhost/talent_local'
+    SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@localhost/talent_local'
     LOGGER = logging.getLogger("scheduler_service.dev")
     DEBUG = True
 elif os.environ.get('GT_ENVIRONMENT') == 'circle':
