@@ -23,6 +23,14 @@
                     }
                 }
             })
+            .state('forgot-password', {
+                url: '/forgot-password',
+                views: {
+                    content: {
+                        template: '<gt-forgot-password></gt-forgot-password'
+                    }
+                }
+            })
             .state('site', {
                 abstract: true,
                 views: {
@@ -30,11 +38,11 @@
                         template: '<gt-topnav></gt-topnav>'
                     },
                     content: {
-                        template: '<div id="app-sidenav-wrapper"><gt-sidenav></gt-sidenav></div><div id="app-view-wrapper"><div ui-view></div></div>'
-                    },
+                        template: '<gt-main></gt-main>'
+                    }/*,
                     footer: {
                         template: '<gt-footer></gt-footer>'
-                    }
+                    }*/
                 },
                 data: {
                     loginRequired: true
@@ -61,37 +69,37 @@
                     }
                 }
             })
-            .state('pipeline', {
+            .state('pipelines', {
                 parent: 'site',
-                url: '/pipeline',
-                redirectTo: 'pipeline.overview'
+                url: '/pipelines',
+                redirectTo: 'pipelines.overview'
             })
-            .state('pipeline.overview', {
+            .state('pipelines.overview', {
                 url: '',
                 views: {
                     '@site': {
-                        template: '<gt-pipeline-overview></gt-pipeline-overview>'
+                        template: '<gt-pipelines-overview></gt-pipelines-overview>'
                     }
                 }
             })
-            .state('pipeline.smartLists', {
-                url: '/smartLists',
+            .state('pipelines.smart-lists', {
+                url: '/smart-lists',
                 views: {
                     '@site': {
                         template: '<gt-smart-lists></gt-smart-lists>'
                     }
                 }
             })
-            .state('pipeline.candidateSearch', {
-                url: '/candidateSearch',
+            .state('pipelines.candidate-search', {
+                url: '/candidate-search',
                 views: {
                     '@site': {
                         template: '<gt-candidate-search></gt-candidate-search>'
                     }
                 }
             })
-            .state('pipeline.importCandidates', {
-                url: '/importCandidates',
+            .state('pipelines.import-candidates', {
+                url: '/import-candidates',
                 views: {
                     '@site': {
                         template: '<gt-import-candidates></gt-import-candidates>'
@@ -111,48 +119,48 @@
                     }
                 }
             })
-            .state('campaigns.emailCampaigns', {
-                url: '/emailCampaigns',
+            .state('campaigns.email-campaigns', {
+                url: '/email-campaigns',
                 views: {
                     '@site': {
                         template: '<gt-email-campaigns></gt-email-campaigns>'
                     }
                 }
             })
-            .state('campaigns.eventCampaigns', {
-                url: '/eventCampaigns',
+            .state('campaigns.event-campaigns', {
+                url: '/event-campaigns',
                 views: {
                     '@site': {
                         template: '<gt-event-campaigns></gt-event-campaigns>'
                     }
                 }
             })
-            .state('campaigns.smsCampaigns', {
-                url: '/smsCampaigns',
+            .state('campaigns.sms-campaigns', {
+                url: '/sms-campaigns',
                 views: {
                     '@site': {
                         template: '<gt-sms-campaigns></gt-sms-campaigns>'
                     }
                 }
             })
-            .state('campaigns.socialMediaCampaigns', {
-                url: '/socialMediaCampaigns',
+            .state('campaigns.social-media-campaigns', {
+                url: '/social-media-campaigns',
                 views: {
                     '@site': {
                         template: '<gt-social-media-campaigns></gt-social-media-campaigns>'
                     }
                 }
             })
-            .state('campaigns.contentCampaigns', {
-                url: '/contentCampaigns',
+            .state('campaigns.content-campaigns', {
+                url: '/content-campaigns',
                 views: {
                     '@site': {
                         template: '<gt-content-campaigns></gt-content-campaigns>'
                     }
                 }
             })
-            .state('campaigns.pushNotifications', {
-                url: '/pushNotifications',
+            .state('campaigns.push-notifications', {
+                url: '/push-notifications',
                 views: {
                     '@site': {
                         template: '<gt-push-notifications></gt-push-notifications>'
@@ -165,15 +173,6 @@
                 views: {
                     '@site': {
                         template: '<gt-admin></gt-admin>'
-                    }
-                }
-            })
-            .state('help', {
-                parent: 'site',
-                url: '/help',
-                views: {
-                    '@site': {
-                        template: '<gt-help></gt-help>'
                     }
                 }
             });

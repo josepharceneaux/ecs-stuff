@@ -1,13 +1,13 @@
 __author__ = 'ufarooqi'
 from flask import render_template
 from user_service.common.utils.amazon_ses import send_email
-from common.models.user import db, Domain, User, UserScopedRoles
-from common.models.misc import EmailTemplateFolder, UserEmailTemplate
+from user_service.common.models.user import db, Domain, User, UserScopedRoles
+from user_service.common.models.misc import EmailTemplateFolder, UserEmailTemplate
 from werkzeug.security import generate_password_hash, gen_salt
 
 
-def get_or_create_domain(logged_in_user_id, name, usage_limitation=-1, organization_id=1, default_tracking_code=None, expiration=None,
-                         default_culture_id=1, dice_company_id=None):
+def get_or_create_domain(logged_in_user_id, name, usage_limitation=-1, organization_id=1, default_tracking_code=None,
+                         expiration=None, default_culture_id=1, dice_company_id=None):
     """
     Gets or creates domain with given name.
     Returns domain id of domain found in database or newly created.
@@ -48,8 +48,8 @@ def check_if_user_exists(email):
     return True if domain_users else False
 
 
-def create_user_for_company(first_name, last_name, email, domain_id=None, expiration_date=None, is_admin=False, phone="",
-                            is_domain_admin=False, dice_user_id=None):
+def create_user_for_company(first_name, last_name, email, domain_id, expiration_date=None, phone="",
+                            dice_user_id=None):
 
     from dateutil import parser
     expiration = None
@@ -58,8 +58,7 @@ def create_user_for_company(first_name, last_name, email, domain_id=None, expira
 
     # create user for existing domain
     user = create_user(email=email, domain_id=domain_id, first_name=first_name, last_name=last_name, phone=phone,
-                       expiration=expiration, is_admin=is_admin, is_domain_admin=is_domain_admin,
-                       dice_user_id=dice_user_id)
+                       expiration=expiration, dice_user_id=dice_user_id)
 
     return user.id
 
@@ -99,8 +98,7 @@ def get_or_create_default_email_templates(domain_id, admin_user_id):
     return sample_templates_folder.id
 
 
-def create_user(email, domain_id, first_name, last_name, expiration, is_admin=False, is_domain_admin=False, phone="",
-                dice_user_id=None):
+def create_user(email, domain_id, first_name, last_name, expiration, phone="", dice_user_id=None):
 
     temp_password = gen_salt(20)
     hashed_password = generate_password_hash(temp_password, method='pbkdf2:sha512')
@@ -114,13 +112,6 @@ def create_user(email, domain_id, first_name, last_name, expiration, is_admin=Fa
 
     # TODO: Make new widget_page if first user in domain
     # TODO: Add activity
-
-    # Adding ADMIN or DOMAIN_ADMIN roles to newly created user
-
-    if is_admin:
-        UserScopedRoles.add_roles(user, True, ['ADMIN'])
-    if is_domain_admin:
-        UserScopedRoles.add_roles(user, True, ['DOMAIN_ADMIN'])
 
     send_new_account_email(email, temp_password)
 

@@ -244,7 +244,7 @@ def get_data_to_log(log_data):
         callee_data = ("Reason: %(error)s"% callee_data_dict)
     return callee_data
 
-
+# TODO - Move it to common/utils/
 def http_request(method_type, url, params=None, headers=None, data=None, user_id=None):
     """
     This is common function to make HTTP Requests. It takes method_type (GET or POST)

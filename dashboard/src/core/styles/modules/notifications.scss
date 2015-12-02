@@ -1,0 +1,66 @@
+// ---------------------------------------------------
+// Modules / Notifications
+// ---------------------------------------------------
+
+.notifications {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  padding: $padding--huge;
+  z-index: 1000;
+}
+
+.notification {
+  @include gradients--blue;
+
+  opacity: 0;
+  color: $color--white;
+  position: relative;
+  max-width: 400px;
+  margin-top: $padding--huge;
+  padding: $padding--normal;
+  border-radius: $border-radius--container;
+  box-shadow: 0px 2px 5px 0px rgba($color--black, 0.1);
+  overflow: hidden;
+
+  a {
+    color: $color--white;
+    position: absolute;
+    top: 0.5em;
+    right: 0.5em;
+
+    &:hover {
+      color: $color--red;
+    }
+  }
+}
+
+.notification--success {
+  @extend .notification;
+  @include gradients--green;
+
+  color: $color--white;
+
+  a {
+    color: $color--white;
+
+    &:hover {
+      color: $color--nearBlack;
+    }
+  }
+}
+
+.notification--error {
+  @extend .notification;
+  @include gradients--red;
+
+  color: $color--white;
+
+  a {
+    color: $color--white;
+
+    &:hover {
+      color: $color--nearBlack;
+    }
+  }
+}

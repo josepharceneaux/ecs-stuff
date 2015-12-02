@@ -20,6 +20,14 @@ RUN add-apt-repository -y ppa:nginx/stable
 RUN apt-get update
 RUN apt-get install -y nginx
 
+# Install syslog-ng
+RUN apt-get -y install syslog-ng syslog-ng-core
+RUN echo 'SYSLOGNG_OPTS="--no-caps"' >> /etc/default/syslog-ng
+
+# Copy syslog conf file to syslog-ng/conf.d directory
+ADD syslog_loggly.conf /etc/syslog-ng/loggly.conf
+RUN mv /etc/syslog-ng/loggly.conf /etc/syslog-ng/syslog-ng.conf
+
 # Install python pyenv and 2.7.9
 RUN curl -L https://raw.github.com/yyuu/pyenv-installer/master/bin/pyenv-installer | bash
 ENV HOME /root
@@ -35,8 +43,9 @@ CMD ["pyenv", "local", "2.7.9"]
 RUN pip install -r /root/base_service_container/requirements.txt
 
 ## Install nginx stuff
-#RUN rm /etc/nginx/sites-enabled/default
-#ADD talent-nginx.conf /etc/nginx/conf.d/
+RUN rm /etc/nginx/sites-enabled/default
+ADD talent-nginx.conf /etc/nginx/conf.d/
+
 # ADD DigiCertCA.crt /usr/local/etc/ssl/DigiCertCA.crt
 # ADD star_gettalent_com.crt /usr/local/etc/ssl/star_gettalent_com.crt
 # ADD star_gettalent_com.key /usr/local/etc/ssl/star_gettalent_com.key

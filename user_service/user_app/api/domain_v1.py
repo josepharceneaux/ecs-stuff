@@ -2,11 +2,11 @@ __author__ = 'ufarooqi'
 from flask_restful import Resource
 from flask import request
 from dateutil import parser
-from common.models.user import User, Domain, db
-from common.models.misc import Culture
+from user_service.common.models.user import User, Domain, db
+from user_service.common.models.misc import Culture
 from user_service.user_app.user_service_utilties import get_or_create_domain
 from user_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
-from common.error_handling import *
+from user_service.common.error_handling import *
 
 
 class DomainApi(Resource):
@@ -14,7 +14,8 @@ class DomainApi(Resource):
     # Access token and role authentication decorators
     decorators = [require_oauth]
 
-    @require_any_role()
+    # 'SELF' is for readability. It means this endpoint will be accessible to any user
+    @require_any_role('SELF', 'CAN_GET_DOMAINS')
     def get(self, **kwargs):
         """
         GET /domains/<id> Fetch domain object with domain's basic info
@@ -30,8 +31,7 @@ class DomainApi(Resource):
         if not requested_domain:
             raise NotFoundError(error_message="Domain with domain id %s not found" % requested_domain_id)
 
-        # Either Logged in user should be ADMIN or should belong to same domain as requested_domain
-        if requested_domain_id == request.user.domain_id or request.is_admin_user:
+        if requested_domain_id == request.user.domain_id or 'CAN_GET_DOMAINS' in request.valid_domain_roles:
             return {
                     'domain': {
                         'id': requested_domain.id,
@@ -41,18 +41,17 @@ class DomainApi(Resource):
                         }
                     }
         else:
-            raise UnauthorizedError(error_message="Either logged-in user belongs to different domain as requested_user "
-                                                  "or it's not an ADMIN user")
+            raise UnauthorizedError(error_message="Either logged-in user belongs to different domain as "
+                                                  "requested_domain or it doesn't have appropriate permissions")
 
-    @require_all_roles('ADMIN')
+    @require_all_roles('CAN_ADD_DOMAINS')
     def post(self):
         """
         POST /domains  Create a new Domain
         input: {'domains': [domain1, domain2, domain3, ... ]}
 
         Take a JSON dictionary containing array of Domain dictionaries
-        A single domain dict must contain at least domain's name.
-        Logged in user must be an ADMIN or DOMAIN_ADMIN.
+        A single domain dict must contain at least domain's name
 
         :return:  A dictionary containing array of user ids
         :rtype: dict
@@ -110,13 +109,12 @@ class DomainApi(Resource):
 
         return {'domains': domain_ids}
 
-    @require_all_roles('ADMIN')
+    @require_all_roles('CAN_DELETE_DOMAINS')
     def delete(self, **kwargs):
         """
         DELETE /domains/<id>
 
         Function will disable domain-object in db
-        Only ADMIN users can disable a domain
 
         :return: {'deleted_domain' {'id': domain_id}}
         :rtype:  dict
@@ -140,13 +138,12 @@ class DomainApi(Resource):
 
         return {'deleted_domain': {'id': domain_id_to_delete}}
 
-    @require_any_role('ADMIN', 'DOMAIN_ADMIN')
+    @require_all_roles('CAN_EDIT_DOMAINS')
     def put(self, **kwargs):
         """
         PUT /domains/<id>
 
         Function will change credentials of one domain per request.
-        Only ADMIN or DOMAIN_ADMIN user can modify a domain
 
         :return: {'updated_domain' {'id': domain_id}}
         :rtype:  dict
@@ -161,11 +158,6 @@ class DomainApi(Resource):
         if not posted_data:
             raise InvalidUsage(error_message="Request body is empty or not provided")
 
-        # Logged-in user should be either DOMAIN_ADMIN, ADMIN to modify a domain
-        if not request.is_admin_user and requested_domain_id != request.user.domain_id:
-            raise UnauthorizedError(error_message="Logged-in user should be either ADMIN or DOMAIN_ADMIN if it belongs "
-                                                  "to same domain as requested domain")
-
         name = posted_data.get('name', '')
         expiration = posted_data.get('expiration', '')
         default_culture_id = posted_data.get('default_culture_id', '')
@@ -177,6 +169,9 @@ class DomainApi(Resource):
                 expiration = parser.parse(expiration)
             except Exception as e:
                 raise InvalidUsage(error_message="Expiration Time is not valid as: %s" % e.message)
+
+        if name and Domain.query.filter_by(name=name).first():
+            raise InvalidUsage('Domain %s already exists in database' % name)
 
         # If Culture doesn't exist in database
         if default_culture_id and not Culture.query.get(default_culture_id):

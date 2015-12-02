@@ -1,0 +1,40 @@
+.sm-show, .md-show, .lg-show {
+  display: none !important
+}
+
+@include helper--media($breakpoint--small) {
+  .sm-show { display: block !important }
+}
+
+@include helper--media($breakpoint--medium) {
+  .md-show { display: block !important }
+}
+
+@include helper--media($breakpoint--full) {
+  .lg-show { display: block !important }
+}
+
+
+@include helper--media($breakpoint--small) {
+  .sm-hide { display: none !important }
+}
+
+@include helper--media($breakpoint--medium) {
+  .md-hide { display: none !important }
+}
+
+@include helper--media($breakpoint--full) {
+  .lg-hide { display: none !important }
+}
+
+.display-none { display: none !important }
+
+.none { display: none; }
+
+.hide {
+  position: absolute !important;
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  clip: rect(1px, 1px, 1px, 1px);
+}
