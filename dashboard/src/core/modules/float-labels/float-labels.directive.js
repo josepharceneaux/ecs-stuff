@@ -55,6 +55,12 @@
         function init() {
             if (ngModel) {
 
+                // Input value isn't initialized yet,
+                // watch value until it changes once.
+                unregister = scope.$watch(function () {
+                    return ngModel.$viewValue;
+                }, valueChangeListener);
+
                 // Watch view changes
                 ngModel.$parsers.push(checkInput);
 
