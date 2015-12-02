@@ -18,16 +18,8 @@ from activity_service.common.models.user import Domain
 from activity_service.common.models.user import Token
 from activity_service.common.models.user import User
 from activity_service.common.utils.db_utils import get_or_create
+from activity_service.common.utils.db_utils import require_integrity
 from activity_service.common.utils.handy_functions import random_word
-
-
-def require_integrity(func):
-    def wrapped(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except IntegrityError:
-            db.session.rollback()
-    return wrapped
 
 
 @pytest.fixture(autouse=True)
@@ -46,7 +38,7 @@ def activities_fixture(user_fixture, candidate_source_fixture, request):
         )
     db.session.bulk_save_objects(activities)
 
-    @require_integrity
+    @require_integrity(database_object=db)
     def fin():
         db.session.query(Activity).filter(Activity.user_id == user_fixture.id).delete()
         db.session.commit()
@@ -67,7 +59,7 @@ def candidate_fixture(user_fixture, culture_fixture, candidate_source_fixture, r
         db.session.add(candidate)
         db.session.commit()
 
-    @require_integrity
+    @require_integrity(database_object=db)
     def fin():
         db.session.delete(candidate)
         db.session.commit()
@@ -83,7 +75,7 @@ def candidate_source_fixture(domain_fixture, request):
     db.session.add(source)
     db.session.commit()
 
-    @require_integrity
+    @require_integrity(database_object=db)
     def fin():
         db.session.delete(source)
         db.session.commit()
@@ -99,7 +91,7 @@ def client_fixture(request):
         db.session.add(client)
         db.session.commit()
 
-    @require_integrity
+    @require_integrity(database_object=db)
     def fin():
         db.session.delete(client)
         db.session.commit()
@@ -115,7 +107,7 @@ def culture_fixture(request):
         db.session.add(culture)
         db.session.commit()
 
-    @require_integrity
+    @require_integrity(database_object=db)
     def fin():
         db.session.delete(culture)
         db.session.commit()
@@ -135,7 +127,7 @@ def domain_fixture(org_fixture, culture_fixture, request):
         db.session.add(domain)
         db.session.commit()
 
-    @require_integrity
+    @require_integrity(database_object=db)
     def fin():
         db.session.delete(domain)
         db.session.commit()
@@ -151,7 +143,7 @@ def org_fixture(request):
         db.session.add(org)
         db.session.commit()
 
-    @require_integrity
+    @require_integrity(database_object=db)
     def fin():
         db.session.delete(org)
         db.session.commit()
@@ -169,7 +161,7 @@ def token_fixture(client_fixture, user_fixture, request):
         db.session.add(token)
         db.session.commit()
 
-    @require_integrity
+    @require_integrity(database_object=db)
     def fin():
         db.session.delete(token)
         db.session.commit()
@@ -188,7 +180,7 @@ def user_fixture(domain_fixture, request):
         db.session.add(user)
         db.session.commit()
 
-    @require_integrity
+    @require_integrity(database_object=db)
     def fin():
         db.session.delete(user)
         db.session.commit()

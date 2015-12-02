@@ -21,10 +21,12 @@ APP_ENDPOINT = 'http://127.0.0.1:8002'
 
 
 def test_call_requires_auth(token_fixture):
+    # this should become a test for non-aggregate responses.
     test_url = '{}/activities/1'.format(APP_ENDPOINT)
     response = requests.get(test_url, headers={'Authorization': 'Bearer {}'.format(
         token_fixture.access_token)})
     assert response.status_code == 200
+    #this should become its own test
     response = requests.get(test_url, headers={'Authorization': 'Bearer bad_token'})
     assert response.status_code == 401
 
@@ -73,6 +75,5 @@ def test_recent_readable(token_fixture):
 
 
 def test_health_check():
-    import requests
     response = requests.get('{}/healthcheck'.format(APP_ENDPOINT))
     assert response.status_code == 200
