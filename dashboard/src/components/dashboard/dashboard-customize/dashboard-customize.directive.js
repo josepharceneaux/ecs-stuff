@@ -1,11 +1,9 @@
 (function () {
-
     'use strict';
 
     angular.module('app.dashboard')
         .directive('gtDashboardCustomize', directiveFunction)
         .controller('DashboardCustomizeController', ControllerFunction);
-
 
     // ----- directiveFunction -----
     directiveFunction.$inject = [];
@@ -16,6 +14,7 @@
         var directive = {
             restrict: 'E',
             templateUrl: 'components/dashboard/dashboard-customize/dashboard-customize.html',
+            replace: true,
             scope: {
             },
             controller: 'DashboardCustomizeController',
@@ -24,7 +23,6 @@
 
         return directive;
     }
-
 
     // ----- ControllerFunction -----
     ControllerFunction.$inject = ['logger'];
@@ -38,5 +36,4 @@
             logger.log('Activated Dashboard Customize View');
         }
     }
-
 })();

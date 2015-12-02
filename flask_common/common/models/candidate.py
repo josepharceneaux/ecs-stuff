@@ -46,7 +46,7 @@ class Candidate(db.Model):
     candidate_documents = relationship('CandidateDocument', backref='candidate')
     candidate_work_preferences = relationship('CandidateWorkPreference', backref='candidate')
     candidate_preferred_locations = relationship('CandidatePreferredLocation', backref='candidate')
-    candidate_social_network = relationship('CandidateSocialNetwork', backref='candidate')
+    candidate_social_networks = relationship('CandidateSocialNetwork', backref='candidate')
     candidate_languages = relationship('CandidateLanguage', backref='candidate')
     candidate_license_certifications = relationship('CandidateLicenseCertification', backref='candidate')
     candidate_references = relationship('CandidateReference', backref='candidate')
@@ -122,6 +122,20 @@ class PhoneLabel(db.Model):
     def __repr__(self):
         return "<PhoneLabel (description=' %r')>" % self.description
 
+    @classmethod
+    def phone_label_id_from_phone_label(cls, phone_label):
+        """
+        Function retrieves phone_label_id from phone_label
+        e.g. 'Primary' => 1
+        :return:  phone_label ID if phone_label is recognized, otherwise 1 ('Primary')
+        """
+        assert phone_label
+        phone_label_row = cls.query.filter_by(description=phone_label).first()
+        if phone_label_row:
+            return phone_label_row.id
+
+        return 1
+
 
 class CandidateSource(db.Model):
     __tablename__ = 'candidate_source'
@@ -174,6 +188,11 @@ class CandidatePhone(db.Model):
     def __repr__(self):
         return "<CandidatePhone (value=' %r', extention= ' %r')>" % (self.value, self.extension)
 
+    @classmethod
+    def set_is_default_to_false(cls, candidate_id):
+        for phone in cls.query.filter_by(candidate_id=candidate_id).all():
+            phone.is_default = False
+
 
 class EmailLabel(db.Model):
     __tablename__ = 'email_label'
@@ -188,6 +207,19 @@ class EmailLabel(db.Model):
     def __repr__(self):
         return "<EmailLabel (description=' %r')>" % self.description
 
+    @classmethod
+    def email_label_id_from_email_label(cls, email_label=None):
+        """
+        Function retrieves email_label_id from email_label
+        e.g. 'Primary' => 1
+        :return:  email_label ID if email_label is recognized, otherwise 1 ('Primary')
+        """
+        if email_label:
+            email_label_row = cls.query.filter(EmailLabel.description == email_label).first()
+            if email_label_row:
+                return email_label_row.id
+        return 1
+
 
 class CandidateEmail(db.Model):
     __tablename__ = 'candidate_email'
@@ -200,6 +232,11 @@ class CandidateEmail(db.Model):
 
     def __repr__(self):
         return "<CandidateEmail (address='%r')" % self.address
+
+    @classmethod
+    def set_is_default_to_false(cls, candidate_id):
+        for email in cls.query.filter_by(candidate_id=candidate_id).all():
+            email.is_default = False
 
 
 class CandidatePhoto(db.Model):
@@ -362,19 +399,51 @@ class CandidateSocialNetwork(db.Model):
 class CandidateWorkPreference(db.Model):
     __tablename__ = 'candidate_work_preference'
     id = db.Column(db.Integer, primary_key=True)
-    candidate_id = db.Column('candidateId', db.Integer, db.ForeignKey('candidate.id'), nullable=False)
-    relocate = db.Column(db.Boolean, default=False)
-    authorization = db.Column(db.String(250))
-    telecommute = db.Column(db.Boolean, default=False)
+    candidate_id = db.Column('candidateId', db.Integer, db.ForeignKey('candidate.id'))
+    relocate = db.Column(db.CHAR(1), default='F')
+    authorization = db.Column(db.String(255))
+    telecommute = db.Column(db.CHAR(1), default='F')
     travel_percentage = db.Column(db.Integer, default=0)
     hourly_rate = db.Column(db.Float, default=0.0)
     salary = db.Column(db.Float, default=0.0)
     tax_terms = db.Column(db.String(255))
-    security_clearance = db.Column(db.Boolean, default=False)
-    third_party = db.Column(db.Boolean, default=False)
+    security_clearance = db.Column(db.CHAR(1), default='F')
+    third_party = db.Column(db.CHAR(1), default='F')
 
     def __repr__(self):
         return "<CandidateWorkPreference (authorization=' %r')>" % self.authorization
+
+    @property
+    def bool_third_party(self):
+        if self.third_party == 'F':
+            return False
+        elif self.third_party == unicode(0):
+            return False
+        return True
+
+    @property
+    def bool_security_clearance(self):
+        if self.security_clearance == 'F':
+            return False
+        elif self.security_clearance == unicode(0):
+            return False
+        return True
+
+    @property
+    def bool_telecommute(self):
+        if self.telecommute == 'F':
+            return False
+        elif self.telecommute == unicode(0):
+            return False
+        return True
+
+    @property
+    def bool_relocate(self):
+        if self.relocate == 'F':
+            return False
+        elif self.relocate == unicode(0):
+            return False
+        return True
 
 
 class CandidatePreferredLocation(db.Model):
@@ -389,19 +458,6 @@ class CandidatePreferredLocation(db.Model):
 
     def __repr__(self):
         return "<CandidatePreferredLocation (candidate_id=' %r')>" % self.candidate_id
-
-
-class Language(db.Model):
-    __tablename__ = 'language'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(200))
-    code = db.Column('Code', db.String(3), unique=True)
-
-    # Relationships
-    candidate_languages = relationship('CandidateLanguage', backref='language')
-
-    def __repr__(self):
-        return "<Language (code=' %r')>" % self.code
 
 
 class CandidateLanguage(db.Model):
@@ -530,54 +586,6 @@ class CandidatePatentHistory(db.Model):
         return "<CandidatePatentHistory (title=' %r')>" % self.title
 
 
-class PatentDetail(db.Model):
-    __tabelname__ = 'patent_detail'
-    id = db.Column(db.BigInteger, primary_key=True)
-    patent_id = db.Column('PatentId', db.BigInteger, db.ForeignKey('patent.id')) # TODO: add relationship
-    issuing_authority = db.Column('IssuingAuthority', db.String(255))
-    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-
-    def __repr__(self):
-        return "<PatentDetail (patent_id=' %r')>" % self.patent_id
-
-
-class PatentStatus(db.Model):
-    __tablename__ = 'patent_status'
-    id = db.Column(db.BigInteger, primary_key=True)
-    description = db.Column('Description', db.String(1000))
-    notes = db.Column('Notes', db.String(1000))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-
-    # Relationships
-    patent_milestones = relationship('PatentMilestone', backref='patent_status')
-
-    def __repr__(self):
-        return "<PatentStatus (id=' %r')>" % self.id
-
-
-class PatentInventor(db.Model):
-    __tablename__ = 'patent_inventor'
-    id = db.Column(db.BigInteger, primary_key=True)
-    patent_id = db.Column('PatentId', db.BigInteger, db.ForeignKey('patent.id')) # TODO: add relationship
-    name = db.Column('Name', db.String(500))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-
-    def __repr__(self):
-        return "<PatentInventor (patent_id=' %r')>" % self.patent_id
-
-
-class PatentMilestone(db.Model):
-    __tabelname__ = 'patent_milestone'
-    id = db.Column(db.BigInteger, primary_key=True)
-    patent_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('patent_status.id'))
-    issued_date = db.Column('IssuedDate', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-
-    def __repr__(self):
-        return "<PatentMilestone (patent_status_id=' %r')>" % self.patent_status_id
-
-
 class CandidatePublication(db.Model):
     __tablename__ = 'candidate_publication'
     id = db.Column(db.BigInteger, primary_key=True)
@@ -610,19 +618,24 @@ class CandidateAddress(db.Model):
     is_default = db.Column('IsDefault', db.Boolean, default=False)  # todo: check other is_default fields for their default values
     coordinates = db.Column('Coordinates', db.String(100))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-
     # TODO: Below are necessary for now, but should remove once all tables have been defined
     resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
 
     def __repr__(self):
-        return "<CandidateAddress (candidate_id = %r)>" % self.candidate_id
+        return "<CandidateAddress (id = %r)>" % self.id
+
+    @classmethod
+    def set_is_default_to_false(cls, candidate_id):
+        addresses = cls.query.filter_by(candidate_id=candidate_id).all()
+        for address in addresses:
+            address.is_default = False
 
 
 class CandidateEducation(db.Model):
     __tablename__ = 'candidate_education'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.BigInteger, primary_key=True)
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
-    list_order = db.Column('ListOrder', db.SmallInteger)    # todo: ascertain smallinteger == tinyint; also check all list_order columns in db
+    list_order = db.Column('ListOrder', db.SmallInteger)
     school_name = db.Column('SchoolName', db.String(200))
     school_type = db.Column('SchoolType', db.String(100))
     city = db.Column('City', db.String(50))
@@ -631,7 +644,6 @@ class CandidateEducation(db.Model):
     is_current = db.Column('IsCurrent', db.Boolean)
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-
     # TODO: Below are necessary for now, but should remove once all tables have been defined
     resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
 
@@ -640,6 +652,12 @@ class CandidateEducation(db.Model):
 
     def __repr__(self):
         return "<CandidateEducation (candidate_id = %r)>" % self.candidate_id
+
+    @classmethod
+    def set_is_current_to_false(cls, candidate_id):
+        educations = cls.query.filter_by(candidate_id=candidate_id).all()
+        for education in educations:
+            education.is_current = False
 
 
 class CandidateEducationDegree(db.Model):
@@ -656,7 +674,7 @@ class CandidateEducationDegree(db.Model):
     gpa_num = db.Column('GpaNum', db.DECIMAL)
     gpa_denom = db.Column('GpaDenom', db.DECIMAL)
     added_time = db.Column('AddedTime', db.DateTime)
-    classification_type_id = db.Column('ClassificationTypeId', db.Integer, db.ForeignKey('classification_type.id')) # todo: create parent table
+    classification_type_id = db.Column('ClassificationTypeId', db.Integer, db.ForeignKey('classification_type.id'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
     start_time = db.Column('StartTime', db.DateTime)
     end_time = db.Column('EndTime', db.DateTime)
@@ -709,6 +727,12 @@ class CandidateExperience(db.Model):
     def __repr__(self):
         return "<CandidateExperience (candidate_id=' %r)>" % self.candidate_id
 
+    @classmethod
+    def set_is_current_to_false(cls, candidate_id):
+        experiences = cls.query.filter_by(candidate_id=candidate_id).all()
+        for experience in experiences:
+            experience.is_current = False
+
 
 class CandidateExperienceBullet(db.Model):
     __tablename__ = 'candidate_experience_bullet'
@@ -754,17 +778,6 @@ class CandidateUnidentified(db.Model):
         return "<CandidateUnidentified (title=' %r')>" % self.title
 
 
-class University(db.Model):
-    __tablename__ = 'university'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(255))
-    state_id = db.Column('StateId', db.Integer, db.ForeignKey('state.id'))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-
-    def __repr__(self):
-        return "<University (name=' %r')>" % self.name
-
-
 class CandidateCustomField(db.Model):
     __tablename__ = 'candidate_custom_field'
     id = db.Column(db.Integer, primary_key=True)
@@ -789,6 +802,18 @@ class ClassificationType(db.Model):
 
     def __repr__(self):
         return "<ClassificationType (code = %r)>" % self.code
+
+    @classmethod
+    def classification_type_id_from_degree_type(cls, degree_type):
+        """
+        Function will return classification_type ID of the ClassificationType that
+        matches degree_type. E.g. degree_type = 'Masters' => ClassificationType.id: 5
+        """
+        classification_type = None
+        if degree_type:
+            classification_type = cls.query.filter(ClassificationType.code == degree_type).first()
+
+        return classification_type.id if classification_type else None
 
 
 

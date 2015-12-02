@@ -1,12 +1,11 @@
 """Widget serving/processing"""
 __author = 'erikfarmer'
-
 # Standard library
 import json
 from base64 import b64decode
 from collections import defaultdict
 from datetime import datetime
-
+from urllib import unquote_plus
 # Framework specific/Third Party
 from flask import Blueprint
 from flask import current_app as app
@@ -15,10 +14,9 @@ from flask import request
 from flask import render_template
 import requests
 import simplecrypt
-
 # Module specific
 from widget_service.common.models.misc import CustomField
-from widget_service.common.models.candidate import University
+from widget_service.common.models.university import University
 from widget_service.common.models.misc import AreaOfInterest
 from widget_service.common.models.misc import Major
 from widget_service.common.models.user import Domain
@@ -63,7 +61,7 @@ def create_candidate_from_widget(encrypted_domain_id, encrypted_widget_id):
     decrypted_url = simplecrypt.decrypt(app.config['ENCRYPTION_KEY'], b64decoded_url)
     id = int(decrypted_url.split('.')[0])
     # Get User from domain
-    widget_user_id = widget = db.session.query(WidgetPage).get(id).user_id
+    widget_user_id = db.session.query(WidgetPage).get(id).user_id
     # Get or Widget Client
     widget_client_id = app.config['WIDGET_CLIENT_ID']
     # Check for Token with userId and Client
@@ -141,7 +139,7 @@ def create_candidate_from_widget(encrypted_domain_id, encrypted_widget_id):
     payload = json.dumps({'candidates': [candidate_dict]})
     r = requests.post(app.config['CANDIDATE_CREATION_URI'], data=payload,
                       headers={'Authorization': 'bearer {}'.format(access_token)})
-    if r.status_code != 200:
+    if r.status_code != 201:
         return jsonify({'error': {'message': 'unable to create candidate from form'}}), 401
     return jsonify({'success': {'message': 'candidate successfully created'}}), 201
 

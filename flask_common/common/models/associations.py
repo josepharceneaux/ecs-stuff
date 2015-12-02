@@ -13,6 +13,15 @@ class CandidateAreaOfInterest(db.Model):
     additional_notes = db.Column('AdditionalNotes', db.Text)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
+    def __repr__(self):
+        return "<CandidateAreaOfInterest (area_of_interest_id=%r)" % self.area_of_interest_id
+
+    @classmethod
+    def get_areas_of_interest(cls, candidate_id, area_of_interest_id):
+        return cls.query.filter(db.and_
+                                (CandidateAreaOfInterest.candidate_id == candidate_id,
+                                 CandidateAreaOfInterest.area_of_interest_id == area_of_interest_id)).first()
+
 
 class ReferenceEmail(db.Model):
     __tablename__ = 'reference_email'
@@ -39,4 +48,3 @@ class ReferencePhone(db.Model):
 
     def __repr__(self):
         return "<ReferencePhone (reference_id=' %r')>" % self.candidate_reference_id
-

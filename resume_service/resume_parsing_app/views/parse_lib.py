@@ -325,7 +325,7 @@ def parse_xml_into_candidate_dict(json_text):
             company_address = employement.find('address')
             company_city = _tag_text(company_address, 'city', capwords=True)
             # company_state = _tag_text(company_address, 'state')
-            company_country_id = 1
+            company_country = 'United States'
 
             # Check if an experience already exists
             existing_experience_list_order = is_experience_already_exists(candidate_experiences, organization or '',
@@ -355,12 +355,12 @@ def parse_xml_into_candidate_dict(json_text):
                 candidate_experiences.append(dict(
                     city=company_city,
                     end_date=experience_end_date,
-                    country=company_country_id,
+                    country=company_country,
                     company=organization,
                     role=position_title,
                     is_current=is_current_job,
                     start_date=experience_start_date,
-                    bullets=candidate_experience_bullets
+                    work_experience_bullets=candidate_experience_bullets
                 ))
 
     # Education
@@ -371,7 +371,7 @@ def parse_xml_into_candidate_dict(json_text):
             school_address = school.find('address')
             school_city = _tag_text(school_address, 'city', capwords=True)
             school_state = _tag_text(school_address, 'state')
-            country_id = 1
+            country = 'United States'
 
             education_start_date = get_date_from_date_tag(school, 'start')
             education_end_date = None
@@ -383,18 +383,24 @@ def parse_xml_into_candidate_dict(json_text):
             elif end_date:
                 education_end_date = end_date
 
-            # No longer used in educations dict, save for later or elimate this and gpa_num_and_denom?
+            # GPA data no longer used in educations dict.
+            # Save for later or elimate this and gpa_num_and_denom?
             # gpa_num, gpa_denom = gpa_num_and_denom(school, 'gpa')
-
             candidate_educations.append(dict(
-                city=school_city,
-                major=_tag_text(school, 'major'),
-                degree=_tag_text(school, 'degree'),
-                state=school_state,
-                graduation_date=education_end_date,
-                country=country_id,
                 school_name=school_name,
-                start_date=education_start_date,
+                city=school_city,
+                state=school_state,
+                country=country,
+                # TODO explore start/end parsing options since tenure at school and
+                # EducationDegrees can have start/endtimes.
+                # graduation_date=education_end_date,
+                degrees=[
+                    {
+                        'type': _tag_text(school, 'degree'),
+                        'title': _tag_text(school, 'major'),
+                        'degree_bullets': []
+                    }
+                ],
             ))
 
     # Skills

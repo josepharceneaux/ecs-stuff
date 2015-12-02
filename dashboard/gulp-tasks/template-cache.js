@@ -1,6 +1,7 @@
 var gulp = require('gulp');
 
 module.exports = function (config) {
+    config.log('Importing template-cache.js...');
 
     var templateCacheConfig = {
         templateFiles: [
@@ -22,28 +23,32 @@ module.exports = function (config) {
         return gulp
             .src(templateCacheConfig.templateFiles)
             .pipe(config.$.if(config.args.verbose, config.$.bytediff.start()))
-            .pipe(config.$.minifyHtml({empty: true}))
+            .pipe(config.$.minifyHtml({ empty: true }))
             .pipe(config.$.if(config.args.verbose, config.$.bytediff.stop(bytediffFormatter)))
-            .pipe(config.$.angularTemplatecache(
-                templateCacheConfig.file,
-                templateCacheConfig.options
-            ))
+            .pipe(config.$.angularTemplatecache(templateCacheConfig.file, templateCacheConfig.options))
             .pipe(gulp.dest(templateCacheConfig.destDir));
     });
-
-
-    function bytediffFormatter(data) {
-        var difference = (data.savings > 0) ? ' smaller.' : ' larger.';
-        return data.fileName + ' went from ' +
-            (data.startSize / 1000).toFixed(2) + ' kB to ' +
-            (data.endSize / 1000).toFixed(2) + ' kB and is ' +
-            formatPercent(1 - data.percent, 2) + '%' + difference;
-    }
-
-
-    function formatPercent(num, precision) {
-        return (num * 100).toFixed(precision);
-    }
-
 };
 
+/**
+ * Formatter for bytediff to display the size changes after processing
+ * @param  {Object} data - byte data
+ * @return {String}      Difference in bytes, formatted
+ */
+function bytediffFormatter(data) {
+    var difference = (data.savings > 0) ? ' smaller.' : ' larger.';
+    return data.fileName + ' went from ' +
+        (data.startSize / 1000).toFixed(2) + ' kB to ' +
+        (data.endSize / 1000).toFixed(2) + ' kB and is ' +
+        formatPercent(1 - data.percent, 2) + '%' + difference;
+}
+
+/**
+ * Format a number as a percentage
+ * @param  {Number} num       Number to format as a percent
+ * @param  {Number} precision Precision of the decimal
+ * @return {String}           Formatted perentage
+ */
+function formatPercent(num, precision) {
+    return (num * 100).toFixed(precision);
+}
