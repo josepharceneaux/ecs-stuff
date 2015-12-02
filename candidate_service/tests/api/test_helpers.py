@@ -69,7 +69,7 @@ def test_check_for_id(sample_user, user_auth):
 
     # Remove id-key from first degree_bullet-dict in degrees
     _dict = candidate_dict.copy()
-    del _dict['educations'][0]['degrees'][0]['degree_bullets'][0]['id']
+    del _dict['educations'][0]['degrees'][0]['bullets'][0]['id']
     r = check_for_id(_dict=_dict)
     assert r is False
 
