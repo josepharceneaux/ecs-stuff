@@ -142,15 +142,38 @@ def test_add_new_candidate_address(sample_user, user_auth):
     # Retrieve Candidate after update
     updated_candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
 
-    # Since this is a new address, it will the last object in candidate_address
-    candidate_address = updated_candidate_dict['addresses'][-1]
+    candidate_address = updated_candidate_dict['addresses'][0]
     assert updated_candidate_dict['id'] == candidate_id
     assert isinstance(candidate_address, dict)
     assert candidate_address['address_line_1'] == data['candidate']['addresses'][0]['address_line_1']
     assert candidate_address['city'] == data['candidate']['addresses'][0]['city']
     assert candidate_address['state'] == data['candidate']['addresses'][0]['state']
     assert candidate_address['zip_code'] == data['candidate']['addresses'][0]['zip_code']
-    # assert candidate_address['country'] == data['candidate']['addresses'][0]['country']
+
+
+def test_multiple_is_default_addresses(sample_user, user_auth):
+    """
+    Test:   Add more than one CandidateAddress with is_default set to True
+    Expect: 200, but only one CandidateAddress must have is_default True, the rest must be False
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Add a new address to the existing Candidate with is_default set to True
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    data=candidate_addresses(candidate_id=candidate_id)
+    patch_to_candidate_resource(token, data)
+
+    # Retrieve Candidate after update
+    updated_candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+    updated_can_addresses = updated_candidate_dict['addresses']
+    # Only one of the addresses must be default!
+    assert sum([1 for address in updated_can_addresses if address['is_default']]) == 1
 
 
 def test_update_an_existing_address(sample_user, user_auth):
@@ -186,7 +209,6 @@ def test_update_an_existing_address(sample_user, user_auth):
     assert updated_address['city'] == data['candidate']['addresses'][0]['city']
     assert updated_address['state'] == data['candidate']['addresses'][0]['state']
     assert updated_address['zip_code'] == data['candidate']['addresses'][0]['zip_code']
-    # assert updated_address['country'] == data['candidate']['addresses'][0]['country']
 
 
 def test_update_candidate_current_address(sample_user, user_auth):
@@ -213,9 +235,7 @@ def test_update_candidate_current_address(sample_user, user_auth):
     can_addresses = candidate_dict['addresses']
 
     # Update: Set the last CandidateAddress in can_addresses as the default candidate-address
-    data = {'candidate': {'id': candidate_id, 'addresses': [
-        {'id': can_addresses[-1]['id'], 'is_default': True}
-    ]}}
+    data = {'candidate': {'id': candidate_id, 'addresses': [{'id': can_addresses[-1]['id'], 'is_default': True}]}}
     updated_resp = patch_to_candidate_resource(token, data)
     print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
 
@@ -225,14 +245,6 @@ def test_update_candidate_current_address(sample_user, user_auth):
     updated_addresses = updated_candidate_dict['addresses']
     assert isinstance(updated_addresses, list)
     assert updated_addresses[0]['is_default'] == True
-    assert updated_addresses[0]['id'] == can_addresses[-1]['id']
-    # Everything else must remain the same
-    assert updated_addresses[0]['address_line_1'] == can_addresses[-1]['address_line_1']
-    assert updated_addresses[0]['city'] == can_addresses[-1]['city']
-    assert updated_addresses[0]['city'] == can_addresses[-1]['city']
-    assert updated_addresses[0]['state'] == can_addresses[-1]['state']
-    assert updated_addresses[0]['state'] == can_addresses[-1]['state']
-    assert updated_addresses[0]['zip_code'] == can_addresses[-1]['zip_code']
 
 # TODO: add/update CandidateAddress with bad input/format, etc.
 ######################## CandidateAreaOfInterest ########################
@@ -258,84 +270,16 @@ def test_add_new_area_of_interest(sample_user, user_auth):
 
     # Add new CandidateAreaOfInterest
     data = candidate_areas_of_interest(sample_user.domain_id, candidate_id)
-    print "\narea_of_interest = %s" % data
     resp = patch_to_candidate_resource(token, data)
     print response_info(resp.request, resp.json(), resp.status_code)
 
     # Retrieve Candidate after update
     candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
     candidate_aois = candidate_dict['areas_of_interest']
-    print "\ncan_aois = %s" % candidate_aois
     assert isinstance(candidate_aois, list)
     assert candidate_aois[0]['name'] == db.session.query(AreaOfInterest).get(candidate_aois[0]['id']).name
     assert candidate_aois[1]['name'] == db.session.query(AreaOfInterest).get(candidate_aois[1]['id']).name
     assert len(candidate_aois) == candidate_area_of_interest_count + 2
-
-
-# def test_update_candidate_area_of_interest(sample_user, user_auth):
-#     """
-#     Test:   Update an existing CandidateAreaOfInterest. Since this is an update, number of
-#             Candidate's aois should remain unchanged.
-#     Expect: 200
-#     :type sample_user:  User
-#     :type user_auth:    UserAuthentication
-#     """
-#     # Get access token
-#     token = user_auth.get_auth_token(sample_user, True)['access_token']
-#
-#     # Create Candidate
-#     can_data = generate_single_candidate_data(domain_id=sample_user.domain_id)
-#     create_resp = post_to_candidate_resource(token, can_data)
-#
-#     # Retrieve Candidate
-#     candidate_id = create_resp.json()['candidates'][0]['id']
-#     candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
-#     print "\naois = %s" % candidate_dict['areas_of_interest']
-#
-#     # Current number of CandidateAreaOfInterest
-#     can_aoi_count = len(candidate_dict['areas_of_interest'])
-#
-#     # Update CandidateAreaOfInterest
-#     data = candidate_areas_of_interest(domain_id=sample_user.domain_id, candidate_id=candidate_id)
-#     updated_resp = patch_to_candidate_resource(token, data)
-#     print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
-
-
-# TODO: Send in erroneous request to add/update CandidateAreaOfInterest
-# TODO: How do we know if an updated is requested for CandidateAreaOfInterest
-######################## CandidateCustomField ########################
-# def test_add_custom_field(sample_user, user_auth):
-#     """
-#     Test:   Add CandidateCustomField to an existing Candidate.
-#     Expect: 200
-#     :type sample_user:  User
-#     :type user_auth:    UserAuthentication
-#     """
-#     # Get access token
-#     token = user_auth.get_auth_token(sample_user, True)['access_token']
-#
-#     # Create Candidate
-#     create_resp = post_to_candidate_resource(token, data=None, domain_id=sample_user.domain_id)
-#     print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
-#
-#     # Retrieve Candidate
-#     candidate_id = create_resp.json()['candidates'][0]['id']
-#     can_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
-#     print "\ncan_dict = %s" % can_dict
-#
-#     # Add CandidateCustomField
-#     data = candidate_custom_fields(domain_id=sample_user.domain_id, candidate_id=candidate_id)
-#     print "\ndata = %s" % data
-#     patch_to_candidate_resource(token, data)
-#
-#     # Retrieve Candidate after update
-#     updated_resp = get_from_candidate_resource(token, candidate_id)
-#     can_custom_fields_after_update = updated_resp.json()['candidate']['custom_fields']
-#     print "\ncan_custom_fields = {}".format(can_custom_fields_after_update)
-
-    # assert isinstance(can_custom_fields_after_update, list)
-    # assert can_custom_fields_after_update[0]['value'] == data['candidate']['custom_fields'][0]['value']
-    # assert can_custom_fields_after_update[1]['value'] == data['candidate']['custom_fields'][1]['value']
 
 ######################## CandidateEducation ########################
 def test_add_new_education(sample_user, user_auth):
@@ -369,7 +313,7 @@ def test_add_new_education(sample_user, user_auth):
 
     can_ed_from_data = data['candidate']['educations'][0]
     can_ed_degrees = can_ed_from_data['degrees'][0]
-    can_ed_degree_bullets = can_ed_degrees['degree_bullets'][0]
+    can_ed_degree_bullets = can_ed_degrees['bullets'][0]
 
     assert candidate_id == updated_can_dict['id']
     assert isinstance(updated_educations, list)
@@ -377,7 +321,7 @@ def test_add_new_education(sample_user, user_auth):
     assert updated_educations[-1]['school_name'] == can_ed_from_data['school_name']
     assert updated_educations[-1]['degrees'][-1]['type'] == can_ed_degrees['type']
     assert updated_educations[-1]['degrees'][-1]['title'] == can_ed_degrees['title']
-    assert updated_educations[-1]['degrees'][-1]['degree_bullets'][-1]['major'] == can_ed_degree_bullets['major']
+    assert updated_educations[-1]['degrees'][-1]['bullets'][-1]['major'] == can_ed_degree_bullets['major']
     assert updated_educations[-1]['country'] == 'United States'
     assert len(updated_educations) == can_educations_count + 1
 
@@ -443,7 +387,7 @@ def test_add_education_degree(sample_user, user_auth):
     # Update existing CandidateEducation
     data = {'candidate': {'id':  candidate_id, 'educations': [
         {'id': candidate_dict['educations'][0]['id'], 'degrees': [
-            {'type': 'AA', 'title': 'associate', 'degree_bullets': [
+            {'type': 'AA', 'title': 'associate', 'bullets': [
                 {'major': 'mathematics', 'comments': 'obtained a high GPA whilst working full time'}
             ]}
         ]}
@@ -454,13 +398,12 @@ def test_add_education_degree(sample_user, user_auth):
     # Retrieve Candidate after update
     updated_can_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
     education_dict = updated_can_dict['educations'][0]
-    print "\neducation_dict = %s" % education_dict
 
     assert candidate_id == updated_can_dict['id']
     assert len(education_dict['degrees']) == candidate_education_count + 1
     assert education_dict['degrees'][-1]['type'] == 'AA'
     assert education_dict['degrees'][-1]['title'] == 'associate'
-    assert education_dict['degrees'][-1]['degree_bullets'][-1]['major'] == 'mathematics'
+    assert education_dict['degrees'][-1]['bullets'][-1]['major'] == 'mathematics'
 
 ######################## CandidateExperience ########################
 def test_add_candidate_experience(sample_user, user_auth):
@@ -503,6 +446,31 @@ def test_add_candidate_experience(sample_user, user_auth):
     assert len(can_experiences) == candidate_experience_count + 1
 
 
+def test_multiple_is_current_experiences(sample_user, user_auth):
+    """
+    Test:   Add more than one CandidateExperience with is_current set to True
+    Expect: 200, but only one CandidateExperience must have is_current True, the rest must be False
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Add a new work experience to the existing Candidate with is_current set to True
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    patch_to_candidate_resource(token, data=candidate_experience(candidate_id=candidate_id))
+
+    # Retrieve Candidate after update
+    updated_candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+    updated_can_experiences = updated_candidate_dict['work_experiences']
+
+    # Only one of the experiences must be current!
+    assert sum([1 for experience in updated_can_experiences if experience['is_current']]) == 1
+
+
 def test_add_experience_bullet(sample_user, user_auth):
     """
     Test:   Adds a CandidateExperienceBullet to an existing CandidateExperience
@@ -523,7 +491,7 @@ def test_add_experience_bullet(sample_user, user_auth):
     candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
 
     can_exp_count = len(candidate_dict['work_experiences'])
-    can_exp_bullet_count = len(candidate_dict['work_experiences'][0]['experience_bullets'])
+    can_exp_bullet_count = len(candidate_dict['work_experiences'][0]['bullets'])
 
     # Add CandidateExperienceBullet to existing CandidateExperience
     data = candidate_experience(candidate_id, candidate_dict['work_experiences'][0]['id'])
@@ -534,11 +502,11 @@ def test_add_experience_bullet(sample_user, user_auth):
     updated_can_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
     updated_experiences = updated_can_dict['work_experiences']
 
-    can_exp_bullet_from_data = data['candidate']['work_experiences'][0]['experience_bullets'][0]
+    can_exp_bullet_from_data = data['candidate']['work_experiences'][0]['bullets'][0]
     assert isinstance(updated_experiences, list)
     assert candidate_id == updated_can_dict['id']
-    assert updated_experiences[-1]['experience_bullets'][-1]['description'] == can_exp_bullet_from_data['description']
-    assert len(updated_experiences[-1]['experience_bullets']) == can_exp_bullet_count + 1
+    assert updated_experiences[0]['bullets'][-1]['description'] == can_exp_bullet_from_data['description']
+    assert len(updated_experiences[0]['bullets']) == can_exp_bullet_count + 1
     assert len(updated_experiences) == len(updated_can_dict['work_experiences'])
 
 
@@ -562,19 +530,21 @@ def test_update_experience_bullet(sample_user, user_auth):
     candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
 
     experience_dict = candidate_dict['work_experiences'][0]
-    candidate_experience_bullet_count = len(experience_dict['experience_bullets'])
+    candidate_experience_bullet_count = len(experience_dict['bullets'])
 
     # Update CandidateExperienceBullet
     data = candidate_experience(candidate_id=candidate_id, experience_id=experience_dict['id'],
-                                experience_bullet_id=experience_dict['experience_bullets'][0]['id'])
+                                experience_bullet_id=experience_dict['bullets'][0]['id'])
     updated_resp = patch_to_candidate_resource(token, data)
     print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
 
     # Retrieve Candidate after update
     updated_can_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
-    updated_exp_bullet_dict = updated_can_dict['work_experiences'][0]['experience_bullets']
+    updated_exp_bullet_dict = updated_can_dict['work_experiences'][0]['bullets']
+    print "\nexp_bullets = %s" % updated_exp_bullet_dict
 
-    exp_bullet_dict_from_data = data['candidate']['work_experiences'][0]['experience_bullets'][0]
+    exp_bullet_dict_from_data = data['candidate']['work_experiences'][0]['bullets'][0]
+    print "\nexp_bullets from data = %s" % exp_bullet_dict_from_data
 
     assert candidate_experience_bullet_count == len(updated_exp_bullet_dict)
     assert updated_exp_bullet_dict[0]['description'] == exp_bullet_dict_from_data['description']
@@ -674,6 +644,31 @@ def test_add_eamils(sample_user, user_auth):
     assert emails[-1]['label'] == email_from_data['label'].capitalize()
     assert emails[-1]['address'] == email_from_data['address']
     assert len(emails) == emails_count + 1
+
+
+def test_multiple_is_default_emails(sample_user, user_auth):
+    """
+    Test:   Add more than one CandidateEmail with is_default set to True
+    Expect: 200, but only one CandidateEmail must have is_current True, the rest must be False
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Add a new email to the existing Candidate with is_current set to True
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    patch_to_candidate_resource(token, data=candidate_emails(candidate_id=candidate_id))
+
+    # Retrieve Candidate after update
+    updated_candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+    updated_can_emails = updated_candidate_dict['emails']
+
+    # Only one of the emails must be default!
+    assert sum([1 for email in updated_can_emails if email['is_default']]) == 1
 
 
 def test_update_existing_email(sample_user, user_auth):
@@ -784,6 +779,31 @@ def test_add_phones(sample_user, user_auth):
     assert len(phones_after_update) == phones_count_before_update + 1
 
 
+def test_multiple_is_default_phones(sample_user, user_auth):
+    """
+    Test:   Add more than one CandidatePhone with is_default set to True
+    Expect: 200, but only one CandidatePhone must have is_current True, the rest must be False
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Add a new email to the existing Candidate with is_current set to True
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    patch_to_candidate_resource(token, data=candidate_phones(candidate_id=candidate_id))
+
+    # Retrieve Candidate after update
+    updated_candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+    updated_can_phones = updated_candidate_dict['phones']
+
+    # Only one of the phones must be default!
+    assert sum([1 for phone in updated_can_phones if phone['is_default']]) == 1
+
+
 def test_update_existing_phone(sample_user, user_auth):
     """
     Test:   Update an existing CandidatePhone. Number of candidate's phones must remain unchanged.
@@ -803,7 +823,7 @@ def test_update_existing_phone(sample_user, user_auth):
     phones_before_update = get_from_candidate_resource(token, candidate_id).json()['candidate']['phones']
     phones_count_before_update = len(phones_before_update)
 
-    # Update first email
+    # Update first phone
     data = candidate_phones(candidate_id=candidate_id, phone_id=phones_before_update[0]['id'])
     updated_resp = patch_to_candidate_resource(token, data)
     print response_info(updated_resp.request, updated_resp.json(), updated_resp.status_code)
