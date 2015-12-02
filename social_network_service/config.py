@@ -12,6 +12,7 @@ logging.config.fileConfig(LOGGING_CONF)
 # SQL ALCHEMY DB URL
 if os.environ.get('GT_ENVIRONMENT') == 'dev':
     APP_URL = 'http://0.0.0.0:8006'
+    UI_APP_URL = 'http://localhost:3002/'
     OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@localhost/talent_local'
@@ -20,6 +21,7 @@ if os.environ.get('GT_ENVIRONMENT') == 'dev':
     DEBUG = True
 elif os.environ.get('GT_ENVIRONMENT') == 'circle':
     APP_URL = 'http://0.0.0.0:8006'
+    UI_APP_URL = 'http://localhost:3000/'
     OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_ci'
@@ -28,6 +30,7 @@ elif os.environ.get('GT_ENVIRONMENT') == 'circle':
     DEBUG = True
 elif os.environ.get('GT_ENVIRONMENT') == 'qa':
     APP_URL = 'http://0.0.0.0:8006'
+    UI_APP_URL = 'http://localhost:3000/'  # TODO: change it to actual url
     OAUTH_SERVER_URI = 'https://secure-webdev.gettalent.com/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!web976892@devdb.gettalent.com/talent_staging'
@@ -36,6 +39,7 @@ elif os.environ.get('GT_ENVIRONMENT') == 'qa':
     DEBUG = False
 elif os.environ.get('GT_ENVIRONMENT') == 'prod':
     APP_URL = 'http://0.0.0.0:8006'
+    UI_APP_URL = 'http://localhost:3000/'  # TODO: change it to actual url
     OAUTH_SERVER_URI = 'https://secure.gettalent.com/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = os.environ.get('DB_STRING')
@@ -49,8 +53,8 @@ SECRET_KEY = os.urandom(24).encode('hex')
 OAUTH2_PROVIDER_TOKEN_EXPIRES_IN = 7200  # 2 hours expiry time for bearer token
 
 # Meetup Credentials
-MEETUP_ACCESS_TOKEN = 'b0060461e2a5b3f364744160bcccf754'
-MEETUP_REFRESH_TOKEN = 'f938d5104470553b106bff54fdc998ce'
+MEETUP_ACCESS_TOKEN = '25f8c0558af38af3410ca3b497c1a336'
+MEETUP_REFRESH_TOKEN = 'cd03fe5b259735f588a93016b7894be6'
 
 # Eventbrite Credentials
 EVENTBRITE_ACCESS_TOKEN = '4DPJ5DXTTFKSG23ZANZT'
