@@ -1,7 +1,13 @@
 """
 This module contains CampaignBase class which provides common methods for
-all campaigns like schedule(), get_candidates(), create_or_update_url_conversion,
-create_activity(), get_campaign_data(), save(), process_send() etc.
+all campaigns. Methods are
+- schedule()
+- get_candidates()
+- create_or_update_url_conversion()
+- create_activity()
+- get_campaign_data()
+- save()
+- process_send() etc.
 Any service can inherit from this class to implement functionality accordingly.
 """
 

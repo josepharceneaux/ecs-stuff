@@ -42,7 +42,7 @@ from sms_campaign_service.custom_exceptions import \
      MultipleUsersFound, MultipleCandidatesFound, ErrorSavingSMSCampaign)
 from sms_campaign_service.common.models.candidate import (PhoneLabel, Candidate, CandidatePhone)
 from sms_campaign_service.common.models.sms_campaign import \
-    (SmsCampaign, SmsCampaignSend, SmsCampaignBlast, SmsCampaignSmartList,
+    (SmsCampaign, SmsCampaignSend, SmsCampaignBlast, SmsCampaignSmartlist,
      SmsCampaignSendUrlConversion,SmsCampaignReply)
 from sms_campaign_service.common.utils.activity_utils import \
     (CAMPAIGN_SMS_CLICK, CAMPAIGN_SMS_REPLY, CAMPAIGN_SMS_SEND, CAMPAIGN_SEND,
@@ -382,6 +382,7 @@ class SmsCampaignBase(CampaignBase):
         :type campaign_id: int
         :return: number of sends
         :rtype: int
+
         This does the following steps to send campaign to candidates.
 
         1- Transform the body text to be sent in sms, add entry in
@@ -421,9 +422,9 @@ class SmsCampaignBase(CampaignBase):
                 raise EmptySmsBody(error_message='SMS Body text is empty for Campaign(id:%s)'
                                                  % campaign_id)
             # Get smart_lists associated to this campaign
-            smart_lists = SmsCampaignSmartList.get_by_campaign_id(campaign_id)
-            all_candidates = []
+            smart_lists = SmsCampaignSmartlist.get_by_campaign_id(campaign_id)
             if smart_lists:
+                all_candidates = []
                 for smart_list in smart_lists:
                     self.smart_list_id = smart_list.smart_list_id
                     # get candidates associated with smart list

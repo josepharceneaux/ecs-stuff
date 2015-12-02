@@ -415,7 +415,7 @@ class SmsCampaignSends(Resource):
                     500 (Internal Server Error)
 
         :param campaign_id: integer, unique id representing campaign in GT database
-        :return: json for required campaign
+        :return: 1- count of campaign sends and 2- sms campaign sends records in as dict
         """
         campaign_blasts = SmsCampaignBlast.get_by_campaign_id(campaign_id)
         if campaign_blasts:

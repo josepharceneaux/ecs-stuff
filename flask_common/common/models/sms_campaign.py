@@ -125,7 +125,7 @@ class SmsCampaignReply(db.Model):
         ).first()
 
 
-class SmsCampaignSmartList(db.Model):
+class SmsCampaignSmartlist(db.Model):
     __tablename__ = 'sms_campaign_smart_list'
     id = db.Column(db.Integer, primary_key=True)
     smart_list_id = db.Column('SmartListId', db.Integer, db.ForeignKey("smart_list.id"), nullable=False)
@@ -133,7 +133,7 @@ class SmsCampaignSmartList(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
-        return '<SmsCampaignSmartList (id = %r)>' % self.id
+        return '<SmsCampaignSmartlist (id = %r)>' % self.id
 
     @classmethod
     def get_by_campaign_id(cls, campaign_id):

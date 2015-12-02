@@ -7,8 +7,6 @@
                             in sms body text)
         2- SMS receive (to save the candidate's reply to a specific SMS campaign
 """
-from sms_campaign_service.utilities import TwilioSMS
-
 __author__ = 'basit.gettalent@gmail.com'
 
 # Initializing App. This line should come before any imports from models
@@ -23,6 +21,7 @@ from werkzeug.utils import redirect
 
 # Application specific Imports
 from sms_campaign_service import logger
+from sms_campaign_service.utilities import TwilioSMS
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.common.models.candidate import Candidate
 from sms_campaign_service.custom_exceptions import MissingRequiredField
