@@ -11,8 +11,8 @@ from scheduler_service.scheduler import scheduler, schedule_job, serialize_task,
 from scheduler_service.custom_exceptions import NoJobFound, PendingStatus, JobAlreadyPaused, \
     JobAlreadyRunning
 
-scheduler_blueprint = Blueprint('scheduling_api', __name__)
 api = TalentApi()
+scheduler_blueprint = Blueprint('scheduling_api', __name__)
 api.init_app(scheduler_blueprint)
 api.route = types.MethodType(api_route, api)
 
@@ -31,9 +31,8 @@ class Tasks(Resource):
         This resource returns a list of tasks or it can be used to create or schedule a task using POST.
     """
 
-    #@authenticate
+    @authenticate
     def get(self, **kwargs):
-        # raise JobAlreadyPaused('sdsdsds')
         """
         This action returns a list of user tasks and their count
         :keyword user_id: user_id of tasks' owner
