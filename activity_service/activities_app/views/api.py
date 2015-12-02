@@ -2,20 +2,18 @@
    to the database.
 """
 __author__ = 'erikfarmer'
-
 # stdlib
 from datetime import datetime
 import json
 import re
-
 # framework specific
 from flask import Blueprint
 from flask import jsonify
 from flask import request
 from flask.ext.cors import CORS
-
 # application specific
-from activity_service.common.models.db import db
+# from activity_service.common.models.db import db
+from activity_service.activities_app import db
 from activity_service.common.models.user import User
 from activity_service.common.models.misc import Activity
 from activity_service.common.utils.auth_utils import require_oauth
@@ -37,8 +35,7 @@ CORS(mod, resources={
 @mod.route('/activities/<page>', methods=['GET'])
 @require_oauth
 def get_activities(page):
-    """Authenticate endpoint requests and then properly route then to the retrieve or creation
-       functions.
+    """
     :param int page: Page used in pagination for GET requests.
     :return: JSON formatted pagination response or message notifying creation status.
     """
@@ -67,10 +64,9 @@ def get_activities(page):
 @require_oauth
 def post_activity():
     valid_user_id = request.user.id
-    tam = TalentActivityManager()
-    return create_activity(valid_user_id, request.form.get('type'),
-                               request.form.get('source_table'), request.form.get('source_id'),
-                               request.form.get('params'))
+    content = request.json
+    return create_activity(valid_user_id, content.get('type'), content.get('source_table'),
+                           content.get('source_id'), content.get('params'))
 
 
 def create_activity(user_id, type_, source_table=None, source_id=None, params=None):
