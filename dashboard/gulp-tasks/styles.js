@@ -32,8 +32,6 @@ module.exports = function (config) {
     });
 
     gulp.task('sass-watcher', function () {
-        watch(config.sass, function () {
-            gulp.start('styles');
-        });
+        watch(config.sass, ['styles']);
     });
 };
