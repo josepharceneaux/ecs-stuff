@@ -27,9 +27,15 @@ from sms_campaign_service.common.utils.app_base_urls import SMS_CAMPAIGN_SERVICE
 TEST_NUMBER_1 = '+123'
 TEST_NUMBER_2 = '+456'
 
-
+# endpoint /campaigns/
 SMS_CAMPAIGN_API_URL = SMS_CAMPAIGN_SERVICE_APP_URL + '/campaigns/'
+# endpoint /campaigns/:id
+SMS_CAMPAIGN_WITH_ID_URL = SMS_CAMPAIGN_API_URL + '%s'
+# endpoint /campaigns/:id/sends
 SMS_CAMPAIGN_SENDS_URL = SMS_CAMPAIGN_API_URL + '%s/sms_campaign_sends'
+# endpoint /campaigns/:id/send
+SMS_CAMPAIGN_PROCESS_SEND_URL = SMS_CAMPAIGN_API_URL + '%s/send'
+# endpoint /url_conversion
 URL_CONVERSION_API_URL = SMS_CAMPAIGN_SERVICE_APP_URL + '/url_conversion'
 
 

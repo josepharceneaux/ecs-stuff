@@ -148,6 +148,7 @@ class SMSCampaigns(Resource):
 
             headers = {
                         'Authorization': 'Bearer <access_token>',
+                        'content-type': 'application/json'
 
                        }
             data = json.dumps(campaign_data)
@@ -201,6 +202,7 @@ class SMSCampaigns(Resource):
             }
             headers = {
                         'Authorization': 'Bearer <access_token>',
+                        'content-type': 'application/json'
                        }
             data = json.dumps(campaign_ids)
             response = requests.delete(
@@ -314,7 +316,7 @@ class CampaignById(Resource):
 
             headers = {
                         'Authorization': 'Bearer <access_token>',
-
+                        'content-type': 'application/json'
                        }
             data = json.dumps(campaign_data)
             campaign_id = campaign_data['id']
@@ -323,7 +325,6 @@ class CampaignById(Resource):
                                         data=data,
                                         headers=headers,
                                     )
-
         .. Response::
 
             No Content
@@ -350,7 +351,7 @@ class CampaignById(Resource):
     def delete(self, campaign_id):
         """
         Removes a single campaign from getTalent's database.
-        :param id: (Integer) unique id in sms_campaign table on GT database.
+        :param campaign_id: (Integer) unique id in sms_campaign table on GT database.
 
         :Example:
             headers = {
@@ -485,7 +486,11 @@ class SendSmsCampaign(Resource):
         :param campaign_id: integer, unique id representing campaign in GT database
         :return: json for required campaign containing message and total sends.
         """
-        camp_obj = SmsCampaignBase(request.user.id)
-        total_sends = camp_obj.process_send(campaign_id)
-        return dict(message='Campaign(id:%s) has been sent successfully'
-                            % campaign_id, total_sends=total_sends), 200
+        campaign = SmsCampaign.get_by_id(campaign_id)
+        if campaign:
+            camp_obj = SmsCampaignBase(request.user.id)
+            total_sends = camp_obj.process_send(campaign)
+            return dict(message='Campaign(id:%s) has been sent successfully'
+                                % campaign_id, total_sends=total_sends), 200
+        else:
+            raise ResourceNotFound(error_message='SMS Campaign(id=%s) Not found.' % campaign_id)

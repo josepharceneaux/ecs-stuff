@@ -2,7 +2,7 @@
 Author: Hafiz Muhammad Basit, QC-Technologies,
         Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
 
-    This module contains pyTests for endpoint /campaigns/:id/sends of SMS Campaign API.
+    This module contains pyTests for endpoint /campaigns/:id/sms_campaign_sends of SMS Campaign API.
 """
 # Standard Imports
 import requests
@@ -13,7 +13,7 @@ from sms_campaign_service.tests.conftest import SMS_CAMPAIGN_API_URL, SMS_CAMPAI
 
 class TestSmsCampaignSends:
     """
-    This class contains tests for endpoint /campaigns/:id/sends
+    This class contains tests for endpoint /campaigns/:id/sms_campaign_sends
     """
 
     def test_for_post_request(self, auth_token, sms_campaign_of_current_user):

@@ -288,7 +288,7 @@ class TestSmsCampaign:
                                    }))
         assert response.status_code == 200, 'Response should be ok (200)'
 
-    def test_delete_with_valid_token_valid_data_type_and_unauthorized_ids(self,
+    def test_delete_with_valid_header_valid_data_type_and_unauthorized_ids(self,
                                                                           valid_header,
                                                                           sms_campaign_of_other_user):
         """

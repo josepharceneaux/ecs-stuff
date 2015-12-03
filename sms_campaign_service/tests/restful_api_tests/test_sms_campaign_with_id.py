@@ -9,7 +9,7 @@ import json
 import requests
 
 # Application Specific
-from sms_campaign_service.tests.conftest import SMS_CAMPAIGN_API_URL
+from sms_campaign_service.tests.conftest import SMS_CAMPAIGN_API_URL, SMS_CAMPAIGN_WITH_ID_URL
 
 
 class TestSmsCampaignWithId:
@@ -25,7 +25,7 @@ class TestSmsCampaignWithId:
         original field values(provided at time of creation of campaign.
         :return:
         """
-        response = requests.get(SMS_CAMPAIGN_API_URL + str(sms_campaign_of_current_user.id),
+        response = requests.get(SMS_CAMPAIGN_WITH_ID_URL % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == 200, 'Response should be ok (200)'
         # verify all the field values
@@ -46,7 +46,7 @@ class TestSmsCampaignWithId:
         User auth token is invalid. It should get Unauthorized error.
         :return:
         """
-        response = requests.get(SMS_CAMPAIGN_API_URL + str(sms_campaign_of_current_user.id),
+        response = requests.get(SMS_CAMPAIGN_WITH_ID_URL % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % 'invalid_token'))
         assert response.status_code == 401, 'It should be unauthorized (401)'
 
@@ -57,10 +57,10 @@ class TestSmsCampaignWithId:
         It should get Not Found error.
         :return:
         """
-        response = requests.delete(SMS_CAMPAIGN_API_URL + str(sms_campaign_of_current_user.id),
+        response = requests.delete(SMS_CAMPAIGN_WITH_ID_URL % sms_campaign_of_current_user.id,
                                    headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == 200, 'should get ok response (200)'
-        response = requests.get(SMS_CAMPAIGN_API_URL + str(sms_campaign_of_current_user.id),
+        response = requests.get(SMS_CAMPAIGN_WITH_ID_URL % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == 404, 'Record should not be found (404)'
 
@@ -69,7 +69,7 @@ class TestSmsCampaignWithId:
         User auth token is invalid. It should get Unauthorized error.
         :return:
         """
-        response = requests.delete(SMS_CAMPAIGN_API_URL + str(sms_campaign_of_current_user.id),
+        response = requests.delete(SMS_CAMPAIGN_WITH_ID_URL % sms_campaign_of_current_user.id,
                                    headers=dict(Authorization='Bearer %s' % 'invalid_token'))
         assert response.status_code == 401, 'It should be unauthorized (401)'
 
@@ -80,7 +80,7 @@ class TestSmsCampaignWithId:
         It should get ok response.
         :return:
         """
-        response = requests.delete(SMS_CAMPAIGN_API_URL + str(sms_campaign_of_current_user.id),
+        response = requests.delete(SMS_CAMPAIGN_WITH_ID_URL % sms_campaign_of_current_user.id,
                                    headers=valid_header)
         assert response.status_code == 200, 'should get ok response (200)'
 
@@ -95,7 +95,7 @@ class TestSmsCampaignWithId:
                                    headers=valid_header)
         assert response.status_code == 403, 'should not be authorized (403)'
 
-    def test_post_with_valid_token_and_valid_data(self, valid_header,
+    def test_post_with_valid_header_and_valid_data(self, valid_header,
                                                   campaign_valid_data,
                                                   sms_campaign_of_current_user):
         """
@@ -107,19 +107,19 @@ class TestSmsCampaignWithId:
         """
         modified_name = 'Modified Name'
         campaign_valid_data.update({'name': modified_name})
-        response_post = requests.post(SMS_CAMPAIGN_API_URL + str(sms_campaign_of_current_user.id),
+        response_post = requests.post(SMS_CAMPAIGN_WITH_ID_URL % sms_campaign_of_current_user.id,
                                       headers=valid_header,
                                       data=json.dumps(campaign_valid_data))
         assert response_post.status_code == 200, 'Response should be ok (200)'
 
         # get updated record to verify the change we made in name
-        response_get = requests.get(SMS_CAMPAIGN_API_URL + str(sms_campaign_of_current_user.id),
+        response_get = requests.get(SMS_CAMPAIGN_WITH_ID_URL % sms_campaign_of_current_user.id,
                                     headers=valid_header,
                                     data=json.dumps(campaign_valid_data))
         assert response_get.status_code == 200, 'Response should be ok (200)'
         assert response_get.json()['campaign']['name'] == modified_name
 
-    def test_post_with_valid_token_and_id_of_deleted_record(self, valid_header,
+    def test_post_with_valid_header_and_id_of_deleted_record(self, valid_header,
                                                             sms_campaign_of_current_user,
                                                             campaign_valid_data):
         """
@@ -128,10 +128,10 @@ class TestSmsCampaignWithId:
         :return:
         """
         response_delete = requests.delete(
-            SMS_CAMPAIGN_API_URL + str(sms_campaign_of_current_user.id),
+            SMS_CAMPAIGN_WITH_ID_URL % sms_campaign_of_current_user.id,
             headers=valid_header)
         assert response_delete.status_code == 200, 'should get ok response (200)'
-        response_post = requests.post(SMS_CAMPAIGN_API_URL + str(sms_campaign_of_current_user.id),
+        response_post = requests.post(SMS_CAMPAIGN_WITH_ID_URL % sms_campaign_of_current_user.id,
                                       headers=valid_header,
                                       data=json.dumps(campaign_valid_data))
         assert response_post.status_code == 404, 'Record should not be found (404)'
@@ -141,7 +141,7 @@ class TestSmsCampaignWithId:
         User auth token is invalid. It should get Unauthorized error.
         :return:
         """
-        response = requests.post(SMS_CAMPAIGN_API_URL + str(sms_campaign_of_current_user.id),
+        response = requests.post(SMS_CAMPAIGN_WITH_ID_URL % sms_campaign_of_current_user.id,
                                  headers=dict(Authorization='Bearer %s' % 'invalid_token'))
         assert response.status_code == 401, 'It should be unauthorized (401)'
 
@@ -152,7 +152,7 @@ class TestSmsCampaignWithId:
         :param auth_token: access token of current user
         :return:
         """
-        response = requests.post(SMS_CAMPAIGN_API_URL + str(sms_campaign_of_current_user.id),
+        response = requests.post(SMS_CAMPAIGN_WITH_ID_URL % sms_campaign_of_current_user.id,
                                  headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == 400, 'It should be a bad request (400)'
 
@@ -162,7 +162,7 @@ class TestSmsCampaignWithId:
         User auth token is valid but no data is provided. It should get bad request error.
         :return:
         """
-        response = requests.post(SMS_CAMPAIGN_API_URL + str(sms_campaign_of_current_user.id),
+        response = requests.post(SMS_CAMPAIGN_WITH_ID_URL % sms_campaign_of_current_user.id,
                                  headers=valid_header)
         assert response.status_code == 400, 'It should get bad request error (400)'
 
@@ -174,12 +174,12 @@ class TestSmsCampaignWithId:
         It should get internal server error.
         Error code should be 5006 (MissingRequiredField)
         """
-        response = requests.post(SMS_CAMPAIGN_API_URL + str(sms_campaign_of_current_user.id),
+        response = requests.post(SMS_CAMPAIGN_WITH_ID_URL % sms_campaign_of_current_user.id,
                                  headers=valid_header,
                                  data=campaign_valid_data)
         assert response.status_code == 400, 'Should be a bad request (400)'
 
-    def test_post_with_valid_token_and_invalid_data(self, valid_header,
+    def test_post_with_valid_header_and_invalid_data(self, valid_header,
                                                     campaign_invalid_data,
                                                     sms_campaign_of_current_user):
         """
@@ -191,7 +191,7 @@ class TestSmsCampaignWithId:
                                             fo current user.
         :return:
         """
-        response = requests.post(SMS_CAMPAIGN_API_URL + str(sms_campaign_of_current_user.id),
+        response = requests.post(SMS_CAMPAIGN_WITH_ID_URL % sms_campaign_of_current_user.id,
                                  headers=valid_header,
                                  data=json.dumps(campaign_invalid_data))
         assert response.status_code == 500, 'Internal server error should occur (500)'

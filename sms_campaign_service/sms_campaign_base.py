@@ -384,10 +384,10 @@ class SmsCampaignBase(CampaignBase):
             UserPhone.save(user_phone_row)
         return user_phone_row
 
-    def process_send(self, campaign_id):
+    def process_send(self, campaign):
         """
-        :param campaign_id: id of sms_campaign
-        :type campaign_id: int
+        :param campaign: sms campaign row
+        :type campaign: Model object
         :return: number of sends
         :rtype: int
 
@@ -417,19 +417,16 @@ class SmsCampaignBase(CampaignBase):
                 camp_obj.process(campaign_id=1)
         :return:
         """
-        campaign = SmsCampaign.get_by_id(campaign_id)
-        if campaign:
-            self.campaign = campaign
-            logger.debug('process_send: SMS Campaign(id:%s) is being sent.' % campaign_id)
-        else:
-            raise ResourceNotFound(error_message='SMS Campaign(id=%s) Not found.' % campaign_id)
+
+        self.campaign = campaign
+        logger.debug('process_send: SMS Campaign(id:%s) is being sent.' % campaign.id)
         self.body_text = self.campaign.sms_body_text.strip()
         if not self.body_text:
             # SMS body text is empty
             raise EmptySmsBody(error_message='SMS Body text is empty for Campaign(id:%s)'
-                                             % campaign_id)
+                                             % campaign.id)
         # Get smart_lists associated to this campaign
-        smart_lists = SmsCampaignSmartlist.get_by_campaign_id(campaign_id)
+        smart_lists = SmsCampaignSmartlist.get_by_campaign_id(campaign.id)
         if smart_lists:
             all_candidates = []
             for smart_list in smart_lists:
@@ -444,24 +441,25 @@ class SmsCampaignBase(CampaignBase):
                                  % smart_list.smart_list_id)
         else:
             logger.error('process_send: No Smart list is associated with SMS '
-                         'Campaign(id:%s)' % campaign_id)
+                         'Campaign(id:%s)' % campaign.id)
             raise ForbiddenError(error_message='No Smart list is associated with SMS '
-                                               'Campaign(id:%s)' % campaign_id)
+                                               'Campaign(id:%s)' % campaign.id)
         if all_candidates:
             logger.debug('process_send: SMS Campaign(id:%s) will be sent to %s candidate(s).'
-                         % (campaign_id, len(all_candidates)))
+                         % (campaign.id, len(all_candidates)))
             # create SMS campaign blast
             self.sms_campaign_blast_id = self.create_or_update_sms_campaign_blast(self.campaign.id)
             self.send_campaign_to_candidates(all_candidates)
             self.create_campaign_send_activity(self.total_sends) if self.total_sends else ''
             logger.debug('process_send: SMS Campaign(id:%s) has been sent to %s candidate(s).'
-                         % (campaign_id, self.total_sends))
+                         % (campaign.id, self.total_sends))
             return self.total_sends
         else:
             logger.error('process_send: No Candidate is associated to SMS Campaign(id:%s)'
-                         % campaign_id)
-            raise ForbiddenError(error_message='No Candidate is associated to SMS '
-                                               'Campaign(id:%s)' % campaign_id)
+                         % campaign.id)
+            raise ForbiddenError(error_message='No Candidate is associated to smartlist(s)'
+                                               'SMS Campaign(id:%s). Smartlist ids are %s'
+                                               % (campaign.id, smart_lists))
 
     def send_campaign_to_candidate(self, candidate):
         """
