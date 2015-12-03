@@ -31,14 +31,31 @@ class Activity(db.Model):
 
 class AreaOfInterest(db.Model):
     __tablename__ = 'area_of_interest'
-    id = db.Column(db.BigInteger, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
-    description = db.Column('Description', db.String(255))
+    name = db.Column('Description', db.String(255))
     parent_id = db.Column('ParentId', db.BigInteger, db.ForeignKey('area_of_interest.id'))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=time.time())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
-        return "<AreaOfInterest (parent_id=' %r')>" % self.parent_id
+        return "<AreaOfInterest (name='%r')>" % self.name
+
+    @classmethod
+    def get_area_of_interest(cls, domain_id, name):
+        """
+        :rtype  AreaOfInterest
+        """
+        return cls.query.filter(db.and_(
+            AreaOfInterest.domain_id == domain_id,
+            AreaOfInterest.name == name
+        )).first()
+
+    @classmethod
+    def get_domain_areas_of_interest(cls, domain_id):
+        """
+        :rtype  [AreaOfInterest]
+        """
+        return cls.query.filter(AreaOfInterest.domain_id == domain_id).all()
 
 
 class Culture(db.Model):
@@ -65,8 +82,8 @@ class Culture(db.Model):
 class Organization(db.Model):
     __tablename__ = 'organization'
     id = db.Column('Id', db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(500), unique=True)
-    notes = db.Column('Notes', db.String(1000))
+    name = db.Column('Name', db.String(255), unique=True)
+    notes = db.Column('Notes', db.String(255))
     updated_time = db.Column('updatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
@@ -105,10 +122,8 @@ class Country(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Name', db.String(100), nullable=False)
     code = db.Column('Code', db.String(20), nullable=False)
-
     # Relationships
     candidate_military_services = relationship('CandidateMilitaryService', backref='country')
-    patent_details = relationship('PatentDetail', backref='country')
     candidate_addresses = relationship('CandidateAddress', backref='country')
     candidate_educations = relationship('CandidateEducation', backref='country')
     candidate_experiences = relationship('CandidateExperience', backref='country')
@@ -116,6 +131,26 @@ class Country(db.Model):
 
     def __repr__(self):
         return "<Country (name=' %r')>" % self.name
+
+    @classmethod
+    def country_id_from_name_or_code(cls, name_or_code):
+        if name_or_code:
+            country_row = cls.query.filter(db.or_(Country.name == name_or_code,
+                                                  Country.code == name_or_code)).first()
+            if country_row:
+                return country_row.id
+        return 1
+
+    @classmethod
+    def country_name_from_country_id(cls, country_id):
+        if not country_id:
+            return 'United States'
+
+        country = cls.query.filter(Country.id == country_id).first()
+        if country:
+            return country.name
+        else:
+            return 'United States'
 
 
 # Even though the table name is major I'm keeping the model class singular.
@@ -130,6 +165,7 @@ class Major(db.Model):
         return {
             'id': self.id,
         }
+
 
 class State(db.Model):
     __tablename__ = 'state'
@@ -190,6 +226,10 @@ class CustomField(db.Model):
 
     def __repr__(self):
         return "<CustomField (name = %r)>" % self.name
+
+    @classmethod
+    def get_domain_custom_fields(cls, domain_id):
+        return cls.query.filter(CustomField.domain_id==domain_id).all()
 
 
 class UserEmailTemplate(db.Model):
