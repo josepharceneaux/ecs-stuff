@@ -6,11 +6,12 @@ module.exports = function (config) {
 
     var $ = config.$;
 
+    var iconSrc = config.sourceDir + 'core/icon-font/icon-src/*.svg';
     var fontName = 'gettalent-icons';
 
     gulp.task('icon-font', function () {
         gulp
-            .src(config.sourceDir + 'core/icon-font/icon-src/*.svg')
+            .src(iconSrc)
             .pipe($.iconfont({
                 fontName           : fontName,
                 fontHeight         : 150,
@@ -57,8 +58,6 @@ module.exports = function (config) {
     });
 
     gulp.task('icon-watcher', function () {
-        watch(config.sourceDir + 'core/icon-font/icon-src/*.svg', function () {
-            gulp.start('icon-font');
-        });
+        watch(iconSrc, ['icon-font']);
     });
 };
