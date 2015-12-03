@@ -212,7 +212,7 @@ class TalentActivityManager(object):
         activities_reponse = {
             'total_count': activities.total,
             'items': [{
-                          'params': a.params,
+                          'params': json.loads(a.params),
                           'source_table': a.source_table,
                           'source_id': a.source_id,
                           'type': a.type,

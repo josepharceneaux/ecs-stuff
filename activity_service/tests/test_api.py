@@ -57,8 +57,7 @@ def test_basic_post(user_fixture, token_fixture):
                                  type=99,
                                  source_table='test',
                                  source_id='1337',
-                                 params=str({'lastName': random_word(6),
-                                             'firstName': random_word(8)})
+                                 params={'lastName': random_word(6), 'firstName': random_word(8)}
                              )))
     assert response.status_code == 200
 
