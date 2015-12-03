@@ -26,9 +26,8 @@ from scheduler_service.common.models.misc import Culture
 from scheduler_service.common.models.misc import Organization
 
 
-
 APP = init_app()
-APP_URL = APP.config['APP_URL']
+APP_URL = 'http://0.0.0.0:8009'
 db_session = _db.session
 
 OAUTH_SERVER = APP.config['OAUTH_SERVER_URI']
@@ -90,18 +89,35 @@ def test_culture(request):
 def job_config(request):
     return {
         "frequency": {
-            "day": 5,
-            "hour": 6
+            "days": 5,
+            "hours": 6
         },
+        'trigger': 'interval',
         "content_type": "application/json",
         "url": "http://getTalent.com/sms/send/",
-        "start_datetime": "2015-12-05T08:00:00-05:00",
-        "end_datetime": "2016-01-05T08:00:00-05:00",
+        "start_datetime": "2015-12-05T08:00:00",
+        "end_datetime": "2017-01-05T08:00:00",
         "post_data": {
             "campaign_name": "SMS Campaign",
             "phone_number": "09230862348",
             "smart_list_id": 123456,
             "content": "text to be sent as sms",
+        }
+    }
+
+
+@pytest.fixture(scope='session')
+def job_config_two(request):
+    return {
+        'trigger': 'date',
+        "content_type": "application/json",
+        "url": "http://getTalent.com/email/send/",
+        "run_datetime": "2017-05-05T08:00:00",
+        "post_data": {
+            "campaign_name": "Email Campaign",
+            "email_id": "abc@hotmail.com",
+            "smart_list_id": 123456,
+            "content": "content to be sent as email",
         }
     }
 

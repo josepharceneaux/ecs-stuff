@@ -1,10 +1,12 @@
+import apscheduler
 import pytz
 from dateutil.parser import parse
 from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.events import EVENT_JOB_EXECUTED
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.redis import RedisJobStore
-
+from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.date import DateTrigger
 from apscheduler.schedulers.background import BackgroundScheduler
 from scheduler_service import logger
 from scheduler_service.tasks import send_request
@@ -53,28 +55,39 @@ def schedule_job(data, user_id, access_token):
     schedule job using post data and add it to apscheduler
     :return:
     """
-    start_datetime = data['start_datetime']
-    end_datetime = data['end_datetime']
-    frequency = data['frequency']
     post_data = data['post_data']
+    trigger = data['trigger']
     content_type = data.get('content_type', 'application/json')
     url = data['url']
     try:
-        job = scheduler.add_job(run_job,
-                                'interval',
-                                seconds=frequency.get('seconds', 0),
-                                minutes=frequency.get('minutes', 0),
-                                hours=frequency.get('hours', 0),
-                                days=frequency.get('days', 0),
-                                weeks=frequency.get('weeks', 0),
-                                start_date=start_datetime,
-                                end_date=end_datetime,
-                                args=[user_id, access_token, url, content_type],
-                                kwargs=post_data)
+        if trigger == 'interval':
+            frequency = data['frequency']
+            start_datetime = data['start_datetime']
+            end_datetime = data.get('end_datetime')
+            job = scheduler.add_job(run_job,
+                                    trigger=trigger,
+                                    seconds=frequency.get('seconds', 0),
+                                    minutes=frequency.get('minutes', 0),
+                                    hours=frequency.get('hours', 0),
+                                    days=frequency.get('days', 0),
+                                    weeks=frequency.get('weeks', 0),
+                                    start_date=start_datetime,
+                                    end_date=end_datetime,
+                                    args=[user_id, access_token, url, content_type],
+                                    kwargs=post_data)
+            logger.info('Task has been added and will run at %s ' % start_datetime)
+        elif trigger == 'date':
+            run_datetime = data['run_datetime']
+            job = scheduler.add_job(run_job,
+                                    trigger=trigger,
+                                    run_date=run_datetime,
+                                    args=[user_id, access_token, url, content_type],
+                                    kwargs=post_data)
+            logger.info('Task has been added and will run at %s ' % run_datetime)
     except Exception as e:
         logger.exception(e.message)
         raise e
-    logger.info('Task has been added and will run at %s ' % start_datetime)
+
     return job.id
 
 
@@ -113,14 +126,24 @@ def serialize_task(task):
     :param task:
     :return: json converted dict object
     """
-    task_dict = dict(
-        id=task.id,
-        url=task.args[1],
-        start_datetime=str(task.trigger.start_date),
-        end_datetime=str(task.trigger.end_date),
-        next_run_time=str(task.next_run_time),
-        frequency=dict(days=task.trigger.interval.days, seconds=task.trigger.interval.seconds),
-        post_data=task.kwargs,
-        pending=task.pending
-    )
+    task_dict = None
+    if isinstance(task.trigger, IntervalTrigger):
+        task_dict = dict(
+            id=task.id,
+            url=task.args[1],
+            start_datetime=str(task.trigger.start_date),
+            end_datetime=str(task.trigger.end_date),
+            next_run_time=str(task.next_run_time),
+            frequency=dict(days=task.trigger.interval.days, seconds=task.trigger.interval.seconds),
+            post_data=task.kwargs,
+            pending=task.pending
+        )
+    elif isinstance(task.trigger, DateTrigger):
+        task_dict = dict(
+            id=task.id,
+            url=task.args[1],
+            run_datetime=str(task.trigger.run_date),
+            post_data=task.kwargs,
+            pending=task.pending
+        )
     return task_dict

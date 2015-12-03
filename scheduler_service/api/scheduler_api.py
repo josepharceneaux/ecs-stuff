@@ -5,16 +5,20 @@ This API also checks for authentication token
 
 import json
 import types
+import apscheduler
 from flask import Blueprint, request
 from flask.ext.restful import Resource
 from flask.ext.cors import CORS
 from scheduler_service import logger
-from scheduler_service.app_utils import api_route, authenticate, JsonResponse
+from scheduler_service.common.utils.api_utils import api_route, ApiResponse
 from scheduler_service.common.talent_api import TalentApi
 from scheduler_service.common.error_handling import *
+from scheduler_service.common.utils.auth_utils import require_oauth
+from scheduler_service.custom_exceptions import JobAlreadyPausedError, PendingJobError, JobAlreadyRunningError, \
+    NoJobFoundError
 from scheduler_service.scheduler import scheduler, schedule_job, serialize_task, remove_tasks
-from scheduler_service.custom_exceptions import NoJobFound, PendingStatus, JobAlreadyPaused, \
-    JobAlreadyRunning
+from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.date import DateTrigger
 
 api = TalentApi()
 scheduler_blueprint = Blueprint('scheduling_api', __name__)
@@ -35,8 +39,8 @@ class Tasks(Resource):
     """
         This resource returns a list of tasks or it can be used to create or schedule a task using POST.
     """
+    decorators = [require_oauth]
 
-    @authenticate
     def get(self, **kwargs):
         """
         This action returns a list of user tasks and their count
@@ -78,14 +82,14 @@ class Tasks(Resource):
                     500 (Internal Server Error)
 
         """
-        user_id = kwargs['user_id']
+        auth_user = request.user
+        user_id = auth_user.id
         tasks = scheduler.get_jobs()
         tasks = filter(lambda task: task.args[0] == user_id, tasks)
         tasks = [serialize_task(task) for task in tasks]
         response = json.dumps(dict(tasks=tasks, count=len(tasks)))
-        return JsonResponse(response)
+        return ApiResponse(response)
 
-    @authenticate
     def post(self, **kwargs):
         """
         This method takes data to create or schedule a task for scheduler.
@@ -130,16 +134,16 @@ class Tasks(Resource):
         :return: id of created task
         """
         # get json post request data
-        user_id = kwargs['user_id']
-        task = request.get_json(force=True)
+        auth_user = request.user
+        user_id = auth_user.id
+        task = request.get_json()
         bearer = request.headers.get('Authorization')
         access_token = bearer.lower().replace('bearer ', '')
         task_id = schedule_job(task, user_id, access_token)
         headers = {'Location': '/tasks/%s' % task_id}
         response = json.dumps(dict(id=task_id))
-        return JsonResponse(response, status=201, headers=headers)
+        return ApiResponse(response, status=201, headers=headers)
 
-    @authenticate
     def delete(self, **kwargs):
         """
         Deletes multiple tasks whose ids are given in list in request data.
@@ -172,24 +176,25 @@ class Tasks(Resource):
                     500 (Internal Server Error)
 
         """
+        auth_user = request.user
+        user_id = auth_user.id
         # get task_ids for tasks to be removed
-        req_data = request.get_json(force=True)
-        user_id =kwargs['user_id']
+        req_data = request.get_json()
         task_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else []
         # check if tasks_ids list is not empty
         if task_ids:
             removed = remove_tasks(task_ids, user_id=user_id)
             if len(removed) == len(task_ids):
-                return JsonResponse(json.dumps(dict(
+                return ApiResponse(json.dumps(dict(
                     message='%s Tasks removed successfully' % len(removed))),
                     status=200)
 
             removed_jobs = map(lambda job: job[1], removed)
             not_removed = list(set(task_ids) - set(removed_jobs))
             if not_removed:
-                return JsonResponse(json.dumps(dict(message='Unable to remove %s tasks' % len(not_removed),
-                                                    removed=removed,
-                                                    not_removed=not_removed)), status=207)
+                return ApiResponse(json.dumps(dict(message='Unable to remove %s tasks' % len(not_removed),
+                                              removed=removed,
+                                              not_removed=not_removed)), status=207)
         raise InvalidUsage('Bad request, include ids as list data', error_code=400)
 
 
@@ -198,8 +203,8 @@ class ResumeTasks(Resource):
     """
         This resource resumes a previously paused jobs/tasks
     """
+    decorators = [require_oauth]
 
-    @authenticate
     def get(self, **kwargs):
         """
         Resume a previously paused tasks/jobs
@@ -226,12 +231,15 @@ class ResumeTasks(Resource):
                     500 (Internal Server Error)
 
         """
-        req_data = request.get_json(force=True)
+        auth_user = request.user
+        user_id = auth_user.id
+        req_data = request.get_json()
         task_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else []
+        task_ids = filter(lambda task_id: scheduler.get_job(job_id=task_id).args[0] == user_id, task_ids)
         for id in task_ids:
             scheduler.resume_job(job_id=id)
         response = json.dumps(dict(message="Tasks has been successfully resumed"))
-        return JsonResponse(response)
+        return ApiResponse(response)
 
 
 @api.route('/tasks/pause/')
@@ -239,8 +247,8 @@ class PauseTasks(Resource):
     """
         This resource pauses jobs/tasks which can be resumed again
     """
+    decorators = [require_oauth]
 
-    @authenticate
     def get(self, **kwargs):
         """
         Pause tasks which is currently running.
@@ -267,14 +275,17 @@ class PauseTasks(Resource):
                     500 (Internal Server Error)
 
         """
-        req_data = request.get_json(force=True)
+        auth_user = request.user
+        user_id = auth_user.id
+        req_data = request.get_json()
         task_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else []
+        task_ids = filter(lambda task_id: scheduler.get_job(job_id=task_id).args[0] == user_id, task_ids)
         for id in task_ids:
             # pause the job whether it is paused before or not
             scheduler.pause_job(job_id=id)
 
         response = json.dumps(dict(message="Tasks have been successfully paused"))
-        return JsonResponse(response)
+        return ApiResponse(response)
 
 
 @api.route('/tasks/id/<string:id>')
@@ -282,8 +293,8 @@ class TaskById(Resource):
     """
         This resource returns a specific task based on id or update a task
     """
+    decorators = [require_oauth]
 
-    @authenticate
     def get(self, id, **kwargs):
         """
         This action returns a task owned by a this user
@@ -327,67 +338,15 @@ class TaskById(Resource):
                     500 (Internal Server Error)
 
         """
-        job_state_exceptions(job_id=id)
+        auth_user = request.user
+        user_id = auth_user.id
         task = scheduler.get_job(id)
-        if task:
+        if task and task.args[0] == user_id:
             task = serialize_task(task)
             response = json.dumps(dict(task=task))
-            return JsonResponse(response)
-        return JsonResponse(dict(error=dict(message="Task not found")), 404)
+            return ApiResponse(response)
+        return ApiResponse(dict(error=dict(message="Task not found")), 404)
 
-    @authenticate
-    def post(self, **kwargs):
-        """
-        This method takes data to update/reschedules an existing task
-
-        :Example:
-            task = {
-                "url": "http://getTalent.com/sms/send/",
-                "post_data": {
-                    "campaign_name": "SMS Campaign",
-                    "phone_number": "09230862348",
-                    "smart_list_id": 123456,
-                    "content": "text to be sent as sms"
-                },
-                "frequency": {
-                    "day": 5,
-                    "hour": 6
-                },
-                "start_datetime": "2015-12-05T08:00:00-05:00",
-                "end_datetime": "2016-01-05T08:00:00-05:00",
-                "timezone": "Asia/Karachi"
-
-            }
-
-            headers = {
-                        'Authorization': 'Bearer <access_token>',
-                        'Content-Type': 'application/json'
-                       }
-            data = json.dumps(task)
-            response = requests.post(
-                                        API_URL + '/tasks/5das76nbv950nghg8j8-33ddd3kfdw2',
-                                        data=data,
-                                        headers=headers,
-                                    )
-
-        .. Response::
-
-            {
-                "message" : "Task updated successfully"
-            }
-        .. Status:: 201 (Resource Created)
-                    500 (Internal Server Error)
-                    401 (Unauthorized to access getTalent)
-
-        :return: id of created task
-        """
-        # get json post request data
-        task = request.get_json(force=True)
-        scheduler.modify_job(id, **task)
-        response = json.dumps(dict(message="Task updated successfully"))
-        return JsonResponse(response, status=200)
-
-    @authenticate
     def delete(self, id, **kwargs):
         """
         Deletes/removes a tasks from scheduler store
@@ -414,14 +373,15 @@ class TaskById(Resource):
                     500 (Internal Server Error)
 
         """
-        # user_id = kwargs['user_id']
+        auth_user = request.user
+        user_id = auth_user.id
         task = scheduler.get_job(id)
-        if task:
+        if task and task.args[0] == user_id:
             scheduler.remove_job(task.id)
             response = json.dumps(dict(message="Task has been removed successfully"))
-            return JsonResponse(response, 200)
+            return ApiResponse(response, 200)
 
-        return JsonResponse(dict(error=dict(message="Task not found")), 404)
+        return ApiResponse(dict(error=dict(message="Task not found")), 404)
 
 
 @api.route('/tasks/<string:id>/resume/')
@@ -429,8 +389,8 @@ class ResumeTaskById(Resource):
     """
         This resource resumes a previously paused job/task
     """
+    decorators = [require_oauth]
 
-    @authenticate
     def get(self, id, **kwargs):
         """
         Resume a previously paused task/job
@@ -454,11 +414,16 @@ class ResumeTaskById(Resource):
                     500 (Internal Server Error)
 
         """
+        auth_user = request.user
+        user_id = auth_user.id
         # check and raise exception if job is already paused or not present
         job_state_exceptions(job_id=id, func='RUNNING')
-        scheduler.resume_job(job_id=id)
-        response = json.dumps(dict(message="Task has been successfully resumed"))
-        return JsonResponse(response)
+        task = scheduler.get_job(id)
+        if task and task.args[0] == user_id:
+            scheduler.resume_job(job_id=id)
+            response = json.dumps(dict(message="Task has been successfully resumed"))
+            return ApiResponse(response)
+        return ApiResponse(dict(error=dict(message="Task not found")), 404)
 
 
 @api.route('/tasks/<string:id>/pause/')
@@ -466,8 +431,8 @@ class PauseTaskById(Resource):
     """
         This resource pauses job/task which can be resumed again
     """
+    decorators = [require_oauth]
 
-    @authenticate
     def get(self, id, **kwargs):
         """
         Pause a task which is currently running.
@@ -492,11 +457,15 @@ class PauseTaskById(Resource):
 
         """
         # check and raise exception if job is already paused or not present
+        auth_user = request.user
+        user_id = auth_user.id
         job_state_exceptions(job_id=id, func='PAUSED')
-        scheduler.pause_job(job_id=id)
-
-        response = json.dumps(dict(message="Task has been successfully paused"))
-        return JsonResponse(response)
+        task = scheduler.get_job(id)
+        if task and task.args[0] == user_id:
+            scheduler.pause_job(job_id=id)
+            response = json.dumps(dict(message="Task has been successfully paused"))
+            return ApiResponse(response)
+        return ApiResponse(dict(error=dict(message="Task not found")), 404)
 
 
 def job_state_exceptions(job_id=None, func='GET'):
@@ -512,20 +481,20 @@ def job_state_exceptions(job_id=None, func='GET'):
     # if job is None => throw job not found exception
     if job is None:
         logger.exception("Job with id '%s' not found" % job_id)
-        raise NoJobFound("Job with id '%s' not found" % job_id)
+        raise NoJobFoundError("Job with id '%s' not found" % job_id)
 
     # if job is pending => throw pending state exception
     if job.pending:
         logger.exception("Job with id '%s' is in pending state. Scheduler not running" % job_id)
-        raise PendingStatus("Job with id '%s' is in pending state. Scheduler not running" % job_id)
+        raise PendingJobError("Job with id '%s' is in pending state. Scheduler not running" % job_id)
 
     # if job has next_run_time none, then job is in paused state
     if job.next_run_time is None and func == 'PAUSED':
         logger.exception("Job with id '%s' is already in paused state" % job_id)
-        raise JobAlreadyPaused("Job with id '%s' is already in paused state" % job_id)
+        raise JobAlreadyPausedError("Job with id '%s' is already in paused state" % job_id)
 
     # if job has_next_run_time is not None, then job is in running state
     if job.next_run_time is not None and func == 'RUNNING':
         logger.exception("Job with id '%s' is already in running state" % job_id)
-        raise JobAlreadyRunning("Job with id '%s' is already in running state" % job_id)
+        raise JobAlreadyRunningError("Job with id '%s' is already in running state" % job_id)
 
