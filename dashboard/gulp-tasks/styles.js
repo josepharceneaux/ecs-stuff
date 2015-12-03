@@ -6,7 +6,7 @@ module.exports = function (config) {
 
     var $ = config.$;
 
-    gulp.task('styles', ['clean-styles'], function () {
+    gulp.task('styles', ['icon-font', 'clean-styles'], function () {
         config.log('Compiling Sass --> CSS');
 
         return gulp

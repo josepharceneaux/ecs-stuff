@@ -1,5 +1,6 @@
 var gulp = require('gulp');
 var watch = require('gulp-watch');
+var runSequence = require('run-sequence').use(gulp);
 
 module.exports = function (config) {
     config.log('Importing icon-fonts.js...');
@@ -8,10 +9,41 @@ module.exports = function (config) {
 
     var iconSrc = config.sourceDir + 'core/icon-font/icon-src/*.svg';
     var fontName = 'gettalent-icons';
+    var cacheName = 'icon-font';
 
-    gulp.task('icon-font', function () {
+    gulp.task('icon-font', function (cb) {
+        var icons = [];
+        var changedIcons = [];
+        var cachedIcons = [];
+
+        gulp.src(iconSrc)
+            .on('data', function (data) {
+                icons.push(data);
+            })
+            .pipe($.cached(cacheName))
+            .on('data', function (data) {
+                changedIcons.push(data);
+            })
+            .pipe($.remember(cacheName))
+            .on('data', function (data) {
+                cachedIcons.push(data);
+            })
+            .on('end', function () {
+                if (changedIcons.length > 0 || icons.length < cachedIcons.length) {
+                    runSequence('build-icon-font', function () {
+                        cb();
+                    });
+                } else {
+                    cb();
+                }
+            });
+    });
+
+    gulp.task('build-icon-font', ['clean-icon-font-cache'], function (cb) {
         gulp
             .src(iconSrc)
+            .pipe($.cached(cacheName))
+            .pipe($.remember(cacheName))
             .pipe($.iconfont({
                 fontName           : fontName,
                 fontHeight         : 150,
@@ -53,8 +85,14 @@ module.exports = function (config) {
                     }))
                     .pipe($.rename(fontName + '.html'))
                     .pipe(gulp.dest(config.sourceDir + 'core/icon-font/'));
+                cb();
             })
             .pipe(gulp.dest(config.sourceDir + 'core/icon-font/'));
+    });
+
+    gulp.task('clean-icon-font-cache', function () {
+        delete $.cached.caches[cacheName];
+        $.remember.forgetAll(cacheName);
     });
 
     gulp.task('icon-watcher', function () {
