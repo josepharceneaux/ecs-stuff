@@ -22,7 +22,8 @@ from twilio.rest import TwilioRestClient
 # Application Specific
 from sms_campaign_service import logger
 from sms_campaign_service.common.utils.common_functions import http_request
-from config import TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, GOOGLE_URL_SHORTENER_API_URL
+from sms_campaign_service.sms_campaign_app_constants import TWILIO_ACCOUNT_SID,\
+    TWILIO_AUTH_TOKEN, GOOGLE_URL_SHORTENER_API_URL
 from sms_campaign_service.custom_exceptions import TwilioAPIError, GoogleShortenUrlAPIError
 
 

@@ -44,7 +44,8 @@ from sms_campaign_service.common.talent_api import TalentApi
 from sms_campaign_service.common.utils.auth_utils import require_oauth
 from sms_campaign_service.custom_exceptions import ErrorDeletingSMSCampaign
 from sms_campaign_service.common.utils.api_utils import api_route, ApiResponse
-from sms_campaign_service.sms_campaign_base import SmsCampaignBase, delete_sms_campaign
+from sms_campaign_service.sms_campaign_base import SmsCampaignBase, delete_sms_campaign,\
+    validate_header
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign, SmsCampaignBlast, \
     SmsCampaignSend
 
@@ -173,11 +174,14 @@ class SMSCampaigns(Resource):
                         5009 (ErrorSavingSMSCampaign)
 
         """
+        validate_header(request)
         # get json post request data
         try:
-            campaign_data = request.get_json(force=True)
+            campaign_data = request.get_json()
         except:
             raise InvalidUsage(error_message='Given data in not in json format')
+        if not campaign_data:
+            raise InvalidUsage(error_message='No data provided to create SMS campaign')
         campaign_obj = SmsCampaignBase(request.user.id,
                                        buy_new_number=campaign_data.get('buy_new_number'))
         campaign_id = campaign_obj.save(campaign_data)
@@ -217,9 +221,10 @@ class SMSCampaigns(Resource):
                     500 (Internal Server Error)
 
         """
+        validate_header(request)
         # get campaign_ids for campaigns to be deleted
         try:
-            req_data = request.get_json(force=True)
+            req_data = request.get_json()
         except:
             raise InvalidUsage(error_message='id(s) of campaign should be in a list')
         campaign_ids = req_data['ids'] if 'ids' in req_data else []
@@ -331,10 +336,13 @@ class CampaignById(Resource):
 
         .. Error codes:: 5006 (MissingRequiredField)
         """
+        validate_header(request)
         try:
-            campaign_data = request.get_json(force=True)
+            campaign_data = request.get_json()
         except:
-            raise InvalidUsage(error_message='Given data in not in json format')
+            raise InvalidUsage(error_message='Given data should be in dict format')
+        if not campaign_data:
+            raise InvalidUsage(error_message='No data provided to update SMS campaign')
         camp_obj = SmsCampaignBase(request.user.id)
         camp_obj.create_or_update_sms_campaign(campaign_data, campaign_id=campaign_id)
         return dict(message='SMS Campaign(id:%s) has been updated successfully' % campaign_id,), 200
@@ -347,8 +355,8 @@ class CampaignById(Resource):
         :Example:
             headers = {
                         'Authorization': 'Bearer <access_token>',
-
                        }
+
             campaign_id = 1
             response = requests.delete(
                                         API_URL + '/campaigns/' + str(campaign_id),

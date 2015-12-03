@@ -38,8 +38,8 @@ from sms_campaign_service.common.error_handling import (ResourceNotFound, Forbid
                                                         InvalidUsage)
 from sms_campaign_service.utilities import TwilioSMS, search_urls_in_text, url_conversion
 from sms_campaign_service.common.utils.common_functions import find_missing_items
-from sms_campaign_service.config import (SMS_URL_REDIRECT, PHONE_LABEL_ID,
-                                         TWILIO, POOL_SIZE)
+from sms_campaign_service.sms_campaign_app_constants import (SMS_URL_REDIRECT, PHONE_LABEL_ID,
+                                                             TWILIO, POOL_SIZE)
 from sms_campaign_service.custom_exceptions import \
     (EmptySmsBody, MultipleTwilioNumbers, EmptyDestinationUrl, MissingRequiredField,
      MultipleUsersFound, MultipleCandidatesFound, ErrorSavingSMSCampaign)
@@ -1073,3 +1073,14 @@ def delete_sms_campaign(campaign_id, current_user_id):
                                                'to delete SMS campaign(id:%s)' % campaign_id)
     else:
         raise ResourceNotFound(error_message='SMS Campaign(id=%s) not found.' % campaign_id)
+
+
+def validate_header(request):
+    """
+    Proper header should be {'content-type': 'application/json'} for posting
+    some data on SMS campaign API.
+    If header of request is not proper, it raises InvalidUsage exception
+    :return:
+    """
+    if not request.headers.get('CONTENT_TYPE') == 'application/json':
+        raise InvalidUsage(error_message='Invalid header provided')

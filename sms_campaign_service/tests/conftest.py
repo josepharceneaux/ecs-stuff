@@ -16,7 +16,7 @@ app = init_sms_campaign_app()
 from sms_campaign_service.common.tests.conftest import *
 
 # App specific
-from sms_campaign_service.config import TWILIO
+from sms_campaign_service.sms_campaign_app_constants import TWILIO
 from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.common.models.candidate import PhoneLabel
@@ -42,6 +42,16 @@ def auth_token(user_auth, sample_user):
     """
     auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
     return auth_token_row['access_token']
+
+
+@pytest.fixture()
+def valid_header(auth_token):
+    """
+    Returns the header containing access token and content-type to make POST/DELETE requests.
+    :param auth_token: fixture to get access token of user
+    """
+    return {'Authorization': 'Bearer %s' % auth_token,
+            'content-type': 'application/json'}
 
 
 @pytest.fixture()
