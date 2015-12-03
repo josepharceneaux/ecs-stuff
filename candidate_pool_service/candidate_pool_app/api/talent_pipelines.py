@@ -8,7 +8,7 @@ from sqlalchemy import and_
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import TALENT_PIPELINE_SEARCH_PARAMS
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.talent_pools_pipelines import *
-from candidate_pool_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
+from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
 from candidate_pool_service.common.error_handling import *
 
 
@@ -284,6 +284,166 @@ class TalentPipelineApi(Resource):
 
         return {
             'talent_pipeline': {'id': talent_pipeline.id}
+        }
+
+
+class TalentPipelineSmartListApi(Resource):
+
+    # Access token decorator
+    decorators = [require_oauth]
+
+    @require_all_roles('CAN_GET_TALENT_PIPELINE_SMART_LISTS')
+    def get(self, **kwargs):
+        """
+        GET /talent-pipeline/<id>/smart_lists   Fetch all smart_lists of a talent_pipeline
+
+        :return A dictionary containing smart_list objects of a talent_pipeline
+
+        :rtype: dict
+        """
+
+        talent_pipeline_id = kwargs.get('id')
+
+        talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
+
+        if not talent_pipeline:
+            raise NotFoundError(error_message="Talent pipeline with id %s doesn't exist in database" %
+                                              talent_pipeline_id)
+
+        if talent_pipeline.user.domain_id != request.user.domain_id:
+            raise UnauthorizedError(error_message="Logged-in user and talent_pipeline belong to different domain")
+
+        smart_lists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline_id).all()
+
+        return {
+            'smart_lists': [
+                {
+                    'name': smart_list.name,
+                    'user_id': smart_list.user_id,
+                    'is_hidden': smart_list.is_hidden,
+                    'search_params': json.loads(smart_list.search_params)
+
+                }
+                for smart_list in smart_lists
+            ]
+        }
+
+    @require_all_roles('CAN_ADD_TALENT_PIPELINE_SMART_LISTS')
+    def post(self, **kwargs):
+        """
+        POST /talent-pipeline/<id>/smart_lists   Add smart_lists to a talent_pipeline
+
+        Take a JSON dictionary containing smart_list_ids
+
+        :return A dictionary containing smart_list_ids successfully added to talent_pipeline
+
+        :rtype: dict
+        """
+
+        talent_pipeline_id = kwargs.get('id')
+
+        talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
+
+        if not talent_pipeline:
+            raise NotFoundError(error_message="Talent pipeline with id %s doesn't exist in database" %
+                                              talent_pipeline_id)
+
+        posted_data = request.get_json(silent=True)
+        if not posted_data or 'smart_list_ids' not in posted_data:
+            raise InvalidUsage(error_message="Request body is empty or not provided")
+
+        # Save user object(s)
+        smart_list_ids = posted_data['smart_list_ids']
+
+        # Talent_pool object(s) must be in a list
+        if not isinstance(smart_list_ids, list):
+            raise InvalidUsage(error_message="Request body is not properly formatted")
+
+        if talent_pipeline.user.domain_id != request.user.domain_id:
+            raise UnauthorizedError(error_message="Logged-in user and talent_pipeline belong to different domain")
+
+        for smart_list_id in smart_list_ids:
+
+            if not is_number(smart_list_id):
+                raise InvalidUsage('Smart List id %s should be an integer' % smart_list_id)
+            else:
+                smart_list_id = int(smart_list_id)
+
+            smart_list = Smartlist.query.get(smart_list_id)
+
+            if smart_list.user.domain_id != talent_pipeline.user.domain_id:
+                raise UnauthorizedError(error_message="Smart list %s and Talent pipeline %s belong to different domain"
+                                                      % (smart_list_id, talent_pipeline_id))
+
+            if smart_list.talent_pipeline_id:
+                raise UnauthorizedError(error_message="smart_list %s is already assigned to talent_pipeline %s" %
+                                                      (smart_list.name, smart_list.talent_pipeline_id))
+
+            smart_list.talent_pipeline_id = talent_pipeline_id
+
+        db.session.commit()
+
+        return {
+            'smart_list_ids': [int(smart_list_id) for smart_list_id in smart_list_ids]
+        }
+
+    @require_all_roles('CAN_DELETE_TALENT_PIPELINE_SMART_LISTS')
+    def post(self, **kwargs):
+        """
+        POST /talent-pipeline/<id>/smart_lists   Remove smart_lists from a talent_pipeline
+
+        Take a JSON dictionary containing smart_list_ids
+
+        :return A dictionary containing smart_list_ids successfully removed from a talent_pipeline
+
+        :rtype: dict
+        """
+
+        talent_pipeline_id = kwargs.get('id')
+
+        talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
+
+        if not talent_pipeline:
+            raise NotFoundError(error_message="Talent pipeline with id %s doesn't exist in database" %
+                                              talent_pipeline_id)
+
+        posted_data = request.get_json(silent=True)
+        if not posted_data or 'smart_list_ids' not in posted_data:
+            raise InvalidUsage(error_message="Request body is empty or not provided")
+
+        # Save user object(s)
+        smart_list_ids = posted_data['smart_list_ids']
+
+        # Talent_pool object(s) must be in a list
+        if not isinstance(smart_list_ids, list):
+            raise InvalidUsage(error_message="Request body is not properly formatted")
+
+        if talent_pipeline.user.domain_id != request.user.domain_id:
+            raise UnauthorizedError(error_message="Logged-in user and talent_pipeline belong to different domain")
+
+        for smart_list_id in smart_list_ids:
+
+            if not is_number(smart_list_id):
+                raise InvalidUsage('Smart List id %s should be an integer' % smart_list_id)
+            else:
+                smart_list_id = int(smart_list_id)
+
+            smart_list = Smartlist.query.get(smart_list_id)
+
+            if smart_list.user.domain_id != talent_pipeline.user.domain_id:
+                raise UnauthorizedError(error_message="Smart list %s and Talent pipeline %s belong to different domain"
+                                                      % (smart_list_id, talent_pipeline_id))
+
+            if smart_list.talent_pipeline_id != talent_pipeline_id:
+                raise UnauthorizedError(error_message="smart_list %s doesn't belong to talent_pipeline %s" %
+                                                      (smart_list.name, talent_pipeline_id))
+
+            smart_list.talent_pipeline_id = None
+
+        db.session.commit()
+
+        return {
+            'smart_list_ids': [int(smart_list_id) for smart_list_id in smart_list_ids]
         }
 
 

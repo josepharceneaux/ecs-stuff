@@ -85,17 +85,20 @@ class TalentPipeline(db.Model):
         db.session.commit()
 
 
-class TalentPipelineCandidateList(db.Model):
+class Smartlist(db.Model):
 
-    __tablename__ = 'talent_pipeline_candidate_list'
+    __tablename__ = 'smart_list'
 
     id = db.Column(db.Integer, primary_key=True)
-    talent_pipeline_id = db.Column(db.Integer, db.ForeignKey('talent_pipeline.id', ondelete='CASCADE'), nullable=False)
-    smart_list_id = db.Column(db.Integer, db.ForeignKey('smart_list.id', ondelete='CASCADE'), nullable=False)
+    name = db.Column('name', db.String(127))
+    search_params = db.Column('searchParams', db.String(1023))
+    user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id'))
+    talent_pipeline_id = db.Column(db.Integer, db.ForeignKey('talent_pipeline.id'))
+    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
+    is_hidden = db.Column('isHidden', db.Boolean, default=False)
 
-    smart_list = db.relationship('TalentPool', backref=db.backref('talent_pool_group', cascade="all, delete-orphan"))
-    user_group = db.relationship('UserGroup', backref=db.backref('talent_pool_group', cascade="all, delete-orphan"))
+    user = db.relationship('User', backref=db.backref('smart_list', cascade="all, delete-orphan"))
+    talent_pipeline = db.relationship('TalentPipeline', backref=db.backref('smart_list'))
 
-    def delete(self):
-        db.session.delete(self)
-        db.session.commit()
+    def __repr__(self):
+        return "<SmartList(name= %r)>" % self.name
