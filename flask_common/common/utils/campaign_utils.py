@@ -33,7 +33,7 @@ from ..models.misc import UrlConversion
 from ..models.candidate import Candidate
 from ..error_handling import ForbiddenError, InvalidUsage
 from ..utils.common_functions import http_request, find_missing_items
-from ..utils.app_api_urls import ACTIVITY_SERVICE_API_URL, CANDIDATE_SERVICE_API_URL
+from ..utils.app_base_urls import ACTIVITY_SERVICE_APP_URL, CANDIDATE_SERVICE_APP_URL
 
 
 class CampaignBase(object):
@@ -154,7 +154,7 @@ class CampaignBase(object):
         params = {'id': smart_list_id,
                   'return': 'all'}
         # HTTP GET call to activity service to create activity
-        url = CANDIDATE_SERVICE_API_URL + '/v1/smartlist/get_candidates/'
+        url = CANDIDATE_SERVICE_APP_URL + '/v1/smartlist/get_candidates/'
         response = http_request('GET', url, headers=self.oauth_header, params=params,
                                 user_id=self.user_id)
         # get candidate ids
@@ -284,5 +284,5 @@ class CampaignBase(object):
                 'user_id': user_id,
                 'params': json_params}
         # POST call to activity service to create activity
-        url = ACTIVITY_SERVICE_API_URL + '/activities/'
+        url = ACTIVITY_SERVICE_APP_URL + '/activities/'
         http_request('POST', url, headers=headers, data=data, user_id=user_id)

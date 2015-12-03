@@ -1,4 +1,7 @@
 """
+ Author: Hafiz Muhammad Basit, QC-Technologies,
+        Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
+
 This file contains API endpoints related to sms_campaign_service.
     Following is a list of API endpoints:
 
@@ -23,9 +26,6 @@ This file contains API endpoints related to sms_campaign_service.
 
             POST    : Sends the SMS Campaign by campaign id
 """
-from sms_campaign_service.custom_exceptions import ErrorDeletingSMSCampaign
-
-__author__ = 'basit.gettalent@gmail.com'
 
 # Standard Library
 import json
@@ -42,7 +42,8 @@ from sms_campaign_service import logger
 from sms_campaign_service.common.error_handling import *
 from sms_campaign_service.common.talent_api import TalentApi
 from sms_campaign_service.common.utils.auth_utils import require_oauth
-from sms_campaign_service.sms_campaign_app.app_utils import api_route, ApiResponse
+from sms_campaign_service.custom_exceptions import ErrorDeletingSMSCampaign
+from sms_campaign_service.common.utils.api_utils import api_route, ApiResponse
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase, delete_sms_campaign
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign, SmsCampaignBlast, \
     SmsCampaignSend

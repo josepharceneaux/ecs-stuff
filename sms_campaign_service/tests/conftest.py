@@ -1,12 +1,15 @@
+"""
+Author: Hafiz Muhammad Basit, QC-Technologies,
+        Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
+
+    This file contains pyTest fixtures for tests of SMS Campaign Service.
+"""
 # Third Party
 import pytest
 
 # App Settings
-from sms_campaign_service import init_app
-from sms_campaign_service.sms_campaign_base import SmsCampaignBase
-
-app = init_app()
-
+from sms_campaign_service import init_sms_campaign_app
+app = init_sms_campaign_app()
 
 # Application Specific
 # common conftest
@@ -15,11 +18,19 @@ from sms_campaign_service.common.tests.conftest import *
 # App specific
 from sms_campaign_service.config import TWILIO
 from sms_campaign_service.common.models.user import UserPhone
+from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.common.models.candidate import PhoneLabel
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
+from sms_campaign_service.common.utils.app_base_urls import SMS_CAMPAIGN_SERVICE_APP_URL
+
 
 TEST_NUMBER_1 = '+123'
 TEST_NUMBER_2 = '+456'
+
+
+SMS_CAMPAIGN_API_URL = SMS_CAMPAIGN_SERVICE_APP_URL + '/campaigns/'
+SMS_CAMPAIGN_SENDS_URL = SMS_CAMPAIGN_API_URL + '%s/sms_campaign_sends'
+URL_CONVERSION_API_URL = SMS_CAMPAIGN_SERVICE_APP_URL + '/url_conversion'
 
 
 @pytest.fixture()

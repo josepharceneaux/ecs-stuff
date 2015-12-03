@@ -1,5 +1,5 @@
 """
-This module contains pytest for utility functions
+This module contains pyTest for utility functions of SMS Campaign Service
 """
 
 # Application Specific

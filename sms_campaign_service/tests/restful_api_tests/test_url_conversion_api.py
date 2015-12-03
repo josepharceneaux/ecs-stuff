@@ -1,18 +1,21 @@
 """
-This module consists pyTests for URL conversion API.
+Author: Hafiz Muhammad Basit, QC-Technologies,
+        Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
+
+    This module contains pyTests for endpoint /url_conversion of URL conversion API.
 """
 
 # Third Party Imports
 import requests
 
 # Application Specific
-from sms_campaign_service import flask_app as app
-
-APP_URL = app.config['APP_URL']
-URL_CONVERSION_API_URL = APP_URL + '/url_conversion'
+from sms_campaign_service.tests.conftest import URL_CONVERSION_API_URL, SMS_CAMPAIGN_SERVICE_APP_URL
 
 
 class TestUrlConversionAPI:
+    """
+    This class contains the tests for the endpoint /url_conversion
+    """
 
     def test_get_with_invalid_token(self):
         """
@@ -57,7 +60,7 @@ class TestUrlConversionAPI:
         """
         response = requests.get(URL_CONVERSION_API_URL,
                                 headers=dict(Authorization='Bearer %s' % auth_token),
-                                data={"long_url": APP_URL}
+                                data={"long_url": SMS_CAMPAIGN_SERVICE_APP_URL}
                                 )
         assert response.status_code == 500, 'Status should be (500)'
         # custom exception for Google's Shorten URL API Error

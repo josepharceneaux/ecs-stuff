@@ -44,8 +44,9 @@ other model classes inherit. But this changes will only effect this app or the a
 
 """
 from types import MethodType
-from sms_campaign_service import logger
-from sms_campaign_service.common.models.db import db
+from ..models.db import db
+from ..error_handling import register_error_handlers
+from ..utils.common_functions import camel_case_to_snake_case
 
 
 def to_json(instance):
@@ -56,7 +57,6 @@ def to_json(instance):
     so we are making a dictionary where keys are types and values are types to which we want to
     convert this data.
     """
-    from social_network_service.utilities import camel_case_to_snake_case
     # add your conversions for things like datetime's
     # and what-not that aren't serializable.
     convert = dict(DATETIME=str, TIMESTAMP=str,
@@ -131,8 +131,8 @@ def get_by_id(cls, _id):
         # get Model instance given by id
         obj = cls.query.get(_id)
     except Exception as error:
-        logger.error("Couldn't get record from db table %s. Error is: %s"
-                     % (cls.__name__, error.message))
+        cls.logger("Couldn't get record from db table %s. Error is: %s"
+                   % (cls.__name__, error.message))
         return None
     return obj
 
@@ -141,9 +141,10 @@ def get_by_id(cls, _id):
 def delete(cls, ref):
     """
     This method deletes a record from database given by id and the calling Model class.
-    :param _id: id for instance
-    :type _id: int
+    :param ref: id for instance | model instance
+    :type ref: int | model object
     :return: Boolean
+    :rtype: bool
     """
     try:
         if isinstance(ref, (int, long)):
@@ -153,12 +154,12 @@ def delete(cls, ref):
         db.session.delete(obj)
         db.session.commit()
     except Exception as error:
-        logger.error("Couldn't delete record from db. Error is: %s" % error.message)
+        cls.logger("Couldn't delete record from db. Error is: %s" % error.message)
         return False
     return True
 
 
-def add_model_helpers(cls):
+def add_model_helpers(cls, logger):
     """
     This function adds helper methods to Model class which is passed as argument.
 
@@ -174,7 +175,9 @@ def add_model_helpers(cls):
     :param cls:
     :return:
     """
-    # this method converts model instance to json serializeable dictionary
+    cls.session = db.session
+    cls.logger = logger
+    # this method converts model instance to json serializable dictionary
     cls.to_json = MethodType(to_json, None, db.Model)
     # This method saves model instance in database as table row
     cls.save = MethodType(save, None, db.Model)
@@ -185,4 +188,47 @@ def add_model_helpers(cls):
     cls.get = get_by_id
     # This method deletes an instance
     cls.delete = delete
-    cls.session = db.session
+
+
+def init_app(flask_app, logger):
+    """
+    This method initializes the flask app by doing followings:
+
+        1- Adds model helpers to the app. This is done to save the effort of adding
+            following lines again and again
+
+            db.session.add(instance)
+            db.session.commit()
+
+                For example, we just need to do (say)
+                    1- to save a new record
+                        user_object = User(first_name='Updated Name', last_name='Last Name')
+                        User.save(user_object)
+
+                    2- to update a record in database
+                        user_row = User.get_by_id(1)
+                        user_row.update(first_name='Updated Name')
+
+                    3- to delete a record
+                        delete by id: User.delete(1)
+                        or
+                        delete by instance: User.delete(instance)
+
+                    4- to get a record by id
+                        User.get(1) or User.get_by_id(1)
+
+                    5- to get json serializable fields of a database record
+                        user_row = User.get_by_id(1)
+                        user_json_data  = user_row.to_json()
+
+        2- Initializes the app by
+                    db.init_app(flask_app) flask SQLAlchemy builtin
+        3- Registers error handlers for the app
+
+    :return: Returns the app
+    """
+    add_model_helpers(db.Model, logger)
+    db.init_app(flask_app)
+    db.app = flask_app
+    register_error_handlers(flask_app, logger)
+    return flask_app

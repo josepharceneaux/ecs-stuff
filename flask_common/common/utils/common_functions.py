@@ -1,3 +1,4 @@
+import re
 import json
 import requests
 import random
@@ -187,3 +188,20 @@ def add_role_to_test_user(test_user, role_names):
     :return:
     """
     UserScopedRoles.add_roles(test_user, role_names)
+
+
+def camel_case_to_snake_case(name):
+    """ Convert camel case to underscore case
+        socialNetworkId --> social_network_id
+
+            :Example:
+
+                result = camel_case_to_snake_case('socialNetworkId')
+                assert result == 'social_network_id'
+
+    """
+    # name_ = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    # return re.sub('([a-z0-9])([A-Z0-9])', r'\1_\2', name_).lower()
+    name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    name = re.sub('(.)([0-9]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()

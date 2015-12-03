@@ -1,4 +1,7 @@
 """
+    Author: Hafiz Muhammad Basit, QC-Technologies,
+        Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
+
     This module contains sms_campaign_app startup.
     We register blueprints for different APIs with this app.
 
@@ -7,11 +10,10 @@
                             in sms body text)
         2- SMS receive (to save the candidate's reply to a specific SMS campaign
 """
-__author__ = 'basit.gettalent@gmail.com'
 
 # Initializing App. This line should come before any imports from models
-from sms_campaign_service import init_app
-app = init_app()
+from sms_campaign_service import init_sms_campaign_app
+app = init_sms_campaign_app()
 
 # Third Party Imports
 import flask

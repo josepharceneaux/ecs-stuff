@@ -1,15 +1,16 @@
 """
-This file contains API endpoints related to Url Conversion.
-    Following is a list of API endpoints:
-        - ConvertUrl:  /url_conversion
-            GET     : This converts the given URL into shortened URL using
-                      Google's Shorten URL API.
+ Author: Hafiz Muhammad Basit, QC-Technologies,
+        Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
+
+    This file contains API endpoints related to Url Conversion.
+        Following is a list of API endpoints:
+            - ConvertUrl:  /url_conversion
+                GET     : This converts the given URL into shortened URL using
+                          Google's Shorten URL API.
 
 """
-__author__ = 'basit.gettalent@gmail.com'
 
 # Standard Library
-import json
 import types
 
 # Third Party
@@ -21,8 +22,8 @@ from flask.ext.restful import Resource
 # Application Specific
 from sms_campaign_service.utilities import url_conversion
 from sms_campaign_service.common.talent_api import TalentApi
+from sms_campaign_service.common.utils.api_utils import api_route
 from sms_campaign_service.common.error_handling import InvalidUsage
-from sms_campaign_service.sms_campaign_app.app_utils import api_route
 from sms_campaign_service.common.utils.auth_utils import require_oauth
 
 # creating blueprint

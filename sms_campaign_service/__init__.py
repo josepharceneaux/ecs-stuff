@@ -6,24 +6,23 @@ from healthcheck import HealthCheck
 
 # Application Specific
 from sms_campaign_service.common.models.db import db
-from sms_campaign_service.models_utils import add_model_helpers
+from sms_campaign_service.common import common_config
+from sms_campaign_service.common.common_config import GT_ENVIRONMENT
 from sms_campaign_service.common.error_handling import register_error_handlers
+from sms_campaign_service.common.utils.models_utils import add_model_helpers, init_app
 
 flask_app = Flask(__name__)
-flask_app.config.from_object('sms_campaign_service.config')
+flask_app.config.from_object(common_config)
 
 logger = flask_app.config['LOGGER']
 
 health = HealthCheck(flask_app, "/healthcheck")
 
 
-def init_app():
+def init_sms_campaign_app():
     """
-    Call this method at the start of app or manager for Events/RSVPs
+    Call this method at the start of app
     :return:
     """
-    add_model_helpers(db.Model)
-    db.init_app(flask_app)
-    db.app = flask_app
-    register_error_handlers(flask_app, logger)
-    return flask_app
+    logger.info("sms_campaign_service is running in %s environment" % GT_ENVIRONMENT)
+    return init_app(flask_app, logger)
