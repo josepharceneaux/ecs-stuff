@@ -6,7 +6,7 @@ module.exports = function (config) {
 
     var $ = config.$;
 
-    gulp.task('styles', ['clean-styles'], function () {
+    gulp.task('styles', ['icon-font', 'clean-styles'], function () {
         config.log('Compiling Sass --> CSS');
 
         return gulp
@@ -32,8 +32,6 @@ module.exports = function (config) {
     });
 
     gulp.task('sass-watcher', function () {
-        watch(config.sass, function () {
-            gulp.start('styles');
-        });
+        watch(config.sass, ['styles']);
     });
 };
