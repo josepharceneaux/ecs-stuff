@@ -12,7 +12,7 @@ from candidate_service.common.models.db import db
 from candidate_service.common.utils.validators import (is_number, is_valid_email)
 from candidate_service.modules.validators import (
     does_candidate_belong_to_user, is_custom_field_authorized,
-    is_area_of_interest_authorized, does_email_campaign_belong_to_domain
+    is_area_of_interest_authorized
 )
 
 # Decorators
@@ -22,8 +22,9 @@ from candidate_service.common.utils.auth_utils import require_oauth
 from candidate_service.common.error_handling import ForbiddenError, InvalidUsage, NotFoundError
 
 # Models
-from candidate_service.common.models.email_marketing import EmailCampaign
 from candidate_service.common.models.candidate import Candidate, CandidateAddress
+from candidate_service.common.models.misc import AreaOfInterest
+from candidate_service.common.models.associations import CandidateAreaOfInterest
 
 # Module
 from candidate_service.modules.talent_candidates import (
@@ -338,24 +339,29 @@ class CandidateResource(Resource):
         return {'candidate': {'id': candidate_id}}
 
 
-class CandidateAddresses(Resource):
+class CandidateAddressResource(Resource):
     decorators = [require_oauth]
 
     def delete(self, **kwargs):
         """
-        Function deletes stuff
+        Endpoints:
+             i. DELETE /v1/candidates/:candidate_id/addresses
+            ii. DELETE /v1/candidates/:candidate_id/addresses/:id
+        Depending on the endpoint requested, function will delete all of Candidate's
+        addresses or just a single one.
         """
         # Authenticated user
         authed_user = request.user
 
         # Get candidate_id and address_id
         candidate_id, address_id = kwargs.get('candidate_id'), kwargs.get('id')
-        single_address, list_of_addresses = False, False
 
+        # Determine if all addresses need to be removed or just a single one
+        single_address, all_addresses = False, False
         if candidate_id and address_id:
             single_address = True
         elif candidate_id and not address_id:
-            list_of_addresses = True
+            all_addresses = True
         else:
             raise InvalidUsage(error_message='Candidate ID is required.')
 
@@ -373,10 +379,10 @@ class CandidateAddresses(Resource):
             else:
                 raise NotFoundError(error_message='Candidate address not found.')
 
-            # Remove CandidateAddress
+            # Delete CandidateAddress
             db.session.delete(candidate_address)
 
-        elif list_of_addresses:
+        elif all_addresses:
             # Remove candidate's addresses
             candidate = Candidate.get_by_id(candidate_id)
             for address in candidate.candidate_addresses:
@@ -386,34 +392,88 @@ class CandidateAddresses(Resource):
         return '', 204
 
 
-class CandidateEmailCampaignResource(Resource):
+class CandidateAreaOfInterestResource(Resource):
     decorators = [require_oauth]
 
-    def get(self, **kwargs):
+    def delete(self, **kwargs):
         """
-        Fetch and return all EmailCampaignSend objects sent to a known candidate.
-            GET /v1/candidates/<int:id>/email_campaigns/<int:email_campaign_id>/email_campaign_sends
-            - This requires an email_campaign_id & a candidate_id
-            - Email campaign must belong to the candidate & candidate must belong to the logged in user.
-        :return: A list of EmailCampaignSend object(s)
+        Endpoints:
+             i. DELETE /v1/candidates/:candidate_id/areas_of_interest
+            ii. DELETE /v1/candidates/:candidate_id/areas_of_interest/:id
+        Depending on the endpoint requested, function will delete all of Candidate's
+        areas of interest or just a single one.
         """
+        # Authenticated user
         authed_user = request.user
-        candidate_id = kwargs.get('id')
-        email_campaign_id = kwargs.get('email_campaign_id')
-        if not candidate_id or not email_campaign_id:
-            raise InvalidUsage(error_message="Candidate ID and email campaign ID are required")
 
-        # Candidate must belong to user & email campaign must belong to user's domain
-        validate_1 = does_candidate_belong_to_user(user_row=authed_user, candidate_id=candidate_id)
-        validate_2 = does_email_campaign_belong_to_domain(user_row=authed_user)
-        if not validate_1 or not validate_2:
-            raise ForbiddenError(error_message="Not authorized")
+        # Get candidate_id and area_of_interest_id
+        candidate_id, area_of_interest_id = kwargs.get('candidate_id'), kwargs.get('id')
 
-        email_campaign = db.session.query(EmailCampaign).get(email_campaign_id)
+        # Determine if all aois need to be removed or just a single one
+        single_aoi, all_aoi = False, False
+        if candidate_id and area_of_interest_id:
+            single_aoi = True
+        elif candidate_id and not area_of_interest_id:
+            all_aoi = True
+        else:
+            raise InvalidUsage(error_message='Candidate ID is required.')
 
-        # Get all email_campaign_send objects of the requested candidate
-        from candidate_service.modules.talent_candidates import retrieve_email_campaign_send
-        email_campaign_send_rows = retrieve_email_campaign_send(email_campaign, candidate_id)
+        if single_aoi:
+            # Prevent user from deleting area_of_interest of candidates outside of its domain
+            is_authorized = is_area_of_interest_authorized(authed_user.domain_id, [area_of_interest_id])
+            if not is_authorized:
+                raise ForbiddenError(error_message="Unauthorized area of interest IDs")
 
-        return {'email_campaign_sends': email_campaign_send_rows}
+            # Area of interest must be associated with candidate's CandidateAreaOfInterest
+            candidate_aoi = CandidateAreaOfInterest.get_areas_of_interest(candidate_id, area_of_interest_id)
+            if not candidate_aoi:
+                raise ForbiddenError(error_message="Unauthorized area of interest IDs")
+
+            # Delete CandidateAreaOfInterest
+            db.session.delete(candidate_aoi)
+
+        elif all_aoi:
+            domain_aois = AreaOfInterest.get_domain_areas_of_interest(domain_id=authed_user.domain_id)
+            areas_of_interest_id = [aoi.id for aoi in domain_aois]
+            for aoi_id in areas_of_interest_id:
+                candidate_aoi = CandidateAreaOfInterest.get_areas_of_interest(candidate_id, aoi_id)
+                if not candidate_aoi:
+                    raise NotFoundError(error_message='Candidate area of interest not found.')
+
+                db.session.delete(candidate_aoi)
+
+        db.session.commit()
+        return '', 204
+
+
+# class CandidateEmailCampaignResource(Resource):
+#     decorators = [require_oauth]
+#
+#     def get(self, **kwargs):
+#         """
+#         Fetch and return all EmailCampaignSend objects sent to a known candidate.
+#             GET /v1/candidates/<int:id>/email_campaigns/<int:email_campaign_id>/email_campaign_sends
+#             - This requires an email_campaign_id & a candidate_id
+#             - Email campaign must belong to the candidate & candidate must belong to the logged in user.
+#         :return: A list of EmailCampaignSend object(s)
+#         """
+#         authed_user = request.user
+#         candidate_id = kwargs.get('id')
+#         email_campaign_id = kwargs.get('email_campaign_id')
+#         if not candidate_id or not email_campaign_id:
+#             raise InvalidUsage(error_message="Candidate ID and email campaign ID are required")
+#
+#         # Candidate must belong to user & email campaign must belong to user's domain
+#         validate_1 = does_candidate_belong_to_user(user_row=authed_user, candidate_id=candidate_id)
+#         validate_2 = does_email_campaign_belong_to_domain(user_row=authed_user)
+#         if not validate_1 or not validate_2:
+#             raise ForbiddenError(error_message="Not authorized")
+#
+#         email_campaign = db.session.query(EmailCampaign).get(email_campaign_id)
+#
+#         # Get all email_campaign_send objects of the requested candidate
+#         from candidate_service.modules.talent_candidates import retrieve_email_campaign_send
+#         email_campaign_send_rows = retrieve_email_campaign_send(email_campaign, candidate_id)
+#
+#         return {'email_campaign_sends': email_campaign_send_rows}
 

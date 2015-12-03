@@ -9,13 +9,38 @@ import json
 from candidate_sample_data import generate_single_candidate_data
 
 
-class CandidateResourceUrl:
+class CandidatesApiUrl:
     def __init__(self):
         pass
 
     BASE = "http://127.0.0.1:8005/v1/candidates"
-    CAN_ADDRESS = "http://127.0.0.1:8005/v1/candidates/%s/addresses/%s"
+
     CAN_ADDRESSES = "http://127.0.0.1:8005/v1/candidates/%s/addresses"
+    CAN_ADDRESS = "http://127.0.0.1:8005/v1/candidates/%s/addresses/%s"
+
+    CAN_AOIS =  "http://127.0.0.1:8005/v1/candidates/%s/areas_of_interest"
+    CAN_AOI =  "http://127.0.0.1:8005/v1/candidates/%s/areas_of_interest/%s"
+
+
+def define_and_send_request(request, url, access_token):
+    """
+    Function will define request based on params and make the appropriate call.
+    :param request:     get, post, put, patch, delete
+    """
+    req = None
+    request = request.lower()
+    if request == 'get':
+        req = requests.delete(url=url, headers={'Authorization': 'Bearer %s' % access_token})
+    elif request == 'post':
+        req = requests.delete(url=url, headers={'Authorization': 'Bearer %s' % access_token})
+    elif request == 'put':
+        req = requests.delete(url=url, headers={'Authorization': 'Bearer %s' % access_token})
+    elif request == 'patch':
+        req = requests.delete(url=url, headers={'Authorization': 'Bearer %s' % access_token})
+    elif request == 'delete':
+        req = requests.delete(url=url, headers={'Authorization': 'Bearer %s' % access_token})
+
+    return req
 
 
 def response_info(resp_request=None, resp_json=None, resp_status=None):
@@ -28,7 +53,7 @@ def response_info(resp_request=None, resp_json=None, resp_status=None):
     args = (resp_request, resp_json, resp_status)
     return "\nRequest: %s \nResponse JSON: %s \nResponse status: %s" % args
 
-
+# TODO: utilize define_and_send_request()
 def post_to_candidate_resource(access_token, data=None, domain_id=None):
     """
     Function sends a request to CandidateResource/post()
@@ -41,18 +66,18 @@ def post_to_candidate_resource(access_token, data=None, domain_id=None):
         data = generate_single_candidate_data()
 
     resp = requests.post(
-        url=CandidateResourceUrl.BASE,
+        url=CandidatesApiUrl.BASE,
         headers={'Authorization': 'Bearer %s' % access_token},
         data=json.dumps(data)
     )
     return resp
 
-
+# TODO: utilize define_and_send_request()
 def get_from_candidate_resource(access_token, candidate_id='', candidate_email=''):
     """
     Function sends a get request to CandidateResource/get()
     """
-    url = CandidateResourceUrl.BASE
+    url = CandidatesApiUrl.BASE
     if candidate_id:
         url = url + '/%s' % candidate_id
     elif candidate_email:
@@ -61,31 +86,61 @@ def get_from_candidate_resource(access_token, candidate_id='', candidate_email='
     resp = requests.get(url=url, headers={'Authorization': 'Bearer %s' % access_token})
     return resp
 
-
+# TODO: utilize define_and_send_request()
 def patch_to_candidate_resource(access_token, data):
     """
     Function sends a request to CandidateResource/patch()
     """
     resp = requests.patch(
-        url=CandidateResourceUrl.BASE,
+        url=CandidatesApiUrl.BASE,
         headers={'Authorization': 'Bearer %s' % access_token},
         data=json.dumps(data)
     )
     return resp
 
 
-def delete_to_candidate_resource(access_token, candidate_id='', can_addresses=False, address_id=None):
+######################## CandidateResource ########################
+def request_to_candidate_resource(access_token, request, candidate_id=''):
     """
-    Function sends a request to CandidateResource/delete()
+    Function sends a request to CandidateResource
+    :param request: get, post, patch, delete
     """
-    url = CandidateResourceUrl.BASE + '/%s' % candidate_id
-    if address_id:
-        url = CandidateResourceUrl.CAN_ADDRESS % (candidate_id, address_id)
-    elif can_addresses and not address_id:
-        url = CandidateResourceUrl.CAN_ADDRESSES % candidate_id
+    url = CandidatesApiUrl.BASE + '/%s' % candidate_id
+    return define_and_send_request(request, url, access_token)
 
-    resp = requests.delete(url=url, headers={'Authorization': 'Bearer %s' % access_token})
-    return resp
+
+######################## CandidateAddressResource ########################
+def request_to_candidate_address_resource(access_token, request, candidate_id='',
+                                          can_addresses=False, address_id=None):
+    """
+    Function sends a request to CandidateAddressResource.
+    If can_addresses is True, the request will hit /addresses endpoint.
+    :param  request: delete
+    """
+    url = CandidatesApiUrl.BASE + '/%s' % candidate_id
+    if address_id:
+        url = CandidatesApiUrl.CAN_ADDRESS % (candidate_id, address_id)
+    elif can_addresses and not address_id:
+        url = CandidatesApiUrl.CAN_ADDRESSES % candidate_id
+
+    return define_and_send_request(request=request, url=url, access_token=access_token)
+
+
+######################## CandidateAddressResource ########################
+def request_to_candidate_aoi_resource(access_token, request, candidate_id='',
+                                      can_aois=False, aoi_id=None):
+    """
+    Function sends a request to CandidateAreaOfInterestResource.
+    If can_aois is True, the request will hit /areas_of_interest endpoint.
+    :param request: delete
+    """
+    url = CandidatesApiUrl.BASE + '/%s' % candidate_id
+    if aoi_id:
+        url = CandidatesApiUrl.CAN_AOI % (candidate_id, aoi_id)
+    elif can_aois and not aoi_id:
+        url = CandidatesApiUrl.CAN_AOIS % candidate_id
+
+    return define_and_send_request(request, url, access_token)
 
 
 def create_same_candidate(access_token):

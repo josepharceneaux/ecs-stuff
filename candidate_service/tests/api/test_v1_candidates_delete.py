@@ -14,7 +14,8 @@ from candidate_service.common.tests.conftest import *
 # Helper functions
 from helpers import (
     response_info, post_to_candidate_resource, get_from_candidate_resource,
-    delete_to_candidate_resource, patch_to_candidate_resource
+    request_to_candidate_resource, request_to_candidate_address_resource,
+    request_to_candidate_aoi_resource
 )
 
 
@@ -34,7 +35,7 @@ def test_delete_candidate(sample_user, user_auth):
 
     # Delete (hide) Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    resp = delete_to_candidate_resource(token, candidate_id)
+    resp = request_to_candidate_resource(token, 'delete', candidate_id)
     print response_info(resp.request, resp.json(), resp.status_code)
 
     # Retrieve Candidate
@@ -45,7 +46,7 @@ def test_delete_candidate(sample_user, user_auth):
 
 
 ######################## CandidateAddress ########################
-def test_remove_candidate_address(sample_user, user_auth):
+def test_delete_candidate_address(sample_user, user_auth):
     """
     Test:   Remove Candidate's CandidateAddress from db
     Expect: 204, Candidate's addresses must be less 1
@@ -67,8 +68,8 @@ def test_remove_candidate_address(sample_user, user_auth):
     candidate_addresses_count = len(candidate_addresses)
 
     # Remove one of Candidate's addresses
-    updated_resp = delete_to_candidate_resource(token, candidate_id,
-                                                address_id=candidate_addresses[0]['id'])
+    updated_resp = request_to_candidate_address_resource(token, 'delete', candidate_id,
+                                                         address_id=candidate_addresses[0]['id'])
     print response_info(updated_resp.request, resp_status=updated_resp.status_code)
 
     # Retrieve Candidate after update
@@ -78,7 +79,7 @@ def test_remove_candidate_address(sample_user, user_auth):
     assert len(can_dict_after_update['addresses']) == candidate_addresses_count - 1
 
 
-def test_remove_all_of_candidates_addresses(sample_user, user_auth):
+def test_delete_all_of_candidates_addresses(sample_user, user_auth):
     """
     Test:   Remove all of candidate's addresses from db
     Expect: 204, Candidate should not have any addresses left
@@ -93,7 +94,7 @@ def test_remove_all_of_candidates_addresses(sample_user, user_auth):
 
     # Remove all of Candidate's addresses
     candidate_id = create_resp.json()['candidates'][0]['id']
-    updated_resp = delete_to_candidate_resource(token, candidate_id, can_addresses=True)
+    updated_resp = request_to_candidate_address_resource(token, 'delete', candidate_id, True)
     print response_info(updated_resp.request, resp_status=updated_resp.status_code)
 
     # Retrieve Candidate after update
@@ -102,7 +103,64 @@ def test_remove_all_of_candidates_addresses(sample_user, user_auth):
     assert updated_resp.status_code == 204
     assert len(can_dict_after_update['addresses']) == 0
 
+######################## CandidateAreaOfInterest ########################
+def test_delete_all_of_candidates_areas_of_interest(sample_user, user_auth):
+    """
+    Test:   Remove all of candidate's aois from db
+    Expect: 204, Candidate should not have any aois left
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
 
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
+
+    # Remove all of Candidate's areas of interest
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    updated_resp = request_to_candidate_aoi_resource(token, 'delete', candidate_id, True)
+    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    assert updated_resp.status_code == 204
+    assert len(can_dict_after_update['areas_of_interest']) == 0
+
+
+def test_delete_candidate_aoi(sample_user, user_auth):
+    """
+    Test:   Remove Candidate's area_of_interest from db
+    Expect: 204, Candidate's aois must be less 1 AND no AreaOfInterest should be deleted
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+    candidate_aois = candidate_dict['areas_of_interest']
+
+    # Number of Candidate's aois
+    candidate_aois_count = len(candidate_aois)
+
+    # Remove one of Candidate's aois
+    updated_resp = request_to_candidate_aoi_resource(token, 'delete', candidate_id, aoi_id=candidate_aois[0]['id'])
+    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    assert updated_resp.status_code == 204
+    assert len(can_dict_after_update['areas_of_interest']) == candidate_aois_count - 1
+    assert db.session.query(AreaOfInterest).get(candidate_aois[0]['id']) # AreaOfInterest should still be in db
+    assert db.session.query(AreaOfInterest).get(candidate_aois[1]['id']) # AreaOfInterest should still be in db
 
 
 

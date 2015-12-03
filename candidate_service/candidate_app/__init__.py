@@ -21,7 +21,7 @@ db.app = app
 health = HealthCheck(app, "/healthcheck")
 
 from candidate_service.candidate_app.api.v1_candidates import (
-    CandidateResource, CandidateEmailCampaignResource, CandidateAddresses
+    CandidateResource, CandidateAddressResource, CandidateAreaOfInterestResource
 )
 api = GetTalentApi(app=app)
 
@@ -33,20 +33,34 @@ api.add_resource(
     '/v1/candidates'
 )
 
+##### CandidateAddressResource #####
 api.add_resource(
-    CandidateAddresses,
-    '/v1/candidates/<int:candidate_id>/addresses/<int:id>',
-    endpoint='candidate_addresses'
+    CandidateAddressResource,
+    '/v1/candidates/<int:candidate_id>/addresses',
+    endpoint='candidate_addresses_1'
 )
 api.add_resource(
-    CandidateAddresses,
-    '/v1/candidates/<int:candidate_id>/addresses',
-    endpoint='candidate_addresses_2'
+CandidateAddressResource,
+'/v1/candidates/<int:candidate_id>/addresses/<int:id>',
+endpoint='candidate_addresses_2'
 )
 
-api.add_resource(CandidateEmailCampaignResource,
-                 '/v1/candidates/<int:id>/email_campaigns/<int:email_campaign_id>/email_campaign_sends',
-                 endpoint='candidates')
+##### CandidateAreaOfInterestResource #####
+api.add_resource(
+    CandidateAreaOfInterestResource,
+    '/v1/candidates/<int:candidate_id>/areas_of_interest',
+    endpoint='candidate_area_of_interest_1'
+)
+api.add_resource(
+    CandidateAreaOfInterestResource,
+    '/v1/candidates/<int:candidate_id>/areas_of_interest/<int:id>',
+    endpoint='candidate_area_of_interest_2'
+)
+
+
+# api.add_resource(CandidateEmailCampaignResource,
+#                  '/v1/candidates/<int:id>/email_campaigns/<int:email_campaign_id>/email_campaign_sends',
+#                  endpoint='candidates')
 
 db.create_all()
 db.session.commit()
