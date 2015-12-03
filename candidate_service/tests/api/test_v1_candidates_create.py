@@ -246,7 +246,7 @@ def test_create_candidate_educations(sample_user, user_auth):
     assert can_edu_degrees[0]['gpa'] == '1.50'
     assert can_edu_degrees[0]['start_year'] == '2002'
 
-    can_edu_degree_bullets = can_edu_degrees[0]['degree_bullets']
+    can_edu_degree_bullets = can_edu_degrees[0]['bullets']
     assert isinstance(can_edu_degree_bullets, list)
     assert can_edu_degree_bullets[0]['major'] == 'mathematics'
 
@@ -282,9 +282,9 @@ def test_create_candidate_experience(sample_user, user_auth):
     assert can_experience[0]['country'] == 'United States'
     assert can_experience[0]['is_current'] == can_exp_data['is_current']
 
-    can_exp_bullets = can_experience[0]['experience_bullets']
+    can_exp_bullets = can_experience[0]['bullets']
     assert isinstance(can_exp_bullets, list)
-    assert can_exp_bullets[0]['description'] == can_exp_data['experience_bullets'][0]['description']
+    assert can_exp_bullets[0]['description'] == can_exp_data['bullets'][0]['description']
 
 ######################## CandidateWorkPreference ########################
 def test_create_candidate_work_preference(sample_user, user_auth):
@@ -311,11 +311,12 @@ def test_create_candidate_work_preference(sample_user, user_auth):
     # Assert data sent in = data retrieved
     can_work_preference = candidate_dict['work_preference']
     can_work_preference_data = data['candidate']['work_preference']
+    print "can_work_preference_data = %s" % can_work_preference_data
     assert isinstance(can_work_preference_data, dict)
     assert can_work_preference['relocate'] == can_work_preference_data['relocate']
     assert can_work_preference['travel_percentage'] == can_work_preference_data['travel_percentage']
     assert can_work_preference['salary'] == can_work_preference_data['salary']
-    assert can_work_preference['tax_terms'] == can_work_preference_data['tax_terms']
+    assert can_work_preference['employment_type'] == can_work_preference_data['employment_type']
     assert can_work_preference['third_party'] == can_work_preference_data['third_party']
     assert can_work_preference['telecommute'] == can_work_preference_data['telecommute']
     assert can_work_preference['authorization'] == can_work_preference_data['authorization']

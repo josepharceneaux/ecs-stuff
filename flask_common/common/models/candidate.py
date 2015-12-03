@@ -188,6 +188,11 @@ class CandidatePhone(db.Model):
     def __repr__(self):
         return "<CandidatePhone (value=' %r', extention= ' %r')>" % (self.value, self.extension)
 
+    @classmethod
+    def set_is_default_to_false(cls, candidate_id):
+        for phone in cls.query.filter_by(candidate_id=candidate_id).all():
+            phone.is_default = False
+
 
 class EmailLabel(db.Model):
     __tablename__ = 'email_label'
@@ -227,6 +232,11 @@ class CandidateEmail(db.Model):
 
     def __repr__(self):
         return "<CandidateEmail (address='%r')" % self.address
+
+    @classmethod
+    def set_is_default_to_false(cls, candidate_id):
+        for email in cls.query.filter_by(candidate_id=candidate_id).all():
+            email.is_default = False
 
 
 class CandidatePhoto(db.Model):
@@ -405,19 +415,35 @@ class CandidateWorkPreference(db.Model):
 
     @property
     def bool_third_party(self):
-        return False if self.third_party == 'F' else True
+        if self.third_party == 'F':
+            return False
+        elif self.third_party == unicode(0):
+            return False
+        return True
 
     @property
     def bool_security_clearance(self):
-        return False if self.security_clearance == 'F' else True
+        if self.security_clearance == 'F':
+            return False
+        elif self.security_clearance == unicode(0):
+            return False
+        return True
 
     @property
     def bool_telecommute(self):
-        return False if self.telecommute == 'F' or unicode(0) else True
+        if self.telecommute == 'F':
+            return False
+        elif self.telecommute == unicode(0):
+            return False
+        return True
 
     @property
     def bool_relocate(self):
-        return False if self.relocate == 'F' else True
+        if self.relocate == 'F':
+            return False
+        elif self.relocate == unicode(0):
+            return False
+        return True
 
 
 class CandidatePreferredLocation(db.Model):
@@ -592,19 +618,24 @@ class CandidateAddress(db.Model):
     is_default = db.Column('IsDefault', db.Boolean, default=False)  # todo: check other is_default fields for their default values
     coordinates = db.Column('Coordinates', db.String(100))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-
     # TODO: Below are necessary for now, but should remove once all tables have been defined
     resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
 
     def __repr__(self):
         return "<CandidateAddress (id = %r)>" % self.id
 
+    @classmethod
+    def set_is_default_to_false(cls, candidate_id):
+        addresses = cls.query.filter_by(candidate_id=candidate_id).all()
+        for address in addresses:
+            address.is_default = False
+
 
 class CandidateEducation(db.Model):
     __tablename__ = 'candidate_education'
     id = db.Column(db.BigInteger, primary_key=True)
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
-    list_order = db.Column('ListOrder', db.SmallInteger)    # todo: ascertain smallinteger == tinyint; also check all list_order columns in db
+    list_order = db.Column('ListOrder', db.SmallInteger)
     school_name = db.Column('SchoolName', db.String(200))
     school_type = db.Column('SchoolType', db.String(100))
     city = db.Column('City', db.String(50))
@@ -613,7 +644,6 @@ class CandidateEducation(db.Model):
     is_current = db.Column('IsCurrent', db.Boolean)
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-
     # TODO: Below are necessary for now, but should remove once all tables have been defined
     resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
 
@@ -622,6 +652,12 @@ class CandidateEducation(db.Model):
 
     def __repr__(self):
         return "<CandidateEducation (candidate_id = %r)>" % self.candidate_id
+
+    @classmethod
+    def set_is_current_to_false(cls, candidate_id):
+        educations = cls.query.filter_by(candidate_id=candidate_id).all()
+        for education in educations:
+            education.is_current = False
 
 
 class CandidateEducationDegree(db.Model):
@@ -690,6 +726,12 @@ class CandidateExperience(db.Model):
 
     def __repr__(self):
         return "<CandidateExperience (candidate_id=' %r)>" % self.candidate_id
+
+    @classmethod
+    def set_is_current_to_false(cls, candidate_id):
+        experiences = cls.query.filter_by(candidate_id=candidate_id).all()
+        for experience in experiences:
+            experience.is_current = False
 
 
 class CandidateExperienceBullet(db.Model):
