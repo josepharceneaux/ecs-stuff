@@ -13,10 +13,12 @@ class CandidateResourceUrl:
     def __init__(self):
         pass
 
-    BASE_URL = "http://127.0.0.1:8005/v1/candidates"
+    BASE = "http://127.0.0.1:8005/v1/candidates"
+    CAN_ADDRESS = "http://127.0.0.1:8005/v1/candidates/%s/addresses/%s"
+    CAN_ADDRESSES = "http://127.0.0.1:8005/v1/candidates/%s/addresses"
 
 
-def response_info(resp_request, resp_json, resp_status):
+def response_info(resp_request=None, resp_json=None, resp_status=None):
     """
     Function returns the following information about the request:
         1. Request, 2. Response dict, and 3. Response status
@@ -29,8 +31,7 @@ def response_info(resp_request, resp_json, resp_status):
 
 def post_to_candidate_resource(access_token, data=None, domain_id=None):
     """
-    Function sends a post request to CandidateResource,
-    i.e. CandidateResource/post()
+    Function sends a request to CandidateResource/post()
     """
     if not data and domain_id:
         data = generate_single_candidate_data(domain_id=domain_id)
@@ -40,10 +41,50 @@ def post_to_candidate_resource(access_token, data=None, domain_id=None):
         data = generate_single_candidate_data()
 
     resp = requests.post(
-        url=CandidateResourceUrl.BASE_URL,
+        url=CandidateResourceUrl.BASE,
         headers={'Authorization': 'Bearer %s' % access_token},
         data=json.dumps(data)
     )
+    return resp
+
+
+def get_from_candidate_resource(access_token, candidate_id='', candidate_email=''):
+    """
+    Function sends a get request to CandidateResource/get()
+    """
+    url = CandidateResourceUrl.BASE
+    if candidate_id:
+        url = url + '/%s' % candidate_id
+    elif candidate_email:
+        url = url + '/%s' % candidate_email
+
+    resp = requests.get(url=url, headers={'Authorization': 'Bearer %s' % access_token})
+    return resp
+
+
+def patch_to_candidate_resource(access_token, data):
+    """
+    Function sends a request to CandidateResource/patch()
+    """
+    resp = requests.patch(
+        url=CandidateResourceUrl.BASE,
+        headers={'Authorization': 'Bearer %s' % access_token},
+        data=json.dumps(data)
+    )
+    return resp
+
+
+def delete_to_candidate_resource(access_token, candidate_id='', can_addresses=False, address_id=None):
+    """
+    Function sends a request to CandidateResource/delete()
+    """
+    url = CandidateResourceUrl.BASE + '/%s' % candidate_id
+    if address_id:
+        url = CandidateResourceUrl.CAN_ADDRESS % (candidate_id, address_id)
+    elif can_addresses and not address_id:
+        url = CandidateResourceUrl.CAN_ADDRESSES % candidate_id
+
+    resp = requests.delete(url=url, headers={'Authorization': 'Bearer %s' % access_token})
     return resp
 
 
@@ -56,41 +97,13 @@ def create_same_candidate(access_token):
     resp_dict = resp.json()
     candidate_id = resp_dict['candidates'][0]['id']
 
-    # Fetch Candidate
+    # Fetch Candidate\
     resp = get_from_candidate_resource(access_token, candidate_id)
     resp_dict = resp.json()
 
     # Create Candidate again
     resp = post_to_candidate_resource(access_token, resp_dict)
 
-    return resp
-
-
-def get_from_candidate_resource(access_token, candidate_id='', candidate_email=''):
-    """
-    Function sends a get request to CandidateResource via candidate's ID
-    or candidate's Email
-    i.e. CandidateResource/get()
-    """
-    url = CandidateResourceUrl.BASE_URL
-    if candidate_id:
-        url = url + '/%s' % candidate_id
-    elif candidate_email:
-        url = url + '/%s' % candidate_email
-
-    resp = requests.get(url=url, headers={'Authorization': 'Bearer %s' % access_token})
-    return resp
-
-
-def patch_to_candidate_resource(access_token, data):
-    """
-    Function sends a patch request to CandidateResource
-    """
-    resp = requests.patch(
-        url=CandidateResourceUrl.BASE_URL,
-        headers={'Authorization': 'Bearer %s' % access_token},
-        data=json.dumps(data)
-    )
     return resp
 
 

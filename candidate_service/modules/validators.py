@@ -79,3 +79,11 @@ def does_email_campaign_belong_to_domain(user_row):
 
     return True if email_campaign_rows else False
 
+
+def does_address_belong_to_candidate(candidate_id, address_id):
+    """
+    :rtype  bool
+    """
+    from candidate_service.common.models.candidate import CandidateAddress
+    if CandidateAddress.get_by_id(_id=address_id).candidate_id != candidate_id:
+        raise
