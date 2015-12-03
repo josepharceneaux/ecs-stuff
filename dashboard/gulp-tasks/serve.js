@@ -95,7 +95,7 @@ module.exports = function (config) {
 
         // If build: watches the files, builds, and restarts browser-sync.
         // If dev: watches sass, compiles it to css, browser-sync handles reload
-        var files = [].concat(config.js, config.html, config.sass);
+        var files = [].concat(config.js, config.html, config.sass, config.iconfont);
         if (isDev) {
             watch(files, {
                 readDelay: 3000
