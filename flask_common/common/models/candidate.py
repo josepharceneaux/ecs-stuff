@@ -2,6 +2,7 @@ from sqlalchemy import and_
 from db import db
 from sqlalchemy.orm import relationship
 import datetime
+from sqlalchemy.dialects.mysql import TINYINT
 
 from email_marketing import EmailCampaign, EmailCampaignSend
 from associations import ReferenceEmail
@@ -17,12 +18,12 @@ class Candidate(db.Model):
     last_name = db.Column('LastName', db.String(50))
     formatted_name = db.Column('FormattedName', db.String(150))
     candidate_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('candidate_status.id'))
-    is_web_hidden = db.Column('IsWebHidden', db.Boolean, default=False)
-    is_mobile_hidden = db.Column('IsMobileHidden', db.Boolean, default=False)
+    is_web_hidden = db.Column('IsWebHidden', TINYINT, default=False)
+    is_mobile_hidden = db.Column('IsMobileHidden', TINYINT, default=False)
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
     user_id = db.Column('OwnerUserId', db.Integer, db.ForeignKey('user.id'))
-    domain_can_read = db.Column('DomainCanRead', db.Boolean, default=True)
-    domain_can_write = db.Column('DomainCanWrite', db.Boolean, default=False)
+    domain_can_read = db.Column('DomainCanRead', TINYINT, default=True)
+    domain_can_write = db.Column('DomainCanWrite', TINYINT, default=False)
     dice_social_profile_id = db.Column('DiceSocialProfileId', db.String(128))
     dice_profile_id = db.Column('DiceProfileId', db.String(128))
     source_id = db.Column('sourceId', db.Integer, db.ForeignKey('candidate_source.id'))
@@ -63,19 +64,15 @@ class Candidate(db.Model):
     candidate_custom_fields = relationship('CandidateCustomField', backref='candidate')
     candidate_experiences = relationship('CandidateExperience', backref='candidate')
 
+    def __repr__(self):
+        return "<Candidate(formatted_name=' %r')>" % self.formatted_name
+
     def get_id(self):
         return unicode(self.id)
 
     @classmethod
     def get_by_id(cls, candidate_id):
-        """
-        :type candidate_id: int
-        :rtype: Candidate
-        """
-        return db.session.query(Candidate).get(candidate_id)
-
-    def __repr__(self):
-        return "<Candidate(formatted_name=' %r')>" % self.formatted_name
+        return cls.query.filter_by(id=candidate_id).first()
 
     @classmethod
     def get_by_first_last_name_owner_user_id_source_id_product(cls, first_name,
@@ -93,6 +90,12 @@ class Candidate(db.Model):
                 Candidate.source_product_id == product_id
             )
         ).first()
+
+    @classmethod
+    def set_is_web_hidden_to_true(cls, candidate_id):
+        cls.query.filter_by(id=candidate_id).first().is_web_hidden = 1
+        db.session.commit()
+
 
 
 class CandidateStatus(db.Model):
@@ -625,9 +628,12 @@ class CandidateAddress(db.Model):
         return "<CandidateAddress (id = %r)>" % self.id
 
     @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.filter_by(id=_id).first()
+
+    @classmethod
     def set_is_default_to_false(cls, candidate_id):
-        addresses = cls.query.filter_by(candidate_id=candidate_id).all()
-        for address in addresses:
+        for address in cls.query.filter_by(candidate_id=candidate_id).all():
             address.is_default = False
 
 
@@ -655,8 +661,7 @@ class CandidateEducation(db.Model):
 
     @classmethod
     def set_is_current_to_false(cls, candidate_id):
-        educations = cls.query.filter_by(candidate_id=candidate_id).all()
-        for education in educations:
+        for education in cls.query.filter_by(candidate_id=candidate_id).all():
             education.is_current = False
 
 

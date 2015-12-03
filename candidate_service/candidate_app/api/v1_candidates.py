@@ -12,25 +12,23 @@ from candidate_service.common.models.db import db
 from candidate_service.common.utils.validators import (is_number, is_valid_email)
 from candidate_service.modules.validators import (
     does_candidate_belong_to_user, is_custom_field_authorized,
-    is_area_of_interest_authorized, does_email_campaign_belong_to_domain,
-    do_candidates_belong_to_user
+    is_area_of_interest_authorized, does_email_campaign_belong_to_domain
 )
 
 # Decorators
 from candidate_service.common.utils.auth_utils import require_oauth
 
 # Error handling
-from candidate_service.common.error_handling import ForbiddenError, InvalidUsage
+from candidate_service.common.error_handling import ForbiddenError, InvalidUsage, NotFoundError
 
 # Models
-from candidate_service.modules.talent_candidates import (
-    fetch_candidate_info, get_candidate_id_from_candidate_email
-)
 from candidate_service.common.models.email_marketing import EmailCampaign
+from candidate_service.common.models.candidate import Candidate, CandidateAddress
 
 # Module
 from candidate_service.modules.talent_candidates import (
-    create_or_update_candidate_from_params, _delete_candidates
+    fetch_candidate_info, get_candidate_id_from_candidate_email,
+    create_or_update_candidate_from_params
 )
 
 
@@ -72,15 +70,21 @@ class CandidateResource(Resource):
             # Get candidate ID from candidate's email
             candidate_id = get_candidate_id_from_candidate_email(candidate_email)
 
+        # If Candidate is web hidden, it is assumed "deleted"
+        candidate = Candidate.get_by_id(candidate_id=candidate_id)
+        if not candidate:
+            raise NotFoundError(error_message='Candidate not found.')
+
+        if candidate.is_web_hidden:
+            raise NotFoundError(error_message='Candidate not found.')
+
         # Candidate must belong to user, and must be in the same domain as the user's domain
         if not does_candidate_belong_to_user(user_row=authed_user, candidate_id=candidate_id):
             raise ForbiddenError(error_message="Not authorized")
 
-        candidate_data = fetch_candidate_info(candidate_id=candidate_id)
-        if not candidate_data:
-            raise ForbiddenError(error_message="Candidate not found")
+        candidate_data_dict = fetch_candidate_info(candidate=candidate)
 
-        return {'candidate': candidate_data}
+        return {'candidate': candidate_data_dict}
 
     def post(self, **kwargs):
         """
@@ -306,52 +310,80 @@ class CandidateResource(Resource):
 
     def delete(self, **kwargs):
         """
-        Function will delete candidate objects from CloudSearch and database.
+        DELETE /v1/candidates/id
+        Function will set requested Candidate's is_web_hidden to True in the db.
 
         Caveats:
-        - Only candidate's owner can delete candidate.
-        - Candidate must be in the same domain as authed_user
+        - Only candidate's owner can hide the Candidate.
+        - Candidate must be in the same domain as authenticated user
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
         # Authenticate user
         authed_user = request.user
 
-        # Parse the request body
-        body_dict = request.get_json(force=True)
-        if not any(body_dict):
-            raise InvalidUsage(error_message="JSON body cannot be empty.")
-
-        # Candidate objects
-        candidates = body_dict.get('candidates')
-
-        # Candidate object(s) must be in a list
-        if not isinstance(candidates, list):
-            error_message = "Unacceptable input: Candidate object(s) must be in a list."
-            raise InvalidUsage(error_message=error_message)
-
-        # Candidate id(s) required
-        if filter(lambda candidate_dict: 'id' not in candidate_dict, candidates):
-            raise InvalidUsage(error_message="Missing input: Candidate ID(s) required.")
-
-        # Candidate ID(s) & source_product_id
-        candidate_ids = [candidate_dict['id'] for candidate_dict in candidates]
-        source_product_id = body_dict.get('source_product_id', 0)
-
-        # All IDs must be integer
-        if filter(lambda candidate_id: not is_number(candidate_id), candidate_ids):
-            raise InvalidUsage(error_message="Candidate ID must be an integer.")
+        # candidate_id must be provided
+        candidate_id = kwargs.get('id')
+        if not candidate_id:
+            raise InvalidUsage(error_message="Candidate's ID is required for deactivating.")
 
         # Prevent user from deleting candidate(s) outside of its domain; or other user's candidates
-        is_authorized = do_candidates_belong_to_user(authed_user, candidate_ids)
+        is_authorized = does_candidate_belong_to_user(authed_user, candidate_id)
         if not is_authorized:
             raise ForbiddenError(error_message="Not authorized")
 
-        # Delete Candidate(s) from CloudSearch & database
-        _delete_candidates(candidate_ids=candidate_ids, user_id=authed_user.id,
-                           source_product_id=source_product_id)
+        # Hide Candidate
+        Candidate.set_is_web_hidden_to_true(candidate_id=candidate_id)
 
-        return {'candidates': [{'id': candidate_id} for candidate_id in candidate_ids]}
+        return {'candidate': {'id': candidate_id}}
+
+
+class CandidateAddresses(Resource):
+    decorators = [require_oauth]
+
+    def delete(self, **kwargs):
+        """
+        Function deletes stuff
+        """
+        # Authenticated user
+        authed_user = request.user
+
+        # Get candidate_id and address_id
+        candidate_id, address_id = kwargs.get('candidate_id'), kwargs.get('id')
+        single_address, list_of_addresses = False, False
+
+        if candidate_id and address_id:
+            single_address = True
+        elif candidate_id and not address_id:
+            list_of_addresses = True
+        else:
+            raise InvalidUsage(error_message='Candidate ID is required.')
+
+        # Prevent user from deleting address of the candidates outside of its domain
+        is_authorized = does_candidate_belong_to_user(authed_user, candidate_id)
+        if not is_authorized:
+            raise ForbiddenError(error_message="Not authorized")
+
+        if single_address:
+            # Ensure address belong to Candidate
+            candidate_address = CandidateAddress.get_by_id(_id=address_id)
+            if candidate_address:
+                if candidate_address.candidate_id != candidate_id:
+                    raise ForbiddenError(error_message='Not authorized')
+            else:
+                raise NotFoundError(error_message='Candidate address not found.')
+
+            # Remove CandidateAddress
+            db.session.delete(candidate_address)
+
+        elif list_of_addresses:
+            # Remove candidate's addresses
+            candidate = Candidate.get_by_id(candidate_id)
+            for address in candidate.candidate_addresses:
+                db.session.delete(address)
+
+        db.session.commit()
+        return '', 204
 
 
 class CandidateEmailCampaignResource(Resource):
@@ -384,3 +416,4 @@ class CandidateEmailCampaignResource(Resource):
         email_campaign_send_rows = retrieve_email_campaign_send(email_campaign, candidate_id)
 
         return {'email_campaign_sends': email_campaign_send_rows}
+

@@ -21,13 +21,29 @@ db.app = app
 health = HealthCheck(app, "/healthcheck")
 
 from candidate_service.candidate_app.api.v1_candidates import (
-    CandidateResource, CandidateEmailCampaignResource
+    CandidateResource, CandidateEmailCampaignResource, CandidateAddresses
 )
 api = GetTalentApi(app=app)
-api.add_resource(CandidateResource,
-                 '/v1/candidates/<int:id>',
-                 '/v1/candidates/<email>',
-                 '/v1/candidates')
+
+# Api resources
+api.add_resource(
+    CandidateResource,
+    '/v1/candidates/<int:id>',
+    '/v1/candidates/<email>',
+    '/v1/candidates'
+)
+
+api.add_resource(
+    CandidateAddresses,
+    '/v1/candidates/<int:candidate_id>/addresses/<int:id>',
+    endpoint='candidate_addresses'
+)
+api.add_resource(
+    CandidateAddresses,
+    '/v1/candidates/<int:candidate_id>/addresses',
+    endpoint='candidate_addresses_2'
+)
+
 api.add_resource(CandidateEmailCampaignResource,
                  '/v1/candidates/<int:id>/email_campaigns/<int:email_campaign_id>/email_campaign_sends',
                  endpoint='candidates')
