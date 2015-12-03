@@ -52,7 +52,7 @@ class CampaignBase(object):
         i.e. sms_campaign or push_notification_campaign etc. and returns the ID of
         new record in db.
 
-    * process_send(self, campaign_id=None): [abstract]
+    * process_send(self, campaign_id): [abstract]
         This method is used send the campaign to candidates. Child classes will implement this.
 
     * get_candidates(smart_list_id): [static]
@@ -124,7 +124,7 @@ class CampaignBase(object):
         pass
 
     @abstractmethod
-    def process_send(self, campaign_id=None):
+    def process_send(self, campaign_id):
         """
         This will be used to do the processing to send campaign to candidates
         according to specific campaign. Child class will implement this.

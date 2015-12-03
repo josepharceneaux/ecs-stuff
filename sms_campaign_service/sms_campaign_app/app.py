@@ -94,9 +94,9 @@ def sms_campaign_url_redirection(campaign_id=None, url_conversion_id=None):
             if candidate:
                 user_id = candidate.user_id
                 camp_obj = SmsCampaignBase(user_id, buy_new_number=False)
-                redirection_url = camp_obj.process_url_redirect(campaign_id=campaign_id,
-                                                                url_conversion_id=url_conversion_id,
-                                                                candidate=candidate)
+                redirection_url = camp_obj.process_url_redirect(campaign_id,
+                                                                url_conversion_id,
+                                                                candidate)
                 return redirect(redirection_url)
             else:
                 ResourceNotFound(error_message='Candidate(id:%s) not found.'

@@ -477,6 +477,6 @@ class SendSmsCampaign(Resource):
         :return: json for required campaign containing message and total sends.
         """
         camp_obj = SmsCampaignBase(request.user.id)
-        total_sends = camp_obj.process_send(campaign_id=campaign_id)
+        total_sends = camp_obj.process_send(campaign_id)
         return dict(message='Campaign(id:%s) has been sent successfully'
                             % campaign_id, total_sends=total_sends), 200

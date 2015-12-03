@@ -44,6 +44,7 @@ other model classes inherit. But this changes will only effect this app or the a
 
 """
 from types import MethodType
+from sms_campaign_service import logger
 from sms_campaign_service.common.models.db import db
 
 
@@ -129,7 +130,9 @@ def get_by_id(cls, _id):
     try:
         # get Model instance given by id
         obj = cls.query.get(_id)
-    except:
+    except Exception as error:
+        logger.error("Couldn't get record from db table %s. Error is: %s"
+                     % (cls.__name__, error.message))
         return None
     return obj
 
@@ -150,6 +153,7 @@ def delete(cls, ref):
         db.session.delete(obj)
         db.session.commit()
     except Exception as error:
+        logger.error("Couldn't delete record from db. Error is: %s" % error.message)
         return False
     return True
 

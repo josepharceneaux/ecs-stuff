@@ -35,7 +35,12 @@ test:
     - python candidate_pool_service/run.py:
         parallel: true
         background: true
+    - python sms_campaign_service/run.py:
+        parallel: true
+        background: true
+
     - sleep 5
+
 
 
   override:
@@ -52,6 +57,8 @@ test:
     - py.test social_network_service/tests/:
         parallel: true
     - py.test candidate_pool_service/tests/:
+        parallel: true
+    - py.test sms_campaign_service/tests/:
         parallel: true
 
 
