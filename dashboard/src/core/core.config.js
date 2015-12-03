@@ -15,11 +15,13 @@
     core.config(configFunction);
 
     configFunction.$inject = ['$compileProvider', '$logProvider', 'exceptionHandlerProvider',
-        'OAuthProvider', 'OAuthTokenProvider', 'authInfo'];
+        'OAuthProvider', 'OAuthTokenProvider', 'pickADateProvider', 'pickATimeProvider',
+        'authInfo'];
 
     /* @ngInject */
     function configFunction($compileProvider, $logProvider, exceptionHandlerProvider,
-                            OAuthProvider, OAuthTokenProvider, authInfo) {
+                            OAuthProvider, OAuthTokenProvider, pickADateProvider, pickATimeProvider,
+                            authInfo) {
 
         // During development, you may want to set debugInfoEnabled to true. This is required for tools like
         // Protractor, Batarang and ng-inspector to work correctly. However do not check in this change.
@@ -45,6 +47,15 @@
             options: {
                 secure: false
             }
+        });
+
+        pickADateProvider.setOptions({
+            today: '',
+            format: 'mmmm dd, yyyy'
+        });
+
+        pickATimeProvider.setOptions({
+            today: ''
         });
     }
 })();

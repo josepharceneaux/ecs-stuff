@@ -497,7 +497,7 @@
                         <!-- Form: Date Needed -->
                         <div class="col--medium-6 form__col">
                             <label class="form__label" for="dateNeed">Date Needed *</label>
-                            <input gt-float-label pick-a-date="vm.dateNeeded" pick-a-date-options="{ format: 'mmmm dd, yyyy' }" ng-model="vm.dateNeededText" class="form__input" id="dateNeed" name="dateNeed" type="text" placeholder="Date Needed *">
+                            <input gt-float-label pick-a-date="vm.dateNeeded" ng-model="vm.dateNeededText" class="form__input" id="dateNeed" name="dateNeed" type="text" placeholder="Date Needed *">
                         </div>
                     </div>
                     <div class="form__fieldset row--expanded">
@@ -561,7 +561,7 @@
     </div>
 
     <div class="row--widget">
-        <form class="col--full-12 box" action="#">
+        <form class="col--full-12 box" action="#" name="createEventForm">
 
             <header class="box__header">
                 <h2>Create Event</h2>
@@ -635,33 +635,33 @@
                 <!-- right half of form -->
                 <div class="col--medium-6 form__fieldset--column">
                     <div class="form__fieldset row--expanded">
-                        <div class="col--medium-6 form__col">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventStartDate.$error.required && createEventForm.eventStartDate.$touched}">
                             <label class="form__label" for="eventStartDate">Event Start Date</label>
-                            <input gt-float-label pick-a-date="vm.eventStartDate" pick-a-date-options="{ format: 'mmmm dd, yyyy' }" ng-model="eventStartDateText" class="form__input picker__input" id="eventStartDate" name="eventStartDate" type="text" placeholder="Event Start Date">
+                            <input gt-float-label pick-a-date="vm.eventStartDate" ng-model="vm.eventStartDateText" class="form__input picker__input" id="eventStartDate" name="eventStartDate" type="text" placeholder="Event Start Date" required>
                         </div>
 
-                        <div class="col--medium-6 form__col">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventEndDate.$error.required && createEventForm.eventEndDate.$touched}">
                             <label class="form__label" for="eventEndDate">Event End Date</label>
-                            <input gt-float-label pick-a-date="vm.eventEndDate" pick-a-date-options="{ format: 'mmmm dd, yyyy' }" ng-model="eventEndDateText" class="form__input picker__input" id="eventEndDate" name="eventEndDate" type="text" placeholder="Event End Date">
+                            <input gt-float-label pick-a-date="vm.eventEndDate" ng-model="vm.eventEndDateText" class="form__input picker__input" id="eventEndDate" name="eventEndDate" type="text" placeholder="Event End Date" required>
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
-                        <div class="col--medium-6 form__col">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventStartTime.$error.required && createEventForm.eventStartTime.$touched}">
                             <label class="form__label" for="eventStartTime">Event Start Time</label>
-                            <input gt-float-label pick-a-time="vm.eventStartDate" ng-model="eventStartTimeText" class="form__input picker__input" id="eventStartTime" name="eventStartTime" type="text" placeholder="Event Start Time">
+                            <input gt-float-label pick-a-time="vm.eventStartDate" ng-model="vm.eventStartTimeText" class="form__input picker__input" id="eventStartTime" name="eventStartTime" type="text" placeholder="Event Start Time" required>
                         </div>
 
-                        <div class="col--medium-6 form__col">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventEndTime.$error.required && createEventForm.eventEndTime.$touched}">
                             <label class="form__label" for="eventEndTime">Event End Time</label>
-                            <input gt-float-label pick-a-time="vm.eventEndDate" ng-model="eventEndTimeText" class="form__input picker__input" id="eventEndTime" name="eventEndTime" type="text" placeholder="Event End Time">
+                            <input gt-float-label pick-a-time="vm.eventEndDate" ng-model="vm.eventEndTimeText" class="form__input picker__input" id="eventEndTime" name="eventEndTime" type="text" placeholder="Event End Time" required>
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
                         <div class="col--medium-12 form__col--stacked">
                             <label class="form__label" for="locationName">Location Name</label>
-                            <input gt-float-label class="form__input" id="locationName" name="locationName" type="text" placeholder="Location Name">
+                            <input gt-float-label class="form__input" ng-model="vm.eventLocationName" id="locationName" name="locationName" type="text" placeholder="Location Name">
                         </div>
                     </div>
 
