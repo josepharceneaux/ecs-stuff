@@ -106,7 +106,7 @@ def test_talent_pool_api_delete(access_token_first, user_first, talent_pool, tal
     talent_pool_id = talent_pool.id
     response, status_code = talent_pool_api(access_token_first, talent_pool_id=talent_pool_id, action='DELETE')
     assert status_code == 200
-    assert response['deleted_talent_pool']['id'] == talent_pool_id
+    assert response['talent_pool']['id'] == talent_pool_id
 
     db.session.commit()
     assert not TalentPool.query.get(talent_pool_id)
@@ -282,8 +282,8 @@ def test_talent_pool_group_api_delete(access_token_first, user_first, talent_poo
     response, status_code = talent_pool_group_api(access_token_first, user_group_id=first_group.id, data=data,
                                                   action='DELETE')
     assert status_code == 200
-    assert len(response['deleted_talent_pools']) == 1
-    assert response['deleted_talent_pools'] == [talent_pool.id]
+    assert len(response['talent_pools']) == 1
+    assert response['talent_pools'] == [talent_pool.id]
 
     db.session.commit()
     assert not TalentPoolGroup.query.filter_by(user_group_id=first_group.id, talent_pool_id=talent_pool.id).first()
@@ -416,8 +416,8 @@ def test_talent_pool_candidate_api_delete(access_token_first, user_first, talent
     data['talent_pool_candidates'][0] = candidate_first.id
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='DELETE')
     assert status_code == 200
-    assert len(response['deleted_talent_pool_candidates']) == 2
-    assert response['deleted_talent_pool_candidates'] == data['talent_pool_candidates']
+    assert len(response['talent_pool_candidates']) == 2
+    assert response['talent_pool_candidates'] == data['talent_pool_candidates']
 
     user_first.user_group_id = None
     db.session.commit()

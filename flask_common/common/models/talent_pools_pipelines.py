@@ -52,3 +52,50 @@ class TalentPoolGroup(db.Model):
 
     talent_pool = db.relationship('TalentPool', backref=db.backref('talent_pool_group', cascade="all, delete-orphan"))
     user_group = db.relationship('UserGroup', backref=db.backref('talent_pool_group', cascade="all, delete-orphan"))
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+
+class TalentPipeline(db.Model):
+
+    __tablename__ = 'talent_pipeline'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    description = db.Column(db.TEXT)
+    positions = db.Column(db.Integer, default=1, nullable=False)
+    date_needed = db.Column(db.DateTime, nullable=False)
+    owner_user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'),  nullable=False)
+    talent_pool_id = db.Column(db.Integer, db.ForeignKey('talent_pool.id'))
+    search_params = db.Column(db.String(1023))
+    added_time = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
+    updated_time = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+                             nullable=False)
+
+    user = db.relationship('User', backref=db.backref('talent_pipeline', cascade="all, delete-orphan"))
+    talent_pool = db.relationship('TalentPool', backref=db.backref('talent_pipeline'))
+
+    def get_id(self):
+        return unicode(self.id)
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+
+class TalentPipelineCandidateList(db.Model):
+
+    __tablename__ = 'talent_pipeline_candidate_list'
+
+    id = db.Column(db.Integer, primary_key=True)
+    talent_pipeline_id = db.Column(db.Integer, db.ForeignKey('talent_pipeline.id', ondelete='CASCADE'), nullable=False)
+    smart_list_id = db.Column(db.Integer, db.ForeignKey('smart_list.id', ondelete='CASCADE'), nullable=False)
+
+    smart_list = db.relationship('TalentPool', backref=db.backref('talent_pool_group', cascade="all, delete-orphan"))
+    user_group = db.relationship('UserGroup', backref=db.backref('talent_pool_group', cascade="all, delete-orphan"))
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()

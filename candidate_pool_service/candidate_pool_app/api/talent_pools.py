@@ -135,7 +135,7 @@ class TalentPoolApi(Resource):
         talent_pool.delete()
 
         return {
-            'deleted_talent_pool': {'id': talent_pool.id}
+            'talent_pool': {'id': talent_pool.id}
         }
 
     @require_all_roles('CAN_ADD_TALENT_POOLS')
@@ -169,7 +169,7 @@ class TalentPoolApi(Resource):
             description = talent_pool.get('description', '').strip()
 
             if not name:
-                raise InvalidUsage(error_message="A valid should be provided to create a talent-pool")
+                raise InvalidUsage(error_message="A valid name should be provided to create a talent-pool")
 
             if name and TalentPool.query.filter_by(name=name, domain_id=request.user.domain_id).all():
                 raise InvalidUsage(error_message="Talent pool '%s' already exists in domain %s" % (name, request.user.domain_id))
@@ -274,7 +274,7 @@ class TalentPoolGroupApi(Resource):
 
         db.session.commit()
 
-        return {'deleted_talent_pools': [int(talent_pool_id) for talent_pool_id in talent_pool_ids]}
+        return {'talent_pools': [int(talent_pool_id) for talent_pool_id in talent_pool_ids]}
 
     @require_all_roles('CAN_ADD_TALENT_POOLS_TO_GROUP')
     def post(self, **kwargs):
@@ -491,5 +491,5 @@ class TalentPoolCandidateApi(Resource):
 
         db.session.commit()
 
-        return {'deleted_talent_pool_candidates': [int(talent_pool_candidate_id) for talent_pool_candidate_id in
+        return {'talent_pool_candidates': [int(talent_pool_candidate_id) for talent_pool_candidate_id in
                                                    talent_pool_candidate_ids]}
