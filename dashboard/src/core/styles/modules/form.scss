@@ -70,6 +70,7 @@ input[type=number] {
   color: $color--nearBlack;
   line-height: 1;
   height: 48px;
+  margin-top: 0;
   padding: $padding--small $padding--tiny;
   background-color: transparent;
   border: 2px solid $color--lightGray;
@@ -126,6 +127,10 @@ input[type=number] {
   margin-left: 0;
   margin-right: 0;
   border: 0;
+
+  .form__input--select {
+    margin-top: $margin--row;
+  }
 
   // Fancy select overrides
   .fancy-select {
