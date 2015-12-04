@@ -5,7 +5,6 @@ This API also checks for authentication token
 
 import json
 import types
-import apscheduler
 from flask import Blueprint, request
 from flask.ext.restful import Resource
 from flask.ext.cors import CORS
@@ -17,8 +16,6 @@ from scheduler_service.common.utils.auth_utils import require_oauth
 from scheduler_service.custom_exceptions import JobAlreadyPausedError, PendingJobError, JobAlreadyRunningError, \
     NoJobFoundError
 from scheduler_service.scheduler import scheduler, schedule_job, serialize_task, remove_tasks
-from apscheduler.triggers.interval import IntervalTrigger
-from apscheduler.triggers.date import DateTrigger
 
 api = TalentApi()
 scheduler_blueprint = Blueprint('scheduling_api', __name__)
@@ -95,11 +92,13 @@ class Tasks(Resource):
         This method takes data to create or schedule a task for scheduler.
 
         :Example:
+            for interval or periodic schedule
             task = {
                 "frequency": {
                     "day": 5,
                     "hour": 6
                 },
+                "trigger": "interval",
                 "start_datetime": "2015-12-05T08:00:00-05:00",
                 "end_datetime": "2016-01-05T08:00:00-05:00",
                 "url": "http://getTalent.com/sms/send/",
@@ -108,6 +107,18 @@ class Tasks(Resource):
                     "phone_number": "09230862348",
                     "smart_list_id": 123456,
                     "content": "text to be sent as sms"
+                }
+            }
+            for one-time schedule
+            task = {
+                "trigger": "date",
+                "run_datetime": "2015-12-05T08:00:00-05:00",
+                "url": "http://getTalent.com/email/send/",
+                "post_data": {
+                    "campaign_name": "Email Campaign",
+                    "email": "user1@hotmail.com",
+                    "smart_list_id": 123456,
+                    "content": "content to be sent as email"
                 }
             }
 
@@ -216,7 +227,7 @@ class ResumeTasks(Resource):
 
         :Example:
             task_ids = {
-                'ids': [1,2,3]
+                'ids': [fasdff12n22m2jnr5n6skf,ascv3h5k1j43k6k8k32k345jmn,123n23n4n43m2kkcj53vdsxc]
             }
             headers = {'Authorization': 'Bearer <access_token>'}
             response = requests.get(API_URL + '/tasks/resume/', headers=headers, data=json.dumps(task_ids))
@@ -260,7 +271,7 @@ class PauseTasks(Resource):
 
         :Example:
             task_ids = {
-                'ids': [1,2,3]
+                'ids': [fasdff12n22m2jnr5n6skf,ascv3h5k1j43k6k8k32k345jmn,123n23n4n43m2kkcj53vdsxc]
             }
             headers = {'Authorization': 'Bearer <access_token>'}
             response = requests.get(API_URL + '/tasks/resume/', headers=headers, data=json.dumps(task_ids))
@@ -311,6 +322,7 @@ class TaskById(Resource):
 
         .. Response::
             {
+               for one time schedule
                "task": {
                          {
                             "id": "5das76nbv950nghg8j8-33ddd3kfdw2",
@@ -329,8 +341,21 @@ class TaskById(Resource):
                             "start_datetime": "2015-11-05T08:00:00-05:00",
                             "end_datetime": "2015-12-05T08:00:00-05:00"
                             "next_run_time": "2015-11-05T08:20:30-05:00",
-                            "timezone": "Asia/Karachi"
-
+                         }
+                    }
+               for interval schedule
+               "task": {
+                         {
+                            "id": "5das76nbv950nghg8j8-33ddd3kfdw2",
+                            "url": "http://getTalent.com/email/send/",
+                            "post_data": {
+                                "campaign_name": "Email Campaign",
+                                "phone_number": "09230862348",
+                                "smart_list_id": 123456,
+                                "content": "text to be sent as Email"
+                                "some_other_kwarg": "abc"
+                            },
+                            "run_datetime": "2015-11-05T08:00:00-05:00",
                          }
                     }
 
