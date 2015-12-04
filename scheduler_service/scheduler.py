@@ -111,12 +111,10 @@ def remove_tasks(ids, user_id):
     :param user_id: tasks owned by user
     :return: tasks which are removed
     """
-    jobs_aps = scheduler.get_jobs()
-    jobs_av = filter(lambda job_id: scheduler.get_job(job_id=job_id) in jobs_aps, ids)
-    jobs_ = map(lambda job_id: scheduler.get_job(job_id=job_id), jobs_av)
-    jobs = filter(lambda job: job.args[0] == user_id, jobs_)
+    jobs_aps = map(lambda job_id: scheduler.get_job(job_id=job_id), ids)
+    jobs_aps = filter(lambda job: job is not None and job.args[0] == user_id, jobs_aps)
 
-    removed = map(lambda job: (scheduler.remove_job(job.id), job.id), jobs)
+    removed = map(lambda job: (scheduler.remove_job(job.id), job.id), jobs_aps)
     return removed
 
 

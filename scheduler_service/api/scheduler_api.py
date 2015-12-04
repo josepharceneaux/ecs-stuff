@@ -246,6 +246,9 @@ class ResumeTasks(Resource):
         user_id = auth_user.id
         req_data = request.get_json()
         task_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else []
+        none_tasks = filter(lambda task_id: scheduler.get_job(job_id=task_id) == None, task_ids)
+        if len(none_tasks):
+            raise NoJobFoundError("Job with id %s doesn't exist" % none_tasks)
         task_ids = filter(lambda task_id: scheduler.get_job(job_id=task_id).args[0] == user_id, task_ids)
         for id in task_ids:
             scheduler.resume_job(job_id=id)
@@ -290,6 +293,9 @@ class PauseTasks(Resource):
         user_id = auth_user.id
         req_data = request.get_json()
         task_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else []
+        none_tasks = filter(lambda task_id: scheduler.get_job(job_id=task_id) == None, task_ids)
+        if len(none_tasks):
+            raise NoJobFoundError("Job with id %s doesn't exist" % none_tasks)
         task_ids = filter(lambda task_id: scheduler.get_job(job_id=task_id).args[0] == user_id, task_ids)
         for id in task_ids:
             # pause the job whether it is paused before or not
