@@ -3,7 +3,7 @@ var gulp = require('gulp');
 module.exports = function (config) {
     config.log('Importing assets.js...');
 
-    gulp.task('fonts', ['clean-fonts'], function () {
+    gulp.task('fonts', ['clean-fonts', 'build-icon-font'], function () {
         config.log('Copying fonts');
 
         var fontDir = config.sourceDir + 'core/icon-font/gettalent-icons.*';
