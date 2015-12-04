@@ -251,6 +251,7 @@ input[type=number] {
 .form__label--shown { // doesn't float the label when the input has value
   @extend .form__label;
 
+  visibility: visible;
   opacity: 1;
   position: absolute;
   top: .75em;
