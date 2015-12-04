@@ -57,7 +57,7 @@ class Candidate(db.Model):
     candidate_patent_histories = relationship('CandidatePatentHistory', backref='candidate')
     candidate_publications = relationship('CandidatePublication', backref='candidate')
     candidate_addresses = relationship('CandidateAddress', backref='candidate')
-    candidate_educations = relationship('CandidateEducation', backref='candidate')
+    candidate_educations = relationship('CandidateEducation', cascade='all, delete-orphan', passive_deletes=True)
     candidate_skills = relationship('CandidateSkill', backref='candidate')
     candidate_unidentifieds = relationship('CandidateUnidentified', backref='candidate')
     email_campaign_sends = relationship('EmailCampaignSend', backref='candidate')
@@ -640,7 +640,7 @@ class CandidateAddress(db.Model):
 class CandidateEducation(db.Model):
     __tablename__ = 'candidate_education'
     id = db.Column(db.BigInteger, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
+    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id', ondelete='CASCADE'))
     list_order = db.Column('ListOrder', db.SmallInteger)
     school_name = db.Column('SchoolName', db.String(200))
     school_type = db.Column('SchoolType', db.String(100))
@@ -654,10 +654,16 @@ class CandidateEducation(db.Model):
     resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
 
     # Relationships
-    candidate_education_degrees = relationship('CandidateEducationDegree', backref='candidate_education')
+    candidate_education_degrees = relationship(
+        'CandidateEducationDegree', cascade='all, delete-orphan', passive_deletes=True
+    )
 
     def __repr__(self):
         return "<CandidateEducation (candidate_id = %r)>" % self.candidate_id
+
+    @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.filter_by(id=_id).first()
 
     @classmethod
     def set_is_current_to_false(cls, candidate_id):
@@ -685,7 +691,9 @@ class CandidateEducationDegree(db.Model):
     end_time = db.Column('EndTime', db.DateTime)
 
     # Relationships
-    candidate_education_degree_bullets = relationship('CandidateEducationDegreeBullet', backref='candidate_education_degree')
+    candidate_education_degree_bullets = relationship('CandidateEducationDegreeBullet',
+                                                      cascade='all, delete-orphan',
+                                                      passive_deletes=True)
 
     def __repr__(self):
         return "<CandidateEducationDegree (candidate_education_id=' %r')>" % self.candidate_education_id
@@ -702,7 +710,8 @@ class CandidateEducationDegreeBullet(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
-        return "<CandidateEducationDegreeBullet (candidate_education_degree_id=' %r')>" % self.candidate_education_degree_id
+        return "<CandidateEducationDegreeBullet (candidate_education_degree_id=' %r')>" % \
+               self.candidate_education_degree_id
 
 
 class CandidateExperience(db.Model):

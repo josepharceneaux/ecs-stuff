@@ -22,7 +22,10 @@ from candidate_service.common.utils.auth_utils import require_oauth
 from candidate_service.common.error_handling import ForbiddenError, InvalidUsage, NotFoundError
 
 # Models
-from candidate_service.common.models.candidate import Candidate, CandidateAddress
+from candidate_service.common.models.candidate import (
+    Candidate, CandidateAddress, CandidateEducation, CandidateEducationDegree,
+    CandidateEducationDegreeBullet
+)
 from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 
@@ -444,6 +447,144 @@ class CandidateAreaOfInterestResource(Resource):
 
         db.session.commit()
         return '', 204
+
+
+class CandidateEducationResource(Resource):
+    decorators = [require_oauth]
+
+    def delete(self, **kwargs):
+        """
+        Endpoints:
+              i. DELETE /v1/candidates/:candidate_id/educations
+             ii. DELETE /v1/candidates/:candidate_id/educations/:id
+              v. DELETE /v1/candidates/:candidate_id/educations/:education_id/degrees/:degree_id/bullets
+             vi. DELETE /v1/candidates/:candidate_id/educations/:education_id/degrees/:degree_id/bullets/:id
+        """
+        # Authenticated user
+        authed_user = request.user
+
+        # Get candidate_id and education_id
+        candidate_id, education_id = kwargs.get('candidate_id'), kwargs.get('id')
+
+        # Determine if all educations need to be deleted or just a single one
+        single_education, all_educations = False, False
+        if candidate_id and education_id:
+            single_education = True
+        elif candidate_id and not education_id:
+            all_educations = True
+
+         # Candidate must belong to user's domain
+        if not does_candidate_belong_to_user(authed_user, candidate_id):
+            raise ForbiddenError(error_message='Not authorized')
+
+        if single_education:
+            # Education must belong to Candidate
+            can_edu = CandidateEducation.get_by_id(_id=education_id)
+            if can_edu:
+                if can_edu.candidate_id != candidate_id:
+                    raise ForbiddenError(error_message='Not authorized')
+
+                db.session.delete(can_edu)
+            else:
+                raise NotFoundError(error_message='Education not found')
+
+        elif all_educations:
+            can_educations = db.session.query(CandidateEducation).filter_by(candidate_id=candidate_id).all()
+            for can_edu in can_educations:
+                db.session.delete(can_edu)
+
+        db.session.commit()
+        return '', 204
+
+
+class CandidateEducationDegreeResource(Resource):
+    decorators = [require_oauth]
+
+    def delete(self, **kwargs):
+        """
+        Endpoints:
+             i. DELETE /v1/candidates/:candidate_id/educations/:education_id/degrees
+            ii. DELETE /v1/candidates/:candidate_id/educations/:education_id/degrees/:id
+        """
+        # Authenticated user
+        authed_user = request.user
+
+        # Get candidate_id, education_id, and degree_id
+        candidate_id, education_id= kwargs.get('candidate_id'), kwargs.get('education_id')
+        degree_id = kwargs.get('id')
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_user(authed_user, candidate_id):
+            raise ForbiddenError(error_message='Not authorized')
+
+        # Determine if all degrees need to be deleted or just a single one
+        single_degree = True if degree_id else False
+
+        if single_degree:
+            # Verify that degree belongs to education, and education belongs to candidate
+            candidate_degree = db.session.query(CandidateEducation).join(CandidateEducationDegree).\
+                filter(CandidateEducation.candidate_id == candidate_id).\
+                filter(CandidateEducationDegree.id == degree_id).first()
+            if candidate_degree:
+                db.session.delete(candidate_degree)
+            else:
+                raise NotFoundError(error_message='Education degree not found.')
+
+        else: # Assume all degrees need to be deleted
+            education = CandidateEducation.get_by_id(_id=education_id)
+            if education:
+                if education.candidate_id != candidate_id:
+                    raise ForbiddenError(error_message='Not Authorized')
+
+                degrees = education.candidate_education_degrees
+                for degree in degrees:
+                    db.session.delete(degree)
+            else:
+                raise NotFoundError(error_message='Education not found')
+
+        db.session.commit()
+        return '', 204
+
+
+class CandidateEducationDegreeBulletResource(Resource):
+    decorators = [require_oauth]
+
+    def delete(self, **kwargs):
+        """
+        Endpoints:
+             i. DELETE /v1/candidates/:candidate_id/educations/:education_id/degrees/:degree_id/bullets
+            ii. DELETE /v1/candidates/:candidate_id/educations/:education_id/degrees/:degree_id/bullets/:id
+        """
+        # Authenticated user
+        authed_user = request.user
+
+        # Get required IDs
+        candidate_id, education_id = kwargs.get('candidate_id'), kwargs.get('educations_id')
+        degree_id, bullet_id = kwargs.get('degree_id'), kwargs.get('id')
+
+        # Determine if all bullets need to be deleted or just a single one
+        single_bullet = True if bullet_id else False
+
+        if single_bullet:
+            # degree_bullet must belongs to degree; degree must belongs to education; education must belong to candidate
+            candidate_degree_bullet = db.session.query(CandidateEducation).\
+                join(CandidateEducationDegree).join(CandidateEducationDegreeBullet).\
+                filter(CandidateEducation.candidate_id == candidate_id).\
+                filter(CandidateEducationDegree.id == degree_id).\
+                filter(CandidateEducationDegreeBullet.id == bullet_id).first()
+            if candidate_degree_bullet:
+                db.session.delete(candidate_degree_bullet)
+            else:
+                raise NotFoundError(error_message='Degree bullet not found.')
+
+        else: # Assume all degree bullets need to be deleted
+            education = CandidateEducation.get_by_id(_id=education_id)
+            if education:
+                if education.candidate_id != candidate_id:
+                    raise ForbiddenError(error_message='Not authorized')
+
+
+
 
 
 # class CandidateEmailCampaignResource(Resource):

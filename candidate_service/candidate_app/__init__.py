@@ -21,7 +21,8 @@ db.app = app
 health = HealthCheck(app, "/healthcheck")
 
 from candidate_service.candidate_app.api.v1_candidates import (
-    CandidateResource, CandidateAddressResource, CandidateAreaOfInterestResource
+    CandidateResource, CandidateAddressResource, CandidateAreaOfInterestResource,
+    CandidateEducationResource, CandidateEducationDegreeResource
 )
 api = GetTalentApi(app=app)
 
@@ -33,19 +34,19 @@ api.add_resource(
     '/v1/candidates'
 )
 
-##### CandidateAddressResource #####
+######################## CandidateAddressResource ########################
 api.add_resource(
     CandidateAddressResource,
     '/v1/candidates/<int:candidate_id>/addresses',
-    endpoint='candidate_addresses_1'
+    endpoint='candidate_address_1'
 )
 api.add_resource(
 CandidateAddressResource,
 '/v1/candidates/<int:candidate_id>/addresses/<int:id>',
-endpoint='candidate_addresses_2'
+endpoint='candidate_address_2'
 )
 
-##### CandidateAreaOfInterestResource #####
+######################## CandidateAreaOfInterestResource ########################
 api.add_resource(
     CandidateAreaOfInterestResource,
     '/v1/candidates/<int:candidate_id>/areas_of_interest',
@@ -57,6 +58,29 @@ api.add_resource(
     endpoint='candidate_area_of_interest_2'
 )
 
+######################## CandidateEducationResource ########################
+api.add_resource(
+    CandidateEducationResource,
+    '/v1/candidates/<int:candidate_id>/educations',
+    endpoint='candidate_education_1'
+)
+api.add_resource(
+    CandidateEducationResource,
+    '/v1/candidates/<int:candidate_id>/educations/<int:id>',
+    endpoint='candidate_education_2'
+)
+
+######################## CandidateEducationDegreeResource ########################
+api.add_resource(
+    CandidateEducationDegreeResource,
+    '/v1/candidates/<int:candidate_id>/educations/<int:education_id>/degrees',
+    endpoint='candidate_education_degree_1'
+)
+api.add_resource(
+    CandidateEducationDegreeResource,
+    '/v1/candidates/<int:candidate_id>/educations/<int:education_id>/degrees/<int:id>',
+    endpoint='candidate_education_degree_2'
+)
 
 # api.add_resource(CandidateEmailCampaignResource,
 #                  '/v1/candidates/<int:id>/email_campaigns/<int:email_campaign_id>/email_campaign_sends',
@@ -65,5 +89,4 @@ api.add_resource(
 db.create_all()
 db.session.commit()
 
-logger.info('Starting candidate_service in %s environment',
-            app.config['GT_ENVIRONMENT'])
+logger.info('Starting candidate_service in %s environment', app.config['GT_ENVIRONMENT'])
