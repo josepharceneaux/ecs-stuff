@@ -43,6 +43,7 @@ other model classes inherit. But this changes will only effect this app or the a
              This will add all these method on db.Model and all its child classes.
 
 """
+from flask import current_app
 from types import MethodType
 from ..models.db import db
 from ..error_handling import register_error_handlers
@@ -131,7 +132,7 @@ def get_by_id(cls, _id):
         # get Model instance given by id
         obj = cls.query.get(_id)
     except Exception as error:
-        cls.logger("Couldn't get record from db table %s. Error is: %s"
+        current_app.logger("Couldn't get record from db table %s. Error is: %s"
                    % (cls.__name__, error.message))
         return None
     return obj
@@ -154,7 +155,7 @@ def delete(cls, ref):
         db.session.delete(obj)
         db.session.commit()
     except Exception as error:
-        cls.logger("Couldn't delete record from db. Error is: %s" % error.message)
+        current_app.logger("Couldn't delete record from db. Error is: %s" % error.message)
         return False
     return True
 

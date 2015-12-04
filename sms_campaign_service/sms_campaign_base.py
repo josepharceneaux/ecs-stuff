@@ -42,7 +42,8 @@ from sms_campaign_service.sms_campaign_app_constants import (SMS_URL_REDIRECT, P
                                                              TWILIO, POOL_SIZE)
 from sms_campaign_service.custom_exceptions import \
     (EmptySmsBody, MultipleTwilioNumbers, EmptyDestinationUrl, MissingRequiredField,
-     MultipleUsersFound, MultipleCandidatesFound, ErrorSavingSMSCampaign)
+     MultipleUsersFound, MultipleCandidatesFound, ErrorSavingSMSCampaign, NoCandidateAssociated,
+     NoSmartlistAssociated)
 from sms_campaign_service.common.models.candidate import (PhoneLabel, Candidate, CandidatePhone)
 from sms_campaign_service.common.models.sms_campaign import \
     (SmsCampaign, SmsCampaignSend, SmsCampaignBlast, SmsCampaignSmartlist,
@@ -437,13 +438,13 @@ class SmsCampaignBase(CampaignBase):
                 if candidates:
                     all_candidates.extend(candidates)
                 else:
-                    logger.error('process_send: No Candidate found. Smart list id is %s.'
+                    logger.error('process_send: No Candidate found. smartlist id is %s.'
                                  % smart_list.smart_list_id)
         else:
-            logger.error('process_send: No Smart list is associated with SMS '
+            logger.error('process_send: No smartlist is associated with SMS '
                          'Campaign(id:%s)' % campaign.id)
-            raise ForbiddenError(error_message='No Smart list is associated with SMS '
-                                               'Campaign(id:%s)' % campaign.id)
+            raise NoSmartlistAssociated(error_message='No smartlist is associated with SMS '
+                                                      'Campaign(id:%s)' % campaign.id)
         if all_candidates:
             logger.debug('process_send: SMS Campaign(id:%s) will be sent to %s candidate(s).'
                          % (campaign.id, len(all_candidates)))
@@ -455,11 +456,9 @@ class SmsCampaignBase(CampaignBase):
                          % (campaign.id, self.total_sends))
             return self.total_sends
         else:
-            logger.error('process_send: No Candidate is associated to SMS Campaign(id:%s)'
-                         % campaign.id)
-            raise ForbiddenError(error_message='No Candidate is associated to smartlist(s)'
-                                               'SMS Campaign(id:%s). Smartlist ids are %s'
-                                               % (campaign.id, smart_lists))
+            raise NoCandidateAssociated(error_message='No candidate is associated to smartlist(s)'
+                                                      'SMS Campaign(id:%s). smartlist ids are %s'
+                                                      % (campaign.id, smart_lists))
 
     def send_campaign_to_candidate(self, candidate):
         """
@@ -485,6 +484,8 @@ class SmsCampaignBase(CampaignBase):
                                         candidate_phone.phone_label_id == PHONE_LABEL_ID,
                                         candidate_phones)
         if len(candidate_mobile_phone) == 1:
+            # If this number is associated with multiple candidates, raise exception
+            _valid_candidate_phone_value(candidate_mobile_phone[0].value)
             # Transform body text to be sent in SMS
             self.process_urls_in_sms_body_text(candidate.id)
             assert self.modified_body_text
@@ -911,7 +912,7 @@ class SmsCampaignBase(CampaignBase):
             # get "user_phone" row
             user_phone = _get_valid_user_phone_value(reply_data.get('To'))
             # get "candidate_phone" row
-            candidate_phone = _get_valid_candidate_phone_value(reply_data.get('From'))
+            candidate_phone = _valid_candidate_phone_value(reply_data.get('From'))
             # get latest campaign send
             sms_campaign_send = SmsCampaignSend.get_by_candidate_id(candidate_phone.candidate_id)
             # get SMS campaign blast
@@ -1020,7 +1021,7 @@ def _get_valid_user_phone_value(user_phone_value):
     return user_phone
 
 
-def _get_valid_candidate_phone_value(candidate_phone_value):
+def _valid_candidate_phone_value(candidate_phone_value):
     """
     - This ensures that given phone number is associated with only one candidate.
 
@@ -1061,14 +1062,26 @@ def delete_sms_campaign(campaign_id, current_user_id):
     :return: True if record deleted successfully, False otherwise.
     :rtype: bool
     """
+    if is_owner_of_campaign(campaign_id, current_user_id):
+        return SmsCampaign.delete(campaign_id)
+
+
+def is_owner_of_campaign(campaign_id, current_user_id):
+    """
+    This function returns True if the current user is an owner for given
+    campaign_id. Otherwise it raises the Forbidden error.
+    :param campaign_id: id of campaign form getTalent database
+    :param current_user_id: Id of current user
+    :return:
+    """
     campaign_row = SmsCampaign.get_by_id(campaign_id)
     if campaign_row:
         campaign_user_id = UserPhone.get_by_id(campaign_row.user_phone_id).user_id
         if campaign_user_id == current_user_id:
-            return SmsCampaign.delete(campaign_id)
+            return True
         else:
-            raise ForbiddenError(error_message='You are not authorized '
-                                               'to delete SMS campaign(id:%s)' % campaign_id)
+            raise ForbiddenError(error_message='You are not the owner of '
+                                               'SMS campaign(id:%s)' % campaign_id)
     else:
         raise ResourceNotFound(error_message='SMS Campaign(id=%s) not found.' % campaign_id)
 

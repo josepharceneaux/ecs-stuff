@@ -9,6 +9,7 @@ import pytest
 
 # App Settings
 from sms_campaign_service import init_sms_campaign_app
+
 app = init_sms_campaign_app()
 
 # Application Specific
@@ -16,13 +17,13 @@ app = init_sms_campaign_app()
 from sms_campaign_service.common.tests.conftest import *
 
 # App specific
-from sms_campaign_service.sms_campaign_app_constants import TWILIO
+from sms_campaign_service.sms_campaign_app_constants import TWILIO, PHONE_LABEL_ID
 from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
-from sms_campaign_service.common.models.candidate import PhoneLabel
-from sms_campaign_service.common.models.sms_campaign import SmsCampaign
+from sms_campaign_service.common.models.candidate import PhoneLabel, CandidatePhone
+from sms_campaign_service.common.models.smart_list import SmartList, SmartListCandidate
+from sms_campaign_service.common.models.sms_campaign import SmsCampaign, SmsCampaignSmartlist
 from sms_campaign_service.common.utils.app_base_urls import SMS_CAMPAIGN_SERVICE_APP_URL
-
 
 TEST_NUMBER_1 = '+123'
 TEST_NUMBER_2 = '+456'
@@ -172,7 +173,7 @@ def create_sms_campaign_blast(sms_campaign_of_current_user):
 
 
 @pytest.fixture()
-def create_campaign_send(candidate_first, candidate_second, create_sms_campaign_blast):
+def create_campaign_sends(candidate_first, candidate_second, create_sms_campaign_blast):
     """
     This creates a record in database table "sms_campaign_send"
     :param candidate_first: fixture to create test candidate
@@ -180,6 +181,89 @@ def create_campaign_send(candidate_first, candidate_second, create_sms_campaign_
     :return:
     """
     campaign_send_1 = SmsCampaignBase.create_or_update_sms_campaign_send(create_sms_campaign_blast,
-                                                                         candidate_first.id, datetime.now())
+                                                                         candidate_first.id,
+                                                                         datetime.now())
     campaign_send_2 = SmsCampaignBase.create_or_update_sms_campaign_send(create_sms_campaign_blast,
-                                                                         candidate_second.id, datetime.now())
+                                                                         candidate_second.id,
+                                                                         datetime.now())
+
+
+@pytest.fixture()
+def sample_sms_campaign_candidates(sample_smartlist,
+                                   candidate_first,
+                                   candidate_second):
+    """
+    This adds two candidates to sample_smartlist
+    :param sample_smartlist:
+    :param candidate_first:
+    :param candidate_second:
+    :return:
+    """
+
+    smart_list_candidate_1 = SmartListCandidate(smart_list_id=sample_smartlist.id,
+                                                candidate_id=candidate_first.id)
+    SmartListCandidate.save(smart_list_candidate_1)
+    smart_list_candidate_2 = SmartListCandidate(smart_list_id=sample_smartlist.id,
+                                                candidate_id=candidate_second.id)
+    SmartListCandidate.save(smart_list_candidate_2)
+
+
+@pytest.fixture()
+def sms_campaign_smartlist(sample_smartlist, sms_campaign_of_current_user):
+    """
+    This associates sample_smartlist with the sms_campaign_of_current_user
+    :param sample_smartlist:
+    :param sms_campaign_of_current_user:
+    :return:
+    """
+    sms_campaign_smart_list = SmsCampaignSmartlist(smart_list_id=sample_smartlist.id,
+                                                   sms_campaign_id=sms_campaign_of_current_user.id)
+    SmsCampaignSmartlist.save(sms_campaign_smart_list)
+    return sms_campaign_smart_list
+
+
+@pytest.fixture()
+def candidate_phone_1(candidate_first):
+    """
+    This associates sample_smartlist with the sms_campaign_of_current_user
+    :param candidate_first:
+    :return:
+    """
+    return _create_candidate_mobile_phone(candidate_first, TEST_NUMBER_1)
+
+
+@pytest.fixture()
+def candidate_phone_2(candidate_second):
+    """
+    This associates sample_smartlist with the sms_campaign_of_current_user
+    :param candidate_second:
+    :return:
+    """
+    return _create_candidate_mobile_phone(candidate_second, TEST_NUMBER_2)
+
+
+@pytest.fixture()
+def candidates_with_same_phone(candidate_first, candidate_second):
+    """
+    This associates same number to candidate_first and candidate_second
+    :param candidate_second:
+    :return:
+    """
+    cand_phone_1 = _create_candidate_mobile_phone(candidate_first, TEST_NUMBER_1)
+    cand_phone_2 = _create_candidate_mobile_phone(candidate_second, TEST_NUMBER_1)
+    return cand_phone_1, cand_phone_2
+
+
+def _create_candidate_mobile_phone(candidate, phone_value):
+    """
+    This adds candidate_phone record in database table "candidate_phone"
+    :param user: user row
+    :param phone_value: value of phone number
+    :return: user_phone row
+    """
+    phone_label_id = PhoneLabel.phone_label_id_from_phone_label(PHONE_LABEL_ID)
+    candidate_phone = CandidatePhone(candidate_id=candidate.id,
+                                     phone_label_id=phone_label_id,
+                                     value=phone_value)
+    CandidatePhone.save(candidate_phone)
+    return candidate_phone

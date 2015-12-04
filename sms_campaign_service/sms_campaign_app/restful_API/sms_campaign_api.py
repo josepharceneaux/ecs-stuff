@@ -45,7 +45,7 @@ from sms_campaign_service.common.utils.auth_utils import require_oauth
 from sms_campaign_service.custom_exceptions import ErrorDeletingSMSCampaign
 from sms_campaign_service.common.utils.api_utils import api_route, ApiResponse
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase, delete_sms_campaign,\
-    validate_header
+    validate_header, is_owner_of_campaign
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign, SmsCampaignBlast, \
     SmsCampaignSend
 
@@ -475,6 +475,7 @@ class SendSmsCampaign(Resource):
 
         .. Status:: 200 (OK)
                     401 (Unauthorized to access getTalent)
+                    403 (Forbidden Error)
                     404 (Campaign not found)
                     500 (Internal Server Error)
 
@@ -486,11 +487,12 @@ class SendSmsCampaign(Resource):
         :param campaign_id: integer, unique id representing campaign in GT database
         :return: json for required campaign containing message and total sends.
         """
-        campaign = SmsCampaign.get_by_id(campaign_id)
-        if campaign:
-            camp_obj = SmsCampaignBase(request.user.id)
-            total_sends = camp_obj.process_send(campaign)
-            return dict(message='Campaign(id:%s) has been sent successfully'
-                                % campaign_id, total_sends=total_sends), 200
-        else:
-            raise ResourceNotFound(error_message='SMS Campaign(id=%s) Not found.' % campaign_id)
+        if is_owner_of_campaign(campaign_id, request.user.id):
+            campaign = SmsCampaign.get_by_id(campaign_id)
+            if campaign:
+                camp_obj = SmsCampaignBase(request.user.id)
+                total_sends = camp_obj.process_send(campaign)
+                return dict(message='Campaign(id:%s) has been sent successfully'
+                                    % campaign_id, total_sends=total_sends), 200
+            else:
+                raise ResourceNotFound(error_message='SMS Campaign(id=%s) Not found.' % campaign_id)

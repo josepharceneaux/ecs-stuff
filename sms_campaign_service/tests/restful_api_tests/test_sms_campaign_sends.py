@@ -104,7 +104,7 @@ class TestSmsCampaignSends:
 
     def test_get_with_valid_token_and_two_campaign_sends(self, auth_token,
                                                          sms_campaign_of_current_user,
-                                                         create_campaign_send):
+                                                         create_campaign_sends):
         """
         It first deletes a campaign from database and try to get its sends.
         It should get not found error.

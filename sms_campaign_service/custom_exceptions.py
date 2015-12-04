@@ -61,3 +61,10 @@ class ErrorSavingSMSCampaign(SmsCampaignApiException):
 class ErrorDeletingSMSCampaign(SmsCampaignApiException):
     error_code = 5010
 
+
+class NoSmartlistAssociated(SmsCampaignApiException):
+    error_code = 5011
+
+
+class NoCandidateAssociated(SmsCampaignApiException):
+    error_code = 5012

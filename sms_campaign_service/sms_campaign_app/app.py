@@ -48,7 +48,7 @@ CORS(app, resources={
 
 
 @app.route('/')
-def hello_world():
+def root():
     return 'Welcome to SMS Campaign Service'
 
 
