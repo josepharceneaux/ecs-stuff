@@ -129,13 +129,9 @@
                     <h2>Active Engagement Campaigns <span>(15)</span></h2>
                 </div>
                 <div class="col--large-3 align--right">
-                    <select id="activeEngagementCharts" class="js-fancy" name="activeEngagementCharts">
-                        <option value="">Select chart to view</option>
-                        <option value="candidate-count-by-pipelines">Candidate Count by Pipelines</option>
-                        <option value="candidate-growth-by-pipelines">Candidate Growth by Pipelines</option>
-                        <option value="candidate-growth-by-user">Candidate Growth by User</option>
-                        <option value="candidate-opt-outs-by-pipelines">Candidate Opt-Outs by Pipelines</option>
-                        <option value="engagement-by-pipelines">Engagement by Pipelines</option>
+                    <select ng-model="vm.activeEngagementChart" ng-options="option.name for option in vm.engagementCharts track by option.id"
+                        id="activeEngagementCharts" class="form__input--select" name="activeEngagementCharts">
+                        <option value="" ng-show="!vm.activeEngagementChart">Select chart to view</option>
                     </select>
                 </div>
             </header>
@@ -396,12 +392,9 @@
                     <!-- Form: Recipients -->
                     <div class="col--medium-6 form__col">
                         <label class="form__label" for="selectRecipients">Select Recipients *</label>
-                        <select class="js-fancy form__field--select" name="selectRecipients" id="selectRecipients">
-                            <option value="">Select Recipients *</option>
-                            <option value="zack">Zack</option>
-                            <option value="greg">Greg</option>
-                            <option value="juergen">Jürgen</option>
-                            <option value="viktor">Viktor</option>
+                        <select ng-model="vm.campaign.recipients" ng-options="option.name for option in vm.recipients track by option.id"
+                            gt-float-label class="form__input--select" name="selectRecipients" id="selectRecipients">
+                            <option value="" ng-show="!vm.campaign.recipients">Select Recipients *</option>
                         </select>
                     </div>
                     <!-- Form: From -->
@@ -437,13 +430,10 @@
                 <div class="form__fieldset row--expanded">
                     <!-- Form: Select Template -->
                     <div class="col--medium-6 form__col">
-                        <label class="form__label" for="selectTemplate">Select Tempalte *</label>
-                        <select gt-float-label class="js-fancy form__input--select" name="selectTemplate" id="selectTemplate">
-                            <option value="">Select Template *</option>
-                            <option value="zack">Template – Zack</option>
-                            <option value="greg">Template – Greg</option>
-                            <option value="juergen">Template – Jürgen</option>
-                            <option value="viktor">Template – Viktor</option>
+                        <label class="form__label" for="selectTemplate">Select Template *</label>
+                        <select ng-model="vm.campaign.template" ng-options="option.name for option in vm.campaignTemplates track by option.id"
+                            gt-float-label class="form__input--select" name="selectTemplate" id="selectTemplate">
+                            <option value="" ng-show="!vm.campaign.template">Select Template *</option>
                         </select>
                     </div>
                 </div>
@@ -492,24 +482,24 @@
                         <!-- Form: Title -->
                         <div class="col--medium-6 form__col">
                             <label class="form__label" for="title">Title *</label>
-                            <input gt-float-label class="form__input" id="title" name="title" type="text" placeholder="Title *">
+                            <input gt-float-label class="form__input" ng-model="vm.pipeline.title" id="title" name="title" type="text" placeholder="Title *">
                         </div>
                         <!-- Form: Date Needed -->
                         <div class="col--medium-6 form__col">
                             <label class="form__label" for="dateNeed">Date Needed *</label>
-                            <input gt-float-label pick-a-date="vm.dateNeeded" ng-model="vm.dateNeededText" class="form__input" id="dateNeed" name="dateNeed" type="text" placeholder="Date Needed *">
+                            <input gt-float-label pick-a-date="vm.pipeline.dateNeeded" ng-model="vm.pipeline.dateNeededText" class="form__input" id="dateNeed" name="dateNeed" type="text" placeholder="Date Needed *">
                         </div>
                     </div>
                     <div class="form__fieldset row--expanded">
                         <!-- Form: Description -->
                         <div class="col--medium-6 form__col">
                             <label class="form__label" for="description">Description</label>
-                            <textarea gt-float-label class="form__input--shortTextarea" name="description" placeholder="Description"></textarea>
+                            <textarea gt-float-label class="form__input--shortTextarea" ng-model="vm.pipeline.description" name="description" placeholder="Description"></textarea>
                         </div>
                         <!-- Form: Auto Archive -->
                         <div class="col--medium-6 form__col">
-                            <label gt-float-label class="form__input--checkbox">
-                                <input type="checkbox"> <!-- Hidden checkbox -->
+                            <label class="form__input--checkbox">
+                                <input gt-float-label type="checkbox" ng-model="vm.pipeline.autoArchive"> <!-- Hidden checkbox -->
                                 <span></span> <!-- Custom displayed checkbox -->
                                 Auto archive after this date <!-- Inside the label so you can click the text to check the checkbox -->
                             </label>
@@ -525,24 +515,24 @@
                     <div class="form__fieldset row--expanded">
                         <div class="col--medium-6 form__col">
                             <label class="form__label--shown" for="description">Keywords <small class="form__instruction">Separate keywords with commas</small></label>
-                            <input class="js-tagsInput form-field" name="skills" type="text" placeholder="Add a keyword">
+                            <input gt-tags-input ng-model="vm.filters.keywords" class="form-field" name="keywords" type="text" placeholder="Add a keyword">
                         </div>
                         <div class="col--medium-6 form__col">
                             <label class="form__label--shown" for="description">Years of Experience</label>
-                            <input class="form__input--inline" name="degree" type="number" placeholder="1" min="0" max="98">
+                            <input class="form__input--inline" ng-model="vm.filters.yearsXp.min" name="minYearXp" type="number" placeholder="1" min="0" max="98">
                             <span class="form__label--inbetweenInputs">to</span>
-                            <input class="form__input--inline" name="degree" type="number" placeholder="5" min="1" max="99">
+                            <input class="form__input--inline" ng-model="vm.filters.yearsXp.max" name="maxYearsXp" type="number" placeholder="5" min="1" max="99">
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
                         <div class="col--medium-6 form__col">
                             <label class="form__label--shown" for="description">Skills <small class="form__instruction">Separate skills with commas</small></label>
-                            <input class="js-tagsInput form-field" name="skills" type="text" placeholder="Add a skill">
+                            <input gt-tags-input ng-model="vm.filters.skills" class="form-field" name="skills" type="text" placeholder="Add a skill">
                         </div>
                         <div class="col--medium-6 form__col">
                             <label class="form__label--shown" for="description">Degree <small class="form__instruction">Separate degrees with commas</small></label>
-                            <input class="js-tagsInput form-field" name="degree" type="text" placeholder="Add a degree">
+                            <input gt-tags-input ng-model="vm.filters.degrees" class="form-field" name="degree" type="text" placeholder="Add a degree">
                         </div>
                     </div>
 
@@ -580,17 +570,16 @@
                     <div class="form__fieldset row--expanded">
                         <div class="col--medium-8 form__col">
                             <label class="form__label" for="eventType">Event Type</label>
-                            <div class="fancy-select"><select id="eventType" class="js-fancy fancified" name="eventType" style="width: 1px; height: 1px; display: block; position: absolute; top: 0px; left: 0px; opacity: 0;">
-                                <option value="">Event Type</option>
-                                <option value="eventbrite">Eventbrite</option>
-                                <option value="eventbrite02">Eventbrite 01</option>
-                            </select><div class="trigger">Event Type</div><ul class="options"><li data-raw-value="eventbrite">Eventbrite</li><li data-raw-value="eventbrite02">Eventbrite 01</li></ul></div>
+                            <select gt-float-label class="form__input--select"
+                                ng-model="vm.event.type" ng-options="option.name for option in vm.eventTypes track by option.id" id="eventType" name="eventType">
+                                <option value="" ng-show="!vm.event.type">Event Type</option>
+                            </select>
                         </div>
 
                         <div class="col--medium-4 form__col">
                             <h4 class="form__label--shown">Active Event?</h4>
-                            <label gt-float-label class="form__input--toggle">
-                                <input type="checkbox">
+                            <label class="form__input--toggle">
+                                <input gt-float-label type="checkbox" ng-model="vm.event.active">
                                 <span></span>
                             </label>
                         </div>
@@ -599,34 +588,33 @@
                     <div class="form__fieldset row--expanded">
                         <div class="col--medium-12 form__col form__col--stacked">
                             <label class="form__label" for="eventDetails">Event Details</label>
-                            <textarea gt-float-label class="form__input--textarea" name="eventDetails" placeholder="Event Details"></textarea>
+                            <textarea gt-float-label class="form__input--textarea" ng-model="vm.event.details" name="eventDetails" placeholder="Event Details"></textarea>
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
                         <div class="col--medium-6 form__col">
                             <label class="form__label" for="eventOrganizer">Event Organizer</label>
-                            <input gt-float-label class="form__input" id="eventOrganizer" name="eventOrganizer" type="text" placeholder="Event Organizer">
+                            <input gt-float-label class="form__input" ng-model="vm.event.organizer.name" id="eventOrganizer" name="eventOrganizer" type="text" placeholder="Event Organizer">
                         </div>
 
                         <div class="col--medium-6 form__col">
                             <label class="form__label" for="eventOrganizerContentEmail">Event Organizer Content Email</label>
-                            <input gt-float-label class="form__input" id="eventOrganizerContentEmail" name="eventOrganizerContentEmail" type="text" placeholder="Event Organizer Content Email">
+                            <input gt-float-label class="form__input" ng-model="vm.event.organizer.email" id="eventOrganizerContentEmail" name="eventOrganizerContentEmail" type="text" placeholder="Event Organizer Content Email">
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
                         <div class="col--medium-12 form__col form__col--stacked">
-                            <label class="form__label" for="aboutEventOrganizer">About Event Organizer</label>
                             <label class="form__label--shown" for="aboutEventOrganizer">About Event Organizer <small class="form__instruction">Enter info here about who is organizing the event</small></label>
-                            <textarea gt-float-label class="form__input--textarea" name="aboutEventOrganizer"></textarea>
+                            <textarea gt-float-label class="form__input--textarea" ng-model="vm.event.organizer.about" name="aboutEventOrganizer"></textarea>
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
                         <div class="col--medium-12 form__col form__col--stacked">
                             <label class="form__label--shown" for="eventRegistrationInstructions">Event Registration Instructions</label>
-                            <textarea gt-float-label class="form__input--shortTextarea" name="eventDetails"></textarea>
+                            <textarea gt-float-label class="form__input--shortTextarea" ng-model="vm.event.registrationInstructions" name="eventRegistrationInstructions"></textarea>
                         </div>
                     </div>
                 </div>
@@ -637,81 +625,77 @@
                     <div class="form__fieldset row--expanded">
                         <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventStartDate.$error.required && createEventForm.eventStartDate.$touched}">
                             <label class="form__label" for="eventStartDate">Event Start Date</label>
-                            <input gt-float-label pick-a-date="vm.eventStartDate" ng-model="vm.eventStartDateText" class="form__input picker__input" id="eventStartDate" name="eventStartDate" type="text" placeholder="Event Start Date" required>
+                            <input gt-float-label pick-a-date="vm.event.startDate" ng-model="vm.event.startDateText" class="form__input picker__input" id="eventStartDate" name="eventStartDate" type="text" placeholder="Event Start Date" required>
                         </div>
 
                         <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventEndDate.$error.required && createEventForm.eventEndDate.$touched}">
                             <label class="form__label" for="eventEndDate">Event End Date</label>
-                            <input gt-float-label pick-a-date="vm.eventEndDate" ng-model="vm.eventEndDateText" class="form__input picker__input" id="eventEndDate" name="eventEndDate" type="text" placeholder="Event End Date" required>
+                            <input gt-float-label pick-a-date="vm.event.endDate" ng-model="vm.event.endDateText" class="form__input picker__input" id="eventEndDate" name="eventEndDate" type="text" placeholder="Event End Date" required>
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
                         <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventStartTime.$error.required && createEventForm.eventStartTime.$touched}">
                             <label class="form__label" for="eventStartTime">Event Start Time</label>
-                            <input gt-float-label pick-a-time="vm.eventStartDate" ng-model="vm.eventStartTimeText" class="form__input picker__input" id="eventStartTime" name="eventStartTime" type="text" placeholder="Event Start Time" required>
+                            <input gt-float-label pick-a-time="vm.event.startDate" ng-model="vm.event.startTimeText" class="form__input picker__input" id="eventStartTime" name="eventStartTime" type="text" placeholder="Event Start Time" required>
                         </div>
 
                         <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventEndTime.$error.required && createEventForm.eventEndTime.$touched}">
                             <label class="form__label" for="eventEndTime">Event End Time</label>
-                            <input gt-float-label pick-a-time="vm.eventEndDate" ng-model="vm.eventEndTimeText" class="form__input picker__input" id="eventEndTime" name="eventEndTime" type="text" placeholder="Event End Time" required>
+                            <input gt-float-label pick-a-time="vm.event.endDate" ng-model="vm.event.endTimeText" class="form__input picker__input" id="eventEndTime" name="eventEndTime" type="text" placeholder="Event End Time" required>
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
                         <div class="col--medium-12 form__col form__col--stacked">
                             <label class="form__label" for="locationName">Location Name</label>
-                            <input gt-float-label class="form__input" ng-model="vm.eventLocationName" id="locationName" name="locationName" type="text" placeholder="Location Name">
+                            <input gt-float-label class="form__input" ng-model="vm.event.location.name" id="locationName" name="locationName" type="text" placeholder="Location Name">
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
                         <div class="col--medium-12 form__col form__col--stacked">
                             <label class="form__label" for="streetAddress">Street Address</label>
-                            <input gt-float-label class="form__input" value="123 Santa Clara St" id="streetAddress" name="streetAddress" type="text" placeholder="Street Address">
+                            <input gt-float-label class="form__input" ng-model="vm.event.location.address" value="225 W Santa Clara St" id="streetAddress" name="streetAddress" type="text" placeholder="Street Address">
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
                         <div class="col--medium-6 form__col">
                             <label class="form__label" for="city">City</label>
-                            <input gt-float-label class="form__input" id="city" name="city" type="text" placeholder="City">
+                            <input gt-float-label class="form__input" ng-model="vm.event.location.city" id="city" name="city" type="text" placeholder="City">
                         </div>
 
                         <div class="col--medium-6 form__col">
                             <label class="form__label" for="state">State</label>
-                            <input gt-float-label class="form__input" id="state" name="state" type="text" placeholder="State">
+                            <input gt-float-label class="form__input" ng-model="vm.event.location.state" id="state" name="state" type="text" placeholder="State">
                         </div>
 
                         <div class="col--medium-6 form__col">
                             <label class="form__label" for="zip">Zip</label>
-                            <input gt-float-label class="form__input" id="zip" name="zip" type="text" placeholder="Zip">
+                            <input gt-float-label class="form__input" ng-model="vm.event.location.zip" id="zip" name="zip" type="text" placeholder="Zip">
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
                         <div class="col--medium-6 form__col">
                             <label class="form__label" for="eventCost">Event Cost</label>
-                            <input gt-float-label class="form__input" id="eventCost" name="eventCost" type="text" placeholder="Event Cost">
+                            <input gt-float-label class="form__input" ng-model="vm.event.cost" id="eventCost" name="eventCost" type="text" placeholder="Event Cost">
                         </div>
 
                         <div class="col--medium-6 form__col">
                             <label class="form__label" for="maxAttendees">Max Attendees</label>
-                            <input gt-float-label class="form__input" id="maxAttendees" name="maxAttendees" type="number" placeholder="Max Attendees">
+                            <input gt-float-label class="form__input" ng-model="vm.event.capacity" id="maxAttendees" name="maxAttendees" type="number" placeholder="Max Attendees">
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
                         <div class="col--medium-12 form__col form__col--stacked">
                             <label class="form__label" for="SelectSmartListsToInvites">Select Smart Lists to Invite</label>
-                            <div class="fancy-select"><select id="activeEngagementCharts" class="js-fancy fancified" name="activeEngagementCharts" style="width: 1px; height: 1px; display: block; position: absolute; top: 0px; left: 0px; opacity: 0;">
-                                <option value="">Select Smart Lists to Invite</option>
-                                <option value="candidate-count-by-pipelines">Candidate Count by Pipelines</option>
-                                <option value="candidate-growth-by-pipelines">Candidate Growth by Pipelines</option>
-                                <option value="candidate-growth-by-user">Candidate Growth by User</option>
-                                <option value="candidate-opt-outs-by-pipelines">Candidate Opt-Outs by Pipelines</option>
-                                <option value="engagement-by-pipelines">Engagement by Pipelines</option>
-                            </select><div class="trigger">Select Smart Lists to Invite</div><ul class="options overflowing"><li data-raw-value="candidate-count-by-pipelines">Candidate Count by Pipelines</li><li data-raw-value="candidate-growth-by-pipelines">Candidate Growth by Pipelines</li><li data-raw-value="candidate-growth-by-user" class="">Candidate Growth by User</li><li data-raw-value="candidate-opt-outs-by-pipelines" class="">Candidate Opt-Outs by Pipelines</li><li data-raw-value="engagement-by-pipelines" class="">Engagement by Pipelines</li></ul></div>
+                            <select ng-model="vm.event.smartListsToInvite" ng-options="option.name for option in vm.smartsLists track by option.id"
+                                gt-float-label id="activeEngagementCharts" class="form__input--select" name="activeEngagementCharts">
+                                <option value="" ng-show="!vm.event.smartListsToInvite">Select Smart Lists to Invite</option>
+                            </select>
                             <small class="form__input-info">Candidate Leads <span class="pill">457</span></small>
                         </div>
                     </div>
@@ -721,7 +705,7 @@
                             <h4 class="form__label--shown">Event Header Image</h4>
 
                             <label class="js-inputFile form__input--file">
-                                <input type="file" aria-label="File browser">
+                                <input type="file" gt-file-model="vm.event.headerImage" aria-label="File browser">
                                 <span data-placeholder="Choose file..."></span>
                             </label>
                         </div>
@@ -766,12 +750,8 @@
                     <h4>3/18/2015</h4>
                 </div>
                 <div class="col--small-3">
-                    <select id="topContributions-dateRange" class="js-fancy" name="topContributions--dateRange">
-                        <option value="7-days">7d</option>
-                        <option value="30-days">30d</option>
-                        <option value="60-days">60d</option>
-                        <option value="182-days">6mo</option>
-                        <option value="365-days">1yr</option>
+                    <select ng-model="vm.selectedTopContributionDateFilter" ng-options="option.name for option in vm.dateFilters track by option.id"
+                        id="topContributions-dateRange" class="form__input--select" name="topContributions--dateRange">
                     </select>
                 </div>
             </header>
