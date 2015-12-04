@@ -21,6 +21,12 @@ class CandidatesApiUrl:
     CAN_AOIS =  "http://127.0.0.1:8005/v1/candidates/%s/areas_of_interest"
     CAN_AOI =  "http://127.0.0.1:8005/v1/candidates/%s/areas_of_interest/%s"
 
+    CAN_EDUCATIONS = "http://127.0.0.1:8005/v1/candidates/%s/educations"
+    CAN_EDUCATION = "http://127.0.0.1:8005/v1/candidates/%s/educations/%s"
+
+    CAN_DEGREES = "http://127.0.0.1:8005/v1/candidates/%s/educations/%s/degrees"
+    CAN_DEGREE = "http://127.0.0.1:8005/v1/candidates/%s/educations/%s/degrees/%s"
+
 
 def define_and_send_request(request, url, access_token):
     """
@@ -99,7 +105,6 @@ def patch_to_candidate_resource(access_token, data):
     return resp
 
 
-######################## CandidateResource ########################
 def request_to_candidate_resource(access_token, request, candidate_id=''):
     """
     Function sends a request to CandidateResource
@@ -109,7 +114,6 @@ def request_to_candidate_resource(access_token, request, candidate_id=''):
     return define_and_send_request(request, url, access_token)
 
 
-######################## CandidateAddressResource ########################
 def request_to_candidate_address_resource(access_token, request, candidate_id='',
                                           can_addresses=False, address_id=None):
     """
@@ -126,7 +130,6 @@ def request_to_candidate_address_resource(access_token, request, candidate_id=''
     return define_and_send_request(request=request, url=url, access_token=access_token)
 
 
-######################## CandidateAddressResource ########################
 def request_to_candidate_aoi_resource(access_token, request, candidate_id='',
                                       can_aois=False, aoi_id=None):
     """
@@ -139,6 +142,39 @@ def request_to_candidate_aoi_resource(access_token, request, candidate_id='',
         url = CandidatesApiUrl.CAN_AOI % (candidate_id, aoi_id)
     elif can_aois and not aoi_id:
         url = CandidatesApiUrl.CAN_AOIS % candidate_id
+
+    return define_and_send_request(request, url, access_token)
+
+
+def request_to_candidate_education_resource(access_token, request, candidate_id='',
+                                            all_educations=False, education_id=None):
+    """
+    Function sends a request to CandidateEducationResource.
+    If all_educations is True, the request will hit /educations endpoint.
+    :param request: delete
+    """
+    url = CandidatesApiUrl.BASE + '/%s' % candidate_id
+    if education_id:
+        url = CandidatesApiUrl.CAN_EDUCATION % (candidate_id, education_id)
+    elif all_educations and not education_id:
+        url = CandidatesApiUrl.CAN_EDUCATIONS % candidate_id
+
+    return define_and_send_request(request, url, access_token)
+
+
+def request_to_candidate_education_degree_resource(access_token, request, candidate_id='',
+                                                   education_id=None, all_degrees=False,
+                                                   degree_id=None):
+    """
+    Function sends a request to CandidateEducationDegreeResource.
+    If all_degrees is True, the request will hit /degrees endpoint.
+    :param request: delete
+    """
+    url = CandidatesApiUrl.BASE + '/%s' % candidate_id
+    if degree_id:
+        url = CandidatesApiUrl.CAN_DEGREE % (candidate_id, education_id, degree_id)
+    elif all_degrees and not degree_id:
+        url = CandidatesApiUrl.CAN_DEGREES % (candidate_id, education_id)
 
     return define_and_send_request(request, url, access_token)
 
