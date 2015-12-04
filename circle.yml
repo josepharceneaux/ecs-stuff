@@ -56,7 +56,7 @@ test:
         parallel: true
     - py.test candidate_pool_service/tests/:
         parallel: true
-    - py.test scheduling_service/tests/:
+    - py.test scheduler_service/tests/:
         parallel: true
 
 
