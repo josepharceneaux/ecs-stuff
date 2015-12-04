@@ -13,7 +13,7 @@ import json
 # Third Part
 from flask import Response
 
-print "hello"
+
 class ApiResponse(Response):
     """
     Override default_mimetype to 'application/json' to return proper json api response
