@@ -21,11 +21,15 @@ db.app = app
 health = HealthCheck(app, "/healthcheck")
 
 from api.talent_pools import *
+from api.talent_pipelines import *
+
 api = TalentApi(app=app)
 
 api.add_resource(TalentPoolApi, '/talent-pools/<int:id>', '/talent-pools')
 api.add_resource(TalentPoolGroupApi, '/groups/<int:group_id>/talent_pools')
 api.add_resource(TalentPoolCandidateApi, '/talent-pools/<int:id>/candidates')
+api.add_resource(TalentPipelineApi, '/talent-pipelines/<int:id>', '/talent-pipelines')
+api.add_resource(TalentPipelineSmartListApi, '/talent-pipeline/<int:id>/smart_lists')
 
 db.create_all()
 db.session.commit()

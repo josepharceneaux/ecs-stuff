@@ -3,6 +3,7 @@ from datetime import datetime
 import random, string, uuid
 
 # Third Party
+import json
 import pytest, requests
 from faker import Faker
 from werkzeug.security import gen_salt
@@ -13,7 +14,7 @@ from ..utils.common_functions import get_or_create, get_access_token, create_tes
 # Application Specific
 from ..models.db import db
 from ..models.user import (Client, Domain, User, Token)
-from ..models.talent_pools_pipelines import (TalentPool, TalentPoolGroup)
+from ..models.talent_pools_pipelines import (TalentPool, TalentPoolGroup, TalentPipeline)
 from ..models.misc import (Culture, Organization, AreaOfInterest, CustomField)
 
 fake = Faker()
@@ -424,6 +425,29 @@ def talent_pool_second(request, domain_second, user_second):
             db.session.rollback()
     request.addfinalizer(tear_down)
     return talent_pool
+
+
+@pytest.fixture()
+def talent_pipeline(request, user_first, talent_pool):
+    search_params = {
+        "skillDescriptionFacet": "Python",
+        "minimum_years_experience": "4",
+        "location": "California"
+    }
+    talent_pipeline = TalentPipeline(name=gen_salt(6), description=gen_salt(15), positions=2,
+                                     date_needed=datetime.utcnow().isoformat(sep=' '), owner_user_id=user_first.id,
+                                     talent_pool_id=talent_pool.id, search_params=json.dumps(search_params))
+    db.session.add(talent_pipeline)
+    db.session.commit()
+
+    def tear_down():
+        try:
+            db.session.delete(talent_pipeline)
+            db.session.commit()
+        except:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return talent_pipeline
 
 
 @pytest.fixture()

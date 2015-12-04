@@ -92,8 +92,8 @@ class Smartlist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('name', db.String(127))
     search_params = db.Column('searchParams', db.String(1023))
-    user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id'))
-    talent_pipeline_id = db.Column(db.Integer, db.ForeignKey('talent_pipeline.id'))
+    user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'))
+    talent_pipeline_id = db.Column('talentPipelineId', db.Integer, db.ForeignKey('talent_pipeline.id'))
     added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
     is_hidden = db.Column('isHidden', db.Boolean, default=False)
 

@@ -48,15 +48,16 @@ class TalentPipelineApi(Resource):
                     'description': talent_pipeline.description,
                     'user_id': talent_pipeline.owner_user_id,
                     'positions': talent_pipeline.positions,
-                    'criteria': json.loads(talent_pipeline.criteria),
+                    'search_params': json.loads(talent_pipeline.search_params),
                     'talent_pool_id': talent_pipeline.talent_pool_id,
-                    'date_needed': talent_pipeline.date_needed,
-                    'added_time': talent_pipeline.added_time,
-                    'updated_time': talent_pipeline.updated_time
+                    'date_needed': str(talent_pipeline.date_needed),
+                    'added_time': str(talent_pipeline.added_time),
+                    'updated_time': str(talent_pipeline.updated_time)
                 }
             }
         else:
-            talent_pipelines = TalentPipeline.query.filter(TalentPipeline.user.domain_id == request.user.domain_id).all()
+            talent_pipelines = TalentPipeline.query.join(TalentPipeline.user).filter(User.domain_id ==
+                                                                                     request.user.domain_id).all()
             return {
                 'talent_pipelines': [
                     {
@@ -65,11 +66,11 @@ class TalentPipelineApi(Resource):
                         'description': talent_pipeline.description,
                         'user_id': talent_pipeline.owner_user_id,
                         'positions': talent_pipeline.positions,
-                        'criteria': json.loads(talent_pipeline.criteria),
+                        'search_params': json.loads(talent_pipeline.search_params),
                         'talent_pool_id': talent_pipeline.talent_pool_id,
-                        'date_needed': talent_pipeline.date_needed,
-                        'added_time': talent_pipeline.added_time,
-                        'updated_time': talent_pipeline.updated_time
+                        'date_needed': str(talent_pipeline.date_needed),
+                        'added_time': str(talent_pipeline.added_time),
+                        'updated_time': str(talent_pipeline.updated_time)
 
                     } for talent_pipeline in talent_pipelines
                 ]
@@ -143,8 +144,8 @@ class TalentPipelineApi(Resource):
                 raise InvalidUsage(error_message="A valid name, date_needed, talent_pool_id should be provided to "
                                                  "create a new talent-pipeline")
 
-            if TalentPipeline.query.filter(and_(TalentPipeline.name == name, TalentPipeline.user.domain_id == request.
-                    user.domain_id)).first():
+            if TalentPipeline.query.join(TalentPipeline.user).filter(and_(TalentPipeline.name == name, User.
+                    domain_id == request.user.domain_id)).first():
                 raise InvalidUsage(error_message="Talent pipeline with name %s already exists in domain %s" %
                                                  (name, request.user.domain_id))
 
@@ -153,7 +154,7 @@ class TalentPipelineApi(Resource):
             except Exception as e:
                 raise InvalidUsage(error_message="Date_needed is not valid as: %s" % e.message)
 
-            if parser.parse(date_needed) < datetime.datetime.now():
+            if parser.parse(date_needed) < datetime.datetime.utcnow():
                 raise InvalidUsage(error_message="Date_needed %s cannot be before current date" % date_needed)
 
             if not is_number(positions) or not int(positions) > 0:
@@ -222,6 +223,7 @@ class TalentPipelineApi(Resource):
         posted_data = request.get_json(silent=True)
         if not posted_data or 'talent_pipeline' not in posted_data:
             raise InvalidUsage(error_message="Request body is empty or not provided")
+        posted_data = posted_data['talent_pipeline']
 
         name = posted_data.get('name', '')
         description = posted_data.get('description', '')
@@ -230,8 +232,11 @@ class TalentPipelineApi(Resource):
         talent_pool_id = posted_data.get('talent_pool_id', '')
         search_params = posted_data.get('search_params', dict())
 
-        if name and not TalentPipeline.query.filter(and_(TalentPipeline.name == name,
-                                                         TalentPipeline.user.domain_id == request.user.domain_id)).first():
+        if name:
+            if TalentPipeline.query.join(TalentPipeline.user).filter(
+                    and_(TalentPipeline.name == name, User.domain_id == request.user.domain_id)).first():
+                raise InvalidUsage(error_message="Talent pipeline with name %s already exists in domain %s" %
+                                                 (name, request.user.domain_id))
             talent_pipeline.name = name
 
         if date_needed:
@@ -240,13 +245,13 @@ class TalentPipelineApi(Resource):
             except Exception as e:
                 raise InvalidUsage(error_message="Date_needed is not valid as: %s" % e.message)
 
-            if parser.parse(date_needed) < datetime.datetime.now():
+            if parser.parse(date_needed) < datetime.datetime.utcnow():
                 raise InvalidUsage(error_message="Date_needed %s cannot be before current date" % date_needed)
 
             talent_pipeline.date_needed = date_needed
 
         if positions:
-            if not is_number(positions) and not int(positions) > 0:
+            if not is_number(positions) or not int(positions) > 0:
                 raise InvalidUsage(error_message="Number of positions should be integer and grater than zero")
 
             talent_pipeline.positions = positions
