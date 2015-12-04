@@ -48,7 +48,7 @@ class TalentPipelineApi(Resource):
                     'description': talent_pipeline.description,
                     'user_id': talent_pipeline.owner_user_id,
                     'positions': talent_pipeline.positions,
-                    'search_params': json.loads(talent_pipeline.search_params),
+                    'search_params': json.loads(talent_pipeline.search_params) if talent_pipeline.search_params else None,
                     'talent_pool_id': talent_pipeline.talent_pool_id,
                     'date_needed': str(talent_pipeline.date_needed),
                     'added_time': str(talent_pipeline.added_time),
@@ -66,7 +66,7 @@ class TalentPipelineApi(Resource):
                         'description': talent_pipeline.description,
                         'user_id': talent_pipeline.owner_user_id,
                         'positions': talent_pipeline.positions,
-                        'search_params': json.loads(talent_pipeline.search_params),
+                        'search_params': json.loads(talent_pipeline.search_params) if talent_pipeline.search_params else None,
                         'talent_pool_id': talent_pipeline.talent_pool_id,
                         'date_needed': str(talent_pipeline.date_needed),
                         'added_time': str(talent_pipeline.added_time),
@@ -326,7 +326,7 @@ class TalentPipelineSmartListApi(Resource):
                     'name': smart_list.name,
                     'user_id': smart_list.user_id,
                     'is_hidden': smart_list.is_hidden,
-                    'search_params': json.loads(smart_list.search_params)
+                    'search_params': json.loads(smart_list.search_params) if smart_list.search_params else None
 
                 }
                 for smart_list in smart_lists
@@ -380,6 +380,10 @@ class TalentPipelineSmartListApi(Resource):
                 raise UnauthorizedError(error_message="Smart list %s and Talent pipeline %s belong to different domain"
                                                       % (smart_list_id, talent_pipeline_id))
 
+            if smart_list.talent_pipeline_id == talent_pipeline_id:
+                raise InvalidUsage(error_message="Smart List %s already belongs to Talent Pipeline %s"
+                                                 % (smart_list.name, talent_pipeline_id))
+
             if smart_list.talent_pipeline_id:
                 raise UnauthorizedError(error_message="smart_list %s is already assigned to talent_pipeline %s" %
                                                       (smart_list.name, smart_list.talent_pipeline_id))
@@ -393,9 +397,9 @@ class TalentPipelineSmartListApi(Resource):
         }
 
     @require_all_roles('CAN_DELETE_TALENT_PIPELINE_SMART_LISTS')
-    def post(self, **kwargs):
+    def delete(self, **kwargs):
         """
-        POST /talent-pipeline/<id>/smart_lists   Remove smart_lists from a talent_pipeline
+        DELETE /talent-pipeline/<id>/smart_lists   Remove smart_lists from a talent_pipeline
 
         Take a JSON dictionary containing smart_list_ids
 
@@ -434,10 +438,6 @@ class TalentPipelineSmartListApi(Resource):
                 smart_list_id = int(smart_list_id)
 
             smart_list = Smartlist.query.get(smart_list_id)
-
-            if smart_list.user.domain_id != talent_pipeline.user.domain_id:
-                raise UnauthorizedError(error_message="Smart list %s and Talent pipeline %s belong to different domain"
-                                                      % (smart_list_id, talent_pipeline_id))
 
             if smart_list.talent_pipeline_id != talent_pipeline_id:
                 raise UnauthorizedError(error_message="smart_list %s doesn't belong to talent_pipeline %s" %

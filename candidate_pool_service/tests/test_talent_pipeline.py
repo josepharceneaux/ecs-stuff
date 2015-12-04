@@ -1,11 +1,9 @@
 __author__ = 'ufarooqi'
 
 from datetime import timedelta
-from sqlalchemy import and_
-from dateutil.parser import parse
 from candidate_pool_service.candidate_pool_app import app
 from candidate_pool_service.common.tests.conftest import *
-from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline
+from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline, Smartlist
 from candidate_pool_service.common.utils.common_functions import add_role_to_test_user
 from common_functions import *
 
@@ -307,3 +305,163 @@ def test_talent_pipeline_api_delete(access_token_first, access_token_second, use
 
     db.session.commit()
     assert not TalentPipeline.query.get(talent_pipeline_id)
+
+
+def test_talent_pipeline_smart_list_api_post(access_token_first, access_token_second, user_second, user_first,
+                                               talent_pipeline):
+
+    talent_pipeline_id = talent_pipeline.id
+
+    # Adding two test_smart_lists
+    test_smart_first = Smartlist(name=gen_salt(5), user_id=user_first.id)
+    test_smart_second = Smartlist(name=gen_salt(5), user_id=user_second.id)
+    db.session.add(test_smart_first)
+    db.session.add(test_smart_second)
+    db.session.commit()
+
+    data = {
+        'smart_list_ids': ['a', test_smart_first.id]
+    }
+
+    # Logged-in user trying to add smart_lists to a talent_pipeline
+    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data,
+                                                           action='POST')
+    assert status_code == 401
+
+    # Adding 'CAN_ADD_TALENT_PIPELINE_SMART_LISTS' to user_first and user_second
+    add_role_to_test_user(user_first, ['CAN_ADD_TALENT_PIPELINE_SMART_LISTS'])
+    add_role_to_test_user(user_second, ['CAN_ADD_TALENT_PIPELINE_SMART_LISTS'])
+
+    # Logged-in user trying to add smart_lists to a talent_pipeline with empty request body
+    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, action='POST')
+    assert status_code == 400
+
+    # Logged-in user trying to add smart_lists to a non-existing talent_pipeline
+    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id + 100, data=data,
+                                                           action='POST')
+    assert status_code == 404
+
+    # Logged-in user trying to add smart_lists to a talent_pipeline of different domain
+    response, status_code = talent_pipeline_smart_list_api(access_token_second, talent_pipeline_id, data=data,
+                                                           action='POST')
+    assert status_code == 401
+
+    # Logged-in user trying to add smart_lists with non-integer id to talent_pipeline
+    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data, action='POST')
+    assert status_code == 400
+
+    # Logged-in user trying to add smart_lists of different domain to talent_pipeline
+    data['smart_list_ids'][0] = test_smart_second.id
+    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data, action='POST')
+    assert status_code == 401
+
+    # Logged-in user trying to add smart_lists to talent_pipeline
+    data['smart_list_ids'].pop(0)
+    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data, action='POST')
+    assert status_code == 200
+
+    db.session.refresh(test_smart_first)
+    db.session.commit()
+
+    assert test_smart_first.talent_pipeline_id == talent_pipeline_id
+
+    # Logged-in user trying to add already added smart_list to talent_pipeline
+    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data, action='POST')
+    assert status_code == 400
+
+
+def test_talent_pipeline_smart_list_api_delete(access_token_first, access_token_second, user_second, user_first,
+                                               talent_pipeline):
+
+    talent_pipeline_id = talent_pipeline.id
+
+    # Adding two test_smart_lists
+    test_smart_first = Smartlist(name=gen_salt(5), user_id=user_first.id, talent_pipeline_id=talent_pipeline_id)
+    test_smart_second = Smartlist(name=gen_salt(5), user_id=user_second.id)
+    db.session.add(test_smart_first)
+    db.session.add(test_smart_second)
+    db.session.commit()
+
+    data = {
+        'smart_list_ids': ['a', test_smart_first.id]
+    }
+
+    # Logged-in user trying to remove smart_lists from a talent_pipeline
+    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data,
+                                                           action='DELETE')
+    assert status_code == 401
+
+    # Adding 'CAN_DELETE_TALENT_PIPELINE_SMART_LISTS' to user_first and user_second
+    add_role_to_test_user(user_first, ['CAN_DELETE_TALENT_PIPELINE_SMART_LISTS'])
+    add_role_to_test_user(user_second, ['CAN_DELETE_TALENT_PIPELINE_SMART_LISTS'])
+
+    # Logged-in user trying to remove smart_lists from a talent_pipeline with empty request body
+    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, action='DELETE')
+    assert status_code == 400
+
+    # Logged-in user trying to remove smart_lists from a non-existing talent_pipeline
+    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id + 100, data=data,
+                                                           action='DELETE')
+    assert status_code == 404
+
+    # Logged-in user trying to remove smart_lists from a talent_pipeline of different domain
+    response, status_code = talent_pipeline_smart_list_api(access_token_second, talent_pipeline_id, data=data,
+                                                           action='DELETE')
+    assert status_code == 401
+
+    # Logged-in user trying to remove smart_lists with non-integer id from a talent_pipeline
+    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data, action='DELETE')
+    assert status_code == 400
+
+    # Logged-in user trying to remove smart_lists from a talent_pipeline
+    data['smart_list_ids'][0] = test_smart_second.id
+    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data, action='DELETE')
+    assert status_code == 401
+
+    # Logged-in user trying to remove smart_lists from a talent_pipeline
+    data['smart_list_ids'].pop(0)
+    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data, action='DELETE')
+    assert status_code == 200
+
+    db.session.refresh(test_smart_first)
+    db.session.commit()
+
+    assert not test_smart_first.talent_pipeline_id
+
+
+def test_talent_pipeline_smart_list_api_get(access_token_first, access_token_second, user_second, user_first, talent_pipeline):
+
+    talent_pipeline_id = talent_pipeline.id
+
+    # Adding two test_smart_lists
+    test_smart_first = Smartlist(name=gen_salt(5), user_id=user_first.id, talent_pipeline_id=talent_pipeline_id)
+    test_smart_second = Smartlist(name=gen_salt(5), user_id=user_first.id, talent_pipeline_id=talent_pipeline_id)
+    db.session.add(test_smart_first)
+    db.session.add(test_smart_second)
+    db.session.commit()
+
+    # Logged-in user trying to get all smart_lists of a talent_pipeline
+    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id)
+    assert status_code == 401
+
+    # Adding 'CAN_GET_TALENT_PIPELINE_SMART_LISTS' to user_first and user_second
+    add_role_to_test_user(user_first, ['CAN_GET_TALENT_PIPELINE_SMART_LISTS'])
+    add_role_to_test_user(user_second, ['CAN_GET_TALENT_PIPELINE_SMART_LISTS'])
+
+    # Logged-in user trying to get all smart_lists of a non-existing talent_pipeline
+    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id + 100)
+    assert status_code == 404
+
+    # Logged-in user trying to get all smart_lists of a talent_pipeline of different domain
+    response, status_code = talent_pipeline_smart_list_api(access_token_second, talent_pipeline_id)
+    assert status_code == 401
+
+    # Logged-in user trying to get all smart_lists of a talent_pipeline
+    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id)
+    assert status_code == 200
+    assert len(response['smart_lists']) == 2
+
+    assert response['smart_lists'][0]['name'] == test_smart_first.name
+    assert response['smart_lists'][0]['user_id'] == test_smart_first.user_id
+    assert response['smart_lists'][1]['name'] == test_smart_second.name
+    assert response['smart_lists'][1]['user_id'] == test_smart_second.user_id
