@@ -3,6 +3,7 @@ import json
 from candidate_service.common.models.db import db
 from candidate_service.common.models.smartlist import SmartlistCandidate, Smartlist
 from candidate_service.common.models.candidate import Candidate, CandidateEmail, CandidateSocialNetwork, CandidatePhone
+from candidate_service.common.models.user import User
 
 __author__ = 'jitesh'
 
@@ -90,6 +91,21 @@ def create_smartlist_dict(smartlist):
             "search_params": smartlist.search_params
         }
     }
+
+
+def get_all_smartlists(auth_user):
+    """
+    Get all smartlists from user's domain.
+    :param auth_user: User object
+    :return: List of dictionary of all smartlists present in user's domain
+    """
+    smartlists = Smartlist.query.join(User, Smartlist.user_id == auth_user.id).filter(
+        User.domain_id == auth_user.domain_id).all()
+
+    if smartlists:
+        return [create_smartlist_dict(smartlist) for smartlist in smartlists]
+
+    return {"Smartlists": "Could not find any smartlist in your domain"}
 
 
 def save_smartlist(user_id, name, search_params=None, candidate_ids=None):

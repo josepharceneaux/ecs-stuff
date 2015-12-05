@@ -97,6 +97,16 @@ class TestSmartlistResource(object):
             resp = self.call_post_api(data, access_token='')
             assert resp.status_code == 401
 
+        def test_create_smartlist_from_candidates_not_in_users_domain(self, access_token_first, user_second):
+            # User_second creates candidates
+            candidate_id_list = populate_candidates(user_second.id, count=3)
+            candidate_ids = ','.join(map(str, candidate_id_list))
+            data = {'name': fake.word(), 'candidate_ids': candidate_ids}
+            # User_first (access_token_first) trying to create smartlist with user_second's candidates.
+            resp = self.call_post_api(data, access_token_first)
+            assert resp.status_code == 403
+            assert json.loads(resp.content)['error']['message'] == "Provided list of candidates does not belong to user's domain"
+
     class TestSmartlistResourceGET(object):
         def call_get_api(self, list_id, access_token):
             """Calls GET API of SmartlistResource"""
@@ -107,8 +117,7 @@ class TestSmartlistResource(object):
 
         def test_get_api_with_candidate_ids(self, sample_user, user_auth):
             """
-            Create candidates => create smartlist with these candidates
-            Test GET api returns correct list_name, count and user_id
+            Test GET API for smartlist (with candidate ids)
             """
             auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
             list_name = fake.name()
@@ -126,8 +135,7 @@ class TestSmartlistResource(object):
 
         def test_get_api_with_search_params(self, sample_user, user_auth):
             """
-            Create candidates => create smartlist with search_params
-            Test GET api returns correct list_name, user_id
+            Test GET API for smartlist (with search_params)
             """
             auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
             list_name = fake.name()

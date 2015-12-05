@@ -4,6 +4,7 @@ import string
 from werkzeug.security import generate_password_hash
 from sqlalchemy.sql.expression import ClauseElement
 from ..models.user import User, UserScopedRoles
+from ..common_config import ACTIVITY_URI
 
 OAUTH_ENDPOINT = 'http://127.0.0.1:8001/%s'
 TOKEN_URL = OAUTH_ENDPOINT % 'oauth2/token'
@@ -98,3 +99,12 @@ def add_role_to_test_user(test_user, role_names):
     :return:
     """
     UserScopedRoles.add_roles(test_user, role_names)
+
+
+def add_activity(access_token):
+    """
+    Calls Activity API to create Activity
+    # TODO: Update this function once ActivityAPI is corrected.
+    :param access_token:
+    :return:
+    """
