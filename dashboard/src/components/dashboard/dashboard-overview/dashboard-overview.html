@@ -692,7 +692,7 @@
                     <div class="form__fieldset row--expanded">
                         <div class="col--medium-12 form__col form__col--stacked">
                             <label class="form__label" for="SelectSmartListsToInvites">Select Smart Lists to Invite</label>
-                            <select ng-model="vm.event.smartListsToInvite" ng-options="option.name for option in vm.smartsLists track by option.id"
+                            <select ng-model="vm.event.smartListsToInvite" ng-options="option.name for option in vm.smartLists track by option.id"
                                 gt-float-label id="activeEngagementCharts" class="form__input--select" name="activeEngagementCharts">
                                 <option value="" ng-show="!vm.event.smartListsToInvite">Select Smart Lists to Invite</option>
                             </select>
