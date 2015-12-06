@@ -440,7 +440,7 @@ class SmsCampaignSends(Resource):
             campaign_blasts = SmsCampaignBlast.get_by_campaign_id(campaign_id)
             campaign_sends_json = []
             if campaign_blasts:
-                campaign_sends = SmsCampaignSend.get_by_campaign_id(campaign_blasts.id)
+                campaign_sends = SmsCampaignSend.get_by_blast_id(campaign_blasts.id)
                 campaign_sends_json = [campaign_send.to_json() for campaign_send in campaign_sends]
             return {'count': len(campaign_sends_json),
                     'campaign_sends': campaign_sends_json}, 200

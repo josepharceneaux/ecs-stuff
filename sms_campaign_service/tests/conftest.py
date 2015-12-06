@@ -69,7 +69,12 @@ def user_phone_1(request, sample_user):
     :param sample_user: fixture in common/tests/conftest.py
     :return:
     """
-    return _create_user_twilio_phone(sample_user, TEST_NUMBER_1)
+    user_phone = _create_user_twilio_phone(sample_user, TEST_NUMBER_1)
+
+    def tear_down():
+        UserPhone.delete(user_phone)
+    request.addfinalizer(tear_down)
+    return user_phone
 
 
 @pytest.fixture()
@@ -80,17 +85,27 @@ def user_phone_2(request, sample_user):
     :param sample_user: fixture in common/tests/conftest.py
     :return:
     """
-    return _create_user_twilio_phone(sample_user, TEST_NUMBER_2)
+    user_phone = _create_user_twilio_phone(sample_user, TEST_NUMBER_2)
+
+    def tear_down():
+        UserPhone.delete(user_phone)
+    request.addfinalizer(tear_down)
+    return user_phone
 
 
 @pytest.fixture()
-def user_phone_3(sample_user_2):
+def user_phone_3(request, sample_user_2):
     """
     This creates user_phone record for sample_user_2
     :param sample_user_2:
     :return:
     """
-    return _create_user_twilio_phone(sample_user_2, TEST_NUMBER_1)
+    user_phone = _create_user_twilio_phone(sample_user_2, TEST_NUMBER_1)
+
+    def tear_down():
+        UserPhone.delete(user_phone)
+    request.addfinalizer(tear_down)
+    return user_phone
 
 
 @pytest.fixture()
@@ -100,7 +115,7 @@ def campaign_valid_data():
     :return:
     """
     return {"name": "New SMS Campaign",
-            "sms_body_text": "HI all, we have few openings at abc.com",
+            "sms_body_text": "HI all, we have few openings at http://www.abc.com",
             "frequency_id": 2,
             "added_time": "2015-11-24T08:00:00",
             "send_time": "2015-11-26T08:00:00",
@@ -116,7 +131,7 @@ def campaign_invalid_data():
     :return:
     """
     return {"name": "New SMS Campaign",
-            "text": "HI all, we have few openings at abc.com",  # invalid key
+            "text": "HI all, we have few openings at http://www.abc.com",  # invalid key
             "frequency_id": 2,
             "added_time": "2015-11-24T08:00:00",
             "send_time": "2015-11-26T08:00:00",
@@ -130,36 +145,14 @@ def sms_campaign_of_current_user(campaign_valid_data, user_phone_1):
 
 
 @pytest.fixture()
+def sms_campaign_of_current_user_with_no_link(campaign_valid_data, user_phone_1):
+    campaign_valid_data['sms_body_text'] = 'HI all'
+    return _create_sms_campaign(campaign_valid_data, user_phone_1)
+
+
+@pytest.fixture()
 def sms_campaign_of_other_user(campaign_valid_data, user_phone_3):
     return _create_sms_campaign(campaign_valid_data, user_phone_3)
-
-
-def _create_sms_campaign(campaign_data, user_phone):
-    """
-    This creates an SMS campaign in database table "sms_campaign"
-    :param campaign_data: data to create campaign
-    :param user_phone: user_phone row
-    :return:
-    """
-    campaign_data['user_phone_id'] = user_phone.id
-    sms_campaign = SmsCampaign(**campaign_data)
-    SmsCampaign.save(sms_campaign)
-    return sms_campaign
-
-
-def _create_user_twilio_phone(user, phone_value):
-    """
-    This adds user_phone record in database table "user_phone"
-    :param user: user row
-    :param phone_value: value of phone number
-    :return: user_phone row
-    """
-    phone_label_id = PhoneLabel.phone_label_id_from_phone_label(TWILIO)
-    user_phone = UserPhone(user_id=user.id,
-                           phone_label_id=phone_label_id,
-                           value=phone_value)
-    UserPhone.save(user_phone)
-    return user_phone
 
 
 @pytest.fixture()
@@ -209,6 +202,23 @@ def sample_sms_campaign_candidates(sample_smartlist,
 
 
 @pytest.fixture()
+def sample_smartlist(request, sample_user):
+    """
+    This creates sample smartlist for sample user
+    :param request:
+    :param sample_user:
+    :return:
+    """
+    smart_list = SmartList(name=gen_salt(20), user_id=sample_user.id)
+    SmartList.save(smart_list)
+
+    def tear_down():
+        SmartList.delete(smart_list)
+    request.addfinalizer(tear_down)
+    return smart_list
+
+
+@pytest.fixture()
 def sms_campaign_smartlist(sample_smartlist, sms_campaign_of_current_user):
     """
     This associates sample_smartlist with the sms_campaign_of_current_user
@@ -223,35 +233,76 @@ def sms_campaign_smartlist(sample_smartlist, sms_campaign_of_current_user):
 
 
 @pytest.fixture()
-def candidate_phone_1(candidate_first):
+def candidate_phone_1(request, candidate_first):
     """
     This associates sample_smartlist with the sms_campaign_of_current_user
     :param candidate_first:
     :return:
     """
-    return _create_candidate_mobile_phone(candidate_first, TEST_NUMBER_1)
+    candidate_phone = _create_candidate_mobile_phone(candidate_first, TEST_NUMBER_1)
+
+    def tear_down():
+        Candidate.delete(candidate_phone)
+    request.addfinalizer(tear_down)
+    return candidate_phone
 
 
 @pytest.fixture()
-def candidate_phone_2(candidate_second):
+def candidate_phone_2(request, candidate_second):
     """
     This associates sample_smartlist with the sms_campaign_of_current_user
     :param candidate_second:
     :return:
     """
-    return _create_candidate_mobile_phone(candidate_second, TEST_NUMBER_2)
+    candidate_phone = _create_candidate_mobile_phone(candidate_second, TEST_NUMBER_2)
+
+    def tear_down():
+        Candidate.delete(candidate_phone)
+    request.addfinalizer(tear_down)
+    return candidate_phone
 
 
 @pytest.fixture()
-def candidates_with_same_phone(candidate_first, candidate_second):
+def candidates_with_same_phone(request, candidate_phone_1, candidate_second):
     """
     This associates same number to candidate_first and candidate_second
     :param candidate_second:
     :return:
     """
-    cand_phone_1 = _create_candidate_mobile_phone(candidate_first, TEST_NUMBER_1)
     cand_phone_2 = _create_candidate_mobile_phone(candidate_second, TEST_NUMBER_1)
-    return cand_phone_1, cand_phone_2
+
+    def tear_down():
+        Candidate.delete(cand_phone_2)
+    request.addfinalizer(tear_down)
+    return candidate_phone_1, cand_phone_2
+
+
+def _create_sms_campaign(campaign_data, user_phone):
+    """
+    This creates an SMS campaign in database table "sms_campaign"
+    :param campaign_data: data to create campaign
+    :param user_phone: user_phone row
+    :return:
+    """
+    campaign_data['user_phone_id'] = user_phone.id
+    sms_campaign = SmsCampaign(**campaign_data)
+    SmsCampaign.save(sms_campaign)
+    return sms_campaign
+
+
+def _create_user_twilio_phone(user, phone_value):
+    """
+    This adds user_phone record in database table "user_phone"
+    :param user: user row
+    :param phone_value: value of phone number
+    :return: user_phone row
+    """
+    phone_label_id = PhoneLabel.phone_label_id_from_phone_label(TWILIO)
+    user_phone = UserPhone(user_id=user.id,
+                           phone_label_id=phone_label_id,
+                           value=phone_value)
+    UserPhone.save(user_phone)
+    return user_phone
 
 
 def _create_candidate_mobile_phone(candidate, phone_value):

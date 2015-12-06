@@ -92,7 +92,7 @@ class SmsCampaignSend(db.Model):
         ).first()
 
     @classmethod
-    def get_by_campaign_id(cls, campaign_blast_id):
+    def get_by_blast_id(cls, campaign_blast_id):
         assert campaign_blast_id
         return cls.query.filter(
             db.and_(
@@ -157,7 +157,7 @@ class SmsCampaignSendUrlConversion(db.Model):
         return '<SmsCampaignSendUrlConversion (id = %r)>' % self.id
 
     @classmethod
-    def get_by_campaign_sned_id_and_url_conversion_id(cls,
+    def get_by_campaign_send_id_and_url_conversion_id(cls,
                                                       campaign_send_id,
                                                       url_conversion_id):
         return cls.query.filter(
@@ -166,3 +166,11 @@ class SmsCampaignSendUrlConversion(db.Model):
                 cls.url_conversion_id == url_conversion_id
             )
         ).first()
+
+    @classmethod
+    def get_by_campaign_send_id(cls, campaign_send_id):
+        return cls.query.filter(
+            db.and_(
+                cls.sms_campaign_send_id == campaign_send_id
+            )
+        ).all()

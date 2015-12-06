@@ -459,16 +459,5 @@ def candidate_second(request):
     return candidate
 
 
-# @pytest.fixture()
-# def sample_smartlist(request, sample_user):
-#     smart_list = SmartList(name='test_smart_list', user_id=sample_user.id)
-#     SmartList.save(smart_list)
-#
-#     def tear_down():
-#         SmartList.delete(smart_list)
-#     request.addfinalizer(tear_down)
-#     return smart_list
-
-
 def randomword(length):
     return ''.join(random.choice(string.lowercase) for i in xrange(length))

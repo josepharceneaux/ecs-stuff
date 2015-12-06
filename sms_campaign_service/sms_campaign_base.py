@@ -185,7 +185,6 @@ class SmsCampaignBase(CampaignBase):
             raise ForbiddenError(error_message='User(id:%s) has no phone number' % self.user_id)
         self.modified_body_text = None
         self.sms_campaign_blast_id = None
-        self.url_conversion_id = None
         self.total_sends = 0
 
     def get_all_campaigns(self):
@@ -485,9 +484,9 @@ class SmsCampaignBase(CampaignBase):
                                         candidate_phones)
         if len(candidate_mobile_phone) == 1:
             # If this number is associated with multiple candidates, raise exception
-            _valid_candidate_phone_value(candidate_mobile_phone[0].value)
+            _validate_candidate_phone_value(candidate_mobile_phone[0].value)
             # Transform body text to be sent in SMS
-            self.process_urls_in_sms_body_text(candidate.id)
+            url_conversion_ids = self.process_urls_in_sms_body_text(candidate.id)
             assert self.modified_body_text
             # send SMS
             message_sent_time = self.send_sms(candidate_mobile_phone[0].value)
@@ -495,10 +494,11 @@ class SmsCampaignBase(CampaignBase):
             sms_campaign_send_id = \
                 self.create_or_update_sms_campaign_send(self.sms_campaign_blast_id, candidate.id,
                                                         message_sent_time)
-            if self.url_conversion_id:
+
+            for url_conversion_id in url_conversion_ids:
                 # create sms_send_url_conversion entry
                 self.create_or_update_sms_send_url_conversion(sms_campaign_send_id,
-                                                              self.url_conversion_id)
+                                                              url_conversion_id)
             # update SMS campaign blast
             self.create_or_update_sms_campaign_blast(self.campaign.id,
                                                      sends_update=True)
@@ -535,6 +535,10 @@ class SmsCampaignBase(CampaignBase):
         - This method is called from process_send() method of class SmsCampaignBase inside
             sms_campaign_service/sms_campaign_base.py.
 
+        :param candidate_id: id of Candidate
+        :return: list of URL conversion records
+        :rtype: list
+
         **See Also**
         .. see also:: process_send() method in SmsCampaignBase class.
         """
@@ -544,21 +548,24 @@ class SmsCampaignBase(CampaignBase):
                      % (self.campaign.id, candidate_id))
         urls_in_body_text = search_urls_in_text(self.body_text)
         short_urls = []
+        url_conversion_ids = []
         for url in urls_in_body_text:
             # We have only one link in body text which needs to shortened.
-            self.url_conversion_id = self.create_or_update_url_conversion(destination_url=url,
-                                                                          source_url='')
+            url_conversion_id = self.create_or_update_url_conversion(destination_url=url,
+                                                                     source_url='')
             # URL to redirect candidates to our end point
             long_url = (SMS_URL_REDIRECT + '?candidate_id={}').format(self.campaign.id,
-                                                                      self.url_conversion_id,
+                                                                      url_conversion_id,
                                                                       candidate_id)
             # Use Google's API to shorten the long Url
             short_url = url_conversion(long_url)
-            # update the "url_conversion" record
-            self.create_or_update_url_conversion(url_conversion_id=self.url_conversion_id,
+            # update the source_url in "url_conversion" record
+            self.create_or_update_url_conversion(url_conversion_id=url_conversion_id,
                                                  source_url=long_url)
             short_urls.append(short_url)
+            url_conversion_ids.append(url_conversion_id)
         self.transform_body_text(urls_in_body_text, short_urls)
+        return url_conversion_ids
 
     def transform_body_text(self, urls_in_sms_body_text, short_urls):
         """
@@ -727,7 +734,7 @@ class SmsCampaignBase(CampaignBase):
         """
         data = {'sms_campaign_send_id': campaign_send_id,
                 'url_conversion_id': url_conversion_id}
-        record_in_db = SmsCampaignSendUrlConversion.get_by_campaign_sned_id_and_url_conversion_id(
+        record_in_db = SmsCampaignSendUrlConversion.get_by_campaign_send_id_and_url_conversion_id(
             campaign_send_id, url_conversion_id)
         if record_in_db:
             record_in_db.update(**data)
@@ -912,7 +919,7 @@ class SmsCampaignBase(CampaignBase):
             # get "user_phone" row
             user_phone = _get_valid_user_phone_value(reply_data.get('To'))
             # get "candidate_phone" row
-            candidate_phone = _valid_candidate_phone_value(reply_data.get('From'))
+            candidate_phone = _validate_candidate_phone_value(reply_data.get('From'))
             # get latest campaign send
             sms_campaign_send = SmsCampaignSend.get_by_candidate_id(candidate_phone.candidate_id)
             # get SMS campaign blast
@@ -1021,7 +1028,7 @@ def _get_valid_user_phone_value(user_phone_value):
     return user_phone
 
 
-def _valid_candidate_phone_value(candidate_phone_value):
+def _validate_candidate_phone_value(candidate_phone_value):
     """
     - This ensures that given phone number is associated with only one candidate.
 
