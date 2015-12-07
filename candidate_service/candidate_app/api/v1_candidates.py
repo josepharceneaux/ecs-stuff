@@ -24,7 +24,9 @@ from candidate_service.common.error_handling import ForbiddenError, InvalidUsage
 # Models
 from candidate_service.common.models.candidate import (
     Candidate, CandidateAddress, CandidateEducation, CandidateEducationDegree,
-    CandidateEducationDegreeBullet
+    CandidateEducationDegreeBullet, CandidateExperience, CandidateExperienceBullet,
+    CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
+    CandidatePreferredLocation
 )
 from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.models.associations import CandidateAreaOfInterest
@@ -559,7 +561,7 @@ class CandidateEducationDegreeBulletResource(Resource):
         authed_user = request.user
 
         # Get required IDs
-        candidate_id, education_id = kwargs.get('candidate_id'), kwargs.get('educations_id')
+        candidate_id, education_id = kwargs.get('candidate_id'), kwargs.get('education_id')
         degree_id, bullet_id = kwargs.get('degree_id'), kwargs.get('id')
 
         # Determine if all bullets need to be deleted or just a single one
@@ -567,9 +569,10 @@ class CandidateEducationDegreeBulletResource(Resource):
 
         if single_bullet:
             # degree_bullet must belongs to degree; degree must belongs to education; education must belong to candidate
-            candidate_degree_bullet = db.session.query(CandidateEducation).\
-                join(CandidateEducationDegree).join(CandidateEducationDegreeBullet).\
+            candidate_degree_bullet = db.session.query(CandidateEducationDegreeBullet).\
+                join(CandidateEducationDegree).join(CandidateEducation).\
                 filter(CandidateEducation.candidate_id == candidate_id).\
+                filter(CandidateEducation.id == education_id).\
                 filter(CandidateEducationDegree.id == degree_id).\
                 filter(CandidateEducationDegreeBullet.id == bullet_id).first()
             if candidate_degree_bullet:
@@ -583,8 +586,299 @@ class CandidateEducationDegreeBulletResource(Resource):
                 if education.candidate_id != candidate_id:
                     raise ForbiddenError(error_message='Not authorized')
 
+                degree = db.session.query(CandidateEducationDegree).get(degree_id)
+                if degree:
+                    degree_bullets = degree.candidate_education_degree_bullets
+                    if degree_bullets:
+                        for degree_bullet in degree_bullets:
+                            db.session.delete(degree_bullet)
+                    else:
+                        raise NotFoundError(error_message='Candidate education degree bullet not found.')
+                else:
+                    raise NotFoundError(error_message='Candidate education degree not found.')
+            else:
+                raise NotFoundError(error_message='Candidate education not found.')
+
+        db.session.commit()
+        return '', 204
 
 
+class CandidateExperienceResource(Resource):
+    decorators = [require_oauth]
+
+    def delete(self, **kwargs):
+        """
+        Endpoints:
+             i. DELETE /v1/candidates/:candidate_id/experiences
+            ii. DELETE /v1/candidates/:candidate_id/experiences/:id
+        """
+        # Authenticated user
+        authed_user = request.user
+
+        # Get candidate_id and experience_id
+        candidate_id, experience_id = kwargs.get('candidate_id'), kwargs.get('id')
+
+        # Ensure Candidate belongs to user
+        is_authorized = does_candidate_belong_to_user(authed_user, candidate_id)
+        if not is_authorized:
+            raise ForbiddenError(error_message='Not authorized')
+
+        # Determine if all experiences must be removed or just a single one
+        single_experience = True if experience_id else False
+
+        if single_experience:
+            # Experience must belong to candidate
+            experience = CandidateExperience.get_by_id(_id=experience_id)
+            if experience:
+                if experience.candidate_id != candidate_id:
+                    raise ForbiddenError(error_message='Not authorized')
+                db.session.delete(experience)
+            else:
+                raise NotFoundError(error_message='Candidate experience not found')
+
+        else: # Delete all experiences
+            experiences = db.session.query(CandidateExperience).filter_by(candidate_id=candidate_id).all()
+            for experience in experiences:
+                db.session.delete(experience)
+
+        db.session.commit()
+        return '', 204
+
+
+class CandidateExperienceBulletResource(Resource):
+    decorators = [require_oauth]
+
+    def delete(self, **kwargs):
+        """
+        Endpoints:
+             i. DELETE /v1/candidates/:candidate_id/experiences/:experience_id/bullets
+            ii. DELETE /v1/candidates/:candidate_id/experiences/:experience_id/bullets/:id
+        """
+        # Authenticated user
+        authed_user = request.user
+
+        # Get required IDs
+        candidate_id, experience_id = kwargs.get('candidate_id'), kwargs.get('experience_id')
+        bullet_id = kwargs.get('id')
+
+        # Candidate must belong to user and its domain
+        if not does_candidate_belong_to_user(authed_user, candidate_id):
+            raise ForbiddenError(error_message='Not authorized')
+
+        # Determine if all bullets must be deleted or just a single one
+        single_bullet = True if bullet_id else False
+
+        if single_bullet:
+            # Experience must belong to Candidate and bullet must belong to CandidateExperience
+            bullet = db.session.query(CandidateExperienceBullet).join(CandidateExperience).join(Candidate).\
+                        filter(CandidateExperienceBullet.id == bullet_id).\
+                        filter(CandidateExperience.id == experience_id).\
+                        filter(CandidateExperience.candidate_id == candidate_id).first()
+            if not bullet:
+                raise NotFoundError(error_message='Experience bullet not found.')
+
+            db.session.delete(bullet)
+
+        else: # Delete all bullets
+            experience = CandidateExperience.get_by_id(_id=experience_id)
+            if experience:
+                if experience.candidate_id != candidate_id:
+                    raise ForbiddenError(error_message='Not authorized')
+
+                bullets = experience.candidate_experience_bullets
+                if not bullets:
+                    raise NotFoundError(error_message='Experience bullet not found.')
+
+                for bullet in bullets:
+                    db.session.delete(bullet)
+
+        db.session.commit()
+        return '', 204
+
+
+class CandidateEmailResource(Resource):
+    decorators = [require_oauth]
+
+    def delete(self, **kwargs):
+        """
+        Endpoints:
+             i. DELETE /v1/candidates/:candidate_id/emails
+            ii. DELETE /v1/candidates/:candidate_id/emails/:id
+        """
+        # Authenticated user
+        authed_user = request.user
+
+        # Get candidate_id and email_id
+        candidate_id, email_id = kwargs.get('candidate_id'), kwargs.get('id')
+
+        # Candidate must belong to user and its domain
+        if not does_candidate_belong_to_user(authed_user, candidate_id):
+            raise ForbiddenError(error_message='Not authorized')
+
+        if email_id: # Specified email will be deleted
+            # Email must belong to candidate
+            email = CandidateEmail.get_by_id(_id=email_id)
+            if email:
+                if email.candidate_id != candidate_id:
+                    raise ForbiddenError(error_message='Not authorized')
+
+                db.session.delete(email)
+
+        else: # All of candidate's emails will be deleted
+            emails = db.session.query(CandidateEmail).filter_by(candidate_id=candidate_id).all()
+            for email in emails:
+                db.session.delete(email)
+
+        db.session.commit()
+        return '', 204
+
+
+class CandidateMilitaryServiceResource(Resource):
+    decorators = [require_oauth]
+
+    def delete(self, **kwargs):
+        """
+        Endpoints:
+             i. DELETE /v1/candidates/:candidate_id/military_services
+            ii. DELETE /v1/candidates/:candidate_id/military_services/:id
+        """
+        # Authenticated user
+        authed_user = request.user
+
+        # Get candidate_id and military_service_id
+        candidate_id, military_service_id = kwargs.get('candidate_id'), kwargs.get('id')
+
+        # Candidate must belong to user and its domain
+        if not does_candidate_belong_to_user(authed_user, candidate_id):
+            raise ForbiddenError(error_message='Not authorized')
+
+        if military_service_id:  # Delete specified military-service
+            # CandidateMilitaryService must belong to Candidate
+            military_service = CandidateMilitaryService.get_by_id(_id=military_service_id)
+            if not military_service:
+                raise NotFoundError(error_message='Candidate military service not found')
+
+            if military_service.candidate_id != candidate_id:
+                raise ForbiddenError(error_message='Not authorized')
+
+            db.session.delete(military_service)
+
+        else:  # Delete all of Candidate's military services
+            military_services = db.session.query(CandidateMilitaryService).filter_by(candidate_id=candidate_id).all()
+            for military_service in military_services:
+                db.session.delete(military_service)
+
+        db.session.commit()
+        return '', 204
+
+
+class CandidatePhoneResource(Resource):
+    decorators = [require_oauth]
+
+    def delete(self, **kwargs):
+        """
+        Endpoints:
+             i. DELETE /v1/candidates/:candidate_id/phones
+            ii. DELETE /v1/candidates/:candidate_id/phones/:id
+        """
+        # Authenticated user
+        authed_user = request.user
+
+        # Get candidate_id and phone_id
+        candidate_id, phone_id = kwargs.get('candidate_id'), kwargs.get('id')
+
+        # Candidate must belong to user and its domain
+        if not does_candidate_belong_to_user(authed_user, candidate_id):
+            raise ForbiddenError(error_message='Not authorized')
+
+        if phone_id:  # Delete specified phone
+            # Phone must belong to Candidate
+            phone = CandidatePhone.get_by_id(_id=phone_id)
+            if not phone:
+                raise NotFoundError(error_message='Candidate phone not found')
+
+            if phone.candidate_id != candidate_id:
+                raise ForbiddenError(error_message='Not authorized')
+
+            db.session.delete(phone)
+
+        else:  # Delete all of Candidate's phones
+            phones = db.session.query(CandidatePhone).filter_by(candidate_id=candidate_id).all()
+            for phone in phones:
+                db.session.delete(phone)
+
+        db.session.commit()
+        return '', 204
+
+
+class CandidatePreferredLocationResource(Resource):
+    decorators = [require_oauth]
+
+    def delete(self, **kwargs):
+        """
+        Endpoints:
+             i. DELETE /v1/candidates/:candidate_id/preferred_locations
+            ii. DELETE /v1/candidates/:candidate_id/preferred_locations/:id
+        """
+        # Authenticated user
+        authed_user = request.user
+
+        # Get candidate_id and preferred_location_id
+        candidate_id, preferred_location_id = kwargs.get('candidate_id'), kwargs.get('id')
+
+        # Candidate must belong to user and its domain
+        if not does_candidate_belong_to_user(authed_user, candidate_id):
+            raise ForbiddenError(error_message='Not authorized')
+
+        if preferred_location_id:  # Delete specified preferred location
+            # Preferred location must belong to Candidate
+            preferred_location = CandidatePreferredLocation.get_by_id(_id=preferred_location_id)
+            if not preferred_location_id:
+                raise NotFoundError(error_message='Candidate preferred location not found')
+
+            if preferred_location.candidate_id != candidate_id:
+                raise ForbiddenError(error_message='Not authorized')
+
+            db.session.delete(preferred_location)
+
+        else:  # Delete all of Candidate's preferred locations
+            preferred_locations = db.session.query(CandidatePreferredLocation).\
+                filter_by(candidate_id=candidate_id)
+            for preferred_location in preferred_locations:
+                db.session.delete(preferred_location)
+
+        db.session.commit()
+        return '', 204
+
+
+class CandidateWorkPreferenceResource(Resource):
+    decorators = [require_oauth]
+
+    def delete(self, **kwargs):
+        """
+        Endpoint: DELETE /v1/candidates/:candidate_id/work_preference/:id
+        """
+        # Authenticated user
+        authed_user = request.user
+
+        # Get candidate_id and work_preference_id
+        candidate_id, work_preference_id = kwargs.get('candidate_id'), kwargs.get('id')
+
+        # Candidate must belong to user and its domain
+        if not does_candidate_belong_to_user(authed_user, candidate_id):
+            raise ForbiddenError(error_message='Not authorized')
+
+        work_preference = CandidateWorkPreference.get_by_id(_id=work_preference_id)
+        if not work_preference:
+            raise NotFoundError(error_message='Candidate work preference not found.')
+
+        # CandidateWorkPreference must belong to Candidate
+        if work_preference.candidate_id != candidate_id:
+            raise ForbiddenError(error_message='Not authorized')
+
+        db.session.delete(work_preference)
+        db.session.commit()
+        return '', 204
 
 
 # class CandidateEmailCampaignResource(Resource):
