@@ -81,6 +81,9 @@
                 { id: '365-days', name: '1yr' }
             ];
             vm.selectedTopContributionDateFilter = vm.dateFilters[0];
+
+            vm.pipelineYearsXpFilterMin = 0;
+            vm.pipelineYearsXpFilterMax = 99;
         }
 
         function activate() {

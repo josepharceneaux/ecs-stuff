@@ -387,51 +387,51 @@
             <header class="box__header">
                 <h2>Campaign Builder</h2>
             </header>
-            <form class="form" action="#">
+            <form class="form" name="campaignBuilderForm" action="#">
                 <div class="form__fieldset row--expanded">
                     <!-- Form: Recipients -->
-                    <div class="col--medium-6 form__col">
+                    <div class="col--medium-6 form__col" ng-class="{'form__col--error': campaignBuilderForm.selectedRecipients.$invalid && (campaignBuilderForm.selectedRecipients.$touched || campaignBuilderForm.$submitted)}">
                         <label class="form__label" for="selectRecipients">Select Recipients *</label>
-                        <select ng-model="vm.campaign.recipients" ng-options="option.name for option in vm.recipients track by option.id"
+                        <select ng-model="vm.campaign.recipients" required ng-options="option.name for option in vm.recipients track by option.id"
                             gt-float-label class="form__input--select" name="selectRecipients" id="selectRecipients">
                             <option value="" ng-show="!vm.campaign.recipients">Select Recipients *</option>
                         </select>
                     </div>
                     <!-- Form: From -->
-                    <div class="col--medium-6 form__col">
+                    <div class="col--medium-6 form__col" ng-class="{'form__col--error': campaignBuilderForm.from.$invalid && (campaignBuilderForm.from.$touched || campaignBuilderForm.$submitted)}">
                         <label class="form__label" for="from">From *</label>
-                        <input gt-float-label class="form__input" id="from" name="from" type="text" placeholder="From *">
+                        <input gt-float-label class="form__input" ng-model="vm.campaign.from" id="from" name="from" type="text" placeholder="From *" required>
                     </div>
                 </div>
                 <div class="form__fieldset row--expanded">
                     <!-- Form: Campaign Name -->
-                    <div class="col--medium-6 form__col">
+                    <div class="col--medium-6 form__col" ng-class="{'form__col--error': campaignBuilderForm.campaignName.$invalid && (campaignBuilderForm.campaignName.$touched || campaignBuilderForm.$submitted)}">
                         <label class="form__label" for="campaignName">Campaign Name *</label>
-                        <input gt-float-label class="form__input" id="campaignName" name="campaignName" type="text" placeholder="Campaign Name *">
+                        <input gt-float-label class="form__input" ng-model="vm.campaign.name" id="campaignName" name="campaignName" type="text" placeholder="Campaign Name *" required>
                     </div>
                     <!-- Form: Reply To -->
-                    <div class="col--medium-6 form__col">
+                    <div class="col--medium-6 form__col" ng-class="{'form__col--error': campaignBuilderForm.replyTo.$invalid && (campaignBuilderForm.replyTo.$touched || campaignBuilderForm.$submitted)}">
                         <label class="form__label" for="replyTo">Reply to *</label>
-                        <input gt-float-label class="form__input" id="replyTo" name="replyTo" type="email" placeholder="Reply to *">
+                        <input gt-float-label class="form__input" ng-model="vm.campaign.replyTo" id="replyTo" name="replyTo" type="email" placeholder="Reply to *" required>
                     </div>
                 </div>
                 <div class="form__fieldset row--expanded">
                     <!-- Form: Subject -->
-                    <div class="col--medium-6 form__col">
+                    <div class="col--medium-6 form__col" ng-class="{'form__col--error': campaignBuilderForm.subject.$invalid && (campaignBuilderForm.subject.$touched || campaignBuilderForm.$submitted)}">
                         <label class="form__label" for="subject">Subject *</label>
-                        <input gt-float-label class="form__input" id="subject" name="subject" type="text" placeholder="Subject *">
+                        <input gt-float-label class="form__input" ng-model="vm.campaign.subject" id="subject" name="subject" type="text" placeholder="Subject *" required>
                     </div>
                     <!-- Form: Tracking Code -->
-                    <div class="col--medium-6 form__col form__col--error">
-                        <label class="form__label--shown" for="trackingCode">Tracking Code</label>
-                        <input gt-float-label class="form__input" id="trackingCode" name="trackingCode" type="text" placeholder="Tracking Code" value="sdkfj-2343">
+                    <div class="col--medium-6 form__col" ng-class="{'form__col--error': campaignBuilderForm.trackingCode.$invalid && (campaignBuilderForm.trackingCode.$touched || campaignBuilderForm.$submitted)}">
+                        <label class="form__label" for="trackingCode">Tracking Code</label>
+                        <input gt-float-label class="form__input" id="trackingCode" name="trackingCode" type="text" placeholder="Tracking Code">
                     </div>
                 </div>
                 <div class="form__fieldset row--expanded">
                     <!-- Form: Select Template -->
-                    <div class="col--medium-6 form__col">
+                    <div class="col--medium-6 form__col" ng-class="{'form__col--error': campaignBuilderForm.selectTemplate.$invalid && (campaignBuilderForm.selectTemplate.$touched || campaignBuilderForm.$submitted)}">
                         <label class="form__label" for="selectTemplate">Select Template *</label>
-                        <select ng-model="vm.campaign.template" ng-options="option.name for option in vm.campaignTemplates track by option.id"
+                        <select ng-model="vm.campaign.template" required ng-options="option.name for option in vm.campaignTemplates track by option.id"
                             gt-float-label class="form__input--select" name="selectTemplate" id="selectTemplate">
                             <option value="" ng-show="!vm.campaign.template">Select Template *</option>
                         </select>
@@ -439,14 +439,14 @@
                 </div>
                 <div class="form__fieldset row--expanded">
                     <div class="col--medium-12">
-                        <textarea gt-float-label class="form__input--textarea" name="wysiwyg"></textarea>
+                        <textarea gt-float-label class="form__input--textarea" ng-model="vm.campaign.emailContent" name="wysiwyg"></textarea>
                     </div>
                 </div>
                 <div class="form__fieldset--footer row--expanded">
                     <div class="col--medium-12">
                         <a class="button--blueOutline button--warningHover" href="#">Cancel</a>
                         <a class="button--blueOutline" href="#">Schedule</a>
-                        <a class="button--blue" href="#">Send</a>
+                        <button type="submit" class="button--blue">Send</button>
                     </div>
                 </div>
             </form>
@@ -477,60 +477,62 @@
         </section>
         <section class="row--widget">
             <div class="col--full-12--cell box">
-                <form class="form" action="#">
+                <form class="form" name="createPipelineForm" action="#">
                     <div class="form__fieldset row--expanded">
                         <!-- Form: Title -->
-                        <div class="col--medium-6 form__col">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createPipelineForm.title.$invalid && (createPipelineForm.title.$touched || createPipelineForm.$submitted)}">
                             <label class="form__label" for="title">Title *</label>
-                            <input gt-float-label class="form__input" ng-model="vm.pipeline.title" id="title" name="title" type="text" placeholder="Title *">
+                            <input gt-float-label class="form__input" ng-model="vm.pipeline.title" id="title" name="title" type="text" placeholder="Title *" required>
                         </div>
                         <!-- Form: Date Needed -->
-                        <div class="col--medium-6 form__col">
-                            <label class="form__label" for="dateNeed">Date Needed *</label>
-                            <input gt-float-label pick-a-date="vm.pipeline.dateNeeded" ng-model="vm.pipeline.dateNeededText" class="form__input" id="dateNeed" name="dateNeed" type="text" placeholder="Date Needed *">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createPipelineForm.dateNeed.$invalid && (createPipelineForm.dateNeed.$touched || createPipelineForm.$submitted)}">
+                            <label class="form__label" for="dateNeeded">Date Needed *</label>
+                            <input gt-float-label pick-a-date="vm.pipeline.dateNeeded" ng-model="vm.pipeline.dateNeededText" class="form__input" id="dateNeeded" name="dateNeeded" type="text" placeholder="Date Needed *" required>
                         </div>
                     </div>
                     <div class="form__fieldset row--expanded">
                         <!-- Form: Description -->
-                        <div class="col--medium-6 form__col">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createPipelineForm.description.$invalid && (createPipelineForm.description.$touched || createPipelineForm.$submitted)}">
                             <label class="form__label" for="description">Description</label>
                             <textarea gt-float-label class="form__input--shortTextarea" ng-model="vm.pipeline.description" name="description" placeholder="Description"></textarea>
                         </div>
                         <!-- Form: Auto Archive -->
-                        <div class="col--medium-6 form__col">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createPipelineForm.autoArchive.$invalid && (createPipelineForm.autoArchive.$touched || createPipelineForm.$submitted)}">
                             <label class="form__input--checkbox">
-                                <input gt-float-label type="checkbox" ng-model="vm.pipeline.autoArchive"> <!-- Hidden checkbox -->
+                                <input gt-float-label type="checkbox" ng-model="vm.pipeline.autoArchive" name="autoArchive"> <!-- Hidden checkbox -->
                                 <span></span> <!-- Custom displayed checkbox -->
                                 Auto archive after this date <!-- Inside the label so you can click the text to check the checkbox -->
                             </label>
                         </div>
                     </div>
 
-                     <div class="form__fieldset row--expanded">
+                    <div class="form__fieldset row--expanded">
                         <div class="col--medium-12">
                             <h3>Candidate Filters</h3>
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
-                        <div class="col--medium-6 form__col">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createPipelineForm.keywords.$invalid && (createPipelineForm.keywords.$touched || createPipelineForm.$submitted)}">
                             <label class="form__label--shown" for="description">Keywords <small class="form__instruction">Separate keywords with commas</small></label>
-                            <input gt-tags-input ng-model="vm.filters.keywords" class="form-field" name="keywords" type="text" placeholder="Add a keyword">
+                            <tags-input ng-model="vm.pipeline.filters.keywords" class="form-field" name="keywords" type="text" placeholder="Add a keyword">
+                                <!--<auto-complete source=""></auto-complete>-->
+                            </tags-input>
                         </div>
-                        <div class="col--medium-6 form__col">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': (createPipelineForm.minYearsXp.$invalid && (createPipelineForm.minYearsXp.$touched || createPipelineForm.$submitted)) || (createPipelineForm.maxYearsXp.$invalid && (createPipelineForm.maxYearsXp.$touched || createPipelineForm.$submitted))}">
                             <label class="form__label--shown" for="description">Years of Experience</label>
-                            <input class="form__input--inline" ng-model="vm.filters.yearsXp.min" name="minYearXp" type="number" placeholder="1" min="0" max="98">
+                            <input class="form__input--inline" ng-model="vm.pipeline.filters.yearsXp.min" name="minYearXp" type="number" placeholder="1" min="{{vm.pipelineYearsXpFilterMin}}" max="{{vm.pipelineYearsXpFilterMax}}">
                             <span class="form__label--inbetweenInputs">to</span>
-                            <input class="form__input--inline" ng-model="vm.filters.yearsXp.max" name="maxYearsXp" type="number" placeholder="5" min="1" max="99">
+                            <input class="form__input--inline" ng-model="vm.pipeline.filters.yearsXp.max" name="maxYearsXp" type="number" placeholder="5" min="{{vm.pipeline.filters.yearsXp.min}}" max="{{vm.pipelineYearsXpFilterMax}}">
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
-                        <div class="col--medium-6 form__col">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createPipelineForm.skills.$invalid && (createPipelineForm.skills.$touched || createPipelineForm.$submitted)}">
                             <label class="form__label--shown" for="description">Skills <small class="form__instruction">Separate skills with commas</small></label>
                             <input gt-tags-input ng-model="vm.filters.skills" class="form-field" name="skills" type="text" placeholder="Add a skill">
                         </div>
-                        <div class="col--medium-6 form__col">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createPipelineForm.degree.$invalid && (createPipelineForm.degree.$touched || createPipelineForm.$submitted)}">
                             <label class="form__label--shown" for="description">Degree <small class="form__instruction">Separate degrees with commas</small></label>
                             <input gt-tags-input ng-model="vm.filters.degrees" class="form-field" name="degree" type="text" placeholder="Add a degree">
                         </div>
@@ -561,14 +563,14 @@
                 <!-- left half of form -->
                 <div class="col--medium-6 form__fieldset--column">
                     <div class="form__fieldset row--expanded">
-                        <div class="col--medium-12 form__col form__col--stacked">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.eventTitle.$invalid && (createEventForm.eventTitle.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="eventTitle">Event Title</label>
                             <input gt-float-label class="form__input" id="eventTitle" name="eventTitle" type="text" placeholder="Event Title">
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
-                        <div class="col--medium-8 form__col">
+                        <div class="col--medium-8 form__col" ng-class="{'form__col--error': createEventForm.eventType.$invalid && (createEventForm.eventType.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="eventType">Event Type</label>
                             <select gt-float-label class="form__input--select"
                                 ng-model="vm.event.type" ng-options="option.name for option in vm.eventTypes track by option.id" id="eventType" name="eventType">
@@ -576,43 +578,43 @@
                             </select>
                         </div>
 
-                        <div class="col--medium-4 form__col">
+                        <div class="col--medium-4 form__col" ng-class="{'form__col--error': createEventForm.eventActive.$invalid && (createEventForm.eventActive.$touched || createEventForm.$submitted)}">
                             <h4 class="form__label--shown">Active Event?</h4>
                             <label class="form__input--toggle">
-                                <input gt-float-label type="checkbox" ng-model="vm.event.active">
+                                <input gt-float-label type="checkbox" ng-model="vm.event.active" name="eventActive">
                                 <span></span>
                             </label>
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
-                        <div class="col--medium-12 form__col form__col--stacked">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.eventDetails.$invalid && (createEventForm.eventDetails.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="eventDetails">Event Details</label>
                             <textarea gt-float-label class="form__input--textarea" ng-model="vm.event.details" name="eventDetails" placeholder="Event Details"></textarea>
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
-                        <div class="col--medium-6 form__col">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventOrganizer.$invalid && (createEventForm.eventOrganizer.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="eventOrganizer">Event Organizer</label>
                             <input gt-float-label class="form__input" ng-model="vm.event.organizer.name" id="eventOrganizer" name="eventOrganizer" type="text" placeholder="Event Organizer">
                         </div>
 
-                        <div class="col--medium-6 form__col">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventOrganizerContentEmail.$invalid && (createEventForm.eventOrganizerContentEmail.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="eventOrganizerContentEmail">Event Organizer Content Email</label>
                             <input gt-float-label class="form__input" ng-model="vm.event.organizer.email" id="eventOrganizerContentEmail" name="eventOrganizerContentEmail" type="text" placeholder="Event Organizer Content Email">
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
-                        <div class="col--medium-12 form__col form__col--stacked">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.aboutEventOrganizer.$invalid && (createEventForm.aboutEventOrganizer.$touched || createEventForm.$submitted)}">
                             <label class="form__label--shown" for="aboutEventOrganizer">About Event Organizer <small class="form__instruction">Enter info here about who is organizing the event</small></label>
                             <textarea gt-float-label class="form__input--textarea" ng-model="vm.event.organizer.about" name="aboutEventOrganizer"></textarea>
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
-                        <div class="col--medium-12 form__col form__col--stacked">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.eventRegistrationInstructions.$invalid && (createEventForm.eventRegistrationInstructions.$touched || createEventForm.$submitted)}">
                             <label class="form__label--shown" for="eventRegistrationInstructions">Event Registration Instructions</label>
                             <textarea gt-float-label class="form__input--shortTextarea" ng-model="vm.event.registrationInstructions" name="eventRegistrationInstructions"></textarea>
                         </div>
@@ -623,74 +625,74 @@
                 <!-- right half of form -->
                 <div class="col--medium-6 form__fieldset--column">
                     <div class="form__fieldset row--expanded">
-                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventStartDate.$error.required && createEventForm.eventStartDate.$touched}">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventStartDate.$invalid && (createEventForm.eventStartDate.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="eventStartDate">Event Start Date</label>
                             <input gt-float-label pick-a-date="vm.event.startDate" ng-model="vm.event.startDateText" class="form__input picker__input" id="eventStartDate" name="eventStartDate" type="text" placeholder="Event Start Date" required>
                         </div>
 
-                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventEndDate.$error.required && createEventForm.eventEndDate.$touched}">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventEndDate.$invalid && (createEventForm.eventEndDate.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="eventEndDate">Event End Date</label>
                             <input gt-float-label pick-a-date="vm.event.endDate" ng-model="vm.event.endDateText" class="form__input picker__input" id="eventEndDate" name="eventEndDate" type="text" placeholder="Event End Date" required>
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
-                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventStartTime.$error.required && createEventForm.eventStartTime.$touched}">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventStartTime.$invalid && (createEventForm.eventStartTime.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="eventStartTime">Event Start Time</label>
                             <input gt-float-label pick-a-time="vm.event.startDate" ng-model="vm.event.startTimeText" class="form__input picker__input" id="eventStartTime" name="eventStartTime" type="text" placeholder="Event Start Time" required>
                         </div>
 
-                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventEndTime.$error.required && createEventForm.eventEndTime.$touched}">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventEndTime.$invalide && (createEventForm.eventEndTime.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="eventEndTime">Event End Time</label>
                             <input gt-float-label pick-a-time="vm.event.endDate" ng-model="vm.event.endTimeText" class="form__input picker__input" id="eventEndTime" name="eventEndTime" type="text" placeholder="Event End Time" required>
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
-                        <div class="col--medium-12 form__col form__col--stacked">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.locationName.$invalid && (createEventForm.locationName.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="locationName">Location Name</label>
                             <input gt-float-label class="form__input" ng-model="vm.event.location.name" id="locationName" name="locationName" type="text" placeholder="Location Name">
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
-                        <div class="col--medium-12 form__col form__col--stacked">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.streetAddress.$invalid && (createEventForm.streetAddress.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="streetAddress">Street Address</label>
-                            <input gt-float-label class="form__input" ng-model="vm.event.location.address" value="225 W Santa Clara St" id="streetAddress" name="streetAddress" type="text" placeholder="Street Address">
+                            <input gt-float-label class="form__input" ng-model="vm.event.location.address" id="streetAddress" name="streetAddress" type="text" placeholder="Street Address">
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
-                        <div class="col--medium-6 form__col">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.city.$invalid && (createEventForm.city.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="city">City</label>
                             <input gt-float-label class="form__input" ng-model="vm.event.location.city" id="city" name="city" type="text" placeholder="City">
                         </div>
 
-                        <div class="col--medium-6 form__col">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.state.$invalid && (createEventForm.state.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="state">State</label>
                             <input gt-float-label class="form__input" ng-model="vm.event.location.state" id="state" name="state" type="text" placeholder="State">
                         </div>
 
-                        <div class="col--medium-6 form__col">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.zip.$invalid && (createEventForm.zip.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="zip">Zip</label>
                             <input gt-float-label class="form__input" ng-model="vm.event.location.zip" id="zip" name="zip" type="text" placeholder="Zip">
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
-                        <div class="col--medium-6 form__col">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventCost.$invalid && (createEventForm.eventCost.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="eventCost">Event Cost</label>
                             <input gt-float-label class="form__input" ng-model="vm.event.cost" id="eventCost" name="eventCost" type="text" placeholder="Event Cost">
                         </div>
 
-                        <div class="col--medium-6 form__col">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.maxAttendees.$invalid && (createEventForm.maxAttendees.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="maxAttendees">Max Attendees</label>
                             <input gt-float-label class="form__input" ng-model="vm.event.capacity" id="maxAttendees" name="maxAttendees" type="number" placeholder="Max Attendees">
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
-                        <div class="col--medium-12 form__col form__col--stacked">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.activeEngagementCharts.$invalid && (createEventForm.activeEngagementCharts.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="SelectSmartListsToInvites">Select Smart Lists to Invite</label>
                             <select ng-model="vm.event.smartListsToInvite" ng-options="option.name for option in vm.smartLists track by option.id"
                                 gt-float-label id="activeEngagementCharts" class="form__input--select" name="activeEngagementCharts">
@@ -701,11 +703,11 @@
                     </div>
 
                     <div class="form__fieldset row--expanded">
-                        <div class="col--medium-12 form__col form__col--stacked">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.headerImage.$invalid && (createEventForm.headerImage.$touched || createEventForm.$submitted)}">
                             <h4 class="form__label--shown">Event Header Image</h4>
 
                             <label class="js-inputFile form__input--file">
-                                <input type="file" gt-file-model="vm.event.headerImage" aria-label="File browser">
+                                <input type="file" gt-file-model="vm.event.headerImage" id="headerImage" name="headerImage" aria-label="File browser">
                                 <span data-placeholder="Choose file..."></span>
                             </label>
                         </div>
@@ -1042,24 +1044,24 @@
                 <h2>Manual Entry</h2>
             </header>
 
-            <form class="form" action="#">
+            <form name="manualEntryForm" class="form" action="#">
                 <div class="form__fieldset row--expanded">
-                    <div class="col--medium-4 form__col form__col--third">
+                    <div class="col--medium-4 form__col form__col--third" ng-class="{'form__col--error': manualEntryForm.firstName.$invalid && (manualEntryForm.firstName.$touched || manualEntryForm.$submitted)}">
                         <label class="form__label" for="firstName">First Name *</label>
-                        <input gt-float-label class="form__input" id="firstName" name="firstName" type="text" placeholder="First Name *">
+                        <input gt-float-label class="form__input" ng-model="vm.manualEntry.firstName" id="firstName" name="firstName" type="text" placeholder="First Name *" required>
                     </div>
-                    <div class="col--medium-4 form__col form__col--third">
+                    <div class="col--medium-4 form__col form__col--third"ng-class="{'form__col--error': manualEntryForm.lastName.$invalid && (manualEntryForm.lastName.$touched || manualEntryForm.$submitted)}">
                         <label class="form__label" for="lastName">Last Name *</label>
-                        <input gt-float-label class="form__input" id="lastName" name="lastName" type="text" placeholder="Last Name *">
+                        <input gt-float-label class="form__input" ng-model="vm.manualEntry.lastName" id="lastName" name="lastName" type="text" placeholder="Last Name *" required>
                     </div>
-                    <div class="col--medium-4 form__col form__col--third">
+                    <div class="col--medium-4 form__col form__col--third"ng-class="{'form__col--error': manualEntryForm.email.$invalid && (manualEntryForm.email.$touched || manualEntryForm.$submitted)}">
                         <label class="form__label" for="email">Email Address *</label>
-                        <input gt-float-label class="form__input" id="email" name="email" type="email" placeholder="Email Address *">
+                        <input gt-float-label class="form__input" ng-model="vm.manualEntry.email" id="email" name="email" type="email" placeholder="Email Address *" required>
                     </div>
                 </div>
                 <div class="form__fieldset--footer row--expanded">
                     <div class="col--medium-12 form__col">
-                        <a class="button--blue" href="#">Send</a>
+                        <button type="submit" class="button--blue">Send</button>
                     </div>
                 </div>
             </form>
