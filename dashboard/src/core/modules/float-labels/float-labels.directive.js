@@ -93,7 +93,7 @@
         }
 
         function checkInput(inputValue) {
-            if (inputValue) {
+            if (inputValue || typeof inputValue === 'number') {
                 formCol.addClass('form__col--has-value');
             } else {
                 formCol.removeClass('form__col--has-value');
