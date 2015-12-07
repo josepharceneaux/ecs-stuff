@@ -39,30 +39,30 @@ class Candidate(db.Model):
     is_dirty = db.Column('IsDirty', db.SmallInteger, default=0)
 
     # One-to-many Relationships; i.e. Candidate has many:
-    candidate_phones = relationship('CandidatePhone', backref='candidate')
-    candidate_emails = relationship('CandidateEmail', backref='candidate')
-    candidate_photos = relationship('CandidatePhoto', backref='candidate')
-    candidate_text_comments = relationship('CandidateTextComment', backref='candidate')
-    voice_comments = relationship('VoiceComment', backref='candidate')
+    candidate_achievements = relationship('CandidateAchievement', backref='candidate')
+    candidate_addresses = relationship('CandidateAddress', backref='candidate')
+    candidate_associations = relationship('CandidateAssociation', backref='candidate')
+    candidate_custom_fields = relationship('CandidateCustomField', backref='candidate')
     candidate_documents = relationship('CandidateDocument', backref='candidate')
-    candidate_work_preferences = relationship('CandidateWorkPreference', backref='candidate')
-    candidate_preferred_locations = relationship('CandidatePreferredLocation', backref='candidate')
-    candidate_social_networks = relationship('CandidateSocialNetwork', backref='candidate')
+    candidate_educations = relationship('CandidateEducation', cascade='all, delete-orphan', passive_deletes=True)
+    candidate_emails = relationship('CandidateEmail', backref='candidate')
+    candidate_experiences = relationship('CandidateExperience', cascade='all, delete-orphan', passive_deletes=True)
     candidate_languages = relationship('CandidateLanguage', backref='candidate')
     candidate_license_certifications = relationship('CandidateLicenseCertification', backref='candidate')
-    candidate_references = relationship('CandidateReference', backref='candidate')
-    candidate_associations = relationship('CandidateAssociation', backref='candidate')
-    candidate_achievements = relationship('CandidateAchievement', backref='candidate')
     candidate_military_services = relationship('CandidateMilitaryService', backref='candidate')
     candidate_patent_histories = relationship('CandidatePatentHistory', backref='candidate')
+    candidate_phones = relationship('CandidatePhone', backref='candidate')
+    candidate_photos = relationship('CandidatePhoto', backref='candidate')
     candidate_publications = relationship('CandidatePublication', backref='candidate')
-    candidate_addresses = relationship('CandidateAddress', backref='candidate')
-    candidate_educations = relationship('CandidateEducation', cascade='all, delete-orphan', passive_deletes=True)
+    candidate_preferred_locations = relationship('CandidatePreferredLocation', backref='candidate')
+    candidate_references = relationship('CandidateReference', backref='candidate')
     candidate_skills = relationship('CandidateSkill', backref='candidate')
+    candidate_social_networks = relationship('CandidateSocialNetwork', backref='candidate')
+    candidate_text_comments = relationship('CandidateTextComment', backref='candidate')
+    candidate_work_preferences = relationship('CandidateWorkPreference', backref='candidate')
     candidate_unidentifieds = relationship('CandidateUnidentified', backref='candidate')
     email_campaign_sends = relationship('EmailCampaignSend', backref='candidate')
-    candidate_custom_fields = relationship('CandidateCustomField', backref='candidate')
-    candidate_experiences = relationship('CandidateExperience', backref='candidate')
+    voice_comments = relationship('VoiceComment', backref='candidate')
 
     def __repr__(self):
         return "<Candidate(formatted_name=' %r')>" % self.formatted_name
@@ -192,6 +192,10 @@ class CandidatePhone(db.Model):
         return "<CandidatePhone (value=' %r', extention= ' %r')>" % (self.value, self.extension)
 
     @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.filter_by(id=_id).first()
+
+    @classmethod
     def set_is_default_to_false(cls, candidate_id):
         for phone in cls.query.filter_by(candidate_id=candidate_id).all():
             phone.is_default = False
@@ -235,6 +239,10 @@ class CandidateEmail(db.Model):
 
     def __repr__(self):
         return "<CandidateEmail (address='%r')" % self.address
+
+    @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.filter_by(id=_id).first()
 
     @classmethod
     def set_is_default_to_false(cls, candidate_id):
@@ -448,6 +456,10 @@ class CandidateWorkPreference(db.Model):
             return False
         return True
 
+    @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.filter_by(id=_id).first()
+
 
 class CandidatePreferredLocation(db.Model):
     __tablename__ = 'candidate_preferred_location'
@@ -461,6 +473,10 @@ class CandidatePreferredLocation(db.Model):
 
     def __repr__(self):
         return "<CandidatePreferredLocation (candidate_id=' %r')>" % self.candidate_id
+
+    @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.filter_by(id=_id).first()
 
 
 class CandidateLanguage(db.Model):
@@ -571,6 +587,10 @@ class CandidateMilitaryService(db.Model):
 
     # TODO: Below are necessary for now, but should remove once all tables have been defined
     resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
+
+    @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.filter_by(id=_id).first()
 
     def __repr__(self):
         return "<CandidateMilitaryService (candidate_id=' %r')>" % self.candidate_id
@@ -736,10 +756,15 @@ class CandidateExperience(db.Model):
     resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
 
     # Relationships
-    candidate_experience_bullets = relationship('CandidateExperienceBullet', backref='candidate_experience')
+    candidate_experience_bullets = relationship('CandidateExperienceBullet',
+                                                cascade='all, delete-orphan', passive_deletes=True)
 
     def __repr__(self):
         return "<CandidateExperience (candidate_id=' %r)>" % self.candidate_id
+
+    @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.filter_by(id=_id).first()
 
     @classmethod
     def set_is_current_to_false(cls, candidate_id):
