@@ -11,7 +11,7 @@
   box-shadow: 0px 2px 5px 0px rgba($color--black, 0.1);
   vertical-align: top;
   position: relative;
-  overflow: hidden;
+  // overflow: hidden;
 
   h4 {
     color: $color--blue;
@@ -92,13 +92,96 @@
   background-repeat: no-repeat;
 }
 
+.box--nested-outer {
+  @extend .box;
+  // display: table;
+  padding: 0;
+  background-color: none;
+  border-spacing: 0;
+  overflow: hidden;
+}
+
+.box--nested-inner {
+  position: relative;
+  margin: 0;
+  padding: $padding--normal;
+}
+
+.box--nested-inner--green {
+  @extend .box--nested-inner;
+  @include gradients--green;
+
+  h2,
+  h4 {
+    color: $color--white;
+  }
+}
+
 // -----
 // Box Headers
 // -----
 
 .box__header {
+  @include inc--align--clearfix;
+
   margin-bottom: $margin--line;
+
+  [class^="icon--"],
+  [class*=" icon--"] {
+    padding-right: $padding--tiny;
+    vertical-align: middle;
+  }
 }
+
+.box__header__with-link {
+  @extend .box__header;
+
+  margin-top: $margin--row;
+
+  @include helper--media($breakpoint--large) {
+    margin-top: 0;
+  }
+
+  .fancy-select {
+    @include helper--media($breakpoint--large) {
+      display: inline-block;
+      padding-left: $padding--tiny;
+    }
+  }
+
+  a {
+    vertical-align: top;
+  }
+}
+
+// -----
+// Box Content
+// -----
+
+.box__center {
+  text-align: center;
+}
+
+.box__content-row {
+  @include inc--align--clearfix;
+
+  padding-top: $padding--large;
+
+  &:first-of-type {
+    @include helper--media($breakpoint--medium) {
+      padding-top: 0;
+    }
+  }
+}
+
+// -----
+// Box Footers
+// -----
+
+.box__footer-btns {
+  margin-top: $margin--line;
+}
+
 
 // -----
 // Box Corner

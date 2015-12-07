@@ -3,11 +3,39 @@
 // ---------------------------------------------------
 
 .hero {
+
+  .form__input--select {
+    display: inline-block;
+  }
+
+  // Fancy select style change
+  .fancy-select {
+    display: inline-block;
+    vertical-align: middle;
+
+    .trigger {
+      color: $color--white;
+      width: auto;
+      padding: $padding--tiny $padding--giant $padding--tiny $padding--tiny;
+      background: transparent;
+      border: 2px solid $color--white;
+
+      &:after { border-top-color: $color--white; }
+
+      &.open {
+        color: $color--nearBlack;
+        background: $color--lightGray;
+        border: 2px solid $color--lightGray;
+
+        &:after { border-top-color: $color--nearBlack; }
+      }
+    }
+  }
 }
 
 .hero__header {
-  padding-top: $margin--row;
-  padding-bottom: $margin--row;
+  padding-top: $padding--large;
+  padding-bottom: $padding--normal;
   z-index: $z-index--1;
   position: relative;
   margin-top: 0;
@@ -22,15 +50,65 @@
   }
 }
 
+.hero__header__breadcrumbs {
+  margin-bottom: $margin--row;
+  vertical-align: middle;
+}
+
+.hero__header__link {
+  color: $color--white;
+  opacity: .75;
+  transition: color $easing--normal,
+              opacity $easing--normal;
+
+  &:hover {
+    color: $color--white;
+    opacity: 1;
+  }
+}
+
 .hero__header__action {
   @include helper--media($breakpoint--large) {
-    vertical-align: middle;
     text-align: right
   }
 }
 
-.hero__graph {
-  @include helper--media($breakpoint--large) {
-    margin-top: -8em;
+.hero__header__action--icon-link {
+  color: $color--white;
+  font-size: $font-size--jumbo;
+  opacity: 1;
+  margin: 0 $padding--tiny;
+  vertical-align: middle;
+  transition: opacity $easing--normal;
+
+  &:hover {
+    color: $color--white;
+    opacity: .75;
   }
+
+  [class^="icon--"],
+  [class*=" icon--"] {
+    vertical-align: middle;
+  }
+}
+
+.hero__header__stats {
+  padding-top: 0;
+  padding-bottom: $padding--mega;
+}
+
+.hero__header__stats--column {
+  margin-bottom: $padding--normal;
+
+  &:last-of-type {
+    margin-bottom: 0;
+  }
+
+  @include helper--media($breakpoint--large) {
+    margin-bottom: 0;
+  }
+}
+
+.hero__header__stats--stat-subhead {
+  font-size: $font-size--small;
 }
