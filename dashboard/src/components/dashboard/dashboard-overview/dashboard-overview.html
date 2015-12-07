@@ -640,7 +640,7 @@
                             <input gt-float-label pick-a-time="vm.event.startDate" ng-model="vm.event.startTimeText" class="form__input picker__input" id="eventStartTime" name="eventStartTime" type="text" placeholder="Event Start Time" required>
                         </div>
 
-                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventEndTime.$invalide && (createEventForm.eventEndTime.$touched || createEventForm.$submitted)}">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventEndTime.$invalid && (createEventForm.eventEndTime.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="eventEndTime">Event End Time</label>
                             <input gt-float-label pick-a-time="vm.event.endDate" ng-model="vm.event.endTimeText" class="form__input picker__input" id="eventEndTime" name="eventEndTime" type="text" placeholder="Event End Time" required>
                         </div>
