@@ -390,7 +390,7 @@
             <form class="form" name="campaignBuilderForm" action="#">
                 <div class="form__fieldset row--expanded">
                     <!-- Form: Recipients -->
-                    <div class="col--medium-6 form__col" ng-class="{'form__col--error': campaignBuilderForm.selectedRecipients.$invalid && (campaignBuilderForm.selectedRecipients.$touched || campaignBuilderForm.$submitted)}">
+                    <div class="col--medium-6 form__col" ng-class="{'form__col--error': campaignBuilderForm.selectRecipients.$invalid && (campaignBuilderForm.selectRecipients.$touched || campaignBuilderForm.$submitted)}">
                         <label class="form__label" for="selectRecipients">Select Recipients *</label>
                         <select ng-model="vm.campaign.recipients" required ng-options="option.name for option in vm.recipients track by option.id"
                             gt-float-label class="form__input--select" name="selectRecipients" id="selectRecipients">
