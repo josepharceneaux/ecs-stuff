@@ -515,9 +515,7 @@
                     <div class="form__fieldset row--expanded">
                         <div class="col--medium-6 form__col" ng-class="{'form__col--error': createPipelineForm.keywords.$invalid && (createPipelineForm.keywords.$touched || createPipelineForm.$submitted)}">
                             <label class="form__label--shown" for="description">Keywords <small class="form__instruction">Separate keywords with commas</small></label>
-                            <tags-input ng-model="vm.pipeline.filters.keywords" class="form-field" name="keywords" type="text" placeholder="Add a keyword">
-                                <!--<auto-complete source=""></auto-complete>-->
-                            </tags-input>
+                            <input gt-tags-input ng-model="vm.pipeline.filters.keywords" class="form-field" name="keywords" type="text" placeholder="Add a keyword">
                         </div>
                         <div class="col--medium-6 form__col" ng-class="{'form__col--error': (createPipelineForm.minYearsXp.$invalid && (createPipelineForm.minYearsXp.$touched || createPipelineForm.$submitted)) || (createPipelineForm.maxYearsXp.$invalid && (createPipelineForm.maxYearsXp.$touched || createPipelineForm.$submitted))}">
                             <label class="form__label--shown" for="description">Years of Experience</label>
