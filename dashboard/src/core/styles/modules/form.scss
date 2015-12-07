@@ -215,6 +215,7 @@ input[type=number] {
 // -----
 
 .form__label {
+  visibility: hidden;
   opacity: 0;
   color: $color--blue;
   font-size: $font-size--small;
@@ -225,12 +226,14 @@ input[type=number] {
   top: $padding--small;
   margin-left: 10px;
   transition: opacity $easing--normal,
-              top $easing--normal;
+              top $easing--normal,
+              visibility $easing--normal;
 }
 
 // .has-value is added by JS
 .form__col--has-value {
   .form__label {
+    visibility: visible;
     opacity: 1;
     top: .75em;
   }
