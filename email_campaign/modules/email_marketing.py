@@ -86,20 +86,21 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
     #     schedule_email_campaign_sends(campaign=campaign, user=user,
     #                                   email_client_id=email_client_id)
 
-    user = User.query.get(user_id)
-    send_emails_to_campaign(oauth_token, email_campaign, user, email_client_id, list_ids)
+    # user = User.query.get(user_id)
+    send_emails_to_campaign(oauth_token, email_campaign.id, email_client_id, list_ids)
     return dict(id=email_campaign.id)
 
 
-def send_emails_to_campaign(oauth_token, campaign, user, email_client_id=None, list_ids=None, new_candidates_only=False):
+def send_emails_to_campaign(oauth_token, campaign_id, email_client_id=None, list_ids=None, new_candidates_only=False):
     """
     new_candidates_only sends the emails only to candidates who haven't yet
     received any as part of this campaign.
 
-    :param campaign:    email campaign row
-    :param user:        user row
+    :param campaign_id:    email campaign id
     :return:            number of emails sent
     """
+    campaign = EmailCampaign.query.get(campaign_id)
+    user = campaign.user
     emails_sent = 0
     candidate_ids_and_emails = get_email_campaign_candidate_ids_and_emails(oauth_token, campaign=campaign, user=user, list_ids=list_ids,
                                                                            new_candidates_only=new_candidates_only)
