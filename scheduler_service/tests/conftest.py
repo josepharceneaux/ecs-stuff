@@ -89,8 +89,7 @@ def test_culture(request):
 def job_config(request):
     return {
         "frequency": {
-            "days": 5,
-            "hours": 6
+            "hours": 10
         },
         'trigger': 'interval',
         "content_type": "application/json",

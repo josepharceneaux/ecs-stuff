@@ -7,7 +7,6 @@ import datetime
 from pytz import timezone
 from time import sleep
 from dateutil.parser import parse
-from dateutil.tz import tzutc
 import pytest
 import requests
 from conftest import APP_URL
@@ -19,43 +18,47 @@ class TestSchedulingViews:
     Test Cases for scheduling, resume, stop, remove single or multiple jobs
     """
 
-    # def test_bulk_job_scheduling_and_removal_load_testing(self, auth_data, job_config):
-    #     """
-    #     Create multiple jobs in bulk for load testing
-    #     then schedule jobs
-    #     then remove all jobs
-    #      Args:
-    #         auth_data: Fixture that contains token.
-    #         job_config (dict): Fixture that contains job config to be used as
-    #         POST data while hitting the endpoint.
-    #     :return:
-    #     """
-    #     start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
-    #     end_date = start_date + datetime.timedelta(hours=2)
-    #     job_config['start_datetime'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
-    #     job_config['end_datetime'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
-    #     jobs = []
-    #
-    #     headers = {'Authorization': 'Bearer ' + auth_data['access_token'],
-    #                'Content-Type': 'application/json'}
-    #     load_number = 200
-    #     # schedule some jobs and remove all of them
-    #     for i in range(load_number):
-    #         print i
-    #         response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
-    #                                  headers=headers)
-    #         assert response.status_code == 201
-    #         jobs.append(json.loads(response.text)['id'])
-    #
-    #     for i in range(0, load_number, 200):
-    #         print i
-    #         jobs_chunk = jobs[i:i + 200]
-    #         print jobs_chunk
-    #         response_remove_jobs = requests.delete(APP_URL + '/tasks/',
-    #                                                data=json.dumps(dict(ids=jobs_chunk)),
-    #                                                headers=headers)
-    #
-    #         assert response_remove_jobs.status_code == 200
+    def test_bulk_job_scheduling_and_removal_load_testing(self, auth_data, job_config):
+        """
+        Create multiple jobs in bulk for load testing
+        then schedule jobs
+        then remove all jobs
+         Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+        :return:
+        """
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
+        end_date = start_date + datetime.timedelta(hours=2)
+        job_config['start_datetime'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
+        job_config['end_datetime'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
+        jobs = []
+
+        headers = {'Authorization': 'Bearer ' + auth_data['access_token'],
+                   'Content-Type': 'application/json'}
+        load_number = 20000
+        # schedule some jobs and remove all of them
+        for i in range(load_number):
+            print i
+            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+                                     headers=headers)
+            assert response.status_code == 201
+            jobs.append(response.json()['id'])
+
+        # wait for all jobs to start
+        sleep(5)
+
+        # delete all created jobs
+        for i in range(0, load_number, 200):
+            print i
+            jobs_chunk = jobs[i:i + 200]
+            print jobs_chunk
+            response_remove_jobs = requests.delete(APP_URL + '/tasks/',
+                                                   data=json.dumps(dict(ids=jobs_chunk)),
+                                                   headers=headers)
+
+            assert response_remove_jobs.status_code == 200
 
     def test_one_scheduled_job(self, auth_data, job_config):
         """

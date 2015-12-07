@@ -36,15 +36,15 @@ def apscheduler_listener(event):
     else:
         logger.info('The job worked :)')
         job = scheduler.get_job(event.job_id)
-        if job.next_run_time > job.trigger.end_date:
-            logger.info('Stopping job')
-            try:
-                scheduler.remove_job(job_id=job.id)
-            except Exception as e:
-                logger.exception(e.message)
-                raise e
-            else:
-                logger.info("Job removed successfully")
+        # if job.next_run_time > job.trigger.end_date:
+        #     logger.info('Stopping job')
+        #     try:
+        #         scheduler.remove_job(job_id=job.id)
+        #     except Exception as e:
+        #         logger.exception(e.message)
+        #         raise e
+        #     else:
+        #         logger.info("Job removed successfully")
 
 
 scheduler.add_listener(apscheduler_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
