@@ -124,6 +124,15 @@ class SmsCampaignReply(db.Model):
             )
         ).first()
 
+    @classmethod
+    def get_by_candidate_phone_id(cls, candidate_phone_id):
+        assert candidate_phone_id
+        return cls.query.filter(
+            db.and_(
+                cls.candidate_phone_id == candidate_phone_id
+            )
+        ).first()
+
 
 class SmsCampaignSmartlist(db.Model):
     __tablename__ = 'sms_campaign_smart_list'

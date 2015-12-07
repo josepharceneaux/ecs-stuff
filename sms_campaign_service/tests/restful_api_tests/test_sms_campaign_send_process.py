@@ -12,8 +12,9 @@ from sms_campaign_service import db
 from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.sms_campaign import SmsCampaignBlast, SmsCampaignSend, \
     SmsCampaignSendUrlConversion, SmsCampaign
+from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_SEND, CAMPAIGN_SEND
 from sms_campaign_service.tests.conftest import SMS_CAMPAIGN_PROCESS_SEND_URL, \
-    SMS_CAMPAIGN_WITH_ID_URL
+    SMS_CAMPAIGN_WITH_ID_URL, assert_for_activity
 
 
 class TestSendSmsCampaign:
@@ -110,7 +111,7 @@ class TestSendSmsCampaign:
         assert 'No Candidate'.lower() in response_post.json()['error']['message'].lower()
 
     def test_post_with_valid_token_one_smartlist_two_candidates_with_no_phone(
-            self, auth_token, sms_campaign_of_current_user, sms_campaign_smartlist,
+            self, auth_token, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
             sample_sms_campaign_candidates):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
@@ -123,11 +124,12 @@ class TestSendSmsCampaign:
         assert response_post.status_code == 200, 'Response should be ok (200)'
         assert response_post.json()['total_sends'] == 0
         assert str(sms_campaign_of_current_user.id) in response_post.json()['message']
-        _assert_on_blasts_sends_and_url_conversion(response_post,
-                                                   str(sms_campaign_of_current_user.id))
+        _assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
+                                                            response_post,
+                                                            str(sms_campaign_of_current_user.id))
 
     def test_post_with_valid_token_one_smartlist_two_candidates_with_one_phone(
-            self, auth_token, sms_campaign_of_current_user, sms_campaign_smartlist,
+            self, auth_token, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
             sample_sms_campaign_candidates, candidate_phone_1):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
@@ -140,8 +142,8 @@ class TestSendSmsCampaign:
         assert response_post.status_code == 200, 'Response should be ok (200)'
         assert response_post.json()['total_sends'] == 1
         assert str(sms_campaign_of_current_user.id) in response_post.json()['message']
-        _assert_on_blasts_sends_and_url_conversion(response_post,
-                                                   str(sms_campaign_of_current_user.id))
+        _assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, response_post,
+                                                            str(sms_campaign_of_current_user.id))
 
     def test_post_with_valid_token_one_smartlist_two_candidates_with_same_phone(
             self, auth_token, sms_campaign_of_current_user, sms_campaign_smartlist,
@@ -159,7 +161,7 @@ class TestSendSmsCampaign:
         assert response_post.json()['error']['code'] == 5008
 
     def test_post_with_valid_token_one_smartlist_two_candidates_with_different_phones(
-            self, auth_token, sms_campaign_of_current_user, sms_campaign_smartlist,
+            self, auth_token, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
             sample_sms_campaign_candidates, candidate_phone_1, candidate_phone_2):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
@@ -173,11 +175,12 @@ class TestSendSmsCampaign:
         assert response_post.status_code == 200, 'Response should be ok (200)'
         assert response_post.json()['total_sends'] == 2
         assert str(sms_campaign_of_current_user.id) in response_post.json()['message']
-        _assert_on_blasts_sends_and_url_conversion(response_post,
-                                                   str(sms_campaign_of_current_user.id))
+        _assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
+                                                            response_post,
+                                                            str(sms_campaign_of_current_user.id))
 
     def test_post_with_valid_token_one_smartlist_two_candidates_with_different_phones_no_link_in_text(
-            self, auth_token, sms_campaign_of_current_user, sms_campaign_smartlist,
+            self, auth_token, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
             sample_sms_campaign_candidates, candidate_phone_1, candidate_phone_2):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
@@ -194,11 +197,12 @@ class TestSendSmsCampaign:
         assert response_post.status_code == 200, 'Response should be ok (200)'
         assert response_post.json()['total_sends'] == 2
         assert str(sms_campaign_of_current_user.id) in response_post.json()['message']
-        _assert_on_blasts_sends_and_url_conversion(response_post,
-                                                   str(sms_campaign_of_current_user.id))
+        _assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
+                                                            response_post,
+                                                            str(sms_campaign_of_current_user.id))
 
     def test_post_with_valid_token_one_smartlist_two_candidates_with_different_phones_multiple_links_in_text(
-            self, auth_token, sms_campaign_of_current_user, sms_campaign_smartlist,
+            self, auth_token, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
             sample_sms_campaign_candidates, candidate_phone_1, candidate_phone_2):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
@@ -216,11 +220,28 @@ class TestSendSmsCampaign:
         assert response_post.status_code == 200, 'Response should be ok (200)'
         assert response_post.json()['total_sends'] == 2
         assert str(sms_campaign_of_current_user.id) in response_post.json()['message']
-        _assert_on_blasts_sends_and_url_conversion(response_post,
-                                                   str(sms_campaign_of_current_user.id))
+        _assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, response_post,
+                                                            str(sms_campaign_of_current_user.id))
+
+    def test_post_with_valid_token_and_multiple_smartlists(
+            self, auth_token, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
+            sms_campaign_smartlist_2, sample_sms_campaign_candidates, candidate_phone_1):
+        """
+        User auth token is valid, campaign has one smart list associated. Smartlist has two
+        candidates. One candidate have no phone number associated. So, total sends should be 1.
+        :return:
+        """
+        response_post = requests.post(
+            SMS_CAMPAIGN_PROCESS_SEND_URL % sms_campaign_of_current_user.id,
+            headers=dict(Authorization='Bearer %s' % auth_token))
+        assert response_post.status_code == 200, 'Response should be ok (200)'
+        assert response_post.json()['total_sends'] == 1
+        assert str(sms_campaign_of_current_user.id) in response_post.json()['message']
+        _assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, response_post,
+                                                            str(sms_campaign_of_current_user.id))
 
 
-def _assert_on_blasts_sends_and_url_conversion(response_post, campaign_id):
+def _assert_on_blasts_sends_url_conversion_and_activity(user_id, response_post, campaign_id):
     """
     This function assert the number of sends in database table "sms_campaign_blast" and
     records in database table "sms_campaign_sends"
@@ -235,13 +256,24 @@ def _assert_on_blasts_sends_and_url_conversion(response_post, campaign_id):
     # assert on sends
     sms_campaign_sends = SmsCampaignSend.get_by_blast_id(str(sms_campaign_blast.id))
     assert len(sms_campaign_sends) == response_post.json()['total_sends']
+    # assert on activity of individual campaign sends
+    for sms_campaign_send in sms_campaign_sends:
+        assert_for_activity(user_id, CAMPAIGN_SMS_SEND, sms_campaign_send.id)
+    if sms_campaign_sends:
+        # assert on activity for whole campaign send
+        assert_for_activity(user_id, CAMPAIGN_SEND, campaign_id)
     _assert_url_conversion(sms_campaign_sends, campaign_id)
 
 
 def _assert_url_conversion(sms_campaign_sends, campaign_id):
     """
-    This function verifies the records related to URL conversion
-    :param sms_campaign_sends:
+    This function verifies the records related to URL conversion.
+    Long URL to redirect candidate to our app looks like
+
+    (say) https://www.gettalent.com/campaigns/1/url_redirection/30/?candidate_id=2
+
+    :param sms_campaign_sends: sends of campaign
+    :param campaign_id: id of SMS campaign
     :return:
     """
     campaign_send_url_conversions = []
@@ -252,6 +284,12 @@ def _assert_url_conversion(sms_campaign_sends, campaign_id):
     for send_url_conversion in campaign_send_url_conversions:
         # get URL conversion record from database table 'url_conversion'
         url_conversion = UrlConversion.get_by_id(send_url_conversion.url_conversion_id)
+        # assert /campaigns/ in source URL
+        assert '/campaigns/' in url_conversion.source_url
+        # assert /url_redirection/ in source URL
+        assert '/url_redirection/' in url_conversion.source_url
+        # assert candidate_id present in source URL
+        assert 'candidate_id' in url_conversion.source_url
         # assert that campaign_id is in source URL
         assert campaign_id in url_conversion.source_url
         # assert that url_conversion_id is in source URL

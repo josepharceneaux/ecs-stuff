@@ -155,7 +155,7 @@ def delete(cls, ref):
         db.session.delete(obj)
         db.session.commit()
     except Exception as error:
-        current_app.logger("Couldn't delete record from db. Error is: %s" % error.message)
+        current_app.logger.error("Couldn't delete record from db. Error is: %s" % error.message)
         return False
     return True
 

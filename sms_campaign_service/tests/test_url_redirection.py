@@ -1,0 +1,95 @@
+"""
+Author: Hafiz Muhammad Basit, QC-Technologies,
+        Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
+
+    This module contains pyTests for endpoint
+
+                /campaigns/:id/url_redirection/:id/candidate_id=id
+
+    of SMS Campaign APP.
+"""
+
+# Third Party Imports
+import requests
+
+# Application Specific
+from sms_campaign_service import db
+from sms_campaign_service.tests.conftest import assert_for_activity
+from sms_campaign_service.common.models.sms_campaign import SmsCampaignBlast
+from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_CLICK
+
+
+class TestSmsCampaignURLRedirection:
+    """
+    This class contains tests for endpoint /campaigns/:id/url_redirection/:id/candidate_id=id.
+    """
+
+    def test_for_post(self, url_conversion_by_send_test_sms_campaign):
+        """
+        POST method should not be allowed at this endpoint.
+        :return:
+        """
+        response_post = requests.post(url_conversion_by_send_test_sms_campaign.source_url)
+        assert response_post.status_code == 405, 'POST Method should not be allowed'
+
+    def test_for_delete(self, url_conversion_by_send_test_sms_campaign):
+        """
+        DELETE method should not be allowed at this endpoint.
+        :return:
+        """
+        response_post = requests.delete(url_conversion_by_send_test_sms_campaign.source_url)
+        assert response_post.status_code == 405, 'DELETE Method should not be allowed'
+
+    def test_for_get(self, sample_user,
+                 url_conversion_by_send_test_sms_campaign,
+                 sms_campaign_of_current_user):
+        """
+        GET method should give ok response
+        :return:
+        """
+        # stats before making request
+        hit_count, clicks = _get_hit_count_and_clicks(url_conversion_by_send_test_sms_campaign,
+                                                      sms_campaign_of_current_user)
+        response_get = requests.get(url_conversion_by_send_test_sms_campaign.source_url)
+        assert response_get.status_code == 200, 'Response should be ok'
+        # stats after making request
+        hit_count_after, clicks_after = _get_hit_count_and_clicks(
+            url_conversion_by_send_test_sms_campaign,
+            sms_campaign_of_current_user)
+        assert hit_count_after == hit_count + 1
+        assert clicks_after == clicks + 1
+        assert_for_activity(sample_user.id, CAMPAIGN_SMS_CLICK, sms_campaign_of_current_user.id)
+
+    def test_for_get_with_no_candidate_id(self, url_conversion_by_send_test_sms_campaign):
+        """
+        Removing candidate id from destination URL. It should get internal server error.
+        :return:
+        """
+        url_excluding_candidate_id = \
+            url_conversion_by_send_test_sms_campaign.source_url.split('?')[0]
+        response_get = requests.get(url_excluding_candidate_id)
+        assert response_get.status_code == 500, 'It should get internal server error'
+
+    def test_for_get_with_empty_destination_url(self, url_conversion_by_send_test_sms_campaign):
+        """
+        Making destination URL an empty string here, it should get internal server error.
+        :return:
+        """
+        # forcing destination URL to be empty
+        url_conversion_by_send_test_sms_campaign.update(destination_url='')
+        url_excluding_candidate_id = url_conversion_by_send_test_sms_campaign.source_url
+        response_get = requests.get(url_excluding_candidate_id)
+        assert response_get.status_code == 500, 'It should get internal server error'
+
+
+def _get_hit_count_and_clicks(url_conversion, campaign):
+    """
+    This returns the hit counts of URL conversion record and clicks of SMS campaign blast
+    from database table 'sms_campaign_blast'
+    :param url_conversion: URL conversion row
+    :param campaign: SMS campaign row
+    :return:
+    """
+    db.session.commit()
+    sms_campaign_blasts = SmsCampaignBlast.get_by_campaign_id(campaign.id)
+    return url_conversion.hit_count, sms_campaign_blasts.clicks

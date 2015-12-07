@@ -86,6 +86,13 @@ def sms_campaign_url_redirection(campaign_id=None, url_conversion_id=None):
     :type url_conversion_id: int
     :return: redirects to the destination URL else raises exception
     """
+    if ('HTTP_FROM' in request.headers.environ
+        and 'google' in request.headers.environ['HTTP_FROM'])\
+            or ('HTTP_REFERER' in request.headers.environ
+                and 'google' in request.headers.environ['HTTP_REFERER']):
+        data = {'message': "Successfully verified by Google's shorten URL API"}
+        logger.info(data['message'])
+        return flask.jsonify(**data), 200
     try:
         url_redirect_data = {'campaign_id': campaign_id,
                              'url_conversion_id': url_conversion_id,
@@ -101,10 +108,11 @@ def sms_campaign_url_redirection(campaign_id=None, url_conversion_id=None):
                                                                 candidate)
                 return redirect(redirection_url)
             else:
-                ResourceNotFound(error_message='Candidate(id:%s) not found.'
+                raise ResourceNotFound(error_message='Candidate(id:%s) not found.'
                                                % request.args.get('candidate_id'))
         else:
-            raise MissingRequiredField(error_message='%s' % missing_items)
+            raise MissingRequiredField(error_message='Missing required fields are: %s'
+                                                     % missing_items)
     except:
         logger.exception("Error occurred while URL redirection for SMS campaign.")
         data = {'message': 'Internal Server Error'}

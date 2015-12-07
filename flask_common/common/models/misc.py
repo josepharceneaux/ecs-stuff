@@ -19,17 +19,27 @@ class Activity(db.Model):
     params = db.Column(db.Text)
 
     @classmethod
-    def get_by_user_id_params_type_source_id(cls, user_id, params, type, source_id):
+    def get_by_user_id_params_type_source_id(cls, user_id, params, type_, source_id):
         assert user_id
         return cls.query.filter(
             db.and_(
                 Activity.user_id == user_id,
                 Activity.params == params,
-                Activity.type == type,
+                Activity.type == type_,
                 Activity.source_id == source_id,
             )
         ).first()
 
+    @classmethod
+    def get_by_user_id_type_source_id(cls, user_id, type_, source_id):
+        assert user_id
+        return cls.query.filter(
+            db.and_(
+                Activity.user_id == user_id,
+                Activity.type == type_,
+                Activity.source_id == source_id,
+            )
+        ).first()
 
 class AreaOfInterest(db.Model):
     __tablename__ = 'area_of_interest'

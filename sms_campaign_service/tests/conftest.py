@@ -9,7 +9,6 @@ import pytest
 
 # App Settings
 from sms_campaign_service import init_sms_campaign_app
-
 app = init_sms_campaign_app()
 
 # Application Specific
@@ -17,16 +16,18 @@ app = init_sms_campaign_app()
 from sms_campaign_service.common.tests.conftest import *
 
 # App specific
-from sms_campaign_service.sms_campaign_app_constants import TWILIO, PHONE_LABEL_ID
 from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
+from sms_campaign_service.common.models.misc import UrlConversion, Activity
+from sms_campaign_service.sms_campaign_app_constants import TWILIO, PHONE_LABEL_ID
 from sms_campaign_service.common.models.candidate import PhoneLabel, CandidatePhone
 from sms_campaign_service.common.models.smart_list import SmartList, SmartListCandidate
-from sms_campaign_service.common.models.sms_campaign import SmsCampaign, SmsCampaignSmartlist
+from sms_campaign_service.common.models.sms_campaign import SmsCampaign, SmsCampaignSmartlist, \
+    SmsCampaignBlast, SmsCampaignSend, SmsCampaignSendUrlConversion
 from sms_campaign_service.common.utils.app_base_urls import SMS_CAMPAIGN_SERVICE_APP_URL
 
-TEST_NUMBER_1 = '+123'
-TEST_NUMBER_2 = '+456'
+TEST_NUMBER_1 = gen_salt(15)
+TEST_NUMBER_2 = gen_salt(15)
 
 # endpoint /campaigns/
 SMS_CAMPAIGN_API_URL = SMS_CAMPAIGN_SERVICE_APP_URL + '/campaigns/'
@@ -38,6 +39,8 @@ SMS_CAMPAIGN_SENDS_URL = SMS_CAMPAIGN_API_URL + '%s/sms_campaign_sends'
 SMS_CAMPAIGN_PROCESS_SEND_URL = SMS_CAMPAIGN_API_URL + '%s/send'
 # endpoint /url_conversion
 URL_CONVERSION_API_URL = SMS_CAMPAIGN_SERVICE_APP_URL + '/url_conversion'
+# endpoint /sms_receive
+SMS_RECEIVE_URL = SMS_CAMPAIGN_SERVICE_APP_URL + '/sms_receive'
 
 
 @pytest.fixture()
@@ -73,6 +76,7 @@ def user_phone_1(request, sample_user):
 
     def tear_down():
         UserPhone.delete(user_phone)
+
     request.addfinalizer(tear_down)
     return user_phone
 
@@ -89,6 +93,7 @@ def user_phone_2(request, sample_user):
 
     def tear_down():
         UserPhone.delete(user_phone)
+
     request.addfinalizer(tear_down)
     return user_phone
 
@@ -104,6 +109,7 @@ def user_phone_3(request, sample_user_2):
 
     def tear_down():
         UserPhone.delete(user_phone)
+
     request.addfinalizer(tear_down)
     return user_phone
 
@@ -114,7 +120,7 @@ def campaign_valid_data():
     This returns the valid data to save an SMS campaign in database
     :return:
     """
-    return {"name": "New SMS Campaign",
+    return {"name": "TEST SMS Campaign",
             "sms_body_text": "HI all, we have few openings at http://www.abc.com",
             "frequency_id": 2,
             "added_time": "2015-11-24T08:00:00",
@@ -130,7 +136,7 @@ def campaign_invalid_data():
     name is modified to 'text' here.
     :return:
     """
-    return {"name": "New SMS Campaign",
+    return {"name": "TEST SMS Campaign",
             "text": "HI all, we have few openings at http://www.abc.com",  # invalid key
             "frequency_id": 2,
             "added_time": "2015-11-24T08:00:00",
@@ -182,7 +188,43 @@ def create_campaign_sends(candidate_first, candidate_second, create_sms_campaign
 
 
 @pytest.fixture()
-def sample_sms_campaign_candidates(sample_smartlist,
+def sample_smartlist(request, sample_user):
+    """
+    This creates sample smartlist for sample user
+    :param request:
+    :param sample_user:
+    :return:
+    """
+
+    smart_list = _create_smart_list(sample_user)
+
+    def tear_down():
+        SmartList.delete(smart_list)
+
+    request.addfinalizer(tear_down)
+    return smart_list
+
+
+@pytest.fixture()
+def sample_smartlist_2(request, sample_user):
+    """
+    This creates sample smartlist for sample user
+    :param request:
+    :param sample_user:
+    :return:
+    """
+    smart_list = _create_smart_list(sample_user)
+
+    def tear_down():
+        SmartList.delete(smart_list)
+
+    request.addfinalizer(tear_down)
+    return smart_list
+
+
+@pytest.fixture()
+def sample_sms_campaign_candidates(sample_user,
+                                   sample_smartlist,
                                    candidate_first,
                                    candidate_second):
     """
@@ -192,30 +234,14 @@ def sample_sms_campaign_candidates(sample_smartlist,
     :param candidate_second:
     :return:
     """
-
+    candidate_first.update(user_id=sample_user.id)
+    candidate_second.update(user_id=sample_user.id)
     smart_list_candidate_1 = SmartListCandidate(smart_list_id=sample_smartlist.id,
                                                 candidate_id=candidate_first.id)
     SmartListCandidate.save(smart_list_candidate_1)
     smart_list_candidate_2 = SmartListCandidate(smart_list_id=sample_smartlist.id,
                                                 candidate_id=candidate_second.id)
     SmartListCandidate.save(smart_list_candidate_2)
-
-
-@pytest.fixture()
-def sample_smartlist(request, sample_user):
-    """
-    This creates sample smartlist for sample user
-    :param request:
-    :param sample_user:
-    :return:
-    """
-    smart_list = SmartList(name=gen_salt(20), user_id=sample_user.id)
-    SmartList.save(smart_list)
-
-    def tear_down():
-        SmartList.delete(smart_list)
-    request.addfinalizer(tear_down)
-    return smart_list
 
 
 @pytest.fixture()
@@ -233,6 +259,20 @@ def sms_campaign_smartlist(sample_smartlist, sms_campaign_of_current_user):
 
 
 @pytest.fixture()
+def sms_campaign_smartlist_2(sample_smartlist_2, sms_campaign_of_current_user):
+    """
+    This associates sample_smartlist with the sms_campaign_of_current_user
+    :param sample_smartlist:
+    :param sms_campaign_of_current_user:
+    :return:
+    """
+    sms_campaign_smart_list = SmsCampaignSmartlist(smart_list_id=sample_smartlist_2.id,
+                                                   sms_campaign_id=sms_campaign_of_current_user.id)
+    SmsCampaignSmartlist.save(sms_campaign_smart_list)
+    return sms_campaign_smart_list
+
+
+@pytest.fixture()
 def candidate_phone_1(request, candidate_first):
     """
     This associates sample_smartlist with the sms_campaign_of_current_user
@@ -242,7 +282,7 @@ def candidate_phone_1(request, candidate_first):
     candidate_phone = _create_candidate_mobile_phone(candidate_first, TEST_NUMBER_1)
 
     def tear_down():
-        Candidate.delete(candidate_phone)
+        CandidatePhone.delete(candidate_phone)
     request.addfinalizer(tear_down)
     return candidate_phone
 
@@ -257,7 +297,8 @@ def candidate_phone_2(request, candidate_second):
     candidate_phone = _create_candidate_mobile_phone(candidate_second, TEST_NUMBER_2)
 
     def tear_down():
-        Candidate.delete(candidate_phone)
+        CandidatePhone.delete(candidate_phone)
+
     request.addfinalizer(tear_down)
     return candidate_phone
 
@@ -272,9 +313,51 @@ def candidates_with_same_phone(request, candidate_phone_1, candidate_second):
     cand_phone_2 = _create_candidate_mobile_phone(candidate_second, TEST_NUMBER_1)
 
     def tear_down():
-        Candidate.delete(cand_phone_2)
+        CandidatePhone.delete(cand_phone_2)
+
     request.addfinalizer(tear_down)
     return candidate_phone_1, cand_phone_2
+
+
+@pytest.fixture()
+def process_send_sms_campaign(sample_user, auth_token,
+                              sms_campaign_of_current_user,
+                              sample_sms_campaign_candidates,
+                              sms_campaign_smartlist,
+                              candidate_phone_1,
+                              ):
+    """
+    This function serves the sending part of SMS campaign
+    :return:
+    """
+    campaign_obj = SmsCampaignBase(sample_user.id)
+    # send campaign to candidates
+    campaign_obj.process_send(sms_campaign_of_current_user)
+
+
+@pytest.fixture()
+def url_conversion_by_send_test_sms_campaign(request,
+                                             sms_campaign_of_current_user,
+                                             process_send_sms_campaign):
+    """
+    This sends SMS campaign and returns the source URL from url_conversion database table.
+    :return:
+    """
+    # get campaign blast
+    sms_campaign_blast = SmsCampaignBlast.get_by_campaign_id(sms_campaign_of_current_user.id)
+    # get campaign sends
+    sms_campaign_sends = SmsCampaignSend.get_by_blast_id(str(sms_campaign_blast.id))
+    # get if of record of sms_campaign_send_url_conversion for this campaign
+    campaign_send_url_conversions = SmsCampaignSendUrlConversion.get_by_campaign_send_id(
+        sms_campaign_sends[0].id)
+    # get URL conversion record from database table 'url_conversion'
+    url_conversion = UrlConversion.get_by_id(campaign_send_url_conversions[0].url_conversion_id)
+
+    def tear_down():
+        UrlConversion.delete(url_conversion)
+
+    request.addfinalizer(tear_down)
+    return url_conversion
 
 
 def _create_sms_campaign(campaign_data, user_phone):
@@ -308,7 +391,7 @@ def _create_user_twilio_phone(user, phone_value):
 def _create_candidate_mobile_phone(candidate, phone_value):
     """
     This adds candidate_phone record in database table "candidate_phone"
-    :param user: user row
+    :param candidate: Candidate row
     :param phone_value: value of phone number
     :return: user_phone row
     """
@@ -318,3 +401,26 @@ def _create_candidate_mobile_phone(candidate, phone_value):
                                      value=phone_value)
     CandidatePhone.save(candidate_phone)
     return candidate_phone
+
+
+def _create_smart_list(test_user):
+    """
+    This creates Smartlist for given user
+    :param test_user:
+    :return:
+    """
+    smart_list = SmartList(name=gen_salt(20), user_id=test_user.id)
+    SmartList.save(smart_list)
+    return smart_list
+
+
+def assert_for_activity(user_id, type_, source_id):
+    """
+    This verifies that activity has been created for given action
+    :param user_id:
+    :param type_:
+    :param source_id:
+    :return:
+    """
+    db.session.commit()
+    assert Activity.get_by_user_id_type_source_id(user_id, type_, source_id)

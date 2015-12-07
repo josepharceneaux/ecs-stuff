@@ -10,7 +10,8 @@ import json
 import requests
 
 # Application Specific
-from sms_campaign_service.tests.conftest import SMS_CAMPAIGN_API_URL
+from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_CREATE
+from sms_campaign_service.tests.conftest import SMS_CAMPAIGN_API_URL, assert_for_activity
 
 
 class TestSmsCampaign:
@@ -103,7 +104,7 @@ class TestSmsCampaign:
         assert response.status_code == 403, 'It should get forbidden error (403)'
 
     def test_post_with_valid_header_and_requesting_new_twilio_number_and_valid_data(
-            self, valid_header, campaign_valid_data):
+            self, sample_user, valid_header, campaign_valid_data):
         """
         User has no phone value. It should get forbidden error.
         :param valid_header: valid header to POST data
@@ -117,6 +118,7 @@ class TestSmsCampaign:
         assert response.status_code == 201, 'It should create sms campaign (201)'
         assert 'location' in response.headers
         assert 'id' in response.json()
+        assert_for_activity(sample_user.id, CAMPAIGN_SMS_CREATE, response.json()['id'])
 
     def test_post_with_valid_header_and_one_user_phone_and_no_data(self,
                                                                    valid_header,
@@ -167,6 +169,7 @@ class TestSmsCampaign:
         assert response.json()['error']['code'] == 5006
 
     def test_post_with_valid_header_and_one_user_phone_and_valid_data(self,
+                                                                      sample_user,
                                                                       valid_header,
                                                                       campaign_valid_data,
                                                                       user_phone_1):
@@ -184,6 +187,7 @@ class TestSmsCampaign:
         assert response.status_code == 201, 'Should create campaign (201)'
         assert 'location' in response.headers
         assert 'id' in response.json()
+        assert_for_activity(sample_user.id, CAMPAIGN_SMS_CREATE, response.json()['id'])
 
     def test_post_with_valid_header_and_multiple_user_phone_and_valid_data(self,
                                                                            valid_header,
@@ -289,8 +293,8 @@ class TestSmsCampaign:
         assert response.status_code == 200, 'Response should be ok (200)'
 
     def test_delete_with_valid_header_valid_data_type_and_unauthorized_ids(self,
-                                                                          valid_header,
-                                                                          sms_campaign_of_other_user):
+                                                                           valid_header,
+                                                                           sms_campaign_of_other_user):
         """
         User auth token is valid, data type is valid and ids are of those sms campaigns that
         belong to some other user. It should get unauthorized error.

@@ -43,7 +43,7 @@ from sms_campaign_service.sms_campaign_app_constants import (SMS_URL_REDIRECT, P
 from sms_campaign_service.custom_exceptions import \
     (EmptySmsBody, MultipleTwilioNumbers, EmptyDestinationUrl, MissingRequiredField,
      MultipleUsersFound, MultipleCandidatesFound, ErrorSavingSMSCampaign, NoCandidateAssociated,
-     NoSmartlistAssociated)
+     NoSmartlistAssociated, NoSMSCampaignSentToCandidate)
 from sms_campaign_service.common.models.candidate import (PhoneLabel, Candidate, CandidatePhone)
 from sms_campaign_service.common.models.sms_campaign import \
     (SmsCampaign, SmsCampaignSend, SmsCampaignBlast, SmsCampaignSmartlist,
@@ -417,7 +417,8 @@ class SmsCampaignBase(CampaignBase):
                 camp_obj.process(campaign_id=1)
         :return:
         """
-
+        if not isinstance(campaign, SmsCampaign):
+            raise InvalidUsage(error_message='campaign should be instance of SmsCampaign model')
         self.campaign = campaign
         logger.debug('process_send: SMS Campaign(id:%s) is being sent.' % campaign.id)
         self.body_text = self.campaign.sms_body_text.strip()
@@ -707,11 +708,6 @@ class SmsCampaignBase(CampaignBase):
             record_in_db.update(**data)
             sms_campaign_send_id = record_in_db.id
         else:
-            missing_required_fields = find_missing_items(data, verify_all_keys=True)
-            if len(missing_required_fields) == len(data.keys()):
-                raise MissingRequiredField(
-                    error_message='Required field is missing to create %s record. %s '
-                                  % (SmsCampaignSend.__tablename__, missing_required_fields))
             new_record = SmsCampaignSend(**data)
             SmsCampaignSend.save(new_record)
             sms_campaign_send_id = new_record.id
@@ -909,6 +905,7 @@ class SmsCampaignBase(CampaignBase):
         :exception: MissingRequiredField (5006)
         :exception: MultipleUsersFound(5007)
         :exception: MultipleCandidatesFound(5008)
+        :exception: NoSMSCampaignSentToCandidate(5013)
 
         **See Also**
         .. see also:: sms_receive() function in sms_campaign_app/app.py
@@ -922,23 +919,28 @@ class SmsCampaignBase(CampaignBase):
             candidate_phone = _validate_candidate_phone_value(reply_data.get('From'))
             # get latest campaign send
             sms_campaign_send = SmsCampaignSend.get_by_candidate_id(candidate_phone.candidate_id)
-            # get SMS campaign blast
-            sms_campaign_blast = SmsCampaignBlast.get_by_id(sms_campaign_send.sms_campaign_blast_id)
-            # save candidate reply
-            sms_campaign_reply = cls.save_candidate_reply(sms_campaign_blast.id,
-                                                          candidate_phone.id,
-                                                          reply_data.get('Body'))
-            # create Activity
-            cls.create_campaign_reply_activity(sms_campaign_reply,
-                                               sms_campaign_blast,
-                                               candidate_phone.candidate_id,
-                                               user_phone.user_id)
-            # get/update SMS campaign blast
-            cls.create_or_update_sms_campaign_blast(sms_campaign_blast.sms_campaign_id,
-                                                    replies_update=True)
-            logger.debug('Candidate(id:%s) replied "%s" to Campaign(id:%s).'
-                         % (candidate_phone.candidate_id, reply_data.get('Body'),
-                            sms_campaign_blast.sms_campaign_id))
+            if sms_campaign_send:
+                # get SMS campaign blast
+                sms_campaign_blast = SmsCampaignBlast.get_by_id(sms_campaign_send.sms_campaign_blast_id)
+                # save candidate reply
+                sms_campaign_reply = cls.save_candidate_reply(sms_campaign_blast.id,
+                                                              candidate_phone.id,
+                                                              reply_data.get('Body'))
+                # create Activity
+                cls.create_campaign_reply_activity(sms_campaign_reply,
+                                                   sms_campaign_blast,
+                                                   candidate_phone.candidate_id,
+                                                   user_phone.user_id)
+                # get/update SMS campaign blast
+                cls.create_or_update_sms_campaign_blast(sms_campaign_blast.sms_campaign_id,
+                                                        replies_update=True)
+                logger.debug('Candidate(id:%s) replied "%s" to Campaign(id:%s).'
+                             % (candidate_phone.candidate_id, reply_data.get('Body'),
+                                sms_campaign_blast.sms_campaign_id))
+            else:
+                raise NoSMSCampaignSentToCandidate(
+                    error_message='No SMS campaign sent to candidate(id:%s)'
+                                  % candidate_phone.candidate_id)
         else:
             raise MissingRequiredField(error_message='%s' % missing_items)
 

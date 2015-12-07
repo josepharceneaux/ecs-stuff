@@ -97,15 +97,18 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                     raise
                 # checks if error occurred on "Server" or is it a bad request
                 elif e.response.status_code < 500:
-                    if 'errors' in e.response.json():
-                        error_message = e.message + ', Details: ' \
-                                        + json.dumps(
-                            e.response.json().get('errors'))
-                    elif 'error_description' in e.response.json():
-                        error_message = e.message + ', Details: ' \
-                                        + json.dumps(
-                            e.response.json().get('error_description'))
-                    else:
+                    try:
+                        if 'errors' in e.response.json():
+                            error_message = e.message + ', Details: ' \
+                                            + json.dumps(
+                                e.response.json().get('errors'))
+                        elif 'error_description' in e.response.json():
+                            error_message = e.message + ', Details: ' \
+                                            + json.dumps(
+                                e.response.json().get('error_description'))
+                        else:
+                            error_message = e.message
+                    except:
                         error_message = e.message
                 else:
                     # raise any Server error

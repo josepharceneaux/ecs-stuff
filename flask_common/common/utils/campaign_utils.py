@@ -76,7 +76,7 @@ class CampaignBase(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self,  user_id, *args, **kwargs):
+    def __init__(self, user_id, *args, **kwargs):
         self.user_id = user_id
         self.oauth_header = self.get_user_access_token(self.user_id)
         self.campaign = None
@@ -159,7 +159,8 @@ class CampaignBase(object):
                                 user_id=self.user_id)
         # get candidate ids
         try:
-            candidate_ids = [candidate['id'] for candidate in json.loads(response.text)['candidates']]
+            candidate_ids = [candidate['id'] for candidate in
+                             json.loads(response.text)['candidates']]
             candidates = [Candidate.get_by_id(_id) for _id in candidate_ids]
             return candidates
         except:
@@ -183,8 +184,8 @@ class CampaignBase(object):
         # job_pool = Pool(POOL_SIZE)
         for candidate in candidates:
             self.send_campaign_to_candidate(candidate)
-        #     job_pool.spawn(self.send_campaign_to_candidate, candidate)
-        # job_pool.join()
+            #     job_pool.spawn(self.send_campaign_to_candidate, candidate)
+            # job_pool.join()
 
     @abstractmethod
     # TODO: This will run on celery (after celery is configured)
@@ -272,17 +273,17 @@ class CampaignBase(object):
         """
         if isinstance(params, dict):
             try:
-                json_params = json.dumps(params)
+                json_data = json.dumps({'source_table': source_table,
+                                        'source_id': source_id,
+                                        'type': type_,
+                                        'params': params})
             except Exception as error:
                 raise ForbiddenError(error_message='Error while serializing activity params '
                                                    'into JSON. Error is: %s' % error.message)
         else:
             raise InvalidUsage(error_message='params should be dictionary.')
-        data = {'source_table': source_table,
-                'source_id': source_id,
-                'type': type_,
-                'user_id': user_id,
-                'params': json_params}
+
+        headers['content-type'] = 'application/json'
         # POST call to activity service to create activity
         url = ACTIVITY_SERVICE_APP_URL + '/activities/'
-        http_request('POST', url, headers=headers, data=data, user_id=user_id)
+        http_request('POST', url, headers=headers, data=json_data, user_id=user_id)

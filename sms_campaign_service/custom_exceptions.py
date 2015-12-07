@@ -68,3 +68,7 @@ class NoSmartlistAssociated(SmsCampaignApiException):
 
 class NoCandidateAssociated(SmsCampaignApiException):
     error_code = 5012
+
+
+class NoSMSCampaignSentToCandidate(SmsCampaignApiException):
+    error_code = 5013
