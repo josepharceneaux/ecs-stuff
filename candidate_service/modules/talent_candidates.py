@@ -18,7 +18,7 @@ from candidate_service.common.models.candidate import (
     CandidateExperience, CandidateEducation, CandidateEducationDegree,
     CandidateSkill, CandidateMilitaryService, CandidateCustomField,
     CandidateSocialNetwork, SocialNetwork, CandidateEducationDegreeBullet,
-    CandidateExperienceBullet, ClassificationType
+    CandidateExperienceBullet, ClassificationType, CandidateTextComment
 )
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.email_marketing import (EmailCampaign, EmailCampaignSend)
@@ -483,6 +483,7 @@ def create_or_update_candidate_from_params(
         status_id=None,
         emails=None,
         phones=None,
+        candidate_text_comment=None,
         addresses=None,
         educations=None,
         military_services=None,
@@ -526,6 +527,7 @@ def create_or_update_candidate_from_params(
     :type status_id:                int
     :type emails:                   list
     :type phones:                   list
+    :type candidate_text_comment:   str
     :type addresses:                list
     :type educations:               list
     :type military_services:        list
@@ -539,8 +541,6 @@ def create_or_update_candidate_from_params(
     :type dice_social_profile_id:   int
     :type dice_profile_id:          int
     :type added_time:               date
-    :type domain_can_read:          bool
-    :type domain_can_write:         bool
     :type source_id:                int
     :type objective:                str
     :type summary:                  str
@@ -636,7 +636,9 @@ def create_or_update_candidate_from_params(
     # Add or update Candidate's social_network(s)
     if social_networks:
         _add_or_update_social_networks(candidate_id, social_networks)
-
+    # Add or update Candidate's text comment
+    if candidate_text_comment:
+        _add_text_comments(candidate_text_comment, candidate_id)
     # Commit to database after all insertions/updates are executed successfully
     db.session.commit()
     return dict(candidate_id=candidate_id)
@@ -998,7 +1000,6 @@ def _add_or_update_educations(candidate_id, educations, added_time):
             # CandidateEducationDegree
             education_degrees = education.get('degrees')
             for education_degree in education_degrees:
-
                 # Add CandidateEducationDegree
                 candidate_education_degree = CandidateEducationDegree(
                     candidate_education_id=education_id,
@@ -1209,9 +1210,9 @@ def _add_or_update_military_services(candidate_id, military_services):
         # Convert ISO 8061 date object to datetime object
         from_date, to_date = military_service.get('from_date'), military_service.get('to_date')
         if from_date:
-            from_date = dateutil.parser.parse(from_date)
+            from_date = dateutil.parser.parse(str(from_date))
         if to_date:
-            to_date = dateutil.parser.parse(to_date)
+            to_date = dateutil.parser.parse(str(to_date))
 
         military_service_dict = dict(
             country_id=Country.country_id_from_name_or_code(military_service.get('country')),
@@ -1277,7 +1278,7 @@ def _add_or_update_skills(candidate_id, skills, added_time):
         # Convert ISO 8601 date format to datetime object
         last_used = skill.get('last_used')
         if last_used:
-            last_used = dateutil.parser.parse(skill.get('last_used'))
+            last_used = dateutil.parser.parse(str(last_used))
 
         skills_dict = dict(
             list_order=skill.get('list_order'),
@@ -1364,3 +1365,20 @@ def _delete_candidates(candidate_ids, user_id, source_product_id):
 
     db.session.commit()
     return len(candidate_ids)
+
+
+def _add_text_comments(candidate_text_comment, candidate_id):
+    """
+    Function will create CandidateTextComment
+    """
+    # Add Text comments
+    if candidate_text_comment:
+        if isinstance(candidate_text_comment, basestring):
+            candidate_text_comment = CandidateTextComment(candidate_id=candidate_id, list_order=1,
+                                                          comment=candidate_text_comment)
+            db.session.add(candidate_text_comment)
+        else:
+            # just insert them for now, no need to update
+            for comment in candidate_text_comment:
+                candidate_text_comment = CandidateTextComment(candidate_id=candidate_id, list_order=0, comment=comment)
+                db.session.add(candidate_text_comment)

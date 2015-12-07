@@ -851,10 +851,10 @@ class CandidateSubscriptionPreference(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     candidate_id = db.Column('candidateId', db.Integer, db.ForeignKey('candidate.id'))
     frequency_id = db.Column('frequencyId', db.Integer, db.ForeignKey('frequency.id'))
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
-        return "<ClassificationType (code = %r)>" % self.code
-
+        return "<CandidateSubscriptionPreference (candidate_id = %r)>" % self.candidate_id
 
 
 

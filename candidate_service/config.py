@@ -16,7 +16,7 @@ logging.config.fileConfig(LOGGING_CONF)
 GT_ENVIRONMENT = os.environ.get('GT_ENVIRONMENT')
 if GT_ENVIRONMENT == 'dev':
     OAUTH_SERVER_URI = 'http://127.0.0.1:8001/oauth2/authorize'
-    CANDIDATE_CREATION_URI = 'http://127.0.0.1:8005/web/api/candidates.json'
+    CANDIDATE_CREATION_URI = 'http://127.0.0.1:8005/v1/candidates'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@localhost/talent_local'
     LOGGER = logging.getLogger("candidate_service.dev")
     DEBUG = True

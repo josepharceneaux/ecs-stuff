@@ -15,7 +15,7 @@ from candidate_service.config import GT_ENVIRONMENT
 from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateStatus
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import AreaOfInterest
-from common_functions import get_geo_coordinates_bounding
+from geo_coordinates import get_geo_coordinates_bounding
 
 
 API_VERSION = "2013-01-01"
@@ -427,8 +427,8 @@ def delete_candidate_documents(candidate_ids):
     action_dicts = [dict(type='delete', id=candidate_id) for candidate_id in candidate_ids]
     adds, deletes = _send_batch_request(action_dicts)
     if adds:
-        logger.error("Shouldn't have gotten any adds in a batch delete operation.Got %s adds. "
-                                 "candidate_ids: %s", adds, candidate_ids)
+        logger.error("Shouldn't have gotten any adds in a batch delete operation.Got %s adds.candidate_ids: %s", adds,
+                     candidate_ids)
     return deletes
 
 
@@ -766,7 +766,7 @@ def get_username_facet_info_with_ids(facet_owner):
     new_tmp_dict = dict()
     # Replace each user's email with name
     for email_value_tuple, count in tmp_dict.items():
-        user_row = db.session.query(User).filter_by(email=email_value_tuple[0]).first()
+        user_row = User.query.filter_by(email=email_value_tuple[0]).first()
         new_tmp_dict[user_row.first_name+" "+user_row.last_name, email_value_tuple[1]] = count
     return new_tmp_dict
 

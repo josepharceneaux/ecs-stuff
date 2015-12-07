@@ -4,17 +4,18 @@ This file is for all geo related functions
 from geo_location import GeoLocation
 import requests
 
+url = 'http://maps.google.com/maps/api/geocode/json'
+
 
 def get_geo_coordinates(location):
     """Google location (lat/lon) service.
     :param location
     """
-    url = 'http://maps.google.com/maps/api/geocode/json'
     r = requests.get(url, params=dict(address=location, sensor='false'))
     try:
         geo_data = r.json()
     except Exception:
-        geo_data = r.json
+        geo_data = {}
 
     results = geo_data.get('results')
     if results:
@@ -68,5 +69,5 @@ def get_geo_coordinates_bounding(address, distance):
         # cloud search requires top left and bottom right coordinates
         north_west = ne_loc.deg_lat, sw_loc.deg_lon
         south_east = sw_loc.deg_lat, ne_loc.deg_lon
-        return {'top_left':north_west, 'bottom_right': south_east, 'point':(lat, lng)}
+        return {'top_left': north_west, 'bottom_right': south_east, 'point': (lat, lng)}
     return False

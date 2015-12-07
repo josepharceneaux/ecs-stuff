@@ -60,7 +60,7 @@ def add_aoi_to_candidate(candidate_id, aoi_ids, owner_user_id=None):
     """
     if not isinstance(aoi_ids, list):
         aoi_ids = [aoi_ids]
-    from common_functions import domain_id_from_user_id
+    from candidate_service.modules.talent_candidates import domain_id_from_user_id
     candidate = db.session.query(Candidate).filter_by(id=candidate_id).first()
     owner_id = candidate.user_id
     domain_id = domain_id_from_user_id(owner_user_id or owner_id)

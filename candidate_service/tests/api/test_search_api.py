@@ -16,7 +16,7 @@ import time
 BASE_URI = "http://127.0.0.1:8005/candidates"
 
 
-def test_search_all_candidates(sample_user, user_auth):
+def test_search_all_candidates_in_domain(sample_user, user_auth):
     """
     Test to search all candidates under the same domain
     :param sample_user: user to create candidates under the same domain
@@ -75,7 +75,8 @@ def test_search_skills(sample_user, user_auth):
     :return:
     """
     candidate_ids = populate_candidates(count=5, owner_user_id=sample_user.id,
-                                        candidate_skill_dicts=[{'description': 'hadoop', 'total_months': 36}],
+                                        candidate_skill_dicts=[{'last_used':datetime.datetime.now(),
+                                                                'name': 'hadoop', 'months_used': 36}],
                                         update_now=True)
     time.sleep(30)
     response = get_response_from_authorized_user(user_auth, sample_user, '?skills=hadoop')
