@@ -100,7 +100,7 @@ def test_remove_id_key(sample_user, user_auth):
     candidate_id = create_resp.json()['candidates'][0]['id']
     get_resp = get_from_candidate_resource(token, candidate_id)
     candidate_dict_with_ids = get_resp.json()['candidate']
-    print response_info(get_resp.request, get_resp.json(), get_resp.status_code)
+    print response_info(get_resp)
 
     # Send Candidate dict with IDs to remove_id_keys
     candidate_dict_without_ids = remove_id_key(_dict=candidate_dict_with_ids.copy())
