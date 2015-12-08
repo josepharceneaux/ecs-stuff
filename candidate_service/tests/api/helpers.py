@@ -13,7 +13,8 @@ class CandidatesApiUrl:
     def __init__(self):
         pass
 
-    BASE = "http://127.0.0.1:8005/v1/candidates"
+    CANDIDATE = "http://127.0.0.1:8005/v1/candidates/%s"
+    CANDIDATES = "http://127.0.0.1:8005/v1/candidates"
 
     ADDRESS = "http://127.0.0.1:8005/v1/candidates/%s/addresses/%s"
     ADDRESSES = "http://127.0.0.1:8005/v1/candidates/%s/addresses"
@@ -47,6 +48,12 @@ class CandidatesApiUrl:
 
     PREFERRED_LOCATION = "http://127.0.0.1:8005/v1/candidates/%s/preferred_locations/%s"
     PREFERRED_LOCATIONS = "http://127.0.0.1:8005/v1/candidates/%s/preferred_locations"
+
+    SKILL = "http://127.0.0.1:8005/v1/candidates/%s/skills/%s"
+    SKILLS = "http://127.0.0.1:8005/v1/candidates/%s/skills"
+
+    SOCIAL_NETWORK = "http://127.0.0.1:8005/v1/candidates/%s/social_networks/%s"
+    SOCIAL_NETWORKS = "http://127.0.0.1:8005/v1/candidates/%s/social_networks"
 
     WORK_PREFERENCE = "http://127.0.0.1:8005/v1/candidates/%s/work_preference/%s"
 
@@ -82,7 +89,7 @@ def response_info(resp_request=None, resp_json=None, resp_status=None):
     args = (resp_request, resp_json, resp_status)
     return "\nRequest: %s \nResponse JSON: %s \nResponse status: %s" % args
 
-# TODO: utilize define_and_send_request()
+
 def post_to_candidate_resource(access_token, data=None, domain_id=None):
     """
     Function sends a request to CandidateResource/post()
@@ -95,18 +102,18 @@ def post_to_candidate_resource(access_token, data=None, domain_id=None):
         data = generate_single_candidate_data()
 
     resp = requests.post(
-        url=CandidatesApiUrl.BASE,
+        url=CandidatesApiUrl.CANDIDATES,
         headers={'Authorization': 'Bearer %s' % access_token},
         data=json.dumps(data)
     )
     return resp
 
-# TODO: utilize define_and_send_request()
+
 def get_from_candidate_resource(access_token, candidate_id='', candidate_email=''):
     """
     Function sends a get request to CandidateResource/get()
     """
-    url = CandidatesApiUrl.BASE
+    url = CandidatesApiUrl.CANDIDATES
     if candidate_id:
         url = url + '/%s' % candidate_id
     elif candidate_email:
@@ -115,40 +122,44 @@ def get_from_candidate_resource(access_token, candidate_id='', candidate_email='
     resp = requests.get(url=url, headers={'Authorization': 'Bearer %s' % access_token})
     return resp
 
-# TODO: utilize define_and_send_request()
+
 def patch_to_candidate_resource(access_token, data):
     """
     Function sends a request to CandidateResource/patch()
     """
     resp = requests.patch(
-        url=CandidatesApiUrl.BASE,
+        url=CandidatesApiUrl.CANDIDATES,
         headers={'Authorization': 'Bearer %s' % access_token},
         data=json.dumps(data)
     )
     return resp
 
 
-def request_to_candidate_resource(access_token, request, candidate_id=''):
+def request_to_candidate_resource(access_token, request, candidate_id='', candidate_email=''):
     """
     Function sends a request to CandidateResource
     :param request: get, post, patch, delete
     """
-    url = CandidatesApiUrl.BASE + '/%s' % candidate_id
+    url = CandidatesApiUrl.CANDIDATES
+    if candidate_id:
+        url = CandidatesApiUrl.CANDIDATE % candidate_id
+    elif candidate_email:
+        url = CandidatesApiUrl.CANDIDATE % candidate_email
+
     return define_and_send_request(request, url, access_token)
 
 
 def request_to_candidate_address_resource(access_token, request, candidate_id='',
-                                          can_addresses=False, address_id=None):
+                                          all_addresses=False, address_id=''):
     """
     Function sends a request to CandidateAddressResource.
-    If can_addresses is True, the request will hit /addresses endpoint.
+    If all_addresses is True, the request will hit /.../addresses endpoint.
     :param  request: delete
     """
-    url = CandidatesApiUrl.BASE + '/%s' % candidate_id
-    if address_id:
-        url = CandidatesApiUrl.ADDRESS % (candidate_id, address_id)
-    elif can_addresses and not address_id:
+    if all_addresses:
         url = CandidatesApiUrl.ADDRESSES % candidate_id
+    else:
+        url = CandidatesApiUrl.ADDRESS % (candidate_id, address_id)
 
     return define_and_send_request(request=request, url=url, access_token=access_token)
 
@@ -160,7 +171,7 @@ def request_to_candidate_aoi_resource(access_token, request, candidate_id='',
     If can_aois is True, the request will hit /areas_of_interest endpoint.
     :param request: delete
     """
-    url = CandidatesApiUrl.BASE + '/%s' % candidate_id
+    url = CandidatesApiUrl.CANDIDATES + '/%s' % candidate_id
     if aoi_id:
         url = CandidatesApiUrl.AOI % (candidate_id, aoi_id)
     elif can_aois and not aoi_id:
@@ -176,7 +187,7 @@ def request_to_candidate_education_resource(access_token, request, candidate_id=
     If all_educations is True, the request will hit /educations endpoint.
     :param request: delete
     """
-    url = CandidatesApiUrl.BASE + '/%s' % candidate_id
+    url = CandidatesApiUrl.CANDIDATES + '/%s' % candidate_id
     if education_id:
         url = CandidatesApiUrl.EDUCATION % (candidate_id, education_id)
     elif all_educations and not education_id:
@@ -193,7 +204,7 @@ def request_to_candidate_education_degree_resource(access_token, request, candid
     If all_degrees is True, the request will hit /.../degrees endpoint.
     :param request: delete
     """
-    url = CandidatesApiUrl.BASE + '/%s' % candidate_id
+    url = CandidatesApiUrl.CANDIDATES + '/%s' % candidate_id
     if degree_id:
         url = CandidatesApiUrl.DEGREE % (candidate_id, education_id, degree_id)
     elif all_degrees and not degree_id:
@@ -213,7 +224,7 @@ def request_to_candidate_education_degree_bullet_resource(access_token, request,
     If all_bullets is True, the request will hit /.../bullets endpoint.
     :param request: delete
     """
-    url = CandidatesApiUrl.BASE + '/%s' % candidate_id
+    url = CandidatesApiUrl.CANDIDATES + '/%s' % candidate_id
     if bullet_id:
         url = CandidatesApiUrl.DEGREE_BULLET % (candidate_id, education_id, degree_id, bullet_id)
     elif all_bullets and not bullet_id:
@@ -229,7 +240,7 @@ def request_to_candidate_experience_resource(access_token, request, candidate_id
     If all_experiences is True, the request will hit /.../experiences endpoint.
     :param request: delete
     """
-    url = CandidatesApiUrl.BASE + '/%s' % candidate_id
+    url = CandidatesApiUrl.CANDIDATES + '/%s' % candidate_id
     if experience_id:
         url = CandidatesApiUrl.EXPERIENCE % (candidate_id, experience_id)
     elif all_experiences and not experience_id:
@@ -245,7 +256,7 @@ def request_to_candidate_experience_bullet_resource(access_token, request, candi
     If all_bullets is True, the request will hit /.../bullets endpoint.
     :param request: delete
     """
-    url = CandidatesApiUrl.BASE + '/%s' % candidate_id
+    url = CandidatesApiUrl.CANDIDATES + '/%s' % candidate_id
     if bullet_id:
         url = CandidatesApiUrl.EXPERIENCE_BULLET % (candidate_id, experience_id, bullet_id)
     elif all_bullets and not bullet_id:
@@ -260,7 +271,7 @@ def request_to_candidate_email_resource(access_token, request, candidate_id='', 
     If all_emails is True, the request will hit /.../emails endpoint.
     :param request: delete
     """
-    url = CandidatesApiUrl.BASE + '/%s' % candidate_id
+    url = CandidatesApiUrl.CANDIDATES + '/%s' % candidate_id
     if email_id:
         url = CandidatesApiUrl.EMAIL % (candidate_id, email_id)
     elif all_emails and not email_id:
@@ -276,7 +287,7 @@ def request_to_candidate_military_service(access_token, request, candidate_id=''
     If all_military_services is True, the request will hit /.../military_services endpoint.
     :param request: delete
     """
-    url = CandidatesApiUrl.BASE + '/%s' % candidate_id
+    url = CandidatesApiUrl.CANDIDATES + '/%s' % candidate_id
     if military_service_id:
         url = CandidatesApiUrl.MILITARY_SERVICE % (candidate_id, military_service_id)
     elif all_military_services and not military_service_id:
@@ -291,7 +302,7 @@ def request_to_candidate_phone_resource(access_token, request, candidate_id='', 
     If all_phones is True, the request will hit /.../phones endpoint.
     :param request: delete
     """
-    url = CandidatesApiUrl.BASE + '/%s' % candidate_id
+    url = CandidatesApiUrl.CANDIDATES + '/%s' % candidate_id
     if phone_id:
         url = CandidatesApiUrl.PHONE % (candidate_id, phone_id)
     elif all_phones and not phone_id:
@@ -307,11 +318,41 @@ def request_to_candidate_preferred_location_resource(access_token, request, cand
     If all_preferred_location is True, the request will hit /.../preferred_locations endpoint
     :param request: delete
     """
-    url = CandidatesApiUrl.BASE + '/%s' % candidate_id
+    url = CandidatesApiUrl.CANDIDATES + '/%s' % candidate_id
     if preferred_location_id:
         url = CandidatesApiUrl.PREFERRED_LOCATION % (candidate_id, preferred_location_id)
     elif all_preferred_locations and not preferred_location_id:
         url = CandidatesApiUrl.PREFERRED_LOCATIONS % candidate_id
+
+    return define_and_send_request(request, url, access_token)
+
+
+def request_to_candidate_skill_resource(access_token, request, candidate_id='', all_skills=False, skill_id=''):
+    """
+    Function sends a request to CandidateSkillResource
+    If all_skills is True, the request will hit /.../skills endpoint.
+    :param request: delete
+    """
+    url = CandidatesApiUrl.CANDIDATES + '/%s' % candidate_id
+    if skill_id:
+        url = CandidatesApiUrl.SKILL % (candidate_id, skill_id)
+    elif all_skills and not skill_id:
+        url = CandidatesApiUrl.SKILLS % candidate_id
+
+    return define_and_send_request(request, url, access_token)
+
+
+def request_to_candidate_social_network_resource(access_token, request, candidate_id='', all_sn=False, sn_id=''):
+    """
+    Function sends a request to CandidateSocialNetwork
+    If all_social_network is True, the request will hit /.../social_networks endpoint
+    :param request: delete
+    """
+    url = CandidatesApiUrl.CANDIDATES + '/%s' % candidate_id
+    if sn_id:
+        url = CandidatesApiUrl.SOCIAL_NETWORK % (candidate_id, sn_id)
+    elif all_sn and not sn_id:
+        url = CandidatesApiUrl.SOCIAL_NETWORKS % candidate_id
 
     return define_and_send_request(request, url, access_token)
 
@@ -445,8 +486,6 @@ def remove_id_key(_dict):
                         for i in range(0, len(dictionary[_key])):
                             remove_id_key(_dict=dictionary[_key][i])  # recurse
     return _dict
-    # TODO: remove keys that have None values (can be done in remove_id_key, or maybe a better idea to keep it separate)
-    # TODO: check if two objects are identical
 
 
 # TODO: what if end_date is provided only?
