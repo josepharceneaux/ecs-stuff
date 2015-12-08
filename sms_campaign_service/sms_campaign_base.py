@@ -215,7 +215,7 @@ class SmsCampaignBase(CampaignBase):
             self.campaign_create_activity(sms_campaign)
             return sms_campaign.id
         else:
-            logger.error('save: No data received from UI.')
+            logger.error('save: No data received from UI. (User(id:%s))' % self.user_id)
 
     def create_or_update_sms_campaign(self, sms_campaign_data, campaign_id=None):
         """
@@ -420,7 +420,8 @@ class SmsCampaignBase(CampaignBase):
         if not isinstance(campaign, SmsCampaign):
             raise InvalidUsage(error_message='campaign should be instance of SmsCampaign model')
         self.campaign = campaign
-        logger.debug('process_send: SMS Campaign(id:%s) is being sent.' % campaign.id)
+        logger.debug('process_send: SMS Campaign(id:%s) is being sent. User(id:%s)'
+                     % (campaign.id, self.user_id))
         self.body_text = self.campaign.sms_body_text.strip()
         if not self.body_text:
             # SMS body text is empty
@@ -438,22 +439,22 @@ class SmsCampaignBase(CampaignBase):
                 if candidates:
                     all_candidates.extend(candidates)
                 else:
-                    logger.error('process_send: No Candidate found. smartlist id is %s.'
-                                 % smart_list.smart_list_id)
+                    logger.error('process_send: No Candidate found. smartlist id is %s. '
+                                 '(User(id:%s))' % (smart_list.smart_list_id, self.user_id))
         else:
             logger.error('process_send: No smartlist is associated with SMS '
-                         'Campaign(id:%s)' % campaign.id)
+                         'Campaign(id:%s). (User(id:%s))' % (campaign.id, self.user_id))
             raise NoSmartlistAssociated(error_message='No smartlist is associated with SMS '
                                                       'Campaign(id:%s)' % campaign.id)
         if all_candidates:
-            logger.debug('process_send: SMS Campaign(id:%s) will be sent to %s candidate(s).'
-                         % (campaign.id, len(all_candidates)))
+            logger.debug('process_send: SMS Campaign(id:%s) will be sent to %s candidate(s). '
+                         '(User(id:%s))' % (campaign.id, len(all_candidates), self.user_id))
             # create SMS campaign blast
             self.sms_campaign_blast_id = self.create_or_update_sms_campaign_blast(self.campaign.id)
             self.send_campaign_to_candidates(all_candidates)
             self.create_campaign_send_activity(self.total_sends) if self.total_sends else ''
             logger.debug('process_send: SMS Campaign(id:%s) has been sent to %s candidate(s).'
-                         % (campaign.id, self.total_sends))
+                         '(User(id:%s))' % (campaign.id, self.total_sends, self.user_id))
             return self.total_sends
         else:
             raise NoCandidateAssociated(error_message='No candidate is associated to smartlist(s)'
@@ -506,15 +507,16 @@ class SmsCampaignBase(CampaignBase):
             self.create_sms_send_activity(candidate, sms_campaign_send_id)
             self.total_sends += 1
             logger.info('send_sms_campaign_to_candidate: SMS has been sent to candidate(id:%s).'
-                        ' Campaign(id:%s).' % (candidate.id, self.campaign.id))
+                        ' Campaign(id:%s). (User(id:%s))'
+                        % (candidate.id, self.campaign.id, self.user_id))
         elif len(candidate_mobile_phone) > 1:
             logger.error('send_sms_campaign_to_candidate: SMS cannot be sent as candidate(id:%s) '
-                         'has multiple mobile phone numbers. Campaign(id:%s).'
-                         % (candidate.id, self.campaign.id))
+                         'has multiple mobile phone numbers. Campaign(id:%s). (User(id:%s))'
+                         % (candidate.id, self.campaign.id, self.user_id))
         else:
             logger.error('send_sms_campaign_to_candidate: SMS cannot be sent as '
-                         'candidate(id:%s) has no phone number associated. '
-                         'Campaign(id:%s).' % (candidate.id, self.campaign.id))
+                         'candidate(id:%s) has no phone number associated. Campaign(id:%s). '
+                         '(User(id:%s))' % (candidate.id, self.campaign.id, self.user_id))
 
     def process_urls_in_sms_body_text(self, candidate_id):
         """
@@ -545,8 +547,8 @@ class SmsCampaignBase(CampaignBase):
         """
         logger.debug('process_urls_in_sms_body_text: Processing any '
                      'link present in sms_body_text for '
-                     'SMS Campaign(id:%s) and Candidate(id:%s)'
-                     % (self.campaign.id, candidate_id))
+                     'SMS Campaign(id:%s) and Candidate(id:%s). (User(id:%s))'
+                     % (self.campaign.id, candidate_id, self.user_id))
         urls_in_body_text = search_urls_in_text(self.body_text)
         short_urls = []
         url_conversion_ids = []
@@ -588,7 +590,8 @@ class SmsCampaignBase(CampaignBase):
         **See Also**
         .. see also:: process_urls_in_sms_body_text() method in SmsCampaignBase class.
         """
-        logger.debug('transform_body_text: Replacing original URL with shorted URL')
+        logger.debug('transform_body_text: Replacing original URL with shorted URL. (User(id:%s))'
+                     % self.user_id)
         if urls_in_sms_body_text:
             text_split = self.body_text.split(' ')
             short_urls_index = 0
@@ -834,7 +837,8 @@ class SmsCampaignBase(CampaignBase):
         **See Also**
         .. see also:: sms_campaign_url_redirection() function in sms_campaign_app/app.py
         """
-        logger.debug('process_url_redirect: Processing for URL redirection.')
+        logger.debug('process_url_redirect: Processing for URL redirection. (User(id:%s))'
+                     % self.user_id)
         # check if campaign exists
         self.campaign = SmsCampaign.get_by_id(campaign_id)
         if self.campaign:
@@ -847,7 +851,8 @@ class SmsCampaignBase(CampaignBase):
             # Create Activity
             self.create_campaign_url_click_activity(candidate)
             logger.info('process_url_redirect: candidate(id:%s) clicked on SMS '
-                        'campaign(id:%s)' % (candidate.id, self.campaign.id))
+                        'campaign(id:%s). (User(id:%s))'
+                        % (candidate.id, self.campaign.id, self.user_id))
             # Get Url to redirect candidate to actual URL
             url_conversion_row = UrlConversion.get_by_id(url_conversion_id)
             if url_conversion_row.destination_url:
@@ -934,9 +939,9 @@ class SmsCampaignBase(CampaignBase):
                 # get/update SMS campaign blast
                 cls.create_or_update_sms_campaign_blast(sms_campaign_blast.sms_campaign_id,
                                                         replies_update=True)
-                logger.debug('Candidate(id:%s) replied "%s" to Campaign(id:%s).'
+                logger.debug('Candidate(id:%s) replied "%s" to Campaign(id:%s).(User(id:%s))'
                              % (candidate_phone.candidate_id, reply_data.get('Body'),
-                                sms_campaign_blast.sms_campaign_id))
+                                sms_campaign_blast.sms_campaign_id, user_phone.user_id))
             else:
                 raise NoSMSCampaignSentToCandidate(
                     error_message='No SMS campaign sent to candidate(id:%s)'

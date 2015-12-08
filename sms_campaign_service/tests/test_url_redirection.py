@@ -17,6 +17,7 @@ from sms_campaign_service import db
 from sms_campaign_service.tests.conftest import assert_for_activity
 from sms_campaign_service.common.models.sms_campaign import SmsCampaignBlast
 from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_CLICK
+from sms_campaign_service.common.utils.app_base_urls import SMS_CAMPAIGN_SERVICE_APP_URL
 
 
 class TestSmsCampaignURLRedirection:
@@ -30,6 +31,11 @@ class TestSmsCampaignURLRedirection:
         :return:
         """
         response_post = requests.post(url_conversion_by_send_test_sms_campaign.source_url)
+        # TODO: remove this when app is up
+        if response_post.status_code == 404:
+            localhost_url = _replace_ngrok_link_with_localhost(
+                url_conversion_by_send_test_sms_campaign.source_url)
+            response_post = requests.post(localhost_url)
         assert response_post.status_code == 405, 'POST Method should not be allowed'
 
     def test_for_delete(self, url_conversion_by_send_test_sms_campaign):
@@ -38,6 +44,12 @@ class TestSmsCampaignURLRedirection:
         :return:
         """
         response_post = requests.delete(url_conversion_by_send_test_sms_campaign.source_url)
+        # TODO: remove this when app is up
+        if response_post.status_code == 404:
+            localhost_url = _replace_ngrok_link_with_localhost(
+                url_conversion_by_send_test_sms_campaign.source_url)
+            response_post = requests.delete(localhost_url)
+
         assert response_post.status_code == 405, 'DELETE Method should not be allowed'
 
     def test_for_get(self, sample_user,
@@ -51,6 +63,12 @@ class TestSmsCampaignURLRedirection:
         hit_count, clicks = _get_hit_count_and_clicks(url_conversion_by_send_test_sms_campaign,
                                                       sms_campaign_of_current_user)
         response_get = requests.get(url_conversion_by_send_test_sms_campaign.source_url)
+        # TODO: remove this when app is up
+        if response_get.status_code == 404:
+            localhost_url = _replace_ngrok_link_with_localhost(
+                url_conversion_by_send_test_sms_campaign.source_url)
+            response_get = requests.get(localhost_url)
+
         assert response_get.status_code == 200, 'Response should be ok'
         # stats after making request
         hit_count_after, clicks_after = _get_hit_count_and_clicks(
@@ -68,6 +86,11 @@ class TestSmsCampaignURLRedirection:
         url_excluding_candidate_id = \
             url_conversion_by_send_test_sms_campaign.source_url.split('?')[0]
         response_get = requests.get(url_excluding_candidate_id)
+        # TODO: remove this when app is up
+        if response_get.status_code == 404:
+            localhost_url = _replace_ngrok_link_with_localhost(url_excluding_candidate_id)
+            response_get = requests.get(localhost_url)
+
         assert response_get.status_code == 500, 'It should get internal server error'
 
     def test_for_get_with_empty_destination_url(self, url_conversion_by_send_test_sms_campaign):
@@ -77,8 +100,13 @@ class TestSmsCampaignURLRedirection:
         """
         # forcing destination URL to be empty
         url_conversion_by_send_test_sms_campaign.update(destination_url='')
-        url_excluding_candidate_id = url_conversion_by_send_test_sms_campaign.source_url
-        response_get = requests.get(url_excluding_candidate_id)
+        response_get = requests.get(url_conversion_by_send_test_sms_campaign.source_url)
+        # TODO: remove this when app is up
+        if response_get.status_code == 404:
+            localhost_url = _replace_ngrok_link_with_localhost(
+                url_conversion_by_send_test_sms_campaign.source_url)
+            response_get = requests.get(localhost_url)
+
         assert response_get.status_code == 500, 'It should get internal server error'
 
 
@@ -93,3 +121,22 @@ def _get_hit_count_and_clicks(url_conversion, campaign):
     db.session.commit()
     sms_campaign_blasts = SmsCampaignBlast.get_by_campaign_id(campaign.id)
     return url_conversion.hit_count, sms_campaign_blasts.clicks
+
+
+# TODO: remove this when app is up
+def _replace_ngrok_link_with_localhost(temp_ngrok_link):
+    """
+    We have exposed our endpoint via ngrok. We need to expose endpoint as Google's shorten URL API
+    looks for valid URL to convert into shorter version. While making HTTP request to this endpoint,
+    if ngrok is not running somehow, we replace that link with localhost to hit that endpoint. i.e.
+
+        https://9a99a454.ngrok.io/campaigns/1298/url_redirection/294/?candidate_id=544
+    will become
+        https://127.0.0.1:8008/campaigns/1298/url_redirection/294/?candidate_id=544
+
+    In final version of app, this won't be necessary as we'll have valid URL for app.
+    :param temp_ngrok_link:
+    :return:
+    """
+    relative_url = temp_ngrok_link.split('ngrok.io')[1]
+    return SMS_CAMPAIGN_SERVICE_APP_URL + relative_url
