@@ -5,9 +5,11 @@
 .progress {
   @include inc--space--stubbedLast;
 
+  position: relative;
   margin-bottom: $margin--line;
 
   h4 {
+    color: $color--nearBlack;
     font-size: $font-size--big;
     padding-bottom: $padding--teeny;
   }

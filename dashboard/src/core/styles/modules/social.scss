@@ -1,0 +1,46 @@
+// ------------
+// Social
+// ------------
+
+.social__module {
+  h4 {
+    color: $color--nearBlack;
+  }
+}
+
+.social__module__metrics {
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: $padding--normal;
+  padding-bottom: $padding--normal;
+  border-bottom: 1px solid $color--lightGray;
+}
+
+.social__module__metrics__number {
+  color: $color--blue;
+  font-size: $font-size--large;
+}
+
+.social__module__metrics__title {
+  font-size: $font-size--big;
+}
+
+.social__module__time {
+  font-size: $font-size--small;
+  margin: 0;
+}
+
+.social__module__info {
+  line-height: 1.1;
+  margin: $padding--teeny 0;
+}
+
+.social__module__subinfo {
+  color: $color--gray;
+  font-size: $font-size--small;
+  margin: 0;
+}
+
+.social__module__event-icon {
+  font-size: $font-size--jumbo;
+}
