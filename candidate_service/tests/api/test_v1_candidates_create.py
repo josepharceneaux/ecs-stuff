@@ -45,7 +45,7 @@ def test_create_candidate_successfully(sample_user, user_auth):
     create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
 
     resp_dict = create_resp.json()
-    print response_info(create_resp.request, resp_dict, create_resp.status_code)
+    print response_info(create_resp)
     assert create_resp.status_code == 201
     assert 'candidates' in resp_dict and 'id' in resp_dict['candidates'][0]
 
@@ -66,12 +66,12 @@ def test_create_candidate_and_retrieve_it(sample_user, user_auth):
     data = generate_single_candidate_data()
     print "data = %s" % data
     create_resp = post_to_candidate_resource(token, data=data)
-    print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
+    print response_info(create_resp)
 
     # Retreive Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
     resp = get_from_candidate_resource(token, candidate_id)
-    print response_info(resp.request, resp.json(), resp.status_code)
+    print response_info(resp)
 
 
 def test_create_an_existing_candidate(sample_user, user_auth):
@@ -88,7 +88,7 @@ def test_create_an_existing_candidate(sample_user, user_auth):
     create_resp = create_same_candidate(token)
 
     resp_dict = create_resp.json()
-    print response_info(create_resp.request, resp_dict, create_resp.status_code)
+    print response_info(create_resp)
     assert create_resp.status_code == 400
     assert 'error' in resp_dict # TODO: assert on server side custom errors
 
@@ -106,7 +106,7 @@ def test_create_candidate_with_missing_keys(sample_user, user_auth):
     # Create Candidate without 'candidate'-key
     data = generate_single_candidate_data()['candidate']
     create_resp = post_to_candidate_resource(token, data)
-    print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
+    print response_info(create_resp)
 
     assert create_resp.status_code == 400
 
@@ -130,7 +130,7 @@ def test_update_candidate_via_post(sample_user, user_auth):
 
     # Send Candidate object with candidate_id to post
     resp = post_to_candidate_resource(token, data=candidate_dict)
-    print response_info(resp.request, resp.json(), resp.status_code)
+    print response_info(resp)
 
     assert resp.status_code == 400
 
@@ -150,7 +150,7 @@ def test_create_candidate_with_bad_zip_code(sample_user, user_auth):
         {'address_line_1': '225 west santa flara', 'zip_code': 'ABCDEFG'}
     ]}}
     create_resp = post_to_candidate_resource(token, data)
-    print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
+    print response_info(create_resp)
     assert create_resp.status_code == 201
 
     # Retrieve Candidate
@@ -173,12 +173,12 @@ def test_create_candidate_area_of_interest(sample_user, user_auth):
     # Create Candidate + CandidateAreaOfInterest
     data = candidate_areas_of_interest(domain_id=sample_user.domain_id)
     create_resp = post_to_candidate_resource(access_token=token, data=data)
-    print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
+    print response_info(create_resp)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
     resp = get_from_candidate_resource(token, candidate_id)
-    print response_info(resp.request, resp.json(), resp.status_code)
+    print response_info(resp)
 
     candidate_aoi = resp.json()['candidate']['areas_of_interest']
     assert isinstance(candidate_aoi, list)
@@ -199,12 +199,12 @@ def test_create_candidate_custom_fields(sample_user, user_auth):
     # Create Candidate + CandidateCustomField
     data = candidate_custom_fields(domain_id=sample_user.domain_id)
     create_resp = post_to_candidate_resource(access_token=token, data=data)
-    print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
+    print response_info(create_resp)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
     resp = get_from_candidate_resource(token, candidate_id)
-    print response_info(resp.request, resp.json(), resp.status_code)
+    print response_info(resp)
 
     can_custom_fields = resp.json()['candidate']['custom_fields']
     assert isinstance(can_custom_fields, list)
@@ -224,7 +224,7 @@ def test_create_candidate_educations(sample_user, user_auth):
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token, data=candidate_educations())
-    print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
+    print response_info(create_resp)
     assert create_resp.status_code == 201
 
     # Retrieve Candidate
@@ -264,7 +264,7 @@ def test_create_candidate_experience(sample_user, user_auth):
     # Create Candidate
     data = candidate_experience()
     create_resp = post_to_candidate_resource(token, data=data)
-    print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
+    print response_info(create_resp)
     assert create_resp.status_code == 201
 
     # Retrieve Candidate
@@ -300,7 +300,7 @@ def test_create_candidate_work_preference(sample_user, user_auth):
     # Create Candidate
     data = candidate_work_preference()
     create_resp = post_to_candidate_resource(token, data=data)
-    print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
+    print response_info(create_resp)
     assert create_resp.status_code == 201
 
     # Retrieve Candidate
@@ -336,13 +336,13 @@ def test_create_candidate_without_email(sample_user, user_auth):
     # Create Candidate with no email-object
     data = {'candidate': {'first_name': 'john', 'last_name': 'stark'}}
     create_resp = post_to_candidate_resource(token, data)
-    print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
+    print response_info(create_resp)
     assert create_resp.status_code == 400
 
     # Create Candidate with empty email-list
     data = {'candidate': {'first_name': 'john', 'last_name': 'stark', 'emails': [{}]}}
     create_resp = post_to_candidate_resource(token, data)
-    print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
+    print response_info(create_resp)
     assert create_resp.status_code == 400
 
 
@@ -359,7 +359,7 @@ def test_create_candidate_with_bad_email(sample_user, user_auth):
     # Create Candidate
     data = {'candidate': {'first_name': 'john', 'emails': [{'address': 'bad_email.com'}]}}
     create_resp = post_to_candidate_resource(token, data)
-    print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
+    print response_info(create_resp)
 
     assert create_resp.status_code == 400
 
@@ -377,7 +377,7 @@ def test_create_candidate_phones(sample_user, user_auth):
     # Create Candidate
     data = candidate_phones()
     create_resp = post_to_candidate_resource(token, data=data)
-    print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
+    print response_info(create_resp)
     assert create_resp.status_code == 201
 
     # Retrieve Candidate
@@ -408,7 +408,7 @@ def test_create_candidate_military_service(sample_user, user_auth):
     # Create Candidate
     data = candidate_military_service()
     create_resp = post_to_candidate_resource(token, data=data)
-    print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
+    print response_info(create_resp)
     assert create_resp.status_code == 201
 
     # Retrieve Candidate
@@ -440,7 +440,7 @@ def test_create_candidate_preferred_location(sample_user, user_auth):
     # Create Candidate
     data = candidate_preferred_locations()
     create_resp = post_to_candidate_resource(token, data=data)
-    print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
+    print response_info(create_resp)
     assert create_resp.status_code == 201
 
     # Retrieve Candidate
@@ -473,7 +473,7 @@ def test_create_candidate_skills(sample_user, user_auth):
     # Create Candidate
     data = candidate_skills()
     create_resp = post_to_candidate_resource(token, data=data)
-    print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
+    print response_info(create_resp)
     assert create_resp.status_code == 201
 
     # Retrieve Candidate
@@ -505,7 +505,7 @@ def test_create_candidate_social_networks(sample_user, user_auth):
     # Create Candidate
     data = candidate_social_network()
     create_resp = post_to_candidate_resource(token, data=data)
-    print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
+    print response_info(create_resp)
     assert create_resp.status_code == 201
 
     # Retrieve Candidate

@@ -42,11 +42,11 @@ def test_delete_candidate(sample_user, user_auth):
     # Delete (hide) Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
     resp = request_to_candidate_resource(token, 'delete', candidate_id)
-    print response_info(resp.request, resp.json(), resp.status_code)
+    print response_info(resp)
 
     # Retrieve Candidate
     get_resp = get_from_candidate_resource(token, candidate_id)
-    print response_info(get_resp.request, get_resp.json(), get_resp.status_code)
+    print response_info(get_resp)
 
     assert get_resp.status_code == 404
 
@@ -63,7 +63,7 @@ def test_delete_candidate_without_id(sample_user, user_auth):
 
     # Delete Candidate
     resp = request_to_candidate_resource(token, 'delete')
-    print response_info(resp.request, resp.json(), resp.status_code)
+    print response_info(resp)
 
     assert resp.status_code == 400
 
@@ -87,7 +87,7 @@ def test_delete_candidate_via_email(sample_user, user_auth):
 
     # Delete (hide) Candidate
     resp = request_to_candidate_resource(token, 'delete', candidate_email=can_emails[0]['address'])
-    print response_info(resp.request, resp.json(), resp.status_code)
+    print response_info(resp)
 
 
 def test_delete_candidate_via_unrecognized_email(sample_user, user_auth):
@@ -102,7 +102,7 @@ def test_delete_candidate_via_unrecognized_email(sample_user, user_auth):
 
     # Delete (hide) Candidate
     resp = request_to_candidate_resource(token, 'delete', candidate_email='email_not_found_45623@simple.com')
-    print response_info(resp.request, resp.json(), resp.status_code)
+    print response_info(resp)
 
     assert resp.status_code == 404
 
@@ -127,7 +127,7 @@ def test_delete_someone_elses_candidate(sample_user, sample_user_2, user_auth):
 
     # Delete (hide) Candidate with token_2 (sample_user_2)
     resp = request_to_candidate_resource(token_2, 'delete', candidate_dict['id'])
-    print response_info(resp.request, resp.json(), resp.status_code)
+    print response_info(resp)
 
     assert resp.status_code == 403
 
@@ -156,7 +156,7 @@ def test_delete_candidate_address(sample_user, user_auth):
     # Remove one of Candidate's addresses
     updated_resp = request_to_candidate_address_resource(token, 'delete', candidate_id,
                                                          address_id=can_addresses[0]['id'])
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate after update
     can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
@@ -181,7 +181,7 @@ def test_delete_all_of_candidates_addresses(sample_user, user_auth):
     # Remove all of Candidate's addresses
     candidate_id = create_resp.json()['candidates'][0]['id']
     updated_resp = request_to_candidate_address_resource(token, 'delete', candidate_id, True)
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate after update
     can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
@@ -203,10 +203,9 @@ def test_delete_candidate_address_with_no_id(sample_user, user_auth):
     # Remove one of Candidate's addresses without an id
     candidate_id = 5 # This is arbitrary since a 404 is expected
     updated_resp = request_to_candidate_address_resource(token, 'delete', candidate_id)
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     assert updated_resp.status_code == 404
-    assert updated_resp.reason == 'NOT FOUND'
 
 
 def test_delete_candidate_addresses_without_candidate_id(sample_user, user_auth):
@@ -221,10 +220,9 @@ def test_delete_candidate_addresses_without_candidate_id(sample_user, user_auth)
 
     # Remove one of Candidate's addresses without an id
     updated_resp = request_to_candidate_address_resource(token, 'delete', all_addresses=True)
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     assert updated_resp.status_code == 404
-    assert updated_resp.reason == 'NOT FOUND'
 
 
 def test_delete_address_of_a_different_candidate(sample_user, user_auth):
@@ -247,7 +245,7 @@ def test_delete_address_of_a_different_candidate(sample_user, user_auth):
     # Delete candidate_2's id using candidate_1_id
     updated_resp = request_to_candidate_address_resource(token, 'delete', candidate_1_id,
                                                          address_id=can_2_addresses[0]['id'])
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     assert updated_resp.status_code == 403
 
@@ -272,7 +270,7 @@ def test_delete_all_of_candidates_areas_of_interest(sample_user, user_auth):
 
     # Remove all of Candidate's areas of interest
     updated_resp = request_to_candidate_aoi_resource(token, 'delete', candidate_id, True)
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate after update
     can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
@@ -306,7 +304,7 @@ def test_delete_candidate_aoi(sample_user, user_auth):
 
     # Remove one of Candidate's aois
     updated_resp = request_to_candidate_aoi_resource(token, 'delete', candidate_id, aoi_id=candidate_aois[0]['id'])
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate after update
     can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
@@ -333,7 +331,7 @@ def test_delete_candidate_educations(sample_user, user_auth):
     # Remove all of Candidate's educations
     candidate_id = create_resp.json()['candidates'][0]['id']
     updated_resp = request_to_candidate_education_resource(token, 'delete', candidate_id, True)
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate after update
     can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
@@ -366,7 +364,7 @@ def test_delete_candidates_education(sample_user, user_auth):
     # Remove one of Candidate's education
     updated_resp = request_to_candidate_education_resource(token, 'delete', candidate_id,
                                                            education_id=candidate_educations[0]['id'])
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate after update
     can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
@@ -398,7 +396,7 @@ def test_delete_candidate_education_degrees(sample_user, user_auth):
     # Remove all of Candidate's degrees
     updated_resp = request_to_candidate_education_degree_resource(token, 'delete', candidate_id,
                                                                   can_educations[0]['id'], True)
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate after update
     can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
@@ -432,7 +430,7 @@ def test_delete_candidates_education_degree(sample_user, user_auth):
     # Remove one of Candidate's education
     updated_resp = request_to_candidate_education_resource(token, 'delete', candidate_id,
                                                            education_id=candidate_educations[0]['id'])
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate after update
     can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
@@ -468,7 +466,7 @@ def test_delete_candidate_education_degree_bullets(sample_user, user_auth):
         token, 'delete', candidate_id, can_educations[0]['id'], can_educations[0]['degrees'][0]['id'],
         True
     )
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate after update
     can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
@@ -510,7 +508,7 @@ def test_delete_candidates_education_degree_bullet(sample_user, user_auth):
         degree_id=candidate_educations[0]['degrees'][0]['id'],
         bullet_id=candidate_educations[0]['degrees'][0]['bullets'][0]['id']
     )
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate after update
     can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
@@ -539,7 +537,7 @@ def test_delete_candidate_experiences(sample_user, user_auth):
 
     # Remove all of Candidate's experiences
     updated_resp = request_to_candidate_experience_resource(token, 'delete', candidate_id, True)
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate after update
     can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
@@ -572,7 +570,7 @@ def test_delete_candidates_experience(sample_user, user_auth):
     # Remove one of Candidate's education
     updated_resp = request_to_candidate_experience_resource(token, 'delete', candidate_id,
                                                             experience_id=candidate_experiences[0]['id'])
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate after update
     can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
@@ -605,7 +603,7 @@ def test_delete_candidate_experience_bullets(sample_user, user_auth):
     # Remove all of Candidate's experiences
     updated_resp = request_to_candidate_experience_bullet_resource(token, 'delete', candidate_id,
                                                                    can_experiences[0]['id'], True)
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate after update
     can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
@@ -640,7 +638,7 @@ def test_delete_candidates_experience_bullet(sample_user, user_auth):
     updated_resp = request_to_candidate_experience_bullet_resource(token, 'delete', candidate_id,
                                                                    can_experiences[0]['id'],
                                                                    bullet_id=can_experiences[0]['bullets'][0]['id'])
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate after update
     can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
@@ -666,7 +664,7 @@ def test_delete_candidate_emails(sample_user, user_auth):
     # Delete Candidate's work preference
     candidate_id = create_resp.json()['candidates'][0]['id']
     updated_resp = request_to_candidate_email_resource(token, 'delete', candidate_id, True)
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate after update
     can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
@@ -698,7 +696,7 @@ def test_delete_candidate_email(sample_user, user_auth):
     # Delete Candidate's work preference
     updated_resp = request_to_candidate_email_resource(token, 'delete', candidate_id,
                                                        email_id=can_emails[0]['id'])
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate's emails after update
     can_emails_after_delete = get_from_candidate_resource(token, candidate_id).json()['candidate']['emails']
@@ -723,7 +721,7 @@ def test_delete_candidate_military_services(sample_user, user_auth):
     # Delete Candidate's military services
     candidate_id = create_resp.json()['candidates'][0]['id']
     updated_resp = request_to_candidate_military_service(token, 'delete', candidate_id, True)
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate after update
     can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
@@ -756,7 +754,7 @@ def test_delete_can_military_service(sample_user, user_auth):
     # Delete Candidate's military service
     updated_resp = request_to_candidate_military_service(token, 'delete', candidate_id,
                                                          military_service_id=can_military_services[0]['id'])
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate's military services after update
     can_military_services_after_delete = get_from_candidate_resource(token, candidate_id).\
@@ -782,7 +780,7 @@ def test_delete_candidate_phones(sample_user, user_auth):
     # Delete Candidate's phones
     candidate_id = create_resp.json()['candidates'][0]['id']
     updated_resp = request_to_candidate_phone_resource(token, 'delete', candidate_id, True)
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate after update
     can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
@@ -814,7 +812,7 @@ def test_delete_candidate_phone(sample_user, user_auth):
     # Delete Candidate's phone
     updated_resp = request_to_candidate_phone_resource(token, 'delete', candidate_id,
                                                        phone_id=can_phones[0]['id'])
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate's phones after update
     can_phones_after_delete = get_from_candidate_resource(token, candidate_id).json()['candidate']['phones']
@@ -839,7 +837,7 @@ def test_delete_candidate_preferred_locations(sample_user, user_auth):
     # Delete Candidate's preferred locations
     candidate_id = create_resp.json()['candidates'][0]['id']
     updated_resp = request_to_candidate_preferred_location_resource(token, 'delete', candidate_id, True)
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate after update
     can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
@@ -873,7 +871,7 @@ def test_delete_candidate_preferred_location(sample_user, user_auth):
     updated_resp = request_to_candidate_preferred_location_resource(
         token, 'delete', candidate_id, preferred_location_id=can_preferred_locations[0]['id']
     )
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate's preferred locations after update
     can_preferred_locations_after_delete = get_from_candidate_resource(token, candidate_id).\
@@ -899,7 +897,7 @@ def test_delete_candidate_skills(sample_user, user_auth):
     # Delete Candidate's skills
     candidate_id = create_resp.json()['candidates'][0]['id']
     updated_resp = request_to_candidate_skill_resource(token, 'delete', candidate_id, True)
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate after update
     can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
@@ -931,7 +929,7 @@ def test_delete_cand_skill(sample_user, user_auth):
     # Delete Candidate's skill
     updated_resp = request_to_candidate_skill_resource(token, 'delete', candidate_id,
                                                        skill_id=can_skills[0]['id'])
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate's skills after update
     can_skills_after_delete = get_from_candidate_resource(token, candidate_id).json()['candidate']['skills']
@@ -957,7 +955,7 @@ def test_delete_candidate_social_networks(sample_user, user_auth):
     # Delete Candidate's social networks
     candidate_id = create_resp.json()['candidates'][0]['id']
     updated_resp = request_to_candidate_social_network_resource(token, 'delete', candidate_id, True)
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate after update
     can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
@@ -989,7 +987,7 @@ def test_delete_candidate_social_network(sample_user, user_auth):
     # Delete Candidate's skill
     updated_resp = request_to_candidate_social_network_resource(token, 'delete',
                                                                 candidate_id, sn_id=can_sn[0]['id'])
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate's social networks after update
     can_sn_after_delete = get_from_candidate_resource(token, candidate_id).\
@@ -1020,7 +1018,7 @@ def test_delete_candidate_work_preference(sample_user, user_auth):
     # Delete Candidate's work preference
     updated_resp = request_to_candidate_work_preference_resource(token, 'delete', candidate_id,
                                                                  work_pref_dict['id'])
-    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+    print response_info(updated_resp)
 
     # Retrieve Candidate after update
     can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']

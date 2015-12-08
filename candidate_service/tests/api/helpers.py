@@ -66,28 +66,28 @@ def define_and_send_request(request, url, access_token):
     req = None
     request = request.lower()
     if request == 'get':
-        req = requests.delete(url=url, headers={'Authorization': 'Bearer %s' % access_token})
+        req = requests.get(url=url, headers={'Authorization': 'Bearer %s' % access_token})
     elif request == 'post':
-        req = requests.delete(url=url, headers={'Authorization': 'Bearer %s' % access_token})
+        req = requests.post(url=url, headers={'Authorization': 'Bearer %s' % access_token})
     elif request == 'put':
-        req = requests.delete(url=url, headers={'Authorization': 'Bearer %s' % access_token})
+        req = requests.put(url=url, headers={'Authorization': 'Bearer %s' % access_token})
     elif request == 'patch':
-        req = requests.delete(url=url, headers={'Authorization': 'Bearer %s' % access_token})
+        req = requests.patch(url=url, headers={'Authorization': 'Bearer %s' % access_token})
     elif request == 'delete':
         req = requests.delete(url=url, headers={'Authorization': 'Bearer %s' % access_token})
 
     return req
 
 
-def response_info(resp_request=None, resp_json=None, resp_status=None):
+def response_info(response):
     """
     Function returns the following information about the request:
         1. Request, 2. Response dict, and 3. Response status
-    :type resp_json:        dict
-    :type resp_status:      int
     """
-    args = (resp_request, resp_json, resp_status)
-    return "\nRequest: %s \nResponse JSON: %s \nResponse status: %s" % args
+    request = response.request
+    _json = None if response.reason == 'NOT FOUND' or not any(response.text) else response.json()
+    status_code = response.status_code
+    return "\nRequest: %s \nResponse JSON: %s \nResponse status: %s" % (request, _json, status_code)
 
 
 def post_to_candidate_resource(access_token, data=None, domain_id=None):
