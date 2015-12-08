@@ -237,8 +237,9 @@ class ResumeTasks(Resource):
             }
 
         .. Status:: 200 (OK)
-                    6054(Job Already running)
                     500 (Internal Server Error)
+
+        .. Error code:: 6053(Job Already running)
 
         """
         auth_user = request.user
@@ -284,8 +285,9 @@ class PauseTasks(Resource):
             }
 
         .. Status:: 200 (OK)
-                    6053(Job already running
                     500 (Internal Server Error)
+
+        .. Error code:: 6054(Job Already running)
 
         """
         auth_user = request.user
@@ -440,8 +442,9 @@ class ResumeTaskById(Resource):
             }
 
         .. Status:: 200 (OK)
-                    6054 (Job Already Running)
                     500 (Internal Server Error)
+
+        .. Error code:: 6054(Job Already running)
 
         """
         auth_user = request.user
@@ -482,8 +485,9 @@ class PauseTaskById(Resource):
             }
 
         .. Status:: 200 (OK)
-                    6053 (Job Already Paused)
                     500 (Internal Server Error)
+
+        .. Error code:: 6053(Job Already Paused)
 
         """
         # check and raise exception if job is already paused or not present
