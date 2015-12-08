@@ -12,10 +12,18 @@
             </a>
             <a ui-sref="pipelines" ui-sref-active="active" class="js--navItem view__sidebar__navItem row--table" data-target="js--subnav-pipelines" ng-click="vm.isCollapsed = !vm.isCollapsed">
                 <div class="col--large-4--cell view__sidebar__navIcon">
+                    <span class="icon--build"></span>
+                </div>
+                <div class="col--large-8--cell view__sidebar__navText">
+                    Build
+                </div>
+            </a>
+            <a ui-sref="pipelines" ui-sref-active="active" class="js--navItem view__sidebar__navItem row--table" data-target="js--subnav-pipelines" ng-click="vm.isCollapsed = !vm.isCollapsed">
+                <div class="col--large-4--cell view__sidebar__navIcon">
                     <span class="icon--pipelines"></span>
                 </div>
                 <div class="col--large-8--cell view__sidebar__navText">
-                    Pipelines
+                    Organize
                 </div>
             </a>
             <a ui-sref="campaigns" ui-sref-active="active" class="js--navItem view__sidebar__navItem row--table" data-target="js--subnav-campaigns" ng-click="vm.isCollapsed = !vm.isCollapsed">
@@ -23,7 +31,7 @@
                     <span class="icon--campaigns"></span>
                 </div>
                 <div class="col--large-8--cell view__sidebar__navText">
-                    Campaigns
+                    Engage
                 </div>
             </a>
             <a ui-sref="admin" ui-sref-active="active" class="js--navItem view__sidebar__navItem row--table" data-target="js--subnav-admin" ng-click="vm.isCollapsed = !vm.isCollapsed">
