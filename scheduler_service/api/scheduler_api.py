@@ -233,13 +233,13 @@ class ResumeTasks(Resource):
 
         .. Response::
             {
-               "message":"Tasks has been resumed successfully"
+               "message":"Tasks have been resumed successfully"
             }
 
         .. Status:: 200 (OK)
                     500 (Internal Server Error)
 
-        .. Error code:: 6053(Job Already running)
+        .. Error code:: 6053(Job Already paused)
 
         """
         auth_user = request.user
@@ -252,7 +252,7 @@ class ResumeTasks(Resource):
         task_ids = filter(lambda task_id: scheduler.get_job(job_id=task_id).args[0] == user_id, task_ids)
         for id in task_ids:
             scheduler.resume_job(job_id=id)
-        response = json.dumps(dict(message="Tasks has been successfully resumed"))
+        response = json.dumps(dict(message="Tasks have been successfully resumed"))
         return ApiResponse(response)
 
 
