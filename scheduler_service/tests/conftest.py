@@ -34,16 +34,6 @@ OAUTH_SERVER = APP.config['OAUTH_SERVER_URI']
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 
-def get_random_word(length):
-    """
-    This function takes a number as an input and creates a random string of length
-    specified by given number.
-    :param length: int or long
-    :return:
-    """
-    return ''.join(random.choice(string.lowercase) for i in xrange(length))
-
-
 @pytest.fixture(scope='session')
 def test_client(request):
     """
@@ -73,7 +63,7 @@ def test_client(request):
 @pytest.fixture(scope='session')
 def test_culture(request):
     mixer = Mixer(session=db_session, commit=True)
-    culture = mixer.blend(Culture, description=get_random_word(20), code=get_random_word(5))
+    culture = mixer.blend(Culture, description=gen_salt(20), code=gen_salt(5))
 
     def fin():
         """
@@ -91,7 +81,7 @@ def job_config(request):
         "frequency": {
             "hours": 10
         },
-        'trigger': 'interval',
+        'trigger': 'periodic',
         "content_type": "application/json",
         "url": "http://getTalent.com/sms/send/",
         "start_datetime": "2015-12-05T08:00:00",
@@ -108,7 +98,7 @@ def job_config(request):
 @pytest.fixture(scope='session')
 def job_config_two(request):
     return {
-        'trigger': 'date',
+        'trigger': 'one-time',
         "content_type": "application/json",
         "url": "http://getTalent.com/email/send/",
         "run_datetime": "2017-05-05T08:00:00",
@@ -180,8 +170,8 @@ def test_user(request, test_domain):
     :return:
     """
     mixer = Mixer(session=db_session, commit=True)
-    user = mixer.blend(User, domain=test_domain, firstName=get_random_word(10),
-                       lastName=get_random_word(10), email=faker.email_address(),
+    user = mixer.blend(User, domain=test_domain, firstName=gen_salt(10),
+                       lastName=gen_salt(10), email=faker.email_address(),
                        password=generate_password_hash('A123456', method='pbkdf2:sha512'))
 
     def fin():
@@ -205,8 +195,8 @@ def test_token(request, test_user, test_client):
     mixer = Mixer(session=db_session, commit=True)
     token = Token(user_id=test_user.id,
                   token_type='Bearer',
-                  access_token=get_random_word(20),
-                  refresh_token=get_random_word(20),
+                  access_token=gen_salt(20),
+                  refresh_token=gen_salt(20),
                   client_id=test_client.client_id,
                   expires=datetime(year=2050, month=1, day=1))
     Token.save(token)

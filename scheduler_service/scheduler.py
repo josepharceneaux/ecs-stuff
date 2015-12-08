@@ -36,15 +36,15 @@ def apscheduler_listener(event):
     else:
         logger.info('The job worked :)')
         job = scheduler.get_job(event.job_id)
-        # if job.next_run_time > job.trigger.end_date:
-        #     logger.info('Stopping job')
-        #     try:
-        #         scheduler.remove_job(job_id=job.id)
-        #     except Exception as e:
-        #         logger.exception(e.message)
-        #         raise e
-        #     else:
-        #         logger.info("Job removed successfully")
+        if job.next_run_time is not None and job.next_run_time > job.trigger.end_date:
+            logger.info('Stopping job')
+            try:
+                scheduler.remove_job(job_id=job.id)
+            except Exception as e:
+                logger.exception(e.message)
+                raise e
+            else:
+                logger.info("Job removed successfully")
 
 
 scheduler.add_listener(apscheduler_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
@@ -60,12 +60,12 @@ def schedule_job(data, user_id, access_token):
     content_type = data.get('content_type', 'application/json')
     url = data['url']
     try:
-        if trigger == 'interval':
+        if trigger == 'periodic':
             frequency = data['frequency']
             start_datetime = data['start_datetime']
             end_datetime = data.get('end_datetime')
             job = scheduler.add_job(run_job,
-                                    trigger=trigger,
+                                    trigger='interval',
                                     seconds=frequency.get('seconds', 0),
                                     minutes=frequency.get('minutes', 0),
                                     hours=frequency.get('hours', 0),
@@ -76,19 +76,20 @@ def schedule_job(data, user_id, access_token):
                                     args=[user_id, access_token, url, content_type],
                                     kwargs=post_data)
             logger.info('Task has been added and will run at %s ' % start_datetime)
-        elif trigger == 'date':
+            return job.id
+        elif trigger == 'one-time':
             run_datetime = data['run_datetime']
             job = scheduler.add_job(run_job,
-                                    trigger=trigger,
+                                    trigger='date',
                                     run_date=run_datetime,
                                     args=[user_id, access_token, url, content_type],
                                     kwargs=post_data)
             logger.info('Task has been added and will run at %s ' % run_datetime)
+            return job.id
     except Exception as e:
         logger.exception(e.message)
         raise e
-
-    return job.id
+    return None
 
 
 def run_job(user_id, access_token, url, content_type, **kwargs):
@@ -131,7 +132,7 @@ def serialize_task(task):
             url=task.args[1],
             start_datetime=str(task.trigger.start_date),
             end_datetime=str(task.trigger.end_date),
-            next_run_time=str(task.next_run_time),
+            next_run_datetime=str(task.next_run_time),
             frequency=dict(days=task.trigger.interval.days, seconds=task.trigger.interval.seconds),
             post_data=task.kwargs,
             pending=task.pending

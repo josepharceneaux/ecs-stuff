@@ -63,14 +63,13 @@ class Tasks(Resource):
                             "phone_number": "09230862348",
                             "smart_list_id": 123456,
                             "content": "text to be sent as sms"
-                            "some_other_kwarg": "abc"
+                            "some_other_kwarg": "abc",
+                            "campaign_name": "SMS Campaign"
                         },
                         "frequency": "0:00:10",
                         "start_datetime": "2015-11-05T08:00:00-05:00",
                         "end_datetime": "2015-12-05T08:00:00-05:00"
-                        "next_run_time": "2015-11-05T08:20:30-05:00",
-                        "campaign_name": "SMS Campaign"
-
+                        "next_run_datetime": "2015-11-05T08:20:30-05:00",
                     }
                ]
             }
@@ -216,7 +215,7 @@ class ResumeTasks(Resource):
     """
     decorators = [require_oauth]
 
-    def get(self, **kwargs):
+    def post(self, **kwargs):
         """
         Resume a previously paused tasks/jobs
         :param id: id of task
@@ -263,7 +262,7 @@ class PauseTasks(Resource):
     """
     decorators = [require_oauth]
 
-    def get(self, **kwargs):
+    def post(self, **kwargs):
         """
         Pause tasks which is currently running.
         :param id: id of task
@@ -346,7 +345,7 @@ class TaskById(Resource):
                             }
                             "start_datetime": "2015-11-05T08:00:00-05:00",
                             "end_datetime": "2015-12-05T08:00:00-05:00"
-                            "next_run_time": "2015-11-05T08:20:30-05:00",
+                            "next_run_datetime": "2015-11-05T08:20:30-05:00",
                          }
                     }
                for interval schedule
@@ -422,7 +421,7 @@ class ResumeTaskById(Resource):
     """
     decorators = [require_oauth]
 
-    def get(self, id, **kwargs):
+    def post(self, id, **kwargs):
         """
         Resume a previously paused task/job
         :param id: id of task
@@ -464,7 +463,7 @@ class PauseTaskById(Resource):
     """
     decorators = [require_oauth]
 
-    def get(self, id, **kwargs):
+    def post(self, id, **kwargs):
         """
         Pause a task which is currently running.
         :param id: id of task
@@ -519,12 +518,12 @@ def job_state_exceptions(job_id=None, func='GET'):
         logger.exception("Job with id '%s' is in pending state. Scheduler not running" % job_id)
         raise PendingJobError("Job with id '%s' is in pending state. Scheduler not running" % job_id)
 
-    # if job has next_run_time none, then job is in paused state
+    # if job has next_run_datetime none, then job is in paused state
     if job.next_run_time is None and func == 'PAUSED':
         logger.exception("Job with id '%s' is already in paused state" % job_id)
         raise JobAlreadyPausedError("Job with id '%s' is already in paused state" % job_id)
 
-    # if job has_next_run_time is not None, then job is in running state
+    # if job has_next_run_datetime is not None, then job is in running state
     if job.next_run_time is not None and func == 'RUNNING':
         logger.exception("Job with id '%s' is already in running state" % job_id)
         raise JobAlreadyRunningError("Job with id '%s' is already in running state" % job_id)
