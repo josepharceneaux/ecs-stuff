@@ -9,7 +9,7 @@ from flask_restful import Resource
 from candidate_service.common.models.db import db
 
 # Validators
-from candidate_service.common.utils.validators import (is_number, is_valid_email)
+from candidate_service.common.utils.validators import (is_valid_email)
 from candidate_service.modules.validators import (
     does_candidate_belong_to_user, is_custom_field_authorized,
     is_area_of_interest_authorized
@@ -853,7 +853,8 @@ class CandidateSkillResource(Resource):
             raise ForbiddenError(error_message='Not authorized')
 
         if skill_id:  # Delete specified skill
-            skill = CandidateSkill.get_by_id(_id=skill_id)
+            # skill = CandidateSkill.get_by_id(_id=skill_id)
+            skill = db.session.query(CandidateSkill).get(skill_id)
             if not skill:
                 raise NotFoundError(error_message='Candidate skill not found')
 
@@ -892,7 +893,8 @@ class CandidateSocialNetworkResource(Resource):
             raise ForbiddenError(error_message='Not authorized')
 
         if social_networks_id:  # Delete specified social network
-            social_network = CandidateSocialNetwork.get_by_id(_id=social_networks_id)
+            # social_network = CandidateSocialNetwork.get_by_id(_id=social_networks_id)
+            social_network = db.session.query(CandidateSocialNetwork).get(social_networks_id)
 
             if not social_network:
                 raise NotFoundError(error_message='Candidate social network not found')

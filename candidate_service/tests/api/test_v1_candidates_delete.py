@@ -908,7 +908,7 @@ def test_delete_candidate_skills(sample_user, user_auth):
     assert len(can_dict_after_update['skills']) == 0
 
 
-def test_delete_candidate_skill(sample_user, user_auth):
+def test_delete_cand_skill(sample_user, user_auth):
     """
     Test:   Remove Candidate's skill from db
     Expect: 204, Candidate's skills must be less 1
