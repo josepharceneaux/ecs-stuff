@@ -251,7 +251,7 @@ class ResumeTasks(Resource):
         task_ids = filter(lambda task_id: scheduler.get_job(job_id=task_id).args[0] == user_id, task_ids)
         for id in task_ids:
             scheduler.resume_job(job_id=id)
-        response = json.dumps(dict(message="Tasks has been successfully resumed"))
+        response = json.dumps(dict(message="Tasks have been successfully resumed"))
         return ApiResponse(response)
 
 
@@ -284,7 +284,7 @@ class PauseTasks(Resource):
             }
 
         .. Status:: 200 (OK)
-                    6053(Job already running
+                    6053(Job already running)
                     500 (Internal Server Error)
 
         """
