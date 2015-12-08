@@ -1,20 +1,19 @@
 """Initializer for Resume Parsing App"""
 __author__ = 'erikfarmer'
-
+# Third party
 from views import api
 from flask import Flask
-# from flask_sqlalchemy import SQLAlchemy
+# Module specific
 from resume_service.common.models.db import db
 from healthcheck import HealthCheck
 import config
 
 app = Flask(__name__)
 app.config.from_object(config)
-# db = SQLAlchemy(app)
 db.init_app(app)
 db.app = app
 
-app.register_blueprint(api.mod)
+app.register_blueprint(api.mod, url_prefix='/v1')
 
 logger = app.config['LOGGER']
 

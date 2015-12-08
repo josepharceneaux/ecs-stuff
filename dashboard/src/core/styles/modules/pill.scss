@@ -1,0 +1,10 @@
+// ---------------------------------------------------
+// Modules / Pills
+// ---------------------------------------------------
+.pill {
+  color: $color--white;
+  display: inline-block;
+  padding: $padding--teeny $padding--tiny;
+  background-color: $color--gray;
+  border-radius: $border-radius--container;
+}

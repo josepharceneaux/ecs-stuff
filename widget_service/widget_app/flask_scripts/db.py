@@ -2,8 +2,8 @@ __author__ = 'erikfarmer'
 import datetime
 import random
 
-from widget_service.common.models.candidate import CustomField
-from widget_service.common.models.candidate import University
+from widget_service.common.models.misc import CustomField
+from widget_service.common.models.university import University
 from widget_service.common.models.misc import AreaOfInterest
 from widget_service.common.models.misc import Culture
 from widget_service.common.models.misc import Major
@@ -86,6 +86,8 @@ def fill_db():
 def destroy_db():
     print 'Murdering the local db'
     db.session.query(University).delete()
+    db.session.commit()
+    db.session.query(AreaOfInterest).filter(AreaOfInterest.parent_id!=None).delete()
     db.session.commit()
     db.session.query(AreaOfInterest).delete()
     db.session.commit()
