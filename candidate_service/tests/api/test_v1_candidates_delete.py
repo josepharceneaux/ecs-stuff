@@ -20,7 +20,8 @@ from helpers import (
     request_to_candidate_experience_resource, request_to_candidate_experience_bullet_resource,
     request_to_candidate_work_preference_resource, request_to_candidate_email_resource,
     request_to_candidate_phone_resource, request_to_candidate_military_service,
-    request_to_candidate_preferred_location_resource
+    request_to_candidate_preferred_location_resource, request_to_candidate_skill_resource,
+    request_to_candidate_social_network_resource
 )
 
 
@@ -50,10 +51,91 @@ def test_delete_candidate(sample_user, user_auth):
     assert get_resp.status_code == 404
 
 
+def test_delete_candidate_without_id(sample_user, user_auth):
+    """
+    Test:   Attempt to delete a Candidate without providing its ID
+    Expect: 400
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Delete Candidate
+    resp = request_to_candidate_resource(token, 'delete')
+    print response_info(resp.request, resp.json(), resp.status_code)
+
+    assert resp.status_code == 400
+
+
+def test_delete_candidate_via_email(sample_user, user_auth):
+    """
+    Test:   "Delete" a Candidate via candidate's email
+    Expect: 200
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    can_emails = get_from_candidate_resource(token, candidate_id).json()['candidate']['emails']
+
+    # Delete (hide) Candidate
+    resp = request_to_candidate_resource(token, 'delete', candidate_email=can_emails[0]['address'])
+    print response_info(resp.request, resp.json(), resp.status_code)
+
+
+def test_delete_candidate_via_unrecognized_email(sample_user, user_auth):
+    """
+    Test:   "Delete" a Candidate via an email that does not exist in db
+    Expect: 404
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Delete (hide) Candidate
+    resp = request_to_candidate_resource(token, 'delete', candidate_email='email_not_found_45623@simple.com')
+    print response_info(resp.request, resp.json(), resp.status_code)
+
+    assert resp.status_code == 404
+
+
+def test_delete_someone_elses_candidate(sample_user, sample_user_2, user_auth):
+    """
+    Test:   "Delete" a Candidate via candidate's email
+    Expect: 200
+    :type sample_user:  User
+    :type sample_user_2:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token_1 and token_2
+    token_1 = user_auth.get_auth_token(sample_user, True)['access_token']
+    token_2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
+
+    # Create Candidate with token_1 (belonging to sample_user)
+    candidate_1_id = post_to_candidate_resource(token_1).json()['candidates'][0]['id']
+
+    # Retrieve Candidate
+    candidate_dict = get_from_candidate_resource(token_1, candidate_1_id).json()['candidate']
+
+    # Delete (hide) Candidate with token_2 (sample_user_2)
+    resp = request_to_candidate_resource(token_2, 'delete', candidate_dict['id'])
+    print response_info(resp.request, resp.json(), resp.status_code)
+
+    assert resp.status_code == 403
+
+
 ######################## CandidateAddress ########################
 def test_delete_candidate_address(sample_user, user_auth):
     """
-    Test:   Remove Candidate's CandidateAddress from db
+    Test:   Remove Candidate's address from db
     Expect: 204, Candidate's addresses must be less 1
     :type sample_user:  User
     :type user_auth:    UserAuthentication
@@ -66,22 +148,21 @@ def test_delete_candidate_address(sample_user, user_auth):
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
-    candidate_addresses = candidate_dict['addresses']
+    can_addresses = get_from_candidate_resource(token, candidate_id).json()['candidate']['addresses']
 
     # Number of Candidate's addresses
-    candidate_addresses_count = len(candidate_addresses)
+    can_addresses_count = len(can_addresses)
 
     # Remove one of Candidate's addresses
     updated_resp = request_to_candidate_address_resource(token, 'delete', candidate_id,
-                                                         address_id=candidate_addresses[0]['id'])
+                                                         address_id=can_addresses[0]['id'])
     print response_info(updated_resp.request, resp_status=updated_resp.status_code)
 
     # Retrieve Candidate after update
     can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
 
     assert updated_resp.status_code == 204
-    assert len(can_dict_after_update['addresses']) == candidate_addresses_count - 1
+    assert len(can_dict_after_update['addresses']) == can_addresses_count - 1
 
 
 def test_delete_all_of_candidates_addresses(sample_user, user_auth):
@@ -107,6 +188,69 @@ def test_delete_all_of_candidates_addresses(sample_user, user_auth):
 
     assert updated_resp.status_code == 204
     assert len(can_dict_after_update['addresses']) == 0
+
+
+def test_delete_candidate_address_with_no_id(sample_user, user_auth):
+    """
+    Test:   Attempt to delete Candidate's address without providing address_id
+    Expect: 404
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Remove one of Candidate's addresses without an id
+    candidate_id = 5 # This is arbitrary since a 404 is expected
+    updated_resp = request_to_candidate_address_resource(token, 'delete', candidate_id)
+    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+
+    assert updated_resp.status_code == 404
+    assert updated_resp.reason == 'NOT FOUND'
+
+
+def test_delete_candidate_addresses_without_candidate_id(sample_user, user_auth):
+    """
+    Test:   Attempt to delete Candidate's address without providing candidate_id
+    Expect: 404
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Remove one of Candidate's addresses without an id
+    updated_resp = request_to_candidate_address_resource(token, 'delete', all_addresses=True)
+    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+
+    assert updated_resp.status_code == 404
+    assert updated_resp.reason == 'NOT FOUND'
+
+
+def test_delete_address_of_a_different_candidate(sample_user, user_auth):
+    """
+    Test:   Attempt to delete the address of a different Candidate's
+    Expect: 403
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create candidate_1 and candidate_2
+    candidate_1_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
+    candidate_2_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
+
+    # Retrieve candidate_2's addresses
+    can_2_addresses = get_from_candidate_resource(token, candidate_2_id).json()['candidate']['addresses']
+
+    # Delete candidate_2's id using candidate_1_id
+    updated_resp = request_to_candidate_address_resource(token, 'delete', candidate_1_id,
+                                                         address_id=can_2_addresses[0]['id'])
+    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+
+    assert updated_resp.status_code == 403
+
 
 ######################## CandidateAreaOfInterest ########################
 def test_delete_all_of_candidates_areas_of_interest(sample_user, user_auth):
@@ -660,7 +804,7 @@ def test_delete_candidate_phone(sample_user, user_auth):
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
 
-    # Retrieve Candidate's emails
+    # Retrieve Candidate's phones
     candidate_id = create_resp.json()['candidates'][0]['id']
     can_phones = get_from_candidate_resource(token, candidate_id).json()['candidate']['phones']
 
@@ -737,6 +881,122 @@ def test_delete_candidate_preferred_location(sample_user, user_auth):
 
     assert updated_resp.status_code == 204
     assert len(can_preferred_locations_after_delete) == preferred_locations_count_before_delete - 1
+
+######################## CandidateSkill ########################
+def test_delete_candidate_skills(sample_user, user_auth):
+    """
+    Test:   Remove Candidate's skills from db
+    Expect: 204, Candidate must not have any skills left
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Delete Candidate's skills
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    updated_resp = request_to_candidate_skill_resource(token, 'delete', candidate_id, True)
+    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    assert updated_resp.status_code == 204
+    assert len(can_dict_after_update['skills']) == 0
+
+
+def test_delete_candidate_skill(sample_user, user_auth):
+    """
+    Test:   Remove Candidate's skill from db
+    Expect: 204, Candidate's skills must be less 1
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate's skills
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    can_skills = get_from_candidate_resource(token, candidate_id).json()['candidate']['skills']
+
+    # Current number of candidate's phones
+    skills_count_before_delete = len(can_skills)
+
+    # Delete Candidate's skill
+    updated_resp = request_to_candidate_skill_resource(token, 'delete', candidate_id,
+                                                       skill_id=can_skills[0]['id'])
+    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+
+    # Retrieve Candidate's skills after update
+    can_skills_after_delete = get_from_candidate_resource(token, candidate_id).json()['candidate']['skills']
+
+    assert updated_resp.status_code == 204
+    assert len(can_skills_after_delete) == skills_count_before_delete - 1
+
+
+######################## CandidateSocialNetwork ########################
+def test_delete_candidate_social_networks(sample_user, user_auth):
+    """
+    Test:   Remove Candidate's social networks from db
+    Expect: 204, Candidate must not have any social networks left
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Delete Candidate's social networks
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    updated_resp = request_to_candidate_social_network_resource(token, 'delete', candidate_id, True)
+    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+
+    # Retrieve Candidate after update
+    can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    assert updated_resp.status_code == 204
+    assert len(can_dict_after_update['social_networks']) == 0
+
+
+def test_delete_candidate_social_network(sample_user, user_auth):
+    """
+    Test:   Remove Candidate's social network from db
+    Expect: 204, Candidate's social networks must be less 1
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate's social networks
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    can_sn = get_from_candidate_resource(token, candidate_id).json()['candidate']['social_networks']
+
+    # Current number of candidate's social networks
+    sn_count_before_delete = len(can_sn)
+
+    # Delete Candidate's skill
+    updated_resp = request_to_candidate_social_network_resource(token, 'delete',
+                                                                candidate_id, sn_id=can_sn[0]['id'])
+    print response_info(updated_resp.request, resp_status=updated_resp.status_code)
+
+    # Retrieve Candidate's social networks after update
+    can_sn_after_delete = get_from_candidate_resource(token, candidate_id).\
+        json()['candidate']['social_networks']
+
+    assert updated_resp.status_code == 204
+    assert len(can_sn_after_delete) == sn_count_before_delete - 1
 
 
 ######################## CandidateWorkPreference ########################

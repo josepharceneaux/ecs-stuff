@@ -25,11 +25,12 @@ from candidate_service.candidate_app.api.v1_candidates import (
     CandidateEducationResource, CandidateEducationDegreeResource, CandidateEducationDegreeBulletResource,
     CandidateExperienceResource, CandidateExperienceBulletResource, CandidateWorkPreferenceResource,
     CandidateEmailResource, CandidatePhoneResource, CandidateMilitaryServiceResource,
-    CandidatePreferredLocationResource
+    CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource
 )
 api = GetTalentApi(app=app)
 
 # API RESOURCES
+######################## CandidateResource ########################
 api.add_resource(
     CandidateResource,
     '/v1/candidates/<int:id>',
@@ -162,12 +163,36 @@ api.add_resource(
 api.add_resource(
     CandidatePreferredLocationResource,
     '/v1/candidates/<int:candidate_id>/preferred_locations',
-    endpoint='candidate_preferred_locations_1'
+    endpoint='candidate_preferred_location_1'
 )
 api.add_resource(
     CandidatePreferredLocationResource,
     '/v1/candidates/<int:candidate_id>/preferred_locations/<int:id>',
-    endpoint='candidate_preferred_locations_2'
+    endpoint='candidate_preferred_location_2'
+)
+
+######################## CandidateSkill ########################
+api.add_resource(
+    CandidateSkillResource,
+    '/v1/candidates/<int:candidate_id>/skills',
+    endpoint='candidate_skill_1'
+)
+api.add_resource(
+    CandidateSkillResource,
+    '/v1/candidates/<int:candidate_id>/skills/<int:id>',
+    endpoint='candidate_skill_2'
+)
+
+######################## CandidateSocialNetworkResource ########################
+api.add_resource(
+    CandidateSocialNetworkResource,
+    '/v1/candidates/<int:candidate_id>/social_networks',
+    endpoint='candidate_social_networks_1'
+)
+api.add_resource(
+    CandidateSocialNetworkResource,
+    '/v1/candidates/<int:candidate_id>/social_networks/<int:id>',
+    endpoint='candidate_social_networks_2'
 )
 
 ######################## CandidateWorkPreference ########################

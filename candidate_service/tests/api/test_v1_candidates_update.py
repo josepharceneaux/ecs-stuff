@@ -1059,7 +1059,7 @@ def test_update_skill(sample_user, user_auth):
     assert len(skills_after_update) ==  skills_count_before_update
     assert skills_after_update[0]['name'] == 'pos'
 
-######################## CandidateSkill ########################
+######################## CandidateSocialNetwork ########################
 def test_add_social_network(sample_user, user_auth):
     """
     Test:   Add a CandidateSocialNetwork to an existing Candidate.

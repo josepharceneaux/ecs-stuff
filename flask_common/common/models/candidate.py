@@ -396,6 +396,10 @@ class CandidateSocialNetwork(db.Model):
         return "<CandidateSocialNetwork (social_profile_url=' %r')>" % self.social_profile_url
 
     @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.filter_by(id=_id).first()
+
+    @classmethod
     def get_by_candidate_id_and_sn_id(cls, candidate_id, social_network_id):
         assert candidate_id
         assert social_network_id
@@ -802,6 +806,10 @@ class CandidateSkill(db.Model):
 
     def __repr__(self):
         return "<CandidateSkill (candidate_id=' %r')>" % self.candidate_id
+
+    @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.filter_by(id=_id).first()
 
 
 class CandidateUnidentified(db.Model):
