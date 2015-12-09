@@ -8,78 +8,19 @@ import json
 # Candidate's sample data
 from candidate_sample_data import generate_single_candidate_data
 
-
-class CandidatesApiUrl:
-    def __init__(self):
-        pass
-
-    CANDIDATE = "http://127.0.0.1:8005/v1/candidates/%s"
-    CANDIDATES = "http://127.0.0.1:8005/v1/candidates"
-
-    ADDRESS = "http://127.0.0.1:8005/v1/candidates/%s/addresses/%s"
-    ADDRESSES = "http://127.0.0.1:8005/v1/candidates/%s/addresses"
-
-    AOI = "http://127.0.0.1:8005/v1/candidates/%s/areas_of_interest/%s"
-    AOIS = "http://127.0.0.1:8005/v1/candidates/%s/areas_of_interest"
-
-    CUSTOM_FIELD = "http://127.0.0.1:8005/v1/candidates/%s/custom_fields/%s"
-    CUSTOM_FIELDS = "http://127.0.0.1:8005/v1/candidates/%s/custom_fields"
-
-    EDUCATION = "http://127.0.0.1:8005/v1/candidates/%s/educations/%s"
-    EDUCATIONS = "http://127.0.0.1:8005/v1/candidates/%s/educations"
-
-    DEGREE = "http://127.0.0.1:8005/v1/candidates/%s/educations/%s/degrees/%s"
-    DEGREES = "http://127.0.0.1:8005/v1/candidates/%s/educations/%s/degrees"
-
-    DEGREE_BULLET = "http://127.0.0.1:8005/v1/candidates/%s/educations/%s/degrees/%s/bullets/%s"
-    DEGREE_BULLETS = "http://127.0.0.1:8005/v1/candidates/%s/educations/%s/degrees/%s/bullets"
-
-    EMAIL = "http://127.0.0.1:8005/v1/candidates/%s/emails/%s"
-    EMAILS = "http://127.0.0.1:8005/v1/candidates/%s/emails"
-
-    EXPERIENCE = "http://127.0.0.1:8005/v1/candidates/%s/experiences/%s"
-    EXPERIENCES = "http://127.0.0.1:8005/v1/candidates/%s/experiences"
-
-    EXPERIENCE_BULLET = "http://127.0.0.1:8005/v1/candidates/%s/experiences/%s/bullets/%s"
-    EXPERIENCE_BULLETS = "http://127.0.0.1:8005/v1/candidates/%s/experiences/%s/bullets"
-
-    MILITARY_SERVICE = "http://127.0.0.1:8005/v1/candidates/%s/military_services/%s"
-    MILITARY_SERVICES = "http://127.0.0.1:8005/v1/candidates/%s/military_services"
-
-    PHONE = "http://127.0.0.1:8005/v1/candidates/%s/phones/%s"
-    PHONES = "http://127.0.0.1:8005/v1/candidates/%s/phones"
-
-    PREFERRED_LOCATION = "http://127.0.0.1:8005/v1/candidates/%s/preferred_locations/%s"
-    PREFERRED_LOCATIONS = "http://127.0.0.1:8005/v1/candidates/%s/preferred_locations"
-
-    SKILL = "http://127.0.0.1:8005/v1/candidates/%s/skills/%s"
-    SKILLS = "http://127.0.0.1:8005/v1/candidates/%s/skills"
-
-    SOCIAL_NETWORK = "http://127.0.0.1:8005/v1/candidates/%s/social_networks/%s"
-    SOCIAL_NETWORKS = "http://127.0.0.1:8005/v1/candidates/%s/social_networks"
-
-    WORK_PREFERENCE = "http://127.0.0.1:8005/v1/candidates/%s/work_preference/%s"
+# Candidate REST urls
+from candidate_service.common.utils.app_rest_urls import CandidateApiUrl
 
 
 def define_and_send_request(request, url, access_token):
     """
     Function will define request based on params and make the appropriate call.
-    :param request:     get, post, put, patch, delete
+    :param  request:  can only be get, post, put, patch, or delete
     """
-    req = None
     request = request.lower()
-    if request == 'get':
-        req = requests.get(url=url, headers={'Authorization': 'Bearer %s' % access_token})
-    elif request == 'post':
-        req = requests.post(url=url, headers={'Authorization': 'Bearer %s' % access_token})
-    elif request == 'put':
-        req = requests.put(url=url, headers={'Authorization': 'Bearer %s' % access_token})
-    elif request == 'patch':
-        req = requests.patch(url=url, headers={'Authorization': 'Bearer %s' % access_token})
-    elif request == 'delete':
-        req = requests.delete(url=url, headers={'Authorization': 'Bearer %s' % access_token})
-
-    return req
+    assert request in ['get', 'post', 'put', 'patch', 'delete']
+    method = getattr(requests, request)
+    return method(url=url, headers={'Authorization': 'Bearer %s' % access_token})
 
 
 def response_info(response):
@@ -105,7 +46,7 @@ def post_to_candidate_resource(access_token, data=None, domain_id=None):
         data = generate_single_candidate_data()
 
     resp = requests.post(
-        url=CandidatesApiUrl.CANDIDATES,
+        url=CandidateApiUrl.CANDIDATES,
         headers={'Authorization': 'Bearer %s' % access_token},
         data=json.dumps(data)
     )
@@ -116,7 +57,7 @@ def get_from_candidate_resource(access_token, candidate_id='', candidate_email='
     """
     Function sends a get request to CandidateResource/get()
     """
-    url = CandidatesApiUrl.CANDIDATES
+    url = CandidateApiUrl.CANDIDATES
     if candidate_id:
         url = url + '/%s' % candidate_id
     elif candidate_email:
@@ -131,7 +72,7 @@ def patch_to_candidate_resource(access_token, data):
     Function sends a request to CandidateResource/patch()
     """
     resp = requests.patch(
-        url=CandidatesApiUrl.CANDIDATES,
+        url=CandidateApiUrl.CANDIDATES,
         headers={'Authorization': 'Bearer %s' % access_token},
         data=json.dumps(data)
     )
@@ -143,11 +84,11 @@ def request_to_candidate_resource(access_token, request, candidate_id='', candid
     Function sends a request to CandidateResource
     :param request: get, post, patch, delete
     """
-    url = CandidatesApiUrl.CANDIDATES
+    url = CandidateApiUrl.CANDIDATES
     if candidate_id:
-        url = CandidatesApiUrl.CANDIDATE % candidate_id
+        url = CandidateApiUrl.CANDIDATE % candidate_id
     elif candidate_email:
-        url = CandidatesApiUrl.CANDIDATE % candidate_email
+        url = CandidateApiUrl.CANDIDATE % candidate_email
 
     return define_and_send_request(request, url, access_token)
 
@@ -160,9 +101,9 @@ def request_to_candidate_address_resource(access_token, request, candidate_id=''
     :param  request: delete
     """
     if all_addresses:
-        url = CandidatesApiUrl.ADDRESSES % candidate_id
+        url = CandidateApiUrl.ADDRESSES % candidate_id
     else:
-        url = CandidatesApiUrl.ADDRESS % (candidate_id, address_id)
+        url = CandidateApiUrl.ADDRESS % (candidate_id, address_id)
 
     return define_and_send_request(request=request, url=url, access_token=access_token)
 
@@ -174,9 +115,9 @@ def request_to_candidate_aoi_resource(access_token, request, candidate_id='', al
     :param request: delete
     """
     if all_aois:
-        url = CandidatesApiUrl.AOIS % candidate_id
+        url = CandidateApiUrl.AOIS % candidate_id
     else:
-        url = CandidatesApiUrl.AOI % (candidate_id, aoi_id)
+        url = CandidateApiUrl.AOI % (candidate_id, aoi_id)
 
     return define_and_send_request(request, url, access_token)
 
@@ -189,9 +130,9 @@ def request_to_candidate_custom_field_resource(access_token, request, candidate_
     :param request: delete
     """
     if all_custom_fields:
-        url = CandidatesApiUrl.CUSTOM_FIELDS % candidate_id
+        url = CandidateApiUrl.CUSTOM_FIELDS % candidate_id
     else:
-        url = CandidatesApiUrl.CUSTOM_FIELD % (candidate_id, custom_field_id)
+        url = CandidateApiUrl.CUSTOM_FIELD % (candidate_id, custom_field_id)
 
     return define_and_send_request(request, url, access_token)
 
@@ -204,9 +145,9 @@ def request_to_candidate_education_resource(access_token, request, candidate_id=
     :param request: delete
     """
     if all_educations:
-        url = CandidatesApiUrl.EDUCATIONS % candidate_id
+        url = CandidateApiUrl.EDUCATIONS % candidate_id
     else:
-        url = CandidatesApiUrl.EDUCATION % (candidate_id, education_id)
+        url = CandidateApiUrl.EDUCATION % (candidate_id, education_id)
 
     return define_and_send_request(request, url, access_token)
 
@@ -220,9 +161,9 @@ def request_to_candidate_education_degree_resource(access_token, request, candid
     :param request: delete
     """
     if all_degrees:
-        url = CandidatesApiUrl.DEGREES % (candidate_id, education_id)
+        url = CandidateApiUrl.DEGREES % (candidate_id, education_id)
     else:
-        url = CandidatesApiUrl.DEGREE % (candidate_id, education_id, degree_id)
+        url = CandidateApiUrl.DEGREE % (candidate_id, education_id, degree_id)
 
     return define_and_send_request(request, url, access_token)
 
@@ -239,9 +180,9 @@ def request_to_candidate_education_degree_bullet_resource(access_token, request,
     :param request: delete
     """
     if all_bullets:
-        url = CandidatesApiUrl.DEGREE_BULLETS % (candidate_id, education_id, degree_id)
+        url = CandidateApiUrl.DEGREE_BULLETS % (candidate_id, education_id, degree_id)
     else:
-        url = CandidatesApiUrl.DEGREE_BULLET % (candidate_id, education_id, degree_id, bullet_id)
+        url = CandidateApiUrl.DEGREE_BULLET % (candidate_id, education_id, degree_id, bullet_id)
 
     return define_and_send_request(request, url, access_token)
 
@@ -254,9 +195,9 @@ def request_to_candidate_experience_resource(access_token, request, candidate_id
     :param request: delete
     """
     if all_experiences:
-        url = CandidatesApiUrl.EXPERIENCES % candidate_id
+        url = CandidateApiUrl.EXPERIENCES % candidate_id
     else:
-        url = CandidatesApiUrl.EXPERIENCE % (candidate_id, experience_id)
+        url = CandidateApiUrl.EXPERIENCE % (candidate_id, experience_id)
 
     return define_and_send_request(request, url, access_token)
 
@@ -269,9 +210,9 @@ def request_to_candidate_experience_bullet_resource(access_token, request, candi
     :param request: delete
     """
     if all_bullets:
-        url = CandidatesApiUrl.EXPERIENCE_BULLETS % (candidate_id, experience_id)
+        url = CandidateApiUrl.EXPERIENCE_BULLETS % (candidate_id, experience_id)
     else:
-        url = CandidatesApiUrl.EXPERIENCE_BULLET % (candidate_id, experience_id, bullet_id)
+        url = CandidateApiUrl.EXPERIENCE_BULLET % (candidate_id, experience_id, bullet_id)
 
     return define_and_send_request(request, url, access_token)
 
@@ -283,9 +224,9 @@ def request_to_candidate_email_resource(access_token, request, candidate_id='', 
     :param request: delete
     """
     if all_emails:
-        url = CandidatesApiUrl.EMAILS % candidate_id
+        url = CandidateApiUrl.EMAILS % candidate_id
     else:
-        url = CandidatesApiUrl.EMAIL % (candidate_id, email_id)
+        url = CandidateApiUrl.EMAIL % (candidate_id, email_id)
 
     return define_and_send_request(request, url, access_token)
 
@@ -298,9 +239,9 @@ def request_to_candidate_military_service(access_token, request, candidate_id=''
     :param request: delete
     """
     if all_military_services:
-        url = CandidatesApiUrl.MILITARY_SERVICES % candidate_id
+        url = CandidateApiUrl.MILITARY_SERVICES % candidate_id
     else:
-        url = CandidatesApiUrl.MILITARY_SERVICE % (candidate_id, military_service_id)
+        url = CandidateApiUrl.MILITARY_SERVICE % (candidate_id, military_service_id)
 
     return define_and_send_request(request, url, access_token)
 
@@ -312,9 +253,9 @@ def request_to_candidate_phone_resource(access_token, request, candidate_id='', 
     :param request: delete
     """
     if all_phones:
-        url = CandidatesApiUrl.PHONES % candidate_id
+        url = CandidateApiUrl.PHONES % candidate_id
     else:
-        url = CandidatesApiUrl.PHONE % (candidate_id, phone_id)
+        url = CandidateApiUrl.PHONE % (candidate_id, phone_id)
 
     return define_and_send_request(request, url, access_token)
 
@@ -327,9 +268,9 @@ def request_to_candidate_preferred_location_resource(access_token, request, cand
     :param request: delete
     """
     if all_preferred_locations:
-        url = CandidatesApiUrl.PREFERRED_LOCATIONS % candidate_id
+        url = CandidateApiUrl.PREFERRED_LOCATIONS % candidate_id
     else:
-        url = CandidatesApiUrl.PREFERRED_LOCATION % (candidate_id, preferred_location_id)
+        url = CandidateApiUrl.PREFERRED_LOCATION % (candidate_id, preferred_location_id)
 
     return define_and_send_request(request, url, access_token)
 
@@ -341,9 +282,9 @@ def request_to_candidate_skill_resource(access_token, request, candidate_id='', 
     :param request: delete
     """
     if all_skills:
-        url = CandidatesApiUrl.SKILLS % candidate_id
+        url = CandidateApiUrl.SKILLS % candidate_id
     else:
-        url = CandidatesApiUrl.SKILL % (candidate_id, skill_id)
+        url = CandidateApiUrl.SKILL % (candidate_id, skill_id)
 
     return define_and_send_request(request, url, access_token)
 
@@ -355,9 +296,9 @@ def request_to_candidate_social_network_resource(access_token, request, candidat
     :param request: delete
     """
     if all_sn:
-        url = CandidatesApiUrl.SOCIAL_NETWORKS % candidate_id
+        url = CandidateApiUrl.SOCIAL_NETWORKS % candidate_id
     else:
-        url = CandidatesApiUrl.SOCIAL_NETWORK % (candidate_id, sn_id)
+        url = CandidateApiUrl.SOCIAL_NETWORK % (candidate_id, sn_id)
 
     return define_and_send_request(request, url, access_token)
 
@@ -367,7 +308,7 @@ def request_to_candidate_work_preference_resource(access_token, request, candida
     Function sends a request to CandidateWorkPreferenceResource
     :param request: delete
     """
-    url = CandidatesApiUrl.WORK_PREFERENCE % (candidate_id, work_preference_id)
+    url = CandidateApiUrl.WORK_PREFERENCE % (candidate_id, work_preference_id)
     return define_and_send_request(request, url, access_token)
 
 
@@ -393,8 +334,10 @@ def create_same_candidate(access_token):
 def check_for_id(_dict):
     """
     Checks for id-key in candidate_dict and all its nested objects that must have an id-key
+    :type _dict:    dict
     :return False if an id-key is missing in candidate_dict or any of its nested objects
     """
+    assert isinstance(_dict, dict)
     # Get top level keys
     top_level_keys = _dict.keys()
 
@@ -493,20 +436,20 @@ def remove_id_key(_dict):
     return _dict
 
 
-# TODO: what if end_date is provided only?
-def is_candidate_experience_ordered_correctly(experiences):
-    """
-    Function will check to see if candidate experience was ordered correctly in return object.
-    CandidateExperience must be returned in descending order based on start_date
-    :rtype  bool
-    """
-    assert isinstance(experiences, list)
-
-    latest= experiences[0].get('start_date')
-    for i, experience in enumerate(experiences):
-        if experience['is_current'] and i != 0:
-            return False
-        if experience['start_date'] > latest:
-            return False
-
-    return True
+# # TODO: what if end_date is provided only?
+# def is_candidate_experience_ordered_correctly(experiences):
+#     """
+#     Function will check to see if candidate experience was ordered correctly in return object.
+#     CandidateExperience must be returned in descending order based on start_date
+#     :rtype  bool
+#     """
+#     assert isinstance(experiences, list)
+#
+#     latest= experiences[0].get('start_date')
+#     for i, experience in enumerate(experiences):
+#         if experience['is_current'] and i != 0:
+#             return False
+#         if experience['start_date'] > latest:
+#             return False
+#
+#     return True
