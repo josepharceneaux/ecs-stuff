@@ -62,6 +62,7 @@
             .setDefaults('tagsInput', {
                 minLength: 1,
                 replaceSpacesWithDashes: false
-            });
+            })
+            .setTextAutosizeThreshold(13.6);
     }
 })();
