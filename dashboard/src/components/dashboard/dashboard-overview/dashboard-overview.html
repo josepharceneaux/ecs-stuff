@@ -565,7 +565,7 @@
                     <div class="form__fieldset row--expanded">
                         <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.eventTitle.$invalid && (createEventForm.eventTitle.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="eventTitle">Event Title</label>
-                            <input gt-float-label class="form__input" id="eventTitle" name="eventTitle" type="text" placeholder="Event Title">
+                            <input gt-float-label class="form__input" ng-model="vm.event.eventTitle" id="eventTitle" name="eventTitle" type="text" placeholder="Event Title" required>
                         </div>
                     </div>
 
@@ -573,7 +573,7 @@
                         <div class="col--medium-8 form__col" ng-class="{'form__col--error': createEventForm.eventType.$invalid && (createEventForm.eventType.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="eventType">Event Type</label>
                             <select gt-float-label class="form__input--select"
-                                ng-model="vm.event.type" ng-options="option.name for option in vm.eventTypes track by option.id" id="eventType" name="eventType">
+                                ng-model="vm.event.type" ng-options="option.name for option in vm.eventTypes track by option.id" id="eventType" name="eventType" required>
                                 <option value="" ng-show="!vm.event.type">Event Type</option>
                             </select>
                         </div>
@@ -651,31 +651,31 @@
                     <div class="form__fieldset row--expanded">
                         <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.locationName.$invalid && (createEventForm.locationName.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="locationName">Location Name</label>
-                            <input gt-float-label class="form__input" ng-model="vm.event.location.name" id="locationName" name="locationName" type="text" placeholder="Location Name">
+                            <input gt-float-label class="form__input" ng-model="vm.event.location.name" id="locationName" name="locationName" type="text" placeholder="Location Name" required>
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
                         <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.streetAddress.$invalid && (createEventForm.streetAddress.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="streetAddress">Street Address</label>
-                            <input gt-float-label class="form__input" ng-model="vm.event.location.address" id="streetAddress" name="streetAddress" type="text" placeholder="Street Address">
+                            <input gt-float-label class="form__input" ng-model="vm.event.location.address" id="streetAddress" name="streetAddress" type="text" placeholder="Street Address" required>
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
                         <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.city.$invalid && (createEventForm.city.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="city">City</label>
-                            <input gt-float-label class="form__input" ng-model="vm.event.location.city" id="city" name="city" type="text" placeholder="City">
+                            <input gt-float-label class="form__input" ng-model="vm.event.location.city" id="city" name="city" type="text" placeholder="City" required>
                         </div>
 
                         <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.state.$invalid && (createEventForm.state.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="state">State</label>
-                            <input gt-float-label class="form__input" ng-model="vm.event.location.state" id="state" name="state" type="text" placeholder="State">
+                            <input gt-float-label class="form__input" ng-model="vm.event.location.state" id="state" name="state" type="text" placeholder="State" required>
                         </div>
 
                         <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.zip.$invalid && (createEventForm.zip.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="zip">Zip</label>
-                            <input gt-float-label class="form__input" ng-model="vm.event.location.zip" id="zip" name="zip" type="text" placeholder="Zip">
+                            <input gt-float-label class="form__input" ng-model="vm.event.location.zip" id="zip" name="zip" type="text" placeholder="Zip" required>
                         </div>
                     </div>
 
