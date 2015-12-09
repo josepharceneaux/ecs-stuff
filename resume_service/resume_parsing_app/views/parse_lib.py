@@ -9,6 +9,7 @@ import base64
 import string
 import datetime
 import re
+import json
 
 import phonenumbers
 from pdfminer.pdfinterp import PDFResourceManager
@@ -23,6 +24,8 @@ from BeautifulSoup import BeautifulSoup
 from bs4 import BeautifulSoup as bs4
 import magic
 from flask import current_app
+from OauthClient import OAuthClient
+from resume_service.resume_parsing_app.views.optic_parse_lib import parse_optic_json, fetch_optic_response
 
 from talent_dice_client import parse_resume_with_bg
 
@@ -110,12 +113,16 @@ def parse_resume(file_obj, filename_str):
 
     encoded_resume = base64.b64encode(doc_content)
     start_time = time()
-    bg_response_dict = parse_resume_with_bg(filename_str + final_file_ext, encoded_resume)
+    # Original Parsing via Dice API
+    # bg_response_dict = parse_resume_with_bg(filename_str + final_file_ext, encoded_resume)
+    optic_response = fetch_optic_response(encoded_resume)
     current_app.logger.info("Benchmark: parse_resume_with_bg(%s) took %ss", filename_str + final_file_ext,
                             time() - start_time)
-    if bg_response_dict:
-        candidate_data = parse_xml_into_candidate_dict(bg_response_dict)
-        candidate_data['dice_api_response'] = bg_response_dict
+    if optic_response:
+        # candidate_data = parse_xml_into_candidate_dict(bg_response_dict)
+        candidate_data = parse_optic_json(optic_response)
+        # consider returning raw value
+        # candidate_data['dice_api_response'] = bg_response_dict
         return candidate_data
     else:
         return dict(error='No XML text')
