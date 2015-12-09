@@ -98,7 +98,7 @@ class Tasks(Resource):
                     "day": 5,
                     "hour": 6
                 },
-                "trigger": "interval",
+                "task_type": "periodic",
                 "start_datetime": "2015-12-05T08:00:00-05:00",
                 "end_datetime": "2016-01-05T08:00:00-05:00",
                 "url": "http://getTalent.com/sms/send/",
@@ -111,7 +111,7 @@ class Tasks(Resource):
             }
             for one_time schedule
             task = {
-                "trigger": "date",
+                "task_type": "one_time",
                 "run_datetime": "2015-12-05T08:00:00-05:00",
                 "url": "http://getTalent.com/email/send/",
                 "post_data": {
@@ -246,9 +246,8 @@ class ResumeTasks(Resource):
 
         .. Status:: 200 (OK)
                     207 (Not all paused)
+                    400 (Bad Request)
                     500 (Internal Server Error)
-
-        .. Error code:: 6050(Task Not Found)
 
         """
         user_id = request.user.id
@@ -301,9 +300,9 @@ class PauseTasks(Resource):
             }
 
         .. Status:: 200 (OK)
+                    207 (Some jobs paused)
+                    400 (Bad request)
                     500 (Internal Server Error)
-
-        .. Error code:: 6050(Task Not Found)
 
         """
         user_id = request.user.id
@@ -389,6 +388,7 @@ class TaskById(Resource):
                     }
 
         .. Status:: 200 (OK)
+                    404 (Task not found)
                     500 (Internal Server Error)
 
         """
@@ -421,7 +421,7 @@ class TaskById(Resource):
                 'message': 'Task has been removed successfully'
             }
         .. Status:: 200 (Resource deleted)
-                    404 (Not found)
+                    404 (Task Not found)
                     500 (Internal Server Error)
 
         """
@@ -459,6 +459,7 @@ class ResumeTaskById(Resource):
             }
 
         .. Status:: 200 (OK)
+                    404 (Task not found)
                     500 (Internal Server Error)
 
         .. Error code:: 6054(Task Already running)
