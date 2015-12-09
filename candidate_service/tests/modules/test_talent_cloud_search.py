@@ -127,7 +127,7 @@ def populate_candidates(owner_user_id, count=1, first_name=True, middle_name=Fal
             'military_branch': {True: uuid.uuid4().__str__()[0:8], False: None}.get(military_branch, military_branch),
             'military_status': {True: uuid.uuid4().__str__()[0:8], False: None}.get(military_status, military_status),
             'military_grade': {True: uuid.uuid4().__str__()[0:8], False: None}.get(military_grade, military_grade),
-            'military_from_date': {True: datetime.date.today(), False: None}.get(military_from_date, military_from_date),
+            'military_from_date': {True: datetime.datetime.strptime(fake.date(), "%Y-%m-%d"), False: None}.get(military_from_date, military_from_date),
             'military_to_date': {True: datetime.datetime.today(), False: None}.get(military_to_date, military_to_date),
             'source_id': source_id,
             'area_of_interest_ids': area_of_interest_ids,

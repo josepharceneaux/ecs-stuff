@@ -34,7 +34,7 @@ from candidate_service.common.error_handling import InvalidUsage
 from candidate_service.common.utils.validators import (sanitize_zip_code, is_number)
 
 # Common utilities
-from candidate_service.common.utils.common_functions import get_coordinates
+from flask.ext.common.common.geo_services.geo_coordinates import get_coordinates
 
 
 ##################################################

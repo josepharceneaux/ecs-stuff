@@ -22,7 +22,7 @@ class CandidateSearch(Resource):
         domain_id = request.user.domain_id
         logger.info("Searching candidates in the domain:%s" % domain_id)
         limit = request_vars.get('limit')
-        search_limit = int(limit) if limit.is_digit() else 15
+        search_limit = int(limit) if limit else 15
 
         # If limit is not requested then the Search limit would be taken as 15, the default value
         candidate_search_results = search_candidates(domain_id, request.args, search_limit)

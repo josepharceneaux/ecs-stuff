@@ -32,6 +32,10 @@ api.add_resource(CandidateEmailCampaignResource,
                  '/v1/candidates/<int:id>/email_campaigns/<int:email_campaign_id>/email_campaign_sends',
                  endpoint='candidates')
 
+from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch
+api.add_resource(CandidateSearch,
+                 '/v1/candidates/search')
+
 db.create_all()
 db.session.commit()
 
