@@ -17,7 +17,7 @@ register_error_handlers(app=app, logger=logger)
 db.init_app(app=app)
 db.app = app
 
-# Wrap the flask app and give a heathcheck url
+# Wrap the flask app and give a healthcheck url
 health = HealthCheck(app, "/healthcheck")
 
 from candidate_service.candidate_app.api.v1_candidates import (

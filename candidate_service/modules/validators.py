@@ -2,7 +2,7 @@
 Functions related to candidate_service/candidate_app/api validations
 """
 from candidate_service.common.models.db import db
-from candidate_service.common.models.candidate import Candidate
+from candidate_service.common.models.candidate import Candidate, CandidateAddress
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
 from candidate_service.common.models.email_marketing import EmailCampaign
@@ -17,6 +17,7 @@ def does_candidate_belong_to_user(user_row, candidate_id):
     :type   user_row: User
     :rtype: bool
     """
+    assert isinstance(candidate_id, (int, long))
     candidate_row = db.session.query(Candidate).join(User).filter(
         Candidate.id == candidate_id, Candidate.user_id == user_row.id,
         User.domain_id == user_row.domain_id
@@ -69,13 +70,14 @@ def is_area_of_interest_authorized(user_domain_id, area_of_interest_ids):
     return exists
 
 
-def does_email_campaign_belong_to_domain(user_row):
+def does_email_campaign_belong_to_domain(user):
     """
     Function retrieves all email campaigns belonging to user's domain
     :rtype: bool
     """
+    assert isinstance(user, User)
     email_campaign_rows = db.session.query(EmailCampaign).join(User).\
-        filter(User.domain_id == user_row.domain_id).first()
+        filter(User.domain_id == user.domain_id).first()
 
     return True if email_campaign_rows else False
 
@@ -84,6 +86,6 @@ def does_address_belong_to_candidate(candidate_id, address_id):
     """
     :rtype  bool
     """
-    from candidate_service.common.models.candidate import CandidateAddress
+    assert isinstance(candidate_id, (int, long))
     if CandidateAddress.get_by_id(_id=address_id).candidate_id != candidate_id:
         raise
