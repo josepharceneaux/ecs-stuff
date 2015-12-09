@@ -1,13 +1,11 @@
-
 /*  GetTalent
     Jason Provencher */
-
 // ---------------------------------------------------
 //  Temporary Styles For Prototyping & Demo Designs
 // ---------------------------------------------------
 
 // -----
-// Admin Menu
+// Demo Menu
 // -----
 
 .demo_menu {
@@ -15,7 +13,7 @@
   color:white;
   position:fixed;
   left:0px;
-  top:550px;
+  top:500px;
   width:200px;
   border-radius: 0px 5px 5px 0px;
   box-shadow:0 0 10px rgba(0,0,0,.2);
@@ -52,5 +50,18 @@
         content: ' >';
       }
     }
+  }
+}
+
+.view__sidebar__navParent {
+  &:after {
+    content: "";
+    display:block;
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,.6);
   }
 }
