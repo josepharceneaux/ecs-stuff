@@ -415,35 +415,35 @@ input[type=number] {
   }
 
   span {
-		display: block;
+        display: block;
     position: relative;
     top: 9px;
-		width: 4em;
-		height: 2em;
+        width: 4em;
+        height: 2em;
     padding: 2px;
     background: $color--lightGray;
-		border-radius: 2em;
+        border-radius: 2em;
     outline: 0;
     cursor: pointer;
     user-select: none;
-		transition: all .4s ease;
+        transition: all .4s ease;
 
-		&:after, &:before {
-			position: relative;
-			display: block;
-			content: "";
-			width: 50%;
-			height: 100%;
-		}
+        &:after, &:before {
+            position: relative;
+            display: block;
+            content: "";
+            width: 50%;
+            height: 100%;
+        }
 
     &:after {
       left: 0;
-			border-radius: 50%;
-			background: $color--white;
-			transition: all .2s ease;
-		}
+            border-radius: 50%;
+            background: $color--white;
+            transition: all .2s ease;
+        }
 
-		&:before { display: none; }
+        &:before { display: none; }
   }
 }
 
@@ -524,6 +524,7 @@ tags-input {
     @extend .form__input;
 
     padding: $padding--tiny;
+    padding-bottom: 0;
     overflow-x: auto;
     cursor: text;
 
@@ -601,10 +602,10 @@ tags-input {
     input {
       color: $color--nearBlack;
       font-size: $font-size--small;
-      width: 100% !important;
+      float: left;
       margin-top: 0;
       margin-right: $padding--tiny;
-      margin-bottom: 0;
+      margin-bottom: $padding--tiny;
       margin-left: 0;
       padding: $padding--tiny;
       background: transparent;
