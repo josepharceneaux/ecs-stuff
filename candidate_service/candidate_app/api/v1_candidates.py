@@ -26,9 +26,9 @@ from candidate_service.common.models.candidate import (
     Candidate, CandidateAddress, CandidateEducation, CandidateEducationDegree,
     CandidateEducationDegreeBullet, CandidateExperience, CandidateExperienceBullet,
     CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
-    CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork
+    CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField
 )
-from candidate_service.common.models.misc import AreaOfInterest
+from candidate_service.common.models.misc import AreaOfInterest, CustomField
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 
 # Module
@@ -413,13 +413,12 @@ class CandidateAreaOfInterestResource(Resource):
         if not does_candidate_belong_to_user(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized')
 
+        # Prevent user from deleting area_of_interest of candidates outside of its domain
+        is_authorized = is_area_of_interest_authorized(authed_user.domain_id, [area_of_interest_id])
+        if not is_authorized:
+            raise ForbiddenError(error_message="Unauthorized area of interest IDs")
 
         if area_of_interest_id:  # Delete specified area of interest
-            # Prevent user from deleting area_of_interest of candidates outside of its domain
-            is_authorized = is_area_of_interest_authorized(authed_user.domain_id, [area_of_interest_id])
-            if not is_authorized:
-                raise ForbiddenError(error_message="Unauthorized area of interest IDs")
-
             # Area of interest must be associated with candidate's CandidateAreaOfInterest
             candidate_aoi = CandidateAreaOfInterest.get_areas_of_interest(candidate_id, area_of_interest_id)
             if not candidate_aoi:
@@ -428,7 +427,7 @@ class CandidateAreaOfInterestResource(Resource):
             # Delete CandidateAreaOfInterest
             db.session.delete(candidate_aoi)
 
-        else:
+        else:  # Delete all of Candidate's areas of interest
             domain_aois = AreaOfInterest.get_domain_areas_of_interest(domain_id=authed_user.domain_id)
             areas_of_interest_id = [aoi.id for aoi in domain_aois]
             for aoi_id in areas_of_interest_id:
@@ -442,6 +441,53 @@ class CandidateAreaOfInterestResource(Resource):
         return '', 204
 
 
+class CandidateCustomFieldResource(Resource):
+    decorators = [require_oauth]
+
+    def delete(self, **kwargs):
+        """
+        Endpoints:
+             i. DELETE /v1/candidates/:candidate_id/custom_fields
+            ii. DELETE /v1/candidates/:candidate_id/custom_fields/:id
+        Depending on the endpoint requested, function will delete all of Candidate's
+        custom fields or just a single one.
+        """
+        # Authenticated user
+        authed_user = request.user
+
+        # Get candidate_id and custom_field_id
+        candidate_id, custom_field_id = kwargs.get('candidate_id'), kwargs.get('id')
+
+        # Candidate must belong to user and its domain
+        if not does_candidate_belong_to_user(authed_user, candidate_id):
+            raise ForbiddenError(error_message='Not authorized')
+
+        # Custom fields must belong to user's domain
+        if not is_custom_field_authorized(authed_user.domain_id, [custom_field_id]):
+            raise ForbiddenError(error_message='Not authorized')
+
+        if custom_field_id:  # Delete specified custom field
+            # Custom field must be associated with CandidateCustomField
+            candidate_custom_field = CandidateCustomField.get_custom_fields(candidate_id, custom_field_id)
+            if not candidate_custom_field:
+                raise ForbiddenError(error_message='Unauthorized custom field ID')
+
+            db.session.delete(candidate_custom_field)
+
+        else:  # Delete all of Candidate's custom fields
+            domain_custom_fields = CustomField.get_domain_custom_fields(domain_id=authed_user.domain_id)
+            custom_field_ids = [custom_field.id for custom_field in domain_custom_fields]
+            for cf_id in custom_field_ids:
+                candidate_custom_field = CandidateCustomField.get_custom_fields(candidate_id, cf_id)
+                if not candidate_custom_field:
+                    raise NotFoundError(error_message='Candidate custom field not found.')
+
+                db.session.delete(candidate_custom_field)
+
+        db.session.commit()
+        return '', 204
+
+
 class CandidateEducationResource(Resource):
     decorators = [require_oauth]
 
@@ -450,6 +496,8 @@ class CandidateEducationResource(Resource):
         Endpoints:
               i. DELETE /v1/candidates/:candidate_id/educations
              ii. DELETE /v1/candidates/:candidate_id/educations/:id
+        Depending on the endpoint requested, function will delete all of Candidate's
+        educations or just a single one.
         """
         # Authenticated user
         authed_user = request.user
@@ -457,7 +505,7 @@ class CandidateEducationResource(Resource):
         # Get candidate_id and education_id
         candidate_id, education_id = kwargs.get('candidate_id'), kwargs.get('id')
 
-         # Candidate must belong to user's domain
+         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_user(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized')
 
@@ -489,6 +537,8 @@ class CandidateEducationDegreeResource(Resource):
         Endpoints:
              i. DELETE /v1/candidates/:candidate_id/educations/:education_id/degrees
             ii. DELETE /v1/candidates/:candidate_id/educations/:education_id/degrees/:id
+        Depending on the endpoint requested, function will delete all of Candidate's
+        education-degrees or just a single one.
         """
         # Authenticated user
         authed_user = request.user
@@ -536,6 +586,8 @@ class CandidateEducationDegreeBulletResource(Resource):
         Endpoints:
              i. DELETE /v1/candidates/:candidate_id/educations/:education_id/degrees/:degree_id/bullets
             ii. DELETE /v1/candidates/:candidate_id/educations/:education_id/degrees/:degree_id/bullets/:id
+        Depending on the endpoint requested, function will delete all of Candidate's
+        education-degree-bullets or just a single one.
         """
         # Authenticated user
         authed_user = request.user
@@ -594,6 +646,8 @@ class CandidateExperienceResource(Resource):
         Endpoints:
              i. DELETE /v1/candidates/:candidate_id/experiences
             ii. DELETE /v1/candidates/:candidate_id/experiences/:id
+        Depending on the endpoint requested, function will delete all of Candidate's
+        work_experiences or just a single one.
         """
         # Authenticated user
         authed_user = request.user
@@ -633,6 +687,8 @@ class CandidateExperienceBulletResource(Resource):
         Endpoints:
              i. DELETE /v1/candidates/:candidate_id/experiences/:experience_id/bullets
             ii. DELETE /v1/candidates/:candidate_id/experiences/:experience_id/bullets/:id
+        Depending on the endpoint requested, function will delete all of Candidate's
+        work_experience-bullets or just a single one.
         """
         # Authenticated user
         authed_user = request.user
@@ -684,6 +740,8 @@ class CandidateEmailResource(Resource):
         Endpoints:
              i. DELETE /v1/candidates/:candidate_id/emails
             ii. DELETE /v1/candidates/:candidate_id/emails/:id
+        Depending on the endpoint requested, function will delete all of Candidate's
+        emails or just a single one.
         """
         # Authenticated user
         authed_user = request.user
@@ -723,6 +781,8 @@ class CandidateMilitaryServiceResource(Resource):
         Endpoints:
              i. DELETE /v1/candidates/:candidate_id/military_services
             ii. DELETE /v1/candidates/:candidate_id/military_services/:id
+        Depending on the endpoint requested, function will delete all of Candidate's
+        military_services or just a single one.
         """
         # Authenticated user
         authed_user = request.user
@@ -762,6 +822,8 @@ class CandidatePhoneResource(Resource):
         Endpoints:
              i. DELETE /v1/candidates/:candidate_id/phones
             ii. DELETE /v1/candidates/:candidate_id/phones/:id
+        Depending on the endpoint requested, function will delete all of Candidate's
+        phones or just a single one.
         """
         # Authenticated user
         authed_user = request.user
@@ -801,6 +863,8 @@ class CandidatePreferredLocationResource(Resource):
         Endpoints:
              i. DELETE /v1/candidates/:candidate_id/preferred_locations
             ii. DELETE /v1/candidates/:candidate_id/preferred_locations/:id
+        Depending on the endpoint requested, function will delete all of Candidate's
+        preferred_locations or just a single one.
         """
         # Authenticated user
         authed_user = request.user
@@ -841,6 +905,8 @@ class CandidateSkillResource(Resource):
         Endpoint:
              i. DELETE /v1/candidates/:candidate_id/skills
             ii. DELETE /v1/candidates/:candidate_id/skills/:id
+        Depending on the endpoint requested, function will delete all of Candidate's
+        skills or just a single one.
         """
         # Authenticated user
         authed_user = request.user
@@ -881,6 +947,8 @@ class CandidateSocialNetworkResource(Resource):
         Endpoint:
              i. DELETE /v1/candidates/:candidate_id/social_networks
             ii. DELETE /v1/candidates/:candidate_id/social_networks/:id
+        Depending on the endpoint requested, function will delete all of Candidate's
+        social_networks or just a single one.
         """
         # Authenticated user
         authed_user = request.user
@@ -920,6 +988,7 @@ class CandidateWorkPreferenceResource(Resource):
     def delete(self, **kwargs):
         """
         Endpoint: DELETE /v1/candidates/:candidate_id/work_preference/:id
+        Function will delete Candidate's work_preference
         """
         # Authenticated user
         authed_user = request.user
