@@ -6,7 +6,7 @@ Scheduler - APScheduler initialization, set jobstore, threadpoolexecutor
 - get tasks from apscheduler and serialize tasks using json
 """
 
-
+# Third-party imports
 from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.events import EVENT_JOB_EXECUTED
 from apscheduler.executors.pool import ThreadPoolExecutor
@@ -14,18 +14,16 @@ from apscheduler.jobstores.redis import RedisJobStore
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.date import DateTrigger
 from apscheduler.schedulers.background import BackgroundScheduler
+
+# Application imports
 from scheduler_service import logger
+from scheduler_service.apscheduler_config import executors
 from scheduler_service.custom_exceptions import FieldRequiredError, TriggerTypeError
 from scheduler_service.tasks import send_request
-
-MAX_THREAD_PO0L = 20
 
 job_store = RedisJobStore()
 jobstores = {
     'redis': job_store
-}
-executors = {
-    'default': ThreadPoolExecutor(MAX_THREAD_PO0L)
 }
 # set timezone to UTC
 scheduler = BackgroundScheduler(jobstore=jobstores, executors=executors,
@@ -45,7 +43,7 @@ def apscheduler_listener(event):
     else:
         logger.info('The job worked :)')
         job = scheduler.get_job(event.job_id)
-        if job.next_run_time and job.next_run_time > job.trigger.end_date:
+        if job.next_run_time is not None and job.next_run_time > job.trigger.end_date:
             logger.info('Stopping job')
             try:
                 scheduler.remove_job(job_id=job.id)
@@ -69,15 +67,15 @@ def schedule_job(data, user_id, access_token):
         content_type = data.get('content_type', 'application/json')
         url = data['url']
     except Exception as e:
-        raise FieldRequiredError(error_message=e.message)
+        raise FieldRequiredError(error_message="Missing or invalid data.")
     if trigger == 'periodic':
         try:
             frequency = data['frequency']
             start_datetime = data['start_datetime']
             end_datetime = data['end_datetime']
         except Exception as e:
-            logger.exception()
-            raise FieldRequiredError(error_message=e.message)
+            logger.exception('schedule_job: Error while scheduling a job')
+            raise FieldRequiredError(error_message="Missing or invalid data.")
         job = scheduler.add_job(run_job,
                                 trigger='interval',
                                 seconds=frequency.get('seconds', 0),
@@ -96,7 +94,7 @@ def schedule_job(data, user_id, access_token):
             run_datetime = data['run_datetime']
         except Exception as e:
             logger.exception()
-            raise FieldRequiredError(error_message=e.message)
+            raise FieldRequiredError(error_message="Missing or invalid data.")
         job = scheduler.add_job(run_job,
                                 trigger='date',
                                 run_date=run_datetime,
@@ -118,7 +116,7 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
     :param kwargs: post data like campaign name, smartlist ids etc
     :return:
     """
-    logger.info('User ID: %s, Url: %s, Content-Type: %s' % (user_id, url, content_type))
+    logger.info('User ID: %s, URL: %s, Content-Type: %s' % (user_id, url, content_type))
     send_request.apply_async([user_id, access_token, url, content_type, kwargs])
 
 

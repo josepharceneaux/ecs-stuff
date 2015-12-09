@@ -1,11 +1,16 @@
 """
 Test cases for scheduling service
 """
+# Standard imports
 import os
-from apscheduler.executors.pool import ThreadPoolExecutor
+
+# Third-party imports
 from apscheduler.jobstores.redis import RedisJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
+
+# Application imports
 from scheduler_service import init_app
+from scheduler_service.apscheduler_config import executors
 from scheduler_service.common.tests.conftest import *
 # Application Specific
 
@@ -93,9 +98,7 @@ def apscheduler_setup(request, redis_jobstore_setup):
     :param request:
     :return: APScheduler object initialized with redis job store and default executor
     """
-    executors = {
-        'default': ThreadPoolExecutor(20)
-    }
+
     scheduler = BackgroundScheduler(jobstore=redis_jobstore_setup, executors=executors)
     scheduler.add_jobstore(redis_jobstore_setup['redis'])
     scheduler.start()
