@@ -1,19 +1,21 @@
 """
 Test cases for Talent Cloud Search functionality
 """
+from random import randint
+import datetime
+import time
+
 from candidate_service.common.tests.conftest import *
-from candidate_service.app.views.talent_cloud_search import search_candidates, upload_candidate_documents
+from candidate_service.modules.talent_cloud_search import search_candidates, upload_candidate_documents
 from candidate_service.modules.talent_candidates import create_or_update_candidate_from_params
 from candidate_service.common.models.candidate import (Candidate, CandidateAddress, CandidateStatus, CandidateSource)
 from candidate_service.candidate_app import db, logger
 from candidate_service.common.models.misc import CustomField, CustomFieldCategory, AreaOfInterest
-from random import randint
-import uuid
-import datetime
-import time
-import random
-import loremipsum
-import radar
+from flask.ext.common.common.geo_services.geo_coordinates import get_geocoordinates_bounding
+from faker import Faker
+
+fake = Faker()
+
 # Various U.S. locations in (city, state, zipcode) format, which can be used to populate candidate locations
 VARIOUS_US_LOCATIONS = (('San Jose', 'CA', '95132'), ('Providence', 'Rhode Island', '02905'),
                         ('Lubbock', 'Texas', '79452'), ('Philadelphia', 'Pennsylvania', '19184'),
@@ -112,7 +114,7 @@ def populate_candidates(owner_user_id, count=1, first_name=True, middle_name=Fal
             'added_time': {True: datetime.datetime.now(), False: None}.get(added_time, added_time),
             'email': '%s@candidate.example.com' % (uuid.uuid4().__str__()),
             'objective': {True: uuid.uuid4().__str__()[0:8], False: None}.get(objective, objective),
-            'candidate_text_comment': {True: '\n'.join(loremipsum.get_sentences(2)), False: None}.get(
+            'candidate_text_comment': {True: '\n'.join(fake.sentences()), False: None}.get(
                 candidate_text_comment, candidate_text_comment),
             'city': {True: VARIOUS_US_LOCATIONS[0][0], False: None}.get(city, city),
             'state': {True: VARIOUS_US_LOCATIONS[0][1], False: None}.get(state, state),
@@ -125,7 +127,7 @@ def populate_candidates(owner_user_id, count=1, first_name=True, middle_name=Fal
             'military_branch': {True: uuid.uuid4().__str__()[0:8], False: None}.get(military_branch, military_branch),
             'military_status': {True: uuid.uuid4().__str__()[0:8], False: None}.get(military_status, military_status),
             'military_grade': {True: uuid.uuid4().__str__()[0:8], False: None}.get(military_grade, military_grade),
-            'military_from_date': {True: radar.random_datetime(), False: None}.get(military_from_date, military_from_date),
+            'military_from_date': {True: datetime.date.today(), False: None}.get(military_from_date, military_from_date),
             'military_to_date': {True: datetime.datetime.today(), False: None}.get(military_to_date, military_to_date),
             'source_id': source_id,
             'area_of_interest_ids': area_of_interest_ids,
@@ -1206,9 +1208,9 @@ def _log_bounding_box_and_coordinates(base_location, radius, candidate_ids):
     :return:
     """
 
-    from candidate_service.app.views.geo_coordinates import get_geo_coordinates_bounding
+
     distance_in_km = float(radius)/0.62137
-    coords_dict = get_geo_coordinates_bounding(base_location, distance_in_km)
+    coords_dict = get_geocoordinates_bounding(base_location, distance_in_km)
     top_left_y, top_left_x, bottom_right_y, bottom_right_x = coords_dict['top_left'][0],coords_dict['top_left'][1], \
                                                              coords_dict['bottom_right'][0],coords_dict['bottom_right'][1]
     # Lat = Y Lng = X
@@ -1236,7 +1238,7 @@ def create_area_of_interest_facets(db, domain_id):
     :param domain_id:
     :return: list of created area of interest ids
     """
-    from candidate_service.app.views.talent_areas_of_interest import KAISER_PARENT_TO_CHILD_AOIS
+    from candidate_service.modules.talent_areas_of_interest import KAISER_PARENT_TO_CHILD_AOIS
     all_aoi_ids = []
     for parent_aoi_name, child_aoi_names in KAISER_PARENT_TO_CHILD_AOIS.items():
         # Insert parent AOI if doesn't exist

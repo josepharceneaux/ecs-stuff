@@ -59,5 +59,3 @@ Flask-Limiter
 newrelic
 healthcheck
 simplejson==3.8.0
-loremipsum
-radar

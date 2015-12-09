@@ -79,3 +79,63 @@ def does_email_campaign_belong_to_domain(user_row):
 
     return True if email_campaign_rows else False
 
+
+def format_search_request_data(request_data):
+    sort_by = request_data.get("sort_by")  # Sorting
+    limit = request_data.get("limit")
+    pages = request_data.get("page")
+    query = request_data.get("query") or request_data.get("q")  # Keyword search
+    # Facets
+    owner_ids = request_data.get('user_ids')
+    location = request_data.get('location')
+    radius = request_data.get('radius')
+    area_of_interest_ids = request_data.get('area_of_interest_ids')
+    status_ids = request_data.get("status_ids")
+    source_ids = request_data.get('source_ids')
+    min_exp = request_data.get('minimum_years_experience')
+    max_exp = request_data.get('maximum_years_experience')
+    skills = request_data.get('skills')
+    position = request_data.get('job_title')
+    school = request_data.get('school_name')
+    degree = request_data.get('degree')
+    concentration = request_data.get('major')  # Electrical Engineering or Concentration on your major
+    degree_end_year_from = request_data.get('degree_end_year_from')
+    degree_end_year_to = request_data.get('degree_end_year_to')
+    service_status = request_data.get('military_service_status')
+    branch = request_data.get('military_branch')
+    grade = request_data.get('military_highest_grade')
+    military_end_date_from = request_data.get('military_end_date_from')
+    military_end_date_to = request_data.get('military_end_date_to')
+    fields = request_data.get("fields")
+    candidate_id = request_data.get("id")
+
+    # Handling custom fields
+    custom_field_with_id = None
+    cf_id = None
+    for value in request_data.keys():
+        cf_str = [cf for cf in value if 'cf-' in cf]
+        if cf_str:
+            cf_id = int(cf_str[0].split('-')[1])
+            custom_field_with_id = request_data.get("cf-%d" % cf_id)
+
+    # Dictionary with all searchable filters
+    request_vars_dict = {"location": location, "skillDescriptionFacet": skills,
+                         "areaOfInterestIdFacet": area_of_interest_ids, "statusFacet": status_ids,
+                         "sourceFacet": source_ids, "minimum_years_experience": min_exp,
+                         "maximum_years_experience": max_exp, "positionFacet": position, "degreeTypeFacet": degree,
+                         "schoolNameFacet": school, "concentrationTypeFacet": concentration,
+                         "degree_end_year_from": degree_end_year_from, "degree_end_year_to": degree_end_year_to,
+                         "serviceStatus": service_status, "branch": branch, "highestGrade": grade,
+                         "military_end_date_from": military_end_date_from, "military_end_date_to": military_end_date_to,
+                         "usernameFacet": owner_ids, "q": query, "limit": limit, "fields": fields, "page": pages,
+                         "sort_by": sort_by, 'radius': radius}
+    if custom_field_with_id:
+        request_vars_dict["cf-%d" % cf_id] = custom_field_with_id
+
+    # Shortlist all the params passed in url
+    request_vars = {}
+    for key, value in request_vars_dict.iteritems():
+        if value is not None:
+            request_vars[key] = value
+
+    return request_vars

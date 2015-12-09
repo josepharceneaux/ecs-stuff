@@ -1,17 +1,19 @@
 """
 Test cases for candidate-search-service-API
 """
+import random
+import datetime
+import uuid
+import time
+
+import requests
+
 from candidate_service.tests.modules.test_talent_cloud_search import populate_candidates, VARIOUS_US_LOCATIONS, \
     create_area_of_interest_facets, get_or_create_status
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.models.candidate import Candidate, CandidateSource
 from candidate_service.common.models.misc import CustomFieldCategory
-from candidate_service.app.views.talent_cloud_search import upload_candidate_documents
-import requests
-import random
-import datetime
-import uuid
-import time
+from candidate_service.modules.talent_cloud_search import upload_candidate_documents
 
 BASE_URI = "http://127.0.0.1:8005/candidates"
 

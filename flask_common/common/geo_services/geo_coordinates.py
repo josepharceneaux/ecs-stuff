@@ -1,13 +1,14 @@
 """
 This file is for all geo related functions
 """
-from geo_location import GeoLocation
 import requests
+
+from flask.ext.common.common.geo_services.geo_location import GeoLocation
 
 url = 'http://maps.google.com/maps/api/geocode/json'
 
 
-def get_geo_coordinates(location):
+def get_geocoordinates(location):
     """Google location (lat/lon) service.
     :param location
     """
@@ -47,21 +48,21 @@ def get_coordinates(zipcode=None, city=None, state=None, address_line_1=None, lo
         state + ", " if state else "",
         zipcode or ""
     )
-    latitude, longitude = get_geo_coordinates(location)
+    latitude, longitude = get_geocoordinates(location)
     if latitude and longitude:
         coordinates = "%s,%s" % (latitude, longitude)
 
     return coordinates
 
 
-def get_geo_coordinates_bounding(address, distance):
+def get_geocoordinates_bounding(address, distance):
     """
     Using google maps api get coordinates, get coordinates, and bounding box with top left and bottom right coordinates
     :param address
     :param distance
     :return: coordinates and bounding box coordinates
     """
-    lat, lng = get_geo_coordinates(address)
+    lat, lng = get_geocoordinates(address)
     if lat and lng:
         # get bounding box based on location coordinates and distance given
         loc = GeoLocation.from_degrees(lat, lng)

@@ -1,22 +1,22 @@
-
 import math
 import operator
 import os
 import time
-import boto
-import boto.exception
-import simplejson
 import re
 from copy import deepcopy
 from datetime import datetime
+
+import boto
+import boto.exception
+import simplejson
 from flask import request
+
 from candidate_service.candidate_app import db, logger
 from candidate_service.config import GT_ENVIRONMENT
 from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateStatus
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import AreaOfInterest
-from geo_coordinates import get_geo_coordinates_bounding
-
+from flask.ext.common.common.geo_services.geo_coordinates import get_geocoordinates_bounding
 
 API_VERSION = "2013-01-01"
 MYSQL_DATE_FORMAT = '%Y-%m-%dT%H:%i:%S.%fZ'
@@ -979,7 +979,7 @@ def _search_with_location(request_vars, location):
     # Convert miles to kilometers, required by geo_location calculator
     # if no radius is given set default distance to 80.47 (50 miles)
     distance_in_km = float(radius)/0.62137 if radius else 80.47
-    coords_dict = get_geo_coordinates_bounding(location, distance_in_km)
+    coords_dict = get_geocoordinates_bounding(location, distance_in_km)
     if coords_dict and coords_dict.get('point'):
         if coords_dict['point']:
             # If coordinates found, then only perform location search
