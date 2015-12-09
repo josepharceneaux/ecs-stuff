@@ -1,5 +1,10 @@
 """
-TODO comment here
+Custom exceptions to throw error code when internal server error occurred
+raise exception when
+- job is already running
+- paused
+- any mandatory field missing in post request
+- Trigger is not correct when scheduling job
 """
 import json
 import scheduler_service.common.error_handling
@@ -29,14 +34,13 @@ class PendingJobError(SchedulerServiceApiException):
     error_code = 6052
 
 
-class TiggerChangedError(SchedulerServiceApiException):
-    error_code = 6052
-
-
 class JobAlreadyRunningError(SchedulerServiceApiException):
     error_code = 6054
 
 
-class NoJobFoundError(SchedulerServiceApiException):
-    error_code = 6050
+class FieldRequiredError(SchedulerServiceApiException):
+    error_code = 6055
 
+
+class TriggerTypeError(SchedulerServiceApiException):
+    error_code = 6056

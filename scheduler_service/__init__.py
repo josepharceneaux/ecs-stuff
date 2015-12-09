@@ -20,7 +20,6 @@ def init_app():
     add_model_helpers(db.Model, logger=logger)
     db.init_app(flask_app)
     db.app = flask_app
-    db.create_all()
     register_error_handlers(flask_app, logger)
     logger.info("Starting scheduler service in %s environment",
                 flask_app.config['GT_ENVIRONMENT'])

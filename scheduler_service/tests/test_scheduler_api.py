@@ -1,6 +1,6 @@
 """
 This file contains unit tests that hit scheduling service endpoints and
-test schedule/resume/pause/remove jobs.
+test schedule/resume/pause/remove with single and multiple jobs and with authorized and unauthorized token.
 """
 import json
 import datetime
@@ -17,47 +17,6 @@ class TestSchedulingViews:
     """
     Test Cases for scheduling, resume, stop, remove single or multiple jobs
     """
-
-    def test_bulk_job_scheduling_and_removal_load_testing(self, auth_data, job_config):
-        """
-        Create multiple jobs in bulk for load testing
-        then schedule jobs
-        then remove all jobs
-         Args:
-            auth_data: Fixture that contains token.
-            job_config (dict): Fixture that contains job config to be used as
-            POST data while hitting the endpoint.
-        :return:
-        """
-        start_date = datetime.datetime.utcnow() - datetime.timedelta(seconds=15)
-        end_date = start_date + datetime.timedelta(days=2)
-        job_config['start_datetime'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
-        job_config['end_datetime'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
-
-        headers = {'Authorization': 'Bearer ' + auth_data['access_token'],
-                   'Content-Type': 'application/json'}
-
-        jobs = []
-
-        # check with 10,000 jobs
-        load_number = 10000
-        # schedule some jobs and remove all of them
-        for i in range(load_number):
-            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
-                                     headers=headers)
-            assert response.status_code == 201
-            jobs.append(response.json()['id'])
-
-        chunk_size = 100
-
-        # delete all created jobs
-        for i in range(0, load_number, chunk_size):
-            jobs_chunk = jobs[i:i + chunk_size]
-            response_remove_jobs = requests.delete(APP_URL + '/tasks/',
-                                                   data=json.dumps(dict(ids=jobs_chunk)),
-                                                   headers=headers)
-
-            assert response_remove_jobs.status_code == 200
 
     def test_one_scheduled_job(self, auth_data, job_config):
         """
@@ -895,4 +854,45 @@ class TestSchedulingViews:
                                           headers=headers)
 
         assert response_delete.status_code == 200
+
+    def test_bulk_job_scheduling_and_removal_load_testing(self, auth_data, job_config):
+        """
+        Create multiple jobs in bulk for load testing
+        then schedule jobs
+        then remove all jobs
+         Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+        :return:
+        """
+        start_date = datetime.datetime.utcnow() - datetime.timedelta(seconds=15)
+        end_date = start_date + datetime.timedelta(days=2)
+        job_config['start_datetime'] = datetime.datetime.strftime(start_date, '%Y-%m-%d %H:%M:%S')
+        job_config['end_datetime'] = datetime.datetime.strftime(end_date, '%Y-%m-%d %H:%M:%S')
+
+        headers = {'Authorization': 'Bearer ' + auth_data['access_token'],
+                   'Content-Type': 'application/json'}
+
+        jobs = []
+
+        # check with 10,000 jobs
+        load_number = 10000
+        # schedule some jobs and remove all of them
+        for i in range(load_number):
+            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+                                     headers=headers)
+            assert response.status_code == 201
+            jobs.append(response.json()['id'])
+
+        chunk_size = 100
+
+        # delete all created jobs
+        for i in range(0, load_number, chunk_size):
+            jobs_chunk = jobs[i:i + chunk_size]
+            response_remove_jobs = requests.delete(APP_URL + '/tasks/',
+                                                   data=json.dumps(dict(ids=jobs_chunk)),
+                                                   headers=headers)
+
+            assert response_remove_jobs.status_code == 200
 
