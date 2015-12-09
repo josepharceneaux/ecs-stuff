@@ -1144,17 +1144,19 @@ def _add_or_update_emails(candidate_id, emails):
     if any([email.get('is_default') for email in emails]):
         CandidateEmail.set_is_default_to_false(candidate_id=candidate_id)
 
+    emails_has_label = any([email.get('label') for email in emails])
     emails_has_default = any([email.get('is_default') for email in emails])
     for i, email in enumerate(emails):
 
         # If there's no is_default, the first email should be default
-        is_default = email.get('is_default')
-        is_default = i == 0 if not emails_has_default else is_default
+        is_default = i == 0 if not emails_has_default else email.get('is_default')
+        # If there's no label, the first email's label will be 'Primary', rest will be 'Other'
+        email_label = 'Primary' if (not emails_has_label and i == 0) else email.get('label')
         email_address = email.get('address')
 
         email_dict = dict(
             address=email_address,
-            email_label_id=EmailLabel.email_label_id_from_email_label(email_label=email.get('label')),
+            email_label_id=EmailLabel.email_label_id_from_email_label(email_label=email_label),
             is_default=is_default
         )
 
@@ -1183,16 +1185,18 @@ def _add_or_update_phones(candidate_id, phones):
         CandidatePhone.set_is_default_to_false(candidate_id=candidate_id)
 
     # TODO: parse out phone extension. Currently the value + extension are being added to the phone's value in the db
-    phone_has_default = any([phone.get('is_default') for phone in phones])
+    phones_has_label = any([phone.get('label') for phone in phones])
+    phones_has_default = any([phone.get('is_default') for phone in phones])
     for i, phone in enumerate(phones):
 
         # If there's no is_default, the first phone should be default
-        is_default = phone.get('is_default')
-        is_default = i == 0 if not phone_has_default else is_default
+        is_default = i == 0 if not phones_has_default else phone.get('is_default')
+        # If there's no label, the first phone's label will be 'Home', rest will be 'Other'
+        phone_label = 'Home' if (not phones_has_label and i == 0) else phone.get('label')
 
         phone_dict = dict(
             value=phone.get('value'),
-            phone_label_id = PhoneLabel.phone_label_id_from_phone_label(phone_label=phone['label']),
+            phone_label_id = PhoneLabel.phone_label_id_from_phone_label(phone_label=phone_label),
             is_default=is_default
         )
 

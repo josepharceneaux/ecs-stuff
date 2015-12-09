@@ -81,7 +81,7 @@ def test_create_an_existing_candidate(sample_user, user_auth):
     :type sample_user:  User
     :type user_auth:    UserAuthentication
     """
-    # Get auth token
+    # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
 
     # Create same Candidate twice
@@ -100,14 +100,13 @@ def test_create_candidate_with_missing_keys(sample_user, user_auth):
     :type sample_user:  User
     :type user_auth:    UserAuthentication
     """
-    # Get auth token
+    # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
 
     # Create Candidate without 'candidate'-key
     data = generate_single_candidate_data()['candidate']
     create_resp = post_to_candidate_resource(token, data)
     print response_info(create_resp)
-
     assert create_resp.status_code == 400
 
 
@@ -118,7 +117,7 @@ def test_update_candidate_via_post(sample_user, user_auth):
     :type sample_user:  User
     :type user_auth:    UserAuthentication
     """
-    # Get auth token
+    # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
 
     # Create Candidate
@@ -131,8 +130,8 @@ def test_update_candidate_via_post(sample_user, user_auth):
     # Send Candidate object with candidate_id to post
     resp = post_to_candidate_resource(token, data=candidate_dict)
     print response_info(resp)
-
     assert resp.status_code == 400
+
 
 ######################## CandidateAddress ########################
 def test_create_candidate_with_bad_zip_code(sample_user, user_auth):
@@ -142,7 +141,7 @@ def test_create_candidate_with_bad_zip_code(sample_user, user_auth):
     :type sample_user:  User
     :type user_auth:    UserAuthentication
     """
-    # Get auth token
+    # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
 
     # Create Candidate
@@ -219,7 +218,7 @@ def test_create_candidate_educations(sample_user, user_auth):
     :type sample_user:  User
     :type user_auth:    UserAuthentication
     """
-    # Get auth token
+    # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
 
     # Create Candidate
@@ -258,7 +257,7 @@ def test_create_candidate_experience(sample_user, user_auth):
     :type sample_user:  User
     :type user_auth:    UserAuthentication
     """
-    # Get auth token
+    # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
 
     # Create Candidate
@@ -294,7 +293,7 @@ def test_create_candidate_work_preference(sample_user, user_auth):
     :type sample_user:  User
     :type user_auth:    UserAuthentication
     """
-    # Get auth token
+    # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
 
     # Create Candidate
@@ -330,7 +329,7 @@ def test_create_candidate_without_email(sample_user, user_auth):
     :type sample_user:  User
     :type user_auth:    UserAuthentication
     """
-    # Get auth token
+    # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
 
     # Create Candidate with no email-object
@@ -353,7 +352,7 @@ def test_create_candidate_with_bad_email(sample_user, user_auth):
     :type sample_user:  User
     :type user_auth:    UserAuthentication
     """
-    # Get auth token
+    # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
 
     # Create Candidate
@@ -363,6 +362,31 @@ def test_create_candidate_with_bad_email(sample_user, user_auth):
 
     assert create_resp.status_code == 400
 
+
+def test_create_candidate_without_email_label(sample_user, user_auth):
+    """
+    Test:   Create a Candidate without providing email's label
+    Expect: 201, email's label must be 'Primary'
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate without email-label
+    data = {'candidate': {'emails': [{'address': fake.email()}, {'address': fake.email()}]}}
+    create_resp = post_to_candidate_resource(token, data)
+    print response_info(create_resp)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    assert create_resp.status_code == 201
+    assert candidate_dict['emails'][0]['label'] == 'Primary'
+    assert candidate_dict['emails'][-1]['label'] == 'Other'
+
+
 ######################## CandidatePhones ########################
 def test_create_candidate_phones(sample_user, user_auth):
     """
@@ -371,7 +395,7 @@ def test_create_candidate_phones(sample_user, user_auth):
     :type sample_user:  User
     :type user_auth:    UserAuthentication
     """
-    # Get auth token
+    # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
 
     # Create Candidate
@@ -392,6 +416,32 @@ def test_create_candidate_phones(sample_user, user_auth):
     assert can_phones[0]['label'] == can_phones_data[0]['label'].capitalize()
     assert can_phones[0]['value'] == can_phones_data[0]['value']
 
+
+def test_create_candidate_without_phone_label(sample_user, user_auth):
+    """
+    Test:   Create a Candidate without providing phone's label
+    Expect: 201, phone's label must be 'Primary'
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate without phone-label
+    data = {'candidate': {'emails': [{'address': fake.email()}], 'phones': [
+        {'value': fake.phone_number()}, {'value': fake.phone_number()}
+    ]}}
+    create_resp = post_to_candidate_resource(token, data)
+    print response_info(create_resp)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    assert create_resp.status_code == 201
+    assert candidate_dict['phones'][0]['label'] == 'Home'
+    assert candidate_dict['phones'][-1]['label'] == 'Other'
+
 # TODO: test with invalid phone numbers, bad lables, e.g. label: vork, number: sdgfka
 
 ######################## CandidateMilitaryService ########################
@@ -402,7 +452,7 @@ def test_create_candidate_military_service(sample_user, user_auth):
     :type sample_user:  User
     :type user_auth:    UserAuthentication
     """
-    # Get auth token
+    # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
 
     # Create Candidate
@@ -434,7 +484,7 @@ def test_create_candidate_preferred_location(sample_user, user_auth):
     :type sample_user:  User
     :type user_auth:    UserAuthentication
     """
-    # Get auth token
+    # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
 
     # Create Candidate
@@ -467,7 +517,7 @@ def test_create_candidate_skills(sample_user, user_auth):
     :type sample_user:  User
     :type user_auth:    UserAuthentication
     """
-    # Get auth token
+    # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
 
     # Create Candidate
@@ -499,7 +549,7 @@ def test_create_candidate_social_networks(sample_user, user_auth):
     :type sample_user:  User
     :type user_auth:    UserAuthentication
     """
-    # Get auth token
+    # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
 
     # Create Candidate

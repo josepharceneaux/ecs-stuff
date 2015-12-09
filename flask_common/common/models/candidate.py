@@ -130,14 +130,13 @@ class PhoneLabel(db.Model):
         """
         Function retrieves phone_label_id from phone_label
         e.g. 'Primary' => 1
-        :return:  phone_label ID if phone_label is recognized, otherwise 1 ('Primary')
+        :return:  phone_label ID if phone_label is recognized, otherwise 6 ('Other')
         """
-        assert phone_label
-        phone_label_row = cls.query.filter_by(description=phone_label).first()
-        if phone_label_row:
-            return phone_label_row.id
-
-        return 1
+        if phone_label:
+            phone_label_row = cls.query.filter_by(description=phone_label).first()
+            if phone_label_row:
+                return phone_label_row.id
+        return 6
 
 
 class CandidateSource(db.Model):
@@ -219,13 +218,14 @@ class EmailLabel(db.Model):
         """
         Function retrieves email_label_id from email_label
         e.g. 'Primary' => 1
-        :return:  email_label ID if email_label is recognized, otherwise 1 ('Primary')
+        :return:  email_label ID if email_label is recognized, otherwise 4 ('Other')
         """
         if email_label:
             email_label_row = cls.query.filter(EmailLabel.description == email_label).first()
             if email_label_row:
                 return email_label_row.id
-        return 1
+        return 4
+
 
 
 class CandidateEmail(db.Model):
@@ -836,6 +836,11 @@ class CandidateCustomField(db.Model):
 
     def __repr__(self):
         return "<CandidateCustomField (id = %r)>" % self.id
+
+    @classmethod
+    def get_custom_fields(cls, candidate_id, custom_field_id):
+        return cls.query.filter(db.and_(CandidateCustomField.candidate_id == candidate_id,
+                                        CandidateCustomField.custom_field_id == custom_field_id)).first()
 
 
 class ClassificationType(db.Model):

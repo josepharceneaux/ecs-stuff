@@ -25,7 +25,8 @@ from candidate_service.candidate_app.api.v1_candidates import (
     CandidateEducationResource, CandidateEducationDegreeResource, CandidateEducationDegreeBulletResource,
     CandidateExperienceResource, CandidateExperienceBulletResource, CandidateWorkPreferenceResource,
     CandidateEmailResource, CandidatePhoneResource, CandidateMilitaryServiceResource,
-    CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource
+    CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
+    CandidateCustomFieldResource
 )
 api = GetTalentApi(app=app)
 
@@ -61,6 +62,18 @@ api.add_resource(
     CandidateAreaOfInterestResource,
     '/v1/candidates/<int:candidate_id>/areas_of_interest/<int:id>',
     endpoint='candidate_area_of_interest_2'
+)
+
+######################## CandidateCustomFieldResource ########################
+api.add_resource(
+    CandidateCustomFieldResource,
+    '/v1/candidates/<int:candidate_id>/custom_fields',
+    endpoint='candidate_custom_field_1'
+)
+api.add_resource(
+    CandidateCustomFieldResource,
+    '/v1/candidates/<int:candidate_id>/custom_fields/<int:id>',
+    endpoint='candidate_custom_field_2'
 )
 
 ######################## CandidateEducationResource ########################
@@ -99,7 +112,7 @@ api.add_resource(
     endpoint='candidate_education_degree_bullet_2'
 )
 
-######################## CandidateExperience ########################
+######################## CandidateExperienceResource ########################
 api.add_resource(
     CandidateExperienceResource,
     '/v1/candidates/<int:candidate_id>/experiences',
@@ -111,7 +124,7 @@ api.add_resource(
     endpoint='candidate_experience_2'
 )
 
-######################## CandidateExperienceBullet ########################
+######################## CandidateExperienceBulletResource ########################
 api.add_resource(
     CandidateExperienceBulletResource,
     '/v1/candidates/<int:candidate_id>/experiences/<int:experience_id>/bullets',
@@ -123,7 +136,7 @@ api.add_resource(
     endpoint='candidate_experience_bullet_2'
 )
 
-######################## CandidateEmail ########################
+######################## CandidateEmailResource ########################
 api.add_resource(
     CandidateEmailResource,
     '/v1/candidates/<int:candidate_id>/emails',
@@ -135,7 +148,7 @@ api.add_resource(
     endpoint='candidate_email_2'
 )
 
-######################## CandidateMilitaryService ########################
+######################## CandidateMilitaryServiceResource ########################
 api.add_resource(
     CandidateMilitaryServiceResource,
     '/v1/candidates/<int:candidate_id>/military_services',
@@ -147,7 +160,7 @@ api.add_resource(
     endpoint='candidate_military_service_2'
 )
 
-######################## CandidatePhone ########################
+######################## CandidatePhoneResource ########################
 api.add_resource(
     CandidatePhoneResource,
     '/v1/candidates/<int:candidate_id>/phones',
@@ -159,7 +172,7 @@ api.add_resource(
     endpoint='candidate_phone_2'
 )
 
-######################## CandidatePreferredLocation ########################
+######################## CandidatePreferredLocationResource ########################
 api.add_resource(
     CandidatePreferredLocationResource,
     '/v1/candidates/<int:candidate_id>/preferred_locations',
@@ -171,7 +184,7 @@ api.add_resource(
     endpoint='candidate_preferred_location_2'
 )
 
-######################## CandidateSkill ########################
+######################## CandidateSkillResource ########################
 api.add_resource(
     CandidateSkillResource,
     '/v1/candidates/<int:candidate_id>/skills',
@@ -195,13 +208,14 @@ api.add_resource(
     endpoint='candidate_social_networks_2'
 )
 
-######################## CandidateWorkPreference ########################
+######################## CandidateWorkPreferenceResource ########################
 api.add_resource(
     CandidateWorkPreferenceResource,
     '/v1/candidates/<int:candidate_id>/work_preference/<int:id>',
     endpoint='candidate_work_preference'
 )
 
+######################## CandidateEmailCampaignResource ########################
 # api.add_resource(CandidateEmailCampaignResource,
 #                  '/v1/candidates/<int:id>/email_campaigns/<int:email_campaign_id>/email_campaign_sends',
 #                  endpoint='candidates')
