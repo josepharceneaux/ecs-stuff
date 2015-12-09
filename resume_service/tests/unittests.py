@@ -33,12 +33,12 @@ from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candid
 EDUCATIONS_KEYS = ('city', 'degrees', 'state', 'country', 'school_name')
 
 JSON_MAPS = [
-    # {'dict_name': DOCX, 'name': 'VEENA NITHOO', 'email_len': 0, 'phone_len': 1, 'education_len': 1},
-    # {'dict_name': GET_642, 'name': 'Bobby Breland', 'email_len': 1, 'phone_len': 2, 'education_len': 1},
-    # {'dict_name': GET_646, 'name': 'Patrick Kaldawy', 'email_len': 3, 'phone_len': 6, 'education_len': 2},
-    # {'dict_name': JPG, 'name': 'Erik Farmer', 'email_len': 0, 'phone_len': 2, 'education_len': 0},
-    # {'dict_name': PDF, 'name': 'MARK GREENE', 'email_len': 1, 'phone_len': 1, 'education_len': 1},
-    # {'dict_name': PDF_13, 'name': 'BRUCE PARKEY', 'email_len': 1, 'phone_len': 1, 'education_len': 1},
+    {'dict_name': DOCX, 'name': 'VEENA NITHOO', 'email_len': 0, 'phone_len': 1, 'education_len': 1},
+    {'dict_name': GET_642, 'name': 'Bobby Breland', 'email_len': 1, 'phone_len': 2, 'education_len': 1},
+    {'dict_name': GET_646, 'name': 'Patrick Kaldawy', 'email_len': 3, 'phone_len': 6, 'education_len': 2},
+    {'dict_name': JPG, 'name': 'Erik Farmer', 'email_len': 0, 'phone_len': 2, 'education_len': 0},
+    {'dict_name': PDF, 'name': 'MARK GREENE', 'email_len': 1, 'phone_len': 1, 'education_len': 1},
+    {'dict_name': PDF_13, 'name': 'BRUCE PARKEY', 'email_len': 1, 'phone_len': 1, 'education_len': 1},
     # This PDF currently does not get its email/phone parsed out of the footer.
     # This PDF currently parses out the wrong education count
     {'dict_name': PDF_14, 'name': 'Jose Chavez', 'email_len': 0, 'phone_len': 0, 'education_len': 2}
@@ -107,7 +107,7 @@ def test_phone_parsing_from_json():
         for p in phones:
             assert 'value' in p.keys()
 
-
+# TODO: ERROR
 def test_education_parsing_from_json():
     """
         Tests parsing function using the JSON response to avoid un-needed API calls
@@ -115,6 +115,7 @@ def test_education_parsing_from_json():
         2. Test that each item has the correct education keys.
     """
     for j in JSON_MAPS:
+        # print '\n' + j['name']
         resume = j['dict_name']
         if resume['resume'].get('education'):
             educations = parse_candidate_educations((resume)['resume']['education'])

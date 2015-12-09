@@ -101,7 +101,7 @@ def parse_candidate_phones(contact_list):
     for item in contact_list:
         # The email key returns either list or string if present.
         phones = item.get('phone')
-        if phones:
+        if not phones:
             continue
         if type(phones) is not type(list()):
             phones = [phones]
@@ -132,14 +132,18 @@ def parse_candidate_educations(education_json):
         if type(institution_value) is not type(list()):
             institution_value = [institution_value]
         education['school_name'] = institution_value[0]
-        # Address processing.
+        # Address processing. Either None, dict, or list.
         address_value = s.get('address')
-        # Hacky hack due to some address entries containing multiple institutions.
-        if type(address_value) is not type(list()):
-            address_value = [address_value]
-        address = address_value[0]
-        education['city'] = address.get('city', {}).get('#text')
-        education['state'] = address.get('state', {}).get('#text')
+        if address_value:
+            # Hacky hack due to some address entries containing multiple institutions.
+            if type(address_value) is not type(list()):
+                address_value = [address_value]
+            address = address_value[0]
+            education['city'] = address.get('city', {}).get('#text')
+            education['state'] = address.get('state', {}).get('#text')
+        else:
+            education['city'] = None
+            education['state'] = None
         education['country'] = "US, United States"
         # Degree processing.
         if 'degree' in s:
