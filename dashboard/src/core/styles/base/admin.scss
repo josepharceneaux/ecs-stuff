@@ -1,0 +1,56 @@
+
+/*  GetTalent
+    Jason Provencher */
+
+// ---------------------------------------------------
+//  Temporary Styles For Prototyping & Demo Designs
+// ---------------------------------------------------
+
+// -----
+// Admin Menu
+// -----
+
+.demo_menu {
+  background:#333;
+  color:white;
+  position:fixed;
+  left:0px;
+  top:550px;
+  width:200px;
+  border-radius: 0px 5px 5px 0px;
+  box-shadow:0 0 10px rgba(0,0,0,.2);
+  overflow:hidden;
+  z-index:1000;
+  div {
+    background:#009ccc;
+    color:white;
+    padding:10px 20px;
+    font-weight:600;
+  }
+  i {
+    display:block;
+    Padding:10px;
+    font-size:12px;
+    color:#ccc;
+  }
+  a {
+    display:block;
+    font-size:15px;
+    padding:10px 20px;
+    border-bottom:1px solid #444;
+    transition: all .1s;
+    color:white;
+    &:last-child {
+      border-bottom:none;
+    }
+    &:hover, &.active {
+      background:#222;
+      padding-left:30px;
+      color:#009ccc;
+      font-weight:600;
+      &:after {
+        content: ' >';
+      }
+    }
+  }
+}
