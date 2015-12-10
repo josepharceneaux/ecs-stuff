@@ -53,8 +53,8 @@ class TestSmsCampaignURLRedirection:
         assert response_post.status_code == 405, 'DELETE Method should not be allowed'
 
     def test_for_get(self, sample_user,
-                 url_conversion_by_send_test_sms_campaign,
-                 sms_campaign_of_current_user):
+                     url_conversion_by_send_test_sms_campaign,
+                     sms_campaign_of_current_user):
         """
         GET method should give ok response
         :return:

@@ -9,7 +9,8 @@ Author: Hafiz Muhammad Basit, QC-Technologies,
 import requests
 
 # Application Specific
-from sms_campaign_service.tests.conftest import URL_CONVERSION_API_URL, SMS_CAMPAIGN_SERVICE_APP_URL
+from sms_campaign_service.custom_exceptions import SmsCampaignApiException
+from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
 
 
 class TestUrlConversionAPI:
@@ -22,7 +23,7 @@ class TestUrlConversionAPI:
         With invalid access token, should get unauthorized
         :return:
         """
-        response = requests.get(URL_CONVERSION_API_URL,
+        response = requests.get(SmsCampaignApiUrl.URL_CONVERSION,
                                 headers=dict(Authorization='Bearer %s' % 'invalid_token'))
         assert response.status_code == 401, 'It should be unauthorized (401)'
         assert 'short_url' not in response.json()
@@ -33,7 +34,7 @@ class TestUrlConversionAPI:
         :param auth_token: access token for sample user
         :return:
         """
-        response = requests.get(URL_CONVERSION_API_URL,
+        response = requests.get(SmsCampaignApiUrl.URL_CONVERSION,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == 400, 'Status should be Bad request (400)'
 
@@ -43,7 +44,7 @@ class TestUrlConversionAPI:
         :param auth_token:
         :return:
         """
-        response = requests.get(URL_CONVERSION_API_URL,
+        response = requests.get(SmsCampaignApiUrl.URL_CONVERSION,
                                 headers=dict(Authorization='Bearer %s' % auth_token),
                                 data={
                                     "long_url": 'https://webdev.gettalent.com/web/default/angular#!/'}
@@ -58,13 +59,14 @@ class TestUrlConversionAPI:
         :param auth_token: access token for sample user
         :return:
         """
-        response = requests.get(URL_CONVERSION_API_URL,
+        response = requests.get(SmsCampaignApiUrl.URL_CONVERSION,
                                 headers=dict(Authorization='Bearer %s' % auth_token),
-                                data={"long_url": SMS_CAMPAIGN_SERVICE_APP_URL}
+                                data={"long_url": SmsCampaignApiUrl.API_URL}
                                 )
         assert response.status_code == 500, 'Status should be (500)'
         # custom exception for Google's Shorten URL API Error
-        assert response.json()['error']['code'] == 5004
+        assert response.json()['error'][
+                   'code'] == SmsCampaignApiException.GOOGLE_SHORTEN_URL_API_ERROR
 
     def test_for_post_request(self, auth_token):
         """
@@ -72,7 +74,7 @@ class TestUrlConversionAPI:
         :param auth_token: access token for sample user
         :return:
         """
-        response = requests.post(URL_CONVERSION_API_URL,
+        response = requests.post(SmsCampaignApiUrl.URL_CONVERSION,
                                  headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == 405, 'POST method should not be allowed (405)'
 
@@ -82,6 +84,6 @@ class TestUrlConversionAPI:
         :param auth_token: access token for sample user
         :return:
         """
-        response = requests.delete(URL_CONVERSION_API_URL,
+        response = requests.delete(SmsCampaignApiUrl.URL_CONVERSION,
                                    headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == 405, 'DELETE method should not be allowed (405)'

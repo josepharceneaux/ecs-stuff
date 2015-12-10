@@ -14,9 +14,10 @@ import requests
 
 # Application Specific
 from sms_campaign_service import db
-from sms_campaign_service.tests.conftest import assert_for_activity, SMS_RECEIVE_URL
+from sms_campaign_service.tests.conftest import assert_for_activity
+from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
 from sms_campaign_service.common.models.sms_campaign import SmsCampaignBlast, SmsCampaignReply
-from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_CLICK, CAMPAIGN_SMS_REPLY
+from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_REPLY
 
 
 class TestSmsReceive:
@@ -29,7 +30,7 @@ class TestSmsReceive:
         GET method should not be allowed at this endpoint.
         :return:
         """
-        response_post = requests.get(SMS_RECEIVE_URL)
+        response_post = requests.get(SmsCampaignApiUrl.SMS_RECEIVE)
         assert response_post.status_code == 405, 'GET Method should not be allowed'
 
     def test_for_delete(self):
@@ -37,7 +38,7 @@ class TestSmsReceive:
         DELETE method should not be allowed at this endpoint.
         :return:
         """
-        response_post = requests.delete(SMS_RECEIVE_URL)
+        response_post = requests.delete(SmsCampaignApiUrl.SMS_RECEIVE)
         assert response_post.status_code == 405, 'DELETE Method should not be allowed'
 
     def test_post_with_no_data(self):
@@ -45,7 +46,7 @@ class TestSmsReceive:
         POST with no data, Response should be ok as this response is returned to Twilio API
         :return:
         """
-        response_get = requests.post(SMS_RECEIVE_URL)
+        response_get = requests.post(SmsCampaignApiUrl.SMS_RECEIVE)
         assert response_get.status_code == 200, 'Response should be ok'
         assert 'xml' in str(response_get.text).strip()
 
@@ -56,9 +57,9 @@ class TestSmsReceive:
         POST with no data, Response should be ok as this response is returned to Twilio API
         :return:
         """
-        response_get = requests.post(SMS_RECEIVE_URL, data={'To': user_phone_1.value,
-                                                            'From': candidate_phone_1.value,
-                                                            'Body': "What's the venue?"})
+        response_get = requests.post(SmsCampaignApiUrl.SMS_RECEIVE, data={'To': user_phone_1.value,
+                                                                          'From': candidate_phone_1.value,
+                                                                          'Body': "What's the venue?"})
         assert response_get.status_code == 200, 'Response should be ok'
         assert 'xml' in str(response_get.text).strip()
         campaign_reply_in_db = _get_reply_text(candidate_phone_1)
@@ -77,9 +78,9 @@ class TestSmsReceive:
         """
         reply_text = "What's the venue?"
         reply_count_before = _get_replies_count(sms_campaign_of_current_user)
-        response_get = requests.post(SMS_RECEIVE_URL, data={'To': user_phone_1.value,
-                                                            'From': candidate_phone_1.value,
-                                                            'Body': reply_text})
+        response_get = requests.post(SmsCampaignApiUrl.SMS_RECEIVE, data={'To': user_phone_1.value,
+                                                                          'From': candidate_phone_1.value,
+                                                                          'Body': reply_text})
         assert response_get.status_code == 200, 'Response should be ok'
         assert 'xml' in str(response_get.text).strip()
         campaign_reply_in_db = _get_reply_text(candidate_phone_1)

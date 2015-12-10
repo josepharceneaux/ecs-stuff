@@ -36,4 +36,3 @@ def test_search_url_in_text():
     test_string = 'Dear candidates, please download registration form at ftp://mysite.com ' \
                   'or ftps://mysite.com'
     assert len(search_urls_in_text(test_string)) == 2
-

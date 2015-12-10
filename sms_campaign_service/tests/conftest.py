@@ -4,9 +4,6 @@ Author: Hafiz Muhammad Basit, QC-Technologies,
 
     This file contains pyTest fixtures for tests of SMS Campaign Service.
 """
-# Third Party
-import pytest
-
 # App Settings
 from sms_campaign_service import init_sms_campaign_app
 app = init_sms_campaign_app()
@@ -14,6 +11,7 @@ app = init_sms_campaign_app()
 # Application Specific
 # common conftest
 from sms_campaign_service.common.tests.conftest import *
+
 
 # App specific
 from sms_campaign_service.common.models.user import UserPhone
@@ -24,23 +22,6 @@ from sms_campaign_service.common.models.candidate import PhoneLabel, CandidatePh
 from sms_campaign_service.common.models.smart_list import SmartList, SmartListCandidate
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign, SmsCampaignSmartlist, \
     SmsCampaignBlast, SmsCampaignSend, SmsCampaignSendUrlConversion
-from sms_campaign_service.common.utils.app_base_urls import SMS_CAMPAIGN_SERVICE_APP_URL
-
-TEST_NUMBER_1 = gen_salt(15)
-TEST_NUMBER_2 = gen_salt(15)
-
-# endpoint /campaigns/
-SMS_CAMPAIGN_API_URL = SMS_CAMPAIGN_SERVICE_APP_URL + '/campaigns/'
-# endpoint /campaigns/:id
-SMS_CAMPAIGN_WITH_ID_URL = SMS_CAMPAIGN_API_URL + '%s'
-# endpoint /campaigns/:id/sends
-SMS_CAMPAIGN_SENDS_URL = SMS_CAMPAIGN_API_URL + '%s/sms_campaign_sends'
-# endpoint /campaigns/:id/send
-SMS_CAMPAIGN_PROCESS_SEND_URL = SMS_CAMPAIGN_API_URL + '%s/send'
-# endpoint /url_conversion
-URL_CONVERSION_API_URL = SMS_CAMPAIGN_SERVICE_APP_URL + '/url_conversion'
-# endpoint /sms_receive
-SMS_RECEIVE_URL = SMS_CAMPAIGN_SERVICE_APP_URL + '/sms_receive'
 
 
 @pytest.fixture()
@@ -72,7 +53,7 @@ def user_phone_1(request, sample_user):
     :param sample_user: fixture in common/tests/conftest.py
     :return:
     """
-    user_phone = _create_user_twilio_phone(sample_user, TEST_NUMBER_1)
+    user_phone = _create_user_twilio_phone(sample_user, gen_salt(15))
 
     def tear_down():
         UserPhone.delete(user_phone)
@@ -89,7 +70,7 @@ def user_phone_2(request, sample_user):
     :param sample_user: fixture in common/tests/conftest.py
     :return:
     """
-    user_phone = _create_user_twilio_phone(sample_user, TEST_NUMBER_2)
+    user_phone = _create_user_twilio_phone(sample_user, gen_salt(15))
 
     def tear_down():
         UserPhone.delete(user_phone)
@@ -105,7 +86,7 @@ def user_phone_3(request, sample_user_2):
     :param sample_user_2:
     :return:
     """
-    user_phone = _create_user_twilio_phone(sample_user_2, TEST_NUMBER_1)
+    user_phone = _create_user_twilio_phone(sample_user_2, gen_salt(15))
 
     def tear_down():
         UserPhone.delete(user_phone)
@@ -279,7 +260,7 @@ def candidate_phone_1(request, candidate_first):
     :param candidate_first:
     :return:
     """
-    candidate_phone = _create_candidate_mobile_phone(candidate_first, TEST_NUMBER_1)
+    candidate_phone = _create_candidate_mobile_phone(candidate_first, gen_salt(15))
 
     def tear_down():
         CandidatePhone.delete(candidate_phone)
@@ -294,7 +275,7 @@ def candidate_phone_2(request, candidate_second):
     :param candidate_second:
     :return:
     """
-    candidate_phone = _create_candidate_mobile_phone(candidate_second, TEST_NUMBER_2)
+    candidate_phone = _create_candidate_mobile_phone(candidate_second, gen_salt(15))
 
     def tear_down():
         CandidatePhone.delete(candidate_phone)
@@ -304,19 +285,22 @@ def candidate_phone_2(request, candidate_second):
 
 
 @pytest.fixture()
-def candidates_with_same_phone(request, candidate_phone_1, candidate_second):
+def candidates_with_same_phone(request, candidate_first, candidate_second):
     """
     This associates same number to candidate_first and candidate_second
     :param candidate_second:
     :return:
     """
-    cand_phone_2 = _create_candidate_mobile_phone(candidate_second, TEST_NUMBER_1)
+    test_number = gen_salt(15)
+    cand_phone_1 = _create_candidate_mobile_phone(candidate_first, test_number)
+    cand_phone_2 = _create_candidate_mobile_phone(candidate_second, test_number)
 
     def tear_down():
+        CandidatePhone.delete(cand_phone_1)
         CandidatePhone.delete(cand_phone_2)
 
     request.addfinalizer(tear_down)
-    return candidate_phone_1, cand_phone_2
+    return cand_phone_1, cand_phone_2
 
 
 @pytest.fixture()

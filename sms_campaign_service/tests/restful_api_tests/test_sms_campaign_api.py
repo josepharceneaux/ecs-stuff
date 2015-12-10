@@ -10,8 +10,10 @@ import json
 import requests
 
 # Application Specific
+from sms_campaign_service.tests.conftest import assert_for_activity
+from sms_campaign_service.custom_exceptions import SmsCampaignApiException
+from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
 from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_CREATE
-from sms_campaign_service.tests.conftest import SMS_CAMPAIGN_API_URL, assert_for_activity
 
 
 class TestSmsCampaign:
@@ -24,7 +26,7 @@ class TestSmsCampaign:
         User auth token is invalid. It should get Unauthorized error.
         :return:
         """
-        response = requests.get(SMS_CAMPAIGN_API_URL,
+        response = requests.get(SmsCampaignApiUrl.CAMPAIGNS,
                                 headers=dict(Authorization='Bearer %s' % 'invalid_token'))
         assert response.status_code == 401, 'It should be unauthorized (401)'
 
@@ -34,7 +36,7 @@ class TestSmsCampaign:
         :param auth_token: access token of user
         :return:
         """
-        response = requests.get(SMS_CAMPAIGN_API_URL,
+        response = requests.get(SmsCampaignApiUrl.CAMPAIGNS,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == 403, 'Should get forbidden error (403)'
 
@@ -45,7 +47,7 @@ class TestSmsCampaign:
         :param user_phone_1: user_phone fixture to assign a test phone number to user
         :return:
         """
-        response = requests.get(SMS_CAMPAIGN_API_URL,
+        response = requests.get(SmsCampaignApiUrl.CAMPAIGNS,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == 200, 'Status should be Ok (200)'
         assert 'count' in response.json()
@@ -64,17 +66,17 @@ class TestSmsCampaign:
         :param user_phone_2: fixture to assign another test phone number to user
         :return:
         """
-        response = requests.get(SMS_CAMPAIGN_API_URL,
+        response = requests.get(SmsCampaignApiUrl.CAMPAIGNS,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == 500, 'Internal Server Error should occur (500)'
-        assert response.json()['error']['code'] == 5002
+        assert response.json()['error']['code'] == SmsCampaignApiException.MULTIPLE_TWILIO_NUMBERS
 
     def test_post_with_invalid_token(self):
         """
         User auth token is invalid, it should get Unauthorized.
         :return:
         """
-        response = requests.post(SMS_CAMPAIGN_API_URL,
+        response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=dict(Authorization='Bearer %s' % 'invalid_token'))
         assert response.status_code == 401, 'It should be unauthorized (401)'
 
@@ -85,7 +87,7 @@ class TestSmsCampaign:
         :param auth_token: access token of current user
         :return:
         """
-        response = requests.post(SMS_CAMPAIGN_API_URL,
+        response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == 400, 'It should be a bad request (400)'
 
@@ -98,7 +100,7 @@ class TestSmsCampaign:
         :param valid_header: valid header to POST data
         :return:
         """
-        response = requests.post(SMS_CAMPAIGN_API_URL,
+        response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
                                  data=json.dumps(campaign_valid_data))
         assert response.status_code == 403, 'It should get forbidden error (403)'
@@ -112,7 +114,7 @@ class TestSmsCampaign:
         :return:
         """
         campaign_valid_data['buy_new_number'] = True
-        response = requests.post(SMS_CAMPAIGN_API_URL,
+        response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
                                  data=json.dumps(campaign_valid_data))
         assert response.status_code == 201, 'It should create sms campaign (201)'
@@ -129,7 +131,7 @@ class TestSmsCampaign:
         :param user_phone_1: user_phone fixture to assign a test phone number to user
         :return:
         """
-        response = requests.post(SMS_CAMPAIGN_API_URL,
+        response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header)
         assert response.status_code == 400, 'Should be a bad request (400)'
 
@@ -145,7 +147,7 @@ class TestSmsCampaign:
         :param user_phone_1: user_phone fixture to assign a test phone number to user
         :return:
         """
-        response = requests.post(SMS_CAMPAIGN_API_URL,
+        response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
                                  data=campaign_valid_data)
         assert response.status_code == 400, 'Should be a bad request (400)'
@@ -162,11 +164,11 @@ class TestSmsCampaign:
         :param user_phone_1: user_phone fixture to assign a test phone number to user
         :return:
         """
-        response = requests.post(SMS_CAMPAIGN_API_URL,
+        response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
                                  data=json.dumps(campaign_invalid_data))
         assert response.status_code == 500, 'Internal server error should occur (500)'
-        assert response.json()['error']['code'] == 5006
+        assert response.json()['error']['code'] == SmsCampaignApiException.MISSING_REQUIRED_FIELD
 
     def test_post_with_valid_header_and_one_user_phone_and_valid_data(self,
                                                                       sample_user,
@@ -181,7 +183,7 @@ class TestSmsCampaign:
         :param user_phone_1: user_phone fixture to assign a test phone number to user
         :return:
         """
-        response = requests.post(SMS_CAMPAIGN_API_URL,
+        response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
                                  data=json.dumps(campaign_valid_data))
         assert response.status_code == 201, 'Should create campaign (201)'
@@ -203,18 +205,18 @@ class TestSmsCampaign:
         :param user_phone_2: user_phone fixture to assign another test phone number to user
         :return:
         """
-        response = requests.post(SMS_CAMPAIGN_API_URL,
+        response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
                                  data=json.dumps(campaign_valid_data))
         assert response.status_code == 500, 'Internal Server Error should occur (500)'
-        assert response.json()['error']['code'] == 5002
+        assert response.json()['error']['code'] == SmsCampaignApiException.MULTIPLE_TWILIO_NUMBERS
 
     def test_delete_with_invalid_token(self):
         """
         User auth token is invalid, it should get Unauthorized.
         :return:
         """
-        response = requests.delete(SMS_CAMPAIGN_API_URL,
+        response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=dict(Authorization='Bearer %s' % 'invalid_token'))
         assert response.status_code == 401, 'It should be unauthorized (401)'
 
@@ -224,7 +226,7 @@ class TestSmsCampaign:
         It should get bad request error.
         :return:
         """
-        response = requests.delete(SMS_CAMPAIGN_API_URL,
+        response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers={'Authorization': 'Bearer %s' % auth_token})
         assert response.status_code == 400, 'It should be a bad request (400)'
 
@@ -233,7 +235,7 @@ class TestSmsCampaign:
         User auth token is valid, but no data provided. It should get bad request error.
         :return:
         """
-        response = requests.delete(SMS_CAMPAIGN_API_URL,
+        response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header)
         assert response.status_code == 400, 'It should be a bad request (400)'
 
@@ -243,7 +245,7 @@ class TestSmsCampaign:
         It should get bad request error.
         :return:
         """
-        response = requests.delete(SMS_CAMPAIGN_API_URL,
+        response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header,
                                    data={
                                        'ids': [1, 2, 3]
@@ -256,7 +258,7 @@ class TestSmsCampaign:
         It should get bad request error.
         :return:
         """
-        response = requests.delete(SMS_CAMPAIGN_API_URL,
+        response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header,
                                    data=json.dumps({
                                        'ids': 1
@@ -270,7 +272,7 @@ class TestSmsCampaign:
         It should get bad request error.
         :return:
         """
-        response = requests.delete(SMS_CAMPAIGN_API_URL,
+        response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header,
                                    data=json.dumps({
                                        'ids': ['a', 'b', 1]
@@ -285,7 +287,7 @@ class TestSmsCampaign:
         (campaign corresponds to user). Response should be ok.
         :return:
         """
-        response = requests.delete(SMS_CAMPAIGN_API_URL,
+        response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header,
                                    data=json.dumps({
                                        'ids': [sms_campaign_of_current_user.id]
@@ -300,7 +302,7 @@ class TestSmsCampaign:
         belong to some other user. It should get unauthorized error.
         :return:
         """
-        response = requests.delete(SMS_CAMPAIGN_API_URL,
+        response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header,
                                    data=json.dumps({
                                        'ids': [sms_campaign_of_other_user.id]

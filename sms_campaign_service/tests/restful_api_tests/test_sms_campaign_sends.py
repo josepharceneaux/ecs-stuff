@@ -8,7 +8,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies,
 import requests
 
 # Application Specific
-from sms_campaign_service.tests.conftest import SMS_CAMPAIGN_API_URL, SMS_CAMPAIGN_SENDS_URL
+from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
 
 
 class TestSmsCampaignSends:
@@ -23,7 +23,7 @@ class TestSmsCampaignSends:
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
         """
-        response = requests.post(SMS_CAMPAIGN_SENDS_URL % sms_campaign_of_current_user.id,
+        response = requests.post(SmsCampaignApiUrl.CAMPAIGN_SENDS % sms_campaign_of_current_user.id,
                                  headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == 405, 'POST method should not be allowed (405)'
 
@@ -34,8 +34,9 @@ class TestSmsCampaignSends:
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
         """
-        response = requests.delete(SMS_CAMPAIGN_SENDS_URL % sms_campaign_of_current_user.id,
-                                   headers=dict(Authorization='Bearer %s' % auth_token))
+        response = requests.delete(
+            SmsCampaignApiUrl.CAMPAIGN_SENDS % sms_campaign_of_current_user.id,
+            headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == 405, 'DELETE method should not be allowed (405)'
 
     def test_get_with_invalid_token(self, sms_campaign_of_current_user):
@@ -45,7 +46,7 @@ class TestSmsCampaignSends:
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
         """
-        response = requests.get(SMS_CAMPAIGN_SENDS_URL % sms_campaign_of_current_user.id,
+        response = requests.get(SmsCampaignApiUrl.CAMPAIGN_SENDS % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s invalid_token'))
         assert response.status_code == 401, 'It should not be authorized (401)'
 
@@ -57,7 +58,7 @@ class TestSmsCampaignSends:
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
         """
-        response = requests.get(SMS_CAMPAIGN_SENDS_URL % sms_campaign_of_current_user.id,
+        response = requests.get(SmsCampaignApiUrl.CAMPAIGN_SENDS % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == 200, 'Response should be ok (200)'
         assert 'count' in response.json()
@@ -77,7 +78,7 @@ class TestSmsCampaignSends:
         :param create_sms_campaign_blast: fixture to create entry in "sms_campaign_blast" db table.
         :return:
         """
-        response = requests.get(SMS_CAMPAIGN_SENDS_URL % sms_campaign_of_current_user.id,
+        response = requests.get(SmsCampaignApiUrl.CAMPAIGN_SENDS % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == 200, 'Response should be ok (200)'
         assert 'count' in response.json()
@@ -95,11 +96,12 @@ class TestSmsCampaignSends:
         :return:
         """
         response_delete = requests.delete(
-            SMS_CAMPAIGN_API_URL + str(sms_campaign_of_current_user.id),
+            SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_delete.status_code == 200, 'should get ok response (200)'
-        response_get = requests.get(SMS_CAMPAIGN_SENDS_URL % sms_campaign_of_current_user.id,
-                                    headers=dict(Authorization='Bearer %s' % auth_token))
+        response_get = requests.get(
+            SmsCampaignApiUrl.CAMPAIGN_SENDS % sms_campaign_of_current_user.id,
+            headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_get.status_code == 404, 'Campaign should not be found (404)'
 
     def test_get_with_valid_token_and_two_campaign_sends(self, auth_token,
@@ -112,7 +114,7 @@ class TestSmsCampaignSends:
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
         """
-        response = requests.get(SMS_CAMPAIGN_SENDS_URL % sms_campaign_of_current_user.id,
+        response = requests.get(SmsCampaignApiUrl.CAMPAIGN_SENDS % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == 200, 'Response should be ok (200)'
         assert 'count' in response.json()

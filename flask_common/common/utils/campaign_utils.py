@@ -25,15 +25,14 @@ import gevent
 from gevent import monkey
 
 gevent.monkey.patch_all()
-from gevent.pool import Pool
 
 # Application Specific
 from ..models.user import Token
 from ..models.misc import UrlConversion
 from ..models.candidate import Candidate
 from ..error_handling import ForbiddenError, InvalidUsage
+from ..utils.app_rest_urls import CandidateApiUrl, ActivityApiUrl
 from ..utils.common_functions import http_request, find_missing_items
-from ..utils.app_base_urls import ACTIVITY_SERVICE_APP_URL, CANDIDATE_SERVICE_APP_URL
 
 
 class CampaignBase(object):
@@ -154,7 +153,7 @@ class CampaignBase(object):
         params = {'id': smart_list_id,
                   'return': 'all'}
         # HTTP GET call to activity service to create activity
-        url = CANDIDATE_SERVICE_APP_URL + '/v1/smartlist/get_candidates/'
+        url = CandidateApiUrl.SMARTLIST_CANDIDATES
         response = http_request('GET', url, headers=self.oauth_header, params=params,
                                 user_id=self.user_id)
         # get candidate ids
@@ -285,5 +284,5 @@ class CampaignBase(object):
 
         headers['content-type'] = 'application/json'
         # POST call to activity service to create activity
-        url = ACTIVITY_SERVICE_APP_URL + '/activities/'
+        url = ActivityApiUrl.CREATE_ACTIVITY
         http_request('POST', url, headers=headers, data=json_data, user_id=user_id)
