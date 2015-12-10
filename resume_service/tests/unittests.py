@@ -28,21 +28,22 @@ from .resume_xml import PDF_14
 # from resume_service.resume_parsing_app.views.optic_parse_lib import fetch_optic_response
 from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_name
 from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_emails
-# from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_phones
-# from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_educations
+from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_phones
+from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_experiences
 
 EDUCATIONS_KEYS = ('city', 'degrees', 'state', 'country', 'school_name')
 
 XML_MAPS = [
-    {'tree_name': DOCX, 'name': 'Veena Nithoo', 'email_len': 0, 'phone_len': 1, 'education_len': 1},
-    {'tree_name': GET_642, 'name': 'Bobby Breland', 'email_len': 1, 'phone_len': 2, 'education_len': 1},
-    {'tree_name': GET_646, 'name': 'Patrick Kaldawy', 'email_len': 3, 'phone_len': 6, 'education_len': 2},
+    {'tree_name': DOCX, 'name': 'Veena Nithoo', 'email_len': 0, 'phone_len': 1, 'education_len': 1, 'experience_len': 7},
+    # The resume below has 12 experience but BG incorrectly returns 13
+    {'tree_name': GET_642, 'name': 'Bobby Breland', 'email_len': 1, 'phone_len': 2, 'education_len': 1, 'experience_len': 13},
+    {'tree_name': GET_646, 'name': 'Patrick Kaldawy', 'email_len': 3, 'phone_len': 5, 'education_len': 2, 'experience_len': 4},
 #     # {'tree_name': JPG, 'name': 'Erik Farmer', 'email_len': 0, 'phone_len': 2, 'education_len': 0},
-    {'tree_name': PDF, 'name': 'Mark Greene', 'email_len': 1, 'phone_len': 1, 'education_len': 1},
-    {'tree_name': PDF_13, 'name': 'Bruce Parkey', 'email_len': 1, 'phone_len': 1, 'education_len': 1},
+    {'tree_name': PDF, 'name': 'Mark Greene', 'email_len': 1, 'phone_len': 1, 'education_len': 1, 'experience_len': 11},
+    {'tree_name': PDF_13, 'name': 'Bruce Parkey', 'email_len': 1, 'phone_len': 1, 'education_len': 1, 'experience_len': 3},
 #     # This PDF currently does not get its email/phone parsed out of the footer.
 #     # This PDF currently parses out the wrong education count
-    {'tree_name': PDF_14, 'name': 'Jose Chavez', 'email_len': 0, 'phone_len': 0, 'education_len': 2}
+    {'tree_name': PDF_14, 'name': 'Jose Chavez', 'email_len': 0, 'phone_len': 0, 'education_len': 2, 'experience_len': 4}
 ]
 
 
@@ -56,7 +57,7 @@ def test_name_parsing_with_xml():
             assert name['last_name'] == j['name'].split()[1]
 
 
-def test_email_parsing_with_json():
+def test_email_parsing_with_xml():
     """
         Tests parsing function using the JSON response to avoid un-needed API calls
         1. Test proper count.
@@ -70,26 +71,29 @@ def test_email_parsing_with_json():
         emails = parse_candidate_emails(contact_xml_list)
         # Test count
         assert len(emails)== j['email_len']
-        # for i, e in enumerate(emails):
-        #     assert 'address' in e.keys()
-        #     if i == 0:
-        #         assert emails[i]['label'] == 'Primary'
-        #     else:
-        #         assert emails[i]['label'] == 'Other'
 
 
-def test_phone_parsing_from_json():
+def test_phone_parsing_from_xml():
     """
         Tests parsing function using the JSON response to avoid un-needed API calls
         1. Test proper count.
         2. Test that each item has the 'value' key.
     """
-    for j in JSON_MAPS:
-        resume = j['dict_name']
-        phones = parse_candidate_phones(resume['resume']['contact'])
+    for j in XML_MAPS:
+        resume = j['tree_name']
+        contact_xml_list = bs4(resume, 'lxml').findAll('contact')
+        phones = parse_candidate_phones(contact_xml_list)
         assert len(phones)== j['phone_len']
         for p in phones:
             assert 'value' in p.keys()
+
+
+def test_experience_parsing_from_xml():
+    for j in XML_MAPS:
+        resume = j['tree_name']
+        experience_xml_list = bs4(resume, 'lxml').findAll('experience')
+        experiences = parse_candidate_experiences(experience_xml_list)
+        assert len(experiences) == j['experience_len']
 
 # TODO: ERROR
 def test_education_parsing_from_json():
@@ -111,7 +115,7 @@ def test_education_parsing_from_json():
 
 
 ###################################################################################################
-# Helper functions extracted out of app due to logging and not wanting to run app/have app context#
+# Helper functions extracted out of app due to logging and not wanting to run app/have app context
 # (unit tests)
 ###################################################################################################
 def convert_file_to_encoded_binary(filename_str):
