@@ -2,11 +2,13 @@
 Functions related to candidate_service/candidate_app/api validations
 """
 from candidate_service.common.models.db import db
+from candidate_service.candidate_app import logger
 from candidate_service.common.models.candidate import Candidate
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
 from candidate_service.common.models.email_marketing import EmailCampaign
-
+from candidate_service.cloudsearch_constants import RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH
+from candidate_service.common.error_handling import InvalidUsage
 
 def does_candidate_belong_to_user(user_row, candidate_id):
     """
@@ -108,6 +110,15 @@ def format_search_request_data(request_data):
     military_end_date_to = request_data.get('military_end_date_to')
     fields = request_data.get("fields")
     candidate_id = request_data.get("id")
+
+    if fields:
+        # If `fields` are present, validate and modify `fields` values according to cloudsearch supported return field names.
+        fields = fields.split(',')
+        try:
+            fields = ','.join([RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH[field] for field in fields])
+        except KeyError:
+            raise InvalidUsage(error_message="Field name `%s` is not correct `return field` name", error_code=400)
+
 
     # Handling custom fields
     custom_field_with_id = None

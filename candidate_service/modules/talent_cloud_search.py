@@ -617,15 +617,20 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
         params = dict(params.items() + geo_params.items())
 
     # Return data dictionary. Initializing here, to have standard return type across the function
-    search_result = dict(candidate_ids=[], percentage_matches=[],
-                         search_data=dict(descriptions=[], facets=dict(), error=dict(), request_vars=request_vars,
-                         mode='search'), total_found=0, descriptions=[], max_score=0, max_pages=0)
+    search_results = dict(total_found=0,
+                          total_count=0,
+                          candidates=[],
+                          max_score=0,
+                          max_pages=0,
+                          facets={})
 
     # Looks like cloud_search does not have something like return only count predefined
     # removing fields and returned content should speed up network request
     if count_only:
         params['ret'] = "_no_fields,_score"
         params['size'] = 0
+    elif request_vars.get('fields'):
+        params['ret'] = request_vars['fields']
     else:
         params['ret'] = "_all_fields,_score"
 
@@ -634,7 +639,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     if search_limit >= CLOUD_SEARCH_MAX_LIMIT and candidate_ids_only:
         candidate_ids, total_found, error = _cloud_search_fetch_all(params)
         if error:
-            return search_result
+            return search_results
         return dict(total_found=total_found, candidate_ids=candidate_ids)
 
     # Make search request with error handling
@@ -644,7 +649,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     try:
         results = search_service.search(**params)
     except Exception:
-        return search_result
+        return search_results
 
     matches = results['hits']['hit']
 
@@ -653,10 +658,10 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     if count_only:
         return dict(total_found=total_found, candidate_ids=[])
 
-    candidate_ids = [match.get('id') for match in matches]
-
-    if candidate_ids_only:
-        return dict(total_found=total_found, candidate_ids=candidate_ids)
+    # candidate_ids = [match.get('id') for match in matches]
+    #
+    # if candidate_ids_only:
+    #     return dict(total_found=total_found, candidate_ids=candidate_ids)
 
     facets = get_faceting_information(results.get('facets'))
 
@@ -671,29 +676,31 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     # Get max score
     max_score = 1
     if get_percentage_match:
-        _get_max_score(params, search_service)
+        max_score = _get_max_score(params, search_service)
 
     percentage_matches = []
 
-    search_data = dict(descriptions=matches, facets=facets, error=dict(), request_vars=request_vars, mode='search')
+    # search_data = dict(descriptions=matches, facets=facets, error=dict(), request_vars=request_vars, mode='search')
     max_pages = int(math.ceil(total_found / float(search_limit))) if search_limit else 1
     fields_data = [data['fields'] for data in matches]
-    if request_vars.get('fields'):
-        return _get_candidates_fields_with_given_filters(fields_data)
-    else:
-        search_results = dict()
-        search_results['candidates'] = fields_data
-        search_results['candidate_ids'] = candidate_ids
-        search_results['max_score'] = max_score
-        search_results['total_found'] = total_found
-        search_results['percentage_matches'] = percentage_matches
-        search_results['max_pages'] = max_pages
-        search_results['search_data'] = search_data
-        for values in search_results['candidates']:
-            if 'email' in values:
-                values['email'] = {"address": values['email']}
-        # Returns a dictionary with all the candidates data
-        return search_results
+    # if request_vars.get('fields'):
+    #     return _get_candidates_fields_with_given_filters(fields_data)
+    # else:
+    # search_results = dict()
+    search_results['total_found'] = total_found
+    search_results['total_count'] = len(fields_data)
+    search_results['candidates'] = fields_data
+    # search_results['candidate_ids'] = candidate_ids
+    search_results['max_score'] = max_score
+    # search_results['percentage_matches'] = percentage_matches
+    search_results['max_pages'] = max_pages
+    search_results['facets'] = facets
+    # search_results['search_data'] = search_data
+    # for values in search_results['candidates']:
+    #     if 'email' in values:
+    #         values['email'] = {"address": values['email']}
+    # Returns a dictionary with all the candidates data
+    return search_results
 
 
 # Get the facet information from database with given ids
@@ -1147,7 +1154,7 @@ def _get_candidates_fields_with_given_filters(fields_data):
     """
     Get only the filtered candidate fields
     :param fields_data:
-    :return: search result with candidates filterd fields
+    :return: search result with candidates filtered fields
     """
     # Checks the fields is is there in the search filter
     requested_data = request.args.get('fields').split(',')
