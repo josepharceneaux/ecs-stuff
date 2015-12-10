@@ -992,7 +992,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
             education_id = candidate_education.id
 
             # CandidateEducationDegree
-            education_degrees = education.get('degrees')
+            education_degrees = education.get('degrees') or []
             for education_degree in education_degrees:
 
                 # Add CandidateEducationDegree

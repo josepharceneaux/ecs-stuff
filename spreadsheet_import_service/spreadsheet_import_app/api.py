@@ -96,4 +96,4 @@ def import_from_table():
                                           candidates_table=candidates_table)
 
     # TODO: Integrate scheduler with this API
-    return jsonify(import_from_spreadsheet(**import_from_spreadsheet_kwargs))
+    return import_from_spreadsheet(**import_from_spreadsheet_kwargs)

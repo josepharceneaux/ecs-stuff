@@ -18,7 +18,11 @@ def import_spreadsheet_candidates(access_token, candidate_data=[], spreadsheet_f
 
     header_row = ['candidate.formattedName', 'candidate_email.address', 'candidate_phone.value',
                   'candidate_experience.organization', 'candidate_experience.position',
-                  'candidate_education.schoolName', 'candidate_address.city', 'candidate_address.state']
+                  'candidate_education.schoolName', 'student_year', 'candidate_address.city', 'candidate_address.state',
+                  'candidate_education_degree_bullet.concentrationType', 'area_of_interest.description',
+                  'custom_field.3', 'area_of_interest.description', 'candidate_experience.organization',
+                  'candidate_experience.position']
+
     headers = {'Authorization': 'Bearer %s' % access_token, 'Content-Type': 'application/json'}
 
     if is_csv:
@@ -57,5 +61,7 @@ def test_candidate_data(num_candidates=15):
     for x in xrange(num_candidates):
         random_str = str(uuid.uuid4())[0:6]
         candidate_data.append(['John %s Smith' % random_str, 'johnsmith%s@example.com' % random_str, '408-555-1212',
-                               'NVIDIA', 'Embedded Software Developer', 'San Jose State University', 'San Jose', 'CA'])
+                               'NVIDIA', 'Embedded Software Developer', 'San Jose State University', '2013', 'San Jose',
+                               'CA', 'Electrical Engineering', 'Production & Development', '24', 'Technology', 'Google',
+                               'Summer Software Intern'])
     return candidate_data

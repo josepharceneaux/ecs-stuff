@@ -1,6 +1,6 @@
 __author__ = 'ufarooqi'
 
-from flask import request
+from flask import request, jsonify
 from . import db, logger, app
 from spreadsheet_import_service.common.utils.talent_s3 import *
 from spreadsheet_import_service.common.models.user import User
@@ -153,14 +153,13 @@ def import_from_spreadsheet(*args, **kwargs):
                         this_source_id = source.id
                 elif column_name == 'area_of_interest.description':
                     column = column.strip()
-                    if column:
-                        matching_aoi = domain_areas_of_interest.find(lambda aoi_row: aoi_row.name.lower().
-                                                                     replace(' ', '') == column.lower().
-                                                                     replace(' ', '')).first()
-                        if matching_aoi:
-                            areas_of_interest.append({'area_of_interest_id': matching_aoi.id})
-                        else:
-                            logger.warning("Unknown AOI when importing from CSV, user %s: %s", user_id, column)
+                    matching_areas_of_interest = filter(lambda aoi_row: aoi_row.name.lower().
+                                                        replace(' ', '') == column.lower().replace(' ', ''),
+                                                        domain_areas_of_interest)
+                    if matching_areas_of_interest:
+                        areas_of_interest.append({'area_of_interest_id': matching_areas_of_interest[0].id})
+                    else:
+                        logger.warning("Unknown AOI when importing from CSV, user %s: %s", user_id, column)
                 elif column_name == 'candidate_experience.organization':
                     prepare_candidate_data(work_experiences, 'company', column)
                 elif column_name == 'candidate_experience.position':
@@ -190,10 +189,12 @@ def import_from_spreadsheet(*args, **kwargs):
                         graduation_year = current_year
                         university_start_year = current_year - 4
                         degree_title = 'Bachelors'
-                    elif 'ms' or 'mba' in column:
+                    elif 'ms' in column or 'mba' in column:
                         graduation_year = current_year
                         university_start_year = current_year - 2
                         degree_title = 'Masters'
+                    else:
+                        continue
 
                     prepare_candidate_data(degrees, 'title', degree_title)
                     prepare_candidate_data(degrees, 'start_year', university_start_year)
@@ -228,33 +229,37 @@ def import_from_spreadsheet(*args, **kwargs):
 
                 educations.append(education)
 
-            result = create_candidates_from_parsed_spreadsheet(dict(full_name=formatted_name,
-                                                                    status_id=status_id,
-                                                                    first_name=first_name,
-                                                                    middle_name=middle_name,
-                                                                    last_name=last_name,
-                                                                    emails=emails,
-                                                                    phones=phones,
-                                                                    work_experiences=work_experiences,
-                                                                    educations=educations,
-                                                                    addresses=addresses,
-                                                                    source_id=this_source_id,
-                                                                    areas_of_interest=areas_of_interest,
-                                                                    custom_fields=custom_fields))
+            status_code, response = create_candidates_from_parsed_spreadsheet(dict(full_name=formatted_name,
+                                                                                   status_id=status_id,
+                                                                                   first_name=first_name,
+                                                                                   middle_name=middle_name,
+                                                                                   last_name=last_name,
+                                                                                   emails=emails,
+                                                                                   phones=phones,
+                                                                                   work_experiences=work_experiences,
+                                                                                   educations=educations,
+                                                                                   addresses=addresses,
+                                                                                   source_id=this_source_id,
+                                                                                   areas_of_interest=areas_of_interest,
+                                                                                   custom_fields=custom_fields))
 
-            candidate_ids.append(result['candidate_id'])
+            if status_code == 201:
+                candidate_ids.append(response.get('candidates')[0].get('id'))
+            else:
+                return jsonify(response), status_code
 
         # TODO: Upload candidate documents to cloud
 
         delete_from_s3(spreadsheet_filename, 'CSVResumes')
 
         logger.info("Successfully imported %s candidates from CSV: User %s", len(candidate_ids), user.id)
-        return dict(count=len(candidate_ids), status='complete')
+        return jsonify(dict(count=len(candidate_ids), status='complete')), 201
 
-    except Exception:
+    except Exception as e:
         email_error_to_admins("Error importing from CSV. User ID: %s, S3 filename: %s" % (user_id, spreadsheet_filename),
                               subject="import_from_csv")
-        raise InvalidUsage("Error importing from CSV. User ID: %s, S3 filename: %s", user_id, spreadsheet_filename)
+        raise InvalidUsage(error_message="Error importing from CSV. User ID: %s, S3 filename: %s. Reason: %s" %
+                                         (user_id, spreadsheet_filename, e.message))
 
 
 def get_or_create_areas_of_interest(domain_id, include_child_aois=False):
@@ -280,7 +285,7 @@ def get_or_create_areas_of_interest(domain_id, include_child_aois=False):
 
     # If we only want parent AOIs, must filter for all AOIs that don't have parentIds
     if not include_child_aois:
-        areas = areas.find(lambda aoi: not aoi.parent_id)
+        areas = filter(lambda aoi: not aoi.parent_id, areas)
 
     return areas
 
@@ -295,7 +300,7 @@ def create_candidates_from_parsed_spreadsheet(candidate_dict):
     import json, requests
     r = requests.post(app.config['CANDIDATE_CREATION_URI'], data=json.dumps({'candidates': [candidate_dict]}),
                       headers={'Authorization': request.oauth_token})
-    return json.loads(r.text)
+    return r.status_code, r.json()
 
 
 def prepare_candidate_data(data_array, key, value):
