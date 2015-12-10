@@ -31,6 +31,49 @@ input[type=number] {
 
 .form {}
 
+.form--white {
+  .form__input { border-color: $color--white; }
+  .form__label { color: $color--white; }
+  .form__instruction { color: $color--lightGray; }
+
+  .tagsinput {
+    .tag {
+      color: $color--nearBlack;
+      background: $color--lightGray;
+
+      a {
+        color: $color--nearBlack;
+
+        &:hover {
+          color: $color--red;
+        }
+      }
+    }
+
+    input {
+      color: $color--white !important;
+    }
+  }
+
+  .fancy-select {
+    .trigger {
+      color: $color--white;
+      background: transparent;
+      border: 2px solid $color--white;
+
+      &:after { border-top-color: $color--white; }
+
+      &.open {
+        color: $color--nearBlack;
+        background: $color--white;
+        border: 2px solid $color--white;
+
+        &:after { border-top-color: $color--nearBlack; }
+      }
+    }
+  }
+}
+
 // -----
 // Input
 // -----
@@ -70,6 +113,7 @@ input[type=number] {
   color: $color--nearBlack;
   line-height: 1;
   height: 48px;
+  margin-top: 0;
   padding: $padding--small $padding--tiny;
   background-color: transparent;
   border: 2px solid $color--lightGray;
@@ -127,6 +171,10 @@ input[type=number] {
   margin-right: 0;
   border: 0;
 
+  .form__input--select {
+    margin-top: $margin--row;
+  }
+
   // Fancy select overrides
   .fancy-select {
     .trigger { margin-top: $margin--row; }
@@ -142,10 +190,29 @@ input[type=number] {
   }
 }
 
+.form__fieldset--column {
+  @include helper--media($breakpoint--medium) {
+    &:nth-of-type(1) {
+      padding-right: $padding--small;
+    }
+    &:nth-of-type(2) {
+      padding-left: $padding--small;
+    }
+  }
+}
+
 .form__fieldset--footer {
   @extend .form__fieldset;
 
   margin-top: $margin--row;
+
+  @include helper--media($breakpoint--medium) {
+    a {
+      margin-right: $margin--inline;
+
+      &:last-of-type { margin-right: 0; }
+    }
+  }
 }
 
 .form__fieldset__link {
@@ -246,6 +313,7 @@ input[type=number] {
 .form__label--shown { // doesn't float the label when the input has value
   @extend .form__label;
 
+  visibility: visible;
   opacity: 1;
   position: absolute;
   top: .75em;
@@ -266,6 +334,17 @@ input[type=number] {
   font-weight: 400;
   margin-left: $padding--teeny;
   padding: 0;
+}
+
+// -----
+// Info below input
+// -----
+.form__input-info {
+  color: $color--gray;
+  display: block;
+  font-weight: $font-weight--bold;
+  text-align: right;
+  padding-top: $padding--tiny;
 }
 
 // -----
@@ -306,6 +385,124 @@ input[type=number] {
        -moz-user-select: none;
         -ms-user-select: none;
             user-select: none;
+  }
+}
+
+// -----
+// Lightswitch
+// -----
+.form__input--toggle {
+  color: inherit;
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  height: 50px;
+  margin-top: $margin--row;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    z-index: -1; /* Put the hidden input behind the label so it doesn't overlay */
+
+    /* Checked state */
+    &:checked ~ span {
+      background: $color--lightGreen;
+
+      &:after { left: 50%; }
+    }
+  }
+
+  span {
+		display: block;
+    position: relative;
+    top: 9px;
+		width: 4em;
+		height: 2em;
+    padding: 2px;
+    background: $color--lightGray;
+		border-radius: 2em;
+    outline: 0;
+    cursor: pointer;
+    user-select: none;
+		transition: all .4s ease;
+
+		&:after, &:before {
+			position: relative;
+			display: block;
+			content: "";
+			width: 50%;
+			height: 100%;
+		}
+
+    &:after {
+      left: 0;
+			border-radius: 50%;
+			background: $color--white;
+			transition: all .2s ease;
+		}
+
+		&:before { display: none; }
+  }
+}
+
+
+// -----
+// File Upload
+// -----
+.form__input--file {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  cursor: pointer;
+  margin-top: $margin--row;
+  width: 100%;
+
+  input {
+    min-width: 14rem;
+    margin: 0;
+    filter: alpha(opacity=0);
+    opacity: 0;
+
+    &:focus ~ .file-custom {
+      box-shadow: 0 0 0 .075rem $color--white,
+                  0 0 0 .2rem $color--blue;
+    }
+  }
+
+  span {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 5;
+    padding: $padding--small $padding--tiny;
+    line-height: 1.5;
+    color: $color--nearBlack;
+    background-color: transparent;
+    border: 2px solid $color--lightGray;
+    border-radius: .25rem;
+    -webkit-user-select: none;
+    user-select: none;
+
+    &:after {
+      content: attr(data-placeholder);
+    }
+
+    &:before {
+      position: absolute;
+      top: -.075rem;
+      right: -.075rem;
+      bottom: -.075rem;
+      z-index: 6;
+      display: block;
+      content: "Browse";
+      padding: $padding--small $padding--tiny;
+      line-height: 1.5;
+      color: $color--nearBlack;
+      background-color: $color--lightGray;
+      border: 2px solid $color--lightGray;
+      border-radius: 0 .25rem .25rem 0;
+    }
   }
 }
 
@@ -406,7 +603,7 @@ input[type=number] {
     width: 100%;
     padding: $padding--small $padding--mega $padding--small $padding--small;
     background: $color--lightGray;
-    border: 2px solid $color--lightGray;
+    border: 1px solid $color--lightGray;
     border-radius: $border-radius--container;
     color: $color--nearBlack;
     overflow: hidden;
@@ -432,7 +629,7 @@ input[type=number] {
     &.open {
       color: $color--black;
       background: $color--lightGray;
-      border: 2px solid $color--lightGray;
+      border-color: $color--lightGray;
     }
 
     &.error,
@@ -446,6 +643,8 @@ input[type=number] {
   .options {
     opacity: 0;
     font-size: $font-size--small;
+    text-align: right;
+    line-height: 1;
     width: 100%;
     list-style: none;
     position: absolute;
@@ -505,5 +704,16 @@ input[type=number] {
         color: $color--white;
       }
     }
+  }
+}
+
+.fancy-select--small .fancy-select {
+  .trigger {
+    font-size: $font-size--small;
+    padding: $padding--tiny $padding--giant $padding--tiny $padding--tiny;
+  }
+
+  .options {
+    font-size: $font-size--small;
   }
 }
