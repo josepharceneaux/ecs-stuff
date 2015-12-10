@@ -70,9 +70,19 @@ def parse_candidate_name(bs_contact_xml_list):
             givenname = _tag_text(contact, 'givenname')
         if not surname:
             surname = _tag_text(contact, 'surname')
-    first_name = givenname if givenname else 'Unknown'
-    last_name = surname if givenname else 'Unknown'
-    return '{} {}'.format(first_name.title(), last_name.title())
+    first_name = givenname.title() if givenname else 'Unknown'
+    last_name = surname.title() if givenname else 'Unknown'
+    return {'first_name': first_name, 'last_name': last_name}
+
+
+def parse_candidate_emails(bs_contact_xml_list):
+    output = []
+    for contact in bs_contact_xml_list:
+        emails = contact.findAll('email')
+        for e in emails:
+            email = e.text.strip()
+            output.append({'address': email})
+    return output
 
 
 _newlines_regexp = re.compile(r"[\r\n]+")
