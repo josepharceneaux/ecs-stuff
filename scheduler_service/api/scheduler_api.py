@@ -6,6 +6,8 @@ This API also checks for authentication token
 # Standard imports
 import json
 import types
+
+# Third party imports
 from flask import Blueprint, request
 from flask.ext.restful import Resource
 from flask.ext.cors import CORS
@@ -69,9 +71,9 @@ class Tasks(Resource):
                             "campaign_name": "SMS Campaign"
                         },
                         "frequency": "0:00:10",
-                        "start_datetime": "2015-11-05T08:00:00-05:00",
-                        "end_datetime": "2015-12-05T08:00:00-05:00"
-                        "next_run_datetime": "2015-11-05T08:20:30-05:00",
+                        "start_datetime": "2015-11-05T08:00:00",
+                        "end_datetime": "2015-12-05T08:00:00"
+                        "next_run_datetime": "2015-11-05T08:20:30",
                         "task_type": "periodic"
                     }
                ]
@@ -100,8 +102,8 @@ class Tasks(Resource):
                     "hour": 6
                 },
                 "task_type": "periodic",
-                "start_datetime": "2015-12-05T08:00:00-05:00",
-                "end_datetime": "2016-01-05T08:00:00-05:00",
+                "start_datetime": "2015-12-05T08:00:00",
+                "end_datetime": "2016-01-05T08:00:00",
                 "url": "http://getTalent.com/sms/send/",
                 "post_data": {
                     "campaign_name": "SMS Campaign",
@@ -113,7 +115,7 @@ class Tasks(Resource):
             for one_time schedule
             task = {
                 "task_type": "one_time",
-                "run_datetime": "2015-12-05T08:00:00-05:00",
+                "run_datetime": "2015-12-05T08:00:00",
                 "url": "http://getTalent.com/email/send/",
                 "post_data": {
                     "campaign_name": "Email Campaign",
@@ -141,8 +143,8 @@ class Tasks(Resource):
             }
         .. Status:: 201 (Resource Created)
                     400 (Bad Request)
-                    500 (Internal Server Error)
                     401 (Unauthorized to access getTalent)
+                    500 (Internal Server Error)
 
         :return: id of created task
         """
@@ -174,7 +176,7 @@ class Tasks(Resource):
                         'Content-Type': 'application/json'
                        }
             data = json.dumps(task_ids)
-            response = requests.post(
+            response = requests.delete(
                                         API_URL + '/tasks/',
                                         data=data,
                                         headers=headers,
@@ -239,7 +241,7 @@ class ResumeTasks(Resource):
                 'ids': [fasdff12n22m2jnr5n6skf,ascv3h5k1j43k6k8k32k345jmn,123n23n4n43m2kkcj53vdsxc]
             }
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/tasks/resume/', headers=headers, data=json.dumps(task_ids))
+            response = requests.post(API_URL + '/tasks/resume/', headers=headers, data=json.dumps(task_ids))
 
         .. Response::
             {
@@ -255,7 +257,7 @@ class ResumeTasks(Resource):
         user_id = request.user.id
         try:
             req_data = request.get_json()
-        except Exception as e:
+        except Exception:
             raise InvalidUsage("Bad Request, data should be in json")
         task_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else None
         if not task_ids:
@@ -271,6 +273,7 @@ class ResumeTasks(Resource):
                             paused=valid_tasks,
                             not_found=none_tasks), 207
             return dict(message="Tasks have been successfully resumed")
+        raise InvalidUsage('Bad request, invalid data in request', error_code=400)
 
 
 @api.route('/tasks/pause/')
@@ -282,9 +285,8 @@ class PauseTasks(Resource):
 
     def post(self, **kwargs):
         """
-        Pause tasks which is currently running.
-        :param id: id of task
-        :type id: str
+        Pause tasks which are currently running.
+
         :keyword user_id: user_id of tasks' owner
         :type user_id: int
         :rtype json
@@ -294,7 +296,7 @@ class PauseTasks(Resource):
                 'ids': [fasdff12n22m2jnr5n6skf,ascv3h5k1j43k6k8k32k345jmn,123n23n4n43m2kkcj53vdsxc]
             }
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/tasks/resume/', headers=headers, data=json.dumps(task_ids))
+            response = requests.post(API_URL + '/tasks/resume/', headers=headers, data=json.dumps(task_ids))
 
         .. Response::
             {
@@ -310,23 +312,27 @@ class PauseTasks(Resource):
         user_id = request.user.id
         try:
             req_data = request.get_json()
-        except Exception as e:
+        except Exception:
             raise InvalidUsage("Bad Request, data should be in json")
         task_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else None
         if not task_ids:
             raise InvalidUsage("Bad request, No data in ids", error_code=400)
+        # Filter tasks which are None
         valid_tasks = filter(lambda task_id: scheduler.get_job(job_id=task_id) is not None, task_ids)
+        # Filter tasks of the current user
         valid_tasks = filter(lambda task_id: scheduler.get_job(job_id=task_id).args[0] == user_id, valid_tasks)
-        for _id in valid_tasks:
-            # pause the job whether it is paused before or not
-            scheduler.pause_job(job_id=_id)
-        if len(valid_tasks) != len(task_ids):
-            none_tasks = filter(lambda task_id: scheduler.get_job(job_id=task_id) is None, task_ids)
-            return dict(message='Unable to pause %s tasks' % len(none_tasks),
-                        paused=valid_tasks,
-                        not_found=none_tasks), 207
+        if valid_tasks:
+            for _id in valid_tasks:
+                scheduler.pause_job(job_id=_id)
+            if len(valid_tasks) != len(task_ids):
 
-        return dict(message="Tasks have been successfully paused")
+                none_tasks = filter(lambda task_id: scheduler.get_job(job_id=task_id) is None, task_ids)
+                return dict(message='Unable to pause %s tasks' % len(none_tasks),
+                            paused=valid_tasks,
+                            not_found=none_tasks), 207
+
+            return dict(message="Tasks have been successfully paused")
+        raise InvalidUsage('Bad request, invalid data in request', error_code=400)
 
 
 @api.route('/tasks/id/<string:_id>')
@@ -368,9 +374,9 @@ class TaskById(Resource):
                                 "days": 0,
                                 "seconds": 10
                             }
-                            "start_datetime": "2015-11-05T08:00:00-05:00",
-                            "end_datetime": "2015-12-05T08:00:00-05:00"
-                            "next_run_datetime": "2015-11-05T08:20:30-05:00",
+                            "start_datetime": "2015-11-05T08:00:00",
+                            "end_datetime": "2015-12-05T08:00:00"
+                            "next_run_datetime": "2015-11-05T08:20:30",
                             "task_type": "periodic"
                          }
                     }
@@ -386,11 +392,10 @@ class TaskById(Resource):
                                 "content": "text to be sent as Email"
                                 "some_other_kwarg": "abc"
                             },
-                            "run_datetime": "2015-11-05T08:00:00-05:00",
+                            "run_datetime": "2015-11-05T08:00:00",
                             "task_type": "one_time"
                          }
                     }
-
         .. Status:: 200 (OK)
                     404 (Task not found)
                     500 (Internal Server Error)
@@ -455,7 +460,7 @@ class ResumeTaskById(Resource):
 
         :Example:
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/tasks/5das76nbv950nghg8j8-33ddd3kfdw2/resume/', headers=headers)
+            response = requests.post(API_URL + '/tasks/5das76nbv950nghg8j8-33ddd3kfdw2/resume/', headers=headers)
 
         .. Response::
             {
@@ -471,7 +476,7 @@ class ResumeTaskById(Resource):
         """
         user_id = request.user.id
         # check and raise exception if job is already paused or not present
-        job_state_exceptions(job_id=_id, func='RUNNING')
+        job_state_exceptions(job_id=_id, func='running')
         task = scheduler.get_job(_id)
         if task and task.args[0] == user_id:
             scheduler.resume_job(job_id=_id)
@@ -497,7 +502,7 @@ class PauseTaskById(Resource):
 
         :Example:
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/tasks/5das76nbv950nghg8j8-33ddd3kfdw2/resume/', headers=headers)
+            response = requests.post(API_URL + '/tasks/5das76nbv950nghg8j8-33ddd3kfdw2/resume/', headers=headers)
 
         .. Response::
             {
@@ -513,7 +518,7 @@ class PauseTaskById(Resource):
         """
         # check and raise exception if job is already paused or not present
         user_id = request.user.id
-        job_state_exceptions(job_id=_id, func='PAUSED')
+        job_state_exceptions(job_id=_id, func='paused')
         task = scheduler.get_job(_id)
         if task and task.args[0] == user_id:
             scheduler.pause_job(job_id=_id)
@@ -532,18 +537,18 @@ def job_state_exceptions(job_id, func='GET'):
     # get job from scheduler by job_id
     job = scheduler.get_job(job_id=job_id)
 
-    # if job is pending => throw pending state exception
+    # if job is pending then throw pending state exception
     if job.pending:
         logger.error("Task with id '%s' is in pending state. Scheduler not running" % job_id)
         raise PendingJobError("Task with id '%s' is in pending state. Scheduler not running" % job_id)
 
     # if job has next_run_datetime none, then job is in paused state
-    if job.next_run_time is None and func == 'PAUSED':
+    if job.next_run_time is None and func == 'paused':
         logger.error("Task with id '%s' is already in paused state" % job_id)
         raise JobAlreadyPausedError("Task with id '%s' is already in paused state" % job_id)
 
     # if job has_next_run_datetime is not None, then job is in running state
-    if job.next_run_time is not None and func == 'RUNNING':
+    if job.next_run_time is not None and func == 'running':
         logger.error("Task with id '%s' is already in running state" % job_id)
         raise JobAlreadyRunningError("Task with id '%s' is already in running state" % job_id)
 

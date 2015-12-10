@@ -7,7 +7,7 @@ celery = Celery('scheduler_service', broker='redis://localhost:6379', backend='r
 
 
 @celery.task(name="send_request")
-def send_request(user_id, access_token, url, content_type, kwargs):
+def send_request(access_token, url, content_type, kwargs):
     """
     :param user_id: the user_id of user who is sending post request
     :param url: the url where to send post requests

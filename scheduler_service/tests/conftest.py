@@ -4,13 +4,8 @@ Test cases for scheduling service
 # Standard imports
 import os
 
-# Third-party imports
-from apscheduler.jobstores.redis import RedisJobStore
-from apscheduler.schedulers.background import BackgroundScheduler
-
 # Application imports
 from scheduler_service import init_app
-from scheduler_service.apscheduler_config import executors
 from scheduler_service.common.tests.conftest import *
 # Application Specific
 
@@ -22,7 +17,7 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 
 @pytest.fixture(scope='session')
-def job_config(request):
+def job_config_periodic(request):
     return {
         "frequency": {
             "hours": 10
@@ -42,7 +37,7 @@ def job_config(request):
 
 
 @pytest.fixture(scope='session')
-def job_config_two(request):
+def job_config_one_time(request):
     return {
         'task_type': 'one_time',
         "content_type": "application/json",
@@ -78,44 +73,3 @@ def auth_header(request, auth_token):
     header = {'Authorization': 'Bearer ' + auth_token,
               'Content-Type': 'application/json'}
     return header
-
-# APScheduler for creating, resuming, stopping, removing jobs
-
-
-@pytest.fixture(scope='function')
-def redis_jobstore_setup(request):
-    """
-    Sets up a Redis based job store to be used by APSCheduler
-    :param request:
-    :return: redis jobstore dictionary object
-    {
-        'redis': job_store_object
-    }
-    """
-    jobstore = {
-        'redis': RedisJobStore()
-    }
-
-    def resource_redis_jobstore_teardown():
-        jobstore['redis'].remove_all_jobs()
-
-    request.addfinalizer(resource_redis_jobstore_teardown)
-    return jobstore
-
-
-@pytest.fixture(scope='function')
-def apscheduler_setup(request, redis_jobstore_setup):
-    """
-    :param request:
-    :return: APScheduler object initialized with redis job store and default executor
-    """
-
-    scheduler = BackgroundScheduler(jobstore=redis_jobstore_setup, executors=executors)
-    scheduler.add_jobstore(redis_jobstore_setup['redis'])
-    scheduler.start()
-
-    def resource_apscheduler_teardown():
-        scheduler.shutdown()
-
-    request.addfinalizer(resource_apscheduler_teardown)
-    return scheduler

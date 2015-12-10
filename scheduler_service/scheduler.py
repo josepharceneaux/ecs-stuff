@@ -1,9 +1,9 @@
 """
 Scheduler - APScheduler initialization, set jobstore, threadpoolexecutor
-- Add task to apscheduler
+- Add task to APScheduler
 - run_job callback method, runs when times come
-- remove multiple tasks from apscheduler
-- get tasks from apscheduler and serialize tasks using json
+- remove multiple tasks from APScheduler
+- get tasks from APScheduler and serialize tasks using json
 """
 
 # Third-party imports
@@ -17,7 +17,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 # Application imports
 from scheduler_service import logger
 from scheduler_service.apscheduler_config import executors
-from scheduler_service.custom_exceptions import FieldRequiredError, TriggerTypeError
+from scheduler_service.custom_exceptions import FieldRequiredError, TriggerTypeError, JobNotCreatedError
 from scheduler_service.tasks import send_request
 
 job_store = RedisJobStore()
@@ -47,7 +47,7 @@ def apscheduler_listener(event):
             try:
                 scheduler.remove_job(job_id=job.id)
             except Exception as e:
-                logger.exception()
+                logger.exception("apscheduler_listener: Error occured while removing job")
                 raise e
             logger.info("apscheduler_listener: Job removed successfully")
 
@@ -57,7 +57,7 @@ scheduler.add_listener(apscheduler_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERRO
 
 def schedule_job(data, user_id, access_token):
     """
-    schedule job using post data and add it to apscheduler
+    schedule job using post data and add it to APScheduler
     :return:
     """
     try:
@@ -65,44 +65,61 @@ def schedule_job(data, user_id, access_token):
         trigger = data['task_type']
         content_type = data.get('content_type', 'application/json')
         url = data['url']
-    except Exception as e:
+    except Exception:
         raise FieldRequiredError(error_message="Missing or invalid data.")
+
+    trigger = trigger.lower().strip()
+
     if trigger == 'periodic':
         try:
             frequency = data['frequency']
             start_datetime = data['start_datetime']
             end_datetime = data['end_datetime']
-        except Exception as e:
+
+            check_time_list = [frequency.get('seconds', -1), frequency.get('minutes', -1), frequency.get('hours', -1),
+                                frequency.get('days', -1), frequency.get('weeks', -1)]
+            is_correct_time = False
+            for t in check_time_list:
+                if t != -1:
+                    is_correct_time = True
+                    break
+
+            if not is_correct_time:
+                raise FieldRequiredError(error_message="Invalid frequency data.")
+        except Exception:
             logger.exception('schedule_job: Error while scheduling a job')
             raise FieldRequiredError(error_message="Missing or invalid data.")
-        job = scheduler.add_job(run_job,
-                                trigger='interval',
-                                seconds=frequency.get('seconds', 0),
-                                minutes=frequency.get('minutes', 0),
-                                hours=frequency.get('hours', 0),
-                                days=frequency.get('days', 0),
-                                weeks=frequency.get('weeks', 0),
-                                start_date=start_datetime,
-                                end_date=end_datetime,
-                                args=[user_id, access_token, url, content_type],
-                                kwargs=post_data)
-        logger.info('apscheduler: Task has been added and will run at %s ' % start_datetime)
+        try:
+            job = scheduler.add_job(run_job,
+                                    trigger='interval',
+                                    seconds=frequency.get('seconds', 0),
+                                    minutes=frequency.get('minutes', 0),
+                                    hours=frequency.get('hours', 0),
+                                    days=frequency.get('days', 0),
+                                    weeks=frequency.get('weeks', 0),
+                                    start_date=start_datetime,
+                                    end_date=end_datetime,
+                                    args=[user_id, access_token, url, content_type],
+                                    kwargs=post_data)
+            logger.info('schedule_job: Task has been added and will run at %s ' % start_datetime)
+        except Exception:
+            raise JobNotCreatedError("Unable to create the job.")
         return job.id
     elif trigger == 'one_time':
         try:
             run_datetime = data['run_datetime']
-        except Exception as e:
-            logger.exception()
-            raise FieldRequiredError(error_message="Missing or invalid data.")
+        except KeyError:
+            logger.exception("schedule_job: couldn't find 'run_datetime'")
+            raise FieldRequiredError(error_message="Missing or invalid data. Field 'run_datetime' is missing")
         job = scheduler.add_job(run_job,
                                 trigger='date',
                                 run_date=run_datetime,
-                                args=[user_id, access_token, url, content_type],
+                                args=[access_token, url, content_type],
                                 kwargs=post_data)
-        logger.info('apscheduler: Task has been added and will run at %s ' % run_datetime)
+        logger.info('schedule_job: Task has been added and will run at %s ' % run_datetime)
         return job.id
     else:
-        logger.error("apscheduler: Task type not correct. Please use periodic or one_time as task type.")
+        logger.error("schedule_job: Task type not correct. Please use periodic or one_time as task type.")
         raise TriggerTypeError("Task type not correct. Please use periodic or one_time as task type.")
 
 

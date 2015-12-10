@@ -18,35 +18,34 @@ from scheduler_service.tests.conftest import APP_URL
 __author__ = 'saad'
 
 
-@pytest.mark.usefixtures('auth_header', 'job_config')
+@pytest.mark.usefixtures('auth_header', 'job_config_periodic')
 class TestSchedulerPause:
 
-    def test_single_pause_job(self, auth_header, job_config):
+    def test_single_pause_job(self, auth_header, job_config_periodic):
         """
-        Create a job by hitting endpoint
-        then stop it using endpoint. We then stop it again and
+        Create a job by hitting endpoint. Then stop it using endpoint. We then stop it again and
         it should give error (6053).
         Args:
             auth_data: Fixture that contains token.
-            job_config (dict): Fixture that contains job config to be used as
+            job_config_periodic (dict): Fixture that contains job config to be used as
             POST data while hitting the endpoint.
         :return:
         """
         start_date = datetime.datetime.utcnow() - datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(days=2)
-        job_config['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
-        job_config['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
+        job_config_periodic['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
+        job_config_periodic['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
 
         jobs = []
 
         for i in range(10):
-            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config_periodic),
                                      headers=auth_header)
             assert response.status_code == 201
             jobs.append(response.json()['id'])
         job_id = jobs[0]
 
-        # send job stop request
+        # Send job stop request
         response_stop = requests.post(APP_URL + '/tasks/' + job_id + '/pause/',
                                       headers=auth_header)
         assert response_stop.status_code == 200
@@ -56,7 +55,7 @@ class TestSchedulerPause:
         next_run_datetime = response.json()['task']['next_run_datetime']
         assert next_run_datetime == 'None'
 
-        # try stopping again, it should throw exception
+        # Try stopping again, it should throw exception
         response_stop_again = requests.post(APP_URL + '/tasks/' + job_id + '/pause/',
                                             headers=auth_header)
         assert response_stop_again.status_code == 500 and \
@@ -79,40 +78,44 @@ class TestSchedulerPause:
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
-    def test_multiple_pause_jobs(self, auth_header, job_config):
+    def test_multiple_pause_jobs(self, auth_header, job_config_periodic):
         """
         Pause already running scheduled jobs and then see it returns 200 status code and also get jobs
         and check their next_run_datetime is none (Paused job has next_run_datetime equal to None)
         Args:
             auth_data: Fixture that contains token.
-            job_config (dict): Fixture that contains job config to be used as
+            job_config_periodic (dict): Fixture that contains job config to be used as
             POST data while hitting the endpoint.
         :return:
         """
         start_date = datetime.datetime.utcnow() - datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(days=2)
-        job_config['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
-        job_config['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
+        job_config_periodic['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
+        job_config_periodic['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
 
         jobs_id = []
 
         for i in range(10):
-            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config_periodic),
                                      headers=auth_header)
             assert response.status_code == 201
             jobs_id.append(response.json()['id'])
 
-        # send job stop request
+        # Send job stop request
         response_stop = requests.post(APP_URL + '/tasks/pause/', data=json.dumps(dict(ids=jobs_id)),
                                       headers=auth_header)
         assert response_stop.status_code == 200
 
         jobs = []
         # Paused jobs have their next_run_datetime set to 'None'
+
+        # Get jobs
         for job_id in jobs_id:
             response_get = requests.get(APP_URL + '/tasks/id/' + job_id, data=json.dumps(dict(ids=jobs_id)),
                                         headers=auth_header)
             jobs.append(response_get.json()['task'])
+
+        # Now after getting jobs check their next run time
         for res in jobs:
             next_run_datetime = res['next_run_datetime']
             assert next_run_datetime == 'None'
@@ -122,21 +125,21 @@ class TestSchedulerPause:
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
-    def test_single_pause_job_without_token(self, auth_header, job_config):
+    def test_single_pause_job_without_token(self, auth_header, job_config_periodic):
         """
         Try to pause an already scheduled job using invalid or no token, then check if it shows 401 response
         Args:
             auth_data: Fixture that contains token.
-            job_config (dict): Fixture that contains job config to be used as
+            job_config_periodic (dict): Fixture that contains job config to be used as
             POST data while hitting the endpoint.
         :return:
         """
         start_date = datetime.datetime.utcnow() - datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(days=2)
-        job_config['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
-        job_config['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
+        job_config_periodic['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
+        job_config_periodic['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
 
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config_periodic),
                                  headers=auth_header)
 
         assert response.status_code == 201
@@ -144,10 +147,10 @@ class TestSchedulerPause:
         assert data['id'] is not None
 
         headers = auth_header.copy()
-        # set the token to invalid
+        # Set the token to invalid
         headers['Authorization'] = 'Bearer invalid_token'
 
-        # send job stop request
+        # Send job stop request
         response_stop = requests.post(APP_URL + '/tasks/' + data['id'] + '/pause/',
                                       headers=headers)
         assert response_stop.status_code == 401
@@ -161,25 +164,25 @@ class TestSchedulerPause:
         response = requests.get(APP_URL + '/tasks/id/' + data['id'], headers=auth_header)
         assert response.status_code == 404
 
-    def test_multiple_pause_jobs_without_token(self, auth_header, job_config):
+    def test_multiple_pause_jobs_without_token(self, auth_header, job_config_periodic):
         """
         Pause multiple jobs which are already scheduled and running without using token and then check
         if the response is 401
         Args:
             auth_data: Fixture that contains token.
-            job_config (dict): Fixture that contains job config to be used as
+            job_config_periodic (dict): Fixture that contains job config to be used as
             POST data while hitting the endpoint.
         :return:
         """
         start_date = datetime.datetime.utcnow() - datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(days=2)
-        job_config['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
-        job_config['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
+        job_config_periodic['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
+        job_config_periodic['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
 
         jobs_id = []
 
         for i in range(10):
-            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config_periodic),
                                      headers=auth_header)
             assert response.status_code == 201
             jobs_id.append(response.json()['id'])
@@ -187,17 +190,21 @@ class TestSchedulerPause:
         headers = auth_header.copy()
         headers['Authorization'] = 'Bearer invalid_token'
 
-        # send job stop request
+        # Send job stop request with invalid token
         response_stop = requests.post(APP_URL + '/tasks/pause/', data=json.dumps(dict(ids=jobs_id)),
                                       headers=headers)
         assert response_stop.status_code == 401
 
         # Paused jobs have their next_run_datetime set to 'None'
         jobs = []
+
+        # Get all jobs
         for job_id in jobs_id:
             response_get = requests.get(APP_URL + '/tasks/id/' + job_id, data=json.dumps(dict(ids=jobs_id)),
                                         headers=auth_header)
             jobs.append(response_get.json())
+
+        # Now check if their next run time is None
         for res in jobs:
             next_run_datetime = res['task']['next_run_datetime']
             assert next_run_datetime != 'None'

@@ -1,5 +1,5 @@
 """
-Test cases for delete job with and with out token
+Test cases for delete job with and with out token.
 First create few jobs using service endpoint. After that delete these jobs using job_id of each job and
 also check for the case when invalid bearer token is passed
 """
@@ -19,28 +19,32 @@ from scheduler_service.tests.conftest import APP_URL
 __author__ = 'saad'
 
 
-@pytest.mark.usefixtures('auth_header', 'job_config')
+@pytest.mark.usefixtures('auth_header', 'job_config_periodic')
 class TestSchedulerDelete:
 
-    def test_single_delete_job(self, auth_header, job_config):
+    def test_single_delete_job(self, auth_header, job_config_periodic):
         """
-        Delete a single job and it should give 200 status code, then delete that created job.
-        after that check if the job is still there, it should give 404 status code
+        Create a single job and it should give 200 status code, then delete that created job.
+        after that check if the job is still there, it should give 404 status code while accessing
+        a deleted job.
         Args:
             auth_data: Fixture that contains token.
-            job_config (dict): Fixture that contains job config to be used as
+            job_config_periodic (dict): Fixture that contains job config to be used as
             POST data while hitting the endpoint.
         :return:
         """
         start_date = datetime.datetime.utcnow() - datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(days=2)
-        job_config['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
-        job_config['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
+        job_config_periodic['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
+        job_config_periodic['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
 
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+        # Creating a job
+        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config_periodic),
                                  headers=auth_header)
         assert response.status_code == 201
         job_id = response.json()['id']
+
+        # Removing a job
         response_remove = requests.delete(APP_URL + '/tasks/id/' + job_id,
                                           headers=auth_header)
         assert response_remove.status_code == 200
@@ -49,54 +53,58 @@ class TestSchedulerDelete:
         response = requests.get(APP_URL + '/tasks/id/' + job_id, headers=auth_header)
         assert response.status_code == 404
 
-    def test_multiple_delete_job(self, auth_header, job_config):
+    def test_multiple_delete_job(self, auth_header, job_config_periodic):
         """
-        First, delete jobs using correct ids, should return 200 status code
-        After that, delete jobs using correct and incorrect ids, should return 207 status code with removed and not removed
+        First, create jobs using correct ids, should return 200 status code.
+        Then we delete all jobs. Then we create 10 scheduled jobs and 1 invalid job (which
+        doesn't exist on the server). Then we try to delete all the jobs. Server does delete
+        all scheduled jobs but couldn't find the invalid one and hence returnrs 207.
+
          Args:
             auth_data: Fixture that contains token.
-            job_config (dict): Fixture that contains job config to be used as
+            job_config_periodic (dict): Fixture that contains job config to be used as
             POST data while hitting the endpoint.
         :return:
         """
         start_date = datetime.datetime.utcnow() - datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(days=2)
-        job_config['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
-        job_config['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
+        job_config_periodic['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
+        job_config_periodic['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
         jobs = []
 
         # schedule 10 jobs and remove all of them
         for i in range(10):
-            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config_periodic),
                                      headers=auth_header)
             assert response.status_code == 201
             jobs.append(json.loads(response.text)['id'])
 
+        # Delete all of them
         response_remove_jobs = requests.delete(APP_URL + '/tasks/',
                                                data=json.dumps(dict(ids=jobs)),
                                                headers=auth_header)
 
         assert response_remove_jobs.status_code == 200
 
-        # free resources
+        # Emptying the job list
         del jobs[:]
 
         # add a non-existing or invalid job and check if it shows 207 status code
         jobs.append('Non-existing job')
         # schedule 10 jobs and remove all of them
         for i in range(10):
-            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config_periodic),
                                      headers=auth_header)
             assert response.status_code == 201
             jobs.append(json.loads(response.text)['id'])
-
+        # Then removed all scheduled jobs
         response_remove_jobs = requests.delete(APP_URL + '/tasks/',
                                                data=json.dumps(dict(ids=jobs)),
                                                headers=auth_header)
-
+        # Returning 207 because 'Non-existing job' doesn't exist and server couldn't find it
         assert response_remove_jobs.status_code == 207
 
-    def test_single_delete_job_without_token(self, auth_header, job_config):
+    def test_single_delete_job_without_token(self, auth_header, job_config_periodic):
         """
         Create a job and then try to delete the job with invalid token and
         we assert for a 401. Then we delete it with correct token and it's deleted.
@@ -104,16 +112,16 @@ class TestSchedulerDelete:
         anymore.
         Args:
             auth_data: Fixture that contains token.
-            job_config (dict): Fixture that contains job config to be used as
+            job_config_periodic (dict): Fixture that contains job config to be used as
             POST data while hitting the endpoint.
         :return:
         """
         start_date = datetime.datetime.utcnow() - datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(days=2)
-        job_config['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
-        job_config['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
+        job_config_periodic['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
+        job_config_periodic['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
 
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config_periodic),
                                  headers=auth_header)
 
         assert response.status_code == 201
@@ -130,36 +138,37 @@ class TestSchedulerDelete:
                                           headers=headers)
         assert response_delete.status_code == 401
 
+        # Now try deleting job with correct token
         response_delete = requests.delete(APP_URL + '/tasks/id/' + data['id'],
-                                           headers=auth_header)
+                                                    headers=auth_header)
 
         assert response_delete.status_code == 200
 
-        # send job delete request...#job should n't exist now
+        # send job delete request, job should n't exist now, hence we will get a 404
         response_delete = requests.delete(APP_URL + '/tasks/id/' + data['id'],
-                                           headers=auth_header)
+                                                    headers=auth_header)
 
         assert response_delete.status_code == 404
 
-    def test_multiple_delete_jobs_without_token(self, auth_header, job_config):
+    def test_multiple_delete_jobs_without_token(self, auth_header, job_config_periodic):
         """
-        Create 10 jobs and then try to delete them without token and we get 401s.
-        Create and schedule jobs then remove all jobs
+        Create 10 jobs and then try to delete them without token and we get 401 for all.
+        Then try deleting them with correct token and they should be deleted.
         Args:
             auth_data: Fixture that contains token.
-            job_config (dict): Fixture that contains job config to be used as
+            job_config_periodic (dict): Fixture that contains job config to be used as
             POST data while hitting the endpoint.
         :return:
         """
         start_date = datetime.datetime.utcnow() - datetime.timedelta(seconds=15)
         end_date = start_date + datetime.timedelta(days=2)
-        job_config['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
-        job_config['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
+        job_config_periodic['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
+        job_config_periodic['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
         jobs = []
 
         # schedule some jobs
         for i in range(10):
-            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config_periodic),
                                      headers=auth_header)
             assert response.status_code == 201
             jobs.append(json.loads(response.text)['id'])
