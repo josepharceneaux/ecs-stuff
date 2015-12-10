@@ -35,6 +35,9 @@ test:
     - python candidate_pool_service/run.py:
         parallel: true
         background: true
+    - python spreadsheet_import_service/run.py:
+        parallel: true
+        background: true
     - sleep 5
 
 
@@ -52,6 +55,8 @@ test:
     - py.test social_network_service/tests/:
         parallel: true
     - py.test candidate_pool_service/tests/:
+        parallel: true
+    - py.test spreadsheet_import_service/tests/:
         parallel: true
 
 

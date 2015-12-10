@@ -55,13 +55,13 @@ def import_spreadsheet_candidates(access_token, candidate_data=[], spreadsheet_f
     return response.json(), response.status_code
 
 
-def test_candidate_data(num_candidates=15):
+def candidate_test_data(num_candidates=15):
 
     candidate_data = []
     for x in xrange(num_candidates):
         random_str = str(uuid.uuid4())[0:6]
         candidate_data.append(['John %s Smith' % random_str, 'johnsmith%s@example.com' % random_str, '408-555-1212',
-                               'NVIDIA', 'Embedded Software Developer', 'San Jose State University', '2013', 'San Jose',
+                               'NVIDIA', 'Embedded Software Developer', 'San Jose State University', 'MS', 'San Jose',
                                'CA', 'Electrical Engineering', 'Production & Development', '24', 'Technology', 'Google',
                                'Summer Software Intern'])
     return candidate_data

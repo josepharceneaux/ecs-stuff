@@ -39,5 +39,17 @@ elif GT_ENVIRONMENT == 'prod':
 else:
     raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")
 
+# Get Amazon SES Credentials from environment variables
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+
+# Flask-Email configurations
+MAIL_SERVER = 'email-smtp.us-east-1.amazonaws.com'
+MAIL_PORT = 587
+MAIL_USE_TLS = True
+MAIL_USERNAME = 'AKIAJWSPKYRQP6U6323A'
+MAIL_PASSWORD = 'At8Wax3hzejFCIeZXehB3Ahte4P3Ot0gIqEWRkME+oXQ'
+MAIL_DEFAULT_SENDER = '"getTalent Web" <no-reply@gettalent.com>'
+
 SECRET_KEY = os.urandom(24).encode('hex')
 OAUTH2_PROVIDER_TOKEN_EXPIRES_IN = 7200  # 2 hours expiry time for bearer token

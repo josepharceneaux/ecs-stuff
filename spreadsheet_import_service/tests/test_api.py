@@ -8,7 +8,7 @@ from common_functions import *
 
 def test_convert_spreadsheet_to_table(access_token_first, user_first):
 
-    candidate_data = test_candidate_data()
+    candidate_data = candidate_test_data()
 
     # Logged-in user trying to convert a csv spreadsheet to table without appropriate roles
     response, status_code = import_spreadsheet_candidates(access_token_first, candidate_data=candidate_data)
@@ -33,7 +33,7 @@ def test_convert_spreadsheet_to_table(access_token_first, user_first):
 
 def test_import_candidates_from_spreadsheet(access_token_first, user_first):
 
-    candidate_data = test_candidate_data()
+    candidate_data = candidate_test_data()
 
     # Logged-in user trying to convert a csv spreadsheet to table without appropriate roles
     response, status_code = import_spreadsheet_candidates(access_token_first, candidate_data=candidate_data,
@@ -46,6 +46,12 @@ def test_import_candidates_from_spreadsheet(access_token_first, user_first):
     response, status_code = import_spreadsheet_candidates(access_token_first, candidate_data=candidate_data,
                                                           import_candidates=True)
 
-    assert status_code == 200
+    assert status_code == 201
     assert response.get('count') == len(candidate_data)
     assert response.get('status') == 'complete'
+
+
+def test_health_check():
+    import requests
+    response = requests.get('http://127.0.0.1:8009/healthcheck')
+    assert response.status_code == 200

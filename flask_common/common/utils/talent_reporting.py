@@ -27,6 +27,8 @@ def email_admins(body, prefix, subject):
     server_type = "Stage" if env == 'qa' else "Production"
     body = "%s\n\n\n\nRequest:\n%s" % (body, request)
 
-    message = Message("Talent Web %s %s: %s" % (server_type, prefix, subject), recipients=ADMINS, body=body)
+    # Init flask_mail object
     mail.init_app(app)
+
+    message = Message("Talent Web %s %s: %s" % (server_type, prefix, subject), recipients=ADMINS, body=body)
     mail.send(message)

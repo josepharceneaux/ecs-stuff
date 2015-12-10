@@ -167,7 +167,7 @@ def import_from_spreadsheet(*args, **kwargs):
                 elif column_name == 'candidate_education.schoolName':
                     school_names.append(column)
                 elif column_name == "candidate_education_degree_bullet.concentrationType":
-                    prepare_candidate_data(degrees, 'bullets', {'major': column})
+                    prepare_candidate_data(degrees, 'bullets', [{'major': column}])
                 elif column_name == 'student_year':
                     column = column.lower()
                     import datetime
@@ -256,7 +256,8 @@ def import_from_spreadsheet(*args, **kwargs):
         return jsonify(dict(count=len(candidate_ids), status='complete')), 201
 
     except Exception as e:
-        email_error_to_admins("Error importing from CSV. User ID: %s, S3 filename: %s" % (user_id, spreadsheet_filename),
+        email_error_to_admins("Error importing from CSV. User ID: %s, S3 filename: %s, S3_URL: %s" %
+                              (user_id, spreadsheet_filename, get_s3_url('CSVResumes', spreadsheet_filename)),
                               subject="import_from_csv")
         raise InvalidUsage(error_message="Error importing from CSV. User ID: %s, S3 filename: %s. Reason: %s" %
                                          (user_id, spreadsheet_filename, e.message))
