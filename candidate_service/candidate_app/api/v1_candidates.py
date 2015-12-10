@@ -316,7 +316,6 @@ class CandidateResource(Resource):
         Endpoints can do these operations:
             1. Delete a candidate via two methods:
                 I.  DELETE /v1/candidates/:id
-
                 OR
                 II. DELETE /v1/candidates/:email
 

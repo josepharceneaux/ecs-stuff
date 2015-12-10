@@ -211,7 +211,7 @@ def candidate_experiences(candidate_id):
                  CandidateExperience.start_year.desc(),
                  CandidateExperience.start_month.desc())
     return [{'id': experience.id,
-             'company': experience.organization,
+             'organization': experience.organization,
              'position': experience.position,
              'start_date': date_of_employment(year=experience.start_year, month=experience.start_month or 1),
              'end_date': date_of_employment(year=experience.end_year, month=experience.end_month or 1),
@@ -898,7 +898,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
     for education in educations:
         # CandidateEducation
         education_dict = dict(
-            list_order=education.get('list_order', 1),
+            list_order=education.get('list_order', 1) or 1,
             school_name=education.get('school_name'),
             school_type=education.get('school_type'),
             city=education.get('city'),
@@ -918,7 +918,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
             db.session.query(CandidateEducation).filter_by(id=education_id).update(education_dict)
 
             # CandidateEducationDegree
-            education_degrees = education.get('degrees', [])
+            education_degrees = education.get('degrees') or []
             for education_degree in education_degrees:
                 education_degree_dict = dict(
                     list_order=education_degree.get('list_order'),
@@ -944,7 +944,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
                         filter_by(candidate_education_id=education_id).update(education_degree_dict)
 
                     # CandidateEducationDegreeBullet
-                    education_degree_bullets = education_degree.get('bullets', [])
+                    education_degree_bullets = education_degree.get('bullets') or []
                     for education_degree_bullet in education_degree_bullets:
                         education_degree_bullet_dict = dict(
                             concentration_type=education_degree_bullet.get('major'),
@@ -973,7 +973,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
                     can_edu_degree_id = candidate_education_degree.id
 
                     # Add CandidateEducationDegreeBullets
-                    education_degree_bullets = education_degree.get('bullets', [])
+                    education_degree_bullets = education_degree.get('bullets') or []
                     for education_degree_bullet in education_degree_bullets:
                         db.session.add(CandidateEducationDegreeBullet(
                             candidate_education_degree_id=can_edu_degree_id,
@@ -992,7 +992,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
             education_id = candidate_education.id
 
             # CandidateEducationDegree
-            education_degrees = education.get('degrees')
+            education_degrees = education.get('degrees') or []
             for education_degree in education_degrees:
 
                 # Add CandidateEducationDegree
@@ -1017,7 +1017,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
                 education_degree_id = candidate_education_degree.id
 
                 # CandidateEducationDegreeBullet
-                degree_bullets = education_degree.get('bullets', [])
+                degree_bullets = education_degree.get('bullets') or []
                 for degree_bullet in degree_bullets:
 
                     # Add CandidateEducationDegreeBullet
@@ -1042,7 +1042,7 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time):
     for work_experience in work_experiences:
         # CandidateExperience
         experience_dict = dict(
-            list_order=work_experience.get('list_order', 1),
+            list_order=work_experience.get('list_order', 1) or 1,
             organization=work_experience.get('organization'),
             position=work_experience.get('position'),
             city=work_experience.get('city'),
@@ -1065,7 +1065,7 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time):
             db.session.query(CandidateExperience).filter_by(candidate_id=candidate_id).update(experience_dict)
 
             # CandidateExperienceBullet
-            experience_bullets = work_experience.get('bullets', [])
+            experience_bullets = work_experience.get('bullets') or []
             for experience_bullet in experience_bullets:
                 experience_bullet_dict = dict(
                     list_order=experience_bullet.get('list_order'),
@@ -1093,7 +1093,7 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time):
             experience_id = experience.id
 
             # CandidateExperienceBullet
-            experience_bullets = work_experience.get('bullets', [])
+            experience_bullets = work_experience.get('bullets') or []
             for experience_bullet in experience_bullets:
                 db.session.add(CandidateExperienceBullet(
                     candidate_experience_id=experience_id,
