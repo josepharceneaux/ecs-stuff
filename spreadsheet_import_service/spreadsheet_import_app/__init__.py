@@ -1,19 +1,20 @@
 __author__ = 'ufarooqi'
 
 from flask import Flask
-import api
 from spreadsheet_import_service.common.models.db import db
 from healthcheck import HealthCheck
 from spreadsheet_import_service.common import common_config
 
 app = Flask(__name__)
 app.config.from_object(common_config)
+
 db.init_app(app)
 db.app = app
 
-app.register_blueprint(api.mod, url_prefix='/v1')
-
 logger = app.config['LOGGER']
+
+import api
+app.register_blueprint(api.mod, url_prefix='/v1')
 
 # wrap the flask app and give a heathcheck url
 health = HealthCheck(app, "/healthcheck")

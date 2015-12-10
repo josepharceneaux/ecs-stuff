@@ -22,7 +22,7 @@ def convert_spreadsheet_to_table(spreadsheet_file, filename):
 
     is_csv = ".csv" in filename
     if is_csv:
-        return _convert_csv_to_table(spreadsheet_file)
+        return convert_csv_to_table(spreadsheet_file)
     import xlrd
 
     book = xlrd.open_workbook(filename=None, file_contents=spreadsheet_file.read())
@@ -42,7 +42,7 @@ def convert_spreadsheet_to_table(spreadsheet_file, filename):
     return table
 
 
-def _convert_csv_to_table(csv_file):
+def convert_csv_to_table(csv_file):
     """
     Convert a CSV file object to a python table object (array of arrays)
     :param csv_file: python file object
@@ -88,52 +88,60 @@ def _convert_csv_to_table(csv_file):
     return csv_table
 
 
-def import_from_csv(*args, **kwargs):
-
+def import_from_spreadsheet(*args, **kwargs):
+    """
+    This function will create new candidates from information of candidates given in a csv file
+    :param source_id: Id of candidates source
+    :param table: An array of candidate's dicts
+    :param spreadsheet_filename: Name of spreadsheet file from which candidates are being imported
+    :param header_row: An array of headers of candidate's spreadsheet
+    :return: A dictionary containing number of candidates successfully imported
+    :rtype: dict
+    """
     source_id = kwargs.get('source_id')
-    user_id = kwargs.get('user_id')
-    table = kwargs.get('csv_table') or []
-    csv_filename = kwargs.get('csv_filename') or []
+    table = kwargs.get('candidates_table') or []
+    spreadsheet_filename = kwargs.get('spreadsheet_filename') or []
     header_row = kwargs.get('header_row')
 
+    user_id = request.user.id
     user = User.query.get(user_id)
     domain_id = user.domain_id
 
     try:
 
-        domain_areas_of_interest = get_or_create_areas_of_interest(user.domainId, include_child_aois=True)
+        domain_areas_of_interest = get_or_create_areas_of_interest(user.domain_id, include_child_aois=True)
 
         logger.info("import CSV table: %s", table)
 
         candidate_ids = []
         for row in table:
-            first_name, middle_name, last_name, formatted_name, status_id,  = None, None, None, None, None, None, None
-            status_id, degree_title, graduation_year, university_start_year = None, None, None, None
-            address, work_experience, education, degree, custom_fields_dict = {}, {}, {}, {}, {}
-            emails, phones, areas_of_interest = [], [], []
+            first_name, middle_name, last_name, formatted_name, status_id,  = None, None, None, None, None
+            emails, phones, areas_of_interest, addresses, degrees = [], [], [], [], []
+            school_names, work_experiences, educations, custom_fields = [], [], [], []
+
             this_source_id = source_id
 
             for column_index, column in enumerate(row):
                 if column_index >= len(header_row):
                     continue
                 column_name = header_row[column_index]
-                if not column_name:
+                if not column_name or not column:
                     continue
 
                 if column_name == 'candidate.formattedName':
-                    formatted_name = column or None
+                    formatted_name = column
                 elif column_name == 'candidate.statusId':
-                    status_id = column or None
+                    status_id = column
                 elif column_name == 'candidate.firstName':
-                    first_name = column or None
+                    first_name = column
                 elif column_name == 'candidate.middleName':
-                    middle_name = column or None
+                    middle_name = column
                 elif column_name == 'candidate.lastName':
-                    last_name = column or None
+                    last_name = column
                 elif column_name == 'candidate_email.address':
-                    emails.append({'address': column or None, 'is_default': True})
+                    emails.append({'address': column})
                 elif column_name == 'candidate_phone.value':
-                    phones.append({'value': column or None, 'is_default': True})
+                        phones.append({'value': column})
                 elif column_name == 'candidate.source':
                     source = CandidateSource.query.filter_by(description=column, domain_id=domain_id).all()
                     if len(source):
@@ -144,26 +152,23 @@ def import_from_csv(*args, **kwargs):
                         db.session.commit()
                         this_source_id = source.id
                 elif column_name == 'area_of_interest.description':
-                    # Get area of interest id from field column
-                    # If area of interest found, use it
                     column = column.strip()
                     if column:
-                        matching_aoi = domain_areas_of_interest.find(
-                            lambda aoi_row: column and aoi_row.name.lower().replace(' ', '') == column.lower().
-                                replace(' ', '')).first()
+                        matching_aoi = domain_areas_of_interest.find(lambda aoi_row: aoi_row.name.lower().
+                                                                     replace(' ', '') == column.lower().
+                                                                     replace(' ', '')).first()
                         if matching_aoi:
                             areas_of_interest.append({'area_of_interest_id': matching_aoi.id})
                         else:
                             logger.warning("Unknown AOI when importing from CSV, user %s: %s", user_id, column)
                 elif column_name == 'candidate_experience.organization':
-                    work_experience['organization'] = column or None
-                    work_experience['is_current'] = True
+                    prepare_candidate_data(work_experiences, 'company', column)
                 elif column_name == 'candidate_experience.position':
-                    work_experience['position'] = column or None
+                    prepare_candidate_data(work_experiences, 'position', column)
                 elif column_name == 'candidate_education.schoolName':
-                    education['school_name'] = column or None
+                    school_names.append(column)
                 elif column_name == "candidate_education_degree_bullet.concentrationType":
-                    degree['bullets'] = [{'major': column or None}]
+                    prepare_candidate_data(degrees, 'bullets', {'major': column})
                 elif column_name == 'student_year':
                     column = column.lower()
                     import datetime
@@ -190,53 +195,76 @@ def import_from_csv(*args, **kwargs):
                         university_start_year = current_year - 2
                         degree_title = 'Masters'
 
-                    degree['title'] = degree_title
-                    degree['start_year'] = university_start_year
-                    degree['end_year'] = graduation_year
-                    degree['start_month'] = degree['end_month'] = 6
-                    education['degrees'] = [degree]
+                    prepare_candidate_data(degrees, 'title', degree_title)
+                    prepare_candidate_data(degrees, 'start_year', university_start_year)
+                    prepare_candidate_data(degrees, 'end_year', graduation_year)
+                    prepare_candidate_data(degrees, 'start_month', 6)
+                    prepare_candidate_data(degrees, 'end_month', 6)
 
                 elif column_name == 'candidate_address.city':
-                    address['city'] = column or None
+                    prepare_candidate_data(addresses, 'city', column)
                 elif column_name == 'candidate_address.state':
-                    address['state'] = column or None
+                    prepare_candidate_data(addresses, 'state', column)
                 elif column_name == 'candidate_address.zipCode':
-                    address['zip_code'] = column or None
+                    prepare_candidate_data(addresses, 'zip_code', column)
                 elif 'custom_field.' in column_name:
-                    column = column.strip()
-                    if column and isinstance(column, basestring):
+                    custom_fields_dict = {}
+                    if isinstance(column, basestring):
                         custom_fields_dict['custom_field_id'] = int(column_name.split('.')[1])
-                        custom_fields_dict['value'] = column
+                        custom_fields_dict['value'] = column.strip()
+                    if custom_fields_dict:
+                        custom_fields.append(custom_fields_dict)
 
-            result = create_candidate_from_parsed_resume(dict(full_name=formatted_name,
-                                                              status_id=status_id,
-                                                              first_name=first_name,
-                                                              middle_name=middle_name,
-                                                              last_name=last_name,
-                                                              emails=emails,
-                                                              phones=phones,
-                                                              work_experiences=[work_experience],
-                                                              educations = [education],
-                                                              addresses=[address],
-                                                              source_id=this_source_id,
-                                                              areas_of_interest=areas_of_interest,
-                                                              custom_fields=[custom_fields_dict]))
+                number_of_educations = max(len(degrees), len(school_names))
+
+            # Prepare candidate educational data
+            for index in range(0, number_of_educations):
+                education = {}
+                if index < len(school_names):
+                    education['school_name'] = school_names[index]
+
+                if index < len(degrees):
+                    education['degrees'] = [degrees[index]]
+
+                educations.append(education)
+
+            result = create_candidates_from_parsed_spreadsheet(dict(full_name=formatted_name,
+                                                                    status_id=status_id,
+                                                                    first_name=first_name,
+                                                                    middle_name=middle_name,
+                                                                    last_name=last_name,
+                                                                    emails=emails,
+                                                                    phones=phones,
+                                                                    work_experiences=work_experiences,
+                                                                    educations=educations,
+                                                                    addresses=addresses,
+                                                                    source_id=this_source_id,
+                                                                    areas_of_interest=areas_of_interest,
+                                                                    custom_fields=custom_fields))
 
             candidate_ids.append(result['candidate_id'])
 
-        delete_from_s3(csv_filename, 'CSVResumes')
+        # TODO: Upload candidate documents to cloud
+
+        delete_from_s3(spreadsheet_filename, 'CSVResumes')
 
         logger.info("Successfully imported %s candidates from CSV: User %s", len(candidate_ids), user.id)
         return dict(count=len(candidate_ids), status='complete')
 
     except Exception:
-        email_error_to_admins("Error importing from CSV. User ID: %s, S3 filename: %s" % (user_id, csv_filename),
+        email_error_to_admins("Error importing from CSV. User ID: %s, S3 filename: %s" % (user_id, spreadsheet_filename),
                               subject="import_from_csv")
-        raise InvalidUsage("Error importing from CSV. User ID: %s, S3 filename: %s", user_id, csv_filename)
+        raise InvalidUsage("Error importing from CSV. User ID: %s, S3 filename: %s", user_id, spreadsheet_filename)
 
 
 def get_or_create_areas_of_interest(domain_id, include_child_aois=False):
-
+    """
+    This function will create or get the areas of interest of a given domain
+    :param domain_id: Id of domain
+    :param include_child_aois: Do you want to include child areas_of_interest ?
+    :return: A Dictionary containing Areas_of_interest of a given domain
+    :rtype: list
+    """
     if not domain_id:
         logger.error("get_or_create_areas_of_interest: domain_id is %s!", domain_id)
 
@@ -257,9 +285,30 @@ def get_or_create_areas_of_interest(domain_id, include_child_aois=False):
     return areas
 
 
-def create_candidate_from_parsed_resume(candidate_dict):
+def create_candidates_from_parsed_spreadsheet(candidate_dict):
+    """
+    Create a new candidate using candidate_service
+    :param candidate_dict: Dict containing information of new candidate
+    :return: A dictionary containing IDs of newly created candidates
+    :rtype: dict
+    """
     import json, requests
-    payload = json.dumps({'candidates': [candidate_dict]})
-    r = requests.post(app.config['CANDIDATE_CREATION_URI'], data=payload,
+    r = requests.post(app.config['CANDIDATE_CREATION_URI'], data=json.dumps({'candidates': [candidate_dict]}),
                       headers={'Authorization': request.oauth_token})
     return json.loads(r.text)
+
+
+def prepare_candidate_data(data_array, key, value):
+    """
+    Prepare candidate data arrays
+    :param data_array: Array of data like work_experiences
+    :param key: Key of the array data which is going to be appended
+    :param value: Value of the data
+    :return: None
+    """
+    for data in data_array:
+        if key not in data:
+            data[key] = value
+            return
+
+    data_array.append({key: value})

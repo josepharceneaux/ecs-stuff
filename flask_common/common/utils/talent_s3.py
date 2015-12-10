@@ -180,6 +180,14 @@ def delete_from_s3(filename, folder_path, prefix=False):
             b.delete_key(k)
 
 
+def delete_from_filepicker_s3(file_name):
+
+    b, c = get_s3_filepicker_bucket_and_conn()
+    k = b.get_key(file_name)
+    if k:
+        b.delete_key(k)
+
+
 def create_bucket():
     """
 

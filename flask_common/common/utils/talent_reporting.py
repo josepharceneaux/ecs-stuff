@@ -3,6 +3,7 @@ __author__ = 'ufarooqi'
 import os
 from flask import request
 from flask_mail import Message
+from flask import current_app as app
 from amazon_ses import mail
 
 ADMINS = ['osman@gettalent.com', 'vincent.mendolia@dice.com', 'ahmed@janim.me', 'jitesh.karesia@newvisionsoftware.in',
@@ -27,4 +28,5 @@ def email_admins(body, prefix, subject):
     body = "%s\n\n\n\nRequest:\n%s" % (body, request)
 
     message = Message("Talent Web %s %s: %s" % (server_type, prefix, subject), recipients=ADMINS, body=body)
+    mail.init_app(app)
     mail.send(message)

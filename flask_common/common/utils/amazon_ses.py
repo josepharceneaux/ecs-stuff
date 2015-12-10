@@ -3,7 +3,6 @@ __author__ = 'ufarooqi'
 import boto
 import re
 import os
-from flask import current_app as app
 from flask.ext.mail import Mail
 
 # Get Amazon SES Credentials from environment variables
@@ -19,7 +18,8 @@ MAIL_PASSWORD = AWS_SECRET_ACCESS_KEY
 MAIL_DEFAULT_SENDER = '"getTalent Web" <no-reply@gettalent.com>'
 
 # Flask-Email object
-mail = Mail(app)
+mail = Mail()
+
 
 def get_boto_ses_connection():
     conn = boto.connect_ses(aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
