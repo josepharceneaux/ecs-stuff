@@ -99,10 +99,10 @@ def parse_candidate_phones(bs_contact_xml_list):
     return output
 
 
-def parse_candidate_experiences(bs_experience_xml_list):
+def parse_candidate_experiences(bg_experience_xml_list):
     # for experiences in rawxml.findAll('experience'):
     output = []
-    for experiences in bs_experience_xml_list:
+    for experiences in bg_experience_xml_list:
         jobs = experiences.findAll('job')
         for employement_index, employement in enumerate(jobs):
 
@@ -172,6 +172,75 @@ def parse_candidate_experiences(bs_experience_xml_list):
                     work_experience_bullets=candidate_experience_bullets
                 ))
     return output
+
+
+def parse_candidate_educations(bg_educations_xml_list):
+    output = []
+    for education in bg_educations_xml_list:
+        for school_index, school in enumerate(education.findAll('school')):
+            school_name = _tag_text(school, 'institution')
+            school_address = school.find('address')
+            school_city = _tag_text(school_address, 'city', capwords=True)
+            school_state = _tag_text(school_address, 'state')
+            country = 'United States'
+
+            # education_start_date = get_date_from_date_tag(school, 'start')
+            # education_end_date = None
+            end_date = get_date_from_date_tag(school, 'end')
+            completion_date = get_date_from_date_tag(school, 'completiondate')
+
+            if completion_date:
+                education_end_date = completion_date
+            elif end_date:
+                education_end_date = end_date
+
+            # GPA data no longer used in educations dict.
+            # Save for later or elimate this and gpa_num_and_denom?
+            # gpa_num, gpa_denom = gpa_num_and_denom(school, 'gpa')
+            output.append(dict(
+                school_name=school_name,
+                city=school_city,
+                state=school_state,
+                country=country,
+                # TODO explore start/end parsing options since tenure at school and
+                # EducationDegrees can have start/endtimes.
+                # graduation_date=education_end_date,
+                degrees=[
+                    {
+                        'type': _tag_text(school, 'degree'),
+                        'title': _tag_text(school, 'major'),
+                        'degree_bullets': []
+                    }
+                ],
+            ))
+    return output
+
+
+def parse_candidate_skills(bg_skills_xml_list):
+    output = []
+    for skill in bg_skills_xml_list:
+        name = skill.get('name')
+        skill_text = skill.text.strip()
+        output.append(dict(
+            months_used=skill.get('experience', '').strip(),
+            last_used_date=skill.get('lastused', '').strip(),
+            name=name or skill_text
+        ))
+    return output
+
+
+def parse_candidate_addresses(bg_xml_list):
+    output = []
+    for address in bg_xml_list:
+        output.append({
+            'address_line_1': _tag_text(address, 'street'),
+            'city': address.get('inferred-city', '').title() or _tag_text(address, 'city'),
+            'state': address.get('inferred-state', '').title() or _tag_text(address, 'state'),
+            'country': address.get('inferred-country', '').title() or 'US',
+            'zip_code': _tag_text(address, 'postalcode')
+        })
+    return output
+
 
 ###################################################################################################
 # Utility functions.*
