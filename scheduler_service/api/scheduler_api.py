@@ -148,7 +148,7 @@ class Tasks(Resource):
         user_id = request.user.id
         try:
             task = request.get_json()
-        except Exception as e:
+        except Exception:
             raise InvalidUsage("Bad Request, data should be in json")
         bearer = request.headers.get('Authorization')
         access_token = bearer.lower().replace('bearer ', '')
@@ -194,7 +194,7 @@ class Tasks(Resource):
         # get task_ids for tasks to be removed
         try:
             req_data = request.get_json()
-        except Exception as e:
+        except Exception:
             raise InvalidUsage("Bad Request, data should be in json")
         task_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else None
         if not task_ids:
@@ -254,7 +254,7 @@ class ResumeTasks(Resource):
         user_id = request.user.id
         try:
             req_data = request.get_json()
-        except Exception as e:
+        except Exception:
             raise InvalidUsage("Bad Request, data should be in json")
         task_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else None
         if not task_ids:
