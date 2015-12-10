@@ -15,62 +15,44 @@ from pdfminer.pdfparser import PDFDocument
 from pdfminer.pdfparser import PDFParser
 from xhtml2pdf import pisa
 import magic
+from bs4 import BeautifulSoup as bs4
 # JSON outputs.
-from .resume_json import DOCX
-from .resume_json import GET_642
-from .resume_json import GET_646
-from .resume_json import JPG
-from .resume_json import PDF
-from .resume_json import PDF_13
-from .resume_json import PDF_14
+from .resume_xml import DOCX
+from .resume_xml import GET_642
+from .resume_xml import GET_646
+# from .resume_xml import JPG
+from .resume_xml import PDF
+from .resume_xml import PDF_13
+from .resume_xml import PDF_14
 # Modules being tested.
-from resume_service.resume_parsing_app.views.optic_parse_lib import fetch_optic_response
+# from resume_service.resume_parsing_app.views.optic_parse_lib import fetch_optic_response
 from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_name
-from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_emails
-from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_phones
-from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_educations
+# from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_emails
+# from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_phones
+# from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_educations
 
 EDUCATIONS_KEYS = ('city', 'degrees', 'state', 'country', 'school_name')
 
-JSON_MAPS = [
-    {'dict_name': DOCX, 'name': 'VEENA NITHOO', 'email_len': 0, 'phone_len': 1, 'education_len': 1},
-    {'dict_name': GET_642, 'name': 'Bobby Breland', 'email_len': 1, 'phone_len': 2, 'education_len': 1},
-    {'dict_name': GET_646, 'name': 'Patrick Kaldawy', 'email_len': 3, 'phone_len': 6, 'education_len': 2},
-    {'dict_name': JPG, 'name': 'Erik Farmer', 'email_len': 0, 'phone_len': 2, 'education_len': 0},
-    {'dict_name': PDF, 'name': 'MARK GREENE', 'email_len': 1, 'phone_len': 1, 'education_len': 1},
-    {'dict_name': PDF_13, 'name': 'BRUCE PARKEY', 'email_len': 1, 'phone_len': 1, 'education_len': 1},
-    # This PDF currently does not get its email/phone parsed out of the footer.
-    # This PDF currently parses out the wrong education count
-    {'dict_name': PDF_14, 'name': 'Jose Chavez', 'email_len': 0, 'phone_len': 0, 'education_len': 2}
-]
-
-RESUME_TO_NAMES_MAPS = [
-    {'file_name': 'Get-642.doc', 'name': 'Bobby Breland'},
-    {'file_name': 'Get-646.doc', 'name': 'Patrick Kaldawy'},
-    {'file_name': 'test_bin.docx', 'name': 'VEENA NITHOO'},
-    {'file_name': 'test_bin.jpg', 'name': 'Erik Farmer'},
-    {'file_name': 'test_bin.pdf', 'name': 'MARK GREENE'},
-    {'file_name': 'test_bin_13.pdf', 'name': 'BRUCE PARKEY'},
-    {'file_name': 'test_bin_14.pdf', 'name': 'Jose Chavez'},
+XML_MAPS = [
+    {'tree_name': DOCX, 'name': 'Veena Nithoo', 'email_len': 0, 'phone_len': 1, 'education_len': 1},
+    {'tree_name': GET_642, 'name': 'Bobby Breland', 'email_len': 1, 'phone_len': 2, 'education_len': 1},
+    {'tree_name': GET_646, 'name': 'Patrick Kaldawy', 'email_len': 3, 'phone_len': 6, 'education_len': 2},
+#     # {'tree_name': JPG, 'name': 'Erik Farmer', 'email_len': 0, 'phone_len': 2, 'education_len': 0},
+    {'tree_name': PDF, 'name': 'Mark Greene', 'email_len': 1, 'phone_len': 1, 'education_len': 1},
+    {'tree_name': PDF_13, 'name': 'Bruce Parkey', 'email_len': 1, 'phone_len': 1, 'education_len': 1},
+#     # This PDF currently does not get its email/phone parsed out of the footer.
+#     # This PDF currently parses out the wrong education count
+    {'tree_name': PDF_14, 'name': 'Jose Chavez', 'email_len': 0, 'phone_len': 0, 'education_len': 2}
 ]
 
 
-def test_candidate_name_parsing():
-    """
-        Tests name parsing using API
-    """
-    for resume_dict in RESUME_TO_NAMES_MAPS:
-        resume = convert_file_to_encoded_binary(resume_dict['file_name'])
-        optic_response = fetch_optic_response(resume)
-        name = parse_candidate_name(optic_response['resume']['contact'])
-        assert name == resume_dict['name']
-
-
-def test_name_parsing_with_json():
-    for j in JSON_MAPS:
-        resume = j['dict_name']
-        name = parse_candidate_name(resume['resume']['contact'])
-        assert name == j['name']
+def test_name_parsing_with_xml():
+    for j in XML_MAPS:
+        resume = j['tree_name']
+        contact_xml_list = bs4(resume, 'lxml').findAll('contact')
+        if contact_xml_list:
+            name = parse_candidate_name(contact_xml_list)
+            assert name == j['name']
 
 
 def test_email_parsing_with_json():

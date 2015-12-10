@@ -1,3 +1,4 @@
+# coding=utf-8
 DOCX = """
   <resdoc>
    <resume canonversion="2" dateversion="2" iso8601="2015-12-09" present="735943" xml:space="preserve">

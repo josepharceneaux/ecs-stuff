@@ -25,7 +25,7 @@ from bs4 import BeautifulSoup as bs4
 import magic
 from flask import current_app
 from OauthClient import OAuthClient
-from resume_service.resume_parsing_app.views.optic_parse_lib import parse_optic_json, fetch_optic_response
+# from resume_service.resume_parsing_app.views.optic_parse_lib import parse_optic_json, fetch_optic_response
 
 from talent_dice_client import parse_resume_with_bg
 
