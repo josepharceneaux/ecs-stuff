@@ -251,8 +251,6 @@ class ResumeTasks(Resource):
                     404 (Bad Request)
                     500 (Internal Server Error)
 
-        .. Error code:: 6050(Task Not Found)
-
         """
         user_id = request.user.id
         try:
@@ -307,8 +305,6 @@ class PauseTasks(Resource):
                     400 (Bad Request)
                     207 (Not all Paused)
                     500 (Internal Server Error)
-
-        .. Error code:: 6050(Task Not Found)
 
         """
         user_id = request.user.id
@@ -396,7 +392,7 @@ class TaskById(Resource):
                     }
 
         .. Status:: 200 (OK)
-                    404 (Not found)
+                    404 (Task not found)
                     500 (Internal Server Error)
 
         """
@@ -429,7 +425,7 @@ class TaskById(Resource):
                 'message': 'Task has been removed successfully'
             }
         .. Status:: 200 (Resource deleted)
-                    404 (Not found)
+                    404 (Task Not found)
                     500 (Internal Server Error)
 
         """
@@ -467,7 +463,7 @@ class ResumeTaskById(Resource):
             }
 
         .. Status:: 200 (OK)
-                    404 (Not found)
+                    404 (Task not found)
                     500 (Internal Server Error)
 
         .. Error code:: 6054(Task Already running)
