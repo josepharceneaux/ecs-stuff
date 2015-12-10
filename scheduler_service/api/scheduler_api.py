@@ -72,6 +72,7 @@ class Tasks(Resource):
                         "start_datetime": "2015-11-05T08:00:00-05:00",
                         "end_datetime": "2015-12-05T08:00:00-05:00"
                         "next_run_datetime": "2015-11-05T08:20:30-05:00",
+                        "task_type": "periodic"
                     }
                ]
             }
@@ -98,7 +99,7 @@ class Tasks(Resource):
                     "day": 5,
                     "hour": 6
                 },
-                "trigger": "interval",
+                "task_type": "periodic",
                 "start_datetime": "2015-12-05T08:00:00-05:00",
                 "end_datetime": "2016-01-05T08:00:00-05:00",
                 "url": "http://getTalent.com/sms/send/",
@@ -111,7 +112,7 @@ class Tasks(Resource):
             }
             for one_time schedule
             task = {
-                "trigger": "date",
+                "task_type": "one_time",
                 "run_datetime": "2015-12-05T08:00:00-05:00",
                 "url": "http://getTalent.com/email/send/",
                 "post_data": {
@@ -139,6 +140,7 @@ class Tasks(Resource):
                 "id" : "5das76nbv950nghg8j8-33ddd3kfdw2"
             }
         .. Status:: 201 (Resource Created)
+                    400 (Bad Request)
                     500 (Internal Server Error)
                     401 (Unauthorized to access getTalent)
 
@@ -210,9 +212,9 @@ class Tasks(Resource):
             removed_jobs = map(lambda job: job[1], removed)
             not_removed = list(set(task_ids) - set(removed_jobs))
             if not_removed:
-                return ApiResponse(json.dumps(dict(message='Unable to remove %s tasks' % len(not_removed),
-                                              removed=removed,
-                                              not_removed=not_removed)), status=207)
+                return dict(message='Unable to remove %s tasks' % len(not_removed),
+                            removed=removed,
+                            not_removed=not_removed), 207
         raise InvalidUsage('Bad request, include ids as list data', error_code=400)
 
 
@@ -246,6 +248,7 @@ class ResumeTasks(Resource):
 
         .. Status:: 200 (OK)
                     207 (Not all paused)
+                    404 (Bad Request)
                     500 (Internal Server Error)
 
         .. Error code:: 6050(Task Not Found)
@@ -266,9 +269,9 @@ class ResumeTasks(Resource):
                 scheduler.resume_job(job_id=_id)
             if len(valid_tasks) != len(task_ids):
                 none_tasks = filter(lambda task_id: scheduler.get_job(job_id=task_id) is None, task_ids)
-                return ApiResponse(json.dumps(dict(message='Unable to pause %s tasks' % len(none_tasks),
-                                                   paused=valid_tasks,
-                                                   not_found=none_tasks)), status=207)
+                return dict(message='Unable to resume %s tasks' % len(none_tasks),
+                            paused=valid_tasks,
+                            not_found=none_tasks), 207
             return dict(message="Tasks have been successfully resumed")
 
 
@@ -301,6 +304,8 @@ class PauseTasks(Resource):
             }
 
         .. Status:: 200 (OK)
+                    400 (Bad Request)
+                    207 (Not all Paused)
                     500 (Internal Server Error)
 
         .. Error code:: 6050(Task Not Found)
@@ -321,24 +326,24 @@ class PauseTasks(Resource):
             scheduler.pause_job(job_id=_id)
         if len(valid_tasks) != len(task_ids):
             none_tasks = filter(lambda task_id: scheduler.get_job(job_id=task_id) is None, task_ids)
-            return ApiResponse(json.dumps(dict(message='Unable to pause %s tasks' % len(none_tasks),
-                                               paused=valid_tasks,
-                                               not_found=none_tasks)), status=207)
+            return dict(message='Unable to pause %s tasks' % len(none_tasks),
+                        paused=valid_tasks,
+                        not_found=none_tasks), 207
 
         return dict(message="Tasks have been successfully paused")
 
 
-@api.route('/tasks/id/<string:id>')
+@api.route('/tasks/id/<string:_id>')
 class TaskById(Resource):
     """
         This resource returns a specific task based on id or update a task
     """
     decorators = [require_oauth]
 
-    def get(self, id, **kwargs):
+    def get(self, _id, **kwargs):
         """
         This action returns a task owned by a this user
-        :param id: id of task
+        :param _id: id of task
         :type id: str
         :keyword user_id: user_id of tasks' owner
         :type user_id: int
@@ -370,6 +375,7 @@ class TaskById(Resource):
                             "start_datetime": "2015-11-05T08:00:00-05:00",
                             "end_datetime": "2015-12-05T08:00:00-05:00"
                             "next_run_datetime": "2015-11-05T08:20:30-05:00",
+                            "task_type": "periodic"
                          }
                     }
                for interval schedule
@@ -385,21 +391,23 @@ class TaskById(Resource):
                                 "some_other_kwarg": "abc"
                             },
                             "run_datetime": "2015-11-05T08:00:00-05:00",
+                            "task_type": "one_time"
                          }
                     }
 
         .. Status:: 200 (OK)
+                    404 (Not found)
                     500 (Internal Server Error)
 
         """
         user_id = request.user.id
-        task = scheduler.get_job(id)
+        task = scheduler.get_job(_id)
         if task and task.args[0] == user_id:
             task = serialize_task(task)
             return dict(task=task)
         raise ResourceNotFound(error_message="Task not found")
 
-    def delete(self, id, **kwargs):
+    def delete(self, _id, **kwargs):
         """
         Deletes/removes a tasks from scheduler store
         :param kwargs:
@@ -426,24 +434,24 @@ class TaskById(Resource):
 
         """
         user_id = request.user.id
-        task = scheduler.get_job(id)
+        task = scheduler.get_job(_id)
         if task and task.args[0] == user_id:
             scheduler.remove_job(task.id)
             return dict(message="Task has been removed successfully")
         raise ResourceNotFound(error_message="Task not found")
 
 
-@api.route('/tasks/<string:id>/resume/')
+@api.route('/tasks/<string:_id>/resume/')
 class ResumeTaskById(Resource):
     """
         This resource resumes a previously paused job/task
     """
     decorators = [require_oauth]
 
-    def post(self, id, **kwargs):
+    def post(self, _id, **kwargs):
         """
         Resume a previously paused task/job
-        :param id: id of task
+        :param _id: id of task
         :type id: str
         :keyword user_id: user_id of tasks' owner
         :type user_id: int
@@ -459,6 +467,7 @@ class ResumeTaskById(Resource):
             }
 
         .. Status:: 200 (OK)
+                    404 (Not found)
                     500 (Internal Server Error)
 
         .. Error code:: 6054(Task Already running)
@@ -466,26 +475,26 @@ class ResumeTaskById(Resource):
         """
         user_id = request.user.id
         # check and raise exception if job is already paused or not present
-        job_state_exceptions(job_id=id, func='RUNNING')
-        task = scheduler.get_job(id)
+        job_state_exceptions(job_id=_id, func='RUNNING')
+        task = scheduler.get_job(_id)
         if task and task.args[0] == user_id:
-            scheduler.resume_job(job_id=id)
+            scheduler.resume_job(job_id=_id)
             return dict(message="Task has been successfully resumed")
         raise ResourceNotFound(error_message="Task not found")
 
 
-@api.route('/tasks/<string:id>/pause/')
+@api.route('/tasks/<string:_id>/pause/')
 class PauseTaskById(Resource):
     """
         This resource pauses job/task which can be resumed again
     """
     decorators = [require_oauth]
 
-    def post(self, id, **kwargs):
+    def post(self, _id, **kwargs):
         """
         Pause a task which is currently running.
         :param id: id of task
-        :type id: str
+        :type _id: str
         :keyword user_id: user_id of tasks' owner
         :type user_id: int
         :rtype json
@@ -508,10 +517,10 @@ class PauseTaskById(Resource):
         """
         # check and raise exception if job is already paused or not present
         user_id = request.user.id
-        job_state_exceptions(job_id=id, func='PAUSED')
-        task = scheduler.get_job(id)
+        job_state_exceptions(job_id=_id, func='PAUSED')
+        task = scheduler.get_job(_id)
         if task and task.args[0] == user_id:
-            scheduler.pause_job(job_id=id)
+            scheduler.pause_job(job_id=_id)
             return dict(message="Task has been successfully paused")
         raise ResourceNotFound(error_message="Task not found")
 
@@ -520,7 +529,8 @@ def job_state_exceptions(job_id, func='GET'):
     """
     raise exception if condition matched
     :param job_id: job_id of task which is in apscheduler
-    :param func: the state to check, if doesn't meet with requirement then raise exception
+    :param func: the state to check, if doesn't meet with requirement then raise exception,
+            func can be RUNNING, PAUSED
     :return:
     """
     # get job from scheduler by job_id

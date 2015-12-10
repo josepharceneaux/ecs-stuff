@@ -9,7 +9,6 @@ Scheduler - APScheduler initialization, set jobstore, threadpoolexecutor
 # Third-party imports
 from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.events import EVENT_JOB_EXECUTED
-from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.redis import RedisJobStore
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.date import DateTrigger
@@ -150,7 +149,8 @@ def serialize_task(task):
             next_run_datetime=str(task.next_run_time),
             frequency=dict(days=task.trigger.interval.days, seconds=task.trigger.interval.seconds),
             post_data=task.kwargs,
-            pending=task.pending
+            pending=task.pending,
+            task_type='periodic'
         )
     elif isinstance(task.trigger, DateTrigger):
         task_dict = dict(
@@ -158,6 +158,7 @@ def serialize_task(task):
             url=task.args[1],
             run_datetime=str(task.trigger.run_date),
             post_data=task.kwargs,
-            pending=task.pending
+            pending=task.pending,
+            task_type='one_time'
         )
     return task_dict

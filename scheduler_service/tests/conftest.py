@@ -58,15 +58,26 @@ def job_config_two(request):
 
 
 @pytest.fixture(scope='function')
-def auth_data(user_auth, sample_user):
+def auth_token(user_auth, sample_user):
     """
     returns the access token using pytest fixture defined in common/tests/conftest.py
     :param user_auth: fixture in common/tests/conftest.py
     :param sample_user: fixture in common/tests/conftest.py
     """
     auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-    return auth_token_row
+    return auth_token_row['access_token']
 
+
+@pytest.fixture(scope='function')
+def auth_header(request, auth_token):
+    """
+    returns the header which contains bearer token and content Type
+    :param auth_data: fixture to get access token
+    :return: header dict object
+    """
+    header = {'Authorization': 'Bearer ' + auth_token,
+              'Content-Type': 'application/json'}
+    return header
 
 # APScheduler for creating, resuming, stopping, removing jobs
 
