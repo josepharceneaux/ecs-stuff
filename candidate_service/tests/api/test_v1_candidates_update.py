@@ -438,7 +438,7 @@ def test_add_candidate_experience(sample_user, user_auth):
 
     assert candidate_id == updated_can_dict['id']
     assert isinstance(can_experiences, list)
-    assert can_experiences[0]['company'] == can_experiences_from_data[0]['organization']
+    assert can_experiences[0]['organization'] == can_experiences_from_data[0]['organization']
     assert can_experiences[0]['position'] == can_experiences_from_data[0]['position']
     assert can_experiences[0]['city'] == can_experiences_from_data[0]['city']
     assert can_experiences[0]['state'] == can_experiences_from_data[0]['state']
