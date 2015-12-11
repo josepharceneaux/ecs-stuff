@@ -97,7 +97,7 @@ def client_fixture(request):
     db.session.commit()
     @require_integrity
     def fin():
-        db.session.query(Client).delete()
+        db.session.delete(client)
         db.session.commit()
     request.addfinalizer(fin)
     return client
@@ -111,7 +111,7 @@ def token_fixture(user_fixture, client_fixture, request):
     db.session.commit()
     @require_integrity
     def fin():
-        db.session.query(Token).delete()
+        db.session.delete(token)
         db.session.commit()
     request.addfinalizer(fin)
     return token
