@@ -522,7 +522,7 @@ def _cloud_search_domain_connection():
     return _cloud_search_domain.get_search_service().domain_connection
 
 
-def search_candidates(domain_id, request_vars, search_limit=15):
+def search_candidates(domain_id, request_vars, search_limit=15, count_only=False):
     """
     Searches candidates based on domain_id and search_filters provided.
     Search Engine: Amazon Cloud Search
@@ -563,7 +563,7 @@ def search_candidates(domain_id, request_vars, search_limit=15):
     page = int(request_vars.get('page')) if (request_vars.get('page') and (int(request_vars.get('page')) > 0)) else 1
     offset = (page - 1) * search_limit if search_limit else 0
 
-    if 'count_only' in request_vars:
+    if count_only:
         search_limit = 0
         offset = 0
     elif search_limit == 0 or search_limit > CLOUD_SEARCH_MAX_LIMIT:
@@ -666,8 +666,8 @@ def search_candidates(domain_id, request_vars, search_limit=15):
 
     # Get max score
     max_score = 1
-    if get_percentage_match:  # TODO fix this
-        max_score = _get_max_score(params, search_service)
+    # if get_percentage_match:  # TODO fix this
+    #     max_score = _get_max_score(params, search_service)
 
     percentage_matches = []
 
@@ -971,14 +971,12 @@ def _get_search_queries(request_vars):
     return search_queries
 
 
-def _search_with_location(request_vars, location):
+def _search_with_location(location, radius):
     """
     :param request_vars:
     :param location:
     :return:
     """
-    location = location.strip()
-    radius = request_vars.get('radius')
     # If zipcode and radius provided, get coordinates & do a geo search
     is_zipcode = re.match(r"^\d+$", location) is not None
     # Convert miles to kilometers, required by geo_location calculator
@@ -1181,15 +1179,16 @@ def get_filter_query_from_request_vars(request_vars, domain_id):
     :return: filter_query
     """
     # If source_id has product_id in it, then remove it and add product_id to filter request_vars
-    if not request_vars.get('product_id') and request_vars.get('source_id'):
+    if not request_vars.get('product_id') and request_vars.get('source_ids'):
         _get_source_id(request_vars)
 
-    if request_vars.get('q') or request_vars.get('query'):
+    if request_vars.get('query'):
         _get_search_queries(request_vars)
 
     if request_vars.get('location'):
         location = request_vars.get('location')
-        _search_with_location(request_vars, location)
+        radius = request_vars.get('radius')
+        _search_with_location(location, radius)
     if isinstance(request_vars.get('user_ids'), list):
         filter_queries.append("(or %s)" % ' '.join("user_id:%s" % uid for uid in request_vars.get('user_ids')))
     elif request_vars.get('user_ids'):
@@ -1201,20 +1200,20 @@ def get_filter_query_from_request_vars(request_vars, domain_id):
         filter_queries.append("(or %s)" % " ".join("area_of_interest_id:%s" % aoi for aoi in
                                                    request_vars.get('area_of_interest_ids')))
     elif request_vars.get('area_of_interest_ids'):
-        filter_queries.append("(term field=area_of_interest_id  %s)" % request_vars.get('areaOfInterestIdFacet'))
+        filter_queries.append("(term field=area_of_interest_id  %s)" % request_vars.get('area_of_interest_ids'))
 
-    if isinstance(request_vars.get('status'), list):
+    if isinstance(request_vars.get('status_ids'), list):
         filter_queries.append("(or %s)" % " ".join("status_id:%s" % status_facet for status_facet in
-                                                   request_vars.get('statusFacet')))
-    elif request_vars.get('status'):
-        filter_queries.append("(term field=status_id %s)" % request_vars.get('statusFacet'))
+                                                   request_vars.get('status_ids')))
+    elif request_vars.get('status_ids'):
+        filter_queries.append("(term field=status_id %s)" % request_vars.get('status_ids'))
 
-    if isinstance(request_vars.get('source'), list):
+    if isinstance(request_vars.get('source_ids'), list):
         # search for exact values in facets
-        source_facets = [ "source_id:%s" % source_facet for source_facet in request_vars.get('sourceFacet')]
+        source_facets = [ "source_id:%s" % source_facet for source_facet in request_vars.get('source_ids')]
         filter_queries.append("(or %s)" % ' '.join(source_facets))
-    elif request_vars.get('source'):
-        filter_queries.append("(term field=source_id %s)" % request_vars.get('sourceFacet'))
+    elif request_vars.get('source_ids'):
+        filter_queries.append("(term field=source_id %s)" % request_vars.get('source_ids'))
 
     # Set filter range for years experience, if given
     if request_vars.get('minimum_years_experience') or request_vars.get('maximum_years_experience'):
@@ -1230,12 +1229,12 @@ def get_filter_query_from_request_vars(request_vars, domain_id):
     if request_vars.get('date_from' or 'date_to'):
         _get_candidates_by_filter_date(request_vars)
 
-    if isinstance(request_vars.get('position'), list):
+    if isinstance(request_vars.get('job_title'), list):
         # search for exact values in facets
-        position_facets = ["position:'%s'" % position_facet for position_facet in request_vars.get('positionFacet')]
+        position_facets = ["position:'%s'" % position_facet for position_facet in request_vars.get('job_title')]
         filter_queries.append("(and %s)" % " ".join(position_facets))
-    elif request_vars.get('position'):
-        filter_queries.append("( term field=position '%s')" % request_vars.get('positionFacet'))
+    elif request_vars.get('job_title'):
+        filter_queries.append("( term field=position '%s')" % request_vars.get('job_title'))
 
     if isinstance(request_vars.get('skills'), list):
         # search for exact values in facets
@@ -1243,29 +1242,29 @@ def get_filter_query_from_request_vars(request_vars, domain_id):
                         request_vars.get('skills')]
         filter_queries.append("(and %s )" % " ".join(skill_facets))
     elif request_vars.get('skills'):
-        filter_queries.append("(term field=skill_description '%s')" % request_vars.get('skillDescriptionFacet'))
+        filter_queries.append("(term field=skill_description '%s')" % request_vars.get('skills'))
 
     if isinstance(request_vars.get('degree_type'), list):
         # search for exact values in facets
-        degree_facets = ["degree_type:'%s'" % degree_facet for degree_facet in request_vars.get('degreeTypeFacet')]
+        degree_facets = ["degree_type:'%s'" % degree_facet for degree_facet in request_vars.get('degree_type')]
         filter_queries.append("(or %s)" % " ".join(degree_facets))
     elif request_vars.get('degree_type'):
-        filter_queries.append("(term field=degree_type '%s')" % request_vars.get('degreeTypeFacet'))
+        filter_queries.append("(term field=degree_type '%s')" % request_vars.get('degree_type'))
 
     if isinstance(request_vars.get('school_name'), list):
         # search for exact values in facets
-        school_facets = ["school_name:'%s'" % school_facet for school_facet in request_vars.get('schoolNameFacet')]
+        school_facets = ["school_name:'%s'" % school_facet for school_facet in request_vars.get('school_name')]
         filter_queries.append("(or %s)" % " ".join(school_facets))
     elif request_vars.get('school_name'):
-        filter_queries.append("(term field=school_name '%s')" % request_vars.get('schoolNameFacet'))
+        filter_queries.append("(term field=school_name '%s')" % request_vars.get('school_name'))
 
-    if isinstance(request_vars.get('concentrationTypeFacet'), list):
+    if isinstance(request_vars.get('major'), list):
         # search for exact values in facets
         concentration_facets = ["concentration_type:'%s'" % concentration_facet for concentration_facet
-                                in request_vars.get('concentrationTypeFacet')]
+                                in request_vars.get('major')]
         filter_queries.append("(and %s)" % " ".join(concentration_facets))
-    elif request_vars.get('concentrationTypeFacet'):
-        filter_queries.append("(term field=concentration_type '%s')" % request_vars.get('concentrationTypeFacet'))
+    elif request_vars.get('major'):
+        filter_queries.append("(term field=concentration_type '%s')" % request_vars.get('major'))
 
     if request_vars.get('degree_end_year_from') or request_vars.get('degree_end_year_to'):
         from_datetime_str, to_datetime_str = _convert_date_range_in_cloudsearch_format(request_vars.get(
@@ -1273,27 +1272,27 @@ def get_filter_query_from_request_vars(request_vars, domain_id):
         if from_datetime_str and to_datetime_str:
             filter_queries.append("degree_end_date:%s,%s" % (from_datetime_str, to_datetime_str))
 
-    if isinstance(request_vars.get('serviceStatus'), list):
+    if isinstance(request_vars.get('military_service_status'), list):
         # search for exact values in facets
         service_status_facets = ["military_service_status:'%s'" % service_status_facet for service_status_facet in
-                                 request_vars.get('serviceStatus')]
+                                 request_vars.get('military_service_status')]
         filter_queries.append("(or %s)" % " ".join(service_status_facets))
-    elif request_vars.get('serviceStatus'):
-        filter_queries.append("(term field=military_service_status '%s')" % request_vars.get('serviceStatus'))
+    elif request_vars.get('military_service_status'):
+        filter_queries.append("(term field=military_service_status '%s')" % request_vars.get('military_service_status'))
 
-    if isinstance(request_vars.get('branch'), list):
+    if isinstance(request_vars.get('military_branch'), list):
         # search for exact values in facets
-        branch_facets = ["military_branch:'%s'" % branch_facet for branch_facet in request_vars.get('branch')]
+        branch_facets = ["military_branch:'%s'" % branch_facet for branch_facet in request_vars.get('military_branch')]
         filter_queries.append("(or %s)" % " ".join( branch_facets ))
-    elif request_vars.get('branch'):
-        filter_queries.append("(term field=military_branch '%s' )" % request_vars.get('branch'))
+    elif request_vars.get('military_branch'):
+        filter_queries.append("(term field=military_branch '%s' )" % request_vars.get('military_branch'))
 
-    if isinstance(request_vars.get('highestGrade'), list):
+    if isinstance(request_vars.get('military_highest_grade'), list):
         # search for exact values in facets
-        grade_facets = ["military_highest_grade:'%s'" % grade_facet for grade_facet in request_vars.get('highestGrade')]
+        grade_facets = ["military_highest_grade:'%s'" % grade_facet for grade_facet in request_vars.get('military_highest_grade')]
         filter_queries.append("(or %s)" % " ".join(grade_facets))
-    elif request_vars.get('highestGrade'):
-        filter_queries.append("(term field=military_highest_grade '%s')" % request_vars.get('highestGrade'))
+    elif request_vars.get('military_highest_grade'):
+        filter_queries.append("(term field=military_highest_grade '%s')" % request_vars.get('military_highest_grade'))
 
     # Date of separation - Military
     if request_vars.get('military_end_date_from') or request_vars.get('military_end_date_to'):

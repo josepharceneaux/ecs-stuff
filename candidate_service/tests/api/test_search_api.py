@@ -25,14 +25,8 @@ def test_search_all_candidates_in_domain(sample_user, user_auth):
     :return:
     """
     candidate_ids = populate_candidates(count=5, owner_user_id=sample_user.id)
-    auth_token = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-    response = requests.get(
-        url=SEARCH_URI,
-        headers={'Authorization': 'Bearer %s' % auth_token['access_token'],
-                 'Content-type': 'application/json'}
-    )
-    resultant_candidates = response.json()['candidate_ids']
-    _assert_results(candidate_ids, resultant_candidates)
+    response = get_response_from_authorized_user(user_auth, sample_user, '')
+    _assert_results(candidate_ids, response.json())
 
 
 def test_search_location(sample_user, user_auth):
@@ -46,8 +40,7 @@ def test_search_location(sample_user, user_auth):
     candidate_ids = populate_candidates(count=3, owner_user_id=sample_user.id, city=city, state=state,
                                         zip_code=zip_code)
     response = get_response_from_authorized_user(user_auth, sample_user, '?location=%s,%s' % (city, state))
-    resultant_candidates = response.json()['candidate_ids']
-    _assert_results(candidate_ids, resultant_candidates)
+    _assert_results(candidate_ids, response.json())
 
 
 def test_search_user_ids(sample_user, user_auth):
@@ -60,9 +53,7 @@ def test_search_user_ids(sample_user, user_auth):
     user_id = sample_user.id
     candidate_ids = populate_candidates(count=5, owner_user_id=user_id)
     response = get_response_from_authorized_user(user_auth, sample_user, '?user_ids=%d' % user_id)
-    resultant_candidates = response.json()['candidate_ids']
-    _assert_results(candidate_ids, resultant_candidates)
-    assert len(candidate_ids) == len(resultant_candidates)
+    _assert_results(candidate_ids, response.json())
 
 
 def test_search_skills(sample_user, user_auth):
@@ -77,8 +68,7 @@ def test_search_skills(sample_user, user_auth):
                                                                 'name': 'hadoop', 'months_used': 36}],
                                         update_now=True)
     response = get_response_from_authorized_user(user_auth, sample_user, '?skills=hadoop')
-    resultant_candidates = response.json()['candidate_ids']
-    _assert_results(candidate_ids, resultant_candidates)
+    _assert_results(candidate_ids, response.json())
 
 
 def test_search_aoi(sample_user, user_auth):
@@ -93,8 +83,7 @@ def test_search_aoi(sample_user, user_auth):
     aoi_ids_list = all_aoi_ids[0:5]
     candidate_ids = populate_candidates(count=5, owner_user_id=sample_user.id, area_of_interest_ids=aoi_ids_list)
     response = get_response_from_authorized_user(user_auth, sample_user, '?area_of_interest_ids=%d' % aoi_ids_list[1])
-    resultant_candidates = response.json()['candidate_ids']
-    _assert_results(candidate_ids, resultant_candidates)
+    _assert_results(candidate_ids, response.json())
 
 
 def test_search_status(sample_user, user_auth):
@@ -114,8 +103,7 @@ def test_search_status(sample_user, user_auth):
         # Update cloud_search
         upload_candidate_documents(candidate_id)
     response = get_response_from_authorized_user(user_auth, sample_user, '?status_ids=%d' % status_id)
-    resultant_candidates = response.json()['candidate_ids']
-    _assert_results(candidate_ids, resultant_candidates)
+    _assert_results(candidate_ids, response.json())
 
 
 def test_search_source(sample_user, user_auth):
@@ -131,8 +119,7 @@ def test_search_source(sample_user, user_auth):
     source_id = new_source.id
     candidate_ids = populate_candidates(count=5, owner_user_id=sample_user.id, source_id=source_id)
     response = get_response_from_authorized_user(user_auth, sample_user, '?source_ids=%d' % source_id)
-    resultant_candidates = response.json()['candidate_ids']
-    _assert_results(candidate_ids, resultant_candidates)
+    _assert_results(candidate_ids, response.json())
 
 
 def test_search_candidate_experience(sample_user, user_auth):
@@ -160,9 +147,8 @@ def test_search_candidate_experience(sample_user, user_auth):
         candidate_ids.append(candidate_id)
     # Update cloud_search
     upload_candidate_documents(candidate_ids)
-    response = get_response_from_authorized_user(user_auth, sample_user, '?minimum_experience=0&maximum_experience=2')
-    resultant_candidates = response.json()['candidate_ids']
-    _assert_results(candidate_ids, resultant_candidates)
+    response = get_response_from_authorized_user(user_auth, sample_user, '?minimum_years_experience=0&maximum_years_experience=2')
+    _assert_results(candidate_ids, response.json())
 
 
 def test_search_position(sample_user, user_auth):
@@ -172,8 +158,7 @@ def test_search_position(sample_user, user_auth):
     """
     candidate_ids = populate_candidates(count=4, owner_user_id=sample_user.id, current_title="Developer")
     response = get_response_from_authorized_user(user_auth, sample_user, '?job_title=Developer')
-    resultant_candidates = response.json()['candidate_ids']
-    _assert_results(candidate_ids, resultant_candidates)
+    _assert_results(candidate_ids, response.json())
 
 
 def test_search_degree(sample_user, user_auth):
@@ -183,8 +168,7 @@ def test_search_degree(sample_user, user_auth):
     """
     candidate_ids = populate_candidates(count=3, owner_user_id=sample_user.id, degree="Masters", university=True)
     response = get_response_from_authorized_user(user_auth, sample_user, '?degree_type=Masters')
-    resultant_candidates = response.json()['candidate_ids']
-    _assert_results(candidate_ids, resultant_candidates)
+    _assert_results(candidate_ids, response.json())
 
 
 def test_search_school_name(sample_user, user_auth):
@@ -194,8 +178,7 @@ def test_search_school_name(sample_user, user_auth):
     """
     candidate_ids = populate_candidates(count=3, owner_user_id=sample_user.id, university='Oklahoma State University')
     response = get_response_from_authorized_user(user_auth, sample_user, '?school_name=Oklahoma State University')
-    resultant_candidates = response.json()['candidate_ids']
-    _assert_results(candidate_ids, resultant_candidates)
+    _assert_results(candidate_ids, response.json())
 
 
 def test_search_concentration(sample_user, user_auth):
@@ -205,8 +188,7 @@ def test_search_concentration(sample_user, user_auth):
     candidate_ids = populate_candidates(count=4, owner_user_id=sample_user.id, major='Post Graduate', university=True)
 
     response = get_response_from_authorized_user(user_auth, sample_user, '?major=Post Graduate')
-    resultant_candidates = response.json()['candidate_ids']
-    _assert_results(candidate_ids, resultant_candidates)
+    _assert_results(candidate_ids, response.json())
 
 
 def test_search_military_service_status(sample_user, user_auth):
@@ -219,8 +201,7 @@ def test_search_military_service_status(sample_user, user_auth):
     candidate_ids = populate_candidates(count=3, owner_user_id=sample_user.id, military_status="Retired")
 
     response = get_response_from_authorized_user(user_auth, sample_user, '?military_service_status=Retired')
-    resultant_candidates = response.json()['candidate_ids']
-    _assert_results(candidate_ids, resultant_candidates)
+    _assert_results(candidate_ids, response.json())
 
 
 def test_search_military_branch(sample_user, user_auth):
@@ -233,8 +214,7 @@ def test_search_military_branch(sample_user, user_auth):
     candidate_ids = populate_candidates(count=3, owner_user_id=sample_user.id, military_branch="Army")
 
     response = get_response_from_authorized_user(user_auth, sample_user, '?military_branch=Army')
-    resultant_candidates = response.json()['candidate_ids']
-    _assert_results(candidate_ids, resultant_candidates)
+    _assert_results(candidate_ids, response.json())
 
 
 def test_search_military_highest_grade(sample_user, user_auth):
@@ -247,8 +227,7 @@ def test_search_military_highest_grade(sample_user, user_auth):
     candidate_ids = populate_candidates(count=3, owner_user_id=sample_user.id, military_grade="W-1")
 
     response = get_response_from_authorized_user(user_auth, sample_user, '?military_highest_grade=W-1')
-    resultant_candidates = response.json()['candidate_ids']
-    _assert_results(candidate_ids, resultant_candidates)
+    _assert_results(candidate_ids, response.json())
 
 
 def test_search_military_date_of_separation(sample_user, user_auth):
@@ -268,29 +247,24 @@ def test_search_military_date_of_separation(sample_user, user_auth):
     test1_candidate_ids = candidates_2014+candidates_today
 
     response1 = get_response_from_authorized_user(user_auth, sample_user, '?military_end_date_from=2013')
-    resultant_candidates = response1.json()['candidate_ids']
-    _assert_results(test1_candidate_ids, resultant_candidates)
+    _assert_results(test1_candidate_ids, response1.json())
 
     test2_candidate_ids=candidates_2012+candidates_2014 + candidates_today
     response2 = get_response_from_authorized_user(user_auth, sample_user, '?military_end_date_from=2010')
-    resultant_candidates = response2.json()['candidate_ids']
-    _assert_results(test2_candidate_ids, resultant_candidates)
+    _assert_results(test2_candidate_ids, response2.json())
 
     test3_candidate_ids = candidates_2012+candidates_2014
     response3 = get_response_from_authorized_user(user_auth, sample_user,
                                                   '?military_end_date_from=2010&military_end_date_to=2014')
-    resultant_candidates = response3.json()['candidate_ids']
-    _assert_results(test3_candidate_ids, resultant_candidates)
+    _assert_results(test3_candidate_ids, response3.json())
 
     test4_candidate_ids=candidates_2012
     response4 = get_response_from_authorized_user(user_auth, sample_user, '?military_end_date_to=2012')
-    resultant_candidates = response4.json()['candidate_ids']
-    _assert_results(test4_candidate_ids, resultant_candidates)
+    _assert_results(test4_candidate_ids, response4.json())
 
     test5_candidate_ids=candidates_2012+candidates_2014
     response5 = get_response_from_authorized_user(user_auth, sample_user, '?military_end_date_to=2014')
-    resultant_candidates = response5.json()['candidate_ids']
-    _assert_results(test5_candidate_ids, resultant_candidates)
+    _assert_results(test5_candidate_ids, response5.json())
 
 
 def test_search_query_with_name(sample_user, user_auth):
@@ -305,8 +279,7 @@ def test_search_query_with_name(sample_user, user_auth):
                                         first_name="Naveen", last_name=uuid.uuid4().__str__()[0:8])
 
     response = get_response_from_authorized_user(user_auth, sample_user, '?q=Naveen')
-    resultant_candidates = response.json()['candidate_ids']
-    _assert_results(candidate_ids, resultant_candidates)
+    _assert_results(candidate_ids, response.json())
 
 
 def test_search_get_only_requested_fields(sample_user, user_auth):
@@ -342,8 +315,7 @@ def test_search_paging(sample_user, user_auth):
                                         military_to_date=datetime.datetime.now())
 
     response1 = get_response_from_authorized_user(user_auth, sample_user, '?sort_by=added_time-asc')
-    resultant_candidates = response1.json()['candidate_ids']
-    _assert_results(candidate_ids[0:15], resultant_candidates)
+    _assert_results(candidate_ids[0:15], response1.json())
 
 
 def test_search_custom_fields(sample_user, user_auth):
@@ -376,21 +348,19 @@ def test_search_custom_fields(sample_user, user_auth):
     candidates_cf2 = populate_candidates(sample_user.id, count=4, custom_fields_dict={custom_field2_id: custom_field2})
 
     response1 = get_response_from_authorized_user(user_auth, sample_user, '?cf-%d=hadoop' % custom_field1_id)
-    resultant_candidates1 = response1.json()['candidate_ids']
-    _assert_results(candidates_cf1, resultant_candidates1)
+    _assert_results(candidates_cf1, response1.json())
     response2 = get_response_from_authorized_user(user_auth, sample_user, '?cf-%d=MongoDB' % custom_field2_id)
-    resultant_candidates2 = response2.json()['candidate_ids']
-    _assert_results(candidates_cf2, resultant_candidates2)
+    _assert_results(candidates_cf2, response2.json())
 
 
-def _assert_results(candidate_ids, resultant_candidates):
+def _assert_results(candidate_ids, response):
     """
     Assert statements for all search results
     :param candidate_ids: list of candidate ids created by the authorized user under same domain
     :param resultant_candidates: list of candidate ids from the search results
     :return:
     """
-    resultant_candidate_ids = map(lambda x: long(x), resultant_candidates)
+    resultant_candidate_ids = [long(candidate['id']) for candidate in response['candidates']]
     print candidate_ids
     print resultant_candidate_ids
     # Test whether every element in the set candidate_ids is in resultant_candidate_ids.
@@ -398,6 +368,8 @@ def _assert_results(candidate_ids, resultant_candidates):
 
 
 def get_response_from_authorized_user(auth_user, owner_user, arguments_to_url):
+    # wait for cloudsearch to update the candidates.
+    time.sleep(30)
     auth_token = auth_user.get_auth_token(owner_user, get_bearer_token=True)
     response = requests.get(
         url=SEARCH_URI + arguments_to_url,

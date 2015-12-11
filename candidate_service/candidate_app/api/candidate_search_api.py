@@ -2,7 +2,7 @@
 from flask import request
 from flask_restful import Resource
 from candidate_service.common.utils.auth_utils import require_oauth
-from candidate_service.modules.validators import format_search_request_data
+from candidate_service.modules.validators import validate_and_format_data
 from candidate_service.modules.talent_cloud_search import search_candidates
 
 
@@ -13,7 +13,7 @@ class CandidateSearch(Resource):
         """
         Search candidates based on the given filter criteria
         """
-        request_vars = format_search_request_data(request.args)
+        request_vars = validate_and_format_data(request.args)
 
         # Get domain_id from auth_user
         domain_id = request.user.domain_id

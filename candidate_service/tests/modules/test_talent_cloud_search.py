@@ -280,13 +280,13 @@ def test_position_and_company(sample_user):
     ceo_at_apple = populate_candidates(count=1, owner_user_id=sample_user.id, current_company=company,
                                        current_title=position)
     # Query for company Apple and position CEO, it should only return 1 candidate although Apple has 10 other employees
-    search_vars = {'query': company, 'positionFacet': position}
+    search_vars = {'query': company, 'job_title': position}
     _assert_search_results(sample_user.domain_id, search_vars, ceo_at_apple, check_for_equality=True)
 
 
 def test_owner_facet(test_domain, sample_user, sample_user_2):
     """
-    Search by usernameFacet
+    Search by username
     :param test_domain:
     :param sample_user:
     :param sample_user_2:
@@ -302,12 +302,12 @@ def test_owner_facet(test_domain, sample_user, sample_user_2):
     total_candidates = user1_candidates + user2_candidates
     _update_now(total_candidates)
     # Search for user_manager_candidates
-    _assert_search_results(domain_id, {'usernameFacet': sample_user.id}, user1_candidates, check_for_equality=True)
+    _assert_search_results(domain_id, {'user_ids': sample_user.id}, user1_candidates, check_for_equality=True)
     # Search for normal user candidates
-    _assert_search_results(domain_id, {'usernameFacet': sample_user_2.id}, user2_candidates, check_for_equality=True,
+    _assert_search_results(domain_id, {'user_ids': sample_user_2.id}, user2_candidates, check_for_equality=True,
                            wait=False)
     # All 8+4 = 12 candidates should appear in search if searched by both users
-    _assert_search_results(domain_id, {'usernameFacet': [sample_user.id, sample_user_2.id]}, total_candidates,
+    _assert_search_results(domain_id, {'user_ids': [sample_user.id, sample_user_2.id]}, total_candidates,
                            check_for_equality=True, wait=False)
 
 
@@ -335,7 +335,7 @@ def OK_test_sort_by_match(sample_user):
 
 def test_search_by_university(sample_user):
     """
-    university > schoolNameFacet
+    university > school_name
     :param sample_user:
     :return:
     """
@@ -345,13 +345,13 @@ def test_search_by_university(sample_user):
     university1_candidates = populate_candidates(owner_user_id=sample_user.id, university=university1)
     # Create other candidates with other university, check
     university2_candidates = populate_candidates(count=2, owner_user_id=sample_user.id, university=university2)
-    _assert_search_results(sample_user.domain_id, {'schoolNameFacet': university1}, university1_candidates)
+    _assert_search_results(sample_user.domain_id, {'school_name': university1}, university1_candidates)
     total_candidates = university1_candidates + university2_candidates
-    _assert_search_results(sample_user.domain_id, {'schoolNameFacet': [university1, university2]},
+    _assert_search_results(sample_user.domain_id, {'school_name': [university1, university2]},
                            total_candidates, wait=False)
     # Select owner facet + both universities should return all candidates in domain
-    _assert_search_results(sample_user.domain_id, {'schoolNameFacet': [university1, university2],
-                                                   'usernameFacet': sample_user.id}, total_candidates, wait=False)
+    _assert_search_results(sample_user.domain_id, {'school_name': [university1, university2],
+                                                   'user_ids': sample_user.id}, total_candidates, wait=False)
 
 
 def test_search_by_location(sample_user):
@@ -497,9 +497,9 @@ def test_sort_by_proximity(sample_user):
                            check_for_sorting=True, wait=False)
 
 
-def test_search_by_major(sample_user):
+def to_fix_test_search_by_major(sample_user):
     """
-    major == concentrationTypeFacet
+    Test to search based on major facet
     Without university major doesn't gets created in database, So university should also be created for major
     :param sample_user:
     :return:
@@ -514,13 +514,12 @@ def test_search_by_major(sample_user):
     _update_now(major1_candidates + major2_candidates)
     _assert_search_results(domain_id, {'major': major1}, major1_candidates)
     _assert_search_results(domain_id, {'major': major2}, major2_candidates, wait=False)
-    # ConcentrationTypeFacet is an 'and' query so no list? Below query will not give any result
-    # TODO: Check if concentrationTypeFacet will be 'and query' or 'or query'
+    # major is an 'and' query so no list? Below query will not give any result
+    # TODO: Check if major will be 'and query' or 'or query'
 
 
 def test_search_by_degree(sample_user):
     """
-    degreeTypeFacet
     :param sample_user:
     :return:
     """
@@ -624,11 +623,11 @@ def to_fix_test_area_of_interest_facet(sample_user):
     candidate1 = populate_candidates(owner_user_id=sample_user.id, area_of_interest_ids=aoi_ids_list_1, update_now=False)
     candidate2 = populate_candidates(owner_user_id=sample_user.id, area_of_interest_ids=aoi_ids_list_2, update_now=False)
     _update_now(candidate1+candidate2)
-    _assert_search_results(domain_id, {"area_of_interest": ','.join(aoi_ids_list_1[0:3])}, candidate1,
+    _assert_search_results(domain_id, {"area_of_interest_ids": ','.join(aoi_ids_list_1[0:3])}, candidate1,
                            check_for_equality=True, wait=False)
-    _assert_search_results(domain_id, {"area_of_interest": ','.join(aoi_ids_list_2[0])}, candidate2,
+    _assert_search_results(domain_id, {"area_of_interest_ids": ','.join(aoi_ids_list_2[0])}, candidate2,
                            check_for_equality=True, wait=False)
-    _assert_search_results(domain_id, {"area_of_interest": ','.join([aoi_ids_list_2[-1], aoi_ids_list_1[-2]])},
+    _assert_search_results(domain_id, {"area_of_interest_ids": ','.join([aoi_ids_list_2[-1], aoi_ids_list_1[-2]])},
                            candidate1+candidate2,
                            check_for_equality=True, wait=False)
 
@@ -656,11 +655,11 @@ def to_fix_test_status_facet(sample_user):
     # Update cloud_search for status changes
     _update_now(candidate1+candidate2)
     # search for qualified candidates
-    _assert_search_results(domain_id, {'status': str(status1_id)}, candidate1, check_for_equality=True)
-    _assert_search_results(domain_id, {'status': str(status2_id)}, candidate2, check_for_equality=True, wait=False)
-    _assert_search_results(domain_id, {'status': ','.join([status1_id, status2_id])}, candidate2+candidate1,
+    _assert_search_results(domain_id, {'status_ids': str(status1_id)}, candidate1, check_for_equality=True)
+    _assert_search_results(domain_id, {'status_ids': str(status2_id)}, candidate2, check_for_equality=True, wait=False)
+    _assert_search_results(domain_id, {'status_ids': ','.join([status1_id, status2_id])}, candidate2+candidate1,
                            check_for_equality=True, wait=False)
-    _assert_search_results(domain_id, {'status': str(new_status_id)}, candidate3, check_for_equality=True, wait=False)
+    _assert_search_results(domain_id, {'status_ids': str(new_status_id)}, candidate3, check_for_equality=True, wait=False)
 
 
 def to_fix_test_source_facet(sample_user):
@@ -683,7 +682,7 @@ def to_fix_test_source_facet(sample_user):
     all_candidates = candidate_ids1+candidate_ids2
     _update_now(all_candidates)
     # Search for candidates with created source, it will not include candidates with unassigned source
-    _assert_search_results(domain_id, {"source": str(source_id)}, candidate_ids2, check_for_equality=True)
+    _assert_search_results(domain_id, {"source_ids": str(source_id)}, candidate_ids2, check_for_equality=True)
 
 
 def test_search_based_on_years_of_experience(sample_user):
