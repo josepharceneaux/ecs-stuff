@@ -49,8 +49,6 @@ test:
           - candidate_pool_service/tests/test*.py
           - spreadsheet_import_service/tests/test*.py
           - candidate_service/tests/api/test*.py
-          - social_network_service/tests/test*.py
-          - social_network_service/tests/restful_api_tests/test*.py
 
 
 experimental:
