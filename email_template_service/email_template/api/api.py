@@ -21,7 +21,6 @@ class EmailTemplate(Resource):
     # Access token and role authentication decorators
     decorators = [require_oauth]
 
-    @mod.route('/emailTemplate', methods=['POST'])
     @require_oauth
     def post(self):
         """
@@ -68,52 +67,58 @@ class EmailTemplate(Resource):
     @require_oauth
     def delete(self, **kwargs):
         """
-        DELETE /email_template/<id>
-
         Function will delete email template from db
         :return: success=1 or 0
         :rtype:  dict
         """
-        requested_template_id = request.args.get("id")
+        # Parse request body
+        body_dict = request.get_json(force=True)
+        if not any(body_dict):
+            raise InvalidUsage(error_message="JSON body cannot be empty.")
+        requested_template_id = body_dict.get("id")
         domain_id = request.user.domain_id
-        template = UserEmailTemplate.query.filter_by(id=requested_template_id).one()
-        if template[0].isImmutable == 1 and not require_all_roles('CAN_DELETE_EMAIL_TEMPLATE'):
+        template = UserEmailTemplate.query.filter_by(id=requested_template_id).first()
+        if template.isImmutable == 1 and not require_all_roles('CAN_DELETE_EMAIL_TEMPLATE'):
             raise ForbiddenError(error_message="Non-admin user trying to delete immutable template")
         else:
-            result = db.session.query(UserEmailTemplate).join(User).filter(UserEmailTemplate.id == requested_template_id,
-                                                                           UserEmailTemplate.user_id.in_(
-                                                                               User.domain_id == domain_id)).one().delete()
+            db.session.query(UserEmailTemplate).join(User).filter(
+                UserEmailTemplate.id == requested_template_id, UserEmailTemplate.user_id.in_(
+                    User.domain_id == domain_id)).first().delete()
 
-            return dict(success=result)
+            return dict(success=1)
 
     # Inputs: id, emailBodyHtml
     @require_oauth
-    def put(self, **kwargs):
+    def patch(self, **kwargs):
         """
-        PUT /users/<id>
+        PATCH /v1/emailTemplate
+        Function can update email template(s).
 
-        Function will change credentials of one user per request.
-        User will be allowed to modify itself
+        Takes a JSON dict containing:
+            - a email_template_id as key and a template-object as value
+        Function only accepts JSON dict.
+        JSON dict must contain email template's ID.
 
-        :return: {'updated_user' {'id': user_id}}
-        :rtype:  dict
+        :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
-        requested_email_template_id = request.args.get("id")
+        # Parse request body
+        body_dict = request.get_json(force=True)
+        requested_email_template_id = body_dict.get("id")
         domain_id = request.user.domain_id
         user_email_template = UserEmailTemplate.query.get(requested_email_template_id)
 
         # Verify owned by same domain
-        owner_user = db.session.query(User).join(UserEmailTemplate).filter(UserEmailTemplate.user_id == User.id).one()
+        owner_user = db.session.query(UserEmailTemplate).join(User).filter_by(
+            UserEmailTemplate.user_id == User.id).first()
         if owner_user.domain_id != domain_id:
             raise ForbiddenError(error_message="Template is not owned by same domain")
-
         # Verify isImmutable
         if user_email_template.is_immutable and not require_all_roles('CAN_UPDATE_EMAIL_TEMPLATE'):
             raise ForbiddenError(error_message="Non-admin user trying to update immutable template")
-        db.session.query(UserEmailTemplate).update({"email_body_html": request.args.get("email_body_html") or
-                                                                       UserEmailTemplate.email_body_html,
-                                                    "email_body_text": request.args.get("email_body_text") or
-                                                                       UserEmailTemplate.email_body_text})
+
+        db.session.query(UserEmailTemplate).update(
+            {"email_body_html": body_dict("email_body_html") or UserEmailTemplate.email_body_html,
+             "email_body_text": request.args.get("email_body_text") or UserEmailTemplate.email_body_text})
         db.session.commit()
 
         return dict(success=1)
@@ -140,14 +145,14 @@ class EmailTemplate(Resource):
             raise ForbiddenError(error_message="Template is not owned by same domain")
 
         # Verify isImmutable
-        if user_email_template_row.is_immutable and not require_all_roles('CAN_UPDATE_EMAIL_TEMPLATE'):
-            raise ForbiddenError(error_message="Non-admin user trying to update immutable template")
+        if user_email_template_row.is_immutable and not require_all_roles('CAN_GET_EMAIL_TEMPLATE'):
+            raise ForbiddenError(error_message="Non-admin user trying to access immutable template")
 
         email_body_html = user_email_template_row.email_body_html
-        return dict(id=email_template_id, email_body_html=email_body_html)
+        return {'email_template': {'id': email_body_html}}
 
 
-# Inputs: name, parentId (if any), isImmutable (only if admin)
+# Inputs: name, parentId (if any), is_immutable (only if admin)
 # @require_all_roles('CAN_CREATE_EMAIL_TEMPLATE_FOLDER')
 @mod.route('/emailTemplateFolder', methods=['POST'])
 @require_oauth
