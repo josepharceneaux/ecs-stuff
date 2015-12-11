@@ -46,6 +46,7 @@ test:
           resume_service/tests/
           activity_service/tests/
           candidate_service/tests/
+          candidate_pool_service/tests/
       : parallel: true
 
 
