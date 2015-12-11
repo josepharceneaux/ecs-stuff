@@ -34,23 +34,27 @@ from sms_campaign_service.common.common_config import IS_DEV
 from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.user import (UserPhone, User)
 from sms_campaign_service.common.utils.campaign_utils import CampaignBase
+from sms_campaign_service.common.utils.common_functions import find_missing_items
+from sms_campaign_service.utilities import (TwilioSMS, search_urls_in_text, url_conversion)
+from sms_campaign_service.common.models.candidate import (PhoneLabel, Candidate, CandidatePhone)
 from sms_campaign_service.common.error_handling import (ResourceNotFound, ForbiddenError,
                                                         InvalidUsage)
-from sms_campaign_service.utilities import TwilioSMS, search_urls_in_text, url_conversion
-from sms_campaign_service.common.utils.common_functions import find_missing_items
 from sms_campaign_service.sms_campaign_app_constants import (SMS_URL_REDIRECT, PHONE_LABEL_ID,
                                                              TWILIO, POOL_SIZE)
-from sms_campaign_service.custom_exceptions import \
-    (EmptySmsBody, MultipleTwilioNumbers, EmptyDestinationUrl, MissingRequiredField,
-     MultipleUsersFound, MultipleCandidatesFound, ErrorSavingSMSCampaign, NoCandidateAssociated,
-     NoSmartlistAssociated, NoSMSCampaignSentToCandidate)
-from sms_campaign_service.common.models.candidate import (PhoneLabel, Candidate, CandidatePhone)
-from sms_campaign_service.common.models.sms_campaign import \
-    (SmsCampaign, SmsCampaignSend, SmsCampaignBlast, SmsCampaignSmartlist,
-     SmsCampaignSendUrlConversion, SmsCampaignReply)
-from sms_campaign_service.common.utils.activity_utils import \
-    (CAMPAIGN_SMS_CLICK, CAMPAIGN_SMS_REPLY, CAMPAIGN_SMS_SEND, CAMPAIGN_SEND,
-     CAMPAIGN_SMS_CREATE)
+from sms_campaign_service.custom_exceptions import (EmptySmsBody, MultipleTwilioNumbers,
+                                                    EmptyDestinationUrl, MissingRequiredField,
+                                                    MultipleUsersFound, MultipleCandidatesFound,
+                                                    ErrorSavingSMSCampaign, NoCandidateAssociated,
+                                                    NoSmartlistAssociated,
+                                                    NoSMSCampaignSentToCandidate)
+from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignSend,
+                                                             SmsCampaignBlast, SmsCampaignSmartlist,
+                                                             SmsCampaignSendUrlConversion,
+                                                             SmsCampaignReply)
+from sms_campaign_service.common.utils.activity_utils import (CAMPAIGN_SMS_CLICK,
+                                                              CAMPAIGN_SMS_REPLY,
+                                                              CAMPAIGN_SMS_SEND, CAMPAIGN_SEND,
+                                                              CAMPAIGN_SMS_CREATE)
 
 
 class SmsCampaignBase(CampaignBase):

@@ -9,6 +9,8 @@ import requests
 
 # Application Specific
 from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
+from sms_campaign_service.common.error_handling import (MethodNotAllowed, ResourceNotFound,
+                                                        UnauthorizedError)
 
 
 class TestSmsCampaignSends:
@@ -25,7 +27,8 @@ class TestSmsCampaignSends:
         """
         response = requests.post(SmsCampaignApiUrl.CAMPAIGN_SENDS % sms_campaign_of_current_user.id,
                                  headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response.status_code == 405, 'POST method should not be allowed (405)'
+        assert response.status_code == MethodNotAllowed.http_status_code(), \
+            'POST method should not be allowed (405)'
 
     def test_for_delete_request(self, auth_token, sms_campaign_of_current_user):
         """
@@ -37,7 +40,8 @@ class TestSmsCampaignSends:
         response = requests.delete(
             SmsCampaignApiUrl.CAMPAIGN_SENDS % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response.status_code == 405, 'DELETE method should not be allowed (405)'
+        assert response.status_code == MethodNotAllowed.http_status_code(),\
+            'DELETE method should not be allowed (405)'
 
     def test_get_with_invalid_token(self, sms_campaign_of_current_user):
         """
@@ -48,7 +52,8 @@ class TestSmsCampaignSends:
         """
         response = requests.get(SmsCampaignApiUrl.CAMPAIGN_SENDS % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s invalid_token'))
-        assert response.status_code == 401, 'It should not be authorized (401)'
+        assert response.status_code == UnauthorizedError.http_status_code(), \
+            'It should not be authorized (401)'
 
     def test_get_with_valid_token_and_no_blasts_saved(self, auth_token,
                                                       sms_campaign_of_current_user):
@@ -102,7 +107,8 @@ class TestSmsCampaignSends:
         response_get = requests.get(
             SmsCampaignApiUrl.CAMPAIGN_SENDS % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response_get.status_code == 404, 'Campaign should not be found (404)'
+        assert response_get.status_code == ResourceNotFound.http_status_code(), \
+            'Campaign should not be found (404)'
 
     def test_get_with_valid_token_and_two_campaign_sends(self, auth_token,
                                                          sms_campaign_of_current_user,

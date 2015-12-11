@@ -11,7 +11,8 @@ import requests
 # Application Specific
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
-
+from sms_campaign_service.common.error_handling import (MethodNotAllowed, UnauthorizedError,
+                                                        InvalidUsage, InternalServerError)
 
 class TestUrlConversionAPI:
     """
@@ -25,7 +26,8 @@ class TestUrlConversionAPI:
         """
         response = requests.get(SmsCampaignApiUrl.URL_CONVERSION,
                                 headers=dict(Authorization='Bearer %s' % 'invalid_token'))
-        assert response.status_code == 401, 'It should be unauthorized (401)'
+        assert response.status_code == UnauthorizedError.http_status_code(), \
+            'It should be unauthorized (401)'
         assert 'short_url' not in response.json()
 
     def test_get_with_valid_token_and_no_data(self, auth_token):
@@ -36,7 +38,8 @@ class TestUrlConversionAPI:
         """
         response = requests.get(SmsCampaignApiUrl.URL_CONVERSION,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response.status_code == 400, 'Status should be Bad request (400)'
+        assert response.status_code == InvalidUsage.http_status_code(), \
+            'It should be Bad request (400)'
 
     def test_get_with_valid_token_and_valid_data(self, auth_token):
         """
@@ -63,10 +66,10 @@ class TestUrlConversionAPI:
                                 headers=dict(Authorization='Bearer %s' % auth_token),
                                 data={"long_url": SmsCampaignApiUrl.API_URL}
                                 )
-        assert response.status_code == 500, 'Status should be (500)'
+        assert response.status_code == InternalServerError.http_status_code(), \
+            'Status should be (500)'
         # custom exception for Google's Shorten URL API Error
-        assert response.json()['error'][
-                   'code'] == SmsCampaignApiException.GOOGLE_SHORTEN_URL_API_ERROR
+        assert response.json()['error']['code'] == SmsCampaignApiException.GOOGLE_SHORTEN_URL_API_ERROR
 
     def test_for_post_request(self, auth_token):
         """
@@ -76,7 +79,8 @@ class TestUrlConversionAPI:
         """
         response = requests.post(SmsCampaignApiUrl.URL_CONVERSION,
                                  headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response.status_code == 405, 'POST method should not be allowed (405)'
+        assert response.status_code == MethodNotAllowed.http_status_code(), \
+            'POST method should not be allowed (405)'
 
     def test_for_delete_request(self, auth_token):
         """
@@ -86,4 +90,5 @@ class TestUrlConversionAPI:
         """
         response = requests.delete(SmsCampaignApiUrl.URL_CONVERSION,
                                    headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response.status_code == 405, 'DELETE method should not be allowed (405)'
+        assert response.status_code == MethodNotAllowed.http_status_code(), \
+            'DELETE method should not be allowed (405)'

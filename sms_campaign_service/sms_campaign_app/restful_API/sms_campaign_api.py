@@ -44,10 +44,10 @@ from sms_campaign_service.common.talent_api import TalentApi
 from sms_campaign_service.common.utils.auth_utils import require_oauth
 from sms_campaign_service.custom_exceptions import ErrorDeletingSMSCampaign
 from sms_campaign_service.common.utils.api_utils import api_route, ApiResponse
-from sms_campaign_service.sms_campaign_base import SmsCampaignBase, delete_sms_campaign,\
-    validate_header, is_owner_of_campaign
-from sms_campaign_service.common.models.sms_campaign import SmsCampaign, SmsCampaignBlast, \
-    SmsCampaignSend
+from sms_campaign_service.sms_campaign_base import (SmsCampaignBase, delete_sms_campaign,
+                                                    validate_header, is_owner_of_campaign)
+from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignBlast,
+                                                             SmsCampaignSend)
 
 # creating blueprint
 sms_campaign_blueprint = Blueprint('sms_campaign_api', __name__)
@@ -231,11 +231,13 @@ class SMSCampaigns(Resource):
             raise InvalidUsage(error_message='id(s) of campaign should be in a list')
         campaign_ids = req_data['ids'] if 'ids' in req_data else []
         if not isinstance(req_data['ids'], list):
-            raise InvalidUsage('Bad request, include campaign_ids as list data', error_code=400)
+            raise InvalidUsage(error_message='Bad request, include campaign_ids as list data',
+                               error_code=InvalidUsage.http_status_code())
         # check if campaigns_ids list is not empty
         if campaign_ids:
             if not all([isinstance(campaign_id, (int, long)) for campaign_id in campaign_ids]):
-                raise InvalidUsage('Bad request, campaign_ids must be integer', error_code=400)
+                raise InvalidUsage(error_message='Bad request, campaign_ids must be integer',
+                                   error_code=InvalidUsage.http_status_code())
             status_list = [delete_sms_campaign(campaign_id, request.user.id)
                            for campaign_id in campaign_ids]
             if all(status_list):
@@ -495,4 +497,5 @@ class SendSmsCampaign(Resource):
                 return dict(message='Campaign(id:%s) has been sent successfully'
                                     % campaign_id, total_sends=total_sends), 200
             else:
-                raise ResourceNotFound(error_message='SMS Campaign(id=%s) Not found.' % campaign_id)
+                raise ResourceNotFound(error_message='SMS Campaign(id=%s) Not found.' % campaign_id,
+                                       error_code=ResourceNotFound.http_status_code())

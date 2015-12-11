@@ -14,6 +14,8 @@ from sms_campaign_service.tests.conftest import assert_for_activity
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
 from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_CREATE
+from sms_campaign_service.common.error_handling import (UnauthorizedError, InvalidUsage,
+                                                        InternalServerError, ForbiddenError)
 
 
 class TestSmsCampaign:
@@ -28,7 +30,8 @@ class TestSmsCampaign:
         """
         response = requests.get(SmsCampaignApiUrl.CAMPAIGNS,
                                 headers=dict(Authorization='Bearer %s' % 'invalid_token'))
-        assert response.status_code == 401, 'It should be unauthorized (401)'
+        assert response.status_code == UnauthorizedError.http_status_code(), \
+            'It should be unauthorized (401)'
 
     def test_get_with_valid_token_and_no_user_phone(self, auth_token):
         """
@@ -38,7 +41,8 @@ class TestSmsCampaign:
         """
         response = requests.get(SmsCampaignApiUrl.CAMPAIGNS,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response.status_code == 403, 'Should get forbidden error (403)'
+        assert response.status_code == ForbiddenError.http_status_code(),\
+            'Should get forbidden error (403)'
 
     def test_get_with_valid_token_and_one_user_phone(self, auth_token, user_phone_1):
         """
@@ -68,7 +72,8 @@ class TestSmsCampaign:
         """
         response = requests.get(SmsCampaignApiUrl.CAMPAIGNS,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response.status_code == 500, 'Internal Server Error should occur (500)'
+        assert response.status_code == InternalServerError.http_status_code(), \
+            'Internal Server Error should occur (500)'
         assert response.json()['error']['code'] == SmsCampaignApiException.MULTIPLE_TWILIO_NUMBERS
 
     def test_post_with_invalid_token(self):
@@ -78,7 +83,8 @@ class TestSmsCampaign:
         """
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=dict(Authorization='Bearer %s' % 'invalid_token'))
-        assert response.status_code == 401, 'It should be unauthorized (401)'
+        assert response.status_code == UnauthorizedError.http_status_code(), \
+            'It should be unauthorized (401)'
 
     def test_post_with_invalid_header(self, auth_token):
         """
@@ -89,7 +95,8 @@ class TestSmsCampaign:
         """
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response.status_code == 400, 'It should be a bad request (400)'
+        assert response.status_code == InvalidUsage.http_status_code(), \
+            'It should be a bad request (400)'
 
     def test_post_with_valid_header_and_no_user_phone_and_valid_data(self,
                                                                      campaign_valid_data,
@@ -103,7 +110,8 @@ class TestSmsCampaign:
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
                                  data=json.dumps(campaign_valid_data))
-        assert response.status_code == 403, 'It should get forbidden error (403)'
+        assert response.status_code == ForbiddenError.http_status_code(), \
+            'It should get forbidden error (403)'
 
     def test_post_with_valid_header_and_requesting_new_twilio_number_and_valid_data(
             self, sample_user, valid_header, campaign_valid_data):
@@ -133,7 +141,8 @@ class TestSmsCampaign:
         """
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header)
-        assert response.status_code == 400, 'Should be a bad request (400)'
+        assert response.status_code == InvalidUsage.http_status_code(), \
+            'Should be a bad request (400)'
 
     def test_post_with_valid_header_and_one_user_phone_and_invalid_data_type(self,
                                                                              valid_header,
@@ -150,7 +159,8 @@ class TestSmsCampaign:
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
                                  data=campaign_valid_data)
-        assert response.status_code == 400, 'Should be a bad request (400)'
+        assert response.status_code == InvalidUsage.http_status_code(), \
+            'Should be a bad request (400)'
 
     def test_post_with_valid_header_and_one_user_phone_and_invalid_data(self,
                                                                         campaign_invalid_data,
@@ -167,7 +177,8 @@ class TestSmsCampaign:
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
                                  data=json.dumps(campaign_invalid_data))
-        assert response.status_code == 500, 'Internal server error should occur (500)'
+        assert response.status_code == InternalServerError.http_status_code(), \
+            'Internal server error should occur (500)'
         assert response.json()['error']['code'] == SmsCampaignApiException.MISSING_REQUIRED_FIELD
 
     def test_post_with_valid_header_and_one_user_phone_and_valid_data(self,
@@ -208,7 +219,8 @@ class TestSmsCampaign:
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
                                  data=json.dumps(campaign_valid_data))
-        assert response.status_code == 500, 'Internal Server Error should occur (500)'
+        assert response.status_code == InternalServerError.http_status_code(),\
+            'Internal Server Error should occur (500)'
         assert response.json()['error']['code'] == SmsCampaignApiException.MULTIPLE_TWILIO_NUMBERS
 
     def test_delete_with_invalid_token(self):
@@ -218,7 +230,8 @@ class TestSmsCampaign:
         """
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=dict(Authorization='Bearer %s' % 'invalid_token'))
-        assert response.status_code == 401, 'It should be unauthorized (401)'
+        assert response.status_code == UnauthorizedError.http_status_code(), \
+            'It should be unauthorized (401)'
 
     def test_delete_with_invalid_header(self, auth_token):
         """
@@ -228,7 +241,8 @@ class TestSmsCampaign:
         """
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers={'Authorization': 'Bearer %s' % auth_token})
-        assert response.status_code == 400, 'It should be a bad request (400)'
+        assert response.status_code == InvalidUsage.http_status_code(), \
+            'It should be a bad request (400)'
 
     def test_delete_with_valid_header_and_no_data(self, valid_header):
         """
@@ -237,7 +251,8 @@ class TestSmsCampaign:
         """
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header)
-        assert response.status_code == 400, 'It should be a bad request (400)'
+        assert response.status_code == InvalidUsage.http_status_code(),\
+            'It should be a bad request (400)'
 
     def test_delete_with_valid_header_and_invalid_data(self, valid_header):
         """
@@ -250,7 +265,8 @@ class TestSmsCampaign:
                                    data={
                                        'ids': [1, 2, 3]
                                    })
-        assert response.status_code == 400, 'It should be a bad request (400)'
+        assert response.status_code == InvalidUsage.http_status_code(), \
+            'It should be a bad request (400)'
 
     def test_delete_with_valid_header_and_invalid_data_type(self, valid_header):
         """
@@ -263,7 +279,8 @@ class TestSmsCampaign:
                                    data=json.dumps({
                                        'ids': 1
                                    }))
-        assert response.status_code == 400, 'It should be a bad request (400)'
+        assert response.status_code == InvalidUsage.http_status_code(), \
+            'It should be a bad request (400)'
 
     def test_delete_with_valid_header_valid_data_type_invalid_ids(self,
                                                                   valid_header):
@@ -277,7 +294,8 @@ class TestSmsCampaign:
                                    data=json.dumps({
                                        'ids': ['a', 'b', 1]
                                    }))
-        assert response.status_code == 400, 'It should be a bad request (400)'
+        assert response.status_code == InvalidUsage.http_status_code(),\
+            'It should be a bad request (400)'
 
     def test_delete_with_valid_header_valid_data_type_and_valid_ids(self,
                                                                     valid_header,
@@ -307,4 +325,5 @@ class TestSmsCampaign:
                                    data=json.dumps({
                                        'ids': [sms_campaign_of_other_user.id]
                                    }))
-        assert response.status_code == 403, 'It should get forbidden error (403)'
+        assert response.status_code == ForbiddenError.http_status_code(), \
+            'It should get forbidden error (403)'

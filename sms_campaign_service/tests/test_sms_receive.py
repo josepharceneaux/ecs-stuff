@@ -15,9 +15,10 @@ import requests
 # Application Specific
 from sms_campaign_service import db
 from sms_campaign_service.tests.conftest import assert_for_activity
+from sms_campaign_service.common.error_handling import MethodNotAllowed
 from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
-from sms_campaign_service.common.models.sms_campaign import SmsCampaignBlast, SmsCampaignReply
 from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_REPLY
+from sms_campaign_service.common.models.sms_campaign import SmsCampaignBlast, SmsCampaignReply
 
 
 class TestSmsReceive:
@@ -31,7 +32,8 @@ class TestSmsReceive:
         :return:
         """
         response_post = requests.get(SmsCampaignApiUrl.SMS_RECEIVE)
-        assert response_post.status_code == 405, 'GET Method should not be allowed'
+        assert response_post.status_code == MethodNotAllowed.http_status_code(), \
+            'GET Method should not be allowed'
 
     def test_for_delete(self):
         """
@@ -39,7 +41,8 @@ class TestSmsReceive:
         :return:
         """
         response_post = requests.delete(SmsCampaignApiUrl.SMS_RECEIVE)
-        assert response_post.status_code == 405, 'DELETE Method should not be allowed'
+        assert response_post.status_code == MethodNotAllowed.http_status_code(), \
+            'DELETE Method should not be allowed'
 
     def test_post_with_no_data(self):
         """

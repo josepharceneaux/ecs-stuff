@@ -10,12 +10,16 @@ import requests
 # Application Specific
 from sms_campaign_service import db
 from sms_campaign_service.common.models.misc import UrlConversion
-from sms_campaign_service.common.models.sms_campaign import SmsCampaignBlast, SmsCampaignSend, \
-    SmsCampaignSendUrlConversion, SmsCampaign
-from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_SEND, CAMPAIGN_SEND
-from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
-from sms_campaign_service.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.conftest import assert_for_activity
+from sms_campaign_service.custom_exceptions import SmsCampaignApiException
+from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
+from sms_campaign_service.common.models.sms_campaign import (SmsCampaignBlast, SmsCampaignSend,
+                                                             SmsCampaignSendUrlConversion,
+                                                             SmsCampaign)
+from sms_campaign_service.common.utils.activity_utils import (CAMPAIGN_SMS_SEND, CAMPAIGN_SEND)
+from sms_campaign_service.common.error_handling import (MethodNotAllowed, UnauthorizedError,
+                                                        ResourceNotFound, ForbiddenError,
+                                                        InternalServerError)
 
 
 class TestSendSmsCampaign:
@@ -33,7 +37,8 @@ class TestSendSmsCampaign:
         response = requests.get(
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response.status_code == 405, 'POST method should not be allowed (405)'
+        assert response.status_code == MethodNotAllowed.http_status_code(),\
+            'POST method should not be allowed (405)'
 
     def test_for_delete_request(self, auth_token, sms_campaign_of_current_user):
         """
@@ -45,7 +50,8 @@ class TestSendSmsCampaign:
         response = requests.delete(
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response.status_code == 405, 'DELETE method should not be allowed (405)'
+        assert response.status_code == MethodNotAllowed.http_status_code(), \
+            'DELETE method should not be allowed (405)'
 
     def test_post_with_invalid_token(self, sms_campaign_of_current_user):
         """
@@ -55,7 +61,8 @@ class TestSendSmsCampaign:
         response = requests.post(
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % 'invalid_token'))
-        assert response.status_code == 401, 'It should be unauthorized (401)'
+        assert response.status_code == UnauthorizedError.http_status_code(), \
+            'It should be unauthorized (401)'
 
     def test_post_with_valid_header_and_id_of_deleted_record(self, auth_token, valid_header,
                                                              sms_campaign_of_current_user):
@@ -70,7 +77,8 @@ class TestSendSmsCampaign:
         response_post = requests.post(
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response_post.status_code == 404, 'Record should not be found (404)'
+        assert response_post.status_code == ResourceNotFound.http_status_code(),\
+            'Record should not be found (404)'
 
     def test_post_with_valid_token_and_not_owned_campaign(self, auth_token,
                                                           sms_campaign_of_other_user):
@@ -82,7 +90,8 @@ class TestSendSmsCampaign:
         response_post = requests.post(
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_other_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response_post.status_code == 403, 'It should get forbidden error (403)'
+        assert response_post.status_code == ForbiddenError.http_status_code(),\
+            'It should get forbidden error (403)'
         assert 'not the owner'.lower() in response_post.json()['error']['message'].lower()
 
     def test_post_with_valid_token_and_no_smartlist_associated(self, auth_token,
@@ -95,7 +104,8 @@ class TestSendSmsCampaign:
         response_post = requests.post(
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response_post.status_code == 500, 'It should be internal server error (500)'
+        assert response_post.status_code == InternalServerError.http_status_code(), \
+            'It should be internal server error (500)'
         assert response_post.json()['error']['code'] == SmsCampaignApiException.NO_SMARTLIST_ASSOCIATED
         assert 'No Smartlist'.lower() in response_post.json()['error']['message'].lower()
 
@@ -110,7 +120,8 @@ class TestSendSmsCampaign:
         response_post = requests.post(
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response_post.status_code == 500, 'It should be internal server error (500)'
+        assert response_post.status_code == InternalServerError.http_status_code(), \
+            'It should be internal server error (500)'
         assert response_post.json()['error']['code'] == SmsCampaignApiException.NO_CANDIDATE_ASSOCIATED
         assert 'No Candidate'.lower() in response_post.json()['error']['message'].lower()
 
@@ -161,9 +172,9 @@ class TestSendSmsCampaign:
         response_post = requests.post(
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response_post.status_code == 500, 'It should be internal server error (500)'
-        assert response_post.json()['error'][
-                   'code'] == SmsCampaignApiException.MULTIPLE_CANDIDATES_FOUND
+        assert response_post.status_code == InternalServerError.http_status_code(), \
+            'It should be internal server error (500)'
+        assert response_post.json()['error']['code'] == SmsCampaignApiException.MULTIPLE_CANDIDATES_FOUND
 
     def test_post_with_valid_token_one_smartlist_two_candidates_with_different_phones(
             self, auth_token, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,

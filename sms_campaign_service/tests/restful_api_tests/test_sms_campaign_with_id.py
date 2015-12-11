@@ -11,6 +11,9 @@ import requests
 # Application Specific
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
+from sms_campaign_service.common.error_handling import (UnauthorizedError, ResourceNotFound,
+                                                        ForbiddenError, InternalServerError,
+                                                        InvalidUsage)
 
 
 class TestSmsCampaignWithId:
@@ -30,17 +33,13 @@ class TestSmsCampaignWithId:
                                 headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == 200, 'Response should be ok (200)'
         # verify all the field values
-        assert response.json()['campaign']['name'] == sms_campaign_of_current_user.name
-        assert response.json()['campaign'][
-                   'sms_body_text'] == sms_campaign_of_current_user.sms_body_text
-        assert response.json()['campaign'][
-                   'frequency_id'] == sms_campaign_of_current_user.frequency_id
-        assert response.json()['campaign']['added_time'] == str(
-            sms_campaign_of_current_user.added_time)
-        assert response.json()['campaign']['send_time'] == str(
-            sms_campaign_of_current_user.send_time)
-        assert response.json()['campaign']['stop_time'] == str(
-            sms_campaign_of_current_user.stop_time)
+        campaign = sms_campaign_of_current_user
+        assert response.json()['campaign']['name'] == campaign.name
+        assert response.json()['campaign']['sms_body_text'] == campaign.sms_body_text
+        assert response.json()['campaign']['frequency_id'] == campaign.frequency_id
+        assert response.json()['campaign']['added_time'] == str(campaign.added_time)
+        assert response.json()['campaign']['send_time'] == str(campaign.send_time)
+        assert response.json()['campaign']['stop_time'] == str(campaign.stop_time)
 
     def test_get_with_invalid_token(self, sms_campaign_of_current_user):
         """
@@ -49,7 +48,8 @@ class TestSmsCampaignWithId:
         """
         response = requests.get(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % 'invalid_token'))
-        assert response.status_code == 401, 'It should be unauthorized (401)'
+        assert response.status_code == UnauthorizedError.http_status_code(), \
+            'It should be unauthorized (401)'
 
     def test_get_with_valid_token_and_id_of_deleted_record(self, auth_token,
                                                            sms_campaign_of_current_user):
@@ -63,7 +63,8 @@ class TestSmsCampaignWithId:
         assert response.status_code == 200, 'should get ok response (200)'
         response = requests.get(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response.status_code == 404, 'Record should not be found (404)'
+        assert response.status_code == ResourceNotFound.http_status_code(), \
+            'Record should not be found (404)'
 
     def test_delete_with_invalid_token(self, sms_campaign_of_current_user):
         """
@@ -72,7 +73,8 @@ class TestSmsCampaignWithId:
         """
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
                                    headers=dict(Authorization='Bearer %s' % 'invalid_token'))
-        assert response.status_code == 401, 'It should be unauthorized (401)'
+        assert response.status_code == UnauthorizedError.http_status_code(), \
+            'It should be unauthorized (401)'
 
     def test_delete_with_valid_header_and_owned_sms_campaign(self, valid_header,
                                                              sms_campaign_of_current_user):
@@ -94,7 +96,8 @@ class TestSmsCampaignWithId:
         """
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_other_user.id,
                                    headers=valid_header)
-        assert response.status_code == 403, 'should not be authorized (403)'
+        assert response.status_code == ForbiddenError.http_status_code(), \
+            'it should get forbidden error (403)'
 
     def test_post_with_valid_header_and_valid_data(self, valid_header,
                                                    campaign_valid_data,
@@ -135,7 +138,8 @@ class TestSmsCampaignWithId:
         response_post = requests.post(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
                                       headers=valid_header,
                                       data=json.dumps(campaign_valid_data))
-        assert response_post.status_code == 404, 'Record should not be found (404)'
+        assert response_post.status_code == ResourceNotFound.http_status_code(), \
+            'Record should not be found (404)'
 
     def test_post_with_invalid_token(self, sms_campaign_of_current_user):
         """
@@ -144,7 +148,8 @@ class TestSmsCampaignWithId:
         """
         response = requests.post(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
                                  headers=dict(Authorization='Bearer %s' % 'invalid_token'))
-        assert response.status_code == 401, 'It should be unauthorized (401)'
+        assert response.status_code == UnauthorizedError.http_status_code(), \
+            'It should be unauthorized (401)'
 
     def test_post_with_invalid_header(self, auth_token, sms_campaign_of_current_user):
         """
@@ -155,7 +160,8 @@ class TestSmsCampaignWithId:
         """
         response = requests.post(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
                                  headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response.status_code == 400, 'It should be a bad request (400)'
+        assert response.status_code == InvalidUsage.http_status_code(), \
+            'It should be a bad request (400)'
 
     def test_post_with_valid_header_and_no_data(self, valid_header,
                                                 sms_campaign_of_current_user):
@@ -165,7 +171,8 @@ class TestSmsCampaignWithId:
         """
         response = requests.post(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
                                  headers=valid_header)
-        assert response.status_code == 400, 'It should get bad request error (400)'
+        assert response.status_code == InvalidUsage.http_status_code(), \
+            'It should get bad request error (400)'
 
     def test_post_with_valid_header_and_invalid_data_type(self, valid_header,
                                                           campaign_valid_data,
@@ -177,7 +184,8 @@ class TestSmsCampaignWithId:
         response = requests.post(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
                                  headers=valid_header,
                                  data=campaign_valid_data)
-        assert response.status_code == 400, 'Should be a bad request (400)'
+        assert response.status_code == InvalidUsage.http_status_code(), \
+            'Should be a bad request (400)'
 
     def test_post_with_valid_header_and_invalid_data(self, valid_header,
                                                      campaign_invalid_data,
@@ -194,5 +202,6 @@ class TestSmsCampaignWithId:
         response = requests.post(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
                                  headers=valid_header,
                                  data=json.dumps(campaign_invalid_data))
-        assert response.status_code == 500, 'Internal server error should occur (500)'
+        assert response.status_code == InternalServerError.http_status_code(), \
+            'Internal server error should occur (500)'
         assert response.json()['error']['code'] == SmsCampaignApiException.MISSING_REQUIRED_FIELD

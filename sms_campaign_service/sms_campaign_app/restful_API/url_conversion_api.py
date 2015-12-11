@@ -79,4 +79,5 @@ class ConvertUrl(Resource):
             data = {'short_url': short_url}
             return data
         else:
-            raise InvalidUsage(error_message='No URL given in request')
+            raise InvalidUsage(error_message='No URL given in request',
+                               error_code=InvalidUsage.http_status_code())
