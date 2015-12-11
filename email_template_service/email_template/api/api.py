@@ -45,12 +45,12 @@ class EmailTemplate(Resource):
         if existing_template_name:
             raise InvalidUsage(error_message="Template name with name=%s already exists" % existing_template_name)
 
-        email_template_folder_id = int(requested_data("email_template_folder_id"))
+        email_template_folder_id = int(requested_data("email_template_folder_id") or 0)
         email_template_folder = EmailTemplateFolder.query.get(email_template_folder_id) if email_template_folder_id else None
         if email_template_folder and email_template_folder.domainId != domain_id:
             raise ForbiddenError(error_message="parent ID %s does not belong to domain %s" % requested_user_id % domain_id)
 
-        get_immutable_value = requested_data("is_immutable") or 0
+        get_immutable_value = int(requested_data("is_immutable") or 0)
         if get_immutable_value == "1" and not require_all_roles('CAN_CREATE_EMAIL_TEMPLATE'):
             raise UnauthorizedError(error_message="User is not admin")
         user_email_template = UserEmailTemplate(user_id=requested_user_id, type=TEMPLATE_EMAIL_MARKETING,
