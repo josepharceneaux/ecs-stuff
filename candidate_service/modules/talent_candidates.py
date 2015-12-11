@@ -55,9 +55,7 @@ def fetch_candidate_info(candidate, fields=None):
 
     full_name = None
     if get_all_fields or 'full_name' in fields:
-        first_name = candidate.first_name or ''
-        last_name = candidate.last_name or ''
-        full_name = (first_name.capitalize() + ' ' + last_name.capitalize()).strip()
+        full_name = format_candidate_full_name(candidate)
 
     created_at_datetime = None
     if get_all_fields or 'created_at_datetime' in fields:
@@ -147,6 +145,19 @@ def fetch_candidate_info(candidate, fields=None):
     # Remove keys with None values
     return_dict = dict((k, v) for k, v in return_dict.iteritems() if v is not None)
     return return_dict
+
+
+def format_candidate_full_name(candidate):
+    first_name, middle_name, last_name = candidate.first_name, candidate.middle_name, candidate.last_name
+    full_name = ''
+    if first_name and middle_name and last_name:
+        full_name = (first_name + ' ' + middle_name + ' ' + last_name).strip().title()
+    elif first_name and last_name:
+        full_name = (first_name + ' ' + last_name).strip().title()
+    elif first_name:
+        full_name = first_name.title()
+
+    return full_name
 
 
 def candidate_emails(candidate):
