@@ -4,7 +4,7 @@ from email_template_service.common.models.misc import EmailTemplateFolder, UserE
 from email_template_service.tests.helpers import post_to_email_template_resource, response_info
 
 
-def create_campaign_template(token, user_id, template_name, body_html, body_text, is_immutable="1", folder_id=None):
+def create_email_template(token, user_id, template_name, body_html, body_text, is_immutable="1", folder_id=None):
     """
     Creates a campaign template with params provided
 
@@ -18,9 +18,11 @@ def create_campaign_template(token, user_id, template_name, body_html, body_text
     """
     data = dict(
         name=template_name,
+        user_id=user_id,
+        type=0,
         email_body_html=body_html,
         email_body_text=body_text,
-        isImmutable=is_immutable
+        is_immutable=is_immutable
     )
 
     create_resp = post_to_email_template_resource(token, data=data)

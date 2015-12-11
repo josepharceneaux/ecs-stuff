@@ -3,7 +3,7 @@
 import time
 import json
 from email_template_service.common.tests.conftest import *
-from email_template_service.email_template.api.common_functions import create_campaign_template
+from email_template_service.email_template.api.common_functions import create_email_template
 
 EMAIL_TEMPLATE_URI = "http://127.0.0.1:8010/emailTemplate"
 EMAIL_TEMPLATE_FOLDER_URI = "http://127.0.0.1:8010/emailTemplateFolder"
@@ -62,15 +62,15 @@ class TestCreateImmutableTemplate:
         :return:
         """
         # Get access token
-        auth_token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
-
+        auth_token = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+        token = auth_token['access_token']
         # Get Template Folder Id
-        template_folder_id = get_template_folder(auth_token)
+        template_folder_id, template_folder_name = get_template_folder(auth_token)
 
         template_name = 'test_template_immutable_%i' % time.time()
 
-        email_template_id = create_campaign_template(auth_token, sample_user.id, template_name, email_template_body, '',
-                                                     is_immutable="1", folder_id=template_folder_id)
+        email_template_id = create_email_template(token, sample_user.id, template_name, email_template_body, '',
+                                                  is_immutable="1", folder_id=template_folder_id)
         template = db.session.query(UserEmailTemplate).filter_by(id=email_template_id).first()
 
         assert template.name == template_name
