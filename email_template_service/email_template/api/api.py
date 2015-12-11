@@ -43,26 +43,26 @@ class EmailTemplate(Resource):
                                                                               User.domain_id == domain_id).one()
         existing_template_name = existing_rows.name
         if existing_template_name:
-            raise InvalidUsage(error_message="Template Folder with name=%s already exists" % existing_template_name)
+            raise InvalidUsage(error_message="Template name with name=%s already exists" % existing_template_name)
 
-        email_template_folder_id = int(request.args.get("emailTemplateFolderId") or 0)
+        email_template_folder_id = int(requested_data("email_template_folder_id"))
         email_template_folder = EmailTemplateFolder.query.get(email_template_folder_id) if email_template_folder_id else None
         if email_template_folder and email_template_folder.domainId != domain_id:
             raise ForbiddenError(error_message="parent ID %s does not belong to domain %s" % requested_user_id % domain_id)
 
-        get_immutable_value = request.args.get("is_immutable")
+        get_immutable_value = requested_data("is_immutable") or 0
         if get_immutable_value == "1" and not require_all_roles('CAN_CREATE_EMAIL_TEMPLATE'):
             raise UnauthorizedError(error_message="User is not admin")
         user_email_template = UserEmailTemplate(user_id=requested_user_id, type=TEMPLATE_EMAIL_MARKETING,
-                                                name=template_name, email_body_html=requested_data["emailBodyHtml"] or None,
-                                                email_body_text=requested_data["emailBodyText"] or None,
-                                                emailTemplateFolderId=email_template_folder.id if email_template_folder
-                                                else None,
+                                                name=template_name, email_body_html=requested_data["email_body_html"] or None,
+                                                email_body_text=requested_data["email_body_text"] or None,
+                                                emailTemplateFolderId=email_template_folder_id if
+                                                email_template_folder_id else None,
                                                 is_immutable=get_immutable_value)
         db.session.add(user_email_template)
         db.session.commit()
         user_email_template_id = user_email_template.id
-        return dict(id=user_email_template_id)
+        return {'template_id': {'id': user_email_template_id}}
 
     # Input: template_id
     @require_oauth
