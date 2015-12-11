@@ -24,6 +24,8 @@
     "angular-ui-router": "~0.2.15",
     "jquery": "~2.1.4",
     "lodash": "~3.9.3",
-    "ng-pickadate": "~0.3.0"
+    "ng-pickadate": "~0.3.0",
+    "ng-tags-input": "~3.0.0",
+    "velocity": "~1.2.3"
   }
 }
