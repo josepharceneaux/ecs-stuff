@@ -150,14 +150,14 @@ def fetch_candidate_info(candidate, fields=None):
 def format_candidate_full_name(candidate):
     first_name, middle_name, last_name = candidate.first_name, candidate.middle_name, candidate.last_name
     full_name = ''
-    if first_name and middle_name and last_name:
-        full_name = (first_name + ' ' + middle_name + ' ' + last_name).strip().title()
-    elif first_name and last_name:
-        full_name = (first_name + ' ' + last_name).strip().title()
-    elif first_name:
-        full_name = first_name.title()
+    if first_name:
+        full_name = '%s ' % first_name
+    if middle_name:
+        full_name = '%s%s ' % (full_name, middle_name)
+    if last_name:
+        full_name = '%s%s' % (full_name, last_name)
 
-    return full_name
+    return full_name.title()
 
 
 def candidate_emails(candidate):
