@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "angular": "~1.4.0",
+    "angular-cookies":  "~1.4.0",
     "angular-oauth2": "~3.0.1",
     "angular-sanitize": "~1.4.0",
     "angular-toastr": "~1.4.1",

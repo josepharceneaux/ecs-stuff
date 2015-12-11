@@ -175,6 +175,14 @@
                         template: '<gt-admin></gt-admin>'
                     }
                 }
+            })
+            .state('admin.settings', {
+                url: '/settings',
+                views: {
+                    '@site': {
+                        template: '<gt-admin-settings></gt-admin-settings>'
+                    }
+                }
             });
     }
 })();

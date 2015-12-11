@@ -3,6 +3,7 @@
 
     angular.module('app.core', [
         // Angular modules
+        'ngCookies',
         'ngSanitize',
         'angular-oauth2',
 
