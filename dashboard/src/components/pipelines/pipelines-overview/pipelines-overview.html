@@ -1,5 +1,202 @@
 <section id="pipelines-overview-view" class="view__main">
 
-    <h1>Pipelines Overview</h1>
+    <div class="row--expanded row--blue hero">
+        <!-- Graph: Total Candidates -->
+        <div class="col--full-12">
+            <header class="row--widget hero__header">
+                <div class="row--table hero__header__stats">
+                    <div class="col--full-4 hero__header__stats--column">
+                        <h3>Unique Candidates</h3>
+                        <h1>21,704</h1>
+                    </div>
+
+                    <div class="col--full-4 hero__header__stats--column">
+                        <h3>Talent Pipelines <a class="hero__header__link" href="#" title="New Pipeline">+</a></h3>
+                        <h1>14</h1>
+                    </div>
+
+                    <div class="col--full-4 hero__header__stats--column">
+                        <h3>Total Engagement</h3>11
+                        <h1>62%</h1>
+                    </div>
+                </div>
+
+                <div class="row--table">
+                    <div class="col--large-8--cell hero__header__text">
+                        <h2>Candidate Growth by Pipeline</h2>
+                        <h4>Next 60 Days (Predictive)</h4>
+                        <h1>462 <span class="hero__header__stats--stat-subhead">-3% (-4% others)</span></h1>
+                    </div>
+                    <div class="col--large-4--cell hero__header__action">
+                        <a class="hero__header__action--icon-link" href="#">
+                            <span class="icon--download"></span>
+                        </a>
+                        <select id="chartToView" class="js-fancy" name="chartToView">
+                            <option value="">Select Chart to View</option>
+                            <option value="totalEngagement">Total Engagement</option>
+                        </select>
+                        <select id="chartDateRange" class="js-fancy" name="chartDateRange">
+                            <option value="15d">15d</option>
+                            <option value="30d">30d</option>
+                            <option value="60d">60d</option>
+                        </select>
+                    </div>
+                </div>
+            </header>
+            <figure class="js-graph--total-candidates areaGraph hero__graph"></figure>
+        </div>
+    </div>
+
+    <div class="row--widget">
+        <!-- Widget: Active Engagement Campaigns -->
+        <div class="col--full-4--cell box">
+            <header class="row--expanded">
+                <div class="col--large-7">
+                    <h2>Talent Pipeline <span>(14)</span></h2>
+                </div>
+                <div class="col--large-5 align--right box__header__with-link">
+                    <a href="#" class="button--blue button--greenHover">New Pipeline</a>
+                    <select id="activeEngagementCharts" class="js-fancy" name="activeEngagementCharts">
+                        <option value="">Select chart to view</option>
+                        <option value="candidate-count-by-pipelines">Candidate Count by Pipelines</option>
+                        <option value="candidate-growth-by-pipelines">Candidate Growth by Pipelines</option>
+                        <option value="candidate-growth-by-user">Candidate Growth by User</option>
+                        <option value="candidate-opt-outs-by-pipelines">Candidate Opt-Outs by Pipelines</option>
+                        <option value="engagement-by-pipelines">Engagement by Pipelines</option>
+                    </select>
+                </div>
+            </header>
+
+            <div class="box__table">
+                <table class="table">
+                    <tr class="table__row">
+                        <th class="table__header">Pipeline</th>
+                        <th class="table__header">Candidates</th>
+                        <th class="table__header">Created</th>
+                        <th class="table__header">Growth</th>
+                        <th class="table__header">Engagement</th>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--morePadding">Sr. Java Developers in CA</td>
+                        <td class="table__col--morePadding">608</td>
+                        <td class="table__col--morePadding">03/02/2015</td>
+                        <td class="table__col--morePadding">+67</td>
+                        <td class="table__col--morePadding">20%</td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--morePadding">Lead Ninja Trainer</td>
+                        <td class="table__col--morePadding">23</td>
+                        <td class="table__col--morePadding">06/06/2015</td>
+                        <td class="table__col--morePadding">+12</td>
+                        <td class="table__col--morePadding">50%</td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--morePadding">Adobe Acrobat Updater</td>
+                        <td class="table__col--morePadding">502</td>
+                        <td class="table__col--morePadding">06/21/2015</td>
+                        <td class="table__col--morePadding">+200</td>
+                        <td class="table__col--morePadding">220%</td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--morePadding">First Class Joomla Hacker</td>
+                        <td class="table__col--morePadding">230</td>
+                        <td class="table__col--morePadding">04/25/2015</td>
+                        <td class="table__col--morePadding">+567</td>
+                        <td class="table__col--morePadding">231%</td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--morePadding">Dreamweaver RockStar</td>
+                        <td class="table__col--morePadding">608</td>
+                        <td class="table__col--morePadding">03/22/2015</td>
+                        <td class="table__col--morePadding">+67</td>
+                        <td class="table__col--morePadding">210%</td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--morePadding">Lazy Exotic Environment Technologist</td>
+                        <td class="table__col--morePadding">20</td>
+                        <td class="table__col--morePadding">02/15/2015</td>
+                        <td class="table__col--morePadding">+45</td>
+                        <td class="table__col--morePadding">210%</td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--morePadding">Master CSS-layout Spec Designer</td>
+                        <td class="table__col--morePadding">25</td>
+                        <td class="table__col--morePadding">04/15/2015</td>
+                        <td class="table__col--morePadding">+67</td>
+                        <td class="table__col--morePadding">210%</td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--morePadding">Fax Machine Masterer</td>
+                        <td class="table__col--morePadding">132</td>
+                        <td class="table__col--morePadding">10/22/2015</td>
+                        <td class="table__col--morePadding">+33</td>
+                        <td class="table__col--morePadding">210%</td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--morePadding">Digital Prophet</td>
+                        <td class="table__col--morePadding">14</td>
+                        <td class="table__col--morePadding">02/29/2015</td>
+                        <td class="table__col--morePadding">+67</td>
+                        <td class="table__col--morePadding">210%</td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--morePadding">Evolutionary Thinker of Free Code</td>
+                        <td class="table__col--morePadding">372</td>
+                        <td class="table__col--morePadding">06/29/2015</td>
+                        <td class="table__col--morePadding">+17</td>
+                        <td class="table__col--morePadding">160%</td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--morePadding">Guru Master Business Hero</td>
+                        <td class="table__col--morePadding">462</td>
+                        <td class="table__col--morePadding">09/21/2015</td>
+                        <td class="table__col--morePadding">+163</td>
+                        <td class="table__col--morePadding">120%</td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--morePadding">Professional Pizza Reheater</td>
+                        <td class="table__col--morePadding">156</td>
+                        <td class="table__col--morePadding">08/12/2015</td>
+                        <td class="table__col--morePadding">+67</td>
+                        <td class="table__col--morePadding">210%</td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--morePadding">Junior Beard Developer</td>
+                        <td class="table__col--morePadding">158</td>
+                        <td class="table__col--morePadding">01/28/2015</td>
+                        <td class="table__col--morePadding">+37</td>
+                        <td class="table__col--morePadding">21%</td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--morePadding">Powerful Newsletter Unsubscriber</td>
+                        <td class="table__col--morePadding">68</td>
+                        <td class="table__col--morePadding">06/12/2015</td>
+                        <td class="table__col--morePadding">+167</td>
+                        <td class="table__col--morePadding">10%</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="row--widget">
+            <p class="footer__copyright">&copy; getTalent &ndash; getTalent is a DHI Service</p>
+        </div>
+    </footer>
 
 </section>
