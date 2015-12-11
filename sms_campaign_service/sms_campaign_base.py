@@ -187,7 +187,9 @@ class SmsCampaignBase(CampaignBase):
         self.user_phone = self.get_user_phone()
         if not self.user_phone:
             raise ForbiddenError(error_message='User(id:%s) has no phone number' % self.user_id)
+        # TODO: Comment here
         self.modified_body_text = None
+        # TODO: Comment here
         self.sms_campaign_blast_id = None
         self.total_sends = 0
 
@@ -238,6 +240,7 @@ class SmsCampaignBase(CampaignBase):
         **See Also**
         .. see also:: save() method in SmsCampaignBase class.
         """
+        #TODO: variable names
         data = dict(name=sms_campaign_data.get('name'),
                     user_phone_id=self.user_phone.id,
                     sms_body_text=sms_campaign_data.get('sms_body_text'),
@@ -301,7 +304,7 @@ class SmsCampaignBase(CampaignBase):
 
     def get_user_phone(self):
         """
-        Her we check if current user has Twilio number in "user_phone" table.
+        Here we check if current user has Twilio number in "user_phone" table.
         If user has no Twilio number associated, we buy a new number for this user,
         saves it in database and returns it.
 
@@ -310,6 +313,7 @@ class SmsCampaignBase(CampaignBase):
 
         :return: UserPhone row
         """
+        # TODO: need to talk to osman where to implement this
         # TWILIO is a name defined in config
         phone_label_id = PhoneLabel.phone_label_id_from_phone_label(TWILIO)
         user_phone = UserPhone.get_by_user_id_and_phone_label_id(self.user_id,
@@ -330,8 +334,8 @@ class SmsCampaignBase(CampaignBase):
 
     def buy_twilio_mobile_number(self, phone_label_id=None):
         """
-        Here we use Twilio API to first get available numbers by calling
-        get_available_numbers() of class TwilioSMS inside utilities.py. We select a number
+        Here we use Twilio API to first get list of available numbers by calling
+        get_available_numbers() of class TwilioSMS inside utilities.py. We select first available number
         from the result of get_available_numbers() and call purchase_twilio_number() to
         buy that number.
 
@@ -402,15 +406,16 @@ class SmsCampaignBase(CampaignBase):
         2- Get selected smart lists for the campaign to be sent from sms_campaign_smart_list.
         3- Loop over all the smart lists and do the followings:
 
-            3-1- Get candidates and their phone number(s) to which we need to send the SMS.
-            3-2- Create SMS campaign blast
-            3-3- Loop over list of candidate_ids found in step-3-1 and do the followings:
+            3.1- Get candidates and their phone number(s) to which we need to send the SMS.
+            3.2- Create SMS campaign blast
+            3.3- Loop over list of candidate_ids found in step-3-1 and do the followings:
 
-                3-3-1- Send SMS
-                3-3-2- Create SMS campaign send
-                3-3-3- Update SMS campaign blast
-                3-3-4- Add activity (%(candidate_name)s received SMS of campaign %(campaign_name)s")
-        4- Add activity (Campaign %(campaign_name)s was sent to %(num_candidates)s candidates")
+                3.3.1- Send SMS
+                3.3.2- Create SMS campaign send
+                3.3.3- Update SMS campaign blast
+                3.3.4- Add activity e.g.("Roger Federer" received SMS of campaign "abc"")
+        4- Add activity e.g. (SMS Campaign "abc" was sent to "1000" candidates")
+
         :Example:
 
             1- Create class object
@@ -433,13 +438,13 @@ class SmsCampaignBase(CampaignBase):
                                              % campaign.id)
         # Get smart_lists associated to this campaign
         smart_lists = SmsCampaignSmartlist.get_by_campaign_id(campaign.id)
+        # TODO: Use map if we can
         if smart_lists:
             all_candidates = []
             for smart_list in smart_lists:
                 self.smart_list_id = smart_list.smart_list_id
                 # get candidates associated with smart list
-                candidates = self.get_candidates_from_candidate_service(
-                    smart_list.smart_list_id)
+                candidates = self.get_candidates_from_candidate_service(smart_list.smart_list_id)
                 if candidates:
                     all_candidates.extend(candidates)
                 else:
@@ -455,6 +460,7 @@ class SmsCampaignBase(CampaignBase):
                          '(User(id:%s))' % (campaign.id, len(all_candidates), self.user_id))
             # create SMS campaign blast
             self.sms_campaign_blast_id = self.create_or_update_sms_campaign_blast(self.campaign.id)
+            # TODO: Implement as per celery
             self.send_campaign_to_candidates(all_candidates)
             self.create_campaign_send_activity(self.total_sends) if self.total_sends else ''
             logger.debug('process_send: SMS Campaign(id:%s) has been sent to %s candidate(s).'

@@ -97,8 +97,7 @@ class CampaignBase(object):
     @abstractmethod
     def save(self, form_data):
         """
-        This saves the campaign in database table.
-        e.g. in sms_campaign or email_campaign etc.
+        This saves the campaign in database table e.g. in sms_campaign or email_campaign etc.
         Child class will implement this.
         :return:
         """
@@ -162,7 +161,8 @@ class CampaignBase(object):
                              json.loads(response.text)['candidates']]
             candidates = [Candidate.get_by_id(_id) for _id in candidate_ids]
             return candidates
-        except:
+        except Exception:
+            #TODO: add logger
             raise
 
     def send_campaign_to_candidates(self, candidates):
@@ -181,6 +181,7 @@ class CampaignBase(object):
         .. see also:: process_send() method in SmsCampaignBase class.
         """
         # job_pool = Pool(POOL_SIZE)
+        # TODO: Celery specific task
         for candidate in candidates:
             self.send_campaign_to_candidate(candidate)
             #     job_pool.spawn(self.send_campaign_to_candidate, candidate)

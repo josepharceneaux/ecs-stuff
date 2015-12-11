@@ -28,7 +28,8 @@ def _base_api_url(service_name, port_number):
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly")
 
 
-class GTApps:
+class GTApps(object):
+    # TODO COMMENT
     def __init__(self):
         pass
     
