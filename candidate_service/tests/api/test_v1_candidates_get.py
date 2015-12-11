@@ -103,7 +103,7 @@ def test_get_candidate_via_invalid_email(sample_user, user_auth):
     assert resp.status_code == 400
 
 
-def test_get_candidate_via_id_and_email(sample_user, user_auth):
+def test_get_can_via_id_and_email(sample_user, user_auth):
     """
     Test:   Retrieve candidate via candidate's ID and candidate's Email address
     Expect: 200 in both cases

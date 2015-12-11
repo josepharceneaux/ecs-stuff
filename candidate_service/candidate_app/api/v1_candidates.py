@@ -14,6 +14,7 @@ from candidate_service.modules.validators import (
     does_candidate_belong_to_user, is_custom_field_authorized,
     is_area_of_interest_authorized
 )
+from candidate_service.modules.resource_schemas import validate_request_body_keys
 
 # Decorators
 from candidate_service.common.utils.auth_utils import require_oauth
@@ -126,6 +127,9 @@ class CandidateResource(Resource):
         created_candidate_ids = []
         for candidate_dict in list_of_candidate_dicts:
 
+            # Candidate object must contain valid keys/fields
+            # validate_request_body_keys(request_body=candidate_dict) TODO: update to handle all fields from the db
+
             # Ensure emails list is provided
             if not candidate_dict.get('emails'):
                 raise InvalidUsage(error_message="Email address is required for creating candidate")
@@ -141,7 +145,7 @@ class CandidateResource(Resource):
                 raise InvalidUsage(error_message="Invalid email address/format")
 
             # Prevent user from adding custom field(s) to other domains
-            custom_fields = candidate_dict.get('custom_fields', [])
+            custom_fields = candidate_dict.get('custom_fields') or []
             custom_field_ids = [custom_field.get('id') for custom_field in custom_fields]
             is_authorized = is_custom_field_authorized(custom_field_ids=custom_field_ids,
                                                        user_domain_id=authed_user.domain_id)
@@ -149,7 +153,7 @@ class CandidateResource(Resource):
                 raise ForbiddenError(error_message="Unauthorized custom field IDs")
 
             # Prevent user from adding area(s) of interest to other domains
-            areas_of_interest = candidate_dict.get('areas_of_interest', [])
+            areas_of_interest = candidate_dict.get('areas_of_interest') or []
             area_of_interest_ids = [area_of_interest.get('id') for area_of_interest in areas_of_interest]
             is_authorized = is_area_of_interest_authorized(area_of_interest_ids=area_of_interest_ids,
                                                            user_domain_id=authed_user.domain_id)
@@ -235,6 +239,9 @@ class CandidateResource(Resource):
         updated_candidate_ids = []
         for candidate_dict in list_of_candidate_dicts:
 
+            # Candidate object must contain valid keys/fields
+            # validate_request_body_keys(request_body=candidate_dict) TODO: update to handle all fields from the db
+
             emails = candidate_dict.get('emails') # TODO: validate emails and format
             if emails:
                 emails = [{'id': email.get('id'), 'label': email.get('label'), 'address': email.get('address'),
@@ -245,7 +252,7 @@ class CandidateResource(Resource):
                     raise InvalidUsage(error_message="Invalid email address/format")
 
             # Prevent user from updating custom field(s) from other domains
-            custom_fields = candidate_dict.get('custom_fields', [])
+            custom_fields = candidate_dict.get('custom_fields') or []
             custom_field_ids = [custom_field.get('id') for custom_field in custom_fields]
             is_authorized = is_custom_field_authorized(custom_field_ids=custom_field_ids,
                                                        user_domain_id=authed_user.domain_id)
@@ -253,7 +260,7 @@ class CandidateResource(Resource):
                 raise ForbiddenError(error_message="Unauthorized custom field IDs")
 
             # Retrieve areas_of_interest
-            areas_of_interest = candidate_dict.get('areas_of_interest', [])
+            areas_of_interest = candidate_dict.get('areas_of_interest') or []
             area_of_interest_ids = [area_of_interest.get('id') for area_of_interest in areas_of_interest]
 
             # If AreaOfInterest ID is not provided, assume it needs to be created
