@@ -828,7 +828,6 @@ def test_update_existing_phone(sample_user, user_auth):
     candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
 
     phones_after_update = candidate_dict['phones']
-    phones_from_data = data['candidate']['phones']
 
     assert candidate_id == candidate_dict['id']
     assert phones_before_update[0]['id'] == phones_after_update[0]['id']

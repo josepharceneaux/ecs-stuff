@@ -405,16 +405,16 @@ def candidate_phones(candidate_id=None, phone_id=None):
     # Data for adding CandidatePhone to an existing Candidate
     if candidate_id and not phone_id:
         data = {'candidate': {'id': candidate_id, 'phones': [
-            {'label': 'home', 'value': '8009346489', 'is_default': True}
+            {'label': 'home', 'value': '6009346489', 'is_default': True}
         ]}}
     # Data for updating an existing CandidatePhone
     elif candidate_id and phone_id:
         data = {'candidate': {'id': candidate_id, 'phones': [{'id': phone_id, 'label': 'home',
-                                                              'value': '8009346489'}]}}
+                                                              'value': '6009346489'}]}}
     # Data for creating Candidate + CandidatePhone
     else:
         data = {'candidate': {'emails': [{'address': fake.email()}], 'phones': [
-            {'label': 'work', 'value': '8009346489'}
+            {'label': 'work', 'value': '6009346489'}
         ]}}
 
     return data
