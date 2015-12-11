@@ -53,7 +53,9 @@
                 contentCampaigns: 'Content Campaigns',
                 pushNotifications: 'Push Notifications'
             },
-            admin: {}
+            admin: {
+                settings: 'Settings'
+            }
         };
     }
 
