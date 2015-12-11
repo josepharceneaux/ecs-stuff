@@ -23,6 +23,7 @@
     "angular-sanitize": "~1.4.0",
     "angular-toastr": "~1.4.1",
     "angular-ui-router": "~0.2.15",
+    "d3": "~3.5.9",
     "jquery": "~2.1.4",
     "lodash": "~3.9.3",
     "ng-pickadate": "~0.3.0",
