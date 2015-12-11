@@ -6,6 +6,7 @@ from email_template_service.common.models.misc import UserEmailTemplate, EmailTe
 from email_template_service.common.models.user import User
 from flask import request
 from email_template_service.common.error_handling import *
+from email_template_service.common.utils.validators import is_number
 import json
 
 mod = Blueprint('email_template_service', __name__)
@@ -15,11 +16,12 @@ TEMPLATE_EMAIL_MARKETING = 0
 # current.TEMPLATE_EMAIL_MARKETING = TEMPLATE_EMAIL_MARKETING Todo: Change the value
 
 
-class EmailTemplateApi(Resource):
+class EmailTemplate(Resource):
 
     # Access token and role authentication decorators
     decorators = [require_oauth]
 
+    @mod.route('/emailTemplate', methods=['POST'])
     @require_oauth
     def post(self):
         """
@@ -32,11 +34,12 @@ class EmailTemplateApi(Resource):
         :return:  A dictionary containing array of user ids
         :rtype: dict
         """
+        requested_data = json.loads(request.data)
         requested_user_id = request.user.id
-        name = request.args.get("name")
+        template_name = requested_data['name']
         domain_id = request.user.domain_id
         # Check if the name is already exists in the domain
-        existing_rows = db.session.query(UserEmailTemplate).join(User).filter(UserEmailTemplate.name == name,
+        existing_rows = db.session.query(UserEmailTemplate).join(User).filter(UserEmailTemplate.name == template_name,
                                                                               User.domain_id == domain_id).one()
         existing_template_name = existing_rows.name
         if existing_template_name:
@@ -51,8 +54,8 @@ class EmailTemplateApi(Resource):
         if get_immutable_value == "1" and not require_all_roles('CAN_CREATE_EMAIL_TEMPLATE'):
             raise UnauthorizedError(error_message="User is not admin")
         user_email_template = UserEmailTemplate(user_id=requested_user_id, type=TEMPLATE_EMAIL_MARKETING,
-                                                name=name, email_body_html=request.args.get("emailBodyHtml") or None,
-                                                email_body_text=request.args.get("emailBodyText") or None,
+                                                name=template_name, email_body_html=requested_data["emailBodyHtml"] or None,
+                                                email_body_text=requested_data["emailBodyText"] or None,
                                                 emailTemplateFolderId=email_template_folder.id if email_template_folder
                                                 else None,
                                                 is_immutable=get_immutable_value)
@@ -115,15 +118,38 @@ class EmailTemplateApi(Resource):
 
         return dict(success=1)
 
+    # Inputs: id
+    @require_oauth
     def get(self, **kwargs):
         """
         """
-        pass
+        # Authenticated user
+        authed_user = request.user
+        domain_id = request.user.domain_id
+
+        email_template_id = kwargs.get("id")
+        if email_template_id:
+            # Candidate ID must be an integer
+            if not is_number(email_template_id):
+                raise InvalidUsage(error_message="Template ID must be an integer")
+        user_email_template_row = UserEmailTemplate.query.filter_by(id=email_template_id).first()
+
+        # Verify domain
+        owner_user = db.session.query(UserEmailTemplate).filter_by(user_id=authed_user.id).first()
+        if owner_user.domain_id != domain_id:
+            raise ForbiddenError(error_message="Template is not owned by same domain")
+
+        # Verify isImmutable
+        if user_email_template_row.is_immutable and not require_all_roles('CAN_UPDATE_EMAIL_TEMPLATE'):
+            raise ForbiddenError(error_message="Non-admin user trying to update immutable template")
+
+        email_body_html = user_email_template_row.email_body_html
+        return dict(id=email_template_id, email_body_html=email_body_html)
 
 
 # Inputs: name, parentId (if any), isImmutable (only if admin)
 # @require_all_roles('CAN_CREATE_EMAIL_TEMPLATE_FOLDER')
-@mod.route('/emailTemplate', methods=['POST'])
+@mod.route('/emailTemplateFolder', methods=['POST'])
 @require_oauth
 def create_email_template_folder():
     """

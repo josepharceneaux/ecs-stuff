@@ -19,6 +19,7 @@ from ..models.db import db
 from ..models.user import (Client, Domain, User, Token)
 from ..models.talent_pools_pipelines import (TalentPool, TalentPoolGroup, TalentPipeline)
 from ..models.misc import (Culture, Organization, AreaOfInterest, CustomField)
+from ..models.misc import UserEmailTemplate, EmailTemplateFolder
 
 
 fake = Faker()
@@ -530,3 +531,25 @@ def candidate_second(request, user_first):
 
 def randomword(length):
     return ''.join(random.choice(string.lowercase) for i in xrange(length))
+
+
+@pytest.fixture(scope='module')
+def email_template_body():
+    return '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test campaign mail testing through script</p>\r\n</body>\r\n</html>\r\n'
+
+
+@pytest.fixture(scope='session')
+def template_id(sample_user, domain_id):
+    """
+    Retrieves email template for the test email campaign
+
+    :param sample_user:
+    :return:    Id of template retrieved
+    """
+    # Retrieve campaign template from 'Sample Templates' folder
+    email_template_folder = db.session.query(EmailTemplateFolder).filter(EmailTemplateFolder.name == 'Sample Templates',
+                                                                         EmailTemplateFolder.domain_id == domain_id).first()
+    email_template_folder_id = email_template_folder.id
+    template = db.session.query(UserEmailTemplate).filter_by(email_template_folder_id=email_template_folder_id)
+
+    return template['id']
