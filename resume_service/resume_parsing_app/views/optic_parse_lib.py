@@ -21,7 +21,7 @@ def fetch_optic_response(resume):
                         oauthVersion='1.0')
     AUTH = oauth.get_authorizationString()
     HEADERS = {
-      'Accept': 'application/xml',
+      'accept': 'application/xml',
       'content-type': 'application/xml',
       'Authorization': AUTH,
     }
