@@ -67,7 +67,7 @@ def format_phone_number(phone_number, country_code='US'):
     except:
         raise InvalidUsage(error_message="format_phone_number(%s, %s): Received other exception" % (phone_number,
                                                                                                     country_code))
-        return False
+        # return False
 
 
 def sanitize_zip_code(zip_code):

@@ -38,8 +38,8 @@ def generate_single_candidate_data(domain_id=None):
                 {'label': 'work', 'address': fake.company_email(), 'is_default': False}
             ],
             'phones': [
-                {'label': 'mobile', 'value': fake.phone_number(), 'is_default': True},
-                {'label': 'Work', 'value': fake.phone_number(), 'is_default': False}
+                {'label': 'mobile', 'value': '8009346489', 'is_default': True},
+                {'label': 'Work', 'value': '8009346489', 'is_default': False}
             ],
             'addresses': [
                 {
@@ -152,8 +152,8 @@ def candidate_data_for_update(candidate_id, email_1_id, email_2_id, phone_1_id,
                 {'id': email_2_id, 'label': 'work', 'address': fake.company_email()}
             ],
             'phones': [
-                {'id': phone_1_id, 'label': 'mobile', 'value': fake.phone_number()},
-                {'id': phone_2_id, 'label': 'Work', 'value': fake.phone_number()}
+                {'id': phone_1_id, 'label': 'mobile', 'value': '8009346489'},
+                {'id': phone_2_id, 'label': 'Work', 'value': '8009346489'}
             ],
             'addresses': [
                 {'id': address_1_id, 'address_line_1': fake.street_address(), 'city': fake.city(),
@@ -405,16 +405,16 @@ def candidate_phones(candidate_id=None, phone_id=None):
     # Data for adding CandidatePhone to an existing Candidate
     if candidate_id and not phone_id:
         data = {'candidate': {'id': candidate_id, 'phones': [
-            {'label': 'home', 'value': fake.phone_number(), 'is_default': True}
+            {'label': 'home', 'value': '8009346489', 'is_default': True}
         ]}}
     # Data for updating an existing CandidatePhone
     elif candidate_id and phone_id:
         data = {'candidate': {'id': candidate_id, 'phones': [{'id': phone_id, 'label': 'home',
-                                                              'value': fake.phone_number()}]}}
+                                                              'value': '8009346489'}]}}
     # Data for creating Candidate + CandidatePhone
     else:
         data = {'candidate': {'emails': [{'address': fake.email()}], 'phones': [
-            {'label': 'work', 'value': fake.phone_number()}
+            {'label': 'work', 'value': '8009346489'}
         ]}}
 
     return data
