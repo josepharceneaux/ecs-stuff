@@ -1,10 +1,8 @@
 """API for the Resume Parsing App"""
 __author__ = 'erikfarmer'
-
 # Standard lib
 from StringIO import StringIO
 import json
-
 # Framework specific
 from flask import Blueprint
 from flask import current_app as app
@@ -63,9 +61,9 @@ def parse_file_picker_resume():
 
     # Parse resume
     result_dict = parse_resume(file_obj=resume_file, filename_str=filename_str)
-    processed_data = result_dict.get('dice_api_response')
-    if processed_data:
-        del result_dict['dice_api_response']
+    # processed_data = result_dict.get('dice_api_response')
+    # if processed_data:
+    #     del result_dict['dice_api_response']
     email_present = True if result_dict.get('emails') else False
     if create_candidate:
         if email_present:
@@ -76,4 +74,5 @@ def parse_file_picker_resume():
             return jsonify(**{'error': {'code': 3, 'message': 'Parsed resume did not have email',
                                         'candidate': result_dict}}), 400
 
-    return jsonify(**{'candidate': result_dict, 'dice_api_response': processed_data})
+    # return jsonify(**{'candidate': result_dict, 'dice_api_response': processed_data})
+    return jsonify(**{'candidate': result_dict})

@@ -2,58 +2,60 @@
 import datetime
 import re
 import string
+from xml.etree import ElementTree as ET
 # Third Party
 from bs4 import BeautifulSoup as bs4
 # from dateutil.parser import parse
-# from OauthClient import OAuthClient
+from OauthClient import OAuthClient
 import phonenumbers
-# import requests
+import requests
 
-# def fetch_optic_response(resume):
-#     URL = 'http://sandbox-lensapi.burning-glass.com/v1.7/parserservice/resume'
-#     oauth = OAuthClient(url='http://sandbox-lensapi.burning-glass.com/v1.7/parserservice/resume',
-#                         method='POST', consumerKey='osman',
-#                         consumerSecret='aRFKEc3AJdR9zogE@M9Sis%QjZPxA5Oy',
-#                         token='Utility',
-#                         tokenSecret='Q5JuWpaMLUi=yveieiNKNWxqqOvHLNJ$',
-#                         signatureMethod='HMAC-SHA1',
-#                         oauthVersion='1.0')
-#     AUTH = oauth.get_authorizationString()
-#     HEADERS = {
-#       'Accept': 'application/xml',
-#       'content-type': 'application/xml',
-#       'Authorization': AUTH,
-#     }
-#     DATA = {
-#         'binaryData': resume,
-#         'instanceType': 'TM',
-#         'locale': 'en_us'
-#     }
-#     r = requests.post(URL, headers=HEADERS, json=DATA)
-#     optic_response = json.loads(r.content)['responseData']['ResDoc']
-#     return optic_response
-#
-# def parse_optic_json(resume_xml):
-#     name = parse_candidate_name(resume_json['resume']['contact'])
-#     emails = parse_candidate_emails(resume_json['resume']['contact'])
-#     phones = parse_candidate_phones(resume_json['resume']['contact'])
-#     work_experiences = parse_candidate_experience(resume_json['resume']['experience']['job'])
-#     if resume_json['resume'].get('education'):
-#         educations = parse_candidate_educations(resume_json['resume']['education'])
-#     else:
-#         educations = []
-#     skills = parse_candidate_skills()
-#     addresses = parse_candidate_addresses(resume_json['resume']['contact'][0])
-#     candidate = dict(
-#         full_name=name,
-#         emails=emails,
-#         phones=phones, # list
-#         work_experiences=work_experiences, # list
-#         educations=educations, # list
-#         skills=skills, # list
-#         addresses=addresses # list
-#     )
-#     return candidate
+def fetch_optic_response(resume):
+    URL = 'http://sandbox-lensapi.burning-glass.com/v1.7/parserservice/resume'
+    oauth = OAuthClient(url='http://sandbox-lensapi.burning-glass.com/v1.7/parserservice/resume',
+                        method='POST', consumerKey='osman',
+                        consumerSecret='aRFKEc3AJdR9zogE@M9Sis%QjZPxA5Oy',
+                        token='Utility',
+                        tokenSecret='Q5JuWpaMLUi=yveieiNKNWxqqOvHLNJ$',
+                        signatureMethod='HMAC-SHA1',
+                        oauthVersion='1.0')
+    AUTH = oauth.get_authorizationString()
+    HEADERS = {
+      'Accept': 'application/xml',
+      'content-type': 'application/xml',
+      'Authorization': AUTH,
+    }
+    DATA = {
+        'binaryData': resume,
+        'instanceType': 'TM',
+        'locale': 'en_us'
+    }
+    r = requests.post(URL, headers=HEADERS, json=DATA)
+    xml_response = ET.parse(r.content).getroot()
+    return xml_response
+
+def parse_optic_json(resume_xml):
+    contact_xml_list = bs4(resume_xml, 'lxml').findAll('contact')
+    experience_xml_list = bs4(resume_xml, 'lxml').findAll('experience')
+    educations_xml_list = bs4(resume_xml, 'lxml').findAll('education')
+    skill_xml_list= bs4(resume_xml, 'lxml').findAll('canonskill')
+    name = parse_candidate_name(contact_xml_list)
+    emails = parse_candidate_emails(contact_xml_list)
+    phones = parse_candidate_phones(contact_xml_list)
+    work_experiences = parse_candidate_experiences(experience_xml_list)
+    educations = parse_candidate_educations(educations_xml_list)
+    skills = parse_candidate_skills(skill_xml_list)
+    addresses = parse_candidate_addresses(contact_xml_list)
+    candidate = dict(
+        full_name=name,
+        emails=emails,
+        phones=phones,
+        work_experiences=work_experiences,
+        educations=educations,
+        skills=skills,
+        addresses=addresses
+    )
+    return candidate
 
 
 def parse_candidate_name(bs_contact_xml_list):
