@@ -225,7 +225,7 @@ api.add_resource(
 # ****** Candidate Search *******
 api.add_resource(CandidateSearch,
                  '/v1/candidates/search')
-    
+
 db.create_all()
 db.session.commit()
 

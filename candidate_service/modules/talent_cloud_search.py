@@ -1,5 +1,5 @@
 import math
-import operator
+# import operator
 import os
 import time
 import re
@@ -16,6 +16,7 @@ from candidate_service.config import GT_ENVIRONMENT
 from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateStatus
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import AreaOfInterest
+from candidate_service.common.error_handling import InternalServerError
 from flask.ext.common.common.geo_services.geo_coordinates import get_geocoordinates_bounding
 
 API_VERSION = "2013-01-01"
@@ -352,7 +353,7 @@ def _build_candidate_documents(candidate_ids):
                 field_name_to_sql_value[field_name] = sql_value_array
 
         # Add the required values we didn't get from DB
-        field_name_to_sql_value_row = db.session.query(User).filter_by(
+        field_name_to_sql_value_row = User.query.filter_by(
             id=field_name_to_sql_value['user_id']).first()
         field_name_to_sql_value['domain_id'] = field_name_to_sql_value_row.domain_id
         action_dict['fields'] = field_name_to_sql_value
@@ -388,7 +389,7 @@ def upload_candidate_documents_in_domain(domain_id):
     :return:
     """
 
-    candidate = db.session.query(Candidate).join(User).filter(Candidate.user_id == User.id,
+    candidate = Candidate.query.join(User).filter(Candidate.user_id == User.id,
                                                               User.domain_id == domain_id)
     candidates = [candidate.id, candidate.user_id]
     candidate_ids = [candidate['id'] for candidate in candidates]
@@ -402,7 +403,7 @@ def upload_candidate_documents_of_user(user):
     :param user:
     :return:
     """
-    candidate = db.session.query(Candidate).join(User).filter_by(Candidate.user_id == User.id)
+    candidate = Candidate.query.join(User).filter_by(Candidate.user_id == User.id)
     candidates = [candidate.id, candidate.user_id]
     candidate_ids = [candidate['id'] for candidate in candidates]
     logger.info("Uploading %s candidates of user's domain %s", len(candidate_ids), user.domainId)
@@ -521,25 +522,15 @@ def _cloud_search_domain_connection():
     return _cloud_search_domain.get_search_service().domain_connection
 
 
-def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_only=False,
-                      get_percentage_match=False, count_only=False):
+def search_candidates(domain_id, request_vars, search_limit=15):
     """
     Searches candidates based on domain_id and search_filters provided.
     Search Engine: Amazon Cloud Search
 
     :param domain_id: Search candidates in given domain Id
     :param request_vars: Search criteria, or various search filters
-    :param search_limit: @TODO
-    :param candidate_ids_only: if true returns only dict of candidate_ids and total_found
-    :param get_percentage_match: if true returns percentage match of result in respective to search query provided
-    :param count_only: @TODO
-    :return: Dictionary consisting of:
-                list of candidate_ids
-                percentage_matches list of percentage match for retrieved search results, iff get_percentage_match is true
-                search_data as returned from cloudsearch
-                total records found
-                descriptions=[] @TODO find why is this empty dictionary needed?
-                max_pages @TODO
+    :param search_limit: Defaults to 15.
+    :return: Search results in format described on `search service` apiary document.
 
     Set search_limit = 0 for no limit, candidate_ids_only returns dict of candidate_ids.
     Parameters in 'request_vars' could be single values or arrays.
@@ -548,7 +539,8 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     _clear_filter_queries_and_search_queries()
     if request_vars:
         for var_name in request_vars.keys():
-            if "[]" == var_name[-2:]: request_vars[var_name[:-2]] = request_vars[var_name]
+            if "[]" == var_name[-2:]:
+                request_vars[var_name[:-2]] = request_vars[var_name]
         get_filter_query_from_request_vars(request_vars, domain_id)
     else:
         # Search all candidates under domain
@@ -556,24 +548,22 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
 
     # Sorting
     sort = '%s %s'
-    if request_vars.get('sort_by') and '-' in request_vars.get('sort_by'):
-        sort_field, sort_order = request_vars.get('sort_by').split('-')
+    if request_vars.get('sort_by'):
+        sort_field, sort_order = request_vars.get('sort_by')
     else:
         sort_field, sort_order = (DEFAULT_SORT_FIELD, DEFAULT_SORT_ORDER)
 
-    if sort_field == 'proximity':
-        if coordinates:
-                sort_field = 'distance'
-        else:
-            sort_field = DEFAULT_SORT_FIELD
-            sort_order = DEFAULT_SORT_ORDER
+    if sort_field == 'distance' and not coordinates:
+        # if coordinates not found set sorting to default.
+        sort_field = DEFAULT_SORT_FIELD
+        sort_order = DEFAULT_SORT_ORDER
 
     sort = sort % (sort_field, sort_order.lower())
 
     page = int(request_vars.get('page')) if (request_vars.get('page') and (int(request_vars.get('page')) > 0)) else 1
     offset = (page - 1) * search_limit if search_limit else 0
 
-    if count_only:
+    if 'count_only' in request_vars:
         search_limit = 0
         offset = 0
     elif search_limit == 0 or search_limit > CLOUD_SEARCH_MAX_LIMIT:
@@ -584,7 +574,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
         query_string = "id:%s" % request_vars['id'] if request_vars.get('id') else "*:*"
 
     else:
-        query_string = "(%s)" % " ".join(search_queries)
+        query_string = "(or %s)" % " ".join(search_queries)
         if request_vars.get('id'):
             # If we want to check if a certain candidate ID is in a smartlist
             query_string = "(and id:%s %s)" % (request_vars['id'], query_string)
@@ -626,7 +616,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
 
     # Looks like cloud_search does not have something like return only count predefined
     # removing fields and returned content should speed up network request
-    if count_only:
+    if 'count_only' in request_vars:
         params['ret'] = "_no_fields,_score"
         params['size'] = 0
     elif request_vars.get('fields'):
@@ -634,9 +624,8 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     else:
         params['ret'] = "_all_fields,_score"
 
-    # If only candidate id is required then return candidate ids and total candidates found.
     # Max cloud_search search limit, then implement cursor (paging beyond 10000 limit)
-    if search_limit >= CLOUD_SEARCH_MAX_LIMIT and candidate_ids_only:
+    if search_limit >= CLOUD_SEARCH_MAX_LIMIT:
         candidate_ids, total_found, error = _cloud_search_fetch_all(params)
         if error:
             return search_results
@@ -648,8 +637,10 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
 
     try:
         results = search_service.search(**params)
-    except Exception:
-        return search_results
+    except Exception as ex:
+        logger.exception("Exception occurred while searching candidates from cloudsearch. "
+                         "Search params: %s. Exception: %s" % (params, ex))
+        return InternalServerError("SearchServiceError: Error while searching the candidates.")
 
     matches = results['hits']['hit']
 
@@ -668,14 +659,14 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     # Update facets
     _update_facet_counts(filter_queries, params['filter_query'], facets, query_string, domain_id)
 
-    for facet_field_name, facet_dict in facets.iteritems():
-        facets[facet_field_name] = sorted(facet_dict.iteritems(), key=operator.itemgetter(1), reverse=True)
+    # for facet_field_name, facet_dict in facets.iteritems():
+    #     facets[facet_field_name] = sorted(facet_dict.iteritems(), key=operator.itemgetter(1), reverse=True)
     if facets.get('custom_field_id_and_value', dict()):
         _kaiser_custom_fields_facets(request_vars, facets)
 
     # Get max score
     max_score = 1
-    if get_percentage_match:
+    if get_percentage_match:  # TODO fix this
         max_score = _get_max_score(params, search_service)
 
     percentage_matches = []
@@ -688,7 +679,6 @@ def search_candidates(domain_id, request_vars, search_limit=15, candidate_ids_on
     # else:
     # search_results = dict()
     search_results['total_found'] = total_found
-    search_results['total_count'] = len(fields_data)
     search_results['candidates'] = fields_data
     # search_results['candidate_ids'] = candidate_ids
     search_results['max_score'] = max_score
@@ -722,43 +712,43 @@ def get_faceting_information(facets):
     facet_custom_field_id_and_value = facets.get('custom_field_id_and_value').get('buckets')
 
     if facet_owner:
-        search_facets_values['usernameFacet'] = get_username_facet_info_with_ids(facet_owner)
+        search_facets_values['username'] = get_username_facet_info_with_ids(facet_owner)
 
     if facet_aoi:
-        search_facets_values['areaOfInterestIdFacet'] = get_facet_info_with_ids(AreaOfInterest, facet_aoi,
+        search_facets_values['area_of_interest'] = get_facet_info_with_ids(AreaOfInterest, facet_aoi,
                                                                                 'name')
 
     if facet_source:
-        search_facets_values['sourceFacet'] = get_facet_info_with_ids(CandidateSource, facet_source,
+        search_facets_values['source'] = get_facet_info_with_ids(CandidateSource, facet_source,
                                                                       'description')
 
     if facet_status:
-        search_facets_values['statusFacet'] = get_facet_info_with_ids(CandidateStatus, facet_status,
+        search_facets_values['status'] = get_facet_info_with_ids(CandidateStatus, facet_status,
                                                                       'description')
 
     if facet_skills:
-        search_facets_values['skillDescriptionFacet'] = get_bucket_facet_value_count(facet_skills)
+        search_facets_values['skills'] = get_bucket_facet_value_count(facet_skills)
 
     if facet_position:
-        search_facets_values['positionFacet'] = get_bucket_facet_value_count(facet_position)
+        search_facets_values['position'] = get_bucket_facet_value_count(facet_position)
 
     if facet_university:
-        search_facets_values['schoolNameFacet'] = get_bucket_facet_value_count(facet_university)
+        search_facets_values['school_name'] = get_bucket_facet_value_count(facet_university)
 
     if facet_degree_type:
-        search_facets_values['degreeTypeFacet'] = get_bucket_facet_value_count(facet_degree_type)
+        search_facets_values['degree_type'] = get_bucket_facet_value_count(facet_degree_type)
 
     if facet_major:
-        search_facets_values['concentrationTypeFacet'] = get_bucket_facet_value_count(facet_major)
+        search_facets_values['concentration_type'] = get_bucket_facet_value_count(facet_major)
 
     if facet_military_service_status:
-        search_facets_values['serviceStatus'] = get_bucket_facet_value_count(facet_military_service_status)
+        search_facets_values['military_service_status'] = get_bucket_facet_value_count(facet_military_service_status)
 
     if facet_military_branch:
-        search_facets_values['branch'] = get_bucket_facet_value_count(facet_military_branch)
+        search_facets_values['military_branch'] = get_bucket_facet_value_count(facet_military_branch)
 
     if facet_military_highest_grade:
-        search_facets_values['highestGrade'] = get_bucket_facet_value_count(facet_military_highest_grade)
+        search_facets_values['military_highest_grade'] = get_bucket_facet_value_count(facet_military_highest_grade)
 
     # TODO: productFacet, customFieldKP facets are remaining, how to do it?
     if facet_custom_field_id_and_value:
@@ -770,12 +760,16 @@ def get_faceting_information(facets):
 def get_username_facet_info_with_ids(facet_owner):
     tmp_dict = get_facet_info_with_ids(User, facet_owner, 'email')
     # Dict is (email, value) -> count
-    new_tmp_dict = dict()
+    username_facets = []
     # Replace each user's email with name
-    for email_value_tuple, count in tmp_dict.items():
-        user_row = User.query.filter_by(email=email_value_tuple[0]).first()
-        new_tmp_dict[user_row.first_name+" "+user_row.last_name, email_value_tuple[1]] = count
-    return new_tmp_dict
+    for username_facet in tmp_dict:
+        new_tmp_dict = {}
+        user_row = User.query.filter_by(email=username_facet['value']).first()
+        new_tmp_dict['id'] = username_facet['id']
+        new_tmp_dict['value'] = user_row.first_name+" "+user_row.last_name
+        new_tmp_dict['count'] = username_facet['count']
+        username_facets.append(new_tmp_dict)
+    return username_facets
 
 
 def get_facet_info_with_ids(table_name, facet, field_name):
@@ -788,15 +782,16 @@ def get_facet_info_with_ids(table_name, facet, field_name):
     :return: Dictionary with field name as key and count of candidates + facet id as value
     """
 
-    tmp_dict = {}
+    facets_list = []
     for bucket in facet:
-        row = db.session.query(table_name).filter_by(id=int(bucket['value'])).first()
+        tmp_dict = {}
+        row = table_name.query.filter_by(id=int(bucket['value'])).first()
         if row:
-            tmp_dict[(getattr(row, field_name), bucket['value'])] = bucket['count']
-        else:
-            pass
-
-    return tmp_dict
+            tmp_dict['id'] = bucket['value']
+            tmp_dict['value'] = getattr(row, field_name)
+            tmp_dict['count'] = bucket['count']
+            facets_list.append(tmp_dict)
+    return facets_list
 
 
 def get_bucket_facet_value_count(facet):
@@ -808,10 +803,13 @@ def get_bucket_facet_value_count(facet):
     :return: dictionary with value as key and count as value
     eg: {'Bachelors':5, 'Masters':3}
     """
-    tmp_dict = {}
+    facet_bucket = []
     for bucket in facet:
-        tmp_dict[bucket['value']] = bucket['count']
-    return tmp_dict
+        tmp_dict = dict()
+        tmp_dict["value"] = bucket['value']
+        tmp_dict["count"] = bucket['count']
+        facet_bucket.append(tmp_dict)
+    return facet_bucket
 
 
 def _update_facet_counts(filter_queries, params_fq, existing_facets, query_string, domain_id):
@@ -829,7 +827,7 @@ def _update_facet_counts(filter_queries, params_fq, existing_facets, query_strin
                                    'query_parser': 'lucene', 'ret': '_no_fields', 'facet': "{user_id: {size:50}}"}
             result_user_id_facet = search_service.search(**query_user_id_facet)
             facet_owner = result_user_id_facet['facets']['user_id']['buckets']
-            existing_facets['usernameFacet'] = get_username_facet_info_with_ids(facet_owner)
+            existing_facets['username'] = get_username_facet_info_with_ids(facet_owner)
         if 'area_of_interest_id' in filter_query:
             fq_without_area_of_interest = params_fq.replace(filter_query, '')
             query_area_of_interest_facet = {'query': query_string, 'size': 0,
@@ -837,7 +835,7 @@ def _update_facet_counts(filter_queries, params_fq, existing_facets, query_strin
                                             'ret': '_no_fields', 'facet': "{area_of_interest_id: {size:500}}"}
             result_area_of_interest_facet = search_service.search(**query_area_of_interest_facet)
             facet_aoi = result_area_of_interest_facet['facets']['area_of_interest_id']['buckets']
-            existing_facets['areaOfInterestIdFacet'] = get_facet_info_with_ids(AreaOfInterest, facet_aoi,
+            existing_facets['area_of_interest'] = get_facet_info_with_ids(AreaOfInterest, facet_aoi,
                                                                                'name')
         if 'source_id' in filter_query:
             fq_without_source_id = params_fq.replace(filter_query, '')
@@ -845,7 +843,7 @@ def _update_facet_counts(filter_queries, params_fq, existing_facets, query_strin
                                      'query_parser': 'lucene', 'ret': '_no_fields', 'facet': "{source_id: {size:50}}"}
             result_source_id_facet = search_service.search(**query_source_id_facet)
             facet_source = result_source_id_facet['facets']['source_id']['buckets']
-            existing_facets['sourceFacet'] = get_facet_info_with_ids(CandidateSource, facet_source, 'description')
+            existing_facets['source'] = get_facet_info_with_ids(CandidateSource, facet_source, 'description')
         if 'school_name' in filter_query:
             fq_without_school_name = params_fq.replace(filter_query, '')
             query_school_name_facet = {'query': query_string, 'size':0, 'filter_query': fq_without_school_name,
@@ -853,7 +851,7 @@ def _update_facet_counts(filter_queries, params_fq, existing_facets, query_strin
                                        'facet': "{school_name: {size:500}}"}
             result_school_name_facet = search_service.search(**query_school_name_facet)
             facet_school = result_school_name_facet['facets']['school_name']['buckets']
-            existing_facets['schoolNameFacet'] = get_bucket_facet_value_count(facet_school)
+            existing_facets['school_name'] = get_bucket_facet_value_count(facet_school)
         if 'degree_type' in filter_query:
             fq_without_degree_type = params_fq.replace(filter_query, '')
             query_degree_type_facet = {'query': query_string, 'size': 0, 'filter_query': fq_without_degree_type,
@@ -861,7 +859,7 @@ def _update_facet_counts(filter_queries, params_fq, existing_facets, query_strin
                                            "{degree_type: {size:50}}"}
             result_degree_type_facet = search_service.search(**query_degree_type_facet)
             facet_degree_type = result_degree_type_facet['facets']['degree_type']['buckets']
-            existing_facets['degreeTypeFacet'] = get_bucket_facet_value_count(facet_degree_type)
+            existing_facets['degree_type'] = get_bucket_facet_value_count(facet_degree_type)
 
 
 def _cloud_search_fetch_all(params):
@@ -1092,14 +1090,14 @@ def _kaiser_custom_fields_facets(request_vars, facets):
     num_kaiser_nuids = 0
     custom_fields = dict()
     if facets.get('custom_field_id_and_value', dict()):
-        for cf_facet_row in facets['custom_field_id_and_value']:
+        for cf_facet in facets['custom_field_id_and_value']:
             # cf_hash example: 9|Top Gun
             # 9 = id of custom field (in this case, Movies)
             # right side of | is the value of that custom field
-            cf_hash = cf_facet_row[0]
+            cf_hash = cf_facet['value']
             cf_id = cf_hash.split('|')[0]
             cf_value = cf_hash.split('|')[1]
-            cf_facet_count = cf_facet_row[1]
+            cf_facet_count = cf_facet['count']
 
             """
             If the cf_id is 15 (NUID's for Kaiser),
@@ -1117,10 +1115,10 @@ def _kaiser_custom_fields_facets(request_vars, facets):
             if not custom_fields.get('cf-%d' % cf_id):
                 custom_fields['cf-%d' % cf_id] = list()
 
-            custom_fields['cf-%d' % cf_id].append((cf_value, cf_facet_count))
+            custom_fields['cf-%d' % cf_id].append({'value': cf_value, 'count': cf_facet_count})
 
         if has_kaiser_nuid:
-            custom_fields['cf-15'] = [('Has NUID', num_kaiser_nuids)]
+            custom_fields['cf-15'] = [{'value': 'Has NUID', 'count': num_kaiser_nuids}]
 
         facets = dict(facets.items() + custom_fields.items())
 
@@ -1128,9 +1126,13 @@ def _kaiser_custom_fields_facets(request_vars, facets):
 
 
 def _get_max_score(params, search_service):
-
-    # if sorting is other than "_score, desc", fire another query with _score, desc sorting so as to get
-    # max relevance score.
+    """
+    Get maximum relevence score from cloudsearch with _score sorting and first result will contain the max_score.
+    For performance optimization, this function is using size 1 and only _score will be returned
+    :param params: same search_params as of the actual query
+    :param search_service: cloudsearch search_service object.
+    :return: Max relevence score
+    """
     default_sorting = "%s %s" % (DEFAULT_SORT_FIELD, DEFAULT_SORT_ORDER)
     params['sort'] = default_sorting
     # Update the sort parameter, to have sorting based on _score, desc
@@ -1140,13 +1142,11 @@ def _get_max_score(params, search_service):
     params['start'] = 0
     params.pop("facet", None)
     single_result = search_service.search(**params)
-    # single_result = single_response.json()
     single_hit = single_result['hits']['hit']
     if len(single_hit) > 0:
         max_score = single_hit[0]['fields']['_score']
     else:
         max_score = 1
-
     return max_score
 
 
@@ -1190,30 +1190,30 @@ def get_filter_query_from_request_vars(request_vars, domain_id):
     if request_vars.get('location'):
         location = request_vars.get('location')
         _search_with_location(request_vars, location)
-    if isinstance(request_vars.get('usernameFacet'), list):
-        filter_queries.append("(or %s)" % ' '.join("user_id:%s" % uid for uid in request_vars.get('usernameFacet')))
-    elif request_vars.get('usernameFacet'):
-        filter_queries.append("(term field=user_id %s)" % request_vars.get('usernameFacet'))
+    if isinstance(request_vars.get('user_ids'), list):
+        filter_queries.append("(or %s)" % ' '.join("user_id:%s" % uid for uid in request_vars.get('user_ids')))
+    elif request_vars.get('user_ids'):
+        filter_queries.append("(term field=user_id %s)" % request_vars.get('user_ids'))
 
     # TODO: Add areaOfInterestNameFacet logic here, we need this for legacy data on production
 
-    if isinstance(request_vars.get('areaOfInterestIdFacet'), list):
+    if isinstance(request_vars.get('area_of_interest_ids'), list):
         filter_queries.append("(or %s)" % " ".join("area_of_interest_id:%s" % aoi for aoi in
-                                                   request_vars.get('areaOfInterestIdFacet')))
-    elif request_vars.get('areaOfInterestIdFacet'):
+                                                   request_vars.get('area_of_interest_ids')))
+    elif request_vars.get('area_of_interest_ids'):
         filter_queries.append("(term field=area_of_interest_id  %s)" % request_vars.get('areaOfInterestIdFacet'))
 
-    if isinstance(request_vars.get('statusFacet'), list):
+    if isinstance(request_vars.get('status'), list):
         filter_queries.append("(or %s)" % " ".join("status_id:%s" % status_facet for status_facet in
                                                    request_vars.get('statusFacet')))
-    elif request_vars.get('statusFacet'):
+    elif request_vars.get('status'):
         filter_queries.append("(term field=status_id %s)" % request_vars.get('statusFacet'))
 
-    if isinstance(request_vars.get('sourceFacet'), list):
+    if isinstance(request_vars.get('source'), list):
         # search for exact values in facets
         source_facets = [ "source_id:%s" % source_facet for source_facet in request_vars.get('sourceFacet')]
         filter_queries.append("(or %s)" % ' '.join(source_facets))
-    elif request_vars.get('sourceFacet'):
+    elif request_vars.get('source'):
         filter_queries.append("(term field=source_id %s)" % request_vars.get('sourceFacet'))
 
     # Set filter range for years experience, if given
@@ -1230,33 +1230,33 @@ def get_filter_query_from_request_vars(request_vars, domain_id):
     if request_vars.get('date_from' or 'date_to'):
         _get_candidates_by_filter_date(request_vars)
 
-    if isinstance(request_vars.get('positionFacet'), list):
+    if isinstance(request_vars.get('position'), list):
         # search for exact values in facets
         position_facets = ["position:'%s'" % position_facet for position_facet in request_vars.get('positionFacet')]
         filter_queries.append("(and %s)" % " ".join(position_facets))
-    elif request_vars.get('positionFacet'):
+    elif request_vars.get('position'):
         filter_queries.append("( term field=position '%s')" % request_vars.get('positionFacet'))
 
-    if isinstance(request_vars.get('skillDescriptionFacet'), list):
+    if isinstance(request_vars.get('skills'), list):
         # search for exact values in facets
         skill_facets = ["skill_description:'%s'" % skill_facet for skill_facet in
-                        request_vars.get('skillDescriptionFacet')]
+                        request_vars.get('skills')]
         filter_queries.append("(and %s )" % " ".join(skill_facets))
-    elif request_vars.get('skillDescriptionFacet'):
+    elif request_vars.get('skills'):
         filter_queries.append("(term field=skill_description '%s')" % request_vars.get('skillDescriptionFacet'))
 
-    if isinstance(request_vars.get('degreeTypeFacet'), list):
+    if isinstance(request_vars.get('degree_type'), list):
         # search for exact values in facets
         degree_facets = ["degree_type:'%s'" % degree_facet for degree_facet in request_vars.get('degreeTypeFacet')]
         filter_queries.append("(or %s)" % " ".join(degree_facets))
-    elif request_vars.get('degreeTypeFacet'):
+    elif request_vars.get('degree_type'):
         filter_queries.append("(term field=degree_type '%s')" % request_vars.get('degreeTypeFacet'))
 
-    if isinstance(request_vars.get('schoolNameFacet'), list):
+    if isinstance(request_vars.get('school_name'), list):
         # search for exact values in facets
         school_facets = ["school_name:'%s'" % school_facet for school_facet in request_vars.get('schoolNameFacet')]
         filter_queries.append("(or %s)" % " ".join(school_facets))
-    elif request_vars.get('schoolNameFacet'):
+    elif request_vars.get('school_name'):
         filter_queries.append("(term field=school_name '%s')" % request_vars.get('schoolNameFacet'))
 
     if isinstance(request_vars.get('concentrationTypeFacet'), list):

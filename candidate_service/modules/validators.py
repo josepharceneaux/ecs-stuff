@@ -7,7 +7,8 @@ from candidate_service.common.models.candidate import Candidate
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
 from candidate_service.common.models.email_marketing import EmailCampaign
-from candidate_service.cloudsearch_constants import RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH
+from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH,
+                                                     SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH)
 from candidate_service.common.error_handling import InvalidUsage
 
 
@@ -87,8 +88,18 @@ def does_email_campaign_belong_to_domain(user):
 
 def format_search_request_data(request_data):
     sort_by = request_data.get("sort_by")  # Sorting
+    if sort_by:
+        # If sorting is present, modify it according to cloudsearch sorting variables.
+        try:
+            sort_by = SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH[sort_by]
+        except KeyError:
+            raise InvalidUsage(error_message="sort_by `%s` is not correct input for sorting.", error_code=400)
     limit = request_data.get("limit")
+    if limit and not limit.isdigit():
+        raise InvalidUsage("limit should be a whole number", 400)
     pages = request_data.get("page")
+    if limit and not limit.isdigit():
+        raise InvalidUsage("page should be a whole number", 400)
     query = request_data.get("query") or request_data.get("q")  # Keyword search
     # Facets
     owner_ids = request_data.get('user_ids')
@@ -116,7 +127,7 @@ def format_search_request_data(request_data):
 
     if fields:
         # If `fields` are present, validate and modify `fields` values according to cloudsearch supported return field names.
-        fields = fields.split(',')
+        fields = [field.strip() for field in fields.split(',') if field.strip()]
         try:
             fields = ','.join([RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH[field] for field in fields])
         except KeyError:
@@ -141,8 +152,8 @@ def format_search_request_data(request_data):
                          "degree_end_year_from": degree_end_year_from, "degree_end_year_to": degree_end_year_to,
                          "serviceStatus": service_status, "branch": branch, "highestGrade": grade,
                          "military_end_date_from": military_end_date_from, "military_end_date_to": military_end_date_to,
-                         "usernameFacet": owner_ids, "q": query, "limit": limit, "fields": fields, "page": pages,
-                         "sort_by": sort_by, 'radius': radius}
+                         "user_ids": owner_ids, "q": query, "limit": limit, "fields": fields, "page": pages,
+                         "sort_by": sort_by, 'radius': radius, "id": candidate_id}
     if custom_field_with_id:
         request_vars_dict["cf-%d" % cf_id] = custom_field_with_id
 
@@ -153,4 +164,5 @@ def format_search_request_data(request_data):
             request_vars[key] = value
 
     return request_vars
+
 

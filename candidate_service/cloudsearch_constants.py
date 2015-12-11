@@ -16,3 +16,10 @@ RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH = {"score": "_score",
                                                          "source_product_id": "source_product_id",
                                                          "status_id": "status_id",
                                                          "user_id": "user_id"}
+
+SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH = {"match": ("_score", "desc"),
+                                                          "~match": ("_score", "asc"),
+                                                          "recent": ("added_time", "desc"),
+                                                          "~recent": ("added_time", "asc"),
+                                                          "proximity": ("distance", "asc"),
+                                                          "~proximity": ("distance", "desc")}
