@@ -3,6 +3,7 @@ Test cases for scheduling service
 """
 # Standard imports
 import os
+from datetime import timedelta
 
 # Application imports
 from scheduler_service import init_app
@@ -73,3 +74,13 @@ def auth_header(request, auth_token):
     header = {'Authorization': 'Bearer ' + auth_token,
               'Content-Type': 'application/json'}
     return header
+
+
+@pytest.fixture(scope='function')
+def job_config(request, job_config_periodic):
+    temp_job_config = job_config_periodic.copy()
+    start_date = datetime.utcnow() - timedelta(seconds=15)
+    end_date = start_date + timedelta(days=2)
+    temp_job_config['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
+    temp_job_config['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
+    return temp_job_config

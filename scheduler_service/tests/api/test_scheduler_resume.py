@@ -3,9 +3,6 @@ Resume jobs which are already scheduled and in paused state.
 Also try to resume the jobs without using token and it should give 401 status code
 """
 
-# Standard imports
-import datetime
-
 # Third party imports
 import json
 import pytest
@@ -18,28 +15,23 @@ from scheduler_service.tests.conftest import APP_URL
 __author__ = 'saad'
 
 
-@pytest.mark.usefixtures('auth_header', 'job_config_periodic')
+@pytest.mark.usefixtures('auth_header', 'job_config')
 class TestSchedulerResume:
 
-    def test_single_resume_job(self, auth_header, job_config_periodic):
+    def test_single_resume_job(self, auth_header, job_config):
         """
         Create and pause a job using service endpoints and then after it is paused, resume the job and check its
         next_run_datetime is not None (Running Job has next_run_datetime equal to next running datetime)
         Args:
             auth_data: Fixture that contains token.
-            job_config_periodic (dict): Fixture that contains job config to be used as
+            job_config (dict): Fixture that contains job config to be used as
             POST data while hitting the endpoint.
         :return:
         """
-        start_date = datetime.datetime.utcnow() - datetime.timedelta(seconds=15)
-        end_date = start_date + datetime.timedelta(days=2)
-        job_config_periodic['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
-        job_config_periodic['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
-
         jobs = []
 
         for i in range(10):
-            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config_periodic),
+            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
                                      headers=auth_header)
             assert response.status_code == 201
             jobs.append(response.json()['id'])
@@ -91,25 +83,20 @@ class TestSchedulerResume:
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
-    def test_multiple_resume_jobs(self, auth_header, job_config_periodic):
+    def test_multiple_resume_jobs(self, auth_header, job_config):
         """
         Create and pause 10 job using service endpoints and then after they are paused, resume all jobs and check their
         next_run_datetime which should not be None (Running Job has next_run_datetime equal to next running datetime)
         Args:
             auth_data: Fixture that contains token.
-            job_config_periodic (dict): Fixture that contains job config to be used as
+            job_config (dict): Fixture that contains job config to be used as
             POST data while hitting the endpoint.
         :return:
         """
-        start_date = datetime.datetime.utcnow() - datetime.timedelta(seconds=15)
-        end_date = start_date + datetime.timedelta(days=2)
-        job_config_periodic['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
-        job_config_periodic['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
-
         jobs_id = []
 
         for i in range(10):
-            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config_periodic),
+            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
                                      headers=auth_header)
             assert response.status_code == 201
             jobs_id.append(response.json()['id'])
@@ -141,21 +128,16 @@ class TestSchedulerResume:
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
-    def test_single_resume_job_without_token(self, auth_header, job_config_periodic):
+    def test_single_resume_job_without_token(self, auth_header, job_config):
         """
         Resume job without using bearer token, it should throw 401 status code
         Args:
             auth_data: Fixture that contains token.
-            job_config_periodic (dict): Fixture that contains job config to be used as
+            job_config (dict): Fixture that contains job config to be used as
             POST data while hitting the endpoint.
         :return:
         """
-        start_date = datetime.datetime.utcnow() - datetime.timedelta(seconds=15)
-        end_date = start_date + datetime.timedelta(days=2)
-        job_config_periodic['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
-        job_config_periodic['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
-
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config_periodic),
+        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
                                  headers=auth_header)
 
         assert response.status_code == 201
@@ -167,13 +149,13 @@ class TestSchedulerResume:
                                       headers=auth_header)
         assert response_stop.status_code == 200
 
-        headers = auth_header.copy()
+        invalid_header = auth_header.copy()
         # Set the token to invalid
-        headers['Authorization'] = 'Bearer invalid_token'
+        invalid_header['Authorization'] = 'Bearer invalid_token'
 
         # Now try resume with invalid token
         response_get = requests.post(APP_URL + '/tasks/' + data['id'] + '/resume/',
-                                     headers=headers)
+                                     headers=invalid_header)
 
         assert response_get.status_code == 401
 
@@ -186,25 +168,20 @@ class TestSchedulerResume:
         response = requests.get(APP_URL + '/tasks/id/' + data['id'], headers=auth_header)
         assert response.status_code == 404
 
-    def test_multiple_resume_jobs_without_token(self, auth_header, job_config_periodic):
+    def test_multiple_resume_jobs_without_token(self, auth_header, job_config):
         """
         Resume multiple jobs using ids as a list of job_ids that were created using service endpoints.
         Then pause them and resume them without using bearer token, it should give 401 status code
         Args:
             auth_data: Fixture that contains token.
-            job_config_periodic (dict): Fixture that contains job config to be used as
+            job_config (dict): Fixture that contains job config to be used as
             POST data while hitting the endpoint.
         :return:
         """
-        start_date = datetime.datetime.utcnow() - datetime.timedelta(seconds=15)
-        end_date = start_date + datetime.timedelta(days=2)
-        job_config_periodic['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
-        job_config_periodic['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
-
         jobs_id = []
 
         for i in range(10):
-            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config_periodic),
+            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
                                      headers=auth_header)
             assert response.status_code == 201
             jobs_id.append(response.json()['id'])
@@ -214,12 +191,12 @@ class TestSchedulerResume:
                                       headers=auth_header)
         assert response_stop.status_code == 200
 
-        headers = auth_header.copy()
-        headers['Authorization'] = 'Bearer invalid_token'
+        invalid_header = auth_header.copy()
+        invalid_header['Authorization'] = 'Bearer invalid_token'
 
         # Then try to resume all jobs with invalid token
         response_resume = requests.post(APP_URL + '/tasks/resume/', data=json.dumps(dict(ids=jobs_id)),
-                                        headers=headers)
+                                        headers=invalid_header)
 
         assert response_resume.status_code == 401
 

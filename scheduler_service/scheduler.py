@@ -60,15 +60,20 @@ def schedule_job(data, user_id, access_token):
     schedule job using post data and add it to APScheduler
     :return:
     """
-    try:
-        post_data = data.get('post_data', '{}')
-        trigger = data['task_type']
-        content_type = data.get('content_type', 'application/json')
-        url = data['url']
-    except Exception:
-        raise FieldRequiredError(error_message="Missing or invalid data.")
+    job_config = dict()
+    job_config['post_data'] = data.get('post_data', '{}')
+    content_type = data.get('content_type', 'application/json')
+    job_config['trigger'] = data.get('task_type', -1)
+    job_config['url'] = data.get('url', -1)
+    job_config['frequency'] = data.get('frequency', -1)
 
-    trigger = trigger.lower().strip()
+    # Get missing keys
+    missing_keys = filter(lambda _key: job_config[_key] == -1, job_config.keys())
+    if len(missing_keys) > 0:
+        logger.exception("schedule_job: Missing keys %s" % ', '.join(missing_keys))
+        raise FieldRequiredError(error_message="Missing keys %s" % ', '.join(missing_keys))
+
+    trigger = job_config['trigger'].lower().strip()
 
     if trigger == 'periodic':
         try:
@@ -76,16 +81,19 @@ def schedule_job(data, user_id, access_token):
             start_datetime = data['start_datetime']
             end_datetime = data['end_datetime']
 
-            check_time_list = [frequency.get('seconds', -1), frequency.get('minutes', -1), frequency.get('hours', -1),
-                                frequency.get('days', -1), frequency.get('weeks', -1)]
-            is_correct_time = False
-            for t in check_time_list:
-                if t != -1:
-                    is_correct_time = True
-                    break
+            # Possible frequency dictionary keys
+            temp_time_list = ['seconds', 'minutes', 'hours', 'days', 'weeks']
 
-            if not is_correct_time:
-                raise FieldRequiredError(error_message="Invalid frequency data.")
+            # Check if keys in frequency are valid time period otherwise throw exception
+            for key in frequency.keys():
+                if key not in temp_time_list:
+                    raise FieldRequiredError(error_message='Invalid key %s in frequency' % key)
+
+            # If value of frequency keys are not integer then throw exception
+            for value in frequency.values():
+                if value <= 0:
+                    raise FieldRequiredError(error_message='Invalid value %s in frequency' % value)
+
         except Exception:
             logger.exception('schedule_job: Error while scheduling a job')
             raise FieldRequiredError(error_message="Missing or invalid data.")
@@ -99,8 +107,8 @@ def schedule_job(data, user_id, access_token):
                                     weeks=frequency.get('weeks', 0),
                                     start_date=start_datetime,
                                     end_date=end_datetime,
-                                    args=[user_id, access_token, url, content_type],
-                                    kwargs=post_data)
+                                    args=[user_id, access_token, job_config['url'], content_type],
+                                    kwargs=job_config['post_data'])
             logger.info('schedule_job: Task has been added and will run at %s ' % start_datetime)
         except Exception:
             raise JobNotCreatedError("Unable to create the job.")
@@ -108,16 +116,16 @@ def schedule_job(data, user_id, access_token):
     elif trigger == 'one_time':
         try:
             run_datetime = data['run_datetime']
+            job = scheduler.add_job(run_job,
+                                    trigger='date',
+                                    run_date=run_datetime,
+                                    args=[access_token, job_config['url'], content_type],
+                                    kwargs=job_config['post_data'])
+            logger.info('schedule_job: Task has been added and will run at %s ' % run_datetime)
+            return job.id
         except KeyError:
             logger.exception("schedule_job: couldn't find 'run_datetime'")
             raise FieldRequiredError(error_message="Missing or invalid data. Field 'run_datetime' is missing")
-        job = scheduler.add_job(run_job,
-                                trigger='date',
-                                run_date=run_datetime,
-                                args=[access_token, url, content_type],
-                                kwargs=post_data)
-        logger.info('schedule_job: Task has been added and will run at %s ' % run_datetime)
-        return job.id
     else:
         logger.error("schedule_job: Task type not correct. Please use periodic or one_time as task type.")
         raise TriggerTypeError("Task type not correct. Please use periodic or one_time as task type.")
