@@ -39,7 +39,7 @@ from sms_campaign_service.utilities import (TwilioSMS, search_urls_in_text, url_
 from sms_campaign_service.common.models.candidate import (PhoneLabel, Candidate, CandidatePhone)
 from sms_campaign_service.common.error_handling import (ResourceNotFound, ForbiddenError,
                                                         InvalidUsage)
-from sms_campaign_service.sms_campaign_app_constants import (SMS_URL_REDIRECT, PHONE_LABEL_ID,
+from sms_campaign_service.sms_campaign_app_constants import (SMS_URL_REDIRECT, CANDIDATE_PHONE_LABEL,
                                                              TWILIO, POOL_SIZE)
 from sms_campaign_service.custom_exceptions import (EmptySmsBody, MultipleTwilioNumbers,
                                                     EmptyDestinationUrl, MissingRequiredField,
@@ -485,8 +485,9 @@ class SmsCampaignBase(CampaignBase):
         # get candidate phones
         candidate_phones = candidate.candidate_phones
         # filter only mobile numbers
+        phone_label_id = PhoneLabel.phone_label_id_from_phone_label(CANDIDATE_PHONE_LABEL)
         candidate_mobile_phone = filter(lambda candidate_phone:
-                                        candidate_phone.phone_label_id == PHONE_LABEL_ID,
+                                        candidate_phone.phone_label_id == phone_label_id,
                                         candidate_phones)
         if len(candidate_mobile_phone) == 1:
             # If this number is associated with multiple candidates, raise exception

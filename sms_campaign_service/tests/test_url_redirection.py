@@ -17,7 +17,7 @@ from sms_campaign_service import db
 from sms_campaign_service.tests.conftest import assert_for_activity
 from sms_campaign_service.common.models.sms_campaign import SmsCampaignBlast
 from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_CLICK
-from sms_campaign_service.common.utils.app_base_urls import SMS_CAMPAIGN_SERVICE_APP_URL
+from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import (ResourceNotFound,
                                                         InternalServerError,
                                                         MethodNotAllowed)
@@ -146,4 +146,4 @@ def _replace_ngrok_link_with_localhost(temp_ngrok_link):
     :return:
     """
     relative_url = temp_ngrok_link.split('ngrok.io')[1]
-    return SMS_CAMPAIGN_SERVICE_APP_URL + relative_url
+    return SmsCampaignApiUrl.API_URL + relative_url

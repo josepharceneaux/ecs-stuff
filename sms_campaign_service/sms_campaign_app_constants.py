@@ -7,7 +7,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies,
 
 POOL_SIZE = 5
 TWILIO = 'Twilio'
-PHONE_LABEL_ID = 1  # for mobile phone
+CANDIDATE_PHONE_LABEL = 'Mobile'  # for mobile phone
 GOOGLE_API_KEY = 'AIzaSyCT7Gg3zfB0yXaBXSPNVhFCZRJzu9WHo4o'
 GOOGLE_URL_SHORTENER_API_URL = 'https://www.googleapis.com/urlshortener/v1/url?key=' \
                                + GOOGLE_API_KEY
