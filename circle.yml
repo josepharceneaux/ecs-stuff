@@ -40,7 +40,7 @@ test:
 
   override:
     - |
-      py.test auth_service/tests/ user_service/tests/ resume_service/tests/ activity_service/tests/ >
+      py.test auth_service/tests/ user_service/tests/ resume_service/tests/ activity_service/tests/ \
       candidate_service/tests/ candidate_pool_service/tests/:
         parallel: true
 
