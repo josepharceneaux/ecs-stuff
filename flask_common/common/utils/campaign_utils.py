@@ -30,7 +30,7 @@ gevent.monkey.patch_all()
 from ..models.user import Token
 from ..models.misc import UrlConversion
 from ..models.candidate import Candidate
-from ..error_handling import ForbiddenError, InvalidUsage
+from ..error_handling import ForbiddenError, InvalidUsage, ResourceNotFound
 from ..utils.app_rest_urls import CandidateApiUrl, ActivityApiUrl
 from ..utils.common_functions import http_request, find_missing_items
 
@@ -227,13 +227,18 @@ class CampaignBase(object):
                 'hit_count': hit_count}
         if url_conversion_id:  # record is already present in database
             record_in_db = UrlConversion.get_by_id(url_conversion_id)
-            data['destination_url'] = record_in_db.destination_url
-            data['source_url'] = source_url if source_url else record_in_db.source_url
-            data['hit_count'] = record_in_db.hit_count + 1 if hit_count_update else \
-                record_in_db.hit_count
-            data.update({'last_hit_time': datetime.now()}) if hit_count_update else ''
-            record_in_db.update(**data)
-            url_conversion_id = record_in_db.id
+            if record_in_db:
+                data['destination_url'] = record_in_db.destination_url
+                data['source_url'] = source_url if source_url else record_in_db.source_url
+                data['hit_count'] = record_in_db.hit_count + 1 if hit_count_update else \
+                    record_in_db.hit_count
+                data.update({'last_hit_time': datetime.now()}) if hit_count_update else ''
+                record_in_db.update(**data)
+                url_conversion_id = record_in_db.id
+            else:
+                raise ResourceNotFound(
+                    error_message='create_or_update_url_conversion: '
+                                  'url_conversion(id:%s) not found' % url_conversion_id)
         else:
             missing_required_fields = find_missing_items(data, verify_all_keys=True)
             if len(missing_required_fields) == len(data.keys()):

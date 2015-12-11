@@ -14,6 +14,9 @@ import requests
 
 # Application Specific
 from sms_campaign_service import db
+from sms_campaign_service.custom_exceptions import SmsCampaignApiException
+from sms_campaign_service.sms_campaign_app.app import sms_campaign_url_redirection
+from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.tests.conftest import assert_for_activity
 from sms_campaign_service.common.models.sms_campaign import SmsCampaignBlast
 from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_CLICK
@@ -115,6 +118,50 @@ class TestSmsCampaignURLRedirection:
 
         assert response_get.status_code == InternalServerError.http_status_code(), \
             'It should get internal server error'
+
+    # def test_pre_process_url_redirect_with_None_data(self):
+    #     try:
+    #         SmsCampaignBase.pre_process_url_redirect(None, None, None)
+    #     except Exception as error:
+    #         assert error.error_code == SmsCampaignApiException.MISSING_REQUIRED_FIELD
+    #         assert 'candidate_id' in error.message
+    #         assert 'campaign_id' in error.message
+    #         assert 'url_conversion_id' in error.message
+    #
+    # def test_pre_process_url_redirect_with_valid_data(self,
+    #                                                   sms_campaign_of_current_user,
+    #                                                   url_conversion_by_send_test_sms_campaign,
+    #                                                   candidate_first):
+    #     candidate = None
+    #     campaign = None
+    #     try:
+    #         campaign, candidate = SmsCampaignBase.pre_process_url_redirect(sms_campaign_of_current_user.id,
+    #                                                             url_conversion_by_send_test_sms_campaign.id,
+    #                                                             candidate_first.id)
+    #
+    #     except:
+    #         pass
+    #     assert candidate
+    #     assert campaign
+
+    # def test_pre_process_url_redirect_with_deleted_campaign(self, valid_header,
+    #                                                   sms_campaign_of_current_user,
+    #                                                   url_conversion_by_send_test_sms_campaign,
+    #                                                   candidate_first):
+    #     """
+    #     Here we first delete the campaign, and then test functionality of pre_process_url_redirect
+    #     class method of SmsCampaignBase. It should give ResourceNotFound Error.
+    #     """
+    #     response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
+    #                                headers=valid_header)
+    #     assert response.status_code == 200, 'should get ok response (200)'
+    #     try:
+    #         SmsCampaignBase.pre_process_url_redirect(sms_campaign_of_current_user.id,
+    #                                                  url_conversion_by_send_test_sms_campaign.id,
+    #                                                  candidate_first.id)
+    #
+    #     except Exception as error:
+    #         assert error.error_code == ResourceNotFound.http_status_code()
 
 
 def _get_hit_count_and_clicks(url_conversion, campaign):

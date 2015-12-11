@@ -3,6 +3,7 @@ This module contains pyTest for utility functions of SMS Campaign Service
 """
 
 # Application Specific
+from sms_campaign_service.sms_campaign_app.app import sms_campaign_url_redirection
 from sms_campaign_service.utilities import search_urls_in_text
 
 

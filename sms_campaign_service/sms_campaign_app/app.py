@@ -13,6 +13,7 @@
 
 # Initializing App. This line should come before any imports from models
 from sms_campaign_service import init_sms_campaign_app
+
 app = init_sms_campaign_app()
 
 # Third Party Imports
@@ -53,7 +54,7 @@ def root():
 
 
 @app.route('/campaigns/<int:campaign_id>/url_redirection/<int:url_conversion_id>/', methods=['GET'])
-def sms_campaign_url_redirection(campaign_id=None, url_conversion_id=None):
+def sms_campaign_url_redirection(campaign_id, url_conversion_id):
     """
     When recruiter(user) adds some url in sms body text, we save the original URL as
     destination URL in "url_conversion" database table. Then we create a new url (long_url) to
@@ -87,32 +88,24 @@ def sms_campaign_url_redirection(campaign_id=None, url_conversion_id=None):
     :return: redirects to the destination URL else raises exception
     """
     if ('HTTP_FROM' in request.headers.environ
-        and 'google' in request.headers.environ['HTTP_FROM'])\
+        and 'google' in request.headers.environ['HTTP_FROM']) \
             or ('HTTP_REFERER' in request.headers.environ
                 and 'google' in request.headers.environ['HTTP_REFERER']):
         data = {'message': "Successfully verified by Google's shorten URL API"}
         logger.info(data['message'])
         return flask.jsonify(**data), 200
     try:
-        url_redirect_data = {'campaign_id': campaign_id,
-                             'url_conversion_id': url_conversion_id,
-                             'candidate_id': request.args.get('candidate_id')}
-        missing_items = find_missing_items(url_redirect_data, verify_all_keys=True)
-        if not missing_items:
-            candidate = Candidate.get_by_id(request.args.get('candidate_id'))
-            if candidate:
-                user_id = candidate.user_id
-                camp_obj = SmsCampaignBase(user_id, buy_new_number=False)
-                redirection_url = camp_obj.process_url_redirect(campaign_id,
-                                                                url_conversion_id,
-                                                                candidate)
-                return redirect(redirection_url)
-            else:
-                raise ResourceNotFound(error_message='Candidate(id:%s) not found.'
-                                               % request.args.get('candidate_id'))
-        else:
-            raise MissingRequiredField(error_message='Missing required fields are: %s'
-                                                     % missing_items)
+
+        campaign_in_db, candidate_in_db = \
+            SmsCampaignBase.pre_process_url_redirect(campaign_id,
+                                                     url_conversion_id,
+                                                     request.args.get('candidate_id'))
+        user_id = candidate_in_db.user_id
+        camp_obj = SmsCampaignBase(user_id, buy_new_number=False)
+        redirection_url = camp_obj.process_url_redirect(campaign_in_db,
+                                                        url_conversion_id,
+                                                        candidate_in_db)
+        return redirect(redirection_url)
     except:
         logger.exception("Error occurred while URL redirection for SMS campaign.")
         data = {'message': 'Internal Server Error'}

@@ -19,7 +19,7 @@ class SmsCampaign(db.Model):
     # scheduler_task_ids = db.Column('SchedulerTaskIds', db.String(255))
 
     # Relationships
-    sms_campaign_blasts = relationship('SmsCampaignBlast', backref='sms_campaign')
+    sms_campaign_blasts = relationship('SmsCampaignBlast', cascade='all, delete', backref='sms_campaign')
 
     def __repr__(self):
         return "<SmsCampaign (name = %r)>" % self.name
