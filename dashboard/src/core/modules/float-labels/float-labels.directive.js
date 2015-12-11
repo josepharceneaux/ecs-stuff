@@ -39,10 +39,6 @@
         //var vm = this;
     }
 
-    // ----- linkFunction -----
-    linkFunction.$inject = [];
-
-    /* @ngInject */
     function linkFunction(scope, elem, attrs, ctrls) {
         var ngModel = ctrls[1];
         var formCol = elem.closest('.form__col');
@@ -93,7 +89,7 @@
         }
 
         function checkInput(inputValue) {
-            if (inputValue) {
+            if (inputValue || typeof inputValue === 'number') {
                 formCol.addClass('form__col--has-value');
             } else {
                 formCol.removeClass('form__col--has-value');

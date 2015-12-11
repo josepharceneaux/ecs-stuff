@@ -263,7 +263,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
         error_message = None
         if url:
             try:
-                response = method(url, params=params, headers=headers, data=data)
+                response = method(url, params=params, headers=headers, data=data, verify=False)
                 # If we made a bad request (a 4XX client error or 5XX server
                 # error response),
                 # we can raise it with Response.raise_for_status():"""
