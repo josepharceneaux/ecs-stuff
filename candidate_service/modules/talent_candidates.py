@@ -31,7 +31,7 @@ from candidate_service.common.models.user import User
 from candidate_service.common.error_handling import InvalidUsage
 
 # Validations
-from candidate_service.common.utils.validators import (sanitize_zip_code, is_number)
+from candidate_service.common.utils.validators import (sanitize_zip_code, is_number, format_phone_number)
 
 # Common utilities
 from candidate_service.common.utils.common_functions import get_coordinates
@@ -1184,7 +1184,6 @@ def _add_or_update_phones(candidate_id, phones):
     if any([phone.get('is_default') for phone in phones]):
         CandidatePhone.set_is_default_to_false(candidate_id=candidate_id)
 
-    # TODO: parse out phone extension. Currently the value + extension are being added to the phone's value in the db
     phones_has_label = any([phone.get('label') for phone in phones])
     phones_has_default = any([phone.get('is_default') for phone in phones])
     for i, phone in enumerate(phones):
@@ -1193,9 +1192,12 @@ def _add_or_update_phones(candidate_id, phones):
         is_default = i == 0 if not phones_has_default else phone.get('is_default')
         # If there's no label, the first phone's label will be 'Home', rest will be 'Other'
         phone_label = 'Home' if (not phones_has_label and i == 0) else phone.get('label')
+        # Format phone number
+        value = phone.get('value')
+        phone_number = format_phone_number(value) if value else None
 
         phone_dict = dict(
-            value=phone.get('value'),
+            value=phone_number,
             phone_label_id = PhoneLabel.phone_label_id_from_phone_label(phone_label=phone_label),
             is_default=is_default
         )

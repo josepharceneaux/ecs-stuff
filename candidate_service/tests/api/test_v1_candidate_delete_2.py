@@ -14,14 +14,11 @@ from candidate_service.common.tests.conftest import *
 # Helper functions
 from helpers import (
     response_info, post_to_candidate_resource, get_from_candidate_resource,
-    request_to_candidate_resource, request_to_candidate_address_resource,
-    request_to_candidate_aoi_resource, request_to_candidate_education_resource,
-    request_to_candidate_education_degree_resource, request_to_candidate_education_degree_bullet_resource,
     request_to_candidate_experience_resource, request_to_candidate_experience_bullet_resource,
     request_to_candidate_work_preference_resource, request_to_candidate_email_resource,
     request_to_candidate_phone_resource, request_to_candidate_military_service,
     request_to_candidate_preferred_location_resource, request_to_candidate_skill_resource,
-    request_to_candidate_social_network_resource, request_to_candidate_custom_field_resource
+    request_to_candidate_social_network_resource
 )
 
 
@@ -164,7 +161,7 @@ def test_delete_candidate_experiences(sample_user, user_auth):
     assert len(can_dict_after_update['work_experiences']) == 0
 
 
-def test_delete_candidates_experience(sample_user, user_auth):
+def test_delete_cand_experience(sample_user, user_auth):
     """
     Test:   Remove Candidate's experience from db
     Expect: 204, Candidate's experience must be less 1.
@@ -1375,7 +1372,7 @@ def test_delete_candidate_social_networks(sample_user, user_auth):
     assert len(can_dict_after_update['social_networks']) == 0
 
 
-def test_delete_candidate_social_network(sample_user, user_auth):
+def test_delete_can_social_network(sample_user, user_auth):
     """
     Test:   Remove Candidate's social network from db
     Expect: 204, Candidate's social networks must be less 1

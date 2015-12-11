@@ -64,7 +64,7 @@ def generate_single_candidate_data(domain_id=None):
             },
             'work_experiences': [
                 {
-                    'company': fake.company(), 'position': fake.job(), 'city': fake.city(),
+                    'organization': fake.company(), 'position': fake.job(), 'city': fake.city(),
                     'state': fake.state(), 'start_month': 11, 'start_year': 2005, 'is_current': True,
                     'end_month': 10, 'end_year': 2007, 'bullets': [
                         {'description': fake.bs()}, {'description': fake.bs()}

@@ -128,7 +128,7 @@ class CandidateResource(Resource):
         for candidate_dict in list_of_candidate_dicts:
 
             # Candidate object must contain valid keys/fields
-            validate_request_body_keys(request_body=candidate_dict)
+            # validate_request_body_keys(request_body=candidate_dict) TODO: update to handle all fields from the db
 
             # Ensure emails list is provided
             if not candidate_dict.get('emails'):
@@ -240,7 +240,7 @@ class CandidateResource(Resource):
         for candidate_dict in list_of_candidate_dicts:
 
             # Candidate object must contain valid keys/fields
-            validate_request_body_keys(request_body=candidate_dict)
+            # validate_request_body_keys(request_body=candidate_dict) TODO: update to handle all fields from the db
 
             emails = candidate_dict.get('emails') # TODO: validate emails and format
             if emails:

@@ -17,11 +17,7 @@ from helpers import (
     request_to_candidate_resource, request_to_candidate_address_resource,
     request_to_candidate_aoi_resource, request_to_candidate_education_resource,
     request_to_candidate_education_degree_resource, request_to_candidate_education_degree_bullet_resource,
-    request_to_candidate_experience_resource, request_to_candidate_experience_bullet_resource,
-    request_to_candidate_work_preference_resource, request_to_candidate_email_resource,
-    request_to_candidate_phone_resource, request_to_candidate_military_service,
-    request_to_candidate_preferred_location_resource, request_to_candidate_skill_resource,
-    request_to_candidate_social_network_resource, request_to_candidate_custom_field_resource
+    request_to_candidate_custom_field_resource
 )
 
 
@@ -182,7 +178,7 @@ def test_delete_address_of_a_candidate_belonging_to_a_diff_user(sample_user, sam
     assert updated_resp.status_code == 403
 
 
-def test_delete_address_of_a_different_candidate(sample_user, user_auth):
+def test_delete_address_of_a_diff_candidate(sample_user, user_auth):
     """
     Test:   Attempt to delete the address of a different Candidate
     Expect: 403
@@ -239,7 +235,7 @@ def test_delete_candidate_addresses_without_candidate_id(sample_user, user_auth)
     assert updated_resp.status_code == 404
 
 
-def test_delete_candidate_address(sample_user, user_auth):
+def test_delete_can_address(sample_user, user_auth):
     """
     Test:   Remove Candidate's address from db
     Expect: 204, Candidate's addresses must be less 1

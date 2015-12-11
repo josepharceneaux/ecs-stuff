@@ -28,6 +28,7 @@ from candidate_service.candidate_app.api.v1_candidates import (
     CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
     CandidateCustomFieldResource
 )
+
 api = GetTalentApi(app=app)
 
 # API RESOURCES
