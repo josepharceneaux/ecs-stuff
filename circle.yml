@@ -42,17 +42,16 @@ test:
 
 
   override:
-    - py.test:
-        parallel: true
-        files:
-          - auth_service/tests/test*.py
-          - user_service/tests/test*.py
-          - resume_service/tests/test*.py
-          - activity_service/tests/test*.py
-          - candidate_pool_service/tests/test*.py
-          - spreadsheet_import_service/tests/test*.py
-          - candidate_service/tests/api/test*.py
-
+    - ? >
+          py.test
+          auth_service/tests/
+          user_service/tests/
+          resume_service/tests/
+          activity_service/tests/
+          candidate_service/tests/
+          candidate_pool_service/tests/
+          spreadsheet_import_service/tests/
+      : parallel: true
 
 experimental:
   notify:
