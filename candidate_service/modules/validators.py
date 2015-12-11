@@ -2,7 +2,7 @@
 Functions related to candidate_service/candidate_app/api validations
 """
 from candidate_service.common.models.db import db
-from candidate_service.common.models.candidate import Candidate, CandidateAddress
+from candidate_service.common.models.candidate import Candidate
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
 from candidate_service.common.models.email_marketing import EmailCampaign
@@ -82,10 +82,3 @@ def does_email_campaign_belong_to_domain(user):
     return True if email_campaign_rows else False
 
 
-def does_address_belong_to_candidate(candidate_id, address_id):
-    """
-    :rtype  bool
-    """
-    assert isinstance(candidate_id, (int, long))
-    if CandidateAddress.get_by_id(_id=address_id).candidate_id != candidate_id:
-        raise

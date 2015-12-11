@@ -133,6 +133,23 @@ def test_update_candidate_via_post(sample_user, user_auth):
     assert resp.status_code == 400
 
 
+def test_create_candidate_with_invalid_fields(sample_user, user_auth):
+    """
+    Test:   Attempt to create a Candidate with bad fields/keys
+    Expect: 400
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate with invalid keys/fields
+    data = {'candidates': [{'emails': [{'address': 'someone@nice.io'}], 'foo': 'bar'}]}
+    create_resp = post_to_candidate_resource(token, data)
+    print response_info(create_resp)
+    assert create_resp.status_code == 400
+
+
 ######################## CandidateAddress ########################
 def test_create_candidate_with_bad_zip_code(sample_user, user_auth):
     """
@@ -157,6 +174,7 @@ def test_create_candidate_with_bad_zip_code(sample_user, user_auth):
     candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
 
     assert candidate_dict['addresses'][0]['zip_code'] == None
+
 
 ######################## CandidateAreaOfInterest ########################
 def test_create_candidate_area_of_interest(sample_user, user_auth):
