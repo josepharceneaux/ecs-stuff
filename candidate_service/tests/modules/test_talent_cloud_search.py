@@ -571,7 +571,7 @@ def test_search_by_added_date(sample_user):
                            candidate_ids=candidate1+candidate2+candidate3+candidate4, wait=False)
 
 
-def test_sort_by_added_date(sample_user):
+def to_fix_test_sort_by_added_date(sample_user):
     """
     Least recent --> sort_by:added_time-asc
     Most recent -->  sort_by:added_time-desc
@@ -1001,7 +1001,7 @@ def to_fix_test_paging(sample_user):
                            check_for_sorting=True, wait=False)
 
 
-def test_paging_with_facet_search(sample_user):
+def to_fix_test_paging_with_facet_search(sample_user):
     """
     Test for no. of pages that are having candidates
     :param sample_user:
