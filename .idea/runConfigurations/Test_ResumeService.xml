@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run resume_service" type="PythonConfigurationType" factoryName="Python" folderName="resume_service">
+  <configuration default="false" name="Test ResumeService" type="tests" factoryName="py.test">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
@@ -11,16 +11,25 @@
       <env name="GT_ENVIRONMENT" value="dev" />
       <env name="AWS_ACCESS_KEY_ID" value="AKIAI3422SZ6SL46EYBQ" />
     </envs>
-    <option name="SDK_HOME" value="" />
-    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/resume_service" />
-    <option name="IS_MODULE_SDK" value="true" />
+    <option name="SDK_HOME" value="$USER_HOME$/.pyenv/versions/2.7.9/bin/python" />
+    <option name="WORKING_DIRECTORY" value="" />
+    <option name="IS_MODULE_SDK" value="false" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <module name="talent-flask-services" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/resume_service/run.py" />
-    <option name="PARAMETERS" value="" />
-    <option name="SHOW_COMMAND_LINE" value="false" />
+    <option name="SCRIPT_NAME" value="" />
+    <option name="CLASS_NAME" value="" />
+    <option name="METHOD_NAME" value="" />
+    <option name="FOLDER_NAME" value="" />
+    <option name="TEST_TYPE" value="TEST_SCRIPT" />
+    <option name="PATTERN" value="" />
+    <option name="USE_PATTERN" value="false" />
+    <option name="testToRun" value="$PROJECT_DIR$/resume_service/tests" />
+    <option name="keywords" value="" />
+    <option name="params" value="" />
+    <option name="USE_PARAM" value="false" />
+    <option name="USE_KEYWORD" value="false" />
     <method />
   </configuration>
 </component>

@@ -49,8 +49,7 @@ def import_spreadsheet_candidates(access_token, candidate_data=[], spreadsheet_f
         response = requests.post(IMPORT_FROM_TABLE_ENDPOINT, headers=headers,
                                  data=json.dumps({"file_picker_key": s3_key_name, 'header_row': header_row}))
     else:
-        response = requests.post(CONVERT_TO_TABLE_ENDPOINT, headers=headers,
-                                 data=json.dumps({"file_picker_key": s3_key_name}))
+        response = requests.get(CONVERT_TO_TABLE_ENDPOINT, headers=headers, params={'file_picker_key': s3_key_name})
 
     return response.json(), response.status_code
 

@@ -3,10 +3,8 @@ __author__ = 'ufarooqi'
 import boto
 import re
 from flask import current_app as app
-from flask.ext.mail import Mail
 
-# Flask-Email object
-mail = Mail()
+DEFAULT_MAIL_SENDER = '"getTalent Web" <no-reply@gettalent.com>'
 
 
 def get_boto_ses_connection():
@@ -33,7 +31,14 @@ def safe_send_email(source, subject, body, to_addresses, html_body=None, text_bo
         request_id_search = re.search('<RequestId>(.*)</RequestId>', e.__str__(), re.IGNORECASE)
         request_id = request_id_search.group(1) if request_id_search else None
 
-        # TODO: Send emails to admin about mail failure notice
+        # Send failure message to email marketing admin, just to notify for verification
+        from talent_reporting import email_error_to_admins
+
+        email_error_to_admins(
+            'email=%s, subject=%s, body=%s, html_body=%s, text_body=%s, error=%s' % (
+                to_addresses, subject, body, html_body, text_body, e),
+            'Email failed to send'
+        )
 
     return dict(request_id=request_id, message_id=message_id)
 

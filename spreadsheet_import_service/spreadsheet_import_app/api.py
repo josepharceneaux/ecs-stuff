@@ -20,7 +20,7 @@ CORS(mod, resources={
 })
 
 
-@mod.route('/parse_spreadsheet/convert_to_table', methods=['POST'])
+@mod.route('/parse_spreadsheet/convert_to_table/', methods=['GET'])
 @require_oauth
 @require_all_roles('CAN_ADD_CANDIDATES')
 def spreadsheet_to_table():
@@ -31,11 +31,10 @@ def spreadsheet_to_table():
     :return A dictionary containing row of candidates
     :rtype: dict
     """
-    posted_data = request.get_json(silent=True)
-    if not posted_data or 'file_picker_key' not in posted_data:
-        raise InvalidUsage(error_message="Request body is empty or not provided")
 
-    file_picker_key = posted_data.get('file_picker_key')
+    file_picker_key = request.args.get('file_picker_key', '')
+    if not file_picker_key:
+        raise InvalidUsage(error_message="A valid file_picker_key should be provided")
 
     file_picker_bucket, conn = get_s3_filepicker_bucket_and_conn()
     file_obj = download_file(file_picker_bucket, file_picker_key)
