@@ -54,6 +54,7 @@ module.exports = function () {
         ],
         html: src + '**/*.html',
         sass: src + '**/*.scss',
+        iconfont: src + 'core/icon-font/**/*.svg',
         $: $,
         args: require('yargs').argv,
 

@@ -9,6 +9,11 @@ module.exports = function (config) {
         return clean(delconfig);
     });
 
+    gulp.task('clean-cache', function () {
+        config.$.cached.caches = {};
+        config.$.remember.forgetAll();
+    });
+
     gulp.task('clean-fonts', function () {
         return clean(config.buildDir + 'fonts/**/*.*');
     });

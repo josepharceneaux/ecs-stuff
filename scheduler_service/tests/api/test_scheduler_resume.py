@@ -9,7 +9,7 @@ import pytest
 import requests
 
 # Application imports
-from scheduler_service.custom_error_codes import CODE_ALREADY_RUNNING
+from scheduler_service.custom_exceptions import SchedulerServiceApiException
 from scheduler_service.tests.conftest import APP_URL
 
 __author__ = 'saad'
@@ -61,7 +61,7 @@ class TestSchedulerResume:
         response_resume_again = requests.post(APP_URL + '/tasks/' + job_id + '/resume/',
                                               headers=auth_header)
         assert response_resume_again.status_code == 500 and \
-               response_resume_again.json()['error']['code'] == CODE_ALREADY_RUNNING
+               response_resume_again.json()['error']['code'] == SchedulerServiceApiException.CODE_ALREADY_RUNNING
 
         # Let's delete jobs now
         response_remove = requests.delete(APP_URL + '/tasks/id/' + job_id,

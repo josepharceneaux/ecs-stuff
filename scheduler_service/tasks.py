@@ -1,15 +1,27 @@
+"""
+Celery tasks are defined here.
+It will be a separate celery process which is called by run_job to send post request to a url.
+If task is successfully sent then it will return SUCCESS status and if request is failed then it will
+show FAILED status
+"""
+
+BACKEND_URL = 'redis://localhost:6379'
+REDIS_URL = 'redis://localhost:6379'
+
+# Third-Party imports
 import json
-from celery import Celery
 import requests
+from celery import Celery
 
 
-celery = Celery('scheduler_service', broker='redis://localhost:6379', backend='redis://localhost:6379')
+celery = Celery('scheduler_service', broker=REDIS_URL, backend=BACKEND_URL)
 
 
 @celery.task(name="send_request")
 def send_request(access_token, url, content_type, kwargs):
     """
-    :param user_id: the user_id of user who is sending post request
+    TODO: Add some description about this method and sample data / example
+    :param access_token: authorization token for user
     :param url: the url where to send post requests
     :param content_type: the content type i.e json or xml
     :param kwargs: post data i.e campaign name, smartlist ids

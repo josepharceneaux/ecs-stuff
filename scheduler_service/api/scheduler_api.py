@@ -1,5 +1,6 @@
 """
-Scheduler Restful-API which has endpoints to schedule, remove, delete single or multiple jobs
+Scheduler Restful-API which has endpoints to schedule, remove, delete, pause, resume single
+or multiple jobs
 This API also checks for authentication token
 """
 
@@ -61,8 +62,7 @@ class Tasks(Resource):
                 "tasks": [
                     {
                         "id": "5das76nbv950nghg8j8-33ddd3kfdw2",
-                        args: [1,2],
-                        "kwargs": {
+                        "post_data": {
                             "url": "http://getTalent.com/sms/send/",
                             "phone_number": "09230862348",
                             "smart_list_id": 123456,
@@ -70,7 +70,9 @@ class Tasks(Resource):
                             "some_other_kwarg": "abc",
                             "campaign_name": "SMS Campaign"
                         },
-                        "frequency": "0:00:10",
+                        "frequency": {
+                            "day" : 6
+                        },
                         "start_datetime": "2015-11-05T08:00:00",
                         "end_datetime": "2015-12-05T08:00:00"
                         "next_run_datetime": "2015-11-05T08:20:30",
@@ -528,8 +530,8 @@ class PauseTaskById(Resource):
 
 def job_state_exceptions(job_id, func='GET'):
     """
-    raise exception if condition matched
-    :param job_id: job_id of task which is in apscheduler
+    raise exception if condition matches
+    :param job_id: job_id of task which is in APScheduler
     :param func: the state to check, if doesn't meet with requirement then raise exception,
             func can be RUNNING, PAUSED
     :return:

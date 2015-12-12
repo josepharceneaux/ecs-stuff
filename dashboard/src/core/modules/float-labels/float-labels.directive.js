@@ -39,14 +39,15 @@
         //var vm = this;
     }
 
-    // ----- linkFunction -----
-    linkFunction.$inject = [];
-
-    /* @ngInject */
     function linkFunction(scope, elem, attrs, ctrls) {
         var ngModel = ctrls[1];
-        var parents = elem.parents('.form__col');
+        var formCol = elem.closest('.form__col');
+        var labels = formCol.find('.form__label');
         var unregister;
+
+        if (labels.length === 0) {
+            return;
+        }
 
         init();
 
@@ -54,6 +55,12 @@
 
         function init() {
             if (ngModel) {
+
+                // Input value isn't initialized yet,
+                // watch value until it changes once.
+                unregister = scope.$watch(function () {
+                    return ngModel.$viewValue;
+                }, valueChangeListener);
 
                 // Watch view changes
                 ngModel.$parsers.push(checkInput);
@@ -82,10 +89,10 @@
         }
 
         function checkInput(inputValue) {
-            if (inputValue) {
-                parents.addClass('form__col--has-value');
+            if (inputValue || typeof inputValue === 'number') {
+                formCol.addClass('form__col--has-value');
             } else {
-                parents.removeClass('form__col--has-value');
+                formCol.removeClass('form__col--has-value');
             }
             return inputValue;
         }

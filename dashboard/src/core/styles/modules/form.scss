@@ -18,6 +18,15 @@
 :-moz-placeholder { /* Firefox 18- */
   color: $color--nearBlack;
 }
+:invalid {
+  box-shadow: none;
+}
+:-moz-submit-invalid {
+  box-shadow: none;
+}
+:-moz-ui-invalid {
+  box-shadow:none;
+}
 
 select:not([multiple]) { vertical-align: middle; }
 
@@ -30,6 +39,51 @@ input[type=number] {
 // -----
 
 .form {}
+
+.form--white {
+  .form__input { border-color: $color--white; }
+  .form__label { color: $color--white; }
+  .form__instruction { color: $color--lightGray; }
+
+  tags-input {
+    .tags {
+      input {
+        color: $color--white;
+
+        &::-webkit-input-placeholder {
+          color: $color--white;
+        }
+        &::-moz-placeholder { /* Firefox 19+ */
+          color: $color--white;
+        }
+        &:-ms-input-placeholder {
+          color: $color--white;
+        }
+        &:-moz-placeholder { /* Firefox 18- */
+          color: $color--white;
+        }
+      }
+    }
+  }
+
+  .fancy-select {
+    .trigger {
+      color: $color--white;
+      background: transparent;
+      border: 2px solid $color--white;
+
+      &:after { border-top-color: $color--white; }
+
+      &.open {
+        color: $color--nearBlack;
+        background: $color--white;
+        border: 2px solid $color--white;
+
+        &:after { border-top-color: $color--nearBlack; }
+      }
+    }
+  }
+}
 
 // -----
 // Input
@@ -70,6 +124,7 @@ input[type=number] {
   color: $color--nearBlack;
   line-height: 1;
   height: 48px;
+  margin-top: 0;
   padding: $padding--small $padding--tiny;
   background-color: transparent;
   border: 2px solid $color--lightGray;
@@ -127,6 +182,10 @@ input[type=number] {
   margin-right: 0;
   border: 0;
 
+  .form__input--select {
+    margin-top: $margin--row;
+  }
+
   // Fancy select overrides
   .fancy-select {
     .trigger { margin-top: $margin--row; }
@@ -142,10 +201,29 @@ input[type=number] {
   }
 }
 
+.form__fieldset--column {
+  @include helper--media($breakpoint--medium) {
+    &:nth-of-type(1) {
+      padding-right: $padding--small;
+    }
+    &:nth-of-type(2) {
+      padding-left: $padding--small;
+    }
+  }
+}
+
 .form__fieldset--footer {
   @extend .form__fieldset;
 
   margin-top: $margin--row;
+
+  @include helper--media($breakpoint--medium) {
+    a {
+      margin-right: $margin--inline;
+
+      &:last-of-type { margin-right: 0; }
+    }
+  }
 }
 
 .form__fieldset__link {
@@ -215,6 +293,7 @@ input[type=number] {
 // -----
 
 .form__label {
+  visibility: hidden;
   opacity: 0;
   color: $color--blue;
   font-size: $font-size--small;
@@ -225,12 +304,14 @@ input[type=number] {
   top: $padding--small;
   margin-left: 10px;
   transition: opacity $easing--normal,
-              top $easing--normal;
+              top $easing--normal,
+              visibility $easing--normal;
 }
 
 // .has-value is added by JS
 .form__col--has-value {
   .form__label {
+    visibility: visible;
     opacity: 1;
     top: .75em;
   }
@@ -243,6 +324,7 @@ input[type=number] {
 .form__label--shown { // doesn't float the label when the input has value
   @extend .form__label;
 
+  visibility: visible;
   opacity: 1;
   position: absolute;
   top: .75em;
@@ -263,6 +345,17 @@ input[type=number] {
   font-weight: 400;
   margin-left: $padding--teeny;
   padding: 0;
+}
+
+// -----
+// Info below input
+// -----
+.form__input-info {
+  color: $color--gray;
+  display: block;
+  font-weight: $font-weight--bold;
+  text-align: right;
+  padding-top: $padding--tiny;
 }
 
 // -----
@@ -307,80 +400,316 @@ input[type=number] {
 }
 
 // -----
-// Tag Inputs
+// Lightswitch
 // -----
-.tagsinput {
-  @extend .form__input;
+.form__input--toggle {
+  color: inherit;
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  height: 50px;
+  margin-top: $margin--row;
 
-  padding: $padding--tiny;
-  margin-bottom: 0;
-  padding-bottom: 0; // as the tags and inner input has the margin bottom to compensate
+  input {
+    position: absolute;
+    opacity: 0;
+    z-index: -1; /* Put the hidden input behind the label so it doesn't overlay */
 
-  .tag {
-    color: $color--nearBlack;
-    font-size: $font-size--small;
-    font-weight: $font-weight--medium;
-    line-height: 1.2;
-    text-decoration: none;
+    /* Checked state */
+    &:checked ~ span {
+      background: $color--lightGreen;
+
+      &:after { left: 50%; }
+    }
+  }
+
+  span {
+        display: block;
     position: relative;
-    float: left;
-    margin-right: $padding--teeny;
-    margin-bottom: $padding--tiny;
-    padding: $padding--tiny;
+    top: 9px;
+        width: 4em;
+        height: 2em;
+    padding: 2px;
     background: $color--lightGray;
-    border-radius: $border-radius--container;
-    cursor: text;
+        border-radius: 2em;
+    outline: 0;
+    cursor: pointer;
+    user-select: none;
+        transition: all .4s ease;
 
-    > span {
-      margin-right: $padding--tiny;
-      vertical-align: middle;
+        &:after, &:before {
+            position: relative;
+            display: block;
+            content: "";
+            width: 50%;
+            height: 100%;
+        }
+
+    &:after {
+      left: 0;
+            border-radius: 50%;
+            background: $color--white;
+            transition: all .2s ease;
+        }
+
+        &:before { display: none; }
+  }
+}
+
+
+// -----
+// File Upload
+// -----
+.form__input--file {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  cursor: pointer;
+  margin-top: $margin--row;
+  width: 100%;
+
+  input {
+    min-width: 14rem;
+    margin: 0;
+    filter: alpha(opacity=0);
+    opacity: 0;
+
+    &:focus ~ .file-custom {
+      box-shadow: 0 0 0 .075rem $color--white,
+                  0 0 0 .2rem $color--blue;
+    }
+  }
+
+  span {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 5;
+    padding: $padding--small $padding--tiny;
+    line-height: 1.5;
+    color: $color--nearBlack;
+    background-color: transparent;
+    border: 2px solid $color--lightGray;
+    border-radius: .25rem;
+    -webkit-user-select: none;
+    user-select: none;
+
+    &:after {
+      content: attr(data-placeholder);
     }
 
-    a {
-      @extend .icon;
-
+    &:before {
+      position: absolute;
+      top: -.075rem;
+      right: -.075rem;
+      bottom: -.075rem;
+      z-index: 6;
+      display: block;
+      content: "Browse";
+      padding: $padding--small $padding--tiny;
+      line-height: 1.5;
       color: $color--nearBlack;
+      background-color: $color--lightGray;
+      border: 2px solid $color--lightGray;
+      border-radius: 0 .25rem .25rem 0;
+    }
+  }
+}
+
+// -----
+// Tag Inputs
+// -----
+tags-input {
+  display: block;
+
+  .host {
+    &:active {
+        outline: none;
+    }
+  }
+
+  .tags {
+    @extend .form__input;
+
+    padding: $padding--tiny;
+    padding-bottom: 0;
+    overflow-x: auto;
+    cursor: text;
+
+    &.focused {
+      //background-color: $color--lightGray;
+      border-color: $color--blue;
+    }
+
+    .tag-list {
+      margin: 0;
+      padding: 0;
+      list-style-type: none;
+    }
+
+    .tag-item {
+      color: $color--nearBlack;
+      font-size: $font-size--small;
+      font-weight: $font-weight--medium;
+      line-height: 1.2;
       text-decoration: none;
       position: relative;
-      top: -1px;
-      vertical-align: middle;
-      cursor: pointer;
+      float: left;
+      margin-right: $padding--teeny;
+      margin-bottom: $padding--tiny;
+      padding: $padding--tiny;
+      background: $color--lightGray;
+      border-radius: $border-radius--container;
+      cursor: text;
 
-      &:hover {
-        color: $color--red;
+      &.selected {
+        color: $color--white;
+        background-color: $color--red;
+
+        .remove-button {
+          color: $color--white;
+          transition: color 0s;
+
+          &:hover {
+            color: inherit;
+          }
+        }
+      }
+
+      span {
+        margin-right: $padding--tiny;
+        vertical-align: middle;
+      }
+
+      .remove-button {
+        @extend .icon--close;
+
+        position: relative;
+        display: inline-block;
+        padding-right: 1rem;
+        white-space: nowrap;
+        text-indent: -9999px;
+
+        color: $color--nearBlack;
+        text-decoration: none;
+        vertical-align: middle;
+        cursor: pointer;
+
+        &:after {
+            position: absolute;
+            right: 0;
+            text-indent: 0;
+        }
+
+        &:hover {
+          color: $color--red;
+        }
+      }
+    }
+
+    input {
+      color: $color--nearBlack;
+      font-size: $font-size--small;
+      float: left;
+      margin-top: 0;
+      margin-right: $padding--tiny;
+      margin-bottom: $padding--tiny;
+      margin-left: 0;
+      padding: $padding--tiny;
+      background: transparent;
+      border: 0;
+      outline: 0;
+
+      &.invalid-tag {
+        color: $color--white;
+        background: $color--red;
+      }
+
+      &::-ms-clear {
+        display: none;
       }
     }
   }
 
-  input {
-    color: $color--nearBlack;
-    font-size: $font-size--small;
-    width: 100% !important;
-    margin-top: 0;
-    margin-right: $padding--tiny;
-    margin-bottom: $padding--tiny;
-    margin-left: 0;
-    padding: $padding--tiny;
-    background: transparent;
-    border: 0;
-    outline: 0;
+  &[disabled] {
+    pointer-events: none;
+
+    .host:focus {
+      outline: none;
+    }
+
+    .tags {
+      background-color: #eee;
+      cursor: default;
+
+      .tag-item {
+        opacity: 0.65;
+        background: -webkit-linear-gradient(top, #f0f9ff 0%, rgba(203, 235, 255, 0.75) 47%, rgba(161, 219, 255, 0.62) 100%);
+        background: linear-gradient(to bottom, #f0f9ff 0%, rgba(203, 235, 255, 0.75) 47%, rgba(161, 219, 255, 0.62) 100%);
+
+        .remove-button {
+          cursor: default;
+
+          &:active {
+            color: #585858;
+          }
+        }
+      }
+
+      input {
+        background-color: #eee;
+        cursor: default;
+      }
+    }
   }
 
-  div {
-    float: left;
-    cursor: text;
+  .autocomplete {
+    margin-top: 5px;
+    position: absolute;
+    padding: 5px 0;
+    z-index: 999;
+    width: 100%;
+    background-color: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+
+    .suggestion-list {
+      margin: 0;
+      padding: 0;
+      list-style-type: none;
+      max-height: 280px;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .suggestion-item {
+      padding: 5px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font: 16px "Helvetica Neue", Helvetica, Arial, sans-serif;
+      color: #000;
+      background-color: #fff;
+
+      &.selected {
+        color: #fff;
+        background-color: #0097cf;
+
+        em {
+          color: #fff;
+          background-color: #0097cf;
+        }
+      }
+
+      em {
+        font: normal bold 16px "Helvetica Neue", Helvetica, Arial, sans-serif;
+        color: #000;
+        background-color: #fff;
+      }
+    }
   }
-}
-
-.tags_clear {
-  clear: both;
-  width: 100%;
-  height: 0;
-}
-
-.not_valid {
-  color: $color--white !important;
-  background: $color--red !important;
 }
 
 
@@ -403,7 +732,7 @@ input[type=number] {
     width: 100%;
     padding: $padding--small $padding--mega $padding--small $padding--small;
     background: $color--lightGray;
-    border: 2px solid $color--lightGray;
+    border: 1px solid $color--lightGray;
     border-radius: $border-radius--container;
     color: $color--nearBlack;
     overflow: hidden;
@@ -429,7 +758,7 @@ input[type=number] {
     &.open {
       color: $color--black;
       background: $color--lightGray;
-      border: 2px solid $color--lightGray;
+      border-color: $color--lightGray;
     }
 
     &.error,
@@ -443,6 +772,8 @@ input[type=number] {
   .options {
     opacity: 0;
     font-size: $font-size--small;
+    text-align: right;
+    line-height: 1;
     width: 100%;
     list-style: none;
     position: absolute;
@@ -502,5 +833,16 @@ input[type=number] {
         color: $color--white;
       }
     }
+  }
+}
+
+.fancy-select--small .fancy-select {
+  .trigger {
+    font-size: $font-size--small;
+    padding: $padding--tiny $padding--giant $padding--tiny $padding--tiny;
+  }
+
+  .options {
+    font-size: $font-size--small;
   }
 }
