@@ -21,10 +21,7 @@ from datetime import datetime
 from abc import abstractmethod
 
 # Third Party
-import gevent
-from gevent import monkey
-
-gevent.monkey.patch_all()
+from celery import chord
 
 # Application Specific
 from ..models.user import Token
@@ -165,7 +162,7 @@ class CampaignBase(object):
             #TODO: add logger
             raise
 
-    def send_campaign_to_candidates(self, candidates):
+    def send_campaign_to_candidates(self, candidates_and_phones):
         """
         Once we have the candidates, we iterate them and call
             self.send_campaign_to_candidate() to send the campaign to all candidates
@@ -174,25 +171,45 @@ class CampaignBase(object):
         - This method is called from process_send() method of class
             SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
 
-        :param candidates: Candidates associated to a smart list
-        :type candidates: list
+        :param candidates_and_phones: Candidates associated to a smart list and their phones
+        :type candidates_and_phones: list of tuples
 
         **See Also**
         .. see also:: process_send() method in SmsCampaignBase class.
         """
-        # job_pool = Pool(POOL_SIZE)
-        # TODO: Celery specific task
-        for candidate in candidates:
-            self.send_campaign_to_candidate(candidate)
-            #     job_pool.spawn(self.send_campaign_to_candidate, candidate)
-            # job_pool.join()
+        callback = self.callback_campaign_sent.subtask((self.user_id, self.campaign,
+                                                        self.oauth_header, ))
+        header = [self.send_campaign_to_candidate.subtask((self, record))
+                  for record in candidates_and_phones]
+        chord(header)(callback)
+        # for each in candidates_and_phones:
+        #     self.send_campaign_to_candidate.apply_async([self, each],
+        #                                                 link=self.callback_campaign_sent.subtask())
 
     @abstractmethod
-    # TODO: This will run on celery (after celery is configured)
-    def send_campaign_to_candidate(self, candidate):
+    def send_campaign_to_candidate(self, candidate_and_phone):
         """
         This sends the campaign to given candidate. Child classes will implement this.
-        :param candidate: Candidate row
+        :param candidate_and_phone: Candidate row and his phone
+        :type candidate_and_phone: tuple
+        :return:
+        """
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def callback_campaign_sent(sends_result, user_id, campaign, auth_header):
+        """
+        This is the callback function for campaign sent.
+        Child classes will implement this.
+        :param sends_result: Result of executed task
+        :param user_id: id of user (owner of campaign)
+        :param campaign: id of campaign which was sent to candidates
+        :param auth_header: auth header of current user to make HTTP request to other services
+        :type sends_result: list
+        :type user_id: int
+        :type campaign: row
+        :type auth_header: dict
         :return:
         """
         pass

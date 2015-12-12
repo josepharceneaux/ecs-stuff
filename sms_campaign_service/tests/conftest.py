@@ -17,7 +17,7 @@ from sms_campaign_service.common.tests.conftest import *
 from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.common.models.misc import (UrlConversion, Activity)
-from sms_campaign_service.sms_campaign_app_constants import (TWILIO, CANDIDATE_PHONE_LABEL)
+from sms_campaign_service.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL)
 from sms_campaign_service.common.models.candidate import (PhoneLabel, CandidatePhone)
 from sms_campaign_service.common.models.smart_list import (SmartList, SmartListCandidate)
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignSmartlist,
@@ -380,7 +380,7 @@ def _create_candidate_mobile_phone(candidate, phone_value):
     :param phone_value: value of phone number
     :return: user_phone row
     """
-    phone_label_id = PhoneLabel.phone_label_id_from_phone_label(CANDIDATE_PHONE_LABEL)
+    phone_label_id = PhoneLabel.phone_label_id_from_phone_label(MOBILE_PHONE_LABEL)
     candidate_phone = CandidatePhone(candidate_id=candidate.id,
                                      phone_label_id=phone_label_id,
                                      value=phone_value)

@@ -35,12 +35,13 @@ from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.user import (UserPhone, User)
 from sms_campaign_service.common.utils.campaign_utils import CampaignBase
 from sms_campaign_service.common.utils.common_functions import find_missing_items
+# from sms_campaign_service.modules.celery_config import celery_app
 from sms_campaign_service.utilities import (TwilioSMS, search_urls_in_text, url_conversion)
 from sms_campaign_service.common.models.candidate import (PhoneLabel, Candidate, CandidatePhone)
 from sms_campaign_service.common.error_handling import (ResourceNotFound, ForbiddenError,
                                                         InvalidUsage)
 from sms_campaign_service.sms_campaign_app_constants import (SMS_URL_REDIRECT,
-                                                             CANDIDATE_PHONE_LABEL,
+                                                             MOBILE_PHONE_LABEL,
                                                              TWILIO, POOL_SIZE)
 from sms_campaign_service.custom_exceptions import (EmptySmsBody, MultipleTwilioNumbers,
                                                     EmptyDestinationUrl, MissingRequiredField,
@@ -56,6 +57,12 @@ from sms_campaign_service.common.utils.activity_utils import (CAMPAIGN_SMS_CLICK
                                                               CAMPAIGN_SMS_REPLY,
                                                               CAMPAIGN_SMS_SEND, CAMPAIGN_SEND,
                                                               CAMPAIGN_SMS_CREATE)
+
+
+from celery import Celery
+from sms_campaign_service.common.common_config import BROKER_URL
+
+celery_app = Celery('sms_campaign_service', broker=BROKER_URL, backend=BROKER_URL)
 
 
 class SmsCampaignBase(CampaignBase):
@@ -192,7 +199,6 @@ class SmsCampaignBase(CampaignBase):
         self.modified_body_text = None
         # TODO: Comment here
         self.sms_campaign_blast_id = None
-        self.total_sends = 0
 
     def get_all_campaigns(self):
         """
@@ -320,6 +326,7 @@ class SmsCampaignBase(CampaignBase):
         user_phone = UserPhone.get_by_user_id_and_phone_label_id(self.user_id,
                                                                  phone_label_id)
         if len(user_phone) == 1:
+            # TODO: validate that user has valid US number
             if user_phone[0].value:
                 return user_phone[0]
         elif len(user_phone) > 1:
@@ -360,6 +367,7 @@ class SmsCampaignBase(CampaignBase):
                 twilio_obj.purchase_twilio_number(number_to_buy)
             user_phone = self.create_or_update_user_phone(self.user_id, number_to_buy,
                                                           phone_label_id)
+            # TODO: validate that user has valid US number
             return user_phone
 
     @staticmethod
@@ -457,78 +465,127 @@ class SmsCampaignBase(CampaignBase):
             raise NoSmartlistAssociated(error_message='No smartlist is associated with SMS '
                                                       'Campaign(id:%s)' % campaign.id)
         if all_candidates:
-            logger.debug('process_send: SMS Campaign(id:%s) will be sent to %s candidate(s). '
-                         '(User(id:%s))' % (campaign.id, len(all_candidates), self.user_id))
             # create SMS campaign blast
             self.sms_campaign_blast_id = self.create_or_update_sms_campaign_blast(self.campaign.id)
-            # TODO: Implement as per celery
-            self.send_campaign_to_candidates(all_candidates)
-            self.create_campaign_send_activity(self.total_sends) if self.total_sends else ''
-            logger.debug('process_send: SMS Campaign(id:%s) has been sent to %s candidate(s).'
-                         '(User(id:%s))' % (campaign.id, self.total_sends, self.user_id))
-            return self.total_sends
+            filtered_candidates_and_phones = filter(lambda row: row is not None,
+                                                    map(self.filter_candidate_for_valid_phone,
+                                                        all_candidates))
+            logger.debug('process_send: SMS Campaign(id:%s) will be sent to %s candidate(s). '
+                         '(User(id:%s))' % (campaign.id, len(filtered_candidates_and_phones),
+                                            self.user_id))
+            self.send_campaign_to_candidates(filtered_candidates_and_phones)
+            return len(filtered_candidates_and_phones)
         else:
             raise NoCandidateAssociated(error_message='No candidate is associated to smartlist(s)'
                                                       'SMS Campaign(id:%s). smartlist ids are %s'
                                                       % (campaign.id, smart_lists))
 
-    def send_campaign_to_candidate(self, candidate):
+    def filter_candidate_for_valid_phone(self, candidate):
         """
-        For each candidate, we do the followings:
-            1- Get phone number(s) of candidate to which we need to send the SMS.
-            2- Send SMS
-            3- Create SMS campaign send
-            4- Update SMS campaign blast
-            5- Add activity (%(candidate_name)s received SMS of campaign %(campaign_name)s")
+        Here we validate that candidate has one mobile number associated.
 
-        - This method is called from send_sms_campaign_to_candidates() method of class
-            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
+        - This method is used in process_send() method.
 
-        :param candidate: Candidate row
+        :param candidate: candidates' mobile phone
+        :return:
 
         **See Also**
-        .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
+        .. see also:: process_send() method in SmsCampaignBase class.
         """
-        # get candidate phones
         candidate_phones = candidate.candidate_phones
+        phone_label_id = PhoneLabel.phone_label_id_from_phone_label(MOBILE_PHONE_LABEL)
+
         # filter only mobile numbers
-        phone_label_id = PhoneLabel.phone_label_id_from_phone_label(CANDIDATE_PHONE_LABEL)
         candidate_mobile_phone = filter(lambda candidate_phone:
                                         candidate_phone.phone_label_id == phone_label_id,
                                         candidate_phones)
         if len(candidate_mobile_phone) == 1:
             # If this number is associated with multiple candidates, raise exception
             _validate_candidate_phone_value(candidate_mobile_phone[0].value)
-            # Transform body text to be sent in SMS
-            url_conversion_ids = self.process_urls_in_sms_body_text(candidate.id)
-            assert self.modified_body_text
-            # send SMS
-            message_sent_time = self.send_sms(candidate_mobile_phone[0].value)
-            # Create sms_campaign_send
-            sms_campaign_send_id = \
-                self.create_or_update_sms_campaign_send(self.sms_campaign_blast_id, candidate.id,
-                                                        message_sent_time)
-
-            for url_conversion_id in url_conversion_ids:
-                # create sms_send_url_conversion entry
-                self.create_or_update_sms_send_url_conversion(sms_campaign_send_id,
-                                                              url_conversion_id)
-            # update SMS campaign blast
-            self.create_or_update_sms_campaign_blast(self.campaign.id,
-                                                     sends_update=True)
-            self.create_sms_send_activity(candidate, sms_campaign_send_id)
-            self.total_sends += 1
-            logger.info('send_sms_campaign_to_candidate: SMS has been sent to candidate(id:%s).'
-                        ' Campaign(id:%s). (User(id:%s))'
-                        % (candidate.id, self.campaign.id, self.user_id))
+            # TODO: validate that candidate has valid US number
+            return candidate, candidate_mobile_phone[0].value
         elif len(candidate_mobile_phone) > 1:
-            logger.error('send_sms_campaign_to_candidate: SMS cannot be sent as candidate(id:%s) '
-                         'has multiple mobile phone numbers. Campaign(id:%s). (User(id:%s))'
+            logger.error('filter_candidates_for_valid_phone: SMS cannot be sent as '
+                         'candidate(id:%s) has multiple mobile phone numbers. '
+                         'Campaign(id:%s). (User(id:%s))'
                          % (candidate.id, self.campaign.id, self.user_id))
         else:
-            logger.error('send_sms_campaign_to_candidate: SMS cannot be sent as '
+            logger.error('filter_candidates_for_valid_phone: SMS cannot be sent as '
                          'candidate(id:%s) has no phone number associated. Campaign(id:%s). '
                          '(User(id:%s))' % (candidate.id, self.campaign.id, self.user_id))
+
+    @celery_app.task(name='send_campaign_to_candidate')
+    def send_campaign_to_candidate(self, candidate_and_phone):
+        """
+        For each candidate with associated phone, we do the followings:
+            1- Send SMS
+            2- Create SMS campaign send
+            3- Update SMS campaign blast
+            4- Add activity (%(candidate_name)s received SMS of campaign %(campaign_name)s")
+
+        - This method is called from send_sms_campaign_to_candidates() method of class
+            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
+
+        :param candidate_and_phone: Candidate row and Candidate's phone
+        :type candidate_and_phone: tuple
+
+        **See Also**
+        .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
+        """
+        candidate = candidate_and_phone[0]
+        candidate_phone = candidate_and_phone[1]
+        # Transform body text to be sent in SMS
+        url_conversion_ids = self.process_urls_in_sms_body_text(candidate.id)
+        assert self.modified_body_text
+        # send SMS
+        message_sent_time = self.send_sms(candidate_phone)
+        # Create sms_campaign_send
+        sms_campaign_send_id = \
+            self.create_or_update_sms_campaign_send(self.sms_campaign_blast_id, candidate.id,
+                                                    message_sent_time)
+
+        for url_conversion_id in url_conversion_ids:
+            # create sms_send_url_conversion entry
+            self.create_or_update_sms_send_url_conversion(sms_campaign_send_id,
+                                                          url_conversion_id)
+        # update SMS campaign blast
+        self.create_or_update_sms_campaign_blast(self.campaign.id, sends_update=True)
+        self.create_sms_send_activity(candidate, sms_campaign_send_id)
+        logger.info('send_sms_campaign_to_candidate: SMS has been sent to candidate(id:%s).'
+                    ' Campaign(id:%s). (User(id:%s))'
+                    % (candidate.id, self.campaign.id, self.user_id))
+        return True
+
+    @staticmethod
+    @celery_app.task(name='callback_campaign_sent')
+    def callback_campaign_sent(sends_result, user_id, campaign, auth_header):
+        """
+        Once SMS campaign has been sent to all candidates, this function is hit, and here we
+
+        add activity e.g. (SMS Campaign "abc" was sent to "1000" candidates")
+
+        :param sends_result: Result of executed task
+        :param user_id: id of user (owner of campaign)
+        :param campaign: id of campaign which was sent to candidates
+        :param auth_header: auth header of current user to make HTTP request to other services
+        :type sends_result: list
+        :type user_id: int
+        :type campaign: row
+        :type auth_header: dict
+
+        **See Also**
+        .. see also:: send_campaign_to_candidates() method in CampaignBase class inside
+                        common/utils/campaign_utils.py
+        """
+        if isinstance(sends_result, list):
+            total_sends = sends_result.count(True)
+            SmsCampaignBase.create_campaign_send_activity(user_id,
+                                                          campaign, auth_header, total_sends) \
+                if total_sends else ''
+            logger.debug('process_send: SMS Campaign(id:%s) has been sent to %s candidate(s).'
+                         '(User(id:%s))' % (campaign.id, total_sends, user_id))
+        else:
+            logger.error('callback_campaign_sent: Result is not a list')
 
     def process_urls_in_sms_body_text(self, candidate_id):
         """
@@ -785,7 +842,8 @@ class SmsCampaignBase(CampaignBase):
         else:
             raise InvalidUsage(error_message='Cannot create sms send activity')
 
-    def create_campaign_send_activity(self, num_candidates):
+    @classmethod
+    def create_campaign_send_activity(cls, user_id, campaign, auth_header, num_candidates):
         """
         - Here we set "params" and "type" of activity to be stored in db table "Activity"
             for Campaign sent.
@@ -801,14 +859,14 @@ class SmsCampaignBase(CampaignBase):
         **See Also**
         .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
         """
-        params = {'name': self.campaign.name,
+        params = {'name': campaign.name,
                   'num_candidates': num_candidates}
-        self.create_activity(self.user_id,
+        cls.create_activity(user_id,
                              type_=CAMPAIGN_SEND,
-                             source_id=self.campaign.id,
+                             source_id=campaign.id,
                              source_table=SmsCampaign.__tablename__,
                              params=params,
-                             headers=self.oauth_header)
+                             headers=auth_header)
 
     @staticmethod
     def pre_process_url_redirect(campaign_id, url_conversion_id, candidate_id):

@@ -494,7 +494,7 @@ class SendSmsCampaign(Resource):
             if campaign:
                 camp_obj = SmsCampaignBase(request.user.id)
                 total_sends = camp_obj.process_send(campaign)
-                return dict(message='Campaign(id:%s) has been sent successfully'
+                return dict(message='Campaign(id:%s) is being sent to candidates.'
                                     % campaign_id, total_sends=total_sends), 200
             else:
                 raise ResourceNotFound(error_message='SMS Campaign(id=%s) Not found.' % campaign_id,

@@ -14,12 +14,14 @@ if GT_ENVIRONMENT == 'dev':
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@127.0.0.1/talent_local'
     OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
     LOGGER = logging.getLogger("flask_service.dev")
+    BROKER_URL = 'redis://localhost:6379'
     IS_DEV = True
     DEBUG = True
 elif GT_ENVIRONMENT == 'circle':
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_ci'
     OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
     LOGGER = logging.getLogger("flask_service.ci")
+    BROKER_URL = 'redis://localhost:6379'
     IS_DEV = True
     DEBUG = True
 elif GT_ENVIRONMENT == 'qa':
