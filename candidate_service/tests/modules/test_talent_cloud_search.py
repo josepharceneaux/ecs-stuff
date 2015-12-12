@@ -209,7 +209,7 @@ def get_source_product_id(candidate_ids):
     return source_product_id
 
 
-def test_search_all_candidates_in_domain(sample_user):
+def _test_search_all_candidates_in_domain(sample_user):
     """
     Test search functionality should return all inserted candidates for domain
     :param sample_user:
@@ -219,7 +219,7 @@ def test_search_all_candidates_in_domain(sample_user):
     _assert_search_results(sample_user.domain_id, {'query': ''}, candidate_ids)
 
 
-def test_search_by_first_name(sample_user):
+def _test_search_by_first_name(sample_user):
     """
     Test search candidates by first name
     :param sample_user:
@@ -231,7 +231,7 @@ def test_search_by_first_name(sample_user):
     _assert_search_results(sample_user.domain_id, {'query': first_name}, candidate_ids)
 
 
-def test_search_by_last_name(sample_user):
+def _test_search_by_last_name(sample_user):
     """
     Test to search candidates by last name
     :param sample_user:
@@ -243,7 +243,7 @@ def test_search_by_last_name(sample_user):
     _assert_search_results(sample_user.domain_id, {'query': last_name}, candidate_ids)
 
 
-def test_search_by_current_company(sample_user):
+def _test_search_by_current_company(sample_user):
     """
     Test to search candidates by current company
     :param sample_user:
@@ -255,7 +255,7 @@ def test_search_by_current_company(sample_user):
     _assert_search_results(sample_user.domain_id, {'query': company_name}, candidate_ids, check_for_equality=True)
 
 
-def test_search_by_position_facet(sample_user):
+def _test_search_by_position_facet(sample_user):
     """
     Test to search candidates by position
     :param sample_user:
@@ -267,7 +267,7 @@ def test_search_by_position_facet(sample_user):
     _assert_search_results(sample_user.domain_id, {'positionFacet': current_title}, candidate_ids)
 
 
-def test_position_and_company(sample_user):
+def _test_position_and_company(sample_user):
     """
     Test to search candidates by position and company
     :param sample_user:
@@ -284,7 +284,7 @@ def test_position_and_company(sample_user):
     _assert_search_results(sample_user.domain_id, search_vars, ceo_at_apple, check_for_equality=True)
 
 
-def test_owner_facet(test_domain, sample_user, sample_user_2):
+def _test_owner_facet(test_domain, sample_user, sample_user_2):
     """
     Search by username
     :param test_domain:
@@ -333,7 +333,7 @@ def OK_test_sort_by_match(sample_user):
                            check_for_sorting=True)
 
 
-def test_search_by_university(sample_user):
+def _test_search_by_university(sample_user):
     """
     university > school_name
     :param sample_user:
@@ -354,7 +354,7 @@ def test_search_by_university(sample_user):
                                                    'user_ids': sample_user.id}, total_candidates, wait=False)
 
 
-def test_search_by_location(sample_user):
+def _test_search_by_location(sample_user):
     """
     Search by City name, State name
     :param sample_user:
@@ -373,7 +373,7 @@ def test_search_by_location(sample_user):
     _assert_search_results(sample_user.domain_id, {'location': '%s' % zip_code}, candidate_ids, wait=False)
 
 
-def test_location_with_radius(sample_user):
+def _test_location_with_radius(sample_user):
     """
     Search by city, state + radius
     Search by zip + radius
@@ -449,7 +449,7 @@ def test_location_with_radius(sample_user):
                            check_for_equality=True, wait=False)
 
 
-def test_sort_by_proximity(sample_user):
+def _test_sort_by_proximity(sample_user):
     """
     Sort by distance
     :param sample_user:
@@ -497,7 +497,7 @@ def test_sort_by_proximity(sample_user):
                            check_for_sorting=True, wait=False)
 
 
-def to_fix_test_search_by_major(sample_user):
+def _to_fix_test_search_by_major(sample_user):
     """
     Test to search based on major facet
     Without university major doesn't gets created in database, So university should also be created for major
@@ -518,7 +518,7 @@ def to_fix_test_search_by_major(sample_user):
     # TODO: Check if major will be 'and query' or 'or query'
 
 
-def test_search_by_degree(sample_user):
+def _test_search_by_degree(sample_user):
     """
     :param sample_user:
     :return:
@@ -538,7 +538,7 @@ def test_search_by_degree(sample_user):
                            all_candidates, wait=False)
 
 
-def test_search_by_added_date(sample_user):
+def _test_search_by_added_date(sample_user):
     """
     Test to search candidates by added time
     :param sample_user:
@@ -685,7 +685,7 @@ def to_fix_test_source_facet(sample_user):
     _assert_search_results(domain_id, {"source_ids": str(source_id)}, candidate_ids2, check_for_equality=True)
 
 
-def test_search_based_on_years_of_experience(sample_user):
+def _test_search_based_on_years_of_experience(sample_user):
     """
     minimum_years_experience
     maximum_years_experience
@@ -748,7 +748,7 @@ def test_search_based_on_years_of_experience(sample_user):
                            wait=False)
 
 
-def test_skill_description_facet(sample_user):
+def _test_skill_description_facet(sample_user):
     """
     skillDescriptionFacet
     :param sample_user:
@@ -930,7 +930,7 @@ def to_fix_test_custom_fields_kaiser_nuid(sample_user):
     _assert_search_results(domain_id, {"cf-%d" % custom_field_obj_id: "Has NUID"}, nuid_candidates, wait=False)
 
 
-def test_custom_fields(sample_user):
+def _test_custom_fields(sample_user):
     """
     Test various custom_fields
     :param sample_user:
@@ -1019,7 +1019,7 @@ def to_fix_test_paging_with_facet_search(sample_user):
                            candidate_ids[15:30], wait=False)
 
 
-def test_id_in_request_vars(sample_user):
+def _test_id_in_request_vars(sample_user):
     """
     There is a case where id can be passed as parameter in search_candidates
     It can be used to check if a certain candidate ID is in a smartlist.
