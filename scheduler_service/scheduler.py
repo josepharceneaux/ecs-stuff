@@ -1,7 +1,7 @@
 """
 Scheduler - APScheduler initialization, set jobstore, threadpoolexecutor
 - Add task to APScheduler
-- run_job callback method, runs when times come
+- run_job callback method, runs when times come # TODO: modify this
 - remove multiple tasks from APScheduler
 - get tasks from APScheduler and serialize tasks using json
 """
@@ -24,7 +24,7 @@ job_store = RedisJobStore()
 jobstores = {
     'redis': job_store
 }
-# set timezone to UTC
+# Set timezone to UTC
 scheduler = BackgroundScheduler(jobstore=jobstores, executors=executors,
                                 timezone='UTC')
 scheduler.add_jobstore(job_store)
@@ -32,7 +32,7 @@ scheduler.add_jobstore(job_store)
 
 def apscheduler_listener(event):
     """
-    apschudler listener for logging on job crashed or job time expires
+    APScheduler listener for logging on job crashed or job time expires
     :param event:
     :return:
     """
@@ -46,10 +46,10 @@ def apscheduler_listener(event):
             logger.info('Stopping job')
             try:
                 scheduler.remove_job(job_id=job.id)
+                logger.info("APScheduler_listener: Job removed successfully")
             except Exception as e:
                 logger.exception("apscheduler_listener: Error occured while removing job")
                 raise e
-            logger.info("apscheduler_listener: Job removed successfully")
 
 
 scheduler.add_listener(apscheduler_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
@@ -57,12 +57,18 @@ scheduler.add_listener(apscheduler_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERRO
 
 def schedule_job(data, user_id, access_token):
     """
-    schedule job using post data and add it to APScheduler
+    Schedule job using post data and add it to APScheduler
+    # TODO: parameters doc strings are missing and it is most important method
     :return:
     """
     job_config = dict()
+    # TODO: default value should be a dict not a string
     job_config['post_data'] = data.get('post_data', '{}')
     content_type = data.get('content_type', 'application/json')
+    # TODO: -1 is not a good choice , and if it is, we should define meaningful constants
+    # TODO: and if just want to check for missing inputs, None is sufficient data.get('task_type')
+    # will return None if key not found. We also need to check for valid values not just keys
+    # in dict because a value can be '' and it can be valid or invalid
     job_config['trigger'] = data.get('task_type', -1)
     job_config['url'] = data.get('url', -1)
     job_config['frequency'] = data.get('frequency', -1)
@@ -87,6 +93,7 @@ def schedule_job(data, user_id, access_token):
             # Check if keys in frequency are valid time period otherwise throw exception
             for key in frequency.keys():
                 if key not in temp_time_list:
+                    # TODO: exception name is not what it does. IMHO it should be `InvalidInput`
                     raise FieldRequiredError(error_message='Invalid key %s in frequency' % key)
 
             # If value of frequency keys are not integer then throw exception
@@ -133,7 +140,8 @@ def schedule_job(data, user_id, access_token):
 
 def run_job(user_id, access_token, url, content_type, **kwargs):
     """
-    function callback to run when job time comes
+    # TODO: comment is not correct because this method `run_job` will run when user will send a POST request
+    Function callback to run when job time comes
     :param user_id:
     :param url: url to send post request
     :param content_type: format of post data
@@ -146,8 +154,8 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
 
 def remove_tasks(ids, user_id):
     """
-    remove jobs from apscheduler redisStore
-    :param ids: ids of tasks which are in apscheduler
+    Remove jobs from APScheduler redisStore
+    :param ids: ids of tasks which are in APScheduler
     :param user_id: tasks owned by user
     :return: tasks which are removed
     """
@@ -160,7 +168,7 @@ def remove_tasks(ids, user_id):
 
 def serialize_task(task):
     """
-    serialize task data to json object
+    Serialize task data to json object
     :param task:
     :return: json converted dict object
     """

@@ -1,15 +1,18 @@
+# TODO: Describe a little here what is this module about
 import json
-from celery import Celery
 import requests
 
+from celery import Celery
 
+# TODO: Move these values to some config or constants file or at least make it a constant in the beginning of file
 celery = Celery('scheduler_service', broker='redis://localhost:6379', backend='redis://localhost:6379')
 
 
 @celery.task(name="send_request")
 def send_request(access_token, url, content_type, kwargs):
     """
-    :param user_id: the user_id of user who is sending post request
+    TODO: Add some description about this method and sample data / example
+    :param access_token: authorization token for user
     :param url: the url where to send post requests
     :param content_type: the content type i.e json or xml
     :param kwargs: post data i.e campaign name, smartlist ids

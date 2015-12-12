@@ -23,6 +23,7 @@ from scheduler_service.api.scheduler_api import scheduler_blueprint
 
 app.register_blueprint(scheduler_blueprint)
 
+# Start scheduler before starting flask app
 scheduler.start()
 
 if __name__ == '__main__':
