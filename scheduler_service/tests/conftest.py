@@ -3,14 +3,10 @@ Test cases for scheduling service
 """
 # Standard imports
 import os
-
-# Third-party imports
-from apscheduler.jobstores.redis import RedisJobStore
-from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import timedelta
 
 # Application imports
 from scheduler_service import init_app
-from scheduler_service.apscheduler_config import executors
 from scheduler_service.common.tests.conftest import *
 # Application Specific
 
@@ -22,7 +18,7 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 
 @pytest.fixture(scope='session')
-def job_config(request):
+def job_config_periodic(request):
     return {
         "frequency": {
             "hours": 10
@@ -42,7 +38,7 @@ def job_config(request):
 
 
 @pytest.fixture(scope='session')
-def job_config_two(request):
+def job_config_one_time(request):
     return {
         'task_type': 'one_time',
         "content_type": "application/json",
@@ -58,53 +54,33 @@ def job_config_two(request):
 
 
 @pytest.fixture(scope='function')
-def auth_data(user_auth, sample_user):
+def auth_token(user_auth, sample_user):
     """
     returns the access token using pytest fixture defined in common/tests/conftest.py
     :param user_auth: fixture in common/tests/conftest.py
     :param sample_user: fixture in common/tests/conftest.py
     """
     auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-    return auth_token_row
-
-
-# APScheduler for creating, resuming, stopping, removing jobs
+    return auth_token_row['access_token']
 
 
 @pytest.fixture(scope='function')
-def redis_jobstore_setup(request):
+def auth_header(request, auth_token):
     """
-    Sets up a Redis based job store to be used by APSCheduler
-    :param request:
-    :return: redis jobstore dictionary object
-    {
-        'redis': job_store_object
-    }
+    returns the header which contains bearer token and content Type
+    :param auth_data: fixture to get access token
+    :return: header dict object
     """
-    jobstore = {
-        'redis': RedisJobStore()
-    }
-
-    def resource_redis_jobstore_teardown():
-        jobstore['redis'].remove_all_jobs()
-
-    request.addfinalizer(resource_redis_jobstore_teardown)
-    return jobstore
+    header = {'Authorization': 'Bearer ' + auth_token,
+              'Content-Type': 'application/json'}
+    return header
 
 
 @pytest.fixture(scope='function')
-def apscheduler_setup(request, redis_jobstore_setup):
-    """
-    :param request:
-    :return: APScheduler object initialized with redis job store and default executor
-    """
-
-    scheduler = BackgroundScheduler(jobstore=redis_jobstore_setup, executors=executors)
-    scheduler.add_jobstore(redis_jobstore_setup['redis'])
-    scheduler.start()
-
-    def resource_apscheduler_teardown():
-        scheduler.shutdown()
-
-    request.addfinalizer(resource_apscheduler_teardown)
-    return scheduler
+def job_config(request, job_config_periodic):
+    temp_job_config = job_config_periodic.copy()
+    start_date = datetime.utcnow() - timedelta(seconds=15)
+    end_date = start_date + timedelta(days=2)
+    temp_job_config['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
+    temp_job_config['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
+    return temp_job_config

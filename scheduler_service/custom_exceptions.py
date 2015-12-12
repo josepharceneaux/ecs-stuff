@@ -1,6 +1,6 @@
 """
-Custom exceptions to throw error code when internal server error occurred
-raise exception when
+Custom exceptions to throw error code when internal server error occurs.
+These exceptions are raised when:
 - job is already running
 - paused
 - any mandatory field missing in post request
@@ -8,6 +8,8 @@ raise exception when
 """
 import json
 import scheduler_service.common.error_handling
+from scheduler_service.custom_error_codes import CODE_TRIGGER_TYPE, CODE_FIELD_REQUIRED, CODE_PENDING, \
+    CODE_ALREADY_PAUSED, CODE_ALREADY_RUNNING, CODE_NOTCREATED_TYPE
 
 __author__ = 'saad'
 
@@ -27,20 +29,24 @@ class SchedulerServiceApiException(scheduler_service.common.error_handling.Inter
 
 
 class JobAlreadyPausedError(SchedulerServiceApiException):
-    error_code = 6053
+    error_code = CODE_ALREADY_PAUSED
 
 
 class PendingJobError(SchedulerServiceApiException):
-    error_code = 6052
+    error_code = CODE_PENDING
 
 
 class JobAlreadyRunningError(SchedulerServiceApiException):
-    error_code = 6054
+    error_code = CODE_ALREADY_RUNNING
 
 
 class FieldRequiredError(SchedulerServiceApiException):
-    error_code = 6055
+    error_code = CODE_FIELD_REQUIRED
 
 
 class TriggerTypeError(SchedulerServiceApiException):
-    error_code = 6056
+    error_code = CODE_TRIGGER_TYPE
+
+
+class JobNotCreatedError(SchedulerServiceApiException):
+    error_code = CODE_NOTCREATED_TYPE
