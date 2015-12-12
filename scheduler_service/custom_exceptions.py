@@ -8,14 +8,18 @@ These exceptions are raised when:
 """
 import json
 import scheduler_service.common.error_handling
-from scheduler_service.custom_error_codes import CODE_TRIGGER_TYPE, CODE_FIELD_REQUIRED, CODE_PENDING, \
-    CODE_ALREADY_PAUSED, CODE_ALREADY_RUNNING, CODE_NOTCREATED_TYPE
 
 __author__ = 'saad'
 
 
 class SchedulerServiceApiException(scheduler_service.common.error_handling.InternalServerError):
     error_code = 6000
+    CODE_ALREADY_PAUSED = 6053
+    CODE_PENDING = 6052
+    CODE_ALREADY_RUNNING = 6054
+    CODE_FIELD_REQUIRED = 6055
+    CODE_TRIGGER_TYPE = 6056
+    CODE_NOT_CREATED_TYPE = 6057
 
     def to_dict(self):
         error_dict = super(SchedulerServiceApiException, self).to_dict()
@@ -29,24 +33,24 @@ class SchedulerServiceApiException(scheduler_service.common.error_handling.Inter
 
 
 class JobAlreadyPausedError(SchedulerServiceApiException):
-    error_code = CODE_ALREADY_PAUSED
+    error_code = SchedulerServiceApiException.CODE_ALREADY_PAUSED
 
 
 class PendingJobError(SchedulerServiceApiException):
-    error_code = CODE_PENDING
+    error_code = SchedulerServiceApiException.CODE_PENDING
 
 
 class JobAlreadyRunningError(SchedulerServiceApiException):
-    error_code = CODE_ALREADY_RUNNING
+    error_code = SchedulerServiceApiException.CODE_ALREADY_RUNNING
 
 
 class FieldRequiredError(SchedulerServiceApiException):
-    error_code = CODE_FIELD_REQUIRED
+    error_code = SchedulerServiceApiException.CODE_FIELD_REQUIRED
 
 
 class TriggerTypeError(SchedulerServiceApiException):
-    error_code = CODE_TRIGGER_TYPE
+    error_code = SchedulerServiceApiException.CODE_TRIGGER_TYPE
 
 
 class JobNotCreatedError(SchedulerServiceApiException):
-    error_code = CODE_NOTCREATED_TYPE
+    error_code = SchedulerServiceApiException.CODE_NOT_CREATED_TYPE

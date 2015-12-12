@@ -8,7 +8,7 @@ import pytest
 import requests
 
 # Application imports
-from scheduler_service.custom_error_codes import CODE_FIELD_REQUIRED, CODE_TRIGGER_TYPE
+from scheduler_service.custom_exceptions import SchedulerServiceApiException
 from scheduler_service.tests.conftest import APP_URL
 
 __author__ = 'saad'
@@ -34,9 +34,9 @@ class TestSchedulerExceptions:
         # Create job with invalid string
         response = requests.post(APP_URL + '/tasks/', data=json.dumps(invalid_job_config),
                                  headers=auth_header)
-        assert response.status_code == 500 and response.json()['error']['code'] == CODE_FIELD_REQUIRED
+        assert response.status_code == 500 and response.json()['error']['code'] == SchedulerServiceApiException.CODE_FIELD_REQUIRED
 
-    def test_incorrect_post_data_exception(self, auth_header, job_config):
+    def test_incorrect_post_data_exception(self, auth_header):
         """
             Create a job by posting wrong data and check if exception occurs with status code 400
             Args:
@@ -71,7 +71,7 @@ class TestSchedulerExceptions:
                                  headers=auth_header)
 
         # Invalid trigger type exception
-        assert response.status_code == 500 and response.json()['error']['code'] == CODE_TRIGGER_TYPE
+        assert response.status_code == 500 and response.json()['error']['code'] == SchedulerServiceApiException.CODE_TRIGGER_TYPE
 
     def test_invalid_frequency_job(self, auth_header, job_config):
         """
@@ -88,13 +88,13 @@ class TestSchedulerExceptions:
         response = requests.post(APP_URL + '/tasks/', data=json.dumps(temp_job_config),
                                  headers=auth_header)
 
-        assert response.status_code == 500 and response.json()['error']['code'] == CODE_FIELD_REQUIRED
+        assert response.status_code == 500 and response.json()['error']['code'] == SchedulerServiceApiException.CODE_FIELD_REQUIRED
 
         temp_job_config['frequency'] = '{ "xyz": "" }'
         response = requests.post(APP_URL + '/tasks/', data=json.dumps(temp_job_config),
                                  headers=auth_header)
 
-        assert response.status_code == 500 and response.json()['error']['code'] == CODE_FIELD_REQUIRED
+        assert response.status_code == 500 and response.json()['error']['code'] == SchedulerServiceApiException.CODE_FIELD_REQUIRED
 
         response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
                                  headers=auth_header)

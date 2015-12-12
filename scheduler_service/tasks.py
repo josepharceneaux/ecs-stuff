@@ -1,11 +1,20 @@
-# TODO: Describe a little here what is this module about
+"""
+Celery tasks are defined here.
+It will be a separate celery process which is called by run_job to send post request to a url.
+If task is successfully sent then it will return SUCCESS status and if request is failed then it will
+show FAILED status
+"""
+
+BACKEND_URL = 'redis://localhost:6379'
+REDIS_URL = 'redis://localhost:6379'
+
+# Third-Party imports
 import json
 import requests
-
 from celery import Celery
 
-# TODO: Move these values to some config or constants file or at least make it a constant in the beginning of file
-celery = Celery('scheduler_service', broker='redis://localhost:6379', backend='redis://localhost:6379')
+
+celery = Celery('scheduler_service', broker=REDIS_URL, backend=BACKEND_URL)
 
 
 @celery.task(name="send_request")

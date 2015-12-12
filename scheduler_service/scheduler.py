@@ -1,7 +1,7 @@
 """
 Scheduler - APScheduler initialization, set jobstore, threadpoolexecutor
 - Add task to APScheduler
-- run_job callback method, runs when times come # TODO: modify this
+- run_job callback method, runs when times come
 - remove multiple tasks from APScheduler
 - get tasks from APScheduler and serialize tasks using json
 """
@@ -21,6 +21,7 @@ from scheduler_service.custom_exceptions import FieldRequiredError, TriggerTypeE
 from scheduler_service.tasks import send_request
 
 job_store = RedisJobStore()
+
 jobstores = {
     'redis': job_store
 }
@@ -57,24 +58,24 @@ scheduler.add_listener(apscheduler_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERRO
 
 def schedule_job(data, user_id, access_token):
     """
-    Schedule job using post data and add it to APScheduler
-    # TODO: parameters doc strings are missing and it is most important method
+    Schedule job using post data and add it to APScheduler. Which calls the callback method when job time comes
+    :param data: the data like url, frequency, post_data, start_datetime and end_datetime of job which is required
+    for creating job of APScheduler
+    :param user_id: the user_id of user who is creating job
+    :param access_token: csrf access token for the sending post request to url with post_data
     :return:
     """
     job_config = dict()
-    # TODO: default value should be a dict not a string
-    job_config['post_data'] = data.get('post_data', '{}')
+    job_config['post_data'] = data.get('post_data', dict())
     content_type = data.get('content_type', 'application/json')
-    # TODO: -1 is not a good choice , and if it is, we should define meaningful constants
-    # TODO: and if just want to check for missing inputs, None is sufficient data.get('task_type')
     # will return None if key not found. We also need to check for valid values not just keys
     # in dict because a value can be '' and it can be valid or invalid
-    job_config['trigger'] = data.get('task_type', -1)
-    job_config['url'] = data.get('url', -1)
-    job_config['frequency'] = data.get('frequency', -1)
+    job_config['trigger'] = data.get('task_type')
+    job_config['url'] = data.get('url')
+    job_config['frequency'] = data.get('frequency')
 
     # Get missing keys
-    missing_keys = filter(lambda _key: job_config[_key] == -1, job_config.keys())
+    missing_keys = filter(lambda _key: job_config[_key] is None, job_config.keys())
     if len(missing_keys) > 0:
         logger.exception("schedule_job: Missing keys %s" % ', '.join(missing_keys))
         raise FieldRequiredError(error_message="Missing keys %s" % ', '.join(missing_keys))
@@ -93,8 +94,7 @@ def schedule_job(data, user_id, access_token):
             # Check if keys in frequency are valid time period otherwise throw exception
             for key in frequency.keys():
                 if key not in temp_time_list:
-                    # TODO: exception name is not what it does. IMHO it should be `InvalidInput`
-                    raise FieldRequiredError(error_message='Invalid key %s in frequency' % key)
+                    raise FieldRequiredError(error_message='Invalid input %s in frequency' % key)
 
             # If value of frequency keys are not integer then throw exception
             for value in frequency.values():
@@ -140,8 +140,7 @@ def schedule_job(data, user_id, access_token):
 
 def run_job(user_id, access_token, url, content_type, **kwargs):
     """
-    # TODO: comment is not correct because this method `run_job` will run when user will send a POST request
-    Function callback to run when job time comes
+    Function callback to run when job time comes, this method is called by APScheduler
     :param user_id:
     :param url: url to send post request
     :param content_type: format of post data
@@ -149,6 +148,7 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
     :return:
     """
     logger.info('User ID: %s, URL: %s, Content-Type: %s' % (user_id, url, content_type))
+    # Call celery task to send post_data to url
     send_request.apply_async([user_id, access_token, url, content_type, kwargs])
 
 
