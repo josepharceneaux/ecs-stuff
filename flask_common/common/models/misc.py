@@ -263,3 +263,11 @@ class EmailTemplateFolder(db.Model):
     domain = relationship(u'Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
     parent = relationship(u'EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
                                                                                        cascade="all, delete-orphan"))
+
+
+class CustomFieldCategory(db.Model):
+    __tablename__ = 'custom_field_category'
+    id = db.Column(db.Integer, primary_key=True)
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
+    name = db.Column('Name', db.String(255))
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())

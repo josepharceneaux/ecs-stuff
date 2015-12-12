@@ -66,7 +66,6 @@ def test_get_candidate_from_forbidden_domain(sample_user, user_auth, sample_user
     """
     Test:   Attempt to retrieve a candidate outside of logged-in-user's domain
     Expect: 403 status_code
-
     :type sample_user:      User
     :type sample_user_2:    User
     :type user_auth:        UserAuthentication
