@@ -1,6 +1,7 @@
 """
 Functions related to candidate_service/candidate_app/api validations
 """
+import json
 from candidate_service.common.models.db import db
 from candidate_service.candidate_app import logger
 from candidate_service.common.models.candidate import Candidate
@@ -124,6 +125,14 @@ def validate_sort_by(key, value):
     return sort_by
 
 
+def validate_encoded_json(value):
+    """ This function will validate and decodes a encoded json string """
+    try:
+        return json.loads(value)
+    except Exception as e:
+        raise InvalidUsage(error_message="Encoded JSON %s couldn't be decoded because: %s" % (value, e.message))
+
+
 def validate_fields(key, value):
     # If `fields` are present, validate and modify `fields` values according to cloudsearch supported return field names.
     fields = [field.strip() for field in value.split(',') if field.strip()]
@@ -161,8 +170,11 @@ SEARCH_INPUT_AND_VALIDATIONS = {
     "military_highest_grade": 'string_list',
     "military_end_date_from": 'digit',
     "military_end_date_to": 'digit',
+    "search_params": 'json_encoded',
     # return fields
     "fields": 'return_fields',
+    # Id of a talent_pool from where to search candidates
+    "talent_pool_id": 'digit',
     # candidate id : to check if candidate is present in smartlist.
     "id": 'digit'
 }
@@ -188,8 +200,11 @@ def validate_and_format_data(request_data):
                 request_vars[key] = string_list(key, value)
             if SEARCH_INPUT_AND_VALIDATIONS[key] == "return_fields":
                 request_vars[key] = validate_fields(key, value)
+            if SEARCH_INPUT_AND_VALIDATIONS[key] == 'json_encoded':
+                request_vars[key] = validate_encoded_json(value)
         # TODO: handling of custom fields
     return request_vars
+
 
 def format_search_request_data(request_data):
     request_vars = {}
