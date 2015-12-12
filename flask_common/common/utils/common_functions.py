@@ -3,14 +3,20 @@ import json
 import requests
 import random
 import string
-from werkzeug.security import generate_password_hash
+
+from flask import current_app
+from ..error_handling import ForbiddenError
 from ..models.user import User, UserScopedRoles
+from sqlalchemy.sql.expression import ClauseElement
+from werkzeug.security import generate_password_hash
+
 
 OAUTH_ENDPOINT = 'http://127.0.0.1:8001/%s'
 TOKEN_URL = OAUTH_ENDPOINT % 'oauth2/token'
-
-from ..error_handling import ForbiddenError
-from sqlalchemy.sql.expression import ClauseElement
+GOOGLE_URL_SHORTENER_API_KEY = 'AIzaSyCT7Gg3zfB0yXaBXSPNVhFCZRJzu9WHo4o'
+GOOGLE_URL_SHORTENER_API_URL = 'https://www.googleapis.com/urlshortener/v1/url?key=' \
+                               + GOOGLE_URL_SHORTENER_API_KEY
+JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
 
 
 def get_or_create(session, model, defaults=None, **kwargs):
@@ -66,7 +72,6 @@ def get_coordinates(zipcode=None, city=None, state=None, address_line_1=None, lo
     return coordinates
 
 
-# TODO: Remove prints
 def http_request(method_type, url, params=None, headers=None, data=None, user_id=None):
     """
     This is common function to make HTTP Requests. It takes method_type (GET or POST)
@@ -97,17 +102,16 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                 # checks if error occurred on "Server" or is it a bad request
                 elif e.response.status_code < 500:
                     try:
+                        # In case of Meetup, we have error details in e.response.json()['errors'].
+                        # So, tyring to log as much
+                        # details of error as we can.
                         if 'errors' in e.response.json():
-                            error_message = e.message + ', Details: ' \
-                                            + json.dumps(
-                                e.response.json().get('errors'))
+                            error_message = e.message + ', Details: ' + json.dumps(e.response.json().get('errors'))
                         elif 'error_description' in e.response.json():
-                            error_message = e.message + ', Details: ' \
-                                            + json.dumps(
-                                e.response.json().get('error_description'))
+                            error_message = e.message + ', Details: ' + json.dumps(e.response.json().get('error_description'))
                         else:
                             error_message = e.message
-                    except:
+                    except Exception:
                         error_message = e.message
                 else:
                     # raise any Server error
@@ -115,18 +119,21 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
             except requests.RequestException as e:
                 if hasattr(e.message, 'args'):
                     if 'Connection aborted' in e.message.args[0]:
-                        print "Couldn't make %s call on %s. Make sure " \
-                              "requested server is running." % (method_type, url)
+                        current_app.logger.exception(
+                            "http_request: Couldn't make %s call on %s. "
+                            "Make sure requested server is running." % (method_type, url))
                         raise ForbiddenError
                 error_message = e.message
             if error_message:
-                print 'http_request: HTTP request failed, %s, user_id: %s', error_message, user_id
+                current_app.logger.exception('http_request: HTTP request failed, %s, '
+                                             'user_id: %s', error_message, user_id)
             return response
         else:
             error_message = 'URL is None. Unable to make "%s" Call' % method_type
-            print 'http_request: Error: %s, user_id: %s' % (error_message, user_id)
+            current_app.logger.error('http_request: Error: %s, user_id: %s'
+                                     % (error_message, user_id))
     else:
-        print 'Unknown Method type %s ' % method_type
+        current_app.logger.error('Unknown Method type %s ' % method_type)
 
 
 def find_missing_items(data_dict, required_fields=None, verify_all_keys=False):
@@ -207,3 +214,31 @@ def camel_case_to_snake_case(name):
     name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     name = re.sub('(.)([0-9]+)', r'\1_\2', name)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
+
+
+def url_conversion(long_url):
+    """
+    We use Google's URL Shortener API to shorten the given URL.
+    In this function we pass a URL which we want to shorten and on
+    success it saves record in database and returns its id.
+    :param long_url: The URL which we want to be shortened
+    :type long_url: str
+    :param long_url:
+    :return: shortened URL
+    :rtype: str
+    """
+    payload = json.dumps({'longUrl': long_url})
+    response = http_request('POST', GOOGLE_URL_SHORTENER_API_URL,
+                            headers=JSON_CONTENT_TYPE_HEADER, data=payload)
+    json_data = response.json()
+    if 'error' not in json_data:
+        short_url = json_data['id']
+        # long_url = json_data['longUrl']
+        current_app.logger.info("url_conversion: Long URL was: %s" % long_url)
+        current_app.logger.info("url_conversion: Shortened URL is: %s" % short_url)
+        return short_url, ''
+    else:
+        error_message = "Error while shortening URL. Long URL is %s. " \
+                        "Error dict is %s" % (long_url, json_data['error']['errors'][0])
+        current_app.logger.error('url_conversion: %s' % error_message)
+        return None, error_message

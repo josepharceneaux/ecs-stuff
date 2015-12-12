@@ -20,13 +20,16 @@ from flask.ext.cors import CORS
 from flask.ext.restful import Resource
 
 # Application Specific
-from sms_campaign_service.utilities import url_conversion
 from sms_campaign_service.common.talent_api import TalentApi
 from sms_campaign_service.common.utils.api_utils import api_route
+from sms_campaign_service.sms_campaign_base import validate_header
 from sms_campaign_service.common.error_handling import InvalidUsage
 from sms_campaign_service.common.utils.auth_utils import require_oauth
+from sms_campaign_service.custom_exceptions import GoogleShortenUrlAPIError, MissingRequiredField
+from sms_campaign_service.common.utils.common_functions import url_conversion
 
 # creating blueprint
+
 url_conversion_blueprint = Blueprint('url_conversion_api', __name__)
 api = TalentApi()
 api.init_app(url_conversion_blueprint)
@@ -49,7 +52,7 @@ class ConvertUrl(Resource):
     """
     decorators = [require_oauth]
 
-    def get(self):
+    def post(self):
         """
         This action returns shorted url of given url
         :return short_url: a dictionary containing short url
@@ -57,7 +60,7 @@ class ConvertUrl(Resource):
 
         :Example:
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/url_conversion/', headers=headers,
+            response = requests.post(API_URL + '/url_conversion/', headers=headers,
                         data={"long_url": 'https://webdev.gettalent.com/web/default/angular#!/'})
 
         .. Response::
@@ -74,10 +77,19 @@ class ConvertUrl(Resource):
 
         .. Error codes:: 5004 (GoogleShortenUrlAPIError)
         """
-        if request.values.get('long_url'):
-            short_url = url_conversion(request.values['long_url'])
-            data = {'short_url': short_url}
-            return data
-        else:
-            raise InvalidUsage(error_message='No URL given in request',
+        validate_header(request)
+        try:
+            json_data = request.get_json()
+        except:
+            raise InvalidUsage(error_message='Given data in not in json format.')
+        if 'url' not in json_data:
+            raise MissingRequiredField(
+                error_message="Data must be provided as '{url: <value>}'")
+        if not json_data['url']:
+            raise InvalidUsage(error_message='No URL is given.',
                                error_code=InvalidUsage.http_status_code())
+        short_url, error = url_conversion(json_data['url'])
+        if short_url:
+            return {'short_url': short_url}
+        elif error:
+            raise GoogleShortenUrlAPIError(error_message=error)

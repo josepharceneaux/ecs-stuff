@@ -6,6 +6,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies,
 """
 # App Settings
 from sms_campaign_service import init_sms_campaign_app
+
 app = init_sms_campaign_app()
 
 # Application Specific
@@ -17,6 +18,7 @@ from sms_campaign_service.common.tests.conftest import *
 from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.common.models.misc import (UrlConversion, Activity)
+from sms_campaign_service.common.utils.common_functions import JSON_CONTENT_TYPE_HEADER
 from sms_campaign_service.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL)
 from sms_campaign_service.common.models.candidate import (PhoneLabel, CandidatePhone)
 from sms_campaign_service.common.models.smart_list import (SmartList, SmartListCandidate)
@@ -42,8 +44,7 @@ def valid_header(auth_token):
     Returns the header containing access token and content-type to make POST/DELETE requests.
     :param auth_token: fixture to get access token of user
     """
-    return {'Authorization': 'Bearer %s' % auth_token,
-            'content-type': 'application/json'}
+    return {'Authorization': 'Bearer %s' % auth_token}.update(JSON_CONTENT_TYPE_HEADER)
 
 
 @pytest.fixture()
@@ -265,6 +266,7 @@ def candidate_phone_1(request, candidate_first):
 
     def tear_down():
         CandidatePhone.delete(candidate_phone)
+
     request.addfinalizer(tear_down)
     return candidate_phone
 

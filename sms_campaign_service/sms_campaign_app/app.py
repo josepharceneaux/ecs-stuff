@@ -13,8 +13,8 @@
 
 # Initializing App. This line should come before any imports from models
 from sms_campaign_service import init_sms_campaign_app
+app, celery_app= init_sms_campaign_app()
 
-app = init_sms_campaign_app()
 
 # Third Party Imports
 import flask
@@ -26,10 +26,6 @@ from werkzeug.utils import redirect
 from sms_campaign_service import logger
 from sms_campaign_service.utilities import TwilioSMS
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
-from sms_campaign_service.common.models.candidate import Candidate
-from sms_campaign_service.custom_exceptions import MissingRequiredField
-from sms_campaign_service.common.error_handling import ResourceNotFound
-from sms_campaign_service.common.utils.common_functions import find_missing_items
 
 # Imports for Blueprints
 from restful_API.sms_campaign_api import sms_campaign_blueprint

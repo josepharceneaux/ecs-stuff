@@ -22,14 +22,15 @@ from abc import abstractmethod
 
 # Third Party
 from celery import chord
+from flask import current_app
 
 # Application Specific
 from ..models.user import Token
 from ..models.misc import UrlConversion
 from ..models.candidate import Candidate
-from ..error_handling import ForbiddenError, InvalidUsage, ResourceNotFound
 from ..utils.app_rest_urls import CandidateApiUrl, ActivityApiUrl
-from ..utils.common_functions import http_request, find_missing_items
+from ..utils.common_functions import http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER
+from ..error_handling import ForbiddenError, InvalidUsage, ResourceNotFound
 
 
 class CampaignBase(object):
@@ -74,16 +75,24 @@ class CampaignBase(object):
 
     def __init__(self, user_id, *args, **kwargs):
         self.user_id = user_id
-        self.oauth_header = self.get_user_access_token(self.user_id)
+        self.oauth_header = self.get_auth_header(self.user_id)
         self.campaign = None
         self.body_text = None  # This is 'text' to be sent to candidates as part of campaign.
         # Child classes will get this from respective campaign table.
         # e.g. in case of SMS campaign, this is get from "sms_campaign" database table.
         self.smart_list_id = None
-        self.pool_size = None
 
     @staticmethod
-    def get_user_access_token(user_id):
+    def get_auth_header(user_id):
+        """
+        This returns the Auth token associated with current user.
+        We use this access token to communicate with other services, like activity_service to
+        create activity.
+
+        :param user_id: id of user
+        :return: Authorization header
+        :rtype: dict
+        """
         user_token_row = Token.get_by_user_id(user_id)
         user_access_token = user_token_row.access_token
         if user_access_token:
@@ -159,7 +168,8 @@ class CampaignBase(object):
             candidates = [Candidate.get_by_id(_id) for _id in candidate_ids]
             return candidates
         except Exception:
-            #TODO: add logger
+            current_app.logger.exception('get_candidates_from_candidate_service: Error while '
+                                         'fetching candidates for smartlist(id:%s)' % smart_list_id)
             raise
 
     def send_campaign_to_candidates(self, candidates_and_phones):
@@ -177,14 +187,13 @@ class CampaignBase(object):
         **See Also**
         .. see also:: process_send() method in SmsCampaignBase class.
         """
+        # callback function which will be hit after campaign is sent to all candidates
         callback = self.callback_campaign_sent.subtask((self.user_id, self.campaign,
                                                         self.oauth_header, ))
         header = [self.send_campaign_to_candidate.subtask((self, record))
                   for record in candidates_and_phones]
+        # This calls the callback function once all tasks in header have done their execution
         chord(header)(callback)
-        # for each in candidates_and_phones:
-        #     self.send_campaign_to_candidate.apply_async([self, each],
-        #                                                 link=self.callback_campaign_sent.subtask())
 
     @abstractmethod
     def send_campaign_to_candidate(self, candidate_and_phone):
@@ -305,7 +314,7 @@ class CampaignBase(object):
         else:
             raise InvalidUsage(error_message='params should be dictionary.')
 
-        headers['content-type'] = 'application/json'
+        headers.update(JSON_CONTENT_TYPE_HEADER)
         # POST call to activity service to create activity
         url = ActivityApiUrl.CREATE_ACTIVITY
         http_request('POST', url, headers=headers, data=json_data, user_id=user_id)

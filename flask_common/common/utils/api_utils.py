@@ -13,12 +13,15 @@ import json
 # Third Part
 from flask import Response
 
+# Application Specific
+from .common_functions import JSON_CONTENT_TYPE_HEADER
+
 
 class ApiResponse(Response):
     """
     Override default_mimetype to 'application/json' to return proper json api response
     """
-    def __init__(self, response, status=200, content_type='application/json',
+    def __init__(self, response, status=200, content_type=JSON_CONTENT_TYPE_HEADER['content-type'],
                  headers=None):
         if isinstance(response, dict):
             response = json.dumps(response)
