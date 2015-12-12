@@ -1,6 +1,7 @@
 __author__ = 'ufarooqi'
 
 import boto
+import os
 import re
 from flask import current_app as app
 
@@ -8,8 +9,8 @@ DEFAULT_MAIL_SENDER = '"getTalent Web" <no-reply@gettalent.com>'
 
 
 def get_boto_ses_connection():
-    conn = boto.connect_ses(aws_access_key_id=app.config['AWS_ACCESS_KEY_ID'],
-                            aws_secret_access_key=app.config['AWS_SECRET_ACCESS_KEY'])
+    conn = boto.connect_ses(aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
+                            aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'))
     return conn
 
 
