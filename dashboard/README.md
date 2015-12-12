@@ -165,6 +165,14 @@ Below this level you will find various folders that arrange the application's fu
 
     Remove all files from the build and temp folders
 
+- `gulp clean-cache`
+
+    Clear out all caches.
+
+- `gulp clean-icon-font-cache`
+
+    Clear out icon-font cache.
+
 - `gulp clean-images`
 
     Remove all images from the build folder
@@ -182,6 +190,14 @@ Below this level you will find various folders that arrange the application's fu
     Remove all styles from the build folder
 
 ### Fonts and Images
+
+- `gulp icon-font`
+
+    Generate icon fonts from svg source files _IF_ running for first time or there are any added, removed, or modified svg files.
+
+- `gulp build-icon-font`
+
+    Clean the svg icon cache and generate icon font.
 
 - `gulp fonts`
 

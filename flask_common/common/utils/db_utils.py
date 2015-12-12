@@ -1,7 +1,8 @@
 """Utility functions related to database/model code."""
 __author__ = 'erikfarmer'
-
+# Module Specific
 from sqlalchemy.sql.expression import ClauseElement
+from _mysql_exceptions import IntegrityError
 
 
 def get_or_create(session, model, defaults=None, **kwargs):
@@ -22,6 +23,17 @@ def get_or_create(session, model, defaults=None, **kwargs):
         instance = model(**params)
         session.add(instance)
         return instance, True
+
+
+def require_integrity(database_object):
+    def inject_db(func):
+        def wrapped(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except IntegrityError:
+                database_object.session.rollback()
+        return wrapped
+    return inject_db
 
 
 def serialize_queried_sa_obj(obj):

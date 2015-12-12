@@ -1,0 +1,29 @@
+// ---------------------------------------------------
+// Modules / Footer
+// ---------------------------------------------------
+
+.footer {
+  @extend .row--expanded;
+
+  color: $color--lightGray;
+  padding: $padding--small 0;
+  background-color: $color--nearBlack;
+}
+
+.footer__copyright {
+  margin: 0;
+}
+
+.footer--login {
+  @extend .row--expanded;
+
+  color: $color--white;
+  text-align: center;
+  width: 100%;
+  padding: $padding--huge 0;
+
+  @media (min-height: 600px) {
+    position: absolute;
+    bottom: 0;
+  }
+}

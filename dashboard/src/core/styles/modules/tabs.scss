@@ -40,6 +40,31 @@
   color: $color--blue;
 }
 
+//------------
+// Icon Tabs Filters
+//------------
+.tabs__icon-nav {
+  font-size: $font-size--large;
+}
+
+.tabs__icon-nav__link {
+  color: $color--gray;
+  margin-right: $padding--small;
+
+  &:last-of-type {
+    margin-right: 0;
+  }
+
+  &:hover,
+  &.tab-active {
+    color: $color--blue;
+  }
+}
+
+
+//------------
+// Tab Content
+//------------
 .tabs__content {
   display: none;
   float: left;
