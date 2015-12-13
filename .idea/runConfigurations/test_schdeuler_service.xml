@@ -1,13 +1,13 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="py.test in test_scheduler_resume.py" type="tests" factoryName="py.test" folderName="SchedulerServiceTests" singleton="true">
+  <configuration default="false" name="test schdeuler_service" type="tests" factoryName="py.test" singleton="true">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
       <env name="GT_ENVIRONMENT" value="dev" />
     </envs>
-    <option name="SDK_HOME" value="" />
-    <option name="WORKING_DIRECTORY" value="" />
-    <option name="IS_MODULE_SDK" value="true" />
+    <option name="SDK_HOME" value="$USER_HOME$/.pyenv/versions/2.7.9/bin/python" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="IS_MODULE_SDK" value="false" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <module name="talent-flask-services" />
@@ -19,7 +19,7 @@
     <option name="TEST_TYPE" value="TEST_SCRIPT" />
     <option name="PATTERN" value="" />
     <option name="USE_PATTERN" value="false" />
-    <option name="testToRun" value="$PROJECT_DIR$/scheduler_service/tests/api/test_scheduler_resume.py" />
+    <option name="testToRun" value="$PROJECT_DIR$/scheduler_service/tests/api" />
     <option name="keywords" value="" />
     <option name="params" value="" />
     <option name="USE_PARAM" value="false" />

@@ -8,6 +8,9 @@ APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 LOGGING_CONF = os.path.join(APP_ROOT, 'logging.conf')
 logging.config.fileConfig(LOGGING_CONF)
 
+BACKEND_URL = 'redis://localhost:6379'
+REDIS_URL = 'redis://localhost:6379'
+
 # SQL ALCHEMY DB URL
 GT_ENVIRONMENT = os.environ.get('GT_ENVIRONMENT')
 if GT_ENVIRONMENT == 'dev':

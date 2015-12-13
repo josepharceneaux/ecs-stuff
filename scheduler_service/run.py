@@ -10,7 +10,7 @@ import os
 from scheduler_service import init_app
 from scheduler_service.scheduler import scheduler
 
-app = init_app()
+app, celery = init_app()
 
 from scheduler_service.api.scheduler_api import scheduler_blueprint
 
