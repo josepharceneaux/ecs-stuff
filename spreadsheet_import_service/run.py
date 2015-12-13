@@ -1,6 +1,6 @@
 __author__ = 'ufarooqi'
 
-from spreadsheet_import_service.spreadsheet_import_app import app
+from spreadsheet_import_service.app import app
 import os
 
 if __name__ == '__main__':

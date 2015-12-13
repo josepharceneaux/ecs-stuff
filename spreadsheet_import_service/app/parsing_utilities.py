@@ -1,5 +1,17 @@
-__author__ = 'ufarooqi'
+"""
+    This module defines following utilities:
 
+    * Convert Spreadsheet to Table: This utility will convert a spreadsheet file object to JSON Array
+    * Convert CSV to Table: This utility will convert a csv file object to JSON Array
+    * Import Candidates from Spreadsheet: This utility will create candidates from JSON Array of candidate data
+
+"""
+import datetime
+import xlrd
+import csv
+import chardet
+import json
+import requests
 from flask import request, jsonify
 from . import db, logger, app
 from spreadsheet_import_service.common.utils.talent_s3 import *
@@ -24,22 +36,15 @@ def convert_spreadsheet_to_table(spreadsheet_file, filename):
     is_csv = ".csv" in filename
     if is_csv:
         return convert_csv_to_table(spreadsheet_file)
-    import xlrd
 
     book = xlrd.open_workbook(filename=None, file_contents=spreadsheet_file.read())
     first_sheet = book.sheet_by_index(0)
 
     table = []
     for row_index in range(first_sheet.nrows):
-        is_row_empty = True
         cells = first_sheet.row(row_index)  # array of cell objects
-        table_row = []
-        for cell in cells:
-            table_row.append(cell.value)
-            if cell.value:
-                is_row_empty = False
-        if not is_row_empty:
-            table.append(table_row)
+        table.append([cell.value for cell in cells if cell.value])
+    table = [row for row in table if row]
     return table
 
 
@@ -49,8 +54,6 @@ def convert_csv_to_table(csv_file):
     :param csv_file: python file object
     :return: An array containing rows of csv file
     """
-    import csv
-    import chardet
     catalog = None
     new_catalog = []
     try:
@@ -78,18 +81,16 @@ def convert_csv_to_table(csv_file):
                 row_array.append(column.strip(' ').decode(chardet.detect(column.strip(' '))['encoding'] or 'cp1252'))
             if not is_row_empty:
                 csv_table.append(row_array)
+        return csv_table
 
     except Exception as e:
-        csv_table = []
         from spreadsheet_import_service.common.utils.talent_reporting import email_error_to_admins
-
         email_error_to_admins("Error message: %s\nNew catalog: %s\nCatalog: %s" % (e, catalog, new_catalog),
                               "Error importing CSV")
+        raise InvalidUsage(error_message="Error importing csv because %s" % e.message)
 
-    return csv_table
 
-
-def import_from_spreadsheet(*args, **kwargs):
+def import_from_spreadsheet(table, spreadsheet_filename, header_row, source_id=None):
     """
     This function will create new candidates from information of candidates given in a csv file
     :param source_id: Id of candidates source
@@ -99,10 +100,10 @@ def import_from_spreadsheet(*args, **kwargs):
     :return: A dictionary containing number of candidates successfully imported
     :rtype: dict
     """
-    source_id = kwargs.get('source_id')
-    table = kwargs.get('candidates_table') or []
-    spreadsheet_filename = kwargs.get('spreadsheet_filename') or []
-    header_row = kwargs.get('header_row')
+
+    assert table
+    assert spreadsheet_filename
+    assert header_row
 
     user_id = request.user.id
     user = User.query.get(user_id)
@@ -171,8 +172,6 @@ def import_from_spreadsheet(*args, **kwargs):
                     prepare_candidate_data(degrees, 'bullets', [{'major': column}])
                 elif column_name == 'student_year':
                     column = column.lower()
-                    import datetime
-
                     current_year = datetime.datetime.now().year
                     if 'freshman' in column:
                         graduation_year = current_year + 3
@@ -273,7 +272,7 @@ def get_or_create_areas_of_interest(domain_id, include_child_aois=False):
     :rtype: list
     """
     if not domain_id:
-        logger.error("get_or_create_areas_of_interest: domain_id is %s!", domain_id)
+        raise InvalidUsage(error_message="get_or_create_areas_of_interest: domain_id is not provided")
 
     areas = AreaOfInterest.get_domain_areas_of_interest(domain_id) or []
 
@@ -299,10 +298,13 @@ def create_candidates_from_parsed_spreadsheet(candidate_dict):
     :return: A dictionary containing IDs of newly created candidates
     :rtype: dict
     """
-    import json, requests
-    r = requests.post(CandidateApiUrl.CANDIDATES, data=json.dumps({'candidates': [candidate_dict]}),
-                      headers={'Authorization': request.oauth_token})
-    return r.status_code, r.json()
+    try:
+        r = requests.post(CandidateApiUrl.CANDIDATES, data=json.dumps({'candidates': [candidate_dict]}),
+                          headers={'Authorization': request.oauth_token})
+
+        return r.status_code, r.json()
+    except Exception as e:
+        raise InvalidUsage(error_message="Couldn't create candidate from parsed_spreadsheet because %s" % e.message)
 
 
 def prepare_candidate_data(data_array, key, value):

@@ -1,5 +1,9 @@
-__author__ = 'ufarooqi'
+"""
+    This module has utilities which perform following operations:
 
+        * Generate test data for testing spreadsheet import service
+        * Hit endpoints of spreadsheet import service with appropriate parameters and request body
+"""
 import uuid
 import csv
 import os
@@ -8,12 +12,14 @@ import StringIO
 import requests
 from spreadsheet_import_service.common.utils.talent_s3 import upload_to_filepicker_s3
 
-SPREADSHEET_IMPORT_ENDPOINT = 'http://127.0.0.1:8009/v1/parse_spreadsheet/%s'
+SPREADSHEET_IMPORT_HOST = 'http://127.0.0.1:8009/%s'
+SPREADSHEET_IMPORT_ENDPOINT = SPREADSHEET_IMPORT_HOST % 'v1/parse_spreadsheet/%s'
 CONVERT_TO_TABLE_ENDPOINT = SPREADSHEET_IMPORT_ENDPOINT % 'convert_to_table'
 IMPORT_FROM_TABLE_ENDPOINT = SPREADSHEET_IMPORT_ENDPOINT % 'import_from_table'
+HEALTH_ENDPOINT = SPREADSHEET_IMPORT_HOST % 'healthcheck'
 
 
-def import_spreadsheet_candidates(access_token, candidate_data=[], spreadsheet_file_name=None, is_csv=True,
+def import_spreadsheet_candidates(access_token, candidate_data=None, spreadsheet_file_name=None, is_csv=True,
                                   import_candidates=False):
 
     header_row = ['candidate.formattedName', 'candidate_email.address', 'candidate_phone.value',

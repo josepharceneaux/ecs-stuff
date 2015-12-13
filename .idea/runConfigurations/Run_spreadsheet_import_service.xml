@@ -3,11 +3,11 @@
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
+      <env name="PYTHONUNBUFFERED" value="1" />
       <env name="AWS_SECRET_ACCESS_KEY" value="tHv3P1nrC4pvO8WxfmtJgpjyvSBc8ox83E+xMpFC" />
       <env name="FILEPICKER_BUCKET_NAME" value="gettalent-filepicker" />
       <env name="TCS_BUCKET_NAME" value="tcs-local-ufarooqi" />
       <env name="TCS_BUCKET_REGION" value="us-west-1" />
-      <env name="PYTHONUNBUFFERED" value="1" />
       <env name="GT_ENVIRONMENT" value="dev" />
       <env name="AWS_ACCESS_KEY_ID" value="AKIAI3422SZ6SL46EYBQ" />
     </envs>

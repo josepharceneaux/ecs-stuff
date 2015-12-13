@@ -21,8 +21,14 @@ def get_s3_bucket_and_conn():
     :rtype: (Bucket, S3Connection)
     """
     c = get_s3_conn()
-    b = c.get_bucket(TCS_BUCKET_NAME, validate=False)
-    return b, c
+    try:
+        b = c.get_bucket(TCS_BUCKET_NAME, validate=False)
+        if not b:
+            raise InvalidUsage(error_message="Bucket '%s' doesn't exist in S3" % TCS_BUCKET_NAME)
+        else:
+            return b, c
+    except Exception as e:
+        raise InvalidUsage(error_message="Couldn't get bucket '%s' because %s" % (TCS_BUCKET_NAME, e.message))
 
 
 def get_s3_filepicker_bucket_and_conn():
@@ -31,8 +37,14 @@ def get_s3_filepicker_bucket_and_conn():
     :rtype: (Bucket, S3Connection)
     """
     c = get_s3_conn('us-west-1')
-    b = c.get_bucket(FILEPICKER_BUCKET_NAME, validate=False)
-    return b, c
+    try:
+        b = c.get_bucket(FILEPICKER_BUCKET_NAME, validate=False)
+        if not b:
+            raise InvalidUsage(error_message="Bucket '%s' doesn't exist in S3" % FILEPICKER_BUCKET_NAME)
+        else:
+            return b, c
+    except Exception as e:
+        raise InvalidUsage(error_message="Couldn't get bucket '%s' because %s" % (FILEPICKER_BUCKET_NAME, e.message))
 
 
 def download_file(bucket, key_name):
@@ -63,12 +75,19 @@ def get_s3_conn(region=None):
     aws_secret_access_key = AWS_SECRET_ACCESS_KEY
     region = region or TCS_BUCKET_REGION
 
-    connection = boto.s3.connect_to_region(region,
-                                           aws_access_key_id=aws_access_key_id,
-                                           aws_secret_access_key=aws_secret_access_key,
-                                           calling_format=OrdinaryCallingFormat())
+    try:
+        connection = boto.s3.connect_to_region(region,
+                                               aws_access_key_id=aws_access_key_id,
+                                               aws_secret_access_key=aws_secret_access_key,
+                                               calling_format=OrdinaryCallingFormat())
 
-    return connection
+        if not connection:
+            raise InvalidUsage(error_message="Connection to S3 couldn't be established")
+        else:
+            return connection
+
+    except Exception as e:
+        raise InvalidUsage(error_message="Connection to S3 couldn't be established because: %s" % e.message)
 
 
 def get_s3_url(folder_path, name):

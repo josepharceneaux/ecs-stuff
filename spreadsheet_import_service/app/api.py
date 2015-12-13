@@ -1,6 +1,8 @@
-__author__ = 'ufarooqi'
+"""
+    This module defines endpoints to create candidates and get candidate
+    data from spreadsheet
+"""
 
-import json
 from flask import Blueprint, jsonify
 from flask import request
 from flask.ext.cors import CORS
@@ -18,6 +20,8 @@ CORS(mod, resources={
         'allow_headers': ['Content-Type', 'Authorization']
     }
 })
+
+HEADER_ROW_PARAMS = ['first_name', 'last_name', 'email']
 
 
 @mod.route('/parse_spreadsheet/convert_to_table/', methods=['GET'])
@@ -81,7 +85,7 @@ def import_from_table():
     delete_from_filepicker_s3(file_picker_key)
 
     # Check if first row of spreadsheet was header
-    if 'first_name' in candidates_table[0] or 'last_name' in candidates_table[0] or 'email' in candidates_table[0]:
+    if any(param in candidates_table[0] for param in HEADER_ROW_PARAMS):
         candidates_table.pop(0)
 
     file_obj.seek(0)
@@ -89,10 +93,7 @@ def import_from_table():
     url, key = upload_to_s3(file_obj.read(), folder_path="CSVResumes", name=file_picker_key, public=False)
     logger.info("import_from_table: Uploaded CSV of user ID %s to %s", user_id, url)
 
-    import_from_spreadsheet_kwargs = dict(header_row=header_row,
-                                          source_id=source_id,
-                                          spreadsheet_filename=file_picker_key,
-                                          candidates_table=candidates_table)
+    file_obj.close()
 
     # TODO: Integrate scheduler with this API
-    return import_from_spreadsheet(**import_from_spreadsheet_kwargs)
+    return import_from_spreadsheet(candidates_table, file_picker_key, header_row, source_id)

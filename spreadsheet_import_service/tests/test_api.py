@@ -1,6 +1,12 @@
-__author__ = 'ufarooqi'
+"""
+    This test module defines functions to test spreadsheet_import_service
 
-from spreadsheet_import_service.spreadsheet_import_app import app
+        * test_convert_spreadsheet_to_table: It'll test functionality of '/parse_spreadsheet/convert_to_table' endpoint
+        * test_import_candidates_from_spreadsheet: It'll test functionality of '/parse_spreadsheet/import_from_table' endpoint
+        * test_health_check: It'll test either the service is up
+"""
+
+from spreadsheet_import_service.app import app
 from spreadsheet_import_service.common.tests.conftest import *
 from spreadsheet_import_service.common.utils.common_functions import add_role_to_test_user
 from common_functions import *
@@ -52,6 +58,5 @@ def test_import_candidates_from_spreadsheet(access_token_first, user_first):
 
 
 def test_health_check():
-    import requests
-    response = requests.get('http://127.0.0.1:8009/healthcheck')
+    response = requests.get(HEALTH_ENDPOINT)
     assert response.status_code == 200
