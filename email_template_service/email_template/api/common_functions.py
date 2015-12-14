@@ -4,7 +4,8 @@ from email_template_service.common.models.misc import EmailTemplateFolder, UserE
 from email_template_service.tests.helpers import post_to_email_template_resource, response_info
 
 
-def create_email_template(token, user_id, template_name, body_html, body_text, is_immutable="1", folder_id=None):
+def create_email_template(token, user_id, template_name, body_html, body_text, is_immutable="1",
+                          folder_id=None, domain_id=None):
     """
     Creates a campaign template with params provided
 
@@ -18,6 +19,7 @@ def create_email_template(token, user_id, template_name, body_html, body_text, i
     """
     data = dict(
         name=template_name,
+        email_template_folder_id=folder_id,
         user_id=user_id,
         type=0,
         email_body_html=body_html,
@@ -25,8 +27,7 @@ def create_email_template(token, user_id, template_name, body_html, body_text, i
         is_immutable=is_immutable
     )
 
-    create_resp = post_to_email_template_resource(token, data=data)
+    create_resp = post_to_email_template_resource(token, data=data, domain_id=domain_id)
     print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
-
-    return response_info['id']
-
+    json_resonse = create_resp.json()['template_id'][0]
+    return json_resonse['id']
