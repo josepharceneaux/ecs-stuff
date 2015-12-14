@@ -4,9 +4,7 @@
     <option name="PARENT_ENVS" value="true" />
     <envs>
       <env name="" value="" />
-      <env name="CLOUD_SEARCH_DOMAIN_NAME" value="gettalent-jitesh" />
       <env name="AWS_SECRET_ACCESS_KEY" value="tHv3P1nrC4pvO8WxfmtJgpjyvSBc8ox83E+xMpFC" />
-      <env name="CLOUD_SEARCH_REGION" value="ap-southeast-1" />
       <env name="AWS_ACCESS_KEY" value="AKIAI3422SZ6SL46EYBQ" />
       <env name="GT_ENVIRONMENT" value="dev" />
     </envs>
