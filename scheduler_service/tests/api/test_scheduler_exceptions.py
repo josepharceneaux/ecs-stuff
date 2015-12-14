@@ -84,17 +84,11 @@ class TestSchedulerExceptions:
         :return:
         """
         temp_job_config = job_config.copy()
-        temp_job_config['frequency'] = '{ "seconds": "abc" }'
+        temp_job_config['frequency'] = 'abc'
         response = requests.post(APP_URL + '/tasks/', data=json.dumps(temp_job_config),
                                  headers=auth_header)
 
-        assert response.status_code == 500 and response.json()['error']['code'] == SchedulerServiceApiException.CODE_FIELD_REQUIRED
-
-        temp_job_config['frequency'] = '{ "xyz": "" }'
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(temp_job_config),
-                                 headers=auth_header)
-
-        assert response.status_code == 500 and response.json()['error']['code'] == SchedulerServiceApiException.CODE_FIELD_REQUIRED
+        assert response.status_code == 400
 
         response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
                                  headers=auth_header)

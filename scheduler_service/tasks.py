@@ -1,7 +1,6 @@
 """
-Celery tasks are defined here. It will be a separate celery process which is called by
-run_job to send POST request to a URL. If task is successfully sent then it will return
-SUCCESS status and if request is failed then it will show FAILED status.
+Celery tasks are defined here. It will be a separate celery process.
+These methods are called by run_job method asynchronously
 
 - Running celery using commandline (scheduler_service directory) =>
 
@@ -26,9 +25,9 @@ import requests
 @celery.task(name="send_request")
 def send_request(access_token, url, content_type, kwargs):
     """
-    TODO: Add some description about this method and sample data / example
+    This method will be called by run_job asynchronously
     :param access_token: authorization token for user
-    :param url: the url where to send post requests
+    :param url: the url where to send post request
     :param content_type: the content type i.e json or xml
     :param kwargs: post data i.e campaign name, smartlist ids
     :return:

@@ -92,7 +92,7 @@ def schedule_job(data, user_id, access_token):
 
     if not is_valid_url(job_config['url']):
         logger.exception("schedule_job: URL is not valid")
-        raise InvalidUsage("url is not valid")
+        raise InvalidUsage("URL is not valid")
 
     trigger = str(job_config['task_type']).lower().strip()
 
