@@ -3,20 +3,20 @@ import math
 import os
 import time
 import re
-from copy import deepcopy
-from datetime import datetime
-
 import boto
 import boto.exception
 import simplejson
-from flask import request
 
+from copy import deepcopy
+from datetime import datetime
+from flask import request
+from flask import current_app
 from candidate_service.candidate_app import db, logger
-from candidate_service.config import GT_ENVIRONMENT
 from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateStatus
-from candidate_service.common.models.user import User
+from candidate_service.common.models.user import User, Domain
 from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.error_handling import InternalServerError
+from candidate_service.common import talent_property_manager
 from flask.ext.common.common.geo_services.geo_coordinates import get_geocoordinates_bounding
 
 API_VERSION = "2013-01-01"
@@ -132,8 +132,8 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 
-CLOUD_SEARCH_REGION = os.environ.get('CLOUD_SEARCH_REGION')
-CLOUD_SEARCH_DOMAIN_NAME = os.environ.get('CLOUD_SEARCH_DOMAIN_NAME')
+CLOUD_SEARCH_REGION = talent_property_manager.get_cloudsearch_region()
+CLOUD_SEARCH_DOMAIN_NAME = talent_property_manager.get_cloudsearch_domain_name()
 
 filter_queries = []
 search_queries = []
@@ -217,7 +217,7 @@ def delete_index_fields():
     Deletes above defined index fields.
     :return:
     """
-    if GT_ENVIRONMENT is not 'dev':
+    if current_app.config['GT_ENVIRONMENT'] is not 'dev':
         raise Exception("Can't call delete_index_fields() in prod! Use the console instead")
     conn = get_cloud_search_connection()
     for index_field_name in INDEX_FIELD_NAME_TO_OPTIONS:
@@ -384,45 +384,45 @@ def upload_candidate_documents(candidate_ids):
 
 def upload_candidate_documents_in_domain(domain_id):
     """
-    Upload the candidate documents, domain specific
-    :param domain_id:
-    :return:
+    Upload all the candidates from given domain to cloudsearch
+    :param domain_id: Domain id of which all the candidates needs to be uploaded to cloudsearch
+    :return: count of total uploaded candidates
     """
 
-    candidate = Candidate.query.join(User).filter(Candidate.user_id == User.id,
-                                                              User.domain_id == domain_id)
-    candidates = [candidate.id, candidate.user_id]
-    candidate_ids = [candidate['id'] for candidate in candidates]
-    logger.info("Uploading %s candidates of domain %s", len(candidate_ids), domain_id)
+    candidates = Candidate.query.with_entities(Candidate.id).join(User).filter(Candidate.user_id == User.id,
+                                                                               User.domain_id == domain_id).all()
+    candidate_ids = [candidate.id for candidate in candidates]
+    logger.info("Uploading %s candidates of domain id %s", len(candidate_ids), domain_id)
     return upload_candidate_documents(candidate_ids)
 
 
-def upload_candidate_documents_of_user(user):
+def upload_candidate_documents_of_user(user_id):
     """
-    Upload candidate documents, user specific
-    :param user:
-    :return:
+    Upload all candidates belonging to given user
+    :param user_id: Id of user whose candidates needs to be uploaded
+    :return: count of total uploaded candidates
     """
-    candidate = Candidate.query.join(User).filter_by(Candidate.user_id == User.id)
-    candidates = [candidate.id, candidate.user_id]
-    candidate_ids = [candidate['id'] for candidate in candidates]
-    logger.info("Uploading %s candidates of user's domain %s", len(candidate_ids), user.domainId)
+    candidates = Candidate.query.with_entities(Candidate.id).filter_by(user_id=user_id).all()
+    candidate_ids = [candidate.id for candidate in candidates]
+    logger.info("Uploading %s candidates of user (user id = %s)", len(candidate_ids), user_id)
     return upload_candidate_documents(candidate_ids=candidate_ids)
 
 
 def upload_all_candidate_documents():
     """
-    upload all the candidate documents of domain
-    :return:
+    Upload all the candidates present in system to cloudsearch.
+    :return: total number of candidates uploaded
     """
     adds = 0
-    for domain in db(db.domain.id > 0).select().as_list():
-        logger.info("Uploading all candidates of domain %s", domain['id'])
-        adds += upload_candidate_documents_in_domain(domain['id'])
+    domains = Domain.query.with_entities(Domain.id).all()
+    for domain in domains:
+        logger.info("Uploading all candidates of domain %s", domain.id)
+        adds += upload_candidate_documents_in_domain(domain.id)
     return adds
 
 
 def delete_candidate_documents(candidate_ids):
+    """Delete specified candidate's documents from cloudsearch"""
     if isinstance(candidate_ids, int):
         candidate_ids = [candidate_ids]
     action_dicts = [dict(type='delete', id=candidate_id) for candidate_id in candidate_ids]
@@ -439,11 +439,11 @@ def delete_all_candidate_documents():
     It only works on dev domain (to avoid the function hitting accidentally on production)
 
     """
-    if GT_ENVIRONMENT is not 'IS_DEV':
+    if current_app.config('GT_ENVIRONMENT') is not 'dev':
         raise Exception("Can't call delete_all_candidate_documents() in prod! Use the console instead")
 
     # Get all candidate ids by searching for everything except a nonsense string
-    params = {'ret': "_no_fields", 'query': "-12421412421412", 'query_parser': 'lucene', "cursor": "initial",
+    params = {'ret': "_no_fields", 'query': "-12421412421412iowejdsklxc", 'query_parser': 'lucene', "cursor": "initial",
               "size": 5000}
 
     search_service = _cloud_search_domain_connection()
@@ -453,13 +453,11 @@ def delete_all_candidate_documents():
         # Get the next batch of candidates to delete
         results = search_service.search(**params)
         matches = results['hits']['hit']
-        candidate_ids_to_delete = []
-        for item in matches:
-            candidate_ids_to_delete.extend(item.values())
+        candidate_ids_to_delete = [item['id'] for item in matches]
 
         # Now delete them
         logger.debug("delete_all_candidate_documents: Deleting %s candidate documents",
-                                 len(candidate_ids_to_delete))
+                     len(candidate_ids_to_delete))
         num_deleted = delete_candidate_documents(candidate_ids_to_delete)
         if not num_deleted:
             no_more_candidates = True
@@ -509,8 +507,9 @@ def _send_batch_request(action_dicts):
                 result = None
             document_service_connection.clear_sdf()
             max_possible_request_size_bytes = 2
-            if result.errors:
-                logger.error("Received errors committing action_dicts to CloudSearch: %s", result.errors)
+            if result:
+                if result.errors:
+                    logger.error("Received errors committing action_dicts to CloudSearch: %s", result.errors)
                 adds += result.adds
                 deletes += result.deletes
 
@@ -578,8 +577,6 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
         if request_vars.get('id'):
             # If we want to check if a certain candidate ID is in a smartlist
             query_string = "(and id:%s %s)" % (request_vars['id'], query_string)
-        else:
-            query_string = "( %s)" % query_string
 
     params = dict(query=query_string, sort=sort, start=offset, size=search_limit)
     params['query_parser'] = 'lucene'
@@ -649,11 +646,6 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     if count_only:
         return dict(total_found=total_found, candidate_ids=[])
 
-    # candidate_ids = [match.get('id') for match in matches]
-    #
-    # if candidate_ids_only:
-    #     return dict(total_found=total_found, candidate_ids=candidate_ids)
-
     facets = get_faceting_information(results.get('facets'))
 
     # Update facets
@@ -665,27 +657,15 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
         _kaiser_custom_fields_facets(request_vars, facets)
 
     # Get max score
-    max_score = 1
-    # if get_percentage_match:  # TODO fix this
-    #     max_score = _get_max_score(params, search_service)
+    max_score = _get_max_score(params, search_service)
 
-    percentage_matches = []
-
-    # search_data = dict(descriptions=matches, facets=facets, error=dict(), request_vars=request_vars, mode='search')
     max_pages = int(math.ceil(total_found / float(search_limit))) if search_limit else 1
     fields_data = [data['fields'] for data in matches]
-    # if request_vars.get('fields'):
-    #     return _get_candidates_fields_with_given_filters(fields_data)
-    # else:
-    # search_results = dict()
     search_results['total_found'] = total_found
     search_results['candidates'] = fields_data
-    # search_results['candidate_ids'] = candidate_ids
     search_results['max_score'] = max_score
-    # search_results['percentage_matches'] = percentage_matches
     search_results['max_pages'] = max_pages
     search_results['facets'] = facets
-    # search_results['search_data'] = search_data
     # for values in search_results['candidates']:
     #     if 'email' in values:
     #         values['email'] = {"address": values['email']}
@@ -955,18 +935,12 @@ def _get_search_queries(request_vars):
     :return:
     """
     # If query is array, separate values by spaces
-    if request_vars.get('q') and not isinstance(request_vars['q'], basestring):
-        q = ' '.join(request_vars['q'])
+    query = request_vars.get('query')
+    if query and not isinstance(query, basestring):
+        q = ' '.join(query)
         search_queries.append(q)
-    elif request_vars.get('q'):
-        q = request_vars.get('q')
-        search_queries.append(q)
-    elif request_vars.get('query') and not isinstance(request_vars['query'], basestring):
-        q = ' '.join(request_vars['query'])
-        search_queries.append(q)
-    elif request_vars.get('query'):
-        q = request_vars.get('query')
-        search_queries.append(q)
+    elif query:
+        search_queries.append(query)
 
     return search_queries
 
@@ -1010,9 +984,6 @@ def _get_candidates_by_filter_date(request_vars):
     """
     add_time_from = request_vars.get('date_from')
     add_time_to = request_vars.get('date_to')
-
-    add_time_from = datetime.strptime(add_time_from, '%m/%d/%Y').isoformat() + 'Z' if add_time_from else None
-    add_time_to = datetime.strptime(add_time_to, '%m/%d/%Y').isoformat() + 'Z' if add_time_to else None
 
     if add_time_from or add_time_to:
         add_time_from = "['%s'" % add_time_from if add_time_from else "{"  # following cloudsearch syntax
@@ -1125,11 +1096,11 @@ def _kaiser_custom_fields_facets(request_vars, facets):
 
 def _get_max_score(params, search_service):
     """
-    Get maximum relevence score from cloudsearch with _score sorting and first result will contain the max_score.
+    Get maximum relevance score from cloudsearch with _score sorting and first result will contain the max_score.
     For performance optimization, this function is using size 1 and only _score will be returned
     :param params: same search_params as of the actual query
     :param search_service: cloudsearch search_service object.
-    :return: Max relevence score
+    :return: Max relevance score
     """
     default_sorting = "%s %s" % (DEFAULT_SORT_FIELD, DEFAULT_SORT_ORDER)
     params['sort'] = default_sorting

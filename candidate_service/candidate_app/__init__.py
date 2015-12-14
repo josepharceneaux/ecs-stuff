@@ -6,8 +6,8 @@ from healthcheck import HealthCheck
 app = Flask(__name__)
 print "Running app: %s" % app
 
-from candidate_service import config
-app.config.from_object(config)
+from candidate_service.common import common_config
+app.config.from_object(common_config)
 
 logger = app.config['LOGGER']
 
