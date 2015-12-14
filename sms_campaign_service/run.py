@@ -1,7 +1,6 @@
 """Run Sms Campaign Service APP"""
-from sms_campaign_service.sms_campaign_app.app import app
-
 import os
+from sms_campaign_service.sms_campaign_app.app import app
 
 if __name__ == '__main__':
     # TODO Have to remove this, only here for testing purposes
