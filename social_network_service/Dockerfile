@@ -2,88 +2,35 @@
 # Dockerfile to build GetTalent Social Network Service
 ############################################################
 
-# Set the base image to Ubuntu
-from ubuntu:14.04
-RUN rm /bin/sh && ln -s /bin/bash /bin/sh
+FROM gettalent/base-service-container:latest
 
-# File Author / Maintainer
-MAINTAINER Maintaner Basit/Zohaib
+# Add social network service stuff
+WORKDIR /root/base_service_container
+ADD . social_network_service
 
-# Add the application resources URL
-RUN echo "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc) main" >> /etc/apt/sources.list
-RUN apt-get update
+# Use appropriate tag name according to flask app
+RUN sed -i -e 's/TAG/SocialNetworkService/g' /etc/syslog-ng/syslog-ng.conf
 
-# Install basic applications
-RUN apt-get update && apt-get install -y \
-    curl \
-    git \
-    nano \
-    wget \
-    build-essential \
-    libssl-dev \
-    gcc \
-    make \
-    zlib1g-dev \
-    libbz2-dev \
-    libreadline-dev \
-    libsqlite3-dev
+WORKDIR /root/base_service_container/social_network_service
 
-# Install Python and Basic Python Tools
-RUN apt-get install -y \
-    python \
-    python-dev \
-    python-distribute \
-    python-pip \
-    python-setuptools
+# Replace FLASK_APP_NAME with SocialNetworkService in newrelic.ini
+RUN sed -i -e 's/FLASK_APP_NAME/SocialNetworkService/g' newrelic.ini
 
-# Install Nginx
-RUN apt-get install -y software-properties-common \
-    python-software-properties
-RUN add-apt-repository -y ppa:nginx/stable
-RUN apt-get update
-RUN apt-get -y upgrade
-RUN apt-get install -y nginx
-
-# Install python pyenv
-RUN curl -L https://raw.github.com/yyuu/pyenv-installer/master/bin/pyenv-installer | bash
-ENV HOME /root
-ENV PYENV_ROOT $HOME/.pyenv
-ENV PATH $PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH
-
-# Install Python
-RUN pyenv install 2.7.9
-RUN pyenv global 2.7.9
-
-# Install UWSGI
-RUN pip install uwsgi==2.0.11.1
-
-# Install MySQL
-RUN apt-get install -y mysql-server libmysqlclient-dev
-
-# Copy source code to Dock Container
-RUN mkdir /root/event-service
-RUN mkdir /root/event-service/EventService
-RUN mkdir /var/log/uwsgi
-ADD . /root/event-service/EventService/
-
-# Install Requirements
-RUN pip install -r /root/event-service/EventService/requirements.txt
-
-# Set DB connection string
-ENV DB_STRING mysql://talent_web:s!web976892@devdb.gettalent.com/talent_staging
-ENV ENVIRONMENT Staging
-# Configure Nginx
-RUN rm /etc/nginx/sites-enabled/default
-RUN ln -s /root/event-service/EventService/talent-nginx.conf /etc/nginx/conf.d/
-
-# Expose ports
 EXPOSE 80
 
-# Set the default directory where CMD will execute
-WORKDIR /root/event-service/EventService/
+# Set DB connection string
+ENV DB_STRING mysql://talent_web:s!web976892@livedb.gettalent.com/talent_core
 
-# Set the default command to execute
+# Set PYTHON PATH
+ENV PYTHONPATH ../
+
 CMD\
     eval "$(pyenv init -)" && \
+
     /etc/init.d/nginx restart && \
-    uwsgi --env GT_ENVIRONMENT=$GT_ENVIRONMENT --env DB_STRING=$DB_STRING --ini talent-uwsgi.ini
+
+    /etc/init.d/syslog-ng restart && \
+
+    export NEW_RELIC_ENVIRONMENT=$GT_ENVIRONMENT && export NEW_RELIC_CONFIG_FILE=newrelic.ini && \
+
+    newrelic-admin run-program uwsgi --env GT_ENVIRONMENT=$GT_ENVIRONMENT --env DB_STRING=$DB_STRING --ini ./talent-uwsgi.ini
