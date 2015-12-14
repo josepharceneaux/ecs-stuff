@@ -2,15 +2,6 @@
 // Modules / View
 // ---------------------------------------------------
 
-.app__wrapper,
-.app__root,
-.app__content,
-.view__wrapper {
-    display: table;
-    width: 100%;
-    height: 100%;
-}
-
 .view {}
 .view--login {
   @extend .view;
@@ -19,7 +10,7 @@
   width: 100%;
   height: 100%;
   background-color: $color--blue;
-  background-image: url('../images/backgrounds/login-peaks.png');
+  background-image: url('../img/backgrounds/login-peaks.png');
   background-position: bottom;
   background-size: cover;
 }

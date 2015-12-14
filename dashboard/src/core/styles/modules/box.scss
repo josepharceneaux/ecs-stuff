@@ -3,6 +3,7 @@
 // ---------------------------------------------------
 
 .box {
+  @include inc--align--clearfix;
   padding: $padding--normal;
   background-color: $color--white;
   border-radius: $border-radius--container;
@@ -87,7 +88,7 @@
 }
 
 .box--person {
-  background-image: url('../images/backgrounds/typical-candidate.svg');
+  background-image: url(../img/backgrounds/typical-candidate.svg);
   background-position: 120% -10%;
   background-repeat: no-repeat;
 }
