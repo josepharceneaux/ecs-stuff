@@ -29,11 +29,11 @@ It has delete_sms_campaign() function to delete only that campaign
 from datetime import datetime
 
 # Application Specific
-from sms_campaign_service import logger
+from sms_campaign_service import logger, db
 from sms_campaign_service.common.common_config import IS_DEV
-from sms_campaign_service.sms_campaign_app.app import celery_app
 from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.user import (UserPhone, User)
+from sms_campaign_service.sms_campaign_app.app import celery_app, app
 from sms_campaign_service.common.utils.campaign_utils import CampaignBase
 from sms_campaign_service.utilities import (TwilioSMS, search_urls_in_text)
 from sms_campaign_service.common.models.candidate import (PhoneLabel, Candidate, CandidatePhone)
@@ -581,6 +581,12 @@ class SmsCampaignBase(CampaignBase):
         else:
             logger.error('callback_campaign_sent: Result is not a list')
 
+    @staticmethod
+    @celery_app.task(name='celery_error')
+    def celery_error(error):
+        db.session.rollback()
+        logger.error('celery_error: %s' % error)
+
     def process_urls_in_sms_body_text(self, candidate_id):
         """
         - Once we have the body text of SMS to be sent via SMS campaign,
@@ -624,7 +630,8 @@ class SmsCampaignBase(CampaignBase):
                                                                       url_conversion_id,
                                                                       candidate_id)
             # Use Google's API to shorten the long Url
-            short_url = url_conversion(long_url)
+            with app.app_context():
+                short_url, _ = url_conversion(long_url)
             # update the source_url in "url_conversion" record
             self.create_or_update_url_conversion(url_conversion_id=url_conversion_id,
                                                  source_url=long_url)
@@ -1003,7 +1010,7 @@ class SmsCampaignBase(CampaignBase):
     def process_candidate_reply(cls, reply_data):
         """
         - When candidate replies to user'phone number, we do the following at our App's
-            endpoint '/sms_receive'
+            endpoint '/receive'
 
             1- Gets "user_phone" record
             2- Gets "candidate_phone" record
@@ -1108,7 +1115,7 @@ class SmsCampaignBase(CampaignBase):
         params = {'candidate_name': candidate.first_name + ' ' + candidate.last_name,
                   'reply_text': sms_campaign_reply.reply_body_text,
                   'campaign_name': campaign.name}
-        user_access_token = cls.get_auth_header(user_id)
+        user_access_token = cls.get_authorization_header(user_id)
         cls.create_activity(user_id,
                             type_=CAMPAIGN_SMS_REPLY,
                             source_id=sms_campaign_reply.id,

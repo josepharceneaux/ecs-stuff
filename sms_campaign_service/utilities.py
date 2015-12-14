@@ -21,6 +21,7 @@ from twilio.rest import TwilioRestClient
 
 # Application Specific
 from sms_campaign_service import logger
+from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
 from sms_campaign_service.custom_exceptions import TwilioAPIError
 from sms_campaign_service.sms_campaign_app_constants import TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN
 
@@ -36,7 +37,8 @@ class TwilioSMS(object):
         self.phone_type = 'local'
         self.sms_enabled = True
         # self.sms_call_back_url = 'http://demo.twilio.com/docs/sms.xml'
-        self.sms_call_back_url = 'http://74cf4bd2.ngrok.io/sms_receive'
+        self.sms_call_back_url = SmsCampaignApiUrl.SMS_RECEIVE
+        # self.sms_call_back_url = 'http://74cf4bd2.ngrok.io/v1/receive'
         self.sms_method = 'POST'
 
     def send_sms(self, body_text=None, receiver_phone=None, sender_phone=None):

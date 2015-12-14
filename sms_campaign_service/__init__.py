@@ -6,7 +6,7 @@ For Celery, Script runs as separate process with celery command
 
  Run the following command to start celery worker:
 
-    $ celery -A sms_campaign_service.modules.celery_config.celery_app worker --concurrency=4 --loglevel=info
+    $ celery -A sms_campaign_service.sms_campaign_app.app.celery_config.celery_app worker --concurrency=4 --loglevel=info
 
 """
 
@@ -31,7 +31,7 @@ logger = flask_app.config['LOGGER']
 health = HealthCheck(flask_app, "/healthcheck")
 
 
-def init_sms_campaign_app():
+def init_sms_campaign_app_and_celery_app():
     """
     Call this method at the start of app
     :return:

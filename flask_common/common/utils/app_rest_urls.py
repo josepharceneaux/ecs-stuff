@@ -9,9 +9,17 @@ TALENT_DOMAIN = '.gettalent.com'
 QA_EXTENSION = '-webdev'
 
 
-def _base_api_url(service_name, port_number):
+def _base_api_url(service_name, port_number, api_version=None):
     """
-    This function gives the Base API Url depending on the environment variable
+    This function gives the Base API Url depending on the environment variable.
+    If api_version is provided, it also appends the version of API.
+
+    e.g. In case of auth_service (for dev) we'll get
+
+            http://127.0.0.1:8001 in case of no api_version is provided
+        and
+            http://127.0.0.1:8001/v1 in case of api_version is provided.
+
     :param service_name: Name of service
     :param port_number: Port number of service
     :type service_name: str
@@ -19,7 +27,10 @@ def _base_api_url(service_name, port_number):
     :return:
     """
     if GT_ENVIRONMENT in ['dev', 'circle']:
-        return LOCAL_HOST + ':' + port_number
+        if api_version:
+            return LOCAL_HOST + ':' + port_number + api_version
+        else:
+            return LOCAL_HOST + ':' + port_number
     elif GT_ENVIRONMENT == 'qa':
         return service_name + QA_EXTENSION + TALENT_DOMAIN
     elif GT_ENVIRONMENT == 'prod':
@@ -28,12 +39,14 @@ def _base_api_url(service_name, port_number):
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly")
 
 
-class GTApps(object):
-    # TODO COMMENT
+class GTApis(object):
+    """
+    This class contains the getTalent flask micro services' name and respective port numbers.
+    """
     def __init__(self):
         pass
     
-    # Port Numbers of micro services
+    # Port Numbers of flask micro services
     AUTH_SERVICE_PORT = '8001'
     ACTIVITY_SERVICE_PORT = '8002'
     RESUME_SERVICE_PORT = '8003'
@@ -44,7 +57,7 @@ class GTApps(object):
     SMS_CAMPAIGN_SERVICE_PORT = '8008'
     SCHEDULER_CAMPAIGN_SERVICE_PORT = '8009'
     
-    # Names of micro services
+    # Names of flask micro services
     AUTH_SERVICE_NAME = 'auth-service'
     ACTIVITY_SERVICE_NAME = 'activity-service'
     RESUME_SERVICE_NAME = 'resume-service'
@@ -56,81 +69,92 @@ class GTApps(object):
     SCHEDULER_CAMPAIGN_SERVICE_NAME = 'scheduler-service'
 
 
-class AuthApiUrl:
+class AuthApiUrl(object):
     def __init__(self):
         pass
 
-    AUTH_API_URL = _base_api_url(GTApps.AUTH_SERVICE_NAME,
-                                 GTApps.AUTH_SERVICE_PORT)
+    AUTH_API_URL = _base_api_url(GTApis.AUTH_SERVICE_NAME,
+                                 GTApis.AUTH_SERVICE_PORT)
+    OAUTH_ENDPOINT = AUTH_API_URL + '/%s'
+    TOKEN_URL = OAUTH_ENDPOINT % 'oauth2/token'
 
 
-class ActivityApiUrl:
+class ActivityApiUrl(object):
     def __init__(self):
         pass
 
-    ACTIVITY_API_URL = _base_api_url(GTApps.ACTIVITY_SERVICE_NAME,
-                                     GTApps.ACTIVITY_SERVICE_PORT)
+    ACTIVITY_API_URL = _base_api_url(GTApis.ACTIVITY_SERVICE_NAME,
+                                     GTApis.ACTIVITY_SERVICE_PORT)
     CREATE_ACTIVITY = ACTIVITY_API_URL + '/activities/'
 
 
-class ResumeApiUrl:
+class ResumeApiUrl(object):
     def __init__(self):
         pass
 
-    RESUME_API_URL = _base_api_url(GTApps.RESUME_SERVICE_NAME,
-                                   GTApps.RESUME_SERVICE_PORT)
+    RESUME_API_URL = _base_api_url(GTApis.RESUME_SERVICE_NAME,
+                                   GTApis.RESUME_SERVICE_PORT)
 
 
-class UserApiUrl:
+class UserApiUrl(object):
     def __init__(self):
         pass
 
-    User_API_URL = _base_api_url(GTApps.USER_SERVICE_NAME,
-                                 GTApps.USER_SERVICE_PORT)
+    User_API_URL = _base_api_url(GTApis.USER_SERVICE_NAME,
+                                 GTApis.USER_SERVICE_PORT)
 
 
-class WidgetApiUrl:
+class WidgetApiUrl(object):
     def __init__(self):
         pass
 
-    WIDGET_API_URL = _base_api_url(GTApps.WIDGET_SERVICE_NAME,
-                                   GTApps.WIDGET_SERVICE_PORT)
+    WIDGET_API_URL = _base_api_url(GTApis.WIDGET_SERVICE_NAME,
+                                   GTApis.WIDGET_SERVICE_PORT)
 
 
-class SocialNetworkApiUrl:
+class SocialNetworkApiUrl(object):
     def __init__(self):
         pass
 
-    SOCIAL_NETWORK_API_URL = _base_api_url(GTApps.SOCIAL_NETWORK_SERVICE_NAME,
-                                           GTApps.SCHEDULER_CAMPAIGN_SERVICE_PORT)
+    SOCIAL_NETWORK_API_URL = _base_api_url(GTApis.SOCIAL_NETWORK_SERVICE_NAME,
+                                           GTApis.SCHEDULER_CAMPAIGN_SERVICE_PORT)
 
 
-class SmsCampaignApiUrl:
+class SmsCampaignApiUrl(object):
+    """
+    This class contains the REST URLs of SMS Campaign API
+    """
     def __init__(self):
         pass
-
-    API_URL = _base_api_url(GTApps.SMS_CAMPAIGN_SERVICE_NAME,
-                            GTApps.SMS_CAMPAIGN_SERVICE_PORT)
-    # endpoint /campaigns/
-    CAMPAIGNS = API_URL + '/campaigns/'
+    API_VERSION = '/v1'
+    API_URL = _base_api_url(GTApis.SMS_CAMPAIGN_SERVICE_NAME,
+                            GTApis.SMS_CAMPAIGN_SERVICE_PORT, api_version=API_VERSION)
+    # endpoint /campaigns
+    # GET all campaigns of a user, POST new campaign, DELETE campaigns of a user from given ids
+    CAMPAIGNS = API_URL + '/campaigns'
     # endpoint /campaigns/:id
-    CAMPAIGN = CAMPAIGNS + '%s'
-    # endpoint /campaigns/:id/sends
-    CAMPAIGN_SENDS = CAMPAIGNS + '%s/sms_campaign_sends'
+    # GET campaign by its id, POST: updates a campaign, DELETE a campaign from given id
+    CAMPAIGN = CAMPAIGNS + '/%s'
+    # endpoint /campaigns/:id/sms_campaign_sends
+    # This gives the records from "sms_campaign_sends" for a given id of campaign
+    CAMPAIGN_SENDS = CAMPAIGNS + '/%s/sms_campaign_sends'
     # endpoint /campaigns/:id/send
-    CAMPAIGN_SEND_PROCESS = CAMPAIGNS + '%s/send'
+    # To send a campaign to candidates
+    CAMPAIGN_SEND_PROCESS = CAMPAIGNS + '/%s/send'
     # endpoint /url_conversion
+    # This converts the given URL to shorter version using Google's Shorten URL API
     URL_CONVERSION = API_URL + '/url_conversion'
-    # endpoint /sms_receive
-    SMS_RECEIVE = API_URL + '/sms_receive'
+    # endpoint /receive
+    # This endpoint is callback URL when candidate replies to a campaign via SMS
+    SMS_RECEIVE = API_URL + '/receive'
 
 
-class CandidateApiUrl:
+class CandidateApiUrl(object):
     def __init__(self):
         pass
 
-    API_URL = _base_api_url(GTApps.CANDIDATE_SERVICE_NAME,
-                            GTApps.CANDIDATE_SERVICE_PORT)
+    API_URL = _base_api_url(GTApis.CANDIDATE_SERVICE_NAME,
+                            GTApis.CANDIDATE_SERVICE_PORT)
 
     CANDIDATE = API_URL + "/v1/candidates/%s"
     CANDIDATES = API_URL + "/v1/candidates"
@@ -181,9 +205,9 @@ class CandidateApiUrl:
     SMARTLIST_CANDIDATES = API_URL + '/v1/smartlist/get_candidates/'
 
 
-class SchedulerApiUrl:
+class SchedulerApiUrl(object):
     def __init__(self):
         pass
 
-    SCHEDULER_API_URL = _base_api_url(GTApps.SCHEDULER_CAMPAIGN_SERVICE_NAME,
-                                      GTApps.SMS_CAMPAIGN_SERVICE_PORT)
+    SCHEDULER_API_URL = _base_api_url(GTApis.SCHEDULER_CAMPAIGN_SERVICE_NAME,
+                                      GTApis.SMS_CAMPAIGN_SERVICE_PORT)

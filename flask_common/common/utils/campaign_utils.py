@@ -75,7 +75,7 @@ class CampaignBase(object):
 
     def __init__(self, user_id, *args, **kwargs):
         self.user_id = user_id
-        self.oauth_header = self.get_auth_header(self.user_id)
+        self.oauth_header = self.get_authorization_header(self.user_id)
         self.campaign = None
         self.body_text = None  # This is 'text' to be sent to candidates as part of campaign.
         # Child classes will get this from respective campaign table.
@@ -83,11 +83,11 @@ class CampaignBase(object):
         self.smart_list_id = None
 
     @staticmethod
-    def get_auth_header(user_id):
+    def get_authorization_header(user_id):
         """
-        This returns the Auth token associated with current user.
-        We use this access token to communicate with other services, like activity_service to
-        create activity.
+        This returns the authorization header containing access token token associated
+        with current user. We use this access token to communicate with other services,
+        like activity_service to create activity.
 
         :param user_id: id of user
         :return: Authorization header
@@ -190,7 +190,8 @@ class CampaignBase(object):
         # callback function which will be hit after campaign is sent to all candidates
         callback = self.callback_campaign_sent.subtask((self.user_id, self.campaign,
                                                         self.oauth_header, ))
-        header = [self.send_campaign_to_candidate.subtask((self, record))
+        header = [self.send_campaign_to_candidate.subtask((self, record),
+                                                          link_error=self.celery_error.subtask())
                   for record in candidates_and_phones]
         # This calls the callback function once all tasks in header have done their execution
         chord(header)(callback)
@@ -204,6 +205,17 @@ class CampaignBase(object):
         :return:
         """
         pass
+
+    @staticmethod
+    @abstractmethod
+    def celery_error(error):
+        """
+        This function logs any error occurred for tasks running on celery,
+        :return:
+        """
+        pass
+
+
 
     @staticmethod
     @abstractmethod

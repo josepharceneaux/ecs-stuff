@@ -5,14 +5,12 @@ import random
 import string
 
 from flask import current_app
-from ..error_handling import ForbiddenError
+from ..utils.app_rest_urls import AuthApiUrl
 from ..models.user import User, UserScopedRoles
 from sqlalchemy.sql.expression import ClauseElement
 from werkzeug.security import generate_password_hash
+from ..error_handling import ForbiddenError, InvalidUsage
 
-
-OAUTH_ENDPOINT = 'http://127.0.0.1:8001/%s'
-TOKEN_URL = OAUTH_ENDPOINT % 'oauth2/token'
 GOOGLE_URL_SHORTENER_API_KEY = 'AIzaSyCT7Gg3zfB0yXaBXSPNVhFCZRJzu9WHo4o'
 GOOGLE_URL_SHORTENER_API_URL = 'https://www.googleapis.com/urlshortener/v1/url?key=' \
                                + GOOGLE_URL_SHORTENER_API_KEY
@@ -181,7 +179,7 @@ def create_test_user(session, domain_id, password):
 
 def get_access_token(user, password, client_id, client_secret):
     params = dict(grant_type="password", username=user.email, password=password)
-    auth_service_token_response = requests.post(TOKEN_URL,
+    auth_service_token_response = requests.post(AuthApiUrl.TOKEN_URL,
                                                 params=params, auth=(client_id, client_secret)).json()
     if not (auth_service_token_response.get(u'access_token') and auth_service_token_response.get(u'refresh_token')):
         raise Exception("Either Access Token or Refresh Token is missing")

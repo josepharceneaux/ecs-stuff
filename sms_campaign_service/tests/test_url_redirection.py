@@ -184,13 +184,13 @@ def _replace_ngrok_link_with_localhost(temp_ngrok_link):
     looks for valid URL to convert into shorter version. While making HTTP request to this endpoint,
     if ngrok is not running somehow, we replace that link with localhost to hit that endpoint. i.e.
 
-        https://9a99a454.ngrok.io/campaigns/1298/url_redirection/294/?candidate_id=544
+        https://9a99a454.ngrok.io/v1/campaigns/1298/url_redirection/294/?candidate_id=544
     will become
-        https://127.0.0.1:8008/campaigns/1298/url_redirection/294/?candidate_id=544
+        https://127.0.0.1:8008/v1/campaigns/1298/url_redirection/294/?candidate_id=544
 
     In final version of app, this won't be necessary as we'll have valid URL for app.
     :param temp_ngrok_link:
     :return:
     """
-    relative_url = temp_ngrok_link.split('ngrok.io')[1]
+    relative_url = temp_ngrok_link.split(SmsCampaignApiUrl.API_VERSION)[1]
     return SmsCampaignApiUrl.API_URL + relative_url

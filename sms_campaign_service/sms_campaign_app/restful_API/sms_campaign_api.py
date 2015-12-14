@@ -5,7 +5,7 @@
 This file contains API endpoints related to sms_campaign_service.
     Following is a list of API endpoints:
 
-        - SmsCampaigns: /campaigns/
+        - SmsCampaigns: /campaigns
 
             GET     : Gets list of all the sms campaigns that belong to user
             POST    : Creates new campaign and save it in database
@@ -41,6 +41,7 @@ from flask.ext.restful import Resource
 from sms_campaign_service import logger
 from sms_campaign_service.common.error_handling import *
 from sms_campaign_service.common.talent_api import TalentApi
+from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
 from sms_campaign_service.common.utils.auth_utils import require_oauth
 from sms_campaign_service.custom_exceptions import ErrorDeletingSMSCampaign
 from sms_campaign_service.common.utils.api_utils import api_route, ApiResponse
@@ -56,16 +57,16 @@ api.init_app(sms_campaign_blueprint)
 api.route = types.MethodType(api_route, api)
 
 
-# # Enable CORS
-# CORS(sms_campaign_blueprint, resources={
-#     r'/(campaigns)/*': {
-#         'origins': '*',
-#         'allow_headers': ['Content-Type', 'Authorization']
-#     }
-# })
+# Enable CORS
+CORS(sms_campaign_blueprint, resources={
+    r''+SmsCampaignApiUrl.API_VERSION+'/(campaigns)/*': {
+        'origins': '*',
+        'allow_headers': ['Content-Type', 'Authorization']
+    }
+})
 
 
-@api.route('/campaigns/')
+@api.route(SmsCampaignApiUrl.API_VERSION + '/campaigns')
 class SMSCampaigns(Resource):
     """
     This resource is used to
@@ -179,7 +180,7 @@ class SMSCampaigns(Resource):
         # get json post request data
         try:
             campaign_data = request.get_json()
-        except:
+        except Exception:
             raise InvalidUsage(error_message='Given data in not in json format')
         if not campaign_data:
             raise InvalidUsage(error_message='No data provided to create SMS campaign')
@@ -227,7 +228,7 @@ class SMSCampaigns(Resource):
         # get campaign_ids for campaigns to be deleted
         try:
             req_data = request.get_json()
-        except:
+        except Exception:
             raise InvalidUsage(error_message='id(s) of campaign should be in a list')
         campaign_ids = req_data['ids'] if 'ids' in req_data else []
         if not isinstance(req_data['ids'], list):
@@ -248,7 +249,7 @@ class SMSCampaigns(Resource):
             return dict(message='No campaign id provided to delete'), 200
 
 
-@api.route('/campaigns/<int:campaign_id>')
+@api.route(SmsCampaignApiUrl.API_VERSION + '/campaigns/<int:campaign_id>')
 class CampaignById(Resource):
     """
     This resource is used to
@@ -342,7 +343,7 @@ class CampaignById(Resource):
         validate_header(request)
         try:
             campaign_data = request.get_json()
-        except:
+        except Exception:
             raise InvalidUsage(error_message='Given data should be in dict format')
         if not campaign_data:
             raise InvalidUsage(error_message='No data provided to update SMS campaign')
@@ -388,7 +389,7 @@ class CampaignById(Resource):
                                                          % campaign_id)
 
 
-@api.route('/campaigns/<int:campaign_id>/sms_campaign_sends')
+@api.route(SmsCampaignApiUrl.API_VERSION + '/campaigns/<int:campaign_id>/sms_campaign_sends')
 class SmsCampaignSends(Resource):
     """
     This resource is used to Get Campaign sends [GET]
@@ -450,7 +451,7 @@ class SmsCampaignSends(Resource):
             raise ResourceNotFound(error_message='SMS Campaign(id=%s) not found.' % campaign_id)
 
 
-@api.route('/campaigns/<int:campaign_id>/send')
+@api.route(SmsCampaignApiUrl.API_VERSION + '/campaigns/<int:campaign_id>/send')
 class SendSmsCampaign(Resource):
     """
     This resource is used to send SMS Campaign to candidates [POST]

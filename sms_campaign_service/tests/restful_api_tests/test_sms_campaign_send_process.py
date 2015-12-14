@@ -8,15 +8,9 @@ Author: Hafiz Muhammad Basit, QC-Technologies,
 import requests
 
 # Application Specific
-from sms_campaign_service import db
-from sms_campaign_service.common.models.misc import UrlConversion
-from sms_campaign_service.tests.conftest import assert_for_activity
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
-from sms_campaign_service.common.models.sms_campaign import (SmsCampaignBlast, SmsCampaignSend,
-                                                             SmsCampaignSendUrlConversion,
-                                                             SmsCampaign)
-from sms_campaign_service.common.utils.activity_utils import (CAMPAIGN_SMS_SEND, CAMPAIGN_SEND)
+from sms_campaign_service.tests.conftest import assert_on_blasts_sends_url_conversion_and_activity
 from sms_campaign_service.common.error_handling import (MethodNotAllowed, UnauthorizedError,
                                                         ResourceNotFound, ForbiddenError,
                                                         InternalServerError)
@@ -37,7 +31,7 @@ class TestSendSmsCampaign:
         response = requests.get(
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response.status_code == MethodNotAllowed.http_status_code(),\
+        assert response.status_code == MethodNotAllowed.http_status_code(), \
             'POST method should not be allowed (405)'
 
     def test_for_delete_request(self, auth_token, sms_campaign_of_current_user):
@@ -77,7 +71,7 @@ class TestSendSmsCampaign:
         response_post = requests.post(
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response_post.status_code == ResourceNotFound.http_status_code(),\
+        assert response_post.status_code == ResourceNotFound.http_status_code(), \
             'Record should not be found (404)'
 
     def test_post_with_valid_token_and_not_owned_campaign(self, auth_token,
@@ -90,7 +84,7 @@ class TestSendSmsCampaign:
         response_post = requests.post(
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_other_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response_post.status_code == ForbiddenError.http_status_code(),\
+        assert response_post.status_code == ForbiddenError.http_status_code(), \
             'It should get forbidden error (403)'
         assert 'not the owner'.lower() in response_post.json()['error']['message'].lower()
 
@@ -106,7 +100,8 @@ class TestSendSmsCampaign:
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_post.status_code == InternalServerError.http_status_code(), \
             'It should be internal server error (500)'
-        assert response_post.json()['error']['code'] == SmsCampaignApiException.NO_SMARTLIST_ASSOCIATED
+        assert response_post.json()['error'][
+                   'code'] == SmsCampaignApiException.NO_SMARTLIST_ASSOCIATED
         assert 'No Smartlist'.lower() in response_post.json()['error']['message'].lower()
 
     def test_post_with_valid_token_and_no_smartlist_candidate(self, auth_token,
@@ -122,7 +117,8 @@ class TestSendSmsCampaign:
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_post.status_code == InternalServerError.http_status_code(), \
             'It should be internal server error (500)'
-        assert response_post.json()['error']['code'] == SmsCampaignApiException.NO_CANDIDATE_ASSOCIATED
+        assert response_post.json()['error'][
+                   'code'] == SmsCampaignApiException.NO_CANDIDATE_ASSOCIATED
         assert 'No Candidate'.lower() in response_post.json()['error']['message'].lower()
 
     def test_post_with_valid_token_one_smartlist_two_candidates_with_no_phone(
@@ -139,104 +135,8 @@ class TestSendSmsCampaign:
         assert response_post.status_code == 200, 'Response should be ok (200)'
         assert response_post.json()['total_sends'] == 0
         assert str(sms_campaign_of_current_user.id) in response_post.json()['message']
-        _assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
+        assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
                                                             response_post,
-                                                            str(sms_campaign_of_current_user.id))
-
-    def test_post_with_valid_token_one_smartlist_two_candidates_with_one_phone(
-            self, auth_token, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
-            sample_sms_campaign_candidates, candidate_phone_1):
-        """
-        User auth token is valid, campaign has one smart list associated. Smartlist has two
-        candidates. One candidate have no phone number associated. So, total sends should be 1.
-        :return:
-        """
-        response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response_post.status_code == 200, 'Response should be ok (200)'
-        assert response_post.json()['total_sends'] == 1
-        assert str(sms_campaign_of_current_user.id) in response_post.json()['message']
-        _assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, response_post,
-                                                            str(sms_campaign_of_current_user.id))
-
-    def test_post_with_valid_token_one_smartlist_two_candidates_with_same_phone(
-            self, auth_token, sms_campaign_of_current_user, sms_campaign_smartlist,
-            sample_sms_campaign_candidates, candidates_with_same_phone):
-        """
-        User auth token is valid, campaign has one smart list associated. Smartlist has two
-        candidates. Both candidates have same phone numbers. It should return Internal server error.
-        Error code should be 5008 (MultipleCandidatesFound)
-        :return:
-        """
-        response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response_post.status_code == InternalServerError.http_status_code(), \
-            'It should be internal server error (500)'
-        assert response_post.json()['error']['code'] == SmsCampaignApiException.MULTIPLE_CANDIDATES_FOUND
-
-    def test_post_with_valid_token_one_smartlist_two_candidates_with_different_phones(
-            self, auth_token, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
-            sample_sms_campaign_candidates, candidate_phone_1, candidate_phone_2):
-        """
-        User auth token is valid, campaign has one smart list associated. Smartlist has two
-        candidates. Both candidates have different phone numbers associated. SMS Campaign
-        should be sent to both of the candidates.
-        :return:
-        """
-        response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response_post.status_code == 200, 'Response should be ok (200)'
-        assert response_post.json()['total_sends'] == 2
-        assert str(sms_campaign_of_current_user.id) in response_post.json()['message']
-        _assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
-                                                            response_post,
-                                                            str(sms_campaign_of_current_user.id))
-
-    def test_post_with_valid_token_one_smartlist_two_candidates_with_different_phones_no_link_in_text(
-            self, auth_token, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
-            sample_sms_campaign_candidates, candidate_phone_1, candidate_phone_2):
-        """
-        User auth token is valid, campaign has one smart list associated. Smartlist has two
-        candidates. Both candidates have different phone numbers associated. SMS Campaign
-        should be sent to both of the candidates. Body text of SMS campaign has no URL link
-        present.
-        :return:
-        """
-        campaign = SmsCampaign.get_by_id(str(sms_campaign_of_current_user.id))
-        campaign.update(sms_body_text='Hi,all')
-        response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response_post.status_code == 200, 'Response should be ok (200)'
-        assert response_post.json()['total_sends'] == 2
-        assert str(sms_campaign_of_current_user.id) in response_post.json()['message']
-        _assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
-                                                            response_post,
-                                                            str(sms_campaign_of_current_user.id))
-
-    def test_post_with_valid_token_one_smartlist_two_candidates_with_different_phones_multiple_links_in_text(
-            self, auth_token, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
-            sample_sms_campaign_candidates, candidate_phone_1, candidate_phone_2):
-        """
-        User auth token is valid, campaign has one smart list associated. Smartlist has two
-        candidates. Both candidates have different phone numbers associated. SMS Campaign
-        should be sent to both of the candidates. Body text of SMS campaign has multiple URL links
-        present.
-        :return:
-        """
-        campaign = SmsCampaign.get_by_id(str(sms_campaign_of_current_user.id))
-        campaign.update(sms_body_text='Hi,all please visit http://www.abc.com or '
-                                      'http://www.123.com or http://www.xyz.com')
-        response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response_post.status_code == 200, 'Response should be ok (200)'
-        assert response_post.json()['total_sends'] == 2
-        assert str(sms_campaign_of_current_user.id) in response_post.json()['message']
-        _assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, response_post,
                                                             str(sms_campaign_of_current_user.id))
 
     def test_post_with_valid_token_and_multiple_smartlists(
@@ -253,62 +153,21 @@ class TestSendSmsCampaign:
         assert response_post.status_code == 200, 'Response should be ok (200)'
         assert response_post.json()['total_sends'] == 1
         assert str(sms_campaign_of_current_user.id) in response_post.json()['message']
-        _assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, response_post,
+        assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, response_post,
                                                             str(sms_campaign_of_current_user.id))
 
-
-def _assert_on_blasts_sends_url_conversion_and_activity(user_id, response_post, campaign_id):
-    """
-    This function assert the number of sends in database table "sms_campaign_blast" and
-    records in database table "sms_campaign_sends"
-    :param response_post: response of POST call
-    :param campaign_id: id of SMS campaign
-    :return:
-    """
-    db.session.commit()
-    # assert on blasts
-    sms_campaign_blast = SmsCampaignBlast.get_by_campaign_id(campaign_id)
-    assert sms_campaign_blast.sends == response_post.json()['total_sends']
-    # assert on sends
-    sms_campaign_sends = SmsCampaignSend.get_by_blast_id(str(sms_campaign_blast.id))
-    assert len(sms_campaign_sends) == response_post.json()['total_sends']
-    # assert on activity of individual campaign sends
-    for sms_campaign_send in sms_campaign_sends:
-        assert_for_activity(user_id, CAMPAIGN_SMS_SEND, sms_campaign_send.id)
-    if sms_campaign_sends:
-        # assert on activity for whole campaign send
-        assert_for_activity(user_id, CAMPAIGN_SEND, campaign_id)
-    _assert_url_conversion(sms_campaign_sends, campaign_id)
-
-
-def _assert_url_conversion(sms_campaign_sends, campaign_id):
-    """
-    This function verifies the records related to URL conversion.
-    Long URL to redirect candidate to our app looks like
-
-    (say) https://www.gettalent.com/campaigns/1/url_redirection/30/?candidate_id=2
-
-    :param sms_campaign_sends: sends of campaign
-    :param campaign_id: id of SMS campaign
-    :return:
-    """
-    campaign_send_url_conversions = []
-    # Get campaign_send_url_conversion records
-    for sms_campaign_send in sms_campaign_sends:
-        campaign_send_url_conversions.extend(
-            SmsCampaignSendUrlConversion.get_by_campaign_send_id(sms_campaign_send.id))
-    for send_url_conversion in campaign_send_url_conversions:
-        # get URL conversion record from database table 'url_conversion'
-        url_conversion = UrlConversion.get_by_id(send_url_conversion.url_conversion_id)
-        # assert /campaigns/ in source URL
-        assert '/campaigns/' in url_conversion.source_url
-        # assert /url_redirection/ in source URL
-        assert '/url_redirection/' in url_conversion.source_url
-        # assert candidate_id present in source URL
-        assert 'candidate_id' in url_conversion.source_url
-        # assert that campaign_id is in source URL
-        assert campaign_id in url_conversion.source_url
-        # assert that url_conversion_id is in source URL
-        assert str(url_conversion.id) in url_conversion.source_url
-        # delete url_conversion record
-        UrlConversion.delete(url_conversion)
+    def valid_headertest_post_with_valid_token_one_smartlist_two_candidates_with_same_phone(
+            self, auth_token, sms_campaign_of_current_user, sms_campaign_smartlist,
+            sample_sms_campaign_candidates, candidates_with_same_phone):
+        """
+        User auth token is valid, campaign has one smart list associated. Smartlist has two
+        candidates. Both candidates have same phone numbers. It should return Internal server error.
+        Error code should be 5008 (MultipleCandidatesFound)
+        :return:
+        """
+        response_post = requests.post(
+            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
+            headers=dict(Authorization='Bearer %s' % auth_token))
+        assert response_post.status_code == InternalServerError.http_status_code(), \
+            'It should be internal server error (500)'
+        assert response_post.json()['error']['code'] == SmsCampaignApiException.MULTIPLE_CANDIDATES_FOUND

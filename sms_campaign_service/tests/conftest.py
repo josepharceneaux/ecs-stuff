@@ -5,16 +5,15 @@ Author: Hafiz Muhammad Basit, QC-Technologies,
     This file contains pyTest fixtures for tests of SMS Campaign Service.
 """
 # App Settings
-from sms_campaign_service import init_sms_campaign_app
-
-app = init_sms_campaign_app()
 
 # Application Specific
 # common conftest
+import time
 from sms_campaign_service.common.tests.conftest import *
 
-
 # App specific
+from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_SEND, CAMPAIGN_SEND
+from sms_campaign_service.sms_campaign_app.app import app
 from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.common.models.misc import (UrlConversion, Activity)
@@ -44,7 +43,9 @@ def valid_header(auth_token):
     Returns the header containing access token and content-type to make POST/DELETE requests.
     :param auth_token: fixture to get access token of user
     """
-    return {'Authorization': 'Bearer %s' % auth_token}.update(JSON_CONTENT_TYPE_HEADER)
+    auth_header = {'Authorization': 'Bearer %s' % auth_token}
+    auth_header.update(JSON_CONTENT_TYPE_HEADER)
+    return auth_header
 
 
 @pytest.fixture()
@@ -320,6 +321,7 @@ def process_send_sms_campaign(sample_user, auth_token,
     campaign_obj = SmsCampaignBase(sample_user.id)
     # send campaign to candidates
     campaign_obj.process_send(sms_campaign_of_current_user)
+    time.sleep(4)  # had to add this as sending process runs on celery
 
 
 @pytest.fixture()
@@ -330,6 +332,7 @@ def url_conversion_by_send_test_sms_campaign(request,
     This sends SMS campaign and returns the source URL from url_conversion database table.
     :return:
     """
+    db.session.commit()
     # get campaign blast
     sms_campaign_blast = SmsCampaignBlast.get_by_campaign_id(sms_campaign_of_current_user.id)
     # get campaign sends
@@ -399,6 +402,64 @@ def _create_smart_list(test_user):
     smart_list = SmartList(name=gen_salt(20), user_id=test_user.id)
     SmartList.save(smart_list)
     return smart_list
+
+
+def assert_url_conversion(sms_campaign_sends, campaign_id):
+    """
+    This function verifies the records related to URL conversion.
+    Long URL to redirect candidate to our app looks like
+
+    (say) https://www.gettalent.com/campaigns/1/url_redirection/30/?candidate_id=2
+
+    :param sms_campaign_sends: sends of campaign
+    :param campaign_id: id of SMS campaign
+    :return:
+    """
+    campaign_send_url_conversions = []
+    # Get campaign_send_url_conversion records
+    for sms_campaign_send in sms_campaign_sends:
+        campaign_send_url_conversions.extend(
+            SmsCampaignSendUrlConversion.get_by_campaign_send_id(sms_campaign_send.id))
+    for send_url_conversion in campaign_send_url_conversions:
+        # get URL conversion record from database table 'url_conversion'
+        url_conversion = UrlConversion.get_by_id(send_url_conversion.url_conversion_id)
+        # assert /campaigns/ in source URL
+        assert '/campaigns/' in url_conversion.source_url
+        # assert /url_redirection/ in source URL
+        assert '/url_redirection/' in url_conversion.source_url
+        # assert candidate_id present in source URL
+        assert 'candidate_id' in url_conversion.source_url
+        # assert that campaign_id is in source URL
+        assert campaign_id in url_conversion.source_url
+        # assert that url_conversion_id is in source URL
+        assert str(url_conversion.id) in url_conversion.source_url
+        # delete url_conversion record
+        UrlConversion.delete(url_conversion)
+
+
+def assert_on_blasts_sends_url_conversion_and_activity(user_id, response_post, campaign_id):
+    """
+    This function assert the number of sends in database table "sms_campaign_blast" and
+    records in database table "sms_campaign_sends"
+    :param response_post: response of POST call
+    :param campaign_id: id of SMS campaign
+    :return:
+    """
+    time.sleep(5)  # need sleep here as campaign send process is running on celery
+    db.session.commit()
+    # assert on blasts
+    sms_campaign_blast = SmsCampaignBlast.get_by_campaign_id(campaign_id)
+    assert sms_campaign_blast.sends == response_post.json()['total_sends']
+    # assert on sends
+    sms_campaign_sends = SmsCampaignSend.get_by_blast_id(str(sms_campaign_blast.id))
+    assert len(sms_campaign_sends) == response_post.json()['total_sends']
+    # assert on activity of individual campaign sends
+    for sms_campaign_send in sms_campaign_sends:
+        assert_for_activity(user_id, CAMPAIGN_SMS_SEND, sms_campaign_send.id)
+    if sms_campaign_sends:
+        # assert on activity for whole campaign send
+        assert_for_activity(user_id, CAMPAIGN_SEND, campaign_id)
+    assert_url_conversion(sms_campaign_sends, campaign_id)
 
 
 def assert_for_activity(user_id, type_, source_id):

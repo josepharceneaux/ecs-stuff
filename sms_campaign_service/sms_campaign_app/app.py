@@ -12,8 +12,10 @@
 """
 
 # Initializing App. This line should come before any imports from models
-from sms_campaign_service import init_sms_campaign_app
-app, celery_app= init_sms_campaign_app()
+from sms_campaign_service import init_sms_campaign_app_and_celery_app
+from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
+
+app, celery_app= init_sms_campaign_app_and_celery_app()
 
 
 # Third Party Imports
@@ -49,7 +51,8 @@ def root():
     return 'Welcome to SMS Campaign Service'
 
 
-@app.route('/campaigns/<int:campaign_id>/url_redirection/<int:url_conversion_id>/', methods=['GET'])
+@app.route(SmsCampaignApiUrl.API_VERSION +
+           '/campaigns/<int:campaign_id>/url_redirection/<int:url_conversion_id>/', methods=['GET'])
 def sms_campaign_url_redirection(campaign_id, url_conversion_id):
     """
     When recruiter(user) adds some url in sms body text, we save the original URL as
@@ -102,13 +105,13 @@ def sms_campaign_url_redirection(campaign_id, url_conversion_id):
                                                         url_conversion_id,
                                                         candidate_in_db)
         return redirect(redirection_url)
-    except:
+    except Exception:
         logger.exception("Error occurred while URL redirection for SMS campaign.")
         data = {'message': 'Internal Server Error'}
         return flask.jsonify(**data), 500
 
 
-@app.route("/sms_receive", methods=['POST'])
+@app.route(SmsCampaignApiUrl.API_VERSION + "/receive", methods=['POST'])
 def sms_receive():
     """
     This end point is used to receive sms of candidates.

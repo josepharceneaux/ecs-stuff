@@ -5,7 +5,7 @@
     This file contains API endpoints related to Url Conversion.
         Following is a list of API endpoints:
             - ConvertUrl:  /url_conversion
-                GET     : This converts the given URL into shortened URL using
+                POST     : This converts the given URL into shortened URL using
                           Google's Shorten URL API.
 
 """
@@ -25,8 +25,9 @@ from sms_campaign_service.common.utils.api_utils import api_route
 from sms_campaign_service.sms_campaign_base import validate_header
 from sms_campaign_service.common.error_handling import InvalidUsage
 from sms_campaign_service.common.utils.auth_utils import require_oauth
-from sms_campaign_service.custom_exceptions import GoogleShortenUrlAPIError, MissingRequiredField
+from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
 from sms_campaign_service.common.utils.common_functions import url_conversion
+from sms_campaign_service.custom_exceptions import GoogleShortenUrlAPIError, MissingRequiredField
 
 # creating blueprint
 
@@ -35,16 +36,16 @@ api = TalentApi()
 api.init_app(url_conversion_blueprint)
 api.route = types.MethodType(api_route, api)
 
-# # Enable CORS
-# CORS(url_conversion_blueprint, resources={
-#     r'/(url_conversion)/*': {
-#         'origins': '*',
-#         'allow_headers': ['Content-Type', 'Authorization']
-#     }
-# })
+# Enable CORS
+CORS(url_conversion_blueprint, resources={
+    r''+SmsCampaignApiUrl.API_VERSION+'/(url_conversion)': {
+        'origins': '*',
+        'allow_headers': ['Content-Type', 'Authorization']
+    }
+})
 
 
-@api.route('/url_conversion')
+@api.route(SmsCampaignApiUrl.API_VERSION + '/url_conversion')
 class ConvertUrl(Resource):
     """
     This end point converts the given url into shorter version using
