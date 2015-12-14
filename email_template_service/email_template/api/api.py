@@ -1,5 +1,4 @@
 from flask import Blueprint
-from flask_restful import Resource
 from email_template_service.common.utils.auth_utils import require_oauth, require_all_roles
 from email_template_service.common.models.db import db
 from email_template_service.common.models.misc import UserEmailTemplate, EmailTemplateFolder
@@ -62,8 +61,10 @@ def post_email_template():
     user_email_template_id = user_email_template.id
     return jsonify({'template_id': [{'id': user_email_template_id}]})
 
+
+@mod.route('/v1/email-templates', methods=['DELETE'])
 @require_oauth
-def delete_email_template(**kwargs):
+def delete_email_template():
     """
     Function will delete email template from db
     input: {'id': "template_id"}
@@ -78,22 +79,23 @@ def delete_email_template(**kwargs):
     template = UserEmailTemplate.query.filter_by(id=email_template_id).first()
 
     # Verify owned by same domain
-    template_owner_user = db.session.query(UserEmailTemplate).join(User).filter_by(
-        UserEmailTemplate.user_id == User.id).first()
-
-    if template_owner_user.domain_id != domain_id:
+    template_owner_user = db.session.query(User).filter(template.user_id == User.id).first()
+    user_domain = template_owner_user.domain_id
+    if user_domain != domain_id:
         raise ForbiddenError(error_message="Template is not owned by same domain")
 
     if template.is_immutable == 1 and not require_all_roles('CAN_DELETE_EMAIL_TEMPLATE'):
         raise ForbiddenError(error_message="User %d not allowed to delete the template" % user_id)
-    else:
-        # Delete the template
-        db.session.query(UserEmailTemplate).filter_by(id=email_template_id).delete()
 
-        return dict(success=1)
+    # Delete the template
+    db.session.query(UserEmailTemplate).filter_by(id=email_template_id).delete()
 
+    return dict(success=1)
+
+
+@mod.route('/v1/email-templates', methods=['PUT'])
 @require_oauth
-def update_email_template(**kwargs):
+def update_email_template():
     """
     Function can update email template(s).
     input: {'id': "template_id"}
@@ -111,33 +113,36 @@ def update_email_template(**kwargs):
         raise ResourceNotFound(error_message="Template with id %d not found" % email_template_id)
 
     # Verify owned by same domain
-    template_owner_user = db.session.query(UserEmailTemplate).join(User).filter_by(
-        UserEmailTemplate.user_id == User.id).first()
-    if template_owner_user.domain_id != domain_id:
+    template_owner_user = db.session.query(User).filter(user_email_template.user_id == User.id).first()
+    user_domain = template_owner_user.domain_id
+    if user_domain != domain_id:
         raise ForbiddenError(error_message="Template is not owned by same domain")
 
     # Verify is_immutable
     if user_email_template.is_immutable == 1 and not require_all_roles('CAN_UPDATE_EMAIL_TEMPLATE'):
         raise ForbiddenError(error_message="User %d not allowed to update the template" % user_id)
 
-    db.session.query(UserEmailTemplate).update(
-        {"email_body_html": data("email_body_html") or UserEmailTemplate.email_body_html,
-         "email_body_text": request.args.get("email_body_text") or UserEmailTemplate.email_body_text})
+    db.session.query(UserEmailTemplate).filter_by(id=email_template_id).update(
+        {"email_body_html": data["email_body_html"] or UserEmailTemplate.email_body_html,
+         "email_body_text": data["email_body_text"] or UserEmailTemplate.email_body_text})
     db.session.commit()
+    email_body_html = user_email_template.email_body_html
+    return jsonify({'email_template': {'email_body_html': email_body_html, 'id': email_template_id}})
 
-    return dict(success=1)
 
+@mod.route('/v1/email-templates', methods=['GET'])
 @require_oauth
-def get_email_template(**kwargs):
+def get_email_template():
     """
     Function can retrieve email template(s).
     input: {'id': "template_id"}
     :return:  A dictionary containing array of template html body and template id
     :rtype: dict
     """
+    data = json.loads(request.data)
+    email_template_id = data["id"]
     domain_id = request.user.domain_id
 
-    email_template_id = kwargs.get("id")
     if isinstance(email_template_id, basestring):
         email_template_id = int(email_template_id)
 
@@ -147,15 +152,15 @@ def get_email_template(**kwargs):
         raise ResourceNotFound(error_message="Template with id %d not found" % email_template_id)
 
     # Verify owned by same domain
-    template_owner_user = db.session.query(UserEmailTemplate).join(User).filter_by(
-        UserEmailTemplate.user_id == User.id).first()
+    template_owner_user = db.session.query(User).filter(user_email_template.user_id == User.id).first()
+    user_domain = template_owner_user.domain_id
 
-    if template_owner_user.domain_id != domain_id:
+    if user_domain != domain_id:
         raise ForbiddenError(error_message="Template is not owned by same domain")
 
     email_body_html = user_email_template.email_body_html
 
-    return {'email_template': {'email_body_html': email_body_html, 'id': email_template_id}}
+    return jsonify({'email_template': {'email_body_html': email_body_html, 'id': email_template_id}})
 
 
 # Inputs: name, parentId (if any), is_immutable (only if admin)
@@ -191,6 +196,6 @@ def create_email_template_folder():
     db.session.commit()
     email_template_folder_id = email_template_folder.id
 
-    return jsonify({"template_folder_id": [{"id":email_template_folder_id}]})
+    return jsonify({"template_folder_id": [{"id": email_template_folder_id}]})
 
 

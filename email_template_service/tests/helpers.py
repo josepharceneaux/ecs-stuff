@@ -37,50 +37,26 @@ def response_info(resp_request, resp_json, resp_status):
     return "\nRequest: %s \nResponse JSON: %s \nResponse status: %s" % args
 
 
-def define_and_send_request(request, url, access_token):
+def define_and_send_request(request, url, access_token, template_id= None, data=None):
     """
     Function will define request based on params and make the appropriate call.
     :param  request:  can only be get, post, put, patch, or delete
     """
     request = request.lower()
-    assert request in ['get', 'post', 'put', 'patch', 'delete']
+    assert request in ['get', 'put', 'patch', 'delete']
     method = getattr(requests, request)
-    return method(url=url, headers={'Authorization': 'Bearer %s' % access_token})
+    if not data:
+        data = dict(id=template_id)
+    return method(url=url, data=json.dumps(data), headers={'Authorization': 'Bearer %s' % access_token})
 
 
-def request_to_email_template_resource(access_token, request, email_template_id):
+def request_to_email_template_resource(access_token, request, email_template_id, data=None):
     """
-    Function sends a request to CandidateResource
+    Function sends a request to email template resource
     :param request: get, post, patch, delete
     """
     url = EMAIL_TEMPLATE_URL
-    if email_template_id:
-        url = url + "%d" % email_template_id
-
-    return define_and_send_request(request, url, access_token)
-
-
-def get_from_email_template_resource(access_token, email_template_id):
-    """
-    Function sends a get request to CandidateResource/get()
-    """
-    url = EMAIL_TEMPLATE_URL
-    if email_template_id:
-        url = url + '/%s' % email_template_id
-    resp = requests.get(url=url, headers={'Authorization': 'Bearer %s' % access_token})
-    return resp
-
-
-def patch_to_email_template_resource(access_token, data):
-    """
-    Function sends a request to CandidateResource/patch()
-    """
-    resp = requests.patch(
-        url=EMAIL_TEMPLATE_URL,
-        headers={'Authorization': 'Bearer %s' % access_token},
-        data=json.dumps(data)
-    )
-    return resp
+    return define_and_send_request(request, url, access_token, email_template_id, data)
 
 
 def check_for_id(_dict):

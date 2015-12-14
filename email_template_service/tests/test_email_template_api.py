@@ -2,7 +2,7 @@
 
 import time
 from email_template_service.common.tests.conftest import *
-from email_template_service.email_template.api.common_functions import create_email_template
+from email_template_service.email_template.api.common_functions import create_email_template, update_email_template
 from helpers import *
 
 
@@ -41,92 +41,115 @@ def test_create_email_template_folder(sample_user, user_auth):
     # Get Template Folder Id
     template_folder_id, template_folder_name = get_template_folder(token)
     # Assert that folder is created with correct name
+    db.session.commit()
     folder_row = EmailTemplateFolder.query.filter_by(id=template_folder_id).first()
     assert folder_row.name == template_folder_name
 
 
-class TestEmailTemplate:
+def test_create_email_template(sample_user, user_auth, email_template_body):
     """
-    Test creating immutable template
+    Tests creating template
+    :param sample_user:         user manager id
+    :param email_template_body:     email template html body
+    :return:
     """
+    # Get access token
+    auth_token = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+    token = auth_token['access_token']
+    domain_id = sample_user.domain_id
+    # Get Template Folder Id
+    template_folder_id, template_folder_name = get_template_folder(token)
 
-    def test_create_email_template(self, sample_user, user_auth, email_template_body):
-        """
-        Tests creating immutable template as user manager
-        It asserts that created template is immutable by checking isImmutable attribute
+    template_name = 'test_email_template%i' % time.time()
 
-        :param sample_user:         user manager id
-        :param email_template_body:     email template html body
-        :return:
-        """
-        # Get access token
-        auth_token = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-        token = auth_token['access_token']
-        domain_id = sample_user.domain_id
-        # Get Template Folder Id
-        template_folder_id, template_folder_name = get_template_folder(token)
+    email_template_id = create_email_template(token, sample_user.id, template_name, email_template_body, '',
+                                              is_immutable="1", folder_id=template_folder_id, domain_id=domain_id)
+    db.session.commit()
+    template = db.session.query(UserEmailTemplate).filter_by(id=email_template_id).first()
 
-        template_name = 'test_email_template%i' % time.time()
+    assert template.name == template_name
+    assert template.is_immutable == 1
 
-        email_template_id = create_email_template(token, sample_user.id, template_name, email_template_body, '',
-                                                  is_immutable="1", folder_id=template_folder_id, domain_id=domain_id)
-        template = db.session.query(UserEmailTemplate).filter_by(id=email_template_id).first()
 
-        assert template.name == template_name
-        assert template.is_immutable == 1
+def test_delete_email_template(sample_user, sample_user_2, email_template_body, user_auth):
+    """
+    Tests deleting user's email template
+    :param sample_user:         user1
+    :param sample_user_2:         user2
+    :param email_template_body:     email template html body
+    :return:
+    """
+    # Get access token
+    auth_token = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+    token1 = auth_token['access_token']
+    domain_id = sample_user.domain_id
+    # Get Template Folder Id
+    template_folder_id, template_folder_name = get_template_folder(token1)
 
-    # def test_delete_email_template(self, sample_user, sample_user_2, email_template_body):
-    #     """
-    #     Tests deleting mutable template created by user manager as passive user
-    #     It asserts that created template can be deleted by running controller function which deletes template by id
-    #
-    #     :param sample_user:         user manager id
-    #     :param sample_user_2:         passive user id
-    #     :param email_template_body:     email template html body
-    #     :return:
-    #     """
-    #     # Get access token
-    #     auth_token = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-    #     token = auth_token['access_token']
-    #     domain_id = sample_user.domain_id
-    #     # Get Template Folder Id
-    #     template_folder_id, template_folder_name = get_template_folder(token)
-    #
-    #     template_name = 'test_template_mutable_as_user_manager_%i' % time.time()
-    #     email_template_id = create_email_template(token, sample_user.id, template_name, email_template_body, '',
-    #                                               is_immutable="1", folder_id=template_folder_id, domain_id=domain_id)
-    #     resp = request_to_email_template_resource(token, 'delete', email_template_id)
-    #     print response_info(resp)
-    #     # Retrieve Candidate
-    #     get_resp = get_from_candidate_resource(token, email_template_id)
-    #     print response_info(get_resp)
-    #     assert get_resp.status_code == 404
-    #
-    # def test_get_email_template_via_id(self, sample_user, user_auth):
-    #     """
-    #     Test:   Retrieve email_template via template's ID
-    #     Expect: 200
-    #     :type sample_user:    User
-    #     :type user_auth:      UserAuthentication
-    #     """
-    #     # Get access token
-    #     token = user_auth.get_auth_token(sample_user, True)['access_token']
-    #
-    #     # Create candidate
-    #     resp = post_to_email_template_resource(access_token=token, data=None, domain_id=sample_user.domain_id)
-    #     print response_info(resp)
-    #
-    #     db.session.commit()
-    #
-    #     email_template = db.session.query(UserEmailTemplate).filter(
-    #         UserEmailTemplate.user_id == sample_user.id).first()
-    #     email_template_id = email_template.id
-    #     # Get email_template via template ID
-    #     resp = get_from_email_template_resource(token, email_template_id)
-    #
-    #     resp_dict = resp.json()
-    #     print response_info(resp)
-    #     assert resp.status_code == 200
-    #     assert isinstance(resp_dict, dict)
-    #     assert check_for_id(_dict=resp_dict['email_template']) is not False
-    #
+    template_name = 'test_template_mutable_as_user_manager_%i' % time.time()
+    email_template_id = create_email_template(token1, sample_user.id, template_name, email_template_body, '',
+                                              is_immutable="1", folder_id=template_folder_id, domain_id=domain_id)
+    token2 = user_auth.get_auth_token(sample_user_2, get_bearer_token=True)['access_token']
+    request_to_email_template_resource(token2, 'delete', email_template_id)
+    template_after_delete = UserEmailTemplate.query.get(template_folder_id)
+    assert template_after_delete is None
+
+
+def test_get_email_template_via_id(sample_user, sample_user_2, email_template_body, user_auth):
+    """
+    Test:   Retrieve email_template via template's ID
+    Expect: 200
+    :type sample_user:    User
+    :type user_auth:      UserAuthentication
+    """
+    # Get access token for sample_user
+    auth_token = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+    token1 = auth_token['access_token']
+    domain_id = sample_user.domain_id
+    # Get Template Folder Id
+    template_folder_id, template_folder_name = get_template_folder(token1)
+
+    template_name = 'test_template_mutable_as_user_manager_%i' % time.time()
+    email_template_id = create_email_template(token1, sample_user.id, template_name, email_template_body, '',
+                                              is_immutable="1", folder_id=template_folder_id, domain_id=domain_id)
+    # Get access token for sample_user_2
+    token2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
+    # Get email_template via template ID
+    resp = request_to_email_template_resource(token2, 'get', email_template_id)
+    assert resp.status_code == 200
+    resp_dict = resp.json()
+    print resp_dict
+    assert isinstance(resp_dict, dict)
+    assert check_for_id(_dict=resp_dict['email_template']) is not False
+
+
+def test_update_email_template(sample_user, sample_user_2, email_template_body, user_auth):
+    """
+    Test to update email template by other user in the same domain
+    :param sample_user:
+    :param sample_user_2:
+    :param email_template_body:
+    :param user_auth:
+    :return:
+    """
+    # Get access token for sample_user
+    auth_token = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+    token1 = auth_token['access_token']
+    domain_id = sample_user.domain_id
+    # Get Template Folder Id
+    template_folder_id, template_folder_name = get_template_folder(token1)
+
+    template_name = 'test_template_mutable_as_user_manager_%i' % time.time()
+    email_template_id = create_email_template(token1, sample_user.id, template_name, email_template_body, '',
+                                              is_immutable="1", folder_id=template_folder_id, domain_id=domain_id)
+    # Get access token for sample_user_2
+    token2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
+    updated_email_template_body = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test for update campaign mail testing through script</p>\r\n</body>\r\n</html>\r\n'
+    # Get email_template via template ID
+    resp = update_email_template(email_template_id, 'put', token2, sample_user_2.id, template_name,
+                                 updated_email_template_body, template_folder_id, domain_id)
+    db.session.commit()
+    assert resp.status_code == 200
+    resp_dict = resp.json()['email_template']
+    print resp_dict
+    assert resp_dict['email_body_html'] == updated_email_template_body
