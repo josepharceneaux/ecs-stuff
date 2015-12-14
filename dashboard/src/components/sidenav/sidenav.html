@@ -2,26 +2,32 @@
 <section class="view__sidebar">
 
     <div class="demo_menu">
-        <div>DEMO MODE</div>
-        <a ui-sref="dashboard" ui-sref-active="active" class="" href="/dashboard">
+        <div>
+            <div>DEMO MODE</div>
+            <label class="form__input--toggle">
+                <input gt-float-label type="checkbox" ng-model="vm.demoMode" name="demoMode" ng-change="vm.setDemoModeCookie(vm.demoMode)">
+                <span></span>
+            </label>
+        </div>
+        <a ui-sref="dashboard" ui-sref-active="active">
             Home
         </a>
-        <a ui-sref="pipelines" ui-sref-active="active" href="/pipelines">
+        <a ui-sref="pipelines" ui-sref-active="active">
             Organize Overview
         </a>
-        <a ui-sref="canditate-profile" ui-sref-active="active" href="/candidates/profile">
+        <a ui-sref="candidates.profile" ui-sref-active="active">
             Candidate Profile
         </a>
-        <a ui-sref="campaigns" ui-sref-active="active" href="/campaigns">
+        <a ui-sref="campaigns.overview" ui-sref-active="active">
             Engage Overview
         </a>
-        <a ui-sref="events" ui-sref-active="active" href="/campaigns/events">
+        <a ui-sref="campaigns.eventCampaigns" ui-sref-active="active">
             Create Event
         </a>
-        <a ui-sref="styles-modules" ui-sref-active="active" href="/dashboard-styles">
+        <a ui-sref="styleguide.dashboard" ui-sref-active="active">
             Styles - Dash
         </a>
-        <a ui-sref="styles-gradients" ui-sref-active="active" href="/dashboard-styles">
+        <a ui-sref="styleguide.colors" ui-sref-active="active">
             Styles - Colors
         </a>
         <i>Main Navigation Deactivated</i>
@@ -30,8 +36,8 @@
     <!-- JS Lock for DEMO Mode -->
 
     <nav class="view__sidebar__nav row--expanded">
-        <div class="js--navDEMO view__sidebar__navParent col--large-3">
-            <a ui-sref="dashboard" ui-sref-active="active" class="js--navItemDEMO view__sidebar__navItem" data-target="js--subnav-dashboard" ng-click="vm.isCollapsed = !vm.isCollapsed">
+        <div class="js--nav view__sidebar__navParent col--large-3">
+            <a ui-sref="dashboard" ui-sref-active="active" class="js--navItem view__sidebar__navItem" data-target="js--subnav-dashboard" ng-click="vm.isCollapsed = !vm.isCollapsed">
                 <div class="col--large-4--cell view__sidebar__navIcon">
                     <span class="icon--overview"></span>
                 </div>
@@ -39,7 +45,7 @@
                     Dashboard
                 </div>
             </a>
-            <a ui-sref="pipelines" ui-sref-active="active" class="js--navItemDEMO view__sidebar__navItem row--table" data-target="js--subnav-pipelines" ng-click="vm.isCollapsed = !vm.isCollapsed">
+            <a ui-sref="pipelines" ui-sref-active="active" class="js--navItem view__sidebar__navItem row--table" data-target="js--subnav-pipelines" ng-click="vm.isCollapsed = !vm.isCollapsed">
                 <div class="col--large-4--cell view__sidebar__navIcon">
                     <span class="icon--build"></span>
                 </div>
@@ -47,7 +53,7 @@
                     Build
                 </div>
             </a>
-            <a ui-sref="pipelines" ui-sref-active="active" class="js--navItemDEMO view__sidebar__navItem row--table" data-target="js--subnav-pipelines" ng-click="vm.isCollapsed = !vm.isCollapsed">
+            <a ui-sref="pipelines" ui-sref-active="active" class="js--navItem view__sidebar__navItem row--table" data-target="js--subnav-pipelines" ng-click="vm.isCollapsed = !vm.isCollapsed">
                 <div class="col--large-4--cell view__sidebar__navIcon">
                     <span class="icon--pipelines"></span>
                 </div>
@@ -55,7 +61,7 @@
                     Organize
                 </div>
             </a>
-            <a ui-sref="campaigns" ui-sref-active="active" class="js--navItemDEMO view__sidebar__navItem row--table" data-target="js--subnav-campaigns" ng-click="vm.isCollapsed = !vm.isCollapsed">
+            <a ui-sref="campaigns" ui-sref-active="active" class="js--navItem view__sidebar__navItem row--table" data-target="js--subnav-campaigns" ng-click="vm.isCollapsed = !vm.isCollapsed">
                 <div class="col--large-4--cell view__sidebar__navIcon">
                     <span class="icon--campaigns"></span>
                 </div>
@@ -63,7 +69,7 @@
                     Engage
                 </div>
             </a>
-            <a ui-sref="admin" ui-sref-active="active" class="js--navItemDEMO view__sidebar__navItem row--table" data-target="js--subnav-admin" ng-click="vm.isCollapsed = !vm.isCollapsed">
+            <a ui-sref="admin" ui-sref-active="active" class="js--navItem view__sidebar__navItem row--table" data-target="js--subnav-admin" ng-click="vm.isCollapsed = !vm.isCollapsed">
                 <div class="col--large-4--cell view__sidebar__navIcon">
                     <span class="icon--tools"></span>
                 </div>

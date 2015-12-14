@@ -27,11 +27,12 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['$state'];
+    ControllerFunction.$inject = ['$cookies', '$state', 'logger'];
 
     /* @ngInject */
-    function ControllerFunction($state) {
+    function ControllerFunction($cookies, $state, logger) {
         var vm = this;
+
         vm.isCollapsed = true;
         vm.state = $state;
         vm.menuItems = {
@@ -57,6 +58,24 @@
                 settings: 'Settings'
             }
         };
+
+        vm.setDemoModeCookie = setDemoModeCookie;
+
+        activate();
+
+        function activate() {
+            logger.log('Activated Sidenav View');
+
+            vm.demoMode = getDemoModeCookie();
+        }
+
+        function getDemoModeCookie() {
+            return $cookies.get('demoMode') === 'true';
+        }
+
+        function setDemoModeCookie(value) {
+            $cookies.put('demoMode', value === 'true' || value === true ? 'true' : 'false');
+        }
     }
 
     function linkFunction(scope, elem, attrs) {

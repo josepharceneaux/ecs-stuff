@@ -9,6 +9,7 @@
         'app.admin',
         'app.approot',
         'app.campaigns',
+        'app.candidates',
         'app.dashboard',
         'app.footer',
         'app.forgot-password',
@@ -16,6 +17,7 @@
         'app.main',
         'app.pipelines',
         'app.sidenav',
+        'app.styleguide',
         'app.topnav'
     ]);
 })();
