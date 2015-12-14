@@ -29,6 +29,18 @@ scheduler = BackgroundScheduler(jobstore=jobstores, executors=executors,
 scheduler.add_jobstore(job_store)
 
 
+def is_valid_url(url):
+    import re
+    regex = re.compile(
+        r'^https?://'  # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
+        r'localhost|'  # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+        r'(?::\d+)?'  # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+    return url is not None and regex.search(url)
+
+
 def apscheduler_listener(event):
     """
     APScheduler listener for logging on job crashed or job time expires
@@ -68,21 +80,27 @@ def schedule_job(data, user_id, access_token):
     content_type = data.get('content_type', 'application/json')
     # will return None if key not found. We also need to check for valid values not just keys
     # in dict because a value can be '' and it can be valid or invalid
-    job_config['trigger'] = data.get('task_type')
+    job_config['task_type'] = data.get('task_type')
     job_config['url'] = data.get('url')
-    job_config['frequency'] = data.get('frequency')
 
     # Get missing keys
     missing_keys = filter(lambda _key: job_config[_key] is None, job_config.keys())
     if len(missing_keys) > 0:
-        logger.exception("schedule_job: Missing keys %s" % ', '.join(missing_keys))
-        raise FieldRequiredError(error_message="Missing keys %s" % ', '.join(missing_keys))
+        logger.exception("schedule_job: Missing keys: %s" % ', '.join(missing_keys))
+        raise FieldRequiredError(error_message="Missing keys: %s" % ', '.join(missing_keys))
 
-    trigger = str(job_config['trigger']).lower().strip()
+    if not is_valid_url(job_config['url']):
+        logger.exception("schedule_job: URL is not valid")
+        raise InvalidUsage("url is not valid")
+
+    trigger = str(job_config['task_type']).lower().strip()
 
     if trigger == 'periodic':
         try:
-            frequency = data['frequency']
+            try:
+                frequency = data['frequency']
+            except KeyError:
+                raise FieldRequiredError("Missing key: frequency")
             start_datetime = data['start_datetime']
             try:
                 start_datetime = parse(start_datetime)
@@ -126,6 +144,7 @@ def schedule_job(data, user_id, access_token):
                                     kwargs=job_config['post_data'])
             logger.info('schedule_job: Task has been added and will run at %s ' % start_datetime)
         except Exception:
+            logger.exception("schedule_job: %s" % Exception.message)
             raise JobNotCreatedError("Unable to create the job.")
         return job.id
     elif trigger == 'one_time':
@@ -143,11 +162,12 @@ def schedule_job(data, user_id, access_token):
             job = scheduler.add_job(run_job,
                                     trigger='date',
                                     run_date=run_datetime,
-                                    args=[access_token, job_config['url'], content_type],
+                                    args=[user_id, access_token, job_config['url'], content_type],
                                     kwargs=job_config['post_data'])
             logger.info('schedule_job: Task has been added and will run at %s ' % run_datetime)
             return job.id
         except Exception:
+            logger.error("schedule_job: %s" % Exception.message)
             raise JobNotCreatedError("Unable to create job. Invalid data given")
     else:
         logger.error("schedule_job: Task type not correct. Please use periodic or one_time as task type.")
@@ -166,7 +186,7 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
     """
     logger.info('User ID: %s, URL: %s, Content-Type: %s' % (user_id, url, content_type))
     # Call celery task to send post_data to url
-    send_request.apply_async([user_id, access_token, url, content_type, kwargs])
+    send_request.apply_async([access_token, url, content_type, kwargs])
 
 
 def remove_tasks(ids, user_id):

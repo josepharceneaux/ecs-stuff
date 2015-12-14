@@ -4,6 +4,7 @@ It will be a separate celery process which is called by run_job to send post req
 If task is successfully sent then it will return SUCCESS status and if request is failed then it will
 show FAILED status
 """
+from scheduler_service.run import celery
 
 BACKEND_URL = 'redis://localhost:6379'
 REDIS_URL = 'redis://localhost:6379'
@@ -14,7 +15,7 @@ import requests
 from celery import Celery
 
 
-celery = Celery('scheduler_service', broker=REDIS_URL, backend=BACKEND_URL)
+# celery = Celery('scheduler_service', broker=REDIS_URL, backend=BACKEND_URL)
 
 
 @celery.task(name="send_request")

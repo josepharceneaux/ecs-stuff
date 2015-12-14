@@ -8,26 +8,23 @@
 import os
 
 from scheduler_service import init_app
-from scheduler_service.scheduler import scheduler
 
 app, celery = init_app()
 
-from scheduler_service.api.scheduler_api import scheduler_blueprint
 
-
-# Run Celery from terminal as
-# celery -A scheduler_service.app.app.celery worker
-
-# Third party imports
-
-
-app.register_blueprint(scheduler_blueprint)
-
-# Start scheduler before starting flask app
-scheduler.start()
+# Split the scheduler from celery, so that celery worker can start from terminal
+def scheduler_app():
+    from scheduler_service.api.scheduler_api import scheduler_blueprint
+    # Run Celery from terminal as
+    # celery -A scheduler_service.app.app.celery worker
+    app.register_blueprint(scheduler_blueprint)
+    from scheduler_service.scheduler import scheduler
+    # Start scheduler before starting flask app
+    scheduler.start()
 
 if __name__ == '__main__':
     os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+    scheduler_app()
     app.run(host='0.0.0.0', port=8009, debug=False)
 
 
