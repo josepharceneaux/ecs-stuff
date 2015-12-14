@@ -1,8 +1,10 @@
-import os
+from celery import Celery
 from flask import Flask
 from scheduler_service.common.error_handling import register_error_handlers
 from scheduler_service.common.models.db import db
 from scheduler_service.common.utils.models_utils import add_model_helpers
+from scheduler_service.common.common_config import BACKEND_URL, REDIS_URL
+
 
 __author__ = 'saad'
 
@@ -23,4 +25,8 @@ def init_app():
     register_error_handlers(flask_app, logger)
     logger.info("Starting scheduler service in %s environment",
                 flask_app.config['GT_ENVIRONMENT'])
-    return flask_app
+
+    # Celery settings
+    celery_app = Celery(flask_app, broker=REDIS_URL, backend=BACKEND_URL,
+                        include=['scheduler_service.tasks'])
+    return flask_app, celery_app

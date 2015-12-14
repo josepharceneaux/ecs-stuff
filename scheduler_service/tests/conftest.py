@@ -10,7 +10,7 @@ from scheduler_service import init_app
 from scheduler_service.common.tests.conftest import *
 # Application Specific
 
-APP = init_app()
+APP, celery = init_app()
 APP_URL = 'http://0.0.0.0:8009'
 
 OAUTH_SERVER = APP.config['OAUTH_SERVER_URI']
@@ -78,6 +78,12 @@ def auth_header(request, auth_token):
 
 @pytest.fixture(scope='function')
 def job_config(request, job_config_periodic):
+    """
+    Fixture job_config to set the start_date and end_date to current time
+    :param request:
+    :param job_config_periodic: fixture of hardcoded values used for testing
+    :return:
+    """
     temp_job_config = job_config_periodic.copy()
     start_date = datetime.utcnow() - timedelta(seconds=15)
     end_date = start_date + timedelta(days=2)

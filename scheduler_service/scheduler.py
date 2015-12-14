@@ -7,28 +7,38 @@ Scheduler - APScheduler initialization, set jobstore, threadpoolexecutor
 """
 
 # Third-party imports
+from pytz import timezone
 from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.events import EVENT_JOB_EXECUTED
-from apscheduler.jobstores.redis import RedisJobStore
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.date import DateTrigger
 from apscheduler.schedulers.background import BackgroundScheduler
+from dateutil.parser import parse
 
 # Application imports
 from scheduler_service import logger
-from scheduler_service.apscheduler_config import executors
+from scheduler_service.apscheduler_config import executors, job_store, jobstores
+from scheduler_service.common.error_handling import InvalidUsage
 from scheduler_service.custom_exceptions import FieldRequiredError, TriggerTypeError, JobNotCreatedError
 from scheduler_service.tasks import send_request
 
-job_store = RedisJobStore()
 
-jobstores = {
-    'redis': job_store
-}
 # Set timezone to UTC
 scheduler = BackgroundScheduler(jobstore=jobstores, executors=executors,
                                 timezone='UTC')
 scheduler.add_jobstore(job_store)
+
+
+def is_valid_url(url):
+    import re
+    regex = re.compile(
+        r'^https?://'  # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
+        r'localhost|'  # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+        r'(?::\d+)?'  # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+    return url is not None and regex.search(url)
 
 
 def apscheduler_listener(event):
@@ -49,7 +59,7 @@ def apscheduler_listener(event):
                 scheduler.remove_job(job_id=job.id)
                 logger.info("APScheduler_listener: Job removed successfully")
             except Exception as e:
-                logger.exception("apscheduler_listener: Error occured while removing job")
+                logger.exception("apscheduler_listener: Error occurred while removing job")
                 raise e
 
 
@@ -70,24 +80,40 @@ def schedule_job(data, user_id, access_token):
     content_type = data.get('content_type', 'application/json')
     # will return None if key not found. We also need to check for valid values not just keys
     # in dict because a value can be '' and it can be valid or invalid
-    job_config['trigger'] = data.get('task_type')
+    job_config['task_type'] = data.get('task_type')
     job_config['url'] = data.get('url')
-    job_config['frequency'] = data.get('frequency')
 
     # Get missing keys
     missing_keys = filter(lambda _key: job_config[_key] is None, job_config.keys())
     if len(missing_keys) > 0:
-        logger.exception("schedule_job: Missing keys %s" % ', '.join(missing_keys))
-        raise FieldRequiredError(error_message="Missing keys %s" % ', '.join(missing_keys))
+        logger.exception("schedule_job: Missing keys: %s" % ', '.join(missing_keys))
+        raise FieldRequiredError(error_message="Missing keys: %s" % ', '.join(missing_keys))
 
-    trigger = job_config['trigger'].lower().strip()
+    if not is_valid_url(job_config['url']):
+        logger.exception("schedule_job: URL is not valid")
+        raise InvalidUsage("url is not valid")
+
+    trigger = str(job_config['task_type']).lower().strip()
 
     if trigger == 'periodic':
         try:
-            frequency = data['frequency']
+            try:
+                frequency = data['frequency']
+            except KeyError:
+                raise FieldRequiredError("Missing key: frequency")
             start_datetime = data['start_datetime']
-            end_datetime = data['end_datetime']
+            try:
+                start_datetime = parse(start_datetime)
+                start_datetime = start_datetime.replace(tzinfo=timezone('UTC'))
+            except Exception:
+                InvalidUsage(error_message="Invalid value of start_datetime %s" % start_datetime)
 
+            end_datetime = data['end_datetime']
+            try:
+                end_datetime = parse(end_datetime)
+                end_datetime = end_datetime.replace(tzinfo=timezone('UTC'))
+            except Exception:
+                InvalidUsage(error_message="Invalid value of end_datetime %s" % end_datetime)
             # Possible frequency dictionary keys
             temp_time_list = ['seconds', 'minutes', 'hours', 'days', 'weeks']
 
@@ -99,7 +125,7 @@ def schedule_job(data, user_id, access_token):
             # If value of frequency keys are not integer then throw exception
             for value in frequency.values():
                 if value <= 0:
-                    raise FieldRequiredError(error_message='Invalid value %s in frequency' % value)
+                    raise InvalidUsage(error_message='Invalid value %s in frequency' % value)
 
         except Exception:
             logger.exception('schedule_job: Error while scheduling a job')
@@ -118,21 +144,31 @@ def schedule_job(data, user_id, access_token):
                                     kwargs=job_config['post_data'])
             logger.info('schedule_job: Task has been added and will run at %s ' % start_datetime)
         except Exception:
+            logger.exception("schedule_job: %s" % Exception.message)
             raise JobNotCreatedError("Unable to create the job.")
         return job.id
     elif trigger == 'one_time':
         try:
             run_datetime = data['run_datetime']
+        except KeyError:
+            logger.exception("schedule_job: couldn't find 'run_datetime' in post data")
+            raise FieldRequiredError(error_message="Field 'run_datetime' is missing")
+        try:
+            run_datetime = parse(run_datetime)
+            run_datetime = run_datetime.replace(tzinfo=timezone('UTC'))
+        except Exception:
+            InvalidUsage(error_message="Invalid value of run_datetime %s. run_datetime should be datetime format" % run_datetime)
+        try:
             job = scheduler.add_job(run_job,
                                     trigger='date',
                                     run_date=run_datetime,
-                                    args=[access_token, job_config['url'], content_type],
+                                    args=[user_id, access_token, job_config['url'], content_type],
                                     kwargs=job_config['post_data'])
             logger.info('schedule_job: Task has been added and will run at %s ' % run_datetime)
             return job.id
-        except KeyError:
-            logger.exception("schedule_job: couldn't find 'run_datetime'")
-            raise FieldRequiredError(error_message="Missing or invalid data. Field 'run_datetime' is missing")
+        except Exception:
+            logger.error("schedule_job: %s" % Exception.message)
+            raise JobNotCreatedError("Unable to create job. Invalid data given")
     else:
         logger.error("schedule_job: Task type not correct. Please use periodic or one_time as task type.")
         raise TriggerTypeError("Task type not correct. Please use periodic or one_time as task type.")
@@ -142,6 +178,7 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
     """
     Function callback to run when job time comes, this method is called by APScheduler
     :param user_id:
+    :param access_token: Bearer token for Authorization when sending request to url
     :param url: url to send post request
     :param content_type: format of post data
     :param kwargs: post data like campaign name, smartlist ids etc
@@ -149,7 +186,7 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
     """
     logger.info('User ID: %s, URL: %s, Content-Type: %s' % (user_id, url, content_type))
     # Call celery task to send post_data to url
-    send_request.apply_async([user_id, access_token, url, content_type, kwargs])
+    send_request.apply_async([access_token, url, content_type, kwargs])
 
 
 def remove_tasks(ids, user_id):
@@ -169,7 +206,7 @@ def remove_tasks(ids, user_id):
 def serialize_task(task):
     """
     Serialize task data to json object
-    :param task:
+    :param task: APScheduler task to convert to json dict
     :return: json converted dict object
     """
     task_dict = None

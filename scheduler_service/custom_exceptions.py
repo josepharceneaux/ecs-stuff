@@ -14,8 +14,9 @@ __author__ = 'saad'
 
 class SchedulerServiceApiException(scheduler_service.common.error_handling.InternalServerError):
     error_code = 6000
-    CODE_ALREADY_PAUSED = 6053
+    CODE_SCHEDULER_NOT_RUNNING = 6051
     CODE_PENDING = 6052
+    CODE_ALREADY_PAUSED = 6053
     CODE_ALREADY_RUNNING = 6054
     CODE_FIELD_REQUIRED = 6055
     CODE_TRIGGER_TYPE = 6056
@@ -30,6 +31,10 @@ class SchedulerServiceApiException(scheduler_service.common.error_handling.Inter
         error_dict = super(SchedulerServiceApiException, self).to_dict()
         error_dict['error']['code'] = self.__class__.error_code
         return json.dumps(error_dict)
+
+
+class SchedulerNotRunningError(SchedulerServiceApiException):
+    error_code = SchedulerServiceApiException.CODE_SCHEDULER_NOT_RUNNING
 
 
 class JobAlreadyPausedError(SchedulerServiceApiException):
