@@ -63,7 +63,7 @@ def post_email_template():
     return jsonify({'template_id': [{'id': user_email_template_id}]})
 
 @require_oauth
-def delete(self, **kwargs):
+def delete_email_template(**kwargs):
     """
     Function will delete email template from db
     input: {'id': "template_id"}
@@ -93,7 +93,7 @@ def delete(self, **kwargs):
         return dict(success=1)
 
 @require_oauth
-def patch(self, **kwargs):
+def update_email_template(**kwargs):
     """
     Function can update email template(s).
     input: {'id': "template_id"}
@@ -128,7 +128,7 @@ def patch(self, **kwargs):
     return dict(success=1)
 
 @require_oauth
-def get(self, **kwargs):
+def get_email_template(**kwargs):
     """
     Function can retrieve email template(s).
     input: {'id': "template_id"}
