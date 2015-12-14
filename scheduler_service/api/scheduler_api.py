@@ -71,9 +71,7 @@ class Tasks(Resource):
                             "some_other_kwarg": "abc",
                             "campaign_name": "SMS Campaign"
                         },
-                        "frequency": {
-                            "day" : 6
-                        },
+                        "frequency": 3601,      #in seconds
                         "start_datetime": "2015-11-05T08:00:00",
                         "end_datetime": "2015-12-05T08:00:00"
                         "next_run_datetime": "2015-11-05T08:20:30",
@@ -101,10 +99,7 @@ class Tasks(Resource):
         :Example:
             for interval or periodic schedule
             task = {
-                "frequency": {
-                    "day": 5,
-                    "hour": 6
-                },
+                "frequency": 3601,
                 "task_type": "periodic",
                 "start_datetime": "2015-12-05T08:00:00",
                 "end_datetime": "2016-01-05T08:00:00",
@@ -375,10 +370,7 @@ class TaskById(Resource):
                                 "content": "text to be sent as sms"
                                 "some_other_kwarg": "abc"
                             },
-                            "frequency": {
-                                "days": 0,
-                                "seconds": 10
-                            }
+                            "frequency": 3601,
                             "start_datetime": "2015-11-05T08:00:00",
                             "end_datetime": "2015-12-05T08:00:00"
                             "next_run_datetime": "2015-11-05T08:20:30",

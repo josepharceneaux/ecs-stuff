@@ -114,18 +114,11 @@ def schedule_job(data, user_id, access_token):
                 end_datetime = end_datetime.replace(tzinfo=timezone('UTC'))
             except Exception:
                 InvalidUsage(error_message="Invalid value of end_datetime %s" % end_datetime)
-            # Possible frequency dictionary keys
-            temp_time_list = ['seconds', 'minutes', 'hours', 'days', 'weeks']
 
-            # Check if keys in frequency are valid time period otherwise throw exception
-            for key in frequency.keys():
-                if key not in temp_time_list:
-                    raise FieldRequiredError(error_message='Invalid input %s in frequency' % key)
-
-            # If value of frequency keys are not integer then throw exception
-            for value in frequency.values():
-                if value <= 0:
-                    raise InvalidUsage(error_message='Invalid value %s in frequency' % value)
+            # If value of frequency is not integer or lesser than 1 hour then throw exception
+            if not str(frequency).isdigit() or int(frequency) < 3600:
+                raise InvalidUsage(error_message='Invalid value %s in frequency. It should be integer and value should \
+                 be greater than or equal 3600' % frequency)
 
         except Exception:
             logger.exception('schedule_job: Error while scheduling a job')
@@ -133,11 +126,7 @@ def schedule_job(data, user_id, access_token):
         try:
             job = scheduler.add_job(run_job,
                                     trigger='interval',
-                                    seconds=frequency.get('seconds', 0),
-                                    minutes=frequency.get('minutes', 0),
-                                    hours=frequency.get('hours', 0),
-                                    days=frequency.get('days', 0),
-                                    weeks=frequency.get('weeks', 0),
+                                    seconds=frequency,
                                     start_date=start_datetime,
                                     end_date=end_datetime,
                                     args=[user_id, access_token, job_config['url'], content_type],
@@ -217,7 +206,7 @@ def serialize_task(task):
             start_datetime=str(task.trigger.start_date),
             end_datetime=str(task.trigger.end_date),
             next_run_datetime=str(task.next_run_time),
-            frequency=dict(days=task.trigger.interval.days, seconds=task.trigger.interval.seconds),
+            frequency=dict(seconds=task.trigger.interval.seconds),
             post_data=task.kwargs,
             pending=task.pending,
             task_type='periodic'

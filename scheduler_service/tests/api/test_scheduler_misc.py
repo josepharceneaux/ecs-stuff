@@ -4,11 +4,8 @@ Also test bulk tests for jobs
 """
 # Third party imports
 import json
-from pytz import timezone
-from time import sleep
 import pytest
 import requests
-from dateutil.parser import parse
 
 # Application imports
 from scheduler_service.tests.conftest import APP_URL
@@ -18,56 +15,6 @@ __author__ = 'saad'
 
 @pytest.mark.usefixtures('auth_header', 'job_config')
 class TestSchedulerMisc:
-
-    def test_monitor_job_running(self, auth_header, job_config):
-        """
-        Its important to check whether job is running or not. And more importantly, if job is running on correct
-        time according to its frequency
-            Args:
-                auth_data: Fixture that contains token.
-                job_config (dict): Fixture that contains job config to be used as
-                POST data while hitting the endpoint.
-            :return:
-            """
-        frequency = 10
-        job_config['frequency'] = {"seconds": frequency}
-
-        # Created a job
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
-                                 headers=auth_header)
-
-        assert response.status_code == 201
-
-        # Wait for 3 seconds for the job to start
-        sleep(3)
-        old_run_time = job_config['start_datetime']
-
-        # Wait for the next runtime and then check if runtime changed and is greater
-        for x in range(2):
-            sleep(frequency)
-            response_running = requests.get(APP_URL + '/tasks/id/' + response.json()['id'],
-                                            headers=auth_header)
-
-            assert response_running.status_code == 200
-            task = response_running.json()
-
-            # Parse date into UTC format
-            str_current_run = parse(old_run_time)
-            current_run = str_current_run.replace(tzinfo=timezone('UTC'))
-            str_next_run = parse(task['task']['next_run_datetime'])
-            next_run = str_next_run.replace(tzinfo=timezone('UTC'))
-
-            # Current run time should be lower than next run time to ensure job has at least run once
-            assert current_run < next_run
-
-            # Set the old_run_time to the next_run_datetime
-            old_run_time = task['task']['next_run_datetime']
-
-        # delete job
-        response_delete = requests.delete(APP_URL + '/tasks/id/' + response.json()['id'],
-                                          headers=auth_header)
-
-        assert response_delete.status_code == 200
 
     def test_bulk_schedule_jobs(self, auth_header, job_config):
         """

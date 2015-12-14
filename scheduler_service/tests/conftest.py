@@ -20,9 +20,7 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 @pytest.fixture(scope='session')
 def job_config_periodic(request):
     return {
-        "frequency": {
-            "hours": 10
-        },
+        "frequency": 3600,
         'task_type': 'periodic',
         "content_type": "application/json",
         "url": "http://getTalent.com/sms/send/",
