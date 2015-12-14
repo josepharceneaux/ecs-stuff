@@ -20,7 +20,7 @@ from scheduler_service.common.talent_api import TalentApi
 from scheduler_service.common.error_handling import *
 from scheduler_service.common.utils.auth_utils import require_oauth
 from scheduler_service.custom_exceptions import JobAlreadyPausedError, PendingJobError, JobAlreadyRunningError, \
-    SchedulerNotRunningError
+    SchedulerNotRunningError, SchedulerServiceApiException
 from scheduler_service.scheduler import scheduler, schedule_job, serialize_task, remove_tasks
 
 api = TalentApi()
@@ -200,7 +200,8 @@ class Tasks(Resource):
         try:
             req_data = request.get_json()
         except Exception:
-            raise InvalidUsage("Bad Request, data should be in json")
+            raise InvalidUsage("Bad Request, data should be in json",
+                               error_code=SchedulerServiceApiException.CODE_INVALID_USAGE)
         task_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else None
         if not task_ids:
             raise InvalidUsage("Bad request, No data in ids", error_code=400)

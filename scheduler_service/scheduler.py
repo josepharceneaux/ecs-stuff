@@ -107,22 +107,25 @@ def schedule_job(data, user_id, access_token):
                 start_datetime = parse(start_datetime)
                 start_datetime = start_datetime.replace(tzinfo=timezone('UTC'))
             except Exception:
-                InvalidUsage(error_message="Invalid value of start_datetime %s" % start_datetime)
+                raise InvalidUsage(error_message="Invalid value of start_datetime %s" % start_datetime)
 
             end_datetime = data['end_datetime']
             try:
                 end_datetime = parse(end_datetime)
                 end_datetime = end_datetime.replace(tzinfo=timezone('UTC'))
             except Exception:
-                InvalidUsage(error_message="Invalid value of end_datetime %s" % end_datetime)
+                raise InvalidUsage(error_message="Invalid value of end_datetime %s" % end_datetime)
 
             # If value of frequency is not integer or lesser than 1 hour then throw exception
-            if not str(frequency).isdigit() or int(frequency) < 3600:
-                raise InvalidUsage(error_message='Invalid value %s in frequency. It should be integer and value should \
-                 be greater than or equal 3600' % frequency)
-
-
-        except Exception:
+            if not str(frequency).isdigit():
+                logger.exception("scheduler_job: Invalid value of frequency. It should be integer")
+                raise InvalidUsage(error_message='Invalid value of frequency. It should be integer')
+            if int(frequency) < 3600:
+                logger.exception("scheduler_job: Invalid value of frequency. Should be greater or equal to 3600")
+                raise InvalidUsage(error_message='Invalid value of frequency. Value should '
+                                                 'be greater than or equal to 3600')
+            frequency = int(frequency)
+        except KeyError:
             logger.exception('schedule_job: Error while scheduling a job')
             raise FieldRequiredError(error_message="Missing or invalid data.")
         try:
