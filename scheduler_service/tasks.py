@@ -1,8 +1,7 @@
 """
-Celery tasks are defined here.
-It will be a separate celery process which is called by run_job to send post request to a url.
-If task is successfully sent then it will return SUCCESS status and if request is failed then it will
-show FAILED status
+Celery tasks are defined here. It will be a separate celery process which is called by
+run_job to send POST request to a URL. If task is successfully sent then it will return
+SUCCESS status and if request is failed then it will show FAILED status.
 
 - Running celery using commandline (scheduler_service directory) =>
 

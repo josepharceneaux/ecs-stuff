@@ -6,6 +6,8 @@ Scheduler - APScheduler initialization, set jobstore, threadpoolexecutor
 - get tasks from APScheduler and serialize tasks using json
 """
 
+import re
+
 # Third-party imports
 from pytz import timezone
 from apscheduler.events import EVENT_JOB_ERROR
@@ -30,7 +32,6 @@ scheduler.add_jobstore(job_store)
 
 
 def is_valid_url(url):
-    import re
     regex = re.compile(
         r'^https?://'  # http:// or https://
         r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
@@ -72,7 +73,7 @@ def schedule_job(data, user_id, access_token):
     :param data: the data like url, frequency, post_data, start_datetime and end_datetime of job which is required
     for creating job of APScheduler
     :param user_id: the user_id of user who is creating job
-    :param access_token: csrf access token for the sending post request to url with post_data
+    :param access_token: CSRF access token for the sending post request to url with post_data
     :return:
     """
     job_config = dict()
@@ -120,7 +121,7 @@ def schedule_job(data, user_id, access_token):
             # Check if keys in frequency are valid time period otherwise throw exception
             for key in frequency.keys():
                 if key not in temp_time_list:
-                    raise FieldRequiredError(error_message='Invalid input %s in frequency' % key)
+                    raise InvalidUsage(error_message='Invalid input %s in frequency' % key)
 
             # If value of frequency keys are not integer then throw exception
             for value in frequency.values():
@@ -171,7 +172,7 @@ def schedule_job(data, user_id, access_token):
             raise JobNotCreatedError("Unable to create job. Invalid data given")
     else:
         logger.error("schedule_job: Task type not correct. Please use periodic or one_time as task type.")
-        raise TriggerTypeError("Task type not correct. Please use periodic or one_time as task type.")
+        raise TriggerTypeError("Task type not correct. Please use either 'periodic' or 'one_time' as task type.")
 
 
 def run_job(user_id, access_token, url, content_type, **kwargs):

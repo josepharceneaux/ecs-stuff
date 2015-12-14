@@ -245,7 +245,7 @@ class ResumeTasks(Resource):
             task_ids = {
                 'ids': [fasdff12n22m2jnr5n6skf,ascv3h5k1j43k6k8k32k345jmn,123n23n4n43m2kkcj53vdsxc]
             }
-            headers = {'Authorization': 'Bearer <access_token>', Content-Type: 'application/json'}
+            headers = {'Authorization': 'Bearer <access_token>', 'Content-Type' : 'application/json'}
             response = requests.post(API_URL + '/tasks/resume/', headers=headers, data=json.dumps(task_ids))
 
         .. Response::
@@ -301,7 +301,7 @@ class PauseTasks(Resource):
             task_ids = {
                 'ids': [fasdff12n22m2jnr5n6skf,ascv3h5k1j43k6k8k32k345jmn,123n23n4n43m2kkcj53vdsxc]
             }
-            headers = {'Authorization': 'Bearer <access_token>'}
+            headers = {'Authorization': 'Bearer <access_token>', 'Content-Type' : 'application/json'}
             response = requests.post(API_URL + '/tasks/resume/', headers=headers, data=json.dumps(task_ids))
 
         .. Response::
