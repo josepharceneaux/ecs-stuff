@@ -1,46 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Pusher Test</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.2/toastr.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.2/toastr.min.js"></script>
-  <script src="https://js.pusher.com/3.0/pusher.min.js"></script>
-  <script>
-
-  </script>
+    <title>Pusher Test</title>
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha/css/bootstrap.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.2/toastr.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.js"></script>
 </head>
 <body>
-<h1>Push Notifications</h1>
-<button onclick="send()">Get Push Notification</button>
-<script>
-  // Enable pusher logging - don't include this in production
-    Pusher.log = function(message) {
-      if (window.console && window.console.log) {
-        window.console.log(message);
-      }
-    };
+<div class="container">
+    <a href="/roost" class="btn btn-primary">Roost</a>
+    <a href="/onesignal" class="btn btn-primary">OneSIgnal</a>
+</div>
 
-    var pusher = new Pusher('7fbaa3e3bfe2607563cb', {
-      encrypted: true
-    });
-    var channel = pusher.subscribe('getTalent');
-    channel.bind('push_event', function(data) {
-      toastr.success(data.message);
-    });
-  function send(){
-    $.ajax({
-      url: "/notification",
-      method: "GET",
-      success: function(res){
-        console.log(res, 'Message:');
-      },
-      error: function (error) {
-        console.log(error);
-      }
-    });
-  }
 
-</script>
 </body>
 </html>

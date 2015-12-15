@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Roost Push Notification Center</title>
+    <script src='//cdn.goroost.com/roostjs/y654irhu7xre1a9nwagu5jc326x436nh' async></script>
+    <script>
+        //AIzaSyBqqrswJeJyvmFvb8njVfWBGUxy8cFYG54
+        // 348968274925
+            var _roost = _roost || [];
+            _roost.push(['onload', function(data) {
+                console.log(data);
+//                _roost.prompt()
+//                console.log(_roost.supportedBrowser());
+//                _roost.push(['enable', false]);
+//                _roost.prompt()
+
+            }]);
+
+//            _roost.push(["autoprompt", true]);
+
+
+            _roost.push(['onresult', function(data) {
+
+                if (data) {
+                		var segments = "";
+                        for(var i = 0; i < data.tags.length; i++) {
+                        	segments += data.tags[i] + "|";
+                        };
+                        window.roostTags = segments;
+                } else {
+                		window.roostTags = "blank";
+                }
+
+                if (!data.firstTime) {
+                    window.roostFirstTime = false;
+                } else {
+                	window.roostFirstTime = true;
+                }
+
+
+
+            }]);
+
+            _roost.push(["segments", "Football", "Tennis"]);
+
+
+            window.addRoostSegment = function(segments) {
+                alert("adding roost segments");
+            };
+
+            function removeRoostSegment(segment) {
+                alert("remobed roost segment");
+            };
+            function doPrompt () {
+                _roost.prompt()
+            }
+    </script>
+</head>
+<body>
+    <button onclick="doPrompt()">Promt</button>
+</body>
+</html>
