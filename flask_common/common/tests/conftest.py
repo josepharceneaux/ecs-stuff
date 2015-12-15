@@ -251,27 +251,13 @@ def sample_client(request):
 
 
 @pytest.fixture()
-def access_token_first(request, user_first, sample_client):
-    access_token = get_access_token(user_first, PASSWORD, sample_client.client_id, sample_client.client_secret)
-
-    def tear_down():
-        token = Token.query.filter_by(access_token=access_token).first()
-        if token:
-            token.delete()
-    request.addfinalizer(tear_down)
-    return access_token
+def access_token_first(user_first, sample_client):
+    return get_access_token(user_first, PASSWORD, sample_client.client_id, sample_client.client_secret)
 
 
 @pytest.fixture()
-def access_token_second(request, user_second, sample_client):
-    access_token = get_access_token(user_second, PASSWORD, sample_client.client_id, sample_client.client_secret)
-
-    def tear_down():
-        token = Token.query.filter_by(access_token=access_token).first()
-        if token:
-            token.delete()
-    request.addfinalizer(tear_down)
-    return access_token
+def access_token_second(user_second, sample_client):
+    return get_access_token(user_second, PASSWORD, sample_client.client_id, sample_client.client_secret)
 
 
 @pytest.fixture()

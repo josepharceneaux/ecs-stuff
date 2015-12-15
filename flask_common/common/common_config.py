@@ -39,5 +39,6 @@ elif GT_ENVIRONMENT == 'prod':
 else:
     raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")
 
+
 SECRET_KEY = os.urandom(24).encode('hex')
 OAUTH2_PROVIDER_TOKEN_EXPIRES_IN = 7200  # 2 hours expiry time for bearer token

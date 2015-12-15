@@ -9,17 +9,25 @@ from sys import exit, platform as _platform
 VM_NOT_RUNNING_ERROR_MESSAGE = 'Virtual Machine is not running. Please start it with docker-machine start VM_NAME'
 SERVICE_TO_DOCKERHUB_REPO = {'activity_service': 'activities-service',
                              'auth_service': 'authservice',
+                             'user_service': 'user-service',
                              'resume_service': 'resume-parsing-service',
                              'candidate_service': 'candidate-service',
                              'base_service_container': 'base-service-container',
-                             'social_network_service': 'social-network-service'}
+                             'social_network_service': 'social-network-service',
+                             'candidate_pool_service': 'candidate-pool-service',
+                             'spreadsheet_import_service': 'spreadsheet-import-service',
+                             'sms_campaign_service': 'sms-campaign-service'}
 
 SERVICE_TO_PORT_NUMBER = {'auth_service': 8001,
                           'activity_service': 8002,
                           'resume_service': 8003,
                           'user_service': 8004,
-                          'social_network_service': 8006,
-                          'sms_campaign_service': 8008}
+                          'candidate_service': 8005,
+                          'widget_service': 8006,
+                          'social_network_service': 8007,
+                          'candidate_pool_service': 8008,
+                          'spreadsheet_import_service': 8009,
+                          'sms_campaign_service': 8010}
 
 parser = argparse.ArgumentParser(description='Common files administrator for Docker building.')
 parser.add_argument('--build', nargs=1, choices=SERVICE_TO_DOCKERHUB_REPO.keys(), help='Invokes the Docker build action for given service')

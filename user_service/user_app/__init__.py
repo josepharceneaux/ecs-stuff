@@ -3,10 +3,11 @@ __author__ = 'ufarooqi'
 from flask import Flask
 from user_service.common.models.db import db
 from user_service.common.talent_api import TalentApi
+from user_service.common import common_config
 from healthcheck import HealthCheck
 
 app = Flask(__name__)
-app.config.from_object('user_service.config')
+app.config.from_object(common_config)
 
 logger = app.config['LOGGER']
 from user_service.common.error_handling import register_error_handlers
