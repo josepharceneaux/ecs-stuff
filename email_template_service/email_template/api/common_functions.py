@@ -25,6 +25,7 @@ def create_email_template(token, user_id, template_name, body_html, body_text, i
     )
 
     create_resp = post_to_email_template_resource(token, data=data, domain_id=domain_id)
+    assert create_resp.status_code == 201
     print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
     json_resonse = create_resp.json()['template_id'][0]
     return json_resonse['id']

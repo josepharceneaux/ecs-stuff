@@ -6,13 +6,6 @@ EMAIL_TEMPLATE_URL = BASE_URL + "/v1/email-templates"
 EMAIL_TEMPLATE_FOLDER_URL = BASE_URL + "/v1/email-template-folders"
 
 
-# class EmailTemplateResourceUrl:
-#     def __init__(self):
-#         pass
-#
-#     BASE_URL = "http://127.0.0.1:8010"
-
-
 def post_to_email_template_resource(access_token, data=None, domain_id=None):
     """
     Function sends a post request to EmailTemplate,

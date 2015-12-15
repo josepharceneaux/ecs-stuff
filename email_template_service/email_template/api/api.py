@@ -1,5 +1,5 @@
 from flask import Blueprint
-from email_template_service.common.utils.auth_utils import require_oauth, require_all_roles
+from email_template_service.common.utils.auth_utils import require_oauth, require_all_roles, is_number
 from email_template_service.common.models.db import db
 from email_template_service.common.models.misc import UserEmailTemplate, EmailTemplateFolder
 from email_template_service.common.models.user import User
@@ -33,8 +33,7 @@ def post_email_template():
         raise ResourceNotFound(error_message="Email HTML body is empty")
 
     # Check if the name is already exists in the domain
-    existing_template_name = db.session.query(UserEmailTemplate).join(User).filter(
-        UserEmailTemplate.name == template_name, User.domain_id == domain_id).first()
+    existing_template_name = UserEmailTemplate.query.get(template_name)
     if existing_template_name:
         raise InvalidUsage(error_message="Template name with name=%s already exists" % existing_template_name)
 
@@ -59,7 +58,7 @@ def post_email_template():
     db.session.add(user_email_template)
     db.session.commit()
     user_email_template_id = user_email_template.id
-    return jsonify({'template_id': [{'id': user_email_template_id}]})
+    return jsonify({'template_id': [{'id': user_email_template_id}]}), 201
 
 
 @mod.route('/v1/email-templates', methods=['DELETE'])
@@ -76,7 +75,7 @@ def delete_email_template():
     user_id = request.user.id
     domain_id = request.user.domain_id
 
-    template = UserEmailTemplate.query.filter_by(id=email_template_id).first()
+    template = UserEmailTemplate.query.get(email_template_id)
 
     # Verify owned by same domain
     template_owner_user = db.session.query(User).filter(template.user_id == User.id).first()
@@ -88,9 +87,10 @@ def delete_email_template():
         raise ForbiddenError(error_message="User %d not allowed to delete the template" % user_id)
 
     # Delete the template
-    db.session.query(UserEmailTemplate).filter_by(id=email_template_id).delete()
-
-    return dict(success=1)
+    template_to_delete = UserEmailTemplate.query.get(email_template_id)
+    db.session.delete(template_to_delete)
+    db.session.commit()
+    return jsonify({"success": 1}), 204
 
 
 @mod.route('/v1/email-templates', methods=['PUT'])
@@ -184,15 +184,17 @@ def create_email_template_folder():
     # Check if the name is already exists under same domain
     existing_row = EmailTemplateFolder.query.filter(EmailTemplateFolder.name == folder_name,
                                                     EmailTemplateFolder.domain_id == domain_id).first()
+
     if existing_row:
         raise InvalidUsage(error_message="Template Folder with name=%s already exists" % folder_name)
+
     parent_id = requested_data['parent_id'] if 'parent_id' in requested_data else None
     template_folder_parent_id = EmailTemplateFolder.query.filter_by(parent_id=parent_id, domain_id=domain_id).first()
     if parent_id and not template_folder_parent_id:
         raise ForbiddenError(error_message="parent ID %s does not belong to domain %s" % auth_user.id % domain_id)
     is_immutable = 0
     get_immutable_value = request.args.get("is_immutable")
-    if get_immutable_value == "1" and not require_all_roles('CAN_CREATE_EMAIL_TEMPLATE_FOLDER'):
+    if get_immutable_value == "1":
         raise UnauthorizedError(error_message="User is not admin")
     email_template_folder = EmailTemplateFolder(name=folder_name, domain_id=domain_id, parent_id=parent_id,
                                                 is_immutable=is_immutable)
@@ -200,7 +202,7 @@ def create_email_template_folder():
     db.session.commit()
     email_template_folder_id = email_template_folder.id
 
-    return jsonify({"template_folder_id": [{"id": email_template_folder_id}]})
+    return jsonify({"template_folder_id": [{"id": email_template_folder_id}]}), 201
 
 
 @require_all_roles('CAN_DELETE_EMAIL_TEMPLATE_FOLDER')
@@ -214,21 +216,20 @@ def delete_email_template_folder():
     """
     requested_data = json.loads(request.data)
     folder_id = requested_data['id']
-    domain_id = request.user.domain_id
     user_id = request.user.id
 
-    template_folder = EmailTemplateFolder.query.filter_by(id=folder_id).first()
+    template_folder = EmailTemplateFolder.query.get(folder_id)
 
     # Verify owned by same domain
-    template_folder_owner_user = db.session.query(User).filter(template_folder.user_id == User.id).first()
-    user_domain = template_folder_owner_user.domain_id
-    if user_domain != domain_id:
+    template_folder_owner_user = db.session.query(User).filter(template_folder.domain_id == User.domain_id).first()
+    if not template_folder_owner_user:
         raise ForbiddenError(error_message="Template folder is not owned by same domain")
 
-    if template_folder.is_immutable == 1 and not require_all_roles('CAN_DELETE_EMAIL_TEMPLATE_FOLDER'):
+    if template_folder.is_immutable == 1:
         raise ForbiddenError(error_message="User %d not allowed to delete the template" % user_id)
 
     # Delete the template
     db.session.query(UserEmailTemplate).filter_by(id=folder_id).delete()
+    db.session.commit()
 
-    return dict(success=1)
+    return jsonify({"success": 1}), 204

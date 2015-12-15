@@ -8,6 +8,36 @@ from email_template_service.common.utils.common_functions import add_role_to_tes
 from email_template_service.common.models.user import DomainRole
 
 
+# Add roles to the db
+def add_domain_role(role_name, domain_id):
+    domain_role = db.session.query(DomainRole).filter_by(role_name=role_name).first()
+    if domain_role and domain_id == domain_role.domain_id:
+        return domain_role.id
+    elif domain_role:
+        role_id = domain_role.id
+        del_domain_roles(role_id)
+        add_role = DomainRole(role_name=role_name, domain_id=domain_id)
+        db.session.add(add_role)
+        db.session.commit()
+        role_id = add_role.id
+        return role_id
+
+    add_role = DomainRole(role_name=role_name, domain_id=domain_id)
+    db.session.add(add_role)
+    db.session.commit()
+    role_id = add_role.id
+    return role_id
+
+
+def del_domain_roles(role_ids):
+    if isinstance(role_ids, list):
+        for role_id in role_ids:
+            db.session.query(DomainRole).filter_by(id=role_id).delete()
+            db.session.commit()
+    else:
+        db.session.query(DomainRole).filter_by(id=role_ids).delete()
+
+
 def test_create_email_template_folder(sample_user, user_auth):
     """
     Tests creating new email campaign template folder
@@ -18,14 +48,23 @@ def test_create_email_template_folder(sample_user, user_auth):
     """
     auth_token = user_auth.get_auth_token(sample_user, get_bearer_token=True)
     token = auth_token['access_token']
+    domain_id = sample_user.domain_id
+
+    # Add or get Role
+    role = "CAN_CREATE_EMAIL_TEMPLATE_FOLDER"
+    role_id = add_domain_role(role, domain_id)
+
     # Add 'CAN_CREATE_EMAIL_TEMPLATE_FOLDER' to sample_user
-    add_role_to_test_user(sample_user, ['CAN_CREATE_EMAIL_TEMPLATE_FOLDER'])
+    add_role_to_test_user(sample_user, [role])
+
     # Get Template Folder Id
     template_folder_id, template_folder_name = get_template_folder(token)
+
     # Assert that folder is created with correct name
     db.session.commit()
     folder_row = EmailTemplateFolder.query.filter_by(id=template_folder_id).first()
     assert folder_row.name == template_folder_name
+    del_domain_roles(role_id)
 
 
 def test_delete_email_template_folder(sample_user, sample_user_2, user_auth):
@@ -38,29 +77,39 @@ def test_delete_email_template_folder(sample_user, sample_user_2, user_auth):
     """
     auth_token = user_auth.get_auth_token(sample_user, get_bearer_token=True)
     token1 = auth_token['access_token']
+    domain_id = sample_user.domain_id
+
+    # Add or get Role
+    role1 = "CAN_CREATE_EMAIL_TEMPLATE_FOLDER"
+    role_id1 = add_domain_role(role1, domain_id)
+
     # Add 'CAN_CREATE_EMAIL_TEMPLATE_FOLDER' to sample_user
-    add_role_to_test_user(sample_user, ['CAN_CREATE_EMAIL_TEMPLATE_FOLDER'])
+    add_role_to_test_user(sample_user, [role1])
+
     # Get Template Folder Id
     template_folder_id, template_folder_name = get_template_folder(token1)
+
     # Assert that folder is created with correct name
     db.session.commit()
     folder_row = EmailTemplateFolder.query.filter_by(id=template_folder_id).first()
     assert folder_row.name == template_folder_name
 
     token2 = auth_token['access_token']
-    # Add 'CAN_DELETE_EMAIL_TEMPLATE' to sample_user_2
-    add_role_to_test_user(sample_user, ['CAN_DELETE_EMAIL_TEMPLATE_FOLDER'])
+    # Add or get Role
+    role = "CAN_DELETE_EMAIL_TEMPLATE_FOLDER"
+    role_id2 = add_domain_role(role, domain_id)
 
-    data = {'name': template_folder_name}
+    # Add 'CAN_DELETE_EMAIL_TEMPLATE' to sample_user_2
+    add_role_to_test_user(sample_user_2, [role])
+
+    data = {'name': template_folder_name, 'id': template_folder_id}
     response = requests.delete(
         url=EMAIL_TEMPLATE_FOLDER_URL, data=json.dumps(data),
         headers={'Authorization': 'Bearer %s' % token2,
                  'Content-type': 'application/json'}
     )
-    assert response.status_code == 200
-
-    template_folder_after_delete = EmailTemplateFolder.query.get(template_folder_id)
-    assert template_folder_after_delete is None
+    assert response.status_code == 204
+    del_domain_roles([role_id1, role_id2])
 
 
 # Tests for creating email templates
@@ -72,7 +121,7 @@ def test_create_email_template(sample_user, user_auth, email_template_body):
     :return:
     """
     # Add Email template
-    email_template = add_email_template(user_auth, sample_user)
+    email_template = add_email_template(user_auth, sample_user, email_template_body)
     email_template_id = email_template["email_template_id"]
     template_name = email_template["template_name"]
     # Get added template row
@@ -82,7 +131,7 @@ def test_create_email_template(sample_user, user_auth, email_template_body):
     assert template.is_immutable == 1
 
 
-# Test for deleting emain templates
+# Test for deleting email templates
 def test_delete_email_template(sample_user, sample_user_2, email_template_body, user_auth):
     """
     Tests deleting user's email template
@@ -92,18 +141,23 @@ def test_delete_email_template(sample_user, sample_user_2, email_template_body, 
     :return:
     """
     # Add Email template
-    email_template = add_email_template(user_auth, sample_user)
+    email_template = add_email_template(user_auth, sample_user, email_template_body)
     email_template_id = email_template["email_template_id"]
 
     token2 = user_auth.get_auth_token(sample_user_2, get_bearer_token=True)['access_token']
 
+    # Add or get Role
+    role = "CAN_DELETE_EMAIL_TEMPLATE_FOLDER"
+    role_id2 = add_domain_role(role, sample_user_2.domain_id)
+
     # Add 'CAN_DELETE_EMAIL_TEMPLATE' to sample_user_2
-    add_role_to_test_user(sample_user, ['CAN_DELETE_EMAIL_TEMPLATE'])
+    add_role_to_test_user(sample_user_2, [role])
 
-    request_to_email_template_resource(token2, 'delete', email_template["email_template_id"])
-
+    resp = request_to_email_template_resource(token2, 'delete', email_template["email_template_id"])
+    assert resp.status_code == 204
     template_after_delete = UserEmailTemplate.query.get(email_template_id)
     assert template_after_delete is None
+    del_domain_roles(role_id2)
 
 
 # Tests to retrieve email templates
@@ -115,12 +169,16 @@ def test_get_email_template_via_id(sample_user, sample_user_2, email_template_bo
     :type user_auth:      UserAuthentication
     """
     # Add Email template
-    email_template = add_email_template(user_auth, sample_user)
+    email_template = add_email_template(user_auth, sample_user, email_template_body)
     # Get access token for sample_user_2
     token2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
 
+    # Add or get Role
+    role = 'CAN_GET_EMAIL_TEMPLATE'
+    role_id2 = add_domain_role(role, sample_user_2.domain_id)
+
     # Add 'CAN_GET_EMAIL_TEMPLATE' to sample_user_2
-    add_role_to_test_user(sample_user, ['CAN_GET_EMAIL_TEMPLATE'])
+    add_role_to_test_user(sample_user_2, [role])
 
     # Get email_template via template ID
     resp = request_to_email_template_resource(token2, 'get', email_template["email_template_id"])
@@ -129,6 +187,7 @@ def test_get_email_template_via_id(sample_user, sample_user_2, email_template_bo
     print resp_dict
     assert isinstance(resp_dict, dict)
     assert check_for_id(_dict=resp_dict['email_template']) is not False
+    del_domain_roles(role_id2)
 
 
 # Tests to update email templates
@@ -142,12 +201,14 @@ def test_update_email_template(sample_user, sample_user_2, email_template_body, 
     :return:
     """
     # Add Email template
-    email_template = add_email_template(user_auth, sample_user)
+    email_template = add_email_template(user_auth, sample_user, email_template_body)
     # Get access token for sample_user_2
     token2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
-
+    # Add or get Role
+    role = 'CAN_UPDATE_EMAIL_TEMPLATE'
+    role_id2 = add_domain_role(role, sample_user_2.domain_id)
     # Add 'CAN_UPDATE_EMAIL_TEMPLATE' to sample_user_2
-    add_role_to_test_user(sample_user, ['CAN_UPDATE_EMAIL_TEMPLATE'])
+    add_role_to_test_user(sample_user_2, [role])
 
     updated_email_template_body = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test for update campaign mail testing through script</p>\r\n</body>\r\n</html>\r\n'
 
@@ -161,29 +222,36 @@ def test_update_email_template(sample_user, sample_user_2, email_template_body, 
     resp_dict = resp.json()['email_template']
     print resp_dict
     assert resp_dict['email_body_html'] == updated_email_template_body
+    del_domain_roles(role_id2)
 
 
-def add_email_template(auth_user, template_owner):
+def add_email_template(user_auth, template_owner, email_template_body):
     """
     This function will create email template
-    :param auth_user:
+    :param template_owner:
     :param template_owner:
     :return:
     """
     # Get access token
-    auth_token = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+    auth_token = user_auth.get_auth_token(template_owner, get_bearer_token=True)
     token = auth_token['access_token']
+    domain_id = template_owner.domain_id
+    # Add or get Role
+    role = "CAN_CREATE_EMAIL_TEMPLATE_FOLDER"
+    role_id = add_domain_role(role, domain_id)
+
     # Add 'CAN_CREATE_EMAIL_TEMPLATE' to sample_user
-    add_role_to_test_user(sample_user, ['CAN_CREATE_EMAIL_TEMPLATE'])
-    domain_id = sample_user.domain_id
+    add_role_to_test_user(template_owner, [role])
+
     # Get Template Folder Id
     template_folder_id, template_folder_name = get_template_folder(token)
 
     template_name = 'test_email_template%i' % time.time()
 
-    email_template_id = create_email_template(token, sample_user.id, template_name, email_template_body, '',
+    email_template_id = create_email_template(token, template_owner.id, template_name, email_template_body, '',
                                               is_immutable="1", folder_id=template_folder_id, domain_id=domain_id)
     db.session.commit()
+    del_domain_roles(role_id)
 
     return {"email_template_id": email_template_id,
             "template_folder_id": template_folder_id,
@@ -206,7 +274,7 @@ def get_template_folder(token):
         headers={'Authorization': 'Bearer %s' % token,
                  'Content-type': 'application/json'}
     )
-    assert response.status_code == 200
+    assert response.status_code == 201
     response_obj = response.json()
     template_folder_id = response_obj["template_folder_id"][0]
     return template_folder_id['id'], template_folder_name
