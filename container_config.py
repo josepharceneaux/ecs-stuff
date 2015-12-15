@@ -20,7 +20,7 @@ SERVICE_TO_PORT_NUMBER = {'auth_service': 8001,
                           'resume_service': 8003,
                           'user_service': 8004,
                           'social_network_service': 8006,
-                          'scheduler_service': 8009}
+                          'scheduler_service': 8010}
 
 parser = argparse.ArgumentParser(description='Common files administrator for Docker building.')
 parser.add_argument('--build', nargs=1, choices=SERVICE_TO_DOCKERHUB_REPO.keys(), help='Invokes the Docker build action for given service')
