@@ -11,7 +11,7 @@ from scheduler_service.common.tests.conftest import *
 # Application Specific
 
 APP, celery = init_app()
-APP_URL = 'http://0.0.0.0:8009'
+APP_URL = 'http://0.0.0.0:8010'
 
 OAUTH_SERVER = APP.config['OAUTH_SERVER_URI']
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
