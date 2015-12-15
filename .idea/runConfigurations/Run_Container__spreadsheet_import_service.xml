@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Build Container: event_service" type="PythonConfigurationType" factoryName="Python" folderName="event_service">
+  <configuration default="false" name="Run Container: spreadsheet_import_service" type="PythonConfigurationType" factoryName="Python" folderName="spreadsheet_import_service">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
@@ -14,7 +14,7 @@
     <module name="talent-flask-services" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/container_config.py" />
-    <option name="PARAMETERS" value="--build=event_service" />
+    <option name="PARAMETERS" value="--run=spreadsheet_import_service" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <method />
   </configuration>
