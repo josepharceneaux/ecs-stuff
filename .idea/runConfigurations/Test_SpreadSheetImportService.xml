@@ -1,16 +1,19 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="test candidate_service" type="tests" factoryName="py.test">
+  <configuration default="false" name="Test SpreadSheetImportService" type="tests" factoryName="py.test">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
-      <env name="" value="" />
       <env name="AWS_SECRET_ACCESS_KEY" value="tHv3P1nrC4pvO8WxfmtJgpjyvSBc8ox83E+xMpFC" />
-      <env name="AWS_ACCESS_KEY" value="AKIAI3422SZ6SL46EYBQ" />
+      <env name="FILEPICKER_BUCKET_NAME" value="gettalent-filepicker" />
+      <env name="TCS_BUCKET_NAME" value="tcs-local-ufarooqi" />
+      <env name="TCS_BUCKET_REGION" value="us-west-1" />
+      <env name="PYTHONUNBUFFERED" value="1" />
       <env name="GT_ENVIRONMENT" value="dev" />
+      <env name="AWS_ACCESS_KEY_ID" value="AKIAI3422SZ6SL46EYBQ" />
     </envs>
-    <option name="SDK_HOME" value="" />
-    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-    <option name="IS_MODULE_SDK" value="true" />
+    <option name="SDK_HOME" value="$USER_HOME$/.pyenv/versions/2.7.9/bin/python" />
+    <option name="WORKING_DIRECTORY" value="" />
+    <option name="IS_MODULE_SDK" value="false" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <module name="talent-flask-services" />
@@ -22,10 +25,10 @@
     <option name="TEST_TYPE" value="TEST_SCRIPT" />
     <option name="PATTERN" value="" />
     <option name="USE_PATTERN" value="false" />
-    <option name="testToRun" value="$PROJECT_DIR$/candidate_service/tests" />
+    <option name="testToRun" value="$PROJECT_DIR$/spreadsheet_import_service/tests" />
     <option name="keywords" value="" />
     <option name="params" value="" />
-    <option name="USE_PARAM" value="true" />
+    <option name="USE_PARAM" value="false" />
     <option name="USE_KEYWORD" value="false" />
     <method />
   </configuration>

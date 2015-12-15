@@ -59,5 +59,10 @@ Flask-Limiter
 newrelic
 healthcheck
 simplejson==3.8.0
+<<<<<<< HEAD
 
 enum34
+=======
+xlrd==0.9.2
+chardet==2.3.0
+>>>>>>> cb64bfcec5ca010cdce002a67d4e2aaf64044d24
