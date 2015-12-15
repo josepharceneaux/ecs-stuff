@@ -548,6 +548,10 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
         # Search all candidates under domain
         filter_queries_list.append(["(term field=domain_id %s)" % domain_id])
 
+    # Add talent_pool_id in filter_queries
+    if request_vars.get('talent_pool_id'):
+        filter_queries_list.append(["(term field=talent_pool_id %s)" % request_vars.get('talent_pool_id')])
+
     # Sorting
     sort = '%s %s'
     if request_vars.get('sort_by'):

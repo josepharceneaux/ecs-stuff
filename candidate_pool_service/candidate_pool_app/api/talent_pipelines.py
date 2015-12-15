@@ -1,6 +1,7 @@
 __author__ = 'ufarooqi'
 
 import json
+import requests
 from flask import request
 from flask_restful import Resource
 from dateutil import parser
@@ -9,6 +10,7 @@ from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities 
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
+from candidate_pool_service.common.utils.app_rest_urls import CandidateApiUrl
 from candidate_pool_service.common.error_handling import *
 
 
@@ -452,8 +454,97 @@ class TalentPipelineSmartListApi(Resource):
         }
 
 
+class TalentPipelineCandidate(Resource):
 
+    # Access token decorator
+    decorators = [require_oauth]
 
+    @require_all_roles('CAN_GET_TALENT_PIPELINE_CANDIDATES')
+    def get(self, **kwargs):
+        """
+        GET /talent-pipeline/<id>/candidates   Fetch all candidates of a talent-pipeline
 
+        :return A dictionary containing list of candidates belonging to a talent-pipeline
 
+        :rtype: dict
+        """
 
+        talent_pipeline_id = kwargs.get('id')
+
+        talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
+
+        if not talent_pipeline:
+            raise NotFoundError(error_message="Talent pipeline with id %s doesn't exist in database" %
+                                              talent_pipeline_id)
+
+        if talent_pipeline.user.domain_id != request.user.domain_id:
+            raise UnauthorizedError(error_message="Logged-in user and talent_pipeline belong to different domain")
+
+        smart_lists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline_id).all()
+
+        search_params, dumb_lists = [], []
+
+        try:
+            if talent_pipeline_id.search_params:
+                search_params.append(json.loads(talent_pipeline_id.search_params))
+            for smart_list in smart_lists:
+                if smart_list.search_params:
+                    search_params.append(json.loads(smart_list.search_params))
+                else:
+                    dumb_lists.append(smart_list)
+
+        except Exception as e:
+            raise InvalidUsage(error_message="Search params of talent-pipeline or its smart-lists are in bad format "
+                                             "because: %s" % e.message)
+
+        headers = {'Authorization': 'Bearer %s' % request.oauth_token}
+        request_params, dumb_list_candidates = {}, {'candidates': [], 'total_found': 0}
+
+        for dumb_list in dumb_lists:
+
+            candidates = SmartlistCandidate.query.join(
+                TalentPoolCandidate, TalentPoolCandidate.candidate_id == SmartlistCandidate.candidate_id).\
+                filter(and_(TalentPoolCandidate.talent_pool_id == talent_pipeline.talent_pool_id, SmartlistCandidate.
+                            smart_list_id == dumb_list.id)).all()
+
+            for candidate in candidates:
+                response = requests.get(CandidateApiUrl.CANDIDATE % candidate.candidate_id,
+                                        headers=headers)
+                if response.ok:
+                    dumb_list_candidates['candidates'].append(response.json().get('candidate'))
+                else:
+                    raise NotFoundError(error_message="Couldn't get candidate for candidate_id: %s in dumb_list"
+                                                      ": %s" % (candidate.candidate_id, dumb_list.id))
+        dumb_list_candidates['total_found'] = len(dumb_list_candidates['candidates'])
+
+        if search_params:
+            request_params['talent_pool_id'] = talent_pipeline.talent_pool_id
+            request_params['fields'] = request.args.get('fields')
+            request_params['sort_by'] = request.args.get('sort_by')
+            request_params['limit'] = request.args.get('limit')
+            request_params['page'] = request.args.get('page')
+            request_params['search_params'] = search_params
+
+            request_params = dict((k, v) for k, v in request_params.iteritems() if v)
+
+            try:
+                response = requests.get(CandidateApiUrl.CANDIDATE_SEARCH_URI, headers=headers, params=request_params)
+                json_response = response.json()
+
+            except Exception as e:
+                raise InvalidUsage(error_message="Couldn't get candidates from candidates search service because: "
+                                                 "%s" % e.message)
+
+            if not response.ok:
+                return json_response, response.status_code
+            else:
+                candidates_dict = {}
+                json_response['candidates'] = json_response['candidates'] + dumb_list_candidates['candidates']
+                for key, candidate in enumerate(json_response['candidates']):
+                    if str(candidate.get('id')) in candidates_dict:
+                        json_response.pop(key)
+                    else:
+                        candidates_dict[str(candidate.get('id'))] = candidate
+
+                json_response['total_found'] = len(json_response['candidates'])
+                return json_response

@@ -22,5 +22,4 @@ TALENT_PIPELINE_SEARCH_PARAMS = [
     "military_highest_grade",
     "military_end_date_from",
     "military_end_date_to"
-    "talent_pool_id"
 ]

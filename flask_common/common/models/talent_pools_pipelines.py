@@ -71,7 +71,7 @@ class TalentPipeline(db.Model):
     talent_pool_id = db.Column(db.Integer, db.ForeignKey('talent_pool.id'))
     search_params = db.Column(db.String(1023))
     added_time = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
-    updated_time = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+    updated_time = db.Column(db.TIMESTAMP, server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
                              nullable=False)
 
     user = db.relationship('User', backref=db.backref('talent_pipeline', cascade="all, delete-orphan"))
@@ -102,3 +102,20 @@ class Smartlist(db.Model):
 
     def __repr__(self):
         return "<SmartList(name= %r)>" % self.name
+
+
+class SmartlistCandidate(db.Model):
+
+    __tablename__ = 'smart_list_candidate'
+
+    id = db.Column(db.Integer, primary_key=True)
+    smart_list_id = db.Column('SmartlistId', db.Integer, db.ForeignKey('smart_list.id',
+                                                                       ondelete='CASCADE'), nullable=False)
+    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id',
+                                                                      ondelete='CASCADE'), nullable=False)
+    added_time = db.Column('AddedTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, server_default=db.
+                             text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"), nullable=False)
+
+    smart_list = db.relationship('Smartlist', backref=db.backref('smart_list_candidate', cascade="all, delete-orphan"))
+    candidate = db.relationship('Candidate', backref=db.backref('smart_list_candidate', cascade="all, delete-orphan"))
