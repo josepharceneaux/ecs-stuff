@@ -20,7 +20,6 @@ from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candid
 EDUCATIONS_KEYS = ('city', 'degrees', 'state', 'country', 'school_name')
 WORK_EXPERIENCES_KEYS = ('city', 'end_date', 'country', 'company', 'role', 'is_current',
                          'start_date', 'work_experience_bullets')
-SKILLS_KEYS = ('name', 'months_used', 'last_used_date')
 ADDRESS_KEYS = ('city', 'country', 'state', 'address_line_1', 'zip_code')
 
 XML_MAPS = [
@@ -122,7 +121,7 @@ def test_skill_parsing_from_xml():
         skills = parse_candidate_skills(skill_xml_list)
         assert len(skills) == j['skills_len']
         for s in skills:
-            assert all(k in s for k in SKILLS_KEYS if s)
+            assert 'name' in s
 
 
 def test_address_parsing_from_xml():

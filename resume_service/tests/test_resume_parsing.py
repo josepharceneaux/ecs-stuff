@@ -86,46 +86,34 @@ def test_jpg_by_post(token_fixture):
     assert 'candidate' in response
 
 
-# def test_pdf_14_of_image_alyson_peters(test_token):
-#     """Test that PDFs of image files can be posted."""
-#     json_obj = fetch_resume_post_response(test_token, 'pdf_14_of_image_alyson_peters.pdf')['candidate']
-#     assert json_obj.get('full_name') == 'Alyson Peters'
-#     keys_formatted_test(json_obj)
-
-
 def test_2448_3264_jpg_by_post(token_fixture):
     """Test that large jpgs files can be posted."""
     response = fetch_resume_post_response(token_fixture, '2448_3264.jpg')
     assert 'candidate' in response
 
 
-# def test_no_token_fails():
-#     filepicker_key = '0169173d35beaf1053e79fdf1b5db864.docx'
-#     test_response = r.post(API_URL, data=dict(filepicker_key=filepicker_key))
-#     json_obj = json.loads(test_response.content)
-#     assert 'error' in json_obj
-#
-#
-# def test_invalid_token_fails():
-#     filepicker_key = '0169173d35beaf1053e79fdf1b5db864.docx'
-#     test_response = r.post(API_URL,
-#                            headers={'Authorization': 'Bearer %s' % 'invalidtokenzzzz'},
-#                            data=dict(filepicker_key=filepicker_key))
-#     json_obj = json.loads(test_response.content)
-#     assert 'error' in json_obj
+def test_no_token_fails():
+    filepicker_key = '0169173d35beaf1053e79fdf1b5db864.docx'
+    test_response = r.post(API_URL, data=dict(filepicker_key=filepicker_key))
+    json_obj = json.loads(test_response.content)
+    assert 'error' in json_obj
 
 
-# def test_v15_pdf_by_post(token_fixture):
-#     """Test that v1.5 pdf files can be posted."""
-#     json_obj = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode='True')['candidate']
-#     assert json_obj['full_name'] == 'MARK GREENE'
-#     assert json_obj['emails'][0]['address'] == 'techguymark@yahoo.com'
-#     assert len(json_obj['educations']) == 1
-#     # Below should be 9 OR 15 (9major + 6 'Additional work experience information'. See resume. Blame BG
-#     # assert len(json_obj['work_experiences']) == 11
-#     db.session.commit() # Hack for transation mismatch
-#     assert db.session.query(Candidate).get(json_obj['id']) is not None
-#     keys_formatted_test(json_obj)
+def test_invalid_token_fails():
+    filepicker_key = '0169173d35beaf1053e79fdf1b5db864.docx'
+    test_response = r.post(API_URL,
+                           headers={'Authorization': 'Bearer %s' % 'invalidtokenzzzz'},
+                           data=dict(filepicker_key=filepicker_key))
+    json_obj = json.loads(test_response.content)
+    assert 'error' in json_obj
+
+
+def test_v15_pdf_by_post(token_fixture):
+    """Test that v1.5 pdf files can be posted."""
+    response = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode='True')
+    # response = fetch_resume_post_response(token_fixture, 'test_bin.pdf')
+    assert 'candidate' in response
+    assert 'id' in response['candidate']
 
 
 def test_health_check():

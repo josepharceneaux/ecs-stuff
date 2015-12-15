@@ -1,5 +1,4 @@
 # Standared Library
-from xml.etree import ElementTree as ET
 import datetime
 import HTMLParser
 import re
@@ -7,7 +6,6 @@ import string
 import urllib2
 # Third Party
 from bs4 import BeautifulSoup as bs4
-# from dateutil.parser import parse
 from OauthClient import OAuthClient
 import phonenumbers
 import requests
@@ -52,7 +50,8 @@ def parse_optic_json(resume_xml_string):
     skills = parse_candidate_skills(skill_xml_list)
     addresses = parse_candidate_addresses(contact_xml_list)
     candidate = dict(
-        full_name=name,
+        first_name=name['first_name'],
+        last_name=name['last_name'],
         emails=emails,
         phones=phones,
         work_experiences=work_experiences,
@@ -107,7 +106,6 @@ def parse_candidate_phones(bs_contact_xml_list):
 
 
 def parse_candidate_experiences(bg_experience_xml_list):
-    # for experiences in rawxml.findAll('experience'):
     output = []
     for experiences in bg_experience_xml_list:
         jobs = experiences.findAll('job')
@@ -228,11 +226,11 @@ def parse_candidate_skills(bg_skills_xml_list):
     for skill in bg_skills_xml_list:
         name = skill.get('name')
         skill_text = skill.text.strip()
-        output.append(dict(
-            months_used=skill.get('experience', '').strip(),
-            last_used_date=skill.get('lastused', '').strip(),
-            name=name or skill_text
-        ))
+        months_used=skill.get('experience', '').strip()
+        skill = dict(name=name or skill_text)
+        if months_used:
+            skill['months_used'] = int(months_used)
+        output.append(skill)
     return output
 
 
@@ -319,3 +317,13 @@ def is_experience_already_exists(candidate_experiences, organization, position_t
                         experience['start_date'] == start_date and experience['end_date'] == end_date):
             return i + 1
     return False
+
+# def sanitize_zip_code(zip_code):
+#     # Folowing expression will validate US zip codes e.g 12345 and 12345-6789
+#     zip_code = str(zip_code)
+#     zip_code = ''.join(filter(lambda character: character not in ' -', zip_code))  # Dashed and Space filtered Zip Code
+#     if zip_code and not ''.join(filter(lambda character: not character.isdigit(), zip_code)):
+#         zip_code = zip_code.zfill(5) if len(zip_code) <= 5 else zip_code.zfill(9) if len(zip_code) <= 9 else ''
+#         if zip_code:
+#             return (zip_code[:5] + ' ' + zip_code[5:]).strip()
+#     return None
