@@ -26,6 +26,7 @@ class SmsCampaignApiException(sms_campaign_service.common.error_handling.Interna
     NO_SMARTLIST_ASSOCIATED = 5011
     NO_CANDIDATE_ASSOCIATED = 5012
     NO_SMS_CAMPAIGN_SENT_TO_CANDIDATE = 5013
+    ERROR_UPDATING_BODY_TEXT = 5014
 
     def to_dict(self):
         error_dict = super(SmsCampaignApiException, self).to_dict()
@@ -88,3 +89,8 @@ class NoCandidateAssociated(SmsCampaignApiException):
 
 class NoSMSCampaignSentToCandidate(SmsCampaignApiException):
     error_code = SmsCampaignApiException.NO_SMS_CAMPAIGN_SENT_TO_CANDIDATE
+
+
+class ErrorUpdatingBodyText(SmsCampaignApiException):
+    error_code = SmsCampaignApiException.ERROR_UPDATING_BODY_TEXT
+

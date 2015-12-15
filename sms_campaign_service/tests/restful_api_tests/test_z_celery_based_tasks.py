@@ -8,7 +8,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies,
     end. we do not need to add time.sleep()
 """
 
-SLEEP_TIME = 15
+SLEEP_TIME = 15  # due to background processing of tasks (Celery)
 # Standard Library
 import time
 
@@ -24,7 +24,7 @@ from sms_campaign_service.tests.conftest import (assert_on_blasts_sends_url_conv
                                                  assert_for_activity)
 
 
-class TestCeleryTasks:
+class TestCeleryTasks(object):
     """
     This class contains tasks that run on celery or if  the fixture they use has some
     processing on Celery.

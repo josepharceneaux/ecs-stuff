@@ -16,6 +16,7 @@ SERVICE_TO_DOCKERHUB_REPO = {'activity_service': 'activities-service',
                              'social_network_service': 'social-network-service',
                              'candidate_pool_service': 'candidate-pool-service',
                              'spreadsheet_import_service': 'spreadsheet-import-service',
+                             'scheduler_service': 'scheduler-service',
                              'sms_campaign_service': 'sms-campaign-service'}
 
 SERVICE_TO_PORT_NUMBER = {'auth_service': 8001,
@@ -27,7 +28,8 @@ SERVICE_TO_PORT_NUMBER = {'auth_service': 8001,
                           'social_network_service': 8007,
                           'candidate_pool_service': 8008,
                           'spreadsheet_import_service': 8009,
-                          'sms_campaign_service': 8010}
+                          'scheduler_service': 8010,
+                          'sms_campaign_service': 8011}
 
 parser = argparse.ArgumentParser(description='Common files administrator for Docker building.')
 parser.add_argument('--build', nargs=1, choices=SERVICE_TO_DOCKERHUB_REPO.keys(), help='Invokes the Docker build action for given service')

@@ -45,7 +45,7 @@ CORS(url_conversion_blueprint, resources={
 })
 
 
-@api.route(SmsCampaignApiUrl.API_VERSION + '/url_conversion')
+@api.route('/' + SmsCampaignApiUrl.API_VERSION + '/url_conversion')
 class ConvertUrl(Resource):
     """
     This end point converts the given url into shorter version using

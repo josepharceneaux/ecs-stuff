@@ -19,7 +19,7 @@ from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
 from sms_campaign_service.common.models.sms_campaign import SmsCampaignBlast, SmsCampaignReply
 
 
-class TestSmsReceive:
+class TestSmsReceive(object):
     """
     This class contains tests for endpoint /receive.
     """

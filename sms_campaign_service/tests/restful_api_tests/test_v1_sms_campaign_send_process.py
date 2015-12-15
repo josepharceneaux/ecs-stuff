@@ -16,7 +16,7 @@ from sms_campaign_service.common.error_handling import (MethodNotAllowed, Unauth
                                                         InternalServerError)
 
 
-class TestSendSmsCampaign:
+class TestSendSmsCampaign(object):
     """
     This class contains tests for endpoint /campaigns/:id/send
     """

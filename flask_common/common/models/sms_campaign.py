@@ -19,7 +19,8 @@ class SmsCampaign(db.Model):
     # scheduler_task_ids = db.Column('SchedulerTaskIds', db.String(255))
 
     # Relationships
-    sms_campaign_blasts = relationship('SmsCampaignBlast', cascade='all, delete', backref='sms_campaign')
+    sms_campaign_blasts = relationship('SmsCampaignBlast', cascade='all, delete-orphan',
+                                       backref='sms_campaign')
 
     def __repr__(self):
         return "<SmsCampaign (name = %r)>" % self.name
@@ -45,8 +46,10 @@ class SmsCampaignBlast(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
-    sms_campaign_sends = relationship('SmsCampaignSend', backref='sms_campaign_blast')
-    sms_campaign_replies = relationship('SmsCampaignReply', backref='sms_campaign_blast')
+    sms_campaign_sends = relationship('SmsCampaignSend', cascade='all, delete-orphan',
+                                      backref='sms_campaign_blast')
+    sms_campaign_replies = relationship('SmsCampaignReply', cascade='all, delete-orphan',
+                                        backref='sms_campaign_blast')
 
     def __repr__(self):
         return "<SmsCampaignBlast (id = %r)>" % self.id

@@ -11,12 +11,12 @@ import requests
 
 # Application Specific
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
-from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
+from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl, LOCAL_HOST
 from sms_campaign_service.common.error_handling import (MethodNotAllowed, UnauthorizedError,
                                                         InvalidUsage, InternalServerError)
 
 
-class TestUrlConversionAPI:
+class TestUrlConversionAPI(object):
     """
     This class contains the tests for the endpoint /url_conversion
     """
@@ -68,7 +68,7 @@ class TestUrlConversionAPI:
         response = requests.post(SmsCampaignApiUrl.URL_CONVERSION,
                                  headers=valid_header,
                                  data=json.dumps(
-                                     {"url": SmsCampaignApiUrl.API_URL}
+                                     {"url": LOCAL_HOST}
                                      ))
         assert response.status_code == InternalServerError.http_status_code(), \
             'Status should be (500)'

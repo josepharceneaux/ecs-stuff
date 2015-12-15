@@ -79,7 +79,7 @@ class Culture(db.Model):
     # Relationships
     candidates = relationship('Candidate', backref='culture')
     # domain = relationship('Domain', backref='culture')
-    user = relationship('User', backref='culture')
+    # user = relationship('User', backref='culture')
 
     def __repr__(self):
         return "<Culture (description=' %r')>" % self.description

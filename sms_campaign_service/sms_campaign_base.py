@@ -33,24 +33,26 @@ from sms_campaign_service import logger, db
 from sms_campaign_service.common.common_config import IS_DEV
 from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.user import (UserPhone, User)
+from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
 from sms_campaign_service.sms_campaign_app.app import celery_app, app
 from sms_campaign_service.common.utils.campaign_utils import CampaignBase
-from sms_campaign_service.utilities import (TwilioSMS, search_urls_in_text)
+from sms_campaign_service.utilities import (TwilioSMS, search_urls_in_text,
+                                            replace_localhost_with_ngrok)
 from sms_campaign_service.common.models.candidate import (PhoneLabel, Candidate, CandidatePhone)
 from sms_campaign_service.common.utils.common_functions import (find_missing_items,
                                                                 url_conversion,
                                                                 JSON_CONTENT_TYPE_HEADER)
 from sms_campaign_service.common.error_handling import (ResourceNotFound, ForbiddenError,
                                                         InvalidUsage)
-from sms_campaign_service.sms_campaign_app_constants import (SMS_URL_REDIRECT,
-                                                             MOBILE_PHONE_LABEL,
+from sms_campaign_service.sms_campaign_app_constants import (MOBILE_PHONE_LABEL,
                                                              TWILIO)
 from sms_campaign_service.custom_exceptions import (EmptySmsBody, MultipleTwilioNumbers,
                                                     EmptyDestinationUrl, MissingRequiredField,
                                                     MultipleUsersFound, MultipleCandidatesFound,
                                                     ErrorSavingSMSCampaign, NoCandidateAssociated,
                                                     NoSmartlistAssociated,
-                                                    NoSMSCampaignSentToCandidate)
+                                                    NoSMSCampaignSentToCandidate,
+                                                    ErrorUpdatingBodyText)
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignSend,
                                                              SmsCampaignBlast, SmsCampaignSmartlist,
                                                              SmsCampaignSendUrlConversion,
@@ -626,9 +628,13 @@ class SmsCampaignBase(CampaignBase):
             url_conversion_id = self.create_or_update_url_conversion(destination_url=url,
                                                                      source_url='')
             # URL to redirect candidates to our end point
-            long_url = (SMS_URL_REDIRECT + '?candidate_id={}').format(self.campaign.id,
-                                                                      url_conversion_id,
-                                                                      candidate_id)
+            # TODO: remove this when app is up
+            app_redirect_url = replace_localhost_with_ngrok(SmsCampaignApiUrl.APP_REDIRECTION_URL)
+            # long_url looks like
+            # http://127.0.0.1:8011/v1/campaigns/1/url_redirection/1?candidate_id=1
+            long_url = app_redirect_url % (self.campaign.id,
+                                           str(url_conversion_id)
+                                           + '?candidate_id=%s') % candidate_id
             # Use Google's API to shorten the long Url
             with app.app_context():
                 short_url, _ = url_conversion(long_url)
@@ -662,20 +668,25 @@ class SmsCampaignBase(CampaignBase):
         """
         logger.debug('transform_body_text: Replacing original URL with shorted URL. (User(id:%s))'
                      % self.user_id)
-        if urls_in_sms_body_text:
-            text_split = self.body_text.split(' ')
-            short_urls_index = 0
-            for url in urls_in_sms_body_text:
-                text_split_index = 0
-                for word in text_split:
-                    if word == url:
-                        text_split[text_split_index] = short_urls[short_urls_index]
-                        break
-                    text_split_index += 1
-                short_urls_index += 1
-            self.modified_body_text = ' '.join(text_split)
-        else:
-            self.modified_body_text = self.body_text
+        try:
+            if urls_in_sms_body_text:
+                text_split = self.body_text.split(' ')
+                short_urls_index = 0
+                for url in urls_in_sms_body_text:
+                    text_split_index = 0
+                    for word in text_split:
+                        if word == url:
+                            text_split[text_split_index] = short_urls[short_urls_index]
+                            break
+                        text_split_index += 1
+                    short_urls_index += 1
+                self.modified_body_text = ' '.join(text_split)
+            else:
+                self.modified_body_text = self.body_text
+        except Exception as error:
+            logger.exception('transform_body_text: Error while updating body text.')
+            raise ErrorUpdatingBodyText(error_message=
+                                        'Error while updating body text' + error.message)
 
     @staticmethod
     def create_or_update_sms_campaign_blast(campaign_id,
@@ -898,25 +909,31 @@ class SmsCampaignBase(CampaignBase):
                              'candidate_id': candidate_id}
         missing_items = find_missing_items(url_redirect_data, verify_all_keys=True)
         if not missing_items:
+            # check if candidate exists in database
             candidate = Candidate.get_by_id(candidate_id)
-            if candidate:
-                # check if campaign exists
-                campaign = SmsCampaign.get_by_id(campaign_id)
-                if campaign:
-                    return campaign, candidate
-                else:
-                    raise ResourceNotFound(error_message='pre_process_url_redirect: '
-                                                         'SMS Campaign(id=%s) Not found.'
-                                                         % campaign_id)
-            else:
-                raise ResourceNotFound(error_message='pre_process_url_redirect: '
-                                                     'Candidate(id:%s) not found.' % candidate_id)
+            if not candidate:
+                raise ResourceNotFound(
+                    error_message='pre_process_url_redirect: Candidate(id:%s) not found.'
+                                  % candidate_id, error_code=ResourceNotFound.http_status_code())
+            # check if campaign exists in database
+            campaign = SmsCampaign.get_by_id(campaign_id)
+            if not campaign:
+                raise ResourceNotFound(
+                    error_message='pre_process_url_redirect: SMS Campaign(id=%s) Not found.'
+                                  % campaign_id, error_code=ResourceNotFound.http_status_code())
+            # check if url_conversion record exists in database
+            url_conversion_record = UrlConversion.get_by_id(url_conversion_id)
+            if not url_conversion_record:
+                raise ResourceNotFound(
+                    error_message='pre_process_url_redirect: Url Conversion(id=%s) Not found.'
+                                  % url_conversion_id, error_code=ResourceNotFound.http_status_code())
+            return campaign, url_conversion_record, candidate
         else:
-            raise MissingRequiredField(error_message='pre_process_url_redirect: '
-                                                     'Missing required fields are: %s'
-                                                     % missing_items)
+            raise MissingRequiredField(
+                error_message='pre_process_url_redirect: Missing required fields are: %s'
+                              % missing_items)
 
-    def process_url_redirect(self, campaign, url_conversion_id, candidate):
+    def process_url_redirect(self, campaign, url_conversion_db_record, candidate):
         """
         This does the following steps to send campaign to candidates.
 
@@ -944,10 +961,10 @@ class SmsCampaignBase(CampaignBase):
                     5005 (EmptyDestinationUrl)
 
         :param campaign: sms_campaign record
-        :param url_conversion_id: id of url_conversion record
+        :param url_conversion_db_record: url_conversion record
         :param candidate: Campaign object form db
         :type campaign: row
-        :type url_conversion_id: int
+        :type url_conversion_db_record: row
         :type candidate: common.models.candidate.Candidate
         :return: URL where to redirect the candidate
         :rtype: str
@@ -962,7 +979,7 @@ class SmsCampaignBase(CampaignBase):
         self.create_or_update_sms_campaign_blast(campaign.id,
                                                  clicks_update=True)
         # Update hit count
-        self.create_or_update_url_conversion(url_conversion_id=url_conversion_id,
+        self.create_or_update_url_conversion(url_conversion_id=url_conversion_db_record.id,
                                              hit_count_update=True)
         # Create Activity
         self.create_campaign_url_click_activity(candidate)
@@ -970,13 +987,12 @@ class SmsCampaignBase(CampaignBase):
                     'campaign(id:%s). (User(id:%s))'
                     % (candidate.id, self.campaign.id, self.user_id))
         # Get Url to redirect candidate to actual URL
-        url_conversion_row = UrlConversion.get_by_id(url_conversion_id)
-        if url_conversion_row.destination_url:
-            return url_conversion_row.destination_url
+        if url_conversion_db_record.destination_url:
+            return url_conversion_db_record.destination_url
         else:
             raise EmptyDestinationUrl(
                 error_message='process_url_redirect: Destination_url is empty for '
-                              'url_conversion(id:%s)' % url_conversion_id)
+                              'url_conversion(id:%s)' % url_conversion_db_record.id)
 
     def create_campaign_url_click_activity(self, source):
         """

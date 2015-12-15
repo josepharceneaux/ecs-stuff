@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="test social_network_service" type="tests" factoryName="py.test">
+  <configuration default="false" name="Test SMSCampaignService" type="tests" factoryName="py.test">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
@@ -19,10 +19,10 @@
     <option name="TEST_TYPE" value="TEST_SCRIPT" />
     <option name="PATTERN" value="" />
     <option name="USE_PATTERN" value="false" />
-    <option name="testToRun" value="$PROJECT_DIR$/social_network_service/tests" />
+    <option name="testToRun" value="$PROJECT_DIR$/sms_campaign_service/tests" />
     <option name="keywords" value="" />
-    <option name="params" value="-s -v" />
-    <option name="USE_PARAM" value="true" />
+    <option name="params" value="" />
+    <option name="USE_PARAM" value="false" />
     <option name="USE_KEYWORD" value="false" />
     <method />
   </configuration>

@@ -4,16 +4,16 @@ Author: Hafiz Muhammad Basit, QC-Technologies,
 
     This file contains pyTest fixtures for tests of SMS Campaign Service.
 """
-# App Settings
+# Standard Import
+import time
 
 # Application Specific
 # common conftest
-import time
+
 from sms_campaign_service.common.tests.conftest import *
 
 # App specific
-from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_SEND, CAMPAIGN_SEND
-from sms_campaign_service.sms_campaign_app.app import app
+from sms_campaign_service.sms_campaign_app.app import app  # to avoid circular import
 from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.common.models.misc import (UrlConversion, Activity)
@@ -24,6 +24,7 @@ from sms_campaign_service.common.models.smart_list import (SmartList, SmartListC
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignSmartlist,
                                                              SmsCampaignBlast, SmsCampaignSend,
                                                              SmsCampaignSendUrlConversion)
+from sms_campaign_service.common.utils.activity_utils import (CAMPAIGN_SMS_SEND, CAMPAIGN_SEND)
 
 
 @pytest.fixture()
@@ -321,7 +322,7 @@ def process_send_sms_campaign(sample_user, auth_token,
     campaign_obj = SmsCampaignBase(sample_user.id)
     # send campaign to candidates
     campaign_obj.process_send(sms_campaign_of_current_user)
-    time.sleep(4)  # had to add this as sending process runs on celery
+    time.sleep(6)  # had to add this as sending process runs on celery
 
 
 @pytest.fixture()

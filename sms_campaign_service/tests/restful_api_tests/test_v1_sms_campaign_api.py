@@ -2,7 +2,7 @@
 Author: Hafiz Muhammad Basit, QC-Technologies,
         Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
 
-    This module contains pyTests for endpoint /campaigns/ of SMS Campaign API.
+    This module contains pyTests for endpoint /campaigns of SMS Campaign API.
 """
 
 # Third Party Imports
@@ -18,7 +18,7 @@ from sms_campaign_service.common.error_handling import (UnauthorizedError, Inval
                                                         InternalServerError, ForbiddenError)
 
 
-class TestSmsCampaign:
+class TestSmsCampaign(object):
     """
     This class contains tests for endpoint /campaigns/.
     """

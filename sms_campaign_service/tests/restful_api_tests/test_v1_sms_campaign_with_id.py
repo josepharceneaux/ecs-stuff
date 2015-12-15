@@ -16,7 +16,7 @@ from sms_campaign_service.common.error_handling import (UnauthorizedError, Resou
                                                         InvalidUsage)
 
 
-class TestSmsCampaignWithId:
+class TestSmsCampaignWithId(object):
     """
     This class contains tests for endpoint /campaigns/:id
     """

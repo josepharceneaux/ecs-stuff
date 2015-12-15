@@ -8,7 +8,11 @@
     This app contains endpoints for
         1- URL redirection (to redirect candidate to our app when he clicks on URL present
                             in sms body text)
+            /v1/campaigns/:id/url_redirection/:id?candidate_id=id
+
         2- SMS receive (to save the candidate's reply to a specific SMS campaign
+
+            /v1/receive
 """
 
 # Initializing App. This line should come before any imports from models
@@ -30,8 +34,8 @@ from sms_campaign_service.utilities import TwilioSMS
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 
 # Imports for Blueprints
-from restful_API.sms_campaign_api import sms_campaign_blueprint
-from restful_API.url_conversion_api import url_conversion_blueprint
+from restful_API.v1_sms_campaign_api import sms_campaign_blueprint
+from restful_API.v1_url_conversion_api import url_conversion_blueprint
 
 # Register Blueprints for different APIs
 app.register_blueprint(sms_campaign_blueprint)
@@ -51,8 +55,8 @@ def root():
     return 'Welcome to SMS Campaign Service'
 
 
-@app.route(SmsCampaignApiUrl.API_VERSION +
-           '/campaigns/<int:campaign_id>/url_redirection/<int:url_conversion_id>/', methods=['GET'])
+@app.route('/' + SmsCampaignApiUrl.API_VERSION +
+           '/campaigns/<int:campaign_id>/url_redirection/<int:url_conversion_id>', methods=['GET'])
 def sms_campaign_url_redirection(campaign_id, url_conversion_id):
     """
     When recruiter(user) adds some url in sms body text, we save the original URL as
@@ -95,14 +99,15 @@ def sms_campaign_url_redirection(campaign_id, url_conversion_id):
         return flask.jsonify(**data), 200
     try:
 
-        campaign_in_db, candidate_in_db = \
+        campaign_in_db, url_conversion_in_db, candidate_in_db = \
             SmsCampaignBase.pre_process_url_redirect(campaign_id,
                                                      url_conversion_id,
                                                      request.args.get('candidate_id'))
+
         user_id = candidate_in_db.user_id
-        camp_obj = SmsCampaignBase(user_id, buy_new_number=False)
+        camp_obj = SmsCampaignBase(user_id)
         redirection_url = camp_obj.process_url_redirect(campaign_in_db,
-                                                        url_conversion_id,
+                                                        url_conversion_in_db,
                                                         candidate_in_db)
         return redirect(redirection_url)
     except Exception:
@@ -111,7 +116,7 @@ def sms_campaign_url_redirection(campaign_id, url_conversion_id):
         return flask.jsonify(**data), 500
 
 
-@app.route(SmsCampaignApiUrl.API_VERSION + "/receive", methods=['POST'])
+@app.route('/' + SmsCampaignApiUrl.API_VERSION + "/receive", methods=['POST'])
 def sms_receive():
     """
     This end point is used to receive sms of candidates.

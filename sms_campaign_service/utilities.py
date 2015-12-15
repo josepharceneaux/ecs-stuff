@@ -12,7 +12,6 @@ This contains following helper classes/functions for SMS Campaign Service.
 
 # Standard Library
 import re
-import json
 
 # Third Party Imports
 import twilio
@@ -21,9 +20,10 @@ from twilio.rest import TwilioRestClient
 
 # Application Specific
 from sms_campaign_service import logger
-from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
 from sms_campaign_service.custom_exceptions import TwilioAPIError
-from sms_campaign_service.sms_campaign_app_constants import TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN
+from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl, GTApis
+from sms_campaign_service.sms_campaign_app_constants import TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, \
+    NGROK_URL
 
 
 class TwilioSMS(object):
@@ -126,3 +126,45 @@ def search_urls_in_text(text):
     :rtype: list
     """
     return re.findall(r'https?://[^\s<>"]+|ftps?://[^\s<>"]+|www\.[^\s<>"]+', text)
+
+
+# TODO: remove this when app is up
+def replace_ngrok_link_with_localhost(temp_ngrok_link):
+    """
+    We have exposed our endpoint via ngrok. We need to expose endpoint as Google's shorten URL API
+    looks for valid URL to convert into shorter version. While making HTTP request to this endpoint,
+    if ngrok is not running somehow, we replace that link with localhost to hit that endpoint. i.e.
+
+        https://9a99a454.ngrok.io/v1/campaigns/1298/url_redirection/294/?candidate_id=544
+    will become
+        https://127.0.0.1:8011/v1/campaigns/1298/url_redirection/294/?candidate_id=544
+
+    In final version of app, this won't be necessary as we'll have valid URL for app.
+    :param temp_ngrok_link:
+    :return:
+    """
+    relative_url = temp_ngrok_link.split(SmsCampaignApiUrl.API_VERSION)[1]
+    # API_URL is http://127.0.0.1:8011/v1 for dev
+    return SmsCampaignApiUrl.API_URL % relative_url
+
+
+# TODO: remove this when app is up
+def replace_localhost_with_ngrok(localhost_url):
+    """
+    We have exposed our endpoint via ngrok. We need to expose endpoint as Google's shorten URL API
+    looks for valid URL to convert into shorter version. While making HTTP request to this endpoint,
+    if ngrok is not running somehow, we replace localhost_url with the ngrok exposed URL. i.e.
+
+        https://127.0.0.1:8011/v1/campaigns/1298/url_redirection/294/?candidate_id=544
+
+    will become
+
+        https://9a99a454.ngrok.io/v1/campaigns/1298/url_redirection/294/?candidate_id=544
+
+
+    In final version of app, this won't be necessary as we'll have valid URL for app.
+    :param localhost_url:
+    :return:
+    """
+    relative_url = localhost_url.split(str(GTApis.SMS_CAMPAIGN_SERVICE_PORT))[1]
+    return NGROK_URL % relative_url

@@ -13,7 +13,7 @@ from sms_campaign_service.common.error_handling import (MethodNotAllowed, Resour
                                                         UnauthorizedError)
 
 
-class TestSmsCampaignSends:
+class TestSmsCampaignSends(object):
     """
     This class contains tests for endpoint /campaigns/:id/sms_campaign_sends
     """

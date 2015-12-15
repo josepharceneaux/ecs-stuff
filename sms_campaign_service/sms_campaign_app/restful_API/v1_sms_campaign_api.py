@@ -59,14 +59,14 @@ api.route = types.MethodType(api_route, api)
 
 # Enable CORS
 CORS(sms_campaign_blueprint, resources={
-    r''+SmsCampaignApiUrl.API_VERSION+'/(campaigns)/*': {
+    r'' + SmsCampaignApiUrl.API_VERSION + '/(campaigns)/*': {
         'origins': '*',
         'allow_headers': ['Content-Type', 'Authorization']
     }
 })
 
 
-@api.route(SmsCampaignApiUrl.API_VERSION + '/campaigns')
+@api.route('/' + SmsCampaignApiUrl.API_VERSION + '/campaigns')
 class SMSCampaigns(Resource):
     """
     This resource is used to
@@ -249,7 +249,7 @@ class SMSCampaigns(Resource):
             return dict(message='No campaign id provided to delete'), 200
 
 
-@api.route(SmsCampaignApiUrl.API_VERSION + '/campaigns/<int:campaign_id>')
+@api.route('/' + SmsCampaignApiUrl.API_VERSION + '/campaigns/<int:campaign_id>')
 class CampaignById(Resource):
     """
     This resource is used to
@@ -349,7 +349,8 @@ class CampaignById(Resource):
             raise InvalidUsage(error_message='No data provided to update SMS campaign')
         camp_obj = SmsCampaignBase(request.user.id)
         camp_obj.create_or_update_sms_campaign(campaign_data, campaign_id=campaign_id)
-        return dict(message='SMS Campaign(id:%s) has been updated successfully' % campaign_id,), 200
+        return dict(
+            message='SMS Campaign(id:%s) has been updated successfully' % campaign_id, ), 200
 
     def delete(self, campaign_id):
         """
@@ -389,7 +390,7 @@ class CampaignById(Resource):
                                                          % campaign_id)
 
 
-@api.route(SmsCampaignApiUrl.API_VERSION + '/campaigns/<int:campaign_id>/sms_campaign_sends')
+@api.route('/' + SmsCampaignApiUrl.API_VERSION + '/campaigns/<int:campaign_id>/sms_campaign_sends')
 class SmsCampaignSends(Resource):
     """
     This resource is used to Get Campaign sends [GET]
@@ -451,7 +452,7 @@ class SmsCampaignSends(Resource):
             raise ResourceNotFound(error_message='SMS Campaign(id=%s) not found.' % campaign_id)
 
 
-@api.route(SmsCampaignApiUrl.API_VERSION + '/campaigns/<int:campaign_id>/send')
+@api.route('/' + SmsCampaignApiUrl.API_VERSION + '/campaigns/<int:campaign_id>/send')
 class SendSmsCampaign(Resource):
     """
     This resource is used to send SMS Campaign to candidates [POST]
@@ -486,6 +487,7 @@ class SendSmsCampaign(Resource):
                          5002 (User has MultipleTwilioNumbers)
                          5003 (TwilioAPIError)
                          5004 (GoogleShortenUrlAPIError)
+                         5014 (ErrorUpdatingBodyText)
 
         :param campaign_id: integer, unique id representing campaign in GT database
         :return: json for required campaign containing message and total sends.

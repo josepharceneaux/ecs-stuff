@@ -50,6 +50,7 @@ class User(db.Model):
     event_organizers = db.relationship('EventOrganizer', backref='user', lazy='dynamic')
     venues = db.relationship('Venue', backref='user', lazy='dynamic')
     smart_lists = db.relationship('SmartList', backref='user', lazy='dynamic')
+    culture = relationship(u'Culture', backref=db.backref('user', cascade="all, delete-orphan"))
 
     def is_authenticated(self):
         return True
