@@ -1,25 +1,20 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run resume_service" type="PythonConfigurationType" factoryName="Python" folderName="resume_service">
+  <configuration default="false" name="Build Container: social_network_service" type="PythonConfigurationType" factoryName="Python" folderName="social_network_service">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
       <env name="PYTHONUNBUFFERED" value="1" />
-      <env name="AWS_SECRET_ACCESS_KEY" value="tHv3P1nrC4pvO8WxfmtJgpjyvSBc8ox83E+xMpFC" />
-      <env name="FILEPICKER_BUCKET_NAME" value="gettalent-filepicker" />
-      <env name="TCS_BUCKET_NAME" value="tcs-local-ufarooqi" />
-      <env name="TCS_BUCKET_REGION" value="us-west-1" />
       <env name="GT_ENVIRONMENT" value="dev" />
-      <env name="AWS_ACCESS_KEY_ID" value="AKIAI3422SZ6SL46EYBQ" />
     </envs>
     <option name="SDK_HOME" value="" />
-    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/resume_service" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
     <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <module name="talent-flask-services" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/resume_service/run.py" />
-    <option name="PARAMETERS" value="" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/container_config.py" />
+    <option name="PARAMETERS" value="--build=social_network_service" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <method />
   </configuration>

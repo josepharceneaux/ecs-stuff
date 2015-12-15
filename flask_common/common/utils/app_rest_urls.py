@@ -1,51 +1,67 @@
+import os
+
+
 class CandidateApiUrl:
     def __init__(self):
         pass
 
-    CANDIDATE = "http://127.0.0.1:8005/v1/candidates/%s"
-    CANDIDATES = "http://127.0.0.1:8005/v1/candidates"
+    env = os.environ.get('GT_ENVIRONMENT')
 
-    ADDRESS = "http://127.0.0.1:8005/v1/candidates/%s/addresses/%s"
-    ADDRESSES = "http://127.0.0.1:8005/v1/candidates/%s/addresses"
+    if env == 'dev' or env == 'circle':
+        CANDIDATE_SERVICE_HOST_NAME = 'http://127.0.0.1:8005/%s'
+    elif env == 'qa':
+        # TODO: Change this url after deployment
+        CANDIDATE_SERVICE_HOST_NAME = 'http://127.0.0.1:8005/%s'
+    elif env == 'prod':
+        # TODO: Change this url after deployment
+        CANDIDATE_SERVICE_HOST_NAME = 'http://127.0.0.1:8005/%s'
+    else:
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
 
-    AOI = "http://127.0.0.1:8005/v1/candidates/%s/areas_of_interest/%s"
-    AOIS = "http://127.0.0.1:8005/v1/candidates/%s/areas_of_interest"
+    CANDIDATE = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s"
+    CANDIDATES = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates"
 
-    CUSTOM_FIELD = "http://127.0.0.1:8005/v1/candidates/%s/custom_fields/%s"
-    CUSTOM_FIELDS = "http://127.0.0.1:8005/v1/candidates/%s/custom_fields"
+    ADDRESS = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/addresses/%s"
+    ADDRESSES = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/addresses"
 
-    EDUCATION = "http://127.0.0.1:8005/v1/candidates/%s/educations/%s"
-    EDUCATIONS = "http://127.0.0.1:8005/v1/candidates/%s/educations"
+    AOI = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/areas_of_interest/%s"
+    AOIS = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/areas_of_interest"
 
-    DEGREE = "http://127.0.0.1:8005/v1/candidates/%s/educations/%s/degrees/%s"
-    DEGREES = "http://127.0.0.1:8005/v1/candidates/%s/educations/%s/degrees"
+    CUSTOM_FIELD = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/custom_fields/%s"
+    CUSTOM_FIELDS = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/custom_fields"
 
-    DEGREE_BULLET = "http://127.0.0.1:8005/v1/candidates/%s/educations/%s/degrees/%s/bullets/%s"
-    DEGREE_BULLETS = "http://127.0.0.1:8005/v1/candidates/%s/educations/%s/degrees/%s/bullets"
+    EDUCATION = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/educations/%s"
+    EDUCATIONS = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/educations"
 
-    EMAIL = "http://127.0.0.1:8005/v1/candidates/%s/emails/%s"
-    EMAILS = "http://127.0.0.1:8005/v1/candidates/%s/emails"
+    DEGREE = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/educations/%s/degrees/%s"
+    DEGREES = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/educations/%s/degrees"
 
-    EXPERIENCE = "http://127.0.0.1:8005/v1/candidates/%s/experiences/%s"
-    EXPERIENCES = "http://127.0.0.1:8005/v1/candidates/%s/experiences"
+    DEGREE_BULLET = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/educations/%s/degrees/%s/bullets/%s"
+    DEGREE_BULLETS = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/educations/%s/degrees/%s/bullets"
 
-    EXPERIENCE_BULLET = "http://127.0.0.1:8005/v1/candidates/%s/experiences/%s/bullets/%s"
-    EXPERIENCE_BULLETS = "http://127.0.0.1:8005/v1/candidates/%s/experiences/%s/bullets"
+    EMAIL = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/emails/%s"
+    EMAILS = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/emails"
 
-    MILITARY_SERVICE = "http://127.0.0.1:8005/v1/candidates/%s/military_services/%s"
-    MILITARY_SERVICES = "http://127.0.0.1:8005/v1/candidates/%s/military_services"
+    EXPERIENCE = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/experiences/%s"
+    EXPERIENCES = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/experiences"
 
-    PHONE = "http://127.0.0.1:8005/v1/candidates/%s/phones/%s"
-    PHONES = "http://127.0.0.1:8005/v1/candidates/%s/phones"
+    EXPERIENCE_BULLET = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/experiences/%s/bullets/%s"
+    EXPERIENCE_BULLETS = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/experiences/%s/bullets"
 
-    PREFERRED_LOCATION = "http://127.0.0.1:8005/v1/candidates/%s/preferred_locations/%s"
-    PREFERRED_LOCATIONS = "http://127.0.0.1:8005/v1/candidates/%s/preferred_locations"
+    MILITARY_SERVICE = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/military_services/%s"
+    MILITARY_SERVICES = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/military_services"
 
-    SKILL = "http://127.0.0.1:8005/v1/candidates/%s/skills/%s"
-    SKILLS = "http://127.0.0.1:8005/v1/candidates/%s/skills"
+    PHONE = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/phones/%s"
+    PHONES = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/phones"
 
-    SOCIAL_NETWORK = "http://127.0.0.1:8005/v1/candidates/%s/social_networks/%s"
-    SOCIAL_NETWORKS = "http://127.0.0.1:8005/v1/candidates/%s/social_networks"
+    PREFERRED_LOCATION = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/preferred_locations/%s"
+    PREFERRED_LOCATIONS = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/preferred_locations"
 
-    WORK_PREFERENCE = "http://127.0.0.1:8005/v1/candidates/%s/work_preference/%s"
+    SKILL = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/skills/%s"
+    SKILLS = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/skills"
+
+    SOCIAL_NETWORK = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/social_networks/%s"
+    SOCIAL_NETWORKS = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/social_networks"
+
+    WORK_PREFERENCE = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/work_preference/%s"
 

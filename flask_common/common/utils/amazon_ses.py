@@ -1,16 +1,16 @@
 __author__ = 'ufarooqi'
 
 import boto
-import re
 import os
+import re
+from flask import current_app as app
 
-# Get Amazon SES Credentials from environment variables
-AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+DEFAULT_MAIL_SENDER = '"getTalent Web" <no-reply@gettalent.com>'
 
 
 def get_boto_ses_connection():
-    conn = boto.connect_ses(aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+    conn = boto.connect_ses(aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
+                            aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'))
     return conn
 
 
@@ -32,7 +32,14 @@ def safe_send_email(source, subject, body, to_addresses, html_body=None, text_bo
         request_id_search = re.search('<RequestId>(.*)</RequestId>', e.__str__(), re.IGNORECASE)
         request_id = request_id_search.group(1) if request_id_search else None
 
-        # TODO: Send emails to admin about mail failure notice
+        # Send failure message to email marketing admin, just to notify for verification
+        from talent_reporting import email_error_to_admins
+
+        email_error_to_admins(
+            'email=%s, subject=%s, body=%s, html_body=%s, text_body=%s, error=%s' % (
+                to_addresses, subject, body, html_body, text_body, e),
+            'Email failed to send'
+        )
 
     return dict(request_id=request_id, message_id=message_id)
 
