@@ -1,8 +1,10 @@
 # Standared Library
+from xml.etree import ElementTree as ET
 import datetime
+import HTMLParser
 import re
 import string
-from xml.etree import ElementTree as ET
+import urllib2
 # Third Party
 from bs4 import BeautifulSoup as bs4
 # from dateutil.parser import parse
@@ -22,7 +24,7 @@ def fetch_optic_response(resume):
     AUTH = oauth.get_authorizationString()
     HEADERS = {
       'accept': 'application/xml',
-      'content-type': 'application/xml',
+      'content-type': 'application/json',
       'Authorization': AUTH,
     }
     DATA = {
@@ -31,14 +33,17 @@ def fetch_optic_response(resume):
         'locale': 'en_us'
     }
     r = requests.post(URL, headers=HEADERS, json=DATA)
-    xml_response = ET.parse(r.content).getroot()
-    return xml_response
+    #TODO add bad request handling.
+    html_parser = HTMLParser.HTMLParser()
+    unquoted = urllib2.unquote(r.content).decode('utf8')
+    unescaped = html_parser.unescape(unquoted)
+    return unescaped
 
-def parse_optic_json(resume_xml):
-    contact_xml_list = bs4(resume_xml, 'lxml').findAll('contact')
-    experience_xml_list = bs4(resume_xml, 'lxml').findAll('experience')
-    educations_xml_list = bs4(resume_xml, 'lxml').findAll('education')
-    skill_xml_list= bs4(resume_xml, 'lxml').findAll('canonskill')
+def parse_optic_json(resume_xml_string):
+    contact_xml_list = bs4(resume_xml_string, 'lxml').findAll('contact')
+    experience_xml_list = bs4(resume_xml_string, 'lxml').findAll('experience')
+    educations_xml_list = bs4(resume_xml_string, 'lxml').findAll('education')
+    skill_xml_list= bs4(resume_xml_string, 'lxml').findAll('canonskill')
     name = parse_candidate_name(contact_xml_list)
     emails = parse_candidate_emails(contact_xml_list)
     phones = parse_candidate_phones(contact_xml_list)
