@@ -6,10 +6,8 @@
     <nav class="header__nav col--medium-8 col--large-12">
         <div class="row--expanded row--table header__inner">
             <div class="col--tiny-4--cell col--vmiddle header__select">
-                <select id="dashboardScope" class="js-fancy" name="dashboardScope">
-                    <option value="sr-java-developers">Sr Java Developers</option>
-                    <option value="jr-java-engineers">Jr Java Engineers</option>
-                    <option value="developers-in-nevada">Developers in Nevada</option>
+                <select ng-options="option.name for option in vm.dashboardScopeOptions track by option.id"
+                    ng-model="vm.selectedDashboardScope" id="dashboardScope" class="form__input--select" name="dashboardScope">
                 </select>
             </div>
             <div class="col--tiny-8--cell col--vmiddle header__actions">
@@ -23,7 +21,7 @@
                     <span class="icon--upload"></span>
                 </a>
                 <a href="#" class="header__profile">
-                    <img src="./images/placeholder/profile.png" alt="Change settings">
+                    <img ng-src="{{vm.userProfilePicThumbSrc}}" alt="Change settings">
                 </a>
                 <a ng-click="vm.logout()">Logout</a>
             </div>

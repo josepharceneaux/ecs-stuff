@@ -36,28 +36,25 @@ test:
         parallel: true
         background: true
     - python email_campaign/run.py:
+        parallel: true
+        background: true
+    - python spreadsheet_import_service/run.py:
+        parallel: true
         background: true
     - sleep 5
 
 
   override:
-    - py.test auth_service/tests/:
-        parallel: true
-    - py.test user_service/tests/:
-        parallel: true
-    - py.test resume_service/tests/:
-        parallel: true
-    - py.test activity_service/tests/:
-        parallel: true
-    - py.test candidate_service/tests/:
-        parallel: true
-    - py.test social_network_service/tests/:
-        parallel: true
-    - py.test email_campaign/tests/:
-        parallel: true
-    - py.test candidate_pool_service/tests/:
-        parallel: true
-
+    - ? >
+          py.test
+          auth_service/tests/
+          user_service/tests/
+          resume_service/tests/
+          activity_service/tests/
+          candidate_service/tests/
+          candidate_pool_service/tests/
+          spreadsheet_import_service/tests/
+      : parallel: true
 
 experimental:
   notify:

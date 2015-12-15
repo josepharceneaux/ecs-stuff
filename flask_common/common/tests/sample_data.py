@@ -24,8 +24,8 @@ def generate_single_candidate_data():
                 {'label': 'work', 'address': fake.company_email()}
             ],
             'phones': [
-                {'label': 'mobile', 'value': fake.phone_number()},
-                {'label': 'Work', 'value': fake.phone_number()}
+                {'label': 'mobile', 'value': '8009346489'},
+                {'label': 'Work', 'value': '8009346489'}
             ],
             'addresses': [
                 {'address_line_1': fake.street_address(), 'city': fake.city(),
@@ -92,8 +92,8 @@ def candidate_data_for_update(candidate_id, email_1_id, email_2_id, phone_1_id,
                 {'id': email_2_id, 'label': 'work', 'address': fake.company_email()}
             ],
             'phones': [
-                {'id': phone_1_id, 'label': 'mobile', 'value': fake.phone_number()},
-                {'id': phone_2_id, 'label': 'Work', 'value': fake.phone_number()}
+                {'id': phone_1_id, 'label': 'mobile', 'value': '8009346489'},
+                {'id': phone_2_id, 'label': 'Work', 'value': '8009346489'}
             ],
             'addresses': [
                 {'id': address_1_id, 'address_line_1': fake.street_address(), 'city': fake.city(),

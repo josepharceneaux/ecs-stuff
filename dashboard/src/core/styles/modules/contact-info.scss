@@ -1,0 +1,12 @@
+// ------------
+// Contact Info
+// ------------
+.contact-info__module {
+  span { text-align: center; }
+  p { line-height: 1; }
+
+  [class^="icon--"],
+  [class*=" icon--"] {
+    font-size: $font-size--large;
+  }
+}
