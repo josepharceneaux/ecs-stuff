@@ -1,7 +1,7 @@
 """API for the Resume Parsing App"""
 __author__ = 'erikfarmer'
 # Standard lib
-from StringIO import StringIO
+from cStringIO import StringIO
 import json
 # Framework specific
 from flask import Blueprint

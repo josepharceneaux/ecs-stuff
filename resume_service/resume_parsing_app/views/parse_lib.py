@@ -1,12 +1,12 @@
 """Main resume parsing logic & functions."""
-
+# Standard library
 from cStringIO import StringIO
 from os.path import basename
 from os.path import splitext
 from time import sleep
 from time import time
 import base64
-
+# Third Party
 from pdfminer.pdfinterp import PDFResourceManager
 from pdfminer.pdfinterp import process_pdf
 from pdfminer.pdfparser import PDFParser
@@ -17,6 +17,7 @@ from xhtml2pdf import pisa
 import requests
 from BeautifulSoup import BeautifulSoup
 import magic
+# Module Specific
 from flask import current_app
 from resume_service.resume_parsing_app.views.optic_parse_lib import parse_optic_json, fetch_optic_response
 
