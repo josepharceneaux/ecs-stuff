@@ -158,18 +158,22 @@ def get_email_template():
     if user_domain != domain_id:
         raise ForbiddenError(error_message="Template is not owned by same domain")
 
+    # Verify is_immutable
+    if user_email_template.is_immutable == 1 and not require_all_roles('CAN_GET_EMAIL_TEMPLATE'):
+        raise ForbiddenError(error_message="User %d not allowed to update the template" % template_owner_user.id)
+
     email_body_html = user_email_template.email_body_html
 
     return jsonify({'email_template': {'email_body_html': email_body_html, 'id': email_template_id}})
 
 
-# Inputs: name, parentId (if any), is_immutable (only if admin)
-# @require_all_roles('CAN_CREATE_EMAIL_TEMPLATE_FOLDER')
+@require_all_roles('CAN_CREATE_EMAIL_TEMPLATE_FOLDER')
 @mod.route('/v1/email-template-folders', methods=['POST'])
 @require_oauth
 def create_email_template_folder():
     """
     This function will create email template folder
+    input: {'name': "template_folder_name", 'parent_id': "parent_id", "is_immutable": 0 or 1}
     :return: Template folder id
     """
     auth_user = request.user
@@ -199,3 +203,32 @@ def create_email_template_folder():
     return jsonify({"template_folder_id": [{"id": email_template_folder_id}]})
 
 
+@require_all_roles('CAN_DELETE_EMAIL_TEMPLATE_FOLDER')
+@mod.route('/v1/email-template-folders', methods=['DELETE'])
+@require_oauth
+def delete_email_template_folder():
+    """
+    This function will delete email template folder from the domain
+    input: {'name': "template_folder_name", 'parent_id': "parent_id", "is_immutable": 0 or 1}
+    :return: Template folder id
+    """
+    requested_data = json.loads(request.data)
+    folder_id = requested_data['id']
+    domain_id = request.user.domain_id
+    user_id = request.user.id
+
+    template_folder = EmailTemplateFolder.query.filter_by(id=folder_id).first()
+
+    # Verify owned by same domain
+    template_folder_owner_user = db.session.query(User).filter(template_folder.user_id == User.id).first()
+    user_domain = template_folder_owner_user.domain_id
+    if user_domain != domain_id:
+        raise ForbiddenError(error_message="Template folder is not owned by same domain")
+
+    if template_folder.is_immutable == 1 and not require_all_roles('CAN_DELETE_EMAIL_TEMPLATE_FOLDER'):
+        raise ForbiddenError(error_message="User %d not allowed to delete the template" % user_id)
+
+    # Delete the template
+    db.session.query(UserEmailTemplate).filter_by(id=folder_id).delete()
+
+    return dict(success=1)
