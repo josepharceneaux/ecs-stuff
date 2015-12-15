@@ -1,5 +1,5 @@
 from flask import Blueprint
-from email_template_service.common.utils.auth_utils import require_oauth, require_all_roles, is_number
+from email_template_service.common.utils.auth_utils import require_oauth, require_all_roles
 from email_template_service.common.models.db import db
 from email_template_service.common.models.misc import UserEmailTemplate, EmailTemplateFolder
 from email_template_service.common.models.user import User
@@ -20,7 +20,6 @@ def post_email_template():
     :return:  A dictionary containing array of template id
     :rtype: dict
     """
-    # check email body
     data = json.loads(request.data)
     user_id = request.user.id
     domain_id = request.user.domain_id
@@ -37,16 +36,19 @@ def post_email_template():
     if existing_template_name:
         raise InvalidUsage(error_message="Template name with name=%s already exists" % existing_template_name)
 
-    email_template_folder_id = int(data["email_template_folder_id"] or 0)
+    email_template_folder_id = data["email_template_folder_id"]
+    if not RepresentsInt(email_template_folder_id):
+        raise InvalidUsage(error_message="Invalid input")
     email_template_folder = db.session.query(EmailTemplateFolder).filter_by(id=email_template_folder_id).first()
 
     # Check if the email template folder belongs to current domain
     if email_template_folder and email_template_folder.domain_id != domain_id:
-        raise ForbiddenError(error_message="Email template's folder %d is in the user's domain %d" %
-                             email_template_folder_id % domain_id)
+        raise ForbiddenError(error_message="Email template's folder is in the user's domain %d" % domain_id)
 
     # If is_immutable = 0, It can be accessed by everyone
-    is_immutable_value = int(data["is_immutable"] or 0)
+    is_immutable_value = data["is_immutable"]
+    if not RepresentsInt(is_immutable_value):
+        raise InvalidUsage(error_message="Invalid input")
     if is_immutable_value == 1 and not require_all_roles('CAN_CREATE_EMAIL_TEMPLATE'):
         raise UnauthorizedError(error_message="User is not admin")
     user_email_template = UserEmailTemplate(user_id=user_id, type=0,
@@ -72,6 +74,9 @@ def delete_email_template():
     """
     data = json.loads(request.data)
     email_template_id = data["id"]
+    if not RepresentsInt(email_template_id):
+        raise InvalidUsage(error_message="Invalid input")
+
     user_id = request.user.id
     domain_id = request.user.domain_id
 
@@ -104,6 +109,9 @@ def update_email_template():
     """
     data = json.loads(request.data)
     email_template_id = data["id"]
+    if not RepresentsInt(email_template_id):
+        raise InvalidUsage(error_message="Invalid input")
+
     domain_id = request.user.domain_id
     user_id = request.user.id
 
@@ -141,6 +149,9 @@ def get_email_template():
     """
     data = json.loads(request.data)
     email_template_id = data["id"]
+    if not RepresentsInt(email_template_id):
+        raise InvalidUsage(error_message="Invalid input")
+
     domain_id = request.user.domain_id
 
     if isinstance(email_template_id, basestring):
@@ -192,10 +203,13 @@ def create_email_template_folder():
     template_folder_parent_id = EmailTemplateFolder.query.filter_by(parent_id=parent_id, domain_id=domain_id).first()
     if parent_id and not template_folder_parent_id:
         raise ForbiddenError(error_message="parent ID %s does not belong to domain %s" % auth_user.id % domain_id)
-    is_immutable = 0
-    get_immutable_value = request.args.get("is_immutable")
-    if get_immutable_value == "1":
-        raise UnauthorizedError(error_message="User is not admin")
+
+    # If is_immutable value is not passed, make it as 0
+    try:
+        is_immutable = requested_data["is_immutable"]
+    except:
+        is_immutable = 0
+
     email_template_folder = EmailTemplateFolder(name=folder_name, domain_id=domain_id, parent_id=parent_id,
                                                 is_immutable=is_immutable)
     db.session.add(email_template_folder)
@@ -216,7 +230,6 @@ def delete_email_template_folder():
     """
     requested_data = json.loads(request.data)
     folder_id = requested_data['id']
-    user_id = request.user.id
 
     template_folder = EmailTemplateFolder.query.get(folder_id)
 
@@ -225,11 +238,16 @@ def delete_email_template_folder():
     if not template_folder_owner_user:
         raise ForbiddenError(error_message="Template folder is not owned by same domain")
 
-    if template_folder.is_immutable == 1:
-        raise ForbiddenError(error_message="User %d not allowed to delete the template" % user_id)
-
     # Delete the template
     db.session.query(UserEmailTemplate).filter_by(id=folder_id).delete()
     db.session.commit()
 
     return jsonify({"success": 1}), 204
+
+
+def RepresentsInt(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
