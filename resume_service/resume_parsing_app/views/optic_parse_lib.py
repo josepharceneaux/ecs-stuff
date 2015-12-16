@@ -11,6 +11,8 @@ from bs4 import BeautifulSoup as bs4
 from resume_service.resume_parsing_app.views.OauthClient import OAuthClient
 import phonenumbers
 import requests
+# Module Specific
+from flask import current_app
 
 def fetch_optic_response(resume):
     """
@@ -19,8 +21,8 @@ def fetch_optic_response(resume):
     :param resume: a base64 encoded resume file.
     :return: unescaped: an html unquoted, utf-decoded string that represents the Burning Glass XML.
     """
-    URL = 'http://sandbox-lensapi.burning-glass.com/v1.7/parserservice/resume'
-    oauth = OAuthClient(url='http://sandbox-lensapi.burning-glass.com/v1.7/parserservice/resume',
+    BG_URL = current_app['config']['BG_URL']
+    oauth = OAuthClient(url=BG_URL,
                         method='POST', consumerKey='osman',
                         consumerSecret='aRFKEc3AJdR9zogE@M9Sis%QjZPxA5Oy',
                         token='Utility',
@@ -38,7 +40,7 @@ def fetch_optic_response(resume):
         'instanceType': 'TM',
         'locale': 'en_us'
     }
-    r = requests.post(URL, headers=HEADERS, json=DATA)
+    r = requests.post(BG_URL, headers=HEADERS, json=DATA)
     #TODO add bad request handling.
     html_parser = HTMLParser.HTMLParser()
     unquoted = urllib2.unquote(r.content).decode('utf8')

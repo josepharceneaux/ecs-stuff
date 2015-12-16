@@ -9,3 +9,4 @@ This service requires Oauth2 and forwards the token from a requesting client to 
 Pylint reports that parselib in general has too many branches and statements. It would be good to break up some of the larger functions.
 optic_parse_lib.parse_candidate_experiences has too many locals.
 Improve general exceptions.
+Consumer secret & token secret should ideally be environment variables
