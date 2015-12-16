@@ -1,19 +1,27 @@
-from email_template_service.tests.helpers import *
+from email_template_service.common.models.user import DomainRole
+from email_template_service.tests.api.helpers import *
 
 
 def create_email_template(token, user_id, template_name, body_html, body_text, is_immutable="1",
-                          folder_id=None, domain_id=None):
+                          folder_id=None, domain_id=None, role_id=None):
     """
-    Creates a campaign template with params provided
+    Creates a email campaign template with params provided
 
+    :param token
     :param user_id:                 User id
     :param template_name:           Template name
     :param body_html:               Body html
     :param body_text:               Body text
     :param is_immutable:            "1" if immutable, otherwise "0"
     :param folder_id:               folder id
+    :param domain_id                domain_id
+    :param role_id                  user scoped role id
     :return:                        Id of template created
     """
+    # Check the user has role to create template
+    role = DomainRole.query.get(role_id)
+    domain_role_name = role.role_name
+    assert domain_role_name == "CAN_CREATE_EMAIL_TEMPLATE"
     data = dict(
         name=template_name,
         email_template_folder_id=folder_id,
@@ -25,10 +33,7 @@ def create_email_template(token, user_id, template_name, body_html, body_text, i
     )
 
     create_resp = post_to_email_template_resource(token, data=data, domain_id=domain_id)
-    assert create_resp.status_code == 201
-    print response_info(create_resp.request, create_resp.json(), create_resp.status_code)
-    json_resonse = create_resp.json()['template_id'][0]
-    return json_resonse['id']
+    return create_resp
 
 
 def update_email_template(email_template_id, request, token, user_id, template_name, body_html, body_text='',
@@ -36,6 +41,7 @@ def update_email_template(email_template_id, request, token, user_id, template_n
     """
 
     :param email_template_id
+    :param request
     :param token:
     :param user_id:
     :param template_name:

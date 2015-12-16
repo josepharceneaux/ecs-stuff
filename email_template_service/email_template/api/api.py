@@ -2,7 +2,7 @@ from flask import Blueprint
 from email_template_service.common.utils.auth_utils import require_oauth, require_all_roles
 from email_template_service.common.models.db import db
 from email_template_service.common.models.misc import UserEmailTemplate, EmailTemplateFolder
-from email_template_service.common.models.user import User
+from email_template_service.common.models.user import User, UserScopedRoles, DomainRole
 from flask import request
 from email_template_service.common.error_handling import *
 import json
@@ -20,14 +20,22 @@ def post_email_template():
     :return:  A dictionary containing array of template id
     :rtype: dict
     """
-    data = json.loads(request.data)
     user_id = request.user.id
+    # Todo: Check roles assigned to user
+    # role_id = UserScopedRoles.query.filter_by(user_id=user_id)
+    # # Check the user has role to create template
+    # role = DomainRole.query.get(role_id)
+    # domain_role_name = role.role_name
+    # assert domain_role_name == "CAN_CREATE_EMAIL_TEMPLATE"
+    data = json.loads(request.data)
+
     domain_id = request.user.domain_id
     template_name = data.get('name')
     if not template_name:
         raise InvalidUsage(error_message="Template name is empty")
 
     email_template_html_body = data.get("email_body_html")
+
     if not email_template_html_body:
         raise InvalidUsage(error_message="Email HTML body is empty")
 
@@ -37,10 +45,10 @@ def post_email_template():
         raise InvalidUsage(error_message="Template name with name=%s already exists" % existing_template_name)
 
     email_template_folder_id = data.get("email_template_folder_id")
-    if email_template_folder_id and not email_template_folder_id.isdigit():
+    if email_template_folder_id and not (isinstance(email_template_folder_id, int)
+                                         or email_template_folder_id.isdigit()):
         raise InvalidUsage(error_message="Invalid input")
-    else:
-        email_template_folder_id = 0
+
     email_template_folder = EmailTemplateFolder.query.get(email_template_folder_id)
 
     # Check if the email template folder belongs to current domain
@@ -52,14 +60,14 @@ def post_email_template():
     is_immutable = data.get("is_immutable")
     if is_immutable and not is_immutable.isdigit():
         raise InvalidUsage(error_message="Invalid input")
-    else:
+    if not is_immutable:
         is_immutable = 0
 
-    if is_immutable == 1 and not require_all_roles('CAN_CREATE_EMAIL_TEMPLATE'):
-        raise UnauthorizedError(error_message="User is not admin")
+    if not require_all_roles('CAN_CREATE_EMAIL_TEMPLATE'):
+        raise UnauthorizedError(error_message="User is not authorized to create email template")
     user_email_template = UserEmailTemplate(user_id=user_id, type=0,
                                             name=template_name, email_body_html=email_template_html_body,
-                                            email_body_text=data["email_body_text"] or None,
+                                            email_body_text=data.get("email_body_text"),
                                             email_template_folder_id=email_template_folder_id if
                                             email_template_folder_id else None,
                                             is_immutable=is_immutable)
@@ -94,8 +102,8 @@ def delete_email_template():
 
     # Verify owned by same domain
     template_owner_user = User.query.get(template.user_id)
-    user_domain = template_owner_user.domain_id
-    if user_domain != domain_id:
+
+    if template_owner_user.domain_id != domain_id:
         raise ForbiddenError(error_message="Template is not owned by same domain")
 
     if template.is_immutable == 1 and not require_all_roles('CAN_DELETE_EMAIL_TEMPLATE'):
@@ -130,19 +138,20 @@ def update_email_template():
     if not template:
         raise ResourceNotFound(error_message="Template with id %d not found" % email_template_id)
 
+    # Verify is_immutable
+    if template.is_immutable == 1 and not require_all_roles('CAN_UPDATE_EMAIL_TEMPLATE'):
+        raise ForbiddenError(error_message="User %d not allowed to update the template" % user_id)
+
     email_body_html = data.get("email_body_html") or template.email_body_html
     email_body_text = data.get("email_body_text") or template.email_body_text
 
     # Verify owned by same domain
     template_owner_user = User.query.get(template.user_id)
-    user_domain = template_owner_user.domain_id
-    if user_domain != domain_id:
+
+    if template_owner_user.domain_id != domain_id:
         raise ForbiddenError(error_message="Template is not owned by same domain")
 
-    # Verify is_immutable
-    if template.is_immutable == 1 and not require_all_roles('CAN_UPDATE_EMAIL_TEMPLATE'):
-        raise ForbiddenError(error_message="User %d not allowed to update the template" % user_id)
-
+    # Update email template
     db.session.query(UserEmailTemplate).filter_by(id=email_template_id).update(
         {"email_body_html": email_body_html, "email_body_text": email_body_text})
 
@@ -200,7 +209,6 @@ def create_email_template_folder():
     if not isinstance(folder_name, basestring):
         raise InvalidUsage(error_message="Invalid input")
     domain_id = request.user.domain_id
-    user_id = request.user.id
 
     # Check if the name is already exists under same domain
     existing_row = EmailTemplateFolder.query.filter(EmailTemplateFolder.name == folder_name,
@@ -210,11 +218,11 @@ def create_email_template_folder():
         raise InvalidUsage(error_message="Template folder with name=%s already exists" % folder_name)
 
     parent_id = data.get('parent_id')
-    if not parent_id.isdigit():
+    if parent_id and not parent_id.isdigit():
         raise InvalidUsage(error_message="Invalid input")
     template_folder_parent_id = EmailTemplateFolder.query.filter_by(parent_id=parent_id, domain_id=domain_id).first()
-    if not template_folder_parent_id:
-        raise ForbiddenError(error_message="Parent ID %s does not belong to domain %s" % user_id % domain_id)
+    if template_folder_parent_id:
+        raise ForbiddenError(error_message="Parent ID does not belong to domain %s" % domain_id)
 
     # If is_immutable value is not passed, make it as 0
     is_immutable = data.get("is_immutable")
@@ -245,8 +253,9 @@ def delete_email_template_folder():
     folder_id = data.get('id')
     if not folder_id:
         raise InvalidUsage("Folder ID must be provided")
-    if not folder_id.isdigit():
-        raise InvalidUsage(error_message="Invalid input")
+    if not isinstance(folder_id, int):
+        if not folder_id.isdigit():
+            raise InvalidUsage(error_message="Invalid input")
     if isinstance(folder_id, basestring):
         folder_id = int(folder_id)
     template_folder = EmailTemplateFolder.query.get(folder_id)
@@ -259,7 +268,7 @@ def delete_email_template_folder():
         raise ForbiddenError(error_message="Template folder is not owned by same domain")
 
     # Delete the template
-    template_folder_to_delete = UserEmailTemplate.query.get(folder_id)
+    template_folder_to_delete = EmailTemplateFolder.query.get(folder_id)
     db.session.delete(template_folder_to_delete)
     db.session.commit()
 
@@ -275,6 +284,10 @@ def validate_template_id(email_template_id):
     if not email_template_id:
         raise InvalidUsage(error_message="Template ID must be provided")
 
-    if not email_template_id.isdigit():
-        raise InvalidUsage(error_message="Invalid input")
+    if not isinstance(email_template_id, int):
+        if not email_template_id.isdigit():
+            raise InvalidUsage(error_message="Invalid input")
 
+
+def check_domain_role():
+    pass
