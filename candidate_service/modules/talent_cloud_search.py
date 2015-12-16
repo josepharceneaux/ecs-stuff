@@ -135,8 +135,6 @@ AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 CLOUD_SEARCH_REGION = talent_property_manager.get_cloudsearch_region()
 CLOUD_SEARCH_DOMAIN_NAME = talent_property_manager.get_cloudsearch_domain_name()
 
-filter_queries = []
-search_queries = []
 filter_queries_list = []
 search_queries_list = []
 coordinates = []
@@ -576,19 +574,16 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
 
     query_strings = []
     for search_query in search_queries_list:
-        if not search_query:
-            # If no search query is provided, (may be in case of landing talent page) then fetch all results
-            query_strings.append("id:%s" % request_vars['id'] if request_vars.get('id') else "*:*")
-
-        else:
-            query_string = "(or %s)" % " ".join(search_query)
+        if search_query:
+            query_string = "(or %s)" % search_query
             if request_vars.get('id'):
                 # If we want to check if a certain candidate ID is in a smartlist
                 query_string = "(and id:%s %s)" % (request_vars['id'], query_string)
 
             query_strings.append(query_string)
 
-    query_string = "(and %s)" % " ".join(query_strings) if len(query_strings) > 1 else ' '.join(query_strings)
+    query_string = "(and %s)" % " ".join(query_strings) if len(query_strings) > 1 else "id:%s" % request_vars['id'] \
+        if request_vars.get('id') else "*:*"
 
     params = dict(query=query_string, sort=sort, start=offset, size=search_limit)
     params['query_parser'] = 'lucene'
@@ -666,7 +661,8 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     facets = get_faceting_information(results.get('facets'))
 
     # Update facets
-    _update_facet_counts(filter_queries, params['filter_query'], facets, query_string, domain_id)
+    queries_list = [query for filter_query_list in filter_queries_list for query in filter_query_list]
+    _update_facet_counts(queries_list, params['filter_query'], facets, query_string, domain_id)
 
     # for facet_field_name, facet_dict in facets.iteritems():
     #     facets[facet_field_name] = sorted(facet_dict.iteritems(), key=operator.itemgetter(1), reverse=True)
@@ -955,11 +951,9 @@ def _get_search_queries(request_vars):
     query = request_vars.get('query')
     if query and not isinstance(query, basestring):
         q = ' '.join(query)
-        search_queries.append(q)
+        search_queries_list.append(q)
     elif query:
-        search_queries.append(query)
-
-    search_queries_list.append(search_queries)
+        search_queries_list.append(query)
 
     return search_queries_list
 
@@ -970,6 +964,8 @@ def _search_with_location(location, radius):
     :param location:
     :return:
     """
+    filter_queries = []
+
     # If zipcode and radius provided, get coordinates & do a geo search
     is_zipcode = re.match(r"^\d+$", location) is not None
     # Convert miles to kilometers, required by geo_location calculator
@@ -1001,6 +997,7 @@ def _get_candidates_by_filter_date(request_vars):
     :param request_vars:
     :return:
     """
+    filter_queries = []
     add_time_from = request_vars.get('date_from')
     add_time_to = request_vars.get('date_to')
 
@@ -1018,7 +1015,7 @@ def _search_custom_fields(request_vars):
     :param request_vars:
     :return:
     """
-
+    filter_queries = []
     # Handling custom fields
     custom_field_vars = list()
     city_of_interest_custom_fields = []
@@ -1169,8 +1166,7 @@ def get_filter_query_from_request_vars(request_vars, domain_id):
     :return: filter_query
     """
 
-    # Clear all queries and filters for fresh search
-    _clear_filter_queries_and_search_queries()
+    filter_queries = []
 
     # If source_id has product_id in it, then remove it and add product_id to filter request_vars
     if not request_vars.get('product_id') and request_vars.get('source_ids'):
@@ -1182,7 +1178,7 @@ def get_filter_query_from_request_vars(request_vars, domain_id):
     if request_vars.get('location'):
         location = request_vars.get('location')
         radius = request_vars.get('radius')
-        _search_with_location(location, radius)
+        filter_queries = filter_queries + _search_with_location(location, radius)
     if isinstance(request_vars.get('user_ids'), list):
         filter_queries.append("(or %s)" % ' '.join("user_id:%s" % uid for uid in request_vars.get('user_ids')))
     elif request_vars.get('user_ids'):
@@ -1221,7 +1217,7 @@ def get_filter_query_from_request_vars(request_vars, domain_id):
 
     # date filtering
     if request_vars.get('date_from' or 'date_to'):
-        _get_candidates_by_filter_date(request_vars)
+        filter_queries = filter_queries + _get_candidates_by_filter_date(request_vars)
 
     if isinstance(request_vars.get('job_title'), list):
         # search for exact values in facets
@@ -1297,7 +1293,7 @@ def get_filter_query_from_request_vars(request_vars, domain_id):
     # Handling custom fields
     for key, value in request_vars.items():
         if 'cf-' in key:
-            _search_custom_fields(request_vars)
+            filter_queries = filter_queries + _search_custom_fields(request_vars)
     filter_queries.append("(term field=domain_id %s)" % domain_id)
 
     filter_queries_list.append(filter_queries)
@@ -1309,12 +1305,6 @@ def get_filter_query_from_request_vars(request_vars, domain_id):
             get_filter_query_from_request_vars(search_params, domain_id)
 
     return filter_queries_list
-
-
-def _clear_filter_queries_and_search_queries():
-    if filter_queries or search_queries:
-        filter_queries[:] = []
-        search_queries[:] = []
 
 
 def _clear_filter_queries_and_search_queries_list():
