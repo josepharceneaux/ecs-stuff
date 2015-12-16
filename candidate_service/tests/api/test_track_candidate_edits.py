@@ -419,3 +419,194 @@ def test_edit_candidate_email(sample_user, user_auth):
     assert edit_resp.status_code == 200
     assert candidate_edits[0]['old_value'] == old_email_dict['address']
     assert candidate_edits[0]['new_value'] == new_email_dict['address']
+
+
+def test_edit_candidate_phone(sample_user, user_auth):
+    """
+    Test:   Change Candidate's phone record
+    Expect: 200
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    old_phone_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['phones'][0]
+
+    # Update Candidate's phone
+    data = {'candidates': [
+        {'id': candidate_id, 'phones': [{'id': old_phone_dict['id'], 'value': '4084054085'}]}
+    ]}
+    patch_to_candidate_resource(token, data)
+
+    # Retrieve Candidate
+    new_email_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['phones'][0]
+
+    # Retrieve Candidate Edits
+    edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
+    print response_info(edit_resp)
+
+    candidate_edits = edit_resp.json()['candidate']['edits']
+    assert edit_resp.status_code == 200
+    assert candidate_edits[1]['old_value'] == old_phone_dict['value']
+    assert candidate_edits[1]['new_value'] == new_email_dict['value']
+
+
+def test_edit_candidate_military_service(sample_user, user_auth):
+    """
+    Test:   Change Candidate's military service record
+    Expect: 200
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    old_military_service_dict = get_from_candidate_resource(token, candidate_id).\
+        json()['candidate']['military_services'][0]
+
+    # Update Candidate's military service
+    data = {'candidates': [
+        {'id': candidate_id, 'military_services': [{'id': old_military_service_dict['id'], 'branch': 'gettalent'}]}
+    ]}
+    patch_to_candidate_resource(token, data)
+
+    # Retrieve Candidate military services
+    new_military_service_dict = get_from_candidate_resource(token, candidate_id).\
+        json()['candidate']['military_services'][0]
+
+    # Retrieve Candidate Edits
+    edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
+    print response_info(edit_resp)
+
+    candidate_edits = edit_resp.json()['candidate']['edits']
+    assert edit_resp.status_code == 200
+    assert candidate_edits[0]['old_value'] == old_military_service_dict['branch']
+    assert candidate_edits[0]['new_value'] == new_military_service_dict['branch']
+
+
+def test_edit_candidate_preferred_location_edits(sample_user, user_auth):
+    """
+    Test:   Change Candidate's preferred location record
+    Expect: 200
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    old_preferred_location_dict = get_from_candidate_resource(token, candidate_id).\
+        json()['candidate']['preferred_locations'][0]
+
+    # Update Candidate's preferred location
+    data = {'candidates': [
+        {'id': candidate_id, 'preferred_locations': [
+            {'id': old_preferred_location_dict['id'], 'city': 'man jose'}
+        ]}
+    ]}
+    patch_to_candidate_resource(token, data)
+
+    # Retrieve Candidate preferred locations
+    new_preferred_location_dict = get_from_candidate_resource(token, candidate_id).\
+        json()['candidate']['preferred_locations'][0]
+
+    # Retrieve Candidate Edits
+    edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
+    print response_info(edit_resp)
+
+    candidate_edits = edit_resp.json()['candidate']['edits']
+    assert edit_resp.status_code == 200
+    assert candidate_edits[0]['old_value'] == old_preferred_location_dict['city']
+    assert candidate_edits[0]['new_value'] == new_preferred_location_dict['city']
+
+
+def test_edit_candidate_skill_edits(sample_user, user_auth):
+    """
+    Test:   Change Candidate's skill record
+    Expect: 200
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    old_skill_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['skills'][0]
+
+    # Update Candidate's skill
+    data = {'candidates': [
+        {'id': candidate_id, 'skills': [
+            {'id': old_skill_dict['id'], 'name': 'useless skill'}
+        ]}
+    ]}
+    patch_to_candidate_resource(token, data)
+
+    # Retrieve Candidate skills
+    new_skill_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['skills'][0]
+
+    # Retrieve Candidate Edits
+    edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
+    print response_info(edit_resp)
+
+    candidate_edits = edit_resp.json()['candidate']['edits']
+    assert edit_resp.status_code == 200
+    assert candidate_edits[0]['old_value'] == old_skill_dict['name']
+    assert candidate_edits[0]['new_value'] == new_skill_dict['name']
+
+
+def test_edit_candidate_social_network_edits(sample_user, user_auth):
+    """
+    Test:   Change Candidate's social network record
+    Expect: 200
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    old_sn_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['social_networks'][0]
+
+    # Update Candidate's social network
+    data = {'candidates': [
+        {'id': candidate_id, 'social_networks': [
+            {'id': old_sn_dict['id'], 'name': 'TripIt', 'profile_url': 'http://www.tripit.com/me'}
+        ]}
+    ]}
+    patch_to_candidate_resource(token, data)
+
+    # Retrieve Candidate social networks
+    new_skill_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['social_networks'][0]
+
+    # Retrieve Candidate Edits
+    edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
+    print response_info(edit_resp)
+
+    candidate_edits = edit_resp.json()['candidate']['edits']
+    assert edit_resp.status_code == 200
+    assert candidate_edits[0]['old_value'] == old_sn_dict['profile_url']
+    assert candidate_edits[0]['new_value'] == new_skill_dict['profile_url']
+

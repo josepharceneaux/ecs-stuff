@@ -13,8 +13,8 @@ class CandidateEdit(db.Model):
     field_id = db.Column(db.Integer)  # Hardcoded constants associated with Candidate's fie ld
     user_id = db.Column(db.Integer)  # ID of the user updating the Candidate, NULL if OpenWeb is updating
     is_custom_field = db.Column(db.Boolean, default=False)  # If True, field_id must = custom_field.id
-    old_value = db.Column(db.String(50))  # Value of the field before update
-    new_value = db.Column(db.String(50))  # Value of the field after update
+    old_value = db.Column(db.String(255))  # Value of the field before update
+    new_value = db.Column(db.String(255))  # Value of the field after update
     edit_type = db.Column(TINYINT, default=None)  # 1 for OpenWeb, 2 for Automatic ClearBit, Null otherwise
     edit_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.now())  # Timestamp of when edit occurred
 
@@ -106,6 +106,40 @@ class CandidateEdit(db.Model):
             'address': 61,
             'is_default': 62
         },
+        'candidate_phone': {
+            'phone_label_id': 63,
+            'value': 64,
+            'extension': 65,
+            'is_default': 66
+        },
+        'candidate_military_service': {
+            'country_id': 67,
+            'service_status': 68,
+            'highest_rank': 69,
+            'highest_grade': 70,
+            'branch': 71,
+            'comments': 72,
+            'from_date': 73,
+            'to_date': 74
+        },
+        'candidate_preferred_location': {
+            'address': 75,
+            'city': 76,
+            'state': 77,
+            'region': 78,
+            'zip_code': 79,
+            'country_id': 80
+        },
+        'candidate_skill': {
+            'description': 81,
+            'total_months': 82,
+            'last_used': 83
+        },
+        'candidate_social_network': {
+            'social_network_id': 84,
+            'social_profile_url': 85,
+            'updated_time': 86
+        }
     }
 
     @classmethod
@@ -126,4 +160,3 @@ class CandidateEdit(db.Model):
             for column_name in cls.field_dict[table_name].keys():
                 if cls.field_dict[table_name][column_name] == field_id:
                     return table_name, column_name
-
