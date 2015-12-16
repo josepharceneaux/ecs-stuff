@@ -32,6 +32,9 @@ scheduler.add_jobstore(job_store)
 
 
 def is_valid_url(url):
+    """
+    Reference: https://github.com/django/django-old/blob/1.3.X/django/core/validators.py#L42
+    """
     regex = re.compile(
         r'^https?://'  # http:// or https://
         r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
