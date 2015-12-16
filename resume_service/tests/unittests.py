@@ -20,7 +20,7 @@ from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candid
 from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_skills
 
 EDUCATIONS_KEYS = ('city', 'degrees', 'state', 'country', 'school_name')
-WORK_EXPERIENCES_KEYS = ('city', 'end_date', 'country', 'company', 'role', 'is_current',
+WORK_EXPERIENCES_KEYS = ('city', 'state', 'end_date', 'country', 'company', 'role', 'is_current',
                          'start_date', 'work_experience_bullets')
 ADDRESS_KEYS = ('city', 'country', 'state', 'address_line_1', 'zip_code')
 
