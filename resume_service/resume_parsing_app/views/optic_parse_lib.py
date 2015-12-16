@@ -23,7 +23,7 @@ def fetch_optic_response(resume):
     :return: str unescaped: an html unquoted, utf-decoded string that represents the Burning Glass
                             XML.
     """
-    BG_URL = current_app['config']['BG_URL']
+    BG_URL = current_app.config['BG_URL']
     oauth = OAuthClient(url=BG_URL,
                         method='POST', consumerKey='osman',
                         consumerSecret='aRFKEc3AJdR9zogE@M9Sis%QjZPxA5Oy',
