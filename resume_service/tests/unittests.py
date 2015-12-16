@@ -28,7 +28,7 @@ XML_MAPS = [
     # The resume below has 12 experience but BG incorrectly returns 13
     {'tree_name': GET_642, 'name': 'Bobby Breland', 'email_len': 1, 'phone_len': 2,
      'education_len': 1, 'experience_len': 13, 'skills_len': 80, 'addresses_len': 2},
-    {'tree_name': GET_646, 'name': 'Patrick Kaldawy', 'email_len': 3, 'phone_len': 5,
+    {'tree_name': GET_646, 'name': 'Patrick Kaldawy', 'email_len': 3, 'phone_len': 6,
      'education_len': 2, 'experience_len': 4, 'skills_len': 42, 'addresses_len': 1},
     {'tree_name': PDF, 'name': 'Mark Greene', 'email_len': 1, 'phone_len': 1, 'education_len': 1,
      'experience_len': 11, 'skills_len': 20, 'addresses_len': 1},
