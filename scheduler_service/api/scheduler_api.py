@@ -529,7 +529,6 @@ class PauseTaskById(Resource):
 def schedule_state_exceptions():
     # if scheduler is not running
     if not scheduler.running:
-        logger.error("schedule_state_exceptions: Scheduler is not running")
         raise SchedulerNotRunningError("Scheduler is not running")
 
 
@@ -546,17 +545,14 @@ def job_state_exceptions(job_id, func):
 
     # if job is pending then throw pending state exception
     if job.pending:
-        logger.error("Task with id '%s' is in pending state. Scheduler not running" % job_id)
         raise PendingJobError("Task with id '%s' is in pending state. Scheduler not running" % job_id)
 
     # if job has next_run_datetime none, then job is in paused state
     if job.next_run_time is None and func == 'paused':
-        logger.error("Task with id '%s' is already in paused state" % job_id)
         raise JobAlreadyPausedError("Task with id '%s' is already in paused state" % job_id)
 
     # if job has_next_run_datetime is not None, then job is in running state
     if job.next_run_time is not None and func == 'running':
-        logger.error("Task with id '%s' is already in running state" % job_id)
         raise JobAlreadyRunningError("Task with id '%s' is already in running state" % job_id)
 
     return job

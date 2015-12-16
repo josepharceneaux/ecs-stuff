@@ -87,11 +87,9 @@ def schedule_job(data, user_id, access_token):
     # Get missing keys
     missing_keys = filter(lambda _key: job_config[_key] is None, job_config.keys())
     if len(missing_keys) > 0:
-        logger.exception("schedule_job: Missing keys: %s" % ', '.join(missing_keys))
         raise FieldRequiredError(error_message="Missing keys: %s" % ', '.join(missing_keys))
 
     if not is_valid_url(job_config['url']):
-        logger.exception("schedule_job: URL is not valid")
         raise InvalidUsage("URL is not valid")
 
     trigger = str(job_config['task_type']).lower().strip()
@@ -118,15 +116,12 @@ def schedule_job(data, user_id, access_token):
 
             # If value of frequency is not integer or lesser than 1 hour then throw exception
             if not str(frequency).isdigit():
-                logger.exception("scheduler_job: Invalid value of frequency. It should be integer")
                 raise InvalidUsage(error_message='Invalid value of frequency. It should be integer')
             if int(frequency) < 3600:
-                logger.exception("scheduler_job: Invalid value of frequency. Should be greater or equal to 3600")
                 raise InvalidUsage(error_message='Invalid value of frequency. Value should '
                                                  'be greater than or equal to 3600')
             frequency = int(frequency)
         except KeyError:
-            logger.exception('schedule_job: Error while scheduling a job')
             raise FieldRequiredError(error_message="Missing or invalid data.")
         try:
             job = scheduler.add_job(run_job,
@@ -138,14 +133,12 @@ def schedule_job(data, user_id, access_token):
                                     kwargs=job_config['post_data'])
             logger.info('schedule_job: Task has been added and will run at %s ' % start_datetime)
         except Exception:
-            logger.exception("schedule_job: %s" % Exception.message)
             raise JobNotCreatedError("Unable to create the job.")
         return job.id
     elif trigger == 'one_time':
         try:
             run_datetime = data['run_datetime']
         except KeyError:
-            logger.exception("schedule_job: couldn't find 'run_datetime' in post data")
             raise FieldRequiredError(error_message="Field 'run_datetime' is missing")
         try:
             run_datetime = parse(run_datetime)
@@ -161,10 +154,8 @@ def schedule_job(data, user_id, access_token):
             logger.info('schedule_job: Task has been added and will run at %s ' % run_datetime)
             return job.id
         except Exception:
-            logger.error("schedule_job: %s" % Exception.message)
             raise JobNotCreatedError("Unable to create job. Invalid data given")
     else:
-        logger.error("schedule_job: Task type not correct. Please use periodic or one_time as task type.")
         raise TriggerTypeError("Task type not correct. Please use either 'periodic' or 'one_time' as task type.")
 
 

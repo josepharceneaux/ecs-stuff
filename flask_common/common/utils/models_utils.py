@@ -93,7 +93,7 @@ def save(instance):
     This method allows a model instance to save itself in database by calling save
     e.g.
     event = Event(**kwargs)
-    event.save()
+    Event.save(event)
     :return: same model instance
     """
     # Add instance to db session and then commit that change to save that
@@ -106,8 +106,8 @@ def update(instance, **data):
     """
     This method allows a model instance to update itself in database by calling update
     e.g.
-    event = Event(**kwargs)
-    event.save()
+    event = Event.get(event_id)
+    event.update(**data)
     :return: same model instance
     """
     # update this instance by given data
