@@ -181,16 +181,14 @@ def parse_candidate_experiences(bg_experience_xml_list):
                 # already existed bullet-descriptions
                 if existing_experience_list_order:
                     existing_experience_description = output[existing_experience_list_order - 1][
-                        'candidate_experience_bullet']
+                        'work_experience_bullets']
                     existing_experience_description.append(dict(
-                        listOrder=len(existing_experience_description) + 1,
-                        description=bullet_description + '\n'
+                        text=bullet_description
                     ))
                 else:
                     candidate_experience_bullets.append(dict(
                         text=bullet_description
                     ))
-
             if not existing_experience_list_order:
                 output.append(dict(
                     city=company_city,

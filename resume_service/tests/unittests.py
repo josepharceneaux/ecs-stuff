@@ -3,6 +3,8 @@ __author__='erik@gettalent.com'
 from bs4 import BeautifulSoup as bs4
 # JSON outputs.
 from .resume_xml import DOCX
+from .resume_xml import GET_626a
+from .resume_xml import GET_626b
 from .resume_xml import GET_642
 from .resume_xml import GET_646
 from .resume_xml import PDF
@@ -132,3 +134,14 @@ def test_address_parsing_from_xml():
         assert len(addresses) == j['addresses_len']
         for a in addresses:
             assert all(k in a for k in ADDRESS_KEYS if a)
+
+
+def test_626_experience_parsing():
+    experience_xml_list_a = bs4(GET_626a, 'lxml').findAll('experience')
+    experiences_a = parse_candidate_experiences(experience_xml_list_a)
+    experience_xml_list_b = bs4(GET_626b, 'lxml').findAll('experience')
+    experiences_b = parse_candidate_experiences(experience_xml_list_b)
+    for e in experiences_a:
+        assert all(k in e for k in WORK_EXPERIENCES_KEYS if e)
+    for e in experiences_b:
+        assert all(k in e for k in WORK_EXPERIENCES_KEYS if e)

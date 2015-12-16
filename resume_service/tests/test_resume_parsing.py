@@ -110,11 +110,21 @@ def test_invalid_token_fails():
 
 def test_v15_pdf_by_post(token_fixture):
     """Test that v1.5 pdf files can be posted."""
-    # response = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode='True')
-    # assert 'candidate' in response
-    response = fetch_resume_post_response(token_fixture, 'test_bin.pdf',)
+    response = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode='True')
     assert 'candidate' in response
-    # assert 'id' in response['candidate']
+    assert 'id' in response['candidate']
+
+
+####################################################################################################
+# Jira Specific Tests                                                                              #
+####################################################################################################
+
+def test_626_failures(token_fixture):
+    """Tests for specific failing resumes"""
+    a_response = fetch_resume_post_response(token_fixture, 'GET_626a.doc')
+    b_response = fetch_resume_post_response(token_fixture, 'GET_626b.doc')
+    assert 'candidate' in a_response
+    assert 'candidate' in b_response
 
 
 def test_health_check():
