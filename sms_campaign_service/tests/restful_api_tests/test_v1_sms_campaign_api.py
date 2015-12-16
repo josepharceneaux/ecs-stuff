@@ -2,16 +2,18 @@
 Author: Hafiz Muhammad Basit, QC-Technologies,
         Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
 
-    This module contains pyTests for endpoint /campaigns of SMS Campaign API.
+    This module contains pyTests for endpoint /v1/campaigns of SMS Campaign API.
 """
 
 # Third Party Imports
 import json
 import requests
 
-# Application Specific
+# Service Specific
 from sms_campaign_service.tests.conftest import assert_for_activity
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
+
+# Common Utils
 from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
 from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_CREATE
 from sms_campaign_service.common.error_handling import (UnauthorizedError, InvalidUsage,
@@ -33,9 +35,9 @@ class TestSmsCampaign(object):
         assert response.status_code == UnauthorizedError.http_status_code(), \
             'It should be unauthorized (401)'
 
-    def test_get_with_valid_token_and_no_user_phone(self, auth_token):
+    def test_get_with_valid_token_and_no_user_twilio_number(self, auth_token):
         """
-        User has no phone value. It should get forbidden error.
+        User has no Twilio phone number. It should get forbidden error.
         :param auth_token: access token of user
         :return:
         """
@@ -44,9 +46,9 @@ class TestSmsCampaign(object):
         assert response.status_code == ForbiddenError.http_status_code(),\
             'Should get forbidden error (403)'
 
-    def test_get_with_valid_token_and_one_user_phone(self, auth_token, user_phone_1):
+    def test_get_with_valid_token_and_one_user_twilio_number(self, auth_token, user_phone_1):
         """
-        User has one phone value of type Twilio, it should get ok response.
+        User has one Twilio phone number, it should get ok response.
         :param auth_token: access token of user
         :param user_phone_1: user_phone fixture to assign a test phone number to user
         :return:
@@ -59,12 +61,13 @@ class TestSmsCampaign(object):
         assert response.json()['count'] == 0
         assert response.json()['campaigns'] == []
 
-    def test_get_with_valid_token_and_multiple_user_phone(self, auth_token,
-                                                          user_phone_1,
-                                                          user_phone_2):
+    def test_get_with_valid_token_and_user_with_multiple_twilio_numbers(self,
+                                                                       auth_token,
+                                                                       user_phone_1,
+                                                                       user_phone_2):
         """
-        User has multiple phone value of type Twilio, it should get internal server error.
-        Error code should be 5002 (MultipleTwilioNumbers)
+        User has multiple Twilio phone numbers, it should get internal server error.
+        Error code should be 5002 (MultipleTwilioNumbersFoundForUser)
         :param auth_token: access token of user
         :param user_phone_1: fixture to assign one test phone number to user
         :param user_phone_2: fixture to assign another test phone number to user
@@ -102,7 +105,7 @@ class TestSmsCampaign(object):
                                                                      campaign_valid_data,
                                                                      valid_header):
         """
-        User has no phone value. It should get forbidden error.
+        User has no Twilio phone number. It should get forbidden error.
         :param campaign_valid_data: valid data to create campaign
         :param valid_header: valid header to POST data
         :return:
@@ -116,7 +119,8 @@ class TestSmsCampaign(object):
     def test_post_with_valid_header_and_requesting_new_twilio_number_and_valid_data(
             self, sample_user, valid_header, campaign_valid_data):
         """
-        User has no phone value. It should get forbidden error.
+        User has no Twilio phone number. Here we request API to buy a number for this user.
+        It should save SMS campaign successfully.
         :param valid_header: valid header to POST data
         :param campaign_valid_data: valid data to create SMS campaign
         :return:
@@ -208,8 +212,8 @@ class TestSmsCampaign(object):
                                                                            user_phone_1,
                                                                            user_phone_2):
         """
-        User has multiple phone values, and valid data. It should get internal server error.
-        Error code should be 5002 (MultipleTwilioNumbers)
+        User has multiple Twilio phone numbers, and valid data. It should get internal server error.
+        Error code should be 5002 (MultipleTwilioNumbersFoundForUser)
         :param valid_header: valid header to POST data
         :param campaign_valid_data: valid data to create SMS campaign
         :param user_phone_1: user_phone fixture to assign a test phone number to user
@@ -249,8 +253,7 @@ class TestSmsCampaign(object):
         User auth token is valid, but no data provided. It should get bad request error.
         :return:
         """
-        response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
-                                   headers=valid_header)
+        response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS, headers=valid_header)
         assert response.status_code == InvalidUsage.http_status_code(),\
             'It should be a bad request (400)'
 

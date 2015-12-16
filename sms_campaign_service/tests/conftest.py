@@ -12,19 +12,26 @@ import time
 
 from sms_campaign_service.common.tests.conftest import *
 
-# App specific
+
+# Service specific
 from sms_campaign_service.sms_campaign_app.app import app  # to avoid circular import
-from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
-from sms_campaign_service.common.models.misc import (UrlConversion, Activity)
-from sms_campaign_service.common.utils.common_functions import JSON_CONTENT_TYPE_HEADER
 from sms_campaign_service.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL)
+
+# Database Models
+from sms_campaign_service.common.models.user import UserPhone
+from sms_campaign_service.common.models.misc import (UrlConversion, Activity)
 from sms_campaign_service.common.models.candidate import (PhoneLabel, CandidatePhone)
 from sms_campaign_service.common.models.smart_list import (SmartList, SmartListCandidate)
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignSmartlist,
                                                              SmsCampaignBlast, SmsCampaignSend,
-                                                             SmsCampaignSendUrlConversion)
+                                                             SmsCampaignSendUrlConversion,
+                                                             SmsCampaignReply)
+# Common Utils
+from sms_campaign_service.common.utils.common_functions import JSON_CONTENT_TYPE_HEADER
 from sms_campaign_service.common.utils.activity_utils import (CAMPAIGN_SMS_SEND, CAMPAIGN_SEND)
+
+SLEEP_TIME = 5  # needed to add this because tasks run on Celery
 
 
 @pytest.fixture()
@@ -309,6 +316,25 @@ def candidates_with_same_phone(request, candidate_first, candidate_second):
 
 
 @pytest.fixture()
+def users_with_same_phone(request, sample_user, sample_user_2):
+    """
+    This associates same number to candidate_first and candidate_second
+    :param candidate_second:
+    :return:
+    """
+    test_number = gen_salt(15)
+    user_1 = _create_user_twilio_phone(sample_user, test_number)
+    user_2 = _create_user_twilio_phone(sample_user_2, test_number)
+
+    def tear_down():
+        UserPhone.delete(user_1)
+        UserPhone.delete(user_2)
+
+    request.addfinalizer(tear_down)
+    return user_1, user_2
+
+
+@pytest.fixture()
 def process_send_sms_campaign(sample_user, auth_token,
                               sms_campaign_of_current_user,
                               sample_sms_campaign_candidates,
@@ -322,7 +348,7 @@ def process_send_sms_campaign(sample_user, auth_token,
     campaign_obj = SmsCampaignBase(sample_user.id)
     # send campaign to candidates
     campaign_obj.process_send(sms_campaign_of_current_user)
-    time.sleep(6)  # had to add this as sending process runs on celery
+    time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
 
 
 @pytest.fixture()
@@ -333,6 +359,7 @@ def url_conversion_by_send_test_sms_campaign(request,
     This sends SMS campaign and returns the source URL from url_conversion database table.
     :return:
     """
+    time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
     db.session.commit()
     # get campaign blast
     sms_campaign_blast = SmsCampaignBlast.get_by_campaign_id(sms_campaign_of_current_user.id)
@@ -446,7 +473,7 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, response_post, c
     :param campaign_id: id of SMS campaign
     :return:
     """
-    time.sleep(5)  # need sleep here as campaign send process is running on celery
+    time.sleep(SLEEP_TIME)  # need sleep here as campaign send process is running on celery
     db.session.commit()
     # assert on blasts
     sms_campaign_blast = SmsCampaignBlast.get_by_campaign_id(campaign_id)
@@ -473,3 +500,14 @@ def assert_for_activity(user_id, type_, source_id):
     """
     db.session.commit()
     assert Activity.get_by_user_id_type_source_id(user_id, type_, source_id)
+
+
+def get_reply_text(candidate_phone):
+    """
+    This asserts that exact reply of candidate has been saved in database table "sms_campaign_reply"
+    :param candidate_phone:
+    :return:
+    """
+    db.session.commit()
+    campaign_reply_record = SmsCampaignReply.get_by_candidate_phone_id(candidate_phone.id)
+    return campaign_reply_record

@@ -2,12 +2,13 @@
 Author: Hafiz Muhammad Basit, QC-Technologies,
         Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
 
-    This module contains pyTests for endpoint /campaigns/:id/sms_campaign_sends of SMS Campaign API.
+    This module contains pyTests for endpoint /v1/campaigns/:id/sms_campaign_sends of
+    SMS Campaign API.
 """
 # Standard Imports
 import requests
 
-# Application Specific
+# Common Utils
 from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import (MethodNotAllowed, ResourceNotFound,
                                                         UnauthorizedError)
@@ -58,7 +59,9 @@ class TestSmsCampaignSends(object):
     def test_get_with_valid_token_and_no_blasts_saved(self, auth_token,
                                                       sms_campaign_of_current_user):
         """
-        SMS campaign is not sent to any of candidates, so there will be no
+        SMS campaign is not sent to any of candidates, no blast saved for the campaign. Count
+        should be 0.
+
         :param auth_token: access token for sample user
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
@@ -75,6 +78,9 @@ class TestSmsCampaignSends(object):
                                                           sms_campaign_of_current_user,
                                                           create_sms_campaign_blast):
         """
+        SMS campaign is not sent to any of candidates, we have blast saved for the campaign.
+        Count should be 0.
+
         This uses fixture "sms_campaign_of_current_user" to create an SMS campaign and
         "create_sms_campaign_blast" to create an entry in database table "sms_campaign_blast",
         and then gets the "sends" of that campaign.
@@ -95,7 +101,7 @@ class TestSmsCampaignSends(object):
                                                           sms_campaign_of_current_user):
         """
         It first deletes a campaign from database and try to get its sends.
-        It should get not found error.
+        It should get ResourceNotFound error.
         :param auth_token: access token for sample user
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
@@ -114,8 +120,9 @@ class TestSmsCampaignSends(object):
                                                          sms_campaign_of_current_user,
                                                          create_campaign_sends):
         """
-        It first deletes a campaign from database and try to get its sends.
-        It should get not found error.
+        This uses fixture "sms_campaign_of_current_user" to create an SMS campaign and
+        "create_sms_campaign_sends" to create an entry in database table "sms_campaign_sends",
+        and then gets the "sends" of that campaign. Count should be 2.
         :param auth_token: access token for sample user
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:

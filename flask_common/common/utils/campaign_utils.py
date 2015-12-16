@@ -279,7 +279,7 @@ class CampaignBase(object):
                     error_message='create_or_update_url_conversion: '
                                   'url_conversion(id:%s) not found' % url_conversion_id)
         else:
-            missing_required_fields = find_missing_items(data, verify_all_keys=True)
+            missing_required_fields = find_missing_items(data, verify_values_of_all_keys=True)
             if len(missing_required_fields) == len(data.keys()):
                 raise ForbiddenError(error_message='destination_url/source_url cannot be None.')
             else:

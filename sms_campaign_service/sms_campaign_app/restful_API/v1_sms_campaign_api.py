@@ -5,24 +5,24 @@
 This file contains API endpoints related to sms_campaign_service.
     Following is a list of API endpoints:
 
-        - SmsCampaigns: /campaigns
+        - SmsCampaigns: /v1/campaigns
 
             GET     : Gets list of all the sms campaigns that belong to user
             POST    : Creates new campaign and save it in database
             DELETE  : Deletes sms campaigns of user by provided campaign ids as a list
 
-        - SmsCampaigns: /campaigns/:id
+        - SmsCampaigns: /v1/campaigns/:id
 
             GET     : Gets campaign data from given id
             POST    : Updates existing campaign using given id
             DELETE  : Deletes sms campaign from db for given id
 
-        - SmsCampaignSends:  /campaigns/:id/sms_campaign_sends
+        - SmsCampaignSends:  /v1/campaigns/:id/sms_campaign_sends
 
             GET    : Gets the "sends" records for given sms campaign id
                     from db table sms_campaign_sends
 
-        - SendSmsCampaign: /campaigns/:id/send
+        - SendSmsCampaign: /v1/campaigns/:id/send
 
             POST    : Sends the SMS Campaign by campaign id
 """
@@ -37,16 +37,20 @@ from flask import Blueprint
 from flask.ext.cors import CORS
 from flask.ext.restful import Resource
 
-# Application Specific
+# Service Specific
 from sms_campaign_service import logger
-from sms_campaign_service.common.error_handling import *
-from sms_campaign_service.common.talent_api import TalentApi
-from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
-from sms_campaign_service.common.utils.auth_utils import require_oauth
 from sms_campaign_service.custom_exceptions import ErrorDeletingSMSCampaign
-from sms_campaign_service.common.utils.api_utils import api_route, ApiResponse
 from sms_campaign_service.sms_campaign_base import (SmsCampaignBase, delete_sms_campaign,
                                                     validate_header, is_owner_of_campaign)
+
+# Common Utils
+from sms_campaign_service.common.error_handling import *
+from sms_campaign_service.common.talent_api import TalentApi
+from sms_campaign_service.common.utils.auth_utils import require_oauth
+from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
+from sms_campaign_service.common.utils.api_utils import api_route, ApiResponse
+
+# Database Models
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignBlast,
                                                              SmsCampaignSend)
 
@@ -170,7 +174,7 @@ class SMSCampaigns(Resource):
                     403 (Forbidden error)
                     500 (Internal Server Error)
 
-        ..Error Codes:: 5002 (MultipleTwilioNumbers)
+        ..Error Codes:: 5002 (MultipleTwilioNumbersFoundForUser)
                         5003 (TwilioAPIError)
                         5006 (MissingRequiredField)
                         5009 (ErrorSavingSMSCampaign)
@@ -484,7 +488,7 @@ class SendSmsCampaign(Resource):
                     500 (Internal Server Error)
 
         .. Error Codes:: 5001 (Empty message body to send)
-                         5002 (User has MultipleTwilioNumbers)
+                         5002 (User has MultipleTwilioNumbersFoundForUser)
                          5003 (TwilioAPIError)
                          5004 (GoogleShortenUrlAPIError)
                          5014 (ErrorUpdatingBodyText)

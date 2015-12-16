@@ -2,15 +2,17 @@
 Author: Hafiz Muhammad Basit, QC-Technologies,
         Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
 
-    This module contains pyTests for endpoint /url_conversion of URL conversion API.
+    This module contains pyTests for endpoint /v1/url_conversion of URL conversion API.
 """
 
 # Third Party Imports
 import json
 import requests
 
-# Application Specific
+# Service Specific
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
+
+# Common Utils
 from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl, LOCAL_HOST
 from sms_campaign_service.common.error_handling import (MethodNotAllowed, UnauthorizedError,
                                                         InvalidUsage, InternalServerError)
@@ -18,12 +20,12 @@ from sms_campaign_service.common.error_handling import (MethodNotAllowed, Unauth
 
 class TestUrlConversionAPI(object):
     """
-    This class contains the tests for the endpoint /url_conversion
+    This class contains the tests for the endpoint /v1/url_conversion
     """
 
     def test_post_with_invalid_token(self):
         """
-        With invalid access token, should get unauthorized
+        POST with invalid access token, should get Unauthorized.
         :return:
         """
         response = requests.post(SmsCampaignApiUrl.URL_CONVERSION,
@@ -73,7 +75,8 @@ class TestUrlConversionAPI(object):
         assert response.status_code == InternalServerError.http_status_code(), \
             'Status should be (500)'
         # custom exception for Google's Shorten URL API Error
-        assert response.json()['error']['code'] == SmsCampaignApiException.GOOGLE_SHORTEN_URL_API_ERROR
+        assert response.json()['error']['code'] == \
+               SmsCampaignApiException.GOOGLE_SHORTEN_URL_API_ERROR
 
     def test_for_get_request(self, auth_token):
         """

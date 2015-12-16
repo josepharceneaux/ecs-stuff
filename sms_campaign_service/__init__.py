@@ -1,22 +1,14 @@
-""" Initializer for SMS Campaign Service App and Celery App.
-
-For Celery, Script runs as separate process with celery command
-
- Usage: open terminal cd to talent-flask-services directory
-
- Run the following command to start celery worker:
-
-    $ celery -A sms_campaign_service.sms_campaign_app.app.celery_config.celery_app worker --concurrency=4 --loglevel=info
-
-"""
+""" Initializer for SMS Campaign Service App and Celery App"""
 
 # Third Party
 from flask import Flask
 from celery import Celery
 from healthcheck import HealthCheck
 
-# Application Specific
+# Database Models
 from sms_campaign_service.common.models.db import db
+
+# Common Utils
 from sms_campaign_service.common import common_config
 from sms_campaign_service.common.common_config import BROKER_URL
 from sms_campaign_service.common.common_config import GT_ENVIRONMENT
@@ -26,6 +18,7 @@ from sms_campaign_service.common.utils.models_utils import add_model_helpers, in
 flask_app = Flask(__name__)
 flask_app.config.from_object(common_config)
 
+# logger setup
 logger = flask_app.config['LOGGER']
 
 health = HealthCheck(flask_app, "/healthcheck")

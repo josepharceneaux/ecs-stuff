@@ -2,14 +2,16 @@
 Author: Hafiz Muhammad Basit, QC-Technologies,
         Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
 
-    This module contains pyTests for endpoint /campaigns/:id of SMS Campaign API/.
+    This module contains pyTests for endpoint /v1/campaigns/:id of SMS Campaign API.
 """
 # Standard Imports
 import json
 import requests
 
-# Application Specific
+# Service Specific
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
+
+# Common Utils
 from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import (UnauthorizedError, ResourceNotFound,
                                                         ForbiddenError, InternalServerError,
@@ -26,7 +28,7 @@ class TestSmsCampaignWithId(object):
         User auth token is valid. It uses 'sms_campaign_of_current_user' fixture
         to create an SMS campaign in database. It gets that record from GET HTTP request
         Response should be ok. It then assert all fields of record got from GET call with the
-        original field values(provided at time of creation of campaign.
+        original field values(provided at time of creation of campaign).
         :return:
         """
         response = requests.get(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
@@ -55,7 +57,7 @@ class TestSmsCampaignWithId(object):
                                                            sms_campaign_of_current_user):
         """
         User auth token is valid. It deletes the campaign and then GETs the record from db.
-        It should get Not Found error.
+        It should get ResourceNotFound error.
         :return:
         """
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
@@ -91,7 +93,7 @@ class TestSmsCampaignWithId(object):
                                                                  sms_campaign_of_other_user):
         """
         User auth token is valid. It tries to delete the campaign of some other user
-        from database. It should get not authorized error.
+        from database. It should get forbidden error.
         :return:
         """
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_other_user.id,
@@ -106,7 +108,6 @@ class TestSmsCampaignWithId(object):
         This uses fixture to create an sms_campaign record in db. It then makes a POST
         call to update that record with name modification. If status code is 200, it then
         gets the record from database and assert the 'name' of modified record.
-        :param auth_token: access token of user
         :return:
         """
         modified_name = 'Modified Name'
@@ -128,7 +129,7 @@ class TestSmsCampaignWithId(object):
                                                              campaign_valid_data):
         """
         User auth token is valid. It deletes the campaign from database and then tries
-        to update the record. It should get Not Found error.
+        to update the record. It should get ResourceNotFound error.
         :return:
         """
         response_delete = requests.delete(
@@ -193,7 +194,6 @@ class TestSmsCampaignWithId(object):
         """
         It tries to update the already present sms_campaign record with invalid_data.
         It should get internal server error. Error code should be 5006.
-        :param auth_token: access token of user
         :param campaign_invalid_data: fixture to get invalid data to update old record
         :param sms_campaign_of_current_user: fixture to create sms_campaign record in database
                                             fo current user.

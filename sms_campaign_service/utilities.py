@@ -18,12 +18,14 @@ import twilio
 import twilio.rest
 from twilio.rest import TwilioRestClient
 
+# Common Utils
+from sms_campaign_service.common.utils.app_rest_urls import (SmsCampaignApiUrl, GTApis)
+
 # Application Specific
 from sms_campaign_service import logger
 from sms_campaign_service.custom_exceptions import TwilioAPIError
-from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl, GTApis
-from sms_campaign_service.sms_campaign_app_constants import TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, \
-    NGROK_URL
+from sms_campaign_service.sms_campaign_app_constants import (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,
+                                                             NGROK_URL)
 
 
 class TwilioSMS(object):
