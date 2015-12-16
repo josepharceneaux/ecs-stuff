@@ -1,5 +1,80 @@
 <section id="event-campaigns-view" class="view__main">
 
-    <h1>Event Campaigns</h1>
+    <div class="row--widget">
+        <div class="col--full-12--cell box">
+            <header class="box__header">
+                <h2>Campaign Builder</h2>
+            </header>
+            <form class="form" action="#">
+                <div class="form__fieldset row--expanded">
+                    <!-- Form: Recipients -->
+                    <div class="col--medium-6 form__col">
+                        <label class="form__label" for="selectRecipients">Select Recipients *</label>
+                        <select class="js-fancy form__field--select" name="selectRecipients" id="selectRecipients">
+                            <option value="">Select Recipients *</option>
+                            <option value="zack">Zack</option>
+                            <option value="greg">Greg</option>
+                            <option value="juergen">Jürgen</option>
+                            <option value="viktor">Viktor</option>
+                        </select>
+                    </div>
+                    <!-- Form: From -->
+                    <div class="col--medium-6 form__col">
+                        <label class="form__label" for="from">From *</label>
+                        <input class="js-floatLabel form__input" id="from" name="from" type="text" placeholder="From *">
+                    </div>
+                </div>
+                <div class="form__fieldset row--expanded">
+                    <!-- Form: Campaign Name -->
+                    <div class="col--medium-6 form__col">
+                        <label class="form__label" for="campaignName">Campaign Name *</label>
+                        <input class="js-floatLabel form__input" id="campaignName" name="campaignName" type="text" placeholder="Campaign Name *">
+                    </div>
+                    <!-- Form: Reply To -->
+                    <div class="col--medium-6 form__col">
+                        <label class="form__label" for="replyTo">Reply to *</label>
+                        <input class="js-floatLabel form__input" id="replyTo" name="replyTo" type="email" placeholder="Reply to *">
+                    </div>
+                </div>
+                <div class="form__fieldset row--expanded">
+                    <!-- Form: Subject -->
+                    <div class="col--medium-6 form__col">
+                        <label class="form__label" for="subject">Subject *</label>
+                        <input class="js-floatLabel form__input" id="subject" name="subject" type="text" placeholder="Subject *">
+                    </div>
+                    <!-- Form: Tracking Code -->
+                    <div class="col--medium-6 form__col--error">
+                        <label class="form__label--shown" for="trackingCode">Tracking Code</label>
+                        <input class="js-floatLabel form__input" id="trackingCode" name="trackingCode" type="text" placeholder="Tracking Code" value="sdkfj-2343">
+                    </div>
+                </div>
+                <div class="form__fieldset row--expanded">
+                    <!-- Form: Select Template -->
+                    <div class="col--medium-6 form__col">
+                        <label class="form__label" for="selectTemplate">Select Tempalte *</label>
+                        <select class="js-fancy js-floatLabel form__input--select" name="selectTemplate" id="selectTemplate">
+                            <option value="">Select Template *</option>
+                            <option value="zack">Template – Zack</option>
+                            <option value="greg">Template – Greg</option>
+                            <option value="juergen">Template – Jürgen</option>
+                            <option value="viktor">Template – Viktor</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form__fieldset row--expanded">
+                    <div class="col--medium-12">
+                        <textarea class="js-floatLabel form__input--textarea" name="wysiwyg"></textarea>
+                    </div>
+                </div>
+                <div class="form__fieldset--footer row--expanded">
+                    <div class="col--medium-12">
+                        <a class="button--blueOutline button--warningHover" href="#">Cancel</a>
+                        <a class="button--blueOutline" href="#">Schedule</a>
+                        <a class="button--blue" href="#">Send</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 
 </section>

@@ -4,10 +4,6 @@
     <div class="demo_menu">
         <div>
             <div>DEMO MODE</div>
-            <label class="form__input--toggle">
-                <input gt-float-label type="checkbox" ng-model="vm.demoMode" name="demoMode" ng-change="vm.setDemoModeCookie(vm.demoMode)">
-                <span></span>
-            </label>
         </div>
         <a ui-sref="dashboard" ui-sref-active="active">
             Home
@@ -29,6 +25,9 @@
         </a>
         <a ui-sref="styleguide.colors" ui-sref-active="active">
             Styles - Colors
+        </a>
+        <a ui-sref="admin.settings" ui-sref-active="active">
+           Settings
         </a>
         <i>Main Navigation Deactivated</i>
     </div>

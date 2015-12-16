@@ -45,7 +45,7 @@
                     }*/
                 },
                 data: {
-                    loginRequired: true
+                    loginRequired: false
                 }
             })
             .state('dashboard', {
