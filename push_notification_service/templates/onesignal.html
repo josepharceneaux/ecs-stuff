@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
     <title>OneSignal Push Notifications</title>
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha/css/bootstrap.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.2/toastr.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.2/toastr.min.js"></script>
@@ -16,9 +18,9 @@
         OneSignal.push(["setDefaultTitle", "getTalent Notification"]);
         OneSignal.push(["isPushNotificationsEnabled", function (enabled) {
             if (enabled)
-                alert("Push notifications are enabled!");
+                toastr.success("Push notifications are enabled!");
             else
-                alert("Push notificaitons are not enable yet.");
+                toastr.success("Push notifications are not enable yet.");
         }]);
         //AIzaSyBqqrswJeJyvmFvb8njVfWBGUxy8cFYG54
         // 348968274925
@@ -27,6 +29,10 @@
 </head>
 <body>
 <a href="#" id="registerForPushLink">Subscribe to Notifications</a>
+<button id="subscribe" class="btn btn-success">Subscribe</button>
+<button id="unsubscribe" class="btn btn-warning">Unsubscribe</button>
+<button id="addTag" class="btn btn-success">Add Tag</button>
+<button id="removeTag" class="btn btn-warning">Remove Tag</button>
 <script>
     OneSignal.push(function () {
         function registerForPush(event) {
@@ -37,6 +43,23 @@
         document.getElementById("registerForPushLink").addEventListener('click', registerForPush, false);
 
     });
+    $('#subscribe').click(function(){
+        OneSignal.push(["setSubscription", true]);
+        toastr.success('Subscribed successfully');
+    });
+    $('#unsubscribe').click(function(){
+        OneSignal.push(["setSubscription", false]);
+        toastr.success('Successfully unsubscribed.')
+    });
+    $('#addTag').click(function(){
+        OneSignal.push(["sendTag", "notification1", "123"]);
+        toastr.success('Added notification1 tag', 'Tags');
+    });
+    $('#removeTag').click(function(){
+        OneSignal.push(["deleteTag", "notification1"]);
+        toastr.success('Removed notification1 tag', 'Tags');
+    });
+
 </script>
 </body>
 </html>

@@ -27,7 +27,7 @@ def onesignal_push():
               "Authorization": "Basic ZjYzZjY5ZmMtZTJkMC00OWEzLTk2OWMtNzgwYjcyNzAyMDVj"}
 
     payload = {"app_id": "0847b2c8-8bcd-4196-b755-11fc6869a0e8",
-               "included_segments": ["All"],
+               "included_segments": ["notification1"],
                "contents": {"en": "English Message"},
                "url": "https://www.google.com",
                "chrome_web_icon": "http://cdn.designcrowd.com.s3.amazonaws.com/blog/Oct2012/52-Startup-Logos-2012/SLR_0040_gettalent.jpg"
@@ -49,7 +49,3 @@ def roost_push():
     r = requests.post(url, json=data, headers=headers, auth=('y654irhu7xre1a9nwagu5jc326x436nh',
                                                              'kqu5oom8yvxy37wlrlf0b7zlm2373y8h'))
     return r.content
-
-
-if __name__ == "__main__":
-    app.run(port=8011)
