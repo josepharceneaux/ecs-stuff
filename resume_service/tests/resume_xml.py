@@ -3476,3 +3476,719 @@ jlchavez.ca   ·   203108 Oak Street   ·   Vancouver, BC. V6H 2L1   ·   604.60
    </dataelementsrollup>
   </resdoc>
 """
+
+GET_626a = """
+<ResDoc>
+<resume canonversion="2" dateversion="2" iso8601="2015-12-16" present="735950" xml:space="preserve">Yetunde (Yeh-tun-day) Laniran
+<contact><address inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503" inferred-state="OR" lat="45.567589" lma="MT413890" lon="-122.642487" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><street>1602 NE Junior St.</street> * <city majorcity="portland">Portland</city>, <state abbrev="OR">Oregon</state> <postalcode inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503" inferred-state="OR" lat="45.567589" lma="MT413890" lon="-122.642487" msa="38900: METROPOLITAN STATISTICAL AREA">97211</postalcode></address> * <email>ylaniran@gmail.com</email> * <phone area="503">503.333.0350</phone></contact>
+<summary>Objective
+<objective>To obtain a challenging role in an organization where acquired knowledge and experience ca
+n be utilized to  improve efficiency and enhance growth within the business.</objective>
+<summary>Qualifications Profile   Solutions-
+oriented Project Manager, IT Analyst and Support Specialist with a proven track record of
+effective  business process and project leadership in implementing mission-
+critical solutions       * Experienced in multiple-
+platform IT environments, project management methodology and project life cycles,
+emerging technologies, and documentation methods.   *
+Skilled project leader; able to define a budget, direct multiple tasks effectively, and ma
+ster innovative software  and tools.   *
+Talent for quickly learning and applying complex technologies.   *
+Effective instructor and mentor to co-workers and end-users.   *
+An effective problem solver, able to identify problems in initial stages and execute quick
+ resolutions.   *
+Excellent interpersonal skills for effective communication with technical and non-
+technical colleagues .  * Ability to self-motivate and work independently .  *
+Data collection and creation for analysis (speech production, speech recognition and synth
+esis).  * Experimental design and stimulus preparation.  *
+Labeling of speech signals for correction of automatic segmentation.  *
+Stimulus creation and rule development for formant synthesis.  * Intonation modeling.  *
+Running human subjects (children and adults).  *
+Data measurement and statistical analysis.</summary></summary>
+  <education>Education   <school id="39"><degree level="18" name="Master's">Masters</degree> <major code="3">Information Systems/Management</major> <institution>University of Phoenix</institution> <completiondate days="732679" iso8601="2007-01-01">2007</completiondate></school>
+<school id="40"><degree level="12" name="Diploma">Diploma</degree> in <major code="1201">Computer Technology</major> <institution>Heald College</institution>, <address inferred-city="PORTLAND" inferred-country="USA" inferred-county="CLACKAMAS" inferred-phone-area-code="503" inferred-state="OR" lat="45.42" lma="MT413890" lon="-122.64" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><city majorcity="portland">Portland</city>, <state abbrev="OR">Oregon</state></address> <completiondate days="729757" iso8601="1999-01-01">1999</completiondate></school>
+<school id="41"><degree>Doctor of Philosophy Degree</degree> in <institution>Linguistics Cornell University</institution>, <address inferred-city="ITHACA" inferred-country="USA" inferred-county="TOMPKINS" inferred-phone-area-code="607" inferred-state="NY" lat="42.45" lma="MT362706" lon="-76.5" majorcity="ITHACA" msa="27060: METROPOLITAN STATISTICAL AREA |296: COMBINED STATISTICAL AREA" state="NY"><city majorcity="ithaca">Ithaca</city>, <state abbrev="NY">New York</state></address> <completiondate days="727200" iso8601="1992-01-01">1992</completiondate></school>
+<school id="42"><degree level="18" name="Master's">Master of Arts Degree</degree> in <major cipcode="16.0102" code="2903" std-major="LINGUISTICS">Linguistics</major> <institution>Cornell University</institution>, <address inferred-city="ITHACA" inferred-country="USA" inferred-county="TOMPKINS" inferred-phone-area-code="607" inferred-state="NY" lat="42.45" lma="MT362706" lon="-76.5" majorcity="ITHACA" msa="27060: METROPOLITAN STATISTICAL AREA |296: COMBINED STATISTICAL AREA" state="NY"><city majorcity="ithaca">Ithaca</city>, <state abbrev="NY">New York</state></address> <completiondate days="725739" iso8601="1988-01-01">1988</completiondate></school>
+<school id="43"><degree level="16" name="Bachelor's">Bachelor of Arts Degree</degree> in <major cipcode="16.0102" code="2903" std-major="LINGUISTICS">Linguistics</major> (honors) <institution>University of Ibadan</institution>, Nigeria <completiondate days="722452" iso8601="1979-01-01">1979</completiondate></school></education>
+<professional><description>Professional Development  Administration of Mac OS X Clients v10.3, 2004
+Accelerated Linux System Administration, 2004
+Planning, Implementing, Managing, and Maintaining a Microsoft Windows Server 2003 Environm
+ent for an MCSE
+on Windows 2000, 2004  Designing a Microsoft Windows 2000 Migration Strategy, 2003
+Upgrading Support Skills from MS Windows NT Server 4.0 to Windows 2000, 2002</description></professional>
+<experience end="present" start="728296">Professional Experience
+<job bgtocc="23-1011.00" end="present" id="1" inferred-naics="921190" onet="23-1011.00" onetrank="1" pos="1" sic="999977" sic2="99" span="6" start="733653"><title bgonetmodel-topic-onet="23-1011.00" clean="Partnership Specialist" internship-flag="false" onet="23-1011.00" onetrank="1">Partnership Specialist</title>, <employer city="BOTHELL" clean="Census Bureau" consolidated="CENSUS BUREAU" inferred-naics="921190" invalid="false" name="CENSUS BUREAU" priority="2" sic="999977" state="WA">Census Bureau</employer>, <department>Department of Commerce</department>, <address division-code="42644: METROPOLITAN DIVISION" inferred-city="BOTHELL" inferred-country="USA" inferred-county="KING" inferred-phone-area-code="425" inferred-state="WA" lat="47.75" lma="DV534264|MT534266" lon="-122.19" majorcity="BOTHELL" msa="42660: METROPOLITAN STATISTICAL AREA" state="WA"><city majorcity="bothell">Bothell</city>, <state abbrev="WA">WA</state></address> <daterange><start days="733653" iso8601="2009-09-01">9/2009</start> -
+<end days="present" iso8601="2015-12-16">present</end></daterange>
+* <description>Develop relationships with local/regional affiliates and national non-
+governmental organizations (NGOs),  local businesses and community groups.   *
+Develop partnerships with state, local and tribal governments by negotiating agreements an
+d assisting in
+the development of the TIGER (Topologically Integrated Geographic Encoding and Referencing
+)
+Improvement, Local Update of Census Addresses (LUCA), and the Be-Counted programs.  *
+Coordinating the Complete Count Committees (CCCs)  *
+Identifying strategic locations for Questionnaire Assistance Centers (QACs) and Be-
+Counted sites as well as  one time Mobile Questionnaire Assistance Centers
+
+2
+
+* Partnering with schools in Hard-to-Count to ensure complete count of new Immigrants  *
+Targeting certain areas that will require additional outreach and promotion efforts, and w
+orking with
+Complete Count Committees (CCCs) to encourage the community to cooperate with enumerators
+during  NRFU.  *
+Maintaining communication with state/local/tribal governments as well as regional corporat
+ions and
+businesses and civic groups about recruitment, census activities and the overall partners
+hip strategy is vital  in gaining the support of these partners.  *
+Maintaining and administering IPCD, Integrated Partnership C Database for all Local Census
+ Offices in  Oregon and Idaho</description></job>
+<job end="733653" id="2" inferred-to="6" onet="43-6011.00|15-1199.09" onetrank="2" pos="5" sic="734901" sic2="73" span="3" start="732679"><title bgonetmodel-topic-onet="15-1199.09" clean="Network Administrative Project Coordinator" internship-flag="false" onet="15-1199.09" onetrank="1" std="Administrative Coordinator">Network Admin/Project Coordinator</title>, <employer clean="NW Facility Maintenance" consolidated="NW Facility Maintenance" invalid="false" priority="3">NW Facility Maintenance</employer>, <address inferred-city="PORTLAND" inferred-country="USA" inferred-county="CLACKAMAS" inferred-phone-area-code="503" inferred-state="OR" lat="45.42" lma="MT413890" lon="-122.64" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><city majorcity="portland">Portland</city>, <state abbrev="OR">OR</state></address> <daterange><start days="732679" iso8601="2007-01-01">1/2007</start> - <end days="733653" iso8601="2009-09-01">9/2009</end></daterange>
+* <description>Administer the windows network and support users. Manage full life cycle projects from
+planning and
+requirements stages through completion. Provide users with maintenance, upgrades, and supp
+ort. Support  Customers via remote desktop.</description></job>     Help Desk, <job end="732983" id="3" inferred-from="5" pos="6" sic="734901" sic2="73" span="0" start="732830"><jobtype hours="parttime" taxterm="employee" type="permanent">Part-
+time</jobtype> Via Training, <address inferred-city="PORTLAND" inferred-country="USA" inferred-county="CLACKAMAS" inferred-phone-area-code="503" inferred-state="OR" lat="45.42" lma="MT413890" lon="-122.64" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><city majorcity="portland">Portland</city>, <state abbrev="OR">OR</state></address> <daterange><start days="732830" iso8601="2007-06-01">6/2007</start> - <end days="732983" iso8601="2007-11-01">11/2007</end></daterange>
+* <description>Administer the Windows and Linux network and support users and customers. Provide users
+ with  maintenance, upgrades, and support for their personal computers. Configure PDA, pri
+nters, and other  peripherals. Support Project Managers</description></job>
+<job bgtocc="15-1151.00" end="732648" id="4" inferred-naics="8131" onet="15-1151.00" onetrank="1" pos="8" sic="272198" sic2="27" span="5" start="730731"><title bgonetmodel-topic-onet="13-1161.00|15-1151.00" clean="Project Manager Computer Support Specialist" internship-flag="false" onet="13-1161.00|15-1151.00" onetrank="1" std="Computer Support Specialist">Project Manager/ Computer Support Specialist</title>, <employer city="PORTLAND" clean="Oregon Catholic Press" consolidated="OREGON CATHOLIC PRESS" employees="170" inferred-naics="8131" invalid="false" name="OREGON CATHOLIC PRESS" priority="2" referenced-naics="5111|5191" sales="48110000" sic="272198" state="OR" zipcode="97213-3638">Oregon Catholic Press</employer>, <address inferred-city="PORTLAND" inferred-country="USA" inferred-county="CLACKAMAS" inferred-phone-area-code="503" inferred-state="OR" lat="45.42" lma="MT413890" lon="-122.64" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><city majorcity="portland">Portland</city>, <state abbrev="OR">OR</state></address> <daterange><start days="730731" iso8601="2001-09-01">9/2001</start> -
+ <end days="732648" iso8601="2006-12-01">12/2006</end></daterange>
+* <description>Directed full life cycle projects from planning and requirements stages through complet
+ion, including  critical software upgrades (Agile Methodology).   *
+Manage full life cycle projects from planning and requirements stages through completion.
+Provide users  with maintenance, upgrades, and support for their personal computers.   *
+Managed IT operations budget acquire equipments as appropriate.   *
+Document all procedures  * Develop policy.   *
+Track hardware distribution, user issues, and resolutions.   *
+Prepare budget for software and license agreements  *
+Support users and customers in a mixed infrastructure and multi-
+platform environment (PC, Mac, and UNIX
+systems).       Key Achievements:   *
+Project Coordinator for Software Development: the business unit, software developers and e
+nd users.
+* Resolved critical business software needs by taking the lead in managing software upgra
+de projects.
+Actively involved in all aspects of project life cycles from assessing project feasibility
+, understanding
+business processes, gathering requirements, identifying potential user issues, managing pr
+oject scope,  and ensuring quality.   * Provide top-
+rated troubleshooting skills to network connectivity issues.   *
+Assisted Network Administrator in performing vital support for corporate-
+wide hardware and software
+installations and upgrades - co-
+planned, tested, and deployed Active Directory upgrade; upgraded OS
+from Windows 98 to 2000 and Mac OS 9 to OSX; migrated NT 4 to Windows 2003 Servers and upg
+raded  server hardware.</description></job>
+<job bgtocc="15-1151.00" end="730669" id="5" naics="541330" naics2="54" onet="15-1151.00" onetrank="1" pos="12" sic="736103" sic2="73" span="1" start="730304"><title bgonetmodel-topic-onet="15-1151.00|15-1141.00" clean="Computer Support Specialist" internship-flag="false" onet="15-1151.00|15-1141.00" onetrank="1" std="Computer Support Specialist">Computer Support Specialist</title>, <employer canonIntermediary="Teksystems, Inc." city="PORTLAND" clean="Teksystems" intermediary="true" intermediaryID="8" invalid="false" name="TEKSYSTEMS" referenced-naics="5416|5613" sic="736103" state="OR">Teksystems</employer>, <address inferred-city="PORTLAND" inferred-country="USA" inferred-county="CLACKAMAS" inferred-phone-area-code="503" inferred-state="OR" lat="45.42" lma="MT413890" lon="-122.64" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><city majorcity="portland">Portland</city>, <state abbrev="OR">OR</state></address> <daterange><start days="730304" iso8601="2000-07-01">7/2000</start> - <end days="730669" iso8601="2001-07-01">7/2001</end></daterange>
+* <description>Performed contract assignments for a number of companies. Provided desk side and teleph
+one support,
+hardware and system installation and configuration, research, and manual/documentation upd
+ates.</description></job>
+
+3
+
+  <job bgtocc="15-1151.00" end="730304" id="6" naics="56132" naics2="56" onet="15-1151.00" onetrank="1" pos="16" sic="736301" sic2="73" span="1" start="730000"><title bgonetmodel-topic-onet="15-1151.00|15-1141.00" clean="Computer Support Specialist" internship-flag="false" onet="15-1151.00|15-1141.00" onetrank="1" std="Computer Support Specialist">Computer Support Specialist</title>, <employer canonIntermediary="Manpowergroup" city="PORTLAND" clean="Manpower" intermediary="true" intermediaryID="8" invalid="false" name="MANPOWER" referenced-naics="5613" sic="736301" state="OR" zipcode="97205-3067">Manpower</employer>, <address inferred-city="PORTLAND" inferred-country="USA" inferred-county="CLACKAMAS" inferred-phone-area-code="503" inferred-state="OR" lat="45.42" lma="MT413890" lon="-122.64" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><city majorcity="portland">Portland</city>, <state abbrev="OR">OR</state></address> <daterange><start days="730000" iso8601="1999-09-01">9/1999</start> - <end days="730304" iso8601="2000-07-01">7/2000</end></daterange>   *
+<description>Provided problem solving in a variety of areas during contract assignments with various co
+mpanies.  Assisted companies in meeting important business requirements by providing high
+profile technical
+solutions.</description></job>
+    <job bgtocc="25-1194.00" end="730000" id="7" inferred-naics="236" onet="25-1194.00|15-1151.00" onetrank="1" pos="18" sic="824900" sic2="82" span="0" start="729847"><title bgonetmodel-topic-onet="15-1151.00|15-1141.00" clean="Computer Instructor/Support Specialist" internship-flag="false" onet="15-1151.00|15-1141.00" onetrank="1">Computer Instructor/Support Specialist</title>, <employer city="PORTLAND" clean="Portland Youth Builders" consolidated="PORTLAND YOUTH BUILDERS" inferred-naics="236" invalid="false" name="PORTLAND YOUTH BUILDERS" priority="2" referenced-naics="6115" sic="824900" state="OR" zipcode="97266-2723">Portland Youth Builders</employer>, <address inferred-city="PORTLAND" inferred-country="USA" inferred-county="CLACKAMAS" inferred-phone-area-code="503" inferred-state="OR" lat="45.42" lma="MT413890" lon="-122.64" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><city majorcity="portland">Portland</city>, <state abbrev="OR">OR</state></address> <daterange><start days="729847" iso8601="1999-04-01">4/1999</start> -
+ <end days="730000" iso8601="1999-09-01">9/1999</end></daterange>   *
+<description>Taught computer classes to students preparing for the GED and for college. Purchased and i
+nstalled  hardware and software that was necessary to get 43 donated computers operable.</description></job>
+    <job end="729816" id="8" inferred-naics="611310" onet="25-1199.00|25-1194.00" onetrank="1" pos="20" sic="822101" sic2="82" span="0" start="729726"><title bgonetmodel-topic-onet="25-1194.00|39-9031.00" clean="Instructor" internship-flag="false" onet="25-1194.00|39-9031.00" onetrank="1">Instructor</title>- Linguistics, <employer city="PORTLAND" clean="University of Oregon" consolidated="University of Oregon" employees="50" inferred-naics="611310" invalid="false" name="UNIVERSITY OF OREGON" priority="1" referenced-naics="6113" sic="822101" state="OR" std="University of Oregon" zipcode="97204-3127">University of Oregon</employer>, <daterange><start days="729726" iso8601="1998-12-01">December 1998</start> to <end days="729816" iso8601="1999-03-01">March 1999</end></daterange></job>
+<job end="729604" id="9" inferred-naics="611310" naics="611310" naics2="61" onet="25-1199.00|25-1194.00" onetrank="1" pos="21" sic="822101" sic2="82" span="0" start="729573"><title bgonetmodel-topic-onet="25-1194.00|39-9031.00" clean="Instructor" internship-flag="false" onet="25-1194.00|39-9031.00" onetrank="1">Instructor</title> - Language and Culture, <employer city="PORTLAND" clean="Portland State University" consolidated="Portland State University" employees="4,000" inferred-naics="611310" invalid="false" name="PORTLAND STATE UNIVERSITY" priority="1" referenced-naics="6113" sic="822101" state="OR" std="Portland State University" zipcode="97201-3299">Portland State University</employer>, <daterange><start days="729573" iso8601="1998-07-01">July</start> to <end days="729604" iso8601="1998-08-01">August 1998</end></daterange></job>
+<job bgtocc="19-1042.00" end="729543" id="10" onet="19-1042.00" onetrank="1" pos="22" span="1" start="729208"><title bgonetmodel-topic-onet="19-1042.00|13-1161.00" clean="Research Associate" internship-flag="false" onet="19-1042.00|13-1161.00" onetrank="1">Research Associate</title>-
+ <employer clean="Human Computer Interaction, Oregon Graduate Institute" consolidated="Human Computer Interaction, Oregon Graduate Institute" invalid="false" priority="3">Human Computer Interaction, Oregon Graduate Institute</employer>, <address inferred-city="PORTLAND" inferred-state="ME" lat="43.6671" lon="-70.2072" majorcity="PORTLAND" state="ME"><city majorcity="portland">Portland</city></address>, <daterange><start days="729208" iso8601="1997-07-01">July 1997</start> to <end days="729543" iso8601="1998-06-01">June 1998</end></daterange></job>
+
+<job bgtocc="19-1042.00" end="729178" id="11" inferred-naics="611310" onet="19-1042.00" onetrank="1" pos="24" sic="801101" sic2="80" span="2" start="728296"><title bgonetmodel-topic-onet="19-1042.00|13-1161.00" clean="Research Associate" internship-flag="false" onet="19-1042.00|13-1161.00" onetrank="1">Research Associate</title> -
+ Linguistics, <department>Department of Linguistics</department>, <employer city="CHAPEL HILL" clean="University of North Carolina" consolidated="University of North Carolina" employees="30" inferred-naics="611310" invalid="false" name="UNIVERSITY OF NORTH CAROLINA" priority="1" referenced-naics="6211|6214" sales="9150000" sic="801101" state="NC" std="University of North Carolina" zipcode="27599-0001">University of North Carolina</employer> <daterange><start days="728296" iso8601="1995-01-01">1995</start> to <end days="729178" iso8601="1997-06-01">June 1997</end></daterange></job></experience>
+
+<skills>Technical Proficiencies
+<skills>Platforms:
+Windows 3.x/95/98/NT/2000/XP Pro, Vista, Mac OS 8.x/9.x to X.5, Linux, DOS, Windows
+Server 2003, Windows NT 4.0/2000/2003 Server, SQL Server
+Tools:  Microsoft Office Suite (Word, Excel, Outlook, Access, PowerPoint), Visio, Project
+, Quark,  Indesign, Photoshop, Active Directory, MS Exchange, Veritas Backup Exec (Backup
+and  Restore), Norton Antivirus Corporate, Symantec Antivirus Enterprise, FrontPage, HTML,
+
+WordPerfect, Lotus Suite, Netscape, Internet Explorer, Java, Visual Basic, various statist
+ical  packages
+Protocols:  TCP/IP, RAS, IPX, DNS, DHCP, SMTP, POP3, IMAP
+Hardware:
+PCs, Macs, Laptops (IBM ThinkPad, Dell Latitudes, Gateway), Workstations (Dell, Gateway,
+IBM), Macintosh (G3, G4, G5, iMac, iBook, Powerbooks, MacBook), PDA, Palm Pilots, Sony
+Clie, Printers (DeskJet, LaserJet, Laser)
+  Non-Professional Experience   * Feeding the homeless   *
+Prepare meals for large numbers of home-bound homeless guests; practiced advocacy skills
+* Served meals to the homeless, helped guests to connect with resources   *</skills></skills>
+<experience end="present" start="727931">Volunteer 4 hrs/wk, works with church to identify resources   *
+<job end="728296" id="12" inferred-naics="921190" onet="51-1011.00" onetrank="1" sic="961101" sic2="96" span="0" start="733775"><description>Several people got housing, jobs, food.   * Language and Culture
+* Teach Class on Language (Yoruba) and Culture to Americans visiting Africa for research
+and  personal reasons   *
+Regularly serve as a teaching resource for cultural and gender issues in the African Commu
+nity</description>
+
+4
+
+Job History (<daterange><start days="733775" iso8601="2010-01-01">2010</start>- <end days="728296" iso8601="1995-01-01">1995</end></daterange>)
+    Employer name: <employer city="BOSTON" clean="Census Bureau" consolidated="CENSUS BUREAU" employees="70" inferred-naics="921190" invalid="false" name="CENSUS BUREAU" priority="2" referenced-naics="9261" sic="961101" state="MA" zipcode="02116-6565">Census Bureau</employer>, <department>Department of Commerce</department>   <title bgonetmodel-topic-onet="51-1011.00" clean="Supervisor" internship-flag="false" onet="51-1011.00" onetrank="1">Supervisor</title></job>: Wayne K. Kei
+Address: 851 19820   Dates of Employment: <job bgtocc="23-1011.00" end="present" id="13" onet="23-1011.00" onetrank="1" pos="2" span="6" start="733653"><daterange><start days="733653" iso8601="2009-09-01">September 2009</start> to <end days="present" iso8601="2015-12-16">present</end></daterange>.
+Job Title: <title bgonetmodel-topic-onet="23-1011.00" clean="Partnership Specialist" internship-flag="false" onet="23-1011.00" onetrank="1">Partnership Specialist</title>  Phone: 425.908.4085
+Employer name: <description>Energy Trust of Oregon   Supervisor: Karl Whinnery</description></job>
+Address: <job bgtocc="15-1151.00" end="733653" id="14" onet="15-1151.00" onetrank="1" pos="4" span="0" start="733561"><address inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503|971" inferred-state="OR" lat="45.518246" lma="MT413890" lon="-122.671989" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR">851 SW Sixth Avenue, Suite 1200, <city majorcity="portland">Portland</city>, <state abbrev="OR">OR</state> <postalcode inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503|971" inferred-state="OR" lat="45.518246" lma="MT413890" lon="-122.671989" msa="38900: METROPOLITAN STATISTICAL AREA">97204</postalcode></address>
+Dates of Employment: <daterange><start days="733561" iso8601="2009-06-01">June 2009</start> to <end days="733653" iso8601="2009-09-01">September 2009</end></daterange>.   Job Title: <title bgonetmodel-topic-onet="43-4081.00|15-1151.00" clean="Help Desk Associate" internship-flag="false" onet="43-4081.00|15-1151.00" onetrank="1">Help Desk Associate</title></job>
+Phone: 503.445.7639
+Employer name: <job bgtocc="49-9071.91" id="15" onet="49-1011.00" onetrank="1"><title bgonetmodel-topic-onet="49-1011.00|49-9071.00" clean="Facilities Maintenance Supervisor" internship-flag="false" onet="49-1011.00|49-9071.00" onetrank="1" std="Maintenance Supervisor">Northwest  Facilities Maintenance  Supervisor</title>: W. Olabode
+Address: <address inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503" inferred-state="OR" lat="45.567589" lma="MT413890" lon="-122.642487" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR">PO Box 11655, <city majorcity="portland">Portland</city>, <state abbrev="OR">OR</state> <postalcode inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503" inferred-state="OR" lat="45.567589" lma="MT413890" lon="-122.642487" msa="38900: METROPOLITAN STATISTICAL AREA">97211</postalcode></address></job>
+Dates of Employment: <job bgtocc="15-1142.00" end="present" id="16" onet="15-1142.00|15-1122.00" onetrank="1" pos="3" span="9" start="732679"><daterange><start days="732679" iso8601="2007-01-01">January 2007</start> to <end days="present" iso8601="2015-12-16">present</end></daterange>.   Job Title: <title bgonetmodel-topic-onet="15-1142.00|15-1122.00" clean="Network Administrative" internship-flag="false" onet="15-1142.00|15-1122.00" onetrank="1" std="Network Administrator">Network Admin</title></job>
+Phone: 503.320.1469
+Employer name: Via Training, a Division of <job id="17" inferred-naics="541611" onet="51-1011.00" onetrank="1" sic="871199" sic2="87"><employer city="PORTLAND" clean="General Physics Corporation" consolidated="GP Strategies Corporation" inferred-naics="541611" invalid="false" name="GENERAL PHYSICS CORPORATION" priority="1" referenced-naics="5413" sic="871199" state="OR" std="GP Strategies Corporation" ticker="GPX">General Physics Corporation</employer> (GP)
+<title bgonetmodel-topic-onet="51-1011.00" clean="Supervisor" internship-flag="false" onet="51-1011.00" onetrank="1">Supervisor</title>: Josh Ellyson   Address: <address inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503|971" inferred-state="OR" lat="45.520378" lma="MT413890" lon="-122.685883" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR">1620 SW Taylor Street, Suite 200, <city majorcity="portland">Portland</city>, <state abbrev="OR">OR</state> <postalcode inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503|971" inferred-state="OR" lat="45.520378" lma="MT413890" lon="-122.685883" msa="38900: METROPOLITAN STATISTICAL AREA">97205</postalcode></address></job>
+Dates of Employment: <job bgtocc="15-1199.09" end="732983" id="18" inferred-naics="8131" onet="15-1199.09" onetrank="1" pos="7" sic="272198" sic2="27" span="0" start="732830"><daterange><start days="732830" iso8601="2007-06-01">June 2007</start> to <end days="732983" iso8601="2007-11-01">November 2007</end></daterange>.   Job Title: <title bgonetmodel-topic-onet="15-1199.11|15-1199.09" clean="Assistant IT Manager" internship-flag="false" onet="15-1199.11|15-1199.09" onetrank="1" std="Assistant Manager">Assist IT Manager</title>
+Phone: 503.944.0957
+Employer name: <employer city="PORTLAND" clean="Oregon Catholic Press" consolidated="OREGON CATHOLIC PRESS" employees="170" inferred-naics="8131" invalid="false" name="OREGON CATHOLIC PRESS" priority="2" referenced-naics="5111|5191" sales="48110000" sic="272198" state="OR" zipcode="97213-3638">Oregon Catholic Press</employer> (503 281 1191)
+<description>Supervisor: Jim Ure (503 281 1191)   Address: 5536 NE Hassalo</description>, <address inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503|971" inferred-state="OR" lat="45.537659" lma="MT413890" lon="-122.600494" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><city majorcity="portland">Portland</city>, <state abbrev="OR">OR</state> <postalcode inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503|971" inferred-state="OR" lat="45.537659" lma="MT413890" lon="-122.600494" msa="38900: METROPOLITAN STATISTICAL AREA">97213</postalcode></address></job>
+Dates of Employment: <job bgtocc="15-1151.00" end="732648" id="19" naics="541330" naics2="54" onet="15-1151.00" onetrank="1" pos="9" sic="736103" sic2="73" span="5" start="730731"><daterange><start days="730731" iso8601="2001-09-01">September 2001</start> to <end days="732648" iso8601="2006-12-01">December 2006</end></daterange>.
+Job Title: <title bgonetmodel-topic-onet="15-1151.00|15-1141.00" clean="Computer Support Specialist" internship-flag="false" onet="15-1151.00|15-1141.00" onetrank="1" std="Computer Support Specialist">Computer Support Specialist</title>
+<employer canonIntermediary="Teksystems, Inc." city="BETHESDA" clean="Teksystems" employees="21" intermediary="true" intermediaryID="8" invalid="false" name="TEKSYSTEMS" referenced-naics="5416|5613" sales="1680000" sic="736103" state="MD" zipcode="20814-4889">Teksystems</employer></job> (Staffing Agency: 503 205 3500)
+Employer name: <job bgtocc="15-1151.00" end="730731" id="20" inferred-naics="221114" naics="2211" naics2="22" onet="15-1151.00" onetrank="1" pos="10" sic="671999" sic2="67" span="0" start="730669"><employer city="PORTLAND" clean="PacifiCorp" consolidated="Pacificorp" inferred-naics="221114" invalid="false" name="PACIFICORP" priority="1" referenced-naics="5511" sic="671999" state="OR" std="Pacificorp" ticker="PPWRL" zipcode="97201">PacifiCorp</employer> (Through Teksystems)
+Address: <address inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503|971" inferred-state="OR" lat="45.528736" lma="MT413890" lon="-122.635345" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR">825 NE Multnomah Ave, <city majorcity="portland">Portland</city>, <state abbrev="OR">OR</state> <postalcode inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503|971" inferred-state="OR" lat="45.528736" lma="MT413890" lon="-122.635345" msa="38900: METROPOLITAN STATISTICAL AREA">97232</postalcode></address>
+Dates of Employment: <daterange><start days="730669" iso8601="2001-07-01">July 2001</start> to <end days="730731" iso8601="2001-09-01">September 2001</end></daterange>, and 2 weeks in September 2000
+Job Title: <title bgonetmodel-topic-onet="15-1151.00|15-1141.00" clean="Computer Support Specialist" internship-flag="false" onet="15-1151.00|15-1141.00" onetrank="1" std="Computer Support Specialist">Computer Support Specialist</title>
+Employer name: <department>Multnomah County Department of Health</department> (Through Teksystems)
+Address: <address inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503|971" inferred-state="OR" lat="45.518246" lma="MT413890" lon="-122.671989" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR">426 SW Stark Ave, <city majorcity="portland">Portland</city>, <state abbrev="OR">OR</state> <postalcode inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503|971" inferred-state="OR" lat="45.518246" lma="MT413890" lon="-122.671989" msa="38900: METROPOLITAN STATISTICAL AREA">97204</postalcode></address></job>
+Dates of Employment: <job bgtocc="15-1151.00" end="730669" id="21" inferred-naics="921190" onet="15-1151.00" onetrank="1" pos="11" sic="874101" sic2="87" span="0" start="730608"><daterange><start days="730608" iso8601="2001-05-01">May 2001</start> to <end days="730669" iso8601="2001-07-01">July 2001</end></daterange>   Job Title: <title bgonetmodel-topic-onet="15-1151.00|15-1141.00" clean="Computer Support Specialist" internship-flag="false" onet="15-1151.00|15-1141.00" onetrank="1" std="Computer Support Specialist">Computer Support Specialist</title>
+Employer name: <employer city="PORTLAND" clean="Bureau of Environmental Services, City of Portland" consolidated="CITY OF PORTLAND" inferred-naics="921190" invalid="false" name="CITY OF PORTLAND" priority="2" referenced-naics="2361|2362|2371|2373" sic="874101" state="OR" zipcode="97204-1912">Bureau of Environmental Services, City of Portland</employer> (<description>Through Teksystems)
+Address: 1120 SW 5th Ave, Room 1000</description>, <address inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503|971" inferred-state="OR" lat="45.518246" lma="MT413890" lon="-122.671989" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><city majorcity="portland">Portland</city>, <state abbrev="OR">OR</state> <postalcode inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503|971" inferred-state="OR" lat="45.518246" lma="MT413890" lon="-122.671989" msa="38900: METROPOLITAN STATISTICAL AREA">97204</postalcode></address></job>
+Dates of Employment: <job end="730578" id="22" pos="13" span="1" start="730366"><daterange><start days="730366" iso8601="2000-09-01">September 2000</start> to <end days="730578" iso8601="2001-04-01">April 2001</end></daterange>   Job Title: Customer Desktop Support
+  Employer name: <employer clean="Enron Broadband Services" consolidated="Enron Broadband Services" invalid="false" priority="3">Enron Broadband Services</employer> (Through Teksystems)
+Address: 2100 <employer clean="SW River Parkway" consolidated="SW River Parkway" invalid="false" priority="3">SW River Parkway</employer>, <address inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503|971" inferred-state="OR" lat="45.498287" lma="MT413890" lon="-122.691322" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><city majorcity="portland">Portland</city>, <state abbrev="OR">OR</state> <postalcode inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503|971" inferred-state="OR" lat="45.498287" lma="MT413890" lon="-122.691322" msa="38900: METROPOLITAN STATISTICAL AREA">97201</postalcode></address></job>
+
+5
+
+Dates of Employment: <job bgtocc="15-1151.00" end="730366" id="23" inferred-naics="541690" naics="56132" naics2="56" onet="15-1151.00" onetrank="1" pos="14" sic="736304" sic2="73" span="0" start="730304"><daterange><start days="730304" iso8601="2000-07-01">July</start> to <end days="730366" iso8601="2000-09-01">September 2000</end></daterange>   Job Title: <title bgonetmodel-topic-onet="15-1151.00|15-1141.00" clean="Help Desk" internship-flag="false" onet="15-1151.00|15-1141.00" onetrank="1">Help Desk</title>
+<employer canonIntermediary="Manpowergroup" city="BEAVERTON" clean="Manpower" employees="3" intermediary="true" intermediaryID="8" invalid="false" name="MANPOWER INCORPORATED" referenced-naics="5613" sales="90000" sic="736304" state="OR" zipcode="97008-7138">Manpower</employer> (Staffing Agency: 503 641 6992)   Employer name: <employer city="BEAVERTON" clean="IBM" consolidated="IBM" inferred-naics="541690" invalid="false" name="IBM" priority="1" referenced-naics="5182|5415" sic="737902" state="OR" std="IBM" ticker="IBM" zipcode="97006-6063">IBM</employer> (Through Manpower)
+Address: 15450 <employer clean="SW Koll Parkway" consolidated="SW Koll Parkway" invalid="false" priority="3">SW Koll Parkway</employer>, <address inferred-city="BEAVERTON" inferred-country="USA" inferred-county="WASHINGTON" inferred-phone-area-code="503|971" inferred-state="OR" lat="45.518002" lma="MT413890" lon="-122.858780" majorcity="BEAVERTON" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><city majorcity="beaverton">Beaverton</city>, <state abbrev="OR">OR</state> <postalcode inferred-city="BEAVERTON" inferred-country="USA" inferred-county="WASHINGTON" inferred-phone-area-code="503|971" inferred-state="OR" lat="45.518002" lma="MT413890" lon="-122.858780" msa="38900: METROPOLITAN STATISTICAL AREA">97006</postalcode></address></job>
+Dates of Employment: <job bgtocc="15-1151.00" end="730304" id="24" onet="15-1151.00|15-1141.00" onetrank="1" pos="15" sic="631100" sic2="63" span="1" start="730091"><daterange><start days="730091" iso8601="1999-12-01">December 1999</start> to <end days="730304" iso8601="2000-07-01">July 2000</end></daterange>
+Job Title: <title bgonetmodel-topic-onet="15-1151.00|15-1141.00" clean="Customer support" internship-flag="false" onet="15-1151.00|15-1141.00" onetrank="1">Customer support</title>: Telephone and Desk side
+Employer name: <employer clean="Blue Cross Blue Shield of Oregon" consolidated="Blue Cross Blue Shield of Oregon" invalid="false" priority="3">Blue Cross Blue Shield of Oregon</employer> (Through Manpower)
+Address: <address inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503|971" inferred-state="OR" lat="45.498287" lma="MT413890" lon="-122.691322" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR">100 SW Market St # 101, <city majorcity="portland">Portland</city>, <state abbrev="OR">OR</state> <postalcode inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503|971" inferred-state="OR" lat="45.498287" lma="MT413890" lon="-122.691322" msa="38900: METROPOLITAN STATISTICAL AREA">97201-5799</postalcode></address></job>
+Dates of Employment: <job bgtocc="47-1011.00" end="730061" id="25" onet="47-1011.00|29-2071.00" onetrank="1" pos="17" span="0" start="730000"><daterange><start days="730000" iso8601="1999-09-01">September 1999</start> to <end days="730061" iso8601="1999-11-01">November 1999</end></daterange>   Job Title: Customer Support
+Employer name: <title bgonetmodel-topic-onet="47-1011.00|29-2071.00" clean="Portland Youth Builder Supervisor" internship-flag="false" onet="47-1011.00|29-2071.00" onetrank="1">Portland Youth Builders   Supervisor</title>: Matt Sten (503 774 9643)
+Address: 7332 N. Smith, <address inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503" inferred-state="OR" lat="45.589928" lma="MT413890" lon="-122.739021" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><city majorcity="portland">Portland</city>, <state abbrev="OR">OR</state> <postalcode inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503" inferred-state="OR" lat="45.589928" lma="MT413890" lon="-122.739021" msa="38900: METROPOLITAN STATISTICAL AREA">97203</postalcode></address></job>
+Dates of Employment: <job bgtocc="25-1194.00" end="730000" id="26" inferred-naics="611310" naics="611310" naics2="61" onet="25-1194.00" onetrank="1" pos="19" sic="822101" sic2="82" span="0" start="729847"><daterange><start days="729847" iso8601="1999-04-01">April 1999</start> to <end days="730000" iso8601="1999-09-01">September 1999</end></daterange>
+Job Title: <title bgonetmodel-topic-onet="25-1194.00|15-1151.00" clean="Computer Instructor and Support" internship-flag="false" onet="25-1194.00|15-1151.00" onetrank="1">Computer Instructor and Support</title> for Users
+Employer name:  <employer city="EUGENE" clean="University of Oregon" consolidated="University of Oregon" inferred-naics="611310" invalid="false" name="UNIVERSITY OF OREGON" priority="1" referenced-naics="6113" sic="822101" state="OR" std="University of Oregon" zipcode="97403-1205">University of Oregon</employer>, <department>Department of Linguistics</department>, <address inferred-city="EUGENE" inferred-country="USA" inferred-county="LANE" inferred-phone-area-code="541" inferred-state="OR" lat="44.08" lma="MT412166" lon="-123.07" majorcity="EUGENE" msa="21660: METROPOLITAN STATISTICAL AREA" state="OR"><city majorcity="eugene">Eugene</city>, <state abbrev="OR">Oregon</state></address></job>
+<job id="27" naics="621111" naics2="62" onet="51-1011.00" onetrank="1" sic="863100" sic2="86"><title bgonetmodel-topic-onet="51-1011.00" clean="Supervisor" internship-flag="false" onet="51-1011.00" onetrank="1">Supervisor</title>:  <department>Head of Department</department>
+Address:  <department>Department of Linguistics</department>, 1290 <daterange>University <end>of</end></daterange> <employer city="EUGENE" clean="Oregon" consolidated="OREGON" invalid="true" name="OREGON" referenced-naics="8139" sic="863100" state="OR">Oregon</employer>, <address inferred-city="EUGENE" inferred-country="USA" inferred-county="LANE" inferred-phone-area-code="541" inferred-state="OR" lat="44.036083" lma="MT412166" lon="-123.052429" majorcity="EUGENE" msa="21660: METROPOLITAN STATISTICAL AREA" state="OR"><city majorcity="eugene">Eugene</city>, <state abbrev="OR">OR</state> <postalcode inferred-city="EUGENE" inferred-country="USA" inferred-county="LANE" inferred-phone-area-code="541" inferred-state="OR" lat="44.036083" lma="MT412166" lon="-123.052429" msa="21660: METROPOLITAN STATISTICAL AREA">97403-1290</postalcode></address></job>
+Dates of Employment: <job id="28" inferred-naics="611310" naics="611310" naics2="61" onet="25-1199.00|25-1194.00" onetrank="1" sic="822101" sic2="82" start="729757"><daterange><start days="729757" iso8601="1999-01-01">1999</start></daterange>  Job Title:  <title bgonetmodel-topic-onet="25-1194.00|39-9031.00" clean="Instructor" internship-flag="false" onet="25-1194.00|39-9031.00" onetrank="1">Instructor</title>
+Employer name:  <employer city="PORTLAND" clean="Portland State University" consolidated="Portland State University" inferred-naics="611310" invalid="false" name="PORTLAND STATE UNIVERSITY" priority="1" referenced-naics="6113" sic="822101" state="OR" std="Portland State University" zipcode="97207">Portland State University</employer>, <department>Department of Applied Linguistics</department>, <address inferred-city="PORTLAND" inferred-state="ME" lat="43.6671" lon="-70.2072" majorcity="PORTLAND" state="ME"><city majorcity="portland">Portland</city>, O</address></job>
+<job id="29" onet="51-1011.00" onetrank="1"><title bgonetmodel-topic-onet="51-1011.00" clean="regon Supervisor" internship-flag="false" onet="51-1011.00" onetrank="1">regon  Supervisor</title>:  <department>Head of Department</department>
+Address:  <department>Department of Applied Linguistics</department>, <address inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503" inferred-state="OR" lat="45.521278" lma="MT413890" lon="-122.685890" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR">632 SW Hall Street, <city majorcity="portland">Portland</city>, <state abbrev="OR">OR</state> <postalcode inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503" inferred-state="OR" lat="45.521278" lma="MT413890" lon="-122.685890" msa="38900: METROPOLITAN STATISTICAL AREA">97207-0751</postalcode></address></job>
+Dates of Employment: <job bgtocc="25-1194.00" id="30" onet="25-1194.00|39-9031.00" onetrank="1" start="729757"><daterange><start days="729757" iso8601="1999-01-01">1999</start></daterange>  Job Title:  <title bgonetmodel-topic-onet="25-1194.00|39-9031.00" clean="Instructor" internship-flag="false" onet="25-1194.00|39-9031.00" onetrank="1">Instructor</title></job>
+Employer name:  <job bgtocc="19-1042.00" id="31" onet="19-1042.00|19-3022.00" onetrank="1" sic="971199" sic2="97"><title bgonetmodel-topic-onet="19-1042.00|19-3022.00" clean="Research Fellow" internship-flag="false" onet="19-1042.00|19-3022.00" onetrank="1">Research Fellow</title>, <employer city="SAN ANTONIO" clean="CHCC, Oregon Graduate Institute of Science and Technolog" consolidated="CHCC" invalid="false" name="CHCC" priority="2" referenced-naics="9281" sic="971199" state="TX" zipcode="78234-7617">CHCC, Oregon Graduate Institute of Science and Technolog</employer></job>
+<job end="729392" id="32" onet="51-1011.00" onetrank="1" pos="23" span="1" start="729027"><title bgonetmodel-topic-onet="51-1011.00" clean="y, Beaverton, Oregon Supervisor" internship-flag="false" onet="51-1011.00" onetrank="1">y, Beaverton, Oregon  Supervisor</title>:  <department>Head of Department</department>
+Address:  <address inferred-city="BEAVERTON" inferred-country="USA" inferred-county="WASHINGTON" inferred-phone-area-code="503|971" inferred-state="OR" lat="45.518002" lma="MT413890" lon="-122.858780" majorcity="BEAVERTON" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR">20000 NW Walker Rd. <city majorcity="beaverton">Beaverton</city> <state abbrev="OR">OR</state> <postalcode inferred-city="BEAVERTON" inferred-country="USA" inferred-county="WASHINGTON" inferred-phone-area-code="503|971" inferred-state="OR" lat="45.518002" lma="MT413890" lon="-122.858780" msa="38900: METROPOLITAN STATISTICAL AREA">97006</postalcode></address>  Dates of Employment: <daterange><start days="729027" iso8601="1997-01-01">1997</start>-<end days="729392" iso8601="1998-01-01">1998</end></daterange></job>
+Job Title:  <job bgtocc="19-1042.00" id="33" onet="19-1042.00" onetrank="1"><title bgonetmodel-topic-onet="19-1042.00|13-1161.00" clean="Research Associate" internship-flag="false" onet="19-1042.00|13-1161.00" onetrank="1">Research Associate</title></job>
+Employer name:  <job bgtocc="19-1042.00" id="34" inferred-naics="611310" onet="19-1042.00|19-3022.00" onetrank="1" sic="801101" sic2="80"><title bgonetmodel-topic-onet="19-1042.00|19-3022.00" clean="Research Fellow" internship-flag="false" onet="19-1042.00|19-3022.00" onetrank="1">Research Fellow</title>, <department>Department of Linguistics</department>, <employer city="CHAPEL HILL" clean="University of North Carolina" consolidated="University of North Carolina" employees="30" inferred-naics="611310" invalid="false" name="UNIVERSITY OF NORTH CAROLINA" priority="1" referenced-naics="6211|6214" sales="9150000" sic="801101" state="NC" std="University of North Carolina" zipcode="27599-0001">University of North Carolina</employer></job>,
+ <job id="35" onet="51-1011.00" onetrank="1"><address inferred-city="CHAPEL HILL" inferred-country="USA" inferred-county="ORANGE" inferred-phone-area-code="919" inferred-state="NC" lat="35.94" lma="MT372050" lon="-79.04" majorcity="CHAPEL HILL" msa="20500: METROPOLITAN STATISTICAL AREA |450: COMBINED STATISTICAL AREA" state="NC"><city majorcity="chapel hill">Chapel Hill</city>, <state abbrev="NC">North Carolina</state>.</address>  <title bgonetmodel-topic-onet="51-1011.00" clean="Supervisor" internship-flag="false" onet="51-1011.00" onetrank="1">Supervisor</title>:  <department>Head of Department</department></job>
+Address:  <job bgtocc="19-1042.00" end="729027" id="36" inferred-naics="611310" naics="611310" naics2="61" onet="19-1042.00" onetrank="1" pos="25" sic="822101" sic2="82" span="2" start="728296"><department>Department of Linguistics</department>, 104A Smith Building, CB #3155, <address inferred-city="CHAPEL HILL" inferred-country="USA" inferred-county="ORANGE" inferred-phone-area-code="919" inferred-state="NC" lat="35.927612" lma="MT372050" lon="-79.040627" majorcity="CHAPEL HILL" msa="20500: METROPOLITAN STATISTICAL AREA |450: COMBINED STATISTICAL AREA" state="NC"><city majorcity="chapel hill">Chapel Hill</city>, <state abbrev="NC">NC</state> <postalcode inferred-city="CHAPEL HILL" inferred-country="USA" inferred-county="ORANGE" inferred-phone-area-code="919" inferred-state="NC" lat="35.927612" lma="MT372050" lon="-79.040627" msa="20500: METROPOLITAN STATISTICAL AREA |450: COMBINED STATISTICAL AREA">27599</postalcode></address>-
+3155  Dates of Employment: <daterange><start days="728296" iso8601="1995-01-01">1995</start>-<end days="729027" iso8601="1997-01-01">1997</end></daterange>  Job Title:  <title bgonetmodel-topic-onet="19-1042.00|13-1161.00" clean="Research Associate" internship-flag="false" onet="19-1042.00|13-1161.00" onetrank="1">Research Associate</title>
+Employer name:  <employer city="CHAPEL HILL" clean="Northeastern University" consolidated="Northeastern University" inferred-naics="611310" invalid="false" name="NORTHEASTERN UNIVERSITY" priority="1" referenced-naics="6113" sic="822101" state="NC" std="Northeastern University">Northeastern University</employer>, <department>Department of African</department></job>-
+American Studies/ Linguistics Program, <job id="37" onet="51-1011.00" onetrank="1"><address division-code="14484: METROPOLITAN DIVISION |71654: NECTA DIVISION" inferred-city="BOSTON" inferred-country="USA" inferred-county="SUFFOLK" inferred-phone-area-code="617" inferred-state="MA" lat="42.36" lma="DV257165|MT257165" lon="-71.07" majorcity="BOSTON" msa="71650: METROPOLITAN NECTA |715: COMBINED NECTA |14460: METROPOLITAN STATISTICAL AREA |148: COMBINED STATISTICAL AREA" state="MA"><city majorcity="boston">Boston</city>, <state abbrev="MA">MA</state></address>  <title bgonetmodel-topic-onet="51-1011.00" clean="Supervisor" internship-flag="false" onet="51-1011.00" onetrank="1">Supervisor</title>:  <department>Head of Department</department></job>
+Address:  <job end="728296" id="38" inferred-naics="611310" naics="611310" naics2="61" onet="25-1199.00|25-1194.00" onetrank="1" pos="26" sic="821103" sic2="82" span="1" start="727931"><employer city="BOSTON" clean="Nightingale Hall, Northeastern University" consolidated="Northeastern University" employees="40" inferred-naics="611310" invalid="false" name="NORTHEASTERN UNIVERSITY" priority="1" referenced-naics="6111" sic="821103" state="MA" std="Northeastern University" zipcode="02115-4340">132 Nightingale Hall, Northeastern University</employer>, <address division-code="14484: METROPOLITAN DIVISION |71654: NECTA DIVISION" inferred-city="BOSTON" inferred-country="USA" inferred-county="SUFFOLK" inferred-phone-area-code="617|857" inferred-state="MA" lat="42.341869" lma="DV257165|MT257165" lon="-71.096848" majorcity="BOSTON" msa="71650: METROPOLITAN NECTA |715: COMBINED NECTA |14460: METROPOLITAN STATISTICAL AREA |148: COMBINED STATISTICAL AREA" state="MA">360 Huntington Avenue, <city majorcity="boston">Boston</city>, <state abbrev="MA">MA</state>
+ <postalcode division-code="14484: METROPOLITAN DIVISION |71654: NECTA DIVISION" inferred-city="BOSTON" inferred-country="USA" inferred-county="SUFFOLK" inferred-phone-area-code="617|857" inferred-state="MA" lat="42.341869" lma="DV257165|MT257165" lon="-71.096848" msa="71650: METROPOLITAN NECTA |715: COMBINED NECTA |14460: METROPOLITAN STATISTICAL AREA |148: COMBINED STATISTICAL AREA">02115</postalcode></address>  Dates of Employment: <daterange><start days="727931" iso8601="1994-01-01">1994</start>-<end days="728296" iso8601="1995-01-01">1995</end></daterange>  Job Title:  <title bgonetmodel-topic-onet="25-1194.00|39-9031.00" clean="Instructor" internship-flag="false" onet="25-1194.00|39-9031.00" onetrank="1">Instructor</title></job></experience>
+
+
+</resume>
+
+<skillrollup version="1">
+  <canonskill name="Adobe Photoshop" skill-cluster="Software and Programming Skills; Digital Media and Design: Visual and Graphic Design; Specialized Skills">
+    <variant>Photoshop</variant>
+  </canonskill>
+  <canonskill name="Basic Internet Skills" skill-cluster="Common Skills">
+    <variant>Internet Explorer</variant>
+  </canonskill>
+  <canonskill end="730578" experience="1" expidrefs="22" idrefs="22" lastused="2001" name="Broadband" posrefs="13" skill-cluster="Specialized Skills" start="730366">
+    <variant>Broadband</variant>
+  </canonskill>
+  <canonskill name="Business Process" skill-cluster="Business: Process and Planning; Specialized Skills">
+    <variant>business process</variant>
+  </canonskill>
+  <canonskill end="732648" experience="1" expidrefs="4" idrefs="4" lastused="2006" name="Business Process" posrefs="8" skill-cluster="Business: Process and Planning; Specialized Skills" start="730731">
+    <variant>business processes</variant>
+  </canonskill>
+  <canonskill name="Communication Skills" skill-cluster="Common Skills: Communication and Coordination">
+    <variant>effective communication</variant>
+  </canonskill>
+  <canonskill name="Communication Skills" skill-cluster="Common Skills: Communication and Coordination">
+    <variant>Excellent interpersonal skills</variant>
+  </canonskill>
+  <canonskill end="730304" experience="1" expidrefs="24,25" idrefs="24,25" lastused="2000" name="Customer Service" posrefs="15,17" skill-cluster="Customer Service: Basic Assistance; Common Skills: Communication and Coordination" start="730000">
+    <variant>Customer Support</variant>
+    <variant>Customer support</variant>
+  </canonskill>
+  <canonskill name="Data Collection" skill-cluster="Specialized Skills">
+    <variant>Data collection</variant>
+  </canonskill>
+  <canonskill name="Domain Name System (DNS)" skill-cluster="Software and Programming Skills; Specialized Skills">
+    <variant>DNS</variant>
+  </canonskill>
+  <canonskill name="Dynamic Host Configuration Protocol (DHCP)" skill-cluster="Software and Programming Skills; Specialized Skills">
+    <variant>DHCP</variant>
+  </canonskill>
+  <canonskill name="Experimental Design" skill-cluster="Sciences: Biotech; Specialized Skills">
+    <variant>Experimental design</variant>
+  </canonskill>
+  <canonskill experience="1" expidrefs="15" idrefs="15" name="Facility Maintenance" skill-cluster="Specialized Skills">
+    <variant>Facilities Maintenance</variant>
+  </canonskill>
+  <canonskill end="733653" experience="1" expidrefs="2" idrefs="2" lastused="2009" name="Facility Maintenance" posrefs="5" skill-cluster="Specialized Skills" start="732679">
+    <variant>Facility Maintenance</variant>
+  </canonskill>
+  <canonskill name="FrontPage" skill-cluster="Software and Programming Skills; IT: Web Design and Technologies; Specialized Skills">
+    <variant>FrontPage</variant>
+  </canonskill>
+  <canonskill end="733653" experience="1" expidrefs="2,4" idrefs="2,4" lastused="2009" name="Full Life Cycle" posrefs="5,8" skill-cluster="IT: Programming, Development, and Engineering; Specialized Skills" start="730731">
+    <variant>full life cycle</variant>
+  </canonskill>
+  <canonskill end="733653" experience="1" expidrefs="14,23" idrefs="14,23" lastused="2009" name="Help Desk Support" posrefs="4,14" skill-cluster="IT: Support; Specialized Skills" start="730304">
+    <variant>Help Desk</variant>
+  </canonskill>
+  <canonskill name="IPX" skill-cluster="IT: Network Administration and Security; Specialized Skills">
+    <variant>IPX</variant>
+  </canonskill>
+  <canonskill name="Indesign" skill-cluster="Software and Programming Skills; Digital Media and Design: Visual and Graphic Design; Specialized Skills">
+    <variant>Indesign</variant>
+  </canonskill>
+  <canonskill end="732648" experience="1" expidrefs="4,5,6,19,20,21" idrefs="4,5,6,19,20,21" lastused="2006" name="It Support" posrefs="8,12,16,9,10,11" skill-cluster="IT: Support; Specialized Skills" start="730000">
+    <variant>Computer Support</variant>
+  </canonskill>
+  <canonskill name="JAVA" skill-cluster="Software and Programming Skills; IT: Programming, Development, and Engineering; IT: Web Design and Technologies; Specialized Skills">
+    <variant>Java</variant>
+  </canonskill>
+  <canonskill end="732983" experience="1" expidrefs="3" idrefs="3" lastused="2007" name="LINUX" posrefs="6" skill-cluster="Software and Programming Skills; IT: Operating Systems; Specialized Skills" start="732830">
+    <variant>Linux</variant>
+  </canonskill>
+  <canonskill name="Labeling" skill-cluster="Specialized Skills">
+    <variant>Labeling</variant>
+  </canonskill>
+  <canonskill name="Lotus Office Suite" skill-cluster="Software and Programming Skills; Common Skills: Communication and Coordination">
+    <variant>Lotus Suite</variant>
+  </canonskill>
+  <canonskill name="Mac OS 8" skill-cluster="IT: Operating Systems; Specialized Skills">
+    <variant>Mac OS 8</variant>
+  </canonskill>
+  <canonskill end="732648" experience="1" expidrefs="4" idrefs="4" lastused="2006" name="MacIntosh OS" posrefs="8" skill-cluster="IT: Operating Systems; Specialized Skills" start="730731">
+    <variant>Mac OS</variant>
+  </canonskill>
+  <canonskill name="Meal Preparation" skill-cluster="Specialized Skills">
+    <variant>Prepare meals</variant>
+  </canonskill>
+  <canonskill name="Microsft Vista" skill-cluster="Software and Programming Skills; Common Skills">
+    <variant>Vista</variant>
+  </canonskill>
+  <canonskill name="Microsoft Excel" skill-cluster="Software and Programming Skills; Common Skills: Problem Solving">
+    <variant>Excel</variant>
+  </canonskill>
+  <canonskill name="Microsoft Exchange" skill-cluster="Software and Programming Skills; Specialized Skills">
+    <variant>MS Exchange</variant>
+  </canonskill>
+  <canonskill name="Microsoft Office" skill-cluster="Software and Programming Skills; Common Skills: Communication and Coordination">
+    <variant>Microsoft Office</variant>
+  </canonskill>
+  <canonskill name="Microsoft Powerpoint" skill-cluster="Software and Programming Skills; Common Skills: Communication and Coordination">
+    <variant>PowerPoint</variant>
+  </canonskill>
+  <canonskill name="Microsoft Visio" skill-cluster="Software and Programming Skills; Common Skills">
+    <variant>Visio</variant>
+  </canonskill>
+  <canonskill name="Microsoft Windows Server" skill-cluster="Software and Programming Skills; IT: Network Administration and Security; Specialized Skills">
+    <variant>Microsoft Windows Server</variant>
+  </canonskill>
+  <canonskill name="Microsoft Windows" skill-cluster="Software and Programming Skills; Common Skills">
+    <variant>Microsoft Windows</variant>
+  </canonskill>
+  <canonskill name="Microsoft Windows" skill-cluster="Software and Programming Skills; Common Skills">
+    <variant>MS Windows</variant>
+  </canonskill>
+  <canonskill end="733653" experience="1" expidrefs="2,3,4" idrefs="2,3,4" lastused="2009" name="Microsoft Windows" posrefs="5,6,8" skill-cluster="Software and Programming Skills; Common Skills" start="730731">
+    <variant>Windows</variant>
+    <variant>windows</variant>
+  </canonskill>
+  <canonskill name="Microsoft Windows" skill-cluster="Software and Programming Skills; Common Skills">
+    <variant>Windows 2000</variant>
+  </canonskill>
+  <canonskill name="Microsoft Windows" skill-cluster="Software and Programming Skills; Common Skills">
+    <variant>Windows 3.x</variant>
+  </canonskill>
+  <canonskill end="732648" experience="1" expidrefs="4" idrefs="4" lastused="2006" name="Microsoft Windows" posrefs="8" skill-cluster="Software and Programming Skills; Common Skills" start="730731">
+    <variant>Windows 98</variant>
+  </canonskill>
+  <canonskill end="735950" experience="1" expidrefs="2,16" idrefs="2,16" lastused="2015" name="Network Administration" posrefs="5,3" skill-cluster="IT: Network Administration and Security; Specialized Skills" start="732679">
+    <variant>Network Admin</variant>
+  </canonskill>
+  <canonskill end="732648" experience="1" expidrefs="4" idrefs="4" lastused="2006" name="Network Administration" posrefs="8" skill-cluster="IT: Network Administration and Security; Specialized Skills" start="730731">
+    <variant>Network Administrator</variant>
+  </canonskill>
+  <canonskill name="Norton AntiVirus" skill-cluster="IT: Network Administration and Security; Specialized Skills">
+    <variant>Norton Antivirus</variant>
+  </canonskill>
+  <canonskill name="Organizational Skills" skill-cluster="Common Skills: Business Environment Skills">
+    <variant>organization</variant>
+  </canonskill>
+  <canonskill name="POP3" skill-cluster="IT: Network Administration and Security; Specialized Skills">
+    <variant>POP3</variant>
+  </canonskill>
+  <canonskill end="732983" experience="1" expidrefs="3,4" idrefs="3,4" lastused="2007" name="Personal Computers" posrefs="6,8" skill-cluster="Specialized Skills" start="730731">
+    <variant>personal computers</variant>
+  </canonskill>
+  <canonskill experience="1" expidrefs="17" idrefs="17" name="Physics" skill-cluster="Sciences: Physics; Specialized Skills">
+    <variant>Physics</variant>
+  </canonskill>
+  <canonskill end="733653" experience="1" expidrefs="2,4" idrefs="2,4" lastused="2009" name="Planning" posrefs="5,8" skill-cluster="Common Skills: Business Environment Skills" start="730731">
+    <variant>Planning</variant>
+    <variant>planning</variant>
+  </canonskill>
+  <canonskill end="732648" experience="1" expidrefs="4" idrefs="4" lastused="2006" name="Policy Development" posrefs="8" skill-cluster="Specialized Skills" start="730731">
+    <variant>Develop policy</variant>
+  </canonskill>
+  <canonskill name="Printers" skill-cluster="Specialized Skills">
+    <variant>Printers</variant>
+  </canonskill>
+  <canonskill name="Problem Solving" skill-cluster="Common Skills: Problem Solving">
+    <variant>problem solver</variant>
+  </canonskill>
+  <canonskill end="730304" experience="1" expidrefs="6" idrefs="6" lastused="2000" name="Problem Solving" posrefs="16" skill-cluster="Common Skills: Problem Solving" start="730000">
+    <variant>problem solving</variant>
+  </canonskill>
+  <canonskill name="Project Management" skill-cluster="Common Skills: Project and Process Flow Skills">
+    <variant>project leader</variant>
+  </canonskill>
+  <canonskill name="Project Management" skill-cluster="Common Skills: Project and Process Flow Skills">
+    <variant>project leadership</variant>
+  </canonskill>
+  <canonskill name="Project Management" skill-cluster="Common Skills: Project and Process Flow Skills">
+    <variant>project management</variant>
+  </canonskill>
+  <canonskill end="732648" experience="1" expidrefs="4" idrefs="4" lastused="2006" name="Project Management" posrefs="8" skill-cluster="Common Skills: Project and Process Flow Skills" start="730731">
+    <variant>Project Manager</variant>
+  </canonskill>
+  <canonskill name="QuarkXPress" skill-cluster="Software and Programming Skills; Digital Media and Design: Tech Development and Design; Specialized Skills">
+    <variant>Quark</variant>
+  </canonskill>
+  <canonskill end="730669" experience="1" expidrefs="5,10,11,12,31,33,34,36" idrefs="5,10,11,12,31,33,34,36" lastused="2001" name="Research" posrefs="12,22,24,25" skill-cluster="Common Skills: Problem Solving" start="728296">
+    <variant>Research</variant>
+    <variant>research</variant>
+  </canonskill>
+  <canonskill name="SQL Server" skill-cluster="Software and Programming Skills; IT: Databases and Data Warehousing; Specialized Skills">
+    <variant>SQL Server</variant>
+  </canonskill>
+  <canonskill name="Simple Mail Transfer Protocol (SMTP)" skill-cluster="Specialized Skills">
+    <variant>SMTP</variant>
+  </canonskill>
+  <canonskill end="732648" experience="1" expidrefs="4" idrefs="4" lastused="2006" name="Software Development" posrefs="8" skill-cluster="IT: Programming, Development, and Engineering; Specialized Skills" start="730731">
+    <variant>software developers</variant>
+  </canonskill>
+  <canonskill end="732648" experience="1" expidrefs="4,5" idrefs="4,5" lastused="2006" name="Software Installation" posrefs="8,12" skill-cluster="IT: Support; Specialized Skills" start="730304">
+    <variant>hardware</variant>
+  </canonskill>
+  <canonskill end="732648" experience="1" expidrefs="4" idrefs="4" lastused="2006" name="Software Installation" posrefs="8" skill-cluster="IT: Support; Specialized Skills" start="730731">
+    <variant>software</variant>
+  </canonskill>
+  <canonskill end="732648" experience="1" expidrefs="4" idrefs="4" lastused="2006" name="Software Installation" posrefs="8" skill-cluster="IT: Support; Specialized Skills" start="730731">
+    <variant>software</variant>
+  </canonskill>
+  <canonskill name="Speech Recognition" skill-cluster="Software and Programming Skills; Specialized Skills">
+    <variant>speech recognition</variant>
+  </canonskill>
+  <canonskill name="Statistics" skill-cluster="Specialized Skills">
+    <variant>statistical analysis</variant>
+  </canonskill>
+  <canonskill name="Symantec Packages" skill-cluster="Software and Programming Skills; IT: Network Administration and Security; Specialized Skills">
+    <variant>Symantec</variant>
+  </canonskill>
+  <canonskill name="System Administration" skill-cluster="IT: Network Administration and Security; Specialized Skills">
+    <variant>System Administration</variant>
+  </canonskill>
+  <canonskill end="730669" experience="1" expidrefs="5" idrefs="5" lastused="2001" name="System and Network Configuration" posrefs="12" skill-cluster="IT: Network Administration and Security; Specialized Skills" start="730304">
+    <variant>system</variant>
+  </canonskill>
+  <canonskill end="728296" experience="1" expidrefs="12" idrefs="12" lastused="1995" name="Teaching" skill-cluster="Common Skills" start="733775">
+    <variant>teaching</variant>
+  </canonskill>
+  <canonskill end="730578" experience="1" expidrefs="22" idrefs="22" lastused="2001" name="Technical Support" posrefs="13" skill-cluster="IT: Support; Specialized Skills" start="730366">
+    <variant>Desktop Support</variant>
+  </canonskill>
+  <canonskill name="Transmission Control Protocol / Internet Protocol (TCP / IP)" skill-cluster="Software and Programming Skills; Specialized Skills">
+    <variant>TCP/IP</variant>
+  </canonskill>
+  <canonskill end="732648" experience="1" expidrefs="4" idrefs="4" lastused="2006" name="Troubleshooting" posrefs="8" skill-cluster="Common Skills: Problem Solving" start="730731">
+    <variant>troubleshooting</variant>
+  </canonskill>
+  <canonskill end="732648" experience="1" expidrefs="4" idrefs="4" lastused="2006" name="UNIX" posrefs="8" skill-cluster="Software and Programming Skills; IT: Operating Systems; Specialized Skills" start="730731">
+    <variant>UNIX</variant>
+  </canonskill>
+  <canonskill name="VERITAS Backup" skill-cluster="IT: Network Administration and Security; Specialized Skills">
+    <variant>Veritas Backup</variant>
+  </canonskill>
+  <canonskill name="Visual Basic" skill-cluster="Software and Programming Skills; IT: Programming, Development, and Engineering; Specialized Skills">
+    <variant>Visual Basic</variant>
+  </canonskill>
+  <canonskill name="Windows NT" skill-cluster="Software and Programming Skills; IT: Network Administration and Security; Specialized Skills">
+    <variant>Windows NT</variant>
+  </canonskill>
+  <canonskill end="732648" experience="1" expidrefs="4" idrefs="4" lastused="2006" name="Windows NT" posrefs="8" skill-cluster="Software and Programming Skills; IT: Network Administration and Security; Specialized Skills" start="730731">
+    <variant>NT 4</variant>
+  </canonskill>
+  <canonskill name="Windows NT" skill-cluster="Software and Programming Skills; IT: Network Administration and Security; Specialized Skills">
+    <variant>NT Server</variant>
+  </canonskill>
+  <canonskill name="WordPerfect" skill-cluster="Software and Programming Skills; Common Skills: Communication and Coordination">
+    <variant>WordPerfect</variant>
+  </canonskill>
+  <canonskill name="Workstations" skill-cluster="Specialized Skills">
+    <variant>Workstations</variant>
+  </canonskill>
+</skillrollup>
+<DataElementsRollup version="5.5.18 TalentMine v3.2.5.3">
+<Certification>MCSE</Certification>
+<CanonCertification>
+  <certification name="MICROSOFT CERTIFIED SYSTEMS ENGINEER (MCSE)" type="Certification" />
+</CanonCertification></DataElementsRollup>
+</ResDoc>
+"""
+
+GET_626b = """<ResDoc>
+<resume canonversion="2" dateversion="2" iso8601="2015-12-16" present="735950" xml:space="preserve"><contact><name><givenname>Kate</givenname> <surname>Begonia</surname></name> <address inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503" inferred-state="OR" lat="45.544044" lma="MT413890" lon="-122.639214" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><street>4014 NE Failing Street</street>, <city majorcity="portland">Portland</city>, <state abbrev="OR">OR</state> <postalcode inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503" inferred-state="OR" lat="45.544044" lma="MT413890" lon="-122.639214" msa="38900: METROPOLITAN STATISTICAL AREA">97212</postalcode></address>       503.<phone>493.1548</phone>
+<email>k_begonia@yahoo.com</email></contact>
+
+
+<experience end="present" start="726835">* <job bgtocc="11-9111.00" end="present" id="1" naics="511210" naics2="51" onet="11-9111.00|11-9033.00" onetrank="1" pos="1" sic="737299" sic2="73" span="6" start="733775"><description>Marketing Executive Seasoned marketing professional with more than 18 years experience
+driving revenues and market visibility by spearheading integrated marketing and
+advertising programs with some of the world's leading companies.</description>
+
+
+* Experience
+<employer city="BEAVERTON" clean="Sage Software" consolidated="SAGE SOFTWARE" invalid="false" name="SAGE SOFTWARE" priority="2" referenced-naics="5112" sic="737299" state="OR">Sage Software</employer>, <address inferred-city="BEAVERTON" inferred-country="USA" inferred-county="WASHINGTON" inferred-phone-area-code="503" inferred-state="OR" lat="45.49" lma="MT413890" lon="-122.8" majorcity="BEAVERTON" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><city majorcity="beaverton">Beaverton</city>, <state abbrev="OR">OR</state></address> <title bgonetmodel-topic-onet="11-9111.00|11-9033.00" clean="Director" internship-flag="false" onet="11-9111.00|11-9033.00" onetrank="1">Director</title>, <employer clean="Digital Marketing Communications" consolidated="Digital Marketing Communications" invalid="false" priority="3">Digital Marketing Communications</employer> <daterange><start days="733775" iso8601="2010-01-01">2010</start> - <end days="present" iso8601="2015-12-16">Present</end></daterange>
+<description>Responsible for development of the division's online communications including website
+design and development and email design, development and deployment. Responsible for
+digital strategy development, email execution and management of web designers and digital
+marketing specialists.
+* Management of cross divisional team of web designers and digital specialists
+responsible for strategy, execution and analysis of online campaigns.</description></job>
+<job bgtocc="11-9111.00" end="733775" id="2" naics="511210" naics2="51" onet="11-9111.00|11-9033.00" onetrank="1" pos="2" sic="737299" sic2="73" span="2" start="733044"><employer city="BEAVERTON" clean="Sage Software" consolidated="SAGE SOFTWARE" invalid="false" name="SAGE SOFTWARE" priority="2" referenced-naics="5112" sic="737299" state="OR">Sage Software</employer>, <address inferred-city="BEAVERTON" inferred-country="USA" inferred-county="WASHINGTON" inferred-phone-area-code="503" inferred-state="OR" lat="45.49" lma="MT413890" lon="-122.8" majorcity="BEAVERTON" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><city majorcity="beaverton">Beaverton</city>, <state abbrev="OR">OR</state></address> <title bgonetmodel-topic-onet="11-9111.00|11-9033.00" clean="Director" internship-flag="false" onet="11-9111.00|11-9033.00" onetrank="1">Director</title>, Creative Services <daterange><start days="733044" iso8601="2008-01-01">2008</start> - <end days="733775" iso8601="2010-01-01">2010</end></daterange> <description>Responsible for
+development of the company's print and online communications materials. Helped lead
+development of packaging, direct mail, collateral, event materials, promotional materials
+and digital programs. Oversaw the planning and implementation of individual business unit
+strategies as they related to Creative Services projects, including collaborating with
+creative staff, clients, vendors and stakeholders to establish project goals, develop
+concepts, and conduct research.
+* Oversaw contractor and vendor relationships and ensured the work of external resources
+met high standards of quality         and brand fidelity.
+* Developed and managed departmental budget. * Received FY10 company-wide award for
+providing my internal clients with an "extraordinary customer experience."</description></job>
+<job bgtocc="13-1161.00" end="733044" id="3" onet="13-1161.00" onetrank="1" pos="3" span="3" start="731949"><title bgonetmodel-topic-onet="13-1161.00|41-3011.00" clean="Marketing Consultant" internship-flag="false" onet="13-1161.00|41-3011.00" onetrank="1">Marketing Consultant</title>, <address inferred-city="PORTLAND" inferred-country="USA" inferred-county="CLACKAMAS" inferred-phone-area-code="503" inferred-state="OR" lat="45.42" lma="MT413890" lon="-122.64" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><city majorcity="portland">Portland</city>, <state abbrev="OR">OR</state></address> <daterange><start days="731949" iso8601="2005-01-01">2005</start> - <end days="733044" iso8601="2008-01-01">2008</end></daterange> <description>Provided consulting services in marketing
+communications and marketing operations.
+* Clients included McCann Worldgroup, Oracle Corporation, CMP Media, Aleri Inc., CCH
+KnowledgePoint, A+A Inc., and dARSW * Projects included: management consulting, marketing
+collateral concept and development, marketing plan development, media plan development,
+agency review operations, development and execution of integrated media programs,
+executive
+presentation development, project management, web site concept development and budget
+development.</description></job>
+<job bgtocc="11-9111.00" end="731949" id="4" inferred-naics="511210" naics="51121" naics2="51" onet="11-9111.00|11-9033.00" onetrank="1" pos="4" sic="573401" sic2="57" span="1" start="731583"><employer city="REDWOOD SHORES" clean="Oracle Corporation" consolidated="Oracle" inferred-naics="511210" invalid="false" name="ORACLE CORPORATION" priority="1" referenced-naics="4431" sic="573401" state="CA" std="Oracle" ticker="ORCL">Oracle Corporation</employer>, <address division-code="41884: METROPOLITAN DIVISION" inferred-city="REDWOOD CITY" inferred-country="USA" inferred-county="SAN MATEO" inferred-phone-area-code="650" inferred-state="CA" lat="37.46" lma="DV064188|MT064186" lon="-122.23" majorcity="REDWOOD CITY" msa="41860: METROPOLITAN STATISTICAL AREA" state="CA"><city majorcity="redwood shores">Redwood Shores</city>, <state abbrev="CA">CA</state></address> <title bgonetmodel-topic-onet="11-9111.00|11-9033.00" clean="Senior Director" internship-flag="false" onet="11-9111.00|11-9033.00" onetrank="1">Senior Director</title>, Branding <daterange><start days="731583" iso8601="2004-01-01">2004</start> - <end days="731949" iso8601="2005-01-01">2005</end></daterange> <description>Created new
+branding organization to track and enhance Oracle's brand as company launched acquisition
+strategy. Led effort to build branding strategy and architecture. Launched creation and
+management of branding guidelines, blending employee portals that supported knowledge and
+corporate asset management, as well as ensuring consistency and frequency of employee
+communications.
+* Selected as key matrix team member to drive the incorporation of PeopleSoft (a $10.3
+billion acquisition) into the Oracle brand. Focused on challenges of web site integration,
+organizational assimilation and brand unification.
+* Engaged with branding agencies to assist in strategy development.
+* Launched assessment of existing research and strategy for further brand analysis.</description></job>
+
+
+
+
+
+<job bgtocc="11-9111.00" end="731583" id="5" inferred-naics="511210" naics="51121" naics2="51" onet="11-9111.00|11-9033.00" onetrank="1" pos="5" sic="573401" sic2="57" span="3" start="730488"><employer city="REDWOOD SHORES" clean="Oracle Corporation" consolidated="Oracle" inferred-naics="511210" invalid="false" name="ORACLE CORPORATION" priority="1" referenced-naics="4431" sic="573401" state="CA" std="Oracle" ticker="ORCL">Oracle Corporation</employer>, <address division-code="41884: METROPOLITAN DIVISION" inferred-city="REDWOOD CITY" inferred-country="USA" inferred-county="SAN MATEO" inferred-phone-area-code="650" inferred-state="CA" lat="37.46" lma="DV064188|MT064186" lon="-122.23" majorcity="REDWOOD CITY" msa="41860: METROPOLITAN STATISTICAL AREA" state="CA"><city majorcity="redwood shores">Redwood Shores</city>, <state abbrev="CA">CA</state></address> <title bgonetmodel-topic-onet="11-9111.00|11-9033.00" clean="Senior Director" internship-flag="false" onet="11-9111.00|11-9033.00" onetrank="1">Senior Director</title>, Global Advertising <daterange><start days="730488" iso8601="2001-01-01">2001</start> - <end days="731583" iso8601="2004-01-01">2004</end></daterange>
+<description>Led global team in developing advertising programs to build brand preference for Oracle.
+Drove creative and media strategy, operations and management of internal staff and
+agencies. Managed $100M+ budget, supporting more than 40 countries.
+* Developed in-house production and traffic team for Americas region (supporting English,
+French, Spanish and Portuguese). Achieved significant cost savings and ensured consistency
+in messages and accuracy in translations through consolidation of production resources.
+* Conducted and directed global media agency review and selected new media agency to
+provide Oracle with improved research tools and strategic thinking. * Led contract
+negotiations for global engagements.
+* Developed unique branded entertainment vehicle for broadcast in Europe ("The Players"),
+which was named one of the top media ideas that "changed our lives" in 2004 by M&amp;M Europe
+magazine.</description></job>
+<job bgtocc="11-9111.00" id="6" inferred-naics="511210" naics="51121" naics2="51" onet="11-9111.00|11-9033.00" onetrank="1" sic="573401" sic2="57"><employer city="REDWOOD SHORES" clean="Oracle Corporation" consolidated="Oracle" inferred-naics="511210" invalid="false" name="ORACLE CORPORATION" priority="1" referenced-naics="4431" sic="573401" state="CA" std="Oracle" ticker="ORCL">Oracle Corporation</employer>, <address division-code="41884: METROPOLITAN DIVISION" inferred-city="REDWOOD CITY" inferred-country="USA" inferred-county="SAN MATEO" inferred-phone-area-code="650" inferred-state="CA" lat="37.46" lma="DV064188|MT064186" lon="-122.23" majorcity="REDWOOD CITY" msa="41860: METROPOLITAN STATISTICAL AREA" state="CA"><city majorcity="redwood shores">Redwood Shores</city>, <state abbrev="CA">CA</state></address> <title bgonetmodel-topic-onet="11-9111.00|11-9033.00" clean="Director" internship-flag="false" onet="11-9111.00|11-9033.00" onetrank="1">Director</title>, <description>Global Advertising and Direct Marketing</description></job>
+<job end="730488" id="7" pos="6" span="1" start="730122"><employer clean="Programs" consolidated="Programs" invalid="false" priority="3">Programs</employer> <daterange><start days="730122" iso8601="2000-01-01">2000</start> - <end days="730488" iso8601="2001-01-01">2001</end></daterange> <description>Led team responsible for U.S. demand generation activities including
+online, direct marketing and global events. Also led global team responsible for all
+advertising creative and media strategy. Managed budgets in excess of $135M.
+* Managed agency fee negotiations for global direct marketing efforts, consolidating
+contracts and improving efficiencies.
+* Managed large experimental online media buy with CMO. Managed creative development and
+optimization of the program.
+* Brought advertising creative in-house, utilizing internal design resources for all
+print advertising globally.</description></job>
+
+<job bgtocc="11-2011.00" end="730122" id="8" inferred-naics="511210" naics="51121" naics2="51" onet="11-2011.00" onetrank="1" pos="7" sic="573401" sic2="57" span="1" start="729757"><employer city="REDWOOD SHORES" clean="Oracle Corporation" consolidated="Oracle" inferred-naics="511210" invalid="false" name="ORACLE CORPORATION" priority="1" referenced-naics="4431" sic="573401" state="CA" std="Oracle" ticker="ORCL">Oracle Corporation</employer>, <address division-code="41884: METROPOLITAN DIVISION" inferred-city="REDWOOD CITY" inferred-country="USA" inferred-county="SAN MATEO" inferred-phone-area-code="650" inferred-state="CA" lat="37.46" lma="DV064188|MT064186" lon="-122.23" majorcity="REDWOOD CITY" msa="41860: METROPOLITAN STATISTICAL AREA" state="CA"><city majorcity="redwood shores">Redwood Shores</city>, <state abbrev="CA">CA</state></address> <title bgonetmodel-topic-onet="41-1012.00|11-2011.00" clean="Senior Advertising Manager" internship-flag="false" onet="41-1012.00|11-2011.00" onetrank="1">Senior Advertising Manager</title>, <description>Domestic Advertising</description>
+<daterange><start days="729757" iso8601="1999-01-01">1999</start> - <end days="730122" iso8601="2000-01-01">2000</end></daterange> <description>Led team responsible for all U.S. advertising programs. Managed agencies and
+internal staff.
+* Led initiative to drive worldwide brand re-positioning. Worked closely with global
+marketing teams and agencies for a synchronized
+launch of the new identity to ensure integrated marketing and brand consistency across
+all programs. * Developed global brand tracking study to track Oracle's brand awareness in
+our top markets.
+* Nominated for Global Marketing MVP of FY00.</description></job>
+
+<job bgtocc="11-2021.91" end="729757" id="9" inferred-naics="511210" naics="51121" naics2="51" onet="11-2021.00" onetrank="1" pos="8" sic="573401" sic2="57" span="1" start="729392"><employer city="REDWOOD SHORES" clean="Oracle Corporation" consolidated="Oracle" inferred-naics="511210" invalid="false" name="ORACLE CORPORATION" priority="1" referenced-naics="4431" sic="573401" state="CA" std="Oracle" ticker="ORCL">Oracle Corporation</employer>, <address division-code="41884: METROPOLITAN DIVISION" inferred-city="REDWOOD CITY" inferred-country="USA" inferred-county="SAN MATEO" inferred-phone-area-code="650" inferred-state="CA" lat="37.46" lma="DV064188|MT064186" lon="-122.23" majorcity="REDWOOD CITY" msa="41860: METROPOLITAN STATISTICAL AREA" state="CA"><city majorcity="redwood shores">Redwood Shores</city>, <state abbrev="CA">CA</state></address> <title bgonetmodel-topic-onet="11-2021.00|13-1161.00" clean="Marketing Manager" internship-flag="false" onet="11-2021.00|13-1161.00" onetrank="1" std="Marketing Manager">Marketing Manager</title>, <description>Industry Solutions Marketing</description>
+<daterange><start days="729392" iso8601="1998-01-01">1998</start> - <end days="729757" iso8601="1999-01-01">1999</end></daterange> <description>Directed marketing execution support for 23 industries. Managed execution of
+executive-level, industry-specific collateral, sales tools, interactive CD-ROMs,
+advertising, and direct marketing programs.
+
+Career Note: Additional positions include Customer Service Manager and Software Education
+Manager at SBT Accounting Software</description></job> (<job bgtocc="11-2011.00" end="729392" id="10" onet="11-2011.00|41-1012.00" onetrank="1" pos="9" span="5" start="727566"><daterange><start days="727566" iso8601="1993-01-01">1993</start>-<end days="729392" iso8601="1998-01-01">1998</end></daterange>) and <title bgonetmodel-topic-onet="11-2011.00|41-1012.00" clean="Circulation Director" internship-flag="false" onet="11-2011.00|41-1012.00" onetrank="1">Circulation Director</title></job> at MegaBrain
+Report (<job end="727200" id="11" pos="10" span="1" start="726835"><daterange><start days="726835" iso8601="1991-01-01">1991</start>-<end days="727200" iso8601="1992-01-01">1992</end></daterange>). <description>Details upon request.</description></job></experience>
+
+
+* <education>Education
+<school id="12"><degree level="16" name="Bachelor's">Bachelor of Arts</degree>, <major cipcode="24.0103" code="4202" std-major="HUMANITIES/HUMANISTIC STUDIES">Humanities</major>, <institution>San Francisco State University</institution></school></education>
+
+</resume>
+
+<skillrollup version="1">
+  <canonskill end="730122" experience="1" expidrefs="8" idrefs="8" lastused="2000" name="Advertising" posrefs="7" skill-cluster="Specialized Skills" start="729757">
+    <variant>Advertising</variant>
+  </canonskill>
+  <canonskill end="731949" experience="1" expidrefs="4" idrefs="4" lastused="2005" name="Asset Management" posrefs="4" skill-cluster="Finance: Accounting, Bookkeeping, and Tax Preparation: Accounting; Specialized Skills" start="731583">
+    <variant>asset management</variant>
+  </canonskill>
+  <canonskill end="731949" experience="1" expidrefs="4" idrefs="4" lastused="2005" name="Brand Analysis" posrefs="4" skill-cluster="Marketing: General; Specialized Skills" start="731583">
+    <variant>brand analysis</variant>
+  </canonskill>
+  <canonskill end="731949" experience="1" expidrefs="4" idrefs="4" lastused="2005" name="Brand Enhancement" posrefs="4" skill-cluster="Marketing: General; Specialized Skills" start="731583">
+    <variant>brand</variant>
+  </canonskill>
+  <canonskill end="731949" experience="1" expidrefs="4" idrefs="4" lastused="2005" name="Brand Management" posrefs="4" skill-cluster="Marketing: General; Specialized Skills" start="731583">
+    <variant>branding</variant>
+  </canonskill>
+  <canonskill end="731949" experience="1" expidrefs="4" idrefs="4" lastused="2005" name="Branding Strategy" posrefs="4" skill-cluster="Marketing: General; Specialized Skills" start="731583">
+    <variant>branding strategy</variant>
+  </canonskill>
+  <canonskill end="731583" experience="1" expidrefs="5" idrefs="5" lastused="2004" name="Broadcast" posrefs="5" skill-cluster="Specialized Skills" start="730488">
+    <variant>broadcast</variant>
+  </canonskill>
+  <canonskill end="730488" experience="1" expidrefs="7" idrefs="7" lastused="2001" name="Budgeting" posrefs="6" skill-cluster="Common Skills: Project and Process Flow Skills" start="730122">
+    <variant>budgets</variant>
+  </canonskill>
+  <canonskill end="733044" experience="1" expidrefs="3" idrefs="3" lastused="2008" name="Concept Design and Development" posrefs="3" skill-cluster="Common Skills: Project and Process Flow Skills" start="731949">
+    <variant>concept development</variant>
+  </canonskill>
+  <canonskill end="733044" experience="1" expidrefs="3" idrefs="3" lastused="2008" name="Concept Development" posrefs="3" skill-cluster="Specialized Skills" start="731949">
+    <variant>concept</variant>
+  </canonskill>
+  <canonskill end="730488" experience="1" expidrefs="7" idrefs="7" lastused="2001" name="Creative Development" posrefs="6" skill-cluster="Specialized Skills" start="730122">
+    <variant>creative development</variant>
+  </canonskill>
+  <canonskill end="733775" experience="1" expidrefs="2,5,7" idrefs="2,5,7" lastused="2010" name="Creativity" posrefs="2,5,6" skill-cluster="Common Skills: Problem Solving" start="730122">
+    <variant>Creative</variant>
+    <variant>creative</variant>
+  </canonskill>
+  <canonskill end="729757" experience="1" expidrefs="9" idrefs="9" lastused="1999" name="Customer Service" posrefs="8" skill-cluster="Customer Service: Basic Assistance; Common Skills: Communication and Coordination" start="729392">
+    <variant>Customer Service Manager</variant>
+  </canonskill>
+  <canonskill end="733775" experience="1" expidrefs="2" idrefs="2" lastused="2010" name="Direct Mail" posrefs="2" skill-cluster="Specialized Skills" start="733044">
+    <variant>direct mail</variant>
+  </canonskill>
+  <canonskill end="730488" experience="1" expidrefs="6,7,9" idrefs="6,7,9" lastused="2001" name="Direct Marketing" posrefs="6,8" skill-cluster="Marketing: General; Specialized Skills" start="729392">
+    <variant>Direct Marketing</variant>
+    <variant>direct marketing</variant>
+  </canonskill>
+  <canonskill end="730122" experience="1" expidrefs="8" idrefs="8" lastused="2000" name="Global Marketing" posrefs="7" skill-cluster="Marketing: General; Specialized Skills" start="729757">
+    <variant>Global Marketing</variant>
+  </canonskill>
+  <canonskill end="733044" experience="1" expidrefs="3" idrefs="3" lastused="2008" name="Management Consulting" posrefs="3" skill-cluster="Management: Consulting; Specialized Skills" start="731949">
+    <variant>management consulting</variant>
+  </canonskill>
+  <canonskill end="733044" experience="1" expidrefs="3" idrefs="3" lastused="2008" name="Market Planning" posrefs="3" skill-cluster="Marketing: General; Specialized Skills" start="731949">
+    <variant>marketing plan development</variant>
+  </canonskill>
+  <canonskill end="735950" experience="1" expidrefs="1" idrefs="1" lastused="2015" name="Marketing Communications" posrefs="1" skill-cluster="Marketing: General; Specialized Skills" start="733775">
+    <variant>Marketing Communications</variant>
+  </canonskill>
+  <canonskill end="729757" experience="1" expidrefs="9" idrefs="9" lastused="1999" name="Marketing Management" posrefs="8" skill-cluster="Marketing: General; Specialized Skills" start="729392">
+    <variant>Marketing Manager</variant>
+  </canonskill>
+  <canonskill end="729757" experience="1" expidrefs="9" idrefs="9" lastused="1999" name="Marketing Management" posrefs="8" skill-cluster="Marketing: General; Specialized Skills" start="729392">
+    <variant>Marketing Manager</variant>
+  </canonskill>
+  <canonskill end="733044" experience="1" expidrefs="3" idrefs="3" lastused="2008" name="Marketing" posrefs="3" skill-cluster="Specialized Skills" start="731949">
+    <variant>Marketing</variant>
+  </canonskill>
+  <canonskill end="733044" experience="1" expidrefs="3" idrefs="3" lastused="2008" name="Media Planning" posrefs="3" skill-cluster="Marketing: General; Specialized Skills" start="731949">
+    <variant>media plan</variant>
+  </canonskill>
+  <canonskill end="731583" experience="1" expidrefs="5,7" idrefs="5,7" lastused="2004" name="Media Strategy" posrefs="5,6" skill-cluster="Digital Media and Design: Digital Strategy; Specialized Skills" start="730122">
+    <variant>media strategy</variant>
+  </canonskill>
+  <canonskill name="Online Communications" skill-cluster="Marketing: Internet; Specialized Skills">
+    <variant>online communications</variant>
+  </canonskill>
+  <canonskill end="730488" experience="1" expidrefs="7" idrefs="7" lastused="2001" name="Optimization" posrefs="6" skill-cluster="Specialized Skills" start="730122">
+    <variant>optimization</variant>
+  </canonskill>
+  <canonskill end="733044" experience="1" expidrefs="3,4,5,6,8,9" idrefs="3,4,5,6,8,9" lastused="2008" name="Oracle" posrefs="3,4,5,7,8" skill-cluster="Software and Programming Skills; IT: Business Intelligence; IT: Databases and Data Warehousing; Specialized Skills" start="729392">
+    <variant>Oracle</variant>
+  </canonskill>
+  <canonskill end="731949" experience="1" expidrefs="4" idrefs="4" lastused="2005" name="Organizational Skills" posrefs="4" skill-cluster="Common Skills: Business Environment Skills" start="731583">
+    <variant>organization</variant>
+  </canonskill>
+  <canonskill end="733775" experience="1" expidrefs="2" idrefs="2" lastused="2010" name="Packaging" posrefs="2" skill-cluster="Specialized Skills" start="733044">
+    <variant>packaging</variant>
+  </canonskill>
+  <canonskill end="731949" experience="1" expidrefs="4" idrefs="4" lastused="2005" name="Peoplesoft" posrefs="4" skill-cluster="Software and Programming Skills; Specialized Skills; HR: Solutions" start="731583">
+    <variant>PeopleSoft</variant>
+  </canonskill>
+  <canonskill end="733775" experience="1" expidrefs="2" idrefs="2" lastused="2010" name="Planning" posrefs="2" skill-cluster="Common Skills: Business Environment Skills" start="733044">
+    <variant>planning</variant>
+  </canonskill>
+  <canonskill end="733044" experience="1" expidrefs="3" idrefs="3" lastused="2008" name="Presentation Design" posrefs="3" skill-cluster="Common Skills: Communication and Coordination" start="731949">
+    <variant>presentation development</variant>
+  </canonskill>
+  <canonskill end="730488" experience="1" expidrefs="7" idrefs="7" lastused="2001" name="Print Advertising" posrefs="6" skill-cluster="Marketing: General; Specialized Skills" start="730122">
+    <variant>print advertising</variant>
+  </canonskill>
+  <canonskill end="733044" experience="1" expidrefs="3" idrefs="3" lastused="2008" name="Project Management" posrefs="3" skill-cluster="Common Skills: Project and Process Flow Skills" start="731949">
+    <variant>project management</variant>
+  </canonskill>
+  <canonskill end="733775" experience="1" expidrefs="2" idrefs="2" lastused="2010" name="Promotional Materials" posrefs="2" skill-cluster="Marketing: Public Relations; Specialized Skills" start="733044">
+    <variant>promotional materials</variant>
+  </canonskill>
+  <canonskill end="733775" experience="1" expidrefs="2,4,5" idrefs="2,4,5" lastused="2010" name="Research" posrefs="2,4,5" skill-cluster="Common Skills: Problem Solving" start="730488">
+    <variant>research</variant>
+  </canonskill>
+  <canonskill end="729757" experience="1" expidrefs="9" idrefs="9" lastused="1999" name="SBT Accounting" posrefs="8" skill-cluster="Specialized Skills" start="729392">
+    <variant>SBT Accounting</variant>
+  </canonskill>
+  <canonskill end="735950" experience="1" expidrefs="1,4" idrefs="1,4" lastused="2015" name="Strategic Development" posrefs="1,4" skill-cluster="Specialized Skills" start="731583">
+    <variant>strategy development</variant>
+  </canonskill>
+  <canonskill end="731583" experience="1" expidrefs="5" idrefs="5" lastused="2004" name="Strategic Thinking" posrefs="5" skill-cluster="Common Skills: Project and Process Flow Skills" start="730488">
+    <variant>strategic thinking</variant>
+  </canonskill>
+  <canonskill end="735950" experience="1" expidrefs="1" idrefs="1" lastused="2015" name="Web Site Design" posrefs="1" skill-cluster="Digital Media and Design: Tech Development and Design; Specialized Skills; Digital Media and Design: Visual and Graphic Design" start="733775">
+    <variant>website</variant>
+  </canonskill>
+</skillrollup>
+<DataElementsRollup version="5.5.18 TalentMine v3.2.5.3">
+<Certification />
+<CanonCertification /></DataElementsRollup>
+</ResDoc>
+"""
