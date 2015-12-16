@@ -29,11 +29,19 @@
 
     /* @ngInject */
     function ControllerFunction(logger) {
+        var vm = this;
 
+        init();
         activate();
 
         function activate() {
             logger.log('Activated Candidate Profile View');
+        }
+
+        function init() {
+            vm.pipelineEngagement = {};
+            vm.pipelineEngagement.graph = {};
+            vm.pipelineEngagement.graph.data = 33;
         }
     }
 })();

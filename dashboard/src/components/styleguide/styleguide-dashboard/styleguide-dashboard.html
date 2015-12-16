@@ -35,7 +35,7 @@
                     </div>
                 </div>
             </section>
-            <figure class="js-graph--total-candidates areaGraph hero__graph"></figure>
+            <figure gt-area-graph data="vm.totalCandidates.graph.data" class="areaGraph hero__graph"></figure>
         </div>
     </div>
 
@@ -106,8 +106,7 @@
             <h2>Pipeline Engagement</h2>
             <h4>Next 60 Days (Predictive)</h4>
 
-            <figure class="js-graph--pipeline-engagement circleGraph">
-            </figure>
+            <figure gt-circle-graph data="vm.pipelineEngagement.graph.data" class="circleGraph""></figure>
         </div>
 
         <!-- Table: Active stats-->
@@ -254,8 +253,7 @@
             <h2>New Candidates</h2>
             <h4>Last 30 Days</h4>
 
-            <div class="js-graph--new-candidates lineGraph">
-            </div>
+            <div gt-line-graph data="vm.newCandidates.graph.data" class="lineGraph"></div>
         </div>
 
         <!-- Blurb: Case Study -->
