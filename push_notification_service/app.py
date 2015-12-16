@@ -24,12 +24,13 @@ def onesignal():
 def onesignal_push():
     url =  'https://onesignal.com/api/v1/notifications'
     header = {"Content-Type": "application/json",
-              "Authorization": "Basic Yjc1M2E2ZjgtYmQzYi00MTQzLTgwMjYtYTJhNTdjNjQwY2Q3"}
+              "Authorization": "Basic ZjYzZjY5ZmMtZTJkMC00OWEzLTk2OWMtNzgwYjcyNzAyMDVj"}
 
-    payload = {"app_id": "36194021-a89d-4cfa-b48b-f1fc452d17cb",
+    payload = {"app_id": "0847b2c8-8bcd-4196-b755-11fc6869a0e8",
                "included_segments": ["All"],
                "contents": {"en": "English Message"},
-               "url": "https://www.google.com"
+               "url": "https://www.google.com",
+               "chrome_web_icon": "http://cdn.designcrowd.com.s3.amazonaws.com/blog/Oct2012/52-Startup-Logos-2012/SLR_0040_gettalent.jpg"
                }
 
     req = requests.post(url, headers=header, data=json.dumps(payload))
