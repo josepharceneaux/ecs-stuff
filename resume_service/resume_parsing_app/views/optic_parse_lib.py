@@ -129,7 +129,7 @@ def parse_candidate_phones(bs_contact_xml_list):
             raw_phone = p.text.strip()
             formatted_phone = format_phone_number(raw_phone)
             if formatted_phone:
-                output.append({'value': formatted_phone})
+                output.append({'value': formatted_phone or raw_phone})
     return output
 
 
