@@ -1202,9 +1202,6 @@ def get_filter_query_from_request_vars(request_vars, domain_id):
     elif request_vars.get('status_ids'):
         filter_queries.append("(term field=status_id %s)" % request_vars.get('status_ids'))
 
-    if request_vars.get('talent_pool_id'):
-        filter_queries.append("(term talent_pool_id=talent_pool_id %s)" % request_vars.get('talent_pool_id'))
-
     if isinstance(request_vars.get('source_ids'), list):
         # search for exact values in facets
         source_facets = [ "source_id:%s" % source_facet for source_facet in request_vars.get('source_ids')]

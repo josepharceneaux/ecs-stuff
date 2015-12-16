@@ -14,6 +14,7 @@ from candidate_service.common.error_handling import InvalidUsage
 from candidate_service.common.utils.validators import is_number
 from datetime import datetime
 
+
 def does_candidate_belong_to_user(user_row, candidate_id):
     """
     Function checks if:
