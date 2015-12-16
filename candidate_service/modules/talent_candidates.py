@@ -923,7 +923,8 @@ def _add_or_update_candidate_custom_field_ids(candidate_id, custom_fields, added
             custom_field_dict = dict((k, v) for k, v in custom_field_dict.iteritems() if v is not None)
 
             # CandidateCustomField must be recognized
-            can_custom_field_query = db.session.query(CandidateCustomField).filter_by(candidate_id=candidate_id)
+            can_custom_field_query = db.session.query(CandidateCustomField).\
+                filter_by(id=candidate_custom_field_id)
             if not can_custom_field_query.first():
                 error_message = 'Candidate custom field you are requesting to update does not exist.'
                 raise InvalidUsage(error_message=error_message)
@@ -933,6 +934,7 @@ def _add_or_update_candidate_custom_field_ids(candidate_id, custom_fields, added
                                                 candidate_id, user_id, edit_time)
 
             # Update CandidateCustomField
+            # TODO: this fails to update, why?
             can_custom_field_query.update(custom_field_dict)
 
         else:  # Add
@@ -1006,7 +1008,7 @@ def _add_or_update_educations(candidate_id, educations, added_time, user_id, edi
 
                     # CandidateEducationDegree must be recognized
                     can_edu_degree_query = db.session.query(CandidateEducationDegree).\
-                        filter_by(candidate_education_id=education_id)
+                        filter_by(id=education_degree_id)
                     if not can_edu_degree_query.first():
                         error_message = 'Candidate education degree you are requesting does not exist.'
                         raise InvalidUsage(error_message=error_message)
@@ -1034,7 +1036,7 @@ def _add_or_update_educations(candidate_id, educations, added_time, user_id, edi
 
                             # CandidateEducationDegreeBullet must be recognized
                             can_edu_degree_bullet_query = db.session.query(CandidateEducationDegreeBullet).\
-                                filter_by(candidate_education_degree_id=education_degree_id)
+                                filter_by(id=education_degree_bullet_id)
                             if not can_edu_degree_bullet_query.first():
                                 err_msg = 'Candidate education degree bullet you are requesting does not exist.'
                                 raise InvalidUsage(error_message=err_msg)
@@ -1147,7 +1149,7 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, 
             experience_dict = dict((k, v) for k, v in experience_dict.iteritems() if v is not None)
 
             # CandidateExperience must be recognized
-            can_exp_query = db.session.query(CandidateExperience).filter_by(candidate_id=candidate_id)
+            can_exp_query = db.session.query(CandidateExperience).filter_by(id=experience_id)
             if not can_exp_query.first():
                 raise InvalidUsage(error_message='Candidate experience you are requesting does not exist.')
 
@@ -1175,7 +1177,7 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, 
 
                     # CandidateExperienceBullet must be recognized
                     can_exp_bullet_query = db.session.query(CandidateExperienceBullet).\
-                        filter_by(candidate_experience_id=experience_id)
+                        filter_by(id=experience_bullet_id)
                     if not can_exp_bullet_query.first():
                         err_msg = 'Candidate experience bullet you are requesting does not exist.'
                         raise InvalidUsage(error_message=err_msg)
@@ -1232,7 +1234,7 @@ def _add_or_update_work_preference(candidate_id, work_preference, user_id, edit_
     if work_preference_id:  # Update
 
         # CandidateWorkPreference must be recognized
-        can_work_pref_query = db.session.query(CandidateWorkPreference).filter_by(candidate_id=candidate_id)
+        can_work_pref_query = db.session.query(CandidateWorkPreference).filter_by(id=work_preference_id)
         if not can_work_pref_query.first():
             raise InvalidUsage(error_message='Candidate work preference you are requesting does not exist.')
 
@@ -1334,7 +1336,7 @@ def _add_or_update_phones(candidate_id, phones, user_id, edit_time):
             phone_dict = dict((k, v) for k, v in phone_dict.iteritems() if v is not None)
 
             # CandidatePhone must be recognized
-            can_phone_query = db.session.query(CandidatePhone).filter_by(candidate_id=candidate_id)
+            can_phone_query = db.session.query(CandidatePhone).filter_by(id=candidate_phone_id)
             if not can_phone_query.first():
                 raise InvalidUsage(error_message='Candidate phone you are requesting does not exist.')
 
