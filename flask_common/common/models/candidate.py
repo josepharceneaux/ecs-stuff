@@ -38,31 +38,31 @@ class Candidate(db.Model):
     # TODO: Below are necessary for now, but should remove once all tables have been defined
     is_dirty = db.Column('IsDirty', db.SmallInteger, default=0)
 
-    # One-to-many Relationships; i.e. Candidate has many:
-    candidate_achievements = relationship('CandidateAchievement', backref='candidate')
-    candidate_addresses = relationship('CandidateAddress', backref='candidate')
-    candidate_associations = relationship('CandidateAssociation', backref='candidate')
-    candidate_custom_fields = relationship('CandidateCustomField', backref='candidate', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_documents = relationship('CandidateDocument', backref='candidate')
+    # Relationships
+    candidate_achievements = relationship('CandidateAchievement', cascade='all, delete-orphan', passive_deletes=True)
+    candidate_addresses = relationship('CandidateAddress', cascade='all, delete-orphan', passive_deletes=True)
+    candidate_associations = relationship('CandidateAssociation', cascade='all, delete-orphan', passive_deletes=True)
+    candidate_custom_fields = relationship('CandidateCustomField', cascade='all, delete-orphan', passive_deletes=True)
+    candidate_documents = relationship('CandidateDocument', cascade='all, delete-orphan', passive_deletes=True)
     candidate_educations = relationship('CandidateEducation', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_emails = relationship('CandidateEmail', backref='candidate')
+    candidate_emails = relationship('CandidateEmail', cascade='all, delete-orphan', passive_deletes=True)
     candidate_experiences = relationship('CandidateExperience', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_languages = relationship('CandidateLanguage', backref='candidate')
-    candidate_license_certifications = relationship('CandidateLicenseCertification', backref='candidate')
-    candidate_military_services = relationship('CandidateMilitaryService', backref='candidate')
-    candidate_patent_histories = relationship('CandidatePatentHistory', backref='candidate')
-    candidate_phones = relationship('CandidatePhone', backref='candidate')
-    candidate_photos = relationship('CandidatePhoto', backref='candidate')
-    candidate_publications = relationship('CandidatePublication', backref='candidate')
-    candidate_preferred_locations = relationship('CandidatePreferredLocation', backref='candidate')
-    candidate_references = relationship('CandidateReference', backref='candidate')
-    candidate_skills = relationship('CandidateSkill', backref='candidate')
-    candidate_social_networks = relationship('CandidateSocialNetwork', backref='candidate')
-    candidate_text_comments = relationship('CandidateTextComment', backref='candidate')
-    candidate_work_preferences = relationship('CandidateWorkPreference', backref='candidate')
-    candidate_unidentifieds = relationship('CandidateUnidentified', backref='candidate')
-    email_campaign_sends = relationship('EmailCampaignSend', backref='candidate')
-    voice_comments = relationship('VoiceComment', backref='candidate')
+    candidate_languages = relationship('CandidateLanguage', cascade='all, delete-orphan', passive_deletes=True)
+    candidate_license_certifications = relationship('CandidateLicenseCertification', cascade='all, delete-orphan', passive_deletes=True)
+    candidate_military_services = relationship('CandidateMilitaryService', cascade='all, delete-orphan', passive_deletes=True)
+    candidate_patent_histories = relationship('CandidatePatentHistory', cascade='all, delete-orphan', passive_deletes=True)
+    candidate_phones = relationship('CandidatePhone', cascade='all, delete-orphan', passive_deletes=True)
+    candidate_photos = relationship('CandidatePhoto', cascade='all, delete-orphan', passive_deletes=True)
+    candidate_publications = relationship('CandidatePublication', cascade='all, delete-orphan', passive_deletes=True)
+    candidate_preferred_locations = relationship('CandidatePreferredLocation', cascade='all, delete-orphan', passive_deletes=True)
+    candidate_references = relationship('CandidateReference', cascade='all, delete-orphan', passive_deletes=True)
+    candidate_skills = relationship('CandidateSkill', cascade='all, delete-orphan', passive_deletes=True)
+    candidate_social_networks = relationship('CandidateSocialNetwork', cascade='all, delete-orphan', passive_deletes=True)
+    candidate_text_comments = relationship('CandidateTextComment', cascade='all, delete-orphan', passive_deletes=True)
+    candidate_work_preferences = relationship('CandidateWorkPreference', cascade='all, delete-orphan', passive_deletes=True)
+    candidate_unidentifieds = relationship('CandidateUnidentified', cascade='all, delete-orphan', passive_deletes=True)
+    email_campaign_sends = relationship('EmailCampaignSend', cascade='all, delete-orphan', passive_deletes=True)
+    voice_comments = relationship('VoiceComment', cascade='all, delete-orphan', passive_deletes=True)
 
     def __repr__(self):
         return "<Candidate(formatted_name=' %r')>" % self.formatted_name
@@ -97,9 +97,8 @@ class Candidate(db.Model):
         db.session.commit()
 
 
-
 class CandidateStatus(db.Model):
-    __tablename = 'candidate_status'
+    __tablename__ = 'candidate_status'
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column('Description', db.String(100))
     notes = db.Column('Notes', db.String(500))
@@ -838,7 +837,7 @@ class CandidateCustomField(db.Model):
         return "<CandidateCustomField (id = %r)>" % self.id
 
     @classmethod
-    def get_custom_fields(cls, candidate_id, custom_field_id):
+    def get_custom_field(cls, candidate_id, custom_field_id):
         return cls.query.filter(db.and_(CandidateCustomField.candidate_id == candidate_id,
                                         CandidateCustomField.custom_field_id == custom_field_id)).first()
 
@@ -877,11 +876,4 @@ class CandidateSubscriptionPreference(db.Model):
 
     def __repr__(self):
         return "<CandidateSubscriptionPreference (candidate_id = %r)>" % self.candidate_id
-
-
-
-
-
-
-
 

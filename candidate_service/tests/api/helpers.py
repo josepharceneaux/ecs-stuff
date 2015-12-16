@@ -37,6 +37,7 @@ def response_info(response):
 def post_to_candidate_resource(access_token, data=None, domain_id=None):
     """
     Function sends a request to CandidateResource/post()
+    If domain_id is provided, data will include candidate aoi & custom fields
     """
     if not data and domain_id:
         data = generate_single_candidate_data(domain_id=domain_id)
@@ -309,6 +310,15 @@ def request_to_candidate_work_preference_resource(access_token, request, candida
     :param request: delete
     """
     url = CandidateApiUrl.WORK_PREFERENCE % (candidate_id, work_preference_id)
+    return define_and_send_request(request, url, access_token)
+
+
+def request_to_candidate_edit_resource(access_token, request, candidate_id=''):
+    """
+    :param access_token:
+    :param request: get
+    """
+    url = CandidateApiUrl.CANDIDATE_EDIT % candidate_id
     return define_and_send_request(request, url, access_token)
 
 

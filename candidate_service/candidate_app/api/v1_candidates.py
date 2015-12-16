@@ -474,7 +474,7 @@ class CandidateCustomFieldResource(Resource):
 
         if custom_field_id:  # Delete specified custom field
             # Custom field must be associated with CandidateCustomField
-            candidate_custom_field = CandidateCustomField.get_custom_fields(candidate_id, custom_field_id)
+            candidate_custom_field = CandidateCustomField.get_custom_field(candidate_id, custom_field_id)
             if not candidate_custom_field:
                 raise ForbiddenError(error_message='Unauthorized custom field ID')
 
@@ -484,7 +484,7 @@ class CandidateCustomFieldResource(Resource):
             domain_custom_fields = CustomField.get_domain_custom_fields(domain_id=authed_user.domain_id)
             custom_field_ids = [custom_field.id for custom_field in domain_custom_fields]
             for cf_id in custom_field_ids:
-                candidate_custom_field = CandidateCustomField.get_custom_fields(candidate_id, cf_id)
+                candidate_custom_field = CandidateCustomField.get_custom_field(candidate_id, cf_id)
                 if not candidate_custom_field:
                     raise NotFoundError(error_message='Candidate custom field not found.')
 
@@ -1017,6 +1017,27 @@ class CandidateWorkPreferenceResource(Resource):
         db.session.delete(work_preference)
         db.session.commit()
         return '', 204
+
+
+class CandidateEditResource(Resource):
+    decorators = [require_oauth]
+
+    def get(self, **kwargs):
+        """
+        Endpoint: GET /v1/candidates/:id/edits
+        Function will return requested Candidate with all of its edits.
+        """
+        # Authenticated user & candidate_id
+        authed_user, candidate_id = request.user, kwargs.get('id')
+
+        # Candidate must belong to user and its domain
+        if not does_candidate_belong_to_user(authed_user, candidate_id):
+            raise ForbiddenError(error_message='Not authorized')
+
+        from candidate_service.modules.talent_candidates import fetch_candidate_edits
+        candidate_edits = fetch_candidate_edits(candidate_id=candidate_id)
+        # return {'candidates': [{'id': updated_candidate_id} for updated_candidate_id in updated_candidate_ids]}
+        return {'candidate': {'id': candidate_id, 'edits': [candidate_edit for candidate_edit in candidate_edits]}}
 
 
 # class CandidateEmailCampaignResource(Resource):
