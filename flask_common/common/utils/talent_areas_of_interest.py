@@ -1,8 +1,5 @@
-from candidate_service.candidate_app import db, logger
-from candidate_service.common.models.misc import AreaOfInterest
-from candidate_service.common.models.associations import CandidateAreaOfInterest
-from candidate_service.common.models.candidate import Candidate
-
+from ..error_handling import InternalServerError
+from flask import current_app
 
 DEFAULT_AREAS_OF_INTEREST = ['Production & Development', 'Marketing', 'Sales', 'Design', 'Finance',
                              'Business & Legal Affairs', 'Human Resources', 'Technology', 'Other']
@@ -16,14 +13,13 @@ def get_or_create_areas_of_interest(domain_id, include_child_aois=False):
     :param include_child_aois:
     :return: area_of_interest row object
     """
-    if not domain_id:
-        logger.error("get_or_create_areas_of_interest: domain_id is %s!", domain_id)
-    areas = db.session.query(AreaOfInterest).filter_by(domain_id=domain_id).order_by(AreaOfInterest.id.asc())
+    from ..models.misc import AreaOfInterest
+    areas = AreaOfInterest.query.filter_by(domain_id=domain_id).order_by(AreaOfInterest.id.asc())
     # If no AOIs exist, create them
     if not areas:
         for description in DEFAULT_AREAS_OF_INTEREST:
             AreaOfInterest(description=description, domain_id=domain_id)
-        areas = db.session.query(AreaOfInterest).filter_by(domain_id=domain_id).order_by(AreaOfInterest.id.asc())
+        areas = AreaOfInterest.query.filter_by(domain_id=domain_id).order_by(AreaOfInterest.id.asc())
 
     # If we only want parent AOIs, must filter for all AOIs that don't have parentIds
     if not include_child_aois:
@@ -37,8 +33,9 @@ def get_area_of_interest_id_to_sub_areas_of_interest(domain_id):
     :param domain_id:
     :return:
     """
-    sub_areas_of_interest = db.session.query(AreaOfInterest).filter(AreaOfInterest.domain_id == domain_id,
-                                                                    AreaOfInterest.parent_id is not None).sorted(
+    from ..models.misc import AreaOfInterest
+    sub_areas_of_interest = AreaOfInterest.query.filter(AreaOfInterest.domain_id == domain_id,
+                                                        AreaOfInterest.parent_id is not None).sorted(
         lambda row: AreaOfInterest.description)
     area_of_interest_id_to_sub_areas_of_interest = dict()
     for sub_aoi in sub_areas_of_interest:
@@ -52,21 +49,24 @@ def get_area_of_interest_id_to_sub_areas_of_interest(domain_id):
 
 def add_aoi_to_candidate(candidate_id, aoi_ids, owner_user_id=None):
     """
-    Add area of interest to created candidate
+    Add area of interest to created candidate.
+    Simply modified. Not Tested, nor found any usage in code. Anyone using this please test it first.
     :param candidate_id:
     :param aoi_ids:
     :param owner_user_id:
     :return:
     """
+    from ..models.candidate import Candidate
+    from ..models.misc import AreaOfInterest
+    from ..models.associations import CandidateAreaOfInterest
     if not isinstance(aoi_ids, list):
         aoi_ids = [aoi_ids]
-    from candidate_service.modules.talent_candidates import domain_id_from_user_id
-    candidate = db.session.query(Candidate).filter_by(id=candidate_id).first()
+    candidate = Candidate.query.filter_by(id=candidate_id).first()
     owner_id = candidate.user_id
-    domain_id = domain_id_from_user_id(owner_user_id or owner_id)
+    domain_id = owner_user_id.domain_id or owner_id.domain_id
     domain_areas_of_interest = get_or_create_areas_of_interest(domain_id, include_child_aois=True)
-    current_candidate_aoi_ids = [r.areaOfInterestId for r in
-                                 db.session.query(CandidateAreaOfInterest).filter_by(candidate_id=candidate_id)]
+    candidate_area_of_interests = CandidateAreaOfInterest.query.filter_by(candidate_id=candidate_id)
+    current_candidate_aoi_ids = [r.area_of_interest_id for r in candidate_area_of_interests]
     for new_aoi_id in aoi_ids:
         # Only add the AOI if the candidate doesn't already have it
         if new_aoi_id not in current_candidate_aoi_ids:
@@ -75,31 +75,35 @@ def add_aoi_to_candidate(candidate_id, aoi_ids, owner_user_id=None):
             if aoi_row:
                 try:
                     new_aoi = CandidateAreaOfInterest(area_of_interest_id=new_aoi_id, candidate_id=candidate_id)
-                    db.session.add(new_aoi)
-                    db.session.commit()
+                    current_app.db.session.add(new_aoi)
+                    current_app.db.session.commit()
                     current_candidate_aoi_ids.append(new_aoi_id)
-                except Exception:
-                    logger.exception("Received exception inserting AOI %s for candidate %s", new_aoi_id, candidate_id)
+                except Exception, ex:
+                    current_app.logger.exception("Received exception while inserting AOI %s for candidate %s. "
+                                                 "Exception was: %s" % (new_aoi_id, candidate_id, ex))
+                    raise InternalServerError("Received exception inserting AOI %s for candidate %s" % (new_aoi_id,
+                                                                                                        candidate_id))
                 # If AOI is a child, insert its parent as well
                 if aoi_row.parent_id:
-                    existing_parent_candidate_aoi = db.session.query(CandidateAreaOfInterest).filter(
+                    existing_parent_candidate_aoi = CandidateAreaOfInterest.query.filter(
                         CandidateAreaOfInterest.area_of_interest_id == aoi_row.parent_id,
                         CandidateAreaOfInterest.candidate_id == candidate_id).first()
                     if not existing_parent_candidate_aoi:
-                        db.session.add(CandidateAreaOfInterest(area_of_interest_id=aoi_row.parent_id,
-                                                               candidate_id=candidate_id))
-                        db.session.commit()
+                        current_app.db.session.add(CandidateAreaOfInterest(area_of_interest_id=aoi_row.parent_id,
+                                                                           candidate_id=candidate_id))
+                        current_app.db.session.commit()
 
                         current_candidate_aoi_ids.append(aoi_row.parent_id)
             else:
-                logger.error("add_aoi_to_candidate(%s): Could not find AOI %s (domain ID %s) in domain %s's AOIs: %s",
-                             candidate_id,
-                             new_aoi_id,
-                             db.area_of_interest(new_aoi_id).domainId,
-                             domain_id,
-                             [aoi.id for aoi in domain_areas_of_interest])
+                current_app.logger.error(
+                    "add_aoi_to_candidate(%s): Could not find AOI %s (domain ID %s) in domain %s's AOIs: %s" % (
+                        candidate_id,
+                        new_aoi_id,
+                        AreaOfInterest.get(new_aoi_id).domain_id,
+                        domain_id,
+                        [aoi.id for aoi in domain_areas_of_interest]))
 
-# All the available Areas of interests
+# All the available Areas of interests in Kaiser domain.
 KAISER_PARENT_TO_CHILD_AOIS = {
     'Accounting, Finance and Actuarial Services': ['Actuarial',
                                                    'Audit',

@@ -94,16 +94,15 @@ def test_search_status(sample_user, user_auth):
     :return:
     """
     user_id = sample_user.id
-    candidate_ids = populate_candidates(count=5, owner_user_id=user_id)
+    candidate_ids = populate_candidates(count=3, owner_user_id=user_id)
     status_id = get_or_create_status(db, status_name="Hired")
-    # Change status of candidate
-    for candidate_id in candidate_ids:
-        db.session.query(Candidate).filter_by(id=candidate_id).update(dict(candidate_status_id=status_id))
-        db.session.commit()
-        # Update cloud_search
-        upload_candidate_documents(candidate_id)
+    # Change status of last candidate
+    Candidate.query.filter_by(id=candidate_ids[-1]).update(dict(candidate_status_id=status_id))
+    # Update cloud_search
+    upload_candidate_documents(candidate_ids)
     response = get_response_from_authorized_user(user_auth, sample_user, '?status_ids=%d' % status_id)
-    _assert_results(candidate_ids, response.json())
+    # Only last candidate should appear in result.
+    _assert_results(candidate_ids[-1:], response.json())
 
 
 def to_fix_test_search_source(sample_user, user_auth):

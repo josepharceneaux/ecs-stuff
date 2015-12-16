@@ -16,7 +16,6 @@ if GT_ENVIRONMENT == 'dev':
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@127.0.0.1/talent_local'
     OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
     LOGGER = logging.getLogger("flask_service.dev")
-    BROKER_URL = 'redis://localhost:6379/0'
     DEBUG = True
 elif GT_ENVIRONMENT == 'circle':
     OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
