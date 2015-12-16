@@ -1,3 +1,5 @@
+"""Parsing functions for extracting specific information from Burning Glass API responses."""
+__author__ = 'erik@getTalent.com'
 # Standared Library
 import datetime
 import HTMLParser
@@ -6,11 +8,17 @@ import string
 import urllib2
 # Third Party
 from bs4 import BeautifulSoup as bs4
-from OauthClient import OAuthClient
+from resume_service.resume_parsing_app.views.OauthClient import OAuthClient
 import phonenumbers
 import requests
 
 def fetch_optic_response(resume):
+    """
+    Takes in an encoded resume file and returns a bs4 'soup-able' format
+    (utf-decode and html escape).
+    :param resume: a base64 encoded resume file.
+    :return: unescaped: an html unquoted, utf-decoded string that represents the Burning Glass XML.
+    """
     URL = 'http://sandbox-lensapi.burning-glass.com/v1.7/parserservice/resume'
     oauth = OAuthClient(url='http://sandbox-lensapi.burning-glass.com/v1.7/parserservice/resume',
                         method='POST', consumerKey='osman',
@@ -21,9 +29,9 @@ def fetch_optic_response(resume):
                         oauthVersion='1.0')
     AUTH = oauth.get_authorizationString()
     HEADERS = {
-      'accept': 'application/xml',
-      'content-type': 'application/json',
-      'Authorization': AUTH,
+        'accept': 'application/xml',
+        'content-type': 'application/json',
+        'Authorization': AUTH,
     }
     DATA = {
         'binaryData': resume,
@@ -38,10 +46,16 @@ def fetch_optic_response(resume):
     return unescaped
 
 def parse_optic_json(resume_xml_string):
+    """
+    Takes in a Burning Glass XML tree in string format and returns a candidate JSON object.
+    :param resume_xml_string: (string) An XML tree represented in string format. It is a slightly
+                                       processed response from the Burning Glass API.
+    :return: candidate: (dict) results of various parsing functions on the input xml string.
+    """
     contact_xml_list = bs4(resume_xml_string, 'lxml').findAll('contact')
     experience_xml_list = bs4(resume_xml_string, 'lxml').findAll('experience')
     educations_xml_list = bs4(resume_xml_string, 'lxml').findAll('education')
-    skill_xml_list= bs4(resume_xml_string, 'lxml').findAll('canonskill')
+    skill_xml_list = bs4(resume_xml_string, 'lxml').findAll('canonskill')
     name = parse_candidate_name(contact_xml_list)
     emails = parse_candidate_emails(contact_xml_list)
     phones = parse_candidate_phones(contact_xml_list)
@@ -64,9 +78,9 @@ def parse_optic_json(resume_xml_string):
 
 def parse_candidate_name(bs_contact_xml_list):
     """
-    Parses a name from a list of contact tags found in a BGXML response
-    :param bs_contact_xml_list: bs4.element.Tag
-    :return: string: formatted name string using title()
+    Parses a name from a list of contact tags found in a BGXML response.
+    :param bs_contact_xml_list: (bs4.element.Tag)
+    :return: (string) formatted name string using title()
     """
     givenname = None
     surname = None
@@ -83,6 +97,11 @@ def parse_candidate_name(bs_contact_xml_list):
 
 
 def parse_candidate_emails(bs_contact_xml_list):
+    """
+    Parses an email list from a list of contact tags found in a BGXML response.
+    :param bs_contact_xml_list: (bs4.element.Tag)
+    :return: output (list) List of dicts containing email data.
+    """
     output = []
     for contact in bs_contact_xml_list:
         emails = contact.findAll('email')
@@ -93,6 +112,11 @@ def parse_candidate_emails(bs_contact_xml_list):
 
 
 def parse_candidate_phones(bs_contact_xml_list):
+    """
+    Parses a phone list from a list of contact tags found in a BGXML response.
+    :param bs_contact_xml_list: (bs4.element.Tag)
+    :return: output (list) List of dicts containing phone data.
+    """
     output = []
     for contact in bs_contact_xml_list:
         phones = contact.findAll('phone')
@@ -106,53 +130,51 @@ def parse_candidate_phones(bs_contact_xml_list):
 
 
 def parse_candidate_experiences(bg_experience_xml_list):
+    """
+    Parses an experience list from a list of experience tags found in a BGXML response.
+    :param bg_experience_xml_list: (bs4.element.Tag)
+    :return: output (list) List of dicts containing experience data.
+    """
     output = []
     for experiences in bg_experience_xml_list:
         jobs = experiences.findAll('job')
-        for employement_index, employement in enumerate(jobs):
-
+        for employement in jobs:
             organization = _tag_text(employement, 'employer')
-            # If it's 5 or less letters, keep the given capitalization, because it may be an acronym.
+            # If it's 5 or less chars, keep the given capitalization, because it may be an acronym.
             if organization and len(organization) > 5:
                 organization = string.capwords(organization)
-
             # Position title
             position_title = _tag_text(employement, 'title')
-
             # Start date
             experience_start_date = get_date_from_date_tag(employement, 'start')
-
             is_current_job = 0
-
             # End date
             experience_end_date = get_date_from_date_tag(employement, 'end')
-
             try:
                 today_date = datetime.date.today().isoformat()
                 is_current_job = 1 if today_date == experience_end_date else 0
             except ValueError:
                 pass
-                # current_app.logger.error("parse_xml: Received exception getting date for candidate end_date %s",
-                #                          experience_end_date)
-
+                # current_app.logger.error(
+                #     "parse_xml: Received exception getting date for candidate end_date %s",
+                #      experience_end_date)
             # Company's address
             company_address = employement.find('address')
             company_city = _tag_text(company_address, 'city', capwords=True)
             # company_state = _tag_text(company_address, 'state')
             company_country = 'United States'
-
             # Check if an experience already exists
-            existing_experience_list_order = is_experience_already_exists(output, organization or '',
+            existing_experience_list_order = is_experience_already_exists(output,
+                                                                          organization or '',
                                                                           position_title or '',
                                                                           experience_start_date,
                                                                           experience_end_date)
-
             # Get experience bullets
             candidate_experience_bullets = []
             description_text = _tag_text(employement, 'description', remove_questions=True) or ''
-            for i, bullet_description in enumerate(description_text.split('|')):
-                # If experience already exists then append the current bullet-descriptions to already existed
-                # bullet-descriptions
+            for bullet_description in description_text.split('|'):
+                # If experience already exists then append the current bullet-descriptions to
+                # already existed bullet-descriptions
                 if existing_experience_list_order:
                     existing_experience_description = output[existing_experience_list_order - 1][
                         'candidate_experience_bullet']
@@ -180,9 +202,14 @@ def parse_candidate_experiences(bg_experience_xml_list):
 
 
 def parse_candidate_educations(bg_educations_xml_list):
+    """
+    Parses an education list from a list of education tags found in a BGXML response.
+    :param bg_educations_xml_list: (bs4.element.Tag)
+    :return: output (list) List of dicts containing education data.
+    """
     output = []
     for education in bg_educations_xml_list:
-        for school_index, school in enumerate(education.findAll('school')):
+        for school in education.findAll('school'):
             school_name = _tag_text(school, 'institution')
             school_address = school.find('address')
             school_city = _tag_text(school_address, 'city', capwords=True)
@@ -191,13 +218,13 @@ def parse_candidate_educations(bg_educations_xml_list):
 
             # education_start_date = get_date_from_date_tag(school, 'start')
             # education_end_date = None
-            end_date = get_date_from_date_tag(school, 'end')
-            completion_date = get_date_from_date_tag(school, 'completiondate')
-
-            if completion_date:
-                education_end_date = completion_date
-            elif end_date:
-                education_end_date = end_date
+            # end_date = get_date_from_date_tag(school, 'end')
+            # completion_date = get_date_from_date_tag(school, 'completiondate')
+            #
+            # if completion_date:
+            #     education_end_date = completion_date
+            # elif end_date:
+            #     education_end_date = end_date
 
             # GPA data no longer used in educations dict.
             # Save for later or elimate this and gpa_num_and_denom?
@@ -207,9 +234,6 @@ def parse_candidate_educations(bg_educations_xml_list):
                 city=school_city,
                 state=school_state,
                 country=country,
-                # TODO explore start/end parsing options since tenure at school and
-                # EducationDegrees can have start/endtimes.
-                # graduation_date=education_end_date,
                 degrees=[
                     {
                         'type': _tag_text(school, 'degree'),
@@ -222,11 +246,16 @@ def parse_candidate_educations(bg_educations_xml_list):
 
 
 def parse_candidate_skills(bg_skills_xml_list):
+    """
+    Parses a skill list from a list of skill tags found in a BGXML response.
+    :param bg_skills_xml_list: (bs4.element.Tag)
+    :return: output (list) List of dicts containing skill data.
+    """
     output = []
     for skill in bg_skills_xml_list:
         name = skill.get('name')
         skill_text = skill.text.strip()
-        months_used=skill.get('experience', '').strip()
+        months_used = skill.get('experience', '').strip()
         skill = dict(name=name or skill_text)
         if months_used:
             skill['months_used'] = int(months_used)
@@ -235,6 +264,11 @@ def parse_candidate_skills(bg_skills_xml_list):
 
 
 def parse_candidate_addresses(bg_xml_list):
+    """
+    Parses an address list from a list of contact tags found in a BGXML response.
+    :param bg_xml_list: (bs4.element.Tag)
+    :return: output (list) List of dicts containing address data.
+    """
     output = []
     for address in bg_xml_list:
         output.append({
@@ -242,7 +276,7 @@ def parse_candidate_addresses(bg_xml_list):
             'city': address.get('inferred-city', '').title() or _tag_text(address, 'city'),
             'state': address.get('inferred-state', '').title() or _tag_text(address, 'state'),
             'country': address.get('inferred-country', '').title() or 'US',
-            'zip_code': _tag_text(address, 'postalcode')
+            'zip_code': sanitize_zip_code(_tag_text(address, 'postalcode'))
         })
     return output
 
@@ -254,7 +288,8 @@ def parse_candidate_addresses(bg_xml_list):
 _newlines_regexp = re.compile(r"[\r\n]+")
 
 
-def _tag_text(tag, child_tag_name, remove_questions=False, remove_extra_newlines=True, capwords=False):
+def _tag_text(tag, child_tag_name, remove_questions=False, remove_extra_newlines=True,
+              capwords=False):
     if not tag:
         return None
     if child_tag_name == 'description':
@@ -283,47 +318,63 @@ def _tag_text(tag, child_tag_name, remove_questions=False, remove_extra_newlines
 
 
 def canonicalize_phonenumber(phonenumber):
+    """Returns common, valid phone number string"""
     try:
         parsed_phonenumbers = phonenumbers.parse(str(phonenumber), region="US")
         if phonenumbers.is_valid_number_for_region(parsed_phonenumbers, 'US'):
             # Phonenumber format is : +1 (123) 456-7899
-            return '+1 ' + phonenumbers.format_number(parsed_phonenumbers, phonenumbers.PhoneNumberFormat.NATIONAL)
+            return '+1 ' + phonenumbers.format_number(
+                parsed_phonenumbers, phonenumbers.PhoneNumberFormat.NATIONAL)
         else:
             # current_app.logger.error(
-            #     'canonicalize_phonenumber: [{}] is an invalid or non-US Phone Number'.format(phonenumber))
+            #     'canonicalize_phonenumber: [{}] is an invalid or non-US Phone Number'.format(
+            #         phonenumber))
             return False
     except phonenumbers.NumberParseException:
         return False
-    except:
+    except Exception:
         return False
 
 
-# date_tag has child tag that could be one of: current, YYYY-MM, notKnown, YYYY, YYYY-MM-DD, or notApplicable (i think)
+# date_tag has child tag that could be one of: current, YYYY-MM, notKnown, YYYY, YYYY-MM-DD, or
+# notApplicable (I think)
 def get_date_from_date_tag(parent_tag, date_tag_name):
+    """Parses date value from bs4.soup"""
     date_tag = parent_tag.find(date_tag_name)
     if date_tag:
         try:
-            if date_tag_name == 'end' and ('current' in date_tag.text.lower() or 'present' in date_tag.text.lower()):
+            if date_tag_name == 'end' and ('current' in date_tag.text.lower() or
+                                           'present' in date_tag.text.lower()):
                 return datetime.date.isoformat()
             return date_tag['iso8601']
-        except:
+        except Exception:
             return None
     return None
 
 
-def is_experience_already_exists(candidate_experiences, organization, position_title, start_date, end_date):
+def is_experience_already_exists(candidate_experiences, organization, position_title, start_date,
+                                 end_date):
+    """Logic for checking an experience has been parsed twice due to BG error"""
     for i, experience in enumerate(candidate_experiences):
-        if (experience['company'] or '') == organization and (experience['role'] or '') == position_title and (
-                        experience['start_date'] == start_date and experience['end_date'] == end_date):
+        if (experience['company'] or '') == organization and\
+                        (experience['role'] or '') == position_title and\
+                        (experience['start_date'] == start_date and
+                         experience['end_date'] == end_date):
             return i + 1
     return False
 
-# def sanitize_zip_code(zip_code):
-#     # Folowing expression will validate US zip codes e.g 12345 and 12345-6789
-#     zip_code = str(zip_code)
-#     zip_code = ''.join(filter(lambda character: character not in ' -', zip_code))  # Dashed and Space filtered Zip Code
-#     if zip_code and not ''.join(filter(lambda character: not character.isdigit(), zip_code)):
-#         zip_code = zip_code.zfill(5) if len(zip_code) <= 5 else zip_code.zfill(9) if len(zip_code) <= 9 else ''
-#         if zip_code:
-#             return (zip_code[:5] + ' ' + zip_code[5:]).strip()
-#     return None
+def sanitize_zip_code(zip_code):
+    """Folowing expression will validate US zip codes e.g 12345 and 12345-6789"""
+    zip_code = str(zip_code)
+    # Dashed and Space filtered Zip Code
+    zip_code = ''.join(char for char in zip_code if char not in ' -')
+    if zip_code and not ''.join(char for char in  zip_code if not char.isdigit()):
+        if len(zip_code) <= 5:
+            zip_code = zip_code.zfill(5)
+        elif len(zip_code) <= 9:
+            zip_code = zip_code.zfill(5)
+        else:
+            zip_code = ''
+        if zip_code:
+            return (zip_code[:5] + ' ' + zip_code[5:]).strip()
+    return None

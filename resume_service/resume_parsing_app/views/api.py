@@ -5,12 +5,10 @@ from cStringIO import StringIO
 import json
 # Framework specific
 from flask import Blueprint
-from flask import current_app as app
 from flask import request
 from flask import jsonify
 from flask.ext.cors import CORS
-
-# Application specific/third party libs
+# Module Specific
 from .parse_lib import parse_resume
 from .utils import create_candidate_from_parsed_resume
 from resume_service.common.utils.talent_s3 import download_file, get_s3_filepicker_bucket_and_conn
@@ -41,7 +39,6 @@ def parse_file_picker_resume():
     Returns:
         result_dict: a json string extrapolating the processed resume.
     """
-
     # Get the resume file object from Filepicker or the request body, if provided
     filepicker_key = request.form.get('filepicker_key')
     create_candidate = request.form.get('create_candidate')
@@ -55,21 +52,18 @@ def parse_file_picker_resume():
         filename_str = request.form['resume_file_name']
     else:
         return jsonify({'error': 'Invalid query params'}), 400
-
-    # Parse resume
+    # Parse the actual resume content.
     result_dict = parse_resume(file_obj=resume_file, filename_str=filename_str)
-    # processed_data = result_dict.get('dice_api_response')
-    # if processed_data:
-    #     del result_dict['dice_api_response']
+    # Emails are the ONLY thing required to create a candidate.
     email_present = True if result_dict.get('emails') else False
     if create_candidate:
         if email_present:
-            candidate_response = create_candidate_from_parsed_resume(result_dict, request.oauth_token)
+            candidate_response = create_candidate_from_parsed_resume(result_dict,
+                                                                     request.oauth_token)
             candidate_id = json.loads(candidate_response).get('candidates')
             result_dict['id'] = candidate_id[0]['id'] if candidate_id else None
         else:
             return jsonify(**{'error': {'code': 3, 'message': 'Parsed resume did not have email',
                                         'candidate': result_dict}}), 400
 
-    # return jsonify(**{'candidate': result_dict, 'dice_api_response': processed_data})
     return jsonify(**{'candidate': result_dict})

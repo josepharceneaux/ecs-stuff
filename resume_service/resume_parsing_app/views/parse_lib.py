@@ -19,7 +19,8 @@ from BeautifulSoup import BeautifulSoup
 import magic
 # Module Specific
 from flask import current_app
-from resume_service.resume_parsing_app.views.optic_parse_lib import parse_optic_json, fetch_optic_response
+from resume_service.resume_parsing_app.views.optic_parse_lib import parse_optic_json
+from resume_service.resume_parsing_app.views.optic_parse_lib import fetch_optic_response
 
 
 def parse_resume(file_obj, filename_str):
@@ -45,7 +46,8 @@ def parse_resume(file_obj, filename_str):
     doc_formats = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
 
     if file_ext not in image_formats and file_ext not in doc_formats:
-        current_app.logger.error('file_ext {} not in image_formats and file_ext not in doc_formats'.format(file_ext))
+        current_app.logger.error(
+            'file_ext {} not in image_formats and file_ext not in doc_formats'.format(file_ext))
         return dict(error='file_ext not in image_formats and file_ext not in doc_formats')
 
     # Find out if the file is an image
@@ -54,7 +56,8 @@ def parse_resume(file_obj, filename_str):
         if file_ext == '.pdf':
             start_time = time()
             text = convert_pdf_to_text(file_obj)
-            current_app.logger.info("Benchmark: convert_pdf_to_text(%s) took %ss", filename_str, time() - start_time)
+            current_app.logger.info(
+                "Benchmark: convert_pdf_to_text(%s) took %ss", filename_str, time() - start_time)
             if not text.strip():
                 # pdf is possibly an image
                 is_resume_image = True
@@ -67,18 +70,22 @@ def parse_resume(file_obj, filename_str):
         # If file is an image, OCR it
         start_time = time()
         doc_content = ocr_image(file_obj)
-        current_app.logger.info("Benchmark: ocr_image(%s) took %ss", filename_str, time() - start_time)
+        current_app.logger.info("Benchmark: ocr_image(%s) took %ss",
+                                filename_str, time() - start_time)
     else:
         """
-        BurningGlass doesn't work when the file's MIME type is text/html, even if the file is a .doc file.
-        (Apparently HTML files that have a .doc extension are also valid doc files, that can be opened/edited in
-        MS Word/LibreOffice/etc.)
-        So, we have to convert the file into PDF using xhtml2pdf.
+        BurningGlass doesn't work when the file's MIME type is text/html, even if the file is a .doc
+        file. (Apparently HTML files that have a .doc extension are also valid doc files, that can
+        be opened/edited in MS Word/LibreOffice/etc.) So, we have to convert the file into PDF using
+        xhtml2pdf.
         """
         start_time = time()
         doc_content = file_obj.read()
         mime_type = magic.from_buffer(doc_content, mime=True)
-        current_app.logger.info("Benchmark: Reading file_obj and magic.from_buffer(%s) took %ss", filename_str, time() - start_time)
+        current_app.logger.info(
+            "Benchmark: Reading file_obj and magic.from_buffer(%s) took %ss",
+            filename_str, time() - start_time
+        )
         final_file_ext = file_ext
 
         if mime_type == 'text/html':
@@ -89,15 +96,17 @@ def parse_resume(file_obj, filename_str):
                 if create_pdf_status.err:
                     current_app.logger.error('PDF create error: {}'.format(create_pdf_status.err))
                     return None
-            except:
-                current_app.logger.error('parse_resume: Couldn\'t convert text/html file \'{}\' to PDF'.format(
-                    filename_str))
+            except Exception as e:
+                current_app.logger.error(
+                    'parse_resume: Couldn\'t convert text/html file \'{}\' to PDF'.format(
+                        filename_str))
                 return None
             file_obj.seek(0)
             doc_content = file_obj.read()
             final_file_ext = '.pdf'
-            current_app.logger.info("Benchmark: pisa.CreatePDF(%s) and reading file took %ss", filename_str,
-                                    time() - start_time)
+            current_app.logger.info(
+                "Benchmark: pisa.CreatePDF(%s) and reading file took %ss", filename_str,
+                time() - start_time)
 
     if not doc_content:
         current_app.logger.error('parse_resume: No doc_content')
@@ -108,8 +117,9 @@ def parse_resume(file_obj, filename_str):
     # Original Parsing via Dice API
     # bg_response_dict = parse_resume_with_bg(filename_str + final_file_ext, encoded_resume)
     optic_response = fetch_optic_response(encoded_resume)
-    current_app.logger.info("Benchmark: parse_resume_with_bg(%s) took %ss", filename_str + final_file_ext,
-                            time() - start_time)
+    current_app.logger.info(
+        "Benchmark: parse_resume_with_bg(%s) took %ss", filename_str + final_file_ext,
+        time() - start_time)
     if optic_response:
         # candidate_data = parse_xml_into_candidate_dict(bg_response_dict)
         candidate_data = parse_optic_json(optic_response)
@@ -128,15 +138,15 @@ def ocr_image(img_file_obj, export_format='pdfSearchable'):
         Image file OCR'd in desired format.
     """
 
-    ABBY_OCR_API_AUTH_TUPLE = ('gettalent', 'lfnJdQNWyevJtg7diX7ot0je')
+    abby_ocr_api_auth_tuple = ('gettalent', 'lfnJdQNWyevJtg7diX7ot0je')
 
     # Post the image to Abby
     files = {'file': img_file_obj}
     response = requests.post('http://cloud.ocrsdk.com/processImage',
-                             auth=ABBY_OCR_API_AUTH_TUPLE,
+                             auth=abby_ocr_api_auth_tuple,
                              files=files,
                              data={'profile': 'documentConversion', 'exportFormat': export_format}
-                             )
+                            )
     if response.status_code != 200:
         current_app.logger.error('ABBY OCR returned non 200 response code')
         return 0
@@ -149,7 +159,6 @@ def ocr_image(img_file_obj, export_format='pdfSearchable'):
 
     if xml.response.task['status'] != 'Queued':
         current_app.logger.error('ocr_image() - Non queued status in ABBY OCR')
-        pass
 
     # Keep pinging Abby to get task status. Quit if tried too many times
     ocr_url = ''
@@ -158,31 +167,36 @@ def ocr_image(img_file_obj, export_format='pdfSearchable'):
     while not ocr_url:
         sleep(estimated_processing_time)
 
-        response = requests.get('http://cloud.ocrsdk.com/getTaskStatus', params=dict(taskId=task_id),
-                                auth=ABBY_OCR_API_AUTH_TUPLE)
+        response = requests.get('http://cloud.ocrsdk.com/getTaskStatus',
+                                params=dict(taskId=task_id), auth=abby_ocr_api_auth_tuple)
         xml = BeautifulSoup(response.text)
         ocr_url = xml.response.task.get('resulturl')
         current_app.logger.info("ocr_image() - Abby response to getTaskStatus: %s", response.text)
 
         if not ocr_url:
             if num_tries > max_num_tries:
-                current_app.logger.error('OCR took > {} tries to process image'.format(max_num_tries))
+                current_app.logger.error('OCR took > {} tries to process image'.format(
+                    max_num_tries))
                 raise Exception('OCR took > {} tries to process image'.format(max_num_tries))
-            estimated_processing_time = 2  # If not done in originally estimated processing time, wait 2 more seconds
+            # If not done in originally estimated processing time, wait 2 more seconds.
+            estimated_processing_time = 2
             num_tries += 1
             continue
 
     if response.status_code == requests.codes.ok:
         start_time = time()
         response = requests.get(ocr_url)
-        current_app.logger.info("Benchmark: ocr_image: requests.get(%s) took %ss to download resume", ocr_url,
-                                time() - start_time)
+        current_app.logger.info(
+            "Benchmark: ocr_image: requests.get(%s) took %ss to download resume",
+            ocr_url, time() - start_time
+        )
         return response.content
     else:
         return 0
 
 
 def convert_pdf_to_text(pdf_file_obj):
+    """Converts a PDF file to a usable string."""
     rsrcmgr = PDFResourceManager()
     retstr = StringIO()
     codec = 'utf-8'

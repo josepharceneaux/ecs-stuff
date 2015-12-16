@@ -3,9 +3,7 @@ __author__ = 'erik@getTalent.com'
 # Standard library
 import json
 import os
-# Third party/module
-from resume_service.common.models.candidate import Candidate
-from resume_service.resume_parsing_app import db
+# Third party
 import requests as r
 # Test fixtures, imports required even though not 'used'
 from test_fixtures import client_fixture
@@ -93,6 +91,7 @@ def test_2448_3264_jpg_by_post(token_fixture):
 
 
 def test_no_token_fails():
+    """Test that tokens are required."""
     filepicker_key = '0169173d35beaf1053e79fdf1b5db864.docx'
     test_response = r.post(API_URL, data=dict(filepicker_key=filepicker_key))
     json_obj = json.loads(test_response.content)
@@ -100,6 +99,7 @@ def test_no_token_fails():
 
 
 def test_invalid_token_fails():
+    """Test that VALID tokens are required."""
     filepicker_key = '0169173d35beaf1053e79fdf1b5db864.docx'
     test_response = r.post(API_URL,
                            headers={'Authorization': 'Bearer %s' % 'invalidtokenzzzz'},
@@ -111,7 +111,6 @@ def test_invalid_token_fails():
 def test_v15_pdf_by_post(token_fixture):
     """Test that v1.5 pdf files can be posted."""
     response = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode='True')
-    # response = fetch_resume_post_response(token_fixture, 'test_bin.pdf')
     assert 'candidate' in response
     assert 'id' in response['candidate']
 
