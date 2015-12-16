@@ -26,8 +26,14 @@ from resume_service.resume_parsing_app.views.optic_parse_lib import fetch_optic_
 def parse_resume(file_obj, filename_str):
     """Primary resume parsing function.
 
+    :param cStringIO.StringI file_obj: a StringIO representation of the raw binary.
+    :param str filename_str: The file_obj file name.
+    :return: A dictionary of processed candidate data or an appropriate error message.
+    """
+    """
+
     Args:
-        file_obj: an s3 file object.
+        file_obj: .
         filename_str: the file's name
         is_test_parser: debugging/test mode Bool.
 
@@ -114,25 +120,26 @@ def parse_resume(file_obj, filename_str):
 
     encoded_resume = base64.b64encode(doc_content)
     start_time = time()
-    # Original Parsing via Dice API
-    # bg_response_dict = parse_resume_with_bg(filename_str + final_file_ext, encoded_resume)
     optic_response = fetch_optic_response(encoded_resume)
     current_app.logger.info(
         "Benchmark: parse_resume_with_bg(%s) took %ss", filename_str + final_file_ext,
         time() - start_time)
     if optic_response:
-        # candidate_data = parse_xml_into_candidate_dict(bg_response_dict)
         candidate_data = parse_optic_json(optic_response)
-        # consider returning raw value
-        # candidate_data['dice_api_response'] = bg_response_dict
         return candidate_data
     else:
         return dict(error='No XML text')
 
 
 def ocr_image(img_file_obj, export_format='pdfSearchable'):
-    """Posts the image to Abby OCR API, then keeps pinging to check if it's done.
-       Quits if not done in certain number of tries.
+    """
+    Posts the image to Abby OCR API, then keeps pinging to check if it's done. Quits if not done in
+    certain number of tries.
+    :param cStringIO.StringI img_file_obj: File initially posted to the resume parsing service.
+    :param string export_format: Abby OCR param.
+    :return:
+    """
+    """
 
     Return:
         Image file OCR'd in desired format.

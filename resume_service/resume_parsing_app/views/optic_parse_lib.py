@@ -18,8 +18,9 @@ def fetch_optic_response(resume):
     """
     Takes in an encoded resume file and returns a bs4 'soup-able' format
     (utf-decode and html escape).
-    :param resume: a base64 encoded resume file.
-    :return: unescaped: an html unquoted, utf-decoded string that represents the Burning Glass XML.
+    :param str resume: a base64 encoded resume file.
+    :return: str unescaped: an html unquoted, utf-decoded string that represents the Burning Glass
+                            XML.
     """
     BG_URL = current_app['config']['BG_URL']
     oauth = OAuthClient(url=BG_URL,
@@ -50,9 +51,9 @@ def fetch_optic_response(resume):
 def parse_optic_json(resume_xml_string):
     """
     Takes in a Burning Glass XML tree in string format and returns a candidate JSON object.
-    :param resume_xml_string: (string) An XML tree represented in string format. It is a slightly
-                                       processed response from the Burning Glass API.
-    :return: candidate: (dict) results of various parsing functions on the input xml string.
+    :param str resume_xml_string: An XML tree represented in string format. It is a slightly
+                                  processed response from the Burning Glass API.
+    :return dict candidate: Results of various parsing functions on the input xml string.
     """
     contact_xml_list = bs4(resume_xml_string, 'lxml').findAll('contact')
     experience_xml_list = bs4(resume_xml_string, 'lxml').findAll('experience')
@@ -81,8 +82,8 @@ def parse_optic_json(resume_xml_string):
 def parse_candidate_name(bs_contact_xml_list):
     """
     Parses a name from a list of contact tags found in a BGXML response.
-    :param bs_contact_xml_list: (bs4.element.Tag)
-    :return: (string) formatted name string using title()
+    :param bs4.element.Tag bs_contact_xml_list:
+    :return dict: Formatted name strings using title() in a dictionary.
     """
     givenname = None
     surname = None
@@ -101,8 +102,8 @@ def parse_candidate_name(bs_contact_xml_list):
 def parse_candidate_emails(bs_contact_xml_list):
     """
     Parses an email list from a list of contact tags found in a BGXML response.
-    :param bs_contact_xml_list: (bs4.element.Tag)
-    :return: output (list) List of dicts containing email data.
+    :param bs4.element.Tag bs_contact_xml_list:
+    :return list output: List of dicts containing email data.
     """
     output = []
     for contact in bs_contact_xml_list:
@@ -116,8 +117,8 @@ def parse_candidate_emails(bs_contact_xml_list):
 def parse_candidate_phones(bs_contact_xml_list):
     """
     Parses a phone list from a list of contact tags found in a BGXML response.
-    :param bs_contact_xml_list: (bs4.element.Tag)
-    :return: output (list) List of dicts containing phone data.
+    :param bs4.element.Tag bs_contact_xml_list:
+    :return list output: List of dicts containing phone data.
     """
     output = []
     for contact in bs_contact_xml_list:
@@ -134,8 +135,8 @@ def parse_candidate_phones(bs_contact_xml_list):
 def parse_candidate_experiences(bg_experience_xml_list):
     """
     Parses an experience list from a list of experience tags found in a BGXML response.
-    :param bg_experience_xml_list: (bs4.element.Tag)
-    :return: output (list) List of dicts containing experience data.
+    :param bs4.element.Tag bg_experience_xml_list:
+    :return list output: List of dicts containing experience data.
     """
     output = []
     for experiences in bg_experience_xml_list:
@@ -206,8 +207,8 @@ def parse_candidate_experiences(bg_experience_xml_list):
 def parse_candidate_educations(bg_educations_xml_list):
     """
     Parses an education list from a list of education tags found in a BGXML response.
-    :param bg_educations_xml_list: (bs4.element.Tag)
-    :return: output (list) List of dicts containing education data.
+    :param bs4.element.Tag bg_educations_xml_list:
+    :return list output: List of dicts containing education data.
     """
     output = []
     for education in bg_educations_xml_list:
@@ -250,8 +251,8 @@ def parse_candidate_educations(bg_educations_xml_list):
 def parse_candidate_skills(bg_skills_xml_list):
     """
     Parses a skill list from a list of skill tags found in a BGXML response.
-    :param bg_skills_xml_list: (bs4.element.Tag)
-    :return: output (list) List of dicts containing skill data.
+    :param bs4.element.Tag bg_skills_xml_list:
+    :return list output: List of dicts containing skill data.
     """
     output = []
     for skill in bg_skills_xml_list:
@@ -268,8 +269,8 @@ def parse_candidate_skills(bg_skills_xml_list):
 def parse_candidate_addresses(bg_xml_list):
     """
     Parses an address list from a list of contact tags found in a BGXML response.
-    :param bg_xml_list: (bs4.element.Tag)
-    :return: output (list) List of dicts containing address data.
+    :param bs4.element.Tag bg_xml_list:
+    :return list output: List of dicts containing address data.
     """
     output = []
     for address in bg_xml_list:

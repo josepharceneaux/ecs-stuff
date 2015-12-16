@@ -34,10 +34,9 @@ def index():
 @mod.route('/parse_resume', methods=['POST'])
 @require_oauth
 def parse_file_picker_resume():
-    """Parses resume uploaded on S3
-
-    Returns:
-        result_dict: a json string extrapolating the processed resume.
+    """
+    Parses a resume based on a provided: filepicker key or binary, filename
+    :return: dict: {'candidate': {}}
     """
     # Get the resume file object from Filepicker or the request body, if provided
     filepicker_key = request.form.get('filepicker_key')
