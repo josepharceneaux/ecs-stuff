@@ -199,37 +199,6 @@ def test_create_template_without_email_body(sample_user, user_auth):
     del_domain_roles(role_id)
 
 
-# def test_create_template_with_no_create_role(sample_user, user_auth, email_template_body):
-#     """
-#     Test for creating email template without passing email body
-#     :param sample_user:         sample user
-#     result : The response should be Bad Request - 400
-#     """
-#     # Get access token
-#     auth_token = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-#     token = auth_token['access_token']
-#     domain_id = sample_user.domain_id
-#     user_id = sample_user.id
-#     # Get Template Folder Id
-#     template_folder_id, template_folder_name = get_template_folder(token)
-#
-#     template_name = 'test_email_template%i' % time.time()
-#
-#     data = dict(
-#         name=template_name,
-#         email_template_folder_id=template_folder_id,
-#         user_id=user_id,
-#         type=0,
-#         email_body_html=email_template_body,
-#         email_body_text="",
-#         is_immutable=0
-#     )
-#
-#     resp = post_to_email_template_resource(token, data=data, domain_id=domain_id)
-#
-#     assert resp.status_code == 400
-
-
 # Test for deleting email templates
 def test_delete_email_template(sample_user, sample_user_2, email_template_body, user_auth):
     """
@@ -310,31 +279,30 @@ def test_delete_template_with_non_existing_template_id(sample_user, sample_user_
     del_domain_roles(role_id)
 
 
-# Todo: Test is failing when getting access token for user_first and user_second. Remove comments when we get it fixed
-# def test_delete_template_from_different_domain(user_first, user_second, email_template_body, user_auth):
-#     """
-#     Tests deleting user's email template from different domain
-#     :param user_first:         user1
-#     :param user_second:         user2
-#     :param email_template_body:     email template html body
-#     result : The response should be Not Found - 404
-#     """
-#     # Add Email template
-#     email_template = add_email_template(user_auth, user_first, email_template_body)
-#     email_template_id = email_template["email_template_id"]
-#
-#     token2 = user_auth.get_auth_token(user_second, get_bearer_token=True)['access_token']
-#
-#     # Add or get Role
-#     role = "CAN_DELETE_EMAIL_TEMPLATE"
-#     role_id = add_domain_role(role, user_second.domain_id)
-#
-#     # Add 'CAN_DELETE_EMAIL_TEMPLATE' to sample_user_2
-#     add_role_to_test_user(user_second, [role])
-#
-#     resp = request_to_email_template_resource(token2, 'delete', email_template_id)
-#     assert resp.status_code == 404
-#     del_domain_roles(role_id)
+def test_delete_template_from_different_domain(sample_user, sample_user_from_domain_first, email_template_body, user_auth):
+    """
+    Tests deleting user's email template from different domain
+    :param sample_user:         user1
+    :param sample_user_from_domain_first:         user2
+    :param email_template_body:     email template html body
+    result : The response should be Forbidden error - 403
+    """
+    # Add Email template
+    email_template = add_email_template(user_auth, sample_user, email_template_body)
+    email_template_id = email_template["email_template_id"]
+
+    token2 = user_auth.get_auth_token(sample_user_from_domain_first, get_bearer_token=True)['access_token']
+
+    # Add or get Role
+    role = "CAN_DELETE_EMAIL_TEMPLATE"
+    role_id = add_domain_role(role, sample_user_from_domain_first.domain_id)
+
+    # Add 'CAN_DELETE_EMAIL_TEMPLATE' to sample_user_2
+    add_role_to_test_user(sample_user_from_domain_first, [role])
+
+    resp = request_to_email_template_resource(token2, 'delete', email_template_id)
+    assert resp.status_code == 403
+    del_domain_roles(role_id)
 
 
 # Tests to retrieve email templates

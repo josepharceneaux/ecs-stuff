@@ -21,7 +21,7 @@ def post_email_template():
     :rtype: dict
     """
     user_id = request.user.id
-    # Todo: Check roles assigned to user
+    # Check roles assigned to user
     # role_id = UserScopedRoles.query.filter_by(user_id=user_id)
     # # Check the user has role to create template
     # role = DomainRole.query.get(role_id)

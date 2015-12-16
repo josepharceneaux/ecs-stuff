@@ -553,3 +553,28 @@ def template_id(sample_user, domain_id):
     template = db.session.query(UserEmailTemplate).filter_by(email_template_folder_id=email_template_folder_id)
 
     return template['id']
+
+
+@pytest.fixture(autouse=True)
+def sample_user_from_domain_first(domain_first, request):
+    user_attrs = dict(
+        domain_id=domain_first.id, first_name='Jamtry', last_name='Jonas',
+        password=USER_HASHED_PASSWORD,
+        email='sample_user@{}.com'.format(randomword(7)), added_time=datetime(2050, 4, 26)
+    )
+    user, created = get_or_create(session=db.session, model=User, defaults=None, **user_attrs)
+    if created:
+        db.session.add(user)
+        db.session.commit()
+
+    def fin():
+        try:
+            db.session.delete(sample_user)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            pass
+
+    request.addfinalizer(fin)
+    return user
+
