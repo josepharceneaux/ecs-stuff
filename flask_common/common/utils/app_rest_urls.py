@@ -147,7 +147,7 @@ class SmsCampaignApiUrl(object):
     This class contains the REST URLs of sms_campaign_service
     """
     API_VERSION = 'v1'
-    # HOST_NAME is http://127.0.0.1:8011 for dev
+    # HOST_NAME is http://127.0.0.1:8011/ for dev
     HOST_NAME = _get_host_name(GTApis.SMS_CAMPAIGN_SERVICE_NAME,
                                GTApis.SMS_CAMPAIGN_SERVICE_PORT)
 

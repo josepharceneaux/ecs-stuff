@@ -1,9 +1,12 @@
 """
 This module contains pyTest for utility functions of SMS Campaign Service
 """
+# Third Party Import
+import requests
 
-# Application Specific
+# Service Specific
 from sms_campaign_service.utilities import search_urls_in_text
+from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
 
 
 def test_search_url_in_text():
@@ -36,3 +39,8 @@ def test_search_url_in_text():
     test_string = 'Dear candidates, please download registration form at ftp://mysite.com ' \
                   'or ftps://mysite.com'
     assert len(search_urls_in_text(test_string)) == 2
+
+
+def test_health_check():
+    response = requests.get(SmsCampaignApiUrl.HOST_NAME + 'healthcheck')
+    assert response.status_code == 200
