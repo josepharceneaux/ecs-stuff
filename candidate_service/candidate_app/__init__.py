@@ -6,8 +6,8 @@ from healthcheck import HealthCheck
 app = Flask(__name__)
 print "Running app: %s" % app
 
-from candidate_service import config
-app.config.from_object(config)
+from candidate_service.common import common_config
+app.config.from_object(common_config)
 
 logger = app.config['LOGGER']
 
@@ -28,8 +28,9 @@ from candidate_service.candidate_app.api.v1_candidates import (
     CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
     CandidateCustomFieldResource
 )
-from candidate_service.candidate_app.api.smartlists_api import SmartlistCandidates, SmartlistResource
 
+from candidate_service.candidate_app.api.smartlists_api import SmartlistCandidates, SmartlistResource
+from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch
 
 api = GetTalentApi(app=app)
 
@@ -222,6 +223,10 @@ api.add_resource(
 # api.add_resource(CandidateEmailCampaignResource,
 #                  '/v1/candidates/<int:id>/email_campaigns/<int:email_campaign_id>/email_campaign_sends',
 #                  endpoint='candidates')
+
+# ****** Candidate Search *******
+api.add_resource(CandidateSearch,
+                 '/v1/candidates/search')
 
 api.add_resource(SmartlistResource,
                  '/v1/smartlist/<int:id>')
