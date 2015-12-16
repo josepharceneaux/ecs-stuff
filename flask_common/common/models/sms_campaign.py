@@ -12,10 +12,11 @@ class SmsCampaign(db.Model):
     user_phone_id = db.Column('UserPhoneId', db.Integer, db.ForeignKey('user_phone.id'))
     sms_body_text = db.Column('SmsBodyText', db.Text)
     frequency_id = db.Column('FrequencyId', db.Integer, db.ForeignKey('frequency.id'))
-    send_time = db.Column('SendTime', db.DateTime)
-    stop_time = db.Column('StopTime', db.DateTime)
-    added_time = db.Column('AddedTime', db.DateTime)
+    send_datetime = db.Column('SendDatetime', db.DateTime)
+    stop_datetime = db.Column('StopDatetime', db.DateTime)
+    added_datetime = db.Column('AddedDatetime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    # TODO: may be need to add scheduler task_id as well here when scheduler_service is up
     # scheduler_task_ids = db.Column('SchedulerTaskIds', db.String(255))
 
     # Relationships
@@ -28,11 +29,7 @@ class SmsCampaign(db.Model):
     @classmethod
     def get_by_user_phone_id(cls, user_phone_id):
         assert user_phone_id
-        return cls.query.filter(
-            db.and_(
-                cls.user_phone_id == user_phone_id,
-            )
-        ).all()
+        return cls.query.filter(cls.user_phone_id == user_phone_id).all()
 
 
 class SmsCampaignBlast(db.Model):
@@ -42,7 +39,7 @@ class SmsCampaignBlast(db.Model):
     sends = db.Column('Sends', db.Integer, default=0)
     clicks = db.Column('Clicks', db.Integer, default=0)
     replies = db.Column('Replies', db.Integer, default=0)
-    sent_time = db.Column('SentTime', db.DateTime)
+    sent_datetime = db.Column('SentDatetime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
@@ -57,19 +54,16 @@ class SmsCampaignBlast(db.Model):
     @classmethod
     def get_by_campaign_id(cls, campaign_id):
         assert campaign_id
-        return cls.query.filter(
-            db.and_(
-                cls.sms_campaign_id == campaign_id,
-            )
-        ).first()
+        return cls.query.filter(cls.sms_campaign_id == campaign_id).first()
 
 
 class SmsCampaignSend(db.Model):
     __tablename__ = 'sms_campaign_send'
     id = db.Column(db.Integer, primary_key=True)
-    sms_campaign_blast_id = db.Column('SmsCampaignBlastId', db.Integer, db.ForeignKey('sms_campaign_blast.id'))
+    sms_campaign_blast_id = db.Column('SmsCampaignBlastId', db.Integer,
+                                      db.ForeignKey('sms_campaign_blast.id'))
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
-    sent_time = db.Column('SentTime', db.DateTime)
+    sent_datetime = db.Column('SentDatetime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
@@ -88,20 +82,13 @@ class SmsCampaignSend(db.Model):
     @classmethod
     def get_by_candidate_id(cls, candidate_id):
         assert candidate_id
-        return cls.query.order_by(-cls.sent_time).filter(
-            db.and_(
-                cls.candidate_id == candidate_id,
-            )
-        ).first()
+        return cls.query.order_by(-cls.sent_datetime).filter(
+            cls.candidate_id == candidate_id).first()
 
     @classmethod
     def get_by_blast_id(cls, campaign_blast_id):
         assert campaign_blast_id
-        return cls.query.filter(
-            db.and_(
-                cls.sms_campaign_blast_id == campaign_blast_id,
-            )
-        ).all()
+        return cls.query.filter(cls.sms_campaign_blast_id == campaign_blast_id).all()
 
 
 class SmsCampaignReply(db.Model):
@@ -112,7 +99,7 @@ class SmsCampaignReply(db.Model):
     reply_body_text = db.Column('SmsBodyText', db.Text)
     candidate_phone_id = db.Column('CandidatePhoneId', db.Integer,
                                    db.ForeignKey('candidate_phone.id'))
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
+    added_time = db.Column('AddedDatetime', db.DateTime, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<SmsCampaignReply (id = %r)>" % self.id
@@ -130,18 +117,16 @@ class SmsCampaignReply(db.Model):
     @classmethod
     def get_by_candidate_phone_id(cls, candidate_phone_id):
         assert candidate_phone_id
-        return cls.query.filter(
-            db.and_(
-                cls.candidate_phone_id == candidate_phone_id
-            )
-        ).first()
+        return cls.query.filter(cls.candidate_phone_id == candidate_phone_id).first()
 
 
 class SmsCampaignSmartlist(db.Model):
-    __tablename__ = 'sms_campaign_smart_list'
+    __tablename__ = 'sms_campaign_smartlist'
     id = db.Column(db.Integer, primary_key=True)
-    smart_list_id = db.Column('SmartListId', db.Integer, db.ForeignKey("smart_list.id"), nullable=False)
-    sms_campaign_id = db.Column('SmsCampaignId', db.Integer, db.ForeignKey("sms_campaign.id"), nullable=False)
+    smartlist_id = db.Column('SmartListId', db.Integer, db.ForeignKey("smart_list.id"),
+                             nullable=False)
+    sms_campaign_id = db.Column('SmsCampaignId', db.Integer, db.ForeignKey("sms_campaign.id"),
+                                nullable=False)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
@@ -150,11 +135,17 @@ class SmsCampaignSmartlist(db.Model):
     @classmethod
     def get_by_campaign_id(cls, campaign_id):
         assert campaign_id
+        return cls.query.filter(cls.sms_campaign_id == campaign_id).all()
+
+    @classmethod
+    def get_by_campaign_id_and_smartlist_id(cls, campaign_id, smartlist_id):
+        assert campaign_id and smartlist_id
         return cls.query.filter(
             db.and_(
                 cls.sms_campaign_id == campaign_id,
+                cls.smartlist_id == smartlist_id,
             )
-        ).all()
+        ).first()
 
 
 class SmsCampaignSendUrlConversion(db.Model):
@@ -182,7 +173,4 @@ class SmsCampaignSendUrlConversion(db.Model):
     @classmethod
     def get_by_campaign_send_id(cls, campaign_send_id):
         return cls.query.filter(
-            db.and_(
-                cls.sms_campaign_send_id == campaign_send_id
-            )
-        ).all()
+            cls.sms_campaign_send_id == campaign_send_id).all()

@@ -41,7 +41,7 @@ from sms_campaign_service.tests.conftest import (assert_on_blasts_sends_url_conv
                                                  assert_for_activity, get_reply_text)
 
 
-SLEEP_TIME = 15  # due to background processing of tasks (Celery)
+SLEEP_TIME = 20  # due to background processing of tasks (Celery)
 OFFSET = 15  # due to background processing of tasks (Celery)
 
 

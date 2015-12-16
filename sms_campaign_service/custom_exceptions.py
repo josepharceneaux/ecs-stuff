@@ -33,6 +33,7 @@ class SmsCampaignApiException(sms_campaign_service.common.error_handling.Interna
     ERROR_UPDATING_BODY_TEXT = 5014
     NO_CANDIDATE_FOR_PHONE_NUMBER = 5015
     NO_USER_FOR_PHONE_NUMBER = 5016
+    INVALID_DATETIME = 5017
 
     def to_dict(self):
         error_dict = super(SmsCampaignApiException, self).to_dict()
@@ -215,3 +216,15 @@ class NoUserFoundForPhoneNumber(SmsCampaignApiException):
         .. see also:: process_candidate_reply() method of SmsCampaignBase class.
     """
     error_code = SmsCampaignApiException.NO_USER_FOR_PHONE_NUMBER
+
+
+class InvalidDatetime(SmsCampaignApiException):
+    """
+    If we are creating new campaign, or updating old one, and start_datetime or end_datetime is
+    not in valid UTC format, we raise this exception.
+    **Usage**
+        .. see also:: validate_form_data() function in utilities.py
+    """
+    error_code = SmsCampaignApiException.INVALID_DATETIME
+
+

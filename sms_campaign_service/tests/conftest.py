@@ -107,7 +107,47 @@ def user_phone_3(request, sample_user_2):
 
 
 @pytest.fixture()
-def campaign_valid_data():
+def sample_smartlist(request, sample_user):
+    """
+    This creates sample smartlist for sample user
+    :param request:
+    :param sample_user:
+    :return:
+    """
+
+    smartlist = _create_smartlist(sample_user)
+
+    def tear_down():
+        SmartList.delete(smartlist)
+
+    request.addfinalizer(tear_down)
+    return smartlist
+
+
+@pytest.fixture()
+def sample_sms_campaign_candidates(sample_user,
+                                   sample_smartlist,
+                                   candidate_first,
+                                   candidate_second):
+    """
+    This adds two candidates to sample_smartlist
+    :param sample_smartlist:
+    :param candidate_first:
+    :param candidate_second:
+    :return:
+    """
+    candidate_first.update(user_id=sample_user.id)
+    candidate_second.update(user_id=sample_user.id)
+    smartlist_candidate_1 = SmartListCandidate(smart_list_id=sample_smartlist.id,
+                                               candidate_id=candidate_first.id)
+    SmartListCandidate.save(smartlist_candidate_1)
+    smartlist_candidate_2 = SmartListCandidate(smart_list_id=sample_smartlist.id,
+                                               candidate_id=candidate_second.id)
+    SmartListCandidate.save(smartlist_candidate_2)
+
+
+@pytest.fixture()
+def campaign_valid_data(sample_smartlist):
     """
     This returns the valid data to save an SMS campaign in database
     :return:
@@ -115,9 +155,9 @@ def campaign_valid_data():
     return {"name": "TEST SMS Campaign",
             "sms_body_text": "HI all, we have few openings at http://www.abc.com",
             "frequency_id": 2,
-            "added_time": "2015-11-24T08:00:00",
-            "send_time": "2015-11-26T08:00:00",
-            "stop_time": "2015-11-30T08:00:00",
+            "send_datetime": "2015-11-26T08:00:00Z",
+            "stop_datetime": "2015-11-30T08:00:00Z",
+            "smartlist_ids": [sample_smartlist.id]
             }
 
 
@@ -131,9 +171,23 @@ def campaign_invalid_data():
     return {"name": "TEST SMS Campaign",
             "text": "HI all, we have few openings at http://www.abc.com",  # invalid key
             "frequency_id": 2,
-            "added_time": "2015-11-24T08:00:00",
-            "send_time": "2015-11-26T08:00:00",
-            "stop_time": "2015-11-30T08:00:00",
+            "send_datetime": "2015-11-26T08:00:00Z",
+            "stop_datetime": "2015-11-30T08:00:00Z",
+            }
+
+
+@pytest.fixture()
+def campaign_invalid_data_2():
+    """
+    This returns invalid data to save an SMS campaign. 'smartlist_ids' required field
+    is missing here.
+    :return:
+    """
+    return {"name": "TEST SMS Campaign",
+            "sms_body_text": "HI all, we have few openings at http://www.abc.com",
+            "frequency_id": 2,
+            "send_datetime": "2015-11-26T08:00:00Z",
+            "stop_datetime": "2015-11-30T08:00:00Z",
             }
 
 
@@ -180,24 +234,6 @@ def create_campaign_sends(candidate_first, candidate_second, create_sms_campaign
 
 
 @pytest.fixture()
-def sample_smartlist(request, sample_user):
-    """
-    This creates sample smartlist for sample user
-    :param request:
-    :param sample_user:
-    :return:
-    """
-
-    smart_list = _create_smart_list(sample_user)
-
-    def tear_down():
-        SmartList.delete(smart_list)
-
-    request.addfinalizer(tear_down)
-    return smart_list
-
-
-@pytest.fixture()
 def sample_smartlist_2(request, sample_user):
     """
     This creates sample smartlist for sample user
@@ -205,35 +241,13 @@ def sample_smartlist_2(request, sample_user):
     :param sample_user:
     :return:
     """
-    smart_list = _create_smart_list(sample_user)
+    smartlist = _create_smartlist(sample_user)
 
     def tear_down():
-        SmartList.delete(smart_list)
+        SmartList.delete(smartlist)
 
     request.addfinalizer(tear_down)
-    return smart_list
-
-
-@pytest.fixture()
-def sample_sms_campaign_candidates(sample_user,
-                                   sample_smartlist,
-                                   candidate_first,
-                                   candidate_second):
-    """
-    This adds two candidates to sample_smartlist
-    :param sample_smartlist:
-    :param candidate_first:
-    :param candidate_second:
-    :return:
-    """
-    candidate_first.update(user_id=sample_user.id)
-    candidate_second.update(user_id=sample_user.id)
-    smart_list_candidate_1 = SmartListCandidate(smart_list_id=sample_smartlist.id,
-                                                candidate_id=candidate_first.id)
-    SmartListCandidate.save(smart_list_candidate_1)
-    smart_list_candidate_2 = SmartListCandidate(smart_list_id=sample_smartlist.id,
-                                                candidate_id=candidate_second.id)
-    SmartListCandidate.save(smart_list_candidate_2)
+    return smartlist
 
 
 @pytest.fixture()
@@ -244,10 +258,10 @@ def sms_campaign_smartlist(sample_smartlist, sms_campaign_of_current_user):
     :param sms_campaign_of_current_user:
     :return:
     """
-    sms_campaign_smart_list = SmsCampaignSmartlist(smart_list_id=sample_smartlist.id,
-                                                   sms_campaign_id=sms_campaign_of_current_user.id)
-    SmsCampaignSmartlist.save(sms_campaign_smart_list)
-    return sms_campaign_smart_list
+    sms_campaign_smartlist = SmsCampaignSmartlist(smartlist_id=sample_smartlist.id,
+                                                  sms_campaign_id=sms_campaign_of_current_user.id)
+    SmsCampaignSmartlist.save(sms_campaign_smartlist)
+    return sms_campaign_smartlist
 
 
 @pytest.fixture()
@@ -258,10 +272,10 @@ def sms_campaign_smartlist_2(sample_smartlist_2, sms_campaign_of_current_user):
     :param sms_campaign_of_current_user:
     :return:
     """
-    sms_campaign_smart_list = SmsCampaignSmartlist(smart_list_id=sample_smartlist_2.id,
-                                                   sms_campaign_id=sms_campaign_of_current_user.id)
-    SmsCampaignSmartlist.save(sms_campaign_smart_list)
-    return sms_campaign_smart_list
+    sms_campaign_smartlist = SmsCampaignSmartlist(smartlist_id=sample_smartlist_2.id,
+                                                  sms_campaign_id=sms_campaign_of_current_user.id)
+    SmsCampaignSmartlist.save(sms_campaign_smartlist)
+    return sms_campaign_smartlist
 
 
 @pytest.fixture()
@@ -385,9 +399,12 @@ def _create_sms_campaign(campaign_data, user_phone):
     :param user_phone: user_phone row
     :return:
     """
+    smartlist_ids = campaign_data['smartlist_ids']
+    del campaign_data['smartlist_ids']  # This is not a field of "sms_campaign" table.
     campaign_data['user_phone_id'] = user_phone.id
     sms_campaign = SmsCampaign(**campaign_data)
     SmsCampaign.save(sms_campaign)
+    campaign_data['smartlist_ids'] = smartlist_ids
     return sms_campaign
 
 
@@ -421,15 +438,15 @@ def _create_candidate_mobile_phone(candidate, phone_value):
     return candidate_phone
 
 
-def _create_smart_list(test_user):
+def _create_smartlist(test_user):
     """
     This creates Smartlist for given user
     :param test_user:
     :return:
     """
-    smart_list = SmartList(name=gen_salt(20), user_id=test_user.id)
-    SmartList.save(smart_list)
-    return smart_list
+    smartlist = SmartList(name=gen_salt(20), user_id=test_user.id)
+    SmartList.save(smartlist)
+    return smartlist
 
 
 def assert_url_conversion(sms_campaign_sends, campaign_id):

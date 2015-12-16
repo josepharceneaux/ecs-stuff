@@ -39,9 +39,8 @@ class TestSmsCampaignWithId(object):
         assert response.json()['campaign']['name'] == campaign.name
         assert response.json()['campaign']['sms_body_text'] == campaign.sms_body_text
         assert response.json()['campaign']['frequency_id'] == campaign.frequency_id
-        assert response.json()['campaign']['added_time'] == str(campaign.added_time)
-        assert response.json()['campaign']['send_time'] == str(campaign.send_time)
-        assert response.json()['campaign']['stop_time'] == str(campaign.stop_time)
+        assert response.json()['campaign']['send_datetime'] == str(campaign.send_datetime)
+        assert response.json()['campaign']['stop_datetime'] == str(campaign.stop_datetime)
 
     def test_get_with_invalid_token(self, sms_campaign_of_current_user):
         """

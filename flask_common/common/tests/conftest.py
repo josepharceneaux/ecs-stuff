@@ -8,7 +8,6 @@ from faker import Faker
 from werkzeug.security import gen_salt
 from ..models.candidate import Candidate
 from ..models.user import UserGroup, DomainRole
-from sms_campaign_service.common.models.smart_list import SmartList
 from ..utils.common_functions import get_or_create, get_access_token, create_test_user
 
 # Application Specific

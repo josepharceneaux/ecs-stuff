@@ -19,11 +19,15 @@ import twilio.rest
 from twilio.rest import TwilioRestClient
 
 # Common Utils
+from sms_campaign_service.common.models.smart_list import SmartList
+from sms_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound)
 from sms_campaign_service.common.utils.app_rest_urls import (SmsCampaignApiUrl, GTApis)
 
 # Application Specific
 from sms_campaign_service import logger
-from sms_campaign_service.custom_exceptions import TwilioAPIError
+from sms_campaign_service.common.utils.common_functions import find_missing_items
+from sms_campaign_service.custom_exceptions import (TwilioAPIError, MissingRequiredField,
+                                                    InvalidDatetime)
 from sms_campaign_service.sms_campaign_app_constants import (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,
                                                              NGROK_URL)
 
@@ -170,3 +174,61 @@ def replace_localhost_with_ngrok(localhost_url):
     """
     relative_url = localhost_url.split(str(GTApis.SMS_CAMPAIGN_SERVICE_PORT))[1]
     return NGROK_URL % relative_url
+
+
+def validate_form_data(form_data):
+    """
+    This does the validation of the data received to create SMS campaign.
+
+        1- If any key from (name, sms_body_text, smartlist_ids) is missing from form data or
+            has no value we raise MissingRequiredFieldError.
+        2- If smartlist_ids are not present in database, we raise ResourceNotFound exception.
+        3- If start_datetime or end_datetime is not valid datetime format, then we raise
+
+    :param form_data:
+    :return:
+    """
+    # TODO: Update comment
+    required_fields = ['name', 'sms_body_text', 'smartlist_ids']
+    # find if any required key is missing from data
+    missing_fields = filter(lambda required_key: required_key not in form_data.keys(),
+                            required_fields)
+    if missing_fields:
+        raise MissingRequiredField('Required fields not provided to save sms_campaign. '
+                                   'Empty fields are %s' % missing_fields)
+    # find if any required key has no value
+    missing_field_values = find_missing_items(form_data, required_fields)
+    if missing_field_values:
+        raise MissingRequiredField(
+            error_message='Required fields are empty to save '
+                          'sms_campaign. Empty fiel ds are %s' % missing_field_values)
+    # validate smartlist ids are in a list
+    if not isinstance(form_data.get('smartlist_ids'), list):
+        raise InvalidUsage(error_message='Include smartlist id(s) in a list.')
+
+    not_found_smartlist_ids = []
+    for smartlist_id in form_data.get('smartlist_ids'):
+        if not SmartList.get_by_id(smartlist_id):
+            logger.error('Smartlist(id:%s) not found in database.' % smartlist_id)
+            not_found_smartlist_ids.append(smartlist_id)
+    if len(form_data.get('smartlist_ids')) == len(not_found_smartlist_ids):
+        raise ResourceNotFound(error_message='smartlists(id(s):%s not found in database.'
+                                             % form_data.get('smartlist_ids'))
+    # filter out unknown smartlist ids
+    form_data['smartlist_ids'] = list(set(form_data.get('smartlist_ids')) -
+                                      set(not_found_smartlist_ids))
+    datetime_validator(form_data.get('send_datetime')) if form_data.get('send_datetime') else ''
+    datetime_validator(form_data.get('stop_datetime')) if form_data.get('stop_datetime') else ''
+
+
+def datetime_validator(str_datetime):
+    """
+    This validates the given datetime.
+    :param str_datetime: str
+    :type str_datetime: str
+    :return:
+    """
+    utc_pattern = '\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z'
+    if not re.match(utc_pattern, str_datetime):
+        raise InvalidDatetime('Invalid DateTime: Kindly specify datetime '
+                              'in UTC format like 2015-10-08T06:16:55Z')

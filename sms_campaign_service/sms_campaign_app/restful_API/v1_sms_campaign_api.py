@@ -39,6 +39,7 @@ from flask.ext.restful import Resource
 
 # Service Specific
 from sms_campaign_service import logger
+from sms_campaign_service.utilities import validate_form_data
 from sms_campaign_service.custom_exceptions import ErrorDeletingSMSCampaign
 from sms_campaign_service.sms_campaign_base import (SmsCampaignBase, delete_sms_campaign,
                                                     validate_header, is_owner_of_campaign)
@@ -55,6 +56,7 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
                                                              SmsCampaignSend)
 
 # creating blueprint
+
 sms_campaign_blueprint = Blueprint('sms_campaign_api', __name__)
 api = TalentApi()
 api.init_app(sms_campaign_blueprint)
@@ -97,24 +99,24 @@ class SMSCampaigns(Resource):
                 "count": 2,
                 "campaigns": [
                             {
-                              "added_time": "2015-11-19 18:54:04",
+                              "added_datetime": "2015-11-19 18:54:04",
                               "frequency_id": 1,
                               "id": 3,
                               "name": "New Campaign",
-                              "send_time": "",
+                              "send_datetime": "",
                               "sms_body_text": "Welcome all boys",
-                              "stop_time": "",
+                              "stop_datetime": "",
                               "updated_time": "2015-11-19 18:53:55",
                               "user_phone_id": 1
                             },
                             {
-                              "added_time": "2015-11-19 18:55:08",
+                              "added_datetime": "2015-11-19 18:55:08",
                               "frequency_id": 1,
                               "id": 4,
                               "name": "New Campaign",
-                              "send_time": "",
+                              "send_datetime": "",
                               "sms_body_text": "Job opening at...",
-                              "stop_time": "",
+                              "stop_datetime": "",
                               "updated_time": "2015-11-19 18:54:51",
                               "user_phone_id": 1
                             }
@@ -146,9 +148,10 @@ class SMSCampaigns(Resource):
                                 "name": "New SMS Campaign",
                                 "sms_body_text": "HI all, we have few openings at abc.com",
                                 "frequency_id": 2,
-                                "added_time": "2015-11-24T08:00:00",
-                                "send_time": "2015-11-26T08:00:00",
-                                "stop_time": "2015-11-30T08:00:00",
+                                "added_datetime": "2015-11-24T08:00:00Z",
+                                "send_datetime": "2015-11-26T08:00:00Z",
+                                "stop_datetime": "2015-11-30T08:00:00Z",
+                                "smartlist_ids": [1, 2, 3]
                              }
 
             headers = {
@@ -183,14 +186,16 @@ class SMSCampaigns(Resource):
         validate_header(request)
         # get json post request data
         try:
-            campaign_data = request.get_json()
+            data_from_ui = request.get_json()
         except Exception:
             raise InvalidUsage(error_message='Given data in not in json format')
-        if not campaign_data:
+        if not data_from_ui:
             raise InvalidUsage(error_message='No data provided to create SMS campaign')
+        # apply validation on fields
+        validate_form_data(data_from_ui)
         campaign_obj = SmsCampaignBase(request.user.id,
-                                       buy_new_number=campaign_data.get('buy_new_number'))
-        campaign_id = campaign_obj.save(campaign_data)
+                                       buy_new_number=data_from_ui.get('buy_new_number'))
+        campaign_id = campaign_obj.save(data_from_ui)
         headers = {'Location': '/campaigns/%s' % campaign_id}
         logger.debug('Campaign(id:%s) has been saved.' % campaign_id)
         return ApiResponse(json.dumps(dict(id=campaign_id)), status=201, headers=headers)
@@ -280,9 +285,9 @@ class CampaignById(Resource):
                           "frequency_id": 1,
                           "updated_time": "2015-11-24 16:31:09",
                           "user_phone_id": 1,
-                          "send_time": "",
-                          "added_time": "2015-11-24 16:30:57",
-                          "stop_time": "",
+                          "send_datetime": "",
+                          "added_datetime": "2015-11-24 16:30:57",
+                          "stop_datetime": "",
                           "id": 1,
                           "name": "UpdatedName"
                         }
@@ -315,9 +320,9 @@ class CampaignById(Resource):
                             "name": "New SMS Campaign",
                             "sms_body_text": "HI all, we have few openings at abc.com",
                             "frequency_id": 2,
-                            "added_time": "2015-11-24T08:00:00",
-                            "send_time": "2015-11-26T08:00:00",
-                            "stop_time": "2015-11-30T08:00:00",
+                            "added_datetime": "2015-11-24T08:00:00Z",
+                            "send_datetime": "2015-11-26T08:00:00Z",
+                            "stop_datetime": "2015-11-30T08:00:00Z",
                             "id": 1
                             }
 
@@ -351,6 +356,7 @@ class CampaignById(Resource):
             raise InvalidUsage(error_message='Given data should be in dict format')
         if not campaign_data:
             raise InvalidUsage(error_message='No data provided to update SMS campaign')
+        validate_form_data(campaign_data)
         camp_obj = SmsCampaignBase(request.user.id)
         camp_obj.create_or_update_sms_campaign(campaign_data, campaign_id=campaign_id)
         return dict(
@@ -419,14 +425,14 @@ class SmsCampaignSends(Resource):
                                         {
                                           "candidate_id": 1,
                                           "id": 9,
-                                          "sent_time": "2015-11-23 18:25:09",
+                                          "sent_datetime": "2015-11-23 18:25:09",
                                           "sms_campaign_blast_id": 1,
                                           "updated_time": "2015-11-23 18:25:08"
                                         },
                                         {
                                           "candidate_id": 2,
                                           "id": 10,
-                                          "sent_time": "2015-11-23 18:25:13",
+                                          "sent_datetime": "2015-11-23 18:25:13",
                                           "sms_campaign_blast_id": 1,
                                           "updated_time": "2015-11-23 18:25:13"
                                        }

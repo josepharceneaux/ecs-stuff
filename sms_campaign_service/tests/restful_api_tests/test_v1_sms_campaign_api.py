@@ -10,14 +10,16 @@ import json
 import requests
 
 # Service Specific
+from werkzeug.security import gen_salt
 from sms_campaign_service.tests.conftest import assert_for_activity
-from sms_campaign_service.custom_exceptions import SmsCampaignApiException
+from sms_campaign_service.custom_exceptions import SmsCampaignApiException, InvalidDatetime
 
 # Common Utils
 from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
 from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_CREATE
 from sms_campaign_service.common.error_handling import (UnauthorizedError, InvalidUsage,
-                                                        InternalServerError, ForbiddenError)
+                                                        InternalServerError, ForbiddenError,
+                                                        ResourceNotFound)
 
 
 class TestSmsCampaign(object):
@@ -166,12 +168,12 @@ class TestSmsCampaign(object):
         assert response.status_code == InvalidUsage.http_status_code(), \
             'Should be a bad request (400)'
 
-    def test_post_with_valid_header_and_one_user_phone_and_invalid_data(self,
+    def test_post_with_valid_header_and_one_user_phone_and_invalid_data_1(self,
                                                                         campaign_invalid_data,
                                                                         valid_header,
                                                                         user_phone_1):
         """
-        User has one phone value, valid header and invalid data (unknown key_value).
+        User has one phone value, valid header and invalid data (unknown key "text").
         It should get internal server error. Error code should be 5006.
         :param campaign_invalid_data: Invalid data to create SMS campaign.
         :param valid_header: valid header to POST data
@@ -184,8 +186,84 @@ class TestSmsCampaign(object):
         assert response.status_code == InternalServerError.http_status_code(), \
             'Internal server error should occur (500)'
         assert response.json()['error']['code'] == SmsCampaignApiException.MISSING_REQUIRED_FIELD
+        assert 'sms_body_text' in response.json()['error']['message']
+
+    def test_post_with_valid_header_and_one_user_phone_and_invalid_data_2(self,
+                                                                        campaign_invalid_data_2,
+                                                                        valid_header,
+                                                                        user_phone_1):
+        """
+        User has one phone value, valid header and invalid data (Missing key "smartlist_ids").
+        It should get internal server error. Error code should be 5006.
+        :param campaign_invalid_data_2: Invalid data to create SMS campaign.
+        :param valid_header: valid header to POST data
+        :param user_phone_1: user_phone fixture to assign a test phone number to user
+        :return:
+        """
+        response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
+                                 headers=valid_header,
+                                 data=json.dumps(campaign_invalid_data_2))
+        assert response.status_code == InternalServerError.http_status_code(), \
+            'Internal server error should occur (500)'
+        assert response.json()['error']['code'] == SmsCampaignApiException.MISSING_REQUIRED_FIELD
+        assert 'smartlist_ids' in response.json()['error']['message']
+
+    def test_post_with_valid_header_and_one_user_phone_and_invalid_data_3(self,
+                                                                        campaign_valid_data,
+                                                                        valid_header,
+                                                                        user_phone_1):
+        """
+        User has one phone value, valid header and invalid data (Unknown "smartlist_ids").
+        It should get ResourceNotFound error,
+        :param valid_header: valid header to POST data
+        :param user_phone_1: user_phone fixture to assign a test phone number to user
+        :return:
+        """
+        campaign_valid_data['smartlist_ids'] = [gen_salt(2)]
+        response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
+                                 headers=valid_header,
+                                 data=json.dumps(campaign_valid_data))
+        assert response.status_code == ResourceNotFound.http_status_code()
+
+    def test_post_with_valid_header_and_one_user_phone_and_invalid_data_4(self,
+                                                                        campaign_valid_data,
+                                                                        valid_header,
+                                                                        user_phone_1):
+        """
+        User has one phone value, valid header and invalid data (Invalid Datetime).
+        It should get internal server error, Custom error should be InvalidDatetime.
+        :param valid_header: valid header to POST data
+        :param user_phone_1: user_phone fixture to assign a test phone number to user
+        :return:
+        """
+        campaign_valid_data['send_datetime'] = campaign_valid_data['send_datetime'].split('Z')[0]
+        response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
+                                 headers=valid_header,
+                                 data=json.dumps(campaign_valid_data))
+        assert response.status_code == InternalServerError.http_status_code()
+        assert response.json()['error']['code'] == SmsCampaignApiException.INVALID_DATETIME
+
+    def test_post_with_valid_header_and_one_user_phone_and_valid_data_one_unknown_smartlist(
+            self, sample_user, valid_header, campaign_valid_data, user_phone_1):
+        """
+        User has one phone value, valid header and valid data.
+        It should get ok response (201 status code)
+        :param valid_header: valid header to POST data
+        :param campaign_valid_data: valid data to create SMS campaign
+        :param user_phone_1: user_phone fixture to assign a test phone number to user
+        :return:
+        """
+        campaign_valid_data['smartlist_ids'].append(gen_salt(2))
+        response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
+                                 headers=valid_header,
+                                 data=json.dumps(campaign_valid_data))
+        assert response.status_code == 201, 'Should create campaign (201)'
+        assert 'location' in response.headers
+        assert 'id' in response.json()
+        assert_for_activity(sample_user.id, CAMPAIGN_SMS_CREATE, response.json()['id'])
 
     def test_post_with_valid_header_and_one_user_phone_and_valid_data(self,
+
                                                                       sample_user,
                                                                       valid_header,
                                                                       campaign_valid_data,

@@ -52,8 +52,8 @@ class CampaignBase(object):
     * process_send(self, campaign_id): [abstract]
         This method is used send the campaign to candidates. Child classes will implement this.
 
-    * get_candidates(smart_list_id): [static]
-        This method gets the candidates associated with the given smart_list_id.
+    * get_candidates(smartlist_id): [static]
+        This method gets the candidates associated with the given smartlist_id.
         It may search candidates in database/cloud. It is common for all the campaigns.
 
     * send_sms_campaign_to_candidates(self, candidates):
@@ -80,7 +80,7 @@ class CampaignBase(object):
         self.body_text = None  # This is 'text' to be sent to candidates as part of campaign.
         # Child classes will get this from respective campaign table.
         # e.g. in case of SMS campaign, this is get from "sms_campaign" database table.
-        self.smart_list_id = None
+        self.smartlist_id = None
 
     @staticmethod
     def get_authorization_header(user_id):
@@ -136,7 +136,7 @@ class CampaignBase(object):
         """
         pass
 
-    def get_candidates_from_candidate_service(self, smart_list_id):
+    def get_candidates_from_candidate_service(self, smartlist_id):
         """
         This will get the candidates associated to a provided smart list. This makes
         HTTP GET call on candidate service API to get the candidate associated candidates.
@@ -145,17 +145,17 @@ class CampaignBase(object):
             SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
 
         :Example:
-                SmsCampaignBase.get_candidates(smart_list_id=1)
+                SmsCampaignBase.get_candidates(smartlist_id=1)
 
-        :param smart_list_id: id of smart list.
-        :type smart_list_id: int
-        :return: Returns array of candidates in the campaign's smart_lists.
+        :param smartlist_id: id of smart list.
+        :type smartlist_id: int
+        :return: Returns array of candidates in the campaign's smartlists.
         :rtype: list
 
         **See Also**
         .. see also:: process_send() method in SmsCampaignBase class.
         """
-        params = {'id': smart_list_id,
+        params = {'id': smartlist_id,
                   'return': 'all'}
         # HTTP GET call to activity service to create activity
         url = CandidateApiUrl.SMARTLIST_CANDIDATES
@@ -169,7 +169,7 @@ class CampaignBase(object):
             return candidates
         except Exception:
             current_app.logger.exception('get_candidates_from_candidate_service: Error while '
-                                         'fetching candidates for smartlist(id:%s)' % smart_list_id)
+                                         'fetching candidates for smartlist(id:%s)' % smartlist_id)
             raise
 
     def send_campaign_to_candidates(self, candidates_and_phones):

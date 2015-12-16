@@ -126,7 +126,7 @@ class SmsCampaignBase(CampaignBase):
     * send_sms(self, candidate_phone_value)
         This finally sends the SMS to candidate using Twilio API.
 
-    * create_or_update_sms_campaign_send(campaign_blast_id, candidate_id, sent_time): [static]
+    * create_or_update_sms_campaign_send(campaign_blast_id, candidate_id, sent_datetime): [static]
         For each SMS sent to the candidate, here we add an entry that abc campaign has been sent to
          xyz candidate at this time.
 
@@ -225,6 +225,9 @@ class SmsCampaignBase(CampaignBase):
         if form_data:
             # Save Campaign in database table "sms_campaign"
             sms_campaign = self.create_or_update_sms_campaign(form_data)
+            # Create record in database table "sms_campaign_smartlist"
+            self.create_or_update_sms_campaign_smartlist(sms_campaign,
+                                                         form_data.get('smartlist_ids'))
             # Create Activity
             self.campaign_create_activity(sms_campaign)
             return sms_campaign.id
@@ -248,20 +251,13 @@ class SmsCampaignBase(CampaignBase):
         **See Also**
         .. see also:: save() method in SmsCampaignBase class.
         """
-        # TODO: add fields validation to save
         sms_campaign_data = dict(name=form_data.get('name'),
                                  user_phone_id=self.user_phone.id,
                                  sms_body_text=form_data.get('sms_body_text'),
                                  frequency_id=form_data.get('frequency_id'),
-                                 added_time=datetime.now(),
-                                 send_time=form_data.get('send_time'),
-                                 stop_time=form_data.get('stop_time'))
-        required_fields = ['name', 'user_phone_id', 'sms_body_text']
-        missing_items = find_missing_items(sms_campaign_data, required_fields)
-        if missing_items:
-            raise MissingRequiredField(error_message='Required fields are empty to save '
-                                                     'sms_campaign. Empty fields are %s'
-                                                     % missing_items)
+                                 added_datetime=datetime.now(),
+                                 send_datetime=form_data.get('send_datetime'),
+                                 stop_datetime=form_data.get('stop_datetime'))
         if campaign_id:
             sms_campaign_row = SmsCampaign.get_by_id(campaign_id)
             if not sms_campaign_row:
@@ -277,6 +273,37 @@ class SmsCampaignBase(CampaignBase):
             except Exception as error:
                 raise ErrorSavingSMSCampaign(error_message=error.message)
         return sms_campaign_row
+
+    @staticmethod
+    def create_or_update_sms_campaign_smartlist(campaign, smartlist_ids):
+        """
+        - Here we save/update the smartlist ids for an SMS campaign in database table
+        "sms_campaign_smartlist".
+
+        - This method is called from save() method of class
+            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
+
+        :param campaign: row sms_campaign
+        :param smartlist_ids: ids of smartlists
+        :type campaign: row
+        :type smartlist_ids: list
+
+        **See Also**
+        .. see also:: save() method in SmsCampaignBase class.
+        """
+        if isinstance(campaign, SmsCampaign):
+            for smartlist_id in smartlist_ids:
+                data = {'smartlist_id': smartlist_id,
+                        'sms_campaign_id': campaign.id}
+                db_record = SmsCampaignSmartlist.get_by_campaign_id_and_smartlist_id(campaign.id,
+                                                                                     smartlist_id)
+                if not db_record:
+                    new_record = SmsCampaignSmartlist(**data)
+                    SmsCampaignSmartlist.save(new_record)
+        else:
+            raise InvalidUsage(error_message='create_or_update_sms_campaign_smartlist: '
+                                             'Given campaign is not instance '
+                                             'of model sms_campaign.')
 
     def campaign_create_activity(self, source):
         """
@@ -321,13 +348,11 @@ class SmsCampaignBase(CampaignBase):
 
         :return: UserPhone row
         """
-        # TODO: need to talk to osman where to implement this
         # TWILIO is a name defined in config
         phone_label_id = PhoneLabel.phone_label_id_from_phone_label(TWILIO)
         user_phone = UserPhone.get_by_user_id_and_phone_label_id(self.user_id,
                                                                  phone_label_id)
         if len(user_phone) == 1:
-            # TODO: validate that user has valid US number
             if user_phone[0].value:
                 return user_phone[0]
         elif len(user_phone) > 1:
@@ -413,7 +438,7 @@ class SmsCampaignBase(CampaignBase):
 
         1- Transform the body text to be sent in SMS, add entry in
             url_conversion and sms_campaign_url_conversion db tables.
-        2- Get selected smart lists for the campaign to be sent from sms_campaign_smart_list.
+        2- Get selected smart lists for the campaign to be sent from sms_campaign_smartlist.
         3- Loop over all the smart lists and do the followings:
 
             3.1- Get candidates and their phone number(s) to which we need to send the SMS.
@@ -446,20 +471,20 @@ class SmsCampaignBase(CampaignBase):
             # SMS body text is empty
             raise EmptySmsBody(error_message='SMS Body text is empty for Campaign(id:%s)'
                                              % campaign.id)
-        # Get smart_lists associated to this campaign
-        smart_lists = SmsCampaignSmartlist.get_by_campaign_id(campaign.id)
+        # Get smartlists associated to this campaign
+        smartlists = SmsCampaignSmartlist.get_by_campaign_id(campaign.id)
         # TODO: Use map if we can
-        if smart_lists:
+        if smartlists:
             all_candidates = []
-            for smart_list in smart_lists:
-                self.smart_list_id = smart_list.smart_list_id
+            for smartlist in smartlists:
+                self.smartlist_id = smartlist.smartlist_id
                 # get candidates associated with smart list
-                candidates = self.get_candidates_from_candidate_service(smart_list.smart_list_id)
+                candidates = self.get_candidates_from_candidate_service(smartlist.smartlist_id)
                 if candidates:
                     all_candidates.extend(candidates)
                 else:
                     logger.error('process_send: No Candidate found. smartlist id is %s. '
-                                 '(User(id:%s))' % (smart_list.smart_list_id, self.user_id))
+                                 '(User(id:%s))' % (smartlist.smartlist_id, self.user_id))
         else:
             logger.error('process_send: No smartlist is associated with SMS '
                          'Campaign(id:%s). (User(id:%s))' % (campaign.id, self.user_id))
@@ -481,7 +506,7 @@ class SmsCampaignBase(CampaignBase):
             raise NoCandidateAssociatedWithSmartlist(
                 error_message='No candidate is associated to smartlist(s)'
                               'SMS Campaign(id:%s). smartlist ids are %s'
-                              % (campaign.id, smart_lists))
+                              % (campaign.id, smartlists))
 
     def filter_candidate_for_valid_phone(self, candidate):
         """
@@ -505,7 +530,6 @@ class SmsCampaignBase(CampaignBase):
         if len(candidate_mobile_phone) == 1:
             # If this number is associated with multiple candidates, raise exception
             _validate_candidate_phone_value(candidate_mobile_phone[0].value)
-            # TODO: validate that candidate has valid US number
             return candidate, candidate_mobile_phone[0].value
         elif len(candidate_mobile_phone) > 1:
             logger.error('filter_candidates_for_valid_phone: SMS cannot be sent as '
@@ -541,12 +565,11 @@ class SmsCampaignBase(CampaignBase):
         url_conversion_ids = self.process_urls_in_sms_body_text(candidate.id)
         assert self.modified_body_text
         # send SMS
-        # TODO: phone validation of user's phone and candidate's phone
-        message_sent_time = self.send_sms(candidate_phone)
+        message_sent_datetime = self.send_sms(candidate_phone)
         # Create sms_campaign_send
         sms_campaign_send_id = \
             self.create_or_update_sms_campaign_send(self.sms_campaign_blast_id, candidate.id,
-                                                    message_sent_time)
+                                                    message_sent_datetime)
 
         for url_conversion_id in url_conversion_ids:
             # create sms_send_url_conversion entry
@@ -733,7 +756,7 @@ class SmsCampaignBase(CampaignBase):
                 'sends': sends,
                 'clicks': clicks,
                 'replies': replies,
-                'sent_time': datetime.now()}
+                'sent_datetime': datetime.now()}
         if record_in_db:
             data['sends'] = record_in_db.sends + 1 if sends_update else record_in_db.sends
             data['clicks'] = record_in_db.clicks + 1 if clicks_update else record_in_db.clicks
@@ -772,7 +795,7 @@ class SmsCampaignBase(CampaignBase):
             return message_response.date_created
 
     @staticmethod
-    def create_or_update_sms_campaign_send(campaign_blast_id, candidate_id, sent_time):
+    def create_or_update_sms_campaign_send(campaign_blast_id, candidate_id, sent_datetime):
         """
         - Here we add an entry in "sms_campaign_send" db table for each SMS send.
 
@@ -781,10 +804,10 @@ class SmsCampaignBase(CampaignBase):
 
         :param campaign_blast_id: id of sms_campaign_blast
         :param candidate_id: id of candidate to which SMS is supposed to be sent
-        :param sent_time: Time of sent SMS
+        :param sent_datetime: Time of sent SMS
         :type campaign_blast_id: int
         :type candidate_id: int
-        :type sent_time: datetime
+        :type sent_datetime: datetime
         :return: id of "sms_campaign_send" record
         :rtype: int
 
@@ -793,7 +816,7 @@ class SmsCampaignBase(CampaignBase):
         """
         data = {'sms_campaign_blast_id': campaign_blast_id,
                 'candidate_id': candidate_id,
-                'sent_time': sent_time}
+                'sent_datetime': sent_datetime}
         record_in_db = SmsCampaignSend.get_by_blast_id_and_candidate_id(campaign_blast_id,
                                                                         candidate_id)
         if record_in_db:
@@ -1107,7 +1130,7 @@ class SmsCampaignBase(CampaignBase):
         sms_campaign_reply_row = SmsCampaignReply(sms_campaign_blast_id=campaign_blast_id,
                                                   candidate_phone_id=candidate_phone_id,
                                                   reply_body_text=reply_body_text,
-                                                  added_time=datetime.now())
+                                                  added_datetime=datetime.now())
         SmsCampaignReply.save(sms_campaign_reply_row)
         return sms_campaign_reply_row
 
