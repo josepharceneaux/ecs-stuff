@@ -151,12 +151,12 @@ def parse_candidate_experiences(bg_experience_xml_list):
             position_title = _tag_text(employement, 'title')
             # Start date
             experience_start_date = get_date_from_date_tag(employement, 'start')
-            is_current_job = 0
+            is_current_job = False
             # End date
             experience_end_date = get_date_from_date_tag(employement, 'end')
             try:
                 today_date = datetime.date.today().isoformat()
-                is_current_job = 1 if today_date == experience_end_date else 0
+                is_current_job = True if today_date == experience_end_date else False
             except ValueError:
                 pass
                 # current_app.logger.error(
