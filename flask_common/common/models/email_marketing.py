@@ -1,7 +1,5 @@
 from db import db
-from misc import Frequency
-from smart_list import SmartList
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship
 
 import datetime
 
@@ -60,7 +58,7 @@ class EmailCampaignSend(db.Model):
     __tablename__ = 'email_campaign_send'
     id = db.Column(db.Integer, primary_key=True)
     email_campaign_id = db.Column('EmailCampaignId', db.Integer)
-    candidate_id = db.Column('CandidateId', db.Integer)
+    candidate_id = db.column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
     sent_time = db.Column('SentTime', db.DateTime)
     ses_message_id = db.Column('sesMessageId', db.String(63))
     ses_request_id = db.Column('sesRequestId', db.String(63))

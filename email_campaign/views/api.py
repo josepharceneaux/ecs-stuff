@@ -39,7 +39,7 @@ def email_campaigns():
         list_ids : One or more (comma separated) smartlist ids to which email campaign will be sent (Currently only supports dumblists)
     Returns: campaign id
     """
-    user_id = request.user.id  # 1553
+    user_id = request.user.id
     # Get and validate request data
     data = validate_and_format_request_data(request.form)
 
@@ -77,7 +77,7 @@ def email_campaigns():
 
 @mod.route('/send-campaign-emails', methods=['GET'])
 def send_email_campaigns():
-    campaign_id = request.args('campaign_id')
-    oauth_token = request.args('oauth_token')
+    campaign_id = request.args.get('campaign_id')
+    oauth_token = request.args.get('oauth_token')
     email_send = send_emails_to_campaign(oauth_token, campaign_id, email_client_id=None, list_ids=None, new_candidates_only=False)
     return json.dumps({'campaign': {'emails send': email_send}})
