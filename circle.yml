@@ -35,7 +35,16 @@ test:
     - python candidate_pool_service/run.py:
         parallel: true
         background: true
+    - python sms_campaign_service/run.py:
+        parallel: true
+        background: true
+
+
+    - python spreadsheet_import_service/run.py:
+        parallel: true
+        background: true
     - sleep 5
+
 
 
   override:
@@ -47,8 +56,9 @@ test:
           activity_service/tests/
           candidate_service/tests/
           candidate_pool_service/tests/
+          sms_campaign_service/tests/
+          spreadsheet_import_service/tests/
       : parallel: true
-
 
 experimental:
   notify:

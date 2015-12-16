@@ -191,6 +191,23 @@ class CandidatePhone(db.Model):
         return "<CandidatePhone (value=' %r', extention= ' %r')>" % (self.value, self.extension)
 
     @classmethod
+    def get_by_candidate_id(cls, candidate_id):
+        assert candidate_id
+        return cls.query.filter(
+            and_(
+                CandidatePhone.candidate_id == candidate_id
+            )
+        ).one()
+
+    @classmethod
+    def get_by_phone_value(cls, phone_value):
+        assert phone_value
+        return cls.query.filter(
+            and_(
+                cls.value == phone_value
+            )
+        ).all()
+
     def get_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()
 
@@ -335,7 +352,6 @@ class SocialNetwork(db.Model):
     # Relationships
     candidate_social_networks = relationship('CandidateSocialNetwork', backref='social_network')
     events = relationship("Event", backref='social_network', lazy='dynamic')
-    user_credentials = relationship("UserSocialNetworkCredential")
     venues = relationship('Venue', backref='social_network', lazy='dynamic')
 
     def __repr__(self):

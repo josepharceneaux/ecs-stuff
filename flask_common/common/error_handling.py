@@ -72,6 +72,11 @@ class ResourceNotFound(TalentError):
         return 404
 
 
+class MethodNotAllowed(TalentError):
+    @classmethod
+    def http_status_code(cls):
+        return 405
+
 def register_error_handlers(app, logger):
     """
 

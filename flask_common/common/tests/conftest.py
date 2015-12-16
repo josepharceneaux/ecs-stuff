@@ -8,6 +8,7 @@ from faker import Faker
 from werkzeug.security import gen_salt
 from ..models.candidate import Candidate
 from ..models.user import UserGroup, DomainRole
+from sms_campaign_service.common.models.smart_list import SmartList
 from ..utils.common_functions import get_or_create, get_access_token, create_test_user
 
 # Application Specific
@@ -104,7 +105,7 @@ def sample_user(test_domain, request):
 
     def fin():
         try:
-            db.session.delete(sample_user)
+            db.session.delete(user)
             db.session.commit()
         except Exception:
             db.session.rollback()
@@ -250,27 +251,13 @@ def sample_client(request):
 
 
 @pytest.fixture()
-def access_token_first(request, user_first, sample_client):
-    access_token = get_access_token(user_first, PASSWORD, sample_client.client_id, sample_client.client_secret)
-
-    def tear_down():
-        token = Token.query.filter_by(access_token=access_token).first()
-        if token:
-            token.delete()
-    request.addfinalizer(tear_down)
-    return access_token
+def access_token_first(user_first, sample_client):
+    return get_access_token(user_first, PASSWORD, sample_client.client_id, sample_client.client_secret)
 
 
 @pytest.fixture()
-def access_token_second(request, user_second, sample_client):
-    access_token = get_access_token(user_second, PASSWORD, sample_client.client_id, sample_client.client_secret)
-
-    def tear_down():
-        token = Token.query.filter_by(access_token=access_token).first()
-        if token:
-            token.delete()
-    request.addfinalizer(tear_down)
-    return access_token
+def access_token_second(user_second, sample_client):
+    return get_access_token(user_second, PASSWORD, sample_client.client_id, sample_client.client_secret)
 
 
 @pytest.fixture()

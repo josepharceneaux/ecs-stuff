@@ -1,9 +1,11 @@
+from sqlalchemy import and_
 from db import db
 import datetime
 from sqlalchemy.orm import relationship
 import time
 
 from candidate import CandidateMilitaryService
+from sms_campaign import SmsCampaign
 
 
 class Activity(db.Model):
@@ -17,17 +19,27 @@ class Activity(db.Model):
     params = db.Column(db.Text)
 
     @classmethod
-    def get_by_user_id_params_type_source_id(cls, user_id, params, type, source_id):
+    def get_by_user_id_params_type_source_id(cls, user_id, params, type_, source_id):
         assert user_id
         return cls.query.filter(
             db.and_(
                 Activity.user_id == user_id,
                 Activity.params == params,
-                Activity.type == type,
+                Activity.type == type_,
                 Activity.source_id == source_id,
             )
         ).first()
 
+    @classmethod
+    def get_by_user_id_type_source_id(cls, user_id, type_, source_id):
+        assert user_id
+        return cls.query.filter(
+            db.and_(
+                Activity.user_id == user_id,
+                Activity.type == type_,
+                Activity.source_id == source_id,
+            )
+        ).first()
 
 class AreaOfInterest(db.Model):
     __tablename__ = 'area_of_interest'
@@ -67,7 +79,7 @@ class Culture(db.Model):
     # Relationships
     candidates = relationship('Candidate', backref='culture')
     # domain = relationship('Domain', backref='culture')
-    user = relationship('User', backref='culture')
+    # user = relationship('User', backref='culture')
 
     def __repr__(self):
         return "<Culture (description=' %r')>" % self.description
@@ -153,6 +165,20 @@ class Country(db.Model):
             return 'United States'
 
 
+class Frequency(db.Model):
+    __tablename__ = 'frequency'
+    id = db.Column(db.Integer, primary_key=True)
+    description = db.Column('Description', db.String(10))
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+    # Relationships
+    email_campaigns = relationship('EmailCampaign', backref='frequency')
+    sms_campaigns = relationship('SmsCampaign', backref='frequency')
+
+    def __repr__(self):
+        return "<Frequency (id = %r)>" % self.id
+
+
 # Even though the table name is major I'm keeping the model class singular.
 class Major(db.Model):
     __tablename__ = 'majors'
@@ -211,6 +237,28 @@ class ZipCode(db.Model):
         return "<Zipcode (code=' %r')>" % self.code
 
 
+class UrlConversion(db.Model):
+    __tablename__ = 'url_conversion'
+    id = db.Column(db.Integer, primary_key=True)
+    source_url = db.Column('sourceUrl', db.String(512))
+    destination_url = db.Column('destinationUrl', db.String(512))
+    hit_count = db.Column('hitCount', db.Integer)
+    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
+    last_hit_time = db.Column('lastHitTime', db.DateTime)
+
+    def __repr__(self):
+        return "<UrlConversion (id=' %r')>" % self.id
+
+    @classmethod
+    def get_by_destination_url(cls, destination_url):
+        assert destination_url
+        return cls.query.filter(
+            and_(
+                UrlConversion.destination_url == destination_url
+            )
+        ).first()
+
+
 class CustomField(db.Model):
     __tablename__ = 'custom_field'
     id = db.Column(db.Integer, primary_key=True)
@@ -247,7 +295,7 @@ class UserEmailTemplate(db.Model):
 
     email_template_folder = relationship(u'EmailTemplateFolder', backref=db.backref('user_email_template',
                                                                                     cascade="all, delete-orphan"))
-    user = relationship(u'User', backref=db.backref('user_email_template', cascade="all, delete-orphan"))
+    user = relationship('User', backref=db.backref('user_email_template', cascade="all, delete-orphan"))
 
 
 class EmailTemplateFolder(db.Model):
@@ -263,3 +311,4 @@ class EmailTemplateFolder(db.Model):
     domain = relationship(u'Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
     parent = relationship(u'EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
                                                                                        cascade="all, delete-orphan"))
+

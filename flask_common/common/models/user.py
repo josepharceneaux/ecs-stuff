@@ -1,5 +1,6 @@
 import time
 import datetime
+from sqlalchemy import and_
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.dialects.mysql import TINYINT
 from db import db
@@ -10,6 +11,7 @@ from associations import CandidateAreaOfInterest
 from event_organizer import EventOrganizer
 from misc import AreaOfInterest
 from email_marketing import EmailCampaign
+from smart_list import SmartList
 
 
 class User(db.Model):
@@ -41,11 +43,14 @@ class User(db.Model):
     candidates = relationship('Candidate', backref='user')
     public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
     user_group = relationship('UserGroup', backref='user')
+    user_phones = relationship('UserPhone', backref='user')
     email_campaigns = relationship('EmailCampaign', backref='user')
     user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
     events = db.relationship('Event', backref='user', lazy='dynamic')
     event_organizers = db.relationship('EventOrganizer', backref='user', lazy='dynamic')
     venues = db.relationship('Venue', backref='user', lazy='dynamic')
+    smart_lists = db.relationship('SmartList', backref='user', lazy='dynamic')
+    culture = relationship(u'Culture', backref=db.backref('user', cascade="all, delete-orphan"))
 
     def is_authenticated(self):
         return True
@@ -77,6 +82,45 @@ class User(db.Model):
         :rtype: list[User]
         """
         return User.query.filter_by(domain_id=domain_id).all()
+
+
+class UserPhone(db.Model):
+    __tablename__ = 'user_phone'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column('Userid', db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'))
+    phone_label_id = db.Column('PhoneLabelId', db.Integer, db.ForeignKey('phone_label.id', ondelete='CASCADE'))
+    value = db.Column(db.String(50), nullable=False)
+
+    def __repr__(self):
+        return "<Phone (value=' %r')>" % self.value
+
+    @classmethod
+    def get_by_user_id(cls, user_id):
+        assert user_id
+        return cls.query.filter(
+            and_(
+                cls.user_id == user_id
+            )
+        ).all()
+
+    @classmethod
+    def get_by_user_id_and_phone_label_id(cls, user_id, phone_label_id):
+        assert user_id and phone_label_id
+        return cls.query.filter(
+            and_(
+                UserPhone.user_id == user_id,
+                UserPhone.phone_label_id == phone_label_id
+            )
+        ).all()
+
+    @classmethod
+    def get_by_phone_value(cls, phone_value):
+        assert phone_value
+        return cls.query.filter(
+            and_(
+                cls.value == phone_value
+            )
+        ).all()
 
 
 class Domain(db.Model):
@@ -201,6 +245,15 @@ class Token(db.Model):
         if self._scopes:
             return self._scopes.split()
         return []
+
+    @classmethod
+    def get_by_user_id(cls, user_id):
+        assert user_id
+        return cls.query.filter(
+            db.and_(
+                cls.user_id == user_id
+            )
+        ).first()
 
 
 class DomainRole(db.Model):

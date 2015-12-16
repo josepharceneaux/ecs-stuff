@@ -14,24 +14,31 @@ if GT_ENVIRONMENT == 'dev':
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@127.0.0.1/talent_local'
     OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
     LOGGER = logging.getLogger("flask_service.dev")
+    BROKER_URL = 'redis://localhost:6379'
+    IS_DEV = True
     DEBUG = True
 elif GT_ENVIRONMENT == 'circle':
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_ci'
     OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
     LOGGER = logging.getLogger("flask_service.ci")
+    BROKER_URL = 'redis://localhost:6379'
+    IS_DEV = True
     DEBUG = True
 elif GT_ENVIRONMENT == 'qa':
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!web976892@devdb.gettalent.com/talent_staging'
     OAUTH_SERVER_URI = 'https://secure-webdev.gettalent.com/oauth2/authorize'
     LOGGER = logging.getLogger("flask_service.qa")
+    IS_DEV = True
     DEBUG = False
 elif GT_ENVIRONMENT == 'prod':
     SQLALCHEMY_DATABASE_URI = os.environ.get('DB_STRING')
     OAUTH_SERVER_URI = 'https://secure.gettalent.com/oauth2/authorize'
     LOGGER = logging.getLogger("flask_service.prod")
+    IS_DEV = False
     DEBUG = False
 else:
     raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")
+
 
 SECRET_KEY = os.urandom(24).encode('hex')
 OAUTH2_PROVIDER_TOKEN_EXPIRES_IN = 7200  # 2 hours expiry time for bearer token
