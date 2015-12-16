@@ -115,18 +115,6 @@ def test_v15_pdf_by_post(token_fixture):
     assert 'id' in response['candidate']
 
 
-####################################################################################################
-# Jira Specific Tests                                                                              #
-####################################################################################################
-
-def test_626_failures(token_fixture):
-    """Tests for specific failing resumes"""
-    a_response = fetch_resume_post_response(token_fixture, 'GET_626a.doc')
-    b_response = fetch_resume_post_response(token_fixture, 'GET_626b.doc')
-    assert 'candidate' in a_response
-    assert 'candidate' in b_response
-
-
 def test_health_check():
     import requests
     response = requests.get('http://127.0.0.1:8003/healthcheck')
