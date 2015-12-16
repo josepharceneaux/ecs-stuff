@@ -5,11 +5,50 @@
 // ---------------------------------------------------
 
 // -----
-// Demo Menu & Mode Styles
+// Demo Menu & Mode Styles - to be removed after demo
 // -----
+
+a {
+  cursor:pointer;
+}
 
 .demo_menu {
   display: none;
+}
+
+.header__upload,
+.header__search,
+.header__select {
+  display:none;
+}
+
+.logo-nav {
+  display:block;
+}
+
+.header__logout {
+  padding:30px 10px 0px 0px;
+  display:inline-block;
+}
+
+.header__actions {
+  background:#fff;
+  &.col--tiny-8--cell {
+    width:auto;
+  }
+}
+
+#app-content{
+  padding-top:86px;
+}
+
+.header {
+  position:fixed;
+  width:100%;
+  top:0;
+  right:0;
+  height:86px;
+  z-index:1000;
 }
 
 .demo-mode {
