@@ -13,6 +13,7 @@ import phonenumbers
 import requests
 # Module Specific
 from flask import current_app
+from resume_service.common.utils.validators import format_phone_number
 
 def fetch_optic_response(resume):
     """
@@ -126,7 +127,7 @@ def parse_candidate_phones(bs_contact_xml_list):
         #TODO: look into adding a type using p.attrs['type']
         for p in phones:
             raw_phone = p.text.strip()
-            formatted_phone = canonicalize_phonenumber(raw_phone)
+            formatted_phone = format_phone_number(raw_phone)
             if formatted_phone:
                 output.append({'value': formatted_phone})
     return output
@@ -318,25 +319,6 @@ def _tag_text(tag, child_tag_name, remove_questions=False, remove_extra_newlines
             text = text.encode('utf-8')
             return bs4(text, 'lxml').text
     return None
-
-
-def canonicalize_phonenumber(phonenumber):
-    """Returns common, valid phone number string"""
-    try:
-        parsed_phonenumbers = phonenumbers.parse(str(phonenumber), region="US")
-        if phonenumbers.is_valid_number_for_region(parsed_phonenumbers, 'US'):
-            # Phonenumber format is : +1 (123) 456-7899
-            return '+1 ' + phonenumbers.format_number(
-                parsed_phonenumbers, phonenumbers.PhoneNumberFormat.NATIONAL)
-        else:
-            # current_app.logger.error(
-            #     'canonicalize_phonenumber: [{}] is an invalid or non-US Phone Number'.format(
-            #         phonenumber))
-            return False
-    except phonenumbers.NumberParseException:
-        return False
-    except Exception:
-        return False
 
 
 # date_tag has child tag that could be one of: current, YYYY-MM, notKnown, YYYY, YYYY-MM-DD, or
