@@ -98,6 +98,7 @@ def test_search_status(sample_user, user_auth):
     status_id = get_or_create_status(db, status_name="Hired")
     # Change status of last candidate
     Candidate.query.filter_by(id=candidate_ids[-1]).update(dict(candidate_status_id=status_id))
+    db.commit()
     # Update cloud_search
     upload_candidate_documents(candidate_ids)
     response = get_response_from_authorized_user(user_auth, sample_user, '?status_ids=%d' % status_id)

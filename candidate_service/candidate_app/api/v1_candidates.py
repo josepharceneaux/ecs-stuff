@@ -37,6 +37,7 @@ from candidate_service.modules.talent_candidates import (
     fetch_candidate_info, get_candidate_id_from_candidate_email,
     create_or_update_candidate_from_params
 )
+from candidate_service.modules.talent_cloud_search import upload_candidate_documents
 
 
 class CandidateResource(Resource):
@@ -201,7 +202,8 @@ class CandidateResource(Resource):
                 dice_profile_id=dice_profile_id
             )
             created_candidate_ids.append(resp_dict['candidate_id'])
-
+        # Upload candidate documents on cloudsearch
+        upload_candidate_documents(created_candidate_ids)
         return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, 201
 
     def patch(self, **kwargs):

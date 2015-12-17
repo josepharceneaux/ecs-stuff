@@ -2,11 +2,11 @@ from flask import request
 from flask_restful import Resource
 
 from candidate_pool_service.common.utils.auth_utils import require_oauth
+from candidate_pool_service.common.error_handling import ForbiddenError, NotFoundError
+from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.modules.smartlists import get_candidates, create_smartlist_dict, save_smartlist, get_all_smartlists
 from candidate_pool_service.modules.validators import (validate_and_parse_request_data, validate_list_belongs_to_domain,
                                                        validate_and_format_smartlist_post_data)
-from candidate_pool_service.common.error_handling import ForbiddenError, NotFoundError
-from candidate_pool_service.common.models.smartlist import Smartlist
 
 __author__ = 'jitesh'
 
@@ -37,7 +37,7 @@ class SmartlistCandidates(Resource):
             raise NotFoundError("List id does not exists.", 404)
         if not validate_list_belongs_to_domain(smartlist, auth_user.id):
             raise ForbiddenError("Provided list does not belong to user's domain", 403)
-        return get_candidates(smartlist, auth_user, data['candidate_ids_only'], data['count_only'])
+        return get_candidates(smartlist, request.oauth_token, data['candidate_ids_only'], data['count_only'])
 
 
 class SmartlistResource(Resource):
@@ -53,7 +53,7 @@ class SmartlistResource(Resource):
         Returns: List in following json format
             {
               "smartlist": {
-                "candidate_count": 3,
+                "total_found": 3,
                 "user_id": 1,
                 "id": 1,
                 "name": "my list"
@@ -69,10 +69,10 @@ class SmartlistResource(Resource):
                 raise NotFoundError("List id does not exists", 404)
             if not validate_list_belongs_to_domain(smartlist, auth_user.id):
                 raise ForbiddenError("List does not belong to user's domain", 403)
-            return create_smartlist_dict(smartlist)
+            return create_smartlist_dict(smartlist, request.oauth_token)
         else:
             # Return all smartlists from user's domain
-            return get_all_smartlists(auth_user)
+            return get_all_smartlists(auth_user, request.oauth_token)
 
     def post(self):
         """

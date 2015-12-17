@@ -1,9 +1,10 @@
 import json
-from candidate_pool_service.candidate_pool_app.api import search_candidates_from_params
+
 from candidate_pool_service.common.models.db import db
 from candidate_pool_service.common.models.smartlist import SmartlistCandidate, Smartlist
 from candidate_pool_service.common.models.candidate import Candidate, CandidateEmail, CandidateSocialNetwork, CandidatePhone
 from candidate_pool_service.common.models.user import User
+from candidate_pool_service.common.helper.api_calls import search_candidates_from_params
 
 __author__ = 'jitesh'
 
@@ -13,7 +14,7 @@ def get_candidates(smartlist, access_token, candidate_ids_only=False, count_only
     Get the candidates of a smart or dumb list.
     :param smartlist: Smartlist row object
     :param max_candidates: If set to 0, will have no limit.
-    :return:  dict of 'candidate_ids, total_found' if candidate_ids_only=True, otherwise returns
+    :return:  candidates and total_found
     what TalentSearch.search_candidates returns
     """
     # If it is a smartlist, perform the dynamic search
@@ -27,7 +28,7 @@ def get_candidates(smartlist, access_token, candidate_ids_only=False, count_only
     elif count_only:
         count = SmartlistCandidate.query.with_entities(SmartlistCandidate.candidate_id).filter_by(
             smartlist_id=smartlist.id).count()
-        return dict(candidate_ids=[], total_found=count)
+        return dict(candidates=[], total_found=count)
     # If a dumblist and not doing count only, simply return all smartlist_candidates
     else:
         smartlist_candidate_rows = SmartlistCandidate.query.with_entities(SmartlistCandidate.candidate_id)\
@@ -36,9 +37,13 @@ def get_candidates(smartlist, access_token, candidate_ids_only=False, count_only
             smartlist_candidate_rows = smartlist_candidate_rows.limit(max_candidates)
 
         # count = smartlist_candidate_rows.count()
-        candidate_ids = [smartlist_candidate_row.candidate_id for smartlist_candidate_row in smartlist_candidate_rows]
+        candidates= []
+        candidate_ids = []
+        for smartlist_candidate_row in smartlist_candidate_rows:
+            candidates.append({'id': smartlist_candidate_row.candidate_id})
+            candidate_ids.append(smartlist_candidate_row.candidate_id)
         if candidate_ids_only:
-            return {'candidate_ids': candidate_ids, 'total_found':len(candidate_ids)}
+            return {'candidates': candidates, 'total_found': len(candidate_ids)}
         search_results = create_candidates_dict(candidate_ids)
 
     return search_results
@@ -68,15 +73,15 @@ def create_candidates_dict(candidate_ids):
     return candidates_dict
 
 
-def create_smartlist_dict(smartlist):
+def create_smartlist_dict(smartlist, oauth_token):
     """
     Given smartlist object returns the formatted smartlist dict.
     """
-    candidate_count = get_candidates(smartlist, count_only=True)['total_found']
+    candidate_count = get_candidates(smartlist, oauth_token, count_only=True)['total_found']
 
     return {
         "smartlist": {
-            "candidate_count": candidate_count,
+            "total_found": candidate_count,
             "user_id": smartlist.user_id,
             "id": smartlist.id,
             "name": smartlist.name,
@@ -85,7 +90,7 @@ def create_smartlist_dict(smartlist):
     }
 
 
-def get_all_smartlists(auth_user):
+def get_all_smartlists(auth_user, oauth_token):
     """
     Get all smartlists from user's domain.
     :param auth_user: User object
@@ -95,7 +100,7 @@ def get_all_smartlists(auth_user):
         User.domain_id == auth_user.domain_id).all()
 
     if smartlists:
-        return [create_smartlist_dict(smartlist) for smartlist in smartlists]
+        return [create_smartlist_dict(smartlist, oauth_token) for smartlist in smartlists]
 
     return {"Smartlists": "Could not find any smartlist in your domain"}
 

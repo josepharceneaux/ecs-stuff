@@ -29,15 +29,8 @@ def validate_list_belongs_to_domain(smartlist, user_id):
     if smartlist.user_id == user_id:
         # if user id is same then smart list belongs to user
         return True
-    user = User.query.get(user_id)
-    # TODO: Revisit; check for alternate query.
-    # Smartlist.query.with_entities(Smartlist.id).join(Smartlist.user).filter(and_(User.domain_id == user_id, Smartlist.id == smartlist.id)).count() == 1
-    domain_users = User.query.with_entities(User.id).filter_by(domain_id=user.domain_id).all()
-    domain_user_ids = [row[0] for row in domain_users]
-    if user_id in domain_user_ids:
-        # if user belongs to same domain i.e. smartlist belongs to domain
-        return True
-    return False
+    # check whether smartlist belongs to user's domain
+    return Smartlist.query.with_entities(Smartlist.id).join(Smartlist.user).filter(and_(User.domain_id == user_id, Smartlist.id == smartlist.id)).count() == 1
 
 
 def validate_and_format_smartlist_post_data(data, user_id):
