@@ -1,9 +1,23 @@
-
 // ---------------------------------------------------
 // Modules / Hero
 // ---------------------------------------------------
 
 .hero {
+
+  .form__input--select {
+    display: inline-block;
+    color: $color--white;
+    width: auto;
+    margin-left: .2em;
+    margin-right: .2em;
+
+    &:focus {
+        color: $color--nearBlack;
+        background: $color--lightGray;
+        border: 2px solid $color--lightGray;
+    }
+  }
+
   // Fancy select style change
   .fancy-select {
     display: inline-block;
