@@ -6,6 +6,7 @@ from candidate_service.candidate_app import app
 
 # Models
 from candidate_service.common.models.user import User
+from candidate_service.common.models.candidate import CandidateCustomField
 
 # Conftest
 from candidate_service.common.tests.conftest import UserAuthentication
@@ -546,6 +547,9 @@ def test_delete_candidates_custom_fields(sample_user, user_auth):
     # Retrieve Candidate's custom fields
     candidate_id = create_resp.json()['candidates'][0]['id']
     can_custom_fields = get_from_candidate_resource(token, candidate_id).json()['candidate']['custom_fields']
+    db.session.commit()
+    custom_field_id_1 = db.session.query(CandidateCustomField).get(can_custom_fields[0]['id']).custom_field_id
+    custom_field_id_2 = db.session.query(CandidateCustomField).get(can_custom_fields[1]['id']).custom_field_id
 
     # Remove all of Candidate's custom fields
     updated_resp = request_to_candidate_custom_field_resource(token, 'delete', candidate_id, True)
@@ -556,8 +560,8 @@ def test_delete_candidates_custom_fields(sample_user, user_auth):
 
     assert updated_resp.status_code == 204
     assert len(can_dict_after_update['custom_fields']) == 0
-    assert db.session.query(CustomField).get(can_custom_fields[0]['id']) # CustomField should still be in db
-    assert db.session.query(CustomField).get(can_custom_fields[1]['id']) # CustomField should still be in db
+    assert db.session.query(CustomField).get(custom_field_id_1) # CustomField should still be in db
+    assert db.session.query(CustomField).get(custom_field_id_2) # CustomField should still be in db
 
 
 def test_delete_can_custom_field(sample_user, user_auth):
@@ -576,6 +580,9 @@ def test_delete_can_custom_field(sample_user, user_auth):
     # Retrieve Candidate custom fields
     candidate_id = create_resp.json()['candidates'][0]['id']
     can_custom_fields = get_from_candidate_resource(token, candidate_id).json()['candidate']['custom_fields']
+    db.session.commit()
+    custom_field_id_1 = db.session.query(CandidateCustomField).get(can_custom_fields[0]['id']).custom_field_id
+    custom_field_id_2 = db.session.query(CandidateCustomField).get(can_custom_fields[1]['id']).custom_field_id
 
     # Current number of Candidate's custom fields
     can_custom_fields_count = len(can_custom_fields)
@@ -590,8 +597,8 @@ def test_delete_can_custom_field(sample_user, user_auth):
 
     assert updated_resp.status_code == 204
     assert len(can_dict_after_update['custom_fields']) == can_custom_fields_count - 1
-    assert db.session.query(CustomField).get(can_custom_fields[0]['id']) # CustomField should still be in db
-    assert db.session.query(CustomField).get(can_custom_fields[1]['id']) # CustomField should still be in db
+    assert db.session.query(CustomField).get(custom_field_id_1) # CustomField should still be in db
+    assert db.session.query(CustomField).get(custom_field_id_2) # CustomField should still be in db
 
 
 ######################## CandidateEducation ########################

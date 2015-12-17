@@ -837,6 +837,10 @@ class CandidateCustomField(db.Model):
         return "<CandidateCustomField (id = %r)>" % self.id
 
     @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.filter_by(id=_id).first()
+
+    @classmethod
     def get_custom_field(cls, candidate_id, custom_field_id):
         return cls.query.filter(db.and_(CandidateCustomField.candidate_id == candidate_id,
                                         CandidateCustomField.custom_field_id == custom_field_id)).first()

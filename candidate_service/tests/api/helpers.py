@@ -9,7 +9,7 @@ import json
 from candidate_sample_data import generate_single_candidate_data
 
 # Candidate REST urls
-from candidate_service.common.utils.app_rest_urls import CandidateApiUrl
+from candidate_service.common.routes import CandidateApiUrl
 
 
 def define_and_send_request(request, url, access_token):

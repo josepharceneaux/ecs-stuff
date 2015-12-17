@@ -65,4 +65,4 @@ class CandidateApiUrl:
 
     WORK_PREFERENCE = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/work_preference/%s"
 
-    CANDIDATE_EDIT = "http://127.0.0.1:8005/v1/candidates/%s/edits"
+    CANDIDATE_EDIT = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/edits"

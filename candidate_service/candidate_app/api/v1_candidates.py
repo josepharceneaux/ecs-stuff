@@ -35,7 +35,7 @@ from candidate_service.common.models.associations import CandidateAreaOfInterest
 # Module
 from candidate_service.modules.talent_candidates import (
     fetch_candidate_info, get_candidate_id_from_candidate_email,
-    create_or_update_candidate_from_params
+    create_or_update_candidate_from_params, fetch_candidate_edits
 )
 
 
@@ -46,12 +46,12 @@ class CandidateResource(Resource):
         """
         Endpoints can do these operations:
             1. Fetch a candidate via two methods:
-                I.  GET /v1/candidates/:id
-                    Takes an integer as candidate's ID, parsed from kwargs
+                 I.  GET /v1/candidates/:id
+                     Takes an integer as candidate's ID, parsed from kwargs
 
                 OR
-                II. GET /v1/candidates/:email
-                    Takes a valid email address, parsed from kwargs
+                II.  GET /v1/candidates/:email
+                     Takes a valid email address, parsed from kwargs
 
         :return:    A dict of candidate info
                     404 status if candidate is not found
@@ -461,22 +461,21 @@ class CandidateCustomFieldResource(Resource):
         # Authenticated user
         authed_user = request.user
 
-        # Get candidate_id and custom_field_id
-        candidate_id, custom_field_id = kwargs.get('candidate_id'), kwargs.get('id')
+        # Get candidate_id and can_cf_id (candidate custom field ID, i.e. CandidateCustomField.id)
+        candidate_id, can_cf_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_user(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized')
 
         # Custom fields must belong to user's domain
-        if not is_custom_field_authorized(authed_user.domain_id, [custom_field_id]):
+        if not is_custom_field_authorized(authed_user.domain_id, [can_cf_id]):
             raise ForbiddenError(error_message='Not authorized')
 
-        if custom_field_id:  # Delete specified custom field
-            # Custom field must be associated with CandidateCustomField
-            candidate_custom_field = CandidateCustomField.get_custom_field(candidate_id, custom_field_id)
+        if can_cf_id:  # Delete specified custom field
+            candidate_custom_field = CandidateCustomField.get_by_id(_id=can_cf_id)
             if not candidate_custom_field:
-                raise ForbiddenError(error_message='Unauthorized custom field ID')
+                raise NotFoundError(error_message='Candidate custom field not found.')
 
             db.session.delete(candidate_custom_field)
 
@@ -1034,10 +1033,9 @@ class CandidateEditResource(Resource):
         if not does_candidate_belong_to_user(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized')
 
-        from candidate_service.modules.talent_candidates import fetch_candidate_edits
         candidate_edits = fetch_candidate_edits(candidate_id=candidate_id)
-        # return {'candidates': [{'id': updated_candidate_id} for updated_candidate_id in updated_candidate_ids]}
-        return {'candidate': {'id': candidate_id, 'edits': [candidate_edit for candidate_edit in candidate_edits]}}
+        return {'candidate': {'id': candidate_id, 'edits': [
+            candidate_edit for candidate_edit in candidate_edits]}}
 
 
 # class CandidateEmailCampaignResource(Resource):
