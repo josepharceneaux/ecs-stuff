@@ -7,18 +7,28 @@ from subprocess import call, check_output
 from sys import exit, platform as _platform
 
 VM_NOT_RUNNING_ERROR_MESSAGE = 'Virtual Machine is not running. Please start it with docker-machine start VM_NAME'
-SERVICE_TO_DOCKERHUB_REPO = {'activity_service': 'activities-service',
+SERVICE_TO_DOCKERHUB_REPO = {'base_service_container': 'base-service-container',
                              'auth_service': 'authservice',
+                             'activity_service': 'activities-service',
                              'resume_service': 'resume-parsing-service',
+                             'user_service': 'user-service',
                              'candidate_service': 'candidate-service',
-                             'base_service_container': 'base-service-container',
-                             'social_network_service': 'social-network-service'}
+                             'social_network_service': 'social-network-service',
+                             'widget_service': 'widget-service',
+                             'candidate_pool_service': 'candidate-pool-service',
+                             'spreadsheet_import_service': 'spreadsheet-import-service',
+                             'dashboard': 'frontend-service'}
 
 SERVICE_TO_PORT_NUMBER = {'auth_service': 8001,
                           'activity_service': 8002,
                           'resume_service': 8003,
                           'user_service': 8004,
-                          'social_network_service': 8006}
+                          'candidate_service': 8005,
+                          'social_network_service': 8006,
+                          'widget_service': 8007,
+                          'candidate_pool_service': 8008,
+                          'spreadsheet_import_service': 8009,
+                          'dashboard': 8010}
 
 parser = argparse.ArgumentParser(description='Common files administrator for Docker building.')
 parser.add_argument('--build', nargs=1, choices=SERVICE_TO_DOCKERHUB_REPO.keys(), help='Invokes the Docker build action for given service')
@@ -94,7 +104,7 @@ if args.run:
     import socket
     my_ip = socket.gethostbyname(socket.gethostname())
 
-    command = 'docker run -p %s:80 -p -e "GT_ENVIRONMENT=dev" --add-host=mysql_host:%s %s' % (
+    command = 'docker run -p %s:80 -d -e "GT_ENVIRONMENT=dev" --add-host=mysql_host:%s %s' % (
         SERVICE_TO_PORT_NUMBER[service_name],
         my_ip,
         repo_name)
@@ -122,12 +132,12 @@ if args.deploy:
     call(command, shell=True)
 
     # Deploy to webdev via Ansible, unless building base service container
-    if service_name == 'base_service_container':
-        print 'This is the base-service-container, so not deploying anywhere'
-    else:
-        print 'Deploying docker container to staging'
-        os.chdir('../ansible-deploy')
-        command = 'ansible-playbook -i hosts --extra-vars "host=staging-%s" --extra-vars ' \
-                  '"service=%s" ansible-deploy.yml' % (SERVICE_TO_DOCKERHUB_REPO[service_name], SERVICE_TO_DOCKERHUB_REPO[service_name])
-        print ' > ', command
-        call(command, shell=True)
+    #if service_name == 'base_service_container':
+    #    print 'This is the base-service-container, so not deploying anywhere'
+    #else:
+    #    print 'Deploying docker container to staging'
+    #    os.chdir('../ansible-deploy')
+    #    command = 'ansible-playbook -i hosts --extra-vars "host=staging-%s" --extra-vars ' \
+    #              '"service=%s" ansible-deploy.yml' % (SERVICE_TO_DOCKERHUB_REPO[service_name], SERVICE_TO_DOCKERHUB_REPO[service_name])
+    #    print ' > ', command
+    #   call(command, shell=True)
