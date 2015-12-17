@@ -4,15 +4,15 @@ describe('Dashboard', function() {
 
     var controller;
 
-    beforeEach(function() {
-        bard.appModule('app.dashboard');
-        bard.inject('$rootScope', '$controller');
-    });
+    // beforeEach(function() {
+    //     bard.appModule('app.dashboard');
+    //     bard.inject('$rootScope', '$controller');
+    // });
 
-    beforeEach(function() {
-        controller = $controller('DashboardController');
-        $rootScope.$apply();
-    });
+    // beforeEach(function() {
+    //     controller = $controller('DashboardController');
+    //     $rootScope.$apply();
+    // });
 
     describe('Dashboard controller', function() {
         it('dummy test', function() {
