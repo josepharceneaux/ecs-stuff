@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
     <title>OneSignal Push Notifications</title>
+
+
     <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha/css/bootstrap.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.2/toastr.min.css">
@@ -9,11 +11,20 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.2/toastr.min.js"></script>
     <!--<script src="https://js.pusher.com/3.0/pusher.min.js"></script>-->
     <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async></script>
-
+ <style>
+        body{
+            background-color: #cccccc !important;
+        }
+    </style>
     <script>
         var OneSignal = OneSignal || [];
         OneSignal.LOGGING = true;
-        OneSignal.push(["init", {appId: "0847b2c8-8bcd-4196-b755-11fc6869a0e8", subdomainName: "gettalentpush"}]);
+        OneSignal.push(["init",
+            {
+                appId: "0847b2c8-8bcd-4196-b755-11fc6869a0e8",
+                subdomainName: "gettalentpush",
+                autoRegister: false
+            }]);
 //        OneSignal.push(["init", {appId: "36194021-a89d-4cfa-b48b-f1fc452d17cb", subdomainName: "gettalent"}]);
         OneSignal.push(["setDefaultTitle", "getTalent Notification"]);
         OneSignal.push(["isPushNotificationsEnabled", function (enabled) {
@@ -22,6 +33,10 @@
             else
                 toastr.success("Push notifications are not enable yet.");
         }]);
+        OneSignal.push(["getTags", function(tags) {
+            console.log("OneSignal getTags:");
+            console.log(tags);
+          }]);
         //AIzaSyBqqrswJeJyvmFvb8njVfWBGUxy8cFYG54
         // 348968274925
     </script>
@@ -29,10 +44,22 @@
 </head>
 <body>
 <a href="#" id="registerForPushLink">Subscribe to Notifications</a>
-<button id="subscribe" class="btn btn-success">Subscribe</button>
-<button id="unsubscribe" class="btn btn-warning">Unsubscribe</button>
-<button id="addTag" class="btn btn-success">Add Tag</button>
-<button id="removeTag" class="btn btn-warning">Remove Tag</button>
+
+<div class="col-lg-6">
+    <button id="subscribe" class="btn btn-success">Subscribe</button>
+    <button id="unsubscribe" class="btn btn-warning">Unsubscribe</button>
+    <fieldset class="form-group">
+        <label for="tagName">Tag Name</label>
+        <input type="text" class="form-control" id="tagName" placeholder="Example input">
+    </fieldset>
+    <fieldset class="form-group">
+        <label for="tagValue">Tag Value</label>
+        <input type="text" class="form-control" id="tagValue" placeholder="Another input">
+    </fieldset>
+    <button id="addTag" class="btn btn-success">Add Tag</button>
+    <button id="removeTag" class="btn btn-warning">Remove Tag</button>
+</div>
+
 <script>
     OneSignal.push(function () {
         function registerForPush(event) {
@@ -52,8 +79,15 @@
         toastr.success('Successfully unsubscribed.')
     });
     $('#addTag').click(function(){
-        OneSignal.push(["sendTag", "notification1", "123"]);
-        toastr.success('Added notification1 tag', 'Tags');
+        var key = $('#tagName').val();
+        var value = $('#tagValue').val();
+        if (key && value){
+            OneSignal.push(["sendTag", "notification1", "Zohaib"]);
+            toastr.success('Added notification1 tag', 'Tags');
+        } else {
+            toastr.error('Tag name or tag value is missing!')
+        }
+
     });
     $('#removeTag').click(function(){
         OneSignal.push(["deleteTag", "notification1"]);
