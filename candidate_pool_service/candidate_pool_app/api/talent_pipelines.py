@@ -480,6 +480,7 @@ class TalentPipelineCandidate(Resource):
         if talent_pipeline.user.domain_id != request.user.domain_id:
             raise UnauthorizedError(error_message="Logged-in user and talent_pipeline belong to different domain")
 
+        # Get all smart_lists and dumb_lists of a talent-pipeline
         smart_lists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline_id).all()
 
         search_params, dumb_lists = [], []
@@ -500,6 +501,7 @@ class TalentPipelineCandidate(Resource):
         headers = {'Authorization': 'Bearer %s' % request.oauth_token}
         request_params, dumb_list_candidates = {}, {'candidates': [], 'total_found': 0}
 
+        # Get all candidates of all dumb_lists of a given talent_pipeline
         for dumb_list in dumb_lists:
 
             candidates = SmartlistCandidate.query.join(
@@ -527,6 +529,7 @@ class TalentPipelineCandidate(Resource):
 
             request_params = dict((k, v) for k, v in request_params.iteritems() if v)
 
+            # Query Candidate Search API to get all candidates of a given talent-pipeline
             try:
                 response = requests.get(CandidateApiUrl.CANDIDATE_SEARCH_URI, headers=headers, params=request_params)
                 json_response = response.json()
@@ -540,6 +543,8 @@ class TalentPipelineCandidate(Resource):
             else:
                 candidates_dict = {}
                 json_response['candidates'] = json_response['candidates'] + dumb_list_candidates['candidates']
+
+                # Remove redundant candidates from all candidates of a given talent-pipeline
                 for key, candidate in enumerate(json_response['candidates']):
                     if str(candidate.get('id')) in candidates_dict:
                         json_response.pop(key)
@@ -548,3 +553,7 @@ class TalentPipelineCandidate(Resource):
 
                 json_response['total_found'] = len(json_response['candidates'])
                 return json_response
+        else:
+            return dumb_list_candidates
+
+
