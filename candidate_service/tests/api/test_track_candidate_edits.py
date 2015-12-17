@@ -593,7 +593,7 @@ def test_edit_candidate_social_network_edits(sample_user, user_auth):
     # Update Candidate's social network
     data = {'candidates': [
         {'id': candidate_id, 'social_networks': [
-            {'id': old_sn_dict['id'], 'name': 'TripIt', 'profile_url': 'http://www.tripit.com/me'}
+            {'id': old_sn_dict['id'], 'name': 'Facebook', 'profile_url': fake.url()}
         ]}
     ]}
     patch_to_candidate_resource(token, data)
