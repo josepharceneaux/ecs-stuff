@@ -385,8 +385,8 @@ def candidate_custom_fields(candidate):
     :type candidate:    Candidate
     :rtype              [dict]
     """
-    custom_fields = candidate.candidate_custom_fields
-    return [{'id': custom_field.custom_field_id,
+    custom_fields = db.session.query(CandidateCustomField).filter_by(candidate_id=candidate.id).all()
+    return [{'id': custom_field.id,
              'value': custom_field.value,
              'created_at_datetime': custom_field.added_time.isoformat()
              } for custom_field in custom_fields]

@@ -111,7 +111,6 @@ def test_edit_candidate_custom_field(sample_user, user_auth):
     candidate_id = create_resp.json()['candidates'][0]['id']
     old_custom_field_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['custom_fields'][0]
     db.session.commit()
-    print "\nold = %s" % old_custom_field_dict
 
     # Update Candidate's custom field
     data = {'candidates': [
@@ -123,14 +122,12 @@ def test_edit_candidate_custom_field(sample_user, user_auth):
 
     # Retrieve Candidate custom fields
     new_custom_field_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['custom_fields'][0]
-    print "\nnew = %s" % new_custom_field_dict
 
     # Retrieve Candidate Edits
     edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
     print response_info(edit_resp)
 
     candidate_edits = edit_resp.json()['candidate']['edits']
-    print "\nedits = %s" % candidate_edits
     assert edit_resp.status_code == 200
     assert candidate_edits[0]['old_value'] == old_custom_field_dict['value']
     assert candidate_edits[0]['new_value'] == new_custom_field_dict['value']
