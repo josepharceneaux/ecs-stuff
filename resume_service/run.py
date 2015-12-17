@@ -1,6 +1,7 @@
 """Local run file."""
 from resume_parsing_app import app
+from resume_service.common.utils.app_rest_urls import GTApis
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8003, debug=True)
+    app.run(host='0.0.0.0', port=GTApis.RESUME_SERVICE_PORT, debug=True)

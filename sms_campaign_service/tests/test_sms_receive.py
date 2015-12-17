@@ -34,7 +34,7 @@ class TestSmsReceive(object):
         GET method should not be allowed at this endpoint.
         :return:
         """
-        response_post = requests.get(SmsCampaignApiUrl.SMS_RECEIVE)
+        response_post = requests.get(SmsCampaignApiUrl.RECEIVE_URL)
         assert response_post.status_code == MethodNotAllowed.http_status_code(), \
             'GET Method should not be allowed'
 
@@ -43,7 +43,7 @@ class TestSmsReceive(object):
         DELETE method should not be allowed at this endpoint.
         :return:
         """
-        response_post = requests.delete(SmsCampaignApiUrl.SMS_RECEIVE)
+        response_post = requests.delete(SmsCampaignApiUrl.RECEIVE_URL)
         assert response_post.status_code == MethodNotAllowed.http_status_code(), \
             'DELETE Method should not be allowed'
 
@@ -52,7 +52,7 @@ class TestSmsReceive(object):
         POST with no data, Response should be ok as this response is returned to Twilio API
         :return:
         """
-        response_get = requests.post(SmsCampaignApiUrl.SMS_RECEIVE)
+        response_get = requests.post(SmsCampaignApiUrl.RECEIVE_URL)
         assert response_get.status_code == 200, 'Response should be ok'
         assert 'xml' in str(response_get.text).strip()
 
@@ -63,7 +63,7 @@ class TestSmsReceive(object):
         POST with no data, Response should be ok as this response is returned to Twilio API
         :return:
         """
-        response_get = requests.post(SmsCampaignApiUrl.SMS_RECEIVE,
+        response_get = requests.post(SmsCampaignApiUrl.RECEIVE_URL,
                                      data={'To': user_phone_1.value,
                                            'From': candidate_phone_1.value,
                                            'Body': "What's the venue?"})

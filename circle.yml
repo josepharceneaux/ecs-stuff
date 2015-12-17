@@ -41,8 +41,9 @@ test:
     - python sms_campaign_service/run.py:
         parallel: true
         background: true
-
-
+    - python sms_campaign_service/run_celery.py:
+        parallel: true
+        background: true
     - python spreadsheet_import_service/run.py:
         parallel: true
         background: true

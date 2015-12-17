@@ -28,7 +28,7 @@ from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
 from sms_campaign_service.common.utils.common_functions import url_conversion
 
 # Service Specific
-from sms_campaign_service.sms_campaign_base import validate_header
+from sms_campaign_service.utilities import validate_header
 from sms_campaign_service.custom_exceptions import (GoogleShortenUrlAPIError, MissingRequiredField)
 
 # creating blueprint
@@ -46,7 +46,7 @@ CORS(url_conversion_blueprint, resources={
 })
 
 
-@api.route('/' + SmsCampaignApiUrl.API_VERSION + '/url_conversion')
+@api.route(SmsCampaignApiUrl.URL_CONVERSION)
 class ConvertUrl(Resource):
     """
     This end point converts the given url into shorter version using

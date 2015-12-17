@@ -20,9 +20,6 @@ methods like
 It also contains private methods for this module as
     - _get_valid_user_phone_value()
     - _get_valid_user_phone_value()
-
-It has delete_sms_campaign() function to delete only that campaign
-    for which the current user is an owner.
 """
 
 # Standard Library
@@ -45,10 +42,7 @@ from sms_campaign_service.common.utils.common_functions import (find_missing_ite
                                                                 JSON_CONTENT_TYPE_HEADER)
 from sms_campaign_service.common.error_handling import (ResourceNotFound, ForbiddenError,
                                                         InvalidUsage)
-from sms_campaign_service.common.utils.activity_utils import (CAMPAIGN_SMS_CLICK,
-                                                              CAMPAIGN_SMS_REPLY,
-                                                              CAMPAIGN_SMS_SEND, CAMPAIGN_SEND,
-                                                              CAMPAIGN_SMS_CREATE)
+from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 # Service Specific
 from sms_campaign_service import logger, db
 from sms_campaign_service.sms_campaign_app.app import celery_app, app
@@ -93,8 +87,18 @@ class SmsCampaignBase(CampaignBase):
         This method is used to save the campaign in db table 'sms_campaign' and
         returns the ID of fresh record in db.
 
+    * create_or_update_sms_campaign(self, form_data, campaign_id=None)
+        This saves/updates SMS campaign in database table sms_campaign
+
+    * create_or_update_sms_campaign_smartlist(campaign, smartlist_ids): [static]
+        This saves/updates smartlist ids associated with an SMS campaign in database
+        table "sms_campaign_smartlist"
+
     * campaign_create_activity(self, sms_campaign)
-        This creates activity that "User xyz created an SMS campaign %(campaign_name)s".
+        This creates activity that "User xyz created an SMS campaign "xyz".
+
+    * get_user_phone(self)
+        This gets the Twilio number of current user from database table "user_phone"
 
     * buy_twilio_mobile_number(self, phone_label_id=None)
         To send sms_campaign, we need to reserve a unique number for each user.
@@ -106,6 +110,20 @@ class SmsCampaignBase(CampaignBase):
     * process_send(self, campaign_id=None)
         This method is used to send the campaign to candidates.
 
+    * filter_candidate_for_valid_phone(self, candidate)
+        This filter out candidate who have no mobile number associated with them.
+
+    * send_campaign_to_candidate(self, candidate)
+        This does the sending part and updates database tables "sms_campaign_blast" and
+         "sms_campaign_send".
+
+    * callback_campaign_sent(send_result, user_id, campaign, auth_header, candidate)
+        Once the campaign is sent to all candidates of a particular smartlists, we crate an
+        activity in Activity table that " "abc" campaign has been sent to "100" candidates"
+
+    * celery_error(error)
+        If we get any error on celery task, we here we catch it and log the error.
+
     * process_urls_in_sms_body_text(self, candidate_id)
         If "body_text" contains any link in it, then we need to transform the
         "body_text" by replacing long URL with shorter version using Google's Shorten
@@ -114,10 +132,6 @@ class SmsCampaignBase(CampaignBase):
 
     * transform_body_text(self, link_in_body_text, short_url)
         This replaces the original URL present in "body_text" with the shortened URL.
-
-    * send_sms_campaign_to_candidate(self, candidate)
-        This does the sending part and updates database tables "sms_campaign_blast" and
-         "sms_campaign_send".
 
     * create_or_update_sms_campaign_blast(campaign_id, send=0, clicks=0, replies=0,
                             sends_update=False, clicks_update=False, replies=False): [static]
@@ -143,6 +157,10 @@ class SmsCampaignBase(CampaignBase):
         to be saved in db table 'Activity' that campaign has been sent to (say)
         40(num_candidates) candidates.
         Activity will appear as "%(campaign_name)s has been sent to %(num_candidates)s.".
+
+    * pre_process_url_redirect(campaign_id, url-conversion_id, candidate_id)
+        This does the validation of all the fields provided before processing the
+        URL redirection.
 
     * process_url_redirect(self, campaign_id=None, url_conversion_id=None)
         When a candidate clicks on the link present in the body text of SMS, this code is
@@ -331,7 +349,7 @@ class SmsCampaignBase(CampaignBase):
                   'campaign_name': source.name}
 
         self.create_activity(self.user_id,
-                             type_=CAMPAIGN_SMS_CREATE,
+                             type_=ActivityMessageIds.CAMPAIGN_SMS_CREATE,
                              source_id=source.id,
                              source_table=SmsCampaign.__tablename__,
                              params=params,
@@ -877,7 +895,7 @@ class SmsCampaignBase(CampaignBase):
             params = {'candidate_name': candidate.first_name + ' ' + candidate.last_name,
                       'campaign_name': self.campaign.name}
             self.create_activity(self.user_id,
-                                 type_=CAMPAIGN_SMS_SEND,
+                                 type_=ActivityMessageIds.CAMPAIGN_SMS_SEND,
                                  source_id=source_id,
                                  source_table=SmsCampaignSend.__tablename__,
                                  params=params,
@@ -913,7 +931,7 @@ class SmsCampaignBase(CampaignBase):
         params = {'name': source.name,
                   'num_candidates': num_candidates}
         cls.create_activity(user_id,
-                            type_=CAMPAIGN_SEND,
+                            type_=ActivityMessageIds.CAMPAIGN_SEND,
                             source_id=source.id,
                             source_table=SmsCampaign.__tablename__,
                             params=params,
@@ -1048,7 +1066,7 @@ class SmsCampaignBase(CampaignBase):
         params = {'candidate_name': source.first_name + ' ' + source.last_name,
                   'campaign_name': self.campaign.name}
         self.create_activity(self.user_id,
-                             type_=CAMPAIGN_SMS_CLICK,
+                             type_=ActivityMessageIds.CAMPAIGN_SMS_CLICK,
                              source_id=self.campaign.id,
                              source_table=SmsCampaign.__tablename__,
                              params=params,
@@ -1166,7 +1184,7 @@ class SmsCampaignBase(CampaignBase):
                   'campaign_name': campaign.name}
         user_access_token = cls.get_authorization_header(user_id)
         cls.create_activity(user_id,
-                            type_=CAMPAIGN_SMS_REPLY,
+                            type_=ActivityMessageIds.CAMPAIGN_SMS_REPLY,
                             source_id=sms_campaign_reply.id,
                             source_table=SmsCampaignReply.__tablename__,
                             params=params,
@@ -1228,50 +1246,3 @@ def _validate_candidate_phone_value(candidate_phone_value):
         raise NoCandidateFoundForPhoneNumber(
             error_message='No Candidate is associated with %s phone number' % candidate_phone_value)
     return candidate_phone
-
-
-def delete_sms_campaign(campaign_id, current_user_id):
-    """
-    This function is used to delete SMS campaign of a user. If current user is the
-    creator of given campaign id, it will delete the campaign, otherwise it will
-    raise the Forbidden error.
-    :param campaign_id: id of SMS campaign to be deleted
-    :param current_user_id: id of current user
-    :exception: Forbidden error (status_code = 403)
-    :exception: Resource not found error (status_code = 404)
-    :return: True if record deleted successfully, False otherwise.
-    :rtype: bool
-    """
-    if is_owner_of_campaign(campaign_id, current_user_id):
-        return SmsCampaign.delete(campaign_id)
-
-
-def is_owner_of_campaign(campaign_id, current_user_id):
-    """
-    This function returns True if the current user is an owner for given
-    campaign_id. Otherwise it raises the Forbidden error.
-    :param campaign_id: id of campaign form getTalent database
-    :param current_user_id: Id of current user
-    :return:
-    """
-    campaign_row = SmsCampaign.get_by_id(campaign_id)
-    if campaign_row:
-        campaign_user_id = UserPhone.get_by_id(campaign_row.user_phone_id).user_id
-        if campaign_user_id == current_user_id:
-            return True
-        else:
-            raise ForbiddenError(error_message='You are not the owner of '
-                                               'SMS campaign(id:%s)' % campaign_id)
-    else:
-        raise ResourceNotFound(error_message='SMS Campaign(id=%s) not found.' % campaign_id)
-
-
-def validate_header(request):
-    """
-    Proper header should be {'content-type': 'application/json'} for posting
-    some data on SMS campaign API.
-    If header of request is not proper, it raises InvalidUsage exception
-    :return:
-    """
-    if not request.headers.get('CONTENT_TYPE') == JSON_CONTENT_TYPE_HEADER['content-type']:
-        raise InvalidUsage(error_message='Invalid header provided')

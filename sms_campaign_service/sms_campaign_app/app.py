@@ -55,8 +55,7 @@ def root():
     return 'Welcome to SMS Campaign Service'
 
 
-@app.route('/' + SmsCampaignApiUrl.API_VERSION +
-           '/campaigns/<int:campaign_id>/url_redirection/<int:url_conversion_id>', methods=['GET'])
+@app.route(SmsCampaignApiUrl.APP_REDIRECTION, methods=['GET'])
 def sms_campaign_url_redirection(campaign_id, url_conversion_id):
     """
     When recruiter(user) adds some url in sms body text, we save the original URL as
@@ -116,7 +115,7 @@ def sms_campaign_url_redirection(campaign_id, url_conversion_id):
         return flask.jsonify(**data), 500
 
 
-@app.route('/' + SmsCampaignApiUrl.API_VERSION + "/receive", methods=['POST'])
+@app.route(SmsCampaignApiUrl.RECEIVE, methods=['POST'])
 def sms_receive():
     """
     This end point is used to receive sms of candidates.

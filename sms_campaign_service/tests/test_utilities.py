@@ -42,5 +42,5 @@ def test_search_url_in_text():
 
 
 def test_health_check():
-    response = requests.get(SmsCampaignApiUrl.HOST_NAME + 'healthcheck')
+    response = requests.get(SmsCampaignApiUrl.HOST_NAME % '/healthcheck')
     assert response.status_code == 200

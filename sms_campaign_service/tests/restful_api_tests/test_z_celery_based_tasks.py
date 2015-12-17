@@ -22,8 +22,7 @@ import requests
 
 # Common Utils
 from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
-from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_REPLY
-from sms_campaign_service.common.utils.activity_utils import CAMPAIGN_SMS_CLICK
+from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.error_handling import (ResourceNotFound,
                                                         InternalServerError,
                                                         MethodNotAllowed)
@@ -65,7 +64,7 @@ class TestCeleryTasks(object):
         campaign.update(sms_body_text='Hi,all please visit http://www.abc.com or '
                                       'http://www.123.com or http://www.xyz.com')
         response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_post.status_code == 200, 'Response should be ok (200)'
         assert response_post.json()['total_sends'] == 2
@@ -84,7 +83,7 @@ class TestCeleryTasks(object):
         :return:
         """
         response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_post.status_code == 200, 'Response should be ok (200)'
         assert response_post.json()['total_sends'] == 1
@@ -102,7 +101,7 @@ class TestCeleryTasks(object):
         :return:
         """
         response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_post.status_code == 200, 'Response should be ok (200)'
         assert response_post.json()['total_sends'] == 2
@@ -125,7 +124,7 @@ class TestCeleryTasks(object):
         campaign = SmsCampaign.get_by_id(str(sms_campaign_of_current_user.id))
         campaign.update(sms_body_text='Hi,all')
         response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_post.status_code == 200, 'Response should be ok (200)'
         assert response_post.json()['total_sends'] == 2
@@ -152,7 +151,7 @@ class TestCeleryTasks(object):
         """
         reply_text = "What's the venue?"
         reply_count_before = get_replies_count(sms_campaign_of_current_user)
-        response_get = requests.post(SmsCampaignApiUrl.SMS_RECEIVE,
+        response_get = requests.post(SmsCampaignApiUrl.RECEIVE_URL,
                                      data={'To': user_phone_1.value,
                                            'From': candidate_phone_1.value,
                                            'Body': reply_text})
@@ -163,7 +162,8 @@ class TestCeleryTasks(object):
         assert campaign_reply_in_db.reply_body_text == reply_text
         reply_count_after = get_replies_count(sms_campaign_of_current_user)
         assert reply_count_after == reply_count_before + 1
-        assert_for_activity(user_phone_1.user_id, CAMPAIGN_SMS_REPLY, campaign_reply_in_db.id)
+        assert_for_activity(user_phone_1.user_id, ActivityMessageIds.CAMPAIGN_SMS_REPLY,
+                            campaign_reply_in_db.id)
 
     def test_post_with_valid_token_and_multiple_smartlists(
             self, auth_token, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
@@ -176,7 +176,7 @@ class TestCeleryTasks(object):
         :return:
         """
         response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_post.status_code == 200, 'Response should be ok (200)'
         assert response_post.json()['total_sends'] == 1
@@ -259,7 +259,8 @@ class TestSmsCampaignURLRedirection(object):
             sms_campaign_of_current_user)
         assert hit_count_after == hit_count + 1
         assert clicks_after == clicks + 1
-        assert_for_activity(sample_user.id, CAMPAIGN_SMS_CLICK, sms_campaign_of_current_user.id)
+        assert_for_activity(sample_user.id, ActivityMessageIds.CAMPAIGN_SMS_CLICK,
+                            sms_campaign_of_current_user.id)
 
     def test_endpoint_for_get_with_no_candidate_id(self, url_conversion_by_send_test_sms_campaign):
         """
@@ -424,7 +425,7 @@ def _delete_sms_campaign(campaign, header):
     :param header:
     :return:
     """
-    response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % campaign.id,
+    response = requests.delete(SmsCampaignApiUrl.CAMPAIGN_URL % campaign.id,
                                headers=header)
     assert response.status_code == 200, 'should get ok response (200)'
 

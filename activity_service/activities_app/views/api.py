@@ -200,7 +200,7 @@ class TalentActivityManager(object):
         CAMPAIGN_SMS_CLICK: ("%(candidate_name)s clicked on SMS Campaign <b>%(campaign_name)s</b>.",
                      "%(candidate_name)s clicked on %(campaign_name)s.",
                      "campaign.png"),
-        CAMPAIGN_SMS_REPLY: ("%(candidate_name)s replied <b>%(reply_text)s</b> on campaign %(campaign_name)s.",
+        CAMPAIGN_SMS_REPLY: ("%(candidate_name)s replied <b>%(reply_text)s</b> on SMS campaign %(campaign_name)s.",
                      "%(candidate_name)s replied '%(reply_text)s' on campaign %(campaign_name)s.",
                      "campaign.png"),
     }

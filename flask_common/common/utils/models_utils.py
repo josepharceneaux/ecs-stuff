@@ -161,7 +161,7 @@ def delete(cls, ref):
     return True
 
 
-def add_model_helpers(cls, logger):
+def add_model_helpers(cls):
     """
     This function adds helper methods to Model class which is passed as argument.
 
@@ -178,7 +178,6 @@ def add_model_helpers(cls, logger):
     :return:
     """
     cls.session = db.session
-    cls.logger = logger
     # this method converts model instance to json serializable dictionary
     cls.to_json = MethodType(to_json, None, db.Model)
     # This method saves model instance in database as table row
@@ -192,7 +191,7 @@ def add_model_helpers(cls, logger):
     cls.delete = delete
 
 
-def init_app(flask_app, logger):
+def init_talent_app(flask_app, logger):
     """
     This method initializes the flask app by doing followings:
 
@@ -229,7 +228,7 @@ def init_app(flask_app, logger):
 
     :return: Returns the app
     """
-    add_model_helpers(db.Model, logger)
+    add_model_helpers(db.Model)
     db.init_app(flask_app)
     db.app = flask_app
     register_error_handlers(flask_app, logger)

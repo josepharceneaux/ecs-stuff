@@ -31,7 +31,7 @@ class TestSendSmsCampaign(object):
         :return:
         """
         response = requests.get(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == MethodNotAllowed.http_status_code(), \
             'GET method should not be allowed (405)'
@@ -44,7 +44,7 @@ class TestSendSmsCampaign(object):
         :return:
         """
         response = requests.delete(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == MethodNotAllowed.http_status_code(), \
             'DELETE method should not be allowed (405)'
@@ -55,7 +55,7 @@ class TestSendSmsCampaign(object):
         :return:
         """
         response = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % 'invalid_token'))
         assert response.status_code == UnauthorizedError.http_status_code(), \
             'It should be unauthorized (401)'
@@ -68,10 +68,10 @@ class TestSendSmsCampaign(object):
         :return:
         """
         response_delete = requests.delete(
-            SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id, headers=valid_header)
+            SmsCampaignApiUrl.CAMPAIGN_URL % sms_campaign_of_current_user.id, headers=valid_header)
         assert response_delete.status_code == 200, 'should get ok response (200)'
         response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_post.status_code == ResourceNotFound.http_status_code(), \
             'Record should not be found (404)'
@@ -84,7 +84,7 @@ class TestSendSmsCampaign(object):
         :return:
         """
         response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_other_user.id,
+            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_other_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_post.status_code == ForbiddenError.http_status_code(), \
             'It should get forbidden error (403)'
@@ -99,7 +99,7 @@ class TestSendSmsCampaign(object):
         :return:
         """
         response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_post.status_code == InternalServerError.http_status_code(), \
             'It should be internal server error (500)'
@@ -117,7 +117,7 @@ class TestSendSmsCampaign(object):
         :return:
         """
         response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_post.status_code == InternalServerError.http_status_code(), \
             'It should be internal server error (500)'
@@ -134,7 +134,7 @@ class TestSendSmsCampaign(object):
         :return:
         """
         response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_post.status_code == 200, 'Response should be ok (200)'
         assert response_post.json()['total_sends'] == 0
@@ -153,7 +153,7 @@ class TestSendSmsCampaign(object):
         :return:
         """
         response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_post.status_code == InternalServerError.http_status_code(), \
             'It should be internal server error (500)'

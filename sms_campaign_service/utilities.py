@@ -19,13 +19,19 @@ import twilio.rest
 from twilio.rest import TwilioRestClient
 
 # Common Utils
-from sms_campaign_service.common.models.smart_list import SmartList
-from sms_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound)
+from sms_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound,
+                                                        ForbiddenError)
 from sms_campaign_service.common.utils.app_rest_urls import (SmsCampaignApiUrl, GTApis)
+
+# Database Models
+from sms_campaign_service.common.models.user import UserPhone
+from sms_campaign_service.common.models.smart_list import SmartList
+from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 
 # Application Specific
 from sms_campaign_service import logger
-from sms_campaign_service.common.utils.common_functions import find_missing_items
+from sms_campaign_service.common.utils.common_functions import (find_missing_items,
+                                                                JSON_CONTENT_TYPE_HEADER)
 from sms_campaign_service.custom_exceptions import (TwilioAPIError, MissingRequiredField,
                                                     InvalidDatetime)
 from sms_campaign_service.sms_campaign_app_constants import (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,
@@ -43,7 +49,7 @@ class TwilioSMS(object):
         self.phone_type = 'local'
         self.sms_enabled = True
         # self.sms_call_back_url = 'http://demo.twilio.com/docs/sms.xml'
-        self.sms_call_back_url = SmsCampaignApiUrl.SMS_RECEIVE
+        self.sms_call_back_url = SmsCampaignApiUrl.RECEIVE
         # self.sms_call_back_url = 'http://74cf4bd2.ngrok.io/v1/receive'
         self.sms_method = 'POST'
 
@@ -149,9 +155,9 @@ def replace_ngrok_link_with_localhost(temp_ngrok_link):
     :param temp_ngrok_link:
     :return:
     """
-    relative_url = temp_ngrok_link.split(SmsCampaignApiUrl.API_VERSION)[1]
-    # API_URL is http://127.0.0.1:8011/v1 for dev
-    return SmsCampaignApiUrl.API_URL % relative_url
+    relative_url = temp_ngrok_link.split(NGROK_URL % '')[1]
+    # HOST_NAME is http://127.0.0.1:8011 for dev
+    return SmsCampaignApiUrl.HOST_NAME % relative_url
 
 
 # TODO: remove this when app is up
@@ -232,3 +238,50 @@ def datetime_validator(str_datetime):
     if not re.match(utc_pattern, str_datetime):
         raise InvalidDatetime('Invalid DateTime: Kindly specify datetime '
                               'in UTC format like 2015-10-08T06:16:55Z')
+
+
+def delete_sms_campaign(campaign_id, current_user_id):
+    """
+    This function is used to delete SMS campaign of a user. If current user is the
+    creator of given campaign id, it will delete the campaign, otherwise it will
+    raise the Forbidden error.
+    :param campaign_id: id of SMS campaign to be deleted
+    :param current_user_id: id of current user
+    :exception: Forbidden error (status_code = 403)
+    :exception: Resource not found error (status_code = 404)
+    :return: True if record deleted successfully, False otherwise.
+    :rtype: bool
+    """
+    if is_owner_of_campaign(campaign_id, current_user_id):
+        return SmsCampaign.delete(campaign_id)
+
+
+def is_owner_of_campaign(campaign_id, current_user_id):
+    """
+    This function returns True if the current user is an owner for given
+    campaign_id. Otherwise it raises the Forbidden error.
+    :param campaign_id: id of campaign form getTalent database
+    :param current_user_id: Id of current user
+    :return:
+    """
+    campaign_row = SmsCampaign.get_by_id(campaign_id)
+    if campaign_row:
+        campaign_user_id = UserPhone.get_by_id(campaign_row.user_phone_id).user_id
+        if campaign_user_id == current_user_id:
+            return True
+        else:
+            raise ForbiddenError(error_message='You are not the owner of '
+                                               'SMS campaign(id:%s)' % campaign_id)
+    else:
+        raise ResourceNotFound(error_message='SMS Campaign(id=%s) not found.' % campaign_id)
+
+
+def validate_header(request):
+    """
+    Proper header should be {'content-type': 'application/json'} for posting
+    some data on SMS campaign API.
+    If header of request is not proper, it raises InvalidUsage exception
+    :return:
+    """
+    if not request.headers.get('CONTENT_TYPE') == JSON_CONTENT_TYPE_HEADER['content-type']:
+        raise InvalidUsage(error_message='Invalid header provided')

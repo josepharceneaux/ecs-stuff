@@ -28,8 +28,8 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
                                                              SmsCampaignSendUrlConversion,
                                                              SmsCampaignReply)
 # Common Utils
+from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.utils.common_functions import JSON_CONTENT_TYPE_HEADER
-from sms_campaign_service.common.utils.activity_utils import (CAMPAIGN_SMS_SEND, CAMPAIGN_SEND)
 
 SLEEP_TIME = 5  # needed to add this because tasks run on Celery
 
@@ -500,10 +500,10 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, response_post, c
     assert len(sms_campaign_sends) == response_post.json()['total_sends']
     # assert on activity of individual campaign sends
     for sms_campaign_send in sms_campaign_sends:
-        assert_for_activity(user_id, CAMPAIGN_SMS_SEND, sms_campaign_send.id)
+        assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_SMS_SEND, sms_campaign_send.id)
     if sms_campaign_sends:
         # assert on activity for whole campaign send
-        assert_for_activity(user_id, CAMPAIGN_SEND, campaign_id)
+        assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_SEND, campaign_id)
     assert_url_conversion(sms_campaign_sends, campaign_id)
 
 

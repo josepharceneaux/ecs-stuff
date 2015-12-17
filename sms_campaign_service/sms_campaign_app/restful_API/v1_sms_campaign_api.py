@@ -39,10 +39,10 @@ from flask.ext.restful import Resource
 
 # Service Specific
 from sms_campaign_service import logger
-from sms_campaign_service.utilities import validate_form_data
+from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.custom_exceptions import ErrorDeletingSMSCampaign
-from sms_campaign_service.sms_campaign_base import (SmsCampaignBase, delete_sms_campaign,
-                                                    validate_header, is_owner_of_campaign)
+from sms_campaign_service.utilities import (validate_form_data, validate_header,
+                                            delete_sms_campaign, is_owner_of_campaign)
 
 # Common Utils
 from sms_campaign_service.common.error_handling import *
@@ -72,7 +72,7 @@ CORS(sms_campaign_blueprint, resources={
 })
 
 
-@api.route('/' + SmsCampaignApiUrl.API_VERSION + '/campaigns')
+@api.route(SmsCampaignApiUrl.CAMPAIGNS)
 class SMSCampaigns(Resource):
     """
     This resource is used to
@@ -258,7 +258,7 @@ class SMSCampaigns(Resource):
             return dict(message='No campaign id provided to delete'), 200
 
 
-@api.route('/' + SmsCampaignApiUrl.API_VERSION + '/campaigns/<int:campaign_id>')
+@api.route(SmsCampaignApiUrl.CAMPAIGN)
 class CampaignById(Resource):
     """
     This resource is used to
@@ -400,7 +400,7 @@ class CampaignById(Resource):
                                                          % campaign_id)
 
 
-@api.route('/' + SmsCampaignApiUrl.API_VERSION + '/campaigns/<int:campaign_id>/sms_campaign_sends')
+@api.route(SmsCampaignApiUrl.CAMPAIGN_SENDS)
 class SmsCampaignSends(Resource):
     """
     This resource is used to Get Campaign sends [GET]
@@ -462,7 +462,7 @@ class SmsCampaignSends(Resource):
             raise ResourceNotFound(error_message='SMS Campaign(id=%s) not found.' % campaign_id)
 
 
-@api.route('/' + SmsCampaignApiUrl.API_VERSION + '/campaigns/<int:campaign_id>/send')
+@api.route(SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS)
 class SendSmsCampaign(Resource):
     """
     This resource is used to send SMS Campaign to candidates [POST]

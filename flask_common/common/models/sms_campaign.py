@@ -43,9 +43,9 @@ class SmsCampaignBlast(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
-    sms_campaign_sends = relationship('SmsCampaignSend', cascade='all, delete-orphan',
+    sms_campaign_sends = relationship('SmsCampaignSend', cascade='all,delete',
                                       backref='sms_campaign_blast')
-    sms_campaign_replies = relationship('SmsCampaignReply', cascade='all, delete-orphan',
+    sms_campaign_replies = relationship('SmsCampaignReply', cascade='all,delete',
                                         backref='sms_campaign_blast')
 
     def __repr__(self):
@@ -99,7 +99,7 @@ class SmsCampaignReply(db.Model):
     reply_body_text = db.Column('SmsBodyText', db.Text)
     candidate_phone_id = db.Column('CandidatePhoneId', db.Integer,
                                    db.ForeignKey('candidate_phone.id'))
-    added_time = db.Column('AddedDatetime', db.DateTime, default=datetime.datetime.now())
+    added_datetime = db.Column('AddedDatetime', db.DateTime, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<SmsCampaignReply (id = %r)>" % self.id
@@ -172,5 +172,4 @@ class SmsCampaignSendUrlConversion(db.Model):
 
     @classmethod
     def get_by_campaign_send_id(cls, campaign_send_id):
-        return cls.query.filter(
-            cls.sms_campaign_send_id == campaign_send_id).all()
+        return cls.query.filter(cls.sms_campaign_send_id == campaign_send_id).all()
