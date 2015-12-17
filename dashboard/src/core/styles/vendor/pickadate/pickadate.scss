@@ -67,8 +67,8 @@
   -moz-opacity: 0;
   opacity: 0;
           transform: translateY(-1em) perspective(600px) rotateX(10deg);
-  transition: -webkit-transform 0.15s ease-out, opacity 0.15s ease-out, max-height 0s 0.15s, border-width 0s 0.15s;
-  transition: transform 0.15s ease-out, opacity 0.15s ease-out, max-height 0s 0.15s, border-width 0s 0.15s;
+  transition: -webkit-transform .15s ease-out, opacity .15s ease-out, max-height 0s .15s, border-width 0s .15s;
+  transition: transform .15s ease-out, opacity .15s ease-out, max-height 0s .15s, border-width 0s .15s;
 }
 /**
  * The frame and wrap work together to ensure that
@@ -94,9 +94,9 @@
   border-bottom-width: 1px;
   -webkit-transform: translateY(0) perspective(600px) rotateX(0);
           transform: translateY(0) perspective(600px) rotateX(0);
-  transition: -webkit-transform 0.15s ease-out, opacity 0.15s ease-out, max-height 0s, border-width 0s;
-  transition: transform 0.15s ease-out, opacity 0.15s ease-out, max-height 0s, border-width 0s;
-  box-shadow: 0 6px 18px 1px rgba(0, 0, 0, 0.12);
+  transition: -webkit-transform .15s ease-out, opacity .15s ease-out, max-height 0s, border-width 0s;
+  transition: transform .15s ease-out, opacity .15s ease-out, max-height 0s, border-width 0s;
+  box-shadow: 0 6px 18px 1px rgba(0, 0, 0, .12);
 }
 
 /* ==========================================================================
@@ -141,7 +141,7 @@
 @media (min-width: 24.5em) {
   .picker__select--month,
   .picker__select--year {
-    margin-top: -0.5em;
+    margin-top: -.5em;
   }
 }
 
@@ -167,12 +167,12 @@
   width: 1em;
   height: 1em;
   box-sizing: content-box;
-  top: -0.25em;
+  top: -.25em;
 }
 @media (min-width: 24.5em) {
   .picker__nav--prev,
   .picker__nav--next {
-    top: -0.33em;
+    top: -.33em;
   }
 }
 
@@ -201,7 +201,7 @@
   content: " ";
   border-top: .5em solid transparent;
   border-bottom: .5em solid transparent;
-  border-right: 0.75em solid $color--nearBlack;
+  border-right: .75em solid $color--nearBlack;
   width: 0;
   height: 0;
   display: block;
@@ -210,7 +210,7 @@
 
 .picker__nav--next:before {
   border-right: 0;
-  border-left: 0.75em solid $color--nearBlack;
+  border-left: .75em solid $color--nearBlack;
 }
 
 
@@ -312,7 +312,7 @@
   right: 2px;
   width: 0;
   height: 0;
-  border-top: 0.5em solid $color--blue;
+  border-top: .5em solid $color--blue;
   border-left: .5em solid transparent;
 }
 
@@ -416,21 +416,21 @@
 }
 
 .picker__button--today:before {
-  top: -0.05em;
+  top: -.05em;
   width: 0;
-  border-top: 0.66em solid $color--blue;
+  border-top: .66em solid $color--blue;
   border-left: .66em solid transparent;
 }
 
 .picker__button--clear:before {
-  top: -0.25em;
+  top: -.25em;
   width: .66em;
   border-top: 3px solid $color--red;
 }
 
 .picker__button--close:before {
   content: "\D7";
-  top: -0.1em;
+  top: -.1em;
   vertical-align: top;
   font-size: 1.1em;
   margin-right: .35em;
@@ -452,3 +452,144 @@
 /* ==========================================================================
    $CLASSIC-DATE-PICKER
    ========================================================================== */
+
+/* ==========================================================================
+  $BASE-TIME-PICKER
+  ========================================================================== */
+/**
+* The list of times.
+*/
+.picker__list {
+ list-style: none;
+ padding: 0;
+ margin: 0;
+
+ // li {
+ //   margin-bottom: 0;
+ // }
+}
+/**
+* The times on the clock.
+*/
+.picker__list-item {
+ border-bottom: 1px solid $color--gray;
+ border-top: 1px solid $color--gray;
+ margin-bottom: -1px;
+ position: relative;
+ background: $color--white;
+ padding: .75em 1.25em;
+}
+@media (min-height: 46.75em) {
+ .picker__list-item {
+   padding: .5em 1em;
+ }
+}
+/* Hovered time */
+.picker__list-item:hover {
+ cursor: pointer;
+ color: $color--nearBlack;
+ background: $color--lightBlue;
+ border-color: $color--blue;
+ z-index: 10;
+}
+/* Highlighted and hovered/focused time */
+.picker__list-item--highlighted {
+ border-color: $color--blue;
+ z-index: 10;
+}
+.picker__list-item--highlighted:hover,
+.picker--focused .picker__list-item--highlighted {
+ cursor: pointer;
+ color: $color--nearBlack;
+ background: $color--lightBlue;
+}
+/* Selected and hovered/focused time */
+.picker__list-item--selected,
+.picker__list-item--selected:hover,
+.picker--focused .picker__list-item--selected {
+ background: $color--blue;
+ color: $color--white;
+ z-index: 10;
+}
+/* Disabled time */
+.picker__list-item--disabled,
+.picker__list-item--disabled:hover,
+.picker--focused .picker__list-item--disabled {
+ background: $color--lightGray;
+ border-color: $color--lightGray;
+ color: $color--gray;
+ cursor: default;
+ border-color: $color--gray;
+ z-index: auto;
+}
+/**
+* The clear button
+*/
+.picker--time .picker__button--clear {
+ display: block;
+ width: 80%;
+ margin: 1em auto 0;
+ padding: 1em 1.25em;
+ background: none;
+ border: 0;
+ font-weight: 500;
+ font-size: .67em;
+ text-align: center;
+ text-transform: uppercase;
+ color: $color--gray;
+
+  li & {
+    margin-bottom: 0;
+  }
+}
+.picker--time .picker__button--clear:hover,
+.picker--time .picker__button--clear:focus {
+ color: $color--nearBlack;
+ background: $color--lightBlue;
+ background: $color--red;
+ border-color: $color--red;
+ cursor: pointer;
+ color: $color--white;
+ outline: none;
+}
+.picker--time .picker__button--clear:before {
+ top: -.25em;
+ color: $color--gray;
+ font-size: 1.25em;
+ font-weight: bold;
+}
+.picker--time .picker__button--clear:hover:before,
+.picker--time .picker__button--clear:focus:before {
+ color: $color--white;
+ border-color: $color--white;
+}
+
+/* ==========================================================================
+  $CLASSIC-TIME-PICKER
+  ========================================================================== */
+/**
+* Note: the root picker element should __NOT__ be styled
+* more than what’s here. Style the `.picker__holder` instead.
+*/
+.picker--time {
+ min-width: 256px;
+ max-width: 320px;
+}
+/**
+* The holder is the base of the picker.
+*/
+.picker--time .picker__holder {
+ background: $color--lightGray;
+}
+@media (min-height: 4.125em) {
+ .picker--time .picker__holder {
+   font-size: .875em;
+ }
+}
+/**
+* The box contains the list of times.
+*/
+.picker--time .picker__box {
+ padding: 0;
+ position: relative;
+}

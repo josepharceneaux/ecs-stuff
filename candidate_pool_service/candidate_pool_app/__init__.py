@@ -27,6 +27,11 @@ api.add_resource(TalentPoolApi, '/talent-pools/<int:id>', '/talent-pools')
 api.add_resource(TalentPoolGroupApi, '/groups/<int:group_id>/talent_pools')
 api.add_resource(TalentPoolCandidateApi, '/talent-pools/<int:id>/candidates')
 
+# Smartlists
+from api.smartlists import SmartlistResource, SmartlistCandidates
+api.add_resource(SmartlistResource, '/v1/smartlists/<int:id>', '/v1/smartlists')
+api.add_resource(SmartlistCandidates, '/v1/smartlists/<int:smartlist_id>/candidates')
+
 db.create_all()
 db.session.commit()
 

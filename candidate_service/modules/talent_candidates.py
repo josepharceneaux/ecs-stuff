@@ -31,15 +31,15 @@ from candidate_service.common.models.user import User
 from candidate_service.common.error_handling import InvalidUsage
 
 # Validations
-from candidate_service.common.utils.validators import (sanitize_zip_code, is_number)
+from candidate_service.common.utils.validators import (sanitize_zip_code, is_number, format_phone_number)
 
 # Common utilities
-from candidate_service.common.utils.common_functions import get_coordinates
+from flask.ext.common.common.geo_services.geo_coordinates import get_coordinates
 
 ##################################################
 # Helper Functions For Retrieving Candidate Info #
 ##################################################
-def fetch_candidate_info(candidate_id, fields=None):
+def fetch_candidate_info(candidate, fields=None):
     """
     Fetch Candidate and candidate related objects via Candidate's id
     :type       candidate_id: int
@@ -48,20 +48,14 @@ def fetch_candidate_info(candidate_id, fields=None):
     :return:    Candidate dict
     :rtype:     dict[str, T]
     """
-    assert isinstance(candidate_id, (int, long))
-    candidate = db.session.query(Candidate).get(candidate_id)
-
-    if not candidate:
-        logger.error('Candidate not found, candidate_id: %s', candidate_id)
-        return None
+    assert isinstance(candidate, Candidate)
+    candidate_id = candidate.id
 
     get_all_fields = fields is None  # if fields is None, then get ALL the fields
 
     full_name = None
     if get_all_fields or 'full_name' in fields:
-        first_name = candidate.first_name or ''
-        last_name = candidate.last_name or ''
-        full_name = (first_name.capitalize() + ' ' + last_name.capitalize()).strip()
+        full_name = format_candidate_full_name(candidate)
 
     created_at_datetime = None
     if get_all_fields or 'created_at_datetime' in fields:
@@ -153,6 +147,19 @@ def fetch_candidate_info(candidate_id, fields=None):
     return return_dict
 
 
+def format_candidate_full_name(candidate):
+    first_name, middle_name, last_name = candidate.first_name, candidate.middle_name, candidate.last_name
+    full_name = ''
+    if first_name:
+        full_name = '%s ' % first_name
+    if middle_name:
+        full_name = '%s%s ' % (full_name, middle_name)
+    if last_name:
+        full_name = '%s%s' % (full_name, last_name)
+
+    return full_name.title()
+
+
 def candidate_emails(candidate):
     """
     :type candidate:    Candidate
@@ -215,7 +222,7 @@ def candidate_experiences(candidate_id):
                  CandidateExperience.start_year.desc(),
                  CandidateExperience.start_month.desc())
     return [{'id': experience.id,
-             'company': experience.organization,
+             'organization': experience.organization,
              'position': experience.position,
              'start_date': date_of_employment(year=experience.start_year, month=experience.start_month or 1),
              'end_date': date_of_employment(year=experience.end_year, month=experience.end_month or 1),
@@ -545,7 +552,7 @@ def create_or_update_candidate_from_params(
     :type source_id:                int
     :type objective:                str
     :type summary:                  str
-    :return:                        dict(candidate_id=candidate_id)
+    :rtype                          dict
     """
     # Format inputs
     added_time = added_time or datetime.datetime.now()
@@ -902,7 +909,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
     for education in educations:
         # CandidateEducation
         education_dict = dict(
-            list_order=education.get('list_order', 1),
+            list_order=education.get('list_order', 1) or 1,
             school_name=education.get('school_name'),
             school_type=education.get('school_type'),
             city=education.get('city'),
@@ -922,7 +929,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
             db.session.query(CandidateEducation).filter_by(id=education_id).update(education_dict)
 
             # CandidateEducationDegree
-            education_degrees = education.get('degrees', [])
+            education_degrees = education.get('degrees') or []
             for education_degree in education_degrees:
                 education_degree_dict = dict(
                     list_order=education_degree.get('list_order'),
@@ -948,7 +955,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
                         filter_by(candidate_education_id=education_id).update(education_degree_dict)
 
                     # CandidateEducationDegreeBullet
-                    education_degree_bullets = education_degree.get('bullets', [])
+                    education_degree_bullets = education_degree.get('bullets') or []
                     for education_degree_bullet in education_degree_bullets:
                         education_degree_bullet_dict = dict(
                             concentration_type=education_degree_bullet.get('major'),
@@ -977,7 +984,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
                     can_edu_degree_id = candidate_education_degree.id
 
                     # Add CandidateEducationDegreeBullets
-                    education_degree_bullets = education_degree.get('bullets', [])
+                    education_degree_bullets = education_degree.get('bullets') or []
                     for education_degree_bullet in education_degree_bullets:
                         db.session.add(CandidateEducationDegreeBullet(
                             candidate_education_degree_id=can_edu_degree_id,
@@ -996,7 +1003,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
             education_id = candidate_education.id
 
             # CandidateEducationDegree
-            education_degrees = education.get('degrees')
+            education_degrees = education.get('degrees') or []
             for education_degree in education_degrees:
 
                 # Add CandidateEducationDegree
@@ -1021,7 +1028,7 @@ def _add_or_update_educations(candidate_id, educations, added_time):
                 education_degree_id = candidate_education_degree.id
 
                 # CandidateEducationDegreeBullet
-                degree_bullets = education_degree.get('bullets', [])
+                degree_bullets = education_degree.get('bullets') or []
                 for degree_bullet in degree_bullets:
 
                     # Add CandidateEducationDegreeBullet
@@ -1046,7 +1053,7 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time):
     for work_experience in work_experiences:
         # CandidateExperience
         experience_dict = dict(
-            list_order=work_experience.get('list_order', 1),
+            list_order=work_experience.get('list_order', 1) or 1,
             organization=work_experience.get('organization'),
             position=work_experience.get('position'),
             city=work_experience.get('city'),
@@ -1069,7 +1076,7 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time):
             db.session.query(CandidateExperience).filter_by(candidate_id=candidate_id).update(experience_dict)
 
             # CandidateExperienceBullet
-            experience_bullets = work_experience.get('bullets', [])
+            experience_bullets = work_experience.get('bullets') or []
             for experience_bullet in experience_bullets:
                 experience_bullet_dict = dict(
                     list_order=experience_bullet.get('list_order'),
@@ -1097,7 +1104,7 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time):
             experience_id = experience.id
 
             # CandidateExperienceBullet
-            experience_bullets = work_experience.get('bullets', [])
+            experience_bullets = work_experience.get('bullets') or []
             for experience_bullet in experience_bullets:
                 db.session.add(CandidateExperienceBullet(
                     candidate_experience_id=experience_id,
@@ -1148,17 +1155,19 @@ def _add_or_update_emails(candidate_id, emails):
     if any([email.get('is_default') for email in emails]):
         CandidateEmail.set_is_default_to_false(candidate_id=candidate_id)
 
+    emails_has_label = any([email.get('label') for email in emails])
     emails_has_default = any([email.get('is_default') for email in emails])
     for i, email in enumerate(emails):
 
         # If there's no is_default, the first email should be default
-        is_default = email.get('is_default')
-        is_default = i == 0 if not emails_has_default else is_default
+        is_default = i == 0 if not emails_has_default else email.get('is_default')
+        # If there's no label, the first email's label will be 'Primary', rest will be 'Other'
+        email_label = 'Primary' if (not emails_has_label and i == 0) else email.get('label')
         email_address = email.get('address')
 
         email_dict = dict(
             address=email_address,
-            email_label_id=EmailLabel.email_label_id_from_email_label(email_label=email.get('label')),
+            email_label_id=EmailLabel.email_label_id_from_email_label(email_label=email_label),
             is_default=is_default
         )
 
@@ -1186,17 +1195,21 @@ def _add_or_update_phones(candidate_id, phones):
     if any([phone.get('is_default') for phone in phones]):
         CandidatePhone.set_is_default_to_false(candidate_id=candidate_id)
 
-    # TODO: parse out phone extension. Currently the value + extension are being added to the phone's value in the db
-    phone_has_default = any([phone.get('is_default') for phone in phones])
+    phones_has_label = any([phone.get('label') for phone in phones])
+    phones_has_default = any([phone.get('is_default') for phone in phones])
     for i, phone in enumerate(phones):
 
         # If there's no is_default, the first phone should be default
-        is_default = phone.get('is_default')
-        is_default = i == 0 if not phone_has_default else is_default
+        is_default = i == 0 if not phones_has_default else phone.get('is_default')
+        # If there's no label, the first phone's label will be 'Home', rest will be 'Other'
+        phone_label = 'Home' if (not phones_has_label and i == 0) else phone.get('label')
+        # Format phone number
+        value = phone.get('value')
+        phone_number = format_phone_number(value) if value else None
 
         phone_dict = dict(
-            value=phone.get('value'),
-            phone_label_id = PhoneLabel.phone_label_id_from_phone_label(phone_label=phone['label']),
+            value=phone_number,
+            phone_label_id = PhoneLabel.phone_label_id_from_phone_label(phone_label=phone_label),
             is_default=is_default
         )
 
@@ -1339,43 +1352,43 @@ def _add_or_update_social_networks(candidate_id, social_networks):
 ################################################
 # Helper Functions For Deleting Candidate Info #
 ################################################
-def _delete_candidates(candidate_ids, user_id, source_product_id):
-    """
-    Mark as web_hidden in db, then delete from search & db, then delete all candidate data from S3
-
-    :type candidate_ids: list[int]
-    :type user_id: int
-    :type source_product_id: int
-    :return: Number of deleted candidates
-    """
-    # Delete candidates from CloudSearch, 100 at a time
-    list_offset = 0
-    list_segment = candidate_ids[0:100]
-    candidates = db.session.query(Candidate).filter(Candidate.id.in_(candidate_ids))
-
-    from activity_service.activities_app.views.api import (TalentActivityManager, create_activity)
-
-    activity_api = TalentActivityManager()
-
-    while list_segment:
-        # Add activity for every candidate deleted
-        for candidate_id in list_segment:
-            candidate = candidates.filter(Candidate.id == candidate_id).first()
-            if candidate:
-                create_activity(user_id=user_id, type_=activity_api.CANDIDATE_DELETE,
-                                source_table='candidate', source_id=candidate_id,
-                                params=dict(source_product_id=source_product_id,
-                                            formatted_name=candidate.formatted_name))
-
-        # Delete all candidates in segment
-        db.session.query(Candidate).filter(Candidate.id.in_(list_segment)).delete(synchronize_session=False)
-
-        # Get next segment
-        list_offset += 100
-        list_segment = candidate_ids[list_offset:(list_offset + 100)]
-
-    # TODO: Delete files from S3
-    # TODO: Delete files from CloudSearch
-
-    db.session.commit()
-    return len(candidate_ids)
+# def _delete_candidates(candidate_ids, user_id, source_product_id):
+#     """
+#     Mark as web_hidden in db, then delete from search & db, then delete all candidate data from S3
+#
+#     :type candidate_ids: list[int]
+#     :type user_id: int
+#     :type source_product_id: int
+#     :return: Number of deleted candidates
+#     """
+#     # Delete candidates from CloudSearch, 100 at a time
+#     list_offset = 0
+#     list_segment = candidate_ids[0:100]
+#     candidates = db.session.query(Candidate).filter(Candidate.id.in_(candidate_ids))
+#
+#     from activity_service.activities_app.views.api import (TalentActivityManager, create_activity)
+#
+#     activity_api = TalentActivityManager()
+#
+#     while list_segment:
+#         # Add activity for every candidate deleted
+#         for candidate_id in list_segment:
+#             candidate = candidates.filter(Candidate.id == candidate_id).first()
+#             if candidate:
+#                 create_activity(user_id=user_id, type_=activity_api.CANDIDATE_DELETE,
+#                                 source_table='candidate', source_id=candidate_id,
+#                                 params=dict(source_product_id=source_product_id,
+#                                             formatted_name=candidate.formatted_name))
+#
+#         # Delete all candidates in segment
+#         db.session.query(Candidate).filter(Candidate.id.in_(list_segment)).delete(synchronize_session=False)
+#
+#         # Get next segment
+#         list_offset += 100
+#         list_segment = candidate_ids[list_offset:(list_offset + 100)]
+#
+#     # TODO: Delete files from S3
+#     # TODO: Delete files from CloudSearch
+#
+#     db.session.commit()
+#     return len(candidate_ids)

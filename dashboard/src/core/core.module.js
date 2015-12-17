@@ -3,6 +3,7 @@
 
     angular.module('app.core', [
         // Angular modules
+        'ngCookies',
         'ngSanitize',
         'angular-oauth2',
 
@@ -12,6 +13,7 @@
         'app.config',
 
         // 3rd Party modules
+        'ngTagsInput',
         'pickadate',
         'toastr',
         'ui.router'

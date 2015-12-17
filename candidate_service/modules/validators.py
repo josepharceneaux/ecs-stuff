@@ -1,14 +1,17 @@
 """
 Functions related to candidate_service/candidate_app/api validations
 """
-from sqlalchemy import and_
 from candidate_service.common.models.db import db
+from candidate_service.candidate_app import logger
 from candidate_service.common.models.candidate import Candidate
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
 from candidate_service.common.models.email_marketing import EmailCampaign
-from candidate_service.common.error_handling import InvalidUsage, ForbiddenError
-
+from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH,
+                                                     SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH)
+from candidate_service.common.error_handling import InvalidUsage
+from candidate_service.common.utils.validators import is_number
+from datetime import datetime
 
 def does_candidate_belong_to_user(user_row, candidate_id):
     """
@@ -19,6 +22,7 @@ def does_candidate_belong_to_user(user_row, candidate_id):
     :type   user_row: User
     :rtype: bool
     """
+    assert isinstance(candidate_id, (int, long))
     candidate_row = db.session.query(Candidate).join(User).filter(
         Candidate.id == candidate_id, Candidate.user_id == user_row.id,
         User.domain_id == user_row.domain_id
@@ -71,91 +75,139 @@ def is_area_of_interest_authorized(user_domain_id, area_of_interest_ids):
     return exists
 
 
-def does_email_campaign_belong_to_domain(user_row):
+def does_email_campaign_belong_to_domain(user):
     """
     Function retrieves all email campaigns belonging to user's domain
     :rtype: bool
     """
+    assert isinstance(user, User)
     email_campaign_rows = db.session.query(EmailCampaign).join(User).\
-        filter(User.domain_id == user_row.domain_id).first()
+        filter(User.domain_id == user.domain_id).first()
 
     return True if email_campaign_rows else False
 
 
-def validate_and_parse_request_data(data):
-    return_fields = data.get('fields').split(',') if data.get('fields') else []
-    candidate_ids_only = False
-    count_only = False
-    if 'candidate_ids_only' in return_fields:
-        candidate_ids_only = True
-    if 'count_only' in return_fields:
-        count_only = True
-
-    return {'candidate_ids_only': candidate_ids_only,
-            'count_only': count_only}
+def validate_is_digit(key, value):
+    if not value.isdigit():
+        raise InvalidUsage("`%s` should be a whole number" % key, 400)
+    return value
 
 
-def validate_list_belongs_to_domain(smartlist, user_id):
+def validate_is_number(key, value):
+    if not is_number(value):
+        raise InvalidUsage("`%s` should be a numeric value" % key, 400)
+
+
+def validate_id_list(key, values):
+    if ',' in values:
+        values = values.split(',')
+        for value in values:
+            if not value.strip().isdigit():
+                raise InvalidUsage("`%s` must be comma separated ids" % key)
+        # if multiple values then return as list else single value.
+        return values[0] if values.__len__() == 1 else values
+    else:
+        return values.strip()
+
+
+def string_list(key, values):
+    if ',' in values:
+        values = [value.strip() for value in values.split(',') if value.strip()]
+        return values[0] if values.__len__() == 1 else values
+
+
+def validate_sort_by(key, value):
+    # If sorting is present, modify it according to cloudsearch sorting variables.
+    try:
+        sort_by = SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH[value]
+    except KeyError:
+        raise InvalidUsage(error_message="sort_by `%s` is not correct input for sorting." % value, error_code=400)
+    return sort_by
+
+
+def validate_fields(key, value):
+    # If `fields` are present, validate and modify `fields` values according to cloudsearch supported return field names.
+    fields = [field.strip() for field in value.split(',') if field.strip()]
+    try:
+        fields = ','.join([RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH[field] for field in fields])
+    except KeyError:
+        raise InvalidUsage(error_message="Field name `%s` is not correct `return field` name", error_code=400)
+    return fields
+
+
+def convert_date(key, value):
     """
-    Validates if given list belongs to user's domain
-    :param smartlist: smart list database row
-    :param user_id:
-    :return:False, if list does not belongs to current user's domain else True
+    Convert the given date into cloudsearch's desired format and return.
+    Raise error if input date string is not matching the "MM/DD/YYYY" format.
     """
-    if smartlist.user_id == user_id:
-        # if user id is same then smart list belongs to user
-        return True
-    user = User.query.get(user_id)
-    # TODO: Revisit; check for alternate query.
-    domain_users = User.query.with_entities(User.id).filter_by(domain_id=user.domain_id).all()
-    domain_user_ids = [row[0] for row in domain_users]
-    if user_id in domain_user_ids:
-        # if user belongs to same domain i.e. smartlist belongs to domain
-        return True
-    return False
-
-
-def _validate_and_format_smartlist_post_data(data, user_id):
-    """Validates request.form data against required parameters
-    strips unwanted whitespaces (if present)
-    creates list of candidate ids (if present)
-    returns list of candidate ids or search params
-    """
-    smartlist_name = data.get('name')
-    candidate_ids = data.get('candidate_ids')  # comma separated ids
-    search_params = data.get('search_params')
-    if not smartlist_name or not smartlist_name.strip():
-        raise InvalidUsage(error_message="Missing input: `name` is required for creating list", error_code=400)
-    # any of the parameters "search_params" or "candidate_ids" should be present
-    if not candidate_ids and not search_params:
-        raise InvalidUsage(error_message="Missing input: Either `search_params` or `candidate_ids` are required",
-                           error_code=400)
-    # Both the parameters will create a confusion, so only one parameter should be present. Its better to notify user.
-    if candidate_ids and search_params:
-        raise InvalidUsage(
-            error_message="Bad input: `search_params` and `candidate_ids` both are present. Service accepts only one",
-            error_code=400)
-
-    formatted_request_data = {'name': smartlist_name.strip(),
-                              'candidate_ids': None,
-                              'search_params': None}
-    if candidate_ids:
+    if value:
         try:
-            # Remove duplicate ids, in case user accidentally added duplicates
-            # remove unwanted whitespaces and convert unicode to long
-            candidate_ids = [long(candidate_id.strip()) for candidate_id in set(candidate_ids.split(',')) if candidate_id]
+            formatted_date = datetime.strptime(value, '%m/%d/%Y')
         except ValueError:
-            raise InvalidUsage("Incorrect input: Candidate ids must be numeric value and separated by comma")
-        # Check if provided candidate ids are present in our database and also belongs to auth user's domain
-        if not validate_candidate_ids_belongs_to_user_domain(candidate_ids, user_id):
-            raise ForbiddenError("Provided list of candidates does not belong to user's domain")
-        formatted_request_data['candidate_ids'] = candidate_ids
-    else:  # if not candidate_ids then it is search_params
-        formatted_request_data['search_params'] = search_params.strip()
-    return formatted_request_data
+            raise InvalidUsage("Field `%s` contains incorrect date format. "
+                               "Date format should be MM/DD/YYYY (eg. 12/31/2015)" % key)
+        return formatted_date.isoformat() + 'Z'  # format it as required by cloudsearch.
 
 
-def validate_candidate_ids_belongs_to_user_domain(candidate_ids, user_id):
-    user = User.query.get(user_id)
-    return db.session.query(Candidate.id).join(User, Candidate.user_id == User.id).filter(
-        and_(User.domain_id == user.domain_id, Candidate.id.in_(candidate_ids))).count() == len(candidate_ids)
+SEARCH_INPUT_AND_VALIDATIONS = {
+    "sort_by": 'sorting',
+    "limit": 'digit',
+    "page": 'digit',
+    "query": '',
+    # Facets
+    "date_from": 'date_range',
+    "date_to": 'date_range',
+    "user_ids": 'id_list',
+    "location": '',
+    "radius": 'number',
+    "area_of_interest_ids": 'id_list',
+    "status_ids": 'id_list',
+    "source_ids": 'id_list',
+    "minimum_years_experience": 'number',
+    "maximum_years_experience": 'number',
+    "skills": 'string_list',
+    "job_title": 'string_list',
+    "school_name": 'string_list',
+    "degree_type": 'string_list',
+    "major": 'string_list',
+    "degree_end_year_from": 'digit',
+    "degree_end_year_to": 'digit',
+    "military_service_status": 'string_list',
+    "military_branch": 'string_list',
+    "military_highest_grade": 'string_list',
+    "military_end_date_from": 'digit',
+    "military_end_date_to": 'digit',
+    # return fields
+    "fields": 'return_fields',
+    # candidate id : to check if candidate is present in smartlist.
+    "id": 'digit'
+}
+
+
+def validate_and_format_data(request_data):
+    request_vars = {}
+    for key, value in request_data.iteritems():
+        if key not in SEARCH_INPUT_AND_VALIDATIONS:
+            raise InvalidUsage("`%s` is an invalid input" % key, 400)
+        if value.strip():
+            if SEARCH_INPUT_AND_VALIDATIONS[key] == '':
+                request_vars[key] = value
+            if SEARCH_INPUT_AND_VALIDATIONS[key] == 'digit':
+                request_vars[key] = validate_is_digit(key, value)
+            if SEARCH_INPUT_AND_VALIDATIONS[key] == 'number':
+                request_vars[key] = validate_is_number(key, value)
+            if SEARCH_INPUT_AND_VALIDATIONS[key] == "id_list":
+                request_vars[key] = validate_id_list(key, value)
+            if SEARCH_INPUT_AND_VALIDATIONS[key] == "sorting":
+                request_vars[key] = validate_sort_by(key, value)
+            if SEARCH_INPUT_AND_VALIDATIONS[key] == "string_list":
+                request_vars[key] = string_list(key, value)
+            if SEARCH_INPUT_AND_VALIDATIONS[key] == "return_fields":
+                request_vars[key] = validate_fields(key, value)
+            if SEARCH_INPUT_AND_VALIDATIONS[key] == "date_range":
+                request_vars[key] = convert_date(key, value)
+
+        # Custom fields. Add custom fields to request_vars.
+        if key.startswith('cf-'):
+            request_vars[key] = value
+    return request_vars
