@@ -20,7 +20,8 @@ def get_candidates(smartlist, access_token, candidate_ids_only=False, count_only
     # If it is a smartlist, perform the dynamic search
     if smartlist.search_params:
         search_params = json.loads(smartlist.search_params)
-        # TODO: Add logic for candidates_ids_only and max_candidates.
+        if candidate_ids_only:
+            search_params['fields'] = 'id'
         if count_only:
             search_params['fields'] = 'count_only'
         search_results = search_candidates_from_params(search_params, access_token)
@@ -36,8 +37,7 @@ def get_candidates(smartlist, access_token, candidate_ids_only=False, count_only
         if max_candidates:
             smartlist_candidate_rows = smartlist_candidate_rows.limit(max_candidates)
 
-        # count = smartlist_candidate_rows.count()
-        candidates= []
+        candidates = []
         candidate_ids = []
         for smartlist_candidate_row in smartlist_candidate_rows:
             candidates.append({'id': smartlist_candidate_row.candidate_id})

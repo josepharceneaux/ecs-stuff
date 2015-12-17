@@ -22,7 +22,7 @@ class SmartlistCandidates(Resource):
             URL Arguments `smartlist_id` (Required): id of smartlist
             Accepts (query string parameters):
                 fields :: comma separated values
-                        `id` --> returns candidate ids only
+                        `candidate_ids_only` --> returns candidate ids only
                         `count_only` --> returns only the count of candidates present in list
                         `all_fields`  --> returns all candidates' fields (all attributes)
                         'fields' parameter not present --> same as 'all' parameter --> returns all candidate fields
