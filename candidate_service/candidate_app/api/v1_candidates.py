@@ -59,9 +59,8 @@ class CandidatesResource(Resource):
         if not body_dict:
             get_all_domain_candidates = True
 
-        if get_all_domain_candidates:  # Retrieve user's candidates that belong to user's domain
-            candidates = db.session.query(Candidate).join(User).filter(Candidate.user_id==authed_user.id).\
-                filter(User.domain_id==authed_user.domain_id).all()
+        if get_all_domain_candidates:  # Retrieve user's candidates
+            candidates = authed_user.candidates
 
             retrieved_candidates = []
             for candidate in candidates:
@@ -69,6 +68,7 @@ class CandidatesResource(Resource):
                 # If Candidate is web hidden, it is assumed "deleted"
                 if candidate.is_web_hidden:
                     raise NotFoundError(error_message='Candidate not found.')
+
                 retrieved_candidates.append(fetch_candidate_info(candidate))
 
         else: # Retrieve via a list of candidate IDs

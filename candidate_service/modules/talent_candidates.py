@@ -1515,8 +1515,7 @@ def _add_or_update_social_networks(candidate_id, social_networks, user_id, edit_
 # Helper Functions For Tracking updates made to the Candidate #
 ###############################################################
 def _track_candidate_edits(update_dict, candidate, user_id, edit_time):
-    fields = update_dict.keys()
-    for field in fields:
+    for field in update_dict:
 
         # If field_id is not found, do not add record
         field_id = CandidateEdit.get_field_id(table_name='candidate', field_name=field)
@@ -1534,8 +1533,7 @@ def _track_candidate_edits(update_dict, candidate, user_id, edit_time):
 
 
 def _track_candidate_address_edits(address_dict, candidate_id, candidate_address, user_id, edit_time):
-    fields = address_dict.keys()
-    for field in fields:
+    for field in address_dict:
 
         # If field_id is not found, do not add record
         field_id = CandidateEdit.get_field_id('candidate_address', field)
@@ -1559,8 +1557,7 @@ def _track_candidate_address_edits(address_dict, candidate_id, candidate_address
 
 def _track_candidate_custom_field_edits(custom_field_dict, candidate_custom_field,
                                         candidate_id, user_id, edit_time):
-    fields = custom_field_dict.keys()
-    for field in fields:
+    for field in custom_field_dict:
 
         # If field_id is not found, do not add record
         field_id = CandidateEdit.get_field_id('candidate_custom_field', field)
@@ -1585,8 +1582,7 @@ def _track_candidate_custom_field_edits(custom_field_dict, candidate_custom_fiel
 
 def _track_candidate_education_edits(education_dict, candidate_education,
                                      candidate_id, user_id, edit_time):
-    fields = education_dict.keys()
-    for field in fields:
+    for field in education_dict:
 
         # If field_id is not found, do not add to record
         field_id = CandidateEdit.get_field_id('candidate_education', field)
@@ -1610,8 +1606,7 @@ def _track_candidate_education_edits(education_dict, candidate_education,
 
 def _track_candidate_education_degree_edits(degree_dict, candidate_education_degree,
                                             candidate_id, user_id, edit_time):
-    fields = degree_dict.keys()
-    for field in fields:
+    for field in degree_dict:
 
         # If field_id is not found, do not add record
         field_id = CandidateEdit.get_field_id('candidate_education_degree', field)
@@ -1635,8 +1630,7 @@ def _track_candidate_education_degree_edits(degree_dict, candidate_education_deg
 
 def _track_candidate_education_degree_bullet_edits(degree_bullet_dict, candidate_education_degree_bullet,
                                                    candidate_id, user_id, edit_time):
-    fields = degree_bullet_dict.keys()
-    for field in fields:
+    for field in degree_bullet_dict:
 
         # If field_id is not found, do not add record
         field_id = CandidateEdit.get_field_id('candidate_education_degree_bullet', field)
@@ -1660,8 +1654,7 @@ def _track_candidate_education_degree_bullet_edits(degree_bullet_dict, candidate
 
 def _track_candidate_experience_edits(experience_dict, candidate_experience, candidate_id,
                                       user_id, edit_time):
-    fields = experience_dict.keys()
-    for field in fields:
+    for field in experience_dict:
 
         # If field_id is not found, do not add record
         field_id = CandidateEdit.get_field_id('candidate_experience', field)
@@ -1685,8 +1678,7 @@ def _track_candidate_experience_edits(experience_dict, candidate_experience, can
 
 def _track_candidate_experience_bullet_edits(bullet_dict, candidate_experience_bullet, candidate_id,
                                              user_id, edit_time):
-    fields = bullet_dict.keys()
-    for field in fields:
+    for field in bullet_dict:
 
         # If field_id is not found, do not add record
         field_id = CandidateEdit.get_field_id('candidate_experience_bullet', field)
@@ -1710,8 +1702,7 @@ def _track_candidate_experience_bullet_edits(bullet_dict, candidate_experience_b
 
 def _track_candidate_work_preference_edits(work_preference_dict, candidate_work_preference,
                                            candidate_id, user_id, edit_time):
-    fields = work_preference_dict.keys()
-    for field in fields:
+    for field in work_preference_dict:
 
         # If field_id is not found, do not add record
         field_id = CandidateEdit.get_field_id('candidate_work_preference', field)
@@ -1734,8 +1725,7 @@ def _track_candidate_work_preference_edits(work_preference_dict, candidate_work_
 
 
 def _track_candidate_email_edits(email_dict, candidate_email, candidate_id, user_id, edit_time):
-    fields = email_dict.keys()
-    for field in fields:
+    for field in email_dict:
 
         # If field_id is not found, do not add record
         field_id = CandidateEdit.get_field_id('candidate_email', field)
@@ -1758,8 +1748,7 @@ def _track_candidate_email_edits(email_dict, candidate_email, candidate_id, user
 
 
 def _track_candidate_phone_edits(phone_dict, candidate_phone, candidate_id, user_id, edit_time):
-    fields = phone_dict.keys()
-    for field in fields:
+    for field in phone_dict:
 
         # If field_id is not found, do not add record
         field_id = CandidateEdit.get_field_id('candidate_phone', field)
@@ -1783,8 +1772,7 @@ def _track_candidate_phone_edits(phone_dict, candidate_phone, candidate_id, user
 
 def _track_candidate_military_service_edits(military_service_dict, candidate_military_service,
                                             candidate_id, user_id, edit_time):
-    fields = military_service_dict.keys()
-    for field in fields:
+    for field in military_service_dict:
 
         # If field_id is not found, do not add record
         field_id = CandidateEdit.get_field_id('candidate_military_service', field)
@@ -1808,8 +1796,7 @@ def _track_candidate_military_service_edits(military_service_dict, candidate_mil
 
 def _track_candidate_preferred_location_edits(preferred_location_dict, candidate_preferred_location,
                                               candidate_id, user_id, edit_time):
-    fields = preferred_location_dict.keys()
-    for field in fields:
+    for field in preferred_location_dict:
 
         # If field_id is not found, do not add record
         field_id = CandidateEdit.get_field_id('candidate_preferred_location', field)
@@ -1832,8 +1819,7 @@ def _track_candidate_preferred_location_edits(preferred_location_dict, candidate
 
 
 def _track_candidate_skill_edits(skill_dict, candidate_skill, candidate_id, user_id, edit_time):
-    fields = skill_dict.keys()
-    for field in fields:
+    for field in skill_dict:
 
         # If field_id is not found, do not add record
         field_id = CandidateEdit.get_field_id('candidate_skill', field)
@@ -1856,8 +1842,7 @@ def _track_candidate_skill_edits(skill_dict, candidate_skill, candidate_id, user
 
 
 def _track_candidate_social_network_edits(sn_dict, candidate_social_network, candidate_id, user_id, edit_time):
-    fields = sn_dict.keys()
-    for field in fields:
+    for field in sn_dict:
 
         # If field_id is not found, do not add record
         field_id = CandidateEdit.get_field_id('candidate_social_network', field)
