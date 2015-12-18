@@ -361,7 +361,7 @@ class TalentPoolCandidateApi(Resource):
                                                   % request.user.id)
 
         candidate_ids = [talent_pool_candidate.candidate_id for talent_pool_candidate in
-                         TalentPoolCandidate.query.filter_by(talent_pool_id=talent_pool_id)]
+                         TalentPoolCandidate.query.filter_by(talent_pool_id=talent_pool_id).all()]
         talent_pool_candidates = Candidate.query.filter(Candidate.id.in_(candidate_ids)).all()
         return {
             'talent_pool_candidates': [

@@ -454,7 +454,7 @@ class TalentPipelineSmartListApi(Resource):
         }
 
 
-class TalentPipelineCandidate(Resource):
+class TalentPipelineCandidates(Resource):
 
     # Access token decorator
     decorators = [require_oauth]
@@ -462,8 +462,8 @@ class TalentPipelineCandidate(Resource):
     @require_all_roles('CAN_GET_TALENT_PIPELINE_CANDIDATES')
     def get(self, **kwargs):
         """
-        GET /talent-pipeline/<id>/candidates   Fetch all candidates of a talent-pipeline
-
+        GET /talent-pipeline/<id>/candidates  Fetch all candidates of a talent-pipeline
+        Query String: {'fields': 'id,email', 'sort_by': 'match' 'limit':10, 'page': 2}
         :return A dictionary containing list of candidates belonging to a talent-pipeline
 
         :rtype: dict
@@ -486,10 +486,10 @@ class TalentPipelineCandidate(Resource):
         search_params, dumb_lists = [], []
 
         try:
-            if talent_pipeline_id.search_params:
-                search_params.append(json.loads(talent_pipeline_id.search_params))
+            if talent_pipeline.search_params and json.loads(talent_pipeline.search_params):
+                search_params.append(json.loads(talent_pipeline.search_params))
             for smart_list in smart_lists:
-                if smart_list.search_params:
+                if smart_list.search_params and json.loads(smart_list.search_params):
                     search_params.append(json.loads(smart_list.search_params))
                 else:
                     dumb_lists.append(smart_list)
@@ -498,7 +498,7 @@ class TalentPipelineCandidate(Resource):
             raise InvalidUsage(error_message="Search params of talent-pipeline or its smart-lists are in bad format "
                                              "because: %s" % e.message)
 
-        headers = {'Authorization': 'Bearer %s' % request.oauth_token}
+        headers = {'Authorization': request.oauth_token}
         request_params, dumb_list_candidates = {}, {'candidates': [], 'total_found': 0}
 
         # Get all candidates of all dumb_lists of a given talent_pipeline
@@ -525,7 +525,7 @@ class TalentPipelineCandidate(Resource):
             request_params['sort_by'] = request.args.get('sort_by')
             request_params['limit'] = request.args.get('limit')
             request_params['page'] = request.args.get('page')
-            request_params['search_params'] = search_params
+            request_params['search_params'] = json.dumps(search_params)
 
             request_params = dict((k, v) for k, v in request_params.iteritems() if v)
 
@@ -546,11 +546,10 @@ class TalentPipelineCandidate(Resource):
 
                 # Remove redundant candidates from all candidates of a given talent-pipeline
                 for key, candidate in enumerate(json_response['candidates']):
-                    if str(candidate.get('id')) in candidates_dict:
-                        json_response.pop(key)
-                    else:
+                    if str(candidate.get('id')) not in candidates_dict:
                         candidates_dict[str(candidate.get('id'))] = candidate
 
+                json_response['candidates'] = [candidate for index, candidate in candidates_dict.iteritems()]
                 json_response['total_found'] = len(json_response['candidates'])
                 return json_response
         else:

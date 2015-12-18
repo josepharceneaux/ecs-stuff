@@ -68,7 +68,7 @@ class TalentPipeline(db.Model):
     positions = db.Column(db.Integer, default=1, nullable=False)
     date_needed = db.Column(db.DateTime, nullable=False)
     owner_user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'),  nullable=False)
-    talent_pool_id = db.Column(db.Integer, db.ForeignKey('talent_pool.id'))
+    talent_pool_id = db.Column(db.Integer, db.ForeignKey('talent_pool.id'), nullable=False)
     search_params = db.Column(db.String(1023))
     added_time = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
     updated_time = db.Column(db.TIMESTAMP, server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
@@ -109,13 +109,11 @@ class SmartlistCandidate(db.Model):
     __tablename__ = 'smart_list_candidate'
 
     id = db.Column(db.Integer, primary_key=True)
-    smart_list_id = db.Column('SmartlistId', db.Integer, db.ForeignKey('smart_list.id',
-                                                                       ondelete='CASCADE'), nullable=False)
-    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id',
-                                                                      ondelete='CASCADE'), nullable=False)
+    smart_list_id = db.Column('SmartlistId', db.Integer, db.ForeignKey('smart_list.id', ondelete='CASCADE'), nullable=False)
+    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id', ondelete='CASCADE'), nullable=False)
     added_time = db.Column('AddedTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, server_default=db.
-                             text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"), nullable=False)
+    updated_time = db.Column('UpdatedTime', db.DateTime,
+                             server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"), nullable=False)
 
     smart_list = db.relationship('Smartlist', backref=db.backref('smart_list_candidate', cascade="all, delete-orphan"))
     candidate = db.relationship('Candidate', backref=db.backref('smart_list_candidate', cascade="all, delete-orphan"))

@@ -3,6 +3,7 @@ Helper functions related to retrieving, creating, updating, and deleting candida
 """
 # Standard libraries
 import datetime
+from flask import request
 import dateutil.parser
 import simplejson as json
 from datetime import date
@@ -21,6 +22,7 @@ from candidate_service.common.models.candidate import (
     CandidateExperienceBullet, ClassificationType
 )
 from candidate_service.common.models.candidate import EmailLabel
+from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
 from candidate_service.common.models.candidate import PhoneLabel
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.email_marketing import (EmailCampaign, EmailCampaignSend)
@@ -28,7 +30,7 @@ from candidate_service.common.models.misc import (Country, AreaOfInterest, Custo
 from candidate_service.common.models.user import User
 
 # Error handling
-from candidate_service.common.error_handling import InvalidUsage
+from candidate_service.common.error_handling import InvalidUsage, NotFoundError, UnauthorizedError
 
 # Validations
 from candidate_service.common.utils.validators import (sanitize_zip_code, is_number, format_phone_number)
@@ -121,6 +123,11 @@ def fetch_candidate_info(candidate, fields=None):
     if get_all_fields or 'dice_profile_id' in fields:
         dice_profile_id = candidate.dice_profile_id
 
+    talent_pool_ids = None
+    if get_all_fields or 'talent_pool_ids' in fields:
+        talent_pool_ids = [talent_pool_candidate.talent_pool_id for talent_pool_candidate in
+                           TalentPoolCandidate.query.filter_by(candidate_id=candidate.id).all()]
+
     return_dict = {
         'id': candidate_id,
         'full_name': full_name,
@@ -139,11 +146,12 @@ def fetch_candidate_info(candidate, fields=None):
         'social_networks': social_networks,
         'contact_history': history,
         'openweb_id': openweb_id,
-        'dice_profile_id': dice_profile_id
+        'dice_profile_id': dice_profile_id,
+        'talent_pool_ids': talent_pool_ids
     }
 
     # Remove keys with None values
-    return_dict = dict((k, v) for k, v in return_dict.iteritems() if v is not None)
+    return_dict = dict((k, v) for k, v in return_dict.iteritems() if v)
     return return_dict
 
 
@@ -504,7 +512,9 @@ def create_or_update_candidate_from_params(
         added_time=None,
         source_id=None,
         objective=None,
-        summary=None
+        summary=None,
+        talent_pool_ids=[],
+        delete_talent_pools=False
 ):
     """
     Function will parse each parameter and:
@@ -552,6 +562,8 @@ def create_or_update_candidate_from_params(
     :type source_id:                int
     :type objective:                str
     :type summary:                  str
+    :type talent_pool_ids:          list
+    :type delete_talent_pools:      bool
     :rtype                          dict
     """
     # Format inputs
@@ -597,6 +609,10 @@ def create_or_update_candidate_from_params(
                                       formatted_name, added_time, status_id,
                                       user_id, dice_profile_id, dice_social_profile_id,
                                       source_id, objective, summary)
+
+    # Add or update Candidate's talent-pools
+    if talent_pool_ids:
+        _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, delete_talent_pools)
 
     # Add or update Candidate's address(es)
     if addresses:
@@ -1347,6 +1363,39 @@ def _add_or_update_social_networks(candidate_id, social_networks):
         else:  # Add
             social_network_dict.update(dict(candidate_id=candidate_id))
             db.session.add(CandidateSocialNetwork(**social_network_dict))
+
+
+def _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, delete_talent_pools=False):
+
+    for talent_pool_id in talent_pool_ids:
+        if not is_number(talent_pool_id):
+            raise InvalidUsage(error_message="TalentPool id should be an integer")
+        else:
+            talent_pool = TalentPool.query.get(int(talent_pool_id))
+            if not talent_pool:
+                raise NotFoundError(error_message="TalentPool with id %s doesn't exist in database" % talent_pool_id)
+
+            if delete_talent_pools:
+                talent_pool_candidate = TalentPoolCandidate.query.filter_by(candidate_id=candidate_id,
+                                                                            talent_pool_id=talent_pool_id).first()
+                if not talent_pool_candidate:
+                    raise InvalidUsage("Candidate %s doesn't belong to TalentPool %s" % (candidate_id, talent_pool_id))
+                else:
+                    db.session.delete(talent_pool_candidate)
+            else:
+                if talent_pool.domain_id != request.user.domain_id:
+                    raise UnauthorizedError(error_message="TalentPool and logged in user belong to different domains")
+
+                if not TalentPoolGroup.query.filter_by(user_group_id=request.user.user_group_id,
+                                                       talent_pool_id=talent_pool_id).first():
+                    raise UnauthorizedError(error_message="TalentPool %s doesn't belong to UserGroup %s of logged-in "
+                                                          "user" % (talent_pool_id, request.user.user_group_id))
+
+                if TalentPoolCandidate.query.filter_by(candidate_id=candidate_id, talent_pool_id=talent_pool_id).first():
+                    raise InvalidUsage('Candidate %s already belongs to TalentPool %s' % (candidate_id, talent_pool_id))
+
+                talent_pool_candidate = TalentPoolCandidate(candidate_id=candidate_id, talent_pool_id=talent_pool_id)
+                db.session.add(talent_pool_candidate)
 
 
 ################################################

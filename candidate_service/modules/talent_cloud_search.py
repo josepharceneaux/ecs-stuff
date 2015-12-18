@@ -126,6 +126,7 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
     'military_branch':               dict(IndexFieldType='literal-array',   LiteralArrayOptions={'ReturnEnabled': False}),
     'military_highest_grade':        dict(IndexFieldType='literal-array',   LiteralArrayOptions={'ReturnEnabled': False}),
     'military_end_date':             dict(IndexFieldType='date-array',      DateArrayOptions={'ReturnEnabled': False}),
+    'talent_pools':                  dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
 }
 
 # Get all the credentials from environment variable
@@ -155,23 +156,23 @@ def get_cloud_search_connection():
 
         _cloud_search_domain = _cloud_search_connection_layer_2.lookup(CLOUD_SEARCH_DOMAIN_NAME)
         if not _cloud_search_domain:
-            raise Exception("No CloudSearch domain found")
+            _cloud_search_connection_layer_2.create_domain(CLOUD_SEARCH_DOMAIN_NAME)
 
     return _cloud_search_connection_layer_2
 
-
-def create_domain(domain_name=None):
-    """
-    Creates the given domain if doesn't exist
-
-    :param domain_name: the domain name. If none, uses the one from config
-    :return: Domain object, or None if not found
-    """
-    if not domain_name:
-        domain_name = CLOUD_SEARCH_DOMAIN_NAME
-    layer2 = get_cloud_search_connection()
-    if not layer2.lookup(domain_name):
-        return layer2.create_domain(domain_name)
+#
+# def create_domain(domain_name=None):
+#     """
+#     Creates the given domain if doesn't exist
+#
+#     :param domain_name: the domain name. If none, uses the one from config
+#     :return: Domain object, or None if not found
+#     """
+#     if not domain_name:
+#         domain_name = CLOUD_SEARCH_DOMAIN_NAME
+#     layer2 = get_cloud_search_connection()
+#     if not layer2.lookup(domain_name):
+#         return layer2.create_domain(domain_name)
 
 
 def make_search_service_public():
@@ -258,6 +259,9 @@ def _build_candidate_documents(candidate_ids):
                 candidate_address.coordinates AS `coordinates`,
                 GROUP_CONCAT(DISTINCT candidate_email.address SEPARATOR '%(sep)s') AS `email`,
 
+                # Talent Pools
+                GROUP_CONCAT(DISTINCT talent_pool_candidate.talent_pool_id SEPARATOR '%(sep)s') AS `talent_pools`,
+
                 # AOIs and Custom Fields
                 GROUP_CONCAT(DISTINCT candidate_area_of_interest.areaOfInterestId SEPARATOR '%(sep)s') AS `area_of_interest_id`,
                 GROUP_CONCAT(DISTINCT CONCAT(candidate_custom_field.customFieldId, '|', candidate_custom_field.value) SEPARATOR '%(sep)s') AS `custom_field_id_and_value`,
@@ -290,6 +294,7 @@ def _build_candidate_documents(candidate_ids):
 
     FROM        candidate
 
+    LEFT JOIN   talent_pool_candidate ON (candidate.id = talent_pool_candidate.candidate_id)
     LEFT JOIN   candidate_address ON (candidate.id = candidate_address.candidateId)
     LEFT JOIN   candidate_email ON (candidate.id = candidate_email.candidateId)
 
@@ -540,14 +545,14 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
         for var_name in request_vars.keys():
             if "[]" == var_name[-2:]:
                 request_vars[var_name[:-2]] = request_vars[var_name]
-        get_filter_query_from_request_vars(request_vars, domain_id)
-    else:
-        # Search all candidates under domain
-        filter_queries_list.append(["(term field=domain_id %s)" % domain_id])
+        get_filter_query_from_request_vars(request_vars)
+
+    # Search all candidates under domain
+    filter_queries_list.append(["(term field=domain_id %s)" % domain_id])
 
     # Add talent_pool_id in filter_queries
     if request_vars.get('talent_pool_id'):
-        filter_queries_list.append(["(term field=talent_pool_id %s)" % request_vars.get('talent_pool_id')])
+        filter_queries_list.append(["(term field=talent_pools  %s)" % request_vars.get('talent_pool_id')])
 
     # Sorting
     sort = '%s %s'
@@ -572,18 +577,15 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     elif search_limit == 0 or search_limit > CLOUD_SEARCH_MAX_LIMIT:
         search_limit = CLOUD_SEARCH_MAX_LIMIT
 
-    query_strings = []
-    for search_query in search_queries_list:
-        if search_query:
-            query_string = "(or %s)" % search_query
-            if request_vars.get('id'):
-                # If we want to check if a certain candidate ID is in a smartlist
-                query_string = "(and id:%s %s)" % (request_vars['id'], query_string)
+    if not search_queries_list:
+        # If no search query is provided, (may be in case of landing talent page) then fetch all results
+        query_string = "id:%s" % request_vars['id'] if request_vars.get('id') else "*:*"
 
-            query_strings.append(query_string)
-
-    query_string = "(and %s)" % " ".join(query_strings) if len(query_strings) > 1 else "id:%s" % request_vars['id'] \
-        if request_vars.get('id') else "*:*"
+    else:
+        query_string = "(and %s)" % " ".join(search_queries_list)
+        if request_vars.get('id'):
+            # If we want to check if a certain candidate ID is in a smartlist
+            query_string = "(and id:%s %s)" % (request_vars['id'], query_string)
 
     params = dict(query=query_string, sort=sort, start=offset, size=search_limit)
     params['query_parser'] = 'lucene'
@@ -1158,11 +1160,10 @@ def _get_candidates_fields_with_given_filters(fields_data):
         return required_search_result
 
 
-def get_filter_query_from_request_vars(request_vars, domain_id):
+def get_filter_query_from_request_vars(request_vars):
     """
     Get the filter query from requested filters
     :param request_vars:
-    :param domain_id
     :return: filter_query
     """
 
@@ -1294,15 +1295,14 @@ def get_filter_query_from_request_vars(request_vars, domain_id):
     for key, value in request_vars.items():
         if 'cf-' in key:
             filter_queries = filter_queries + _search_custom_fields(request_vars)
-    filter_queries.append("(term field=domain_id %s)" % domain_id)
 
     filter_queries_list.append(filter_queries)
 
     # Get filter_query for each of the search_params dictionary and push it to filter_queries_list
-    search_params_list = request_vars.get('search_params_list') or []
+    search_params_list = request_vars.get('search_params') or []
     if isinstance(search_params_list, list):
         for search_params in search_params_list:
-            get_filter_query_from_request_vars(search_params, domain_id)
+            get_filter_query_from_request_vars(search_params)
 
     return filter_queries_list
 

@@ -416,7 +416,7 @@ def talent_pool_second(request, domain_second, user_second):
 @pytest.fixture()
 def talent_pipeline(request, user_first, talent_pool):
     search_params = {
-        "skillDescriptionFacet": "Python",
+        "skills": "Python",
         "minimum_years_experience": "4",
         "location": "California"
     }

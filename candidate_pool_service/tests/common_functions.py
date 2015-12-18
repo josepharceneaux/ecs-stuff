@@ -1,6 +1,8 @@
 __author__ = 'ufarooqi'
 import requests
 import json
+from werkzeug.security import gen_salt
+from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline, Smartlist, SmartlistCandidate
 
 CANDIDATE_POOL_SERVICE_ENDPOINT = 'http://127.0.0.1:8008/%s'
 TALENT_POOL_API = CANDIDATE_POOL_SERVICE_ENDPOINT % 'talent-pools'
@@ -8,6 +10,7 @@ TALENT_POOL_GROUP_API = CANDIDATE_POOL_SERVICE_ENDPOINT % 'groups/%s/talent_pool
 TALENT_POOL_CANDIDATE_API = CANDIDATE_POOL_SERVICE_ENDPOINT % 'talent-pools/%s/candidates'
 TALENT_PIPELINE_API = CANDIDATE_POOL_SERVICE_ENDPOINT % 'talent-pipelines'
 TALENT_PIPELINE_SMART_LIST_API = CANDIDATE_POOL_SERVICE_ENDPOINT % 'talent-pipeline/%s/smart_lists'
+TALENT_PIPELINE_CANDIDATE_API = CANDIDATE_POOL_SERVICE_ENDPOINT % 'talent-pipeline/%s/candidates'
 
 
 def talent_pool_api(access_token, talent_pool_id='', data='', action='GET'):
@@ -105,3 +108,46 @@ def talent_pipeline_smart_list_api(access_token, talent_pipeline_id, data='', ac
         return response.json(), response.status_code
     else:
         raise Exception('No valid action is provided')
+
+
+def talent_pipeline_smart_list_api(access_token, talent_pipeline_id, params=''):
+
+    headers = {'Authorization': 'Bearer %s' % access_token}
+    response = requests.get(url=TALENT_PIPELINE_CANDIDATE_API % talent_pipeline_id, headers=headers, params=params)
+    return response.json(), response.status_code
+
+
+def prepare_pipeline_candidate_data(session, talent_pipeline, user):
+    """
+    This function will add a test dumb_list and smart_list to database and talent-pipeline
+    :param session: SQLAlchemy Session object
+    :param talent_pipeline: TalentPipeline object
+    :param user: User object
+    :return: test smart_list and dumb_list objects
+    """
+
+    test_smart_list = Smartlist(name=gen_salt(5), user_id=user.id, talent_pipeline_id=talent_pipeline.id)
+    test_dumb_list = Smartlist(name=gen_salt(5), user_id=user.id, talent_pipeline_id=talent_pipeline.id)
+    session.add(test_smart_list)
+    session.add(test_dumb_list)
+    talent_pipeline.search_params = json.dumps({})
+    session.commit()
+
+    return test_smart_list, test_dumb_list
+
+
+def add_candidates_to_dumb_list(session, test_dumb_list, candidate_ids):
+    """
+    This function will add a test dumb_list and smart_list to database and talent-pipeline
+    :param session: SQLAlchemy Session object
+    :param test_dumb_list: SmartList object
+    :param list candidate_ids: List of candidate_ids that will be added to test dumb_list
+    :return: None
+    """
+
+    for candidate_id in candidate_ids:
+        dumb_list_candidate = SmartlistCandidate(candidate_id=candidate_id, smart_list_id=test_dumb_list.id)
+        session.add(dumb_list_candidate)
+
+    session.commit()
+

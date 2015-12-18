@@ -5,6 +5,7 @@ from candidate_pool_service.candidate_pool_app import app
 from candidate_pool_service.common.tests.conftest import *
 from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline, Smartlist
 from candidate_pool_service.common.utils.common_functions import add_role_to_test_user
+from candidate_pool_service.common.tests.cloud_search_common_functions import *
 from common_functions import *
 
 
@@ -93,7 +94,7 @@ def test_talent_pipeline_api_post(access_token_first, user_first, talent_pool, t
 
     # Logged-in user trying to add a new talent-pipeline
     data['talent_pipelines'][0]['search_params'] = {
-        "skillDescriptionFacet": "Python",
+        "major": "CS",
         "minimum_years_experience": "4",
         "location": "California"
     }
@@ -207,7 +208,7 @@ def test_talent_pipeline_api_put(access_token_first, access_token_second, user_s
 
     # Logged-in user trying to edit talent-pipeline with invalid search params keys
     data['talent_pipeline']['search_params'] = {
-        "skillDescriptionFacet": "Python",
+        "minimum_years_experience": 2,
         "minimum_age": "22",
         "location": "California"
     }
@@ -215,9 +216,9 @@ def test_talent_pipeline_api_put(access_token_first, access_token_second, user_s
                                                 action='PUT')
     assert status_code == 404
 
-    # Logged-in user trying to edit talent-pipeline with invalid search params keys
+    # Logged-in user trying to edit talent-pipeline with valid search params keys
     data['talent_pipeline']['search_params'] = {
-        "skillDescriptionFacet": "Java",
+        "major": "CS",
         "minimum_years_experience": "10",
         "location": "Indiana"
     }
@@ -465,3 +466,4 @@ def test_talent_pipeline_smart_list_api_get(access_token_first, access_token_sec
     assert response['smart_lists'][0]['user_id'] == test_smart_first.user_id
     assert response['smart_lists'][1]['name'] == test_smart_second.name
     assert response['smart_lists'][1]['user_id'] == test_smart_second.user_id
+

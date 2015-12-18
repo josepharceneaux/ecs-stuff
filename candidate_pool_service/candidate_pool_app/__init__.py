@@ -30,6 +30,7 @@ api.add_resource(TalentPoolGroupApi, '/groups/<int:group_id>/talent_pools')
 api.add_resource(TalentPoolCandidateApi, '/talent-pools/<int:id>/candidates')
 api.add_resource(TalentPipelineApi, '/talent-pipelines/<int:id>', '/talent-pipelines')
 api.add_resource(TalentPipelineSmartListApi, '/talent-pipeline/<int:id>/smart_lists')
+api.add_resource(TalentPipelineCandidates, '/talent-pipeline/<int:id>/candidates')
 
 db.create_all()
 db.session.commit()

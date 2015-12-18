@@ -101,8 +101,9 @@ def validate_is_number(key, value):
 
 
 def validate_id_list(key, values):
-    if ',' in values:
-        values = values.split(',')
+
+    if ',' in values or isinstance(values, list):
+        values = values.split(',') if ',' in values else values
         for value in values:
             if not value.strip().isdigit():
                 raise InvalidUsage("`%s` must be comma separated ids" % key)
@@ -112,10 +113,12 @@ def validate_id_list(key, values):
         return values.strip()
 
 
-def string_list(key, values):
+def validate_string_list(key, values):
     if ',' in values:
         values = [value.strip() for value in values.split(',') if value.strip()]
         return values[0] if values.__len__() == 1 else values
+    else:
+        return values.strip()
 
 
 def validate_sort_by(key, value):
@@ -214,7 +217,7 @@ def validate_and_format_data(request_data):
             if SEARCH_INPUT_AND_VALIDATIONS[key] == "sorting":
                 request_vars[key] = validate_sort_by(key, value)
             if SEARCH_INPUT_AND_VALIDATIONS[key] == "string_list":
-                request_vars[key] = string_list(key, value)
+                request_vars[key] = validate_string_list(key, value)
             if SEARCH_INPUT_AND_VALIDATIONS[key] == "return_fields":
                 request_vars[key] = validate_fields(key, value)
             if SEARCH_INPUT_AND_VALIDATIONS[key] == "date_range":
