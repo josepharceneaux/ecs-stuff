@@ -122,7 +122,7 @@ class TestCeleryTasks(object):
         :return:
         """
         campaign = SmsCampaign.get_by_id(str(sms_campaign_of_current_user.id))
-        campaign.update(sms_body_text='Hi,all')
+        campaign.update(body_text='Hi,all')
         response_post = requests.post(
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
