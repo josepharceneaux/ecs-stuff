@@ -159,7 +159,7 @@ class TestCeleryTasks(object):
         assert 'xml' in str(response_get.text).strip()
         time.sleep(SLEEP_TIME)  # Need to add this as processing of POST request runs on celery
         campaign_reply_in_db = get_reply_text(candidate_phone_1)
-        assert campaign_reply_in_db.reply_body_text == reply_text
+        assert campaign_reply_in_db.body_text == reply_text
         reply_count_after = get_replies_count(sms_campaign_of_current_user)
         assert reply_count_after == reply_count_before + 1
         assert_for_activity(user_phone_1.user_id, ActivityMessageIds.CAMPAIGN_SMS_REPLY,
