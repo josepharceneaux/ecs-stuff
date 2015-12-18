@@ -26,7 +26,7 @@ from candidate_service.candidate_app.api.v1_candidates import (
     CandidateExperienceResource, CandidateExperienceBulletResource, CandidateWorkPreferenceResource,
     CandidateEmailResource, CandidatePhoneResource, CandidateMilitaryServiceResource,
     CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
-    CandidateCustomFieldResource, CandidateEditResource
+    CandidateCustomFieldResource, CandidateEditResource, CandidatesResource
 )
 from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch
 
@@ -38,8 +38,14 @@ api.add_resource(
     CandidateResource,
     '/v1/candidates/<int:id>',
     '/v1/candidates/<email>',
-    '/v1/candidates',
     endpoint='candidate_resource'
+)
+
+######################## CandidatesResource ########################
+api.add_resource(
+    CandidatesResource,
+    '/v1/candidates',
+    endpoint='candidates_resource'
 )
 
 ######################## CandidateAddressResource ########################

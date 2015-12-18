@@ -60,7 +60,7 @@ def test_delete_candidate_without_id(sample_user, user_auth):
     # Delete Candidate
     resp = request_to_candidate_resource(token, 'delete')
     print response_info(resp)
-    assert resp.status_code == 400
+    assert resp.status_code == 405
 
 
 def test_delete_candidate_via_email(sample_user, user_auth):
