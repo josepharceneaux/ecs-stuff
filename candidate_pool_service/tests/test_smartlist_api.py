@@ -23,16 +23,15 @@ class TestSmartlistResource(object):
         def call_post_api(self, data, access_token):
             return requests.post(
                 url=SMARTLIST_URL,
-                data=data,
+                data=json.dumps(data),
                 headers={'Authorization': 'Bearer %s' % access_token}
             )
 
         def test_create_smartlist_with_search_params(self, sample_user, user_auth):
             auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
             name = fake.word()
-            search_params = json.dumps({"maximum_years_experience": "5", "location": "San Jose, CA", "minimum_years_experience": "2"})
-            data = {'name': name,
-                    'search_params': search_params}
+            search_params = '{"maximum_years_experience": "5", "location": "San Jose, CA", "minimum_years_experience": "2"}'
+            data = {'name': name, 'search_params': search_params}
             resp = self.call_post_api(data, auth_token_row['access_token'])
             assert resp.status_code == 201  # Successfully created
             response = json.loads(resp.content)
@@ -94,6 +93,22 @@ class TestSmartlistResource(object):
             resp = self.call_post_api(data, auth_token_row['access_token'])
             assert resp.status_code == 400
             assert json.loads(resp.content)['error']['message'] == "Bad input: `search_params` and `candidate_ids` both are present. Service accepts only one"
+
+        def test_create_smartlist_with_invalid_search_params(self, access_token_first):
+            data = {'name': fake.word(), 'search_params': '{maximum_years_experience= "5"}'}
+            resp = self.call_post_api(data, access_token_first)
+            assert resp.status_code == 400
+            assert json.loads(resp.content)['error']['message'] == "`search_params` should be in valid format."
+            data2 = {'name': fake.word(), 'search_params': "location=San Jose, CA"}
+            resp = self.call_post_api(data2, access_token_first)
+            assert resp.status_code == 400
+            assert json.loads(resp.content)['error']['message'] == "`search_params` should be in valid format."
+
+        def test_create_smartlist_with_string_search_params(self, access_token_first):
+            data2 = {'name': fake.word(), 'search_params': "'example'"}
+            resp = self.call_post_api(data2, access_token_first)
+            assert resp.status_code == 400
+            assert json.loads(resp.content)['error']['message'] == "`search_params` should in dictionary format."
 
         def test_create_smartlist_without_name(self, sample_user, user_auth):
             auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)

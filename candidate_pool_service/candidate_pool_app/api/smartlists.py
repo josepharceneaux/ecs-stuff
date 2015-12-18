@@ -78,14 +78,16 @@ class SmartlistResource(Resource):
         """
         Creates list with search params or with list of candidate ids
         Input data:
+            json body having following keys
             "name": Name with which smart list will be created
-            "search_params": search parameters for smart list
+            "search_params": search parameters for smart list in dictionary format
                 or  "candidate_ids": if not search_params then candidate_ids should be present
         :return: smartlist id
         """
         user_id = request.user.id
         # request.form data must pass through this function, as this will create data in desired format
-        data = validate_and_format_smartlist_post_data(request.form, user_id)
+        body_dict = request.get_json(force=True)
+        data = validate_and_format_smartlist_post_data(body_dict, user_id)
         smartlist = save_smartlist(user_id=user_id, name=data.get('name'), search_params=data.get('search_params'),
                                    candidate_ids=data.get('candidate_ids'))
         return {'smartlist': {'id': smartlist.id}}, 201

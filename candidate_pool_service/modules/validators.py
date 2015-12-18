@@ -1,3 +1,5 @@
+import json
+import ast
 from sqlalchemy import and_
 from candidate_pool_service.common.models.user import User
 from candidate_pool_service.common.models.candidate import Candidate
@@ -53,6 +55,15 @@ def validate_and_format_smartlist_post_data(data, user_id):
         raise InvalidUsage(
             error_message="Bad input: `search_params` and `candidate_ids` both are present. Service accepts only one",
             error_code=400)
+    if search_params:
+        # validate if search_params in valid dict format.
+        try:
+            search_params = ast.literal_eval(search_params)
+        except Exception:
+            raise InvalidUsage("`search_params` should be in valid format.", 400)
+
+        if not isinstance(search_params, dict):
+            raise InvalidUsage("`search_params` should in dictionary format.", 400)
 
     formatted_request_data = {'name': smartlist_name.strip(),
                               'candidate_ids': None,
@@ -69,7 +80,7 @@ def validate_and_format_smartlist_post_data(data, user_id):
             raise ForbiddenError("Provided list of candidates does not belong to user's domain")
         formatted_request_data['candidate_ids'] = candidate_ids
     else:  # if not candidate_ids then it is search_params
-        formatted_request_data['search_params'] = search_params.strip()
+        formatted_request_data['search_params'] = json.dumps(search_params)
     return formatted_request_data
 
 
