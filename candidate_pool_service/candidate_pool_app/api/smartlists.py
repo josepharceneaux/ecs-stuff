@@ -2,7 +2,7 @@ from flask import request
 from flask_restful import Resource
 
 from candidate_pool_service.common.utils.auth_utils import require_oauth
-from candidate_pool_service.common.error_handling import ForbiddenError, NotFoundError
+from candidate_pool_service.common.error_handling import ForbiddenError, NotFoundError, InvalidUsage
 from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.modules.smartlists import get_candidates, create_smartlist_dict, save_smartlist, get_all_smartlists
 from candidate_pool_service.modules.validators import (validate_and_parse_request_data, validate_list_belongs_to_domain,
@@ -49,7 +49,7 @@ class SmartlistResource(Resource):
         Call this resource from url: /v1/smartlists :: to retrieve all the smartlists in user's domain
                                      /v1/smartlists/<int:id> :: to get single smartlist
 
-        example: http://localhost:8005/v1/smartlists/2
+        example: http://localhost:8008/v1/smartlists/2
         Returns: List in following json format
             {
               "smartlist": {
@@ -85,9 +85,11 @@ class SmartlistResource(Resource):
         :return: smartlist id
         """
         user_id = request.user.id
-        # request.form data must pass through this function, as this will create data in desired format
-        body_dict = request.get_json(force=True)
-        data = validate_and_format_smartlist_post_data(body_dict, user_id)
+        data = request.get_json(silent=True)
+        if not data:
+            raise InvalidUsage("Received empty request body")
+        # request data must pass through this function, as this will create data in desired format
+        data = validate_and_format_smartlist_post_data(data, user_id)
         smartlist = save_smartlist(user_id=user_id, name=data.get('name'), search_params=data.get('search_params'),
                                    candidate_ids=data.get('candidate_ids'))
         return {'smartlist': {'id': smartlist.id}}, 201

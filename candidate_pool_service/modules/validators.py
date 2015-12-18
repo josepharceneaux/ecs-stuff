@@ -1,5 +1,4 @@
 import json
-import ast
 from sqlalchemy import and_
 from candidate_pool_service.common.models.user import User
 from candidate_pool_service.common.models.candidate import Candidate
@@ -57,11 +56,6 @@ def validate_and_format_smartlist_post_data(data, user_id):
             error_code=400)
     if search_params:
         # validate if search_params in valid dict format.
-        try:
-            search_params = ast.literal_eval(search_params)
-        except Exception:
-            raise InvalidUsage("`search_params` should be in valid format.", 400)
-
         if not isinstance(search_params, dict):
             raise InvalidUsage("`search_params` should in dictionary format.", 400)
 
