@@ -4,16 +4,38 @@
     <div class="row--expanded row--blue hero">
         <!-- Graph: Total Candidates -->
         <div class="col--full-12">
-            <header class="row--widget row--table hero__header">
-                <div class="col--large-9--cell hero__header__text">
-                    <h1>430 Total Candidates</h1>
-                    <h3>60% Engagement</h3>
-                </div>
-                <div class="col--large-3--cell hero__header__action">
-                    <a href="#" class="button--small button--white button--greenHover">New Pipeline</a>
+            <header class="hero__header">
+                <div class="row--widget">
+                    <div class="row--table hero__header__stats">
+                        <div class="col--full-4 hero__header__stats--column">
+                            <h3>Unique Candidates</h3>
+                            <h1>21,704</h1>
+                        </div>
+
+                        <div class="col--full-4 hero__header__stats--column">
+                            <h3>Talent Pipelines <a class="hero__header__link" href="#" title="New Pipeline">+</a></h3>
+                            <h1>14</h1>
+                        </div>
+
+                        <div class="col--full-4 hero__header__stats--column">
+                            <h3>Total Engagement</h3>
+                            <h1>62%</h1>
+                        </div>
+                    </div>
                 </div>
             </header>
-            <figure class="js-graph--total-candidates areaGraph hero__graph"></figure>
+            <section class="row--widget hero__content">
+                <div class="row--table">
+                    <div class="col--large-8--cell hero__header__text">
+                        <h1>430 Total Candidates</h1>
+                        <h3>60% Engagement</h3>
+                    </div>
+                    <div class="col--large-3--cell hero__header__action">
+                        <a href="#" class="button--small button--white button--greenHover">New Pipeline</a>
+                    </div>
+                </div>
+            </section>
+            <figure gt-area-graph data="vm.totalCandidates.graph.data" class="areaGraph hero__graph"></figure>
         </div>
     </div>
 
@@ -84,8 +106,7 @@
             <h2>Pipeline Engagement</h2>
             <h4>Next 60 Days (Predictive)</h4>
 
-            <figure class="js-graph--pipeline-engagement circleGraph">
-            </figure>
+            <figure gt-circle-graph data="vm.pipelineEngagement.graph.data" class="circleGraph""></figure>
         </div>
 
         <!-- Table: Active stats-->
@@ -232,8 +253,7 @@
             <h2>New Candidates</h2>
             <h4>Last 30 Days</h4>
 
-            <div class="js-graph--new-candidates lineGraph">
-            </div>
+            <div gt-line-graph data="vm.newCandidates.graph.data" class="lineGraph"></div>
         </div>
 
         <!-- Blurb: Case Study -->
@@ -687,15 +707,15 @@
 
                         <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.maxAttendees.$invalid && (createEventForm.maxAttendees.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="maxAttendees">Max Attendees</label>
-                            <input gt-float-label class="form__input" ng-model="vm.event.capacity" id="maxAttendees" name="maxAttendees" type="number" placeholder="Max Attendees">
+                            <input gt-float-label class="form__input" ng-model="vm.event.capacity" id="maxAttendees" name="maxAttendees" type="number" placeholder="Max Attendees" min="0">
                         </div>
                     </div>
 
                     <div class="form__fieldset row--expanded">
-                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.activeEngagementCharts.$invalid && (createEventForm.activeEngagementCharts.$touched || createEventForm.$submitted)}">
-                            <label class="form__label" for="SelectSmartListsToInvites">Select Smart Lists to Invite</label>
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.smartListToInvite.$invalid && (createEventForm.smartListToInvite.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="smartListToInvite">Select Smart Lists to Invite</label>
                             <select ng-model="vm.event.smartListsToInvite" ng-options="option.name for option in vm.smartLists track by option.id"
-                                gt-float-label id="activeEngagementCharts" class="form__input--select" name="activeEngagementCharts">
+                                gt-float-label required id="smartListToInvite" class="form__input--select" name="smartListToInvite">
                                 <option value="" ng-show="!vm.event.smartListsToInvite">Select Smart Lists to Invite</option>
                             </select>
                             <small class="form__input-info">Candidate Leads <span class="pill">457</span></small>

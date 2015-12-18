@@ -42,7 +42,7 @@ class Candidate(db.Model):
     candidate_achievements = relationship('CandidateAchievement', backref='candidate')
     candidate_addresses = relationship('CandidateAddress', backref='candidate')
     candidate_associations = relationship('CandidateAssociation', backref='candidate')
-    candidate_custom_fields = relationship('CandidateCustomField', backref='candidate')
+    candidate_custom_fields = relationship('CandidateCustomField', backref='candidate', cascade='all, delete-orphan', passive_deletes=True)
     candidate_documents = relationship('CandidateDocument', backref='candidate')
     candidate_educations = relationship('CandidateEducation', cascade='all, delete-orphan', passive_deletes=True)
     candidate_emails = relationship('CandidateEmail', backref='candidate')
@@ -829,8 +829,8 @@ class CandidateCustomField(db.Model):
     __tablename__ = 'candidate_custom_field'
     id = db.Column(db.Integer, primary_key=True)
     value = db.Column('Value', db.Text)
-    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
-    custom_field_id = db.Column('CustomFieldId', db.Integer, db.ForeignKey('custom_field.id'))
+    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id', ondelete='CASCADE'))
+    custom_field_id = db.Column('CustomFieldId', db.Integer, db.ForeignKey('custom_field.id', ondelete='CASCADE'))
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
@@ -868,11 +868,15 @@ class ClassificationType(db.Model):
         return classification_type.id if classification_type else None
 
 
+class CandidateSubscriptionPreference(db.Model):
+    __tablename__ = 'candidate_subscription_preference'
+    id = db.Column(db.Integer, primary_key=True)
+    candidate_id = db.Column('candidateId', db.Integer, db.ForeignKey('candidate.id', ondelete='CASCADE'))
+    frequency_id = db.Column('frequencyId', db.Integer, db.ForeignKey('frequency.id', ondelete='CASCADE'))
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
-
-
-
-
+    def __repr__(self):
+        return "<CandidateSubscriptionPreference (candidate_id = %r)>" % self.candidate_id
 
 
 

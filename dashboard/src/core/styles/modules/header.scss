@@ -193,6 +193,10 @@
   padding-left: $padding--large;
   padding-right: $padding--large;
 
+  .form__input--select {
+    margin-bottom: 0;
+  }
+
   .fancy-select .trigger {
     margin-bottom: 0;
   }

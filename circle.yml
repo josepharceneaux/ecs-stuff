@@ -7,8 +7,11 @@ machine:
     PYTHONPATH: .
 
 dependencies:
-   override:
+  override:
     - pip install -r requirements.txt
+  post:
+    - mkdir ~/.talent
+    - "printf \"[cloudsearch]\ndomain: gettalent-circleci\nregion: us-west-1\n[s3]\nbucket: tcs-local-circleci\nregion: us-west-1\n[local]\nemail: jitesh.karesia+circleci@newvisionsoftware.in\nenv: dev\ninstance-name: local\n[iam]\naccount-id: 528222547498\" > ~/.talent/web.cfg"
 
 test:
   pre:
@@ -35,6 +38,9 @@ test:
     - python candidate_pool_service/run.py:
         parallel: true
         background: true
+    - python spreadsheet_import_service/run.py:
+        parallel: true
+        background: true
     - sleep 5
 
 
@@ -47,8 +53,8 @@ test:
           activity_service/tests/
           candidate_service/tests/
           candidate_pool_service/tests/
+          spreadsheet_import_service/tests/
       : parallel: true
-
 
 experimental:
   notify:
