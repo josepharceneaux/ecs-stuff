@@ -37,7 +37,7 @@ class TestSmsCampaignWithId(object):
         # verify all the field values
         campaign = sms_campaign_of_current_user
         assert response.json()['campaign']['name'] == campaign.name
-        assert response.json()['campaign']['sms_body_text'] == campaign.sms_body_text
+        assert response.json()['campaign']['body_text'] == campaign.body_text
         assert response.json()['campaign']['frequency_id'] == campaign.frequency_id
         assert response.json()['campaign']['send_datetime'] == str(campaign.send_datetime)
         assert response.json()['campaign']['stop_datetime'] == str(campaign.stop_datetime)

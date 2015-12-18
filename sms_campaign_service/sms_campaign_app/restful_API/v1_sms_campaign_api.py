@@ -104,7 +104,7 @@ class SMSCampaigns(Resource):
                               "id": 3,
                               "name": "New Campaign",
                               "send_datetime": "",
-                              "sms_body_text": "Welcome all boys",
+                              "body_text": "Welcome all boys",
                               "stop_datetime": "",
                               "updated_time": "2015-11-19 18:53:55",
                               "user_phone_id": 1
@@ -115,7 +115,7 @@ class SMSCampaigns(Resource):
                               "id": 4,
                               "name": "New Campaign",
                               "send_datetime": "",
-                              "sms_body_text": "Job opening at...",
+                              "body_text": "Job opening at...",
                               "stop_datetime": "",
                               "updated_time": "2015-11-19 18:54:51",
                               "user_phone_id": 1
@@ -146,7 +146,7 @@ class SMSCampaigns(Resource):
 
             campaign_data = {
                                 "name": "New SMS Campaign",
-                                "sms_body_text": "HI all, we have few openings at abc.com",
+                                "body_text": "HI all, we have few openings at abc.com",
                                 "frequency_id": 2,
                                 "added_datetime": "2015-11-24T08:00:00Z",
                                 "send_datetime": "2015-11-26T08:00:00Z",
@@ -192,13 +192,20 @@ class SMSCampaigns(Resource):
         if not data_from_ui:
             raise InvalidUsage(error_message='No data provided to create SMS campaign')
         # apply validation on fields
-        validate_form_data(data_from_ui)
+        not_found_smartlist_ids = validate_form_data(data_from_ui)
         campaign_obj = SmsCampaignBase(request.user.id,
                                        buy_new_number=data_from_ui.get('buy_new_number'))
         campaign_id = campaign_obj.save(data_from_ui)
         headers = {'Location': '/campaigns/%s' % campaign_id}
         logger.debug('Campaign(id:%s) has been saved.' % campaign_id)
-        return ApiResponse(json.dumps(dict(id=campaign_id)), status=201, headers=headers)
+        if not_found_smartlist_ids:
+            return ApiResponse(json.dumps(dict(sms_campaign_id=campaign_id,
+                                               not_found_smartlist_ids=not_found_smartlist_ids)),
+                               status=207, headers=headers)
+
+        else:
+            return ApiResponse(json.dumps(dict(sms_campaign_id=campaign_id)),
+                               status=201, headers=headers)
 
     def delete(self):
         """
@@ -281,7 +288,7 @@ class CampaignById(Resource):
 
             {
                 "campaign": {
-                          "sms_body_text": "Dear all, please visit http://www.qc-technologies.com",
+                          "body_text": "Dear all, please visit http://www.qc-technologies.com",
                           "frequency_id": 1,
                           "updated_time": "2015-11-24 16:31:09",
                           "user_phone_id": 1,
@@ -318,7 +325,7 @@ class CampaignById(Resource):
             campaign_data = {
 
                             "name": "New SMS Campaign",
-                            "sms_body_text": "HI all, we have few openings at abc.com",
+                            "body_text": "HI all, we have few openings at abc.com",
                             "frequency_id": 2,
                             "added_datetime": "2015-11-24T08:00:00Z",
                             "send_datetime": "2015-11-26T08:00:00Z",
@@ -356,11 +363,16 @@ class CampaignById(Resource):
             raise InvalidUsage(error_message='Given data should be in dict format')
         if not campaign_data:
             raise InvalidUsage(error_message='No data provided to update SMS campaign')
-        validate_form_data(campaign_data)
+        not_found_smartlist_ids = validate_form_data(campaign_data)
         camp_obj = SmsCampaignBase(request.user.id)
         camp_obj.create_or_update_sms_campaign(campaign_data, campaign_id=campaign_id)
-        return dict(
-            message='SMS Campaign(id:%s) has been updated successfully' % campaign_id, ), 200
+        if not_found_smartlist_ids:
+
+            return dict(message='SMS Campaign(id:%s) has been updated successfully' % campaign_id,
+                        not_found_smartlist_ids=not_found_smartlist_ids), 207
+        else:
+            return dict(message='SMS Campaign(id:%s) has been updated successfully'
+                                % campaign_id), 200
 
     def delete(self, campaign_id):
         """

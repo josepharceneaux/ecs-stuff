@@ -5,7 +5,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies,
 This module contains CampaignBase class which provides common methods for
 all campaigns. Methods are
 - schedule()
-- get_candidates()
+- get_smartlist_candidates()
 - create_or_update_url_conversion()
 - create_activity()
 - get_campaign_data()
@@ -136,7 +136,7 @@ class CampaignBase(object):
         """
         pass
 
-    def get_candidates_from_candidate_service(self, smartlist_id):
+    def get_smartlist_candidates(self, campaign_smartlist):
         """
         This will get the candidates associated to a provided smart list. This makes
         HTTP GET call on candidate service API to get the candidate associated candidates.
@@ -147,16 +147,16 @@ class CampaignBase(object):
         :Example:
                 SmsCampaignBase.get_candidates(smartlist_id=1)
 
-        :param smartlist_id: id of smart list.
-        :type smartlist_id: int
+        :param campaign_smartlist: row (e.g record of "sms_campaign_smartlist" database table)
+        :type campaign_smartlist: row
         :return: Returns array of candidates in the campaign's smartlists.
         :rtype: list
 
         **See Also**
         .. see also:: process_send() method in SmsCampaignBase class.
         """
-        params = {'id': smartlist_id,
-                  'return': 'all'}
+
+        params = {'id': campaign_smartlist.smartlist_id, 'return': 'all'}
         # HTTP GET call to activity service to create activity
         url = CandidateApiUrl.SMARTLIST_CANDIDATES
         response = http_request('GET', url, headers=self.oauth_header, params=params,
@@ -166,11 +166,18 @@ class CampaignBase(object):
             candidate_ids = [candidate['id'] for candidate in
                              json.loads(response.text)['candidates']]
             candidates = [Candidate.get_by_id(_id) for _id in candidate_ids]
-            return candidates
         except Exception:
-            current_app.logger.exception('get_candidates_from_candidate_service: Error while '
-                                         'fetching candidates for smartlist(id:%s)' % smartlist_id)
+            current_app.logger.exception('get_smartlist_candidates: Error while '
+                                         'fetching candidates for smartlist(id:%s)'
+                                         % campaign_smartlist.smartlist_id)
             raise
+        if not candidates:
+            current_app.logger.error('get_smartlist_candidates: '
+                                     'No Candidate found. smartlist id is %s. '
+                                     '(User(id:%s))' % (campaign_smartlist.smartlist_id,
+                                                        self.user_id))
+        else:
+            return candidates
 
     def send_campaign_to_candidates(self, candidates_and_phones):
         """

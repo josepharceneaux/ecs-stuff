@@ -133,9 +133,9 @@ class TestSmsCampaign(object):
                                  data=json.dumps(campaign_valid_data))
         assert response.status_code == 201, 'It should create sms campaign (201)'
         assert 'location' in response.headers
-        assert 'id' in response.json()
+        assert 'sms_campaign_id' in response.json()
         assert_for_activity(sample_user.id, ActivityMessageIds.CAMPAIGN_SMS_CREATE,
-                            response.json()['id'])
+                            response.json()['sms_campaign_id'])
 
     def test_post_with_valid_header_and_one_user_phone_and_no_data(self,
                                                                    valid_header,
@@ -187,7 +187,7 @@ class TestSmsCampaign(object):
         assert response.status_code == InternalServerError.http_status_code(), \
             'Internal server error should occur (500)'
         assert response.json()['error']['code'] == SmsCampaignApiException.MISSING_REQUIRED_FIELD
-        assert 'sms_body_text' in response.json()['error']['message']
+        assert 'body_text' in response.json()['error']['message']
 
     def test_post_with_valid_header_and_one_user_phone_and_invalid_data_2(self,
                                                                         campaign_invalid_data_2,
@@ -258,11 +258,12 @@ class TestSmsCampaign(object):
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS_URL,
                                  headers=valid_header,
                                  data=json.dumps(campaign_valid_data))
-        assert response.status_code == 201, 'Should create campaign (201)'
+        assert response.status_code == 207, \
+            'Should create campaign, but one smartlist is not found(207)'
         assert 'location' in response.headers
-        assert 'id' in response.json()
+        assert 'sms_campaign_id' in response.json()
         assert_for_activity(sample_user.id, ActivityMessageIds.CAMPAIGN_SMS_CREATE,
-                            response.json()['id'])
+                            response.json()['sms_campaign_id'])
 
     def test_post_with_valid_header_and_one_user_phone_and_valid_data(self,
 
@@ -283,9 +284,9 @@ class TestSmsCampaign(object):
                                  data=json.dumps(campaign_valid_data))
         assert response.status_code == 201, 'Should create campaign (201)'
         assert 'location' in response.headers
-        assert 'id' in response.json()
+        assert 'sms_campaign_id' in response.json()
         assert_for_activity(sample_user.id, ActivityMessageIds.CAMPAIGN_SMS_CREATE,
-                            response.json()['id'])
+                            response.json()['sms_campaign_id'])
 
     def test_post_with_valid_header_and_multiple_user_phone_and_valid_data(self,
                                                                            valid_header,

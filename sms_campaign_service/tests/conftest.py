@@ -153,7 +153,7 @@ def campaign_valid_data(sample_smartlist):
     :return:
     """
     return {"name": "TEST SMS Campaign",
-            "sms_body_text": "HI all, we have few openings at http://www.abc.com",
+            "body_text": "HI all, we have few openings at http://www.abc.com",
             "frequency_id": 2,
             "send_datetime": "2015-11-26T08:00:00Z",
             "stop_datetime": "2015-11-30T08:00:00Z",
@@ -164,7 +164,7 @@ def campaign_valid_data(sample_smartlist):
 @pytest.fixture()
 def campaign_invalid_data():
     """
-    This returns invalid data to save an SMS campaign. 'sms_body_text' required field
+    This returns invalid data to save an SMS campaign. 'body_text' required field
     name is modified to 'text' here.
     :return:
     """
@@ -184,7 +184,7 @@ def campaign_invalid_data_2():
     :return:
     """
     return {"name": "TEST SMS Campaign",
-            "sms_body_text": "HI all, we have few openings at http://www.abc.com",
+            "body_text": "HI all, we have few openings at http://www.abc.com",
             "frequency_id": 2,
             "send_datetime": "2015-11-26T08:00:00Z",
             "stop_datetime": "2015-11-30T08:00:00Z",
@@ -198,7 +198,7 @@ def sms_campaign_of_current_user(campaign_valid_data, user_phone_1):
 
 @pytest.fixture()
 def sms_campaign_of_current_user_with_no_link(campaign_valid_data, user_phone_1):
-    campaign_valid_data['sms_body_text'] = 'HI all'
+    campaign_valid_data['body_text'] = 'HI all'
     return _create_sms_campaign(campaign_valid_data, user_phone_1)
 
 

@@ -186,7 +186,7 @@ def validate_form_data(form_data):
     """
     This does the validation of the data received to create SMS campaign.
 
-        1- If any key from (name, sms_body_text, smartlist_ids) is missing from form data or
+        1- If any key from (name, body_text, smartlist_ids) is missing from form data or
             has no value we raise MissingRequiredFieldError.
         2- If smartlist_ids are not present in database, we raise ResourceNotFound exception.
         3- If start_datetime or end_datetime is not valid datetime format, then we raise
@@ -195,19 +195,19 @@ def validate_form_data(form_data):
     :return:
     """
     # TODO: Update comment
-    required_fields = ['name', 'sms_body_text', 'smartlist_ids']
+    required_fields = ['name', 'body_text', 'smartlist_ids']
     # find if any required key is missing from data
     missing_fields = filter(lambda required_key: required_key not in form_data.keys(),
                             required_fields)
     if missing_fields:
         raise MissingRequiredField('Required fields not provided to save sms_campaign. '
-                                   'Empty fields are %s' % missing_fields)
+                                   'Missing fields are %s' % missing_fields)
     # find if any required key has no value
     missing_field_values = find_missing_items(form_data, required_fields)
     if missing_field_values:
         raise MissingRequiredField(
             error_message='Required fields are empty to save '
-                          'sms_campaign. Empty fiel ds are %s' % missing_field_values)
+                          'sms_campaign. Empty fields are %s' % missing_field_values)
     # validate smartlist ids are in a list
     if not isinstance(form_data.get('smartlist_ids'), list):
         raise InvalidUsage(error_message='Include smartlist id(s) in a list.')
@@ -225,6 +225,7 @@ def validate_form_data(form_data):
                                       set(not_found_smartlist_ids))
     datetime_validator(form_data.get('send_datetime')) if form_data.get('send_datetime') else ''
     datetime_validator(form_data.get('stop_datetime')) if form_data.get('stop_datetime') else ''
+    return not_found_smartlist_ids
 
 
 def datetime_validator(str_datetime):

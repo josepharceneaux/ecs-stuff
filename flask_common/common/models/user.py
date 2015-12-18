@@ -87,8 +87,8 @@ class User(db.Model):
 class UserPhone(db.Model):
     __tablename__ = 'user_phone'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column('Userid', db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'))
-    phone_label_id = db.Column('PhoneLabelId', db.Integer, db.ForeignKey('phone_label.id', ondelete='CASCADE'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'))
+    phone_label_id = db.Column(db.Integer, db.ForeignKey('phone_label.id', ondelete='CASCADE'))
     value = db.Column(db.String(50), nullable=False)
 
     def __repr__(self):
