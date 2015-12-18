@@ -1,6 +1,5 @@
 from flask import Flask
-from flask import render_template
-import requests
+from flask import render_template, request
 import json
 from one_signal_sdk import OneSignalSdk
 
@@ -19,8 +18,8 @@ def onesignal():
     return render_template('onesignal.html')
 
 
-@app.route('/onesignal/push')
-def onesignal_push():
+@app.route('/send', methods=['GET', 'POST'])
+def send():
     # url =  'https://onesignal.com/api/v1/notifications'
     # header = {"Content-Type": "application/json",
     #           "Authorization": "Basic ZjYzZjY5ZmMtZTJkMC00OWEzLTk2OWMtNzgwYjcyNzAyMDVj"}
@@ -37,5 +36,9 @@ def onesignal_push():
     # req = requests.post(url, headers=header, data=json.dumps(payload))
     #
     # print(req.status_code, req.reason)
-    req = one_signal_client.create_notification('https://www.google.com', 'I am a test notification')
-    return req.content
+    data = request.values
+    req = one_signal_client.create_notification(data['url'], data['message'], data['title'])
+    if req.ok:
+        return req.content
+    else:
+        return {"error": "Unable to send notification"}

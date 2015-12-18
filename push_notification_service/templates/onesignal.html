@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.2/toastr.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.2/toastr.min.js"></script>
-    <!--<script src="https://js.pusher.com/3.0/pusher.min.js"></script>-->
     <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async></script>
  <style>
         body{
@@ -24,6 +23,8 @@
                 appId: "0847b2c8-8bcd-4196-b755-11fc6869a0e8",
                 subdomainName: "gettalentpush",
                 autoRegister: false
+            }, function(a,b,c){
+                console.log(a,b,c);
             }]);
 //        OneSignal.push(["init", {appId: "36194021-a89d-4cfa-b48b-f1fc452d17cb", subdomainName: "gettalent"}]);
         OneSignal.push(["setDefaultTitle", "getTalent Notification"]);
@@ -58,6 +59,25 @@
     </fieldset>
     <button id="addTag" class="btn btn-success">Add Tag</button>
     <button id="removeTag" class="btn btn-warning">Remove Tag</button>
+
+</div>
+<div class="col-lg-6">
+    <form action="/send" id="notification_form">
+    <fieldset class="form-group">
+        <label for="title">Title</label>
+        <input type="text" class="form-control" id="title" name="title" placeholder="Title">
+    </fieldset>
+    <fieldset class="form-group">
+        <label for="message">Message</label>
+        <input type="text" class="form-control" id="message" name="message" placeholder="Message">
+    </fieldset>
+    <fieldset class="form-group">
+        <label for="url">URL</label>
+        <input type="url" class="form-control" id="url" name="url" placeholder="Title">
+    </fieldset>
+
+</form>
+<button id="send" class="btn btn-success">Send Notification</button>
 </div>
 
 <script>
@@ -70,6 +90,11 @@
         document.getElementById("registerForPushLink").addEventListener('click', registerForPush, false);
 
     });
+    OneSignal.push(["getIdsAvailable", function(ids) {
+      console.log("getIdsAvailable:"
+              + "\nUserID: " + ids.userId
+              + "\nRegistration ID: " + ids.registrationId);
+    }]);
     $('#subscribe').click(function(){
         OneSignal.push(["setSubscription", true]);
         toastr.success('Subscribed successfully');
@@ -82,8 +107,8 @@
         var key = $('#tagName').val();
         var value = $('#tagValue').val();
         if (key && value){
-            OneSignal.push(["sendTag", "notification1", "Zohaib"]);
-            toastr.success('Added notification1 tag', 'Tags');
+            OneSignal.push(["sendTag", key, value]);
+            toastr.success('Added tag <' + key + '> with  value: ' + value, 'Tags');
         } else {
             toastr.error('Tag name or tag value is missing!')
         }
@@ -94,6 +119,20 @@
         toastr.success('Removed notification1 tag', 'Tags');
     });
 
+
+    $('#send').click(function () {
+        $.ajax({
+            url: '/send',
+            data:$('#notification_form').serialize(),
+            method: 'POST',
+            success: function(res){
+                toastr.success(res);
+            },
+            error: function(res){
+                toastr.error(res);
+            }
+        });
+    });
 </script>
 </body>
 </html>
