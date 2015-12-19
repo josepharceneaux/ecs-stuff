@@ -110,7 +110,7 @@ def talent_pipeline_smart_list_api(access_token, talent_pipeline_id, data='', ac
         raise Exception('No valid action is provided')
 
 
-def talent_pipeline_smart_list_api(access_token, talent_pipeline_id, params=''):
+def talent_pipeline_candidate_api(access_token, talent_pipeline_id, params=''):
 
     headers = {'Authorization': 'Bearer %s' % access_token}
     response = requests.get(url=TALENT_PIPELINE_CANDIDATE_API % talent_pipeline_id, headers=headers, params=params)
