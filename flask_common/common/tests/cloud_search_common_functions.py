@@ -148,7 +148,7 @@ def populate_candidates(oauth_token, count=1, first_name=True, middle_name=False
             degree_bullets_dict['major'] = data['major_name']
             degree_dict['bullets'] = [degree_bullets_dict]
         if data['military_branch'] or data['military_status'] or data['military_grade']:
-            military_services['service_status'] = data['military_status']
+            military_services['status'] = data['military_status']
             military_services['branch'] = data['military_branch']
             military_services['highest_grade'] = data['military_grade']
             military_services['from_date'] = data['military_from_date']
