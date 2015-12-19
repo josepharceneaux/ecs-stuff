@@ -151,9 +151,9 @@ def populate_candidates(owner_user_id, count=1, first_name=True, middle_name=Fal
             degree_dict['type'] = data['degree']
             educations['degrees'] = [degree_dict]
             degree_bullets_dict['major'] = data['major_name']
-            degree_dict['degree_bullets'] = [degree_bullets_dict]
+            degree_dict['bullets'] = [degree_bullets_dict]
         if data['military_branch'] or data['military_status'] or data['military_grade']:
-            military_services['service_status'] = data['military_status']
+            military_services['status'] = data['military_status']
             military_services['branch'] = data['military_branch']
             military_services['highest_grade'] = data['military_grade']
             military_services['from_date'] = data['military_from_date']

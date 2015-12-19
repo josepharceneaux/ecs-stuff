@@ -432,7 +432,7 @@ class CandidateResource(Resource):
         Candidate.set_is_web_hidden_to_true(candidate_id=candidate_id)
 
         # Delete candidate from cloud search
-        delete_candidate_documents(candidate_id)
+        delete_candidate_documents([candidate_id])
         return
 
 

@@ -152,7 +152,7 @@ def fetch_candidate_info(candidate, fields=None):
     }
 
     # Remove keys with None values
-    return_dict = dict((k, v) for k, v in return_dict.iteritems() if v)
+    return_dict = dict((k, v) for k, v in return_dict.iteritems() if v is not None)
     return return_dict
 
 
