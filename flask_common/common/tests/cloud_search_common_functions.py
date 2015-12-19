@@ -159,7 +159,7 @@ def populate_candidates(oauth_token, count=1, first_name=True, middle_name=False
         if data['custom_fields_dict']:
             custom_fields_list.append(data['custom_fields_dict'])
         if talent_pool_id:
-            talent_pool_ids = [talent_pool_id]
+            talent_pool_ids = {'add': [talent_pool_id]}
 
         candidate = dict(
             first_name=data['first_name'],

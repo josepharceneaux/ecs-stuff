@@ -46,9 +46,8 @@ def test_talent_pipeline_candidate_get(access_token_first, access_token_second, 
                                               talent_pool_id=talent_pool.id)
 
     # Adding a candidate with 'Apple' as current company and 'Software Engineer' as current title
-    apple_sw_engineers_candidate_ids = populate_candidates(oauth_token=access_token_first, count=5,
-                                                           current_title='Software Engineer', current_company='Apple',
-                                                           talent_pool_id=talent_pool.id)
+    populate_candidates(oauth_token=access_token_first, count=5, current_title='Software Engineer',
+                        current_company='Apple', talent_pool_id=talent_pool.id)
 
     # Adding a candidate with 'Apple' as current company and 'Software Engineer' as current title and 'CS' as major
     cs_sw_engineers_candidate_ids = populate_candidates(oauth_token=access_token_first, count=5, major='CS',

@@ -187,8 +187,7 @@ class CandidatesResource(Resource):
             skills = candidate_dict.get('skills')
             dice_social_profile_id = body_dict.get('openweb_id')
             dice_profile_id = body_dict.get('dice_profile_id')
-            talent_pool_ids = candidate_dict.get('talent_pool_ids', [])
-            delete_talent_pools = candidate_dict.get('delete_talent_pools', False)
+            talent_pool_ids = candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []})
 
             resp_dict = create_or_update_candidate_from_params(
                 user_id=user_id,
@@ -212,7 +211,6 @@ class CandidatesResource(Resource):
                 dice_social_profile_id=dice_social_profile_id,
                 dice_profile_id=dice_profile_id,
                 talent_pool_ids=talent_pool_ids,
-                delete_talent_pools=delete_talent_pools
             )
             created_candidate_ids.append(resp_dict['candidate_id'])
 
@@ -307,8 +305,7 @@ class CandidatesResource(Resource):
             skills = candidate_dict.get('skills')
             dice_social_profile_id = body_dict.get('openweb_id')
             dice_profile_id=body_dict.get('dice_profile_id')
-            talent_pool_ids = candidate_dict.get('talent_pool_ids', [])
-            delete_talent_pools = candidate_dict.get('delete_talent_pools', False)
+            talent_pool_ids = candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []})
 
             resp_dict = create_or_update_candidate_from_params(
                 user_id=user_id,
@@ -332,8 +329,7 @@ class CandidatesResource(Resource):
                 skills=skills,
                 dice_social_profile_id=dice_social_profile_id,
                 dice_profile_id=dice_profile_id,
-                talent_pool_ids=talent_pool_ids,
-                delete_talent_pools=delete_talent_pools
+                talent_pool_ids=talent_pool_ids
             )
             updated_candidate_ids.append(resp_dict['candidate_id'])
 
