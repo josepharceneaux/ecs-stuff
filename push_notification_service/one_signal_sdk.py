@@ -34,7 +34,7 @@ class OneSignalSdk(object):
     def get_player(self):
         pass
 
-    def create_notification(self, url, message, title, **kwargs):
+    def create_notification(self, url, message, title, player_ids=None, **kwargs):
         headers = {
             "Content-Type": "application/json",
             "Authorization": "Basic %s" % self.rest_key
@@ -47,9 +47,10 @@ class OneSignalSdk(object):
             "contents": {"en": message},
             "headings": {"en": title},
             "url": url,
-            "include_player_ids": ["56c1d574-237e-4a41-992e-c0094b6f2ded"],
             "chrome_web_icon": "http://cdn.designcrowd.com.s3.amazonaws.com/blog/Oct2012/52-Startup-Logos-2012/SLR_0040_gettalent.jpg"
         }
+        if player_ids and isinstance(player_ids, list):
+            data['include_player_ids'] = player_ids
         data = json.dumps(data)
         return send_request(CREATE_NOTIFICATION_URL, method='POST', data=data, headers=headers)
 
