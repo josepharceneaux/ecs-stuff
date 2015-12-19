@@ -7,7 +7,7 @@ import json
 import requests
 from random import randint
 from faker import Faker
-from ..utils.app_rest_urls import CandidateApiUrl
+from ..routes import CandidateApiUrl
 
 fake = Faker()
 

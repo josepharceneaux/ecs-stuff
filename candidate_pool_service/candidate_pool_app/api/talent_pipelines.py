@@ -10,7 +10,7 @@ from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities 
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
-from candidate_pool_service.common.utils.app_rest_urls import CandidateApiUrl
+from candidate_pool_service.common.routes import CandidateApiUrl
 from candidate_pool_service.common.error_handling import *
 
 
@@ -498,7 +498,7 @@ class TalentPipelineCandidates(Resource):
             raise InvalidUsage(error_message="Search params of talent-pipeline or its smart-lists are in bad format "
                                              "because: %s" % e.message)
 
-        headers = {'Authorization': request.oauth_token}
+        headers = {'Authorization': request.oauth_token, 'Content-Type': 'application/json'}
         request_params, dumb_list_candidates = {}, {'candidates': [], 'total_found': 0}
 
         # Get all candidates of all dumb_lists of a given talent_pipeline
@@ -509,14 +509,21 @@ class TalentPipelineCandidates(Resource):
                 filter(and_(TalentPoolCandidate.talent_pool_id == talent_pipeline.talent_pool_id, SmartlistCandidate.
                             smart_list_id == dumb_list.id)).all()
 
-            for candidate in candidates:
-                response = requests.get(CandidateApiUrl.CANDIDATE % candidate.candidate_id,
-                                        headers=headers)
-                if response.ok:
-                    dumb_list_candidates['candidates'].append(response.json().get('candidate'))
-                else:
-                    raise NotFoundError(error_message="Couldn't get candidate for candidate_id: %s in dumb_list"
-                                                      ": %s" % (candidate.candidate_id, dumb_list.id))
+            candidate_ids = [candidate.candidate_id for candidate in candidates]
+            if candidate_ids:
+                try:
+                    response = requests.get(CandidateApiUrl.CANDIDATES, headers=headers,
+                                            data=json.dumps({'candidate_ids': candidate_ids}))
+                    if response.ok:
+                        dumb_list_candidates['candidates'] = dumb_list_candidates['candidates'] + \
+                                                             (response.json().get('candidates'))
+                    else:
+                        raise Exception('Status Code: %s, Response body: %s' % (response.status_code, response.json()))
+
+                except Exception as e:
+                    raise InvalidUsage(error_message="Couldn't get candidates of dumb_list %s  because: "
+                                                     "%s" % (dumb_list.id, e.message))
+
         dumb_list_candidates['total_found'] = len(dumb_list_candidates['candidates'])
 
         if search_params:

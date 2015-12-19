@@ -25,16 +25,17 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['logger'];
+    ControllerFunction.$inject = ['$state', 'logger'];
 
     /* @ngInject */
-    function ControllerFunction(logger) {
+    function ControllerFunction($state, logger) {
         var vm = this;
 
         init();
         activate();
 
         function init() {
+            vm.state = $state;
 
             /* https://code.angularjs.org/1.4.8/docs/api/ng/directive/ngModelOptions */
             vm.ngModelOptions = {};

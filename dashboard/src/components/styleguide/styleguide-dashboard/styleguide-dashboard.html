@@ -1,0 +1,1118 @@
+<!-- Main view -->
+<section class="view__main" id="styleguide-dashboard-view">
+
+    <div class="row--expanded row--blue hero">
+        <!-- Graph: Total Candidates -->
+        <div class="col--full-12">
+            <header class="hero__header">
+                <div class="row--widget">
+                    <div class="row--table hero__header__stats">
+                        <div class="col--full-4 hero__header__stats--column">
+                            <h3>Unique Candidates</h3>
+                            <h1>21,704</h1>
+                        </div>
+
+                        <div class="col--full-4 hero__header__stats--column">
+                            <h3>Talent Pipelines <a class="hero__header__link" href="#" title="New Pipeline">+</a></h3>
+                            <h1>14</h1>
+                        </div>
+
+                        <div class="col--full-4 hero__header__stats--column">
+                            <h3>Total Engagement</h3>
+                            <h1>62%</h1>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <section class="row--widget hero__content">
+                <div class="row--table">
+                    <div class="col--large-8--cell hero__header__text">
+                        <h1>430 Total Candidates</h1>
+                        <h3>60% Engagement</h3>
+                    </div>
+                    <div class="col--large-3--cell hero__header__action">
+                        <a href="#" class="button--small button--white button--greenHover">New Pipeline</a>
+                    </div>
+                </div>
+            </section>
+            <figure gt-area-graph data="vm.totalCandidates.graph.data" class="areaGraph hero__graph"></figure>
+        </div>
+    </div>
+
+    <div class="row--widget">
+        <!-- Table: Most Engaged Candidates -->
+        <div class="col--full-4--cell box">
+            <h2>Most Engaged Candidates</h2>
+
+            <div class="box__table">
+                <table class="table">
+                    <tr class="table__row">
+                        <td class="table__col--3">
+                            <a href="#" class="figure--circle">
+                                <img src="./images/placeholder/jwhite.png" alt="Joe White">
+                            </a>
+                        </td>
+                        <td class="table__col--6">
+                            <a href="#">Joe White</a>
+                            <p class="subtext">
+                                Java Engineer<br>
+                                Los Angeles, CA
+                            </p>
+                        </td>
+                        <td>
+                            <span class="label--big label--green">83%</span>
+                        </td>
+                    </tr>
+                    <tr class="table__row">
+                        <td class="table__col--3">
+                            <a href="#" class="figure--circle">
+                                <img src="./images/placeholder/jwhite.png" alt="Joe White">
+                            </a>
+                        </td>
+                        <td class="table__col--6">
+                            <a href="#">Holly Alvarez</a>
+                            <p class="subtext">
+                                Java Engineer<br>
+                                Portsmouth, CA
+                            </p>
+                        </td>
+                        <td>
+                            <span class="label--big label--green">80%</span>
+                        </td>
+                    </tr>
+                    <tr class="table__row">
+                        <td class="table__col--3">
+                            <a href="#" class="figure--circle">
+                                <img src="./images/placeholder/jwhite.png" alt="Joe White">
+                            </a>
+                        </td>
+                        <td class="table__col--6">
+                            <a href="#">Lena Flemming</a>
+                            <p class="subtext">
+                                Java Engineer<br>
+                                Los Angeles, CA
+                            </p>
+                        </td>
+                        <td>
+                            <span class="label--big label--green">77%</span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Graph: Pipeline Engagement -->
+        <div class="col--full-4--cell box--green">
+            <h2>Pipeline Engagement</h2>
+            <h4>Next 60 Days (Predictive)</h4>
+
+            <figure gt-circle-graph data="vm.pipelineEngagement.graph.data" class="circleGraph""></figure>
+        </div>
+
+        <!-- Table: Active stats-->
+        <div class="col--full-4--cell box--padless">
+            <div class="box__half row--expanded">
+                <div class="box__corner col--full-6">
+                    <div class="box__corner__inner">
+                        <span class="label--big label--green">15</span>
+                        Active Categories
+                    </div>
+                </div>
+                <div class="box__corner col--full-6">
+                    <div class="box__corner__inner">
+                        <span class="label--big label--red">21,704</span>
+                        Unique Candidates
+                    </div>
+                </div>
+            </div>
+            <div class="box__half row--expanded">
+                <div class="box__corner col--full-6">
+                    <div class="box__corner__inner">
+                        <span class="label--big label--red">62%</span>
+                        Total Engagement
+                    </div>
+                </div>
+                <div class="box__corner col--full-6">
+                    <div class="box__corner__inner">
+                        <span class="label--big label--green">14%</span>
+                        Pipeline Engagement
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row--widget">
+        <!-- Widget: Active Engagement Campaigns -->
+        <div class="col--full-4--cell box">
+            <header class="row--expanded">
+                <div class="col--large-9">
+                    <h2>Active Engagement Campaigns <span>(15)</span></h2>
+                </div>
+                <div class="col--large-3 align--right">
+                    <select ng-model="vm.activeEngagementChart" ng-options="option.name for option in vm.engagementCharts track by option.id"
+                        id="activeEngagementCharts" class="form__input--select" name="activeEngagementCharts">
+                        <option value="" ng-show="!vm.activeEngagementChart">Select chart to view</option>
+                    </select>
+                </div>
+            </header>
+
+            <div class="box__table">
+                <table class="table">
+                    <tr class="table__row">
+                        <th class="table__header">Date</th>
+                        <th class="table__header">Campaign Name</th>
+                        <th class="table__header">Engagement</th>
+                        <th class="table__header">User</th>
+                        <th class="table__header">Type</th>
+                        <th class="table__header">Pipeline</th>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--morePadding">3/2/2015</td>
+                        <td class="table__col--morePadding">Daily Job Alert</td>
+                        <td class="table__col--morePadding">67%</td>
+                        <td class="table__col--morePadding">Alan T</td>
+                        <td class="table__col--morePadding">Email</td>
+                        <td class="table__col--morePadding">Sr. Java Developers in CA</td>
+                        <td class="table__col--check">
+                            <label gt-float-label class="form__input--checkbox">
+                                <input type="checkbox">
+                                <span></span>
+                            </label>
+                        </td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--morePadding">3/2/2015</td>
+                        <td class="table__col--morePadding">Daily Job Alert</td>
+                        <td class="table__col--morePadding">67%</td>
+                        <td class="table__col--morePadding">Alan T</td>
+                        <td class="table__col--morePadding">Email</td>
+                        <td class="table__col--morePadding">Sr. Java Developers in CA</td>
+                        <td class="table__col--check">
+                            <label gt-float-label class="form__input--checkbox">
+                                <input type="checkbox">
+                                <span></span>
+                            </label>
+                        </td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--morePadding">3/2/2015</td>
+                        <td class="table__col--morePadding">Daily Job Alert</td>
+                        <td class="table__col--morePadding">67%</td>
+                        <td class="table__col--morePadding">Alan T</td>
+                        <td class="table__col--morePadding">Email</td>
+                        <td class="table__col--morePadding">Sr. Java Developers in CA</td>
+                        <td class="table__col--check">
+                            <label gt-float-label class="form__input--checkbox">
+                                <input type="checkbox">
+                                <span></span>
+                            </label>
+                        </td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--morePadding">3/2/2015</td>
+                        <td class="table__col--morePadding">Daily Job Alert</td>
+                        <td class="table__col--morePadding">67%</td>
+                        <td class="table__col--morePadding">Alan T</td>
+                        <td class="table__col--morePadding">Email</td>
+                        <td class="table__col--morePadding">Sr. Java Developers in CA</td>
+                        <td class="table__col--check">
+                            <label gt-float-label class="form__input--checkbox">
+                                <input type="checkbox">
+                                <span></span>
+                            </label>
+                        </td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--morePadding">3/2/2015</td>
+                        <td class="table__col--morePadding">Daily Job Alert</td>
+                        <td class="table__col--morePadding">67%</td>
+                        <td class="table__col--morePadding">Alan T</td>
+                        <td class="table__col--morePadding">Email</td>
+                        <td class="table__col--morePadding">Sr. Java Developers in CA</td>
+                        <td class="table__col--check">
+                            <label gt-float-label class="form__input--checkbox">
+                                <input type="checkbox">
+                                <span></span>
+                            </label>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row--widget">
+        <!-- Graph: Most Engaged Candidates -->
+        <div class="col--full-4--cell box">
+            <h2>New Candidates</h2>
+            <h4>Last 30 Days</h4>
+
+            <div gt-line-graph data="vm.newCandidates.graph.data" class="lineGraph"></div>
+        </div>
+
+        <!-- Blurb: Case Study -->
+        <div class="col--full-8--cell box--padless">
+            <article class="exerpt row--expanded">
+                <div class="excerpt__hero--img col--full-6" style="background-image: url('./images/placeholder/exerpt-hero.png');"></div>
+                <section class="excerpt__content col--full-6 col--right">
+                    <header class="box__header">
+                        <h2>Engagement Mini Case Study</h2>
+                        <h4>3/18/2015</h4>
+                    </header>
+                    <p>The waies could be said to resemble inured halibuts. A romania is a square's sink.</p>
+                    <a class="button--blue button--small" href="#">Read More</a>
+                </section>
+            </article>
+        </div>
+    </div>
+
+
+    <div class="row--widget">
+
+        <!-- Pipeline Breakdown -->
+        <div class="col--full-6--cell box">
+            <header class="box__header">
+                <h2>Pipeline Breakdown</h2>
+            </header>
+            <div class="tabs">
+                <nav class="tabs__nav">
+                    <a class="tabs__nav__link tabs__nav__link--active" href="#top-skills">
+                        Top Skills
+                    </a>
+                    <a class="tabs__nav__link" href="#top-locations">
+                        Top Locations
+                    </a>
+                    <a class="tabs__nav__link" href="#top-sites">
+                        Top Sites
+                    </a>
+                    <a class="tabs__nav__link" href="#top-referrals">
+                        Top Referrals
+                    </a>
+                </nav>
+                <div class="tabs__container">
+                    <div id="top-skills" class="tabs__content tabs__content--active">
+                        <ul class="list--sideBySide list-reset">
+                            <li>Automatic Data Processing</li>
+                            <li>Angular JS</li>
+                            <li>Hadoop</li>
+                            <li>HTML5</li>
+                            <li>Apache Jackrabbit</li>
+                            <li>Linux</li>
+                            <li>Production Management</li>
+                            <li>Software Troubleshooting</li>
+                            <li>Sybase Unwired Platform</li>
+                            <li>Location-Based Services</li>
+                            <li>DevOps</li>
+                            <li>LTX Credence</li>
+                        </ul>
+                    </div>
+
+                    <div id="top-locations" class="tabs__content">
+                        <ul class="list--sideBySide list-reset">
+                            <li>Portland, OR</li>
+                            <li>Detroit, MI</li>
+                            <li>Orlando, FL</li>
+                            <li>Santa Cruz, CA</li>
+                            <li>Miami, FL</li>
+                            <li>Seattle, WA</li>
+                            <li>Olympia, WA</li>
+                            <li>Dallas, TX</li>
+                            <li>Denver, CO</li>
+                        </ul>
+                    </div>
+
+                    <div id="top-sites" class="tabs__content">
+                        <ul class="list--sideBySide list-reset">
+                            <li>Seattle, WA</li>
+                            <li>Olympia, WA</li>
+                            <li>Dallas, TX</li>
+                            <li>Portland, OR</li>
+                            <li>Detroit, MI</li>
+                            <li>Orlando, FL</li>
+                            <li>Santa Cruz, CA</li>
+                            <li>Miami, FL</li>
+                            <li>Denver, CO</li>
+                        </ul>
+                    </div>
+
+                    <div id="top-referrals" class="tabs__content">
+                        <ul class="list--sideBySide list-reset">
+                            <li>Miami, FL</li>
+                            <li>Seattle, WA</li>
+                            <li>Olympia, WA</li>
+                            <li>Dallas, TX</li>
+                            <li>Denver, CO</li>
+                            <li>Portland, OR</li>
+                            <li>Detroit, MI</li>
+                            <li>Orlando, FL</li>
+                            <li>Santa Cruz, CA</li>
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Candidate Growth by Pipeline -->
+        <div class="col--full-6--cell box">
+            <header class="box__header">
+                <h2>Candidate Growth by Pipeline</h2>
+                <h4>Next 60 Days (Predictive)</h4>
+            </header>
+
+            <figure class="progress">
+                <h4>Senior Java Developers in CA</h4>
+
+                <div class="progress__inner" style="width: 100%">
+                    <div class="progress__bar"></div>
+                    <div class="progress__label">120</div>
+                </div>
+            </figure>
+            <figure class="progress">
+                <h4>Vererans Hiring Initiative</h4>
+
+                <div class="progress__inner"    style="width: 78%">
+                    <div class="progress__bar"></div>
+                    <div class="progress__label">78</div>
+                </div>
+            </figure>
+            <figure class="progress">
+                <h4>Oracle DBAs Overseas</h4>
+
+                <div class="progress__inner" style="width: 25%">
+                    <div class="progress__bar--red"></div>
+                    <div class="progress__label">25</div>
+                </div>
+            </figure>
+            <figure class="progress">
+                <h4>Oracle DBAs Overseas</h4>
+
+                <div class="progress__inner" style="width: 50%">
+                    <div class="progress__bar--red"></div>
+                    <div class="progress__label">50</div>
+                </div>
+            </figure>
+        </div>
+
+    </div>
+
+    <div class="row--widget">
+        <div class="col--full-12--cell box">
+            <header class="box__header">
+                <h2>Campaign Builder</h2>
+            </header>
+            <form class="form" name="campaignBuilderForm" action="#">
+                <div class="form__fieldset row--expanded">
+                    <!-- Form: Recipients -->
+                    <div class="col--medium-6 form__col" ng-class="{'form__col--error': campaignBuilderForm.selectRecipients.$invalid && (campaignBuilderForm.selectRecipients.$touched || campaignBuilderForm.$submitted)}">
+                        <label class="form__label" for="selectRecipients">Select Recipients *</label>
+                        <select ng-model="vm.campaign.recipients" required ng-options="option.name for option in vm.recipients track by option.id"
+                            gt-float-label class="form__input--select" name="selectRecipients" id="selectRecipients">
+                            <option value="" ng-show="!vm.campaign.recipients">Select Recipients *</option>
+                        </select>
+                    </div>
+                    <!-- Form: From -->
+                    <div class="col--medium-6 form__col" ng-class="{'form__col--error': campaignBuilderForm.from.$invalid && (campaignBuilderForm.from.$touched || campaignBuilderForm.$submitted)}">
+                        <label class="form__label" for="from">From *</label>
+                        <input gt-float-label class="form__input" ng-model="vm.campaign.from" id="from" name="from" type="text" placeholder="From *" required>
+                    </div>
+                </div>
+                <div class="form__fieldset row--expanded">
+                    <!-- Form: Campaign Name -->
+                    <div class="col--medium-6 form__col" ng-class="{'form__col--error': campaignBuilderForm.campaignName.$invalid && (campaignBuilderForm.campaignName.$touched || campaignBuilderForm.$submitted)}">
+                        <label class="form__label" for="campaignName">Campaign Name *</label>
+                        <input gt-float-label class="form__input" ng-model="vm.campaign.name" id="campaignName" name="campaignName" type="text" placeholder="Campaign Name *" required>
+                    </div>
+                    <!-- Form: Reply To -->
+                    <div class="col--medium-6 form__col" ng-class="{'form__col--error': campaignBuilderForm.replyTo.$invalid && (campaignBuilderForm.replyTo.$touched || campaignBuilderForm.$submitted)}">
+                        <label class="form__label" for="replyTo">Reply to *</label>
+                        <input gt-float-label class="form__input" ng-model="vm.campaign.replyTo" id="replyTo" name="replyTo" type="email" placeholder="Reply to *" required>
+                    </div>
+                </div>
+                <div class="form__fieldset row--expanded">
+                    <!-- Form: Subject -->
+                    <div class="col--medium-6 form__col" ng-class="{'form__col--error': campaignBuilderForm.subject.$invalid && (campaignBuilderForm.subject.$touched || campaignBuilderForm.$submitted)}">
+                        <label class="form__label" for="subject">Subject *</label>
+                        <input gt-float-label class="form__input" ng-model="vm.campaign.subject" id="subject" name="subject" type="text" placeholder="Subject *" required>
+                    </div>
+                    <!-- Form: Tracking Code -->
+                    <div class="col--medium-6 form__col" ng-class="{'form__col--error': campaignBuilderForm.trackingCode.$invalid && (campaignBuilderForm.trackingCode.$touched || campaignBuilderForm.$submitted)}">
+                        <label class="form__label" for="trackingCode">Tracking Code</label>
+                        <input gt-float-label class="form__input" id="trackingCode" name="trackingCode" type="text" placeholder="Tracking Code">
+                    </div>
+                </div>
+                <div class="form__fieldset row--expanded">
+                    <!-- Form: Select Template -->
+                    <div class="col--medium-6 form__col" ng-class="{'form__col--error': campaignBuilderForm.selectTemplate.$invalid && (campaignBuilderForm.selectTemplate.$touched || campaignBuilderForm.$submitted)}">
+                        <label class="form__label" for="selectTemplate">Select Template *</label>
+                        <select ng-model="vm.campaign.template" required ng-options="option.name for option in vm.campaignTemplates track by option.id"
+                            gt-float-label class="form__input--select" name="selectTemplate" id="selectTemplate">
+                            <option value="" ng-show="!vm.campaign.template">Select Template *</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form__fieldset row--expanded">
+                    <div class="col--medium-12">
+                        <textarea gt-float-label class="form__input--textarea" ng-model="vm.campaign.emailContent" name="wysiwyg"></textarea>
+                    </div>
+                </div>
+                <div class="form__fieldset--footer row--expanded">
+                    <div class="col--medium-12">
+                        <a class="button--blueOutline button--warningHover" href="#">Cancel</a>
+                        <a class="button--blueOutline" href="#">Schedule</a>
+                        <button type="submit" class="button--blue">Send</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row--green row--expanded">
+        <!-- Widget: Drag 'n Drop' -->
+        <header class="row--widget row--table">
+            <div class="col--large-9--cell">
+                <h1>Edit Pipeline</h1>
+            </div>
+            <div class="col--large-3--cell col--vmiddle align--right-tiny">
+                <a class="button--white" href="#">Save Pipeline</a>
+            </div>
+        </header>
+        <section class="row--widget">
+            <div class="col--large-12 box--dashed">
+                <div class="dragDrop">
+                    <header class="dragDrop__header">
+                        <span class="dragDrop__icon icon--upload"></span>
+                        <h2>Drag 'n Drop</h2>
+                    </header>
+
+                    <p>Create a pipeline with a job description or <a href="#">browse</a> for one<br> (doc, pdf, text, etc)</p>
+                </div>
+            </div>
+        </section>
+        <section class="row--widget">
+            <div class="col--full-12--cell box">
+                <form class="form" name="createPipelineForm" action="#">
+                    <div class="form__fieldset row--expanded">
+                        <!-- Form: Title -->
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createPipelineForm.title.$invalid && (createPipelineForm.title.$touched || createPipelineForm.$submitted)}">
+                            <label class="form__label" for="title">Title *</label>
+                            <input gt-float-label class="form__input" ng-model="vm.pipeline.title" id="title" name="title" type="text" placeholder="Title *" required>
+                        </div>
+                        <!-- Form: Date Needed -->
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createPipelineForm.dateNeed.$invalid && (createPipelineForm.dateNeed.$touched || createPipelineForm.$submitted)}">
+                            <label class="form__label" for="dateNeeded">Date Needed *</label>
+                            <input gt-float-label pick-a-date="vm.pipeline.dateNeeded" ng-model="vm.pipeline.dateNeededText" class="form__input" id="dateNeeded" name="dateNeeded" type="text" placeholder="Date Needed *" required>
+                        </div>
+                    </div>
+                    <div class="form__fieldset row--expanded">
+                        <!-- Form: Description -->
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createPipelineForm.description.$invalid && (createPipelineForm.description.$touched || createPipelineForm.$submitted)}">
+                            <label class="form__label" for="description">Description</label>
+                            <textarea gt-float-label class="form__input--shortTextarea" ng-model="vm.pipeline.description" name="description" placeholder="Description"></textarea>
+                        </div>
+                        <!-- Form: Auto Archive -->
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createPipelineForm.autoArchive.$invalid && (createPipelineForm.autoArchive.$touched || createPipelineForm.$submitted)}">
+                            <label class="form__input--checkbox">
+                                <input gt-float-label type="checkbox" ng-model="vm.pipeline.autoArchive" name="autoArchive"> <!-- Hidden checkbox -->
+                                <span></span> <!-- Custom displayed checkbox -->
+                                Auto archive after this date <!-- Inside the label so you can click the text to check the checkbox -->
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12">
+                            <h3>Candidate Filters</h3>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createPipelineForm.keywords.$invalid && (createPipelineForm.keywords.$touched || createPipelineForm.$submitted)}">
+                            <label class="form__label--shown" for="description">Keywords <small class="form__instruction">Separate keywords with commas</small></label>
+                            <tags-input ng-model="vm.pipeline.filters.keywords" class="form-field" name="keywords" type="text" placeholder="Add a keyword">
+                                <!--<auto-complete source=""></auto-complete>-->
+                            </tags-input>
+                        </div>
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': (createPipelineForm.minYearsXp.$invalid && (createPipelineForm.minYearsXp.$touched || createPipelineForm.$submitted)) || (createPipelineForm.maxYearsXp.$invalid && (createPipelineForm.maxYearsXp.$touched || createPipelineForm.$submitted))}">
+                            <label class="form__label--shown" for="description">Years of Experience</label>
+                            <input class="form__input--inline" ng-model="vm.pipeline.filters.yearsXp.min" name="minYearXp" type="number" placeholder="1" min="{{vm.pipelineYearsXpFilterMin}}" max="{{vm.pipelineYearsXpFilterMax}}">
+                            <span class="form__label--inbetweenInputs">to</span>
+                            <input class="form__input--inline" ng-model="vm.pipeline.filters.yearsXp.max" name="maxYearsXp" type="number" placeholder="5" min="{{vm.pipeline.filters.yearsXp.min}}" max="{{vm.pipelineYearsXpFilterMax}}">
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createPipelineForm.skills.$invalid && (createPipelineForm.skills.$touched || createPipelineForm.$submitted)}">
+                            <label class="form__label--shown" for="description">Skills <small class="form__instruction">Separate skills with commas</small></label>
+                            <tags-input ng-model="vm.filters.skills" class="form-field" name="skills" type="text" placeholder="Add a skill"></tags-input>
+                        </div>
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createPipelineForm.degree.$invalid && (createPipelineForm.degree.$touched || createPipelineForm.$submitted)}">
+                            <label class="form__label--shown" for="description">Degree <small class="form__instruction">Separate degrees with commas</small></label>
+                            <tags-input ng-model="vm.filters.degrees" class="form-field" name="degree" type="text" placeholder="Add a degree"></tags-input>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset--footer row--expanded">
+                        <div class="col--medium-12 form__col">
+                            <a class="button--blue" href="#"><span class="icon--save"></span> Save Pipeline</a>
+                            <a class="button--blueOutline" href="#">Duplicate</a>
+                            <a class="button--blueOutline" href="#">Archive</a>
+                            <a class="button--blueOutline button--warningHover" href="#">Delete</a>
+                        </div>
+                    </div>
+                </form>
+
+            </div>
+        </section>
+    </div>
+
+    <div class="row--widget">
+        <form class="col--full-12 box" action="#" name="createEventForm">
+
+            <header class="box__header">
+                <h2>Create Event</h2>
+            </header>
+
+            <div class="row--expanded">
+                <!-- left half of form -->
+                <div class="col--medium-6 form__fieldset--column">
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.eventTitle.$invalid && (createEventForm.eventTitle.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="eventTitle">Event Title</label>
+                            <input gt-float-label class="form__input" ng-model="vm.event.eventTitle" id="eventTitle" name="eventTitle" type="text" placeholder="Event Title" required>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-8 form__col" ng-class="{'form__col--error': createEventForm.eventType.$invalid && (createEventForm.eventType.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="eventType">Event Type</label>
+                            <select gt-float-label class="form__input--select"
+                                ng-model="vm.event.type" ng-options="option.name for option in vm.eventTypes track by option.id" id="eventType" name="eventType" required>
+                                <option value="" ng-show="!vm.event.type">Event Type</option>
+                            </select>
+                        </div>
+
+                        <div class="col--medium-4 form__col" ng-class="{'form__col--error': createEventForm.eventActive.$invalid && (createEventForm.eventActive.$touched || createEventForm.$submitted)}">
+                            <h4 class="form__label--shown">Active Event?</h4>
+                            <label class="form__input--toggle">
+                                <input gt-float-label type="checkbox" ng-model="vm.event.active" name="eventActive">
+                                <span></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.eventDetails.$invalid && (createEventForm.eventDetails.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="eventDetails">Event Details</label>
+                            <textarea gt-float-label class="form__input--textarea" ng-model="vm.event.details" name="eventDetails" placeholder="Event Details"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventOrganizer.$invalid && (createEventForm.eventOrganizer.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="eventOrganizer">Event Organizer</label>
+                            <input gt-float-label class="form__input" ng-model="vm.event.organizer.name" id="eventOrganizer" name="eventOrganizer" type="text" placeholder="Event Organizer">
+                        </div>
+
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventOrganizerContentEmail.$invalid && (createEventForm.eventOrganizerContentEmail.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="eventOrganizerContentEmail">Event Organizer Content Email</label>
+                            <input gt-float-label class="form__input" ng-model="vm.event.organizer.email" id="eventOrganizerContentEmail" name="eventOrganizerContentEmail" type="text" placeholder="Event Organizer Content Email">
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.aboutEventOrganizer.$invalid && (createEventForm.aboutEventOrganizer.$touched || createEventForm.$submitted)}">
+                            <label class="form__label--shown" for="aboutEventOrganizer">About Event Organizer <small class="form__instruction">Enter info here about who is organizing the event</small></label>
+                            <textarea gt-float-label class="form__input--textarea" ng-model="vm.event.organizer.about" name="aboutEventOrganizer"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.eventRegistrationInstructions.$invalid && (createEventForm.eventRegistrationInstructions.$touched || createEventForm.$submitted)}">
+                            <label class="form__label--shown" for="eventRegistrationInstructions">Event Registration Instructions</label>
+                            <textarea gt-float-label class="form__input--shortTextarea" ng-model="vm.event.registrationInstructions" name="eventRegistrationInstructions"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <!-- /left half of form -->
+
+                <!-- right half of form -->
+                <div class="col--medium-6 form__fieldset--column">
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventStartDate.$invalid && (createEventForm.eventStartDate.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="eventStartDate">Event Start Date</label>
+                            <input gt-float-label pick-a-date="vm.event.startDate" ng-model="vm.event.startDateText" class="form__input picker__input" id="eventStartDate" name="eventStartDate" type="text" placeholder="Event Start Date" required>
+                        </div>
+
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventEndDate.$invalid && (createEventForm.eventEndDate.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="eventEndDate">Event End Date</label>
+                            <input gt-float-label pick-a-date="vm.event.endDate" ng-model="vm.event.endDateText" class="form__input picker__input" id="eventEndDate" name="eventEndDate" type="text" placeholder="Event End Date" required>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventStartTime.$invalid && (createEventForm.eventStartTime.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="eventStartTime">Event Start Time</label>
+                            <input gt-float-label pick-a-time="vm.event.startDate" ng-model="vm.event.startTimeText" class="form__input picker__input" id="eventStartTime" name="eventStartTime" type="text" placeholder="Event Start Time" required>
+                        </div>
+
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventEndTime.$invalid && (createEventForm.eventEndTime.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="eventEndTime">Event End Time</label>
+                            <input gt-float-label pick-a-time="vm.event.endDate" ng-model="vm.event.endTimeText" class="form__input picker__input" id="eventEndTime" name="eventEndTime" type="text" placeholder="Event End Time" required>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.locationName.$invalid && (createEventForm.locationName.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="locationName">Location Name</label>
+                            <input gt-float-label class="form__input" ng-model="vm.event.location.name" id="locationName" name="locationName" type="text" placeholder="Location Name" required>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.streetAddress.$invalid && (createEventForm.streetAddress.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="streetAddress">Street Address</label>
+                            <input gt-float-label class="form__input" ng-model="vm.event.location.address" id="streetAddress" name="streetAddress" type="text" placeholder="Street Address" required>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.city.$invalid && (createEventForm.city.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="city">City</label>
+                            <input gt-float-label class="form__input" ng-model="vm.event.location.city" id="city" name="city" type="text" placeholder="City" required>
+                        </div>
+
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.state.$invalid && (createEventForm.state.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="state">State</label>
+                            <input gt-float-label class="form__input" ng-model="vm.event.location.state" id="state" name="state" type="text" placeholder="State" required>
+                        </div>
+
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.zip.$invalid && (createEventForm.zip.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="zip">Zip</label>
+                            <input gt-float-label class="form__input" ng-model="vm.event.location.zip" id="zip" name="zip" type="text" placeholder="Zip" required>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventCost.$invalid && (createEventForm.eventCost.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="eventCost">Event Cost</label>
+                            <input gt-float-label class="form__input" ng-model="vm.event.cost" id="eventCost" name="eventCost" type="text" placeholder="Event Cost">
+                        </div>
+
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.maxAttendees.$invalid && (createEventForm.maxAttendees.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="maxAttendees">Max Attendees</label>
+                            <input gt-float-label class="form__input" ng-model="vm.event.capacity" id="maxAttendees" name="maxAttendees" type="number" placeholder="Max Attendees">
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.activeEngagementCharts.$invalid && (createEventForm.activeEngagementCharts.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="SelectSmartListsToInvites">Select Smart Lists to Invite</label>
+                            <select ng-model="vm.event.smartListsToInvite" ng-options="option.name for option in vm.smartLists track by option.id"
+                                gt-float-label id="activeEngagementCharts" class="form__input--select" name="activeEngagementCharts">
+                                <option value="" ng-show="!vm.event.smartListsToInvite">Select Smart Lists to Invite</option>
+                            </select>
+                            <small class="form__input-info">Candidate Leads <span class="pill">457</span></small>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.headerImage.$invalid && (createEventForm.headerImage.$touched || createEventForm.$submitted)}">
+                            <h4 class="form__label--shown">Event Header Image</h4>
+
+                            <label class="js-inputFile form__input--file">
+                                <input type="file" gt-file-model="vm.event.headerImage" id="headerImage" name="headerImage" aria-label="File browser">
+                                <span data-placeholder="Choose file..."></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <!-- /right half of form -->
+            </div>
+
+            <div class="form__fieldset--footer row--expanded">
+                <div class="col--medium-12">
+                    <a class="button--blue" href="#">Save Event</a>
+                    <a class="button--blueOutline" href="#">View Event</a>
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+    <div class="row--widget">
+
+        <!-- Table: Active stats-->
+        <div class="col--full-6--cell box box--person">
+            <div class="box__header">
+                <h2>Typical Candidate</h2>
+            </div>
+
+            <ul class="list--spaced">
+                <li><a href="#">10-12 years experience</a></li>
+                <li><a href="#">16 months at most recent job</a></li>
+                <li><a href="#">Bachelor's degree</a></li>
+                <li><a href="#">Not willing to relocate</a></li>
+                <li><a href="#">US citizen</a></li>
+                <li><a href="#">Annual income of $90,000</a></li>
+            </ul>
+        </div>
+
+        <!-- Table: Top Contributions By User -->
+        <div class="col--full-6--cell box">
+            <header class="row--expanded box__header">
+                <div class="col--small-9">
+                    <h2>Top Contributions By User</h2>
+                    <h4>3/18/2015</h4>
+                </div>
+                <div class="col--small-3">
+                    <select ng-model="vm.selectedTopContributionDateFilter" ng-options="option.name for option in vm.dateFilters track by option.id"
+                        id="topContributions-dateRange" class="form__input--select" name="topContributions--dateRange">
+                    </select>
+                </div>
+            </header>
+
+            <table class="table">
+                <tr class="table__row">
+                    <td class="table__col--3">
+                        <a href="#" class="figure--circle">
+                            <img src="./images/placeholder/jwhite.png" alt="Joe White">
+                        </a>
+                    </td>
+                    <td class="table__col--9">
+                        <a href="#">Joe White</a>
+                        <p class="subtext">
+                            76 New Candidates
+                        </p>
+                    </td>
+                </tr>
+                <tr class="table__row">
+                    <td class="table__col--3">
+                        <a href="#" class="figure--circle">
+                            <img src="./images/placeholder/jwhite.png" alt="Joe White">
+                        </a>
+                    </td>
+                    <td class="table__col--9">
+                        <a href="#">Holly Alvarez</a>
+                        <p class="subtext">
+                            72 New Candidates
+                        </p>
+                    </td>
+                </tr>
+                <tr class="table__row">
+                    <td class="table__col--3">
+                        <a href="#" class="figure--circle">
+                            <img src="./images/placeholder/jwhite.png" alt="Joe White">
+                        </a>
+                    </td>
+                    <td class="table__col--9">
+                        <a href="#">Lena Flemming</a>
+                        <p class="subtext">
+                            49 New Candidates
+                        </p>
+                    </td>
+                </tr>
+                <tr class="table__row">
+                    <td class="table__col--3">
+                        <a href="#" class="figure--circle">
+                            <img src="./images/placeholder/jwhite.png" alt="Joe White">
+                        </a>
+                    </td>
+                    <td class="table__col--9">
+                        <a href="#">Lena Flemming</a>
+                        <p class="subtext">
+                            46 New Candidates
+                        </p>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="row--green row--expanded row--table">
+        <div class="col--medium-8--cell col--vmiddle">
+            <div class="row--widget">
+                <div class="col--tiny-4--cell">
+                    <figure class="figure--circle figure--bufferRight">
+                        <img src="//placehold.it/300x300" alt="Thomas Maxwell">
+                    </figure>
+                </div>
+                <div class="col--tiny-8--cell col--vmiddle">
+                    <h2>Thomas Maxwell</h2>
+                    <h3>Web Developer</h3>
+
+                    <ul class="list--buffer">
+                        <li>San Jose, CA 95113</li>
+                        <li>(408) 555-5289</li>
+                        <li>thomas@gmail.com</li>
+                    </ul>
+
+                    <a href="" class="button--whiteOutline button--small"> <span class="icon--file"></span>View Resume</a>
+                </div>
+            </div>
+        </div>
+        <div class="col--medium-4--cell col--vmiddle box--basic box--lightGreen">
+            <div class="box--clear">
+                <header class="box__header">
+                    <h2>Top Skills</h2>
+                </header>
+                <ul class="list--spaced">
+                    <li>Automatic Data Processing</li>
+                    <li>Angular JS</li>
+                    <li>Hadoop</li>
+                    <li>HTML5</li>
+                    <li>Apache Jackrabbit</li>
+                    <li>Linux</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="row--widget">
+
+        <!-- Table: Communication -->
+        <div class="col--full-6--cell">
+            <div class="box">
+                <header class="box__header">
+                    <h2>
+                        <span class="icon--speech"></span> Communication
+                    </h2>
+                </header>
+
+                <table class="table">
+                    <tr class="table__row">
+                        <td class="table__col--2 table__col--center">
+                            <span class="icon--twitter"></span>
+                        </td>
+                        <td class="table__col--10">
+                            <h4>9/16/2015</h4>
+                            <p>Follow you on Twitter</p>
+                        </td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--2 table__col--center">
+                            <span class="icon--linkedin"></span>
+                        </td>
+                        <td class="table__col--10">
+                            <h4>8/25/2015</h4>
+                            <p>Connected with you on LinkedIn</p>
+                        </td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--2 table__col--center">
+                            <span class="icon--raised-hand"></span>
+                        </td>
+                        <td class="table__col--10">
+                            <h4>8/25/2015</h4>
+                            <p>Raised hand re: New Opportunites</p>
+                        </td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--2 table__col--center">
+                            <span class="icon--calendar"></span>
+                        </td>
+                        <td class="table__col--10">
+                            <h4>8/25/2015</h4>
+                            <p>Reserved a spot on your EventBrite hackathon</p>
+                        </td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--2 table__col--center">
+                            <span class="icon--checked"></span>
+                        </td>
+                        <td class="table__col--10">
+                            <h4>8/25/2015</h4>
+                            <p>Attended your meetup at DevCon</p>
+                        </td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--2 table__col--center">
+                            <span class="icon--mail-open"></span>
+                        </td>
+                        <td class="table__col--10">
+                            <h4>8/25/2015</h4>
+                            <p>Email opened on 12/25/2014</p>
+                        </td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--2 table__col--center">
+                            <span class="icon--mail"></span>
+                        </td>
+                        <td class="table__col--10">
+                            <h4>8/25/2015</h4>
+                            <p>Email sent on 12/24/2014</p>
+                        </td>
+                    </tr>
+
+                    <tr class="table__row">
+                        <td class="table__col--2 table__col--center">
+                            <span class="icon--thumbs-up"></span>
+                        </td>
+                        <td class="table__col--10">
+                            <h4>8/25/2015</h4>
+                            <p>Thomas Maxwell joined your pipeline</p>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="col--full-6--cell">
+            <div class="box">
+                <header class="box__header">
+                    <h2>
+                        <span class="icon--work"></span> Work Experience
+                    </h2>
+                </header>
+                <ul class="list--blocks">
+                    <li>
+                        <h3>Senior Web Developer, The Google</h3>
+                        <p>The zeitgeist contends that a hardcover is the nail of a russian. We know that some posit the middling blizzard to be less than dying. The tawdry archeology comes from a stockish attempt. The shiest seed reveals itself as a woodwind kidney to those who look.</p>
+                    </li>
+                    <li>
+                        <h3>Web Developer, Facespace</h3>
+                        <p>As far as we can estimate, waitresses are glottic routes. The bills could be said to resemble lento decisions. A sphagnous rod without divisions is truly a spaghetti of columned anthropologies. The mustached observation reveals itself as a retained fibre to those who look.</p>
+                    </li>
+                    <li>
+                        <h3>Web Developer, CloudFlare</h3>
+                        <p>Mines are deathless substances. They were lost without the addle wrist that composed their dungeon. Extending this logic, few can name a cheerless elephant that isn't a joyless sail. One cannot separate couches from woesome mosques.</p>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="box">
+                <header class="box__header">
+                    <h2>
+                        <span class="icon--education"></span> Education
+                    </h2>
+                </header>
+                <ul class="list--blocks">
+                    <li>
+                        <h3>MSCS, Stanford University</h3>
+                        <p>As far as we can estimate, some posit the gruffish limit to be less than trickless. However, a biplane of the intestine is assumed to be a bracing almanac. The lumpish hurricane reveals itself as a hammy plant to those who look.</p>
+                    </li>
+                    <li>
+                        <h3>BA Computer Sciences, Santa Clara University</h3>
+                        <p>A low sees a yard as an unswayed puma. The unmoaned Sunday reveals itself as a dotted manager to those who look. Few can name a lingual deposit that isn't a custom nephew. A modest stock's hallway comes with it the thought that the crushing bath is a church.</p>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="row--green row--expanded">
+        <!-- Widget: Drag 'n Drop' -->
+        <header class="row--widget row--table">
+            <div class="col--large-12">
+                <h1>Import Resumes</h1>
+            </div>
+        </header>
+        <section class="row--widget">
+            <div class="col--full-4--cell col--vmiddle box--dashed">
+                <div class="dragDrop">
+                    <header class="dragDrop__header">
+                        <span class="dragDrop__icon icon--file"></span>
+                        <h2>Drop file(s) here to upload</h2>
+                    </header>
+                </div>
+            </div>
+            <div class="col--full-4--cell col--vmiddle box--outline">
+                <div class="dragDrop">
+                    <header class="dragDrop__header">
+                        <h2>Files on your computer</h2>
+                        <span class="dragDrop__icon icon--computer"></span>
+                        <a href="#" class="button--whiteOutline button--small">Browse Files</a>
+                    </header>
+                </div>
+            </div>
+            <div class="col--full-4--cell col--vmiddle box--outline">
+                <div class="dragDrop">
+                    <header class="dragDrop__header">
+                        <h2>Upload Using</h2>
+                        <a href="#" class="dragDrop__icon--link">
+                            <span class="icon--dropbox"></span>
+                        </a>
+                        <a href="#" class="dragDrop__icon--link">
+                            <span class="icon--box"></span>
+                        </a>
+                        <a href="#" class="dragDrop__icon--link">
+                            <span class="icon--google-drive"></span>
+                        </a>
+                    </header>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Manual Entry -->
+    <div class="row--widget">
+        <div class="col--full-12--cell box">
+            <header class="box__header">
+                <h2>Manual Entry</h2>
+            </header>
+
+            <form name="manualEntryForm" class="form" action="#">
+                <div class="form__fieldset row--expanded">
+                    <div class="col--medium-4 form__col form__col--third" ng-class="{'form__col--error': manualEntryForm.firstName.$invalid && (manualEntryForm.firstName.$touched || manualEntryForm.$submitted)}">
+                        <label class="form__label" for="firstName">First Name *</label>
+                        <input gt-float-label class="form__input" ng-model="vm.manualEntry.firstName" id="firstName" name="firstName" type="text" placeholder="First Name *" required>
+                    </div>
+                    <div class="col--medium-4 form__col form__col--third"ng-class="{'form__col--error': manualEntryForm.lastName.$invalid && (manualEntryForm.lastName.$touched || manualEntryForm.$submitted)}">
+                        <label class="form__label" for="lastName">Last Name *</label>
+                        <input gt-float-label class="form__input" ng-model="vm.manualEntry.lastName" id="lastName" name="lastName" type="text" placeholder="Last Name *" required>
+                    </div>
+                    <div class="col--medium-4 form__col form__col--third"ng-class="{'form__col--error': manualEntryForm.email.$invalid && (manualEntryForm.email.$touched || manualEntryForm.$submitted)}">
+                        <label class="form__label" for="email">Email Address *</label>
+                        <input gt-float-label class="form__input" ng-model="vm.manualEntry.email" id="email" name="email" type="email" placeholder="Email Address *" required>
+                    </div>
+                </div>
+                <div class="form__fieldset--footer row--expanded">
+                    <div class="col--medium-12 form__col">
+                        <button type="submit" class="button--blue">Send</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- Embed Code -->
+    <div class="row--widget">
+        <div class="col--full-12--cell box">
+            <header class="box__header">
+                <h2>Embed Code</h2>
+            </header>
+
+            <div class="form__fieldset row--expanded">
+                <div class="col--medium-6 form__col">
+                    <h4>Button Code</h4>
+
+                    <pre><code class="code__wrap">&lt;object width=&quot;420&quot; height=&quot;315&quot; data=&quot;http://www.youtube.com/embed/XGSy3_Czz8k&quot;&gt;&lt;/object&gt;</code></pre>
+
+                    <a class="button--blue" href="#">Preview</a>
+                </div>
+                <div class="col--medium-6 form__col">
+                    <h4>Widget Code</h4>
+
+                    <pre><code class="code__wrap">&lt;object width=&quot;420&quot; height=&quot;315&quot; data=&quot;http://www.youtube.com/embed/XGSy3_Czz8k&quot;&gt;&lt;/object&gt;</code></pre>
+
+                    <a class="button--blue" href="#">Preview</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</section>
