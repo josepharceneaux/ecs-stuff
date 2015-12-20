@@ -492,74 +492,35 @@ class TalentPipelineCandidates(Resource):
                 if smart_list.search_params and json.loads(smart_list.search_params):
                     search_params.append(json.loads(smart_list.search_params))
                 else:
-                    dumb_lists.append(smart_list)
+                    dumb_lists.append(str(smart_list.id))
 
         except Exception as e:
             raise InvalidUsage(error_message="Search params of talent-pipeline or its smart-lists are in bad format "
                                              "because: %s" % e.message)
 
         headers = {'Authorization': request.oauth_token, 'Content-Type': 'application/json'}
-        request_params, dumb_list_candidates = {}, {'candidates': [], 'total_found': 0}
 
-        # Get all candidates of all dumb_lists of a given talent_pipeline
-        for dumb_list in dumb_lists:
+        request_params = dict()
 
-            candidates = SmartlistCandidate.query.join(
-                TalentPoolCandidate, TalentPoolCandidate.candidate_id == SmartlistCandidate.candidate_id).\
-                filter(and_(TalentPoolCandidate.talent_pool_id == talent_pipeline.talent_pool_id, SmartlistCandidate.
-                            smart_list_id == dumb_list.id)).all()
+        request_params['talent_pool_id'] = talent_pipeline.talent_pool_id
+        request_params['fields'] = request.args.get('fields', '')
+        request_params['sort_by'] = request.args.get('sort_by', '')
+        request_params['limit'] = request.args.get('limit', '')
+        request_params['page'] = request.args.get('page', '')
+        request_params['dumb_list_ids'] = ','.join(dumb_lists) if dumb_lists else None
+        request_params['search_params'] = json.dumps(search_params) if search_params else None
 
-            candidate_ids = [candidate.candidate_id for candidate in candidates]
-            if candidate_ids:
-                try:
-                    response = requests.get(CandidateApiUrl.CANDIDATES, headers=headers,
-                                            data=json.dumps({'candidate_ids': candidate_ids}))
-                    if response.ok:
-                        dumb_list_candidates['candidates'] = dumb_list_candidates['candidates'] + \
-                                                             (response.json().get('candidates'))
-                    else:
-                        raise Exception('Status Code: %s, Response body: %s' % (response.status_code, response.json()))
+        request_params = dict((k, v) for k, v in request_params.iteritems() if v)
 
-                except Exception as e:
-                    raise InvalidUsage(error_message="Couldn't get candidates of dumb_list %s  because: "
-                                                     "%s" % (dumb_list.id, e.message))
-
-        dumb_list_candidates['total_found'] = len(dumb_list_candidates['candidates'])
-
-        if search_params:
-            request_params['talent_pool_id'] = talent_pipeline.talent_pool_id
-            request_params['fields'] = request.args.get('fields')
-            request_params['sort_by'] = request.args.get('sort_by')
-            request_params['limit'] = request.args.get('limit')
-            request_params['page'] = request.args.get('page')
-            request_params['search_params'] = json.dumps(search_params)
-
-            request_params = dict((k, v) for k, v in request_params.iteritems() if v)
-
-            # Query Candidate Search API to get all candidates of a given talent-pipeline
-            try:
-                response = requests.get(CandidateApiUrl.CANDIDATE_SEARCH_URI, headers=headers, params=request_params)
-                json_response = response.json()
-
-            except Exception as e:
-                raise InvalidUsage(error_message="Couldn't get candidates from candidates search service because: "
-                                                 "%s" % e.message)
-
-            if not response.ok:
-                return json_response, response.status_code
+        # Query Candidate Search API to get all candidates of a given talent-pipeline
+        try:
+            response = requests.get(CandidateApiUrl.CANDIDATE_SEARCH_URI, headers=headers, params=request_params)
+            if response.ok:
+                return response.json()
             else:
-                candidates_dict = {}
-                json_response['candidates'] = json_response['candidates'] + dumb_list_candidates['candidates']
-
-                # Remove redundant candidates from all candidates of a given talent-pipeline
-                for key, candidate in enumerate(json_response['candidates']):
-                    if str(candidate.get('id')) not in candidates_dict:
-                        candidates_dict[str(candidate.get('id'))] = candidate
-
-                json_response['candidates'] = [candidate for index, candidate in candidates_dict.iteritems()]
-                json_response['total_found'] = len(json_response['candidates'])
-                return json_response
-        else:
-            return dumb_list_candidates
+                raise Exception("Status Code: %s, Response: %s" % (response.status_code, response.json()))
+        except Exception as e:
+            raise InvalidUsage(error_message="Couldn't get candidates from candidates search service because: "
+                                             "%s" % e.message)
 
 

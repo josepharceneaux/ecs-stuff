@@ -3,7 +3,8 @@ from flask import request
 from flask_restful import Resource
 from candidate_service.common.utils.auth_utils import require_oauth
 from candidate_service.modules.validators import validate_and_format_data
-from candidate_service.modules.talent_cloud_search import search_candidates
+from candidate_service.common.error_handling import InvalidUsage
+from candidate_service.modules.talent_cloud_search import search_candidates, upload_candidate_documents, delete_candidate_documents
 
 
 class CandidateSearch(Resource):
@@ -32,3 +33,34 @@ class CandidateSearch(Resource):
         candidate_search_results = search_candidates(domain_id, request_vars, search_limit)
 
         return candidate_search_results
+
+
+class CandidateDocuments(Resource):
+
+    decorators = [require_oauth]
+
+    def post(self):
+        """
+        Upload Candidate Documents to Amazon Cloud Search
+        """
+
+        requested_data = request.get_json(silent=True)
+        if not requested_data or 'candidate_ids' not in requested_data:
+            raise InvalidUsage(error_message="Request body is empty or invalid")
+
+        upload_candidate_documents(candidate_ids=requested_data.get('candidate_ids'))
+
+        return '', 204
+
+    def delete(self):
+        """
+        Delete Candidate Documents from Amazon Cloud Search
+        """
+
+        requested_data = request.get_json(silent=True)
+        if not requested_data or 'candidate_ids' not in requested_data:
+            raise InvalidUsage(error_message="Request body is empty or invalid")
+
+        delete_candidate_documents(candidate_ids=requested_data.get('candidate_ids'))
+
+        return '', 204

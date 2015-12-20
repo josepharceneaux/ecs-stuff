@@ -55,7 +55,8 @@ def test_talent_pipeline_candidate_get(access_token_first, access_token_second, 
                                                         talent_pool_id=talent_pool.id)
 
     # Adding candidates dumb_list
-    add_candidates_to_dumb_list(db.session, test_dumb_list, candidate_ids_without_talent_pool + apple_candidate_ids)
+    add_candidates_to_dumb_list(db.session, access_token_first, test_dumb_list,
+                                candidate_ids_without_talent_pool + apple_candidate_ids)
 
     # Wait for addition of candidates in Amazon Cloud Search
     sleep(30)
@@ -74,8 +75,9 @@ def test_talent_pipeline_candidate_get(access_token_first, access_token_second, 
     assert_results(apple_candidate_ids + cs_sw_engineers_candidate_ids,  response)
 
     # Adding candidates dumb_list
-    add_candidates_to_dumb_list(db.session, test_dumb_list, cs_sw_engineers_candidate_ids)
+    add_candidates_to_dumb_list(db.session, access_token_first, test_dumb_list, cs_sw_engineers_candidate_ids)
 
     # Logged-in user trying to get all candidates of talent-pipeline with search_params
-    response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id)
-    assert_results(apple_candidate_ids + cs_sw_engineers_candidate_ids,  response)
+    response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id,
+                                                          {'fields': 'count_only'})
+    assert len(set(apple_candidate_ids + cs_sw_engineers_candidate_ids)) == response.get('total_found')

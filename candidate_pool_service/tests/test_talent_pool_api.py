@@ -346,7 +346,7 @@ def test_talent_pool_candidate_api_get(access_token_first, user_first, talent_po
         'talent_pool_candidates': [candidate_first.id, candidate_second.id]
     }
 
-    # Logged-in user trying to add candidates to talent_pool
+    # Logged-in user trying to get candidates from talent_pool
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='POST')
     assert status_code == 200
 
@@ -361,8 +361,7 @@ def test_talent_pool_candidate_api_get(access_token_first, user_first, talent_po
     # Logged-in user trying to get candidates from talent_pool
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id)
     assert status_code == 200
-    assert len(response['talent_pool_candidates']) == 2
-    assert [candidate.get('id') for candidate in response['talent_pool_candidates']] == data['talent_pool_candidates']
+    assert response['talent_pool_candidates']['total_found'] == 2
 
     user_first.user_group_id = None
     db.session.commit()
@@ -376,11 +375,11 @@ def test_talent_pool_candidate_api_get(access_token_first, user_first, talent_po
     # Logged-in user trying to get candidates from talent_pool
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id)
     assert status_code == 200
-    assert len(response['talent_pool_candidates']) == 2
-    assert [candidate.get('id') for candidate in response['talent_pool_candidates']] == data['talent_pool_candidates']
+    assert response['talent_pool_candidates']['total_found'] == 2
 
 
-def test_talent_pool_candidate_api_delete(access_token_first, user_first, talent_pool, talent_pool_second, candidate_first, candidate_second):
+def test_talent_pool_candidate_api_delete(access_token_first, user_first, talent_pool, talent_pool_second,
+                                          candidate_first, candidate_second):
 
     data = {
         'talent_pool_candidates': [candidate_first.id, candidate_second.id]
@@ -431,7 +430,6 @@ def test_talent_pool_candidate_api_delete(access_token_first, user_first, talent
     # Logged-in user trying to delete existing candidates from a talent-pool
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='DELETE')
     assert status_code == 404
-
 
 
 def test_health_check():

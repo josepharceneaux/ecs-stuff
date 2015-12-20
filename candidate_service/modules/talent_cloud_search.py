@@ -127,6 +127,7 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
     'military_highest_grade':        dict(IndexFieldType='literal-array',   LiteralArrayOptions={'ReturnEnabled': False}),
     'military_end_date':             dict(IndexFieldType='date-array',      DateArrayOptions={'ReturnEnabled': False}),
     'talent_pools':                  dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
+    'dumb_lists':                    dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
 }
 
 # Get all the credentials from environment variable
@@ -262,6 +263,9 @@ def _build_candidate_documents(candidate_ids):
                 # Talent Pools
                 GROUP_CONCAT(DISTINCT talent_pool_candidate.talent_pool_id SEPARATOR '%(sep)s') AS `talent_pools`,
 
+                # Dumb Lists
+                GROUP_CONCAT(DISTINCT smart_list_candidate.smartlistId SEPARATOR '%(sep)s') AS `dumb_lists`,
+
                 # AOIs and Custom Fields
                 GROUP_CONCAT(DISTINCT candidate_area_of_interest.areaOfInterestId SEPARATOR '%(sep)s') AS `area_of_interest_id`,
                 GROUP_CONCAT(DISTINCT CONCAT(candidate_custom_field.customFieldId, '|', candidate_custom_field.value) SEPARATOR '%(sep)s') AS `custom_field_id_and_value`,
@@ -295,6 +299,7 @@ def _build_candidate_documents(candidate_ids):
     FROM        candidate
 
     LEFT JOIN   talent_pool_candidate ON (candidate.id = talent_pool_candidate.candidate_id)
+    LEFT JOIN   smart_list_candidate ON (candidate.id = smart_list_candidate.candidateId)
     LEFT JOIN   candidate_address ON (candidate.id = candidate_address.candidateId)
     LEFT JOIN   candidate_email ON (candidate.id = candidate_email.candidateId)
 
@@ -541,6 +546,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     """
     # Clear all queries and filters list for fresh search
     _clear_filter_queries_and_search_queries_list()
+
     if request_vars:
         for var_name in request_vars.keys():
             if "[]" == var_name[-2:]:
@@ -550,9 +556,15 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     # Search all candidates under domain
     filter_queries_list.append(["(term field=domain_id %s)" % domain_id])
 
-    # Add talent_pool_id in filter_queries
-    if request_vars.get('talent_pool_id'):
-        filter_queries_list.append(["(term field=talent_pools  %s)" % request_vars.get('talent_pool_id')])
+    dumb_list_query_string, dumb_list_filter_query_string = '', ''
+    # This parameter is for internal Talent-Pipeline search only
+    if isinstance(request_vars.get('dumb_list_ids'), list):
+        dumb_list_query_string = " OR ".join("dumb_lists:%s" % dumb_list_id for dumb_list_id in
+                                             request_vars.get('dumb_list_ids'))
+        dumb_list_filter_query_string = "(or %s)" % ' '.join("dumb_lists:%s" % dumb_list_id for dumb_list_id in
+                                                             request_vars.get('dumb_list_ids'))
+    elif request_vars.get('dumb_list_ids'):
+        dumb_list_filter_query_string = dumb_list_query_string = "dumb_lists:%s" % request_vars.get('dumb_list_ids')
 
     # Sorting
     sort = '%s %s'
@@ -582,10 +594,14 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
         query_string = "id:%s" % request_vars['id'] if request_vars.get('id') else "*:*"
 
     else:
-        query_string = "(and %s)" % " ".join(search_queries_list)
+        query_string = " AND ".join(search_queries_list) if len(search_queries_list) > 1 \
+            else " ".join(search_queries_list)
         if request_vars.get('id'):
             # If we want to check if a certain candidate ID is in a smartlist
-            query_string = "(and id:%s %s)" % (request_vars['id'], query_string)
+            query_string = "id:%s AND %s" % (request_vars['id'], query_string)
+        # For TalentPipeline candidate search we'll need to query candidates of given dumb_lists
+        if dumb_list_query_string:
+            query_string = "((%s) OR (%s))" % (dumb_list_query_string, query_string)
 
     params = dict(query=query_string, sort=sort, start=offset, size=search_limit)
     params['query_parser'] = 'lucene'
@@ -598,6 +614,18 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
 
     params['filter_query'] = "(and %s)" % " ".join(filter_query_strings) if len(filter_query_strings) > 1 \
         else ' '.join(filter_query_strings)
+
+    if dumb_list_query_string:
+        if len(filter_query_strings) > 1:
+            params['filter_query'] = "(or %s %s)" % (dumb_list_filter_query_string, params['filter_query'])
+        else:
+            # Length of filter_query_strings is 1 because there would be domain_id term at least
+            params['filter_query'] = dumb_list_filter_query_string
+
+    # Add talent_pool_id in filter_queries
+    if request_vars.get('talent_pool_id'):
+        params['filter_query'] = "(and %s (term field=talent_pools  %s))" % (params['filter_query'],
+                                                                             request_vars.get('talent_pool_id'))
 
     if sort_field == "distance":
         params['expr'] = "{'distance':'haversin(%s,%s,coordinates.latitude,coordinates.longitude)'}"\

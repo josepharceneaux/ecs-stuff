@@ -195,6 +195,8 @@ SEARCH_INPUT_AND_VALIDATIONS = {
     "fields": 'return_fields',
     # Id of a talent_pool from where to search candidates
     "talent_pool_id": 'digit',
+    # List of ids of dumb_lists (For Internal TalentPipeline Search Only)
+    "dumb_list_ids":  'id_list',
     # candidate id : to check if candidate is present in smartlist.
     "id": 'digit'
 }

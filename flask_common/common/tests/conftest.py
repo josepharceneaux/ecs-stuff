@@ -437,8 +437,8 @@ def talent_pipeline(request, user_first, talent_pool):
 
 
 @pytest.fixture()
-def candidate_first(request):
-    candidate = Candidate(last_name=gen_salt(20), first_name=gen_salt(20))
+def candidate_first(request, user_first):
+    candidate = Candidate(last_name=gen_salt(20), first_name=gen_salt(20), user_id=user_first.id)
     db.session.add(candidate)
     db.session.commit()
 
@@ -453,8 +453,8 @@ def candidate_first(request):
 
 
 @pytest.fixture()
-def candidate_second(request):
-    candidate = Candidate(last_name=gen_salt(20), first_name=gen_salt(20))
+def candidate_second(request, user_first):
+    candidate = Candidate(last_name=gen_salt(20), first_name=gen_salt(20), user_id=user_first.id)
     db.session.add(candidate)
     db.session.commit()
 

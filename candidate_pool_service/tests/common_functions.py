@@ -2,7 +2,8 @@ __author__ = 'ufarooqi'
 import requests
 import json
 from werkzeug.security import gen_salt
-from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline, Smartlist, SmartlistCandidate
+from candidate_pool_service.common.routes import CandidateApiUrl
+from candidate_pool_service.common.models.talent_pools_pipelines import Smartlist, SmartlistCandidate
 
 CANDIDATE_POOL_SERVICE_ENDPOINT = 'http://127.0.0.1:8008/%s'
 TALENT_POOL_API = CANDIDATE_POOL_SERVICE_ENDPOINT % 'talent-pools'
@@ -136,7 +137,7 @@ def prepare_pipeline_candidate_data(session, talent_pipeline, user):
     return test_smart_list, test_dumb_list
 
 
-def add_candidates_to_dumb_list(session, test_dumb_list, candidate_ids):
+def add_candidates_to_dumb_list(session, access_token, test_dumb_list, candidate_ids):
     """
     This function will add a test dumb_list and smart_list to database and talent-pipeline
     :param session: SQLAlchemy Session object
@@ -150,4 +151,10 @@ def add_candidates_to_dumb_list(session, test_dumb_list, candidate_ids):
         session.add(dumb_list_candidate)
 
     session.commit()
+
+    # Updating Candidate Info in Amazon Cloud SEarch
+    headers = {'Authorization': 'Bearer %s' % access_token, 'Content-Type': 'application/json'}
+    response = requests.post(CandidateApiUrl.CANDIDATES_DOCUMENTS_URI, headers=headers,
+                             data=json.dumps({'candidate_ids': candidate_ids}))
+    assert response.status_code == 204
 
