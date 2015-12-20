@@ -56,7 +56,7 @@ class ConvertUrl(Resource):
 
     def post(self):
         """
-        This action returns shorted url of given url
+        This action returns shorted URL of given URL.
         :return short_url: a dictionary containing short url
         :rtype json
 
@@ -88,8 +88,7 @@ class ConvertUrl(Resource):
             raise MissingRequiredField(
                 error_message="Data must be provided as '{url: <value>}'")
         if not json_data['url']:
-            raise InvalidUsage(error_message='No URL is given.',
-                               error_code=InvalidUsage.http_status_code())
+            raise InvalidUsage(error_message='No URL is given.')
         short_url, error = url_conversion(json_data['url'])
         if short_url:
             return {'short_url': short_url}

@@ -197,8 +197,7 @@ def validate_form_data(form_data):
     # TODO: Update comment
     required_fields = ['name', 'body_text', 'smartlist_ids']
     # find if any required key is missing from data
-    missing_fields = filter(lambda required_key: required_key not in form_data.keys(),
-                            required_fields)
+    missing_fields = filter(lambda required_key: required_key not in form_data, required_fields)
     if missing_fields:
         raise MissingRequiredField('Required fields not provided to save sms_campaign. '
                                    'Missing fields are %s' % missing_fields)
