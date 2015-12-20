@@ -183,12 +183,13 @@ class SMSCampaigns(Resource):
                         5009 (ErrorSavingSMSCampaign)
 
         """
+        # TODO: Validation Twice not needed
         validate_header(request)
         # get json post request data
         try:
             data_from_ui = request.get_json()
         except Exception:
-            raise InvalidUsage(error_message='Given data in not in json format')
+            raise InvalidUsage(error_message='Given data is not in json format')
         if not data_from_ui:
             raise InvalidUsage(error_message='No data provided to create SMS campaign')
         # apply validation on fields

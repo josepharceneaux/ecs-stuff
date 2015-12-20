@@ -4,7 +4,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies,
 
     This file contains constants used in SMS campaign service.
 """
-
+# TODO: file name can be `constants` like `utilities` because it is inside sms campaign service
 TWILIO = 'Twilio'
 MOBILE_PHONE_LABEL = 'Mobile'  # for mobile phone
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"

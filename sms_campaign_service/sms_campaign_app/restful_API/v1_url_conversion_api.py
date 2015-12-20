@@ -79,6 +79,7 @@ class ConvertUrl(Resource):
 
         .. Error codes:: 5004 (GoogleShortenUrlAPIError)
         """
+        # TODO: either validate header is required or try catch for `request.get_json()`
         validate_header(request)
         try:
             json_data = request.get_json()
@@ -87,6 +88,8 @@ class ConvertUrl(Resource):
         if 'url' not in json_data:
             raise MissingRequiredField(
                 error_message="Data must be provided as '{url: <value>}'")
+        # Why twice? You can do `if json_data.get('url'):` and if there is possibility one None
+        # You can do `if isinstance(json_data, dict) and json_data.get('url'):`
         if not json_data['url']:
             raise InvalidUsage(error_message='No URL is given.')
         short_url, error = url_conversion(json_data['url'])

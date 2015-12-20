@@ -14,6 +14,7 @@ from sms_campaign_service.common.tests.conftest import *
 
 
 # Service specific
+# TODO: Is it unused? if so remove it
 from sms_campaign_service.sms_campaign_app.app import app  # to avoid circular import
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL)

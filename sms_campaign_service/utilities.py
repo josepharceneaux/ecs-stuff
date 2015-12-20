@@ -4,7 +4,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies,
 
 This contains following helper classes/functions for SMS Campaign Service.
 
-- Class TwilioSMS which uses TwilioAPI to buy new number, or send sms etc.
+- Class TwilioSMS which uses Twilio API to buy new number, or send sms etc.
 - Function search_urls_in_text() to search a URL present in given text.
 - Function url_conversion() which takes the URL and try to make it shorter using
     Google's shorten URL API.
@@ -48,6 +48,7 @@ class TwilioSMS(object):
         self.country = 'US'
         self.phone_type = 'local'
         self.sms_enabled = True
+        # TODO: Remove commented code if not required
         # self.sms_call_back_url = 'http://demo.twilio.com/docs/sms.xml'
         self.sms_call_back_url = SmsCampaignApiUrl.RECEIVE
         # self.sms_call_back_url = 'http://74cf4bd2.ngrok.io/v1/receive'
@@ -190,11 +191,12 @@ def validate_form_data(form_data):
             has no value we raise MissingRequiredFieldError.
         2- If smartlist_ids are not present in database, we raise ResourceNotFound exception.
         3- If start_datetime or end_datetime is not valid datetime format, then we raise
+            InvalidDatetime
 
     :param form_data:
-    :return:
+    :return: list of ids of smartlists which were not found in database.
+    :rtype: list
     """
-    # TODO: Update comment
     required_fields = ['name', 'body_text', 'smartlist_ids']
     # find if any required key is missing from data
     missing_fields = filter(lambda required_key: required_key not in form_data, required_fields)
@@ -236,8 +238,9 @@ def datetime_validator(str_datetime):
     """
     utc_pattern = '\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z'
     if not re.match(utc_pattern, str_datetime):
-        raise InvalidDatetime('Invalid DateTime: Kindly specify datetime '
-                              'in UTC format like 2015-10-08T06:16:55Z')
+        # TODO: Needed to update this message in social network service
+        raise InvalidDatetime('Invalid DateTime: Kindly specify UTC datetime in ISO-8601 '
+                              'format like 2015-10-08T06:16:55Z')
 
 
 def delete_sms_campaign(campaign_id, current_user_id):
@@ -283,5 +286,7 @@ def validate_header(request):
     If header of request is not proper, it raises InvalidUsage exception
     :return:
     """
+    # TODO: You are using `request.get_json()` inside try catch and then raising Invalid content etc error
+    # then there is no need to check headers and vice versa
     if not request.headers.get('CONTENT_TYPE') == JSON_CONTENT_TYPE_HEADER['content-type']:
         raise InvalidUsage(error_message='Invalid header provided')

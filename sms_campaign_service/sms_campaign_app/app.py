@@ -30,7 +30,6 @@ from werkzeug.utils import redirect
 
 # Application specific Imports
 from sms_campaign_service import logger
-from sms_campaign_service.utilities import TwilioSMS
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 
 # Imports for Blueprints
@@ -95,6 +94,7 @@ def sms_campaign_url_redirection(campaign_id, url_conversion_id):
                 and 'google' in request.headers.environ['HTTP_REFERER']):
         data = {'message': "Successfully verified by Google's shorten URL API"}
         logger.info(data['message'])
+        # Is there any need to jsonify? maybe we can send a simple dict
         return flask.jsonify(**data), 200
     try:
 
@@ -170,6 +170,7 @@ def sms_receive():
             </Response>
             """
 
+# TODO: Remove commented imports and code if it is not required
 # import twilio.twiml
 # resp = twilio.twiml.Response()
 # resp.message("Thank you for your response")
