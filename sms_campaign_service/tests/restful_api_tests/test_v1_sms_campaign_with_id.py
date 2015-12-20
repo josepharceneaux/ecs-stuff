@@ -12,7 +12,7 @@ import requests
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
 
 # Common Utils
-from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
+from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import (UnauthorizedError, ResourceNotFound,
                                                         ForbiddenError, InternalServerError,
                                                         InvalidUsage)

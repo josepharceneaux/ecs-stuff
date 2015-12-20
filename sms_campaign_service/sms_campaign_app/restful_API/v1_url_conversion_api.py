@@ -24,7 +24,7 @@ from sms_campaign_service.common.talent_api import TalentApi
 from sms_campaign_service.common.utils.api_utils import api_route
 from sms_campaign_service.common.error_handling import InvalidUsage
 from sms_campaign_service.common.utils.auth_utils import require_oauth
-from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
+from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.utils.common_functions import url_conversion
 
 # Service Specific

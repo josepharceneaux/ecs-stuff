@@ -17,7 +17,7 @@
 
 # Initializing App. This line should come before any imports from models
 from sms_campaign_service import init_sms_campaign_app_and_celery_app
-from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
+from sms_campaign_service.common.routes import SmsCampaignApiUrl
 
 app, celery_app= init_sms_campaign_app_and_celery_app()
 
@@ -170,14 +170,7 @@ def sms_receive():
             </Response>
             """
 
-# TODO: Remove commented imports and code if it is not required
-# import twilio.twiml
-# resp = twilio.twiml.Response()
-# resp.message("Thank you for your response")
-# return str(resp)
-# <Message> Hello </Message>
-
-
+# TODO: Verify send/receive SMS to/from with actual US or CANADA number
 # @app.route('/send_sms')
 # def send_sms():
 #     twilio_obj = TwilioSMS()

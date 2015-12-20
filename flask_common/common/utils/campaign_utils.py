@@ -28,7 +28,7 @@ from flask import current_app
 from ..models.user import Token
 from ..models.misc import UrlConversion
 from ..models.candidate import Candidate
-from ..utils.app_rest_urls import CandidateApiUrl, ActivityApiUrl
+from ..routes import CandidateApiUrl, ActivityApiUrl
 from ..utils.common_functions import http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER
 from ..error_handling import ForbiddenError, InvalidUsage, ResourceNotFound
 

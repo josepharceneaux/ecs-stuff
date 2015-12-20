@@ -36,7 +36,7 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
 # common utils
 from sms_campaign_service.common.common_config import IS_DEV
 from sms_campaign_service.common.utils.campaign_utils import CampaignBase
-from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
+from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.utils.common_functions import (find_missing_items,
                                                                 url_conversion,
                                                                 JSON_CONTENT_TYPE_HEADER)
@@ -411,7 +411,6 @@ class SmsCampaignBase(CampaignBase):
                 twilio_obj.purchase_twilio_number(number_to_buy)
             user_phone = self.create_or_update_user_phone(self.user_id, number_to_buy,
                                                           phone_label_id)
-            # TODO: validate that user has valid US number
             return user_phone
 
     @staticmethod

@@ -2,7 +2,7 @@ __author__ = 'ufarooqi'
 import os
 
 from candidate_pool_service.candidate_pool_app import app
-from social_network_service.common.utils.app_rest_urls import GTApis
+from social_network_service.common.routes import GTApis
 
 
 if __name__ == '__main__':

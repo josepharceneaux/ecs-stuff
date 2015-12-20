@@ -1,6 +1,7 @@
 <!-- Header -->
 <header class="header row--expanded">
     <figure class="header__logo col--medium-4 col--large-12">
+        <a ui-sref="dashboard"></a>
         <img src="./images/logo--main--white.svg" alt="getTalent">
     </figure>
     <nav class="header__nav col--medium-8 col--large-12">
@@ -23,7 +24,7 @@
                 <a href="#" class="header__profile">
                     <img ng-src="{{vm.userProfilePicThumbSrc}}" alt="Change settings">
                 </a>
-                <a ng-click="vm.logout()">Logout</a>
+                <a class="header__logout" ng-click="vm.logout()">Logout</a>
             </div>
         </div>
     </nav>

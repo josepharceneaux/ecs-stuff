@@ -43,7 +43,6 @@ other model classes inherit. But this changes will only effect this app or the a
              This will add all these method on db.Model and all its child classes.
 
 """
-from flask import current_app
 from types import MethodType
 from ..models.db import db
 from ..error_handling import register_error_handlers
@@ -133,7 +132,7 @@ def get_by_id(cls, _id):
         # get Model instance given by id
         obj = cls.query.get(_id)
     except Exception as error:
-        current_app.logger("Couldn't get record from db table %s. Error is: %s"
+        cls.logger("Couldn't get record from db table %s. Error is: %s"
                    % (cls.__name__, error.message))
         return None
     return obj
@@ -156,12 +155,12 @@ def delete(cls, ref):
         db.session.delete(obj)
         db.session.commit()
     except Exception as error:
-        current_app.logger.error("Couldn't delete record from db. Error is: %s" % error.message)
+        cls.logger.error("Couldn't delete record from db. Error is: %s" % error.message)
         return False
     return True
 
 
-def add_model_helpers(cls):
+def add_model_helpers(cls, logger):
     """
     This function adds helper methods to Model class which is passed as argument.
 
@@ -177,7 +176,9 @@ def add_model_helpers(cls):
     :param cls:
     :return:
     """
+
     cls.session = db.session
+    cls.logger = logger
     # this method converts model instance to json serializable dictionary
     cls.to_json = MethodType(to_json, None, db.Model)
     # This method saves model instance in database as table row
@@ -228,7 +229,7 @@ def init_talent_app(flask_app, logger):
 
     :return: Returns the app
     """
-    add_model_helpers(db.Model)
+    add_model_helpers(db.Model, logger)
     db.init_app(flask_app)
     db.app = flask_app
     register_error_handlers(flask_app, logger)

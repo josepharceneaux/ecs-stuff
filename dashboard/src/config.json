@@ -9,7 +9,7 @@
   },
   "development": {
     "authInfo": {
-      "baseUrl": "https://secure-webdev.gettalent.com",
+      "baseUrl": "http://secure-webdev.gettalent.com",
       "clientId": "KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921UX1",
       "clientSecret": "DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYjMw",
       "grantPath": "/oauth2/token"

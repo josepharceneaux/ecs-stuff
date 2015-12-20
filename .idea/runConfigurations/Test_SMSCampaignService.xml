@@ -21,8 +21,8 @@
     <option name="USE_PATTERN" value="false" />
     <option name="testToRun" value="$PROJECT_DIR$/sms_campaign_service/tests" />
     <option name="keywords" value="" />
-    <option name="params" value="" />
-    <option name="USE_PARAM" value="false" />
+    <option name="params" value="-k test_method_pre_process_url_redirect_with_deleted_candidate" />
+    <option name="USE_PARAM" value="true" />
     <option name="USE_KEYWORD" value="false" />
     <method />
   </configuration>

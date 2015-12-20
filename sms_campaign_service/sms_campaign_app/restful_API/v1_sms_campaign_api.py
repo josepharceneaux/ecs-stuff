@@ -48,7 +48,7 @@ from sms_campaign_service.utilities import (validate_form_data, validate_header,
 from sms_campaign_service.common.error_handling import *
 from sms_campaign_service.common.talent_api import TalentApi
 from sms_campaign_service.common.utils.auth_utils import require_oauth
-from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
+from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.utils.api_utils import api_route, ApiResponse
 
 # Database Models

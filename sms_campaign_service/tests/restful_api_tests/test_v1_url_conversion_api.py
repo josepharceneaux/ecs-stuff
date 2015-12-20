@@ -13,7 +13,7 @@ import requests
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
 
 # Common Utils
-from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl, LOCAL_HOST
+from sms_campaign_service.common.routes import SmsCampaignApiUrl, LOCAL_HOST
 from sms_campaign_service.common.error_handling import (MethodNotAllowed, UnauthorizedError,
                                                         InvalidUsage, InternalServerError)
 

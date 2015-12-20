@@ -19,9 +19,11 @@ import twilio.rest
 from twilio.rest import TwilioRestClient
 
 # Common Utils
+from sms_campaign_service.common.routes import (SmsCampaignApiUrl, GTApis)
 from sms_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound,
                                                         ForbiddenError)
-from sms_campaign_service.common.utils.app_rest_urls import (SmsCampaignApiUrl, GTApis)
+from sms_campaign_service.common.utils.common_functions import (find_missing_items,
+                                                                JSON_CONTENT_TYPE_HEADER)
 
 # Database Models
 from sms_campaign_service.common.models.user import UserPhone
@@ -30,8 +32,6 @@ from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 
 # Application Specific
 from sms_campaign_service import logger
-from sms_campaign_service.common.utils.common_functions import (find_missing_items,
-                                                                JSON_CONTENT_TYPE_HEADER)
 from sms_campaign_service.custom_exceptions import (TwilioAPIError, MissingRequiredField,
                                                     InvalidDatetime)
 from sms_campaign_service.sms_campaign_app_constants import (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,
@@ -48,10 +48,11 @@ class TwilioSMS(object):
         self.country = 'US'
         self.phone_type = 'local'
         self.sms_enabled = True
-        # TODO: Remove commented code if not required
-        # self.sms_call_back_url = 'http://demo.twilio.com/docs/sms.xml'
-        self.sms_call_back_url = SmsCampaignApiUrl.RECEIVE
-        # self.sms_call_back_url = 'http://74cf4bd2.ngrok.io/v1/receive'
+
+        # default value of sms_call_back_url is 'http://demo.twilio.com/docs/sms.xml'
+        # TODO: Until app is up, will use ngrok address
+        # self.sms_call_back_url = SmsCampaignApiUrl.RECEIVE_URL
+        self.sms_call_back_url = NGROK_URL % SmsCampaignApiUrl.RECEIVE
         self.sms_method = 'POST'
 
     def send_sms(self, body_text=None, receiver_phone=None, sender_phone=None):

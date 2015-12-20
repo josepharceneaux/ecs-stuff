@@ -1,6 +1,6 @@
 """Local run file."""
 from resume_parsing_app import app
-from resume_service.common.utils.app_rest_urls import GTApis
+from resume_service.common.routes import GTApis
 
 
 if __name__ == '__main__':

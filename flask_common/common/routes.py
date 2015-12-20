@@ -2,7 +2,7 @@
 This file contains Base APP URls, and Urls of REST endpoints of all services
 """
 
-from ..common_config import GT_ENVIRONMENT
+from common_config import GT_ENVIRONMENT
 
 LOCAL_HOST = 'http://127.0.0.1'
 TALENT_DOMAIN = '.gettalent.com'
@@ -57,8 +57,9 @@ class GTApis(object):
     SOCIAL_NETWORK_SERVICE_PORT = 8007
     CANDIDATE_POOL_SERVICE_PORT = 8008
     SPREADSHEET_IMPORT_SERVICE_PORT = 8009
-    SCHEDULER_SERVICE_PORT = 8010
+    DASHBOARD_SERVICE_PORT = 8010
     SMS_CAMPAIGN_SERVICE_PORT = 8011
+    SCHEDULER_SERVICE_PORT = 8012
 
     # Names of flask micro services
     AUTH_SERVICE_NAME = 'auth-service'
@@ -70,6 +71,7 @@ class GTApis(object):
     SOCIAL_NETWORK_SERVICE_NAME = 'social-network-service'
     CANDIDATE_POOL_SERVICE_NAME = 'candidate_pool_service'
     SPREADSHEET_IMPORT_SERVICE_NAME = 'spreadsheet_import_service'
+    DASHBOARD_SERVICE_NAME = 'frontend-service'
     SMS_CAMPAIGN_SERVICE_NAME = 'sms-campaign-service'
     SCHEDULER_SERVICE_NAME = 'scheduler-service'
 
@@ -242,6 +244,8 @@ class CandidateApiUrl(object):
     SOCIAL_NETWORKS = API_URL % "/candidates/%s/social_networks"
 
     WORK_PREFERENCE = API_URL % "/candidates/%s/work_preference/%s"
+    CANDIDATE_EDIT = API_URL % "/candidates/%s/edits"
+
     SMARTLIST_CANDIDATES = API_URL % '/smartlist/get_candidates/'
 
 

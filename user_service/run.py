@@ -1,7 +1,7 @@
 __author__ = 'ufarooqi'
 
 from user_app import app
-from user_service.common.utils.app_rest_urls import GTApis
+from user_service.common.routes import GTApis
 
 
 if __name__ == '__main__':

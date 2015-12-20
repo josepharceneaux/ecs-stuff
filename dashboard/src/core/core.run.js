@@ -5,11 +5,14 @@
         .run(runFunction);
 
     // ----- runFunction -----
-    runFunction.$inject = ['$rootScope', '$state', 'OAuth'];
+    runFunction.$inject = ['$rootScope', '$state', '$cookies', 'OAuth'];
 
     /* @ngInject */
-    function runFunction($rootScope, $state, OAuth) {
+    function runFunction($rootScope, $state, $cookies, OAuth) {
         $rootScope.$on('$stateChangeStart', function (evt, to, params) {
+            to.data = to.data || {};
+            to.data.demoMode = $cookies.get('demoMode') === 'true';
+
             if (to.redirectTo) {
                 evt.preventDefault();
                 $state.go(to.redirectTo, params);

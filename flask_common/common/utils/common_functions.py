@@ -5,7 +5,7 @@ import random
 import string
 
 from flask import current_app
-from ..utils.app_rest_urls import AuthApiUrl
+from ..routes import AuthApiUrl
 from ..models.user import User, UserScopedRoles
 from sqlalchemy.sql.expression import ClauseElement
 from werkzeug.security import generate_password_hash

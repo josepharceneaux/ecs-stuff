@@ -12,7 +12,6 @@ import time
 
 from sms_campaign_service.common.tests.conftest import *
 
-
 # Service specific
 # TODO: Is it unused? if so remove it
 from sms_campaign_service.sms_campaign_app.app import app  # to avoid circular import

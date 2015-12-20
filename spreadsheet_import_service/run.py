@@ -3,7 +3,7 @@ __author__ = 'ufarooqi'
 import os
 
 from spreadsheet_import_service.app import app
-from widget_service.common.utils.app_rest_urls import GTApis
+from widget_service.common.routes import GTApis
 
 
 if __name__ == '__main__':

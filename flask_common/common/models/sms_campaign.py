@@ -21,9 +21,9 @@ class SmsCampaign(db.Model):
 
     # Relationships
     sms_campaign_blasts = relationship('SmsCampaignBlast', cascade='all, delete-orphan',
-                                       backref='sms_campaign')
-    sms_campaign_smartlists = relationship('SmsCampaignSmartlist', cascade='all, delete',
-                                           backref='sms_campaign')
+                                       passive_deletes=True, backref='sms_campaign')
+    sms_campaign_smartlists = relationship('SmsCampaignSmartlist', cascade='all, delete-orphan',
+                                           passive_deletes=True, backref='sms_campaign')
 
     def __repr__(self):
         return "<SmsCampaign (name = %r)>" % self.name
@@ -45,10 +45,10 @@ class SmsCampaignBlast(db.Model):
     updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
-    sms_campaign_sends = relationship('SmsCampaignSend', cascade='all,delete',
-                                      backref='sms_campaign_blast')
-    sms_campaign_replies = relationship('SmsCampaignReply', cascade='all,delete',
-                                        backref='sms_campaign_blast')
+    sms_campaign_sends = relationship('SmsCampaignSend', cascade='all,delete-orphan',
+                                      passive_deletes=True, backref='sms_campaign_blast')
+    sms_campaign_replies = relationship('SmsCampaignReply', cascade='all,delete-orphan',
+                                        passive_deletes=True, backref='sms_campaign_blast')
 
     def __repr__(self):
         return "<SmsCampaignBlast (id = %r)>" % self.id
@@ -67,6 +67,12 @@ class SmsCampaignSend(db.Model):
     candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.id'))
     sent_datetime = db.Column(db.DateTime)
     updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
+
+    # Relationships
+    sms_campaign_sends_url_conversions = relationship('SmsCampaignSendUrlConversion',
+                                                      cascade='all,delete-orphan',
+                                                      passive_deletes=True,
+                                                      backref='sms_campaign_send')
 
     def __repr__(self):
         return "<SmsCampaignSend (id = %r)>" % self.id

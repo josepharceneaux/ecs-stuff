@@ -12,8 +12,8 @@
                 <div class="col--medium-6 form__fieldset--column">
 
                     <div class="form__fieldset row--expanded">
-                        <div class="col--medium-4 form__col" ng-class="{'form__col--error': demoSettingsForm.demoMode.$invalid && (demoSettingsForm.demoMode.$touched || demoSettingsForm.$submitted)}">
-                            <h4 class="form__label--shown">Enable Demo Mode?</h4>
+                        <div class="col--medium-12 form__col" ng-class="{'form__col--error': demoSettingsForm.demoMode.$invalid && (demoSettingsForm.demoMode.$touched || demoSettingsForm.$submitted)}">
+                            <h4 class="form__label--shown">Enable Demo Mode? <small class="form__instruction">Refresh required</small></h4>
                             <label class="form__input--toggle">
                                 <input gt-float-label type="checkbox" ng-model="vm.demoMode" name="demoMode" ng-change="vm.setDemoModeCookie(vm.demoMode)">
                                 <span></span>

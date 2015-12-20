@@ -12,7 +12,7 @@ from sms_campaign_service.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.conftest import assert_on_blasts_sends_url_conversion_and_activity
 
 # Common Utils
-from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
+from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import (MethodNotAllowed, UnauthorizedError,
                                                         ResourceNotFound, ForbiddenError,
                                                         InternalServerError)

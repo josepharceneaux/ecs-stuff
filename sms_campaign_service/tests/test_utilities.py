@@ -6,7 +6,7 @@ import requests
 
 # Service Specific
 from sms_campaign_service.utilities import search_urls_in_text
-from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
+from sms_campaign_service.common.routes import SmsCampaignApiUrl
 
 
 def test_search_url_in_text():
@@ -15,7 +15,6 @@ def test_search_url_in_text():
     accurately in the given string.
     :return:
     """
-    # TODO: You are just checking length of returned URL list. YOu should compare the URL as well
     # test empty string
     test_string = ''
     assert len(search_urls_in_text(test_string)) == 0

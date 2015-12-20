@@ -9,7 +9,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies,
 import requests
 
 # Common Utils
-from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
+from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import (MethodNotAllowed, ResourceNotFound,
                                                         UnauthorizedError)
 
