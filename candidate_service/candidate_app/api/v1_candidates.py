@@ -12,7 +12,7 @@ from candidate_service.common.models.db import db
 from candidate_service.common.utils.validators import (is_valid_email)
 from candidate_service.modules.validators import (
     does_candidate_belong_to_user, is_custom_field_authorized,
-    is_area_of_interest_authorized
+    is_area_of_interest_authorized, is_number
 )
 from candidate_service.modules.resource_schemas import validate_request_body_keys
 
@@ -31,64 +31,73 @@ from candidate_service.common.models.candidate import (
 )
 from candidate_service.common.models.misc import AreaOfInterest, CustomField
 from candidate_service.common.models.associations import CandidateAreaOfInterest
+from candidate_service.common.models.user import User
 
 # Module
 from candidate_service.modules.talent_candidates import (
     fetch_candidate_info, get_candidate_id_from_candidate_email,
-    create_or_update_candidate_from_params
+    create_or_update_candidate_from_params, fetch_candidate_edits
 )
 
 
-class CandidateResource(Resource):
+class CandidatesResource(Resource):
     decorators = [require_oauth]
 
     def get(self, **kwargs):
         """
-        Endpoints can do these operations:
-            1. Fetch a candidate via two methods:
-                I.  GET /v1/candidates/:id
-                    Takes an integer as candidate's ID, parsed from kwargs
-
-                OR
-                II. GET /v1/candidates/:email
-                    Takes a valid email address, parsed from kwargs
-
-        :return:    A dict of candidate info
-                    404 status if candidate is not found
+        Endpoint:   GET /v1/candidates
+        :return     List of Candidate(s)
+        :rtype      [str]
         """
         # Authenticated user
         authed_user = request.user
 
-        # Either candidate_id or candidate_email must be provided
-        candidate_id, candidate_email = kwargs.get('id'), kwargs.get('email')
-        if not candidate_id and not candidate_email:
-            raise InvalidUsage(error_message="Candidate's ID or candidate's email is required")
+        get_all_domain_candidates = False
 
-        if candidate_email:
-            # Email address must be valid
-            if not is_valid_email(candidate_email):
-                raise InvalidUsage(error_message="A valid email address is required")
+        # Parse request body
+        body_dict = request.get_json()
+        if not body_dict:
+            get_all_domain_candidates = True
 
-            # Get candidate ID from candidate's email
-            candidate_id = get_candidate_id_from_candidate_email(candidate_email)
-            if not candidate_id:
-                raise NotFoundError(error_message='Candidate email not recognized')
+        if get_all_domain_candidates:  # Retrieve user's candidates
+            candidates = authed_user.candidates
 
-        candidate = Candidate.get_by_id(candidate_id=candidate_id)
-        if not candidate:
-            raise NotFoundError(error_message='Candidate not found.')
+            retrieved_candidates = []
+            for candidate in candidates:
 
-        # If Candidate is web hidden, it is assumed "deleted"
-        if candidate.is_web_hidden:
-            raise NotFoundError(error_message='Candidate not found.')
+                # If Candidate is web hidden, it is assumed "deleted"
+                if candidate.is_web_hidden:
+                    raise NotFoundError(error_message='Candidate not found.')
 
-        # Candidate must belong to user, and must be in the same domain as the user's domain
-        if not does_candidate_belong_to_user(user_row=authed_user, candidate_id=candidate_id):
-            raise ForbiddenError(error_message="Not authorized")
+                retrieved_candidates.append(fetch_candidate_info(candidate))
 
-        candidate_data_dict = fetch_candidate_info(candidate=candidate)
+        else: # Retrieve via a list of candidate IDs
+            # Candidate IDs must be in a list
+            candidate_ids = body_dict.get('candidate_ids')
+            if not isinstance(candidate_ids, list):
+                raise InvalidUsage(error_message='Candidate IDs must be in a list/array.')
 
-        return {'candidate': candidate_data_dict}
+            # Candidate IDs must be integers
+            if filter(lambda candidate_id: not is_number(candidate_id), candidate_ids):
+                raise InvalidUsage(error_message='Candidate IDs must be integers.')
+
+            retrieved_candidates = []
+            for candidate_id in candidate_ids:
+                candidate = Candidate.get_by_id(candidate_id=candidate_id)
+                if not candidate:
+                    raise NotFoundError(error_message='Candidate not found.')
+
+                # If Candidate is web hidden, it is assumed "deleted"
+                if candidate.is_web_hidden:
+                    raise NotFoundError(error_message='Candidate not found.')
+
+                # Candidate ID must belong to user and its domain
+                if not does_candidate_belong_to_user(authed_user, candidate_id):
+                    raise ForbiddenError(error_message='Not authorized')
+
+                retrieved_candidates.append(fetch_candidate_info(candidate))
+
+        return {'candidates': retrieved_candidates}
 
     def post(self, **kwargs):
         """
@@ -318,6 +327,58 @@ class CandidateResource(Resource):
 
         return {'candidates': [{'id': updated_candidate_id} for updated_candidate_id in updated_candidate_ids]}
 
+
+class CandidateResource(Resource):
+    decorators = [require_oauth]
+
+    def get(self, **kwargs):
+        """
+        Endpoints can do these operations:
+            1. Fetch a candidate via two methods:
+                I.  GET /v1/candidates/:id
+                    Takes an integer as candidate's ID, parsed from kwargs
+
+                OR
+                II. GET /v1/candidates/:email
+                    Takes a valid email address, parsed from kwargs
+
+        :return:    A dict of candidate info
+                    404 status if candidate is not found
+        """
+        # Authenticated user
+        authed_user = request.user
+
+        # Either candidate_id or candidate_email must be provided
+        candidate_id, candidate_email = kwargs.get('id'), kwargs.get('email')
+        if not candidate_id and not candidate_email:
+            raise InvalidUsage(error_message="Candidate's ID or candidate's email is required")
+
+        if candidate_email:
+            # Email address must be valid
+            if not is_valid_email(candidate_email):
+                raise InvalidUsage(error_message="A valid email address is required")
+
+            # Get candidate ID from candidate's email
+            candidate_id = get_candidate_id_from_candidate_email(candidate_email)
+            if not candidate_id:
+                raise NotFoundError(error_message='Candidate email not recognized')
+
+        candidate = Candidate.get_by_id(candidate_id=candidate_id)
+        if not candidate:
+            raise NotFoundError(error_message='Candidate not found.')
+
+        # If Candidate is web hidden, it is assumed "deleted"
+        if candidate.is_web_hidden:
+            raise NotFoundError(error_message='Candidate not found.')
+
+        # Candidate must belong to user, and must be in the same domain as the user's domain
+        if not does_candidate_belong_to_user(user_row=authed_user, candidate_id=candidate_id):
+            raise ForbiddenError(error_message="Not authorized")
+
+        candidate_data_dict = fetch_candidate_info(candidate=candidate)
+
+        return {'candidate': candidate_data_dict}
+
     def delete(self, **kwargs):
         """
         Endpoints can do these operations:
@@ -354,6 +415,7 @@ class CandidateResource(Resource):
 
         # Hide Candidate
         Candidate.set_is_web_hidden_to_true(candidate_id=candidate_id)
+
         return
 
 
@@ -461,22 +523,21 @@ class CandidateCustomFieldResource(Resource):
         # Authenticated user
         authed_user = request.user
 
-        # Get candidate_id and custom_field_id
-        candidate_id, custom_field_id = kwargs.get('candidate_id'), kwargs.get('id')
+        # Get candidate_id and can_cf_id (candidate custom field ID, i.e. CandidateCustomField.id)
+        candidate_id, can_cf_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_user(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized')
 
         # Custom fields must belong to user's domain
-        if not is_custom_field_authorized(authed_user.domain_id, [custom_field_id]):
+        if not is_custom_field_authorized(authed_user.domain_id, [can_cf_id]):
             raise ForbiddenError(error_message='Not authorized')
 
-        if custom_field_id:  # Delete specified custom field
-            # Custom field must be associated with CandidateCustomField
-            candidate_custom_field = CandidateCustomField.get_custom_fields(candidate_id, custom_field_id)
+        if can_cf_id:  # Delete specified custom field
+            candidate_custom_field = CandidateCustomField.get_by_id(_id=can_cf_id)
             if not candidate_custom_field:
-                raise ForbiddenError(error_message='Unauthorized custom field ID')
+                raise NotFoundError(error_message='Candidate custom field not found.')
 
             db.session.delete(candidate_custom_field)
 
@@ -484,7 +545,7 @@ class CandidateCustomFieldResource(Resource):
             domain_custom_fields = CustomField.get_domain_custom_fields(domain_id=authed_user.domain_id)
             custom_field_ids = [custom_field.id for custom_field in domain_custom_fields]
             for cf_id in custom_field_ids:
-                candidate_custom_field = CandidateCustomField.get_custom_fields(candidate_id, cf_id)
+                candidate_custom_field = CandidateCustomField.get_custom_field(candidate_id, cf_id)
                 if not candidate_custom_field:
                     raise NotFoundError(error_message='Candidate custom field not found.')
 
@@ -1017,6 +1078,26 @@ class CandidateWorkPreferenceResource(Resource):
         db.session.delete(work_preference)
         db.session.commit()
         return '', 204
+
+
+class CandidateEditResource(Resource):
+    decorators = [require_oauth]
+
+    def get(self, **kwargs):
+        """
+        Endpoint: GET /v1/candidates/:id/edits
+        Function will return requested Candidate with all of its edits.
+        """
+        # Authenticated user & candidate_id
+        authed_user, candidate_id = request.user, kwargs.get('id')
+
+        # Candidate must belong to user and its domain
+        if not does_candidate_belong_to_user(authed_user, candidate_id):
+            raise ForbiddenError(error_message='Not authorized')
+
+        candidate_edits = fetch_candidate_edits(candidate_id=candidate_id)
+        return {'candidate': {'id': candidate_id, 'edits': [
+            candidate_edit for candidate_edit in candidate_edits]}}
 
 
 # class CandidateEmailCampaignResource(Resource):
