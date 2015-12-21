@@ -1,6 +1,6 @@
-from candidate_pool_service.common.utils.app_rest_urls import CandidateApiUrl
-from candidate_pool_service.common.tests.sample_data import generate_single_candidate_data
-from candidate_pool_service.common.error_handling import InternalServerError
+from ..routes import CandidateApiUrl
+from ..tests.sample_data import generate_single_candidate_data
+from ..error_handling import InternalServerError
 import requests
 import json
 
