@@ -45,6 +45,10 @@
 //------------
 .tabs__icon-nav {
   font-size: $font-size--large;
+
+  @include helper--media($breakpoint--small) {
+    text-align: right;
+  }
 }
 
 .tabs__icon-nav__link {

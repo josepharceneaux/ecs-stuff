@@ -47,6 +47,11 @@ input[type=number] {
 
   tags-input {
     .tags {
+      .tag-item {
+        color: $color--nearBlack;
+        background: $color--lightGray;
+      }
+
       input {
         color: $color--white;
 
@@ -147,6 +152,11 @@ input[type=number] {
   min-height: 6em;
 }
 
+.form__input--noMargin {
+  @extend .form__input;
+
+  margin-top: 0;
+}
 
 // -----
 // Inputs with Icons
@@ -214,6 +224,7 @@ input[type=number] {
 
 .form__fieldset--footer {
   @extend .form__fieldset;
+  @include inc--align--clearfix;
 
   margin-top: $margin--row;
 
@@ -237,6 +248,8 @@ input[type=number] {
 // -----
 
 .form__col {
+  @include inc--align--clearfix;
+
   position: relative;
 
   @include helper--media($breakpoint--medium) {
@@ -258,6 +271,12 @@ input[type=number] {
     padding-left: 0;
     padding-right: 0;
   }
+}
+
+.form__col--static {
+  @extend .form__col;
+
+  position: static;
 }
 
 .form__col--error {
@@ -332,7 +351,7 @@ input[type=number] {
 
 .form__label--inbetweenInputs {
   position: relative;
-  top: .5em;
+  top: 1em;
   padding-right: $padding--small;
   padding-left: $padding--small;
 }
@@ -366,6 +385,7 @@ input[type=number] {
   position: relative;
   display: inline-block;
   padding-left: 2rem;
+  padding-right: .5rem;
   cursor: pointer;
   margin-top: $margin--line;
 
@@ -396,6 +416,99 @@ input[type=number] {
        -moz-user-select: none;
         -ms-user-select: none;
             user-select: none;
+  }
+}
+
+
+/*
+ * Checkboxes and radios
+ */
+
+.control {
+  position: relative;
+  display: inline-block;
+  padding-left: 2em;
+  color: $color--nearBlack;
+  cursor: pointer;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    z-index: -1; /* Put the input behind the label so it doesn't overlay text */
+
+    /* Checked state */
+    &:checked ~ .control-indicator {
+      color: #fff;
+      background-color: $color--blue;
+    }
+
+    /* Active */
+    &:active ~ .control-indicator {
+      color: #fff;
+      background-color: $color--lightBlue;
+    }
+  }
+}
+
+.control-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width:  1em;
+  height: 1em;
+  line-height: 1rem;
+  font-size: 1.25em;
+  color: #eee;
+  text-align: center;
+  background-color: #eee;
+  background-size: 50% 50%;
+  background-position: center center;
+  background-repeat: no-repeat;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+
+  .checkbox & {
+    border-radius: .25rem;
+  }
+
+  .radio & {
+    border-radius: 50%;
+  }
+}
+
+.checkbox input:checked ~ .control-indicator {
+  background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjwhLS0gR2VuZXJhdG9yOiBBZG9iZSBJbGx1c3RyYXRvciAxNy4xLjAsIFNWRyBFeHBvcnQgUGx1Zy1JbiAuIFNWRyBWZXJzaW9uOiA2LjAwIEJ1aWxkIDApICAtLT4NCjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+DQo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4Ig0KCSB2aWV3Qm94PSIwIDAgOCA4IiBlbmFibGUtYmFja2dyb3VuZD0ibmV3IDAgMCA4IDgiIHhtbDpzcGFjZT0icHJlc2VydmUiPg0KPHBhdGggZmlsbD0iI0ZGRkZGRiIgZD0iTTYuNCwxTDUuNywxLjdMMi45LDQuNUwyLjEsMy43TDEuNCwzTDAsNC40bDAuNywwLjdsMS41LDEuNWwwLjcsMC43bDAuNy0wLjdsMy41LTMuNWwwLjctMC43TDYuNCwxTDYuNCwxeiINCgkvPg0KPC9zdmc+DQo=');
+}
+
+.radio input:checked ~ .control-indicator {
+  background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjwhLS0gR2VuZXJhdG9yOiBBZG9iZSBJbGx1c3RyYXRvciAxNy4xLjAsIFNWRyBFeHBvcnQgUGx1Zy1JbiAuIFNWRyBWZXJzaW9uOiA2LjAwIEJ1aWxkIDApICAtLT4NCjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+DQo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4Ig0KCSB2aWV3Qm94PSIwIDAgOCA4IiBlbmFibGUtYmFja2dyb3VuZD0ibmV3IDAgMCA4IDgiIHhtbDpzcGFjZT0icHJlc2VydmUiPg0KPHBhdGggZmlsbD0iI0ZGRkZGRiIgZD0iTTQsMUMyLjMsMSwxLDIuMywxLDRzMS4zLDMsMywzczMtMS4zLDMtM1M1LjcsMSw0LDF6Ii8+DQo8L3N2Zz4NCg==');
+}
+
+.controls-stacked {
+  margin: 1em 0;
+
+  .control {
+    display: block;
+
+    + .control {
+      margin-top: .5em;
+    }
+  }
+}
+
+.controls-inline {
+  margin: 1em 0;
+
+  .control {
+    display: inline-block;
+    height: 1em;
+
+    + .control {
+      margin-left: 1em;
+    }
   }
 }
 
