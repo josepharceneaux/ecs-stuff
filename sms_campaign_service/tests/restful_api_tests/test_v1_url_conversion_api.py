@@ -2,31 +2,33 @@
 Author: Hafiz Muhammad Basit, QC-Technologies,
         Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
 
-    This module contains pyTests for endpoint /url_conversion of URL conversion API.
+    This module contains pyTests for endpoint /v1/url_conversion of URL conversion API.
 """
 
 # Third Party Imports
 import json
 import requests
 
-# Application Specific
+# Service Specific
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
-from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl, LOCAL_HOST
+
+# Common Utils
+from sms_campaign_service.common.routes import SmsCampaignApiUrl, LOCAL_HOST
 from sms_campaign_service.common.error_handling import (MethodNotAllowed, UnauthorizedError,
                                                         InvalidUsage, InternalServerError)
 
 
 class TestUrlConversionAPI(object):
     """
-    This class contains the tests for the endpoint /url_conversion
+    This class contains the tests for the endpoint /v1/url_conversion
     """
 
     def test_post_with_invalid_token(self):
         """
-        With invalid access token, should get unauthorized
+        POST with invalid access token, should get Unauthorized.
         :return:
         """
-        response = requests.post(SmsCampaignApiUrl.URL_CONVERSION,
+        response = requests.post(SmsCampaignApiUrl.URL_CONVERSION_URL,
                                  headers=dict(Authorization='Bearer %s' % 'invalid_token'))
         assert response.status_code == UnauthorizedError.http_status_code(), \
             'It should be unauthorized (401)'
@@ -38,7 +40,7 @@ class TestUrlConversionAPI(object):
         :param auth_token: access token for sample user
         :return:
         """
-        response = requests.post(SmsCampaignApiUrl.URL_CONVERSION,
+        response = requests.post(SmsCampaignApiUrl.URL_CONVERSION_URL,
                                  headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should be Bad request (400)'
@@ -49,7 +51,7 @@ class TestUrlConversionAPI(object):
         :param valid_header:
         :return:
         """
-        response = requests.post(SmsCampaignApiUrl.URL_CONVERSION,
+        response = requests.post(SmsCampaignApiUrl.URL_CONVERSION_URL,
                                  headers=valid_header,
                                  data=
                                  json.dumps(
@@ -65,7 +67,7 @@ class TestUrlConversionAPI(object):
         :param valid_header: authorization header for sample user
         :return:
         """
-        response = requests.post(SmsCampaignApiUrl.URL_CONVERSION,
+        response = requests.post(SmsCampaignApiUrl.URL_CONVERSION_URL,
                                  headers=valid_header,
                                  data=json.dumps(
                                      {"url": LOCAL_HOST}
@@ -73,7 +75,8 @@ class TestUrlConversionAPI(object):
         assert response.status_code == InternalServerError.http_status_code(), \
             'Status should be (500)'
         # custom exception for Google's Shorten URL API Error
-        assert response.json()['error']['code'] == SmsCampaignApiException.GOOGLE_SHORTEN_URL_API_ERROR
+        assert response.json()['error']['code'] == \
+               SmsCampaignApiException.GOOGLE_SHORTEN_URL_API_ERROR
 
     def test_for_get_request(self, auth_token):
         """
@@ -81,7 +84,7 @@ class TestUrlConversionAPI(object):
         :param auth_token: access token for sample user
         :return:
         """
-        response = requests.get(SmsCampaignApiUrl.URL_CONVERSION,
+        response = requests.get(SmsCampaignApiUrl.URL_CONVERSION_URL,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == MethodNotAllowed.http_status_code(), \
             'GET method should not be allowed (405)'
@@ -92,7 +95,7 @@ class TestUrlConversionAPI(object):
         :param auth_token: access token for sample user
         :return:
         """
-        response = requests.delete(SmsCampaignApiUrl.URL_CONVERSION,
+        response = requests.delete(SmsCampaignApiUrl.URL_CONVERSION_URL,
                                    headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == MethodNotAllowed.http_status_code(), \
             'DELETE method should not be allowed (405)'

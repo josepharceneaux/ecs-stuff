@@ -2,7 +2,7 @@
 This file contains Base APP URls, and Urls of REST endpoints of all services
 """
 
-from ..common_config import GT_ENVIRONMENT
+from common_config import GT_ENVIRONMENT
 
 LOCAL_HOST = 'http://127.0.0.1'
 TALENT_DOMAIN = '.gettalent.com'
@@ -30,7 +30,7 @@ def _get_host_name(service_name, port_number):
     :return:
     """
     if GT_ENVIRONMENT in ['dev', 'circle']:
-        return LOCAL_HOST + ':' + str(port_number) + '/'
+        return LOCAL_HOST + ':' + str(port_number) + '%s'
     elif GT_ENVIRONMENT == 'qa':
         # This looks like auth-service-webdev.gettalent.com ( for auth service)
         # TODO: Verify this url after deployment
@@ -57,8 +57,9 @@ class GTApis(object):
     SOCIAL_NETWORK_SERVICE_PORT = 8007
     CANDIDATE_POOL_SERVICE_PORT = 8008
     SPREADSHEET_IMPORT_SERVICE_PORT = 8009
-    SCHEDULER_SERVICE_PORT = 8010
+    DASHBOARD_SERVICE_PORT = 8010
     SMS_CAMPAIGN_SERVICE_PORT = 8011
+    SCHEDULER_SERVICE_PORT = 8012
 
     # Names of flask micro services
     AUTH_SERVICE_NAME = 'auth-service'
@@ -70,6 +71,7 @@ class GTApis(object):
     SOCIAL_NETWORK_SERVICE_NAME = 'social-network-service'
     CANDIDATE_POOL_SERVICE_NAME = 'candidate_pool_service'
     SPREADSHEET_IMPORT_SERVICE_NAME = 'spreadsheet_import_service'
+    DASHBOARD_SERVICE_NAME = 'frontend-service'
     SMS_CAMPAIGN_SERVICE_NAME = 'sms-campaign-service'
     SCHEDULER_SERVICE_NAME = 'scheduler-service'
 
@@ -81,8 +83,7 @@ class AuthApiUrl(object):
 
     AUTH_HOST_NAME = _get_host_name(GTApis.AUTH_SERVICE_NAME,
                                     GTApis.AUTH_SERVICE_PORT)
-    OAUTH_ENDPOINT = AUTH_HOST_NAME + '%s'
-    TOKEN_URL = OAUTH_ENDPOINT % 'oauth2/token'
+    TOKEN_URL = AUTH_HOST_NAME % 'oauth2/token'
 
 
 class ActivityApiUrl(object):
@@ -91,7 +92,7 @@ class ActivityApiUrl(object):
     """
     ACTIVITY_HOST_NAME = _get_host_name(GTApis.ACTIVITY_SERVICE_NAME,
                                         GTApis.ACTIVITY_SERVICE_PORT)
-    CREATE_ACTIVITY = ACTIVITY_HOST_NAME + 'activities/'
+    CREATE_ACTIVITY = ACTIVITY_HOST_NAME % '/activities/'
 
 
 class ResumeApiUrl(object):
@@ -150,32 +151,43 @@ class SmsCampaignApiUrl(object):
     # HOST_NAME is http://127.0.0.1:8011 for dev
     HOST_NAME = _get_host_name(GTApis.SMS_CAMPAIGN_SERVICE_NAME,
                                GTApis.SMS_CAMPAIGN_SERVICE_PORT)
-
-    # API_URL is http://127.0.0.1:8011/v1 for dev
-    API_URL = HOST_NAME + API_VERSION + '%s'
-    # endpoint /campaigns
+    # endpoint /v1/campaigns
     # GET all campaigns of a user, POST new campaign, DELETE campaigns of a user from given ids
-    CAMPAIGNS = API_URL % '/campaigns'
-    # endpoint /campaigns/:id
+    CAMPAIGNS = '/%s/%s' % (API_VERSION, 'campaigns')
+
+    # endpoint /v1/campaigns/:id
     # GET campaign by its id, POST: updates a campaign, DELETE a campaign from given id
-    CAMPAIGN = API_URL % '/campaigns/%s'
-    # endpoint /campaigns/:id/sms_campaign_sends
+    CAMPAIGN = '/%s/%s' % (API_VERSION, 'campaigns/<int:campaign_id>')
+
+    # endpoint /v1/campaigns/:id/sms_campaign_sends
     # This gives the records from "sms_campaign_sends" for a given id of campaign
-    CAMPAIGN_SENDS = CAMPAIGN % '%s/sms_campaign_sends'
-    # endpoint /campaigns/:id/send
+    CAMPAIGN_SENDS = CAMPAIGN + '/sms_campaign_sends'
+
+    # endpoint /v1/campaigns/:id/send
     # To send a campaign to candidates
-    CAMPAIGN_SEND_PROCESS = CAMPAIGN % '%s/send'
+    CAMPAIGN_SEND_PROCESS = CAMPAIGN + '/send'
+
     # endpoint /url_conversion
     # This converts the given URL to shorter version using Google's Shorten URL API
-    URL_CONVERSION = API_URL % '/url_conversion'
+    URL_CONVERSION = '/%s/%s' % (API_VERSION, 'url_conversion')
 
     """ Followings are not REST endpoints, but App endpoints """
-    # endpoint /receive
+    # endpoint /v1/receive
     # This endpoint is callback URL when candidate replies to a campaign via SMS
-    SMS_RECEIVE = API_URL % '/receive'
-    # endpoint /campaigns/:id/url_redirection/:id?candidate_id=id
+    RECEIVE = '/%s/%s' % (API_VERSION, 'receive')
+
+    # endpoint /v1/campaigns/:id/url_redirection/:id?candidate_id=id
     # This endpoint is hit when candidate clicks on any URL present in SMS body text.
-    APP_REDIRECTION_URL = CAMPAIGN % '%s/url_redirection/%s'
+    APP_REDIRECTION = CAMPAIGN + '/url_redirection/<int:url_conversion_id>'
+
+    """ Endpoints' complete URLs for pyTests """
+    CAMPAIGNS_URL = HOST_NAME % CAMPAIGNS
+    CAMPAIGN_URL = HOST_NAME % '/%s/%s' % (API_VERSION, 'campaigns/%s')
+    CAMPAIGN_SENDS_URL = CAMPAIGN_URL + '/sms_campaign_sends'
+    CAMPAIGN_SEND_PROCESS_URL = CAMPAIGN_URL + '/send'
+    URL_CONVERSION_URL = HOST_NAME % URL_CONVERSION
+    RECEIVE_URL = HOST_NAME % RECEIVE
+    APP_REDIRECTION_URL = CAMPAIGN_URL % '%s/url_redirection/%s'
 
 
 class CandidateApiUrl(object):
@@ -185,7 +197,7 @@ class CandidateApiUrl(object):
     API_VERSION = 'v1'
     CANDIDATE_SERVICE_HOST_NAME = _get_host_name(GTApis.CANDIDATE_SERVICE_NAME,
                                                  GTApis.CANDIDATE_SERVICE_PORT)
-    API_URL = CANDIDATE_SERVICE_HOST_NAME + API_VERSION + '%s'
+    API_URL = CANDIDATE_SERVICE_HOST_NAME % '/%s%s' % (API_VERSION, '%s')
     CANDIDATE = API_URL % "/candidates/%s"
     CANDIDATES = API_URL % "/candidates"
 
@@ -232,6 +244,8 @@ class CandidateApiUrl(object):
     SOCIAL_NETWORKS = API_URL % "/candidates/%s/social_networks"
 
     WORK_PREFERENCE = API_URL % "/candidates/%s/work_preference/%s"
+    CANDIDATE_EDIT = API_URL % "/candidates/%s/edits"
+
     SMARTLIST_CANDIDATES = API_URL % '/smartlist/get_candidates/'
 
 

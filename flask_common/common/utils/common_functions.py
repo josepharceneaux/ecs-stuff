@@ -5,7 +5,7 @@ import random
 import string
 
 from flask import current_app
-from ..utils.app_rest_urls import AuthApiUrl
+from ..routes import AuthApiUrl
 from ..models.user import User, UserScopedRoles
 from sqlalchemy.sql.expression import ClauseElement
 from werkzeug.security import generate_password_hash
@@ -27,47 +27,6 @@ def get_or_create(session, model, defaults=None, **kwargs):
         instance = model(**params)
         session.add(instance)
         return instance, True
-
-
-def get_geocoordinates(location):
-    url = 'http://maps.google.com/maps/api/geocode/json'
-    r = requests.get(url, params=dict(address=location, sensor='false'))
-    try:
-        geodata = r.json()
-    except:
-        geodata = r.json
-
-    results = geodata.get('results')
-    if results:
-        location = results[0].get('geometry', {}).get('location', {})
-
-        lat = location.get('lat')
-        lng = location.get('lng')
-    else:
-        lat, lng = None, None
-
-    return lat, lng
-
-
-def get_coordinates(zipcode=None, city=None, state=None, address_line_1=None, location=None):
-    """
-    Function gets the coordinates of a location using Google Maps
-    :param location: if provided, overrides all other inputs
-    :return: string of "lat,lon" in degrees, or None if nothing found
-    """
-    coordinates = None
-
-    location = location or "%s%s%s%s" % (
-        address_line_1 + ", " if address_line_1 else "",
-        city + ", " if city else "",
-        state + ", " if state else "",
-        zipcode or ""
-    )
-    latitude, longitude = get_geocoordinates(location)
-    if latitude and longitude:
-        coordinates = "%s,%s" % (latitude, longitude)
-
-    return coordinates
 
 
 def http_request(method_type, url, params=None, headers=None, data=None, user_id=None):
@@ -134,7 +93,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
         current_app.logger.error('Unknown Method type %s ' % method_type)
 
 
-def find_missing_items(data_dict, required_fields=None, verify_all_keys=False):
+def find_missing_items(data_dict, required_fields=None, verify_values_of_all_keys=False):
     """
     This function is used to find the missing items in given data_dict. If verify_all
     is true, this function checks all the keys present in data_dict if they are empty or not.
@@ -142,18 +101,22 @@ def find_missing_items(data_dict, required_fields=None, verify_all_keys=False):
 
     :param data_dict: given dictionary to be examined
     :param required_fields: keys which need to be checked
-    :param verify_all_keys: indicator if we want to check values of all keys or only keys
+    :param verify_values_of_all_keys: indicator if we want to check values of all keys or only keys
                             present in required_fields
     :type data_dict: dict
     :type required_fields: list | None
-    :type verify_all_keys: bool
+    :type verify_values_of_all_keys: bool
     :return: list of missing items
     :rtype: list
     """
-    if verify_all_keys:
+    if not data_dict:  # If data_dict is empty, return all the required_fields as missing_item
+        return [{item: ''} for item in required_fields]
+    elif verify_values_of_all_keys:
+        # verify that all keys in the data_dict have valid values
         missing_items = [{key: value} for key, value in data_dict.iteritems()
                          if not value and not value == 0]
     else:
+        # verify that keys of data_dict present in required_field have valid values
         missing_items = [{key: value} for key, value in data_dict.iteritems()
                          if key in required_fields and not value and not value == 0]
     return [missing_item for missing_item in missing_items]

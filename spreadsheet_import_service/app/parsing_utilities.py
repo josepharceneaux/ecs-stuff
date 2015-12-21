@@ -19,7 +19,7 @@ from spreadsheet_import_service.common.models.user import User
 from spreadsheet_import_service.common.models.misc import AreaOfInterest
 from spreadsheet_import_service.common.models.candidate import CandidateSource
 from spreadsheet_import_service.common.utils.talent_reporting import email_error_to_admins
-from spreadsheet_import_service.common.utils.app_rest_urls import CandidateApiUrl
+from spreadsheet_import_service.common.routes import CandidateApiUrl
 
 DEFAULT_AREAS_OF_INTEREST = ['Production & Development', 'Marketing', 'Sales', 'Design', 'Finance',
                              'Business & Legal Affairs', 'Human Resources', 'Technology', 'Other']

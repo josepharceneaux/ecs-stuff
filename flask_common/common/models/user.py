@@ -87,21 +87,17 @@ class User(db.Model):
 class UserPhone(db.Model):
     __tablename__ = 'user_phone'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column('Userid', db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'))
-    phone_label_id = db.Column('PhoneLabelId', db.Integer, db.ForeignKey('phone_label.id', ondelete='CASCADE'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'))
+    phone_label_id = db.Column(db.Integer, db.ForeignKey('phone_label.id', ondelete='CASCADE'))
     value = db.Column(db.String(50), nullable=False)
 
     def __repr__(self):
-        return "<Phone (value=' %r')>" % self.value
+        return "<UserPhone (value=' %r')>" % self.value
 
     @classmethod
     def get_by_user_id(cls, user_id):
         assert user_id
-        return cls.query.filter(
-            and_(
-                cls.user_id == user_id
-            )
-        ).all()
+        return cls.query.filter(cls.user_id == user_id).all()
 
     @classmethod
     def get_by_user_id_and_phone_label_id(cls, user_id, phone_label_id):
@@ -115,12 +111,8 @@ class UserPhone(db.Model):
 
     @classmethod
     def get_by_phone_value(cls, phone_value):
-        assert phone_value
-        return cls.query.filter(
-            and_(
-                cls.value == phone_value
-            )
-        ).all()
+        assert phone_value, "phone_value isn't valid"
+        return cls.query.filter(cls.value == phone_value).all()
 
 
 class Domain(db.Model):
@@ -249,11 +241,7 @@ class Token(db.Model):
     @classmethod
     def get_by_user_id(cls, user_id):
         assert user_id
-        return cls.query.filter(
-            db.and_(
-                cls.user_id == user_id
-            )
-        ).first()
+        return cls.query.filter(cls.user_id == user_id).first()
 
 
 class DomainRole(db.Model):

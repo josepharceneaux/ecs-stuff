@@ -8,19 +8,22 @@ from sqlalchemy.orm import relationship
 class SmsCampaign(db.Model):
     __tablename__ = 'sms_campaign'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(127))
-    user_phone_id = db.Column('UserPhoneId', db.Integer, db.ForeignKey('user_phone.id'))
-    sms_body_text = db.Column('SmsBodyText', db.Text)
-    frequency_id = db.Column('FrequencyId', db.Integer, db.ForeignKey('frequency.id'))
-    send_time = db.Column('SendTime', db.DateTime)
-    stop_time = db.Column('StopTime', db.DateTime)
-    added_time = db.Column('AddedTime', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    name = db.Column(db.String(127))
+    user_phone_id = db.Column(db.Integer, db.ForeignKey('user_phone.id', ondelete='CASCADE'))
+    body_text = db.Column(db.Text)
+    frequency_id = db.Column(db.Integer, db.ForeignKey('frequency.id', ondelete='CASCADE'))
+    send_datetime = db.Column(db.DateTime)
+    stop_datetime = db.Column(db.DateTime)
+    added_datetime = db.Column(db.DateTime)
+    updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
+    # TODO: may be need to add scheduler task_id as well here when scheduler_service is up
     # scheduler_task_ids = db.Column('SchedulerTaskIds', db.String(255))
 
     # Relationships
     sms_campaign_blasts = relationship('SmsCampaignBlast', cascade='all, delete-orphan',
-                                       backref='sms_campaign')
+                                       passive_deletes=True, backref='sms_campaign')
+    sms_campaign_smartlists = relationship('SmsCampaignSmartlist', cascade='all, delete-orphan',
+                                           passive_deletes=True, backref='sms_campaign')
 
     def __repr__(self):
         return "<SmsCampaign (name = %r)>" % self.name
@@ -28,28 +31,24 @@ class SmsCampaign(db.Model):
     @classmethod
     def get_by_user_phone_id(cls, user_phone_id):
         assert user_phone_id
-        return cls.query.filter(
-            db.and_(
-                cls.user_phone_id == user_phone_id,
-            )
-        ).all()
+        return cls.query.filter(cls.user_phone_id == user_phone_id).all()
 
 
 class SmsCampaignBlast(db.Model):
     __tablename__ = 'sms_campaign_blast'
     id = db.Column(db.Integer, primary_key=True)
-    sms_campaign_id = db.Column('smsCampaignId', db.Integer, db.ForeignKey('sms_campaign.id'))
-    sends = db.Column('Sends', db.Integer, default=0)
-    clicks = db.Column('Clicks', db.Integer, default=0)
-    replies = db.Column('Replies', db.Integer, default=0)
-    sent_time = db.Column('SentTime', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    sms_campaign_id = db.Column(db.Integer, db.ForeignKey('sms_campaign.id', ondelete='CASCADE'))
+    sends = db.Column(db.Integer, default=0)
+    clicks = db.Column(db.Integer, default=0)
+    replies = db.Column(db.Integer, default=0)
+    sent_datetime = db.Column(db.DateTime)
+    updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
-    sms_campaign_sends = relationship('SmsCampaignSend', cascade='all, delete-orphan',
-                                      backref='sms_campaign_blast')
-    sms_campaign_replies = relationship('SmsCampaignReply', cascade='all, delete-orphan',
-                                        backref='sms_campaign_blast')
+    sms_campaign_sends = relationship('SmsCampaignSend', cascade='all,delete-orphan',
+                                      passive_deletes=True, backref='sms_campaign_blast')
+    sms_campaign_replies = relationship('SmsCampaignReply', cascade='all,delete-orphan',
+                                        passive_deletes=True, backref='sms_campaign_blast')
 
     def __repr__(self):
         return "<SmsCampaignBlast (id = %r)>" % self.id
@@ -57,20 +56,23 @@ class SmsCampaignBlast(db.Model):
     @classmethod
     def get_by_campaign_id(cls, campaign_id):
         assert campaign_id
-        return cls.query.filter(
-            db.and_(
-                cls.sms_campaign_id == campaign_id,
-            )
-        ).first()
+        return cls.query.filter(cls.sms_campaign_id == campaign_id).first()
 
 
 class SmsCampaignSend(db.Model):
     __tablename__ = 'sms_campaign_send'
     id = db.Column(db.Integer, primary_key=True)
-    sms_campaign_blast_id = db.Column('SmsCampaignBlastId', db.Integer, db.ForeignKey('sms_campaign_blast.id'))
-    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
-    sent_time = db.Column('SentTime', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    sms_campaign_blast_id = db.Column(db.Integer,
+                                      db.ForeignKey('sms_campaign_blast.id', ondelete='CASCADE'))
+    candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.id'))
+    sent_datetime = db.Column(db.DateTime)
+    updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
+
+    # Relationships
+    sms_campaign_sends_url_conversions = relationship('SmsCampaignSendUrlConversion',
+                                                      cascade='all,delete-orphan',
+                                                      passive_deletes=True,
+                                                      backref='sms_campaign_send')
 
     def __repr__(self):
         return "<SmsCampaignSend (id = %r)>" % self.id
@@ -88,31 +90,24 @@ class SmsCampaignSend(db.Model):
     @classmethod
     def get_by_candidate_id(cls, candidate_id):
         assert candidate_id
-        return cls.query.order_by(-cls.sent_time).filter(
-            db.and_(
-                cls.candidate_id == candidate_id,
-            )
-        ).first()
+        return cls.query.order_by(-cls.sent_datetime).filter(
+            cls.candidate_id == candidate_id).first()
 
     @classmethod
     def get_by_blast_id(cls, campaign_blast_id):
         assert campaign_blast_id
-        return cls.query.filter(
-            db.and_(
-                cls.sms_campaign_blast_id == campaign_blast_id,
-            )
-        ).all()
+        return cls.query.filter(cls.sms_campaign_blast_id == campaign_blast_id).all()
 
 
 class SmsCampaignReply(db.Model):
     __tablename__ = 'sms_campaign_reply'
     id = db.Column(db.Integer, primary_key=True)
-    sms_campaign_blast_id = db.Column('SmsCampaignBlastId', db.Integer,
-                                      db.ForeignKey('sms_campaign_blast.id'))
-    reply_body_text = db.Column('SmsBodyText', db.Text)
-    candidate_phone_id = db.Column('CandidatePhoneId', db.Integer,
-                                   db.ForeignKey('candidate_phone.id'))
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
+    sms_campaign_blast_id = db.Column(db.Integer,
+                                      db.ForeignKey('sms_campaign_blast.id', ondelete='CASCADE'))
+    body_text = db.Column(db.Text)
+    candidate_phone_id = db.Column(db.Integer,
+                                   db.ForeignKey('candidate_phone.id', ondelete='CASCADE'))
+    added_datetime = db.Column(db.DateTime, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<SmsCampaignReply (id = %r)>" % self.id
@@ -130,19 +125,17 @@ class SmsCampaignReply(db.Model):
     @classmethod
     def get_by_candidate_phone_id(cls, candidate_phone_id):
         assert candidate_phone_id
-        return cls.query.filter(
-            db.and_(
-                cls.candidate_phone_id == candidate_phone_id
-            )
-        ).first()
+        return cls.query.filter(cls.candidate_phone_id == candidate_phone_id).first()
 
 
 class SmsCampaignSmartlist(db.Model):
-    __tablename__ = 'sms_campaign_smart_list'
+    __tablename__ = 'sms_campaign_smartlist'
     id = db.Column(db.Integer, primary_key=True)
-    smart_list_id = db.Column('SmartListId', db.Integer, db.ForeignKey("smart_list.id"), nullable=False)
-    sms_campaign_id = db.Column('SmsCampaignId', db.Integer, db.ForeignKey("sms_campaign.id"), nullable=False)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    smartlist_id = db.Column(db.Integer, db.ForeignKey("smart_list.id", ondelete='CASCADE'),
+                             nullable=False)
+    sms_campaign_id = db.Column(db.Integer, db.ForeignKey("sms_campaign.id", ondelete='CASCADE'),
+                                nullable=False)
+    updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return '<SmsCampaignSmartlist (id = %r)>' % self.id
@@ -150,20 +143,28 @@ class SmsCampaignSmartlist(db.Model):
     @classmethod
     def get_by_campaign_id(cls, campaign_id):
         assert campaign_id
+        return cls.query.filter(cls.sms_campaign_id == campaign_id).all()
+
+    @classmethod
+    def get_by_campaign_id_and_smartlist_id(cls, campaign_id, smartlist_id):
+        assert campaign_id and smartlist_id
         return cls.query.filter(
             db.and_(
                 cls.sms_campaign_id == campaign_id,
+                cls.smartlist_id == smartlist_id,
             )
-        ).all()
+        ).first()
 
 
 class SmsCampaignSendUrlConversion(db.Model):
     __tablename__ = 'sms_campaign_send_url_conversion'
     id = db.Column(db.Integer, primary_key=True)
-    sms_campaign_send_id = db.Column('SmsCampaignSendId', db.Integer,
-                                     db.ForeignKey("sms_campaign_send.id"), nullable=False)
-    url_conversion_id = db.Column('UrlConversionId', db.Integer,
-                                  db.ForeignKey("url_conversion.id"), nullable=False)
+    sms_campaign_send_id = db.Column(db.Integer,
+                                     db.ForeignKey("sms_campaign_send.id", ondelete='CASCADE'),
+                                     nullable=False)
+    url_conversion_id = db.Column(db.Integer,
+                                  db.ForeignKey("url_conversion.id", ondelete='CASCADE'),
+                                  nullable=False)
 
     def __repr__(self):
         return '<SmsCampaignSendUrlConversion (id = %r)>' % self.id
@@ -181,8 +182,4 @@ class SmsCampaignSendUrlConversion(db.Model):
 
     @classmethod
     def get_by_campaign_send_id(cls, campaign_send_id):
-        return cls.query.filter(
-            db.and_(
-                cls.sms_campaign_send_id == campaign_send_id
-            )
-        ).all()
+        return cls.query.filter(cls.sms_campaign_send_id == campaign_send_id).all()

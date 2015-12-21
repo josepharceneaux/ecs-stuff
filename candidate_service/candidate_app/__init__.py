@@ -6,8 +6,8 @@ from healthcheck import HealthCheck
 app = Flask(__name__)
 print "Running app: %s" % app
 
-from candidate_service import config
-app.config.from_object(config)
+from candidate_service.common import common_config
+app.config.from_object(common_config)
 
 logger = app.config['LOGGER']
 
@@ -26,10 +26,11 @@ from candidate_service.candidate_app.api.v1_candidates import (
     CandidateExperienceResource, CandidateExperienceBulletResource, CandidateWorkPreferenceResource,
     CandidateEmailResource, CandidatePhoneResource, CandidateMilitaryServiceResource,
     CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
-    CandidateCustomFieldResource
+    CandidateCustomFieldResource, CandidateEditResource, CandidatesResource
 )
-from candidate_service.candidate_app.api.smartlists_api import SmartlistCandidates, SmartlistResource
 
+from candidate_service.candidate_app.api.smartlists_api import SmartlistCandidates, SmartlistResource
+from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch
 
 api = GetTalentApi(app=app)
 
@@ -39,8 +40,14 @@ api.add_resource(
     CandidateResource,
     '/v1/candidates/<int:id>',
     '/v1/candidates/<email>',
-    '/v1/candidates',
     endpoint='candidate_resource'
+)
+
+######################## CandidatesResource ########################
+api.add_resource(
+    CandidatesResource,
+    '/v1/candidates',
+    endpoint='candidates_resource'
 )
 
 ######################## CandidateAddressResource ########################
@@ -218,10 +225,21 @@ api.add_resource(
     endpoint='candidate_work_preference'
 )
 
+######################## CandidateEditResource ########################
+api.add_resource(
+    CandidateEditResource,
+    '/v1/candidates/<int:id>/edits',
+    endpoint='candidate_edit'
+)
+
 ######################## CandidateEmailCampaignResource ########################
 # api.add_resource(CandidateEmailCampaignResource,
 #                  '/v1/candidates/<int:id>/email_campaigns/<int:email_campaign_id>/email_campaign_sends',
 #                  endpoint='candidates')
+
+# ****** Candidate Search *******
+api.add_resource(CandidateSearch,
+                 '/v1/candidates/search')
 
 api.add_resource(SmartlistResource,
                  '/v1/smartlist/<int:id>')

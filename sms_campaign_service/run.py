@@ -1,7 +1,13 @@
 """Run Sms Campaign Service APP"""
+
+# Standard Library
 import os
+
+# Service Specific
 from sms_campaign_service.sms_campaign_app.app import app
-from sms_campaign_service.common.utils.app_rest_urls import GTApis
+
+# Common Utils
+from sms_campaign_service.common.routes import GTApis
 
 if __name__ == '__main__':
     # TODO Have to remove this, only here for testing purposes

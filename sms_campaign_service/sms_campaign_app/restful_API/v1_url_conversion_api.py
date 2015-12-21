@@ -4,7 +4,7 @@
 
     This file contains API endpoints related to Url Conversion.
         Following is a list of API endpoints:
-            - ConvertUrl:  /url_conversion
+            - ConvertUrl:  /v1/url_conversion
                 POST     : This converts the given URL into shortened URL using
                           Google's Shorten URL API.
 
@@ -19,18 +19,19 @@ from flask import Blueprint
 from flask.ext.cors import CORS
 from flask.ext.restful import Resource
 
-# Application Specific
+# Common Utils
 from sms_campaign_service.common.talent_api import TalentApi
 from sms_campaign_service.common.utils.api_utils import api_route
-from sms_campaign_service.sms_campaign_base import validate_header
 from sms_campaign_service.common.error_handling import InvalidUsage
 from sms_campaign_service.common.utils.auth_utils import require_oauth
-from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
+from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.utils.common_functions import url_conversion
-from sms_campaign_service.custom_exceptions import GoogleShortenUrlAPIError, MissingRequiredField
+
+# Service Specific
+from sms_campaign_service.utilities import validate_header
+from sms_campaign_service.custom_exceptions import (GoogleShortenUrlAPIError, MissingRequiredField)
 
 # creating blueprint
-
 url_conversion_blueprint = Blueprint('url_conversion_api', __name__)
 api = TalentApi()
 api.init_app(url_conversion_blueprint)
@@ -45,7 +46,7 @@ CORS(url_conversion_blueprint, resources={
 })
 
 
-@api.route('/' + SmsCampaignApiUrl.API_VERSION + '/url_conversion')
+@api.route(SmsCampaignApiUrl.URL_CONVERSION)
 class ConvertUrl(Resource):
     """
     This end point converts the given url into shorter version using
@@ -55,7 +56,7 @@ class ConvertUrl(Resource):
 
     def post(self):
         """
-        This action returns shorted url of given url
+        This action returns shorted URL of given URL.
         :return short_url: a dictionary containing short url
         :rtype json
 
@@ -78,6 +79,7 @@ class ConvertUrl(Resource):
 
         .. Error codes:: 5004 (GoogleShortenUrlAPIError)
         """
+        # TODO: either validate header is required or try catch for `request.get_json()`
         validate_header(request)
         try:
             json_data = request.get_json()
@@ -86,9 +88,10 @@ class ConvertUrl(Resource):
         if 'url' not in json_data:
             raise MissingRequiredField(
                 error_message="Data must be provided as '{url: <value>}'")
+        # Why twice? You can do `if json_data.get('url'):` and if there is possibility one None
+        # You can do `if isinstance(json_data, dict) and json_data.get('url'):`
         if not json_data['url']:
-            raise InvalidUsage(error_message='No URL is given.',
-                               error_code=InvalidUsage.http_status_code())
+            raise InvalidUsage(error_message='No URL is given.')
         short_url, error = url_conversion(json_data['url'])
         if short_url:
             return {'short_url': short_url}

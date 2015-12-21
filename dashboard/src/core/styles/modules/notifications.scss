@@ -50,6 +50,21 @@
   }
 }
 
+.notification--warning {
+  @extend .notification;
+  @include gradients--yellow;
+
+  color: $color--nearBlack;
+
+  a {
+    color: $color--nearBlack;
+
+    &:hover {
+      color: $color--nearBlack;
+    }
+  }
+}
+
 .notification--error {
   @extend .notification;
   @include gradients--red;

@@ -4,7 +4,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies,
 
 This contains following helper classes/functions for SMS Campaign Service.
 
-- Class TwilioSMS which uses TwilioAPI to buy new number, or send sms etc.
+- Class TwilioSMS which uses Twilio API to buy new number, or send sms etc.
 - Function search_urls_in_text() to search a URL present in given text.
 - Function url_conversion() which takes the URL and try to make it shorter using
     Google's shorten URL API.
@@ -18,12 +18,24 @@ import twilio
 import twilio.rest
 from twilio.rest import TwilioRestClient
 
+# Common Utils
+from sms_campaign_service.common.routes import (SmsCampaignApiUrl, GTApis)
+from sms_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound,
+                                                        ForbiddenError)
+from sms_campaign_service.common.utils.common_functions import (find_missing_items,
+                                                                JSON_CONTENT_TYPE_HEADER)
+
+# Database Models
+from sms_campaign_service.common.models.user import UserPhone
+from sms_campaign_service.common.models.smart_list import SmartList
+from sms_campaign_service.common.models.sms_campaign import SmsCampaign
+
 # Application Specific
 from sms_campaign_service import logger
-from sms_campaign_service.custom_exceptions import TwilioAPIError
-from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl, GTApis
-from sms_campaign_service.sms_campaign_app_constants import TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, \
-    NGROK_URL
+from sms_campaign_service.custom_exceptions import (TwilioAPIError, MissingRequiredField,
+                                                    InvalidDatetime)
+from sms_campaign_service.sms_campaign_app_constants import (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,
+                                                             NGROK_URL)
 
 
 class TwilioSMS(object):
@@ -36,9 +48,11 @@ class TwilioSMS(object):
         self.country = 'US'
         self.phone_type = 'local'
         self.sms_enabled = True
-        # self.sms_call_back_url = 'http://demo.twilio.com/docs/sms.xml'
-        self.sms_call_back_url = SmsCampaignApiUrl.SMS_RECEIVE
-        # self.sms_call_back_url = 'http://74cf4bd2.ngrok.io/v1/receive'
+
+        # default value of sms_call_back_url is 'http://demo.twilio.com/docs/sms.xml'
+        # TODO: Until app is up, will use ngrok address
+        # self.sms_call_back_url = SmsCampaignApiUrl.RECEIVE_URL
+        self.sms_call_back_url = NGROK_URL % SmsCampaignApiUrl.RECEIVE
         self.sms_method = 'POST'
 
     def send_sms(self, body_text=None, receiver_phone=None, sender_phone=None):
@@ -143,9 +157,9 @@ def replace_ngrok_link_with_localhost(temp_ngrok_link):
     :param temp_ngrok_link:
     :return:
     """
-    relative_url = temp_ngrok_link.split(SmsCampaignApiUrl.API_VERSION)[1]
-    # API_URL is http://127.0.0.1:8011/v1 for dev
-    return SmsCampaignApiUrl.API_URL % relative_url
+    relative_url = temp_ngrok_link.split(NGROK_URL % '')[1]
+    # HOST_NAME is http://127.0.0.1:8011 for dev
+    return SmsCampaignApiUrl.HOST_NAME % relative_url
 
 
 # TODO: remove this when app is up
@@ -168,3 +182,112 @@ def replace_localhost_with_ngrok(localhost_url):
     """
     relative_url = localhost_url.split(str(GTApis.SMS_CAMPAIGN_SERVICE_PORT))[1]
     return NGROK_URL % relative_url
+
+
+def validate_form_data(form_data):
+    """
+    This does the validation of the data received to create SMS campaign.
+
+        1- If any key from (name, body_text, smartlist_ids) is missing from form data or
+            has no value we raise MissingRequiredFieldError.
+        2- If smartlist_ids are not present in database, we raise ResourceNotFound exception.
+        3- If start_datetime or end_datetime is not valid datetime format, then we raise
+            InvalidDatetime
+
+    :param form_data:
+    :return: list of ids of smartlists which were not found in database.
+    :rtype: list
+    """
+    required_fields = ['name', 'body_text', 'smartlist_ids']
+    # find if any required key is missing from data
+    missing_fields = filter(lambda required_key: required_key not in form_data, required_fields)
+    if missing_fields:
+        raise MissingRequiredField('Required fields not provided to save sms_campaign. '
+                                   'Missing fields are %s' % missing_fields)
+    # find if any required key has no value
+    missing_field_values = find_missing_items(form_data, required_fields)
+    if missing_field_values:
+        raise MissingRequiredField(
+            error_message='Required fields are empty to save '
+                          'sms_campaign. Empty fields are %s' % missing_field_values)
+    # validate smartlist ids are in a list
+    if not isinstance(form_data.get('smartlist_ids'), list):
+        raise InvalidUsage(error_message='Include smartlist id(s) in a list.')
+
+    not_found_smartlist_ids = []
+    for smartlist_id in form_data.get('smartlist_ids'):
+        if not SmartList.get_by_id(smartlist_id):
+            logger.error('Smartlist(id:%s) not found in database.' % smartlist_id)
+            not_found_smartlist_ids.append(smartlist_id)
+    if len(form_data.get('smartlist_ids')) == len(not_found_smartlist_ids):
+        raise ResourceNotFound(error_message='smartlists(id(s):%s not found in database.'
+                                             % form_data.get('smartlist_ids'))
+    # filter out unknown smartlist ids
+    form_data['smartlist_ids'] = list(set(form_data.get('smartlist_ids')) -
+                                      set(not_found_smartlist_ids))
+    datetime_validator(form_data.get('send_datetime')) if form_data.get('send_datetime') else ''
+    datetime_validator(form_data.get('stop_datetime')) if form_data.get('stop_datetime') else ''
+    return not_found_smartlist_ids
+
+
+def datetime_validator(str_datetime):
+    """
+    This validates the given datetime.
+    :param str_datetime: str
+    :type str_datetime: str
+    :return:
+    """
+    utc_pattern = '\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z'
+    if not re.match(utc_pattern, str_datetime):
+        # TODO: Needed to update this message in social network service
+        raise InvalidDatetime('Invalid DateTime: Kindly specify UTC datetime in ISO-8601 '
+                              'format like 2015-10-08T06:16:55Z')
+
+
+def delete_sms_campaign(campaign_id, current_user_id):
+    """
+    This function is used to delete SMS campaign of a user. If current user is the
+    creator of given campaign id, it will delete the campaign, otherwise it will
+    raise the Forbidden error.
+    :param campaign_id: id of SMS campaign to be deleted
+    :param current_user_id: id of current user
+    :exception: Forbidden error (status_code = 403)
+    :exception: Resource not found error (status_code = 404)
+    :return: True if record deleted successfully, False otherwise.
+    :rtype: bool
+    """
+    if is_owner_of_campaign(campaign_id, current_user_id):
+        return SmsCampaign.delete(campaign_id)
+
+
+def is_owner_of_campaign(campaign_id, current_user_id):
+    """
+    This function returns True if the current user is an owner for given
+    campaign_id. Otherwise it raises the Forbidden error.
+    :param campaign_id: id of campaign form getTalent database
+    :param current_user_id: Id of current user
+    :return:
+    """
+    campaign_row = SmsCampaign.get_by_id(campaign_id)
+    if campaign_row:
+        campaign_user_id = UserPhone.get_by_id(campaign_row.user_phone_id).user_id
+        if campaign_user_id == current_user_id:
+            return True
+        else:
+            raise ForbiddenError(error_message='You are not the owner of '
+                                               'SMS campaign(id:%s)' % campaign_id)
+    else:
+        raise ResourceNotFound(error_message='SMS Campaign(id=%s) not found.' % campaign_id)
+
+
+def validate_header(request):
+    """
+    Proper header should be {'content-type': 'application/json'} for posting
+    some data on SMS campaign API.
+    If header of request is not proper, it raises InvalidUsage exception
+    :return:
+    """
+    # TODO: You are using `request.get_json()` inside try catch and then raising Invalid content etc error
+    # then there is no need to check headers and vice versa
+    if not request.headers.get('CONTENT_TYPE') == JSON_CONTENT_TYPE_HEADER['content-type']:
+        raise InvalidUsage(error_message='Invalid header provided')

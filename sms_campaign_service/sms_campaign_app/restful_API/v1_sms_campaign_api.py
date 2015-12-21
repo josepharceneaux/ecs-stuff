@@ -5,24 +5,24 @@
 This file contains API endpoints related to sms_campaign_service.
     Following is a list of API endpoints:
 
-        - SmsCampaigns: /campaigns
+        - SmsCampaigns: /v1/campaigns
 
             GET     : Gets list of all the sms campaigns that belong to user
             POST    : Creates new campaign and save it in database
             DELETE  : Deletes sms campaigns of user by provided campaign ids as a list
 
-        - SmsCampaigns: /campaigns/:id
+        - SmsCampaigns: /v1/campaigns/:id
 
             GET     : Gets campaign data from given id
             POST    : Updates existing campaign using given id
             DELETE  : Deletes sms campaign from db for given id
 
-        - SmsCampaignSends:  /campaigns/:id/sms_campaign_sends
+        - SmsCampaignSends:  /v1/campaigns/:id/sms_campaign_sends
 
             GET    : Gets the "sends" records for given sms campaign id
                     from db table sms_campaign_sends
 
-        - SendSmsCampaign: /campaigns/:id/send
+        - SendSmsCampaign: /v1/campaigns/:id/send
 
             POST    : Sends the SMS Campaign by campaign id
 """
@@ -37,20 +37,26 @@ from flask import Blueprint
 from flask.ext.cors import CORS
 from flask.ext.restful import Resource
 
-# Application Specific
+# Service Specific
 from sms_campaign_service import logger
+from sms_campaign_service.sms_campaign_base import SmsCampaignBase
+from sms_campaign_service.custom_exceptions import ErrorDeletingSMSCampaign
+from sms_campaign_service.utilities import (validate_form_data, validate_header,
+                                            delete_sms_campaign, is_owner_of_campaign)
+
+# Common Utils
 from sms_campaign_service.common.error_handling import *
 from sms_campaign_service.common.talent_api import TalentApi
-from sms_campaign_service.common.utils.app_rest_urls import SmsCampaignApiUrl
 from sms_campaign_service.common.utils.auth_utils import require_oauth
-from sms_campaign_service.custom_exceptions import ErrorDeletingSMSCampaign
+from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.utils.api_utils import api_route, ApiResponse
-from sms_campaign_service.sms_campaign_base import (SmsCampaignBase, delete_sms_campaign,
-                                                    validate_header, is_owner_of_campaign)
+
+# Database Models
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignBlast,
                                                              SmsCampaignSend)
 
 # creating blueprint
+
 sms_campaign_blueprint = Blueprint('sms_campaign_api', __name__)
 api = TalentApi()
 api.init_app(sms_campaign_blueprint)
@@ -66,7 +72,7 @@ CORS(sms_campaign_blueprint, resources={
 })
 
 
-@api.route('/' + SmsCampaignApiUrl.API_VERSION + '/campaigns')
+@api.route(SmsCampaignApiUrl.CAMPAIGNS)
 class SMSCampaigns(Resource):
     """
     This resource is used to
@@ -93,24 +99,24 @@ class SMSCampaigns(Resource):
                 "count": 2,
                 "campaigns": [
                             {
-                              "added_time": "2015-11-19 18:54:04",
+                              "added_datetime": "2015-11-19 18:54:04",
                               "frequency_id": 1,
                               "id": 3,
                               "name": "New Campaign",
-                              "send_time": "",
-                              "sms_body_text": "Welcome all boys",
-                              "stop_time": "",
+                              "send_datetime": "",
+                              "body_text": "Welcome all boys",
+                              "stop_datetime": "",
                               "updated_time": "2015-11-19 18:53:55",
                               "user_phone_id": 1
                             },
                             {
-                              "added_time": "2015-11-19 18:55:08",
+                              "added_datetime": "2015-11-19 18:55:08",
                               "frequency_id": 1,
                               "id": 4,
                               "name": "New Campaign",
-                              "send_time": "",
-                              "sms_body_text": "Job opening at...",
-                              "stop_time": "",
+                              "send_datetime": "",
+                              "body_text": "Job opening at...",
+                              "stop_datetime": "",
                               "updated_time": "2015-11-19 18:54:51",
                               "user_phone_id": 1
                             }
@@ -140,11 +146,12 @@ class SMSCampaigns(Resource):
 
             campaign_data = {
                                 "name": "New SMS Campaign",
-                                "sms_body_text": "HI all, we have few openings at abc.com",
+                                "body_text": "HI all, we have few openings at abc.com",
                                 "frequency_id": 2,
-                                "added_time": "2015-11-24T08:00:00",
-                                "send_time": "2015-11-26T08:00:00",
-                                "stop_time": "2015-11-30T08:00:00",
+                                "added_datetime": "2015-11-24T08:00:00Z",
+                                "send_datetime": "2015-11-26T08:00:00Z",
+                                "stop_datetime": "2015-11-30T08:00:00Z",
+                                "smartlist_ids": [1, 2, 3]
                              }
 
             headers = {
@@ -170,26 +177,36 @@ class SMSCampaigns(Resource):
                     403 (Forbidden error)
                     500 (Internal Server Error)
 
-        ..Error Codes:: 5002 (MultipleTwilioNumbers)
+        ..Error Codes:: 5002 (MultipleTwilioNumbersFoundForUser)
                         5003 (TwilioAPIError)
                         5006 (MissingRequiredField)
                         5009 (ErrorSavingSMSCampaign)
 
         """
+        # TODO: Validation Twice not needed
         validate_header(request)
         # get json post request data
         try:
-            campaign_data = request.get_json()
+            data_from_ui = request.get_json()
         except Exception:
-            raise InvalidUsage(error_message='Given data in not in json format')
-        if not campaign_data:
+            raise InvalidUsage(error_message='Given data is not in json format')
+        if not data_from_ui:
             raise InvalidUsage(error_message='No data provided to create SMS campaign')
+        # apply validation on fields
+        not_found_smartlist_ids = validate_form_data(data_from_ui)
         campaign_obj = SmsCampaignBase(request.user.id,
-                                       buy_new_number=campaign_data.get('buy_new_number'))
-        campaign_id = campaign_obj.save(campaign_data)
+                                       buy_new_number=data_from_ui.get('buy_new_number'))
+        campaign_id = campaign_obj.save(data_from_ui)
         headers = {'Location': '/campaigns/%s' % campaign_id}
         logger.debug('Campaign(id:%s) has been saved.' % campaign_id)
-        return ApiResponse(json.dumps(dict(id=campaign_id)), status=201, headers=headers)
+        if not_found_smartlist_ids:
+            return ApiResponse(json.dumps(dict(sms_campaign_id=campaign_id,
+                                               not_found_smartlist_ids=not_found_smartlist_ids)),
+                               status=207, headers=headers)
+
+        else:
+            return ApiResponse(json.dumps(dict(sms_campaign_id=campaign_id)),
+                               status=201, headers=headers)
 
     def delete(self):
         """
@@ -249,7 +266,7 @@ class SMSCampaigns(Resource):
             return dict(message='No campaign id provided to delete'), 200
 
 
-@api.route('/' + SmsCampaignApiUrl.API_VERSION + '/campaigns/<int:campaign_id>')
+@api.route(SmsCampaignApiUrl.CAMPAIGN)
 class CampaignById(Resource):
     """
     This resource is used to
@@ -272,13 +289,13 @@ class CampaignById(Resource):
 
             {
                 "campaign": {
-                          "sms_body_text": "Dear all, please visit http://www.qc-technologies.com",
+                          "body_text": "Dear all, please visit http://www.qc-technologies.com",
                           "frequency_id": 1,
                           "updated_time": "2015-11-24 16:31:09",
                           "user_phone_id": 1,
-                          "send_time": "",
-                          "added_time": "2015-11-24 16:30:57",
-                          "stop_time": "",
+                          "send_datetime": "",
+                          "added_datetime": "2015-11-24 16:30:57",
+                          "stop_datetime": "",
                           "id": 1,
                           "name": "UpdatedName"
                         }
@@ -309,11 +326,11 @@ class CampaignById(Resource):
             campaign_data = {
 
                             "name": "New SMS Campaign",
-                            "sms_body_text": "HI all, we have few openings at abc.com",
+                            "body_text": "HI all, we have few openings at abc.com",
                             "frequency_id": 2,
-                            "added_time": "2015-11-24T08:00:00",
-                            "send_time": "2015-11-26T08:00:00",
-                            "stop_time": "2015-11-30T08:00:00",
+                            "added_datetime": "2015-11-24T08:00:00Z",
+                            "send_datetime": "2015-11-26T08:00:00Z",
+                            "stop_datetime": "2015-11-30T08:00:00Z",
                             "id": 1
                             }
 
@@ -347,10 +364,16 @@ class CampaignById(Resource):
             raise InvalidUsage(error_message='Given data should be in dict format')
         if not campaign_data:
             raise InvalidUsage(error_message='No data provided to update SMS campaign')
+        not_found_smartlist_ids = validate_form_data(campaign_data)
         camp_obj = SmsCampaignBase(request.user.id)
         camp_obj.create_or_update_sms_campaign(campaign_data, campaign_id=campaign_id)
-        return dict(
-            message='SMS Campaign(id:%s) has been updated successfully' % campaign_id, ), 200
+        if not_found_smartlist_ids:
+
+            return dict(message='SMS Campaign(id:%s) has been updated successfully' % campaign_id,
+                        not_found_smartlist_ids=not_found_smartlist_ids), 207
+        else:
+            return dict(message='SMS Campaign(id:%s) has been updated successfully'
+                                % campaign_id), 200
 
     def delete(self, campaign_id):
         """
@@ -390,7 +413,7 @@ class CampaignById(Resource):
                                                          % campaign_id)
 
 
-@api.route('/' + SmsCampaignApiUrl.API_VERSION + '/campaigns/<int:campaign_id>/sms_campaign_sends')
+@api.route(SmsCampaignApiUrl.CAMPAIGN_SENDS)
 class SmsCampaignSends(Resource):
     """
     This resource is used to Get Campaign sends [GET]
@@ -415,14 +438,14 @@ class SmsCampaignSends(Resource):
                                         {
                                           "candidate_id": 1,
                                           "id": 9,
-                                          "sent_time": "2015-11-23 18:25:09",
+                                          "sent_datetime": "2015-11-23 18:25:09",
                                           "sms_campaign_blast_id": 1,
                                           "updated_time": "2015-11-23 18:25:08"
                                         },
                                         {
                                           "candidate_id": 2,
                                           "id": 10,
-                                          "sent_time": "2015-11-23 18:25:13",
+                                          "sent_datetime": "2015-11-23 18:25:13",
                                           "sms_campaign_blast_id": 1,
                                           "updated_time": "2015-11-23 18:25:13"
                                        }
@@ -452,7 +475,7 @@ class SmsCampaignSends(Resource):
             raise ResourceNotFound(error_message='SMS Campaign(id=%s) not found.' % campaign_id)
 
 
-@api.route('/' + SmsCampaignApiUrl.API_VERSION + '/campaigns/<int:campaign_id>/send')
+@api.route(SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS)
 class SendSmsCampaign(Resource):
     """
     This resource is used to send SMS Campaign to candidates [POST]
@@ -484,7 +507,7 @@ class SendSmsCampaign(Resource):
                     500 (Internal Server Error)
 
         .. Error Codes:: 5001 (Empty message body to send)
-                         5002 (User has MultipleTwilioNumbers)
+                         5002 (User has MultipleTwilioNumbersFoundForUser)
                          5003 (TwilioAPIError)
                          5004 (GoogleShortenUrlAPIError)
                          5014 (ErrorUpdatingBodyText)

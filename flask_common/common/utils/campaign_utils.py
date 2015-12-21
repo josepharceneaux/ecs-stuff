@@ -5,7 +5,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies,
 This module contains CampaignBase class which provides common methods for
 all campaigns. Methods are
 - schedule()
-- get_candidates()
+- get_smartlist_candidates()
 - create_or_update_url_conversion()
 - create_activity()
 - get_campaign_data()
@@ -28,7 +28,7 @@ from flask import current_app
 from ..models.user import Token
 from ..models.misc import UrlConversion
 from ..models.candidate import Candidate
-from ..utils.app_rest_urls import CandidateApiUrl, ActivityApiUrl
+from ..routes import CandidateApiUrl, ActivityApiUrl
 from ..utils.common_functions import http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER
 from ..error_handling import ForbiddenError, InvalidUsage, ResourceNotFound
 
@@ -52,8 +52,8 @@ class CampaignBase(object):
     * process_send(self, campaign_id): [abstract]
         This method is used send the campaign to candidates. Child classes will implement this.
 
-    * get_candidates(smart_list_id): [static]
-        This method gets the candidates associated with the given smart_list_id.
+    * get_candidates(smartlist_id): [static]
+        This method gets the candidates associated with the given smartlist_id.
         It may search candidates in database/cloud. It is common for all the campaigns.
 
     * send_sms_campaign_to_candidates(self, candidates):
@@ -80,7 +80,7 @@ class CampaignBase(object):
         self.body_text = None  # This is 'text' to be sent to candidates as part of campaign.
         # Child classes will get this from respective campaign table.
         # e.g. in case of SMS campaign, this is get from "sms_campaign" database table.
-        self.smart_list_id = None
+        self.smartlist_id = None
 
     @staticmethod
     def get_authorization_header(user_id):
@@ -136,7 +136,7 @@ class CampaignBase(object):
         """
         pass
 
-    def get_candidates_from_candidate_service(self, smart_list_id):
+    def get_smartlist_candidates(self, campaign_smartlist):
         """
         This will get the candidates associated to a provided smart list. This makes
         HTTP GET call on candidate service API to get the candidate associated candidates.
@@ -145,18 +145,18 @@ class CampaignBase(object):
             SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
 
         :Example:
-                SmsCampaignBase.get_candidates(smart_list_id=1)
+                SmsCampaignBase.get_candidates(smartlist_id=1)
 
-        :param smart_list_id: id of smart list.
-        :type smart_list_id: int
-        :return: Returns array of candidates in the campaign's smart_lists.
+        :param campaign_smartlist: row (e.g record of "sms_campaign_smartlist" database table)
+        :type campaign_smartlist: row
+        :return: Returns array of candidates in the campaign's smartlists.
         :rtype: list
 
         **See Also**
         .. see also:: process_send() method in SmsCampaignBase class.
         """
-        params = {'id': smart_list_id,
-                  'return': 'all'}
+
+        params = {'id': campaign_smartlist.smartlist_id, 'return': 'all'}
         # HTTP GET call to activity service to create activity
         url = CandidateApiUrl.SMARTLIST_CANDIDATES
         response = http_request('GET', url, headers=self.oauth_header, params=params,
@@ -166,11 +166,18 @@ class CampaignBase(object):
             candidate_ids = [candidate['id'] for candidate in
                              json.loads(response.text)['candidates']]
             candidates = [Candidate.get_by_id(_id) for _id in candidate_ids]
-            return candidates
         except Exception:
-            current_app.logger.exception('get_candidates_from_candidate_service: Error while '
-                                         'fetching candidates for smartlist(id:%s)' % smart_list_id)
+            current_app.logger.exception('get_smartlist_candidates: Error while '
+                                         'fetching candidates for smartlist(id:%s)'
+                                         % campaign_smartlist.smartlist_id)
             raise
+        if not candidates:
+            current_app.logger.error('get_smartlist_candidates: '
+                                     'No Candidate found. smartlist id is %s. '
+                                     '(User(id:%s))' % (campaign_smartlist.smartlist_id,
+                                                        self.user_id))
+        else:
+            return candidates
 
     def send_campaign_to_candidates(self, candidates_and_phones):
         """
@@ -279,7 +286,7 @@ class CampaignBase(object):
                     error_message='create_or_update_url_conversion: '
                                   'url_conversion(id:%s) not found' % url_conversion_id)
         else:
-            missing_required_fields = find_missing_items(data, verify_all_keys=True)
+            missing_required_fields = find_missing_items(data, verify_values_of_all_keys=True)
             if len(missing_required_fields) == len(data.keys()):
                 raise ForbiddenError(error_message='destination_url/source_url cannot be None.')
             else:
