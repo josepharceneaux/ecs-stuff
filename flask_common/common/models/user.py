@@ -111,7 +111,7 @@ class UserPhone(db.Model):
 
     @classmethod
     def get_by_phone_value(cls, phone_value):
-        assert phone_value
+        assert phone_value, "phone_value isn't valid"
         return cls.query.filter(cls.value == phone_value).all()
 
 
