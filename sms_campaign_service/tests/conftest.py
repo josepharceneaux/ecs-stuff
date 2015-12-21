@@ -129,7 +129,7 @@ def sample_sms_campaign_candidates(sample_user,
                                    candidate_first,
                                    candidate_second):
     """
-    This adds two candidates to sample_smartlist
+    This adds two candidates to same smart list i.e. sample_smartlist
     :param sample_smartlist:
     :param candidate_first:
     :param candidate_second:
@@ -152,7 +152,7 @@ def campaign_valid_data(sample_smartlist):
     :return:
     """
     return {"name": "TEST SMS Campaign",
-            "body_text": "HI all, we have few openings at http://www.abc.com",
+            "body_text": "Hi all, we have few openings at http://www.abc.com",
             "frequency_id": 2,
             "send_datetime": "2015-11-26T08:00:00Z",
             "stop_datetime": "2015-11-30T08:00:00Z",
@@ -164,7 +164,7 @@ def campaign_valid_data(sample_smartlist):
 def campaign_invalid_data():
     """
     This returns invalid data to save an SMS campaign. 'body_text' required field
-    name is modified to 'text' here.
+    name is modified to be 'text' here i.e. the correct value is 'body_text'
     :return:
     """
     return {"name": "TEST SMS Campaign",
@@ -359,7 +359,7 @@ def process_send_sms_campaign(sample_user, auth_token,
     :return:
     """
     campaign_obj = SmsCampaignBase(sample_user.id)
-    # send campaign to candidates
+    # send campaign to candidates, which will be sent by a Celery task
     campaign_obj.process_send(sms_campaign_of_current_user)
     time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
 
@@ -369,10 +369,12 @@ def url_conversion_by_send_test_sms_campaign(request,
                                              sms_campaign_of_current_user,
                                              process_send_sms_campaign):
     """
-    This sends SMS campaign and returns the source URL from url_conversion database table.
+    This sends SMS campaign (using process_send_sms_campaign fixture)
+     and returns the source URL from url_conversion database table.
     :return:
     """
     time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
+    # Need to double check TODO
     db.session.commit()
     # get campaign blast
     sms_campaign_blast = SmsCampaignBlast.get_by_campaign_id(sms_campaign_of_current_user.id)
@@ -403,6 +405,7 @@ def _create_sms_campaign(campaign_data, user_phone):
     campaign_data['user_phone_id'] = user_phone.id
     sms_campaign = SmsCampaign(**campaign_data)
     SmsCampaign.save(sms_campaign)
+    # We put it back again
     campaign_data['smartlist_ids'] = smartlist_ids
     return sms_campaign
 
@@ -451,9 +454,11 @@ def _create_smartlist(test_user):
 def assert_url_conversion(sms_campaign_sends, campaign_id):
     """
     This function verifies the records related to URL conversion.
-    Long URL to redirect candidate to our app looks like
+    Long URL to redirect candidate to our app looks like e.g.
 
-    (say) https://www.gettalent.com/campaigns/1/url_redirection/30/?candidate_id=2
+    https://www.gettalent.com/campaigns/1/url_redirection/30/?candidate_id=2
+
+    So we will verify whether above URL contains the correct keys.
 
     :param sms_campaign_sends: sends of campaign
     :param campaign_id: id of SMS campaign
@@ -489,6 +494,7 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, response_post, c
     :param campaign_id: id of SMS campaign
     :return:
     """
+    # TODO double check
     time.sleep(SLEEP_TIME)  # need sleep here as campaign send process is running on celery
     db.session.commit()
     # assert on blasts

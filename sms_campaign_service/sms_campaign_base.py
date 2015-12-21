@@ -927,8 +927,8 @@ class SmsCampaignBase(CampaignBase):
     def pre_process_url_redirect(campaign_id, url_conversion_id, candidate_id):
         """
         This method is used for the pre-processing of URL redirection
-            It checks if candidate and campaign is present in database, If both are
-            present, returns them otherwise rasie ResourceNotFound.
+            It checks if candidate and campaign is present in database. If both are
+            present, returns them otherwise raise ResourceNotFound.
 
         :param campaign_id: id of SMS campaign
         :param url_conversion_id: id of URL conversion record
@@ -1115,7 +1115,7 @@ class SmsCampaignBase(CampaignBase):
                 # get SMS campaign blast
                 sms_campaign_blast = SmsCampaignBlast.get_by_id(
                     sms_campaign_send.sms_campaign_blast_id)
-                # save candidate reply
+                # save candidate's reply
                 sms_campaign_reply = cls.save_candidate_reply(sms_campaign_blast.id,
                                                               candidate_phone.id,
                                                               reply_data.get('Body'))
@@ -1199,7 +1199,7 @@ class SmsCampaignBase(CampaignBase):
 
 def _get_valid_user_phone_value(user_phone_value):
     """
-    - This ensures that given phone number is associated with only one user.
+    - This ensures that given phone number is associated with only one user (i.e. recruiter).
 
     - This function is called from class method process_candidate_reply() of
     SmsCampaignBase class to get user_phone db record.

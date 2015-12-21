@@ -18,7 +18,7 @@
 from sms_campaign_service import init_sms_campaign_app_and_celery_app
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 
-app, celery_app= init_sms_campaign_app_and_celery_app()
+app, celery_app = init_sms_campaign_app_and_celery_app()
 
 
 # Third Party Imports
@@ -68,7 +68,8 @@ def sms_campaign_url_redirection(campaign_id, url_conversion_id):
 
             https://goo.gl/CazBJG
 
-    When candidate clicks on above URL, it is redirected to this endpoint, where we keep track
+    When candidate clicks on above url, it is redirected to this flask endpoint, where we keep track
+
     of number of clicks and hit_counts for a URL. We then create activity that 'this' candidate
     has clicked on 'this' campaign. Finally we redirect the candidate to destination URL (Original
     URL provided by the recruiter)
@@ -87,6 +88,7 @@ def sms_campaign_url_redirection(campaign_id, url_conversion_id):
     :type url_conversion_id: int
     :return: redirects to the destination URL else raises exception
     """
+    environ_header = request.headers.environ
     if ('HTTP_FROM' in request.headers.environ
         and 'google' in request.headers.environ['HTTP_FROM']) \
             or ('HTTP_REFERER' in request.headers.environ
@@ -116,10 +118,17 @@ def sms_campaign_url_redirection(campaign_id, url_conversion_id):
 @app.route(SmsCampaignApiUrl.RECEIVE, methods=['POST'])
 def sms_receive():
     """
-    This end point is /v1/receive which is used to receive SMS of candidates.
+    This end point is is /v1/receive and is used by Twilio to notify getTalent when a candidate
+     replies to an SMS.
 
-    - Recruiters(users) are assigned to one unique twilio number.sms_callback_url of
-        that number is set to redirect request at this end point. Twilio API hits this URL
+    - Recruiters(users) are assigned to one unique Twilio number and sms_callback_url (which is variable
+     within Twilio to config blah TODO) of
+        that number is set to redirect request at this end point. So whenever some one replies to that particular
+        recruiter's SMS (from within getTalent) this endpoint will be hit.
+        - It searches the candiddate in getTalent's database
+        - It searches the user (i.e the recruiter) in getTalent's database
+        -
+        Twilio API hits this URL
         with data like
                  {
                       "From": "+12015617985",
@@ -135,12 +144,12 @@ def sms_receive():
                  }
 
         So whenever candidate replies to user's SMS (that was sent as SMS campaign),
-        this endpoint is hit and we do the followings:
+        this endpoint is hit and we do the following:
 
-            1- Search the candidate in GT database using "From" key value
-            2- Search the user in GT database using "To" key value
+            1- Search the candidate in GT database using "From" key
+            2- Search the user in GT database using "To" key
             3- Stores the candidate's reply in database table "sms_campaign_reply"
-            4- Create's activity that 'abc' candidate has replied "Body"(key value)
+            4- Creates activity that 'abc' candidate has replied "Body"(key)
                 on 'xyz' SMS campaign.
 
     .. Status:: 200 (OK)
@@ -162,6 +171,7 @@ def sms_receive():
             SmsCampaignBase.process_candidate_reply(request.values)
         except Exception as error:
             logger.exception("sms_receive: Error is: %s" % error.message)
+    # So in the end we need to send properly formatted XML response back to Twilio
     return """
         <?xml version="1.0" encoding="UTF-8"?>
             <Response>
