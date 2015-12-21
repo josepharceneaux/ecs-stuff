@@ -4,7 +4,7 @@
 
 FROM gettalent/base-service-container:latest
 
-# Add sms campaign service stuff
+# Add SMS campaign service stuff
 WORKDIR /root/base_service_container
 ADD . sms_campaign_service
 

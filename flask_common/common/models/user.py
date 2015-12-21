@@ -96,12 +96,13 @@ class UserPhone(db.Model):
 
     @classmethod
     def get_by_user_id(cls, user_id):
-        assert user_id
+        assert user_id, 'No user_id provided'
         return cls.query.filter(cls.user_id == user_id).all()
 
     @classmethod
     def get_by_user_id_and_phone_label_id(cls, user_id, phone_label_id):
-        assert user_id and phone_label_id
+        assert user_id, 'No user_id provided'
+        assert phone_label_id, 'No phone_label_id provided'
         return cls.query.filter(
             and_(
                 UserPhone.user_id == user_id,
@@ -111,7 +112,7 @@ class UserPhone(db.Model):
 
     @classmethod
     def get_by_phone_value(cls, phone_value):
-        assert phone_value
+        assert phone_value, 'No phone_value given'
         return cls.query.filter(cls.value == phone_value).all()
 
 

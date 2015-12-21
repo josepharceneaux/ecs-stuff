@@ -1,6 +1,5 @@
 """
- Author: Hafiz Muhammad Basit, QC-Technologies,
-        Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
+ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     This file contains API endpoints related to Url Conversion.
         Following is a list of API endpoints:
@@ -49,7 +48,7 @@ CORS(url_conversion_blueprint, resources={
 @api.route(SmsCampaignApiUrl.URL_CONVERSION)
 class ConvertUrl(Resource):
     """
-    This end point converts the given url into shorter version using
+    This end point converts the given URL into shorter version using
     Google's shorten URL API.
     """
     decorators = [require_oauth]
@@ -57,7 +56,7 @@ class ConvertUrl(Resource):
     def post(self):
         """
         This action returns shorted URL of given URL.
-        :return short_url: a dictionary containing short url
+        :return short_url: a dictionary containing short URL
         :rtype json
 
         :Example:
@@ -79,17 +78,14 @@ class ConvertUrl(Resource):
 
         .. Error codes:: 5004 (GoogleShortenUrlAPIError)
         """
-        # TODO: either validate header is required or try catch for `request.get_json()`
         validate_header(request)
         try:
             json_data = request.get_json()
-        except:
+        except Exception:
             raise InvalidUsage(error_message='Given data in not in json format.')
         if 'url' not in json_data:
             raise MissingRequiredField(
-                error_message="Data must be provided as '{url: <value>}'")
-        # Why twice? You can do `if json_data.get('url'):` and if there is possibility one None
-        # You can do `if isinstance(json_data, dict) and json_data.get('url'):`
+                error_message="Data must be provided as '{url: <value>}'.")
         if not json_data['url']:
             raise InvalidUsage(error_message='No URL is given.')
         short_url, error = url_conversion(json_data['url'])

@@ -1,6 +1,5 @@
 """
-Author: Hafiz Muhammad Basit, QC-Technologies,
-        Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
+Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     This module contains pyTests for endpoint /v1/campaigns of SMS Campaign API.
 """
@@ -131,7 +130,7 @@ class TestSmsCampaign(object):
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS_URL,
                                  headers=valid_header,
                                  data=json.dumps(campaign_valid_data))
-        assert response.status_code == 201, 'It should create sms campaign (201)'
+        assert response.status_code == 201, 'It should create SMS campaign (201)'
         assert 'location' in response.headers
         assert 'sms_campaign_id' in response.json()
         assert_for_activity(sample_user.id, ActivityMessageIds.CAMPAIGN_SMS_CREATE,
@@ -401,7 +400,7 @@ class TestSmsCampaign(object):
                                                                            valid_header,
                                                                            sms_campaign_of_other_user):
         """
-        User auth token is valid, data type is valid and ids are of those sms CAMPAIGNS_URL that
+        User auth token is valid, data type is valid and ids are of those SMS CAMPAIGNS_URL that
         belong to some other user. It should get unauthorized error.
         :return:
         """

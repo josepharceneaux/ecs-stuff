@@ -1,25 +1,24 @@
 """
- Author: Hafiz Muhammad Basit, QC-Technologies,
-        Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
+ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
 This file contains API endpoints related to sms_campaign_service.
     Following is a list of API endpoints:
 
         - SmsCampaigns: /v1/campaigns
 
-            GET     : Gets list of all the sms campaigns that belong to user
+            GET     : Gets list of all the SMS campaigns that belong to user
             POST    : Creates new campaign and save it in database
-            DELETE  : Deletes sms campaigns of user by provided campaign ids as a list
+            DELETE  : Deletes SMS campaigns of user by provided campaign ids as a list
 
         - SmsCampaigns: /v1/campaigns/:id
 
             GET     : Gets campaign data from given id
             POST    : Updates existing campaign using given id
-            DELETE  : Deletes sms campaign from db for given id
+            DELETE  : Deletes SMS campaign from db for given id
 
         - SmsCampaignSends:  /v1/campaigns/:id/sms_campaign_sends
 
-            GET    : Gets the "sends" records for given sms campaign id
+            GET    : Gets the "sends" records for given SMS campaign id
                     from db table sms_campaign_sends
 
         - SendSmsCampaign: /v1/campaigns/:id/send
@@ -77,7 +76,7 @@ class SMSCampaigns(Resource):
     """
     This resource is used to
         1- Get all campaigns created by current user [GET]
-        2- Create an sms campaign [POST]
+        2- Create an SMS campaign [POST]
         3- Delete campaigns by taking campaign ids [DELETE]
     """
     decorators = [require_oauth]
@@ -138,7 +137,7 @@ class SMSCampaigns(Resource):
 
     def post(self, *args, **kwargs):
         """
-        This method takes data to create sms campaign in database.
+        This method takes data to create SMS campaign in database.
         :return: id of created campaign
         :type: json
 
@@ -181,9 +180,9 @@ class SMSCampaigns(Resource):
                         5003 (TwilioAPIError)
                         5006 (MissingRequiredField)
                         5009 (ErrorSavingSMSCampaign)
+                        5017 (InvalidDatetime)
 
         """
-        # TODO: Validation Twice not needed
         validate_header(request)
         # get json post request data
         try:
@@ -240,6 +239,9 @@ class SMSCampaigns(Resource):
                     403 (Forbidden error)
                     500 (Internal Server Error)
 
+        .. Error Codes::
+                    ErrorDeletingSMSCampaign (5010)
+
         """
         validate_header(request)
         # get campaign_ids for campaigns to be deleted
@@ -271,7 +273,7 @@ class CampaignById(Resource):
     """
     This resource is used to
         1- Get Campaign from given campaign_id [GET]
-        2- Updates an existing sms campaign [POST]
+        2- Updates an existing SMS campaign [POST]
         3- Delete campaign by given campaign id [DELETE]
     """
     decorators = [require_oauth]
@@ -355,7 +357,9 @@ class CampaignById(Resource):
                     404 (Campaign not found)
                     500 (Internal Server Error)
 
-        .. Error codes:: 5006 (MissingRequiredField)
+        .. Error codes::
+                        5006 (MissingRequiredField)
+                        5009 (ErrorSavingSMSCampaign)
         """
         validate_header(request)
         try:
@@ -460,7 +464,7 @@ class SmsCampaignSends(Resource):
                     500 (Internal Server Error)
 
         :param campaign_id: integer, unique id representing campaign in GT database
-        :return: 1- count of campaign sends and 2- sms campaign sends records in as dict
+        :return: 1- count of campaign sends and 2- SMS campaign sends records in as dict
         """
         campaign = SmsCampaign.get_by_id(campaign_id)
         if campaign:

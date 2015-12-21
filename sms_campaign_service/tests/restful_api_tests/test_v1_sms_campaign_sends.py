@@ -1,6 +1,5 @@
 """
-Author: Hafiz Muhammad Basit, QC-Technologies,
-        Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
+Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     This module contains pyTests for endpoint /v1/campaigns/:id/sms_campaign_sends of
     SMS Campaign API.

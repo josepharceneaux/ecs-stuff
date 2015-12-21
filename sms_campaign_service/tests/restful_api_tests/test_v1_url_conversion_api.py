@@ -1,6 +1,5 @@
 """
-Author: Hafiz Muhammad Basit, QC-Technologies,
-        Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
+Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     This module contains pyTests for endpoint /v1/url_conversion of URL conversion API.
 """
@@ -13,7 +12,7 @@ import requests
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
 
 # Common Utils
-from sms_campaign_service.common.routes import SmsCampaignApiUrl, LOCAL_HOST
+from sms_campaign_service.common.routes import (SmsCampaignApiUrl, LOCAL_HOST)
 from sms_campaign_service.common.error_handling import (MethodNotAllowed, UnauthorizedError,
                                                         InvalidUsage, InternalServerError)
 
@@ -56,9 +55,22 @@ class TestUrlConversionAPI(object):
                                  data=
                                  json.dumps(
                                      {"url": 'https://webdev.gettalent.com/web/default/angular#!/'}
-                                     ))
+                                 ))
         assert response.status_code == 200, 'response should be ok'
         assert 'short_url' in response.json()
+
+    def test_post_with_valid_header_and_invalid_data_type(self, valid_header):
+        """
+        Making POST call on endpoint with invalid data type (not JSON),should get bad request error.
+        :param valid_header:
+        :return:
+        """
+        response = requests.post(SmsCampaignApiUrl.URL_CONVERSION_URL,
+                                 headers=valid_header,
+                                 data=
+                                 {"url":'https://webdev.gettalent.com/web/default/angular#!/'})
+
+        assert response.status_code == InvalidUsage.http_status_code(), 'Should be bad request(400)'
 
     def test_post_with_valid_header_and_invalid_data(self, valid_header):
         """
@@ -71,7 +83,7 @@ class TestUrlConversionAPI(object):
                                  headers=valid_header,
                                  data=json.dumps(
                                      {"url": LOCAL_HOST}
-                                     ))
+                                 ))
         assert response.status_code == InternalServerError.http_status_code(), \
             'Status should be (500)'
         # custom exception for Google's Shorten URL API Error

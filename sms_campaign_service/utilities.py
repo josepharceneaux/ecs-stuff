@@ -1,10 +1,9 @@
 """
-Author: Hafiz Muhammad Basit, QC-Technologies,
-        Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
+Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
 This contains following helper classes/functions for SMS Campaign Service.
 
-- Class TwilioSMS which uses Twilio API to buy new number, or send sms etc.
+- Class TwilioSMS which uses Twilio API to buy new number, or send SMS etc.
 - Function search_urls_in_text() to search a URL present in given text.
 - Function url_conversion() which takes the URL and try to make it shorter using
     Google's shorten URL API.

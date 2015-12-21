@@ -1,6 +1,5 @@
 """
-Author: Zohaib Ijaz, QC-Technologies,
-        Lahore, Punjab, Pakistan <mzohaib.qc@gmail.com>
+Author: Zohaib Ijaz, QC-Technologies, <mzohaib.qc@gmail.com>
 
 This modules contains helper methods for Flask-SqlAlchemy models.
 On app creation and startup these methods are added in Base Model class from which all

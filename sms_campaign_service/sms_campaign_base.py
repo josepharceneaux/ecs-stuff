@@ -1,6 +1,5 @@
 """
-Author: Hafiz Muhammad Basit, QC-Technologies,
-        Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
+Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
 This module contains SmsCampaignBase class inherited from CampaignBase.
 This is used to send SMS campaign to candidates.
@@ -158,7 +157,7 @@ class SmsCampaignBase(CampaignBase):
         40(num_candidates) candidates.
         Activity will appear as "%(campaign_name)s has been sent to %(num_candidates)s.".
 
-    * pre_process_url_redirect(campaign_id, url-conversion_id, candidate_id)
+    * pre_process_url_redirect(campaign_id, url_conversion_id, candidate_id)
         This does the validation of all the fields provided before processing the
         URL redirection.
 
@@ -446,7 +445,7 @@ class SmsCampaignBase(CampaignBase):
 
     def process_send(self, campaign):
         """
-        :param campaign: sms campaign row
+        :param campaign: SMS campaign row
         :type campaign: Model object
         :return: number of sends
         :rtype: int
@@ -888,7 +887,7 @@ class SmsCampaignBase(CampaignBase):
                                  params=params,
                                  headers=self.oauth_header)
         else:
-            raise InvalidUsage(error_message='Cannot create sms send activity')
+            raise InvalidUsage(error_message='Cannot create SMS send activity')
 
     @classmethod
     def create_campaign_send_activity(cls, user_id, source, auth_header, num_candidates):
@@ -1062,11 +1061,27 @@ class SmsCampaignBase(CampaignBase):
     @classmethod
     def process_candidate_reply(cls, reply_data):
         """
-        - When candidate replies to user'phone number, we do the following at our App's
-            endpoint '/receive'
+        - Recruiters(users) are assigned to one unique twilio number.sms_callback_url of
+        that number is set to redirect request at this end point. Twilio API hits this URL
+        with data like
+                 {
+                      "From": "+12015617985",
+                      "To": "+15039255479",
+                      "Body": "Dear all, we have few openings at http://www.qc-technologies.com",
+                      "SmsStatus": "received",
+                      "FromCity": "FELTON",
+                      "FromCountry": "US",
+                      "FromZip": "95018",
+                      "ToCity": "SHERWOOD",
+                      "ToCountry": "US",
+                      "ToZip": "97132",
+                 }
 
-            1- Gets "user_phone" record
-            2- Gets "candidate_phone" record
+        - When candidate replies to user'phone number, we do the following at our App's
+            endpoint '/v1/receive'
+
+            1- Gets "user_phone" record using "To" key
+            2- Gets "candidate_phone" record using "From" key
             3- Gets latest campaign sent to given candidate
             4- Gets "sms_campaign_blast" row for "sms_campaign_send" found in step-3
             5- Saves candidate's reply in db table "sms_campaign_reply"
@@ -1078,7 +1093,11 @@ class SmsCampaignBase(CampaignBase):
         :exception: MissingRequiredField (5006)
         :exception: MultipleUsersFound(5007)
         :exception: MultipleCandidatesFound(5008)
+        :exception: NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN(5011)
+        :exception: NoCandidateAssociatedWithSmartlist(5012)
         :exception: NoSMSCampaignSentToCandidate(5013)
+        :exception: NoUserFoundForPhoneNumber(5016)
+        :exception: NoCandidateFoundForPhoneNumber (5017)
 
         **See Also**
         .. see also:: sms_receive() function in sms_campaign_app/app.py

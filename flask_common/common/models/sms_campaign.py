@@ -30,7 +30,7 @@ class SmsCampaign(db.Model):
 
     @classmethod
     def get_by_user_phone_id(cls, user_phone_id):
-        assert user_phone_id
+        assert user_phone_id, 'No user_phone_id given'
         return cls.query.filter(cls.user_phone_id == user_phone_id).all()
 
 
@@ -55,7 +55,7 @@ class SmsCampaignBlast(db.Model):
 
     @classmethod
     def get_by_campaign_id(cls, campaign_id):
-        assert campaign_id
+        assert campaign_id, 'No campaign_id given'
         return cls.query.filter(cls.sms_campaign_id == campaign_id).first()
 
 
@@ -79,7 +79,8 @@ class SmsCampaignSend(db.Model):
 
     @classmethod
     def get_by_blast_id_and_candidate_id(cls, campaign_blast_id, candidate_id):
-        assert campaign_blast_id and candidate_id
+        assert campaign_blast_id, 'No campaign_blast_id given'
+        assert candidate_id, 'No candidate_id given'
         return cls.query.filter(
             db.and_(
                 cls.sms_campaign_blast_id == campaign_blast_id,
@@ -89,13 +90,13 @@ class SmsCampaignSend(db.Model):
 
     @classmethod
     def get_by_candidate_id(cls, candidate_id):
-        assert candidate_id
+        assert candidate_id, 'No candidate_id given'
         return cls.query.order_by(-cls.sent_datetime).filter(
             cls.candidate_id == candidate_id).first()
 
     @classmethod
     def get_by_blast_id(cls, campaign_blast_id):
-        assert campaign_blast_id
+        assert campaign_blast_id, 'No campaign_blast_id given'
         return cls.query.filter(cls.sms_campaign_blast_id == campaign_blast_id).all()
 
 
@@ -114,7 +115,8 @@ class SmsCampaignReply(db.Model):
 
     @classmethod
     def get_by_blast_id_and_candidate_phone_id(cls, campaign_blast_id, candidate_phone_id):
-        assert campaign_blast_id and candidate_phone_id
+        assert campaign_blast_id, 'No campaign_blast_id given'
+        assert candidate_phone_id, 'No candidate_phone_id given'
         return cls.query.filter(
             db.and_(
                 cls.sms_campaign_blast_id == campaign_blast_id,
@@ -124,7 +126,7 @@ class SmsCampaignReply(db.Model):
 
     @classmethod
     def get_by_candidate_phone_id(cls, candidate_phone_id):
-        assert candidate_phone_id
+        assert candidate_phone_id, 'No candidate_phone_id given'
         return cls.query.filter(cls.candidate_phone_id == candidate_phone_id).first()
 
 
@@ -142,12 +144,13 @@ class SmsCampaignSmartlist(db.Model):
 
     @classmethod
     def get_by_campaign_id(cls, campaign_id):
-        assert campaign_id
+        assert campaign_id, 'No campaign_id given'
         return cls.query.filter(cls.sms_campaign_id == campaign_id).all()
 
     @classmethod
     def get_by_campaign_id_and_smartlist_id(cls, campaign_id, smartlist_id):
-        assert campaign_id and smartlist_id
+        assert campaign_id, 'No campaign_id given'
+        assert smartlist_id, 'No smartlist_id given'
         return cls.query.filter(
             db.and_(
                 cls.sms_campaign_id == campaign_id,
@@ -173,6 +176,8 @@ class SmsCampaignSendUrlConversion(db.Model):
     def get_by_campaign_send_id_and_url_conversion_id(cls,
                                                       campaign_send_id,
                                                       url_conversion_id):
+        assert campaign_send_id, 'No campaign_send_id given'
+        assert url_conversion_id, 'No url_conversion_id given'
         return cls.query.filter(
             db.and_(
                 cls.sms_campaign_send_id == campaign_send_id,
@@ -182,4 +187,5 @@ class SmsCampaignSendUrlConversion(db.Model):
 
     @classmethod
     def get_by_campaign_send_id(cls, campaign_send_id):
+        assert campaign_send_id, 'No campaign_send_id given'
         return cls.query.filter(cls.sms_campaign_send_id == campaign_send_id).all()

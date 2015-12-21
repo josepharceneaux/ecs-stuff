@@ -1,6 +1,5 @@
 """
-Author: Hafiz Muhammad Basit, QC-Technologies,
-        Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
+Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     This module contains pyTests for endpoint /v1/campaigns/:id/send of SMS Campaign API.
 """
@@ -79,7 +78,7 @@ class TestSendSmsCampaign(object):
     def test_post_with_valid_token_and_not_owned_campaign(self, auth_token,
                                                           sms_campaign_of_other_user):
         """
-        User auth token is valid but user is not owner of given sms campaign.
+        User auth token is valid but user is not owner of given SMS campaign.
         It should get Forbidden error.
         :return:
         """
@@ -93,7 +92,7 @@ class TestSendSmsCampaign(object):
     def test_post_with_valid_token_and_no_smartlist_associated(self, auth_token,
                                                                sms_campaign_of_current_user):
         """
-        User auth token is valid but given sms campaign has no associated smart list with it.
+        User auth token is valid but given SMS campaign has no associated smart list with it.
         It should get internal server error. Custom error should be
         NoSmartlistAssociatedWithCampaign.
         :return:

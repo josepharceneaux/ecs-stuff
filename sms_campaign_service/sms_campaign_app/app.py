@@ -1,13 +1,12 @@
 """
-    Author: Hafiz Muhammad Basit, QC-Technologies,
-        Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
+    Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     This module contains sms_campaign_app startup.
     We register blueprints for different APIs with this app.
 
     This app contains endpoints for
         1- URL redirection (to redirect candidate to our app when he clicks on URL present
-                            in sms body text)
+                            in SMS body text)
             /v1/campaigns/:id/url_redirection/:id?candidate_id=id
 
         2- SMS receive (to save the candidate's reply to a specific SMS campaign
@@ -33,8 +32,8 @@ from sms_campaign_service import logger
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 
 # Imports for Blueprints
-from restful_API.v1_sms_campaign_api import sms_campaign_blueprint
-from restful_API.v1_url_conversion_api import url_conversion_blueprint
+from api.v1_sms_campaign_api import sms_campaign_blueprint
+from api.v1_url_conversion_api import url_conversion_blueprint
 
 # Register Blueprints for different APIs
 app.register_blueprint(sms_campaign_blueprint)
@@ -57,21 +56,21 @@ def root():
 @app.route(SmsCampaignApiUrl.APP_REDIRECTION, methods=['GET'])
 def sms_campaign_url_redirection(campaign_id, url_conversion_id):
     """
-    When recruiter(user) adds some url in sms body text, we save the original URL as
-    destination URL in "url_conversion" database table. Then we create a new url (long_url) to
+    When recruiter(user) adds some URL in SMS body text, we save the original URL as
+    destination URL in "url_conversion" database table. Then we create a new URL (long_url) to
     redirect the candidate to our app. This long_url looks like
 
             http://127.0.0.1:8008/sms_campaign/2/url_redirection/67/?candidate_id=2
 
     For this we first convert this long_url in shorter URL (using Google's shorten URL API) and
-    send in sms body text to candidate. This is the endpoint which redirect the candidate. Short
+    send in SMS body text to candidate. This is the endpoint which redirect the candidate. Short
     URL looks like
 
             https://goo.gl/CazBJG
 
-    When candidate clicks on above url, it is redirected to this endpoint, where we keep track
+    When candidate clicks on above URL, it is redirected to this endpoint, where we keep track
     of number of clicks and hit_counts for a URL. We then create activity that 'this' candidate
-    has clicked on 'this' campaign. Finally we redirect the candidate to destination url (Original
+    has clicked on 'this' campaign. Finally we redirect the candidate to destination URL (Original
     URL provided by the recruiter)
 
     .. Status:: 200 (OK)
@@ -94,7 +93,6 @@ def sms_campaign_url_redirection(campaign_id, url_conversion_id):
                 and 'google' in request.headers.environ['HTTP_REFERER']):
         data = {'message': "Successfully verified by Google's shorten URL API"}
         logger.info(data['message'])
-        # Is there any need to jsonify? maybe we can send a simple dict
         return flask.jsonify(**data), 200
     try:
 
@@ -118,10 +116,10 @@ def sms_campaign_url_redirection(campaign_id, url_conversion_id):
 @app.route(SmsCampaignApiUrl.RECEIVE, methods=['POST'])
 def sms_receive():
     """
-    This end point is used to receive sms of candidates.
+    This end point is /v1/receive which is used to receive SMS of candidates.
 
     - Recruiters(users) are assigned to one unique twilio number.sms_callback_url of
-        that number is set to redirect request at this end point. Twilio API hits this url
+        that number is set to redirect request at this end point. Twilio API hits this URL
         with data like
                  {
                       "From": "+12015617985",
@@ -136,7 +134,7 @@ def sms_receive():
                       "ToZip": "97132",
                  }
 
-        So whenever candidate replies to user's sms (that was sent as sms campaign),
+        So whenever candidate replies to user's SMS (that was sent as SMS campaign),
         this endpoint is hit and we do the followings:
 
             1- Search the candidate in GT database using "From" key value
