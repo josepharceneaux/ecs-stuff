@@ -3,6 +3,7 @@ from candidate_pool_service.common.tests.conftest import *
 from candidate_pool_service.common.helper.api_calls import create_candidates_from_candidate_api
 from candidate_pool_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from candidate_pool_service.modules.smartlists import save_smartlist
+from candidate_pool_service.common.models.smartlist import Smartlist
 import json
 import random
 import time
@@ -193,6 +194,65 @@ class TestSmartlistResource(object):
             resp = self.call_get_api(access_token='', list_id=1)
             assert resp.status_code == 401
 
+    class TestSmartlistResourceDELETE(object):
+        def call_delete_api(self, access_token, list_id=None):
+            """Calls DELETE API of SmartlistResource"""
+            return requests.delete(
+                url=SMARTLIST_URL + '/%s' % list_id if list_id else SMARTLIST_URL,
+                headers={'Authorization': 'Bearer %s' % access_token}
+            )
+
+        def test_delete_smartlist(self, sample_user, user_auth):
+            auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+            list_name = fake.name()
+            data = FakeCandidatesData.create(count=1)
+            candidate_ids = create_candidates_from_candidate_api(auth_token_row['access_token'], data)
+            smartlist = save_smartlist(user_id=auth_token_row['user_id'], name=list_name,
+                                       candidate_ids=candidate_ids)
+            db.session.commit()
+            smartlist_obj = Smartlist.query.get(smartlist.id)
+            assert smartlist_obj.is_hidden is False
+            response = self.call_delete_api(auth_token_row['access_token'], smartlist.id)
+            assert response.status_code == 200
+            resp = response.json()
+            assert 'smartlist' in resp
+            assert resp['smartlist']['id'] == smartlist.id
+            db.session.commit()
+            smartlist_after_deletion = Smartlist.query.get(smartlist.id)
+            assert smartlist_after_deletion.is_hidden is True  # Verify smartlist is hidden
+            # Try calling GET method with deleted (hidden) list id and it should give 404 Not found
+            output = requests.get(
+                url=SMARTLIST_URL + '/s' % smartlist_after_deletion.id,
+                headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
+            )
+            assert output.status_code == 404  # Get method should give 404 for hidden smartlist
+
+        def test_delete_smartlist_from_other_domain(self, user_first, access_token_first, access_token_second):
+            list_name = fake.name()
+            data = FakeCandidatesData.create(count=1)
+            candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
+            # User 1 from domain 1 created smartlist
+            smartlist = save_smartlist(user_id=user_first.id, name=list_name, candidate_ids=candidate_ids)
+            # User 2 from domain 2 trying to delete smartlist
+            response = self.call_delete_api(access_token_second, smartlist.id)
+            assert response.status_code == 403
+
+        def test_delete_smartlist_without_int_id(self, access_token_first):
+            response = self.call_delete_api(access_token_first, 'abcd')
+            assert response.status_code == 404
+
+        def test_delete_deleted_smartlist(self, user_first, access_token_first):
+            list_name = fake.name()
+            search_params = json.dumps({"location": "San Jose, CA"})
+            smartlist = save_smartlist(user_id=user_first.id,
+                                       name=list_name,
+                                       search_params=search_params)
+            response = self.call_delete_api(access_token_first, smartlist.id)
+            assert response.status_code == 200
+            # Now try to delete this deleted smartlist
+            response2 = self.call_delete_api(access_token_first, smartlist.id)
+            assert response.status_code == 404
+
 
 class TestSmartlistCandidatesApi(object):
     def call_smartlist_candidates_get_api(self, smartlist_id, params, access_token):
@@ -291,3 +351,17 @@ class TestSmartlistCandidatesApi(object):
         output_candidate_ids = [long(candidate['id']) for candidate in response['candidates']]
         assert response['total_found'] == no_of_candidates
         assert sorted(candidate_ids) == sorted(output_candidate_ids)
+
+    def test_get_candidates_from_deleted_smartlist(self, user_first, access_token_first):
+        list_name = fake.name()
+        search_params = json.dumps({"location": "San Jose, CA"})
+        smartlist = save_smartlist(user_id=user_first.id,
+                                   name=list_name,
+                                   search_params=search_params)
+        # Delete (hide) this smartlist
+        response = requests.delete(url=SMARTLIST_URL + '/%s' % smartlist.id,
+                                   headers={'Authorization': 'Bearer %s' % access_token_first})
+        assert response.status_code == 200
+        # Now try getting candidates from this deleted(hidden) smartlist
+        response = self.call_smartlist_candidates_get_api(smartlist.id, {'fields': 'all'}, access_token_first)
+        assert response.status_code == 404

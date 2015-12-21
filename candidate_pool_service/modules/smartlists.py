@@ -53,20 +53,13 @@ def create_candidates_dict(candidate_ids):
     """Given candidate ids, function will return respective candidates in formatted dict"""
     candidates = Candidate.query.filter(Candidate.id.in_(candidate_ids)).all()
     candidate_emails = CandidateEmail.query.filter(CandidateEmail.candidate_id.in_(candidate_ids)).all()
-    candidate_phones = CandidatePhone.query.filter(CandidatePhone.candidate_id.in_(candidate_ids)).all()
-    candidate_socials = CandidateSocialNetwork.query.filter(CandidateSocialNetwork.candidate_id.in_(candidate_ids)).all()
     candidates_dict = {"candidates": [], "total_found": 0}
     for candidate in candidates:
         candidate_dict = {}
         candidate_id = candidate.id
         candidate_dict["id"] = candidate_id
-        candidate_dict["emails"] = [{email.email_label.description: email.address} for email in
+        candidate_dict["emails"] = [email.address for email in
                                     filter(lambda emails: emails.candidate_id == candidate_id, candidate_emails)]
-        candidate_dict["social_network"] = [{"url": sn.social_profile_url, "id": sn.social_network_id} for sn in
-                                            filter(lambda csn: csn.candidate_id == candidate_id, candidate_socials)]
-        candidate_dict["phone_numbers"] = [{phone.phone_label.description: phone.value} for phone in
-                                           filter(lambda phone_obj: phone_obj.candidate == candidate_id, candidate_phones)]
-        # TODO: Add more fields if required
         # Finally append all candidates in list and return it
         candidates_dict["candidates"].append(candidate_dict)
     candidates_dict["total_found"] = len(candidates)

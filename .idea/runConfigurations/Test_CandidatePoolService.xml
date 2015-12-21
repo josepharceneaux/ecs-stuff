@@ -19,7 +19,7 @@
     <option name="TEST_TYPE" value="TEST_SCRIPT" />
     <option name="PATTERN" value="" />
     <option name="USE_PATTERN" value="false" />
-    <option name="testToRun" value="$PROJECT_DIR$/candidate_pool_service/tests" />
+    <option name="testToRun" value="$PROJECT_DIR$/candidate_pool_service/tests/test_smartlist_api.py" />
     <option name="keywords" value="" />
     <option name="params" value="" />
     <option name="USE_PARAM" value="false" />

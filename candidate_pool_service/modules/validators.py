@@ -20,20 +20,6 @@ def validate_and_parse_request_data(data):
             'count_only': count_only}
 
 
-def validate_list_belongs_to_domain(smartlist, user_id):
-    """
-    Validates if given list belongs to user's domain
-    :param smartlist: smart list database row
-    :param user_id:
-    :return:False, if list does not belongs to current user's domain else True
-    """
-    if smartlist.user_id == user_id:
-        # if user id is same then smart list belongs to user
-        return True
-    # check whether smartlist belongs to user's domain
-    return Smartlist.query.with_entities(Smartlist.id).join(Smartlist.user).filter(and_(User.domain_id == user_id, Smartlist.id == smartlist.id)).count() == 1
-
-
 def validate_and_format_smartlist_post_data(data, user_id):
     """Validates request.form data against required parameters
     strips unwanted whitespaces (if present)
