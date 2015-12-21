@@ -222,7 +222,7 @@ class TestSmartlistResource(object):
             assert smartlist_after_deletion.is_hidden is True  # Verify smartlist is hidden
             # Try calling GET method with deleted (hidden) list id and it should give 404 Not found
             output = requests.get(
-                url=SMARTLIST_URL + '/s' % smartlist_after_deletion.id,
+                url=SMARTLIST_URL + '/%s' % smartlist_after_deletion.id,
                 headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
             )
             assert output.status_code == 404  # Get method should give 404 for hidden smartlist
@@ -251,7 +251,7 @@ class TestSmartlistResource(object):
             assert response.status_code == 200
             # Now try to delete this deleted smartlist
             response2 = self.call_delete_api(access_token_first, smartlist.id)
-            assert response.status_code == 404
+            assert response2.status_code == 404
 
 
 class TestSmartlistCandidatesApi(object):
@@ -303,8 +303,6 @@ class TestSmartlistCandidatesApi(object):
         response = json.loads(resp.content)
         assert response['total_found'] == num_of_candidates
         assert 'emails' in response['candidates'][0]
-        assert 'phone_numbers' in response['candidates'][0]
-        # TODO: assert candidate emails and phone_numbers also
 
     def test_without_list_id(self, sample_user, user_auth):
         auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
