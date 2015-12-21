@@ -67,3 +67,4 @@ class CandidateApiUrl:
 
     SEARCH = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/search"
 
+    CANDIDATE_EDIT = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/edits"

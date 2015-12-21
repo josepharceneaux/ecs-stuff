@@ -508,7 +508,7 @@ def test_create_candidate_without_phone_label(sample_user, user_auth):
 
     # Create Candidate without phone-label
     data = {'candidate': {'emails': [{'address': fake.email()}], 'phones': [
-        {'value': fake.phone_number()}, {'value': fake.phone_number()}
+        {'value': '6504084069'}, {'value': '6509554065'}
     ]}}
     create_resp = post_to_candidate_resource(token, data)
     print response_info(create_resp)

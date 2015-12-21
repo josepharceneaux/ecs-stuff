@@ -98,7 +98,7 @@ module.exports = function (config) {
         var files = [].concat(config.js, config.html, config.sass, config.iconfont);
         if (isDev) {
             watch(files, {
-                readDelay: 3000
+                readDelay: 1000
             }, function () {
                 runSequence('inject', browserSync.reload);
             });

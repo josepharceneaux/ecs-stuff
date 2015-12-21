@@ -1,5 +1,177 @@
 <section id="event-campaigns-view" class="view__main">
 
-    <h1>Event Campaigns</h1>
+    <div class="row--widget">
+        <form class="col--full-12 box" action="#" name="createEventForm">
+
+            <header class="box__header">
+                <h2>Create Event</h2>
+            </header>
+
+            <div class="row--expanded">
+                <!-- left half of form -->
+                <div class="col--medium-6 form__fieldset--column">
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.eventTitle.$invalid && (createEventForm.eventTitle.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="eventTitle">Event Title</label>
+                            <input gt-float-label class="form__input" ng-model="vm.event.eventTitle" id="eventTitle" name="eventTitle" type="text" placeholder="Event Title" required>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-8 form__col" ng-class="{'form__col--error': createEventForm.eventType.$invalid && (createEventForm.eventType.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="eventType">Event Type</label>
+                            <select gt-float-label class="form__input--select"
+                                ng-model="vm.event.type" ng-options="option.name for option in vm.eventTypes track by option.id" id="eventType" name="eventType" required>
+                                <option value="" ng-show="!vm.event.type">Event Type</option>
+                            </select>
+                        </div>
+
+                        <div class="col--medium-4 form__col" ng-class="{'form__col--error': createEventForm.eventActive.$invalid && (createEventForm.eventActive.$touched || createEventForm.$submitted)}">
+                            <h4 class="form__label--shown">Active Event?</h4>
+                            <label class="form__input--toggle">
+                                <input gt-float-label type="checkbox" ng-model="vm.event.active" name="eventActive">
+                                <span></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.eventDetails.$invalid && (createEventForm.eventDetails.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="eventDetails">Event Details</label>
+                            <textarea gt-float-label class="form__input--textarea" ng-model="vm.event.details" name="eventDetails" placeholder="Event Details"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventOrganizer.$invalid && (createEventForm.eventOrganizer.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="eventOrganizer">Event Organizer</label>
+                            <input gt-float-label class="form__input" ng-model="vm.event.organizer.name" id="eventOrganizer" name="eventOrganizer" type="text" placeholder="Event Organizer">
+                        </div>
+
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventOrganizerContentEmail.$invalid && (createEventForm.eventOrganizerContentEmail.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="eventOrganizerContentEmail">Event Organizer Content Email</label>
+                            <input gt-float-label class="form__input" ng-model="vm.event.organizer.email" id="eventOrganizerContentEmail" name="eventOrganizerContentEmail" type="text" placeholder="Event Organizer Content Email">
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.aboutEventOrganizer.$invalid && (createEventForm.aboutEventOrganizer.$touched || createEventForm.$submitted)}">
+                            <label class="form__label--shown" for="aboutEventOrganizer">About Event Organizer <small class="form__instruction">Enter info here about who is organizing the event</small></label>
+                            <textarea gt-float-label class="form__input--textarea" ng-model="vm.event.organizer.about" name="aboutEventOrganizer"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.eventRegistrationInstructions.$invalid && (createEventForm.eventRegistrationInstructions.$touched || createEventForm.$submitted)}">
+                            <label class="form__label--shown" for="eventRegistrationInstructions">Event Registration Instructions</label>
+                            <textarea gt-float-label class="form__input--shortTextarea" ng-model="vm.event.registrationInstructions" name="eventRegistrationInstructions"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <!-- /left half of form -->
+
+                <!-- right half of form -->
+                <div class="col--medium-6 form__fieldset--column">
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventStartDate.$invalid && (createEventForm.eventStartDate.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="eventStartDate">Event Start Date</label>
+                            <input gt-float-label pick-a-date="vm.event.startDate" ng-model="vm.event.startDateText" class="form__input picker__input" id="eventStartDate" name="eventStartDate" type="text" placeholder="Event Start Date" required>
+                        </div>
+
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventEndDate.$invalid && (createEventForm.eventEndDate.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="eventEndDate">Event End Date</label>
+                            <input gt-float-label pick-a-date="vm.event.endDate" ng-model="vm.event.endDateText" class="form__input picker__input" id="eventEndDate" name="eventEndDate" type="text" placeholder="Event End Date" required>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventStartTime.$invalid && (createEventForm.eventStartTime.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="eventStartTime">Event Start Time</label>
+                            <input gt-float-label pick-a-time="vm.event.startDate" ng-model="vm.event.startTimeText" class="form__input picker__input" id="eventStartTime" name="eventStartTime" type="text" placeholder="Event Start Time" required>
+                        </div>
+
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventEndTime.$invalid && (createEventForm.eventEndTime.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="eventEndTime">Event End Time</label>
+                            <input gt-float-label pick-a-time="vm.event.endDate" ng-model="vm.event.endTimeText" class="form__input picker__input" id="eventEndTime" name="eventEndTime" type="text" placeholder="Event End Time" required>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.locationName.$invalid && (createEventForm.locationName.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="locationName">Location Name</label>
+                            <input gt-float-label class="form__input" ng-model="vm.event.location.name" id="locationName" name="locationName" type="text" placeholder="Location Name" required>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.streetAddress.$invalid && (createEventForm.streetAddress.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="streetAddress">Street Address</label>
+                            <input gt-float-label class="form__input" ng-model="vm.event.location.address" id="streetAddress" name="streetAddress" type="text" placeholder="Street Address" required>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.city.$invalid && (createEventForm.city.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="city">City</label>
+                            <input gt-float-label class="form__input" ng-model="vm.event.location.city" id="city" name="city" type="text" placeholder="City" required>
+                        </div>
+
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.state.$invalid && (createEventForm.state.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="state">State</label>
+                            <input gt-float-label class="form__input" ng-model="vm.event.location.state" id="state" name="state" type="text" placeholder="State" required>
+                        </div>
+
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.zip.$invalid && (createEventForm.zip.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="zip">Zip</label>
+                            <input gt-float-label class="form__input" ng-model="vm.event.location.zip" id="zip" name="zip" type="text" placeholder="Zip" required>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventCost.$invalid && (createEventForm.eventCost.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="eventCost">Event Cost</label>
+                            <input gt-float-label class="form__input" ng-model="vm.event.cost" id="eventCost" name="eventCost" type="text" placeholder="Event Cost">
+                        </div>
+
+                        <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.maxAttendees.$invalid && (createEventForm.maxAttendees.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="maxAttendees">Max Attendees</label>
+                            <input gt-float-label class="form__input" ng-model="vm.event.capacity" id="maxAttendees" name="maxAttendees" type="number" placeholder="Max Attendees" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.smartListToInvite.$invalid && (createEventForm.smartListToInvite.$touched || createEventForm.$submitted)}">
+                            <label class="form__label" for="SelectSmartListsToInvites">Select Smart Lists to Invite</label>
+                            <select ng-model="vm.event.smartListsToInvite" ng-options="option.name for option in vm.smartLists track by option.id"
+                                gt-float-label required id="smartListToInvite" class="form__input--select" name="smartListToInvite">
+                                <option value="" ng-show="!vm.event.smartListsToInvite">Select Smart Lists to Invite</option>
+                            </select>
+                            <small class="form__input-info">Candidate Leads <span class="pill">457</span></small>
+                        </div>
+                    </div>
+
+                    <div class="form__fieldset row--expanded">
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': createEventForm.headerImage.$invalid && (createEventForm.headerImage.$touched || createEventForm.$submitted)}">
+                            <h4 class="form__label--shown">Event Header Image</h4>
+
+                            <label class="js-inputFile form__input--file">
+                                <input type="file" gt-file-model="vm.event.headerImage" id="headerImage" name="headerImage" aria-label="File browser">
+                                <span data-placeholder="Choose file..."></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <!-- /right half of form -->
+            </div>
+
+            <div class="form__fieldset--footer row--expanded">
+                <div class="col--medium-12">
+                    <a class="button--blue" href="#">Save Event</a>
+                    <a class="button--blueOutline" href="#">View Event</a>
+                </div>
+            </div>
+
+        </form>
+    </div>
 
 </section>

@@ -9,10 +9,10 @@ import json
 from candidate_sample_data import generate_single_candidate_data
 
 # Candidate REST urls
-from candidate_service.common.utils.app_rest_urls import CandidateApiUrl
+from candidate_service.common.routes import CandidateApiUrl
 
 
-def define_and_send_request(request, url, access_token):
+def define_and_send_request(access_token, request, url, data=None):
     """
     Function will define request based on params and make the appropriate call.
     :param  request:  can only be get, post, put, patch, or delete
@@ -20,7 +20,11 @@ def define_and_send_request(request, url, access_token):
     request = request.lower()
     assert request in ['get', 'post', 'put', 'patch', 'delete']
     method = getattr(requests, request)
-    return method(url=url, headers={'Authorization': 'Bearer %s' % access_token})
+    if not data:
+        return method(url=url, headers={'Authorization': 'Bearer %s' % access_token})
+    else:
+        return method(url=url, headers={'Authorization': 'Bearer %s' % access_token},
+                      data=json.dumps(data))
 
 
 def response_info(response):
@@ -29,7 +33,11 @@ def response_info(response):
         1. Request, 2. Response dict, and 3. Response status
     """
     request = response.request
-    _json = None if response.reason == 'NOT FOUND' or not any(response.text) else response.json()
+    try:
+        _json = response.json()
+    except Exception:
+        _json = None
+
     status_code = response.status_code
     return "\nRequest: %s \nResponse JSON: %s \nResponse status: %s" % (request, _json, status_code)
 
@@ -37,6 +45,7 @@ def response_info(response):
 def post_to_candidate_resource(access_token, data=None, domain_id=None):
     """
     Function sends a request to CandidateResource/post()
+    If domain_id is provided, data will include candidate aoi & custom fields
     """
     if not data and domain_id:
         data = generate_single_candidate_data(domain_id=domain_id)
@@ -67,6 +76,14 @@ def get_from_candidate_resource(access_token, candidate_id='', candidate_email='
     return resp
 
 
+def request_to_candidates_resource(access_token, request, data=None):
+    """
+    Function sends a get request to CandidatesResource NOT CandidateResource
+    """
+    url = CandidateApiUrl.CANDIDATES
+    return define_and_send_request(access_token, request, url, data)
+
+
 def patch_to_candidate_resource(access_token, data):
     """
     Function sends a request to CandidateResource/patch()
@@ -90,7 +107,7 @@ def request_to_candidate_resource(access_token, request, candidate_id='', candid
     elif candidate_email:
         url = CandidateApiUrl.CANDIDATE % candidate_email
 
-    return define_and_send_request(request, url, access_token)
+    return define_and_send_request(access_token, request, url)
 
 
 def request_to_candidate_address_resource(access_token, request, candidate_id='',
@@ -119,7 +136,7 @@ def request_to_candidate_aoi_resource(access_token, request, candidate_id='', al
     else:
         url = CandidateApiUrl.AOI % (candidate_id, aoi_id)
 
-    return define_and_send_request(request, url, access_token)
+    return define_and_send_request(access_token, request, url)
 
 
 def request_to_candidate_custom_field_resource(access_token, request, candidate_id='',
@@ -134,7 +151,7 @@ def request_to_candidate_custom_field_resource(access_token, request, candidate_
     else:
         url = CandidateApiUrl.CUSTOM_FIELD % (candidate_id, custom_field_id)
 
-    return define_and_send_request(request, url, access_token)
+    return define_and_send_request(access_token, request, url)
 
 
 def request_to_candidate_education_resource(access_token, request, candidate_id='',
@@ -149,7 +166,7 @@ def request_to_candidate_education_resource(access_token, request, candidate_id=
     else:
         url = CandidateApiUrl.EDUCATION % (candidate_id, education_id)
 
-    return define_and_send_request(request, url, access_token)
+    return define_and_send_request(access_token, request, url)
 
 
 def request_to_candidate_education_degree_resource(access_token, request, candidate_id='',
@@ -165,7 +182,7 @@ def request_to_candidate_education_degree_resource(access_token, request, candid
     else:
         url = CandidateApiUrl.DEGREE % (candidate_id, education_id, degree_id)
 
-    return define_and_send_request(request, url, access_token)
+    return define_and_send_request(access_token, request, url)
 
 
 def request_to_candidate_education_degree_bullet_resource(access_token, request,
@@ -184,7 +201,7 @@ def request_to_candidate_education_degree_bullet_resource(access_token, request,
     else:
         url = CandidateApiUrl.DEGREE_BULLET % (candidate_id, education_id, degree_id, bullet_id)
 
-    return define_and_send_request(request, url, access_token)
+    return define_and_send_request(access_token, request, url)
 
 
 def request_to_candidate_experience_resource(access_token, request, candidate_id='',
@@ -199,7 +216,7 @@ def request_to_candidate_experience_resource(access_token, request, candidate_id
     else:
         url = CandidateApiUrl.EXPERIENCE % (candidate_id, experience_id)
 
-    return define_and_send_request(request, url, access_token)
+    return define_and_send_request(access_token, request, url)
 
 
 def request_to_candidate_experience_bullet_resource(access_token, request, candidate_id='',
@@ -214,7 +231,7 @@ def request_to_candidate_experience_bullet_resource(access_token, request, candi
     else:
         url = CandidateApiUrl.EXPERIENCE_BULLET % (candidate_id, experience_id, bullet_id)
 
-    return define_and_send_request(request, url, access_token)
+    return define_and_send_request(access_token, request, url)
 
 
 def request_to_candidate_email_resource(access_token, request, candidate_id='', all_emails=False, email_id=''):
@@ -228,7 +245,7 @@ def request_to_candidate_email_resource(access_token, request, candidate_id='', 
     else:
         url = CandidateApiUrl.EMAIL % (candidate_id, email_id)
 
-    return define_and_send_request(request, url, access_token)
+    return define_and_send_request(access_token, request, url)
 
 
 def request_to_candidate_military_service(access_token, request, candidate_id='',
@@ -243,7 +260,7 @@ def request_to_candidate_military_service(access_token, request, candidate_id=''
     else:
         url = CandidateApiUrl.MILITARY_SERVICE % (candidate_id, military_service_id)
 
-    return define_and_send_request(request, url, access_token)
+    return define_and_send_request(access_token, request, url)
 
 
 def request_to_candidate_phone_resource(access_token, request, candidate_id='', all_phones=False, phone_id=''):
@@ -257,7 +274,7 @@ def request_to_candidate_phone_resource(access_token, request, candidate_id='', 
     else:
         url = CandidateApiUrl.PHONE % (candidate_id, phone_id)
 
-    return define_and_send_request(request, url, access_token)
+    return define_and_send_request(access_token, request, url)
 
 
 def request_to_candidate_preferred_location_resource(access_token, request, candidate_id='',
@@ -272,7 +289,7 @@ def request_to_candidate_preferred_location_resource(access_token, request, cand
     else:
         url = CandidateApiUrl.PREFERRED_LOCATION % (candidate_id, preferred_location_id)
 
-    return define_and_send_request(request, url, access_token)
+    return define_and_send_request(access_token, request, url)
 
 
 def request_to_candidate_skill_resource(access_token, request, candidate_id='', all_skills=False, skill_id=''):
@@ -286,7 +303,7 @@ def request_to_candidate_skill_resource(access_token, request, candidate_id='', 
     else:
         url = CandidateApiUrl.SKILL % (candidate_id, skill_id)
 
-    return define_and_send_request(request, url, access_token)
+    return define_and_send_request(access_token, request, url)
 
 
 def request_to_candidate_social_network_resource(access_token, request, candidate_id='', all_sn=False, sn_id=''):
@@ -300,7 +317,7 @@ def request_to_candidate_social_network_resource(access_token, request, candidat
     else:
         url = CandidateApiUrl.SOCIAL_NETWORK % (candidate_id, sn_id)
 
-    return define_and_send_request(request, url, access_token)
+    return define_and_send_request(access_token, request, url)
 
 
 def request_to_candidate_work_preference_resource(access_token, request, candidate_id='', work_preference_id=''):
@@ -309,7 +326,16 @@ def request_to_candidate_work_preference_resource(access_token, request, candida
     :param request: delete
     """
     url = CandidateApiUrl.WORK_PREFERENCE % (candidate_id, work_preference_id)
-    return define_and_send_request(request, url, access_token)
+    return define_and_send_request(access_token, request, url)
+
+
+def request_to_candidate_edit_resource(access_token, request, candidate_id=''):
+    """
+    :param access_token:
+    :param request: get
+    """
+    url = CandidateApiUrl.CANDIDATE_EDIT % candidate_id
+    return define_and_send_request(access_token, request, url)
 
 
 def create_same_candidate(access_token):
