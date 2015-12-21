@@ -5,6 +5,8 @@ import json
 
 import requests
 
+from push_notification_service.constants import GET_TALENT_ICON_URL
+
 CREATE_NOTIFICATION_URL = 'https://onesignal.com/api/v1/notifications'
 GET_NOTIFICATIONS_URL = 'https://onesignal.com/api/v1/notifications?app_id=%s&limit=%s&offset=%s'
 GET_NOTIFICATION_URL = 'https://onesignal.com/api/v1/notifications/%s?app_id=%s'
@@ -34,23 +36,30 @@ class OneSignalSdk(object):
     def get_player(self):
         pass
 
-    def create_notification(self, url, message, title, player_ids=None, **kwargs):
+    def create_notification(self, url, message, title, players=None, **kwargs):
         headers = {
             "Content-Type": "application/json",
             "Authorization": "Basic %s" % self.rest_key
         }
 
         segments = kwargs.get('segments')
+        segments = segments if isinstance(segments, list) and len(segments) else ['All']
         tags = kwargs.get('tags')
+        tags = tags if isinstance(tags, list) and len(tags) else None
         data = {
             "app_id": self.app_id,
             "contents": {"en": message},
             "headings": {"en": title},
             "url": url,
-            "chrome_web_icon": "http://cdn.designcrowd.com.s3.amazonaws.com/blog/Oct2012/52-Startup-Logos-2012/SLR_0040_gettalent.jpg"
+            "chrome_web_icon": GET_TALENT_ICON_URL
         }
-        if player_ids and isinstance(player_ids, list):
-            data['include_player_ids'] = player_ids
+        if players and isinstance(players, list):
+            data['include_player_ids'] = players
+        if tags:
+            data['tags'] = tags
+
+        if not data['include_player_ids'] and not data['tags']:
+            data['included_segments'] = segments
         data = json.dumps(data)
         return send_request(CREATE_NOTIFICATION_URL, method='POST', data=data, headers=headers)
 

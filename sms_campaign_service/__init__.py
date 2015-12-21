@@ -23,7 +23,7 @@ from sms_campaign_service.common.common_config import GT_ENVIRONMENT
 from sms_campaign_service.common.error_handling import register_error_handlers
 from sms_campaign_service.common.utils.models_utils import add_model_helpers, init_app
 
-flask_app = Flask(__name__)
+flask_app = Flask(__name__, static_url_path='')
 flask_app.config.from_object(common_config)
 
 logger = flask_app.config['LOGGER']
