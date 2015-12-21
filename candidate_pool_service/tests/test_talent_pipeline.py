@@ -76,7 +76,7 @@ def test_talent_pipeline_api_post(access_token_first, user_first, talent_pool, t
     # Logged-in user trying to add a new talent-pipeline with talent_pool of different domain
     data['talent_pipelines'][0]['talent_pool_id'] = talent_pool_second.id
     response, status_code = talent_pipeline_api(access_token_first, data=data, action='POST')
-    assert status_code == 401
+    assert status_code == 403
 
     # Logged-in user trying to add a new talent-pipeline with invalid search params
     data['talent_pipelines'][0]['talent_pool_id'] = talent_pool.id
@@ -138,7 +138,7 @@ def test_talent_pipeline_api_put(access_token_first, access_token_second, user_s
     # Logged-in user trying to edit an existing talent-pipeline of different domain
     response, status_code = talent_pipeline_api(access_token_second, talent_pipeline_id=talent_pipeline_id, data=data,
                                                 action='PUT')
-    assert status_code == 401
+    assert status_code == 403
 
     # Logged-in user trying to edit an existing talent-pipeline of same domain
     response, status_code = talent_pipeline_api(access_token_first, talent_pipeline_id=talent_pipeline_id, data=data,
@@ -198,7 +198,7 @@ def test_talent_pipeline_api_put(access_token_first, access_token_second, user_s
     data['talent_pipeline']['talent_pool_id'] = talent_pool_second.id
     response, status_code = talent_pipeline_api(access_token_first, talent_pipeline_id=talent_pipeline_id, data=data,
                                                 action='PUT')
-    assert status_code == 401
+    assert status_code == 403
 
     # Logged-in user trying to edit talent-pipeline with invalid search params
     del data['talent_pipeline']['talent_pool_id']
@@ -254,7 +254,7 @@ def test_talent_pipeline_api_get(access_token_first, access_token_second, user_s
 
     # Logged-in user trying to get information of a talent_pipeline of different domain
     response, status_code = talent_pipeline_api(access_token_second, talent_pipeline_id=talent_pipeline_id)
-    assert status_code == 401
+    assert status_code == 403
 
     # Logged-in user trying to get information of a talent_pipeline
     response, status_code = talent_pipeline_api(access_token_first, talent_pipeline_id=talent_pipeline_id)
@@ -298,7 +298,7 @@ def test_talent_pipeline_api_delete(access_token_first, access_token_second, use
 
     # Logged-in user trying to delete a talent_pipeline of different domain
     response, status_code = talent_pipeline_api(access_token_second, talent_pipeline_id=talent_pipeline_id, action='DELETE')
-    assert status_code == 401
+    assert status_code == 403
 
     # Logged-in user trying to delete a talent_pipeline
     response, status_code = talent_pipeline_api(access_token_first, talent_pipeline_id=talent_pipeline_id, action='DELETE')
@@ -345,7 +345,7 @@ def test_talent_pipeline_smart_list_api_post(access_token_first, access_token_se
     # Logged-in user trying to add smart_lists to a talent_pipeline of different domain
     response, status_code = talent_pipeline_smart_list_api(access_token_second, talent_pipeline_id, data=data,
                                                            action='POST')
-    assert status_code == 401
+    assert status_code == 403
 
     # Logged-in user trying to add smart_lists with non-integer id to talent_pipeline
     response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data, action='POST')
@@ -354,7 +354,7 @@ def test_talent_pipeline_smart_list_api_post(access_token_first, access_token_se
     # Logged-in user trying to add smart_lists of different domain to talent_pipeline
     data['smart_list_ids'][0] = test_smart_second.id
     response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data, action='POST')
-    assert status_code == 401
+    assert status_code == 403
 
     # Logged-in user trying to add smart_lists to talent_pipeline
     data['smart_list_ids'].pop(0)
@@ -408,7 +408,7 @@ def test_talent_pipeline_smart_list_api_delete(access_token_first, access_token_
     # Logged-in user trying to remove smart_lists from a talent_pipeline of different domain
     response, status_code = talent_pipeline_smart_list_api(access_token_second, talent_pipeline_id, data=data,
                                                            action='DELETE')
-    assert status_code == 401
+    assert status_code == 403
 
     # Logged-in user trying to remove smart_lists with non-integer id from a talent_pipeline
     response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data, action='DELETE')
@@ -417,7 +417,7 @@ def test_talent_pipeline_smart_list_api_delete(access_token_first, access_token_
     # Logged-in user trying to remove smart_lists from a talent_pipeline
     data['smart_list_ids'][0] = test_smart_second.id
     response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data, action='DELETE')
-    assert status_code == 401
+    assert status_code == 403
 
     # Logged-in user trying to remove smart_lists from a talent_pipeline
     data['smart_list_ids'].pop(0)
@@ -455,7 +455,7 @@ def test_talent_pipeline_smart_list_api_get(access_token_first, access_token_sec
 
     # Logged-in user trying to get all smart_lists of a talent_pipeline of different domain
     response, status_code = talent_pipeline_smart_list_api(access_token_second, talent_pipeline_id)
-    assert status_code == 401
+    assert status_code == 403
 
     # Logged-in user trying to get all smart_lists of a talent_pipeline
     response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id)

@@ -67,7 +67,7 @@ def test_talent_pool_api_put(access_token_first, user_first, talent_pool, talent
     # Logged-in user trying to update a talent-pool of different domain
     response, status_code = talent_pool_api(access_token_first, talent_pool_id=talent_pool_second.id, data=data,
                                             action='PUT')
-    assert status_code == 401
+    assert status_code == 403
 
     # Logged-in user trying to update a talent-pool but with empty name and description
     response, status_code = talent_pool_api(access_token_first, talent_pool_id=talent_pool.id, data=data, action='PUT')
@@ -100,7 +100,7 @@ def test_talent_pool_api_delete(access_token_first, user_first, talent_pool, tal
 
     # Delete a talent-pool using logged-in user of different domain
     response, status_code = talent_pool_api(access_token_first, talent_pool_id=talent_pool_second.id, action='DELETE')
-    assert status_code == 401
+    assert status_code == 403
 
     # Delete a talent-pool using admin user
     talent_pool_id = talent_pool.id
@@ -121,7 +121,7 @@ def test_talent_pool_api_get(access_token_first, access_token_second, user_first
 
     # Logged-in user trying to get talent-pool's info of different domain
     response, status_code = talent_pool_api(access_token_first, talent_pool_id=talent_pool_second.id)
-    assert status_code == 401
+    assert status_code == 403
 
     # Logged-in user of same group trying to get talent-pool's info
     response, status_code = talent_pool_api(access_token_first, talent_pool_id=talent_pool.id)
@@ -133,7 +133,7 @@ def test_talent_pool_api_get(access_token_first, access_token_second, user_first
 
     # Logged-in user trying to get talent-pool's info
     response, status_code = talent_pool_api(access_token_second, talent_pool_id=talent_pool.id)
-    assert status_code == 401
+    assert status_code == 403
 
     # Adding 'CAN_GET_TALENT_POOLS' to user_second
     add_role_to_test_user(user_second, ['CAN_GET_TALENT_POOLS'])
@@ -145,7 +145,7 @@ def test_talent_pool_api_get(access_token_first, access_token_second, user_first
 
     # Logged-in user trying to get all talent-pools of a domain
     response, status_code = talent_pool_api(access_token_first)
-    assert status_code == 401
+    assert status_code == 403
 
     # Adding 'CAN_GET_TALENT_POOLS' to user_first
     add_role_to_test_user(user_first, ['CAN_GET_TALENT_POOLS'])
@@ -166,7 +166,7 @@ def test_talent_pool_group_api_get(access_token_first, access_token_second, user
 
     # Logged-in user trying to get talent pools of group of different domain
     response, status_code = talent_pool_group_api(access_token_first, user_group_id=second_group.id)
-    assert status_code == 401
+    assert status_code == 403
 
     # Logged-in user trying to get talent pools of group
     response, status_code = talent_pool_group_api(access_token_first, user_group_id=first_group.id)
@@ -179,7 +179,7 @@ def test_talent_pool_group_api_get(access_token_first, access_token_second, user
 
     # Logged-in user of same domain but different group trying to get talent pools of another group
     response, status_code = talent_pool_group_api(access_token_second, user_group_id=second_group.id)
-    assert status_code == 401
+    assert status_code == 403
 
     # Adding 'CAN_GET_TALENT_POOLS_OF_GROUP' role in user_second
     add_role_to_test_user(user_second, ['CAN_GET_TALENT_POOLS_OF_GROUP'])
@@ -217,7 +217,7 @@ def test_talent_pool_group_api_post(access_token_first, user_first, talent_pool,
     # Logged-in user trying to add talent-pools in a group of a different domain
     response, status_code = talent_pool_group_api(access_token_first, user_group_id=second_group.id, data=data,
                                                   action='POST')
-    assert status_code == 401
+    assert status_code == 403
 
     # Logged-in user trying to add talent-pools in a group
     response, status_code = talent_pool_group_api(access_token_first, user_group_id=first_group.id, data=data,
@@ -270,7 +270,7 @@ def test_talent_pool_group_api_delete(access_token_first, user_first, talent_poo
     # Logged-in user trying to remove talent-pools from a group of different domain
     response, status_code = talent_pool_group_api(access_token_first, user_group_id=second_group.id, data=data,
                                                   action='DELETE')
-    assert status_code == 401
+    assert status_code == 403
 
     # Logged-in user trying to remove non-existing talent-pools from a group
     response, status_code = talent_pool_group_api(access_token_first, user_group_id=first_group.id, data=data,
@@ -307,7 +307,7 @@ def test_talent_pool_candidate_api_post(access_token_first, user_first, talent_p
     # Logged-in user trying to add candidates to a talent-pool of different domain
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool_second.id, data=data,
                                                       action='POST')
-    assert status_code == 401
+    assert status_code == 403
 
     # Logged-in user trying to add candidates to a talent-pool with non-integer candidate ids
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='POST')
@@ -330,7 +330,7 @@ def test_talent_pool_candidate_api_post(access_token_first, user_first, talent_p
 
     # Logged-in user trying to add existing candidates to a talent-pool
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='POST')
-    assert status_code == 401
+    assert status_code == 403
 
     add_role_to_test_user(user_first, ['CAN_ADD_CANDIDATES_TO_TALENT_POOL'])
 
@@ -356,7 +356,7 @@ def test_talent_pool_candidate_api_get(access_token_first, user_first, talent_po
 
     # Logged-in user trying to get candidates from talent_pool of different domain
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool_second.id)
-    assert status_code == 401
+    assert status_code == 403
 
     # Logged-in user trying to get candidates from talent_pool
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id)
@@ -368,7 +368,7 @@ def test_talent_pool_candidate_api_get(access_token_first, user_first, talent_po
 
     # Logged-in user trying to add existing candidates to a talent-pool
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id)
-    assert status_code == 401
+    assert status_code == 403
 
     add_role_to_test_user(user_first, ['CAN_GET_CANDIDATES_FROM_TALENT_POOL'])
 
@@ -399,7 +399,7 @@ def test_talent_pool_candidate_api_delete(access_token_first, user_first, talent
 
     # Logged-in user trying to delete candidates from talent_pool of different domain
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool_second.id, data=data, action='DELETE')
-    assert status_code == 401
+    assert status_code == 403
 
     # Logged-in user trying to delete candidates with non-integer id from talent_pool
     data['talent_pool_candidates'][0] = 'a'
@@ -423,7 +423,7 @@ def test_talent_pool_candidate_api_delete(access_token_first, user_first, talent
 
     # Logged-in user trying to delete existing candidates from a talent-pool
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='DELETE')
-    assert status_code == 401
+    assert status_code == 403
 
     add_role_to_test_user(user_first, ['CAN_DELETE_CANDIDATES_FROM_TALENT_POOL'])
 

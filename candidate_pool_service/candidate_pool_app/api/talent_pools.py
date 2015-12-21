@@ -37,14 +37,14 @@ class TalentPoolApi(Resource):
                 raise NotFoundError(error_message="Talent pool with id %s doesn't exist in database" % talent_pool_id)
 
             if talent_pool.domain_id != request.user.domain_id:
-                raise UnauthorizedError(error_message="User %s is not authorized to get talent-pool's info" %
-                                                      request.user.id)
+                raise ForbiddenError(error_message="User %s is not authorized to get talent-pool's info" %
+                                                   request.user.id)
 
             if not TalentPoolGroup.query.filter_by(user_group_id=request.user.user_group_id,
                                                    talent_pool_id=talent_pool_id).all() and 'CAN_GET_TALENT_POOLS' \
                     not in request.valid_domain_roles:
-                raise UnauthorizedError(error_message="User %s doesn't have appropriate permissions to get "
-                                                      "talent-pools's info" % request.user.id)
+                raise ForbiddenError(error_message="User %s doesn't have appropriate permissions to get "
+                                                   "talent-pools's info" % request.user.id)
             return {
                 'talent_pool': {
                     'id': talent_pool.id,
@@ -69,7 +69,7 @@ class TalentPoolApi(Resource):
                 ]
             }
         else:
-            raise UnauthorizedError("User %s is not authorized to get talent-pool's info" % request.user.id)
+            raise ForbiddenError("User %s is not authorized to get talent-pool's info" % request.user.id)
 
     @require_all_roles('CAN_EDIT_TALENT_POOLS')
     def put(self, **kwargs):
@@ -94,7 +94,7 @@ class TalentPoolApi(Resource):
             raise InvalidUsage(error_message="Request body is empty or not provided")
 
         if request.user.domain_id != talent_pool.domain_id:
-            raise UnauthorizedError(error_message="User %s is not authorized to edit talent-pool's info" % request.user.id)
+            raise ForbiddenError(error_message="User %s is not authorized to edit talent-pool's info" % request.user.id)
 
         name = posted_data.get('name')
         description = posted_data.get('description')
@@ -133,7 +133,7 @@ class TalentPoolApi(Resource):
             raise NotFoundError(error_message="Talent pool with id %s doesn't exist in database" % talent_pool_id)
 
         if request.user.domain_id != talent_pool.domain_id:
-            raise UnauthorizedError(error_message="User %s is not authorized to delete a talent-pool" % request.user.id)
+            raise ForbiddenError(error_message="User %s is not authorized to delete a talent-pool" % request.user.id)
 
         talent_pool.delete()
 
@@ -208,11 +208,11 @@ class TalentPoolGroupApi(Resource):
             raise NotFoundError(error_message="User group with id %s doesn't exist" % user_group_id)
 
         if user_group.domain_id != request.user.domain_id:
-            raise UnauthorizedError(error_message="Logged-in user belongs to different domain as given user group")
+            raise ForbiddenError(error_message="Logged-in user belongs to different domain as given user group")
 
         if user_group.id != request.user.user_group_id and 'CAN_GET_TALENT_POOLS_OF_GROUP' not in request.valid_domain_roles:
-            raise UnauthorizedError(error_message="Either logged-in user belongs to different group as input user group"
-                                                  "or it doesn't have appropriate roles")
+            raise ForbiddenError(error_message="Either logged-in user belongs to different group as input user group "
+                                               "or it doesn't have appropriate roles")
 
         talent_pool_ids = [talent_pool_group.talent_pool_id for talent_pool_group in
                            TalentPoolGroup.query.filter_by(user_group_id=user_group_id).all()]
@@ -258,7 +258,7 @@ class TalentPoolGroupApi(Resource):
             raise NotFoundError(error_message="User group with id %s doesn't exist" % user_group_id)
 
         if request.user.domain_id != user_group.domain_id:
-            raise UnauthorizedError(error_message="Logged-in user and given user-group belong to different domains")
+            raise ForbiddenError(error_message="Logged-in user and given user-group belong to different domains")
 
         for talent_pool_id in talent_pool_ids:
 
@@ -308,7 +308,7 @@ class TalentPoolGroupApi(Resource):
             raise NotFoundError(error_message="User group with id %s doesn't exist" % user_group_id)
 
         if request.user.domain_id != user_group.domain_id:
-            raise UnauthorizedError(error_message="Logged-in user and given user-group belong to different domains")
+            raise ForbiddenError(error_message="Logged-in user and given user-group belong to different domains")
 
         for talent_pool_id in talent_pool_ids:
 
@@ -357,11 +357,11 @@ class TalentPoolCandidateApi(Resource):
             raise NotFoundError(error_message="Talent pool with id %s doesn't exist in database" % talent_pool_id)
 
         if talent_pool.domain_id != request.user.domain_id:
-            raise UnauthorizedError(error_message="Talent pool and logged in user belong to different domains")
+            raise ForbiddenError(error_message="Talent pool and logged in user belong to different domains")
 
         if not TalentPoolGroup.query.filter_by(user_group_id=request.user.user_group_id, talent_pool_id=talent_pool_id)\
                 .all() and 'CAN_GET_CANDIDATES_FROM_TALENT_POOL' not in request.valid_domain_roles:
-            raise UnauthorizedError(error_message="User %s doesn't have appropriate permissions to get candidates"
+            raise ForbiddenError(error_message="User %s doesn't have appropriate permissions to get candidates"
                                                   % request.user.id)
 
         total_candidate = TalentPoolCandidate.query.filter_by(talent_pool_id=talent_pool_id).all()
@@ -405,11 +405,11 @@ class TalentPoolCandidateApi(Resource):
             raise NotFoundError(error_message="Talent pool with id %s doesn't exist in database" % talent_pool_id)
 
         if talent_pool.domain_id != request.user.domain_id:
-            raise UnauthorizedError(error_message="Talent pool and logged in user belong to different domains")
+            raise ForbiddenError(error_message="Talent pool and logged in user belong to different domains")
 
         if not TalentPoolGroup.query.filter_by(user_group_id=request.user.user_group_id, talent_pool_id=talent_pool_id)\
                 .all() and 'CAN_ADD_CANDIDATES_TO_TALENT_POOL' not in request.valid_domain_roles:
-            raise UnauthorizedError(error_message="User %s doesn't have appropriate permissions to add candidates"
+            raise ForbiddenError(error_message="User %s doesn't have appropriate permissions to add candidates"
                                                   % request.user.id)
 
         try:
@@ -483,11 +483,11 @@ class TalentPoolCandidateApi(Resource):
             raise NotFoundError(error_message="Talent pool with id %s doesn't exist in database" % talent_pool_id)
 
         if talent_pool.domain_id != request.user.domain_id:
-            raise UnauthorizedError(error_message="Talent pool and logged in user belong to different domains")
+            raise ForbiddenError(error_message="Talent pool and logged in user belong to different domains")
 
         if not TalentPoolGroup.query.filter_by(user_group_id=request.user.user_group_id, talent_pool_id=talent_pool_id)\
                 .all() and 'CAN_DELETE_CANDIDATES_FROM_TALENT_POOL' not in request.valid_domain_roles:
-            raise UnauthorizedError(error_message="User %s doesn't have appropriate permissions to remove candidates"
+            raise ForbiddenError(error_message="User %s doesn't have appropriate permissions to remove candidates"
                                                   % request.user.id)
 
         for talent_pool_candidate_id in talent_pool_candidate_ids:

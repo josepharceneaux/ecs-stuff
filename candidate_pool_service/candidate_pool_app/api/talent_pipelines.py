@@ -41,7 +41,7 @@ class TalentPipelineApi(Resource):
                                                   talent_pipeline_id)
 
             if talent_pipeline.user.domain_id != request.user.domain_id:
-                raise UnauthorizedError(error_message="Logged-in user and talent_pipeline belong to different domain")
+                raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
 
             return {
                 'talent_pipeline': {
@@ -99,7 +99,7 @@ class TalentPipelineApi(Resource):
                                               talent_pipeline_id)
 
         if talent_pipeline.user.domain_id != request.user.domain_id:
-            raise UnauthorizedError(error_message="Logged-in user and talent_pipeline belong to different domain")
+            raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
 
         talent_pipeline.delete()
 
@@ -160,7 +160,7 @@ class TalentPipelineApi(Resource):
                 raise InvalidUsage(error_message="Date_needed %s cannot be before current date" % date_needed)
 
             if not is_number(positions) or not int(positions) > 0:
-                raise InvalidUsage(error_message="Number of positions should be integer and grater than zero")
+                raise InvalidUsage(error_message="Number of positions should be integer and greater than zero")
 
             if not is_number(talent_pool_id):
                 raise InvalidUsage(error_message="talent_pool_id should be an integer")
@@ -171,7 +171,7 @@ class TalentPipelineApi(Resource):
                 raise NotFoundError(error_message="Talent pool with id %s doesn't exist in database" % talent_pool_id)
 
             if talent_pool.domain_id != request.user.domain_id:
-                raise UnauthorizedError(error_message="Logged-in user and given talent-pool belong to different domain")
+                raise ForbiddenError(error_message="Logged-in user and given talent-pool belong to different domain")
 
             if search_params:
                 if not isinstance(search_params, dict):
@@ -220,7 +220,7 @@ class TalentPipelineApi(Resource):
                                               talent_pipeline_id)
 
         if talent_pipeline.user.domain_id != request.user.domain_id:
-            raise UnauthorizedError(error_message="Logged-in user and talent_pipeline belong to different domain")
+            raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
 
         posted_data = request.get_json(silent=True)
         if not posted_data or 'talent_pipeline' not in posted_data:
@@ -254,7 +254,7 @@ class TalentPipelineApi(Resource):
 
         if positions:
             if not is_number(positions) or not int(positions) > 0:
-                raise InvalidUsage(error_message="Number of positions should be integer and grater than zero")
+                raise InvalidUsage(error_message="Number of positions should be integer and greater than zero")
 
             talent_pipeline.positions = positions
 
@@ -272,7 +272,7 @@ class TalentPipelineApi(Resource):
                 raise NotFoundError(error_message="Talent pool with id %s doesn't exist in database" % talent_pool_id)
 
             if talent_pool.domain_id != request.user.domain_id:
-                raise UnauthorizedError(error_message="Logged-in user and given talent-pool belong to different domain")
+                raise ForbiddenError(error_message="Logged-in user and given talent-pool belong to different domain")
 
             talent_pipeline.talent_pool_id = talent_pool_id
 
@@ -318,7 +318,7 @@ class TalentPipelineSmartListApi(Resource):
                                               talent_pipeline_id)
 
         if talent_pipeline.user.domain_id != request.user.domain_id:
-            raise UnauthorizedError(error_message="Logged-in user and talent_pipeline belong to different domain")
+            raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
 
         smart_lists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline_id).all()
 
@@ -367,7 +367,7 @@ class TalentPipelineSmartListApi(Resource):
             raise InvalidUsage(error_message="Request body is not properly formatted")
 
         if talent_pipeline.user.domain_id != request.user.domain_id:
-            raise UnauthorizedError(error_message="Logged-in user and talent_pipeline belong to different domain")
+            raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
 
         for smart_list_id in smart_list_ids:
 
@@ -379,16 +379,16 @@ class TalentPipelineSmartListApi(Resource):
             smart_list = Smartlist.query.get(smart_list_id)
 
             if smart_list.user.domain_id != talent_pipeline.user.domain_id:
-                raise UnauthorizedError(error_message="Smart list %s and Talent pipeline %s belong to different domain"
-                                                      % (smart_list_id, talent_pipeline_id))
+                raise ForbiddenError(error_message="Smart list %s and Talent pipeline %s belong to different domain"
+                                                   % (smart_list_id, talent_pipeline_id))
 
             if smart_list.talent_pipeline_id == talent_pipeline_id:
                 raise InvalidUsage(error_message="Smart List %s already belongs to Talent Pipeline %s"
                                                  % (smart_list.name, talent_pipeline_id))
 
             if smart_list.talent_pipeline_id:
-                raise UnauthorizedError(error_message="smart_list %s is already assigned to talent_pipeline %s" %
-                                                      (smart_list.name, smart_list.talent_pipeline_id))
+                raise ForbiddenError(error_message="smart_list %s is already assigned to talent_pipeline %s" %
+                                                   (smart_list.name, smart_list.talent_pipeline_id))
 
             smart_list.talent_pipeline_id = talent_pipeline_id
 
@@ -430,7 +430,7 @@ class TalentPipelineSmartListApi(Resource):
             raise InvalidUsage(error_message="Request body is not properly formatted")
 
         if talent_pipeline.user.domain_id != request.user.domain_id:
-            raise UnauthorizedError(error_message="Logged-in user and talent_pipeline belong to different domain")
+            raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
 
         for smart_list_id in smart_list_ids:
 
@@ -442,8 +442,8 @@ class TalentPipelineSmartListApi(Resource):
             smart_list = Smartlist.query.get(smart_list_id)
 
             if smart_list.talent_pipeline_id != talent_pipeline_id:
-                raise UnauthorizedError(error_message="smart_list %s doesn't belong to talent_pipeline %s" %
-                                                      (smart_list.name, talent_pipeline_id))
+                raise ForbiddenError(error_message="smart_list %s doesn't belong to talent_pipeline %s" %
+                                                   (smart_list.name, talent_pipeline_id))
 
             smart_list.talent_pipeline_id = None
 
@@ -478,7 +478,7 @@ class TalentPipelineCandidates(Resource):
                                               talent_pipeline_id)
 
         if talent_pipeline.user.domain_id != request.user.domain_id:
-            raise UnauthorizedError(error_message="Logged-in user and talent_pipeline belong to different domain")
+            raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
 
         # Get all smart_lists and dumb_lists of a talent-pipeline
         smart_lists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline_id).all()

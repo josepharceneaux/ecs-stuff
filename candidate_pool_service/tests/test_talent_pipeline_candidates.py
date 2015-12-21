@@ -34,7 +34,7 @@ def test_talent_pipeline_candidate_get(access_token_first, access_token_second, 
 
     # Logged-in user trying to get all candidates of talent-pipeline of different domain
     response, status_code = talent_pipeline_candidate_api(access_token_second, talent_pipeline.id)
-    assert status_code == 401
+    assert status_code == 403
 
     # Creating and Adding test smart_list and dumb_list to talent-pipeline
     test_smart_list, test_dumb_list = prepare_pipeline_candidate_data(db.session, talent_pipeline, user_first)
