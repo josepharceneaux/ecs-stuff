@@ -5,15 +5,14 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 """
 # Standard Import
 import time
-
 # Application Specific
 # common conftest
 
 from sms_campaign_service.common.tests.conftest import *
 
 # Service specific
-# TODO: Is it unused? if so remove it
-from sms_campaign_service.sms_campaign_app.app import app  # to avoid circular import
+# to avoid circular we need to import app before SmsCampaignBase
+from sms_campaign_service.sms_campaign_app.app import app
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL)
 
@@ -31,6 +30,14 @@ from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.utils.common_functions import JSON_CONTENT_TYPE_HEADER
 
 SLEEP_TIME = 5  # needed to add this because tasks run on Celery
+CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
+                        "body_text": "Hi all, we have few openings at http://www.abc.com",
+                        "frequency_id": 2,
+                        "send_datetime": "2015-11-26T08:00:00Z",
+                        "stop_datetime": "2015-11-30T08:00:00Z",
+                        "smartlist_ids": ""
+                        }
+fake = Faker()
 
 
 @pytest.fixture()
@@ -63,7 +70,7 @@ def user_phone_1(request, sample_user):
     :param sample_user: fixture in common/tests/conftest.py
     :return:
     """
-    user_phone = _create_user_twilio_phone(sample_user, gen_salt(15))
+    user_phone = _create_user_twilio_phone(sample_user, fake.phone_number())
 
     def tear_down():
         UserPhone.delete(user_phone)
@@ -80,7 +87,7 @@ def user_phone_2(request, sample_user):
     :param sample_user: fixture in common/tests/conftest.py
     :return:
     """
-    user_phone = _create_user_twilio_phone(sample_user, gen_salt(15))
+    user_phone = _create_user_twilio_phone(sample_user, fake.phone_number())
 
     def tear_down():
         UserPhone.delete(user_phone)
@@ -96,7 +103,7 @@ def user_phone_3(request, sample_user_2):
     :param sample_user_2:
     :return:
     """
-    user_phone = _create_user_twilio_phone(sample_user_2, gen_salt(15))
+    user_phone = _create_user_twilio_phone(sample_user_2, fake.phone_number())
 
     def tear_down():
         UserPhone.delete(user_phone)
@@ -129,7 +136,7 @@ def sample_sms_campaign_candidates(sample_user,
                                    candidate_first,
                                    candidate_second):
     """
-    This adds two candidates to same smart list i.e. sample_smartlist
+    This adds two candidates to sample_smartlist.
     :param sample_smartlist:
     :param candidate_first:
     :param candidate_second:
@@ -151,58 +158,66 @@ def campaign_valid_data(sample_smartlist):
     This returns the valid data to save an SMS campaign in database
     :return:
     """
-    return {"name": "TEST SMS Campaign",
-            "body_text": "Hi all, we have few openings at http://www.abc.com",
-            "frequency_id": 2,
-            "send_datetime": "2015-11-26T08:00:00Z",
-            "stop_datetime": "2015-11-30T08:00:00Z",
-            "smartlist_ids": [sample_smartlist.id]
-            }
+    campaign_data = CREATE_CAMPAIGN_DATA.copy()
+    campaign_data['smartlist_ids'] = [sample_smartlist.id]
+    return campaign_data
 
 
 @pytest.fixture()
-def campaign_invalid_data():
+def campaign_data_unknown_key_text():
     """
     This returns invalid data to save an SMS campaign. 'body_text' required field
     name is modified to be 'text' here i.e. the correct value is 'body_text'
     :return:
     """
-    return {"name": "TEST SMS Campaign",
-            "text": "HI all, we have few openings at http://www.abc.com",  # invalid key
-            "frequency_id": 2,
-            "send_datetime": "2015-11-26T08:00:00Z",
-            "stop_datetime": "2015-11-30T08:00:00Z",
-            }
+    campaign_data = CREATE_CAMPAIGN_DATA.copy()
+    campaign_data['text'] = campaign_data.pop('body_text')
+    return campaign_data
 
 
 @pytest.fixture()
-def campaign_invalid_data_2():
+def campaign_data_missing_smartlist_ids():
     """
     This returns invalid data to save an SMS campaign. 'smartlist_ids' required field
     is missing here.
     :return:
     """
-    return {"name": "TEST SMS Campaign",
-            "body_text": "HI all, we have few openings at http://www.abc.com",
-            "frequency_id": 2,
-            "send_datetime": "2015-11-26T08:00:00Z",
-            "stop_datetime": "2015-11-30T08:00:00Z",
-            }
+    campaign_data = CREATE_CAMPAIGN_DATA.copy()
+    del campaign_data['smartlist_ids']
+    return campaign_data
 
 
 @pytest.fixture()
 def sms_campaign_of_current_user(campaign_valid_data, user_phone_1):
+    """
+    This creates the SMS campaign for sammple_user using valid data.
+    :param campaign_valid_data:
+    :param user_phone_1:
+    :return:
+    """
     return _create_sms_campaign(campaign_valid_data, user_phone_1)
 
 
 @pytest.fixture()
 def sms_campaign_of_current_user_with_no_link(campaign_valid_data, user_phone_1):
+    """
+    This creates SMS campaign for sample_user using valid data but 'body_text' has no URL present.
+    :param campaign_valid_data:
+    :param user_phone_1:
+    :return:
+    """
     campaign_valid_data['body_text'] = 'HI all'
     return _create_sms_campaign(campaign_valid_data, user_phone_1)
 
 
 @pytest.fixture()
 def sms_campaign_of_other_user(campaign_valid_data, user_phone_3):
+    """
+    This creates SMS campaign for some other user i.e. not sample_user rather sample_user_2
+    :param campaign_valid_data:
+    :param user_phone_3:
+    :return:
+    """
     return _create_sms_campaign(campaign_valid_data, user_phone_3)
 
 
@@ -284,7 +299,7 @@ def candidate_phone_1(request, candidate_first):
     :param candidate_first:
     :return:
     """
-    candidate_phone = _create_candidate_mobile_phone(candidate_first, gen_salt(15))
+    candidate_phone = _create_candidate_mobile_phone(candidate_first, fake.phone_number())
 
     def tear_down():
         CandidatePhone.delete(candidate_phone)
@@ -300,7 +315,7 @@ def candidate_phone_2(request, candidate_second):
     :param candidate_second:
     :return:
     """
-    candidate_phone = _create_candidate_mobile_phone(candidate_second, gen_salt(15))
+    candidate_phone = _create_candidate_mobile_phone(candidate_second, fake.phone_number())
 
     def tear_down():
         CandidatePhone.delete(candidate_phone)
@@ -316,7 +331,7 @@ def candidates_with_same_phone(request, candidate_first, candidate_second):
     :param candidate_second:
     :return:
     """
-    test_number = gen_salt(15)
+    test_number = fake.phone_number()
     cand_phone_1 = _create_candidate_mobile_phone(candidate_first, test_number)
     cand_phone_2 = _create_candidate_mobile_phone(candidate_second, test_number)
 
@@ -331,11 +346,9 @@ def candidates_with_same_phone(request, candidate_first, candidate_second):
 @pytest.fixture()
 def users_with_same_phone(request, sample_user, sample_user_2):
     """
-    This associates same number to candidate_first and candidate_second
-    :param candidate_second:
-    :return:
+    This associates same number to sample_user and sample_user_2
     """
-    test_number = gen_salt(15)
+    test_number = fake.phone_number()
     user_1 = _create_user_twilio_phone(sample_user, test_number)
     user_2 = _create_user_twilio_phone(sample_user_2, test_number)
 
@@ -453,22 +466,25 @@ def _create_smartlist(test_user):
 
 def assert_url_conversion(sms_campaign_sends, campaign_id):
     """
-    This function verifies the records related to URL conversion.
-    Long URL to redirect candidate to our app looks like e.g.
+    This function verifies that source_url saved in database table "url_conversion" is in
+    valid format as expected.
+
+    URL to redirect candidate to our app looks like e.g.
 
     https://www.gettalent.com/campaigns/1/url_redirection/30/?candidate_id=2
 
-    So we will verify whether above URL contains the correct keys.
+    So we will verify whether source_url has same format as above URL.
 
     :param sms_campaign_sends: sends of campaign
     :param campaign_id: id of SMS campaign
     :return:
     """
     campaign_send_url_conversions = []
-    # Get campaign_send_url_conversion records
+    # Get "sms_campaign_send_url_conversion" records
     for sms_campaign_send in sms_campaign_sends:
         campaign_send_url_conversions.extend(
             SmsCampaignSendUrlConversion.get_by_campaign_send_id(sms_campaign_send.id))
+    # For each url_conversion record we assert that source_url is saved correctly
     for send_url_conversion in campaign_send_url_conversions:
         # get URL conversion record from database table 'url_conversion'
         url_conversion = UrlConversion.get_by_id(send_url_conversion.url_conversion_id)

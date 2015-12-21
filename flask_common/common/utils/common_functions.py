@@ -203,3 +203,17 @@ def url_conversion(long_url):
                         "Error dict is %s" % (long_url, json_data['error']['errors'][0])
         current_app.logger.error('url_conversion: %s' % error_message)
         return None, error_message
+
+
+def is_iso_8601_format(str_datetime):
+    """
+    This validates the given datetime is in ISO format or not. Proper format should be like
+    '2015-10-08T06:16:55Z'.
+
+    :param str_datetime: str
+    :type str_datetime: str
+    :return: True if given datetime is valid, False otherwise.
+    :rtype: bool
+    """
+    utc_pattern = '\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z'
+    return re.match(utc_pattern, str_datetime)

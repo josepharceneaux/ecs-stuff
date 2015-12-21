@@ -21,6 +21,9 @@ def test_search_url_in_text():
     # test string with no link
     test_string = 'Dear candidates, your application has been received'
     assert len(search_urls_in_text(test_string)) == 0
+    # test string with valid URLs keywords like http, https, www.
+    test_string = 'Dear candidates, as for http, we will use https. please visit at www'
+    assert len(search_urls_in_text(test_string)) == 0
     # test of http URL
     test_string = 'Dear candidates, please apply at http://www.example.com'
     test_result = search_urls_in_text(test_string)

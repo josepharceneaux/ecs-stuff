@@ -20,10 +20,10 @@ from flask.ext.restful import Resource
 
 # Common Utils
 from sms_campaign_service.common.talent_api import TalentApi
+from sms_campaign_service.common.routes import SmsCampaignApi
 from sms_campaign_service.common.utils.api_utils import api_route
 from sms_campaign_service.common.error_handling import InvalidUsage
 from sms_campaign_service.common.utils.auth_utils import require_oauth
-from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.utils.common_functions import url_conversion
 
 # Service Specific
@@ -38,14 +38,14 @@ api.route = types.MethodType(api_route, api)
 
 # Enable CORS
 CORS(url_conversion_blueprint, resources={
-    r''+SmsCampaignApiUrl.API_VERSION+'/(url_conversion)': {
+    r''+SmsCampaignApi.VERSION+'/(url_conversion)': {
         'origins': '*',
         'allow_headers': ['Content-Type', 'Authorization']
     }
 })
 
 
-@api.route(SmsCampaignApiUrl.URL_CONVERSION)
+@api.route(SmsCampaignApi.URL_CONVERSION)
 class ConvertUrl(Resource):
     """
     This end point converts the given URL into shorter version using

@@ -143,25 +143,25 @@ class SpreadSheetImportApiUrl(object):
                                                   GTApis.SPREADSHEET_IMPORT_SERVICE_PORT)
 
 
-class SmsCampaignApiUrl(object):
+class SmsCampaignApi(object):
     """
-    This class contains the REST URLs of sms_campaign_service
+    This class contains the REST endpoints of sms_campaign_service
     """
-    API_VERSION = 'v1'
+    VERSION = 'v1'
     # HOST_NAME is http://127.0.0.1:8011 for dev
     HOST_NAME = _get_host_name(GTApis.SMS_CAMPAIGN_SERVICE_NAME,
                                GTApis.SMS_CAMPAIGN_SERVICE_PORT)
     # endpoint /v1/campaigns
     # GET all campaigns of a user, POST new campaign, DELETE campaigns of a user from given ids
-    CAMPAIGNS = '/%s/%s' % (API_VERSION, 'campaigns')
+    CAMPAIGNS = '/%s/%s' % (VERSION, 'campaigns')
 
     # endpoint /v1/campaigns/:id
     # GET campaign by its id, POST: updates a campaign, DELETE a campaign from given id
-    CAMPAIGN = '/%s/%s' % (API_VERSION, 'campaigns/<int:campaign_id>')
+    CAMPAIGN = '/%s/%s' % (VERSION, 'campaigns/<int:campaign_id>')
 
-    # endpoint /v1/campaigns/:id/sms_campaign_sends
-    # This gives the records from "sms_campaign_sends" for a given id of campaign
-    CAMPAIGN_SENDS = CAMPAIGN + '/sms_campaign_sends'
+    # endpoint /v1/campaigns/:id/sends
+    # This gives the records from "sends" for a given id of campaign
+    CAMPAIGN_SENDS = CAMPAIGN + '/sends'
 
     # endpoint /v1/campaigns/:id/send
     # To send a campaign to candidates
@@ -169,24 +169,29 @@ class SmsCampaignApiUrl(object):
 
     # endpoint /url_conversion
     # This converts the given URL to shorter version using Google's Shorten URL API
-    URL_CONVERSION = '/%s/%s' % (API_VERSION, 'url_conversion')
+    URL_CONVERSION = '/%s/%s' % (VERSION, 'url_conversion')
 
     """ Followings are not REST endpoints, but App endpoints """
     # endpoint /v1/receive
     # This endpoint is callback URL when candidate replies to a campaign via SMS
-    RECEIVE = '/%s/%s' % (API_VERSION, 'receive')
+    RECEIVE = '/%s/%s' % (VERSION, 'receive')
 
     # endpoint /v1/campaigns/:id/url_redirection/:id?candidate_id=id
     # This endpoint is hit when candidate clicks on any URL present in SMS body text.
     APP_REDIRECTION = CAMPAIGN + '/url_redirection/<int:url_conversion_id>'
 
+
+class SmsCampaignApiUrl(SmsCampaignApi):
+    """
+    This class contains the REST URLs of sms_campaign_service
+    """
     """ Endpoints' complete URLs for pyTests """
-    CAMPAIGNS_URL = HOST_NAME % CAMPAIGNS
-    CAMPAIGN_URL = HOST_NAME % '/%s/%s' % (API_VERSION, 'campaigns/%s')
-    CAMPAIGN_SENDS_URL = CAMPAIGN_URL + '/sms_campaign_sends'
+    CAMPAIGNS_URL = SmsCampaignApi.HOST_NAME % SmsCampaignApi.CAMPAIGNS
+    CAMPAIGN_URL = SmsCampaignApi.HOST_NAME % '/%s/%s' % (SmsCampaignApi.VERSION, 'campaigns/%s')
+    CAMPAIGN_SENDS_URL = CAMPAIGN_URL + '/sends'
     CAMPAIGN_SEND_PROCESS_URL = CAMPAIGN_URL + '/send'
-    URL_CONVERSION_URL = HOST_NAME % URL_CONVERSION
-    RECEIVE_URL = HOST_NAME % RECEIVE
+    URL_CONVERSION_URL = SmsCampaignApi.HOST_NAME % SmsCampaignApi.URL_CONVERSION
+    RECEIVE_URL = SmsCampaignApi.HOST_NAME % SmsCampaignApi.RECEIVE
     APP_REDIRECTION_URL = CAMPAIGN_URL % '%s/url_redirection/%s'
 
 

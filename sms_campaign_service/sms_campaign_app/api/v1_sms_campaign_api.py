@@ -16,7 +16,7 @@ This file contains API endpoints related to sms_campaign_service.
             POST    : Updates existing campaign using given id
             DELETE  : Deletes SMS campaign from db for given id
 
-        - SmsCampaignSends:  /v1/campaigns/:id/sms_campaign_sends
+        - SmsCampaignSends:  /v1/campaigns/:id/sends
 
             GET    : Gets the "sends" records for given SMS campaign id
                     from db table sms_campaign_sends
@@ -47,7 +47,7 @@ from sms_campaign_service.utilities import (validate_form_data, validate_header,
 from sms_campaign_service.common.error_handling import *
 from sms_campaign_service.common.talent_api import TalentApi
 from sms_campaign_service.common.utils.auth_utils import require_oauth
-from sms_campaign_service.common.routes import SmsCampaignApiUrl
+from sms_campaign_service.common.routes import SmsCampaignApi
 from sms_campaign_service.common.utils.api_utils import api_route, ApiResponse
 
 # Database Models
@@ -64,14 +64,14 @@ api.route = types.MethodType(api_route, api)
 
 # Enable CORS
 CORS(sms_campaign_blueprint, resources={
-    r'' + SmsCampaignApiUrl.API_VERSION + '/(campaigns)/*': {
+    r'' + SmsCampaignApi.VERSION + '/(campaigns)/*': {
         'origins': '*',
         'allow_headers': ['Content-Type', 'Authorization']
     }
 })
 
 
-@api.route(SmsCampaignApiUrl.CAMPAIGNS)
+@api.route(SmsCampaignApi.CAMPAIGNS)
 class SMSCampaigns(Resource):
     """
     This resource is used to
@@ -268,7 +268,7 @@ class SMSCampaigns(Resource):
             return dict(message='No campaign id provided to delete'), 200
 
 
-@api.route(SmsCampaignApiUrl.CAMPAIGN)
+@api.route(SmsCampaignApi.CAMPAIGN)
 class CampaignById(Resource):
     """
     This resource is used to
@@ -417,7 +417,7 @@ class CampaignById(Resource):
                                                          % campaign_id)
 
 
-@api.route(SmsCampaignApiUrl.CAMPAIGN_SENDS)
+@api.route(SmsCampaignApi.CAMPAIGN_SENDS)
 class SmsCampaignSends(Resource):
     """
     This resource is used to Get Campaign sends [GET]
@@ -432,7 +432,7 @@ class SmsCampaignSends(Resource):
             headers = {'Authorization': 'Bearer <access_token>'}
             campaign_id = 1
             response = requests.get(API_URL + '/campaigns/' + str(campaign_id)
-                                + '/sms_campaign_sends/', headers=headers)
+                                + '/sends/', headers=headers)
 
         .. Response::
 
@@ -479,7 +479,7 @@ class SmsCampaignSends(Resource):
             raise ResourceNotFound(error_message='SMS Campaign(id=%s) not found.' % campaign_id)
 
 
-@api.route(SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS)
+@api.route(SmsCampaignApi.CAMPAIGN_SEND_PROCESS)
 class SendSmsCampaign(Resource):
     """
     This resource is used to send SMS Campaign to candidates [POST]

@@ -1090,14 +1090,21 @@ class SmsCampaignBase(CampaignBase):
 
         :param reply_data:
         :type reply_data: dict
-        :exception: MissingRequiredField (5006)
-        :exception: MultipleUsersFound(5007)
-        :exception: MultipleCandidatesFound(5008)
-        :exception: NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN(5011)
-        :exception: NoCandidateAssociatedWithSmartlist(5012)
-        :exception: NoSMSCampaignSentToCandidate(5013)
-        :exception: NoUserFoundForPhoneNumber(5016)
-        :exception: NoCandidateFoundForPhoneNumber (5017)
+
+        .. Status:: 200 (OK)
+                    403 (ForbiddenError)
+                    404 (Resource not found)
+                    500 (Internal Server Error)
+
+        .. Error codes:
+                     MissingRequiredField (5006)
+                     MultipleUsersFound(5007)
+                     MultipleCandidatesFound(5008)
+                     NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN(5011)
+                     NoCandidateAssociatedWithSmartlist(5012)
+                     NoSMSCampaignSentToCandidate(5013)
+                     NoUserFoundForPhoneNumber(5016)
+                     NoCandidateFoundForPhoneNumber (5017)
 
         **See Also**
         .. see also:: sms_receive() function in sms_campaign_app/app.py
@@ -1184,7 +1191,15 @@ class SmsCampaignBase(CampaignBase):
         """
         # get Candidate
         candidate = Candidate.get_by_id(candidate_id)
+        if not candidate:
+            raise ResourceNotFound(
+                error_message='create_campaign_reply_activity: Candidate(id:%s) not found.'
+                              % candidate_id, error_code=ResourceNotFound.http_status_code())
         campaign = SmsCampaign.get_by_id(campaign_blast.sms_campaign_id)
+        if not campaign:
+            raise ResourceNotFound(
+                error_message='create_campaign_reply_activity: SMS Campaign(id=%s) Not found.'
+                              % campaign.id, error_code=ResourceNotFound.http_status_code())
         params = {'candidate_name': candidate.first_name + ' ' + candidate.last_name,
                   'reply_text': sms_campaign_reply.body_text,
                   'campaign_name': campaign.name}

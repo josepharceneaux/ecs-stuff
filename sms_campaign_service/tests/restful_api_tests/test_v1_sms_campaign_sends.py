@@ -1,7 +1,7 @@
 """
 Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
-    This module contains pyTests for endpoint /v1/campaigns/:id/sms_campaign_sends of
+    This module contains pyTests for endpoint /v1/campaigns/:id/sends of
     SMS Campaign API.
 """
 # Standard Imports
@@ -15,7 +15,7 @@ from sms_campaign_service.common.error_handling import (MethodNotAllowed, Resour
 
 class TestSmsCampaignSends(object):
     """
-    This class contains tests for endpoint /campaigns/:id/sms_campaign_sends
+    This class contains tests for endpoint /campaigns/:id/sends
     """
 
     def test_for_post_request(self, auth_token, sms_campaign_of_current_user):
@@ -116,7 +116,7 @@ class TestSmsCampaignSends(object):
         assert response_get.status_code == ResourceNotFound.http_status_code(), \
             'Campaign should not be found (404)'
 
-    def test_get_with_valid_token_and_two_campaign_sends(self, auth_token,
+    def test_get_with_valid_token_and_two_sends(self, auth_token,
                                                          sms_campaign_of_current_user,
                                                          create_campaign_sends):
         """

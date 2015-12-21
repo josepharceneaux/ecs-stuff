@@ -92,7 +92,9 @@ class TestSendSmsCampaign(object):
     def test_post_with_valid_token_and_no_smartlist_associated(self, auth_token,
                                                                sms_campaign_of_current_user):
         """
-        User auth token is valid but given SMS campaign has no associated smart list with it.
+        User auth token is valid but given SMS campaign has no associated smart list with it.So
+        up til this point we only have created a user and SMS campaign of that user (using fixtures
+        passed in as params).
         It should get internal server error. Custom error should be
         NoSmartlistAssociatedWithCampaign.
         :return:
@@ -142,7 +144,7 @@ class TestSendSmsCampaign(object):
                                                            response_post,
                                                            str(sms_campaign_of_current_user.id))
 
-    def valid_headertest_post_with_valid_token_one_smartlist_two_candidates_with_same_phone(
+    def test_post_with_valid_token_one_smartlist_two_candidates_with_same_phone(
             self, auth_token, sms_campaign_of_current_user, sms_campaign_smartlist,
             sample_sms_campaign_candidates, candidates_with_same_phone):
         """

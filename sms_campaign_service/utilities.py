@@ -22,6 +22,7 @@ from sms_campaign_service.common.routes import (SmsCampaignApiUrl, GTApis)
 from sms_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound,
                                                         ForbiddenError)
 from sms_campaign_service.common.utils.common_functions import (find_missing_items,
+                                                                is_iso_8601_format,
                                                                 JSON_CONTENT_TYPE_HEADER)
 
 # Database Models
@@ -138,7 +139,7 @@ def search_urls_in_text(text):
     :return: list of all URLs present in given text | []
     :rtype: list
     """
-    return re.findall(r'https?://[^\s<>"]+|ftps?://[^\s<>"]+|www\.[^\s<>"]+', text)
+    return re.findall(r'(?:http|ftp)s?://[^\s<>"]+|www\.[^\s<>"]+', text)
 
 
 # TODO: remove this when app is up
@@ -224,23 +225,11 @@ def validate_form_data(form_data):
     # filter out unknown smartlist ids
     form_data['smartlist_ids'] = list(set(form_data.get('smartlist_ids')) -
                                       set(not_found_smartlist_ids))
-    datetime_validator(form_data.get('send_datetime')) if form_data.get('send_datetime') else ''
-    datetime_validator(form_data.get('stop_datetime')) if form_data.get('stop_datetime') else ''
+    for datetime in [form_data.get('send_datetime'), form_data.get('stop_datetime')]:
+        if not is_iso_8601_format(datetime):
+            raise InvalidDatetime('Invalid DateTime: Kindly specify UTC datetime in ISO-8601 '
+                                  'format like 2015-10-08T06:16:55Z. Given Date is %s' % datetime)
     return not_found_smartlist_ids
-
-
-def datetime_validator(str_datetime):
-    """
-    This validates the given datetime.
-    :param str_datetime: str
-    :type str_datetime: str
-    :return:
-    """
-    utc_pattern = '\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z'
-    if not re.match(utc_pattern, str_datetime):
-        # TODO: Needed to update this message in social network service
-        raise InvalidDatetime('Invalid DateTime: Kindly specify UTC datetime in ISO-8601 '
-                              'format like 2015-10-08T06:16:55Z')
 
 
 def delete_sms_campaign(campaign_id, current_user_id):
@@ -286,7 +275,5 @@ def validate_header(request):
     If header of request is not proper, it raises InvalidUsage exception
     :return:
     """
-    # TODO: You are using `request.get_json()` inside try catch and then raising Invalid content etc error
-    # then there is no need to check headers and vice versa
     if not request.headers.get('CONTENT_TYPE') == JSON_CONTENT_TYPE_HEADER['content-type']:
         raise InvalidUsage(error_message='Invalid header provided')

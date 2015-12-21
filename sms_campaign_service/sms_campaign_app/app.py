@@ -16,8 +16,6 @@
 
 # Initializing App. This line should come before any imports from models
 from sms_campaign_service import init_sms_campaign_app_and_celery_app
-from sms_campaign_service.common.routes import SmsCampaignApiUrl
-
 app, celery_app = init_sms_campaign_app_and_celery_app()
 
 
@@ -29,6 +27,7 @@ from werkzeug.utils import redirect
 
 # Application specific Imports
 from sms_campaign_service import logger
+from sms_campaign_service.common.routes import SmsCampaignApi
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 
 # Imports for Blueprints
@@ -53,14 +52,17 @@ def root():
     return 'Welcome to SMS Campaign Service'
 
 
-@app.route(SmsCampaignApiUrl.APP_REDIRECTION, methods=['GET'])
+@app.route(SmsCampaignApi.APP_REDIRECTION, methods=['GET'])
 def sms_campaign_url_redirection(campaign_id, url_conversion_id):
     """
-    When recruiter(user) adds some URL in SMS body text, we save the original URL as
-    destination URL in "url_conversion" database table. Then we create a new URL (long_url) to
-    redirect the candidate to our app. This long_url looks like
+    This endpoint is /v1/campaign/:id/url_redirection/:id/?candidate_id=:id.
 
-            http://127.0.0.1:8008/sms_campaign/2/url_redirection/67/?candidate_id=2
+    When recruiter(user) adds some URL in SMS body text, we save the original URL as
+    destination URL in "url_conversion" database table. Then we create a new URL called long_url
+    (which is created during the process of sending campaign to candidate) to redirect the
+    candidate to our app. This long_url looks like
+
+            http://127.0.0.1:8008/v1/sms_campaign/2/url_redirection/67/?candidate_id=2
 
     For this we first convert this long_url in shorter URL (using Google's shorten URL API) and
     send in SMS body text to candidate. This is the endpoint which redirect the candidate. Short
@@ -69,7 +71,6 @@ def sms_campaign_url_redirection(campaign_id, url_conversion_id):
             https://goo.gl/CazBJG
 
     When candidate clicks on above url, it is redirected to this flask endpoint, where we keep track
-
     of number of clicks and hit_counts for a URL. We then create activity that 'this' candidate
     has clicked on 'this' campaign. Finally we redirect the candidate to destination URL (Original
     URL provided by the recruiter)
@@ -88,14 +89,13 @@ def sms_campaign_url_redirection(campaign_id, url_conversion_id):
     :type url_conversion_id: int
     :return: redirects to the destination URL else raises exception
     """
-    environ_header = request.headers.environ
-    if ('HTTP_FROM' in request.headers.environ
-        and 'google' in request.headers.environ['HTTP_FROM']) \
-            or ('HTTP_REFERER' in request.headers.environ
-                and 'google' in request.headers.environ['HTTP_REFERER']):
-        data = {'message': "Successfully verified by Google's shorten URL API"}
-        logger.info(data['message'])
-        return flask.jsonify(**data), 200
+    # Google's shorten URL API hits this end point while converting long_url to shorter version.
+    keys = ['HTTP_FROM', 'HTTP_REFERER']
+    for key in keys:
+        if key in request.headers.environ and 'google' in request.headers.environ[key]:
+            data = {'message': "Successfully verified by Google's shorten URL API"}
+            logger.info(data['message'])
+            return flask.jsonify(**data), 200
     try:
 
         campaign_in_db, url_conversion_in_db, candidate_in_db = \
@@ -110,27 +110,22 @@ def sms_campaign_url_redirection(campaign_id, url_conversion_id):
                                                         candidate_in_db)
         return redirect(redirection_url)
     except Exception:
+        # As this endpoint is hit by client, so we log the error, and return internal server error.
         logger.exception("Error occurred while URL redirection for SMS campaign.")
         data = {'message': 'Internal Server Error'}
         return flask.jsonify(**data), 500
 
 
-@app.route(SmsCampaignApiUrl.RECEIVE, methods=['POST'])
+@app.route(SmsCampaignApi.RECEIVE, methods=['POST'])
 def sms_receive():
     """
     This end point is is /v1/receive and is used by Twilio to notify getTalent when a candidate
      replies to an SMS.
 
-    - Recruiters(users) are assigned to one unique Twilio number and sms_callback_url (which is variable
-     within Twilio to config blah TODO) of
-        that number is set to redirect request at this end point. So whenever some one replies to that particular
-        recruiter's SMS (from within getTalent) this endpoint will be hit.
-        - It searches the candiddate in getTalent's database
-        - It searches the user (i.e the recruiter) in getTalent's database
-        -
-        Twilio API hits this URL
-        with data like
-                 {
+    - Recruiters(users) are assigned to one unique Twilio number. That number is configured with
+     "sms_callback_url" which redirect the request at this end point with following data:
+
+                {
                       "From": "+12015617985",
                       "To": "+15039255479",
                       "Body": "Dear all, we have few openings at http://www.qc-technologies.com",
@@ -143,26 +138,16 @@ def sms_receive():
                       "ToZip": "97132",
                  }
 
-        So whenever candidate replies to user's SMS (that was sent as SMS campaign),
-        this endpoint is hit and we do the following:
+     So whenever someone replies to that particular recruiter's SMS (from within getTalent), this
+     endpoint is hit and we do the following:
 
             1- Search the candidate in GT database using "From" key
             2- Search the user in GT database using "To" key
             3- Stores the candidate's reply in database table "sms_campaign_reply"
-            4- Creates activity that 'abc' candidate has replied "Body"(key)
+            4- Create activity that 'abc' candidate has replied "Body"(key)
                 on 'xyz' SMS campaign.
 
-    .. Status:: 200 (OK)
-                403 (ForbiddenError)
-                404 (Resource not found)
-                500 (Internal Server Error)
-
-    .. Error codes:
-                5006 (MissingRequiredField)
-                5007 (MultipleUsersFound)
-                5008 (MultipleCandidatesFound)
-
-    :return: xml response to Twilio API
+    :return: XML response to Twilio API
     """
     if request.values:
         try:

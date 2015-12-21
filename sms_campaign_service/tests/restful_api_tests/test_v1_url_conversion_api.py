@@ -46,7 +46,7 @@ class TestUrlConversionAPI(object):
 
     def test_post_with_valid_header_and_valid_data(self, valid_header):
         """
-        Making POST call on endpoint with valid data,should get ok response.
+        Making POST call on endpoint with valid data,should get OK response.
         :param valid_header:
         :return:
         """

@@ -141,7 +141,7 @@ class TestCeleryTasks(object):
         """
         - This tests the endpoint /receive
 
-        Here we make HTTP POST  request with no data, Response should be ok as this response
+        Here we make HTTP POST  request with no data, Response should be OK as this response
         is returned to Twilio API.
         Candidate is associated with an SMS campaign. Then we assert that reply has been saved
         and replies count has been incremented by 1. Finally we assert that activity has been
@@ -236,7 +236,7 @@ class TestSmsCampaignURLRedirection(object):
                               url_conversion_by_send_test_sms_campaign,
                               sms_campaign_of_current_user):
         """
-        GET method should give ok response. We check the "hit_count" and "clicks" before
+        GET method should give OK response. We check the "hit_count" and "clicks" before
         hitting the endpoint and after hitting the endpoint. Then we assert that both
         "hit_count" and "clicks" have been successfully updated by '1' in database.
         :return:
@@ -315,7 +315,7 @@ class TestSmsCampaignURLRedirection(object):
                                                              candidate_first):
         """
         This tests the functionality of pre_process_url_redirect() class method of SmsCampaignBase.
-        All parameters passed are valid, So, it should get ok response.
+        All parameters passed are valid, So, it should get OK response.
         :param sms_campaign_of_current_user:
         :param url_conversion_by_send_test_sms_campaign:
         :param candidate_first:
