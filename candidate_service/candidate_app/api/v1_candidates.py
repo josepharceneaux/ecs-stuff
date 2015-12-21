@@ -38,6 +38,7 @@ from candidate_service.modules.talent_candidates import (
     fetch_candidate_info, get_candidate_id_from_candidate_email,
     create_or_update_candidate_from_params, fetch_candidate_edits
 )
+from candidate_service.modules.talent_cloud_search import upload_candidate_documents, delete_candidate_documents
 
 
 class CandidatesResource(Resource):
@@ -185,7 +186,8 @@ class CandidatesResource(Resource):
             preferred_locations = candidate_dict.get('preferred_locations')
             skills = candidate_dict.get('skills')
             dice_social_profile_id = body_dict.get('openweb_id')
-            dice_profile_id=body_dict.get('dice_profile_id')
+            dice_profile_id = body_dict.get('dice_profile_id')
+            talent_pool_ids = candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []})
 
             resp_dict = create_or_update_candidate_from_params(
                 user_id=user_id,
@@ -207,9 +209,13 @@ class CandidatesResource(Resource):
                 preferred_locations=preferred_locations,
                 skills=skills,
                 dice_social_profile_id=dice_social_profile_id,
-                dice_profile_id=dice_profile_id
+                dice_profile_id=dice_profile_id,
+                talent_pool_ids=talent_pool_ids,
             )
             created_candidate_ids.append(resp_dict['candidate_id'])
+
+        # Add candidates to cloud search
+        upload_candidate_documents(created_candidate_ids)
 
         return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, 201
 
@@ -299,6 +305,7 @@ class CandidatesResource(Resource):
             skills = candidate_dict.get('skills')
             dice_social_profile_id = body_dict.get('openweb_id')
             dice_profile_id=body_dict.get('dice_profile_id')
+            talent_pool_ids = candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []})
 
             resp_dict = create_or_update_candidate_from_params(
                 user_id=user_id,
@@ -321,9 +328,13 @@ class CandidatesResource(Resource):
                 preferred_locations=preferred_locations,
                 skills=skills,
                 dice_social_profile_id=dice_social_profile_id,
-                dice_profile_id=dice_profile_id
+                dice_profile_id=dice_profile_id,
+                talent_pool_ids=talent_pool_ids
             )
             updated_candidate_ids.append(resp_dict['candidate_id'])
+
+        # Update candidates in cloud search
+        upload_candidate_documents(updated_candidate_ids)
 
         return {'candidates': [{'id': updated_candidate_id} for updated_candidate_id in updated_candidate_ids]}
 
@@ -416,6 +427,8 @@ class CandidateResource(Resource):
         # Hide Candidate
         Candidate.set_is_web_hidden_to_true(candidate_id=candidate_id)
 
+        # Delete candidate from cloud search
+        delete_candidate_documents([candidate_id])
         return
 
 

@@ -28,7 +28,7 @@ from candidate_service.candidate_app.api.v1_candidates import (
     CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
     CandidateCustomFieldResource, CandidateEditResource, CandidatesResource
 )
-from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch
+from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
 
 api = GetTalentApi(app=app)
 
@@ -236,8 +236,12 @@ api.add_resource(
 #                  endpoint='candidates')
 
 # ****** Candidate Search *******
-api.add_resource(CandidateSearch,
-                 '/v1/candidates/search')
+api.add_resource(CandidateSearch, '/v1/candidates/search')
+
+
+# ****** Candidate Documents *******
+api.add_resource(CandidateDocuments, '/v1/candidates/documents')
+
 
 db.create_all()
 db.session.commit()
