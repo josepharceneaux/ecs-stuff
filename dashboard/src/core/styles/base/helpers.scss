@@ -30,14 +30,14 @@
   }
 
   @each $breakpoint, $value in $breakpoints {
-    .col--#{ $breakpoint }-#{ $span } {
+    .col--#{ $breakpoint}-#{ $span} {
       @include helper--media($value) {
         float: left;
         width: 100% * ($span / 12);
       }
     }
 
-    .col--#{ $breakpoint }-#{ $span }--cell {
+    .col--#{ $breakpoint}-#{ $span}--cell {
       @include inc--space--stubbedLast;
 
       margin: $margin--row 0;
