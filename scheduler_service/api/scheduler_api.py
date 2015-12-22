@@ -12,15 +12,17 @@ import types
 from flask import Blueprint, request
 from flask.ext.restful import Resource
 from flask.ext.cors import CORS
+from flask_hmac import Hmac
+from flask_hmac.exceptions import HmacException, UnknownKeyName
 
 # Application imports
-from scheduler_service import logger
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse
 from scheduler_service.common.talent_api import TalentApi
 from scheduler_service.common.error_handling import *
 from scheduler_service.common.utils.auth_utils import require_oauth
 from scheduler_service.custom_exceptions import JobAlreadyPausedError, PendingJobError, JobAlreadyRunningError, \
     SchedulerNotRunningError, SchedulerServiceApiException
+from scheduler_service.run import hmac
 from scheduler_service.scheduler import scheduler, schedule_job, serialize_task, remove_tasks
 
 api = TalentApi()
@@ -556,3 +558,73 @@ def job_state_exceptions(job_id, func):
         raise JobAlreadyRunningError("Task with id '%s' is already in running state" % job_id)
 
     return job
+
+
+@api.route('/schedule/')
+class GeneralTasks(Resource):
+
+    def post(self, **kwargs):
+        """
+        This method takes data to create or schedule a task for scheduler but without user.
+
+
+        :Example:
+            for interval or periodic schedule
+            task = {
+                "frequency": 3601,
+                "task_type": "periodic",
+                "start_datetime": "2015-12-05T08:00:00",
+                "end_datetime": "2016-01-05T08:00:00",
+                "url": "http://getTalent.com/sms/send/",
+                "post_data": {
+                    "campaign_name": "SMS Campaign",
+                    "phone_number": "09230862348",
+                    "smart_list_id": 123456,
+                    "content": "text to be sent as sms"
+                }
+            }
+            for one_time schedule
+            task = {
+                "task_type": "one_time",
+                "run_datetime": "2015-12-05T08:00:00",
+                "url": "http://getTalent.com/email/send/",
+                "post_data": {
+                    "campaign_name": "Email Campaign",
+                    "email": "user1@hotmail.com",
+                    "smart_list_id": 123456,
+                    "content": "content to be sent as email"
+                }
+            }
+
+            headers = {
+                        'Authorization': 'Bearer <access_token>',
+                        'Content-Type': 'application/json'
+                       }
+            data = json.dumps(task)
+            response = requests.post(
+                                        API_URL + '/tasks/',
+                                        data=data,
+                                        headers=headers,
+                                    )
+
+        .. Response::
+
+            {
+                "id" : "5das76nbv950nghg8j8-33ddd3kfdw2"
+            }
+        .. Status:: 201 (Resource Created)
+                    400 (Bad Request)
+                    401 (Unauthorized to access getTalent)
+                    500 (Internal Server Error)
+
+        :return: id of created task
+        """
+        hmac.validate_signature(request)
+        # get json post request data
+        schedule_state_exceptions()
+        try:
+            task = json.loads(request.data)
+        except Exception:
+            raise InvalidUsage("Bad Request, data should be in json")
+        task_id = schedule_job(task)
+        return task_id, 201

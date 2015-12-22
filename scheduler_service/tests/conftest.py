@@ -2,6 +2,7 @@
 Test cases for scheduling service
 """
 # Standard imports
+import json
 import os
 from datetime import timedelta
 
@@ -10,7 +11,7 @@ from scheduler_service import init_app
 from scheduler_service.common.tests.conftest import *
 # Application Specific
 
-APP, celery = init_app()
+hmac , APP, celery = init_app()
 APP_URL = 'http://0.0.0.0:8010'
 
 OAUTH_SERVER = APP.config['OAUTH_SERVER_URI']
@@ -88,3 +89,11 @@ def job_config(request, job_config_periodic):
     temp_job_config['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
     temp_job_config['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
     return temp_job_config
+
+
+@pytest.fixture(scope='function')
+def general_task_header(request, job_config):
+    data = json.dumps(job_config)
+    sig = hmac.make_hmac(data, key=APP.config['HMAC_KEY'])
+    headers = {hmac.header: sig}
+    return data, headers

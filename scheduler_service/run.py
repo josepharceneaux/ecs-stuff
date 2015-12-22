@@ -9,7 +9,7 @@ import os
 
 from scheduler_service import init_app
 
-app, celery = init_app()
+hmac, app, celery = init_app()
 
 
 # Split the scheduler from celery, so that celery worker can start from terminal

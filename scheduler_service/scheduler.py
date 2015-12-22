@@ -70,7 +70,7 @@ def apscheduler_listener(event):
 scheduler.add_listener(apscheduler_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 
 
-def schedule_job(data, user_id, access_token):
+def schedule_job(data, user_id=None, access_token=None):
     """
     Schedule job using post data and add it to APScheduler. Which calls the callback method when job time comes
     :param data: the data like url, frequency, post_data, start_datetime and end_datetime of job which is required

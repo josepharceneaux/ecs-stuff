@@ -8,14 +8,33 @@ import pytest
 import requests
 
 # Application imports
-from scheduler_service.tests.conftest import APP_URL
-
+from scheduler_service.scheduler import scheduler
+from scheduler_service.tests.conftest import APP_URL, hmac, APP
 
 __author__ = 'saad'
 
 
-@pytest.mark.usefixtures('auth_header', 'job_config')
+@pytest.mark.usefixtures('auth_header', 'job_config', 'general_task_header')
 class TestSchedulerCreate:
+
+    def test_single_schedule_general_job(self, general_task_header):
+        """
+        Create a job by hitting the endpoint but by using valid HMAC signature and make sure response
+        is correct and job id is returned.
+        Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+        :return:
+        """
+        data, header = general_task_header
+        response = requests.post(APP_URL + '/schedule/', data=data,
+                                 headers=header)
+        assert response.status_code == 201
+        data = json.loads(response.text)
+        assert data is not None
+
+        scheduler.remove_job(job_id=data)
 
     def test_single_schedule_job(self, auth_header, job_config):
         """
