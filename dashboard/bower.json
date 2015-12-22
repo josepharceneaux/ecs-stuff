@@ -1,8 +1,12 @@
 {
-  "name": "gettalent-dashboard",
+  "name": "gt-dashboard",
   "version": "0.1.0",
-  "description": "GetTalent",
-  "author": "Haohong Xu",
+  "description": "getTalent Dashboard",
+  "authors": [
+    "Haohong Xu",
+    "Jordan Seaberg",
+    "Jason Provencher"
+  ],
   "license": "MIT",
   "homepage": "",
   "ignore": [
