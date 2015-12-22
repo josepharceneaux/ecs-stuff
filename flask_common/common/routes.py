@@ -21,6 +21,10 @@ class CandidateApiUrl:
     CANDIDATE = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s"
     CANDIDATES = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates"
 
+    CANDIDATE_SEARCH_URI = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/search"
+
+    CANDIDATES_DOCUMENTS_URI = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/documents"
+
     ADDRESS = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/addresses/%s"
     ADDRESSES = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/addresses"
 
