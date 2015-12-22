@@ -8,7 +8,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     This module also contains pyTests for endpoint
 
-                /v1/campaigns/:id/url_redirection/:id?candidate_id=id
+                /v1/campaigns/:id/redirect/:id?candidate_id=id
 
     of SMS Campaign APP.
 """
@@ -37,10 +37,10 @@ from sms_campaign_service.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.utilities import replace_ngrok_link_with_localhost
 from sms_campaign_service.tests.conftest import (assert_on_blasts_sends_url_conversion_and_activity,
                                                  assert_for_activity, get_reply_text)
-
-
-SLEEP_TIME = 30  # due to background processing of tasks (Celery)
+# TODO: debug why Celery tasks fail sometime
+SLEEP_TIME = 25  # due to background processing of tasks (Celery)
 OFFSET = 20  # due to background processing of tasks (Celery)
+ADDITIONAL_OFFSET = 0  # due to background processing of tasks (Celery)
 
 
 class TestCeleryTasks(object):
@@ -61,7 +61,7 @@ class TestCeleryTasks(object):
         """
         campaign = SmsCampaign.get_by_id(str(sms_campaign_of_current_user.id))
         campaign.update(body_text='Hi,all please visit http://www.abc.com or '
-                                      'http://www.123.com or http://www.xyz.com')
+                                  'http://www.123.com or http://www.xyz.com')
         response_post = requests.post(
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
@@ -69,7 +69,7 @@ class TestCeleryTasks(object):
         assert response_post.json()['total_sends'] == 2
         assert str(sms_campaign_of_current_user.id) in response_post.json()['message']
         # Need to add this as processing of POST request runs on celery
-        time.sleep(SLEEP_TIME + OFFSET)
+        time.sleep(SLEEP_TIME + OFFSET + ADDITIONAL_OFFSET)
         assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, response_post,
                                                            str(sms_campaign_of_current_user.id))
 
@@ -87,6 +87,7 @@ class TestCeleryTasks(object):
         assert response_post.status_code == 200, 'Response should be ok (200)'
         assert response_post.json()['total_sends'] == 1
         assert str(sms_campaign_of_current_user.id) in response_post.json()['message']
+        time.sleep(SLEEP_TIME + OFFSET)
         assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, response_post,
                                                            str(sms_campaign_of_current_user.id))
 
@@ -105,7 +106,8 @@ class TestCeleryTasks(object):
         assert response_post.status_code == 200, 'Response should be ok (200)'
         assert response_post.json()['total_sends'] == 2
         assert str(sms_campaign_of_current_user.id) in response_post.json()['message']
-        time.sleep(SLEEP_TIME + OFFSET)  # Need to add this as processing of POST request runs on celery
+        time.sleep(SLEEP_TIME + OFFSET)  # Need to add this as processing of POST
+        # request runs on celery
         assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
                                                            response_post,
                                                            str(sms_campaign_of_current_user.id))
@@ -189,7 +191,7 @@ class TestCeleryTasks(object):
 def get_replies_count(campaign):
     """
     This returns the replies counts of SMS campaign from database table 'sms_campaign_blast'
-    :param campaign: SMS campaign row
+    :param campaign: SMS campaign obj
     :return:
     """
     db.session.commit()
@@ -199,7 +201,7 @@ def get_replies_count(campaign):
 
 class TestSmsCampaignURLRedirection(object):
     """
-    This class contains tests for endpoint /v1/campaigns/:id/url_redirection/:id?candidate_id=id.
+    This class contains tests for endpoint /v1/campaigns/:id/redirect/:id?candidate_id=id.
     """
 
     def test_for_post(self, url_conversion_by_send_test_sms_campaign):
@@ -395,7 +397,8 @@ class TestSmsCampaignURLRedirection(object):
             assert url_conversion_id in error.message
 
     def test_method_pre_process_url_redirect_with_empty_destination_url(
-            self, sample_user, sms_campaign_of_current_user, url_conversion_by_send_test_sms_campaign,
+            self, sample_user, sms_campaign_of_current_user,
+            url_conversion_by_send_test_sms_campaign,
             candidate_first):
         """
         Making destination URL an empty string here, it should get internal server error.
@@ -433,8 +436,9 @@ def _get_hit_count_and_clicks(url_conversion, campaign):
     """
     This returns the hit counts of URL conversion record and clicks of SMS campaign blast
     from database table 'sms_campaign_blast'
-    :param url_conversion: URL conversion row
-    :param campaign: SMS campaign row
+    :param url_conversion: URL conversion obj
+    :param campaign: SMS campaign obj
+    :type campaign: SmsCampaign
     :return:
     """
     db.session.commit()

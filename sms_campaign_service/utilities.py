@@ -149,9 +149,9 @@ def replace_ngrok_link_with_localhost(temp_ngrok_link):
     looks for valid URL to convert into shorter version. While making HTTP request to this endpoint,
     if ngrok is not running somehow, we replace that link with localhost to hit that endpoint. i.e.
 
-        https://9a99a454.ngrok.io/v1/campaigns/1298/url_redirection/294/?candidate_id=544
+        https://9a99a454.ngrok.io/v1/campaigns/1298/redirect/294/?candidate_id=544
     will become
-        https://127.0.0.1:8011/v1/campaigns/1298/url_redirection/294/?candidate_id=544
+        https://127.0.0.1:8011/v1/campaigns/1298/redirect/294/?candidate_id=544
 
     In final version of app, this won't be necessary as we'll have valid URL for app.
     :param temp_ngrok_link:
@@ -169,11 +169,11 @@ def replace_localhost_with_ngrok(localhost_url):
     looks for valid URL to convert into shorter version. While making HTTP request to this endpoint,
     if ngrok is not running somehow, we replace localhost_url with the ngrok exposed URL. i.e.
 
-        https://127.0.0.1:8011/v1/campaigns/1298/url_redirection/294/?candidate_id=544
+        https://127.0.0.1:8011/v1/campaigns/1298/redirect/294/?candidate_id=544
 
     will become
 
-        https://9a99a454.ngrok.io/v1/campaigns/1298/url_redirection/294/?candidate_id=544
+        https://9a99a454.ngrok.io/v1/campaigns/1298/redirect/294/?candidate_id=544
 
 
     In final version of app, this won't be necessary as we'll have valid URL for app.
@@ -222,7 +222,7 @@ def validate_form_data(form_data):
     if len(form_data.get('smartlist_ids')) == len(not_found_smartlist_ids):
         raise ResourceNotFound(error_message='smartlists(id(s):%s not found in database.'
                                              % form_data.get('smartlist_ids'))
-    # filter out unknown smartlist ids
+    # filter out unknown smartlist ids, and keeping the valid ones
     form_data['smartlist_ids'] = list(set(form_data.get('smartlist_ids')) -
                                       set(not_found_smartlist_ids))
     for datetime in [form_data.get('send_datetime'), form_data.get('stop_datetime')]:
@@ -246,6 +246,7 @@ def delete_sms_campaign(campaign_id, current_user_id):
     """
     if is_owner_of_campaign(campaign_id, current_user_id):
         return SmsCampaign.delete(campaign_id)
+    return False
 
 
 def is_owner_of_campaign(campaign_id, current_user_id):
@@ -270,7 +271,7 @@ def is_owner_of_campaign(campaign_id, current_user_id):
 
 def validate_header(request):
     """
-    Proper header should be {'content-type': 'application/json'} for posting
+    Proper header should be {'content-type': 'application/json'} for POSTing
     some data on SMS campaign API.
     If header of request is not proper, it raises InvalidUsage exception
     :return:

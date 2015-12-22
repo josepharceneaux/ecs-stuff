@@ -167,18 +167,14 @@ class SmsCampaignApi(object):
     # To send a campaign to candidates
     CAMPAIGN_SEND_PROCESS = CAMPAIGN + '/send'
 
-    # endpoint /url_conversion
-    # This converts the given URL to shorter version using Google's Shorten URL API
-    URL_CONVERSION = '/%s/%s' % (VERSION, 'url_conversion')
-
     """ Followings are not REST endpoints, but App endpoints """
     # endpoint /v1/receive
     # This endpoint is callback URL when candidate replies to a campaign via SMS
     RECEIVE = '/%s/%s' % (VERSION, 'receive')
 
-    # endpoint /v1/campaigns/:id/url_redirection/:id?candidate_id=id
+    # endpoint /v1/campaigns/:id/redirect/:id?candidate_id=id
     # This endpoint is hit when candidate clicks on any URL present in SMS body text.
-    APP_REDIRECTION = CAMPAIGN + '/url_redirection/<int:url_conversion_id>'
+    APP_REDIRECTION = CAMPAIGN + '/redirect/<int:url_conversion_id>'
 
 
 class SmsCampaignApiUrl(SmsCampaignApi):
@@ -190,9 +186,8 @@ class SmsCampaignApiUrl(SmsCampaignApi):
     CAMPAIGN_URL = SmsCampaignApi.HOST_NAME % '/%s/%s' % (SmsCampaignApi.VERSION, 'campaigns/%s')
     CAMPAIGN_SENDS_URL = CAMPAIGN_URL + '/sends'
     CAMPAIGN_SEND_PROCESS_URL = CAMPAIGN_URL + '/send'
-    URL_CONVERSION_URL = SmsCampaignApi.HOST_NAME % SmsCampaignApi.URL_CONVERSION
     RECEIVE_URL = SmsCampaignApi.HOST_NAME % SmsCampaignApi.RECEIVE
-    APP_REDIRECTION_URL = CAMPAIGN_URL % '%s/url_redirection/%s'
+    APP_REDIRECTION_URL = CAMPAIGN_URL % '%s/redirect/%s'
 
 
 class CandidateApiUrl(object):

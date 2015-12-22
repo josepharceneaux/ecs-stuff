@@ -185,9 +185,13 @@ def url_conversion(long_url):
     :param long_url: The URL which we want to be shortened
     :type long_url: str
     :param long_url:
-    :return: shortened URL
-    :rtype: str
+    :return: shortened URL, and error message if any
+    :rtype: tuple
     """
+    if not isinstance(long_url, basestring):
+        raise InvalidUsage(error_message='Pass URL(to be shortened) as a string',
+                           error_code=InvalidUsage.http_status_code())
+
     payload = json.dumps({'longUrl': long_url})
     response = http_request('POST', GOOGLE_URL_SHORTENER_API_URL,
                             headers=JSON_CONTENT_TYPE_HEADER, data=payload)
@@ -201,7 +205,6 @@ def url_conversion(long_url):
     else:
         error_message = "Error while shortening URL. Long URL is %s. " \
                         "Error dict is %s" % (long_url, json_data['error']['errors'][0])
-        current_app.logger.error('url_conversion: %s' % error_message)
         return None, error_message
 
 

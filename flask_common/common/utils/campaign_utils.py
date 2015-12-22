@@ -146,7 +146,7 @@ class CampaignBase(object):
         :Example:
                 SmsCampaignBase.get_candidates(smartlist_id=1)
 
-        :param campaign_smartlist: row (e.g record of "sms_campaign_smartlist" database table)
+        :param campaign_smartlist: obj (e.g record of "sms_campaign_smartlist" database table)
         :type campaign_smartlist: row
         :return: Returns array of candidates in the campaign's smartlists.
         :rtype: list
@@ -193,14 +193,16 @@ class CampaignBase(object):
         **See Also**
         .. see also:: process_send() method in SmsCampaignBase class.
         """
-        # callback function which will be hit after campaign is sent to all candidates
+        # callback function which will be hit after campaign is sent to all candidates i.e.
+        # once the asynch task is done the self.callback_campaign_sent will be called
         callback = self.callback_campaign_sent.subtask((self.user_id, self.campaign,
                                                         self.oauth_header, ))
-        header = [self.send_campaign_to_candidate.subtask((self, record),
+        # Comment TODO and probably change var name as well
+        tasks = [self.send_campaign_to_candidate.subtask((self, record),
                                                           link_error=self.celery_error.subtask())
                   for record in candidates_and_phones]
-        # This calls the callback function once all tasks in header have done their execution
-        chord(header)(callback)
+        # This calls the callback function once all tasks in header finished running
+        chord(tasks)(callback)
 
     @abstractmethod
     def send_campaign_to_candidate(self, candidate_and_phone):

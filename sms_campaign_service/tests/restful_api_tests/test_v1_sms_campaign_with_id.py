@@ -6,6 +6,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 # Standard Imports
 import json
 import requests
+from werkzeug.security import gen_salt
 
 # Service Specific
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
@@ -15,6 +16,7 @@ from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import (UnauthorizedError, ResourceNotFound,
                                                         ForbiddenError, InternalServerError,
                                                         InvalidUsage)
+from sms_campaign_service.tests.conftest import fake
 
 
 class TestSmsCampaignWithIdHTTPGet(object):
@@ -23,7 +25,7 @@ class TestSmsCampaignWithIdHTTPGet(object):
 
     """
 
-    def test_get_with_valid_token_and_valid_id(self, auth_token, sms_campaign_of_current_user):
+    def test_with_valid_token_and_valid_id(self, auth_token, sms_campaign_of_current_user):
         """
         User auth token is valid. It uses 'sms_campaign_of_current_user' fixture
         to create an SMS campaign in database. It gets that record from GET HTTP request
@@ -36,13 +38,14 @@ class TestSmsCampaignWithIdHTTPGet(object):
         assert response.status_code == 200, 'Response should be ok (200)'
         # verify all the field values
         campaign = sms_campaign_of_current_user
-        assert response.json()['campaign']['name'] == campaign.name
-        assert response.json()['campaign']['body_text'] == campaign.body_text
-        assert response.json()['campaign']['frequency_id'] == campaign.frequency_id
-        assert response.json()['campaign']['send_datetime'] == str(campaign.send_datetime)
-        assert response.json()['campaign']['stop_datetime'] == str(campaign.stop_datetime)
+        response_campaign = response.json()['campaign']
+        assert response_campaign['name'] == campaign.name
+        assert response_campaign['body_text'] == campaign.body_text
+        assert response_campaign['frequency_id'] == campaign.frequency_id
+        assert response_campaign['send_datetime'] == str(campaign.send_datetime)
+        assert response_campaign['stop_datetime'] == str(campaign.stop_datetime)
 
-    def test_get_with_invalid_token(self, sms_campaign_of_current_user):
+    def test_with_invalid_token(self, sms_campaign_of_current_user):
         """
         User auth token is invalid. It should get Unauthorized error.
         :return:
@@ -52,8 +55,8 @@ class TestSmsCampaignWithIdHTTPGet(object):
         assert response.status_code == UnauthorizedError.http_status_code(), \
             'It should be unauthorized (401)'
 
-    def test_get_with_id_of_deleted_record(self, auth_token,
-                                           sms_campaign_of_current_user):
+    def test_with_id_of_deleted_record(self, auth_token,
+                                       sms_campaign_of_current_user):
         """
         User auth token is valid. It deletes the campaign and then GETs the record from db.
         It should get ResourceNotFound error.
@@ -73,7 +76,7 @@ class TestSmsCampaignWithIdHTTPPost(object):
     This class contains tests for endpoint /campaigns/:id and HTTP method POST.
     """
 
-    def test_post_with_invalid_token(self, sms_campaign_of_current_user):
+    def test_with_invalid_token(self, sms_campaign_of_current_user):
         """
         User auth token is invalid. It should get Unauthorized error.
         :return:
@@ -83,7 +86,7 @@ class TestSmsCampaignWithIdHTTPPost(object):
         assert response.status_code == UnauthorizedError.http_status_code(), \
             'It should be unauthorized (401)'
 
-    def test_post_with_invalid_header(self, auth_token, sms_campaign_of_current_user):
+    def test_with_invalid_header(self, auth_token, sms_campaign_of_current_user):
         """
         User auth token is valid, but content-type is not set.
         it should get bad request error.
@@ -95,9 +98,9 @@ class TestSmsCampaignWithIdHTTPPost(object):
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should be a bad request (400)'
 
-    def test_post_with_valid_data(self, valid_header,
-                                  campaign_valid_data,
-                                  sms_campaign_of_current_user):
+    def test_with_valid_data(self, valid_header,
+                             campaign_valid_data,
+                             sms_campaign_of_current_user):
         """
         This uses fixture to create an sms_campaign record in db. It then makes a POST
         call to update that record with name modification. If status code is 200, it then
@@ -120,9 +123,9 @@ class TestSmsCampaignWithIdHTTPPost(object):
         assert response_get.status_code == 200, 'Response should be ok (200)'
         assert response_get.json()['campaign']['name'] == modified_name
 
-    def test_post_with_id_of_deleted_record(self, valid_header,
-                                            sms_campaign_of_current_user,
-                                            campaign_valid_data):
+    def test_with_id_of_deleted_record(self, valid_header,
+                                       sms_campaign_of_current_user,
+                                       campaign_valid_data):
         """
         User auth token is valid. It deletes the campaign from database and then tries
         to update the record. It should get ResourceNotFound error.
@@ -139,8 +142,8 @@ class TestSmsCampaignWithIdHTTPPost(object):
         assert response_post.status_code == ResourceNotFound.http_status_code(), \
             'Record should not be found (404)'
 
-    def test_post_with_no_data(self, valid_header,
-                               sms_campaign_of_current_user):
+    def test_with_no_data(self, valid_header,
+                          sms_campaign_of_current_user):
         """
         User auth token is valid but no data is provided. It should get bad request error.
         :return:
@@ -150,12 +153,11 @@ class TestSmsCampaignWithIdHTTPPost(object):
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should get bad request error (400)'
 
-    def test_post_with_invalid_data_type(self, valid_header,
-                                         campaign_valid_data,
-                                         sms_campaign_of_current_user):
+    def test_with_non_json_data(self, valid_header, campaign_valid_data,
+                                sms_campaign_of_current_user):
         """
-        This tries to update sms_campaign record providing invalid data.
-        It should get bad request error
+        This tries to update SMS campaign record (in sms_campaign table) providing data in dict
+        format rather than JSON. It should get bad request error.
         """
         response = requests.post(SmsCampaignApiUrl.CAMPAIGN_URL % sms_campaign_of_current_user.id,
                                  headers=valid_header,
@@ -163,11 +165,12 @@ class TestSmsCampaignWithIdHTTPPost(object):
         assert response.status_code == InvalidUsage.http_status_code(), \
             'Should be a bad request (400)'
 
-    def test_post_with_invalid_data(self, valid_header,
-                                    campaign_data_unknown_key_text,
-                                    sms_campaign_of_current_user):
+    def test_with_unknown_key_in_data(self, valid_header,
+                                      campaign_data_unknown_key_text,
+                                      sms_campaign_of_current_user):
         """
         It tries to update the already present sms_campaign record with invalid_data.
+        campaign_data_unknown_key_text (fixture) has no 'body_text' (which is mandatory) field
         It should get internal server error. Error code should be 5006.
         :param campaign_data_unknown_key_text: fixture to get invalid data to update old record
         :param sms_campaign_of_current_user: fixture to create sms_campaign record in database
@@ -197,10 +200,9 @@ class TestSmsCampaignWithIdHTTPDelete(object):
         assert response.status_code == UnauthorizedError.http_status_code(), \
             'It should be unauthorized (401)'
 
-    def test_delete_with_owned_sms_campaign(self, valid_header,
-                                            sms_campaign_of_current_user):
+    def test_owned_sms_campaign(self, valid_header, sms_campaign_of_current_user):
         """
-        User auth token is valid. It deletes the campaign from database.
+        User auth token is valid. It deletes the campaign, belong to the user, from database.
         It should get OK response.
         :return:
         """
@@ -208,8 +210,7 @@ class TestSmsCampaignWithIdHTTPDelete(object):
                                    headers=valid_header)
         assert response.status_code == 200, 'should get ok response (200)'
 
-    def test_delete_with_not_owned_sms_campaign(self, valid_header,
-                                                sms_campaign_of_other_user):
+    def test_not_owned_sms_campaign(self, valid_header, sms_campaign_of_other_user):
         """
         User auth token is valid. It tries to delete the campaign of some other user
         from database. It should get forbidden error.

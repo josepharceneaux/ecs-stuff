@@ -7,7 +7,7 @@
     This app contains endpoints for
         1- URL redirection (to redirect candidate to our app when he clicks on URL present
                             in SMS body text)
-            /v1/campaigns/:id/url_redirection/:id?candidate_id=id
+            /v1/campaigns/:id/redirect/:id?candidate_id=id
 
         2- SMS receive (to save the candidate's reply to a specific SMS campaign
 
@@ -32,11 +32,9 @@ from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 
 # Imports for Blueprints
 from api.v1_sms_campaign_api import sms_campaign_blueprint
-from api.v1_url_conversion_api import url_conversion_blueprint
 
 # Register Blueprints for different APIs
 app.register_blueprint(sms_campaign_blueprint)
-app.register_blueprint(url_conversion_blueprint)
 
 # Enable CORS
 CORS(app, resources={
@@ -55,14 +53,14 @@ def root():
 @app.route(SmsCampaignApi.APP_REDIRECTION, methods=['GET'])
 def sms_campaign_url_redirection(campaign_id, url_conversion_id):
     """
-    This endpoint is /v1/campaign/:id/url_redirection/:id/?candidate_id=:id.
+    This endpoint is /v1/campaign/:id/redirect/:id/?candidate_id=:id.
 
     When recruiter(user) adds some URL in SMS body text, we save the original URL as
     destination URL in "url_conversion" database table. Then we create a new URL called long_url
     (which is created during the process of sending campaign to candidate) to redirect the
     candidate to our app. This long_url looks like
 
-            http://127.0.0.1:8008/v1/sms_campaign/2/url_redirection/67/?candidate_id=2
+            http://127.0.0.1:8008/v1/sms_campaign/2/redirect/67/?candidate_id=2
 
     For this we first convert this long_url in shorter URL (using Google's shorten URL API) and
     send in SMS body text to candidate. This is the endpoint which redirect the candidate. Short

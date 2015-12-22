@@ -8,13 +8,13 @@ This file contains API endpoints related to sms_campaign_service.
 
             GET     : Gets list of all the SMS campaigns that belong to user
             POST    : Creates new campaign and save it in database
-            DELETE  : Deletes SMS campaigns of user by provided campaign ids as a list
+            DELETE  : Deletes SMS campaigns of user using given campaign ids as a list
 
         - SmsCampaigns: /v1/campaigns/:id
 
-            GET     : Gets campaign data from given id
+            GET     : Gets campaign data using given id
             POST    : Updates existing campaign using given id
-            DELETE  : Deletes SMS campaign from db for given id
+            DELETE  : Deletes SMS campaign from db using given id
 
         - SmsCampaignSends:  /v1/campaigns/:id/sends
 
@@ -83,7 +83,7 @@ class SMSCampaigns(Resource):
 
     def get(self):
         """
-        This action returns a list of all Campaigns for logged in user.
+        This action returns a list of all Campaigns for logged-in user.
 
         :return campaigns_data: a dictionary containing list of campaigns and their count
         :rtype json
@@ -145,7 +145,7 @@ class SMSCampaigns(Resource):
 
             campaign_data = {
                                 "name": "New SMS Campaign",
-                                "body_text": "HI all, we have few openings at abc.com",
+                                "body_text": "Hi all, we have few openings at abc.com",
                                 "frequency_id": 2,
                                 "added_datetime": "2015-11-24T08:00:00Z",
                                 "send_datetime": "2015-11-26T08:00:00Z",
@@ -189,6 +189,7 @@ class SMSCampaigns(Resource):
             data_from_ui = request.get_json()
         except Exception:
             raise InvalidUsage(error_message='Given data is not in json format')
+
         if not data_from_ui:
             raise InvalidUsage(error_message='No data provided to create SMS campaign')
         # apply validation on fields
@@ -258,6 +259,7 @@ class SMSCampaigns(Resource):
             if not all([isinstance(campaign_id, (int, long)) for campaign_id in campaign_ids]):
                 raise InvalidUsage(error_message='Bad request, campaign_ids must be integer',
                                    error_code=InvalidUsage.http_status_code())
+            # TODO what is a status_list
             status_list = [delete_sms_campaign(campaign_id, request.user.id)
                            for campaign_id in campaign_ids]
             if all(status_list):
@@ -273,7 +275,7 @@ class CampaignById(Resource):
     """
     This resource is used to
         1- Get Campaign from given campaign_id [GET]
-        2- Updates an existing SMS campaign [POST]
+        2- Update an existing SMS campaign [POST]
         3- Delete campaign by given campaign id [DELETE]
     """
     decorators = [require_oauth]
@@ -333,7 +335,8 @@ class CampaignById(Resource):
                             "added_datetime": "2015-11-24T08:00:00Z",
                             "send_datetime": "2015-11-26T08:00:00Z",
                             "stop_datetime": "2015-11-30T08:00:00Z",
-                            "id": 1
+                            "id": 1,
+                            "smartlist_ids": [1, 2, 3]
                             }
 
             headers = {
@@ -372,7 +375,6 @@ class CampaignById(Resource):
         camp_obj = SmsCampaignBase(request.user.id)
         camp_obj.create_or_update_sms_campaign(campaign_data, campaign_id=campaign_id)
         if not_found_smartlist_ids:
-
             return dict(message='SMS Campaign(id:%s) has been updated successfully' % campaign_id,
                         not_found_smartlist_ids=not_found_smartlist_ids), 207
         else:
@@ -420,7 +422,7 @@ class CampaignById(Resource):
 @api.route(SmsCampaignApi.CAMPAIGN_SENDS)
 class SmsCampaignSends(Resource):
     """
-    This resource is used to Get Campaign sends [GET]
+    This resource is used to GET Campaign sends
     """
     decorators = [require_oauth]
 

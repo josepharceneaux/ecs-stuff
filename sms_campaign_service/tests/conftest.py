@@ -4,9 +4,11 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
     This file contains pyTest fixtures for tests of SMS Campaign Service.
 """
 # Standard Import
+import re
 import time
 # Application Specific
 # common conftest
+from sms_campaign_service.common.routes import SmsCampaignApi
 
 from sms_campaign_service.common.tests.conftest import *
 
@@ -37,7 +39,6 @@ CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
                         "stop_datetime": "2015-11-30T08:00:00Z",
                         "smartlist_ids": ""
                         }
-fake = Faker()
 
 
 @pytest.fixture()
@@ -387,7 +388,8 @@ def url_conversion_by_send_test_sms_campaign(request,
     :return:
     """
     time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
-    # Need to double check TODO
+    # Need to commit the session because Celery has its own session, and our session does not
+    # know about the changes that Celery session has made.
     db.session.commit()
     # get campaign blast
     sms_campaign_blast = SmsCampaignBlast.get_by_campaign_id(sms_campaign_of_current_user.id)
@@ -410,7 +412,7 @@ def _create_sms_campaign(campaign_data, user_phone):
     """
     This creates an SMS campaign in database table "sms_campaign"
     :param campaign_data: data to create campaign
-    :param user_phone: user_phone row
+    :param user_phone: user_phone obj
     :return:
     """
     smartlist_ids = campaign_data['smartlist_ids']
@@ -426,9 +428,9 @@ def _create_sms_campaign(campaign_data, user_phone):
 def _create_user_twilio_phone(user, phone_value):
     """
     This adds user_phone record in database table "user_phone"
-    :param user: user row
+    :param user: user obj
     :param phone_value: value of phone number
-    :return: user_phone row
+    :return: user_phone obj
     """
     phone_label_id = PhoneLabel.phone_label_id_from_phone_label(TWILIO)
     user_phone = UserPhone(user_id=user.id,
@@ -441,9 +443,12 @@ def _create_user_twilio_phone(user, phone_value):
 def _create_candidate_mobile_phone(candidate, phone_value):
     """
     This adds candidate_phone record in database table "candidate_phone"
-    :param candidate: Candidate row
+    :param candidate: Candidate obj
     :param phone_value: value of phone number
-    :return: user_phone row
+    :type candidate: Candidate
+    :type phone_value: str
+    :return: user_phone obj
+    :rtype: CandidatePhone
     """
     phone_label_id = PhoneLabel.phone_label_id_from_phone_label(MOBILE_PHONE_LABEL)
     candidate_phone = CandidatePhone(candidate_id=candidate.id,
@@ -471,7 +476,7 @@ def assert_url_conversion(sms_campaign_sends, campaign_id):
 
     URL to redirect candidate to our app looks like e.g.
 
-    https://www.gettalent.com/campaigns/1/url_redirection/30/?candidate_id=2
+    https://www.gettalent.com/campaigns/1/redirect/30/?candidate_id=2
 
     So we will verify whether source_url has same format as above URL.
 
@@ -488,12 +493,10 @@ def assert_url_conversion(sms_campaign_sends, campaign_id):
     for send_url_conversion in campaign_send_url_conversions:
         # get URL conversion record from database table 'url_conversion'
         url_conversion = UrlConversion.get_by_id(send_url_conversion.url_conversion_id)
-        # assert /campaigns/ in source URL
-        assert '/campaigns/' in url_conversion.source_url
-        # assert /url_redirection/ in source URL
-        assert '/url_redirection/' in url_conversion.source_url
-        # assert candidate_id present in source URL
-        assert 'candidate_id' in url_conversion.source_url
+        # assert if source_url is in valid form i.e,
+        # 'http://127.0.0.1:8011/v1/campaigns/1710/url_redirection/1453/?candidate_id=780'
+        assert re.match('(/campaigns/)\w+(/redirect/)\w+(\?candidate_id=)',
+                        url_conversion.source_url.split(SmsCampaignApi.VERSION)[1])
         # assert that campaign_id is in source URL
         assert campaign_id in url_conversion.source_url
         # assert that url_conversion_id is in source URL
@@ -510,8 +513,8 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, response_post, c
     :param campaign_id: id of SMS campaign
     :return:
     """
-    # TODO double check
-    time.sleep(SLEEP_TIME)  # need sleep here as campaign send process is running on celery
+    # Need to commit the session because Celery has its own session, and our session does not
+    # know about the changes that Celery session has made.
     db.session.commit()
     # assert on blasts
     sms_campaign_blast = SmsCampaignBlast.get_by_campaign_id(campaign_id)
@@ -536,6 +539,8 @@ def assert_for_activity(user_id, type_, source_id):
     :param source_id:
     :return:
     """
+    # Need to commit the session because Celery has its own session, and our session does not
+    # know about the changes that Celery session has made.
     db.session.commit()
     assert Activity.get_by_user_id_type_source_id(user_id, type_, source_id)
 
@@ -546,6 +551,8 @@ def get_reply_text(candidate_phone):
     :param candidate_phone:
     :return:
     """
+    # Need to commit the session because Celery has its own session, and our session does not
+    # know about the changes that Celery session has made.
     db.session.commit()
     campaign_reply_record = SmsCampaignReply.get_by_candidate_phone_id(candidate_phone.id)
     return campaign_reply_record

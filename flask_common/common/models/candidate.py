@@ -186,6 +186,10 @@ class CandidatePhone(db.Model):
     extension = db.Column(db.String(5))
     is_default = db.Column('IsDefault', db.Boolean)
 
+    # Relationships
+    sms_campaign_replies = relationship('SmsCampaignReply', cascade='all, delete-orphan',
+                                        passive_deletes=True, backref="candidate_phone")
+
     def __repr__(self):
         return "<CandidatePhone (value=' %r', extention= ' %r')>" % (self.value, self.extension)
 
