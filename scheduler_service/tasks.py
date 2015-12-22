@@ -34,8 +34,9 @@ def send_request(access_token, url, content_type, kwargs):
     """
     headers = {
         'Content-Type': content_type,
-        'Authorization': 'Bearer %s' % access_token
     }
+    if access_token:
+        headers['Authorization'] = 'Bearer %s' % access_token
     if content_type == 'application/json':
         kwargs = json.dumps(kwargs)
 

@@ -567,7 +567,6 @@ class GeneralTasks(Resource):
         """
         This method takes data to create or schedule a task for scheduler but without user.
 
-
         :Example:
             for interval or periodic schedule
             task = {
@@ -619,7 +618,10 @@ class GeneralTasks(Resource):
 
         :return: id of created task
         """
-        hmac.validate_signature(request)
+        try:
+            hmac.validate_signature(request)
+        except HmacException:
+            raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
         # get json post request data
         schedule_state_exceptions()
         try:
