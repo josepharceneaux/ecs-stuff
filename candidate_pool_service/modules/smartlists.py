@@ -2,9 +2,10 @@ import json
 
 from candidate_pool_service.common.models.db import db
 from candidate_pool_service.common.models.smartlist import SmartlistCandidate, Smartlist
-from candidate_pool_service.common.models.candidate import Candidate, CandidateEmail, CandidateSocialNetwork, CandidatePhone
+from candidate_pool_service.common.models.candidate import Candidate, CandidateEmail
 from candidate_pool_service.common.models.user import User
-from candidate_pool_service.common.helper.api_calls import search_candidates_from_params
+from candidate_pool_service.common.error_handling import InternalServerError
+from candidate_pool_service.common.helper.api_calls import search_candidates_from_params, update_candidates_on_cloudsearch
 
 __author__ = 'jitesh'
 
@@ -98,18 +99,23 @@ def get_all_smartlists(auth_user, oauth_token):
     return {"Smartlists": "Could not find any smartlist in your domain"}
 
 
-def save_smartlist(user_id, name, search_params=None, candidate_ids=None):
+def save_smartlist(user_id, name, search_params=None, candidate_ids=None, access_token=None):
     """
     Creates a smart or dumb list.
 
     :param user_id: list owner
     :param name: name of list
-    :param search_params *:
-    :param candidate_ids *: only set if you want to create a dumb list
+    :param search_params:
+    :param candidate_ids: only set if you want to create a dumb list
     :type candidate_ids: list[long|int] | None
     * only one parameter should be present: either `search_params` or `candidate_ids` (Should be validated by 'calling' function)
+    :param access_token: oauth token required only in case of candidate_ids, it is required by search service to upload candidates to cloudsearch
+    :type access_token: basestring
     :return: Newly created smartlist row object
     """
+    if candidate_ids and not access_token:
+        raise InternalServerError("Access token is required when adding candidate ids to smartlist")
+
     smartlist = Smartlist(name=name,
                           user_id=user_id,
                           search_params=search_params)
@@ -121,7 +127,10 @@ def save_smartlist(user_id, name, search_params=None, candidate_ids=None):
         for candidate_id in candidate_ids:
             row = SmartlistCandidate(smartlist_id=smartlist.id, candidate_id=candidate_id)
             db.session.add(row)
-    db.session.commit()
+        db.session.commit()
+
+        # Update candidate documents on cloudsearch
+        update_candidates_on_cloudsearch(access_token, candidate_ids)
 
     # TODO Add activity
     return smartlist

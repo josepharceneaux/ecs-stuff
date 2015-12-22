@@ -3,7 +3,8 @@ from flask_restful import Resource
 
 from candidate_pool_service.common.utils.auth_utils import require_oauth
 from candidate_pool_service.common.error_handling import ForbiddenError, NotFoundError, InvalidUsage
-from candidate_pool_service.common.models.smartlist import *
+from candidate_pool_service.common.models.db import db
+from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.modules.smartlists import get_candidates, create_smartlist_dict, save_smartlist, get_all_smartlists
 from candidate_pool_service.modules.validators import (validate_and_parse_request_data,
                                                        validate_and_format_smartlist_post_data)
@@ -68,7 +69,7 @@ class SmartlistResource(Resource):
             if not smartlist or smartlist.is_hidden:
                 raise NotFoundError("List id does not exists", 404)
             # check whether smartlist belongs to user's domain
-            if smartlist.user.domain_id != request.user.domain_id:
+            if smartlist.user.domain_id != auth_user.domain_id:
                 raise ForbiddenError("List does not belong to user's domain", 403)
             return create_smartlist_dict(smartlist, request.oauth_token)
         else:
@@ -85,14 +86,14 @@ class SmartlistResource(Resource):
                 or  "candidate_ids": if not search_params then candidate_ids should be present
         :return: smartlist id
         """
-        user_id = request.user.id
+        auth_user = request.user
         data = request.get_json(silent=True)
         if not data:
             raise InvalidUsage("Received empty request body")
         # request data must pass through this function, as this will create data in desired format
-        data = validate_and_format_smartlist_post_data(data, user_id)
-        smartlist = save_smartlist(user_id=user_id, name=data.get('name'), search_params=data.get('search_params'),
-                                   candidate_ids=data.get('candidate_ids'))
+        data = validate_and_format_smartlist_post_data(data, auth_user)
+        smartlist = save_smartlist(user_id=auth_user.id, name=data.get('name'), search_params=data.get('search_params'),
+                                   candidate_ids=data.get('candidate_ids'), access_token=request.oauth_token)
         return {'smartlist': {'id': smartlist.id}}, 201
 
     def delete(self, **kwargs):
@@ -111,6 +112,5 @@ class SmartlistResource(Resource):
         # check whether smartlist belongs to user's domain
         if smartlist.user.domain_id != request.user.domain_id:
             raise ForbiddenError("List does not belong to user's domain")
-        smartlist.is_hidden = True
-        db.session.commit()
+        smartlist.delete()
         return {'smartlist': {'id': smartlist.id}}

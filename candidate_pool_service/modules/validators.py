@@ -20,7 +20,7 @@ def validate_and_parse_request_data(data):
             'count_only': count_only}
 
 
-def validate_and_format_smartlist_post_data(data, user_id):
+def validate_and_format_smartlist_post_data(data, user):
     """Validates request.form data against required parameters
     strips unwanted whitespaces (if present)
     creates list of candidate ids (if present)
@@ -44,8 +44,10 @@ def validate_and_format_smartlist_post_data(data, user_id):
         # validate if search_params in valid dict format.
         if not isinstance(search_params, dict):
             raise InvalidUsage("`search_params` should in dictionary format.", 400)
-
-    formatted_request_data = {'name': smartlist_name.strip(),
+    smartlist_name = smartlist_name.strip()
+    if Smartlist.query.join(Smartlist.user).filter(and_(User.domain_id == user.domain_id, Smartlist.name == smartlist_name)).first():
+        raise InvalidUsage("Given smartlist `name` %s already exists in your domain" % smartlist_name)
+    formatted_request_data = {'name': smartlist_name,
                               'candidate_ids': None,
                               'search_params': None}
     if candidate_ids:
@@ -56,7 +58,7 @@ def validate_and_format_smartlist_post_data(data, user_id):
         except ValueError:
             raise InvalidUsage("Incorrect input: Candidate ids must be numeric value and separated by comma")
         # Check if provided candidate ids are present in our database and also belongs to auth user's domain
-        if not validate_candidate_ids_belongs_to_user_domain(candidate_ids, user_id):
+        if not validate_candidate_ids_belongs_to_user_domain(candidate_ids, user):
             raise ForbiddenError("Provided list of candidates does not belong to user's domain")
         formatted_request_data['candidate_ids'] = candidate_ids
     else:  # if not candidate_ids then it is search_params
@@ -64,8 +66,7 @@ def validate_and_format_smartlist_post_data(data, user_id):
     return formatted_request_data
 
 
-def validate_candidate_ids_belongs_to_user_domain(candidate_ids, user_id):
-    user = User.query.get(user_id)
+def validate_candidate_ids_belongs_to_user_domain(candidate_ids, user):
     return Candidate.query.with_entities(Candidate.id).join(User, Candidate.user_id == User.id).filter(
         and_(User.domain_id == user.domain_id, Candidate.id.in_(candidate_ids))).count() == len(candidate_ids)
 

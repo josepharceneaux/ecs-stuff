@@ -70,6 +70,14 @@ class TestSmartlistResource(object):
             resp = self.call_post_api(data, auth_token_row['access_token'])
             assert resp.status_code == 400
 
+        def test_create_smartlist_with_whitespace_search_params(self, sample_user, user_auth):
+            auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+            name = 'smart list with whitespace search params'
+            search_params = '         '
+            data = {'name': name, 'search_params': search_params}
+            resp = self.call_post_api(data, auth_token_row['access_token'])
+            assert resp.status_code == 400
+
         def test_create_smartlist_without_candidate_ids_and_search_params(self, sample_user, user_auth):
             auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
             name = fake.word()
@@ -132,6 +140,17 @@ class TestSmartlistResource(object):
             assert resp.status_code == 403
             assert json.loads(resp.content)['error']['message'] == "Provided list of candidates does not belong to user's domain"
 
+        def test_create_smartlist_with_existing_name_in_domain(self, access_token_first):
+            smartlist_name = fake.word()
+            data = {'name': smartlist_name, 'search_params': {"maximum_years_experience": "5"}}
+            resp = self.call_post_api(data, access_token_first)
+            assert resp.status_code == 201  # Successfully created
+            # Try creating smartlist with same name
+            data2 = {'name': smartlist_name, 'search_params': {"location": "San Jose, CA"}}
+            resp2 = self.call_post_api(data2, access_token_first)
+            assert resp2.status_code == 400
+            assert json.loads(resp2.content)['error']['message'] == "Given smartlist `name` %s already exists in your domain" % smartlist_name
+
     class TestSmartlistResourceGET(object):
         def call_get_api(self, access_token, list_id=None):
             """Calls GET API of SmartlistResource"""
@@ -150,7 +169,7 @@ class TestSmartlistResource(object):
             data = FakeCandidatesData.create(count=num_of_candidates)
             candidate_ids = create_candidates_from_candidate_api(auth_token_row['access_token'], data)
             smartlist = save_smartlist(user_id=auth_token_row['user_id'], name=list_name,
-                                       candidate_ids=candidate_ids)
+                                       candidate_ids=candidate_ids, access_token=auth_token_row['access_token'])
             resp = self.call_get_api(auth_token_row['access_token'], smartlist.id)
             assert resp.status_code == 200
             response = json.loads(resp.content)
@@ -208,7 +227,7 @@ class TestSmartlistResource(object):
             data = FakeCandidatesData.create(count=1)
             candidate_ids = create_candidates_from_candidate_api(auth_token_row['access_token'], data)
             smartlist = save_smartlist(user_id=auth_token_row['user_id'], name=list_name,
-                                       candidate_ids=candidate_ids)
+                                       candidate_ids=candidate_ids, access_token=auth_token_row['access_token'])
             db.session.commit()
             smartlist_obj = Smartlist.query.get(smartlist.id)
             assert smartlist_obj.is_hidden is False
@@ -232,7 +251,8 @@ class TestSmartlistResource(object):
             data = FakeCandidatesData.create(count=1)
             candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
             # User 1 from domain 1 created smartlist
-            smartlist = save_smartlist(user_id=user_first.id, name=list_name, candidate_ids=candidate_ids)
+            smartlist = save_smartlist(user_id=user_first.id, name=list_name, candidate_ids=candidate_ids,
+                                       access_token=access_token_first)
             # User 2 from domain 2 trying to delete smartlist
             response = self.call_delete_api(access_token_second, smartlist.id)
             assert response.status_code == 403
@@ -267,7 +287,7 @@ class TestSmartlistCandidatesApi(object):
         data = FakeCandidatesData.create(count=num_of_candidates)
         candidate_ids = create_candidates_from_candidate_api(auth_token_row['access_token'], data)
         smartlist = save_smartlist(user_id=auth_token_row['user_id'], name=fake.name(),
-                                   candidate_ids=candidate_ids)
+                                   candidate_ids=candidate_ids, access_token=auth_token_row['access_token'])
         params = {'fields': 'candidate_ids_only'}
         resp = self.call_smartlist_candidates_get_api(smartlist.id, params, auth_token_row['access_token'])
         assert resp.status_code == 200
@@ -282,7 +302,7 @@ class TestSmartlistCandidatesApi(object):
         data = FakeCandidatesData.create(count=num_of_candidates)
         candidate_ids = create_candidates_from_candidate_api(auth_token_row['access_token'], data)
         smartlist = save_smartlist(user_id=auth_token_row['user_id'], name=fake.name(),
-                                   candidate_ids=candidate_ids)
+                                   candidate_ids=candidate_ids, access_token=auth_token_row['access_token'])
         params = {'fields': 'count_only'}
         resp = self.call_smartlist_candidates_get_api(smartlist.id, params, auth_token_row['access_token'])
         assert resp.status_code == 200
@@ -296,7 +316,7 @@ class TestSmartlistCandidatesApi(object):
         data = FakeCandidatesData.create(count=num_of_candidates)
         candidate_ids = create_candidates_from_candidate_api(auth_token_row['access_token'], data)
         smartlist = save_smartlist(user_id=auth_token_row['user_id'], name=fake.name(),
-                                   candidate_ids=candidate_ids)
+                                   candidate_ids=candidate_ids, access_token=auth_token_row['access_token'])
         params = {'fields': 'all'}
         resp = self.call_smartlist_candidates_get_api(smartlist.id, params, auth_token_row['access_token'])
         assert resp.status_code == 200

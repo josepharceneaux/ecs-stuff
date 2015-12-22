@@ -2,7 +2,7 @@ __author__ = 'ufarooqi'
 import json
 from werkzeug.security import gen_salt
 from candidate_pool_service.common.routes import CandidateApiUrl
-from candidate_pool_service.common.models.talent_pools_pipelines import Smartlist, SmartlistCandidate
+from candidate_pool_service.common.models.smartlist import Smartlist, SmartlistCandidate
 
 import requests
 
@@ -148,7 +148,7 @@ def add_candidates_to_dumb_list(session, access_token, test_dumb_list, candidate
     """
 
     for candidate_id in candidate_ids:
-        dumb_list_candidate = SmartlistCandidate(candidate_id=candidate_id, smart_list_id=test_dumb_list.id)
+        dumb_list_candidate = SmartlistCandidate(candidate_id=candidate_id, smartlist_id=test_dumb_list.id)
         session.add(dumb_list_candidate)
 
     session.commit()

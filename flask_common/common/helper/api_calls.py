@@ -17,7 +17,7 @@ def create_candidates_from_candidate_api(access_token, data=None):
 
     resp = requests.post(
         url=CandidateApiUrl.CANDIDATES,
-        headers={'Authorization': 'Bearer %s' % access_token if 'Bearer' in access_token else 'Bearer %s' % access_token},
+        headers={'Authorization': access_token if 'Bearer' in access_token else 'Bearer %s' % access_token},
         data=json.dumps(data)
     )
     assert resp.status_code == 201
@@ -40,3 +40,24 @@ def search_candidates_from_params(search_params, access_token):
     except Exception as ex:
         raise InternalServerError("Error occurred while searching for candidates. Exception: %s" % ex)
 
+
+def update_candidates_on_cloudsearch(access_token, candidate_ids):
+    """
+    Calls candidate search service to upload candidate documents for given candidate ids
+    :param access_token: User's access token
+    :type access_token: basestring
+    :param candidate_ids: List of candidate ids
+    :type candidate_ids: list
+    """
+    try:
+        # Update Candidate Documents in Amazon Cloud Search
+        headers = {'Authorization': access_token if 'Bearer' in access_token else 'Bearer %s' % access_token,
+                   'Content-Type': 'application/json'}
+        response = requests.post(CandidateApiUrl.CANDIDATES_DOCUMENTS_URI, headers=headers,
+                                 data=json.dumps({'candidate_ids': candidate_ids}))
+
+        if response.status_code != 204:
+            raise InternalServerError("Status Code: %s Response: %s" % (response.status_code, response.json()))
+
+    except Exception as e:
+        raise InternalServerError("Couldn't update Candidate Documents in Amazon Cloud Search. Because: %s" % e.message)
