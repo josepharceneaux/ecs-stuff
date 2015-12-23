@@ -53,14 +53,13 @@ def get_candidates(smartlist, access_token, candidate_ids_only=False, count_only
 def create_candidates_dict(candidate_ids):
     """Given candidate ids, function will return respective candidates in formatted dict"""
     candidates = Candidate.query.filter(Candidate.id.in_(candidate_ids)).all()
-    candidate_emails = CandidateEmail.query.filter(CandidateEmail.candidate_id.in_(candidate_ids)).all()
     candidates_dict = {"candidates": [], "total_found": 0}
     for candidate in candidates:
         candidate_dict = {}
         candidate_id = candidate.id
         candidate_dict["id"] = candidate_id
         candidate_dict["emails"] = [email.address for email in
-                                    filter(lambda emails: emails.candidate_id == candidate_id, candidate_emails)]
+                                    candidate.candidate_emails]
         # Finally append all candidates in list and return it
         candidates_dict["candidates"].append(candidate_dict)
     candidates_dict["total_found"] = len(candidates)
@@ -70,18 +69,19 @@ def create_candidates_dict(candidate_ids):
 def create_smartlist_dict(smartlist, oauth_token):
     """
     Given smartlist object returns the formatted smartlist dict.
+    :param smartlist: smartlist row object
+    :param oauth_token: oauth token
     """
     candidate_count = get_candidates(smartlist, oauth_token, count_only=True)['total_found']
 
     return {
-        "smartlist": {
-            "total_found": candidate_count,
-            "user_id": smartlist.user_id,
-            "id": smartlist.id,
-            "name": smartlist.name,
-            "search_params": smartlist.search_params
-        }
+        "total_found": candidate_count,
+        "user_id": smartlist.user_id,
+        "id": smartlist.id,
+        "name": smartlist.name,
+        "search_params": smartlist.search_params
     }
+
 
 
 def get_all_smartlists(auth_user, oauth_token):
@@ -90,13 +90,13 @@ def get_all_smartlists(auth_user, oauth_token):
     :param auth_user: User object
     :return: List of dictionary of all smartlists present in user's domain
     """
-    smartlists = Smartlist.query.join(User, Smartlist.user_id == auth_user.id).filter(
-        User.domain_id == auth_user.domain_id).all()
+    smartlists = Smartlist.query.join(Smartlist.user).filter(
+        User.domain_id == auth_user.domain_id, Smartlist.is_hidden == False).all()
 
     if smartlists:
         return [create_smartlist_dict(smartlist, oauth_token) for smartlist in smartlists]
 
-    return {"Smartlists": "Could not find any smartlist in your domain"}
+    return "Could not find any smartlist in your domain"
 
 
 def save_smartlist(user_id, name, search_params=None, candidate_ids=None, access_token=None):

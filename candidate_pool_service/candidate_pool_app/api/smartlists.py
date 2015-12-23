@@ -3,7 +3,6 @@ from flask_restful import Resource
 
 from candidate_pool_service.common.utils.auth_utils import require_oauth
 from candidate_pool_service.common.error_handling import ForbiddenError, NotFoundError, InvalidUsage
-from candidate_pool_service.common.models.db import db
 from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.modules.smartlists import get_candidates, create_smartlist_dict, save_smartlist, get_all_smartlists
 from candidate_pool_service.modules.validators import (validate_and_parse_request_data,
@@ -34,10 +33,10 @@ class SmartlistCandidates(Resource):
         data = validate_and_parse_request_data(request.args)
         smartlist = Smartlist.query.get(smartlist_id)
         if not smartlist or smartlist.is_hidden:
-            raise NotFoundError("List id does not exists.", 404)
+            raise NotFoundError("List id does not exists.")
         # check whether smartlist belongs to user's domain
         if smartlist.user.domain_id != request.user.domain_id:
-            raise ForbiddenError("Provided list does not belong to user's domain", 403)
+            raise ForbiddenError("Provided list does not belong to user's domain")
         return get_candidates(smartlist, request.oauth_token, data['candidate_ids_only'], data['count_only'])
 
 
@@ -67,14 +66,14 @@ class SmartlistResource(Resource):
         if list_id:
             smartlist = Smartlist.query.get(list_id)
             if not smartlist or smartlist.is_hidden:
-                raise NotFoundError("List id does not exists", 404)
+                raise NotFoundError("List id does not exists")
             # check whether smartlist belongs to user's domain
             if smartlist.user.domain_id != auth_user.domain_id:
-                raise ForbiddenError("List does not belong to user's domain", 403)
-            return create_smartlist_dict(smartlist, request.oauth_token)
+                raise ForbiddenError("List does not belong to user's domain")
+            return {'smartlist': create_smartlist_dict(smartlist, request.oauth_token)}
         else:
             # Return all smartlists from user's domain
-            return get_all_smartlists(auth_user, request.oauth_token)
+            return {'smartlists': get_all_smartlists(auth_user, request.oauth_token)}
 
     def post(self):
         """

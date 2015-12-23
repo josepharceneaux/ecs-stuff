@@ -8,11 +8,9 @@ import json
 import random
 import time
 import requests
-from faker import Faker
 
 __author__ = 'jitesh'
 
-fake = Faker()
 
 # TODO: Use routes.py once it is ready
 SMARTLIST_URL = 'http://localhost:8008/v1/smartlists'
@@ -30,6 +28,7 @@ class TestSmartlistResource(object):
             )
 
         def test_create_smartlist_with_search_params(self, sample_user, user_auth):
+            """Test to create smartlist by passing valid search_params as parameter. It should create smartlist"""
             auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
             name = fake.word()
             search_params = {"maximum_years_experience": "5", "location": "San Jose, CA", "minimum_years_experience": "2"}
@@ -41,10 +40,10 @@ class TestSmartlistResource(object):
             assert 'id' in response['smartlist']
 
         def test_create_smartlist_with_candidate_ids(self, sample_user, user_auth):
+            """Test to create smartlist with candidate ids (smartlist with candidate ids is dumblist)."""
             auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
             data = FakeCandidatesData.create(count=5)
-            candidate_id_list = create_candidates_from_candidate_api(auth_token_row['access_token'], data)
-            candidate_ids = ','.join(map(str, candidate_id_list))
+            candidate_ids = create_candidates_from_candidate_api(auth_token_row['access_token'], data)
             name = fake.word()
             data = {'name': name,
                     'candidate_ids': candidate_ids}
@@ -60,9 +59,10 @@ class TestSmartlistResource(object):
                                                                                   {'fields': 'candidate_ids_only'},
                                                                                   auth_token_row['access_token'])
             smartlist_candidate_ids = [row['id'] for row in response.json()['candidates']]
-            assert sorted(candidate_id_list) == sorted(smartlist_candidate_ids)
+            assert sorted(candidate_ids) == sorted(smartlist_candidate_ids)
 
         def test_create_smartlist_with_blank_search_params(self, sample_user, user_auth):
+            """Test blank search params validation"""
             auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
             name = 'smart list with blank search params'
             search_params = ''
@@ -71,6 +71,7 @@ class TestSmartlistResource(object):
             assert resp.status_code == 400
 
         def test_create_smartlist_with_whitespace_search_params(self, sample_user, user_auth):
+            """Test whitespaces are passed to search params, validations test"""
             auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
             name = 'smart list with whitespace search params'
             search_params = '         '
@@ -79,6 +80,8 @@ class TestSmartlistResource(object):
             assert resp.status_code == 400
 
         def test_create_smartlist_without_candidate_ids_and_search_params(self, sample_user, user_auth):
+            """Test either of search_params or candidate_ids should be present.
+            If not it should not create smartlist and should raise 400"""
             auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
             name = fake.word()
             data = {'name': name}
@@ -86,25 +89,30 @@ class TestSmartlistResource(object):
             assert resp.status_code == 400
 
         def test_create_smartlist_with_blank_candidate_ids(self, sample_user, user_auth):
+            """Test with blank candidate_ids list, it should raise InvalidUsage error"""
             auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
             data = {'name': fake.word(), 'candidate_ids': ''}
             resp = self.call_post_api(data, auth_token_row['access_token'])
             assert resp.status_code == 400
 
         def test_create_smartlist_with_characters_in_candidate_ids(self, sample_user, user_auth):
+            """Test for validation that list of candidate_ids should only contain number"""
             auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-            data = {'name': fake.word(), 'candidate_ids': '1, 2, "abcd", 5'}
+            data = {'name': fake.word(), 'candidate_ids': [1, 2, "abcd", 5]}
             resp = self.call_post_api(data, auth_token_row['access_token'])
             assert resp.status_code == 400
+            assert resp.json()['error']['message'] == "`candidate_ids` should be list of whole numbers"
 
         def test_create_smartlist_with_both_search_params_and_candidate_ids(self, sample_user, user_auth):
+            """Test creating smartlist with both search_params and candidate_ids should not be allowed"""
             auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-            data = {'name': fake.word(), 'candidate_ids': '1', 'search_params': {"maximum_years_experience": "5"}}
+            data = {'name': fake.word(), 'candidate_ids': [1], 'search_params': {"maximum_years_experience": "5"}}
             resp = self.call_post_api(data, auth_token_row['access_token'])
             assert resp.status_code == 400
             assert json.loads(resp.content)['error']['message'] == "Bad input: `search_params` and `candidate_ids` both are present. Service accepts only one"
 
         def test_create_smartlist_with_invalid_search_params(self, access_token_first):
+            """Test search_params should be in dictionary format"""
             data = {'name': fake.word(), 'search_params': "location=San Jose, CA"}
             resp = self.call_post_api(data, access_token_first)
             assert resp.status_code == 400
@@ -116,24 +124,26 @@ class TestSmartlistResource(object):
             assert resp.status_code == 400
             assert json.loads(resp.content)['error']['message'] == "`search_params` should in dictionary format."
 
-        def test_create_smartlist_without_name(self, sample_user, user_auth):
+        def test_create_smartlist_with_whitespaces_name(self, sample_user, user_auth):
+            """Test creating smartlist with whitespaces in name"""
             auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
             name = "    "
-            data = {'name': name, 'candidate_ids': '1'}
+            data = {'name': name, 'candidate_ids': [1]}
             resp = self.call_post_api(data, auth_token_row['access_token'])
             assert resp.status_code == 400
             assert json.loads(resp.content)['error']['message'] == "Missing input: `name` is required for creating list"
 
         def test_create_smartlist_presence_of_oauth_decorator(self):
-            data = {'name': fake.word(), 'candidate_ids': '1'}
+            """Check if no access_token is given it should raise authorization error"""
+            data = {'name': fake.word(), 'candidate_ids': [1]}
             resp = self.call_post_api(data, access_token='')
             assert resp.status_code == 401
 
         def test_create_smartlist_from_candidates_not_in_users_domain(self, access_token_first, access_token_second):
+            """Test user should not be allowed to create smartlist with candidates not belonging to his own domain"""
             # User_second creates candidates
             data = FakeCandidatesData.create(count=3)
-            candidate_id_list = create_candidates_from_candidate_api(access_token_second, data)
-            candidate_ids = ','.join(map(str, candidate_id_list))
+            candidate_ids = create_candidates_from_candidate_api(access_token_second, data)
             data = {'name': fake.word(), 'candidate_ids': candidate_ids}
             # first user (access_token_first) trying to create smartlist with second user's candidates.
             resp = self.call_post_api(data, access_token_first)
@@ -141,8 +151,9 @@ class TestSmartlistResource(object):
             assert json.loads(resp.content)['error']['message'] == "Provided list of candidates does not belong to user's domain"
 
         def test_create_smartlist_with_existing_name_in_domain(self, access_token_first):
+            """Test smartlist creation with same name is not allowed"""
             smartlist_name = fake.word()
-            data = {'name': smartlist_name, 'search_params': {"maximum_years_experience": "5"}}
+            data = {'name': smartlist_name, 'search_params': {'maximum_years_experience': '5'}}
             resp = self.call_post_api(data, access_token_first)
             assert resp.status_code == 201  # Successfully created
             # Try creating smartlist with same name
@@ -222,6 +233,9 @@ class TestSmartlistResource(object):
             )
 
         def test_delete_smartlist(self, sample_user, user_auth):
+            """Test user is able to delete (hide) smartlist.
+            Once it is deleted one should not be able to retrieve it from GET API
+            """
             auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
             list_name = fake.name()
             data = FakeCandidatesData.create(count=1)
@@ -245,6 +259,35 @@ class TestSmartlistResource(object):
                 headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
             )
             assert output.status_code == 404  # Get method should give 404 for hidden smartlist
+
+        def test_get_all_smartlist_should_not_return_deleted_smartlist(self, user_first, access_token_first):
+            """Test GET all smartlists in domain should not include the deleted smartlist"""
+            smartlist1 = save_smartlist(user_id=user_first.id,
+                                        name=fake.name(),
+                                        search_params=json.dumps({"query": ""}))
+            smartlist2 = save_smartlist(user_id=user_first.id, name=fake.name(),
+                                        search_params=json.dumps({'maximum_years_experience': '5'}))
+            # Call GET all smartlists and it should give both the smartlist ids
+            resp1 = requests.get(
+                url=SMARTLIST_URL,
+                headers={'Authorization': 'Bearer %s' % access_token_first}
+            )
+            assert resp1.status_code == 200
+            all_smartlists = resp1.json()['smartlists']
+            all_smartlist_ids = [smartlist['id'] for smartlist in all_smartlists]
+            assert sorted([smartlist1.id, smartlist2.id]) == sorted(all_smartlist_ids)
+            # Delete smartlist 1
+            resp2 = self.call_delete_api(access_token_first, smartlist1.id)
+            assert resp2.status_code == 200
+            # Call GET all smartlists and it should give single smartlist, i.e. smartlist2
+            resp3 = requests.get(
+                url=SMARTLIST_URL,
+                headers={'Authorization': 'Bearer %s' % access_token_first}
+            )
+            assert resp3.status_code == 200
+            smartlist_ids = [smartlist['id'] for smartlist in resp3.json()['smartlists']]
+            assert len(smartlist_ids) == 1
+            assert smartlist_ids[0] == smartlist2.id
 
         def test_delete_smartlist_from_other_domain(self, user_first, access_token_first, access_token_second):
             list_name = fake.name()
@@ -380,6 +423,6 @@ class TestSmartlistCandidatesApi(object):
         response = requests.delete(url=SMARTLIST_URL + '/%s' % smartlist.id,
                                    headers={'Authorization': 'Bearer %s' % access_token_first})
         assert response.status_code == 200
-        # Now try getting candidates from this deleted(hidden) smartlist
+        # Now try getting candidates from this deleted(hidden) smartlist, it should raise 404(not found)
         response = self.call_smartlist_candidates_get_api(smartlist.id, {'fields': 'all'}, access_token_first)
         assert response.status_code == 404

@@ -1,7 +1,5 @@
 from db import db
 import datetime
-from candidate import Candidate
-from sqlalchemy.orm import relationship, backref
 
 __author__ = 'jitesh'
 

@@ -30,20 +30,18 @@ def validate_and_format_smartlist_post_data(data, user):
     candidate_ids = data.get('candidate_ids')  # comma separated ids
     search_params = data.get('search_params')
     if not smartlist_name or not smartlist_name.strip():
-        raise InvalidUsage(error_message="Missing input: `name` is required for creating list", error_code=400)
+        raise InvalidUsage(error_message="Missing input: `name` is required for creating list")
     # any of the parameters "search_params" or "candidate_ids" should be present
     if not candidate_ids and not search_params:
-        raise InvalidUsage(error_message="Missing input: Either `search_params` or `candidate_ids` are required",
-                           error_code=400)
+        raise InvalidUsage(error_message="Missing input: Either `search_params` or `candidate_ids` are required")
     # Both the parameters will create a confusion, so only one parameter should be present. Its better to notify user.
     if candidate_ids and search_params:
         raise InvalidUsage(
-            error_message="Bad input: `search_params` and `candidate_ids` both are present. Service accepts only one",
-            error_code=400)
+            error_message="Bad input: `search_params` and `candidate_ids` both are present. Service accepts only one")
     if search_params:
         # validate if search_params in valid dict format.
         if not isinstance(search_params, dict):
-            raise InvalidUsage("`search_params` should in dictionary format.", 400)
+            raise InvalidUsage("`search_params` should in dictionary format.")
     smartlist_name = smartlist_name.strip()
     if Smartlist.query.join(Smartlist.user).filter(and_(User.domain_id == user.domain_id, Smartlist.name == smartlist_name)).first():
         raise InvalidUsage("Given smartlist `name` %s already exists in your domain" % smartlist_name)
@@ -51,12 +49,12 @@ def validate_and_format_smartlist_post_data(data, user):
                               'candidate_ids': None,
                               'search_params': None}
     if candidate_ids:
-        try:
-            # Remove duplicate ids, in case user accidentally added duplicates
-            # remove unwanted whitespaces and convert unicode to long
-            candidate_ids = [long(candidate_id.strip()) for candidate_id in set(candidate_ids.split(',')) if candidate_id]
-        except ValueError:
-            raise InvalidUsage("Incorrect input: Candidate ids must be numeric value and separated by comma")
+        if not isinstance(candidate_ids, list):
+            raise InvalidUsage("`candidate_ids` should be in list format.")
+        if filter(lambda x: not isinstance(x, (int, long)), candidate_ids):
+            raise InvalidUsage("`candidate_ids` should be list of whole numbers")
+        # Remove duplicate ids, in case user accidentally added duplicates
+        candidate_ids = list(set(candidate_ids))
         # Check if provided candidate ids are present in our database and also belongs to auth user's domain
         if not validate_candidate_ids_belongs_to_user_domain(candidate_ids, user):
             raise ForbiddenError("Provided list of candidates does not belong to user's domain")
