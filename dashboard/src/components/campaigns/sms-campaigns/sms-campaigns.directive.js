@@ -1,11 +1,9 @@
 (function () {
-
     'use strict';
 
     angular.module('app.campaigns')
         .directive('gtSmsCampaigns', directiveFunction)
         .controller('SmsCampaignsController', ControllerFunction);
-
 
     // ----- directiveFunction -----
     directiveFunction.$inject = [];
@@ -25,7 +23,6 @@
         return directive;
     }
 
-
     // ----- ControllerFunction -----
     ControllerFunction.$inject = ['logger'];
 
@@ -38,5 +35,4 @@
             logger.log('Activated Sms Campaigns View');
         }
     }
-
 })();

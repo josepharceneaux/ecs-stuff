@@ -9,7 +9,6 @@ ADD talent-uwsgi.ini talent-uwsgi.ini
 RUN pip install simple-crypt
 
 EXPOSE 80
-EXPOSE 443
 
 # Set DB connection string
 ENV DB_STRING mysql://talent_web:s!web976892@livedb.gettalent.com/talent_core

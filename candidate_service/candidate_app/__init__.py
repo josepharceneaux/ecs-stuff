@@ -26,9 +26,9 @@ from candidate_service.candidate_app.api.v1_candidates import (
     CandidateExperienceResource, CandidateExperienceBulletResource, CandidateWorkPreferenceResource,
     CandidateEmailResource, CandidatePhoneResource, CandidateMilitaryServiceResource,
     CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
-    CandidateCustomFieldResource
+    CandidateCustomFieldResource, CandidateEditResource, CandidatesResource
 )
-from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch
+from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
 
 api = GetTalentApi(app=app)
 
@@ -38,8 +38,14 @@ api.add_resource(
     CandidateResource,
     '/v1/candidates/<int:id>',
     '/v1/candidates/<email>',
-    '/v1/candidates',
     endpoint='candidate_resource'
+)
+
+######################## CandidatesResource ########################
+api.add_resource(
+    CandidatesResource,
+    '/v1/candidates',
+    endpoint='candidates_resource'
 )
 
 ######################## CandidateAddressResource ########################
@@ -217,14 +223,25 @@ api.add_resource(
     endpoint='candidate_work_preference'
 )
 
+######################## CandidateEditResource ########################
+api.add_resource(
+    CandidateEditResource,
+    '/v1/candidates/<int:id>/edits',
+    endpoint='candidate_edit'
+)
+
 ######################## CandidateEmailCampaignResource ########################
 # api.add_resource(CandidateEmailCampaignResource,
 #                  '/v1/candidates/<int:id>/email_campaigns/<int:email_campaign_id>/email_campaign_sends',
 #                  endpoint='candidates')
 
 # ****** Candidate Search *******
-api.add_resource(CandidateSearch,
-                 '/v1/candidates/search')
+api.add_resource(CandidateSearch, '/v1/candidates/search')
+
+
+# ****** Candidate Documents *******
+api.add_resource(CandidateDocuments, '/v1/candidates/documents')
+
 
 db.create_all()
 db.session.commit()

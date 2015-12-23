@@ -20,24 +20,6 @@ def is_valid_email(email):
     return email and re.match(regex, email)
 
 
-# def format_phone_number(phone_number):
-#     """
-#     Format US/Canada phone numbers in +1 (123) 456-7899 format
-#     :return: Formatted phone numbers
-#     :rtype: str
-#     """
-#     import phonenumbers
-#     try:
-#         parsed_phone_numbers = phonenumbers.parse(str(phone_number), region="US")
-#         if phonenumbers.is_valid_number_for_region(parsed_phone_numbers, 'US'):
-#             # Phone number format is : +1 (123) 456-7899
-#             return '+1 ' + phonenumbers.format_number(parsed_phone_numbers, phonenumbers.PhoneNumberFormat.NATIONAL)
-#         else:
-#             raise InvalidUsage(error_message="[%s] is an invalid or non-US/Canada Phone Number" % phone_number)
-#     except:
-#         raise InvalidUsage("[%s] is an invalid or non-US/Canada Phone Number" % phone_number)
-
-
 def format_phone_number(phone_number, country_code='US'):
     """
     Format US/Canada phone numbers in +1 (123) 456-7899 format
@@ -67,7 +49,6 @@ def format_phone_number(phone_number, country_code='US'):
     except:
         raise InvalidUsage(error_message="format_phone_number(%s, %s): Received other exception" % (phone_number,
                                                                                                     country_code))
-        # return False
 
 
 def sanitize_zip_code(zip_code):

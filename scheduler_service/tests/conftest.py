@@ -12,7 +12,7 @@ from scheduler_service.common.tests.conftest import *
 # Application Specific
 
 hmac , APP, celery = init_app()
-APP_URL = 'http://0.0.0.0:8010'
+APP_URL = 'http://0.0.0.0:8011'
 
 OAUTH_SERVER = APP.config['OAUTH_SERVER_URI']
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
