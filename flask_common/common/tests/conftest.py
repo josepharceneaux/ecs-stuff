@@ -105,7 +105,7 @@ def sample_user(test_domain, request):
 
     def fin():
         try:
-            db.session.delete(sample_user)
+            db.session.delete(user)
             db.session.commit()
         except Exception:
             db.session.rollback()
