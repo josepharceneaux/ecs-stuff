@@ -9,8 +9,10 @@ import requests
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.error_handling import (MethodNotAllowed, ResourceNotFound,
-                                                        UnauthorizedError)
+from sms_campaign_service.common.error_handling import (ResourceNotFound, UnauthorizedError)
+
+# Service Specific
+from sms_campaign_service.tests.modules.common_functions import assert_method_not_allowed
 
 
 class TestSmsCampaignSends(object):
@@ -28,8 +30,7 @@ class TestSmsCampaignSends(object):
         response = requests.post(SmsCampaignApiUrl.CAMPAIGN_SENDS_URL
                                  % sms_campaign_of_current_user.id,
                                  headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response.status_code == MethodNotAllowed.http_status_code(), \
-            'POST method should not be allowed (405)'
+        assert_method_not_allowed(response, 'POST')
 
     def test_for_delete_request(self, auth_token, sms_campaign_of_current_user):
         """
@@ -41,8 +42,7 @@ class TestSmsCampaignSends(object):
         response = requests.delete(
             SmsCampaignApiUrl.CAMPAIGN_SENDS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response.status_code == MethodNotAllowed.http_status_code(),\
-            'DELETE method should not be allowed (405)'
+        assert_method_not_allowed(response, 'DELETE')
 
     def test_get_with_invalid_token(self, sms_campaign_of_current_user):
         """
@@ -68,11 +68,7 @@ class TestSmsCampaignSends(object):
         """
         response = requests.get(SmsCampaignApiUrl.CAMPAIGN_SENDS_URL % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response.status_code == 200, 'Response should be ok (200)'
-        assert 'count' in response.json()
-        assert response.json()['count'] == 0
-        assert 'campaign_sends' in response.json()
-        assert response.json()['campaign_sends'] == []
+        _assert_counts_and_sends(response)
 
     def test_get_with_valid_token_and_with_campaign_blast(self, auth_token,
                                                           sms_campaign_of_current_user,
@@ -91,11 +87,7 @@ class TestSmsCampaignSends(object):
         """
         response = requests.get(SmsCampaignApiUrl.CAMPAIGN_SENDS_URL % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response.status_code == 200, 'Response should be ok (200)'
-        assert 'count' in response.json()
-        assert response.json()['count'] == 0
-        assert 'campaign_sends' in response.json()
-        assert response.json()['campaign_sends'] == []
+        _assert_counts_and_sends(response)
 
     def test_get_with_valid_token_and_deleted_campaign_id(self, auth_token,
                                                           sms_campaign_of_current_user):
@@ -129,7 +121,25 @@ class TestSmsCampaignSends(object):
         """
         response = requests.get(SmsCampaignApiUrl.CAMPAIGN_SENDS_URL % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response.status_code == 200, 'Response should be ok (200)'
-        assert 'count' in response.json()
-        assert response.json()['count'] == 2
-        assert 'campaign_sends' in response.json()
+        _assert_counts_and_sends(response, count=2)
+
+
+def _assert_counts_and_sends(response, count=0):
+    """
+    This is the common function to assert that response is returning valid 'count'
+    and 'campaign_sends'
+    :param response:
+    :param count:
+    :return:
+    """
+    assert response.status_code == 200, 'Response should be ok (200)'
+    assert response.json()
+    resp = response.json()
+    assert 'count' in resp
+    assert 'campaign_sends' in resp
+    assert resp['count'] == count
+    if not count:  # if count is 0, campaign_sends should be []
+        assert not resp['campaign_sends']
+    else:
+        assert resp['campaign_sends']
+

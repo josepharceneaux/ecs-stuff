@@ -12,12 +12,13 @@ import requests
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.error_handling import MethodNotAllowed
 
 # Service Specific
+from sms_campaign_service.tests.conftest import fake
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
-from sms_campaign_service.tests.conftest import get_reply_text, fake
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
+from sms_campaign_service.tests.modules.common_functions import (get_reply_text,
+                                                               assert_method_not_allowed)
 
 
 class TestSmsReceive(object):
@@ -31,18 +32,16 @@ class TestSmsReceive(object):
         GET method should not be allowed at this endpoint.
         :return:
         """
-        response_post = requests.get(SmsCampaignApiUrl.RECEIVE_URL)
-        assert response_post.status_code == MethodNotAllowed.http_status_code(), \
-            'GET Method should not be allowed'
+        response = requests.get(SmsCampaignApiUrl.RECEIVE_URL)
+        assert_method_not_allowed(response, 'GET')
 
     def test_for_delete(self):
         """
         DELETE method should not be allowed at this endpoint.
         :return:
         """
-        response_post = requests.delete(SmsCampaignApiUrl.RECEIVE_URL)
-        assert response_post.status_code == MethodNotAllowed.http_status_code(), \
-            'DELETE Method should not be allowed'
+        response = requests.delete(SmsCampaignApiUrl.RECEIVE_URL)
+        assert_method_not_allowed(response, 'DELETE')
 
     def test_post_with_no_data(self):
         """

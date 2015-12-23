@@ -185,7 +185,7 @@ def url_conversion(long_url):
     :param long_url: The URL which we want to be shortened
     :type long_url: str
     :param long_url:
-    :return: shortened URL, and error message if any
+    :return: shortened URL, and error message if any else ''
     :rtype: tuple
     """
     if not isinstance(long_url, basestring):

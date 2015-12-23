@@ -92,8 +92,8 @@ class CampaignBase(object):
         :return: Authorization header
         :rtype: dict
         """
-        user_token_row = Token.get_by_user_id(user_id)
-        user_access_token = user_token_row.access_token
+        user_token_obj = Token.get_by_user_id(user_id)
+        user_access_token = user_token_obj.access_token
         if user_access_token:
             return {'Authorization': 'Bearer %s' % user_access_token}
         else:
@@ -144,10 +144,10 @@ class CampaignBase(object):
             SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
 
         :Example:
-                SmsCampaignBase.get_candidates(smartlist_id=1)
+                SmsCampaignBase.get_candidates(1)
 
         :param campaign_smartlist: obj (e.g record of "sms_campaign_smartlist" database table)
-        :type campaign_smartlist: row
+        :type campaign_smartlist: object e,g obj of SmsCampaignSmartlist
         :return: Returns array of candidates in the campaign's smartlists.
         :rtype: list
 
@@ -208,7 +208,7 @@ class CampaignBase(object):
     def send_campaign_to_candidate(self, candidate_and_phone):
         """
         This sends the campaign to given candidate. Child classes will implement this.
-        :param candidate_and_phone: Candidate row and his phone
+        :param candidate_and_phone: Candidate obj and his phone
         :type candidate_and_phone: tuple
         :return:
         """
@@ -237,7 +237,7 @@ class CampaignBase(object):
         :param auth_header: auth header of current user to make HTTP request to other services
         :type sends_result: list
         :type user_id: int
-        :type campaign: row
+        :type campaign: object (e.g SmsCampaign)
         :type auth_header: dict
         :return:
         """
@@ -297,7 +297,7 @@ class CampaignBase(object):
         return url_conversion_id
 
     @staticmethod
-    def create_activity(user_id, type_=None, source_table=None, source_id=None,
+    def create_activity(user_id, _type=None, source_table=None, source_id=None,
                         params=None, headers=None):
         """
         - Once we have all the parameters to save the activity in database table "Activity",
@@ -309,12 +309,12 @@ class CampaignBase(object):
             sms_campaign_service/sms_campaign_base.py.
 
         :param user_id: id of user
-        :param type_: type of activity (using underscore with type as "type" reflects built in name)
+        :param _type: type of activity (using underscore with type as "type" reflects built in name)
         :param source_table: source table name of activity
         :param source_id: source id of activity
         :param params: params to store for activity
-        :type user_id; int
-        :type type_; int
+        :type user_id: int
+        :type _type: int
         :type source_table: str
         :type source_id: int
         :type params: dict
@@ -326,7 +326,7 @@ class CampaignBase(object):
             try:
                 json_data = json.dumps({'source_table': source_table,
                                         'source_id': source_id,
-                                        'type': type_,
+                                        'type': _type,
                                         'params': params})
             except Exception as error:
                 raise ForbiddenError(error_message='Error while serializing activity params '

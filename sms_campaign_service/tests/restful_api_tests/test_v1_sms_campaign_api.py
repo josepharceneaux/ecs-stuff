@@ -7,11 +7,11 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 # Third Party Imports
 import json
 import requests
+from werkzeug.security import gen_salt
 
 # Service Specific
-from werkzeug.security import gen_salt
-from sms_campaign_service.tests.conftest import assert_for_activity
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
+from sms_campaign_service.tests.modules.common_functions import assert_for_activity
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
@@ -144,8 +144,8 @@ class TestSmsCampaignHTTPPost(object):
                             response.json()['sms_campaign_id'])
 
     def test_campaign_creation_with_no_data(self,
-                                                             valid_header,
-                                                             user_phone_1):
+                                            valid_header,
+                                            user_phone_1):
         """
         User has one phone value, but no data was sent. It should get bad request error.
         :param valid_header: valid header to POST data
@@ -157,8 +157,8 @@ class TestSmsCampaignHTTPPost(object):
         assert response.status_code == InvalidUsage.http_status_code(), \
             'Should be a bad request (400)'
 
-    def test_campaign_creation_with_invalid_data_type(self, valid_header,
-                                                      campaign_valid_data, user_phone_1):
+    def test_campaign_creation_with_non_json_data(self, valid_header,
+                                                  campaign_valid_data, user_phone_1):
         """
         User has one phone value, valid header and invalid data type (not json) was sent.
         It should get bad request error.
@@ -213,7 +213,7 @@ class TestSmsCampaignHTTPPost(object):
             self, campaign_valid_data, valid_header, user_phone_1):
         """
         User has one phone value, valid header and invalid data (Unknown "smartlist_ids").
-        It should get ResourceNotFound error,
+        It should get InvalidUsage error,
         :param valid_header: valid header to POST data
         :param user_phone_1: user_phone fixture to assign a test phone number to user
         :return:
@@ -222,12 +222,12 @@ class TestSmsCampaignHTTPPost(object):
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS_URL,
                                  headers=valid_header,
                                  data=json.dumps(campaign_valid_data))
-        assert response.status_code == ResourceNotFound.http_status_code()
+        assert response.status_code == InvalidUsage.http_status_code()
 
     def test_campaign_creation_with_one_user_phone_and_invalid_datetime(self,
-                                                                      campaign_valid_data,
-                                                                      valid_header,
-                                                                      user_phone_1):
+                                                                        campaign_valid_data,
+                                                                        valid_header,
+                                                                        user_phone_1):
         """
         User has one phone value, valid header and invalid data (Invalid Datetime).
         It should get internal server error, Custom error should be InvalidDatetime.
@@ -413,3 +413,39 @@ class TestSmsCampaignHTTPDelete(object):
                                    }))
         assert response.status_code == ForbiddenError.http_status_code(), \
             'It should get forbidden error (403)'
+
+    def test_campaigns_delete_authorized_and_unauthorized_ids(self, valid_header,
+                                                              sms_campaign_of_other_user,
+                                                              sms_campaign_of_current_user):
+        """
+        Test with one authorized and one unauthorized SMS campaign. It should get 207
+        status code.
+        :return:
+        """
+        response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS_URL,
+                                   headers=valid_header,
+                                   data=json.dumps({
+                                       'ids': [sms_campaign_of_other_user.id,
+                                               sms_campaign_of_current_user.id]
+                                   }))
+        assert response.status_code == 207
+        assert sms_campaign_of_other_user.id in response.json()['not_deleted_ids']
+
+    def test_campaigns_delete_with_deleted_id(self, valid_header, sms_campaign_of_current_user):
+        """
+        We first delete an SMS campaign, and again try to delete it. It should get
+        ResourceNotFound error.
+        :return:
+        """
+        response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS_URL,
+                                   headers=valid_header,
+                                   data=json.dumps({
+                                       'ids': [sms_campaign_of_current_user.id]
+                                   }))
+        assert response.status_code == 200
+        response_after_delete = requests.delete(SmsCampaignApiUrl.CAMPAIGNS_URL,
+                                                headers=valid_header,
+                                                data=json.dumps({
+                                                    'ids': [sms_campaign_of_current_user.id]
+                                                }))
+        assert response_after_delete.status_code == ResourceNotFound.http_status_code()

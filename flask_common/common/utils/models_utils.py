@@ -180,7 +180,7 @@ def add_model_helpers(cls, logger):
     cls.logger = logger
     # this method converts model instance to json serializable dictionary
     cls.to_json = MethodType(to_json, None, db.Model)
-    # This method saves model instance in database as table row
+    # This method saves model instance in database as model object
     cls.save = MethodType(save, None, db.Model)
     # This method updates an existing instance
     cls.update = MethodType(update, None, db.Model)
@@ -207,8 +207,8 @@ def init_talent_app(flask_app, logger):
                         User.save(user_object)
 
                     2- to update a record in database
-                        user_row = User.get_by_id(1)
-                        user_row.update(first_name='Updated Name')
+                        user_obj = User.get_by_id(1)
+                        user_obj.update(first_name='Updated Name')
 
                     3- to delete a record
                         delete by id: User.delete(1)
@@ -219,8 +219,8 @@ def init_talent_app(flask_app, logger):
                         User.get(1) or User.get_by_id(1)
 
                     5- to get json serializable fields of a database record
-                        user_row = User.get_by_id(1)
-                        user_json_data  = user_row.to_json()
+                        user_obj = User.get_by_id(1)
+                        user_json_data  = user_obj.to_json()
 
         2- Initializes the app by
                     db.init_app(flask_app) flask SQLAlchemy builtin

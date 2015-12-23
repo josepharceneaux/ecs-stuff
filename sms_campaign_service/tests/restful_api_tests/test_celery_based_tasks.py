@@ -35,8 +35,9 @@ from sms_campaign_service import db
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.utilities import replace_ngrok_link_with_localhost
-from sms_campaign_service.tests.conftest import (assert_on_blasts_sends_url_conversion_and_activity,
-                                                 assert_for_activity, get_reply_text)
+from sms_campaign_service.tests.modules.common_functions import \
+    (assert_on_blasts_sends_url_conversion_and_activity, assert_for_activity, get_reply_text)
+
 # TODO: debug why Celery tasks fail sometime
 SLEEP_TIME = 25  # due to background processing of tasks (Celery)
 OFFSET = 20  # due to background processing of tasks (Celery)

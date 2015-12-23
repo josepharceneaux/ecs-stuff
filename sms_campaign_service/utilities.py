@@ -33,7 +33,7 @@ from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 # Application Specific
 from sms_campaign_service import logger
 from sms_campaign_service.custom_exceptions import (TwilioAPIError, MissingRequiredField,
-                                                    InvalidDatetime)
+                                                    InvalidDatetime, ErrorDeletingSMSCampaign)
 from sms_campaign_service.sms_campaign_app_constants import (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,
                                                              NGROK_URL)
 
@@ -215,21 +215,36 @@ def validate_form_data(form_data):
         raise InvalidUsage(error_message='Include smartlist id(s) in a list.')
 
     not_found_smartlist_ids = []
+    invalid_smartlist_ids = []
     for smartlist_id in form_data.get('smartlist_ids'):
-        if not SmartList.get_by_id(smartlist_id):
-            logger.error('Smartlist(id:%s) not found in database.' % smartlist_id)
-            not_found_smartlist_ids.append(smartlist_id)
+        try:
+            if not isinstance(smartlist_id, (int, long)):
+                invalid_smartlist_ids.append(smartlist_id)
+                raise InvalidUsage('Include smartlist id as int|long')
+            if not SmartList.get_by_id(smartlist_id):
+                not_found_smartlist_ids.append(smartlist_id)
+                raise ResourceNotFound('Smartlist(id:%s) not found in database.' % smartlist_id)
+        except InvalidUsage:
+            logger.exception('validate_form_data: Invalid smartlist id')
+        except ResourceNotFound:
+            logger.exception('validate_form_data:')
+    # If all provided smartlist ids are invalid, raise InvalidUsage
+    if len(form_data.get('smartlist_ids')) == len(invalid_smartlist_ids):
+        raise InvalidUsage(
+            error_message='smartlists(id(s):%s are invalid. Valid id must be int|long'
+                          % form_data.get('smartlist_ids'))
+    # If all provided smartlist ids do not exist in database, raise ResourceNotFound
     if len(form_data.get('smartlist_ids')) == len(not_found_smartlist_ids):
         raise ResourceNotFound(error_message='smartlists(id(s):%s not found in database.'
                                              % form_data.get('smartlist_ids'))
     # filter out unknown smartlist ids, and keeping the valid ones
     form_data['smartlist_ids'] = list(set(form_data.get('smartlist_ids')) -
-                                      set(not_found_smartlist_ids))
+                                      set(invalid_smartlist_ids + not_found_smartlist_ids))
     for datetime in [form_data.get('send_datetime'), form_data.get('stop_datetime')]:
         if not is_iso_8601_format(datetime):
             raise InvalidDatetime('Invalid DateTime: Kindly specify UTC datetime in ISO-8601 '
                                   'format like 2015-10-08T06:16:55Z. Given Date is %s' % datetime)
-    return not_found_smartlist_ids
+    return invalid_smartlist_ids, not_found_smartlist_ids
 
 
 def delete_sms_campaign(campaign_id, current_user_id):
@@ -241,11 +256,18 @@ def delete_sms_campaign(campaign_id, current_user_id):
     :param current_user_id: id of current user
     :exception: Forbidden error (status_code = 403)
     :exception: Resource not found error (status_code = 404)
+    :exception: ErrorDeletingSMSCampaign
+    :exception: InvalidUsage
     :return: True if record deleted successfully, False otherwise.
     :rtype: bool
     """
+    if not isinstance(campaign_id, (int, long)):
+        raise InvalidUsage(error_message='Include campaign_id as int|long')
     if is_owner_of_campaign(campaign_id, current_user_id):
-        return SmsCampaign.delete(campaign_id)
+        deleted = SmsCampaign.delete(campaign_id)
+        if not deleted:
+            raise ErrorDeletingSMSCampaign("Campaign(id:%s) couldn't be deleted."
+                                           % campaign_id)
     return False
 
 
@@ -255,18 +277,23 @@ def is_owner_of_campaign(campaign_id, current_user_id):
     campaign_id. Otherwise it raises the Forbidden error.
     :param campaign_id: id of campaign form getTalent database
     :param current_user_id: Id of current user
-    :return:
+    :exception: InvalidUsage
+    :exception: ResourceNotFound
+    :exception: ForbiddenError
+    :return: True if current user is an owner for given campaign, False otherwise
+    :rtype: bool
     """
-    campaign_row = SmsCampaign.get_by_id(campaign_id)
-    if campaign_row:
-        campaign_user_id = UserPhone.get_by_id(campaign_row.user_phone_id).user_id
-        if campaign_user_id == current_user_id:
-            return True
-        else:
-            raise ForbiddenError(error_message='You are not the owner of '
-                                               'SMS campaign(id:%s)' % campaign_id)
-    else:
+    if not isinstance(campaign_id, (int, long)):
+        raise InvalidUsage(error_message='Include campaign_id as int|long')
+    campaign_obj = SmsCampaign.get_by_id(campaign_id)
+    if not campaign_obj:
         raise ResourceNotFound(error_message='SMS Campaign(id=%s) not found.' % campaign_id)
+    campaign_user_id = UserPhone.get_by_id(campaign_obj.user_phone_id).user_id
+    if campaign_user_id == current_user_id:
+        return True
+    else:
+        raise ForbiddenError(error_message='You are not the owner of '
+                                           'SMS campaign(id:%s)' % campaign_id)
 
 
 def validate_header(request):

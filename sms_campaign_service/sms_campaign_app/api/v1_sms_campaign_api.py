@@ -29,6 +29,7 @@ This file contains API endpoints related to sms_campaign_service.
 # Standard Library
 import json
 import types
+from werkzeug.exceptions import BadRequest
 
 # Third Party
 from flask import request
@@ -46,8 +47,8 @@ from sms_campaign_service.utilities import (validate_form_data, validate_header,
 # Common Utils
 from sms_campaign_service.common.error_handling import *
 from sms_campaign_service.common.talent_api import TalentApi
-from sms_campaign_service.common.utils.auth_utils import require_oauth
 from sms_campaign_service.common.routes import SmsCampaignApi
+from sms_campaign_service.common.utils.auth_utils import require_oauth
 from sms_campaign_service.common.utils.api_utils import api_route, ApiResponse
 
 # Database Models
@@ -74,6 +75,7 @@ CORS(sms_campaign_blueprint, resources={
 @api.route(SmsCampaignApi.CAMPAIGNS)
 class SMSCampaigns(Resource):
     """
+    Endpoint looks like /v1/campaigns
     This resource is used to
         1- Get all campaigns created by current user [GET]
         2- Create an SMS campaign [POST]
@@ -129,11 +131,8 @@ class SMSCampaigns(Resource):
         """
 
         camp_obj = SmsCampaignBase(request.user.id)
-        campaigns = camp_obj.get_all_campaigns()
-        all_campaigns = [campaign.to_json() for campaign in campaigns]
-        data = {'count': len(all_campaigns),
-                'campaigns': all_campaigns}
-        return data, 200
+        all_campaigns = [campaign.to_json() for campaign in camp_obj.get_all_campaigns()]
+        return dict(count=len(all_campaigns), campaigns=all_campaigns), 200
 
     def post(self, *args, **kwargs):
         """
@@ -187,25 +186,24 @@ class SMSCampaigns(Resource):
         # get json post request data
         try:
             data_from_ui = request.get_json()
-        except Exception:
+        except BadRequest:
             raise InvalidUsage(error_message='Given data is not in json format')
-
         if not data_from_ui:
             raise InvalidUsage(error_message='No data provided to create SMS campaign')
         # apply validation on fields
-        not_found_smartlist_ids = validate_form_data(data_from_ui)
+        invalid_smartlist_ids, not_found_smartlist_ids = validate_form_data(data_from_ui)
         campaign_obj = SmsCampaignBase(request.user.id,
                                        buy_new_number=data_from_ui.get('buy_new_number'))
         campaign_id = campaign_obj.save(data_from_ui)
         headers = {'Location': '/campaigns/%s' % campaign_id}
         logger.debug('Campaign(id:%s) has been saved.' % campaign_id)
-        if not_found_smartlist_ids:
-            return ApiResponse(json.dumps(dict(sms_campaign_id=campaign_id,
-                                               not_found_smartlist_ids=not_found_smartlist_ids)),
+        if not_found_smartlist_ids or invalid_smartlist_ids:
+            return ApiResponse(dict(sms_campaign_id=campaign_id,
+                                    not_found_smartlist_ids=not_found_smartlist_ids,
+                                    invalid_smartlist_ids=invalid_smartlist_ids),
                                status=207, headers=headers)
-
         else:
-            return ApiResponse(json.dumps(dict(sms_campaign_id=campaign_id)),
+            return ApiResponse(dict(sms_campaign_id=campaign_id),
                                status=201, headers=headers)
 
     def delete(self):
@@ -255,24 +253,32 @@ class SMSCampaigns(Resource):
             raise InvalidUsage(error_message='Bad request, include campaign_ids as list data',
                                error_code=InvalidUsage.http_status_code())
         # check if campaigns_ids list is not empty
-        if campaign_ids:
-            if not all([isinstance(campaign_id, (int, long)) for campaign_id in campaign_ids]):
-                raise InvalidUsage(error_message='Bad request, campaign_ids must be integer',
-                                   error_code=InvalidUsage.http_status_code())
-            # TODO what is a status_list
-            status_list = [delete_sms_campaign(campaign_id, request.user.id)
-                           for campaign_id in campaign_ids]
-            if all(status_list):
-                return dict(message='%s Campaigns deleted successfully' % len(campaign_ids)), 200
-            else:
-                return dict(message='Unable to delete %s campaigns' % status_list.count(False)), 207
-        else:
+        if not campaign_ids:
             return dict(message='No campaign id provided to delete'), 200
+
+        if not all([isinstance(campaign_id, (int, long)) for campaign_id in campaign_ids]):
+            raise InvalidUsage(error_message='Bad request, campaign_ids must be integer',
+                               error_code=InvalidUsage.http_status_code())
+        not_deleted = []
+        for campaign_id in campaign_ids:
+            try:
+                delete_sms_campaign(campaign_id, request.user.id)
+            except ForbiddenError or ResourceNotFound or ErrorDeletingSMSCampaign:
+                if len(campaign_ids) == 1:
+                    raise
+                # error has been logged inside delete_sms_campaign()
+                not_deleted.append(campaign_id)
+        if not not_deleted:
+            return dict(message='%s Campaigns deleted successfully' % len(campaign_ids)), 200
+        else:
+            return dict(message='Unable to delete %s campaigns' % len(not_deleted),
+                        not_deleted_ids=not_deleted), 207
 
 
 @api.route(SmsCampaignApi.CAMPAIGN)
 class CampaignById(Resource):
     """
+    Endpoint looks like /v1/campaigns/:id
     This resource is used to
         1- Get Campaign from given campaign_id [GET]
         2- Update an existing SMS campaign [POST]
@@ -314,11 +320,10 @@ class CampaignById(Resource):
         :return: json for required campaign
         """
         campaign = SmsCampaign.get_by_id(campaign_id)
-        if campaign:
-            return dict(campaign=campaign.to_json()), 200
-        else:
+        if not campaign:
             raise ResourceNotFound(error_message='SMS Campaign does not exist with id %s'
                                                  % campaign_id)
+        return dict(campaign=campaign.to_json()), 200
 
     def post(self, campaign_id):
         """
@@ -350,9 +355,6 @@ class CampaignById(Resource):
                                         data=data,
                                         headers=headers,
                                     )
-        .. Response::
-
-            No Content
 
         .. Status:: 200 (Resource Modified)
                     400 (Bad request)
@@ -367,16 +369,17 @@ class CampaignById(Resource):
         validate_header(request)
         try:
             campaign_data = request.get_json()
-        except Exception:
+        except BadRequest:
             raise InvalidUsage(error_message='Given data should be in dict format')
         if not campaign_data:
             raise InvalidUsage(error_message='No data provided to update SMS campaign')
-        not_found_smartlist_ids = validate_form_data(campaign_data)
+        invalid_smartlist_ids, not_found_smartlist_ids = validate_form_data(campaign_data)
         camp_obj = SmsCampaignBase(request.user.id)
         camp_obj.create_or_update_sms_campaign(campaign_data, campaign_id=campaign_id)
-        if not_found_smartlist_ids:
+        if not_found_smartlist_ids or invalid_smartlist_ids:
             return dict(message='SMS Campaign(id:%s) has been updated successfully' % campaign_id,
-                        not_found_smartlist_ids=not_found_smartlist_ids), 207
+                        not_found_smartlist_ids=not_found_smartlist_ids,
+                        invalid_smartlist_ids=invalid_smartlist_ids), 207
         else:
             return dict(message='SMS Campaign(id:%s) has been updated successfully'
                                 % campaign_id), 200
@@ -411,17 +414,14 @@ class CampaignById(Resource):
                     5010 (ErrorDeletingSMSCampaign)
         """
 
-        delete_status = delete_sms_campaign(campaign_id, request.user.id)
-        if delete_status:
-            return dict(message='Campaign(id:%s) deleted successfully' % campaign_id), 200
-        else:
-            raise ErrorDeletingSMSCampaign(error_message="Campaign(id:%s) couldn't be deleted."
-                                                         % campaign_id)
+        delete_sms_campaign(campaign_id, request.user.id)
+        return dict(message='Campaign(id:%s) deleted successfully' % campaign_id), 200
 
 
 @api.route(SmsCampaignApi.CAMPAIGN_SENDS)
 class SmsCampaignSends(Resource):
     """
+    Endpoint looks like /v1/campaigns/:id/sends
     This resource is used to GET Campaign sends
     """
     decorators = [require_oauth]
@@ -469,21 +469,20 @@ class SmsCampaignSends(Resource):
         :return: 1- count of campaign sends and 2- SMS campaign sends records in as dict
         """
         campaign = SmsCampaign.get_by_id(campaign_id)
-        if campaign:
-            campaign_blasts = SmsCampaignBlast.get_by_campaign_id(campaign_id)
-            campaign_sends_json = []
-            if campaign_blasts:
-                campaign_sends = SmsCampaignSend.get_by_blast_id(campaign_blasts.id)
-                campaign_sends_json = [campaign_send.to_json() for campaign_send in campaign_sends]
-            return {'count': len(campaign_sends_json),
-                    'campaign_sends': campaign_sends_json}, 200
-        else:
+        if not campaign:
             raise ResourceNotFound(error_message='SMS Campaign(id=%s) not found.' % campaign_id)
+        campaign_blasts = SmsCampaignBlast.get_by_campaign_id(campaign_id)
+        campaign_sends_json = []
+        if campaign_blasts:
+            campaign_sends = SmsCampaignSend.get_by_blast_id(campaign_blasts.id)
+            campaign_sends_json = [campaign_send.to_json() for campaign_send in campaign_sends]
+        return dict(count=len(campaign_sends_json), campaign_sends=campaign_sends_json), 200
 
 
 @api.route(SmsCampaignApi.CAMPAIGN_SEND_PROCESS)
 class SendSmsCampaign(Resource):
     """
+    Endpoint looks like /v1/campaigns/:id/send
     This resource is used to send SMS Campaign to candidates [POST]
     """
     decorators = [require_oauth]
@@ -523,11 +522,11 @@ class SendSmsCampaign(Resource):
         """
         if is_owner_of_campaign(campaign_id, request.user.id):
             campaign = SmsCampaign.get_by_id(campaign_id)
-            if campaign:
-                camp_obj = SmsCampaignBase(request.user.id)
-                total_sends = camp_obj.process_send(campaign)
-                return dict(message='Campaign(id:%s) is being sent to candidates.'
-                                    % campaign_id, total_sends=total_sends), 200
-            else:
+            if not campaign:
                 raise ResourceNotFound(error_message='SMS Campaign(id=%s) Not found.' % campaign_id,
-                                       error_code=ResourceNotFound.http_status_code())
+                               error_code=ResourceNotFound.http_status_code())
+
+            camp_obj = SmsCampaignBase(request.user.id)
+            total_sends = camp_obj.process_send(campaign)
+            return dict(message='Campaign(id:%s) is being sent to candidates.'
+                                % campaign_id, total_sends=total_sends), 200

@@ -106,7 +106,8 @@ class TestUrlConversion(object):
         try:
             url_conversion({"url":'https://webdev.gettalent.com/web/default/angular#!/'})
         except Exception as error:
-            assert error.status_code == InvalidUsage.http_status_code(), 'Should be bad request(400)'
+            assert error.status_code == InvalidUsage.http_status_code(), \
+                'Should be bad request(400)'
 
     def test_with_invalid_url(self):
         """

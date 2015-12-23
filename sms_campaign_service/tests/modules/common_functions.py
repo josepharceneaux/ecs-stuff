@@ -1,0 +1,120 @@
+"""
+Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
+
+    This module contains the code which is common for different tests.
+"""
+# Standard Import
+import re
+
+# Service Specific
+from sms_campaign_service import db
+
+# Common Utils
+from sms_campaign_service.common.routes import SmsCampaignApi
+from user_service.common.error_handling import MethodNotAllowed
+from sms_campaign_service.common.models.misc import (UrlConversion, Activity)
+from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
+from sms_campaign_service.common.models.sms_campaign import (SmsCampaignSendUrlConversion,
+                                                             SmsCampaignReply, SmsCampaignBlast,
+                                                             SmsCampaignSend)
+
+
+def assert_url_conversion(sms_campaign_sends, campaign_id):
+    """
+    This function verifies that source_url saved in database table "url_conversion" is in
+    valid format as expected.
+
+    URL to redirect candidate to our app looks like e.g.
+
+    https://www.gettalent.com/campaigns/1/redirect/30/?candidate_id=2
+
+    So we will verify whether source_url has same format as above URL.
+
+    :param sms_campaign_sends: sends of campaign
+    :param campaign_id: id of SMS campaign
+    :return:
+    """
+    campaign_send_url_conversions = []
+    # Get "sms_campaign_send_url_conversion" records
+    for sms_campaign_send in sms_campaign_sends:
+        campaign_send_url_conversions.extend(
+            SmsCampaignSendUrlConversion.get_by_campaign_send_id(sms_campaign_send.id))
+    # For each url_conversion record we assert that source_url is saved correctly
+    for send_url_conversion in campaign_send_url_conversions:
+        # get URL conversion record from database table 'url_conversion'
+        url_conversion = UrlConversion.get_by_id(send_url_conversion.url_conversion_id)
+        # assert if source_url is in valid form i.e,
+        # 'http://127.0.0.1:8011/v1/campaigns/1710/url_redirection/1453/?candidate_id=780'
+        assert re.match('(/campaigns/)\w+(/redirect/)\w+(\?candidate_id=)',
+                        url_conversion.source_url.split(SmsCampaignApi.VERSION)[1])
+        # assert that campaign_id is in source URL
+        assert campaign_id in url_conversion.source_url
+        # assert that url_conversion_id is in source URL
+        assert str(url_conversion.id) in url_conversion.source_url
+        # delete url_conversion record
+        UrlConversion.delete(url_conversion)
+
+
+def assert_on_blasts_sends_url_conversion_and_activity(user_id, response_post, campaign_id):
+    """
+    This function assert the number of sends in database table "sms_campaign_blast" and
+    records in database table "sms_campaign_sends"
+    :param response_post: response of POST call
+    :param campaign_id: id of SMS campaign
+    :return:
+    """
+    # Need to commit the session because Celery has its own session, and our session does not
+    # know about the changes that Celery session has made.
+    db.session.commit()
+    # assert on blasts
+    sms_campaign_blast = SmsCampaignBlast.get_by_campaign_id(campaign_id)
+    assert sms_campaign_blast.sends == response_post.json()['total_sends']
+    # assert on sends
+    sms_campaign_sends = SmsCampaignSend.get_by_blast_id(str(sms_campaign_blast.id))
+    assert len(sms_campaign_sends) == response_post.json()['total_sends']
+    # assert on activity of individual campaign sends
+    for sms_campaign_send in sms_campaign_sends:
+        assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_SMS_SEND, sms_campaign_send.id)
+    if sms_campaign_sends:
+        # assert on activity for whole campaign send
+        assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_SEND, campaign_id)
+    assert_url_conversion(sms_campaign_sends, campaign_id)
+
+
+def assert_for_activity(user_id, type_, source_id):
+    """
+    This verifies that activity has been created for given action
+    :param user_id:
+    :param type_:
+    :param source_id:
+    :return:
+    """
+    # Need to commit the session because Celery has its own session, and our session does not
+    # know about the changes that Celery session has made.
+    db.session.commit()
+    assert Activity.get_by_user_id_type_source_id(user_id, type_, source_id)
+
+
+def get_reply_text(candidate_phone):
+    """
+    This asserts that exact reply of candidate has been saved in database table "sms_campaign_reply"
+    :param candidate_phone:
+    :return:
+    """
+    # Need to commit the session because Celery has its own session, and our session does not
+    # know about the changes that Celery session has made.
+    db.session.commit()
+    campaign_reply_record = SmsCampaignReply.get_by_candidate_phone_id(candidate_phone.id)
+    return campaign_reply_record
+
+
+def assert_method_not_allowed(response, method_name):
+    """
+    This asserts the given response should have status code 405 i.e. MethodNotAllowed.
+    :param response:
+    :param method_name: HTTP method
+    :type method_name: str
+    :return:
+    """
+    assert response.status_code == MethodNotAllowed.http_status_code(), \
+        method_name + 'method should not be allowed (405)'

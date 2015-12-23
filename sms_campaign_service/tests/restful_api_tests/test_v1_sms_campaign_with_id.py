@@ -6,9 +6,9 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 # Standard Imports
 import json
 import requests
-from werkzeug.security import gen_salt
 
 # Service Specific
+from werkzeug.security import gen_salt
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
 
 # Common Utils
@@ -16,7 +16,6 @@ from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import (UnauthorizedError, ResourceNotFound,
                                                         ForbiddenError, InternalServerError,
                                                         InvalidUsage)
-from sms_campaign_service.tests.conftest import fake
 
 
 class TestSmsCampaignWithIdHTTPGet(object):
@@ -220,3 +219,18 @@ class TestSmsCampaignWithIdHTTPDelete(object):
                                    headers=valid_header)
         assert response.status_code == ForbiddenError.http_status_code(), \
             'it should get forbidden error (403)'
+
+    def test_with_deleted_campaign(self, valid_header, sms_campaign_of_current_user):
+        """
+        We first delete an SMS campaign, and again try to delete it. It should get
+        ResourceNotFound error.
+        :return:
+        """
+        response = requests.delete(SmsCampaignApiUrl.CAMPAIGN_URL % sms_campaign_of_current_user.id,
+                                   headers=valid_header)
+        assert response.status_code == 200
+        response_after_delete = requests.delete(
+            SmsCampaignApiUrl.CAMPAIGN_URL % sms_campaign_of_current_user.id,
+            headers=valid_header)
+        assert response_after_delete.status_code == ResourceNotFound.http_status_code()
+

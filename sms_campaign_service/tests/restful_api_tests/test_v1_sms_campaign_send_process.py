@@ -8,13 +8,13 @@ import requests
 
 # Service Specific
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
-from sms_campaign_service.tests.conftest import assert_on_blasts_sends_url_conversion_and_activity
+from sms_campaign_service.tests.modules.common_functions import \
+    (assert_on_blasts_sends_url_conversion_and_activity, assert_method_not_allowed)
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.error_handling import (MethodNotAllowed, UnauthorizedError,
-                                                        ResourceNotFound, ForbiddenError,
-                                                        InternalServerError)
+from sms_campaign_service.common.error_handling import (UnauthorizedError, ResourceNotFound,
+                                                        ForbiddenError, InternalServerError)
 
 
 class TestSendSmsCampaign(object):
@@ -32,8 +32,7 @@ class TestSendSmsCampaign(object):
         response = requests.get(
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response.status_code == MethodNotAllowed.http_status_code(), \
-            'GET method should not be allowed (405)'
+        assert_method_not_allowed(response, 'GET')
 
     def test_for_delete_request(self, auth_token, sms_campaign_of_current_user):
         """
@@ -45,8 +44,7 @@ class TestSendSmsCampaign(object):
         response = requests.delete(
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response.status_code == MethodNotAllowed.http_status_code(), \
-            'DELETE method should not be allowed (405)'
+        assert_method_not_allowed(response, 'DELETE')
 
     def test_post_with_invalid_token(self, sms_campaign_of_current_user):
         """
