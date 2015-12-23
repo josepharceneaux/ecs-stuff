@@ -14,7 +14,8 @@ from candidate_service.modules.validators import (
     does_candidate_belong_to_user, is_custom_field_authorized,
     is_area_of_interest_authorized, is_number
 )
-from candidate_service.modules.resource_schemas import validate_request_body_keys
+from candidate_service.modules.json_schema import candidates_resource_schema
+from jsonschema import validate
 
 # Decorators
 from candidate_service.common.utils.auth_utils import require_oauth
@@ -138,8 +139,11 @@ class CandidatesResource(Resource):
         created_candidate_ids = []
         for candidate_dict in list_of_candidate_dicts:
 
-            # Candidate object must contain valid keys/fields
-            # validate_request_body_keys(request_body=candidate_dict) TODO: update to handle all fields from the db
+            # Validate data sent in
+            try:
+                validate(instance=candidate_dict, schema=candidates_resource_schema)
+            except Exception as e:
+                raise InvalidUsage(error_message=e.message)
 
             # Ensure emails list is provided
             if not candidate_dict.get('emails'):
@@ -171,7 +175,6 @@ class CandidatesResource(Resource):
             if not is_authorized:
                 raise ForbiddenError(error_message="Unauthorized area of interest IDs")
 
-            # TODO: Validate all input formats and existence
             user_id = authed_user.id
             addresses = candidate_dict.get('addresses')
             first_name = candidate_dict.get('first_name')

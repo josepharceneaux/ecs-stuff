@@ -45,18 +45,18 @@ def generate_single_candidate_data(domain_id=None):
                 {
                     'address_line_1': fake.street_address(), 'city': fake.city(),
                     'state': fake.state(), 'zip_code': fake.zipcode(), 'country': fake.country(),
-                    'is_default': True,
+                    'is_default': True, 'po_box': None
                 },
                 {
                     'address_line_1': fake.street_address(), 'city': fake.city(),
                     'state': fake.state(), 'zip_code': fake.postcode(), 'country': fake.country(),
-                    'is_default': False
+                    'is_default': False, 'po_box': ''
                 }
             ],
             'work_preference': {
                 "relocate": False, "authorization": "US Citizen", "telecommute": True,
                 "travel_percentage": randrange(0, 100),
-                "hourly_rate": '%.2f' % random.uniform(20, 90),
+                "hourly_rate": float('%.2f' % random.uniform(20, 90)),
                 "salary": randrange(50000, 300000),
                 "employment_type": "full-time employment",
                 "security_clearance": None,
@@ -66,36 +66,38 @@ def generate_single_candidate_data(domain_id=None):
                 {
                     'organization': fake.company(), 'position': fake.job(), 'city': fake.city(),
                     'state': fake.state(), 'start_month': 11, 'start_year': 2005, 'is_current': True,
-                    'end_month': 10, 'end_year': 2007, 'bullets': [
-                        {'description': fake.bs()}, {'description': fake.bs()}
-                    ]
+                    'end_month': 10, 'end_year': 2007, 'country': fake.country(), 'bullets': [
+                    {'description': fake.bs()}, {'description': fake.bs()}
+                ]
                 },
                 {
                     'organization': fake.company(), 'position': fake.job(), 'city': fake.city(),
-                    'state': fake.state(), 'start_month': '1', 'start_year': '2008',
-                    'end_month': '5', 'end_year': '2012', 'bullets': [
-                        {'description': fake.bs()}, {'description': fake.bs()}
-                    ]
+                    'state': fake.state(), 'start_month': 1, 'start_year': 2008, 'is_current': None,
+                    'end_month': 5, 'end_year': 2012, 'country': fake.country(), 'bullets': [
+                    {'description': fake.bs()}, {'description': fake.bs()}
+                ]
                 }
             ],
             'educations': [
                 {
-                    'school_name': 'SJSU', 'city': 'San Jose', 'country': 'USA', 'degrees': [
-                        {
-                            'type': 'BS', 'title': 'Bachelors', 'start_year': 2008, 'start_month': 9,
-                            'end_year': 2012, 'end_month': 12, 'gpa': 3.5,
-                            'bullets': [{'major': fake.job(), 'comments': fake.bs()}]
-                        }
-                    ]
+                    'school_name': 'SJSU', 'city': 'San Jose', 'state': 'CA', 'country': 'USA',
+                    'school_type': 'university', 'is_current': False, 'degrees': [
+                    {
+                        'type': 'BS', 'title': 'Bachelors', 'start_year': 2008, 'start_month': 9,
+                        'end_year': 2012, 'end_month': 12, 'gpa_num': 3.5,
+                        'bullets': [{'major': fake.job(), 'comments': fake.bs()}]
+                    }
+                ]
                 },
                 {
-                    'school_name': 'De Anza', 'city': 'Cupertino', 'country': 'US', 'degrees': [
-                        {
-                            'type': 'AA', 'title': 'Associate', 'start_date': 2006, 'start_month': 9,
-                            'end_year': 2008, 'end_month': 9, 'gpa_num': 3,
-                            'bullets': [{'major': fake.job(), 'comments': fake.bs()}]
-                        }
-                    ]
+                    'school_name': 'De Anza', 'school_type': 'college', 'city': 'cupertino', 'state': 'california',
+                    'country': 'america', 'is_current': True, 'degrees': [
+                    {
+                        'type': 'AA', 'title': 'Associate', 'start_year': 2006, 'start_month': 9,
+                        'end_year': 2008, 'end_month': 9, 'gpa_num': 3,
+                        'bullets': [{'major': fake.job(), 'comments': fake.bs()}]
+                    }
+                ]
                 }
             ],
             'military_services': [
@@ -106,16 +108,17 @@ def generate_single_candidate_data(domain_id=None):
                 },
                 {
                     'country': 'us', 'branch': fake.military_ship(), 'highest_rank': 'major',
-                    'comments': fake.bs(), 'from_date': '2002-5-25', 'to_date': '2012-12-12'
+                    'status': 'active', 'highest_grade': '0-1', 'comments': fake.bs(),
+                    'from_date': '2002-5-25', 'to_date': '2012-12-12'
                 }
             ],
             'preferred_locations': [
-                {'city': fake.city(), 'state': fake.state()},
-                {'city': fake.city(), 'state': fake.state()}
+                {'city': fake.city(), 'state': fake.state(), 'country': fake.country()},
+                {'city': fake.city(), 'state': fake.state(), 'country': fake.country()}
             ],
             'skills': [
                 {'name': 'payroll', 'months_used': 15, 'last_used_date': '2015-11-25'},
-                {'name': 'sql', 'months_used': '24', 'last_used_date': '1998-10-19'}
+                {'name': 'sql', 'months_used': 24, 'last_used_date': '1998-10-19'}
             ],
             'social_networks': [
                 {'profile_url': 'http://www.facebook.com/1024359318', 'name': 'facebook'},
@@ -148,7 +151,7 @@ def candidate_data_for_update(candidate_id, email_1_id, email_2_id, phone_1_id,
             'middle_name': fake.first_name(),
             'last_name': fake.last_name(),
             'emails': [
-                {'id': email_1_id,'label': 'Primary', 'address': fake.email()},
+                {'id': email_1_id, 'label': 'Primary', 'address': fake.email()},
                 {'id': email_2_id, 'label': 'work', 'address': fake.company_email()}
             ],
             'phones': [
@@ -163,7 +166,7 @@ def candidate_data_for_update(candidate_id, email_1_id, email_2_id, phone_1_id,
             ],
             'work_preference': {'id': work_preference_id, "relocate": False, "authorization": "US Citizen",
                                 "telecommute": True, "travel_percentage": randrange(0, 100),
-                                "hourly_rate": '%.2f' % random.uniform(20, 90),
+                                "hourly_rate": float('%.2f' % random.uniform(20, 90)),
                                 "salary": randrange(50000, 300000),
                                 "tax_terms": "full-time employment",
                                 "security_clearance": False,
@@ -177,7 +180,7 @@ def candidate_data_for_update(candidate_id, email_1_id, email_2_id, phone_1_id,
             'educations': [
                 {'id': education_1_id, 'school_name': 'SJSU', 'city': 'San Jose',
                  'country': 'USA', 'degrees': [
-                    {'id': degree_1_id,'type': 'BS', 'title': 'dancing'}
+                    {'id': degree_1_id, 'type': 'BS', 'title': 'dancing'}
                 ]}
             ],
             'military_services': [
@@ -222,9 +225,9 @@ def candidate_addresses(candidate_id=None, address_id=None):
     # Data for creating a Candidate + CandidateAddress
     else:
         data = {'candidate': {'emails': [{'address': fake.email()}], 'addresses': [
-        {'address_line_1': fake.street_address(), 'city': fake.city(),
-         'state': fake.state(), 'zip_code': fake.zipcode(), 'country': fake.country()}
-    ]}}
+            {'address_line_1': fake.street_address(), 'city': fake.city(),
+             'state': fake.state(), 'zip_code': fake.zipcode(), 'country': fake.country()}
+        ]}}
 
     return data
 
@@ -242,16 +245,16 @@ def candidate_areas_of_interest(domain_id, candidate_id=None, aoi_id=None):
     if candidate_id and not aoi_id:
         data = {'candidate': {'id': candidate_id, 'areas_of_interest': [
             {'area_of_interest_id': area_of_interest.id} for area_of_interest in areas_of_interest
-        ]}}
+            ]}}
     elif candidate_id and aoi_id:
         data = {'candidate': {'id': candidate_id, 'areas_of_interest': [
             {'area_of_interest_id': area_of_interest.id} for area_of_interest in areas_of_interest
-        ]}}
+            ]}}
     # Data for creating Candidate + CandidateAreaOfInterest
     else:
         data = {'candidate': {'emails': [{'address': fake.email()}], 'areas_of_interest': [
             {'area_of_interest_id': area_of_interest.id} for area_of_interest in areas_of_interest
-        ]}}
+            ]}}
     return data
 
 
@@ -267,12 +270,12 @@ def candidate_custom_fields(domain_id, candidate_id=None):
     if candidate_id:
         data = {'candidate': {'id': candidate_id, 'custom_fields': [
             {'custom_field_id': custom_field.id, 'value': fake.word()} for custom_field in custom_fields
-        ]}}
+            ]}}
     # Data for creating Candidate + CandidateCustomField
     else:
         data = {'candidate': {'emails': [{'address': fake.email()}], 'custom_fields': [
             {'custom_field_id': custom_field.id, 'value': fake.word()} for custom_field in custom_fields
-        ]}}
+            ]}}
     return data
 
 
@@ -363,10 +366,14 @@ def candidate_work_preference(candidate_id=None, work_preference_id=None):
         }}}
     elif candidate_id and work_preference_id:
         data = {'candidate': {'id': candidate_id, 'work_preference': {'id': work_preference_id,
-            "relocate": True, "authorization": "us citizen", "telecommute": False,
-            "travel_percentage": randrange(0, 100), "hourly_rate": '%.2f' % random.uniform(20, 90),
-            "salary": randrange(50000, 300000), "employment_type": "full-time employment", "third_party": False
-        }}}
+                                                                      "relocate": True, "authorization": "us citizen",
+                                                                      "telecommute": False,
+                                                                      "travel_percentage": randrange(0, 100),
+                                                                      "hourly_rate": '%.2f' % random.uniform(20, 90),
+                                                                      "salary": randrange(50000, 300000),
+                                                                      "employment_type": "full-time employment",
+                                                                      "third_party": False
+                                                                      }}}
     else:
         data = {'candidate': {'emails': [{'address': fake.email()}], 'work_preference': {
             "relocate": True, "authorization": "us citizen", "telecommute": False,
@@ -430,6 +437,7 @@ def candidate_military_service():
          'comments': fake.sentence()}
     ]}}
     return data
+
 
 def candidate_preferred_locations():
     """
