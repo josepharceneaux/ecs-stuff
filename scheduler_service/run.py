@@ -13,6 +13,8 @@ hmac, app, celery = init_app()
 
 
 # Split the scheduler from celery, so that celery worker can start from terminal
+# Celery tasks needs name of included file. If the import is above the file, celery will not recognize
+# updated file. So, it should be specific to app only
 def scheduler_app():
     from scheduler_service.api.scheduler_api import scheduler_blueprint
     # Run Celery from terminal as

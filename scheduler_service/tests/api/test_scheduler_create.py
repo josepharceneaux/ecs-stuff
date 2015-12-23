@@ -9,7 +9,7 @@ import requests
 
 # Application imports
 from scheduler_service.scheduler import scheduler
-from scheduler_service.tests.conftest import APP_URL, hmac, APP
+from scheduler_service.tests.conftest import APP_URL
 
 __author__ = 'saad'
 
@@ -21,6 +21,9 @@ class TestSchedulerCreate:
         """
         Create a job by hitting the endpoint but by using valid HMAC signature and make sure response
         is correct and job id is returned.
+        In case of no user or no valid token job should not be created. So create generate HMAC key
+        and pass that in header while sending data to endpoint. Check the response status code
+        and see that it is 201.
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as

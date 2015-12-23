@@ -70,6 +70,60 @@ def apscheduler_listener(event):
 scheduler.add_listener(apscheduler_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 
 
+def validate_one_time_job(data):
+    valid_data = dict()
+    try:
+        run_datetime = data['run_datetime']
+    except KeyError:
+        raise FieldRequiredError(error_message="Field 'run_datetime' is missing")
+    try:
+        run_datetime = parse(run_datetime)
+        run_datetime = run_datetime.replace(tzinfo=timezone('UTC'))
+        valid_data.update({'run_datetime': run_datetime})
+        return valid_data
+    except Exception:
+        InvalidUsage(
+            error_message="Invalid value of run_datetime %s. run_datetime should be datetime format" % run_datetime)
+
+
+def validate_periodic_job(data):
+    valid_data = dict()
+    try:
+        try:
+            frequency = data['frequency']
+        except KeyError:
+            raise FieldRequiredError("Missing key: frequency")
+        start_datetime = data['start_datetime']
+        try:
+            start_datetime = parse(start_datetime)
+            start_datetime = start_datetime.replace(tzinfo=timezone('UTC'))
+            valid_data.update({'start_datetime': start_datetime})
+        except Exception:
+            raise InvalidUsage(error_message="Invalid value of start_datetime %s" % start_datetime)
+
+        end_datetime = data['end_datetime']
+        try:
+            end_datetime = parse(end_datetime)
+            end_datetime = end_datetime.replace(tzinfo=timezone('UTC'))
+            valid_data.update({'end_datetime': end_datetime})
+        except Exception:
+            raise InvalidUsage(error_message="Invalid value of end_datetime %s" % end_datetime)
+
+        # If value of frequency is not integer or lesser than 1 hour then throw exception
+        if not str(frequency).isdigit():
+            raise InvalidUsage(error_message='Invalid value of frequency. It should be integer')
+        if int(frequency) < 3600:
+            raise InvalidUsage(error_message='Invalid value of frequency. Value should '
+                                             'be greater than or equal to 3600')
+
+        frequency = int(frequency)
+        valid_data.update({'frequency': frequency})
+        return valid_data
+
+    except KeyError:
+        raise FieldRequiredError(error_message="Missing or invalid data.")
+
+
 def schedule_job(data, user_id=None, access_token=None):
     """
     Schedule job using post data and add it to APScheduler. Which calls the callback method when job time comes
@@ -98,63 +152,29 @@ def schedule_job(data, user_id=None, access_token=None):
     trigger = str(job_config['task_type']).lower().strip()
 
     if trigger == 'periodic':
-        try:
-            try:
-                frequency = data['frequency']
-            except KeyError:
-                raise FieldRequiredError("Missing key: frequency")
-            start_datetime = data['start_datetime']
-            try:
-                start_datetime = parse(start_datetime)
-                start_datetime = start_datetime.replace(tzinfo=timezone('UTC'))
-            except Exception:
-                raise InvalidUsage(error_message="Invalid value of start_datetime %s" % start_datetime)
+        valid_data = validate_periodic_job(data)
 
-            end_datetime = data['end_datetime']
-            try:
-                end_datetime = parse(end_datetime)
-                end_datetime = end_datetime.replace(tzinfo=timezone('UTC'))
-            except Exception:
-                raise InvalidUsage(error_message="Invalid value of end_datetime %s" % end_datetime)
-
-            # If value of frequency is not integer or lesser than 1 hour then throw exception
-            if not str(frequency).isdigit():
-                raise InvalidUsage(error_message='Invalid value of frequency. It should be integer')
-            if int(frequency) < 3600:
-                raise InvalidUsage(error_message='Invalid value of frequency. Value should '
-                                                 'be greater than or equal to 3600')
-            frequency = int(frequency)
-        except KeyError:
-            raise FieldRequiredError(error_message="Missing or invalid data.")
         try:
             job = scheduler.add_job(run_job,
                                     trigger='interval',
-                                    seconds=frequency,
-                                    start_date=start_datetime,
-                                    end_date=end_datetime,
+                                    seconds=valid_data['frequency'],
+                                    start_date=valid_data['start_datetime'],
+                                    end_date=valid_data['end_datetime'],
                                     args=[user_id, access_token, job_config['url'], content_type],
                                     kwargs=job_config['post_data'])
-            logger.info('schedule_job: Task has been added and will run at %s ' % start_datetime)
+            logger.info('schedule_job: Task has been added and will start at %s ' % valid_data['start_datetime'])
         except Exception:
             raise JobNotCreatedError("Unable to create the job.")
         return job.id
     elif trigger == 'one_time':
-        try:
-            run_datetime = data['run_datetime']
-        except KeyError:
-            raise FieldRequiredError(error_message="Field 'run_datetime' is missing")
-        try:
-            run_datetime = parse(run_datetime)
-            run_datetime = run_datetime.replace(tzinfo=timezone('UTC'))
-        except Exception:
-            InvalidUsage(error_message="Invalid value of run_datetime %s. run_datetime should be datetime format" % run_datetime)
+        valid_data = validate_one_time_job(data)
         try:
             job = scheduler.add_job(run_job,
                                     trigger='date',
-                                    run_date=run_datetime,
+                                    run_date=valid_data['run_datetime'],
                                     args=[user_id, access_token, job_config['url'], content_type],
                                     kwargs=job_config['post_data'])
-            logger.info('schedule_job: Task has been added and will run at %s ' % run_datetime)
+            logger.info('schedule_job: Task has been added and will run at %s ' % valid_data['run_datetime'])
             return job.id
         except Exception:
             raise JobNotCreatedError("Unable to create job. Invalid data given")

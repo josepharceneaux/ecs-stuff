@@ -25,7 +25,6 @@ def init_app():
     db.init_app(flask_app)
     db.app = flask_app
     hmac.init_app(flask_app)
-    flask_app.config['HMAC_KEY'] = 'janj21389ikasdzkl2exlp3osmbcvn293842mlps'
     register_error_handlers(flask_app, logger)
     logger.info("Starting scheduler service in %s environment",
                 flask_app.config['GT_ENVIRONMENT'])

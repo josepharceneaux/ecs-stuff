@@ -93,6 +93,12 @@ def job_config(request, job_config_periodic):
 
 @pytest.fixture(scope='function')
 def general_task_data(request, job_config):
+    """
+    Make a valid signature header for post data(job_config) and also dump job_config data
+    :param request:
+    :param job_config:
+    :return: job_config and valid signature header
+    """
     data = json.dumps(job_config)
     sig = hmac.make_hmac(data, key=APP.config['HMAC_KEY'])
     headers = {hmac.header: sig}

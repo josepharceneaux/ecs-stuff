@@ -565,7 +565,7 @@ class GeneralTasks(Resource):
 
     def post(self, **kwargs):
         """
-        This method takes data to create or schedule a task for scheduler but without user.
+        This method takes data to create or schedule a task for scheduler but without authenticated user.
 
         :Example:
             for interval or periodic schedule
@@ -596,7 +596,7 @@ class GeneralTasks(Resource):
             }
 
             headers = {
-                        'Authorization': 'Bearer <access_token>',
+                        'Signature': 'signature key HMAC',
                         'Content-Type': 'application/json'
                        }
             data = json.dumps(task)
