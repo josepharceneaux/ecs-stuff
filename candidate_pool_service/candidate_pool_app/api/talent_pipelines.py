@@ -3,21 +3,25 @@ __author__ = 'ufarooqi'
 import json
 import requests
 from flask import request
-from flask_restful import Resource
 from dateutil import parser
 from sqlalchemy import and_
-from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import TALENT_PIPELINE_SEARCH_PARAMS
+from dateutil.parser import parse
+from flask_restful import Resource
+from candidate_pool_service.candidate_pool_app import app
+from candidate_pool_service.common.error_handling import *
+from candidate_pool_service.tests.common_functions import TALENT_PIPELINE_CANDIDATE_API
+from candidate_pool_service.common.routes import CandidateApiUrl
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.talent_pools_pipelines import *
+from candidate_pool_service.common.utils.talent_reporting import email_error_to_admins
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
-from candidate_pool_service.common.routes import CandidateApiUrl
-from candidate_pool_service.common.error_handling import *
+from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import TALENT_PIPELINE_SEARCH_PARAMS
 
 
 class TalentPipelineApi(Resource):
 
     # Access token decorator
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     @require_all_roles('CAN_GET_TALENT_PIPELINES')
     def get(self, **kwargs):
@@ -297,7 +301,7 @@ class TalentPipelineApi(Resource):
 class TalentPipelineSmartListApi(Resource):
 
     # Access token decorator
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     @require_all_roles('CAN_GET_TALENT_PIPELINE_SMART_LISTS')
     def get(self, **kwargs):
@@ -457,7 +461,7 @@ class TalentPipelineSmartListApi(Resource):
 class TalentPipelineCandidates(Resource):
 
     # Access token decorator
-    decorators = [require_oauth]
+    decorators = [require_oauth(allow_basic_auth=True)]
 
     @require_all_roles('CAN_GET_TALENT_PIPELINE_CANDIDATES')
     def get(self, **kwargs):
@@ -498,7 +502,12 @@ class TalentPipelineCandidates(Resource):
             raise InvalidUsage(error_message="Search params of talent-pipeline or its smart-lists are in bad format "
                                              "because: %s" % e.message)
 
-        headers = {'Authorization': request.oauth_token, 'Content-Type': 'application/json'}
+        if not request.oauth_token:
+            secret_key, oauth_token = User.generate_auth_token(user_id=talent_pipeline.owner_user_id)
+            headers = {'Authorization': oauth_token, 'X-Talent-Server-Key': secret_key,
+                       'Content-Type': 'application/json'}
+        else:
+            headers = {'Authorization': request.oauth_token, 'Content-Type': 'application/json'}
 
         request_params = dict()
 
@@ -522,5 +531,89 @@ class TalentPipelineCandidates(Resource):
         except Exception as e:
             raise InvalidUsage(error_message="Couldn't get candidates from candidates search service because: "
                                              "%s" % e.message)
+
+
+@app.route('/talent-pipelines/stats', methods=['POST'])
+@require_oauth(allow_basic_auth=True, allow_null_user=True)
+def update_talent_pipelines_stats():
+    """
+    This method will update the statistics of all talent-pipelines once in a week.
+    :return: None
+    """
+
+    if request.oauth_token:
+        headers = {'Authorization': request.oauth_token}
+
+    try:
+        talent_pipelines = TalentPipeline.query.all()
+        for talent_pipeline in talent_pipelines:
+            last_week_stat = TalentPipeline.query.filter_by(talent_pipeline_id=talent_pipeline.id).\
+                order_by(TalentPipelineStats.id.desc()).first()
+            if not request.oauth_token:
+                secret_key, oauth_token = User.generate_auth_token(user_id=talent_pipeline.owner_user_id)
+                headers = {'Authorization': oauth_token, 'X-Talent-Server-Key': secret_key}
+
+            response = requests.get(url=TALENT_PIPELINE_CANDIDATE_API % talent_pipeline.id, headers=headers,
+                                    params={'fields': 'count_only'})
+            if not response.ok:
+                raise Exception("Couldn't get total number of candidates of talent-pipeline %s because: %s" %
+                                (talent_pipeline.id, response.json()))
+
+            total_candidates = response.json().get('total_found')
+            if last_week_stat:
+                talent_pipeline_stat = TalentPipelineStats(talent_pipeline_id=talent_pipeline.id,
+                                                           total_candidates=total_candidates,
+                                                           number_of_candidates_removed_or_added=
+                                                           total_candidates - last_week_stat.total_candidates)
+            else:
+                talent_pipeline_stat = TalentPipelineStats(talent_pipeline_id=talent_pipeline.id,
+                                                           total_candidates=total_candidates,
+                                                           number_of_candidates_removed_or_added=total_candidates)
+            db.session.add(talent_pipeline_stat)
+
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        email_error_to_admins("Couldn't update statistics of TalentPipelines because: %s" % e.message,
+                              subject="TalentPipeline Statistics")
+        raise InternalServerError(error_message="Couldn't update statistics of TalentPools because: %s" % e.message)
+
+
+@app.route('/talent-pipeline/<int:talent_pipeline_id>/stats', methods=['GET'])
+@require_oauth()
+def get_talent_pipeline_stats(talent_pipeline_id):
+    """
+    This method will return the statistics of a talent_pipeline over a given period of time with time-period = 1 week
+    :param talent_pipeline_id: Id of a talent-pipeline
+    :return: A list of time-series data
+    """
+    talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
+    if not talent_pipeline:
+        raise NotFoundError(error_message="TalentPipeline with id=%s doesn't exist in database" % talent_pipeline_id)
+
+    from_date_string = request.args.get('from_date', '')
+    to_date_string = request.args.get('to_date', '')
+
+    if not from_date_string and not to_date_string:
+        raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is missing from request parameters")
+
+    try:
+        from_date = parse(from_date_string)
+        to_date = parse(to_date_string)
+    except Exception as e:
+        raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
+
+    talent_pipeline_stats = TalentPipelineStats.query.filter(TalentPipelineStats.talent_pool_id == talent_pipeline_id,
+                                                             TalentPipelineStats.added_time >= from_date,
+                                                             TalentPipelineStats.added_time <= to_date)
+
+    return {'talent_pool_data': [
+        {
+            'total_number_of_candidates': talent_pipeline_stat.total_candidates,
+            'number_of_candidates_removed_or_added': talent_pipeline_stat.number_of_candidates_removed_or_added,
+            'added_time': talent_pipeline_stat.added_time
+        }
+        for talent_pipeline_stat in talent_pipeline_stats
+    ]}
 
 

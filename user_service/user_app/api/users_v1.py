@@ -10,7 +10,7 @@ from user_service.common.error_handling import *
 class UserApi(Resource):
 
     # Access token and role authentication decorators
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
     @require_any_role('SELF', 'CAN_GET_USERS')

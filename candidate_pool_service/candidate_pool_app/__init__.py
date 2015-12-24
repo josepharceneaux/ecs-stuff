@@ -2,6 +2,7 @@ __author__ = 'ufarooqi'
 
 from flask import Flask
 from candidate_pool_service.common.models.db import db
+from candidate_pool_service.common.redis_cache import redis_store
 from candidate_pool_service.common import common_config
 from healthcheck import HealthCheck
 from candidate_pool_service.common.talent_api import TalentApi
@@ -16,6 +17,9 @@ register_error_handlers(app, logger)
 
 db.init_app(app)
 db.app = app
+
+# Initialize Redis Cache
+redis_store.init_app(app)
 
 # wrap the flask app and give a heathcheck url
 health = HealthCheck(app, "/healthcheck")

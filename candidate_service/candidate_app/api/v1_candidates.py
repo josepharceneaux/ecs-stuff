@@ -42,7 +42,7 @@ from candidate_service.modules.talent_cloud_search import upload_candidate_docum
 
 
 class CandidatesResource(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def get(self, **kwargs):
         """
@@ -340,7 +340,7 @@ class CandidatesResource(Resource):
 
 
 class CandidateResource(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def get(self, **kwargs):
         """
@@ -433,7 +433,7 @@ class CandidateResource(Resource):
 
 
 class CandidateAddressResource(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def delete(self, **kwargs):
         """
@@ -474,7 +474,7 @@ class CandidateAddressResource(Resource):
 
 
 class CandidateAreaOfInterestResource(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def delete(self, **kwargs):
         """
@@ -523,7 +523,7 @@ class CandidateAreaOfInterestResource(Resource):
 
 
 class CandidateCustomFieldResource(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def delete(self, **kwargs):
         """
@@ -569,7 +569,7 @@ class CandidateCustomFieldResource(Resource):
 
 
 class CandidateEducationResource(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def delete(self, **kwargs):
         """
@@ -610,7 +610,7 @@ class CandidateEducationResource(Resource):
 
 
 class CandidateEducationDegreeResource(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def delete(self, **kwargs):
         """
@@ -659,7 +659,7 @@ class CandidateEducationDegreeResource(Resource):
 
 
 class CandidateEducationDegreeBulletResource(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def delete(self, **kwargs):
         """
@@ -719,7 +719,7 @@ class CandidateEducationDegreeBulletResource(Resource):
 
 
 class CandidateExperienceResource(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def delete(self, **kwargs):
         """
@@ -760,7 +760,7 @@ class CandidateExperienceResource(Resource):
 
 
 class CandidateExperienceBulletResource(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def delete(self, **kwargs):
         """
@@ -813,7 +813,7 @@ class CandidateExperienceBulletResource(Resource):
 
 
 class CandidateEmailResource(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def delete(self, **kwargs):
         """
@@ -854,7 +854,7 @@ class CandidateEmailResource(Resource):
 
 
 class CandidateMilitaryServiceResource(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def delete(self, **kwargs):
         """
@@ -895,7 +895,7 @@ class CandidateMilitaryServiceResource(Resource):
 
 
 class CandidatePhoneResource(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def delete(self, **kwargs):
         """
@@ -936,7 +936,7 @@ class CandidatePhoneResource(Resource):
 
 
 class CandidatePreferredLocationResource(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def delete(self, **kwargs):
         """
@@ -978,7 +978,7 @@ class CandidatePreferredLocationResource(Resource):
 
 
 class CandidateSkillResource(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def delete(self, **kwargs):
         """
@@ -1020,7 +1020,7 @@ class CandidateSkillResource(Resource):
 
 
 class CandidateSocialNetworkResource(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def delete(self, **kwargs):
         """
@@ -1063,7 +1063,7 @@ class CandidateSocialNetworkResource(Resource):
 
 
 class CandidateWorkPreferenceResource(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def delete(self, **kwargs):
         """
@@ -1094,7 +1094,7 @@ class CandidateWorkPreferenceResource(Resource):
 
 
 class CandidateEditResource(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def get(self, **kwargs):
         """
@@ -1114,7 +1114,7 @@ class CandidateEditResource(Resource):
 
 
 # class CandidateEmailCampaignResource(Resource):
-#     decorators = [require_oauth]
+#     decorators = [require_oauth()]
 #
 #     def get(self, **kwargs):
 #         """

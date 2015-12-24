@@ -15,35 +15,50 @@ from ..models.user import *
 from ..error_handling import *
 
 
-def require_oauth(func):
-    @wraps(func)
-    def authenticate(*args, **kwargs):
-        """
-        This method will verify Authorization header of request using getTalent AuthService and will set
-        request.user and request.oauth_token
-        """
-        try:
-            oauth_token = request.headers['Authorization']
-        except KeyError:
-            raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
-        try:
-            response = requests.get(app.config['OAUTH_SERVER_URI'], headers={'Authorization': oauth_token})
-        except Exception as e:
-            raise InternalServerError(error_message=e.message)
-        if response.status_code == 429:
-            raise UnauthorizedError(error_message='You have exceeded the access limit of this API')
-        elif not response.ok:
-            error_body = response.json()
-            if error_body['error']:
-                raise UnauthorizedError(error_message=error_body['error']['message'], error_code=error_body['error']['code'])
+def require_oauth(allow_basic_auth=False, allow_null_user=False):
+    """
+    This method will verify Authorization header of request using getTalent AuthService or Basic HTTP secret-key based
+    Auth and will set request.user and request.oauth_token
+    """
+    def auth_wrapper(func):
+        @wraps(func)
+        def authenticate(*args, **kwargs):
+            try:
+                oauth_token = request.headers['Authorization']
+            except KeyError:
+                raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
+            if 'Bearer' in oauth_token:
+                try:
+                    response = requests.get(app.config['OAUTH_SERVER_URI'], headers={'Authorization': oauth_token})
+                except Exception as e:
+                    raise InternalServerError(error_message=e.message)
+                if response.status_code == 429:
+                    raise UnauthorizedError(error_message='You have exceeded the access limit of this API')
+                elif not response.ok:
+                    error_body = response.json()
+                    if error_body['error']:
+                        raise UnauthorizedError(error_message=error_body['error']['message'],
+                                                error_code=error_body['error']['code'])
+                    else:
+                        raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
+                else:
+                    valid_user_id = response.json().get('user_id')
+                    request.user = User.query.get(valid_user_id)
+                    request.oauth_token = oauth_token
+                    return func(*args, **kwargs)
+            elif 'Basic' in oauth_token and allow_basic_auth:
+                token = oauth_token.replace('Basic', '').strip()
+                try:
+                    secret_key = request.headers['X-Talent-Server-Key']
+                except KeyError:
+                    raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
+                User.verify_auth_token(secret_key, token, allow_null_user)
+                return func(*args, **kwargs)
             else:
                 raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
-        else:
-            valid_user_id = response.json().get('user_id')
-            request.user = User.query.get(valid_user_id)
-            request.oauth_token = oauth_token
-            return func(*args, **kwargs)
-    return authenticate
+
+        return authenticate
+    return auth_wrapper
 
 
 def require_all_roles(*role_names):

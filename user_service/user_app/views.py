@@ -9,7 +9,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 
 @app.route('/domain/<int:domain_id>/roles', methods=['GET'])
-@require_oauth
+@require_oauth()
 @require_all_roles('CAN_GET_DOMAIN_ROLES')
 def get_all_roles_of_domain(domain_id):
     # if logged-in user should belong to same domain as input domain_id
@@ -22,7 +22,7 @@ def get_all_roles_of_domain(domain_id):
 
 
 @app.route('/users/update_password', methods=['PUT'])
-@require_oauth
+@require_oauth()
 def update_password():
     """
     This endpoint will be used to update the password of a user given old password

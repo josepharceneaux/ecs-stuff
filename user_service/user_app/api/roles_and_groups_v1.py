@@ -8,7 +8,7 @@ from user_service.common.error_handling import *
 class UserScopedRolesApi(Resource):
 
     # Access token decorator
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
     @require_any_role('SELF', 'CAN_GET_USER_ROLES')
@@ -94,7 +94,7 @@ class UserScopedRolesApi(Resource):
 class UserGroupsApi(Resource):
 
     # Access token decorator
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     @require_all_roles('CAN_GET_GROUP_USERS')
     def get(self, **kwargs):
@@ -148,7 +148,7 @@ class UserGroupsApi(Resource):
 class DomainGroupsApi(Resource):
 
     # Access token decorator
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     @require_all_roles('CAN_GET_DOMAIN_GROUPS')
     def get(self, **kwargs):
