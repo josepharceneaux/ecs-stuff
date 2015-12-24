@@ -149,7 +149,7 @@
         <div class="col--full-12--cell box">
             <header class="row--expanded">
                 <div class="col--large-7">
-                    <h2>Talent Pipeline <span>(14)</span></h2>
+                    <h2>Talent Pipeline <span>({{vm.talentPipelines.length}})</span></h2>
                 </div>
                 <div class="col--large-5 align--right box__header__with-link">
                     <a href="#" class="button--blue button--greenHover">New Pipeline</a>
@@ -304,7 +304,7 @@
         <div class="col--full-12--cell box">
             <header class="row--expanded">
                 <div class="col--large-9">
-                    <h2>Active Engagement Campaigns <span>(15)</span></h2>
+                    <h2>Active Engagement Campaigns <span>({{vm.campaigns.length}})</span></h2>
                 </div>
                 <div class="col--large-3 align--right">
                     <select ng-model="vm.selectedActiveEngagementViewOption" ng-options="option.name for option in vm.activeEngagementViewOptions track by option.id"
