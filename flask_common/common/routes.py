@@ -58,8 +58,8 @@ class GTApis(object):
     CANDIDATE_POOL_SERVICE_PORT = 8008
     SPREADSHEET_IMPORT_SERVICE_PORT = 8009
     DASHBOARD_SERVICE_PORT = 8010
-    SMS_CAMPAIGN_SERVICE_PORT = 8011
-    SCHEDULER_SERVICE_PORT = 8012
+    SCHEDULER_SERVICE_PORT = 8011
+    SMS_CAMPAIGN_SERVICE_PORT = 8012
 
     # Names of flask micro services
     AUTH_SERVICE_NAME = 'auth-service'
@@ -207,8 +207,13 @@ class CandidateApiUrl(object):
     AOI = API_URL % "/candidates/%s/areas_of_interest/%s"
     AOIS = API_URL % "/candidates/%s/areas_of_interest"
 
+
     CUSTOM_FIELD = API_URL % "/candidates/%s/custom_fields/%s"
     CUSTOM_FIELDS = API_URL % "/candidates/%s/custom_fields"
+
+    CANDIDATE_SEARCH_URI = API_URL % "/candidates/search"
+
+    CANDIDATES_DOCUMENTS_URI = API_URL % "/candidates/documents"
 
     EDUCATION = API_URL % "/candidates/%s/educations/%s"
     EDUCATIONS = API_URL % "/candidates/%s/educations"

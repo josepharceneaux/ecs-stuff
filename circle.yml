@@ -47,11 +47,15 @@ test:
     - python spreadsheet_import_service/run.py:
         parallel: true
         background: true
+    - python scheduler_service/run.py:
+        parallel: true
+        background: true
     - sleep 5
 
 
 
   override:
+
     - ? >
           py.test
           auth_service/tests/
@@ -62,6 +66,7 @@ test:
           candidate_pool_service/tests/
           sms_campaign_service/tests/
           spreadsheet_import_service/tests/
+          scheduler_service/tests/
       : parallel: true
 
 experimental:
