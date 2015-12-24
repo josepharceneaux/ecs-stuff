@@ -431,7 +431,7 @@ class TestSmsCampaignHTTPDelete(object):
         assert response.status_code == 207
         assert sms_campaign_of_other_user.id in response.json()['not_deleted_ids']
 
-    def test_campaigns_delete_with_deleted_id(self, valid_header, sms_campaign_of_current_user):
+    def test_campaigns_delete_with_deleted_record(self, valid_header, sms_campaign_of_current_user):
         """
         We first delete an SMS campaign, and again try to delete it. It should get
         ResourceNotFound error.

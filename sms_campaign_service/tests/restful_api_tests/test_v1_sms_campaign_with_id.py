@@ -23,8 +23,17 @@ class TestSmsCampaignWithIdHTTPGet(object):
     This class contains tests for endpoint /campaigns/:id and HTTP method GET.
 
     """
+    def test_with_invalid_token(self, sms_campaign_of_current_user):
+        """
+        User auth token is invalid. It should get Unauthorized error.
+        :return:
+        """
+        response = requests.get(SmsCampaignApiUrl.CAMPAIGN_URL % sms_campaign_of_current_user.id,
+                                headers=dict(Authorization='Bearer %s' % 'invalid_token'))
+        assert response.status_code == UnauthorizedError.http_status_code(), \
+            'It should be unauthorized (401)'
 
-    def test_with_valid_token_and_valid_id(self, auth_token, sms_campaign_of_current_user):
+    def test_with_owned_campaign(self, auth_token, sms_campaign_of_current_user):
         """
         User auth token is valid. It uses 'sms_campaign_of_current_user' fixture
         to create an SMS campaign in database. It gets that record from GET HTTP request
@@ -44,15 +53,17 @@ class TestSmsCampaignWithIdHTTPGet(object):
         assert response_campaign['send_datetime'] == str(campaign.send_datetime)
         assert response_campaign['stop_datetime'] == str(campaign.stop_datetime)
 
-    def test_with_invalid_token(self, sms_campaign_of_current_user):
+    def test_with_not_owned_campaign(self, auth_token, sms_campaign_of_other_user):
         """
-        User auth token is invalid. It should get Unauthorized error.
+        User auth token is valid. It uses 'sms_campaign_of_other_user' fixture
+        to create an SMS campaign in database. It gets that record from GET HTTP request
+        Response should get Forbidden error as current user is not an owner of this campaign.
         :return:
         """
-        response = requests.get(SmsCampaignApiUrl.CAMPAIGN_URL % sms_campaign_of_current_user.id,
-                                headers=dict(Authorization='Bearer %s' % 'invalid_token'))
-        assert response.status_code == UnauthorizedError.http_status_code(), \
-            'It should be unauthorized (401)'
+        response = requests.get(SmsCampaignApiUrl.CAMPAIGN_URL % sms_campaign_of_other_user.id,
+                                headers=dict(Authorization='Bearer %s' % auth_token))
+        assert response.status_code == ForbiddenError.http_status_code(), \
+            'It should get forbidden error(403)'
 
     def test_with_id_of_deleted_record(self, auth_token,
                                        sms_campaign_of_current_user):
@@ -182,6 +193,21 @@ class TestSmsCampaignWithIdHTTPPost(object):
         assert response.status_code == InternalServerError.http_status_code(), \
             'Internal server error should occur (500)'
         assert response.json()['error']['code'] == SmsCampaignApiException.MISSING_REQUIRED_FIELD
+
+    def test_updating_owned_sms_campaign(self, valid_header, sms_campaign_of_other_user,
+                                         campaign_valid_data, user_phone_1):
+        """
+        Here we try to update a campaign such that current user is not an owner of. It should get
+        forbidden error.
+        """
+        modified_name = 'Modified Name'
+        campaign_valid_data.update({'name': modified_name})
+        response_post = requests.post(
+            SmsCampaignApiUrl.CAMPAIGN_URL % sms_campaign_of_other_user.id,
+            headers=valid_header,
+            data=json.dumps(campaign_valid_data))
+        assert response_post.status_code == ForbiddenError.http_status_code(), \
+            'It should get forbidden error (403)'
 
 
 class TestSmsCampaignWithIdHTTPDelete(object):

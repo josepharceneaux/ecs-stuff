@@ -313,12 +313,17 @@ class CampaignById(Resource):
 
         .. Status:: 200 (OK)
                     401 (Unauthorized to access getTalent)
+                    403 (Forbidden: Current user cannot get SMS campaign record)
                     404 (Campaign not found)
                     500 (Internal Server Error)
 
         :param campaign_id: integer, unique id representing campaign in GT database
         :return: json for required campaign
         """
+        if not is_owner_of_campaign(campaign_id, request.user.id):
+            raise ForbiddenError(
+                error_message='User(id:%s) is not owner of SMS campaign(id:%s)'
+                              % (request.user.id, campaign_id))
         campaign = SmsCampaign.get_by_id(campaign_id)
         if not campaign:
             raise ResourceNotFound(error_message='SMS Campaign does not exist with id %s'
@@ -359,6 +364,7 @@ class CampaignById(Resource):
         .. Status:: 200 (Resource Modified)
                     400 (Bad request)
                     401 (Unauthorized to access getTalent)
+                    403 (Forbidden: Current user cannot update SMS campaign)
                     404 (Campaign not found)
                     500 (Internal Server Error)
 
@@ -373,6 +379,10 @@ class CampaignById(Resource):
             raise InvalidUsage(error_message='Given data should be in dict format')
         if not campaign_data:
             raise InvalidUsage(error_message='No data provided to update SMS campaign')
+        if not is_owner_of_campaign(campaign_id, request.user.id):
+            raise ForbiddenError(
+                error_message='User(id:%s) is not authorized to update SMS campaign(id:%s)'
+                              % (request.user.id, campaign_id))
         invalid_smartlist_ids, not_found_smartlist_ids = validate_form_data(campaign_data)
         camp_obj = SmsCampaignBase(request.user.id)
         camp_obj.create_or_update_sms_campaign(campaign_data, campaign_id=campaign_id)
