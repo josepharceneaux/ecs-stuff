@@ -96,8 +96,11 @@ def save(instance):
     :return: same model instance
     """
     # Add instance to db session and then commit that change to save that
-    db.session.add(instance)
-    db.session.commit()
+    try:
+        db.session.add(instance)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
     return instance
 
 
@@ -110,8 +113,11 @@ def update(instance, **data):
     :return: same model instance
     """
     # update this instance by given data
-    instance.query.filter_by(id=instance.id).update(data)
-    db.session.commit()
+    try:
+        instance.query.filter_by(id=instance.id).update(data)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
     return instance
 
 
@@ -126,6 +132,7 @@ def get_by_id(cls, _id):
     :type _id: int
     :return: Model instance
     """
+
     try:
         # get Model instance given by id
         obj = cls.query.get(_id)

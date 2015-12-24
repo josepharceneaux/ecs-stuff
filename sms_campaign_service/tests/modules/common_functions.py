@@ -5,6 +5,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 """
 # Standard Import
 import re
+import time
 
 # Service Specific
 from sms_campaign_service import db
@@ -17,6 +18,8 @@ from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaignSendUrlConversion,
                                                              SmsCampaignReply, SmsCampaignBlast,
                                                              SmsCampaignSend)
+
+SLEEP_TIME = 20
 
 
 def assert_url_conversion(sms_campaign_sends, campaign_id):
@@ -55,23 +58,23 @@ def assert_url_conversion(sms_campaign_sends, campaign_id):
         UrlConversion.delete(url_conversion)
 
 
-def assert_on_blasts_sends_url_conversion_and_activity(user_id, response_post, campaign_id):
+def assert_on_blasts_sends_url_conversion_and_activity(user_id, json_resp, campaign_id):
     """
     This function assert the number of sends in database table "sms_campaign_blast" and
     records in database table "sms_campaign_sends"
-    :param response_post: response of POST call
+    :param json_resp: JSON response of POST call
     :param campaign_id: id of SMS campaign
     :return:
     """
+    # assert on blasts
     # Need to commit the session because Celery has its own session, and our session does not
     # know about the changes that Celery session has made.
     db.session.commit()
-    # assert on blasts
     sms_campaign_blast = SmsCampaignBlast.get_by_campaign_id(campaign_id)
-    assert sms_campaign_blast.sends == response_post.json()['total_sends']
+    assert sms_campaign_blast.sends == json_resp['total_sends']
     # assert on sends
     sms_campaign_sends = SmsCampaignSend.get_by_blast_id(str(sms_campaign_blast.id))
-    assert len(sms_campaign_sends) == response_post.json()['total_sends']
+    assert len(sms_campaign_sends) == json_resp['total_sends']
     # assert on activity of individual campaign sends
     for sms_campaign_send in sms_campaign_sends:
         assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_SMS_SEND, sms_campaign_send.id)
@@ -118,3 +121,22 @@ def assert_method_not_allowed(response, method_name):
     """
     assert response.status_code == MethodNotAllowed.http_status_code(), \
         method_name + 'method should not be allowed (405)'
+
+
+def assert_api_send_response(campaign, response, count, expected_status_code):
+    """
+    Here are asserts that make sure that campaign has been created successfully.
+    :param campaign: sms_campaign obj
+    :param response: HTTP POST response
+    :param count: number of counts
+    :param expected_status_code: status code like 200, 404
+    :return: HTTP POST response in JSON
+    """
+    assert response.status_code == expected_status_code, 'Response should be' + expected_status_code
+    assert response.json()
+    json_resp = response.json()
+    assert json_resp['total_sends'] == count
+    assert str(campaign.id) in json_resp['message']
+    # Need to add this as processing of POST request runs on Celery
+    time.sleep(SLEEP_TIME)
+    return json_resp

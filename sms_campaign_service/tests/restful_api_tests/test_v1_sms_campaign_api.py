@@ -10,8 +10,12 @@ import requests
 from werkzeug.security import gen_salt
 
 # Service Specific
+from sms_campaign_service.tests.conftest import db
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.modules.common_functions import assert_for_activity
+
+# Models
+from sms_campaign_service.common.models.user import UserPhone
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
@@ -36,7 +40,7 @@ class TestSmsCampaignHTTPGet(object):
         assert response.status_code == UnauthorizedError.http_status_code(), \
             'It should be unauthorized (401)'
 
-    def test_campaigns_get_with_no_user_twilio_number(self, auth_token):
+    def test_campaigns_get_with_no_user_twilio_number(self, auth_token, sample_user):
         """
         User has no Twilio phone number. It should get OK response as we will buy a number for
         user silently.
@@ -46,6 +50,7 @@ class TestSmsCampaignHTTPGet(object):
         response = requests.get(SmsCampaignApiUrl.CAMPAIGNS_URL,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
         _assert_counts_and_campaigns(response)
+        _delete_created_number_of_user(sample_user)
 
     def test_campaigns_get_with_one_user_twilio_number(self, auth_token,
                                                        user_phone_1):
@@ -120,6 +125,7 @@ class TestSmsCampaignHTTPPost(object):
                                  headers=valid_header,
                                  data=json.dumps(campaign_valid_data))
         _assert_campaign_creation(response, sample_user.id, 201)
+        _delete_created_number_of_user(sample_user)
 
     def test_campaign_creation_with_no_data(self,
                                             valid_header,
@@ -451,3 +457,10 @@ def _assert_campaign_creation(response, user_id, expected_status_code):
     assert 'location' in response.headers
     assert 'sms_campaign_id' in resp
     assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_SMS_CREATE, resp['sms_campaign_id'])
+
+
+def _delete_created_number_of_user(user):
+    # Need to commit the session here as we have saved the user_phone in another session.
+    # And we do not have any user_phone for this session.
+    db.session.commit()
+    UserPhone.delete(user.user_phones[0])

@@ -9,7 +9,8 @@ import requests
 # Service Specific
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.modules.common_functions import \
-    (assert_on_blasts_sends_url_conversion_and_activity, assert_method_not_allowed)
+    (assert_on_blasts_sends_url_conversion_and_activity, assert_method_not_allowed,
+     assert_api_send_response)
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
@@ -135,11 +136,9 @@ class TestSendSmsCampaign(object):
         response_post = requests.post(
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response_post.status_code == 200, 'Response should be ok (200)'
-        assert response_post.json()['total_sends'] == 0
-        assert str(sms_campaign_of_current_user.id) in response_post.json()['message']
+        json_resp = assert_api_send_response(sms_campaign_of_current_user, response_post, 0, 200)
         assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
-                                                           response_post,
+                                                           json_resp,
                                                            str(sms_campaign_of_current_user.id))
 
     def test_post_with_one_smartlist_two_candidates_with_same_phone(

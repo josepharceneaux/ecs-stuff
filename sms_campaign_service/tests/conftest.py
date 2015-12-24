@@ -13,10 +13,15 @@ from sms_campaign_service.common.tests.conftest import *
 # Service specific
 # to avoid circular we need to import app before SmsCampaignBase
 from sms_campaign_service.sms_campaign_app.app import app
+
+# from sms_campaign_service import init_sms_campaign_app_and_celery_app
+# flask_app, celery_app = init_sms_campaign_app_and_celery_app()
+
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL,
                                                              TWILIO_TEST_NUMBER,
-                                                             TWILIO_INVALID_TEST_NUMBER)
+                                                             TWILIO_INVALID_TEST_NUMBER,
+                                                             TWILIO_PAID_NUMBER_1)
 
 # Database Models
 from sms_campaign_service.common.models.user import UserPhone
@@ -30,7 +35,7 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
 # Common Utils
 from sms_campaign_service.common.utils.common_functions import JSON_CONTENT_TYPE_HEADER
 
-SLEEP_TIME = 5  # needed to add this because tasks run on Celery
+SLEEP_TIME = 6  # needed to add this because tasks run on Celery
 CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
                         "body_text": "Hi all, we have few openings at http://www.abc.com",
                         "frequency_id": 2,
@@ -38,6 +43,24 @@ CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
                         "stop_datetime": "2015-11-30T08:00:00Z",
                         "smartlist_ids": ""
                         }
+
+
+def remove_any_user_phone_record_with_twilio_test_number():
+    """
+    This function cleans the database tables user_phone and candidate_phone.
+    If any record in these two tables has phone number value either TWILIO_TEST_NUMBER or
+    TWILIO_INVALID_TEST_NUMBER, we remove all those records before running the tests.
+    :return:
+    """
+    records = UserPhone.get_by_phone_value(TWILIO_TEST_NUMBER)
+    records += UserPhone.get_by_phone_value(TWILIO_INVALID_TEST_NUMBER)
+    map(UserPhone.delete, records)
+    records = CandidatePhone.get_by_phone_value(TWILIO_TEST_NUMBER)
+    records += CandidatePhone.get_by_phone_value(TWILIO_INVALID_TEST_NUMBER)
+    map(CandidatePhone.delete, records)
+
+# clean database tables user_phone and candidate_phone first
+remove_any_user_phone_record_with_twilio_test_number()
 
 
 @pytest.fixture()
@@ -315,7 +338,7 @@ def candidate_phone_2(request, candidate_second):
     :param candidate_second:
     :return:
     """
-    candidate_phone = _create_candidate_mobile_phone(candidate_second, TWILIO_INVALID_TEST_NUMBER)
+    candidate_phone = _create_candidate_mobile_phone(candidate_second, TWILIO_PAID_NUMBER_1)
 
     def tear_down():
         CandidatePhone.delete(candidate_phone)
@@ -323,6 +346,21 @@ def candidate_phone_2(request, candidate_second):
     request.addfinalizer(tear_down)
     return candidate_phone
 
+
+@pytest.fixture()
+def candidate_invalid_phone(request, candidate_second):
+    """
+    This associates sample_smartlist with the sms_campaign_of_current_user
+    :param candidate_second:
+    :return:
+    """
+    candidate_phone = _create_candidate_mobile_phone(candidate_second, TWILIO_INVALID_TEST_NUMBER)
+
+    def tear_down():
+        CandidatePhone.delete(candidate_phone)
+
+    request.addfinalizer(tear_down)
+    return candidate_phone
 
 @pytest.fixture()
 def candidates_with_same_phone(request, candidate_first, candidate_second):
@@ -369,6 +407,7 @@ def process_send_sms_campaign(sample_user, auth_token,
     This function serves the sending part of SMS campaign
     :return:
     """
+
     campaign_obj = SmsCampaignBase(sample_user.id)
     # send campaign to candidates, which will be sent by a Celery task
     campaign_obj.process_send(sms_campaign_of_current_user)
@@ -444,7 +483,7 @@ def _create_candidate_mobile_phone(candidate, phone_value):
     :param phone_value: value of phone number
     :type candidate: Candidate
     :type phone_value: str
-    :return: user_phone obj
+    :return: candidate_phone obj
     :rtype: CandidatePhone
     """
     phone_label_id = PhoneLabel.phone_label_id_from_phone_label(MOBILE_PHONE_LABEL)

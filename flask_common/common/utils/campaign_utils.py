@@ -72,14 +72,15 @@ class CampaignBase(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, user_id, *args, **kwargs):
+    def __init__(self, user_id):
         self.user_id = user_id
+        # This gets the access_token of current user to communicate with other services.
         self.oauth_header = self.get_authorization_header(self.user_id)
-        self.campaign = None
+        self.campaign = None  # It will be instance of model e.g. SmsCampaign
+        # or PushNotification etc.
         self.body_text = None  # This is 'text' to be sent to candidates as part of campaign.
         # Child classes will get this from respective campaign table.
         # e.g. in case of SMS campaign, this is get from "sms_campaign" database table.
-        self.smartlist_id = None
 
     @staticmethod
     def get_authorization_header(user_id):
@@ -178,7 +179,7 @@ class CampaignBase(object):
         else:
             return candidates
 
-    def send_campaign_to_candidates(self, candidates_and_phones):
+    def send_campaign_to_candidates(self, candidates_and_phones, logger):
         """
         Once we have the candidates, we iterate them and call
             self.send_campaign_to_candidate() to send the campaign to all candidates
@@ -194,15 +195,23 @@ class CampaignBase(object):
         .. see also:: process_send() method in SmsCampaignBase class.
         """
         # callback function which will be hit after campaign is sent to all candidates i.e.
-        # once the asynch task is done the self.callback_campaign_sent will be called
-        callback = self.callback_campaign_sent.subtask((self.user_id, self.campaign,
-                                                        self.oauth_header, ))
-        # Comment TODO and probably change var name as well
-        tasks = [self.send_campaign_to_candidate.subtask((self, record),
-                                                          link_error=self.celery_error.subtask())
-                  for record in candidates_and_phones]
-        # This calls the callback function once all tasks in header finished running
-        chord(tasks)(callback)
+        # once the async task is done the self.callback_campaign_sent will be called
+        try:
+            # TODO: make this function generic for all campaigns, and update comment in class
+            # When all tasks assigned to Celery complete their execution, following function
+            # is called by celery as a callback function.
+            callback = self.callback_campaign_sent.subtask((self.user_id, self.campaign,
+                                                            self.oauth_header, ))
+            # Here we create list of all tasks and assign a self.celery_error() as a callback
+            # function in case any of the tasks in the list encounter some error.
+            tasks = [self.send_campaign_to_candidate.subtask((self, record),
+                                                             link_error=self.celery_error_handler.subtask())
+                     for record in candidates_and_phones]
+            # This runs all tasks asynchronously and sets callback function to be hit once all
+            # tasks in list finish running.
+            chord(tasks)(callback)
+        except Exception:
+            logger.exception('send_campaign_to_candidates: Error while sending tasks to Celery')
 
     @abstractmethod
     def send_campaign_to_candidate(self, candidate_and_phone):
@@ -216,14 +225,12 @@ class CampaignBase(object):
 
     @staticmethod
     @abstractmethod
-    def celery_error(error):
+    def celery_error_handler(uuid):
         """
         This function logs any error occurred for tasks running on celery,
         :return:
         """
         pass
-
-
 
     @staticmethod
     @abstractmethod

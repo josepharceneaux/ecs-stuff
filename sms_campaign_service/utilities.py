@@ -24,7 +24,8 @@ from sms_campaign_service.common.error_handling import (InvalidUsage, ResourceNo
                                                         ForbiddenError)
 from sms_campaign_service.common.utils.common_functions import (find_missing_items,
                                                                 is_iso_8601_format,
-                                                                JSON_CONTENT_TYPE_HEADER)
+                                                                JSON_CONTENT_TYPE_HEADER,
+                                                                is_valid_url)
 
 # Database Models
 from sms_campaign_service.common.models.user import UserPhone
@@ -34,7 +35,8 @@ from sms_campaign_service.common.models.talent_pools_pipelines import Smartlist
 # Application Specific
 from sms_campaign_service import logger
 from sms_campaign_service.custom_exceptions import (TwilioAPIError, MissingRequiredField,
-                                                    InvalidDatetime, ErrorDeletingSMSCampaign)
+                                                    InvalidDatetime, ErrorDeletingSMSCampaign,
+                                                    InvalidUrl)
 from sms_campaign_service.sms_campaign_app_constants import (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,
                                                              NGROK_URL, TWILIO_TEST_ACCOUNT_SID,
                                                              TWILIO_TEST_AUTH_TOKEN)
@@ -47,9 +49,11 @@ class TwilioSMS(object):
 
     def __init__(self):
         if IS_DEV:
+            # This client is created using test_credentials of Twilio
             self.client = twilio.rest.TwilioRestClient(TWILIO_TEST_ACCOUNT_SID,
                                                        TWILIO_TEST_AUTH_TOKEN)
         else:
+            # This client has actual app credentials of Twilio
             self.client = twilio.rest.TwilioRestClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
         self.country = 'US'
         self.phone_type = 'local'
@@ -59,6 +63,21 @@ class TwilioSMS(object):
         # self.sms_call_back_url = SmsCampaignApiUrl.RECEIVE_URL
         self.sms_call_back_url = NGROK_URL % SmsCampaignApiUrl.RECEIVE
         self.sms_method = 'POST'
+
+    def validate_a_number(self, phone_number):
+        # -------------------------------------
+        # sends SMS to given number
+        # -------------------------------------
+        if not isinstance(phone_number, basestring):
+            raise InvalidUsage('Include phone number as str')
+        try:
+            # This does not work with Test Credentials
+            response = self.client.caller_ids.validate(phone_number)
+            return response
+        except twilio.TwilioRestException as error:
+            logger.error('Cannot validate given number. Error is "%s"'
+                         % error.msg if hasattr(error, 'msg') else error.message)
+        return False
 
     def send_sms(self, body_text=None, receiver_phone=None, sender_phone=None):
         # -------------------------------------
@@ -73,7 +92,7 @@ class TwilioSMS(object):
             return message
         except twilio.TwilioRestException as error:
             raise TwilioAPIError(error_message=
-                                 'Cannot get available number. Error is "%s"'
+                                 'Cannot send SMS. Error is "%s"'
                                  % error.msg if hasattr(error, 'msg') else error.message)
 
     def get_available_numbers(self):
@@ -118,7 +137,7 @@ class TwilioSMS(object):
             logger.info('SMS call back URL has been set to: %s' % number.sms_url)
         except Exception as error:
             raise TwilioAPIError(error_message=
-                                 'Cannot buy new number. Error is "%s"'
+                                 'Error updating callback URL. Error is "%s"'
                                  % error.msg if hasattr(error, 'msg') else error.message)
 
     def get_sid(self, phone_number):
@@ -131,7 +150,7 @@ class TwilioSMS(object):
                 return 'SID of Phone Number %s is %s' % (phone_number, number[0].sid)
         except Exception as error:
             raise TwilioAPIError(error_message=
-                                 'Cannot buy new number. Error is "%s"'
+                                 'Error getting SID of phone_number. Error is "%s"'
                                  % error.msg if hasattr(error, 'msg') else error.message)
 
 
@@ -310,3 +329,15 @@ def validate_header(request):
     """
     if not request.headers.get('CONTENT_TYPE') == JSON_CONTENT_TYPE_HEADER['content-type']:
         raise InvalidUsage(error_message='Invalid header provided')
+
+
+def validate_url(url):
+    """
+    This validates if given URL is valid or not
+    :param url: URL to be validate
+    :type url: str
+    :exception: InvalidUrl if URL is in improper format
+    :return:
+    """
+    if not is_valid_url(url):
+        raise InvalidUrl('Given URL (%s) is not valid.' % url)

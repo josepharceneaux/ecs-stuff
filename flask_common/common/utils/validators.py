@@ -1,4 +1,5 @@
 import re
+import phonenumbers
 from ..error_handling import *
 
 
@@ -27,8 +28,6 @@ def format_phone_number(phone_number, country_code='US'):
     :rtype: str
     """
     try:
-        import phonenumbers
-
         # Maybe the number is already internationally formatted
         try:
             parsed_phone_number = phonenumbers.parse(str(phone_number))
