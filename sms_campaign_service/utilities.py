@@ -18,6 +18,7 @@ import twilio.rest
 from twilio.rest import TwilioRestClient
 
 # Common Utils
+from sms_campaign_service.common.common_config import IS_DEV
 from sms_campaign_service.common.routes import (SmsCampaignApiUrl, GTApis)
 from sms_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound,
                                                         ForbiddenError)
@@ -27,15 +28,16 @@ from sms_campaign_service.common.utils.common_functions import (find_missing_ite
 
 # Database Models
 from sms_campaign_service.common.models.user import UserPhone
-from sms_campaign_service.common.models.smart_list import SmartList
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
+from sms_campaign_service.common.models.talent_pools_pipelines import Smartlist
 
 # Application Specific
 from sms_campaign_service import logger
 from sms_campaign_service.custom_exceptions import (TwilioAPIError, MissingRequiredField,
                                                     InvalidDatetime, ErrorDeletingSMSCampaign)
 from sms_campaign_service.sms_campaign_app_constants import (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,
-                                                             NGROK_URL)
+                                                             NGROK_URL, TWILIO_TEST_ACCOUNT_SID,
+                                                             TWILIO_TEST_AUTH_TOKEN)
 
 
 class TwilioSMS(object):
@@ -44,11 +46,14 @@ class TwilioSMS(object):
     """
 
     def __init__(self):
-        self.client = twilio.rest.TwilioRestClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+        if IS_DEV:
+            self.client = twilio.rest.TwilioRestClient(TWILIO_TEST_ACCOUNT_SID,
+                                                       TWILIO_TEST_AUTH_TOKEN)
+        else:
+            self.client = twilio.rest.TwilioRestClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
         self.country = 'US'
         self.phone_type = 'local'
         self.sms_enabled = True
-
         # default value of sms_call_back_url is 'http://demo.twilio.com/docs/sms.xml'
         # TODO: Until app is up, will use ngrok address
         # self.sms_call_back_url = SmsCampaignApiUrl.RECEIVE_URL
@@ -97,7 +102,7 @@ class TwilioSMS(object):
                                                         sms_url=self.sms_call_back_url,
                                                         sms_method=self.sms_method,
                                                         )
-            logger.info('Bought new Twilio number %s' % number.sid)
+            logger.info('Bought new Twilio number %s' % phone_number)
         except Exception as error:
             raise TwilioAPIError(error_message=
                                  'Cannot buy new number. Error is "%s"'
@@ -221,7 +226,7 @@ def validate_form_data(form_data):
             if not isinstance(smartlist_id, (int, long)):
                 invalid_smartlist_ids.append(smartlist_id)
                 raise InvalidUsage('Include smartlist id as int|long')
-            if not SmartList.get_by_id(smartlist_id):
+            if not Smartlist.get_by_id(smartlist_id):
                 not_found_smartlist_ids.append(smartlist_id)
                 raise ResourceNotFound('Smartlist(id:%s) not found in database.' % smartlist_id)
         except InvalidUsage:

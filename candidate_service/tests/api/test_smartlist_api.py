@@ -1,7 +1,7 @@
 import requests
 import json
 from faker import Faker
-from candidate_service.common.models.smart_list import SmartList, SmartListCandidate
+from candidate_service.common.models.talent_pools_pipelines import Smartlist, SmartlistCandidate
 from candidate_service.common.tests.conftest import UserAuthentication
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.tests.sample_data import generate_single_candidate_data
@@ -39,10 +39,10 @@ def create_smartlist_with_candidate_ids(auth_token_row):
     candidate_id = resp_object['candidates'][0]['id']
     # Create smartlist
     # TODO: Add create function once it is created
-    list_obj = SmartList(name=fake.word(), user_id=auth_token_row['user_id'])
+    list_obj = Smartlist(name=fake.word(), user_id=auth_token_row['user_id'])
     db.session.add(list_obj)
     db.session.commit()
-    smartlist_candidate = SmartListCandidate(smart_list_id=list_obj.id, candidate_id=candidate_id)
+    smartlist_candidate = SmartlistCandidate(smart_list_id=list_obj.id, candidate_id=candidate_id)
     db.session.add(smartlist_candidate)
     db.session.commit()
     return list_obj.id, list_obj.name

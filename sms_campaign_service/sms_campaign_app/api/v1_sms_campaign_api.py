@@ -192,8 +192,7 @@ class SMSCampaigns(Resource):
             raise InvalidUsage(error_message='No data provided to create SMS campaign')
         # apply validation on fields
         invalid_smartlist_ids, not_found_smartlist_ids = validate_form_data(data_from_ui)
-        campaign_obj = SmsCampaignBase(request.user.id,
-                                       buy_new_number=data_from_ui.get('buy_new_number'))
+        campaign_obj = SmsCampaignBase(request.user.id)
         campaign_id = campaign_obj.save(data_from_ui)
         headers = {'Location': '/campaigns/%s' % campaign_id}
         logger.debug('Campaign(id:%s) has been saved.' % campaign_id)

@@ -126,7 +126,6 @@ def get_by_id(cls, _id):
     :type _id: int
     :return: Model instance
     """
-    db.session.commit()
     try:
         # get Model instance given by id
         obj = cls.query.get(_id)

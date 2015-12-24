@@ -38,30 +38,27 @@ class TestSmsCampaignHTTPGet(object):
 
     def test_campaigns_get_with_no_user_twilio_number(self, auth_token):
         """
-        User has no Twilio phone number. It should get forbidden error.
+        User has no Twilio phone number. It should get OK response as we will buy a number for
+        user silently.
         :param auth_token: access token of user
         :return:
         """
         response = requests.get(SmsCampaignApiUrl.CAMPAIGNS_URL,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response.status_code == ForbiddenError.http_status_code(), \
-            'Should get forbidden error (403)'
+        _assert_counts_and_campaigns(response)
 
     def test_campaigns_get_with_one_user_twilio_number(self, auth_token,
                                                        user_phone_1):
         """
-        User has one Twilio phone number, it should get OK response.
+        User has one Twilio phone number, User already has a Twilio phone number.
+        it should get OK response.
         :param auth_token: access token of user
         :param user_phone_1: user_phone fixture to assign a test phone number to user
         :return:
         """
         response = requests.get(SmsCampaignApiUrl.CAMPAIGNS_URL,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response.status_code == 200, 'Status should be Ok (200)'
-        assert 'count' in response.json()
-        assert 'campaigns' in response.json()
-        assert response.json()['count'] == 0
-        assert response.json()['campaigns'] == []
+        _assert_counts_and_campaigns(response)
 
     def test_campaigns_get_with_user_having_multiple_twilio_numbers(self,
                                                                     auth_token,
@@ -109,11 +106,12 @@ class TestSmsCampaignHTTPPost(object):
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should be a bad request (400)'
 
-    def test_campaign_creation_with_no_user_phone_and_valid_data(self,
+    def test_campaign_creation_with_no_user_phone_and_valid_data(self, sample_user,
                                                                  campaign_valid_data,
                                                                  valid_header):
         """
-        User has no Twilio phone number. It should get forbidden error.
+        User has no Twilio phone number. It should get Ok response as we will buy a Twilio
+        number for user silently.
         :param campaign_valid_data: valid data to create campaign
         :param valid_header: valid header to POST data
         :return:
@@ -121,27 +119,7 @@ class TestSmsCampaignHTTPPost(object):
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS_URL,
                                  headers=valid_header,
                                  data=json.dumps(campaign_valid_data))
-        assert response.status_code == ForbiddenError.http_status_code(), \
-            'It should get forbidden error (403)'
-
-    def test_campaign_creation_by_requesting_new_twilio_number(self, sample_user,
-                                                               valid_header, campaign_valid_data):
-        """
-         User has no Twilio phone number. Our code should save SMS campaign successfully
-        (by buying the number behind the scenes).
-        :param valid_header: valid header to POST data
-        :param campaign_valid_data: valid data to create SMS campaign
-        :return:
-        """
-        campaign_valid_data['buy_new_number'] = True
-        response = requests.post(SmsCampaignApiUrl.CAMPAIGNS_URL,
-                                 headers=valid_header,
-                                 data=json.dumps(campaign_valid_data))
-        assert response.status_code == 201, 'It should create SMS campaign (201)'
-        assert 'location' in response.headers
-        assert 'sms_campaign_id' in response.json()
-        assert_for_activity(sample_user.id, ActivityMessageIds.CAMPAIGN_SMS_CREATE,
-                            response.json()['sms_campaign_id'])
+        _assert_campaign_creation(response, sample_user.id, 201)
 
     def test_campaign_creation_with_no_data(self,
                                             valid_header,
@@ -160,7 +138,7 @@ class TestSmsCampaignHTTPPost(object):
     def test_campaign_creation_with_non_json_data(self, valid_header,
                                                   campaign_valid_data, user_phone_1):
         """
-        User has one phone value, valid header and invalid data type (not json) was sent.
+        User has one phone value, valid header and invalid data type (not JSON) was sent.
         It should get bad request error.
         :param valid_header: valid header to POST data
         :param campaign_valid_data: valid data to create SMS campaign
@@ -173,8 +151,8 @@ class TestSmsCampaignHTTPPost(object):
         assert response.status_code == InvalidUsage.http_status_code(), \
             'Should be a bad request (400)'
 
-    def test_campaign_creation_with_unknown_key_in_data(
-            self, campaign_data_unknown_key_text, valid_header, user_phone_1):
+    def test_campaign_creation_with_unknown_key_in_data( self, campaign_data_unknown_key_text,
+                                                         valid_header, user_phone_1):
         """
         User has one phone value, valid header and invalid data (unknown key "text") was sent.
         It should get internal server error. Error code should be 5006.
@@ -245,9 +223,10 @@ class TestSmsCampaignHTTPPost(object):
     def test_campaign_creation_with_one_user_phone_and_one_unknown_smartlist(
             self, sample_user, valid_header, campaign_valid_data, user_phone_1):
         """
-        User has one phone value, valid header and valid data.Smart list being sent to the server
-        doesn't actually exist in the getTalent's database.
-        It should get OK response (201 status code)
+        User has one phone value, valid header and valid data. One of the Smartlist ids being sent
+        to the server doesn't actually exist in the getTalent's database.
+        It should get OK response (207 status code) as code should create campaign for valid
+        smartlist ids.
         :param valid_header: valid header to POST data
         :param campaign_valid_data: valid data to create SMS campaign
         :param user_phone_1: user_phone fixture to assign a test phone number to user
@@ -257,12 +236,7 @@ class TestSmsCampaignHTTPPost(object):
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS_URL,
                                  headers=valid_header,
                                  data=json.dumps(campaign_valid_data))
-        assert response.status_code == 207, \
-            'Should create campaign, but one smartlist is not found(207)'
-        assert 'location' in response.headers
-        assert 'sms_campaign_id' in response.json()
-        assert_for_activity(sample_user.id, ActivityMessageIds.CAMPAIGN_SMS_CREATE,
-                            response.json()['sms_campaign_id'])
+        _assert_campaign_creation(response, sample_user.id, 207)
 
     def test_campaign_creation_with_one_user_phone_and_valid_data(self,
 
@@ -281,11 +255,7 @@ class TestSmsCampaignHTTPPost(object):
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS_URL,
                                  headers=valid_header,
                                  data=json.dumps(campaign_valid_data))
-        assert response.status_code == 201, 'Should create campaign (201)'
-        assert 'location' in response.headers
-        assert 'sms_campaign_id' in response.json()
-        assert_for_activity(sample_user.id, ActivityMessageIds.CAMPAIGN_SMS_CREATE,
-                            response.json()['sms_campaign_id'])
+        _assert_campaign_creation(response, sample_user.id, 201)
 
     def test_campaign_creation_with_multiple_user_phone_and_valid_data(self,
                                                                        valid_header,
@@ -344,10 +314,9 @@ class TestSmsCampaignHTTPDelete(object):
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should be a bad request (400)'
 
-    def test_campaigns_delete_with_invalid_data(self, valid_header):
+    def test_campaigns_delete_with_non_json_data(self, valid_header):
         """
-        User auth token is valid, but invalid data type provided.
-        It should get bad request error.
+        User auth token is valid, but non JSON data provided. It should get bad request error.
         :return:
         """
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS_URL,
@@ -358,7 +327,7 @@ class TestSmsCampaignHTTPDelete(object):
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should be a bad request (400)'
 
-    def test_campaigns_delete_with_invalid_data_type(self, valid_header):
+    def test_campaigns_delete_with_campaign_ids_in_non_list_form(self, valid_header):
         """
         User auth token is valid, but invalid data provided(other than list).
         It should get bad request error.
@@ -449,3 +418,36 @@ class TestSmsCampaignHTTPDelete(object):
                                                     'ids': [sms_campaign_of_current_user.id]
                                                 }))
         assert response_after_delete.status_code == ResourceNotFound.http_status_code()
+
+
+def _assert_counts_and_campaigns(response, count=0, campaigns=list()):
+    """
+    This function is used to assert the count of SMS campaigns and list of campaigns
+    :param response:
+    :param count:
+    :param campaigns:
+    :return:
+    """
+    assert response.status_code == 200, 'Status should be Ok (200)'
+    assert response.json()
+    resp = response.json()
+    assert 'count' in resp
+    assert 'campaigns' in resp
+    assert resp['count'] == count
+    assert resp['campaigns'] == campaigns
+
+
+def _assert_campaign_creation(response, user_id, expected_status_code):
+    """
+    Here are asserts that make sure that campaign has been created successfully.
+    :param response:
+    :param user_id:
+    :return:
+    """
+    assert response.status_code == expected_status_code, \
+        'It should get status code' + expected_status_code
+    assert response.json()
+    resp = response.json()
+    assert 'location' in response.headers
+    assert 'sms_campaign_id' in resp
+    assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_SMS_CREATE, resp['sms_campaign_id'])

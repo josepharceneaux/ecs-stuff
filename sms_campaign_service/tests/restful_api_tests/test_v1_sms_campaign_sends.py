@@ -56,12 +56,10 @@ class TestSmsCampaignSends(object):
         assert response.status_code == UnauthorizedError.http_status_code(), \
             'It should not be authorized (401)'
 
-    def test_get_with_valid_token_and_no_blasts_saved(self, auth_token,
-                                                      sms_campaign_of_current_user):
+    def test_get_with_no_campaign_sent(self, auth_token, sms_campaign_of_current_user):
         """
-        SMS campaign is not sent to any of candidates, no blast saved for the campaign. Count
-        should be 0.
-
+        Here we are assuming that SMS campaign has not been sent to any of candidates,
+        So no blast should be saved for the campaign. Sends count should be 0.
         :param auth_token: access token for sample user
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
@@ -70,12 +68,12 @@ class TestSmsCampaignSends(object):
                                 headers=dict(Authorization='Bearer %s' % auth_token))
         _assert_counts_and_sends(response)
 
-    def test_get_with_valid_token_and_with_campaign_blast(self, auth_token,
+    def test_get_with_no_candidate_associated_to_campaign(self, auth_token,
                                                           sms_campaign_of_current_user,
                                                           create_sms_campaign_blast):
         """
-        SMS campaign is not sent to any of candidates, we have blast saved for the campaign.
-        Count should be 0.
+        Here we are assuming that SMS campaign has been sent but no candidate was associated with
+        the associated smartlists. So, sends count should be 0.
 
         This uses fixture "sms_campaign_of_current_user" to create an SMS campaign and
         "create_sms_campaign_blast" to create an entry in database table "sms_campaign_blast",
@@ -89,7 +87,7 @@ class TestSmsCampaignSends(object):
                                 headers=dict(Authorization='Bearer %s' % auth_token))
         _assert_counts_and_sends(response)
 
-    def test_get_with_valid_token_and_deleted_campaign_id(self, auth_token,
+    def test_get_with_deleted_campaign_id(self, auth_token,
                                                           sms_campaign_of_current_user):
         """
         It first deletes a campaign from database and try to get its sends.
@@ -112,9 +110,11 @@ class TestSmsCampaignSends(object):
                                                          sms_campaign_of_current_user,
                                                          create_campaign_sends):
         """
+        This is the case where we assume we have sent the campaign to 2 candidates. We are
+        using fixtures to create campaign blast and campaign sends.
         This uses fixture "sms_campaign_of_current_user" to create an SMS campaign and
         "create_sms_campaign_sends" to create an entry in database table "sms_campaign_sends",
-        and then gets the "sends" of that campaign. Count should be 2.
+        and then gets the "sends" of that campaign. Sends count should be 2.
         :param auth_token: access token for sample user
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
@@ -142,4 +142,3 @@ def _assert_counts_and_sends(response, count=0):
         assert not resp['campaign_sends']
     else:
         assert resp['campaign_sends']
-

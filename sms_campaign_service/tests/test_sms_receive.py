@@ -18,7 +18,7 @@ from sms_campaign_service.tests.conftest import fake
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.modules.common_functions import (get_reply_text,
-                                                               assert_method_not_allowed)
+                                                                 assert_method_not_allowed)
 
 
 class TestSmsReceive(object):

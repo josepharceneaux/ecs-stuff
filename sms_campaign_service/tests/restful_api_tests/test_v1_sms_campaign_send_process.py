@@ -48,7 +48,7 @@ class TestSendSmsCampaign(object):
 
     def test_post_with_invalid_token(self, sms_campaign_of_current_user):
         """
-        User auth token is invalid, it should get Unauthorized.
+        User auth token is invalid, it should get Unauthorized error.
         :return:
         """
         response = requests.post(
@@ -57,8 +57,8 @@ class TestSendSmsCampaign(object):
         assert response.status_code == UnauthorizedError.http_status_code(), \
             'It should be unauthorized (401)'
 
-    def test_post_with_valid_header_and_id_of_deleted_record(self, auth_token, valid_header,
-                                                             sms_campaign_of_current_user):
+    def test_post_with_id_of_deleted_record(self, auth_token, valid_header,
+                                            sms_campaign_of_current_user):
         """
         User auth token is valid. It first deletes the campaign from database and then tries
         to update the record. It should get ResourceNotFound error.
@@ -73,8 +73,8 @@ class TestSendSmsCampaign(object):
         assert response_post.status_code == ResourceNotFound.http_status_code(), \
             'Record should not be found (404)'
 
-    def test_post_with_valid_token_and_not_owned_campaign(self, auth_token,
-                                                          sms_campaign_of_other_user):
+    def test_post_with_not_owned_campaign(self, auth_token,
+                                          sms_campaign_of_other_user):
         """
         User auth token is valid but user is not owner of given SMS campaign.
         It should get Forbidden error.
@@ -87,10 +87,10 @@ class TestSendSmsCampaign(object):
             'It should get forbidden error (403)'
         assert 'not the owner'.lower() in response_post.json()['error']['message'].lower()
 
-    def test_post_with_valid_token_and_no_smartlist_associated(self, auth_token,
-                                                               sms_campaign_of_current_user):
+    def test_post_with_no_smartlist_associated(self, auth_token,
+                                               sms_campaign_of_current_user):
         """
-        User auth token is valid but given SMS campaign has no associated smart list with it.So
+        User auth token is valid but given SMS campaign has no associated smartlist with it. So
         up til this point we only have created a user and SMS campaign of that user (using fixtures
         passed in as params).
         It should get internal server error. Custom error should be
@@ -106,9 +106,9 @@ class TestSendSmsCampaign(object):
                SmsCampaignApiException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN
         assert 'No Smartlist'.lower() in response_post.json()['error']['message'].lower()
 
-    def test_post_with_valid_token_and_no_smartlist_candidate(self, auth_token,
-                                                              sms_campaign_of_current_user,
-                                                              sms_campaign_smartlist):
+    def test_post_with_no_smartlist_candidate(self, auth_token,
+                                              sms_campaign_of_current_user,
+                                              sms_campaign_smartlist):
         """
         User auth token is valid, campaign has one smart list associated. But smartlist has
         no candidate associated with it. It should get internal server error.
@@ -124,7 +124,7 @@ class TestSendSmsCampaign(object):
                SmsCampaignApiException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST
         assert 'No Candidate'.lower() in response_post.json()['error']['message'].lower()
 
-    def test_post_with_valid_token_one_smartlist_two_candidates_with_no_phone(
+    def test_post_with_one_smartlist_two_candidates_with_no_phone(
             self, auth_token, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
             sample_sms_campaign_candidates):
         """
@@ -142,7 +142,7 @@ class TestSendSmsCampaign(object):
                                                            response_post,
                                                            str(sms_campaign_of_current_user.id))
 
-    def test_post_with_valid_token_one_smartlist_two_candidates_with_same_phone(
+    def test_post_with_one_smartlist_two_candidates_with_same_phone(
             self, auth_token, sms_campaign_of_current_user, sms_campaign_smartlist,
             sample_sms_campaign_candidates, candidates_with_same_phone):
         """
@@ -156,5 +156,5 @@ class TestSendSmsCampaign(object):
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_post.status_code == InternalServerError.http_status_code(), \
             'It should be internal server error (500)'
-        assert response_post.json()['error'][
-                   'code'] == SmsCampaignApiException.MULTIPLE_CANDIDATES_FOUND
+        assert response_post.json()['error']['code'] == \
+               SmsCampaignApiException.MULTIPLE_CANDIDATES_FOUND

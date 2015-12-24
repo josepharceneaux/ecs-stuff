@@ -25,8 +25,8 @@ It also contains private methods for this module as
 from datetime import datetime
 
 # Database Models
+from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.common.models.misc import UrlConversion
-from sms_campaign_service.common.models.user import (UserPhone, User)
 from sms_campaign_service.common.models.candidate import (PhoneLabel, Candidate, CandidatePhone)
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignSend,
                                                              SmsCampaignBlast, SmsCampaignSmartlist,
@@ -47,7 +47,8 @@ from sms_campaign_service import logger, db
 from sms_campaign_service.sms_campaign_app.app import celery_app, app
 from sms_campaign_service.utilities import (TwilioSMS, search_urls_in_text,
                                             replace_localhost_with_ngrok)
-from sms_campaign_service.sms_campaign_app_constants import (MOBILE_PHONE_LABEL, TWILIO)
+from sms_campaign_service.sms_campaign_app_constants import (MOBILE_PHONE_LABEL, TWILIO,
+                                                             TWILIO_TEST_NUMBER)
 from sms_campaign_service.custom_exceptions import (EmptySmsBody, MultipleTwilioNumbersFoundForUser,
                                                     EmptyDestinationUrl, MissingRequiredField,
                                                     MultipleUsersFound, MultipleCandidatesFound,
@@ -216,7 +217,6 @@ class SmsCampaignBase(CampaignBase):
         """
         # sets the user_id
         super(SmsCampaignBase, self).__init__(user_id, *args, **kwargs)
-        self.buy_new_number = kwargs.get('buy_new_number', False)
         self.user_phone = self.get_user_phone()
         if not self.user_phone:
             raise ForbiddenError(error_message='User(id:%s) has no phone number' % self.user_id)
@@ -390,10 +390,9 @@ class SmsCampaignBase(CampaignBase):
             # User has no associated twilio number, need to buy one
             logger.debug('get_user_phone: User(id:%s) has no Twilio number associated.'
                          % self.user_id)
-            if self.buy_new_number:
-                return self.buy_twilio_mobile_number(phone_label_id=phone_label_id)
+            return self.buy_twilio_mobile_number(phone_label_id)
 
-    def buy_twilio_mobile_number(self, phone_label_id=None):
+    def buy_twilio_mobile_number(self, phone_label_id):
         """
         Here we use Twilio API to first get list of available numbers by calling
         get_available_numbers() of class TwilioSMS inside utilities.py. We select first available number
@@ -410,19 +409,19 @@ class SmsCampaignBase(CampaignBase):
         :rtype: UserPhone
         """
         twilio_obj = TwilioSMS()
-        available_phone_numbers = twilio_obj.get_available_numbers()
-        if available_phone_numbers:
-            if IS_DEV:
-                # Do not "actually" buy a number.
-                number_to_buy = '1234'
-            else:
-                logger.debug('buy_twilio_mobile_number: Going to buy Twilio number for '
-                             'user(id:%s).' % self.user_id)
-                number_to_buy = available_phone_numbers[0].phone_number
-                twilio_obj.purchase_twilio_number(number_to_buy)
-            user_phone = self.create_or_update_user_phone(self.user_id, number_to_buy,
-                                                          phone_label_id)
-            return user_phone
+        if IS_DEV:
+            # Buy Twilio TEST number so that we won't be charged
+            number_to_buy = TWILIO_TEST_NUMBER
+        else:
+            logger.debug('buy_twilio_mobile_number: Going to buy Twilio number for '
+                         'user(id:%s).' % self.user_id)
+            available_phone_numbers = twilio_obj.get_available_numbers()
+            # We get a list of 30 available numbers and we pick very first phone number to buy.
+            number_to_buy = available_phone_numbers[0].phone_number
+        twilio_obj.purchase_twilio_number(number_to_buy)
+        user_phone = self.create_or_update_user_phone(self.user_id, number_to_buy,
+                                                      phone_label_id)
+        return user_phone
 
     @staticmethod
     def create_or_update_user_phone(user_id, phone_number, phone_label_id):
@@ -839,6 +838,7 @@ class SmsCampaignBase(CampaignBase):
         if not isinstance(candidate_phone_value, basestring):
             raise InvalidUsage('Include candidate_phone as str')
         if IS_DEV:
+            #TODO: Use Twilio TEST credentials to send SMS
             # Do not "actually" send SMS.
             return datetime.now()
         else:

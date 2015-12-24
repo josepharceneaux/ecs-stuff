@@ -53,8 +53,6 @@ loggly-python-handler==1.0.0
 
 # SMS Campaign code
 twilio
-redis==2.10.3
-celery==3.1.19
 
 mixer==5.2.2
 python-dateutil==2.4.2

@@ -88,7 +88,6 @@ class TalentPipeline(db.Model):
 class Smartlist(db.Model):
 
     __tablename__ = 'smart_list'
-
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('name', db.String(127))
     search_params = db.Column('searchParams', db.String(1023))
@@ -101,7 +100,16 @@ class Smartlist(db.Model):
     talent_pipeline = db.relationship('TalentPipeline', backref=db.backref('smart_list'))
 
     def __repr__(self):
-        return "<SmartList(name= %r)>" % self.name
+        return "<Smartlist(name= %r)>" % self.name
+
+    @classmethod
+    def get_by_user_id(cls, user_id):
+        assert user_id
+        return cls.query.filter(
+            db.and_(
+                cls.user_id == user_id,
+            )
+        ).all()
 
 
 class SmartlistCandidate(db.Model):
@@ -117,3 +125,13 @@ class SmartlistCandidate(db.Model):
 
     smart_list = db.relationship('Smartlist', backref=db.backref('smart_list_candidate', cascade="all, delete-orphan"))
     candidate = db.relationship('Candidate', backref=db.backref('smart_list_candidate', cascade="all, delete-orphan"))
+
+    @classmethod
+    def get_by_smart_list_id(cls, smart_list_id):
+        assert smart_list_id
+        return cls.query.filter(
+            db.and_(
+                cls.smart_list_id == smart_list_id,
+            )
+        ).all()
+

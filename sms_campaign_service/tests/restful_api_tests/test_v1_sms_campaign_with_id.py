@@ -8,7 +8,6 @@ import json
 import requests
 
 # Service Specific
-from werkzeug.security import gen_salt
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
 
 # Common Utils
@@ -23,6 +22,7 @@ class TestSmsCampaignWithIdHTTPGet(object):
     This class contains tests for endpoint /campaigns/:id and HTTP method GET.
 
     """
+
     def test_with_invalid_token(self, sms_campaign_of_current_user):
         """
         User auth token is invalid. It should get Unauthorized error.
@@ -108,9 +108,9 @@ class TestSmsCampaignWithIdHTTPPost(object):
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should be a bad request (400)'
 
-    def test_with_valid_data(self, valid_header,
-                             campaign_valid_data,
-                             sms_campaign_of_current_user):
+    def test_updating_owned_campaign(self, valid_header,
+                                     campaign_valid_data,
+                                     sms_campaign_of_current_user):
         """
         This uses fixture to create an sms_campaign record in db. It then makes a POST
         call to update that record with name modification. If status code is 200, it then
@@ -133,9 +133,24 @@ class TestSmsCampaignWithIdHTTPPost(object):
         assert response_get.status_code == 200, 'Response should be ok (200)'
         assert response_get.json()['campaign']['name'] == modified_name
 
-    def test_with_id_of_deleted_record(self, valid_header,
-                                       sms_campaign_of_current_user,
-                                       campaign_valid_data):
+    def test_updating_not_owned_sms_campaign(self, valid_header, sms_campaign_of_other_user,
+                                             campaign_valid_data, user_phone_1):
+        """
+        Here we try to update a campaign such that current user is not an owner of. It should get
+        forbidden error.
+        """
+        modified_name = 'Modified Name'
+        campaign_valid_data.update({'name': modified_name})
+        response_post = requests.post(
+            SmsCampaignApiUrl.CAMPAIGN_URL % sms_campaign_of_other_user.id,
+            headers=valid_header,
+            data=json.dumps(campaign_valid_data))
+        assert response_post.status_code == ForbiddenError.http_status_code(), \
+            'It should get forbidden error (403)'
+
+    def test_updating_deleted_record(self, valid_header,
+                                     sms_campaign_of_current_user,
+                                     campaign_valid_data):
         """
         User auth token is valid. It deletes the campaign from database and then tries
         to update the record. It should get ResourceNotFound error.
@@ -194,21 +209,6 @@ class TestSmsCampaignWithIdHTTPPost(object):
             'Internal server error should occur (500)'
         assert response.json()['error']['code'] == SmsCampaignApiException.MISSING_REQUIRED_FIELD
 
-    def test_updating_owned_sms_campaign(self, valid_header, sms_campaign_of_other_user,
-                                         campaign_valid_data, user_phone_1):
-        """
-        Here we try to update a campaign such that current user is not an owner of. It should get
-        forbidden error.
-        """
-        modified_name = 'Modified Name'
-        campaign_valid_data.update({'name': modified_name})
-        response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_URL % sms_campaign_of_other_user.id,
-            headers=valid_header,
-            data=json.dumps(campaign_valid_data))
-        assert response_post.status_code == ForbiddenError.http_status_code(), \
-            'It should get forbidden error (403)'
-
 
 class TestSmsCampaignWithIdHTTPDelete(object):
     """
@@ -259,4 +259,3 @@ class TestSmsCampaignWithIdHTTPDelete(object):
             SmsCampaignApiUrl.CAMPAIGN_URL % sms_campaign_of_current_user.id,
             headers=valid_header)
         assert response_after_delete.status_code == ResourceNotFound.http_status_code()
-

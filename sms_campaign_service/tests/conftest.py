@@ -14,13 +14,16 @@ from sms_campaign_service.common.tests.conftest import *
 # to avoid circular we need to import app before SmsCampaignBase
 from sms_campaign_service.sms_campaign_app.app import app
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
-from sms_campaign_service.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL)
+from sms_campaign_service.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL,
+                                                             TWILIO_TEST_NUMBER,
+                                                             TWILIO_INVALID_TEST_NUMBER)
 
 # Database Models
 from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.candidate import (PhoneLabel, CandidatePhone)
-from sms_campaign_service.common.models.smart_list import (SmartList, SmartListCandidate)
+from sms_campaign_service.common.models.talent_pools_pipelines import (Smartlist,
+                                                                       SmartlistCandidate)
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignSmartlist,
                                                              SmsCampaignBlast, SmsCampaignSend,
                                                              SmsCampaignSendUrlConversion)
@@ -67,7 +70,7 @@ def user_phone_1(request, sample_user):
     :param sample_user: fixture in common/tests/conftest.py
     :return:
     """
-    user_phone = _create_user_twilio_phone(sample_user, fake.phone_number())
+    user_phone = _create_user_twilio_phone(sample_user, TWILIO_TEST_NUMBER)
 
     def tear_down():
         UserPhone.delete(user_phone)
@@ -84,7 +87,7 @@ def user_phone_2(request, sample_user):
     :param sample_user: fixture in common/tests/conftest.py
     :return:
     """
-    user_phone = _create_user_twilio_phone(sample_user, fake.phone_number())
+    user_phone = _create_user_twilio_phone(sample_user, TWILIO_INVALID_TEST_NUMBER)
 
     def tear_down():
         UserPhone.delete(user_phone)
@@ -100,7 +103,7 @@ def user_phone_3(request, sample_user_2):
     :param sample_user_2:
     :return:
     """
-    user_phone = _create_user_twilio_phone(sample_user_2, fake.phone_number())
+    user_phone = _create_user_twilio_phone(sample_user_2, TWILIO_TEST_NUMBER)
 
     def tear_down():
         UserPhone.delete(user_phone)
@@ -121,7 +124,7 @@ def sample_smartlist(request, sample_user):
     smartlist = _create_smartlist(sample_user)
 
     def tear_down():
-        SmartList.delete(smartlist)
+        Smartlist.delete(smartlist)
 
     request.addfinalizer(tear_down)
     return smartlist
@@ -141,12 +144,12 @@ def sample_sms_campaign_candidates(sample_user,
     """
     candidate_first.update(user_id=sample_user.id)
     candidate_second.update(user_id=sample_user.id)
-    smartlist_candidate_1 = SmartListCandidate(smart_list_id=sample_smartlist.id,
+    smartlist_candidate_1 = SmartlistCandidate(smart_list_id=sample_smartlist.id,
                                                candidate_id=candidate_first.id)
-    SmartListCandidate.save(smartlist_candidate_1)
-    smartlist_candidate_2 = SmartListCandidate(smart_list_id=sample_smartlist.id,
+    SmartlistCandidate.save(smartlist_candidate_1)
+    smartlist_candidate_2 = SmartlistCandidate(smart_list_id=sample_smartlist.id,
                                                candidate_id=candidate_second.id)
-    SmartListCandidate.save(smartlist_candidate_2)
+    SmartlistCandidate.save(smartlist_candidate_2)
 
 
 @pytest.fixture()
@@ -255,7 +258,7 @@ def sample_smartlist_2(request, sample_user):
     smartlist = _create_smartlist(sample_user)
 
     def tear_down():
-        SmartList.delete(smartlist)
+        Smartlist.delete(smartlist)
 
     request.addfinalizer(tear_down)
     return smartlist
@@ -296,7 +299,7 @@ def candidate_phone_1(request, candidate_first):
     :param candidate_first:
     :return:
     """
-    candidate_phone = _create_candidate_mobile_phone(candidate_first, fake.phone_number())
+    candidate_phone = _create_candidate_mobile_phone(candidate_first, TWILIO_TEST_NUMBER)
 
     def tear_down():
         CandidatePhone.delete(candidate_phone)
@@ -312,7 +315,7 @@ def candidate_phone_2(request, candidate_second):
     :param candidate_second:
     :return:
     """
-    candidate_phone = _create_candidate_mobile_phone(candidate_second, fake.phone_number())
+    candidate_phone = _create_candidate_mobile_phone(candidate_second, TWILIO_INVALID_TEST_NUMBER)
 
     def tear_down():
         CandidatePhone.delete(candidate_phone)
@@ -328,9 +331,8 @@ def candidates_with_same_phone(request, candidate_first, candidate_second):
     :param candidate_second:
     :return:
     """
-    test_number = fake.phone_number()
-    cand_phone_1 = _create_candidate_mobile_phone(candidate_first, test_number)
-    cand_phone_2 = _create_candidate_mobile_phone(candidate_second, test_number)
+    cand_phone_1 = _create_candidate_mobile_phone(candidate_first, TWILIO_TEST_NUMBER)
+    cand_phone_2 = _create_candidate_mobile_phone(candidate_second, TWILIO_TEST_NUMBER)
 
     def tear_down():
         CandidatePhone.delete(cand_phone_1)
@@ -345,9 +347,8 @@ def users_with_same_phone(request, sample_user, sample_user_2):
     """
     This associates same number to sample_user and sample_user_2
     """
-    test_number = fake.phone_number()
-    user_1 = _create_user_twilio_phone(sample_user, test_number)
-    user_2 = _create_user_twilio_phone(sample_user_2, test_number)
+    user_1 = _create_user_twilio_phone(sample_user, TWILIO_TEST_NUMBER)
+    user_2 = _create_user_twilio_phone(sample_user_2, TWILIO_TEST_NUMBER)
 
     def tear_down():
         UserPhone.delete(user_1)
@@ -460,7 +461,7 @@ def _create_smartlist(test_user):
     :param test_user:
     :return:
     """
-    smartlist = SmartList(name=gen_salt(20), user_id=test_user.id)
-    SmartList.save(smartlist)
+    smartlist = Smartlist(name=gen_salt(20), user_id=test_user.id)
+    Smartlist.save(smartlist)
     return smartlist
 

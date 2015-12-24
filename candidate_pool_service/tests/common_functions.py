@@ -141,7 +141,7 @@ def add_candidates_to_dumb_list(session, access_token, test_dumb_list, candidate
     """
     This function will add a test dumb_list and smart_list to database and talent-pipeline
     :param session: SQLAlchemy Session object
-    :param test_dumb_list: SmartList object
+    :param test_dumb_list: Smartlist object
     :param list candidate_ids: List of candidate_ids that will be added to test dumb_list
     :return: None
     """
