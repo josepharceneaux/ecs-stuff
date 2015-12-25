@@ -40,7 +40,7 @@ TALENT_PIPELINE_SEARCH_PARAMS = [
 def get_candidates_of_talent_pipeline(talent_pipeline):
         """
         Fetch all candidates of a talent-pipeline
-        :param talent_pipeline: Id of talent-pipeline
+        :param talent_pipeline: TalentPipeline Object
         :return: A dict containing info of all candidates according to query parameters
         """
 
