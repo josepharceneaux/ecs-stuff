@@ -10,7 +10,6 @@ import requests
 # Application/Module Specific
 from ..utils.handy_functions import random_letter_digit_string
 from flask import current_app as app
-from flask import request
 from ..models.user import *
 from ..error_handling import *
 
@@ -53,6 +52,7 @@ def require_oauth(allow_basic_auth=False, allow_null_user=False):
                 except KeyError:
                     raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
                 User.verify_auth_token(secret_key, token, allow_null_user)
+                request.oauth_token = ''
                 return func(*args, **kwargs)
             else:
                 raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
@@ -66,6 +66,9 @@ def require_all_roles(*role_names):
     def domain_roles(func):
         @wraps(func)
         def authenticate_roles(*args, **kwargs):
+            # For server-to-server Auth roles check should be skipped
+            if not request.oauth_token:
+                return func(*args, **kwargs)
             if not role_names:
                 # Roles list is empty so it means func is not roles protected
                 return func(*args, **kwargs)
@@ -88,6 +91,10 @@ def require_any_role(*role_names):
     def domain_roles(func):
         @wraps(func)
         def authenticate_roles(*args, **kwargs):
+
+            # For server-to-server Auth roles check should be skipped
+            if not request.oauth_token:
+                return func(*args, **kwargs)
             user_roles = [DomainRole.query.get(user_role.role_id).role_name for user_role in
                           UserScopedRoles.get_all_roles_of_user(request.user.id)]
             user_roles.append('SELF')

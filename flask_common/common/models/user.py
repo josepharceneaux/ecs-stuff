@@ -57,12 +57,12 @@ class User(db.Model):
         secret_key = str(uuid.uuid4())[0:10]
         secret_value = os.urandom(24)
         redis_store.setex(secret_key, secret_value, expiration)
-        s = Serializer(secret_key, expires_in=expiration)
+        s = Serializer(secret_value, expires_in=expiration)
         return secret_key, 'Basic %s' % s.dumps({'user_id': user_id})
 
     @staticmethod
     def verify_auth_token(secret_key, token, allow_null_user=False):
-        s = Serializer(redis_store.get(secret_key, ''))
+        s = Serializer(redis_store.get(secret_key))
         try:
             data = s.loads(token)
         except SignatureExpired:
@@ -74,7 +74,9 @@ class User(db.Model):
             user = User.query.get(data['user_id'])
             if user:
                 request.user = user
+                return
         elif allow_null_user:
+            request.user = None
             return
 
         raise UnauthorizedError(error_message="User with id=%s doesn't exist in database" % data['user_id'])

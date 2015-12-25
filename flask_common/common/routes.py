@@ -70,3 +70,47 @@ class CandidateApiUrl:
     WORK_PREFERENCE = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/work_preference/%s"
 
     CANDIDATE_EDIT = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/edits"
+
+
+class SchedulerApiUrl:
+    def __init__(self):
+        pass
+
+    env = os.environ.get('GT_ENVIRONMENT')
+
+    if env == 'dev' or env == 'circle':
+        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
+    elif env == 'qa':
+        # TODO: Change this url after deployment
+        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
+    elif env == 'prod':
+        # TODO: Change this url after deployment
+        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
+    else:
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
+
+    TASKS = SCHEDULER_SERVICE_HOST_NAME % "tasks/"
+    SINGLE_TASK = SCHEDULER_SERVICE_HOST_NAME % 'tasks/id/%s'
+
+
+class CandidatePoolApiUrl:
+    def __init__(self):
+        pass
+
+    env = os.environ.get('GT_ENVIRONMENT')
+
+    if env == 'dev' or env == 'circle':
+        CANDIDATE_POOL_SERVICE_HOST_NAME = 'http://127.0.0.1:8008/%s'
+    elif env == 'qa':
+        # TODO: Change this url after deployment
+        CANDIDATE_POOL_SERVICE_HOST_NAME = 'http://127.0.0.1:8008/%s'
+    elif env == 'prod':
+        # TODO: Change this url after deployment
+        CANDIDATE_POOL_SERVICE_HOST_NAME = 'http://127.0.0.1:8008/%s'
+    else:
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
+
+    TALENT_POOL_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "talent-pools/stats"
+    TALENT_POOL_GET_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "talent-pool/%s/stats"
+    TALENT_PIPELINE_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "talent-pipelines/stats"
+    TALENT_PIPELINE_GET_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "talent-pipeline/%s/stats"

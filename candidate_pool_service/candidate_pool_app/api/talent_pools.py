@@ -527,7 +527,8 @@ class TalentPoolCandidateApi(Resource):
 
 
 @app.route('/talent-pools/stats', methods=['POST'])
-@require_oauth()
+@require_oauth(allow_basic_auth=True, allow_null_user=True)
+@require_all_roles('CAN_UPDATE_TALENT_POOLS_STATS')
 def update_talent_pools_stats():
     """
     This method will update the statistics of all talent-pools once in a week.
@@ -550,11 +551,13 @@ def update_talent_pools_stats():
             db.session.add(talent_pool_stat)
 
         db.session.commit()
+        return '', 204
+
     except Exception as e:
         db.session.rollback()
         email_error_to_admins("Couldn't update statistics of TalentPools because: %s" % e.message,
                               subject="TalentPool Statistics")
-        raise InternalServerError(error_message="Couldn't update statistics of TalentPools because: %s" % e.message)
+        raise InvalidUsage(error_message="Couldn't update statistics of TalentPools because: %s" % e.message)
 
 
 @app.route('/talent-pool/<int:talent_pool_id>/stats', methods=['GET'])
@@ -568,6 +571,10 @@ def get_talent_pool_stats(talent_pool_id):
     talent_pool = TalentPool.query.get(talent_pool_id)
     if not talent_pool:
         raise NotFoundError(error_message="TalentPool with id=%s doesn't exist in database" % talent_pool_id)
+
+    if talent_pool.owner_user_id != request.user.id:
+        raise ForbiddenError(error_message="Logged-in user %s is unauthorized to get stats of talent-pool %s"
+                                           % (request.user.id, talent_pool.id))
 
     from_date_string = request.args.get('from_date', '')
     to_date_string = request.args.get('to_date', '')
@@ -585,11 +592,11 @@ def get_talent_pool_stats(talent_pool_id):
                                                           TalentPoolStats.added_time >= from_date,
                                                           TalentPoolStats.added_time <= to_date))
 
-    return {'talent_pool_data': [
+    return jsonify({'talent_pool_data': [
         {
             'total_number_of_candidates': talent_pool_stat.total_candidates,
             'number_of_candidates_removed_or_added': talent_pool_stat.number_of_candidates_removed_or_added,
             'added_time': talent_pool_stat.added_time
         }
         for talent_pool_stat in talent_pool_stats
-    ]}
+    ]})

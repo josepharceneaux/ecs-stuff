@@ -2,7 +2,7 @@ __author__ = 'ufarooqi'
 import requests
 import json
 from werkzeug.security import gen_salt
-from candidate_pool_service.common.routes import CandidateApiUrl
+from candidate_pool_service.common.routes import CandidateApiUrl, CandidatePoolApiUrl
 from candidate_pool_service.common.models.talent_pools_pipelines import Smartlist, SmartlistCandidate
 
 CANDIDATE_POOL_SERVICE_ENDPOINT = 'http://127.0.0.1:8008/%s'
@@ -115,6 +115,36 @@ def talent_pipeline_candidate_api(access_token, talent_pipeline_id, params=''):
 
     headers = {'Authorization': 'Bearer %s' % access_token}
     response = requests.get(url=TALENT_PIPELINE_CANDIDATE_API % talent_pipeline_id, headers=headers, params=params)
+    return response.json(), response.status_code
+
+
+def talent_pool_update_stats(access_token):
+
+    headers = {'Authorization': 'Bearer %s' % access_token}
+    response = requests.post(url=CandidatePoolApiUrl.TALENT_POOL_STATS, headers=headers)
+    return response.status_code
+
+
+def talent_pool_get_stats(access_token, talent_pool_id, params=''):
+
+    headers = {'Authorization': 'Bearer %s' % access_token}
+    response = requests.get(url=CandidatePoolApiUrl.TALENT_POOL_GET_STATS % talent_pool_id, headers=headers,
+                            params=params)
+    return response.json(), response.status_code
+
+
+def talent_pipeline_update_stats(access_token):
+
+    headers = {'Authorization': 'Bearer %s' % access_token}
+    response = requests.post(url=CandidatePoolApiUrl.TALENT_PIPELINE_STATS, headers=headers)
+    return response.status_code
+
+
+def talent_pipeline_get_stats(access_token, talent_pipeline_id, params=''):
+
+    headers = {'Authorization': 'Bearer %s' % access_token}
+    response = requests.get(url=CandidatePoolApiUrl.TALENT_PIPELINE_GET_STATS % talent_pipeline_id, headers=headers,
+                            params=params)
     return response.json(), response.status_code
 
 

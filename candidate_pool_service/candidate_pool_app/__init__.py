@@ -39,4 +39,9 @@ api.add_resource(TalentPipelineCandidates, '/talent-pipeline/<int:id>/candidates
 db.create_all()
 db.session.commit()
 
+from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import \
+    schedule_talent_pool_and_pipelines_weekly_stats_update
+
+schedule_talent_pool_and_pipelines_weekly_stats_update()
+
 logger.info("Starting candidate_pool_service in %s environment", app.config['GT_ENVIRONMENT'])
