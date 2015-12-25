@@ -8,6 +8,7 @@ import json
 import requests
 
 # Service Specific
+from sms_campaign_service.common.tests.sample_data import fake
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException
 
 # Common Utils
@@ -208,6 +209,22 @@ class TestSmsCampaignWithIdHTTPPost(object):
         assert response.status_code == InternalServerError.http_status_code(), \
             'Internal server error should occur (500)'
         assert response.json()['error']['code'] == SmsCampaignApiException.MISSING_REQUIRED_FIELD
+
+    def test_campaign_update_with_invalid_url_in_body_text(self, campaign_valid_data,
+                                                          valid_header, sms_campaign_of_current_user):
+        """
+        User has one phone value, valid header and invalid URL in body text(random word).
+        It should get internal server error, Custom error should be InvalidUrl.
+        :param valid_header: valid header to POST data
+        :param user_phone_1: user_phone fixture to assign a test phone number to user
+        :return:
+        """
+        campaign_valid_data['body_text'] += 'http://' + fake.word()
+        response = requests.post(SmsCampaignApiUrl.CAMPAIGN_URL % sms_campaign_of_current_user.id,
+                                 headers=valid_header,
+                                 data=json.dumps(campaign_valid_data))
+        assert response.status_code == InternalServerError.http_status_code()
+        assert response.json()['error']['code'] == SmsCampaignApiException.INVALID_URL_FORMAT
 
 
 class TestSmsCampaignWithIdHTTPDelete(object):

@@ -99,7 +99,8 @@ def save(instance):
     try:
         db.session.add(instance)
         db.session.commit()
-    except Exception:
+    except Exception as error:
+        print 'save_error' + error.message
         db.session.rollback()
     return instance
 
@@ -116,7 +117,8 @@ def update(instance, **data):
     try:
         instance.query.filter_by(id=instance.id).update(data)
         db.session.commit()
-    except Exception:
+    except Exception as error:
+        print 'update_error' + error.message
         db.session.rollback()
     return instance
 

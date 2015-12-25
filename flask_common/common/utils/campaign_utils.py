@@ -179,46 +179,57 @@ class CampaignBase(object):
         else:
             return candidates
 
-    def send_campaign_to_candidates(self, candidates_and_phones, logger):
+    def send_campaign_to_candidates(self, candidates, logger):
         """
-        Once we have the candidates, we iterate them and call
-            self.send_campaign_to_candidate() to send the campaign to all candidates
-            asynchronously.
+        Once we have the candidates, we iterate each candidate, create celery task and call
+        self.send_campaign_to_candidate() to send the campaign. Celery sends campaign to all
+        candidates asynchronously and if all tasks finish correctly, it hits a callback function
+        to notify us.
 
-        - This method is called from process_send() method of class
+        e.g. This method is called from process_send() method of class
             SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
 
-        :param candidates_and_phones: Candidates associated to a smart list and their phones
-        :type candidates_and_phones: list of tuples
+        :param candidates: This contains the objects of model Candidate
+        :type candidates: list
 
         **See Also**
         .. see also:: process_send() method in SmsCampaignBase class.
         """
-        # callback function which will be hit after campaign is sent to all candidates i.e.
-        # once the async task is done the self.callback_campaign_sent will be called
         try:
-            # TODO: make this function generic for all campaigns, and update comment in class
+            pre_processed_data = self.pre_process_celery_task(candidates)
+            # callback is a function which will be hit after campaign is sent to all candidates i.e.
+            # once the async task is done the self.callback_campaign_sent will be called
             # When all tasks assigned to Celery complete their execution, following function
             # is called by celery as a callback function.
             callback = self.callback_campaign_sent.subtask((self.user_id, self.campaign,
-                                                            self.oauth_header, ))
-            # Here we create list of all tasks and assign a self.celery_error() as a callback
-            # function in case any of the tasks in the list encounter some error.
-            tasks = [self.send_campaign_to_candidate.subtask((self, record),
-                                                             link_error=self.celery_error_handler.subtask())
-                     for record in candidates_and_phones]
+                                                            self.oauth_header,))
+            # Here we create list of all tasks and assign a self.celery_error_handler() as a
+            # callback function in case any of the tasks in the list encounter some error.
+            tasks = [self.send_campaign_to_candidate.subtask(
+                (self, record), link_error=self.celery_error_handler.subtask()
+            ) for record in pre_processed_data]
             # This runs all tasks asynchronously and sets callback function to be hit once all
-            # tasks in list finish running.
+            # tasks in list finish running without raising any error. Otherwise callback
+            # results in failure status.
             chord(tasks)(callback)
         except Exception:
             logger.exception('send_campaign_to_candidates: Error while sending tasks to Celery')
 
+    def pre_process_celery_task(self, candidates):
+        """
+        Here we do any necessary processing before assigning task to Celery. Child classes
+        will override this if needed.
+        :param candidates:
+        :return:
+        """
+        return candidates
+
     @abstractmethod
-    def send_campaign_to_candidate(self, candidate_and_phone):
+    def send_campaign_to_candidate(self, data_to_send_campaign):
         """
         This sends the campaign to given candidate. Child classes will implement this.
-        :param candidate_and_phone: Candidate obj and his phone
-        :type candidate_and_phone: tuple
+        :param data_to_send_campaign: This is the data used by celery task to send campaign
+        :type data_to_send_campaign: tuple
         :return:
         """
         pass

@@ -33,15 +33,13 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
 # Service Specific
 from sms_campaign_service import db
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
-from sms_campaign_service.custom_exceptions import SmsCampaignApiException
+from sms_campaign_service.custom_exceptions import SmsCampaignApiException, EmptyDestinationUrl
 from sms_campaign_service.utilities import replace_ngrok_link_with_localhost
 from sms_campaign_service.tests.modules.common_functions import \
     (assert_on_blasts_sends_url_conversion_and_activity, assert_for_activity, get_reply_text,
      assert_api_send_response)
 
-
-# SLEEP_TIME = 20  # due to background processing of tasks (Celery)
-SLEEP_OFFSET = 10  # For those tasks which takes longer than usual
+SLEEP_OFFSET = 15  # For those tasks which takes longer than usual
 
 
 class TestCeleryTasks(object):
@@ -66,8 +64,8 @@ class TestCeleryTasks(object):
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         time.sleep(SLEEP_OFFSET)
-        json_resp = assert_api_send_response(sms_campaign_of_current_user, response_post, 2, 200)
-        assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, json_resp,
+        assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
+        assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, 2,
                                                            str(sms_campaign_of_current_user.id))
 
     def test_campaign_send_witht_two_candidates_with_valid_and_invalid_phones(
@@ -82,12 +80,11 @@ class TestCeleryTasks(object):
         response_post = requests.post(
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        json_resp = assert_api_send_response(sms_campaign_of_current_user, response_post, 2, 200)
+        assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
         # as one phone number is invalid, so only one record should be enter in sms_campaign_send
         # and sms_campaign_blast.sends should be equal to 1.
-        # Changing 2 (expected at the time of sent) with 1 (actual after sending SMS)
-        json_resp['total_sends'] = 1
-        assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, json_resp,
+        # Expected send is 1.
+        assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, 1,
                                                            str(sms_campaign_of_current_user.id))
 
     def test_campaign_send_witht_two_candidates_with_one_phone(
@@ -101,8 +98,8 @@ class TestCeleryTasks(object):
         response_post = requests.post(
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        json_resp = assert_api_send_response(sms_campaign_of_current_user, response_post, 1, 200)
-        assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, json_resp,
+        assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
+        assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, 1,
                                                            str(sms_campaign_of_current_user.id))
 
     def test_campaign_send_with_two_candidates_having_different_phones_one_link_in_text(
@@ -117,10 +114,9 @@ class TestCeleryTasks(object):
         response_post = requests.post(
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        json_resp = assert_api_send_response(sms_campaign_of_current_user, response_post, 2, 200)
-        # request runs on celery
+        assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
-                                                           json_resp,
+                                                           2,
                                                            str(sms_campaign_of_current_user.id))
 
     def test_campaign_send_with_two_candidates_with_different_phones_no_link_in_text(
@@ -138,10 +134,10 @@ class TestCeleryTasks(object):
         response_post = requests.post(
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        json_resp = assert_api_send_response(sms_campaign_of_current_user, response_post, 2, 200)
         time.sleep(SLEEP_OFFSET)
+        assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
-                                                           json_resp,
+                                                           2,
                                                            str(sms_campaign_of_current_user.id))
 
     def test_campaign_send_with_multiple_smartlists(
@@ -157,9 +153,9 @@ class TestCeleryTasks(object):
         response_post = requests.post(
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        json_resp = assert_api_send_response(sms_campaign_of_current_user, response_post, 1, 200)
+        assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
-                                                           json_resp,
+                                                           1,
                                                            str(sms_campaign_of_current_user.id))
 
     def test_sms_receive_with_valid_data_and_one_campaign_sent(self, user_phone_1,
@@ -184,7 +180,7 @@ class TestCeleryTasks(object):
                                            'Body': reply_text})
         assert response_get.status_code == 200, 'Response should be ok'
         assert 'xml' in str(response_get.text).strip()
-        time.sleep(SLEEP_OFFSET)  # Need to add this as processing of POST request runs on celery
+        # time.sleep(SLEEP_OFFSET)  # Need to add this as processing of POST request runs on celery
         campaign_reply_in_db = get_reply_text(candidate_phone_1)
         assert campaign_reply_in_db.body_text == reply_text
         reply_count_after = get_replies_count(sms_campaign_of_current_user)
@@ -410,7 +406,6 @@ class TestSmsCampaignURLRedirection(object):
         # forcing destination URL to be empty
         url_conversion_by_send_test_sms_campaign.update(destination_url='')
         try:
-
             campaign, url_conversion_record, candidate = \
                 SmsCampaignBase.pre_process_url_redirect(
                     sms_campaign_of_current_user.id,
@@ -418,8 +413,7 @@ class TestSmsCampaignURLRedirection(object):
                     candidate_first.id)
             camp_obj = SmsCampaignBase(sample_user.id)
             camp_obj.process_url_redirect(campaign, url_conversion_record, candidate)
-
-        except Exception as error:
+        except EmptyDestinationUrl as error:
             assert error.error_code == SmsCampaignApiException.EMPTY_DESTINATION_URL
 
 

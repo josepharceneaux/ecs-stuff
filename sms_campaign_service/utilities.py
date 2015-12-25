@@ -25,7 +25,7 @@ from sms_campaign_service.common.error_handling import (InvalidUsage, ResourceNo
 from sms_campaign_service.common.utils.common_functions import (find_missing_items,
                                                                 is_iso_8601_format,
                                                                 JSON_CONTENT_TYPE_HEADER,
-                                                                is_valid_url)
+                                                                is_valid_url_format, http_request)
 
 # Database Models
 from sms_campaign_service.common.models.user import UserPhone
@@ -234,6 +234,11 @@ def validate_form_data(form_data):
         raise MissingRequiredField(
             error_message='Required fields are empty to save '
                           'sms_campaign. Empty fields are %s' % missing_field_values)
+    # validate URLs present in SMS body text
+    valid_urls, invalid_urls = validate_urls_in_body_text(form_data['body_text'])
+    if invalid_urls:
+        raise InvalidUrl(error_message='Invalid URL(s) in body_text. %s' % invalid_urls)
+
     # validate smartlist ids are in a list
     if not isinstance(form_data.get('smartlist_ids'), list):
         raise InvalidUsage(error_message='Include smartlist id(s) in a list.')
@@ -331,7 +336,7 @@ def validate_header(request):
         raise InvalidUsage(error_message='Invalid header provided')
 
 
-def validate_url(url):
+def validate_url_format(url):
     """
     This validates if given URL is valid or not
     :param url: URL to be validate
@@ -339,5 +344,43 @@ def validate_url(url):
     :exception: InvalidUrl if URL is in improper format
     :return:
     """
-    if not is_valid_url(url):
+    if not is_valid_url_format(url):
         raise InvalidUrl('Given URL (%s) is not valid.' % url)
+    return True
+
+
+def validate_url_by_http_request(url):
+    """
+    This function makes HTTP GET call to given URL, and return True if we get OK response,
+    It returns False otherwise
+    :param url:
+    :return: True or False
+    :rtype: bool
+    """
+    try:
+        http_request('GET', url)
+    except Exception:
+        return False
+    return True
+
+
+def validate_urls_in_body_text(text):
+    """
+    This function validates the URLs present in SMS body text. It first check if they
+    are in valid format, then it makes HTTP GET call to that URL to verify the URL is live.
+    :param text:
+    :return:
+    """
+    urls = search_urls_in_text(text)
+    valid_urls = []
+    invalid_urls = []
+    for url in urls:
+        try:
+            validate_url_format(url)
+            validate_url_by_http_request(url)
+            valid_urls.append(url)
+        except Exception:
+            invalid_urls.append(url)
+    return valid_urls, invalid_urls
+
+

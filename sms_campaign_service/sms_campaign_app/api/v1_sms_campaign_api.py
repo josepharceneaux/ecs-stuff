@@ -510,8 +510,7 @@ class SendSmsCampaign(Resource):
         .. Response::
 
                 {
-                    "total_sends": 2,
-                    "message": "Campaign(id:1) has been sent successfully"
+                    "message": "Campaign(id:1) is being sent to candidates"
                 }
 
         .. Status:: 200 (OK)
@@ -532,10 +531,7 @@ class SendSmsCampaign(Resource):
         if is_owner_of_campaign(campaign_id, request.user.id):
             campaign = SmsCampaign.get_by_id(campaign_id)
             if not campaign:
-                raise ResourceNotFound(error_message='SMS Campaign(id=%s) Not found.' % campaign_id,
-                               error_code=ResourceNotFound.http_status_code())
-
+                raise ResourceNotFound(error_message='SMS Campaign(id=%s) Not found.' % campaign_id)
             camp_obj = SmsCampaignBase(request.user.id)
-            total_sends = camp_obj.process_send(campaign)
-            return dict(message='Campaign(id:%s) is being sent to candidates.'
-                                % campaign_id, total_sends=total_sends), 200
+            camp_obj.process_send(campaign)
+            return dict(message='Campaign(id:%s) is being sent to candidates.' % campaign_id), 200

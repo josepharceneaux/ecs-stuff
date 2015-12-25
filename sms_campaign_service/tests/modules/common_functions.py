@@ -58,11 +58,11 @@ def assert_url_conversion(sms_campaign_sends, campaign_id):
         UrlConversion.delete(url_conversion)
 
 
-def assert_on_blasts_sends_url_conversion_and_activity(user_id, json_resp, campaign_id):
+def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_count, campaign_id):
     """
     This function assert the number of sends in database table "sms_campaign_blast" and
     records in database table "sms_campaign_sends"
-    :param json_resp: JSON response of POST call
+    :param expected_count: Excpeted number of sends
     :param campaign_id: id of SMS campaign
     :return:
     """
@@ -71,10 +71,10 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, json_resp, campa
     # know about the changes that Celery session has made.
     db.session.commit()
     sms_campaign_blast = SmsCampaignBlast.get_by_campaign_id(campaign_id)
-    assert sms_campaign_blast.sends == json_resp['total_sends']
+    assert sms_campaign_blast.sends == expected_count
     # assert on sends
     sms_campaign_sends = SmsCampaignSend.get_by_blast_id(str(sms_campaign_blast.id))
-    assert len(sms_campaign_sends) == json_resp['total_sends']
+    assert len(sms_campaign_sends) == expected_count
     # assert on activity of individual campaign sends
     for sms_campaign_send in sms_campaign_sends:
         assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_SMS_SEND, sms_campaign_send.id)
@@ -106,6 +106,7 @@ def get_reply_text(candidate_phone):
     """
     # Need to commit the session because Celery has its own session, and our session does not
     # know about the changes that Celery session has made.
+    time.sleep(SLEEP_TIME)
     db.session.commit()
     campaign_reply_record = SmsCampaignReply.get_by_candidate_phone_id(candidate_phone.id)
     return campaign_reply_record
@@ -123,20 +124,16 @@ def assert_method_not_allowed(response, method_name):
         method_name + 'method should not be allowed (405)'
 
 
-def assert_api_send_response(campaign, response, count, expected_status_code):
+def assert_api_send_response(campaign, response, expected_status_code):
     """
     Here are asserts that make sure that campaign has been created successfully.
     :param campaign: sms_campaign obj
     :param response: HTTP POST response
-    :param count: number of counts
     :param expected_status_code: status code like 200, 404
-    :return: HTTP POST response in JSON
     """
     assert response.status_code == expected_status_code, 'Response should be' + expected_status_code
     assert response.json()
     json_resp = response.json()
-    assert json_resp['total_sends'] == count
     assert str(campaign.id) in json_resp['message']
     # Need to add this as processing of POST request runs on Celery
     time.sleep(SLEEP_TIME)
-    return json_resp

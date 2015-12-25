@@ -7,7 +7,8 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 import requests
 
 # Service Specific
-from sms_campaign_service.custom_exceptions import SmsCampaignApiException
+from sms_campaign_service.custom_exceptions import SmsCampaignApiException, MultipleCandidatesFound
+from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.tests.modules.common_functions import \
     (assert_on_blasts_sends_url_conversion_and_activity, assert_method_not_allowed,
      assert_api_send_response)
@@ -136,24 +137,23 @@ class TestSendSmsCampaign(object):
         response_post = requests.post(
             SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        json_resp = assert_api_send_response(sms_campaign_of_current_user, response_post, 0, 200)
+        assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
-                                                           json_resp,
+                                                           0,
                                                            str(sms_campaign_of_current_user.id))
 
-    def test_post_with_one_smartlist_two_candidates_with_same_phone(
-            self, auth_token, sms_campaign_of_current_user, sms_campaign_smartlist,
-            sample_sms_campaign_candidates, candidates_with_same_phone):
+    def test_pre_process_celery_task_with_two_candidates_having_same_phone(
+            self, auth_token, sms_campaign_of_current_user, sample_user, sms_campaign_smartlist,
+            sample_sms_campaign_candidates, candidates_with_same_phone,
+            candidate_first, candidate_second):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates. Both candidates have same phone numbers. It should return Internal server error.
         Error code should be 5008 (MultipleCandidatesFound)
         :return:
         """
-        response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response_post.status_code == InternalServerError.http_status_code(), \
-            'It should be internal server error (500)'
-        assert response_post.json()['error']['code'] == \
-               SmsCampaignApiException.MULTIPLE_CANDIDATES_FOUND
+        try:
+            obj = SmsCampaignBase(sample_user.id)
+            obj.pre_process_celery_task([candidate_first, candidate_second])
+        except MultipleCandidatesFound as error:
+            assert error.error_code == SmsCampaignApiException.MULTIPLE_CANDIDATES_FOUND

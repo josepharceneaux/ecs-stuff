@@ -35,7 +35,7 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
 # Common Utils
 from sms_campaign_service.common.utils.common_functions import JSON_CONTENT_TYPE_HEADER
 
-SLEEP_TIME = 6  # needed to add this because tasks run on Celery
+SLEEP_TIME = 10  # needed to add this because tasks run on Celery
 CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
                         "body_text": "Hi all, we have few openings at http://www.abc.com",
                         "frequency_id": 2,
