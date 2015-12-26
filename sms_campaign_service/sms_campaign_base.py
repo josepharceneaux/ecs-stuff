@@ -112,8 +112,11 @@ class SmsCampaignBase(CampaignBase):
     * process_send(self, campaign_id=None)
         This method is used to send the campaign to candidates.
 
-    * filter_candidate_for_valid_phone(self, candidate)
-        This filter out candidate who have no mobile number associated with them.
+    * is_candidate_have_unique_mobile_phone(self, candidate)
+        This validates if candidate have unique mobile number associated with it.
+
+    * pre_process_celery_task(self, candidate)
+        This filter out the candidates who have no unique mobile number associated,
 
     * send_campaign_to_candidate(self, candidate)
         This does the sending part and updates database tables "sms_campaign_blast" and
@@ -124,7 +127,7 @@ class SmsCampaignBase(CampaignBase):
         activity in Activity table that (e.g)
                 " "Job opening at getTalent" campaign has been sent to "100" candidates"
 
-    * celery_error(error)
+    * celery_error_handler(uuid):
         If we get any error on celery task, we here we catch it and log the error.
 
     * process_urls_in_sms_body_text(self, candidate_id)
@@ -187,7 +190,7 @@ class SmsCampaignBase(CampaignBase):
     * create_campaign_reply_activity(cls,sms_campaign_reply, campaign_blast, candidate_id, user_id)
         When a candidate replies to a recruiter's phone number, we create an activity in
         database table "Activity" that (e.g)
-            "'William Lyles' replied "Intrested" on SMS campaign 'Job opening at getTalent'.".
+            "'William Lyles' replied "Interested" on SMS campaign 'Job opening at getTalent'.".
 
     - An example of sending campaign to candidates will be like this.
         :Example:
@@ -211,8 +214,6 @@ class SmsCampaignBase(CampaignBase):
         """
         Here we set the "user_id" by calling super constructor and "user_phone" by
         calling get_user_phone() method,
-        :param args:
-        :param kwargs:
         :return:
         """
         # sets the user_id
@@ -394,8 +395,8 @@ class SmsCampaignBase(CampaignBase):
     def buy_twilio_mobile_number(self, phone_label_id):
         """
         Here we use Twilio API to first get list of available numbers by calling
-        get_available_numbers() of class TwilioSMS inside utilities.py. We select first available number
-        from the result of get_available_numbers() and call purchase_twilio_number() to
+        get_available_numbers() of class TwilioSMS inside utilities.py. We select first available
+        number from the result of get_available_numbers() and call purchase_twilio_number() to
         buy that number.
 
         - This method is called from get_user_phone() method of class SmsCampaignBase inside
@@ -792,7 +793,7 @@ class SmsCampaignBase(CampaignBase):
         **See Also**
         .. see also:: process_urls_in_sms_body_text() method in SmsCampaignBase class.
         """
-        logger.debug('transform_body_text: Replacing original URL with shorted URL. (User(id:%s))'
+        logger.debug('transform_body_text: Replacing original URL with shortened URL. (User(id:%s))'
                      % self.user_id)
         try:
             if urls_in_sms_body_text:
@@ -855,7 +856,8 @@ class SmsCampaignBase(CampaignBase):
         if record_in_db:
             data['sends'] = record_in_db.sends + 1 if increment_sends else record_in_db.sends
             data['clicks'] = record_in_db.clicks + 1 if increment_clicks else record_in_db.clicks
-            data['replies'] = record_in_db.replies + 1 if increment_replies else record_in_db.replies
+            data[
+                'replies'] = record_in_db.replies + 1 if increment_replies else record_in_db.replies
             record_in_db.update(**data)
             sms_campaign_blast_id = record_in_db.id
         else:
@@ -1133,7 +1135,6 @@ class SmsCampaignBase(CampaignBase):
                 error_message='process_url_redirect: Destination_url is empty for '
                               'url_conversion(id:%s)' % url_conversion_db_record.id)
         return url_conversion_db_record.destination_url
-
 
     def create_campaign_url_click_activity(self, source):
         """

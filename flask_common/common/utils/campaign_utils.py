@@ -28,8 +28,8 @@ from ..models.user import Token
 from ..models.misc import UrlConversion
 from ..models.candidate import Candidate
 from ..routes import CandidateApiUrl, ActivityApiUrl
-from ..utils.common_functions import http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER
 from ..error_handling import ForbiddenError, InvalidUsage, ResourceNotFound
+from ..utils.common_functions import http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER
 
 
 class CampaignBase(object):
@@ -43,24 +43,55 @@ class CampaignBase(object):
         This method is called by creating the class object.
         - It takes "user_id" as keyword argument and sets it in self.user_id.
 
+    * get_authorization_header(user_id): [static]
+        This method is used to get authorization header for current user. This header is
+        used to communicate with other flask micro services like candidate_service,
+        activity_service etc.
+
     * save(self, form_data): [abstract]
         This method is used to save the campaign in db table according to campaign type.
         i.e. sms_campaign or push_notification_campaign etc. and returns the ID of
         new record in db.
 
-    * process_send(self, campaign_id): [abstract]
+    * campaign_create_activity(self, source): [abstract]
+        This method is used to create an activity in database table "Activity" when user
+        creates a campaign.
+            e.g. in case of SMS campaign, activity will appear as
+                'Nikola Tesla' created an SMS campaign "We are hiring".
+
+    * schedule(self, campaign_id): [abstract]
+        This method is used to schedule given campaign using scheduler_service. Child classes
+        will implement this as every campaign has its own database table like email_campaign,
+        sms_campaign etc,
+
+    * process_send(self, campaign): [abstract]
         This method is used send the campaign to candidates. Child classes will implement this.
 
-    * get_candidates(smartlist_id): [static]
+    * get_smartlist_candidates(self, campaign_smartlist):
         This method gets the candidates associated with the given smartlist_id.
-        It may search candidates in database/cloud. It is common for all the campaigns.
+        It may search candidates in database/cloud. It is common for all the campaigns. It uses
+        candidate_service/candidate_pool_service to do the job.
+
+    * pre_process_celery_task(self, candidates):
+        This method is used to do any necessary processing before assigning task to Celery
+        worker if required. For example in case of SMS campaign, we filter valid candidates
+        (those candidates who have one unique phone number associated).
 
     * send_sms_campaign_to_candidates(self, candidates):
-        This loops over candidates and call send_sms_campaign_to_candidate to be send
+        This loops over candidates and call send_sms_campaign_to_candidate() to send the
         campaign asynchronously.
 
-    * send_sms_campaign_to_candidate(self, candidates): [abstract]
-        This does the sending part and update "sms_campaign_blast" and "sms_campaign_send".
+    * send_sms_campaign_to_candidate(self, data_to_send_campaign): [abstract]
+        This is a celery task. This does the sending part and update "sms_campaign_blast"
+        ,"sms_campaign_send" etc.
+
+    * celery_error_handler(uuid):
+        This method is used to catch any error of Celery task and log it.
+
+    * call_back_campaign_sent(send_result, user_id, campaign, auth_header):
+        Once a campaign has been sent to a list of candidates, Celery hits this method as
+        a callback and we create an "Activity" in database table as
+            SMS campaign 'We are hiring' has been sent to 500 candidates.
 
     * create_or_update_url_conversion(destination_url=None, source_url='', hit_count=0,
                                     url_conversion_id=None, hit_count_update=None): [static]
@@ -90,15 +121,20 @@ class CampaignBase(object):
         like activity_service to create activity.
 
         :param user_id: id of user
+        :exception: ForbiddenError
+        :exception: ResourceNotFound
         :return: Authorization header
         :rtype: dict
         """
         user_token_obj = Token.get_by_user_id(user_id)
+        if not user_token_obj:
+            raise ResourceNotFound(error_message='No auth token record found for user(id:%s)'
+                                                 % user_id)
         user_access_token = user_token_obj.access_token
-        if user_access_token:
-            return {'Authorization': 'Bearer %s' % user_access_token}
-        else:
-            raise ForbiddenError(error_message='User(id:%s) has no auth token.' % user_id)
+        if not user_access_token:
+            raise ForbiddenError(error_message='User(id:%s) has no auth token associated.'
+                                               % user_id)
+        return {'Authorization': 'Bearer %s' % user_access_token}
 
     @abstractmethod
     def save(self, form_data):
@@ -128,10 +164,10 @@ class CampaignBase(object):
         pass
 
     @abstractmethod
-    def process_send(self, campaign_id):
+    def process_send(self, campaign):
         """
         This will be used to do the processing to send campaign to candidates
-        according to specific campaign. Child class will implement this.
+        according to specific campaign. Child classes will implement this.
         :return:
         """
         pass
@@ -155,12 +191,10 @@ class CampaignBase(object):
         **See Also**
         .. see also:: process_send() method in SmsCampaignBase class.
         """
-
         params = {'id': campaign_smartlist.smartlist_id, 'return': 'all'}
-        # HTTP GET call to activity service to create activity
-        url = CandidateApiUrl.SMARTLIST_CANDIDATES
-        response = http_request('GET', url, headers=self.oauth_header, params=params,
-                                user_id=self.user_id)
+        # HTTP GET call to candidate_service to get candidates associated with given smartlist id.
+        response = http_request('GET', CandidateApiUrl.SMARTLIST_CANDIDATES,
+                                headers=self.oauth_header, params=params, user_id=self.user_id)
         # get candidate ids
         try:
             candidate_ids = [candidate['id'] for candidate in
@@ -176,8 +210,7 @@ class CampaignBase(object):
                                      'No Candidate found. smartlist id is %s. '
                                      '(User(id:%s))' % (campaign_smartlist.smartlist_id,
                                                         self.user_id))
-        else:
-            return candidates
+        return candidates
 
     def send_campaign_to_candidates(self, candidates, logger):
         """
@@ -281,6 +314,8 @@ class CampaignBase(object):
         :type hit_count: int
         :type url_conversion_id: int
         :type hit_count_update: bool
+        :exception: ResourceNotFound
+        :exception: ForbiddenError
         :return: id of the url_conversion record in database
         :rtype: int
 
@@ -336,23 +371,22 @@ class CampaignBase(object):
         :type source_table: str
         :type source_id: int
         :type params: dict
+        :exception: ForbiddenError
 
         **See Also**
             .. see also:: create_sms_send_activity() method in SmsCampaignBase class.
         """
-        if isinstance(params, dict):
-            try:
-                json_data = json.dumps({'source_table': source_table,
-                                        'source_id': source_id,
-                                        'type': _type,
-                                        'params': params})
-            except Exception as error:
-                raise ForbiddenError(error_message='Error while serializing activity params '
-                                                   'into JSON. Error is: %s' % error.message)
-        else:
+        if not isinstance(params, dict):
             raise InvalidUsage(error_message='params should be dictionary.')
-
-        headers.update(JSON_CONTENT_TYPE_HEADER)
-        # POST call to activity service to create activity
-        url = ActivityApiUrl.CREATE_ACTIVITY
-        http_request('POST', url, headers=headers, data=json_data, user_id=user_id)
+        try:
+            json_data = json.dumps({'source_table': source_table,
+                                    'source_id': source_id,
+                                    'type': _type,
+                                    'params': params})
+        except Exception as error:
+            raise ForbiddenError(error_message='Error while serializing activity params '
+                                               'into JSON. Error is: %s' % error.message)
+        headers.update(JSON_CONTENT_TYPE_HEADER) # Add content-type in header
+        # POST call to activity_service to create activity
+        http_request('POST', ActivityApiUrl.CREATE_ACTIVITY, headers=headers,
+                     data=json_data, user_id=user_id)
