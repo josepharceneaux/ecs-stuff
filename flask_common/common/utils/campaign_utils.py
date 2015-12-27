@@ -60,10 +60,10 @@ class CampaignBase(object):
             e.g. in case of SMS campaign, activity will appear as
                 'Nikola Tesla' created an SMS campaign "We are hiring".
 
-    * schedule(self, campaign_id): [abstract]
+    * schedule(self, data_to_schedule):
         This method is used to schedule given campaign using scheduler_service. Child classes
-        will implement this as every campaign has its own database table like email_campaign,
-        sms_campaign etc,
+        will override this to set the value of "data_to_schedule" and update tables like
+        email_campaign, sms_campaign etc, with "task_id" (Task created on APScheduler).
 
     * process_send(self, campaign): [abstract]
         This method is used send the campaign to candidates. Child classes will implement this.
@@ -160,8 +160,10 @@ class CampaignBase(object):
     def schedule(self, data_to_schedule):
         """
         This actually POST on scheduler_service to schedule a given task.
-        This will be common for all campaigns.
-        e.g, in case of SMS campaign
+        we set data_to_schedule dict in child class and call super constructor
+        to make HTTP POST call to scheduler_service.
+
+        e.g, in case of SMS campaign, we have
         data_to_schedule = {
                             'url_to_run_task': 'http://127.0.0.1:8012/v1/campaigns/1/send',
                             'task_type': 'one_time',
@@ -169,7 +171,8 @@ class CampaignBase(object):
                             }
         **See Also**
         .. see also:: schedule() method in SmsCampaignBase class.
-
+        :param data_to_schedule: This contains the required data to schedule a particular job
+        :type data_to_schedule: dict
         :return:
         """
         if not self.campaign:
@@ -200,7 +203,11 @@ class CampaignBase(object):
         self.oauth_header.update({'Content-Type': 'application/json'})
         response = http_request('POST', SchedulerApiUrl.CREATE_TASK, data=json.dumps(task),
                                 headers=self.oauth_header)
-        return response.json()['id']
+        # If any error occurs on POST call, we log the error inside http_request().
+        if 'id' in response.json():
+            return response.json()['id']
+        else:
+            raise InvalidUsage(error_message="Error occured while scheduling a task")
 
     @abstractmethod
     def process_send(self, campaign):

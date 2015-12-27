@@ -109,6 +109,12 @@ class SmsCampaignBase(CampaignBase):
         This creates activity that (e.g)
             " 'Smith' created an SMS campaign "Job Opening at getTalent".
 
+    * schedule(self, data_to_schedule)
+        This overrides the base class method and set the value of data_to_schedule.
+        It then calls super constructor to get task_id for us. Then we will update
+        SMS campaign record in sms_campaign table with frequency_id, send_datetime,
+        stop_datetime and "task_id"(Task created on APScheduler).
+
     * process_send(self, campaign_id=None)
         This method is used to send the campaign to candidates.
 
@@ -459,10 +465,26 @@ class SmsCampaignBase(CampaignBase):
 
     def schedule(self, data_to_schedule):
         """
-        This actually POST on scheduler_service to schedule a given task.
-        This will be common for all campaigns.
+        This overrides the CampaignBase class method schedule().
+        Here we set the value of dict "data_to_schedule" and pass it to
+        super constructor to get task_id for us. Finally we update the SMS campaign
+        record in database table "sms_campaign" with
+            1- frequency_id
+            2- send_datetime
+            3- stop_datetime
+            4- task_id (Task created on APScheduler)
+        Finally we return the "task_id".
 
-        :return:
+        - This method is called from the endpoint /v1/campaigns/:id/schedule
+
+        :param data_to_schedule: required data to schedule an SMS campaign
+        :type data_to_schedule: dict
+        :return: task_id (Task created on APScheduler)
+        :rtype: str
+
+        **See Also**
+        .. see also:: ScheduleSmsCampaign() method in v1_sms_campaign_api.py.
+
         """
         data_to_schedule.update(
             {'url_to_run_task': SmsCampaignApiUrl.SEND % self.campaign.id}
