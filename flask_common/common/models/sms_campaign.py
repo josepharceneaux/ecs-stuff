@@ -16,8 +16,7 @@ class SmsCampaign(db.Model):
     stop_datetime = db.Column(db.DateTime)
     added_datetime = db.Column(db.DateTime)
     updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
-    # TODO: may be need to add scheduler task_id as well here when scheduler_service is up
-    # scheduler_task_ids = db.Column('SchedulerTaskIds', db.String(255))
+    scheduler_task_id = db.Column(db.String(255))
 
     # Relationships
     sms_campaign_blasts = relationship('SmsCampaignBlast', cascade='all, delete-orphan',

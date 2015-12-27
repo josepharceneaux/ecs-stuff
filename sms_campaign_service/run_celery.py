@@ -12,6 +12,6 @@ For Celery to run from command line, script runs as separate process with celery
 
 # Service Specific
 from sms_campaign_service.sms_campaign_app.app import celery_app
+from sms_campaign_service.sms_campaign_app_constants import CELERY_QUEUE
 
-celery_app.start(argv=['celery', 'worker', '-l', 'info'])
-
+celery_app.start(argv=['celery', 'worker', '-l', 'info', '-Q', CELERY_QUEUE])

@@ -19,13 +19,14 @@ from twilio.rest import TwilioRestClient
 
 # Common Utils
 from sms_campaign_service.common.common_config import IS_DEV
-from sms_campaign_service.common.routes import (SmsCampaignApiUrl, GTApis)
+from sms_campaign_service.common.routes import (GTApis, SmsCampaignApi)
 from sms_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound,
                                                         ForbiddenError)
 from sms_campaign_service.common.utils.common_functions import (find_missing_items,
                                                                 is_iso_8601_format,
                                                                 JSON_CONTENT_TYPE_HEADER,
-                                                                is_valid_url_format, http_request)
+                                                                is_valid_url_format, http_request,
+                                                                frequency_id_to_seconds)
 
 # Database Models
 from sms_campaign_service.common.models.user import UserPhone
@@ -36,7 +37,7 @@ from sms_campaign_service.common.models.talent_pools_pipelines import Smartlist
 from sms_campaign_service import logger
 from sms_campaign_service.custom_exceptions import (TwilioAPIError, MissingRequiredField,
                                                     InvalidDatetime, ErrorDeletingSMSCampaign,
-                                                    InvalidUrl)
+                                                    InvalidUrl, InvalidFrequencyId)
 from sms_campaign_service.sms_campaign_app_constants import (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,
                                                              NGROK_URL, TWILIO_TEST_ACCOUNT_SID,
                                                              TWILIO_TEST_AUTH_TOKEN)
@@ -60,8 +61,8 @@ class TwilioSMS(object):
         self.sms_enabled = True
         # default value of sms_call_back_url is 'http://demo.twilio.com/docs/sms.xml'
         # TODO: Until app is up, will use ngrok address
-        # self.sms_call_back_url = SmsCampaignApiUrl.RECEIVE_URL
-        self.sms_call_back_url = NGROK_URL % SmsCampaignApiUrl.RECEIVE
+        # self.sms_call_back_url = SmsCampaignApi.RECEIVE
+        self.sms_call_back_url = NGROK_URL % SmsCampaignApi.RECEIVE
         self.sms_method = 'POST'
 
     def validate_a_number(self, phone_number):
@@ -183,7 +184,7 @@ def replace_ngrok_link_with_localhost(temp_ngrok_link):
     """
     relative_url = temp_ngrok_link.split(NGROK_URL % '')[1]
     # HOST_NAME is http://127.0.0.1:8011 for dev
-    return SmsCampaignApiUrl.HOST_NAME % relative_url
+    return SmsCampaignApi.HOST_NAME % relative_url
 
 
 # TODO: remove this when app is up
@@ -215,8 +216,6 @@ def validate_form_data(form_data):
         1- If any key from (name, body_text, smartlist_ids) is missing from form data or
             has no value we raise MissingRequiredFieldError.
         2- If smartlist_ids are not present in database, we raise ResourceNotFound exception.
-        3- If start_datetime or end_datetime is not valid datetime format, then we raise
-            InvalidDatetime
 
     :param form_data:
     :return: list of ids of smartlists which were not found in database.
@@ -252,11 +251,12 @@ def validate_form_data(form_data):
                 raise InvalidUsage('Include smartlist id as int|long')
             if not Smartlist.get_by_id(smartlist_id):
                 not_found_smartlist_ids.append(smartlist_id)
-                raise ResourceNotFound('Smartlist(id:%s) not found in database.' % smartlist_id)
+                raise ResourceNotFound
         except InvalidUsage:
             logger.exception('validate_form_data: Invalid smartlist id')
         except ResourceNotFound:
-            logger.exception('validate_form_data:')
+            logger.exception('validate_form_data: Smartlist(id:%s) not found in database.'
+                             % str(smartlist_id))
     # If all provided smartlist ids are invalid, raise InvalidUsage
     if len(form_data.get('smartlist_ids')) == len(invalid_smartlist_ids):
         raise InvalidUsage(
@@ -269,11 +269,37 @@ def validate_form_data(form_data):
     # filter out unknown smartlist ids, and keeping the valid ones
     form_data['smartlist_ids'] = list(set(form_data.get('smartlist_ids')) -
                                       set(invalid_smartlist_ids + not_found_smartlist_ids))
-    for datetime in [form_data.get('send_datetime'), form_data.get('stop_datetime')]:
+    return invalid_smartlist_ids, not_found_smartlist_ids
+
+
+def validate_scheduler_data(schedule_data):
+    """
+    Here we validate the data provided to schedule an SMS campaign.
+
+    Valid Schedule data looks like
+                            {
+                                "frequency_id": 0,
+                                "send_datetime": "2015-12-26T14:04:00Z",
+                                "stop_datetime": "2015-12-27T14:05:00Z"
+                            }
+
+    1- If start_datetime or end_datetime is not valid datetime format, then we raise
+            custom exception InvalidDatetime.
+    2- If frequency_id does not exist in database, we raise the custom exception InvalidFrequencyId,
+    :param schedule_data:
+    :exception: InvalidDatetime
+    :exception: InvalidFrequencyId
+    :return:
+    """
+    for datetime in [schedule_data.get('send_datetime'), schedule_data.get('stop_datetime')]:
         if not is_iso_8601_format(datetime):
             raise InvalidDatetime('Invalid DateTime: Kindly specify UTC datetime in ISO-8601 '
                                   'format like 2015-10-08T06:16:55Z. Given Date is %s' % datetime)
-    return invalid_smartlist_ids, not_found_smartlist_ids
+    try:
+        frequency_id_to_seconds(schedule_data.get('frequency_id'))
+    except InvalidUsage:
+        raise InvalidFrequencyId(error_message="Invalid frequency Id given: %s"
+                                               % schedule_data.get('frequency_id'))
 
 
 def delete_sms_campaign(campaign_id, current_user_id):

@@ -200,8 +200,14 @@ class CandidatePhone(db.Model):
 
     @classmethod
     def get_by_phone_value(cls, phone_value):
-        assert phone_value
+        assert phone_value, 'phone_value no provided'
         return cls.query.filter_by(value=phone_value).all()
+
+    @classmethod
+    def get_by_candidate_id_and_phone_value(cls, candidate_id, phone_value):
+        assert phone_value, 'phone_value no provided'
+        assert candidate_id, 'Candidate id not given'
+        return cls.query.filter_by(candidate_id=candidate_id, value=phone_value, ).first()
 
     def get_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()

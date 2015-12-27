@@ -14,6 +14,8 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 """
 
 # Standard Library
+from datetime import datetime, timedelta
+import json
 import time
 
 # Third Party
@@ -22,6 +24,7 @@ import requests
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
+from sms_campaign_service.common.utils.common_functions import get_utc_datetime
 from sms_campaign_service.common.error_handling import (ResourceNotFound,
                                                         InternalServerError,
                                                         MethodNotAllowed)
@@ -34,10 +37,11 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
 from sms_campaign_service import db
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.custom_exceptions import SmsCampaignApiException, EmptyDestinationUrl
+from sms_campaign_service.tests.conftest import CAMPAIGN_SCHEDULE_DATA
 from sms_campaign_service.utilities import replace_ngrok_link_with_localhost
 from sms_campaign_service.tests.modules.common_functions import \
     (assert_on_blasts_sends_url_conversion_and_activity, assert_for_activity, get_reply_text,
-     assert_api_send_response)
+     assert_api_send_response, assert_campaign_schedule, SLEEP_TIME)
 
 SLEEP_OFFSET = 15  # For those tasks which takes longer than usual
 
@@ -61,7 +65,7 @@ class TestCeleryTasks(object):
         campaign.update(body_text='Hi,all please visit http://www.abc.com or '
                                   'http://www.123.com or http://www.xyz.com')
         response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         time.sleep(SLEEP_OFFSET)
         assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
@@ -78,7 +82,7 @@ class TestCeleryTasks(object):
         :return:
         """
         response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
         # as one phone number is invalid, so only one record should be enter in sms_campaign_send
@@ -96,7 +100,7 @@ class TestCeleryTasks(object):
         :return:
         """
         response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, 1,
@@ -112,7 +116,7 @@ class TestCeleryTasks(object):
         :return:
         """
         response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
@@ -132,7 +136,7 @@ class TestCeleryTasks(object):
         campaign = SmsCampaign.get_by_id(str(sms_campaign_of_current_user.id))
         campaign.update(body_text='Hi,all')
         response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         time.sleep(SLEEP_OFFSET)
         assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
@@ -151,9 +155,29 @@ class TestCeleryTasks(object):
         :return:
         """
         response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
+        assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
+                                                           1,
+                                                           str(sms_campaign_of_current_user.id))
+
+    def test_campaign_schedule_and_validate_task_run(
+            self, valid_header,  sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
+            sample_sms_campaign_candidates, candidate_phone_1):
+        """
+        This is test to schedule SMS campaign with all valid parameters. This should get OK
+         response
+        """
+        data = CAMPAIGN_SCHEDULE_DATA.copy()
+        data['frequency_id'] = 0  # for one_time job
+        data['send_datetime'] = get_utc_datetime(datetime.now() + timedelta(seconds=10),
+                                                 'Asia/Karachi')
+        response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
+                                 headers=valid_header,
+                                 data=json.dumps(data))
+        assert_campaign_schedule(response)
+        time.sleep(SLEEP_TIME + SLEEP_OFFSET)
         assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
                                                            1,
                                                            str(sms_campaign_of_current_user.id))
@@ -174,7 +198,7 @@ class TestCeleryTasks(object):
         """
         reply_text = "What's the venue?"
         reply_count_before = get_replies_count(sms_campaign_of_current_user)
-        response_get = requests.post(SmsCampaignApiUrl.RECEIVE_URL,
+        response_get = requests.post(SmsCampaignApiUrl.RECEIVE,
                                      data={'To': user_phone_1.value,
                                            'From': candidate_phone_1.value,
                                            'Body': reply_text})
@@ -424,7 +448,7 @@ def _delete_sms_campaign(campaign, header):
     :param header:
     :return:
     """
-    response = requests.delete(SmsCampaignApiUrl.CAMPAIGN_URL % campaign.id,
+    response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % campaign.id,
                                headers=header)
     assert response.status_code == 200, 'should get ok response (200)'
 

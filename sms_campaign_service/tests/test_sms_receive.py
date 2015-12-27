@@ -32,7 +32,7 @@ class TestSmsReceive(object):
         GET method should not be allowed at this endpoint.
         :return:
         """
-        response = requests.get(SmsCampaignApiUrl.RECEIVE_URL)
+        response = requests.get(SmsCampaignApiUrl.RECEIVE)
         assert_method_not_allowed(response, 'GET')
 
     def test_for_delete(self):
@@ -40,7 +40,7 @@ class TestSmsReceive(object):
         DELETE method should not be allowed at this endpoint.
         :return:
         """
-        response = requests.delete(SmsCampaignApiUrl.RECEIVE_URL)
+        response = requests.delete(SmsCampaignApiUrl.RECEIVE)
         assert_method_not_allowed(response, 'DELETE')
 
     def test_post_with_no_data(self):
@@ -48,7 +48,7 @@ class TestSmsReceive(object):
         POST with no data, Response should be OK as this response is returned to Twilio API
         :return:
         """
-        response_get = requests.post(SmsCampaignApiUrl.RECEIVE_URL)
+        response_get = requests.post(SmsCampaignApiUrl.RECEIVE)
         assert response_get.status_code == 200, 'Response should be ok'
         assert 'xml' in str(response_get.text).strip()
 
@@ -62,7 +62,7 @@ class TestSmsReceive(object):
         Response should be OK as this response is returned to Twilio API
         :return:
         """
-        response_get = requests.post(SmsCampaignApiUrl.RECEIVE_URL,
+        response_get = requests.post(SmsCampaignApiUrl.RECEIVE,
                                      data={'To': user_phone_1.value,
                                            'From': candidate_phone_1.value,
                                            'Body': "What's the venue?"})

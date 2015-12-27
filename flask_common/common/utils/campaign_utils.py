@@ -27,7 +27,8 @@ from flask import current_app
 from ..models.user import Token
 from ..models.misc import UrlConversion
 from ..models.candidate import Candidate
-from ..routes import CandidateApiUrl, ActivityApiUrl
+from ..utils.common_functions import frequency_id_to_seconds
+from ..routes import CandidateApiUrl, ActivityApiUrl, SchedulerApiUrl
 from ..error_handling import ForbiddenError, InvalidUsage, ResourceNotFound
 from ..utils.common_functions import http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER
 
@@ -112,6 +113,8 @@ class CampaignBase(object):
         self.body_text = None  # This is 'text' to be sent to candidates as part of campaign.
         # Child classes will get this from respective campaign table.
         # e.g. in case of SMS campaign, this is get from "sms_campaign" database table.
+        self.queue_name = None # name of Celery Queue. Each service will use its own queue
+        # so that tasks related to one service only assign to that particular queue.
 
     @staticmethod
     def get_authorization_header(user_id):
@@ -154,14 +157,50 @@ class CampaignBase(object):
         """
         pass
 
-    # TODO: implement after scheduler service is ready
-    def schedule(self):
+    def schedule(self, data_to_schedule):
         """
         This actually POST on scheduler_service to schedule a given task.
         This will be common for all campaigns.
+        e.g, in case of SMS campaign
+        data_to_schedule = {
+                            'url_to_run_task': 'http://127.0.0.1:8012/v1/campaigns/1/send',
+                            'task_type': 'one_time',
+                            'data_to_post': None
+                            }
+        **See Also**
+        .. see also:: schedule() method in SmsCampaignBase class.
+
         :return:
         """
-        pass
+        if not self.campaign:
+            raise ForbiddenError(error_message='No campaign given to schedule.')
+
+        if not data_to_schedule.get('url_to_run_task'):
+            raise ForbiddenError(error_message='No URL given for the task.')
+
+        # get number of seconds from frequency id
+        frequency = frequency_id_to_seconds(data_to_schedule.get('frequency_id'))
+        if not frequency:  # This means it is a one time job
+            task = {
+                "task_type": 'one_time',
+                "run_datetime": data_to_schedule['send_datetime'],
+            }
+        else:
+            task = {
+                "task_type": 'periodic',
+                "frequency": frequency,
+                "start_datetime": data_to_schedule['send_datetime'],
+                "end_datetime": data_to_schedule['stop_datetime'],
+            }
+        # set URL to be hit when time comes to run that task
+        task['url'] = data_to_schedule['url_to_run_task']
+        # set data to POST with above URL
+        task['post_data'] = data_to_schedule.get('data_to_post', dict())
+        # set content-type in header
+        self.oauth_header.update({'Content-Type': 'application/json'})
+        response = http_request('POST', SchedulerApiUrl.CREATE_TASK, data=json.dumps(task),
+                                headers=self.oauth_header)
+        return response.json()['id']
 
     @abstractmethod
     def process_send(self, campaign):
@@ -217,7 +256,8 @@ class CampaignBase(object):
         Once we have the candidates, we iterate each candidate, create celery task and call
         self.send_campaign_to_candidate() to send the campaign. Celery sends campaign to all
         candidates asynchronously and if all tasks finish correctly, it hits a callback function
-        to notify us.
+        (self.callback_campaign_sent() in our case) to notify us that campaign has been sent
+        to all candidates.
 
         e.g. This method is called from process_send() method of class
             SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
@@ -234,13 +274,16 @@ class CampaignBase(object):
             # once the async task is done the self.callback_campaign_sent will be called
             # When all tasks assigned to Celery complete their execution, following function
             # is called by celery as a callback function.
+            # Each service will use its own queue so that tasks related to one service only
+            # assign to that particular queue.
             callback = self.callback_campaign_sent.subtask((self.user_id, self.campaign,
-                                                            self.oauth_header,))
+                                                            self.oauth_header,),
+                                                           queue=self.queue_name)
             # Here we create list of all tasks and assign a self.celery_error_handler() as a
             # callback function in case any of the tasks in the list encounter some error.
             tasks = [self.send_campaign_to_candidate.subtask(
-                (self, record), link_error=self.celery_error_handler.subtask()
-            ) for record in pre_processed_data]
+                (self, record), link_error=self.celery_error_handler.subtask(queue=self.queue_name)
+                , queue=self.queue_name) for record in pre_processed_data]
             # This runs all tasks asynchronously and sets callback function to be hit once all
             # tasks in list finish running without raising any error. Otherwise callback
             # results in failure status.
@@ -386,7 +429,7 @@ class CampaignBase(object):
         except Exception as error:
             raise ForbiddenError(error_message='Error while serializing activity params '
                                                'into JSON. Error is: %s' % error.message)
-        headers.update(JSON_CONTENT_TYPE_HEADER) # Add content-type in header
+        headers.update(JSON_CONTENT_TYPE_HEADER)  # Add content-type in header
         # POST call to activity_service to create activity
         http_request('POST', ActivityApiUrl.CREATE_ACTIVITY, headers=headers,
                      data=json_data, user_id=user_id)

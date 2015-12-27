@@ -4,6 +4,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
     This file contains constants used in SMS campaign service.
 """
 
+CELERY_QUEUE = 'sms_campaign'
 TWILIO = 'Twilio'
 MOBILE_PHONE_LABEL = 'Mobile'  # for mobile phone
 

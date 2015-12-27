@@ -19,12 +19,12 @@ from sms_campaign_service.utilities import (search_urls_in_text, validate_url_fo
 # Common Utils
 from sms_campaign_service.common.error_handling import InvalidUsage
 from sms_campaign_service.common.utils.common_functions import url_conversion
-from sms_campaign_service.common.routes import (SmsCampaignApiUrl, LOCAL_HOST)
+from sms_campaign_service.common.routes import (LOCAL_HOST, SmsCampaignApi)
 
 
 # Test for healthcheck
 def test_health_check():
-    response = requests.get(SmsCampaignApiUrl.HOST_NAME % '/healthcheck')
+    response = requests.get(SmsCampaignApi.HOST_NAME % '/healthcheck')
     assert response.status_code == 200
 
 

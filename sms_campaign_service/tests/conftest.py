@@ -36,13 +36,16 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
 from sms_campaign_service.common.utils.common_functions import JSON_CONTENT_TYPE_HEADER
 
 SLEEP_TIME = 10  # needed to add this because tasks run on Celery
+
+# This is data to create/update SMS campaign
 CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
                         "body_text": "Hi all, we have few openings at http://www.abc.com",
-                        "frequency_id": 2,
-                        "send_datetime": "2015-11-26T08:00:00Z",
-                        "stop_datetime": "2015-11-30T08:00:00Z",
                         "smartlist_ids": ""
                         }
+# This is data to schedule an SMS campaign
+CAMPAIGN_SCHEDULE_DATA = {"frequency_id": 2,
+                          "send_datetime": "2015-11-26T08:00:00Z",
+                          "stop_datetime": "2015-11-30T08:00:00Z"}
 
 
 def remove_any_user_phone_record_with_twilio_test_number():
@@ -58,6 +61,7 @@ def remove_any_user_phone_record_with_twilio_test_number():
     records = CandidatePhone.get_by_phone_value(TWILIO_TEST_NUMBER)
     records += CandidatePhone.get_by_phone_value(TWILIO_INVALID_TEST_NUMBER)
     map(CandidatePhone.delete, records)
+
 
 # clean database tables user_phone and candidate_phone first
 remove_any_user_phone_record_with_twilio_test_number()
@@ -362,6 +366,7 @@ def candidate_invalid_phone(request, candidate_second):
     request.addfinalizer(tear_down)
     return candidate_phone
 
+
 @pytest.fixture()
 def candidates_with_same_phone(request, candidate_first, candidate_second):
     """
@@ -503,4 +508,3 @@ def _create_smartlist(test_user):
     smartlist = Smartlist(name=gen_salt(20), user_id=test_user.id)
     Smartlist.save(smartlist)
     return smartlist
-

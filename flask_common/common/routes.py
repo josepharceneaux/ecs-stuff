@@ -161,11 +161,15 @@ class SmsCampaignApi(object):
 
     # endpoint /v1/campaigns/:id/sends
     # This gives the records from "sends" for a given id of campaign
-    CAMPAIGN_SENDS = CAMPAIGN + '/sends'
+    SENDS = CAMPAIGN + '/sends'
 
     # endpoint /v1/campaigns/:id/send
     # To send a campaign to candidates
-    CAMPAIGN_SEND_PROCESS = CAMPAIGN + '/send'
+    SEND = CAMPAIGN + '/send'
+
+    # /v1/campaigns/:id/schedule
+    # To schedule an SMS campaign
+    SCHEDULE = CAMPAIGN + '/schedule'
 
     """ Followings are not REST endpoints, but App endpoints """
     # endpoint /v1/receive
@@ -177,17 +181,18 @@ class SmsCampaignApi(object):
     APP_REDIRECTION = CAMPAIGN + '/redirect/<int:url_conversion_id>'
 
 
-class SmsCampaignApiUrl(SmsCampaignApi):
+class SmsCampaignApiUrl(object):
     """
     This class contains the REST URLs of sms_campaign_service
     """
     """ Endpoints' complete URLs for pyTests """
-    CAMPAIGNS_URL = SmsCampaignApi.HOST_NAME % SmsCampaignApi.CAMPAIGNS
-    CAMPAIGN_URL = SmsCampaignApi.HOST_NAME % '/%s/%s' % (SmsCampaignApi.VERSION, 'campaigns/%s')
-    CAMPAIGN_SENDS_URL = CAMPAIGN_URL + '/sends'
-    CAMPAIGN_SEND_PROCESS_URL = CAMPAIGN_URL + '/send'
-    RECEIVE_URL = SmsCampaignApi.HOST_NAME % SmsCampaignApi.RECEIVE
-    APP_REDIRECTION_URL = CAMPAIGN_URL % '%s/redirect/%s'
+    CAMPAIGNS = SmsCampaignApi.HOST_NAME % SmsCampaignApi.CAMPAIGNS
+    CAMPAIGN = SmsCampaignApi.HOST_NAME % '/%s/%s' % (SmsCampaignApi.VERSION, 'campaigns/%s')
+    SENDS = CAMPAIGN + '/sends'
+    SEND = CAMPAIGN + '/send'
+    SCHEDULE = CAMPAIGN + '/schedule'
+    RECEIVE = SmsCampaignApi.HOST_NAME % SmsCampaignApi.RECEIVE
+    REDIRECT = CAMPAIGN % '%s/redirect/%s'
 
 
 class CandidateApiUrl(object):
@@ -260,3 +265,4 @@ class SchedulerApiUrl(object):
     """
     SCHEDULER_HOST_NAME = _get_host_name(GTApis.SCHEDULER_SERVICE_NAME,
                                          GTApis.SCHEDULER_SERVICE_PORT)
+    CREATE_TASK = SCHEDULER_HOST_NAME % '/tasks/'

@@ -19,7 +19,7 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaignSendUrlC
                                                              SmsCampaignReply, SmsCampaignBlast,
                                                              SmsCampaignSend)
 
-SLEEP_TIME = 20
+SLEEP_TIME = 30
 
 
 def assert_url_conversion(sms_campaign_sends, campaign_id):
@@ -137,3 +137,13 @@ def assert_api_send_response(campaign, response, expected_status_code):
     assert str(campaign.id) in json_resp['message']
     # Need to add this as processing of POST request runs on Celery
     time.sleep(SLEEP_TIME)
+
+
+def assert_campaign_schedule(response):
+    """
+    This asserts that campaign has scheduled  successfully and we get 'task_id' in response
+    :param response:
+    :return:
+    """
+    assert response.status_code == 200, ' It should get ok response'
+    assert 'task_id' in response.json()

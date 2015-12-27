@@ -48,7 +48,7 @@ from sms_campaign_service.sms_campaign_app.app import celery_app, app
 from sms_campaign_service.utilities import (TwilioSMS, search_urls_in_text,
                                             replace_localhost_with_ngrok, validate_url_format)
 from sms_campaign_service.sms_campaign_app_constants import (MOBILE_PHONE_LABEL, TWILIO,
-                                                             TWILIO_TEST_NUMBER)
+                                                             TWILIO_TEST_NUMBER, CELERY_QUEUE)
 from sms_campaign_service.custom_exceptions import (EmptySmsBody, MultipleTwilioNumbersFoundForUser,
                                                     EmptyDestinationUrl, MissingRequiredField,
                                                     MultipleUsersFound, MultipleCandidatesFound,
@@ -81,6 +81,16 @@ class SmsCampaignBase(CampaignBase):
             provided "user_id".
         - Sets total_sends to 0.
 
+    * get_user_phone(self)
+        This gets the Twilio number of current user from database table "user_phone"
+
+    * buy_twilio_mobile_number(self, phone_label_id=None)
+        To send sms_campaign, we need to reserve a unique number for each user.
+        This method is used to reserve a unique number for getTalent user.
+
+    * create_or_update_user_phone(user_id, phone_number, phone_label_id): [static]
+        This method is used to create/update user_phone record.
+
     *  get_all_campaigns(self)
         This gets all the campaigns created by current user.
 
@@ -98,16 +108,6 @@ class SmsCampaignBase(CampaignBase):
     * campaign_create_activity(self, sms_campaign)
         This creates activity that (e.g)
             " 'Smith' created an SMS campaign "Job Opening at getTalent".
-
-    * get_user_phone(self)
-        This gets the Twilio number of current user from database table "user_phone"
-
-    * buy_twilio_mobile_number(self, phone_label_id=None)
-        To send sms_campaign, we need to reserve a unique number for each user.
-        This method is used to reserve a unique number for getTalent user.
-
-    * create_or_update_user_phone(user_id, phone_number, phone_label_id): [static]
-        This method is used to create/update user_phone record.
 
     * process_send(self, campaign_id=None)
         This method is used to send the campaign to candidates.
@@ -225,143 +225,7 @@ class SmsCampaignBase(CampaignBase):
         # and this contains the updated text to be sent via SMS.
         # This is the id of record in sms_campaign_blast" database table
         self.sms_campaign_blast_id = None
-
-    def get_all_campaigns(self):
-        """
-        This gets all the campaigns created by current user
-        :return: all campaigns associated to with user
-        :rtype: list
-        """
-        return SmsCampaign.get_by_user_phone_id(self.user_phone.id)
-
-    def save(self, form_data):
-        """
-        This saves the campaign in database table sms_campaign in following steps:
-
-            1- Save campaign in database
-            2- Create activity that (e,g)
-                "'Harvey Specter' created an SMS campaign: 'Hiring at getTalent'"
-
-        :param form_data: data from UI
-        :type form_data: dict
-        :return: id of sms_campaign in db
-        :rtype: int
-        """
-        if not form_data:
-            logger.error('save: No data received from UI. (User(id:%s))' % self.user_id)
-        else:
-            # Save Campaign in database table "sms_campaign"
-            sms_campaign = self.create_or_update_sms_campaign(form_data)
-            # Create record in database table "sms_campaign_smartlist"
-            self.create_or_update_sms_campaign_smartlist(sms_campaign,
-                                                         form_data.get('smartlist_ids'))
-            # Create Activity
-            self.campaign_create_activity(sms_campaign)
-            return sms_campaign.id
-
-    def create_or_update_sms_campaign(self, form_data, campaign_id=None):
-        """
-        - Here we save/update sms_campaign in database table "sms_campaign".
-
-        - This method is called from save() method of class
-            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
-
-        :param form_data: data of SMS campaign from UI to save
-        :param campaign_id: id of "sms_campaign" obj, default None
-        :type form_data: dict
-        :type campaign_id: int
-        :exception: ResourceNotFound
-        :exception: ErrorSavingSMSCampaign
-        :return: "sms_campaign" obj
-        :rtype: SmsCampaign
-
-        **See Also**
-        .. see also:: save() method in SmsCampaignBase class.
-        """
-        sms_campaign_data = dict(name=form_data.get('name'),
-                                 user_phone_id=self.user_phone.id,
-                                 body_text=form_data.get('body_text'),
-                                 frequency_id=form_data.get('frequency_id'),
-                                 added_datetime=datetime.now(),
-                                 send_datetime=form_data.get('send_datetime'),
-                                 stop_datetime=form_data.get('stop_datetime'))
-        if campaign_id:
-            sms_campaign_obj = SmsCampaign.get_by_id(campaign_id)
-            if not sms_campaign_obj:
-                raise ResourceNotFound(error_message='SMS Campaign(id=%s) not found.' % campaign_id)
-            for key, value in sms_campaign_data.iteritems():
-                # update old values with new ones if provided, else preserve old ones.
-                sms_campaign_data[key] = value if value else getattr(sms_campaign_obj, key)
-            sms_campaign_obj.update(**sms_campaign_data)
-        else:
-            try:
-                sms_campaign_obj = SmsCampaign(**sms_campaign_data)
-                SmsCampaign.save(sms_campaign_obj)
-            except Exception as error:
-                raise ErrorSavingSMSCampaign(error_message=error.message)
-        return sms_campaign_obj
-
-    @staticmethod
-    def create_or_update_sms_campaign_smartlist(campaign, smartlist_ids):
-        """
-        - Here we save/update the smartlist ids for an SMS campaign in database table
-        "sms_campaign_smartlist".
-
-        - This method is called from save() method of class
-            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
-
-        :param campaign: sms_campaign obj
-        :param smartlist_ids: ids of smartlists
-        :exception: InvalidUsage
-        :type campaign: SmsCampaign
-        :type smartlist_ids: list
-
-        **See Also**
-        .. see also:: save() method in SmsCampaignBase class.
-        """
-        if not isinstance(campaign, SmsCampaign):
-            raise InvalidUsage(error_message='create_or_update_sms_campaign_smartlist: '
-                                             'Given campaign is not instance '
-                                             'of model sms_campaign.')
-        for smartlist_id in smartlist_ids:
-            data = {'smartlist_id': smartlist_id,
-                    'sms_campaign_id': campaign.id}
-            db_record = SmsCampaignSmartlist.get_by_campaign_id_and_smartlist_id(campaign.id,
-                                                                                 smartlist_id)
-            if not db_record:
-                new_record = SmsCampaignSmartlist(**data)
-                SmsCampaignSmartlist.save(new_record)
-
-    def campaign_create_activity(self, source):
-        """
-        - Here we set "params" and "type" of activity to be stored in db table "Activity"
-            for created Campaign.
-
-        - Activity will appear as (e.g)
-           "'Harvey Specter' created an SMS campaign: 'Hiring at getTalent'"
-
-        - This method is called from save() method of class
-            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
-
-        :param source: "sms_campaign" obj
-        :type source: SmsCampaign
-        :exception: InvalidUsage
-
-        **See Also**
-        .. see also:: save() method in SmsCampaignBase class.
-        """
-        if not isinstance(source, SmsCampaign):
-            raise InvalidUsage(error_message='source should be an instance of model sms_campaign')
-        # set params
-        params = {'user_name': self.user_phone.user.name,
-                  'campaign_name': source.name}
-
-        self.create_activity(self.user_id,
-                             _type=ActivityMessageIds.CAMPAIGN_SMS_CREATE,
-                             source_id=source.id,
-                             source_table=SmsCampaign.__tablename__,
-                             params=params,
-                             headers=self.oauth_header)
+        self.queue_name = CELERY_QUEUE
 
     def get_user_phone(self):
         """
@@ -454,6 +318,161 @@ class SmsCampaignBase(CampaignBase):
             user_phone_obj = UserPhone(**data)
             UserPhone.save(user_phone_obj)
         return user_phone_obj
+
+    def get_all_campaigns(self):
+        """
+        This gets all the campaigns created by current user
+        :return: all campaigns associated to with user
+        :rtype: list
+        """
+        return SmsCampaign.get_by_user_phone_id(self.user_phone.id)
+
+    def save(self, form_data):
+        """
+        This saves the campaign in database table sms_campaign in following steps:
+
+            1- Save campaign in database
+            2- Create activity that (e,g)
+                "'Harvey Specter' created an SMS campaign: 'Hiring at getTalent'"
+
+        :param form_data: data from UI
+        :type form_data: dict
+        :return: id of sms_campaign in db
+        :rtype: int
+        """
+        if not form_data:
+            logger.error('save: No data received from UI. (User(id:%s))' % self.user_id)
+        else:
+            # Save Campaign in database table "sms_campaign"
+            sms_campaign = self.create_or_update_sms_campaign(form_data)
+            # Create record in database table "sms_campaign_smartlist"
+            self.create_or_update_sms_campaign_smartlist(sms_campaign,
+                                                         form_data.get('smartlist_ids'))
+            # Create Activity
+            self.campaign_create_activity(sms_campaign)
+            return sms_campaign.id
+
+    def create_or_update_sms_campaign(self, form_data, campaign_id=None):
+        """
+        - Here we save/update sms_campaign in database table "sms_campaign".
+
+        - This method is called from save() method of class
+            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
+
+        :param form_data: data of SMS campaign from UI to save
+        :param campaign_id: id of "sms_campaign" obj, default None
+        :type form_data: dict
+        :type campaign_id: int
+        :exception: ResourceNotFound
+        :exception: ErrorSavingSMSCampaign
+        :return: "sms_campaign" obj
+        :rtype: SmsCampaign
+
+        **See Also**
+        .. see also:: save() method in SmsCampaignBase class.
+        """
+        sms_campaign_data = dict(name=form_data.get('name'),
+                                 user_phone_id=self.user_phone.id,
+                                 body_text=form_data.get('body_text'),
+                                 frequency_id=form_data.get('frequency_id'),
+                                 added_datetime=datetime.now(),
+                                 send_datetime=form_data.get('send_datetime'),
+                                 stop_datetime=form_data.get('stop_datetime'),
+                                 scheduler_task_id=form_data.get('task_id'))
+        if campaign_id:
+            sms_campaign_obj = SmsCampaign.get_by_id(campaign_id)
+            if not sms_campaign_obj:
+                raise ResourceNotFound(error_message='SMS Campaign(id=%s) not found.' % campaign_id)
+            for key, value in sms_campaign_data.iteritems():
+                # update old values with new ones if provided, else preserve old ones.
+                sms_campaign_data[key] = value if value else getattr(sms_campaign_obj, key)
+            sms_campaign_obj.update(**sms_campaign_data)
+        else:
+            try:
+                sms_campaign_obj = SmsCampaign(**sms_campaign_data)
+                SmsCampaign.save(sms_campaign_obj)
+            except Exception as error:
+                raise ErrorSavingSMSCampaign(error_message=error.message)
+        return sms_campaign_obj
+
+    @staticmethod
+    def create_or_update_sms_campaign_smartlist(campaign, smartlist_ids):
+        """
+        - Here we save/update the smartlist ids for an SMS campaign in database table
+        "sms_campaign_smartlist".
+
+        - This method is called from save() method of class
+            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
+
+        :param campaign: sms_campaign obj
+        :param smartlist_ids: ids of smartlists
+        :exception: InvalidUsage
+        :type campaign: SmsCampaign
+        :type smartlist_ids: list
+
+        **See Also**
+        .. see also:: save() method in SmsCampaignBase class.
+        """
+        if not isinstance(campaign, SmsCampaign):
+            raise InvalidUsage(error_message='create_or_update_sms_campaign_smartlist: '
+                                             'Given campaign is not instance '
+                                             'of model sms_campaign.')
+        for smartlist_id in smartlist_ids:
+            data = {'smartlist_id': smartlist_id,
+                    'sms_campaign_id': campaign.id}
+            db_record = SmsCampaignSmartlist.get_by_campaign_id_and_smartlist_id(campaign.id,
+                                                                                 smartlist_id)
+            if not db_record:
+                new_record = SmsCampaignSmartlist(**data)
+                SmsCampaignSmartlist.save(new_record)
+
+    def campaign_create_activity(self, source):
+        """
+        - Here we set "params" and "type" of activity to be stored in db table "Activity"
+            for created Campaign.
+
+        - Activity will appear as (e.g)
+           "'Harvey Specter' created an SMS campaign: 'Hiring at getTalent'"
+
+        - This method is called from save() method of class
+            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
+
+        :param source: "sms_campaign" obj
+        :type source: SmsCampaign
+        :exception: InvalidUsage
+
+        **See Also**
+        .. see also:: save() method in SmsCampaignBase class.
+        """
+        if not isinstance(source, SmsCampaign):
+            raise InvalidUsage(error_message='source should be an instance of model sms_campaign')
+        # set params
+        params = {'user_name': self.user_phone.user.name,
+                  'campaign_name': source.name}
+
+        self.create_activity(self.user_id,
+                             _type=ActivityMessageIds.CAMPAIGN_SMS_CREATE,
+                             source_id=source.id,
+                             source_table=SmsCampaign.__tablename__,
+                             params=params,
+                             headers=self.oauth_header)
+
+    def schedule(self, data_to_schedule):
+        """
+        This actually POST on scheduler_service to schedule a given task.
+        This will be common for all campaigns.
+
+        :return:
+        """
+        data_to_schedule.update(
+            {'url_to_run_task': SmsCampaignApiUrl.SEND % self.campaign.id}
+        )
+        # get scheduler task_id
+        task_id = super(SmsCampaignBase, self).schedule(data_to_schedule)
+        data_to_schedule.update({'task_id': task_id})
+        # update sms_campaign record with task_id
+        self.create_or_update_sms_campaign(data_to_schedule, campaign_id=self.campaign.id)
+        return task_id
 
     def process_send(self, campaign):
         """
@@ -612,11 +631,7 @@ class SmsCampaignBase(CampaignBase):
         **See Also**
         .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
         """
-        # Need to commit the session because Celery session does not know about the changes
-        # that some other session has made.
-        db.session.commit()
         candidate, candidate_phone = candidate_and_phone
-        # Transform body text to be sent in SMS
         try:
             modified_body_text, url_conversion_ids = \
                 self.process_urls_in_sms_body_text(candidate.id)
@@ -752,7 +767,7 @@ class SmsCampaignBase(CampaignBase):
                                                                      source_url='')
             # URL to redirect candidates to our end point
             # TODO: remove this when app is up
-            app_redirect_url = replace_localhost_with_ngrok(SmsCampaignApiUrl.APP_REDIRECTION_URL)
+            app_redirect_url = replace_localhost_with_ngrok(SmsCampaignApiUrl.REDIRECT)
             # long_url looks like
             # http://127.0.0.1:8011/v1/campaigns/1/redirect/1?candidate_id=1
             long_url = str(app_redirect_url % (self.campaign.id, str(url_conversion_id)

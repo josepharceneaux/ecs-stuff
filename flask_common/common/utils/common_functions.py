@@ -1,8 +1,12 @@
 import re
 import json
-import requests
+import pytz
 import random
 import string
+import requests
+from pytz import timezone
+from datetime import datetime
+from dateutil.parser import parse
 
 from flask import current_app
 from ..routes import AuthApiUrl
@@ -234,3 +238,52 @@ def is_valid_url_format(url):
         r'(?::\d+)?'  # optional port
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)
     return url is not None and regex.search(url)
+
+
+def frequency_id_to_seconds(frequency_id):
+    #  'Once', 'Daily', 'Weekly', 'Biweekly', 'Monthly', 'Yearly'
+    if not isinstance(frequency_id, int):
+        raise InvalidUsage(error_message='Include frequency id as int')
+    if not frequency_id or frequency_id == 1:
+        period = 0
+    elif frequency_id == 2:
+        period = 24 * 3600
+    elif frequency_id == 3:
+        period = 7 * 24 * 3600
+    elif frequency_id == 4:
+        period = 14 * 24 * 3600
+    elif frequency_id == 5:
+        period = 30 * 24 * 3600
+    elif frequency_id == 6:
+        period = 365 * 24 * 3600
+    else:
+        raise InvalidUsage("Unknown frequency ID: %s", frequency_id)
+    return period
+
+
+def get_utc_datetime(dt, tz):
+    """
+    This method takes datetime object and timezone name and returns UTC specific datetime
+
+    :Example:
+
+        >> now = datetime.now()  # datetime(2015, 10, 8, 11, 16, 55, 520914)
+        >> timezone = 'Asia/Karachi'
+        >> utc_datetime = get_utc_datetime(now, timezone) # '2015-10-08T06:16:55Z
+
+    :param dt: datetime object
+    :type dt: datetime
+    :return: timezone specific datetime object
+    :rtype string
+    """
+    assert tz, 'Timezone should not be none'
+    assert isinstance(dt, datetime), 'dt should be datetime object'
+    # get timezone info from given datetime object
+    local_timezone = timezone(tz)
+    try:
+        local_dt = local_timezone.localize(dt, is_dst=None)
+    except ValueError as e:
+        # datetime object already contains timezone info
+        return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    utc_dt = local_dt.astimezone(pytz.utc)
+    return utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")

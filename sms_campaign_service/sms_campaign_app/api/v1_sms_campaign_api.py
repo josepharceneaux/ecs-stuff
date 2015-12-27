@@ -10,6 +10,10 @@ This file contains API endpoints related to sms_campaign_service.
             POST    : Creates new campaign and save it in database
             DELETE  : Deletes SMS campaigns of user using given campaign ids as a list
 
+        - SendSmsCampaign: /v1/campaigns/:id/schedule
+
+            POST    : Schedules an SMS Campaign by campaign id
+
         - SmsCampaigns: /v1/campaigns/:id
 
             GET     : Gets campaign data using given id
@@ -42,7 +46,8 @@ from sms_campaign_service import logger
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.custom_exceptions import ErrorDeletingSMSCampaign
 from sms_campaign_service.utilities import (validate_form_data, validate_header,
-                                            delete_sms_campaign, is_owner_of_campaign)
+                                            delete_sms_campaign, is_owner_of_campaign,
+                                            validate_scheduler_data)
 
 # Common Utils
 from sms_campaign_service.common.error_handling import *
@@ -145,10 +150,6 @@ class SMSCampaigns(Resource):
             campaign_data = {
                                 "name": "New SMS Campaign",
                                 "body_text": "Hi all, we have few openings at abc.com",
-                                "frequency_id": 2,
-                                "added_datetime": "2015-11-24T08:00:00Z",
-                                "send_datetime": "2015-11-26T08:00:00Z",
-                                "stop_datetime": "2015-11-30T08:00:00Z",
                                 "smartlist_ids": [1, 2, 3]
                              }
 
@@ -179,8 +180,6 @@ class SMSCampaigns(Resource):
                         5003 (TwilioAPIError)
                         5006 (MissingRequiredField)
                         5009 (ErrorSavingSMSCampaign)
-                        5017 (InvalidDatetime)
-
         """
         validate_header(request)
         # get json post request data
@@ -272,6 +271,76 @@ class SMSCampaigns(Resource):
         else:
             return dict(message='Unable to delete %s campaigns' % len(not_deleted),
                         not_deleted_ids=not_deleted), 207
+
+
+@api.route(SmsCampaignApi.SCHEDULE)
+class ScheduleSmsCampaign(Resource):
+    """
+    Endpoint looks like /v1/campaigns/:id/schedule
+    This resource is used to schedule SMS Campaign using scheduler_service [POST]
+    """
+    decorators = [require_oauth]
+
+    def post(self, campaign_id):
+        """
+        It schedules given Campaign (from given campaign id) to the smartlist candidates
+            associated with given campaign.
+
+        :Example:
+
+            headers = {'Authorization': 'Bearer <access_token>',
+                       'Content-type': 'application/json'}
+
+            schedule_data =
+                        {
+                            "frequency_id": 2,
+                            "send_datetime": "2015-11-26T08:00:00Z",
+                            "stop_datetime": "2015-11-30T08:00:00Z"
+                        }
+
+            campaign_id = 1
+
+            response = requests.post(API_URL + '/campaigns/' + str(campaign_id) + '/schedule',
+                                        headers=headers, data=schedule_data)
+
+        .. Response::
+
+                {
+                    "message": "Campaign(id:1) is has been scheduled.
+                    "task_id"; ""
+                }
+
+        .. Status:: 200 (OK)
+                    400 (Bad request)
+                    401 (Unauthorized to access getTalent)
+                    403 (Forbidden Error)
+                    404 (Campaign not found)
+                    500 (Internal Server Error)
+
+        .. Error codes:
+                    5017 (InvalidDatetime)
+                    5019 (InvalidFrequencyId)
+
+        :param campaign_id: integer, unique id representing campaign in GT database
+        :return: json for required campaign containing message and total sends.
+        """
+        validate_header(request)
+        if is_owner_of_campaign(campaign_id, request.user.id):
+            campaign = SmsCampaign.get_by_id(campaign_id)
+            if not campaign:
+                raise ResourceNotFound(error_message='SMS Campaign(id=%s) Not found.' % campaign_id)
+            try:
+                schedule_data = request.get_json()
+            except BadRequest:
+                raise InvalidUsage(error_message='Given data should be in dict format')
+            if not schedule_data:
+                raise InvalidUsage(error_message='schedule_data not provided')
+            validate_scheduler_data(schedule_data)
+            camp_obj = SmsCampaignBase(request.user.id)
+            camp_obj.campaign = campaign
+            task_id = camp_obj.schedule(schedule_data)
+            return dict(message='Campaign(id:%s) has been scheduled.' % campaign_id,
+                        task_id=task_id), 200
 
 
 @api.route(SmsCampaignApi.CAMPAIGN)
@@ -427,7 +496,7 @@ class CampaignById(Resource):
         return dict(message='Campaign(id:%s) deleted successfully' % campaign_id), 200
 
 
-@api.route(SmsCampaignApi.CAMPAIGN_SENDS)
+@api.route(SmsCampaignApi.SENDS)
 class SmsCampaignSends(Resource):
     """
     Endpoint looks like /v1/campaigns/:id/sends
@@ -488,7 +557,7 @@ class SmsCampaignSends(Resource):
         return dict(count=len(campaign_sends_json), campaign_sends=campaign_sends_json), 200
 
 
-@api.route(SmsCampaignApi.CAMPAIGN_SEND_PROCESS)
+@api.route(SmsCampaignApi.SEND)
 class SendSmsCampaign(Resource):
     """
     Endpoint looks like /v1/campaigns/:id/send
@@ -526,7 +595,6 @@ class SendSmsCampaign(Resource):
                          5014 (ErrorUpdatingBodyText)
 
         :param campaign_id: integer, unique id representing campaign in GT database
-        :return: json for required campaign containing message and total sends.
         """
         if is_owner_of_campaign(campaign_id, request.user.id):
             campaign = SmsCampaign.get_by_id(campaign_id)
