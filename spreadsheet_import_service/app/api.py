@@ -7,7 +7,7 @@ from flask import Blueprint, jsonify
 from flask import request
 from flask.ext.cors import CORS
 from . import logger
-from .parsing_utilities import convert_spreadsheet_to_table, import_from_spreadsheet
+from .parsing_utilities import convert_spreadsheet_to_table, import_from_spreadsheet, schedule_spreadsheet_import
 from spreadsheet_import_service.common.utils.auth_utils import require_oauth, require_all_roles
 from spreadsheet_import_service.common.utils.talent_s3 import *
 
@@ -72,6 +72,7 @@ def import_from_table():
     file_picker_key = posted_data.get('file_picker_key')
     header_row = posted_data.get('header_row')
     source_id = posted_data.get('source_id')
+    is_import_scheduled = posted_data.get('is_import_scheduled')
 
     if not header_row or not file_picker_key:
         raise InvalidUsage(error_message="FilePicker key or header_row is missing")
@@ -82,11 +83,17 @@ def import_from_table():
 
     candidates_table = convert_spreadsheet_to_table(file_obj, file_picker_key)
 
-    delete_from_filepicker_s3(file_picker_key)
-
     # Check if first row of spreadsheet was header
     if any(param in candidates_table[0] for param in HEADER_ROW_PARAMS):
         candidates_table.pop(0)
+
+    if len(candidates_table) > 500 and not is_import_scheduled:
+        file_obj.close()
+        posted_data['is_import_scheduled'] = True
+        schedule_spreadsheet_import(posted_data)
+        return jsonify(dict(count=len(candidates_table), status='pending')), 201
+
+    delete_from_filepicker_s3(file_picker_key)
 
     file_obj.seek(0)
 
@@ -95,5 +102,4 @@ def import_from_table():
 
     file_obj.close()
 
-    # TODO: Integrate scheduler with this API
     return import_from_spreadsheet(candidates_table, file_picker_key, header_row, source_id)

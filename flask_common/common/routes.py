@@ -70,3 +70,45 @@ class CandidateApiUrl:
     WORK_PREFERENCE = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/work_preference/%s"
 
     CANDIDATE_EDIT = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/edits"
+
+
+class SchedulerApiUrl:
+    def __init__(self):
+        pass
+
+    env = os.environ.get('GT_ENVIRONMENT')
+
+    if env == 'dev' or env == 'circle':
+        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
+    elif env == 'qa':
+        # TODO: Change this url after deployment
+        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
+    elif env == 'prod':
+        # TODO: Change this url after deployment
+        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
+    else:
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
+
+    TASKS = SCHEDULER_SERVICE_HOST_NAME % "tasks/"
+    SINGLE_TASK = SCHEDULER_SERVICE_HOST_NAME % 'tasks/id/%s'
+
+
+class SpreadsheetImportApiUrl:
+    def __init__(self):
+        pass
+
+    env = os.environ.get('GT_ENVIRONMENT')
+
+    if env == 'dev' or env == 'circle':
+        SPREADSHEET_IMPORT_SERVICE_HOST_NAME = 'http://127.0.0.1:8009/v1/parse_spreadsheet/%s'
+    elif env == 'qa':
+        # TODO: Change this url after deployment
+        SPREADSHEET_IMPORT_SERVICE_HOST_NAME = 'http://127.0.0.1:8009/v1/parse_spreadsheet/%s'
+    elif env == 'prod':
+        # TODO: Change this url after deployment
+        SPREADSHEET_IMPORT_SERVICE_HOST_NAME = 'http://127.0.0.1:8009/v1/parse_spreadsheet/%s'
+    else:
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
+
+    CONVERT_TO_TABLE = SPREADSHEET_IMPORT_SERVICE_HOST_NAME % "convert_to_table"
+    IMPORT_FROM_TABLE = SPREADSHEET_IMPORT_SERVICE_HOST_NAME % 'import_from_table'
