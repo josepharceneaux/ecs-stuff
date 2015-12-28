@@ -87,6 +87,57 @@ def test_update_candidate_without_id(sample_user, user_auth):
     assert resp.status_code == 400
 
 
+def test_data_validations(sample_user, user_auth):
+    """
+    Test:   Validate json data
+    Expect: 400
+    :type   sample_user:  User
+    :type   user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    data = {'candidate': [{}]}
+    resp = patch_to_candidate_resource(token, data)
+    assert resp.status_code == 400
+    print response_info(resp)
+
+    data = {'candidates': {}}
+    resp = patch_to_candidate_resource(token, data)
+    assert resp.status_code == 400
+    print response_info(resp)
+
+    data = {'candidates': [{}]}
+    resp = patch_to_candidate_resource(token, data)
+    assert resp.status_code == 400
+    print response_info(resp)
+
+    data = {'candidates': [{'id': 5, 'phones': [{}]}]}
+    resp = patch_to_candidate_resource(token, data)
+    assert resp.status_code == 400
+    print response_info(resp)
+
+    data = {'candidates': [{'id': 5, 'phones': [{'id': 10}]}]}
+    resp = patch_to_candidate_resource(token, data)
+    assert resp.status_code == 400
+    print response_info(resp)
+
+    data = {'candidates': [{'id': 5, 'phones': [{'id': 10, 'label': None}]}]}
+    resp = patch_to_candidate_resource(token, data)
+    assert resp.status_code == 400
+    print response_info(resp)
+
+    data = {'candidates': [{'id': 5, 'phones': [{'id': 10, 'label': None, 'value': None}]}]}
+    resp = patch_to_candidate_resource(token, data)
+    assert resp.status_code == 400
+    print response_info(resp)
+
+    data = {'candidates': [{'id': 5, 'phones': [{'id': 10, 'label': None, 'value': None, 'is_default': False}]}]}
+    resp = patch_to_candidate_resource(token, data)
+    assert resp.status_code == 403
+    print response_info(resp)
+
+
 def test_update_candidate_names(sample_user, user_auth):
     """
     Test:   Update candidate's first, middle, and last names
@@ -323,6 +374,29 @@ def test_add_new_education(sample_user, user_auth):
     assert updated_educations[-1]['degrees'][-1]['bullets'][-1]['major'] == can_ed_degree_bullets['major']
     assert updated_educations[-1]['country'] == 'United States'
     assert len(updated_educations) == can_educations_count + 1
+
+
+def test_update_education_of_a_diff_candidate(sample_user, user_auth):
+    """
+    Test:   Update education information of a different Candidate
+    Expect: 403
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    candidate_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
+
+    # Retrieve Candidate
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+
+    # Update existing CandidateEducation of a different Candidate
+    data = candidate_educations(7, candidate_dict['educations'][0]['id'])
+    updated_resp = patch_to_candidate_resource(token, data)
+    print response_info(updated_resp)
+    assert updated_resp.status_code == 403
 
 
 def test_update_education_primary_info(sample_user, user_auth):

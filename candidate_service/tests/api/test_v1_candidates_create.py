@@ -63,7 +63,7 @@ def test_schema_validation(sample_user, user_auth):
         {
             'emails': [{'label': None, 'address': fake.safe_email(), 'is_default': True}],
             'first_name': 'john', 'middle_name': '', 'last_name': '', 'addresses': [],
-            'social_networks': [], 'skills': [], 'work_experiences': [], #'work_preference': {},
+            'social_networks': [], 'skills': [], 'work_experiences': [], 'work_preference': None,
             'educations': [], 'custom_fields': [], 'preferred_locations': [], 'military_services': [],
             'areas_of_interest': [], 'phones': []
         }

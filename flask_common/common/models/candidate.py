@@ -189,6 +189,9 @@ class CandidatePhone(db.Model):
     def __repr__(self):
         return "<CandidatePhone (value=' %r', extention= ' %r')>" % (self.value, self.extension)
 
+    # Relationships
+    candidate = relationship('Candidate', backref='candidate_phone')
+
     @classmethod
     def get_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()
@@ -714,6 +717,7 @@ class CandidateEducationDegree(db.Model):
     end_time = db.Column('EndTime', db.DateTime)
 
     # Relationships
+    candidate_education = relationship('CandidateEducation', backref='candidate_education_degree')
     candidate_education_degree_bullets = relationship('CandidateEducationDegreeBullet',
                                                       cascade='all, delete-orphan',
                                                       passive_deletes=True)
@@ -731,6 +735,9 @@ class CandidateEducationDegreeBullet(db.Model):
     comments = db.Column('Comments', db.String(5000))
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+    # Relationships
+    candidate_education_degree = relationship('CandidateEducationDegree', backref='candidate_education_degree_bullet')
 
     def __repr__(self):
         return "<CandidateEducationDegreeBullet (candidate_education_degree_id=' %r')>" % \
@@ -759,6 +766,7 @@ class CandidateExperience(db.Model):
     resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
 
     # Relationships
+    candidate = relationship('Candidate', backref='candidate_experience')
     candidate_experience_bullets = relationship('CandidateExperienceBullet',
                                                 cascade='all, delete-orphan', passive_deletes=True)
 
@@ -784,6 +792,9 @@ class CandidateExperienceBullet(db.Model):
     description = db.Column('Description', db.String(10000))
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+    # Relationships
+    candidate_experience = relationship('CandidateExperience', backref='candidate_experience_bullet')
 
     def __repr__(self):
         return "<CandidateExperienceBullet (candidate_experience_id=' %r')>" % self.candidate_experience_id
