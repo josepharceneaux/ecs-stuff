@@ -131,7 +131,7 @@ input[type=number] {
   height: 48px;
   margin-top: 0;
   padding: $padding--small $padding--tiny;
-  background-color: transparent;
+  background-color: $color--lightGray;;
   border: 2px solid $color--lightGray;
   border-radius: $border-radius--container;
   -webkit-appearance: menulist-button;
