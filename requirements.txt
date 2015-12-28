@@ -62,6 +62,7 @@ simplejson==3.8.0
 enum34
 xlrd==0.9.2
 chardet==2.3.0
+flask-redis
 
 # Scheduling Service
 APScheduler==3.0.4

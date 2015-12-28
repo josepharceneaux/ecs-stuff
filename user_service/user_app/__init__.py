@@ -4,6 +4,7 @@ from flask import Flask
 from user_service.common.models.db import db
 from user_service.common.talent_api import TalentApi
 from user_service.common import common_config
+from user_service.common.redis_cache import redis_store
 from healthcheck import HealthCheck
 
 app = Flask(__name__)
@@ -15,6 +16,10 @@ register_error_handlers(app, logger)
 
 db.init_app(app)
 db.app = app
+
+# It's added here to avoid merge conflicts and will be removed before merging
+REDIS_URL = 'redis://localhost:6379'
+redis_store.init_app(app)
 
 from api.users_v1 import UserApi
 from api.domain_v1 import DomainApi

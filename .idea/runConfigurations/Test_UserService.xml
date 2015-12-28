@@ -5,6 +5,7 @@
     <envs>
       <env name="AWS_SECRET_ACCESS_KEY" value="tHv3P1nrC4pvO8WxfmtJgpjyvSBc8ox83E+xMpFC" />
       <env name="GT_ENVIRONMENT" value="dev" />
+      <env name="SECRET_KEY" value="414917220fcccbd2d223cc495d8b29e3b479384b2e7bac03" />
       <env name="AWS_ACCESS_KEY_ID" value="AKIAI3422SZ6SL46EYBQ" />
     </envs>
     <option name="SDK_HOME" value="$USER_HOME$/.pyenv/versions/2.7.9/bin/python" />
