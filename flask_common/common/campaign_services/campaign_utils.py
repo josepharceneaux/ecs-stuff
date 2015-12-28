@@ -18,6 +18,7 @@ import json
 from abc import ABCMeta
 from datetime import datetime
 from abc import abstractmethod
+from werkzeug.exceptions import BadRequest
 
 # Third Party
 from celery import chord
@@ -27,10 +28,10 @@ from flask import current_app
 from ..models.user import Token
 from ..models.misc import UrlConversion
 from ..models.candidate import Candidate
-from ..utils.common_functions import frequency_id_to_seconds, validate_datetime_format
 from ..routes import CandidateApiUrl, ActivityApiUrl, SchedulerApiUrl
 from ..error_handling import ForbiddenError, InvalidUsage, ResourceNotFound
 from ..utils.common_functions import http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER
+from validators import (validate_header, validate_datetime_format, frequency_id_to_seconds)
 
 
 class CampaignBase(object):
@@ -157,14 +158,55 @@ class CampaignBase(object):
         """
         pass
 
+    @staticmethod
+    @abstractmethod
+    def validate_ownership_of_campaign(campaign_id, current_user_id):
+        """
+        This function returns True if the current user is an owner for given
+        campaign_id. Otherwise it raises the Forbidden error. Child classes will implement this
+        according to their database tables.
+        :param campaign_id: id of campaign form getTalent database
+        :param current_user_id: Id of current user
+        :exception: InvalidUsage
+        :exception: ResourceNotFound
+        :exception: ForbiddenError
+        :return: Campaign obj if current user is an owner for given campaign.
+        :rtype: SmsCampaign or some other campaign obj
+        """
+        pass
+
     @classmethod
     def pre_process_schedule(cls, request, campaign_id):
         """
-        If we need to do any processing before making HTTP POST/GET call on scheduler_service,
-        like if given campaign exists in database or not.
-        :return:
+        This implements the base class method. Before making HTTP POST/GET call on
+        scheduler_service, we do the following.
+        1- Check if request has valid JSON content-type header
+        2- Check if current user is an owner of given campaign_id
+        :return: dictionary containing Campaign obj, data to schedule SMS campaign,
+                    scheduled_task and bearer access token
+        :rtype: dict
         """
-        pass
+        # TODO Update comment
+        validate_header(request)
+        campaign_obj = cls.validate_ownership_of_campaign(campaign_id, request.user.id)
+        # check if campaign is already scheduled
+        scheduled_task = cls.is_already_scheduled(campaign_obj.scheduler_task_id,
+                                                  request.oauth_token)
+        # Updating scheduled task should not be allowed in POST request
+        if scheduled_task and request.method == 'POST':
+            raise ForbiddenError(error_message='Use PUT method to update task')
+        try:
+            data_to_schedule_campaign = request.get_json()
+        except BadRequest:
+            raise InvalidUsage(error_message='Given data should be in dict format')
+        if not data_to_schedule_campaign:
+            raise InvalidUsage(
+                error_message='No data provided to schedule %s (id:%s)'
+                              % (campaign_obj.__tablename__, campaign_id))
+        return {'campaign': campaign_obj,
+                'data_to_schedule': data_to_schedule_campaign,
+                'scheduled_task': scheduled_task,
+                'auth_header': {'Authorization': request.oauth_token}}
 
     def schedule(self, data_to_schedule):
         """
@@ -241,14 +283,12 @@ class CampaignBase(object):
         if all([pre_processed_data['scheduled_task']['frequency']['seconds'] ==
                         frequency_id_to_seconds(data_to_schedule.get('frequency_id')),
                 pre_processed_data['scheduled_task']['start_datetime'] == data_to_schedule.get(
-                    'send_datetime'),
+                    'start_datetime'),
                 pre_processed_data['scheduled_task']['end_datetime'] == data_to_schedule.get(
-                    'stop_datetime')]):
-            response = http_request('DELETE',
-                                    SchedulerApiUrl.TASK % pre_processed_data['scheduled_task'][
-                                        'id'],
-                                    headers={
-                                        'Authorization': pre_processed_data['bearer_access_token']})
+                    'end_datetime')]):
+            response = http_request(
+                'DELETE', SchedulerApiUrl.TASK % pre_processed_data['scheduled_task']['id'],
+                headers=pre_processed_data['auth_header'])
             if response.ok:
                 pass
 
@@ -264,20 +304,20 @@ class CampaignBase(object):
         """
         # get number of seconds from frequency id
         frequency = frequency_id_to_seconds(data_to_schedule.get('frequency_id'))
-        validate_datetime_format(data_to_schedule['send_datetime'])
+        validate_datetime_format(data_to_schedule['start_datetime'])
         if not frequency:  # This means it is a one time job
-            validate_datetime_format(data_to_schedule['send_datetime'])
+            validate_datetime_format(data_to_schedule['start_datetime'])
             task = {
                 "task_type": 'one_time',
-                "run_datetime": data_to_schedule['send_datetime'],
+                "run_datetime": data_to_schedule['start_datetime'],
             }
         else:
-            validate_datetime_format(data_to_schedule['stop_datetime'])
+            validate_datetime_format(data_to_schedule['end_datetime'])
             task = {
                 "task_type": 'periodic',
                 "frequency": frequency,
-                "start_datetime": data_to_schedule['send_datetime'],
-                "end_datetime": data_to_schedule['stop_datetime'],
+                "start_datetime": data_to_schedule['start_datetime'],
+                "end_datetime": data_to_schedule['end_datetime'],
             }
         # set URL to be hit when time comes to run that task
         task['url'] = data_to_schedule['url_to_run_task']

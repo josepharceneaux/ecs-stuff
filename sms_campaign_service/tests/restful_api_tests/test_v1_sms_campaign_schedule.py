@@ -108,7 +108,7 @@ class TestSmsCampaignSchedule(object):
         :return:
         """
         data = CAMPAIGN_SCHEDULE_DATA.copy()
-        data['send_datetime'] = data['send_datetime'].split('Z')[0]
+        data['start_datetime'] = data['start_datetime'].split('Z')[0]
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
                                  headers=valid_header,
                                  data=json.dumps(data))

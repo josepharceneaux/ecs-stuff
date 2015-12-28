@@ -44,9 +44,9 @@ from flask.ext.restful import Resource
 # Service Specific
 from sms_campaign_service import logger
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
+from sms_campaign_service.modules.validators import validate_form_data
 from sms_campaign_service.custom_exceptions import ErrorDeletingSMSCampaign
-from sms_campaign_service.utilities import (validate_form_data, validate_header,
-                                            delete_sms_campaign, is_owner_of_campaign)
+from sms_campaign_service.modules.handy_functions import delete_sms_campaign
 
 # Common Utils
 from sms_campaign_service.common.error_handling import *
@@ -54,10 +54,10 @@ from sms_campaign_service.common.talent_api import TalentApi
 from sms_campaign_service.common.routes import SmsCampaignApi
 from sms_campaign_service.common.utils.auth_utils import require_oauth
 from sms_campaign_service.common.utils.api_utils import api_route, ApiResponse
+from sms_campaign_service.common.campaign_services.validators import validate_header
 
 # Database Models
-from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignBlast,
-                                                             SmsCampaignSend)
+from sms_campaign_service.common.models.sms_campaign import (SmsCampaignBlast, SmsCampaignSend)
 
 # creating blueprint
 
@@ -108,9 +108,9 @@ class SMSCampaigns(Resource):
                               "frequency_id": 1,
                               "id": 3,
                               "name": "New Campaign",
-                              "send_datetime": "",
+                              "start_datetime": "",
                               "body_text": "Welcome all boys",
-                              "stop_datetime": "",
+                              "end_datetime": "",
                               "updated_time": "2015-11-19 18:53:55",
                               "user_phone_id": 1
                             },
@@ -119,9 +119,9 @@ class SMSCampaigns(Resource):
                               "frequency_id": 1,
                               "id": 4,
                               "name": "New Campaign",
-                              "send_datetime": "",
+                              "start_datetime": "",
                               "body_text": "Job opening at...",
-                              "stop_datetime": "",
+                              "end_datetime": "",
                               "updated_time": "2015-11-19 18:54:51",
                               "user_phone_id": 1
                             }
@@ -294,8 +294,8 @@ class ScheduleSmsCampaign(Resource):
             schedule_data =
                         {
                             "frequency_id": 2,
-                            "send_datetime": "2015-11-26T08:00:00Z",
-                            "stop_datetime": "2015-11-30T08:00:00Z"
+                            "start_datetime": "2015-11-26T08:00:00Z",
+                            "end_datetime": "2015-11-30T08:00:00Z"
                         }
 
             campaign_id = 1
@@ -343,8 +343,8 @@ class ScheduleSmsCampaign(Resource):
             schedule_data =
                         {
                             "frequency_id": 2,
-                            "send_datetime": "2015-11-26T08:00:00Z",
-                            "stop_datetime": "2015-11-30T08:00:00Z"
+                            "start_datetime": "2015-11-26T08:00:00Z",
+                            "end_datetime": "2015-11-30T08:00:00Z"
                         }
 
             campaign_id = 1
@@ -406,9 +406,9 @@ class CampaignById(Resource):
                           "frequency_id": 1,
                           "updated_time": "2015-11-24 16:31:09",
                           "user_phone_id": 1,
-                          "send_datetime": "",
+                          "start_datetime": "",
                           "added_datetime": "2015-11-24 16:30:57",
-                          "stop_datetime": "",
+                          "end_datetime": "",
                           "id": 1,
                           "name": "UpdatedName"
                         }
@@ -423,14 +423,7 @@ class CampaignById(Resource):
         :param campaign_id: integer, unique id representing campaign in GT database
         :return: json for required campaign
         """
-        if not is_owner_of_campaign(campaign_id, request.user.id):
-            raise ForbiddenError(
-                error_message='User(id:%s) is not owner of SMS campaign(id:%s)'
-                              % (request.user.id, campaign_id))
-        campaign = SmsCampaign.get_by_id(campaign_id)
-        if not campaign:
-            raise ResourceNotFound(error_message='SMS Campaign does not exist with id %s'
-                                                 % campaign_id)
+        campaign = SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id)
         return dict(campaign=campaign.to_json()), 200
 
     def post(self, campaign_id):
@@ -446,8 +439,8 @@ class CampaignById(Resource):
                             "body_text": "HI all, we have few openings at abc.com",
                             "frequency_id": 2,
                             "added_datetime": "2015-11-24T08:00:00Z",
-                            "send_datetime": "2015-11-26T08:00:00Z",
-                            "stop_datetime": "2015-11-30T08:00:00Z",
+                            "start_datetime": "2015-11-26T08:00:00Z",
+                            "end_datetime": "2015-11-30T08:00:00Z",
                             "id": 1,
                             "smartlist_ids": [1, 2, 3]
                             }
@@ -483,10 +476,7 @@ class CampaignById(Resource):
             raise InvalidUsage(error_message='Given data should be in dict format')
         if not campaign_data:
             raise InvalidUsage(error_message='No data provided to update SMS campaign')
-        if not is_owner_of_campaign(campaign_id, request.user.id):
-            raise ForbiddenError(
-                error_message='User(id:%s) is not authorized to update SMS campaign(id:%s)'
-                              % (request.user.id, campaign_id))
+        SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id)
         invalid_smartlist_ids, not_found_smartlist_ids = validate_form_data(campaign_data)
         camp_obj = SmsCampaignBase(request.user.id)
         camp_obj.create_or_update_sms_campaign(campaign_data, campaign_id=campaign_id)
@@ -576,16 +566,15 @@ class SmsCampaignSends(Resource):
 
         .. Status:: 200 (OK)
                     401 (Unauthorized to access getTalent)
+                    403 (Not owner of campaign)
                     404 (Campaign not found)
                     500 (Internal Server Error)
 
         :param campaign_id: integer, unique id representing campaign in GT database
         :return: 1- count of campaign sends and 2- SMS campaign sends records in as dict
         """
-        campaign = SmsCampaign.get_by_id(campaign_id)
-        if not campaign:
-            raise ResourceNotFound(error_message='SMS Campaign(id=%s) not found.' % campaign_id)
-        campaign_blasts = SmsCampaignBlast.get_by_campaign_id(campaign_id)
+        campaign = SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id)
+        campaign_blasts = SmsCampaignBlast.get_by_campaign_id(campaign.id)
         campaign_sends_json = []
         if campaign_blasts:
             campaign_sends = SmsCampaignSend.get_by_blast_id(campaign_blasts.id)
@@ -632,10 +621,7 @@ class SendSmsCampaign(Resource):
 
         :param campaign_id: integer, unique id representing campaign in GT database
         """
-        if is_owner_of_campaign(campaign_id, request.user.id):
-            campaign = SmsCampaign.get_by_id(campaign_id)
-            if not campaign:
-                raise ResourceNotFound(error_message='SMS Campaign(id=%s) Not found.' % campaign_id)
-            camp_obj = SmsCampaignBase(request.user.id)
-            camp_obj.process_send(campaign)
-            return dict(message='Campaign(id:%s) is being sent to candidates.' % campaign_id), 200
+        campaign = SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id)
+        camp_obj = SmsCampaignBase(request.user.id)
+        camp_obj.process_send(campaign)
+        return dict(message='Campaign(id:%s) is being sent to candidates.' % campaign_id), 200

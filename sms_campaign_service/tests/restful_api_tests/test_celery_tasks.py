@@ -51,6 +51,7 @@ class TestCeleryTasks(object):
     This class contains tasks that run on celery or if  the fixture they use has some
     processing on Celery.
     """
+
     def test_campaign_send_with_two_candidates_with_different_phones_multiple_links_in_text(
             self, auth_token, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
             sample_sms_campaign_candidates, candidate_phone_1, candidate_phone_2):
@@ -163,7 +164,7 @@ class TestCeleryTasks(object):
                                                            str(sms_campaign_of_current_user.id))
 
     def test_campaign_schedule_and_validate_task_run(
-            self, valid_header,  sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
+            self, valid_header, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
             sample_sms_campaign_candidates, candidate_phone_1):
         """
         This is test to schedule SMS campaign with all valid parameters. This should get OK
@@ -171,8 +172,8 @@ class TestCeleryTasks(object):
         """
         data = CAMPAIGN_SCHEDULE_DATA.copy()
         data['frequency_id'] = 0  # for one_time job
-        data['send_datetime'] = get_utc_datetime(datetime.now() + timedelta(seconds=10),
-                                                 'Asia/Karachi')
+        data['start_datetime'] = get_utc_datetime(datetime.now() + timedelta(seconds=10),
+                                                  'Asia/Karachi')
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
                                  headers=valid_header,
                                  data=json.dumps(data))
@@ -467,4 +468,3 @@ def _get_hit_count_and_clicks(url_conversion, campaign):
     db.session.commit()
     sms_campaign_blasts = SmsCampaignBlast.get_by_campaign_id(campaign.id)
     return url_conversion.hit_count, sms_campaign_blasts.clicks
-
