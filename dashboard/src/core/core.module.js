@@ -13,6 +13,7 @@
         'app.config',
 
         // 3rd Party modules
+        'angularUtils.directives.dirPagination',
         'ngTagsInput',
         'pickadate',
         'toastr',
