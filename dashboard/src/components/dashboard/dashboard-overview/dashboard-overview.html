@@ -63,36 +63,11 @@
                 <h4>Next 60 Days (Predictive)</h4>
             </header>
 
-            <figure class="progress">
-                <h4>Senior Java Developers in CA</h4>
+            <figure class="progress" ng-repeat="pipeline in vm.pipelines track by pipeline.id">
+                <h4>{{pipeline.name}}</h4>
 
-                <div class="progress__inner" style="width: 100%">
-                    <div class="progress__bar"></div>
-                    <div class="progress__label">120</div>
-                </div>
-            </figure>
-            <figure class="progress">
-                <h4>Vererans Hiring Initiative</h4>
-
-                <div class="progress__inner"    style="width: 78%">
-                    <div class="progress__bar"></div>
-                    <div class="progress__label">78</div>
-                </div>
-            </figure>
-            <figure class="progress">
-                <h4>Oracle DBAs Overseas</h4>
-
-                <div class="progress__inner" style="width: 25%">
-                    <div class="progress__bar--red"></div>
-                    <div class="progress__label">25</div>
-                </div>
-            </figure>
-            <figure class="progress">
-                <h4>Oracle DBAs Overseas</h4>
-
-                <div class="progress__inner" style="width: 50%">
-                    <div class="progress__bar--red"></div>
-                    <div class="progress__label">50</div>
+                <div class="progress__inner" ng-style="{'width': pipeline.progress * 100 + '%'}">
+                    <div class="progress__bar" ng-class="{'progress__bar--red': pipeline.progress <= .5}"></div>
                 </div>
             </figure>
         </div>
@@ -174,7 +149,7 @@
         <div class="col--full-12--cell box">
             <header class="row--expanded">
                 <div class="col--large-7">
-                    <h2>Talent Pipeline <span>(14)</span></h2>
+                    <h2>Talent Pipeline <span>({{vm.talentPipelines.length}})</span></h2>
                 </div>
                 <div class="col--large-5 align--right box__header__with-link">
                     <a href="#" class="button--blue button--greenHover">New Pipeline</a>
@@ -195,134 +170,27 @@
                         <th class="table__header">Engagement</th>
                     </tr>
 
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Sr. Java Developers in CA</td>
-                        <td class="table__col--morePadding">608</td>
-                        <td class="table__col--morePadding">03/02/2015</td>
-                        <td class="table__col--morePadding">+67</td>
-                        <td class="table__col--morePadding">20%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Lead Ninja Trainer</td>
-                        <td class="table__col--morePadding">23</td>
-                        <td class="table__col--morePadding">06/06/2015</td>
-                        <td class="table__col--morePadding">+12</td>
-                        <td class="table__col--morePadding">50%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Adobe Acrobat Updater</td>
-                        <td class="table__col--morePadding">502</td>
-                        <td class="table__col--morePadding">06/21/2015</td>
-                        <td class="table__col--morePadding">+200</td>
-                        <td class="table__col--morePadding">220%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">First Class Joomla Hacker</td>
-                        <td class="table__col--morePadding">230</td>
-                        <td class="table__col--morePadding">04/25/2015</td>
-                        <td class="table__col--morePadding">+567</td>
-                        <td class="table__col--morePadding">231%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Dreamweaver RockStar</td>
-                        <td class="table__col--morePadding">608</td>
-                        <td class="table__col--morePadding">03/22/2015</td>
-                        <td class="table__col--morePadding">+67</td>
-                        <td class="table__col--morePadding">210%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Lazy Exotic Environment Technologist</td>
-                        <td class="table__col--morePadding">20</td>
-                        <td class="table__col--morePadding">02/15/2015</td>
-                        <td class="table__col--morePadding">+45</td>
-                        <td class="table__col--morePadding">210%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Master CSS-layout Spec Designer</td>
-                        <td class="table__col--morePadding">25</td>
-                        <td class="table__col--morePadding">04/15/2015</td>
-                        <td class="table__col--morePadding">+67</td>
-                        <td class="table__col--morePadding">210%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Fax Machine Masterer</td>
-                        <td class="table__col--morePadding">132</td>
-                        <td class="table__col--morePadding">10/22/2015</td>
-                        <td class="table__col--morePadding">+33</td>
-                        <td class="table__col--morePadding">210%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Digital Prophet</td>
-                        <td class="table__col--morePadding">14</td>
-                        <td class="table__col--morePadding">02/29/2015</td>
-                        <td class="table__col--morePadding">+67</td>
-                        <td class="table__col--morePadding">210%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Evolutionary Thinker of Free Code</td>
-                        <td class="table__col--morePadding">372</td>
-                        <td class="table__col--morePadding">06/29/2015</td>
-                        <td class="table__col--morePadding">+17</td>
-                        <td class="table__col--morePadding">160%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Guru Master Business Hero</td>
-                        <td class="table__col--morePadding">462</td>
-                        <td class="table__col--morePadding">09/21/2015</td>
-                        <td class="table__col--morePadding">+163</td>
-                        <td class="table__col--morePadding">120%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Professional Pizza Reheater</td>
-                        <td class="table__col--morePadding">156</td>
-                        <td class="table__col--morePadding">08/12/2015</td>
-                        <td class="table__col--morePadding">+67</td>
-                        <td class="table__col--morePadding">210%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Junior Beard Developer</td>
-                        <td class="table__col--morePadding">158</td>
-                        <td class="table__col--morePadding">01/28/2015</td>
-                        <td class="table__col--morePadding">+37</td>
-                        <td class="table__col--morePadding">21%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Powerful Newsletter Unsubscriber</td>
-                        <td class="table__col--morePadding">68</td>
-                        <td class="table__col--morePadding">06/12/2015</td>
-                        <td class="table__col--morePadding">+167</td>
-                        <td class="table__col--morePadding">10%</td>
+                    <tr class="table__row" dir-paginate="item in vm.talentPipelines | itemsPerPage: vm.pipelinesPerPage track by item.id" pagination-id="talentPipelinesPagination">
+                        <td class="table__col--morePadding">{{item.name}}</td>
+                        <td class="table__col--morePadding">{{item.totalCandidates}}</td>
+                        <td class="table__col--morePadding">{{item.dateCreated | date : 'MM/dd/yyyy'}}</td>
+                        <td class="table__col--morePadding">{{item.growth}}</td>
+                        <td class="table__col--morePadding">{{item.engagement}}</td>
                     </tr>
                 </table>
             </div>
 
-            <div class="pagination col--12">
+            <div class="pagination__controls col--12">
                 <div class="col--large-2">
-                    <select ng-model="vm.pipelinesPerPage" ng-options="option.name for option in vm.itemsPerPageOptions track by option.id"
-                        id="show" class="form__input--select" name="show">
+                    <select ng-model="vm.pipelinesPerPage" ng-options="option.value as option.name for option in vm.itemsPerPageOptions"
+                        id="pipelinesPerPage" class="form__input--select" name="pipelinesPerPage">
                     </select>
                 </div>
                 <div class="col--large-10 align--right">
-                    <a class="pagination__page-link" href="#">1</a>
-                    <a class="pagination__page-link" href="#">2</a>
-                    <a class="is-active pagination__page-link" href="#">3</a>
-                    <a class="pagination__page-link" href="#">4</a>
-                    <a class="pagination__page-link" href="#">5</a>
+                    <dir-pagination-controls direction-links="false" boundary-links="false" pagination-id="talentPipelinesPagination"></dir-pagination-controls>
                 </div>
             </div>
+
         </div>
     </div><!-- /row widget -->
 
@@ -436,7 +304,7 @@
         <div class="col--full-12--cell box">
             <header class="row--expanded">
                 <div class="col--large-9">
-                    <h2>Active Engagement Campaigns <span>(15)</span></h2>
+                    <h2>Active Engagement Campaigns <span>({{vm.campaigns.length}})</span></h2>
                 </div>
                 <div class="col--large-3 align--right">
                     <select ng-model="vm.selectedActiveEngagementViewOption" ng-options="option.name for option in vm.activeEngagementViewOptions track by option.id"
@@ -457,73 +325,13 @@
                         <th class="table__header">Pipeline</th>
                     </tr>
 
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">3/2/2015</td>
-                        <td class="table__col--morePadding">Daily Job Alert</td>
-                        <td class="table__col--morePadding">67%</td>
-                        <td class="table__col--morePadding">Alan T</td>
-                        <td class="table__col--morePadding">Email</td>
-                        <td class="table__col--morePadding">Sr. Java Developers in CA</td>
-                        <td class="table__col--check">
-                            <label gt-float-label class="form__input--checkbox">
-                                <input type="checkbox">
-                                <span></span>
-                            </label>
-                        </td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">3/2/2015</td>
-                        <td class="table__col--morePadding">Daily Job Alert</td>
-                        <td class="table__col--morePadding">67%</td>
-                        <td class="table__col--morePadding">Alan T</td>
-                        <td class="table__col--morePadding">Email</td>
-                        <td class="table__col--morePadding">Sr. Java Developers in CA</td>
-                        <td class="table__col--check">
-                            <label gt-float-label class="form__input--checkbox">
-                                <input type="checkbox">
-                                <span></span>
-                            </label>
-                        </td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">3/2/2015</td>
-                        <td class="table__col--morePadding">Daily Job Alert</td>
-                        <td class="table__col--morePadding">67%</td>
-                        <td class="table__col--morePadding">Alan T</td>
-                        <td class="table__col--morePadding">Email</td>
-                        <td class="table__col--morePadding">Sr. Java Developers in CA</td>
-                        <td class="table__col--check">
-                            <label gt-float-label class="form__input--checkbox">
-                                <input type="checkbox">
-                                <span></span>
-                            </label>
-                        </td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">3/2/2015</td>
-                        <td class="table__col--morePadding">Daily Job Alert</td>
-                        <td class="table__col--morePadding">67%</td>
-                        <td class="table__col--morePadding">Alan T</td>
-                        <td class="table__col--morePadding">Email</td>
-                        <td class="table__col--morePadding">Sr. Java Developers in CA</td>
-                        <td class="table__col--check">
-                            <label gt-float-label class="form__input--checkbox">
-                                <input type="checkbox">
-                                <span></span>
-                            </label>
-                        </td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">3/2/2015</td>
-                        <td class="table__col--morePadding">Daily Job Alert</td>
-                        <td class="table__col--morePadding">67%</td>
-                        <td class="table__col--morePadding">Alan T</td>
-                        <td class="table__col--morePadding">Email</td>
-                        <td class="table__col--morePadding">Sr. Java Developers in CA</td>
+                    <tr class="table__row" dir-paginate="item in vm.campaigns | itemsPerPage: vm.campaignsPerPage track by item.id" pagination-id="campaignsPagination">
+                        <td class="table__col--morePadding">{{item.date | date : 'MM/dd/yyyy'}}</td>
+                        <td class="table__col--morePadding">{{item.name}}</td>
+                        <td class="table__col--morePadding">{{item.engagement}}</td>
+                        <td class="table__col--morePadding">{{item.user}}</td>
+                        <td class="table__col--morePadding">{{item.type}}</td>
+                        <td class="table__col--morePadding">{{item.pipeline}}</td>
                         <td class="table__col--check">
                             <label gt-float-label class="form__input--checkbox">
                                 <input type="checkbox">
@@ -534,18 +342,14 @@
                 </table>
             </div>
 
-            <div class="pagination col--12">
+            <div class="pagination__controls col--12">
                 <div class="col--large-2">
-                    <select ng-model="vm.campaignsPerPage" ng-options="option.name for option in vm.itemsPerPageOptions track by option.id"
-                        id="show" class="form__input--select" name="show">
+                    <select ng-model="vm.campaignsPerPage" ng-options="option.value as option.name for option in vm.itemsPerPageOptions"
+                        id="campaignsPerPage" class="form__input--select" name="campaignsPerPage">
                     </select>
                 </div>
                 <div class="col--large-10 align--right">
-                    <a class="pagination__page-link" href="#">1</a>
-                    <a class="is-active pagination__page-link" href="#">2</a>
-                    <a class="pagination__page-link" href="#">3</a>
-                    <a class="pagination__page-link" href="#">4</a>
-                    <a class="pagination__page-link" href="#">5</a>
+                    <dir-pagination-controls direction-links="false" boundary-links="false" pagination-id="campaignsPagination"></dir-pagination-controls>
                 </div>
             </div>
 
