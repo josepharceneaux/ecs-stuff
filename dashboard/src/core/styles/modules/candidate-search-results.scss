@@ -1,0 +1,52 @@
+// ------------
+// Candidate Search Results
+// ------------
+
+.candidate-search-result__card {
+  color: $color--nearBlack;
+  display: table;
+  width: 100%;
+  padding: 0 $padding--small $padding--huge;
+  background-color: $color--white;
+
+  @include helper--media($breakpoint--small) {
+    padding: $padding--huge $padding--small;
+  }
+
+  &:nth-of-type(even) {
+    background-color: $color--lightGray;
+  }
+
+  h4 {
+    color: $color--nearBlack;
+  }
+}
+
+.candidate-search-result__card__name {
+  font-size: $font-size--jumbo;
+  line-height: 1.1;
+}
+
+.candidate-search-result__card__social {
+  font-size: $font-size--big;
+  margin-top: $padding--small;
+
+  @include helper--media($breakpoint--small) {
+    margin-bottom: $margin--line;
+  }
+
+  a {
+    color: $color--nearBlack;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: $padding--small;
+
+    &:last-of-type {
+      margin-right: 0;
+    }
+
+    &:hover {
+      color: $color--blue;
+    }
+  }
+}

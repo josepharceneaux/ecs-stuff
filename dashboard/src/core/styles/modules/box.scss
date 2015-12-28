@@ -143,6 +143,7 @@
 
   @include helper--media($breakpoint--large) {
     margin-top: 0;
+    text-align: right;
   }
 
   .form__input--select {

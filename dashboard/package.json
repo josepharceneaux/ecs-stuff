@@ -4,7 +4,8 @@
   "description": "GetTalent Dashboard",
   "authors": [
     "Haohong Xu",
-    "Jordan Seaberg"
+    "Jordan Seaberg",
+    "Jason Provencher"
   ],
   "license": "MIT",
   "homepage": "https://github.com/gettalent/talent-flask-services",

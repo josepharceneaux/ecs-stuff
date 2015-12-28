@@ -27,6 +27,11 @@
   background-image: linear-gradient(90deg, $color--yellow, $color--darkYellow);
 }
 
+@mixin gradients--orange-to-pink {
+  background-color: $color--orange; // fallback
+  background-image: linear-gradient(90deg, $color--orange-alt, $color--pink-alt);
+}
+
 
 // Global Mix In
 
