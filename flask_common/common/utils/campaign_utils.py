@@ -27,7 +27,7 @@ from flask import current_app
 from ..models.user import Token
 from ..models.misc import UrlConversion
 from ..models.candidate import Candidate
-from ..utils.common_functions import frequency_id_to_seconds
+from ..utils.common_functions import frequency_id_to_seconds, validate_datetime_format
 from ..routes import CandidateApiUrl, ActivityApiUrl, SchedulerApiUrl
 from ..error_handling import ForbiddenError, InvalidUsage, ResourceNotFound
 from ..utils.common_functions import http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER
@@ -113,7 +113,7 @@ class CampaignBase(object):
         self.body_text = None  # This is 'text' to be sent to candidates as part of campaign.
         # Child classes will get this from respective campaign table.
         # e.g. in case of SMS campaign, this is get from "sms_campaign" database table.
-        self.queue_name = None # name of Celery Queue. Each service will use its own queue
+        self.queue_name = None  # name of Celery Queue. Each service will use its own queue
         # so that tasks related to one service only assign to that particular queue.
 
     @staticmethod
@@ -157,6 +157,15 @@ class CampaignBase(object):
         """
         pass
 
+    @classmethod
+    def pre_process_schedule(cls, request, campaign_id):
+        """
+        If we need to do any processing before making HTTP POST/GET call on scheduler_service,
+        like if given campaign exists in database or not.
+        :return:
+        """
+        pass
+
     def schedule(self, data_to_schedule):
         """
         This actually POST on scheduler_service to schedule a given task.
@@ -173,22 +182,97 @@ class CampaignBase(object):
         .. see also:: schedule() method in SmsCampaignBase class.
         :param data_to_schedule: This contains the required data to schedule a particular job
         :type data_to_schedule: dict
-        :return:
+        :return: Task Id on APScheduler
+        :rtype: str
         """
         if not self.campaign:
             raise ForbiddenError(error_message='No campaign given to schedule.')
 
         if not data_to_schedule.get('url_to_run_task'):
             raise ForbiddenError(error_message='No URL given for the task.')
+        # format data to create new task
+        data_to_schedule = self.format_data_to_schedule(data_to_schedule)
+        # set content-type in header
+        self.oauth_header.update({'Content-Type': 'application/json'})
+        response = http_request('POST', SchedulerApiUrl.TASKS,
+                                data=json.dumps(data_to_schedule),
+                                headers=self.oauth_header)
+        # If any error occurs on POST call, we log the error inside http_request().
+        if 'id' in response.json():
+            return response.json()['id']
+        else:
+            raise InvalidUsage(error_message="Error occurred while scheduling a task")
 
+    @staticmethod
+    def is_already_scheduled(scheduler_task_id, bearer_access_token):
+        """
+        If the given task id  has already been scheduled on scheduler_service. It makes HTTP GET
+        call on scheduler_service_api endpoint to check if given scheduler_task_id is already
+        present in redis job store. If task is found, we return task obj, otherwise we return None.
+        :param scheduler_task_id: Data provided from UI to schedule a campaign
+        :param bearer_access_token: Bearer access token to make HTTP GET call on scheduler_service
+        :type scheduler_task_id: str
+        :type bearer_access_token: str
+        :exception: InvalidUsage
+        :return: task obj if task is already scheduled, None otherwise.
+        :rtype: bool
+        """
+        task = None
+        if not bearer_access_token:
+            raise InvalidUsage(error_message='Bearer access token is required param')
+        if not scheduler_task_id:  # campaign has no scheduler_task_id associated
+            return task
+        # HTTP GET request on scheduler_service
+        response = http_request('GET', SchedulerApiUrl.TASK % scheduler_task_id,
+                                headers={'Authorization': bearer_access_token})
+        # Task not found on APScheduler
+        if response.status_code == ResourceNotFound.http_status_code():
+            return task
+        # Task is present on APScheduler
+        if response.ok:
+            task = response.json()['task']
+        return task
+
+    @staticmethod
+    def pre_process_re_schedule(pre_processed_data):
+        # TODO: WIP
+        # Check if all the scheduler parameters are same as saved in database
+        data_to_schedule = pre_processed_data['data_to_schedule']
+        if all([pre_processed_data['scheduled_task']['frequency']['seconds'] ==
+                        frequency_id_to_seconds(data_to_schedule.get('frequency_id')),
+                pre_processed_data['scheduled_task']['start_datetime'] == data_to_schedule.get(
+                    'send_datetime'),
+                pre_processed_data['scheduled_task']['end_datetime'] == data_to_schedule.get(
+                    'stop_datetime')]):
+            response = http_request('DELETE',
+                                    SchedulerApiUrl.TASK % pre_processed_data['scheduled_task'][
+                                        'id'],
+                                    headers={
+                                        'Authorization': pre_processed_data['bearer_access_token']})
+            if response.ok:
+                pass
+
+    @staticmethod
+    def format_data_to_schedule(data_to_schedule):
+        """
+        Once we have data from UI to schedule a campaign, we format the data as per
+        scheduler_service requirement, and return it.
+        :param data_to_schedule:  Data provided from UI to schedule a campaign
+        :exception: Invalid usage
+        :return: data in dict format to send to scheduler_service
+        :rtype: dict
+        """
         # get number of seconds from frequency id
         frequency = frequency_id_to_seconds(data_to_schedule.get('frequency_id'))
+        validate_datetime_format(data_to_schedule['send_datetime'])
         if not frequency:  # This means it is a one time job
+            validate_datetime_format(data_to_schedule['send_datetime'])
             task = {
                 "task_type": 'one_time',
                 "run_datetime": data_to_schedule['send_datetime'],
             }
         else:
+            validate_datetime_format(data_to_schedule['stop_datetime'])
             task = {
                 "task_type": 'periodic',
                 "frequency": frequency,
@@ -199,15 +283,7 @@ class CampaignBase(object):
         task['url'] = data_to_schedule['url_to_run_task']
         # set data to POST with above URL
         task['post_data'] = data_to_schedule.get('data_to_post', dict())
-        # set content-type in header
-        self.oauth_header.update({'Content-Type': 'application/json'})
-        response = http_request('POST', SchedulerApiUrl.CREATE_TASK, data=json.dumps(task),
-                                headers=self.oauth_header)
-        # If any error occurs on POST call, we log the error inside http_request().
-        if 'id' in response.json():
-            return response.json()['id']
-        else:
-            raise InvalidUsage(error_message="Error occured while scheduling a task")
+        return task
 
     @abstractmethod
     def process_send(self, campaign):

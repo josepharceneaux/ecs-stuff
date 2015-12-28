@@ -103,7 +103,7 @@ class TestSmsCampaignSchedule(object):
                                                      sms_campaign_of_current_user):
         """
         User has one phone value, valid header and invalid data (Invalid Datetime).
-        It should get internal server error, Custom error should be InvalidDatetime.
+        It should get bad request error
         :param valid_header: valid header to POST data
         :return:
         """
@@ -112,14 +112,13 @@ class TestSmsCampaignSchedule(object):
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
                                  headers=valid_header,
                                  data=json.dumps(data))
-        assert response.status_code == InternalServerError.http_status_code()
-        assert response.json()['error']['code'] == SmsCampaignApiException.INVALID_DATETIME
+        assert response.status_code == InvalidUsage.http_status_code()
 
     def test_campaign_schedule_with_non_existing_frequency_id(self, valid_header,
                                                               sms_campaign_of_current_user):
         """
         Trying to schedule a campaign with invalid frequency Id, Valid ids are in [1,2,3..6] for
-        now.
+        now. It should get bad request error.
         :return:
         """
         data = CAMPAIGN_SCHEDULE_DATA.copy()
@@ -127,7 +126,7 @@ class TestSmsCampaignSchedule(object):
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
                                  headers=valid_header,
                                  data=json.dumps(data))
-        _assert_invalid_frequency_id(response)
+        assert response.status_code == InvalidUsage.http_status_code()
 
     def test_campaign_schedule_with_invalid_frequency_id(self, valid_header,
                                                          sms_campaign_of_current_user):
@@ -140,7 +139,7 @@ class TestSmsCampaignSchedule(object):
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
                                  headers=valid_header,
                                  data=json.dumps(data))
-        _assert_invalid_frequency_id(response)
+        assert response.status_code == InvalidUsage.http_status_code()
 
     def test_campaign_schedule_with_not_owned_campaign(self, valid_header,
                                                        sms_campaign_of_other_user):
@@ -189,12 +188,3 @@ class TestSmsCampaignSchedule(object):
                                  data=json.dumps(CAMPAIGN_SCHEDULE_DATA))
         assert response.status_code == ResourceNotFound.http_status_code()
 
-
-def _assert_invalid_frequency_id(response):
-    """
-    This asserts that given response get the custom exception InvalidFrequencyId
-    :param response:
-    :return:
-    """
-    assert response.status_code == InternalServerError.http_status_code()
-    assert response.json()['error']['code'] == SmsCampaignApiException.INVALID_FREQUENCY_ID

@@ -32,9 +32,8 @@ class SmsCampaignApiException(sms_campaign_service.common.error_handling.Interna
     ERROR_UPDATING_BODY_TEXT = 5014
     NO_CANDIDATE_FOR_PHONE_NUMBER = 5015
     NO_USER_FOR_PHONE_NUMBER = 5016
-    INVALID_DATETIME = 5017
-    INVALID_URL_FORMAT = 5018
-    INVALID_FREQUENCY_ID = 5019
+    INVALID_URL_FORMAT = 5017
+    CAMPAIGN_ALREADY_SCHEDULED = 5018
 
     def to_dict(self):
         error_dict = super(SmsCampaignApiException, self).to_dict()
@@ -219,16 +218,6 @@ class NoUserFoundForPhoneNumber(SmsCampaignApiException):
     error_code = SmsCampaignApiException.NO_USER_FOR_PHONE_NUMBER
 
 
-class InvalidDatetime(SmsCampaignApiException):
-    """
-    If we are creating new campaign, or updating old one, and start_datetime or end_datetime is
-    not in valid UTC format, we raise this exception.
-    **Usage**
-        .. see also:: validate_url() function in utilities.py
-    """
-    error_code = SmsCampaignApiException.INVALID_DATETIME
-
-
 class InvalidUrl(SmsCampaignApiException):
     """
     If we are searching URLs in SMS body text, we also check if those URLs are in valid format.
@@ -239,15 +228,11 @@ class InvalidUrl(SmsCampaignApiException):
     error_code = SmsCampaignApiException.INVALID_URL_FORMAT
 
 
-class InvalidFrequencyId(SmsCampaignApiException):
+class CampaignAlreadyScheduled(SmsCampaignApiException):
     """
-    This exception is raised when we are validating data to schedule a campaign and
-    frequency_id is unknown to database.
+    This exception is raised when we try to schedule an already scheduled SMS campaign
 
     **Usage**
         .. see also:: validate_scheduler_data() function in utilities.py
     """
-    error_code = SmsCampaignApiException.INVALID_FREQUENCY_ID
-
-
-
+    error_code = SmsCampaignApiException.CAMPAIGN_ALREADY_SCHEDULED

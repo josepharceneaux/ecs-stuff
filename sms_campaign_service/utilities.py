@@ -19,11 +19,11 @@ from twilio.rest import TwilioRestClient
 
 # Common Utils
 from sms_campaign_service.common.common_config import IS_DEV
-from sms_campaign_service.common.routes import (GTApis, SmsCampaignApi)
+from sms_campaign_service.common.routes import (GTApis, SmsCampaignApi, SchedulerApiUrl)
 from sms_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound,
                                                         ForbiddenError)
 from sms_campaign_service.common.utils.common_functions import (find_missing_items,
-                                                                is_iso_8601_format,
+                                                                validate_datetime_format,
                                                                 JSON_CONTENT_TYPE_HEADER,
                                                                 is_valid_url_format, http_request,
                                                                 frequency_id_to_seconds)
@@ -36,8 +36,7 @@ from sms_campaign_service.common.models.talent_pools_pipelines import Smartlist
 # Application Specific
 from sms_campaign_service import logger
 from sms_campaign_service.custom_exceptions import (TwilioAPIError, MissingRequiredField,
-                                                    InvalidDatetime, ErrorDeletingSMSCampaign,
-                                                    InvalidUrl, InvalidFrequencyId)
+                                                    ErrorDeletingSMSCampaign, InvalidUrl)
 from sms_campaign_service.sms_campaign_app_constants import (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,
                                                              NGROK_URL, TWILIO_TEST_ACCOUNT_SID,
                                                              TWILIO_TEST_AUTH_TOKEN)
@@ -211,7 +210,7 @@ def replace_localhost_with_ngrok(localhost_url):
 
 def validate_form_data(form_data):
     """
-    This does the validation of the data received to create SMS campaign.
+    This does the validation of the data received to create/update SMS campaign.
 
         1- If any key from (name, body_text, smartlist_ids) is missing from form data or
             has no value we raise MissingRequiredFieldError.
@@ -270,36 +269,6 @@ def validate_form_data(form_data):
     form_data['smartlist_ids'] = list(set(form_data.get('smartlist_ids')) -
                                       set(invalid_smartlist_ids + not_found_smartlist_ids))
     return invalid_smartlist_ids, not_found_smartlist_ids
-
-
-def validate_scheduler_data(schedule_data):
-    """
-    Here we validate the data provided to schedule an SMS campaign.
-
-    Valid Schedule data looks like
-                            {
-                                "frequency_id": 0,
-                                "send_datetime": "2015-12-26T14:04:00Z",
-                                "stop_datetime": "2015-12-27T14:05:00Z"
-                            }
-
-    1- If start_datetime or end_datetime is not valid datetime format, then we raise
-            custom exception InvalidDatetime.
-    2- If frequency_id does not exist in database, we raise the custom exception InvalidFrequencyId,
-    :param schedule_data:
-    :exception: InvalidDatetime
-    :exception: InvalidFrequencyId
-    :return:
-    """
-    for datetime in [schedule_data.get('send_datetime'), schedule_data.get('stop_datetime')]:
-        if not is_iso_8601_format(datetime):
-            raise InvalidDatetime('Invalid DateTime: Kindly specify UTC datetime in ISO-8601 '
-                                  'format like 2015-10-08T06:16:55Z. Given Date is %s' % datetime)
-    try:
-        frequency_id_to_seconds(schedule_data.get('frequency_id'))
-    except InvalidUsage:
-        raise InvalidFrequencyId(error_message="Invalid frequency Id given: %s"
-                                               % schedule_data.get('frequency_id'))
 
 
 def delete_sms_campaign(campaign_id, current_user_id):
@@ -408,5 +377,4 @@ def validate_urls_in_body_text(text):
         except Exception:
             invalid_urls.append(url)
     return valid_urls, invalid_urls
-
 

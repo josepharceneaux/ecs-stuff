@@ -19,10 +19,12 @@ from dateutil.parser import parse
 
 # Application imports
 from scheduler_service import logger
-from scheduler_service.apscheduler_config import executors, job_store, jobstores
-from scheduler_service.common.error_handling import InvalidUsage
-from scheduler_service.custom_exceptions import FieldRequiredError, TriggerTypeError, JobNotCreatedError
 from scheduler_service.tasks import send_request
+from scheduler_service.common.error_handling import InvalidUsage
+from flask.ext.common.common.utils.common_functions import to_utc_str
+from scheduler_service.apscheduler_config import executors, job_store, jobstores
+from scheduler_service.custom_exceptions import FieldRequiredError, TriggerTypeError, \
+    JobNotCreatedError
 
 
 # Set timezone to UTC
@@ -222,8 +224,8 @@ def serialize_task(task):
         task_dict = dict(
             id=task.id,
             url=task.args[1],
-            start_datetime=str(task.trigger.start_date),
-            end_datetime=str(task.trigger.end_date),
+            start_datetime=to_utc_str(task.trigger.start_date),
+            end_datetime=to_utc_str(task.trigger.end_date),
             next_run_datetime=str(task.next_run_time),
             frequency=dict(seconds=task.trigger.interval.seconds),
             post_data=task.kwargs,
@@ -234,7 +236,7 @@ def serialize_task(task):
         task_dict = dict(
             id=task.id,
             url=task.args[1],
-            run_datetime=str(task.trigger.run_date),
+            run_datetime=to_utc_str(task.trigger.run_date),
             post_data=task.kwargs,
             pending=task.pending,
             task_type='one_time'

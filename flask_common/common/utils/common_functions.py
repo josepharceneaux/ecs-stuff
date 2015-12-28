@@ -212,18 +212,36 @@ def url_conversion(long_url):
         return None, error_message
 
 
-def is_iso_8601_format(str_datetime):
+def validate_datetime_format(str_datetime):
     """
-    This validates the given datetime is in ISO format or not. Proper format should be like
+    This validates the given datetime is in ISO UTC format or not. Proper format should be like
     '2015-10-08T06:16:55Z'.
 
     :param str_datetime: str
     :type str_datetime: str
+    :exception: Invalid Usage
     :return: True if given datetime is valid, False otherwise.
     :rtype: bool
     """
     utc_pattern = '\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z'
-    return re.match(utc_pattern, str_datetime)
+    if re.match(utc_pattern, str_datetime):
+        return True
+    else:
+        raise InvalidUsage('Invalid DateTime: Kindly specify UTC datetime in ISO-8601 format '
+                           'like 2015-10-08T06:16:55Z. Given Date is %s' % str_datetime)
+
+
+def to_utc_str(dt):
+    """
+    This converts given datetime in '2015-10-08T06:16:55Z' format.
+    :param dt: given datetime
+    :type dt: datetime
+    :return: UTC date in str
+    :rtype: str
+    """
+    if isinstance(dt, datetime):
+        raise InvalidUsage(error_message='Given param should be datetime obj')
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def is_valid_url_format(url):
@@ -257,7 +275,7 @@ def frequency_id_to_seconds(frequency_id):
     elif frequency_id == 6:
         period = 365 * 24 * 3600
     else:
-        raise InvalidUsage("Unknown frequency ID: %s", frequency_id)
+        raise InvalidUsage("Unknown frequency ID: %s" % frequency_id)
     return period
 
 

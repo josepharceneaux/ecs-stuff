@@ -25,6 +25,7 @@ It also contains private methods for this module as
 from datetime import datetime
 
 # Database Models
+from werkzeug.exceptions import BadRequest
 from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.candidate import (PhoneLabel, Candidate, CandidatePhone)
@@ -46,7 +47,8 @@ from sms_campaign_service.common.error_handling import (ResourceNotFound, Forbid
 from sms_campaign_service import logger, db
 from sms_campaign_service.sms_campaign_app.app import celery_app, app
 from sms_campaign_service.utilities import (TwilioSMS, search_urls_in_text,
-                                            replace_localhost_with_ngrok, validate_url_format)
+                                            replace_localhost_with_ngrok, validate_url_format,
+                                            validate_header, is_owner_of_campaign)
 from sms_campaign_service.sms_campaign_app_constants import (MOBILE_PHONE_LABEL, TWILIO,
                                                              TWILIO_TEST_NUMBER, CELERY_QUEUE)
 from sms_campaign_service.custom_exceptions import (EmptySmsBody, MultipleTwilioNumbersFoundForUser,
@@ -59,7 +61,8 @@ from sms_campaign_service.custom_exceptions import (EmptySmsBody, MultipleTwilio
                                                     ErrorUpdatingBodyText,
                                                     NoCandidateFoundForPhoneNumber,
                                                     NoUserFoundForPhoneNumber,
-                                                    GoogleShortenUrlAPIError, TwilioAPIError)
+                                                    GoogleShortenUrlAPIError, TwilioAPIError,
+                                                    CampaignAlreadyScheduled)
 
 
 class SmsCampaignBase(CampaignBase):
@@ -463,6 +466,40 @@ class SmsCampaignBase(CampaignBase):
                              params=params,
                              headers=self.oauth_header)
 
+    @classmethod
+    def pre_process_schedule(cls, request, campaign_id, post_or_put=''):
+        """
+        This implements the base class method. Before making HTTP POST/GET call on
+        scheduler_service, we do the following.
+        1- Check if request has valid JSON content-type header
+        2- Check if current user is an owner of given campaign_id
+        :return: dictionary containing sms_campaign obj, data to schedule SMS campaign,
+                    scheduled_task and bearer access token
+        :rtype: dict
+        """
+        # TODO Update comment
+        validate_header(request)
+        if is_owner_of_campaign(campaign_id, request.user.id):
+            campaign = SmsCampaign.get_by_id(campaign_id)
+            if not campaign:
+                raise ResourceNotFound(error_message='SMS Campaign(id=%s) Not found.' % campaign_id)
+            # Updating scheduled task should not be allowed in POST request
+            scheduled_task = cls.is_already_scheduled(campaign.scheduler_task_id,
+                                                      request.oauth_token)
+            if scheduled_task and request.method == 'POST':
+                raise CampaignAlreadyScheduled(error_message='Use PUT method to update task')
+            try:
+                data_to_schedule_campaign = request.get_json()
+            except BadRequest:
+                raise InvalidUsage(error_message='Given data should be in dict format')
+            if not data_to_schedule_campaign:
+                raise InvalidUsage(
+                    error_message='No data provided to schedule SMS campaign(id:%s)' % campaign_id)
+            return {'campaign': campaign,
+                    'data_to_schedule': data_to_schedule_campaign,
+                    'scheduled_task': scheduled_task,
+                    'bearer_access_token': request.oauth_token}
+
     def schedule(self, data_to_schedule):
         """
         This overrides the CampaignBase class method schedule().
@@ -479,17 +516,16 @@ class SmsCampaignBase(CampaignBase):
 
         :param data_to_schedule: required data to schedule an SMS campaign
         :type data_to_schedule: dict
-        :return: task_id (Task created on APScheduler)
-        :rtype: str
-
+        :return: task_id (Task created on APScheduler), and status of task(already scheduled
+                            or new scheduled)
+        :rtype: tuple
         **See Also**
         .. see also:: ScheduleSmsCampaign() method in v1_sms_campaign_api.py.
-
         """
         data_to_schedule.update(
             {'url_to_run_task': SmsCampaignApiUrl.SEND % self.campaign.id}
         )
-        # get scheduler task_id
+        # get scheduler task_id created on scheduler_service
         task_id = super(SmsCampaignBase, self).schedule(data_to_schedule)
         data_to_schedule.update({'task_id': task_id})
         # update sms_campaign record with task_id

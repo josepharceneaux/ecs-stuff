@@ -46,8 +46,7 @@ from sms_campaign_service import logger
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.custom_exceptions import ErrorDeletingSMSCampaign
 from sms_campaign_service.utilities import (validate_form_data, validate_header,
-                                            delete_sms_campaign, is_owner_of_campaign,
-                                            validate_scheduler_data)
+                                            delete_sms_campaign, is_owner_of_campaign)
 
 # Common Utils
 from sms_campaign_service.common.error_handling import *
@@ -180,6 +179,7 @@ class SMSCampaigns(Resource):
                         5003 (TwilioAPIError)
                         5006 (MissingRequiredField)
                         5009 (ErrorSavingSMSCampaign)
+                        5017 (InvalidUrl)
         """
         validate_header(request)
         # get json post request data
@@ -283,8 +283,8 @@ class ScheduleSmsCampaign(Resource):
 
     def post(self, campaign_id):
         """
-        It schedules given Campaign (from given campaign id) to the smartlist candidates
-            associated with given campaign.
+        It schedules an SMS campaign using given campaign_id by making HTTP request to
+         scheduler_service.
 
         :Example:
 
@@ -307,7 +307,7 @@ class ScheduleSmsCampaign(Resource):
 
                 {
                     "message": "Campaign(id:1) is has been scheduled.
-                    "task_id"; ""
+                    "task_id"; "33e32e8ac45e4e2aa710b2a04ed96371"
                 }
 
         .. Status:: 200 (OK)
@@ -318,29 +318,64 @@ class ScheduleSmsCampaign(Resource):
                     500 (Internal Server Error)
 
         .. Error codes:
-                    5017 (InvalidDatetime)
-                    5019 (InvalidFrequencyId)
+                    5018 (CampaignAlreadyScheduled)
 
         :param campaign_id: integer, unique id representing campaign in GT database
-        :return: json for required campaign containing message and total sends.
+        :return: JSON containing message and task_id.
         """
-        validate_header(request)
-        if is_owner_of_campaign(campaign_id, request.user.id):
-            campaign = SmsCampaign.get_by_id(campaign_id)
-            if not campaign:
-                raise ResourceNotFound(error_message='SMS Campaign(id=%s) Not found.' % campaign_id)
-            try:
-                schedule_data = request.get_json()
-            except BadRequest:
-                raise InvalidUsage(error_message='Given data should be in dict format')
-            if not schedule_data:
-                raise InvalidUsage(error_message='schedule_data not provided')
-            validate_scheduler_data(schedule_data)
-            camp_obj = SmsCampaignBase(request.user.id)
-            camp_obj.campaign = campaign
-            task_id = camp_obj.schedule(schedule_data)
-            return dict(message='Campaign(id:%s) has been scheduled.' % campaign_id,
-                        task_id=task_id), 200
+        pre_processed_data = SmsCampaignBase.pre_process_schedule(request, campaign_id)
+        sms_camp_obj = SmsCampaignBase(request.user.id)
+        sms_camp_obj.campaign = pre_processed_data['campaign']
+        task_id = sms_camp_obj.schedule(pre_processed_data['data_to_schedule'])
+        return dict(message='Campaign(id:%s) has been scheduled.' % campaign_id,
+                    task_id=task_id), 200
+
+    def put(self, campaign_id):
+        """
+        This endpoint is to reschedule a campaign. It first deletes the old schedule of
+        campaign from scheduler_service and then creates new task.
+
+        :Example:
+
+            headers = {'Authorization': 'Bearer <access_token>',
+                       'Content-type': 'application/json'}
+
+            schedule_data =
+                        {
+                            "frequency_id": 2,
+                            "send_datetime": "2015-11-26T08:00:00Z",
+                            "stop_datetime": "2015-11-30T08:00:00Z"
+                        }
+
+            campaign_id = 1
+
+            response = requests.put(API_URL + '/campaigns/' + str(campaign_id) + '/schedule',
+                                        headers=headers, data=schedule_data)
+
+        .. Response::
+
+                {
+                    "message": "Campaign(id:1) is has been re-scheduled.
+                    "task_id"; "33e32e8ac45e4e2aa710b2a04ed96371"
+                }
+
+        .. Status:: 200 (OK)
+                    400 (Bad request)
+                    401 (Unauthorized to access getTalent)
+                    403 (Forbidden Error)
+                    404 (Campaign not found)
+                    500 (Internal Server Error)
+
+        :param campaign_id: integer, unique id representing campaign in GT database
+        :return: JSON containing message and task_id.
+        """
+        pre_processed_data= SmsCampaignBase.pre_process_schedule(request, campaign_id)
+        SmsCampaignBase.pre_process_re_schedule(pre_processed_data)
+        sms_camp_obj = SmsCampaignBase(request.user.id)
+        sms_camp_obj.campaign = pre_processed_data['campaign']
+        task_id = sms_camp_obj.schedule(pre_processed_data['data_to_schedule'])
+        return dict(message='Campaign(id:%s) has been re-scheduled.' % campaign_id,
+                    task_id=task_id), 200
 
 
 @api.route(SmsCampaignApi.CAMPAIGN)
@@ -439,6 +474,7 @@ class CampaignById(Resource):
         .. Error codes::
                         5006 (MissingRequiredField)
                         5009 (ErrorSavingSMSCampaign)
+                        5017 (InvalidUrl)
         """
         validate_header(request)
         try:
