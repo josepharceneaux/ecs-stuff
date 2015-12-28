@@ -203,3 +203,35 @@ def url_conversion(long_url):
                         "Error dict is %s" % (long_url, json_data['error']['errors'][0])
         current_app.logger.error('url_conversion: %s' % error_message)
         return None, error_message
+
+# Frequencies
+ONCE = 1
+DAILY = 2
+WEEKLY = 3
+BIWEEKLY = 4
+MONTHLY = 5
+YEARLY = 6
+
+
+def frequency_id_to_seconds(_id):
+    """
+    This method takes a frequency id (one of ids from frequency table) and then converts it to corresponding
+    interval/frequency in seconds.
+    :param _id: int, id of frequency from `frequency` table
+    :return: frequency in seconds
+    """
+    if _id == ONCE:
+        frequency = None
+    elif _id == DAILY:
+        frequency = 24 * 60 * 60
+    elif _id == WEEKLY:
+        frequency = 7 * 24 * 60 * 60
+    elif _id == BIWEEKLY:
+        frequency = 3.5 * 24 * 60 * 60
+    elif _id == MONTHLY:
+        frequency = 30 * 24 * 60 * 60
+    elif _id == YEARLY:
+        frequency = 365 * 24 * 60 * 60
+    else:
+        frequency = None
+    return frequency

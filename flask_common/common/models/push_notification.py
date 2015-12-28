@@ -30,6 +30,12 @@ class PushNotification(db.Model):
         assert isinstance(user_id, int) and user_id > 0, 'User id is not valid integer'
         return cls.query.filter_by(user_id=user_id).all()
 
+    @classmethod
+    def get_by_id_and_user_id(cls, _id, user_id):
+        assert isinstance(_id, int) and _id > 0, 'Push notification id is not valid integer'
+        assert isinstance(user_id, int) and user_id > 0, 'User id is not valid integer'
+        return cls.query.filter_by(id=_id, user_id=user_id).first()
+
 
 class PushNotificationSend(db.Model):
     __tablename__ = 'push_notification_send'
