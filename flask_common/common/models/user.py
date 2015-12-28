@@ -11,7 +11,6 @@ from associations import CandidateAreaOfInterest
 from event_organizer import EventOrganizer
 from misc import AreaOfInterest
 from email_marketing import EmailCampaign
-from smart_list import SmartList
 
 
 class User(db.Model):
@@ -43,13 +42,13 @@ class User(db.Model):
     candidates = relationship('Candidate', backref='user')
     public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
     user_group = relationship('UserGroup', backref='user')
-    user_phones = relationship('UserPhone', backref='user')
+    user_phones = relationship('UserPhone', cascade='all,delete-orphan', passive_deletes=True,
+                               backref='user')
     email_campaigns = relationship('EmailCampaign', backref='user')
     user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
     events = db.relationship('Event', backref='user', lazy='dynamic')
     event_organizers = db.relationship('EventOrganizer', backref='user', lazy='dynamic')
     venues = db.relationship('Venue', backref='user', lazy='dynamic')
-    smart_lists = db.relationship('SmartList', backref='user', lazy='dynamic')
     culture = relationship(u'Culture', backref=db.backref('user', cascade="all, delete-orphan"))
 
     def is_authenticated(self):
@@ -96,12 +95,13 @@ class UserPhone(db.Model):
 
     @classmethod
     def get_by_user_id(cls, user_id):
-        assert user_id
+        assert user_id, 'No user_id provided'
         return cls.query.filter(cls.user_id == user_id).all()
 
     @classmethod
     def get_by_user_id_and_phone_label_id(cls, user_id, phone_label_id):
-        assert user_id and phone_label_id
+        assert user_id, 'No user_id provided'
+        assert phone_label_id, 'No phone_label_id provided'
         return cls.query.filter(
             and_(
                 UserPhone.user_id == user_id,

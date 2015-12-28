@@ -187,26 +187,28 @@ class CandidatePhone(db.Model):
     extension = db.Column(db.String(5))
     is_default = db.Column('IsDefault', db.Boolean)
 
+    # Relationships
+    sms_campaign_replies = relationship('SmsCampaignReply', cascade='all, delete-orphan',
+                                        passive_deletes=True, backref="candidate_phone")
+
     def __repr__(self):
         return "<CandidatePhone (value=' %r', extention= ' %r')>" % (self.value, self.extension)
 
     @classmethod
     def get_by_candidate_id(cls, candidate_id):
-        assert candidate_id
-        return cls.query.filter(
-            and_(
-                CandidatePhone.candidate_id == candidate_id
-            )
-        ).one()
+        assert candidate_id, 'Candidate id not given'
+        return cls.query.filter_by(candidate_id=candidate_id).all()
 
     @classmethod
     def get_by_phone_value(cls, phone_value):
-        assert phone_value
-        return cls.query.filter(
-            and_(
-                cls.value == phone_value
-            )
-        ).all()
+        assert phone_value, 'phone_value no provided'
+        return cls.query.filter_by(value=phone_value).all()
+
+    @classmethod
+    def get_by_candidate_id_and_phone_value(cls, candidate_id, phone_value):
+        assert phone_value, 'phone_value no provided'
+        assert candidate_id, 'Candidate id not given'
+        return cls.query.filter_by(candidate_id=candidate_id, value=phone_value, ).first()
 
     def get_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()

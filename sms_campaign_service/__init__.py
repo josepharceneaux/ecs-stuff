@@ -10,8 +10,8 @@ from sms_campaign_service.common.models.db import db
 
 # Common Utils
 from sms_campaign_service.common import common_config
-from sms_campaign_service.common.common_config import REDIS_SERVER_URL
 from sms_campaign_service.common.common_config import GT_ENVIRONMENT
+from sms_campaign_service.common.common_config import REDIS_SERVER_URL
 from sms_campaign_service.common.error_handling import register_error_handlers
 from sms_campaign_service.common.utils.models_utils import add_model_helpers, init_talent_app
 

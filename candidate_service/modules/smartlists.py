@@ -1,7 +1,7 @@
 import json
 
 from candidate_service.candidate_app import db, logger
-from candidate_service.common.models.smart_list import SmartListCandidate
+from candidate_service.common.models.talent_pools_pipelines import SmartlistCandidate
 from candidate_service.common.models.candidate import Candidate, CandidateEmail, CandidateSocialNetwork, CandidatePhone
 
 __author__ = 'jitesh'
@@ -25,11 +25,11 @@ def get_candidates(smart_list, candidate_ids_only=False, count_only=False, max_c
                                            count_only=count_only)
     # If a dumblist & getting count only, just do count
     elif count_only:
-        count = db.session.query(SmartListCandidate.candidate_id).filter_by(smart_list_id=smart_list.id).count()
+        count = db.session.query(SmartlistCandidate.candidate_id).filter_by(smart_list_id=smart_list.id).count()
         search_results = dict(candidate_ids=[], total_found=count)
     # If a dumblist and not doing count only, simply return all smart_list_candidates
     else:
-        smart_list_candidate_rows = db.session.query(SmartListCandidate.candidate_id)\
+        smart_list_candidate_rows = db.session.query(SmartlistCandidate.candidate_id)\
             .filter_by(smart_list_id=smart_list.id)
         if max_candidates:
             smart_list_candidate_rows = smart_list_candidate_rows.limit(max_candidates)

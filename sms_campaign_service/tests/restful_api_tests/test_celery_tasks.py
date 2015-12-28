@@ -1,6 +1,5 @@
 """
-Author: Hafiz Muhammad Basit, QC-Technologies,
-        Lahore, Punjab, Pakistan <basit.gettalent@gmail.com>
+Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     This module contains pyTests of tasks that run on Celery. These tests are put in
     separate file such that these tests run at the end of all tests because they needed to
@@ -9,12 +8,14 @@ Author: Hafiz Muhammad Basit, QC-Technologies,
 
     This module also contains pyTests for endpoint
 
-                /v1/campaigns/:id/url_redirection/:id?candidate_id=id
+                /v1/campaigns/:id/redirect/:id?candidate_id=id
 
     of SMS Campaign APP.
 """
 
 # Standard Library
+from datetime import datetime, timedelta
+import json
 import time
 
 # Third Party
@@ -23,6 +24,7 @@ import requests
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
+from sms_campaign_service.common.utils.common_functions import get_utc_datetime
 from sms_campaign_service.common.error_handling import (ResourceNotFound,
                                                         InternalServerError,
                                                         MethodNotAllowed)
@@ -34,14 +36,14 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
 # Service Specific
 from sms_campaign_service import db
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
-from sms_campaign_service.custom_exceptions import SmsCampaignApiException
+from sms_campaign_service.custom_exceptions import SmsCampaignApiException, EmptyDestinationUrl
+from sms_campaign_service.tests.conftest import CAMPAIGN_SCHEDULE_DATA
 from sms_campaign_service.utilities import replace_ngrok_link_with_localhost
-from sms_campaign_service.tests.conftest import (assert_on_blasts_sends_url_conversion_and_activity,
-                                                 assert_for_activity, get_reply_text)
+from sms_campaign_service.tests.modules.common_functions import \
+    (assert_on_blasts_sends_url_conversion_and_activity, assert_for_activity, get_reply_text,
+     assert_api_send_response, assert_campaign_schedule, SLEEP_TIME)
 
-
-SLEEP_TIME = 30  # due to background processing of tasks (Celery)
-OFFSET = 20  # due to background processing of tasks (Celery)
+SLEEP_OFFSET = 15  # For those tasks which takes longer than usual
 
 
 class TestCeleryTasks(object):
@@ -49,8 +51,7 @@ class TestCeleryTasks(object):
     This class contains tasks that run on celery or if  the fixture they use has some
     processing on Celery.
     """
-
-    def test_post_with_valid_token_one_smartlist_two_candidates_with_different_phones_multiple_links_in_text(
+    def test_campaign_send_with_two_candidates_with_different_phones_multiple_links_in_text(
             self, auth_token, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
             sample_sms_campaign_candidates, candidate_phone_1, candidate_phone_2):
         """
@@ -62,19 +63,35 @@ class TestCeleryTasks(object):
         """
         campaign = SmsCampaign.get_by_id(str(sms_campaign_of_current_user.id))
         campaign.update(body_text='Hi,all please visit http://www.abc.com or '
-                                      'http://www.123.com or http://www.xyz.com')
+                                  'http://www.123.com or http://www.xyz.com')
         response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response_post.status_code == 200, 'Response should be ok (200)'
-        assert response_post.json()['total_sends'] == 2
-        assert str(sms_campaign_of_current_user.id) in response_post.json()['message']
-        # Need to add this as processing of POST request runs on celery
-        time.sleep(SLEEP_TIME + OFFSET)
-        assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, response_post,
+        time.sleep(SLEEP_OFFSET)
+        assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
+        assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, 2,
                                                            str(sms_campaign_of_current_user.id))
 
-    def test_post_with_valid_token_one_smartlist_two_candidates_with_one_phone(
+    def test_campaign_send_witht_two_candidates_with_valid_and_invalid_phones(
+            self, auth_token, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
+            sample_sms_campaign_candidates, candidate_phone_1, candidate_invalid_phone):
+        """
+        User auth token is valid, campaign has one smart list associated. Smartlist has two
+        candidates. One candidate has invalid phone number associated, other has valid phone number
+        associated. So, total sends should be 1.
+        :return:
+        """
+        response_post = requests.post(
+            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
+            headers=dict(Authorization='Bearer %s' % auth_token))
+        assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
+        # as one phone number is invalid, so only one record should be enter in sms_campaign_send
+        # and sms_campaign_blast.sends should be equal to 1.
+        # Expected send is 1.
+        assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, 1,
+                                                           str(sms_campaign_of_current_user.id))
+
+    def test_campaign_send_witht_two_candidates_with_one_phone(
             self, auth_token, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
             sample_sms_campaign_candidates, candidate_phone_1):
         """
@@ -83,15 +100,13 @@ class TestCeleryTasks(object):
         :return:
         """
         response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response_post.status_code == 200, 'Response should be ok (200)'
-        assert response_post.json()['total_sends'] == 1
-        assert str(sms_campaign_of_current_user.id) in response_post.json()['message']
-        assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, response_post,
+        assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
+        assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, 1,
                                                            str(sms_campaign_of_current_user.id))
 
-    def test_post_with_valid_token_one_smartlist_two_candidates_with_different_phones_one_link_in_text(
+    def test_campaign_send_with_two_candidates_having_different_phones_one_link_in_text(
             self, auth_token, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
             sample_sms_campaign_candidates, candidate_phone_1, candidate_phone_2):
         """
@@ -101,17 +116,14 @@ class TestCeleryTasks(object):
         :return:
         """
         response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response_post.status_code == 200, 'Response should be ok (200)'
-        assert response_post.json()['total_sends'] == 2
-        assert str(sms_campaign_of_current_user.id) in response_post.json()['message']
-        time.sleep(SLEEP_TIME + OFFSET)  # Need to add this as processing of POST request runs on celery
+        assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
-                                                           response_post,
+                                                           2,
                                                            str(sms_campaign_of_current_user.id))
 
-    def test_post_with_valid_token_one_smartlist_two_candidates_with_different_phones_no_link_in_text(
+    def test_campaign_send_with_two_candidates_with_different_phones_no_link_in_text(
             self, auth_token, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
             sample_sms_campaign_candidates, candidate_phone_1, candidate_phone_2):
         """
@@ -124,48 +136,15 @@ class TestCeleryTasks(object):
         campaign = SmsCampaign.get_by_id(str(sms_campaign_of_current_user.id))
         campaign.update(body_text='Hi,all')
         response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response_post.status_code == 200, 'Response should be ok (200)'
-        assert response_post.json()['total_sends'] == 2
-        assert str(sms_campaign_of_current_user.id) in response_post.json()['message']
-        # Need to add this as processing of POST request runs on celery
-        time.sleep(SLEEP_TIME + OFFSET)
+        time.sleep(SLEEP_OFFSET)
+        assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
-                                                           response_post,
+                                                           2,
                                                            str(sms_campaign_of_current_user.id))
 
-    def test_post_with_valid_data_with_campaign_sent(self, user_phone_1,
-                                                     sms_campaign_of_current_user,
-                                                     candidate_phone_1,
-                                                     process_send_sms_campaign):
-        """
-        - This tests the endpoint /receive
-
-        Here we make HTTP POST  request with no data, Response should be ok as this response
-        is returned to Twilio API.
-        Candidate is associated with an SMS campaign. Then we assert that reply has been saved
-        and replies count has been incremented by 1. Finally we assert that activity has been
-        created in database table 'Activity'
-        :return:
-        """
-        reply_text = "What's the venue?"
-        reply_count_before = get_replies_count(sms_campaign_of_current_user)
-        response_get = requests.post(SmsCampaignApiUrl.RECEIVE_URL,
-                                     data={'To': user_phone_1.value,
-                                           'From': candidate_phone_1.value,
-                                           'Body': reply_text})
-        assert response_get.status_code == 200, 'Response should be ok'
-        assert 'xml' in str(response_get.text).strip()
-        time.sleep(SLEEP_TIME)  # Need to add this as processing of POST request runs on celery
-        campaign_reply_in_db = get_reply_text(candidate_phone_1)
-        assert campaign_reply_in_db.body_text == reply_text
-        reply_count_after = get_replies_count(sms_campaign_of_current_user)
-        assert reply_count_after == reply_count_before + 1
-        assert_for_activity(user_phone_1.user_id, ActivityMessageIds.CAMPAIGN_SMS_REPLY,
-                            campaign_reply_in_db.id)
-
-    def test_post_with_valid_token_and_multiple_smartlists(
+    def test_campaign_send_with_multiple_smartlists(
             self, auth_token, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
             sms_campaign_smartlist_2, sample_sms_campaign_candidates, candidate_phone_1):
         """
@@ -176,21 +155,68 @@ class TestCeleryTasks(object):
         :return:
         """
         response_post = requests.post(
-            SmsCampaignApiUrl.CAMPAIGN_SEND_PROCESS_URL % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response_post.status_code == 200, 'Response should be ok (200)'
-        assert response_post.json()['total_sends'] == 1
-        assert str(sms_campaign_of_current_user.id) in response_post.json()['message']
-        time.sleep(SLEEP_TIME)  # Need to add this as processing of POST request runs on celery
+        assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
-                                                           response_post,
+                                                           1,
                                                            str(sms_campaign_of_current_user.id))
+
+    def test_campaign_schedule_and_validate_task_run(
+            self, valid_header,  sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
+            sample_sms_campaign_candidates, candidate_phone_1):
+        """
+        This is test to schedule SMS campaign with all valid parameters. This should get OK
+         response
+        """
+        data = CAMPAIGN_SCHEDULE_DATA.copy()
+        data['frequency_id'] = 0  # for one_time job
+        data['send_datetime'] = get_utc_datetime(datetime.now() + timedelta(seconds=10),
+                                                 'Asia/Karachi')
+        response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
+                                 headers=valid_header,
+                                 data=json.dumps(data))
+        assert_campaign_schedule(response)
+        time.sleep(SLEEP_TIME + SLEEP_OFFSET)
+        assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
+                                                           1,
+                                                           str(sms_campaign_of_current_user.id))
+
+    def test_sms_receive_with_valid_data_and_one_campaign_sent(self, user_phone_1,
+                                                               sms_campaign_of_current_user,
+                                                               candidate_phone_1,
+                                                               process_send_sms_campaign):
+        """
+        - This tests the endpoint /v1/receive
+
+        Here we make HTTP POST  request with no data, Response should be OK as this response
+        is returned to Twilio API.
+        Candidate is associated with an SMS campaign. Then we assert that reply has been saved
+        and replies count has been incremented by 1. Finally we assert that activity has been
+        created in database table 'Activity'
+        :return:
+        """
+        reply_text = "What's the venue?"
+        reply_count_before = get_replies_count(sms_campaign_of_current_user)
+        response_get = requests.post(SmsCampaignApiUrl.RECEIVE,
+                                     data={'To': user_phone_1.value,
+                                           'From': candidate_phone_1.value,
+                                           'Body': reply_text})
+        assert response_get.status_code == 200, 'Response should be ok'
+        assert 'xml' in str(response_get.text).strip()
+        # time.sleep(SLEEP_OFFSET)  # Need to add this as processing of POST request runs on celery
+        campaign_reply_in_db = get_reply_text(candidate_phone_1)
+        assert campaign_reply_in_db.body_text == reply_text
+        reply_count_after = get_replies_count(sms_campaign_of_current_user)
+        assert reply_count_after == reply_count_before + 1
+        assert_for_activity(user_phone_1.user_id, ActivityMessageIds.CAMPAIGN_SMS_REPLY,
+                            campaign_reply_in_db.id)
 
 
 def get_replies_count(campaign):
     """
     This returns the replies counts of SMS campaign from database table 'sms_campaign_blast'
-    :param campaign: SMS campaign row
+    :param campaign: SMS campaign obj
     :return:
     """
     db.session.commit()
@@ -200,7 +226,7 @@ def get_replies_count(campaign):
 
 class TestSmsCampaignURLRedirection(object):
     """
-    This class contains tests for endpoint /v1/campaigns/:id/url_redirection/:id?candidate_id=id.
+    This class contains tests for endpoint /v1/campaigns/:id/redirect/:id?candidate_id=id.
     """
 
     def test_for_post(self, url_conversion_by_send_test_sms_campaign):
@@ -233,11 +259,11 @@ class TestSmsCampaignURLRedirection(object):
         assert response_post.status_code == MethodNotAllowed.http_status_code(), \
             'DELETE Method should not be allowed'
 
-    def test_endpoint_for_get(self, sample_user,
-                              url_conversion_by_send_test_sms_campaign,
-                              sms_campaign_of_current_user):
+    def test_for_get(self, sample_user,
+                     url_conversion_by_send_test_sms_campaign,
+                     sms_campaign_of_current_user):
         """
-        GET method should give ok response. We check the "hit_count" and "clicks" before
+        GET method should give OK response. We check the "hit_count" and "clicks" before
         hitting the endpoint and after hitting the endpoint. Then we assert that both
         "hit_count" and "clicks" have been successfully updated by '1' in database.
         :return:
@@ -262,7 +288,7 @@ class TestSmsCampaignURLRedirection(object):
         assert_for_activity(sample_user.id, ActivityMessageIds.CAMPAIGN_SMS_CLICK,
                             sms_campaign_of_current_user.id)
 
-    def test_endpoint_for_get_with_no_candidate_id(self, url_conversion_by_send_test_sms_campaign):
+    def test_get_with_no_candidate_id(self, url_conversion_by_send_test_sms_campaign):
         """
         Removing candidate id from destination URL. It should get internal server error.
         :return:
@@ -278,8 +304,8 @@ class TestSmsCampaignURLRedirection(object):
         assert response_get.status_code == InternalServerError.http_status_code(), \
             'It should get internal server error'
 
-    def test_endpoint_for_get_with_empty_destination_url(self,
-                                                         url_conversion_by_send_test_sms_campaign):
+    def test_get_with_empty_destination_url(self,
+                                            url_conversion_by_send_test_sms_campaign):
         """
         Making destination URL an empty string here, it should get internal server error.
         :return:
@@ -296,7 +322,7 @@ class TestSmsCampaignURLRedirection(object):
         assert response_get.status_code == InternalServerError.http_status_code(), \
             'It should get internal server error'
 
-    def test_method_pre_process_url_redirect_with_None_data(self):
+    def test_pre_process_url_redirect_with_None_data(self):
         """
         This tests the functionality of pre_process_url_redirect() class method of SmsCampaignBase.
         All parameters passed are None, So, it should raise MissingRequiredField Error.
@@ -310,13 +336,13 @@ class TestSmsCampaignURLRedirection(object):
             assert 'campaign_id' in error.message
             assert 'url_conversion_id' in error.message
 
-    def test_method_pre_process_url_redirect_with_valid_data(self,
-                                                             sms_campaign_of_current_user,
-                                                             url_conversion_by_send_test_sms_campaign,
-                                                             candidate_first):
+    def test_pre_process_url_redirect_with_valid_data(self,
+                                                      sms_campaign_of_current_user,
+                                                      url_conversion_by_send_test_sms_campaign,
+                                                      candidate_first):
         """
         This tests the functionality of pre_process_url_redirect() class method of SmsCampaignBase.
-        All parameters passed are valid, So, it should get ok response.
+        All parameters passed are valid, So, it should get OK response.
         :param sms_campaign_of_current_user:
         :param url_conversion_by_send_test_sms_campaign:
         :param candidate_first:
@@ -335,10 +361,9 @@ class TestSmsCampaignURLRedirection(object):
         assert candidate
         assert campaign
 
-    def test_method_pre_process_url_redirect_with_deleted_campaign(self, valid_header,
-                                                                   sms_campaign_of_current_user,
-                                                                   url_conversion_by_send_test_sms_campaign,
-                                                                   candidate_first):
+    def test_pre_process_url_redirect_with_deleted_campaign(
+            self, valid_header, sms_campaign_of_current_user,
+            url_conversion_by_send_test_sms_campaign, candidate_first):
         """
         This tests the functionality of pre_process_url_redirect() class method of SmsCampaignBase.
         Here we first delete the campaign, and then test functionality of pre_process_url_redirect
@@ -355,10 +380,9 @@ class TestSmsCampaignURLRedirection(object):
             assert error.status_code == ResourceNotFound.http_status_code()
             str(campaing_id) in error.message
 
-    def test_method_pre_process_url_redirect_with_deleted_candidate(self,
-                                                                    sms_campaign_of_current_user,
-                                                                    url_conversion_by_send_test_sms_campaign,
-                                                                    candidate_first):
+    def test_pre_process_url_redirect_with_deleted_candidate(
+            self, sms_campaign_of_current_user, url_conversion_by_send_test_sms_campaign,
+            candidate_first):
         """
         This tests the functionality of pre_process_url_redirect() class method of SmsCampaignBase.
         Here we first delete the candidate, and then test functionality of pre_process_url_redirect
@@ -374,10 +398,9 @@ class TestSmsCampaignURLRedirection(object):
             assert error.status_code == ResourceNotFound.http_status_code()
             assert str(candidate_first.id) in error.message
 
-    def test_method_pre_process_url_redirect_with_deleted_url_conversion(self,
-                                                                         sms_campaign_of_current_user,
-                                                                         url_conversion_by_send_test_sms_campaign,
-                                                                         candidate_first):
+    def test_pre_process_url_redirect_with_deleted_url_conversion(
+            self, sms_campaign_of_current_user, url_conversion_by_send_test_sms_campaign,
+            candidate_first):
         """
         This tests the functionality of pre_process_url_redirect() class method of SmsCampaignBase.
         Here we first delete the url_conversion db record, and then test functionality of
@@ -395,8 +418,9 @@ class TestSmsCampaignURLRedirection(object):
             assert error.status_code == ResourceNotFound.http_status_code()
             assert url_conversion_id in error.message
 
-    def test_method_pre_process_url_redirect_with_empty_destination_url(
-            self, sample_user, sms_campaign_of_current_user, url_conversion_by_send_test_sms_campaign,
+    def test_pre_process_url_redirect_with_empty_destination_url(
+            self, sample_user, sms_campaign_of_current_user,
+            url_conversion_by_send_test_sms_campaign,
             candidate_first):
         """
         Making destination URL an empty string here, it should get internal server error.
@@ -406,15 +430,14 @@ class TestSmsCampaignURLRedirection(object):
         # forcing destination URL to be empty
         url_conversion_by_send_test_sms_campaign.update(destination_url='')
         try:
-
             campaign, url_conversion_record, candidate = \
-                SmsCampaignBase.pre_process_url_redirect(sms_campaign_of_current_user.id,
-                                                         url_conversion_by_send_test_sms_campaign.id,
-                                                         candidate_first.id)
+                SmsCampaignBase.pre_process_url_redirect(
+                    sms_campaign_of_current_user.id,
+                    url_conversion_by_send_test_sms_campaign.id,
+                    candidate_first.id)
             camp_obj = SmsCampaignBase(sample_user.id)
             camp_obj.process_url_redirect(campaign, url_conversion_record, candidate)
-
-        except Exception as error:
+        except EmptyDestinationUrl as error:
             assert error.error_code == SmsCampaignApiException.EMPTY_DESTINATION_URL
 
 
@@ -425,7 +448,7 @@ def _delete_sms_campaign(campaign, header):
     :param header:
     :return:
     """
-    response = requests.delete(SmsCampaignApiUrl.CAMPAIGN_URL % campaign.id,
+    response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % campaign.id,
                                headers=header)
     assert response.status_code == 200, 'should get ok response (200)'
 
@@ -434,10 +457,14 @@ def _get_hit_count_and_clicks(url_conversion, campaign):
     """
     This returns the hit counts of URL conversion record and clicks of SMS campaign blast
     from database table 'sms_campaign_blast'
-    :param url_conversion: URL conversion row
-    :param campaign: SMS campaign row
+    :param url_conversion: URL conversion obj
+    :param campaign: SMS campaign obj
+    :type campaign: SmsCampaign
     :return:
     """
+    # Need to commit the session because Celery has its own session, and our session does not
+    # know about the changes that Celery session has made.
     db.session.commit()
     sms_campaign_blasts = SmsCampaignBlast.get_by_campaign_id(campaign.id)
     return url_conversion.hit_count, sms_campaign_blasts.clicks
+

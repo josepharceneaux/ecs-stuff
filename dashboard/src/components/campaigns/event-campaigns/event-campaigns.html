@@ -44,13 +44,13 @@
 
                     <div class="form__fieldset row--expanded">
                         <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventOrganizer.$invalid && (createEventForm.eventOrganizer.$touched || createEventForm.$submitted)}">
-                            <label class="form__label" for="eventOrganizer">Event Organizer</label>
-                            <input gt-float-label class="form__input" ng-model="vm.event.organizer.name" id="eventOrganizer" name="eventOrganizer" type="text" placeholder="Event Organizer">
+                            <label class="form__label" for="eventOrganizer">Event Organizer Name</label>
+                            <input gt-float-label class="form__input" ng-model="vm.event.organizer.name" id="eventOrganizer" name="eventOrganizer" type="text" placeholder="Event Organizer Name">
                         </div>
 
                         <div class="col--medium-6 form__col" ng-class="{'form__col--error': createEventForm.eventOrganizerContentEmail.$invalid && (createEventForm.eventOrganizerContentEmail.$touched || createEventForm.$submitted)}">
                             <label class="form__label" for="eventOrganizerContentEmail">Event Organizer Content Email</label>
-                            <input gt-float-label class="form__input" ng-model="vm.event.organizer.email" id="eventOrganizerContentEmail" name="eventOrganizerContentEmail" type="text" placeholder="Event Organizer Content Email">
+                            <input gt-float-label class="form__input" ng-model="vm.event.organizer.email" id="eventOrganizerContentEmail" name="eventOrganizerContentEmail" type="text" placeholder="Event Organizer Email">
                         </div>
                     </div>
 

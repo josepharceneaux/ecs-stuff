@@ -1,8 +1,12 @@
 import re
 import json
-import requests
+import pytz
 import random
 import string
+import requests
+from pytz import timezone
+from datetime import datetime
+from dateutil.parser import parse
 
 from flask import current_app
 from ..routes import AuthApiUrl
@@ -15,6 +19,14 @@ GOOGLE_URL_SHORTENER_API_KEY = 'AIzaSyCT7Gg3zfB0yXaBXSPNVhFCZRJzu9WHo4o'
 GOOGLE_URL_SHORTENER_API_URL = 'https://www.googleapis.com/urlshortener/v1/url?key=' \
                                + GOOGLE_URL_SHORTENER_API_KEY
 JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
+
+# Frequencies
+ONCE = 1
+DAILY = 2
+WEEKLY = 3
+BIWEEKLY = 4
+MONTHLY = 5
+YEARLY = 6
 
 
 def get_or_create(session, model, defaults=None, **kwargs):
@@ -185,9 +197,13 @@ def url_conversion(long_url):
     :param long_url: The URL which we want to be shortened
     :type long_url: str
     :param long_url:
-    :return: shortened URL
-    :rtype: str
+    :return: shortened URL, and error message if any else ''
+    :rtype: tuple
     """
+    if not isinstance(long_url, basestring):
+        raise InvalidUsage(error_message='Pass URL(to be shortened) as a string',
+                           error_code=InvalidUsage.http_status_code())
+
     payload = json.dumps({'longUrl': long_url})
     response = http_request('POST', GOOGLE_URL_SHORTENER_API_URL,
                             headers=JSON_CONTENT_TYPE_HEADER, data=payload)
@@ -201,37 +217,90 @@ def url_conversion(long_url):
     else:
         error_message = "Error while shortening URL. Long URL is %s. " \
                         "Error dict is %s" % (long_url, json_data['error']['errors'][0])
-        current_app.logger.error('url_conversion: %s' % error_message)
         return None, error_message
 
-# Frequencies
-ONCE = 1
-DAILY = 2
-WEEKLY = 3
-BIWEEKLY = 4
-MONTHLY = 5
-YEARLY = 6
 
 
-def frequency_id_to_seconds(_id):
+def is_iso_8601_format(str_datetime):
+    """
+    This validates the given datetime is in ISO format or not. Proper format should be like
+    '2015-10-08T06:16:55Z'.
+
+    :param str_datetime: str
+    :type str_datetime: str
+    :return: True if given datetime is valid, False otherwise.
+    :rtype: bool
+    """
+    utc_pattern = '\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z'
+    return re.match(utc_pattern, str_datetime)
+
+
+def is_valid_url_format(url):
+    """
+    Reference: https://github.com/django/django-old/blob/1.3.X/django/core/validators.py#L42
+    """
+    regex = re.compile(
+        r'^(http|ftp)s?://'  # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
+        r'localhost|'  # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+        r'(?::\d+)?'  # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+    return url is not None and regex.search(url)
+
+
+def frequency_id_to_seconds(frequency_id):
     """
     This method takes a frequency id (one of ids from frequency table) and then converts it to corresponding
     interval/frequency in seconds.
+    Possible frequencies are:
+    'Once', 'Daily', 'Weekly', 'Biweekly', 'Monthly', 'Yearly'
+
     :param _id: int, id of frequency from `frequency` table
     :return: frequency in seconds
     """
-    if _id == ONCE:
-        frequency = None
-    elif _id == DAILY:
-        frequency = 24 * 60 * 60
-    elif _id == WEEKLY:
-        frequency = 7 * 24 * 60 * 60
-    elif _id == BIWEEKLY:
-        frequency = 3.5 * 24 * 60 * 60
-    elif _id == MONTHLY:
-        frequency = 30 * 24 * 60 * 60
-    elif _id == YEARLY:
-        frequency = 365 * 24 * 60 * 60
+    if not isinstance(frequency_id, int):
+        raise InvalidUsage(error_message='Include frequency id as int')
+    if not frequency_id or frequency_id == ONCE:
+        period = 0
+    elif frequency_id == DAILY:
+        period = 24 * 3600
+    elif frequency_id == WEEKLY:
+        period = 7 * 24 * 3600
+    elif frequency_id == BIWEEKLY:
+        period = 14 * 24 * 3600
+    elif frequency_id == MONTHLY:
+        period = 30 * 24 * 3600
+    elif frequency_id == YEARLY:
+        period = 365 * 24 * 3600
     else:
-        frequency = None
-    return frequency
+        raise InvalidUsage("Unknown frequency ID: %s", frequency_id)
+    return period
+
+
+def get_utc_datetime(dt, tz):
+    """
+    This method takes datetime object and timezone name and returns UTC specific datetime
+
+    :Example:
+
+        >> now = datetime.now()  # datetime(2015, 10, 8, 11, 16, 55, 520914)
+        >> timezone = 'Asia/Karachi'
+        >> utc_datetime = get_utc_datetime(now, timezone) # '2015-10-08T06:16:55Z
+
+    :param dt: datetime object
+    :type dt: datetime
+    :return: timezone specific datetime object
+    :rtype string
+    """
+    assert tz, 'Timezone should not be none'
+    assert isinstance(dt, datetime), 'dt should be datetime object'
+    # get timezone info from given datetime object
+    local_timezone = timezone(tz)
+    try:
+        local_dt = local_timezone.localize(dt, is_dst=None)
+    except ValueError as e:
+        # datetime object already contains timezone info
+        return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    utc_dt = local_dt.astimezone(pytz.utc)
+    return utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")

@@ -1,20 +1,19 @@
 """
 Functions related to candidate_service/candidate_app/api validations
 """
+import json
 from candidate_service.common.models.db import db
-from candidate_service.candidate_app import logger
 from candidate_service.common.models.candidate import Candidate
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
 from candidate_service.common.models.email_marketing import EmailCampaign
-from candidate_service.common.models.smart_list import SmartList
-from candidate_service.common.error_handling import InvalidUsage
 
 from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH,
                                                      SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH)
 from candidate_service.common.error_handling import InvalidUsage
 from candidate_service.common.utils.validators import is_number
 from datetime import datetime
+
 
 def does_candidate_belong_to_user(user_row, candidate_id):
     """
@@ -141,8 +140,9 @@ def validate_is_number(key, value):
 
 
 def validate_id_list(key, values):
-    if ',' in values:
-        values = values.split(',')
+
+    if ',' in values or isinstance(values, list):
+        values = values.split(',') if ',' in values else values
         for value in values:
             if not value.strip().isdigit():
                 raise InvalidUsage("`%s` must be comma separated ids" % key)
@@ -152,10 +152,12 @@ def validate_id_list(key, values):
         return values.strip()
 
 
-def string_list(key, values):
+def validate_string_list(key, values):
     if ',' in values:
         values = [value.strip() for value in values.split(',') if value.strip()]
         return values[0] if values.__len__() == 1 else values
+    else:
+        return values.strip()
 
 
 def validate_sort_by(key, value):
@@ -165,6 +167,14 @@ def validate_sort_by(key, value):
     except KeyError:
         raise InvalidUsage(error_message="sort_by `%s` is not correct input for sorting." % value, error_code=400)
     return sort_by
+
+
+def validate_encoded_json(value):
+    """ This function will validate and decodes a encoded json string """
+    try:
+        return json.loads(value)
+    except Exception as e:
+        raise InvalidUsage(error_message="Encoded JSON %s couldn't be decoded because: %s" % (value, e.message))
 
 
 def validate_fields(key, value):
@@ -219,8 +229,13 @@ SEARCH_INPUT_AND_VALIDATIONS = {
     "military_highest_grade": 'string_list',
     "military_end_date_from": 'digit',
     "military_end_date_to": 'digit',
+    "search_params": 'json_encoded',
     # return fields
     "fields": 'return_fields',
+    # Id of a talent_pool from where to search candidates
+    "talent_pool_id": 'digit',
+    # List of ids of dumb_lists (For Internal TalentPipeline Search Only)
+    "dumb_list_ids":  'id_list',
     # candidate id : to check if candidate is present in smartlist.
     "id": 'digit'
 }
@@ -243,12 +258,13 @@ def validate_and_format_data(request_data):
             if SEARCH_INPUT_AND_VALIDATIONS[key] == "sorting":
                 request_vars[key] = validate_sort_by(key, value)
             if SEARCH_INPUT_AND_VALIDATIONS[key] == "string_list":
-                request_vars[key] = string_list(key, value)
+                request_vars[key] = validate_string_list(key, value)
             if SEARCH_INPUT_AND_VALIDATIONS[key] == "return_fields":
                 request_vars[key] = validate_fields(key, value)
             if SEARCH_INPUT_AND_VALIDATIONS[key] == "date_range":
                 request_vars[key] = convert_date(key, value)
-
+            if SEARCH_INPUT_AND_VALIDATIONS[key] == 'json_encoded':
+                request_vars[key] = validate_encoded_json(value)
         # Custom fields. Add custom fields to request_vars.
         if key.startswith('cf-'):
             request_vars[key] = value

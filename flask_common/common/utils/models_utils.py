@@ -1,6 +1,5 @@
 """
-Author: Zohaib Ijaz, QC-Technologies,
-        Lahore, Punjab, Pakistan <mzohaib.qc@gmail.com>
+Author: Zohaib Ijaz, QC-Technologies, <mzohaib.qc@gmail.com>
 
 This modules contains helper methods for Flask-SqlAlchemy models.
 On app creation and startup these methods are added in Base Model class from which all
@@ -93,12 +92,16 @@ def save(instance):
     This method allows a model instance to save itself in database by calling save
     e.g.
     event = Event(**kwargs)
-    event.save()
+    Event.save(event)
     :return: same model instance
     """
     # Add instance to db session and then commit that change to save that
-    db.session.add(instance)
-    db.session.commit()
+    try:
+        db.session.add(instance)
+        db.session.commit()
+    except Exception as error:
+        print 'save_error' + error.message
+        db.session.rollback()
     return instance
 
 
@@ -106,13 +109,17 @@ def update(instance, **data):
     """
     This method allows a model instance to update itself in database by calling update
     e.g.
-    event = Event(**kwargs)
-    event.save()
+    event = Event.get(event_id)
+    event.update(**data)
     :return: same model instance
     """
     # update this instance by given data
-    instance.query.filter_by(id=instance.id).update(data)
-    db.session.commit()
+    try:
+        instance.query.filter_by(id=instance.id).update(data)
+        db.session.commit()
+    except Exception as error:
+        print 'update_error' + error.message
+        db.session.rollback()
     return instance
 
 
@@ -151,7 +158,7 @@ def get_by_id(cls, _id):
     :type _id: int
     :return: Model instance
     """
-    db.session.commit()
+
     try:
         # get Model instance given by id
         obj = cls.query.get(_id)
@@ -200,12 +207,11 @@ def add_model_helpers(cls, logger):
     :param cls:
     :return:
     """
-
     cls.session = db.session
     cls.logger = logger
     # this method converts model instance to json serializable dictionary
     cls.to_json = MethodType(to_json, None, db.Model)
-    # This method saves model instance in database as table row
+    # This method saves model instance in database as model object
     cls.save = MethodType(save, None, db.Model)
     # This method updates an existing instance
     cls.update = MethodType(update, None, db.Model)
@@ -232,8 +238,8 @@ def init_talent_app(flask_app, logger):
                         User.save(user_object)
 
                     2- to update a record in database
-                        user_row = User.get_by_id(1)
-                        user_row.update(first_name='Updated Name')
+                        user_obj = User.get_by_id(1)
+                        user_obj.update(first_name='Updated Name')
 
                     3- to delete a record
                         delete by id: User.delete(1)
@@ -244,8 +250,8 @@ def init_talent_app(flask_app, logger):
                         User.get(1) or User.get_by_id(1)
 
                     5- to get json serializable fields of a database record
-                        user_row = User.get_by_id(1)
-                        user_json_data  = user_row.to_json()
+                        user_obj = User.get_by_id(1)
+                        user_json_data  = user_obj.to_json()
 
         2- Initializes the app by
                     db.init_app(flask_app) flask SQLAlchemy builtin
