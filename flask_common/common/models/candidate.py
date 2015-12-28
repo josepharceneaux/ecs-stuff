@@ -63,6 +63,7 @@ class Candidate(db.Model):
     candidate_unidentifieds = relationship('CandidateUnidentified', cascade='all, delete-orphan', passive_deletes=True)
     email_campaign_sends = relationship('EmailCampaignSend', cascade='all, delete-orphan', passive_deletes=True)
     voice_comments = relationship('VoiceComment', cascade='all, delete-orphan', passive_deletes=True)
+    devices = relationship('CandidateDevice', cascade='all, delete-orphan', passive_deletes=True, backref='candidate')
 
     def __repr__(self):
         return "<Candidate(formatted_name=' %r')>" % self.formatted_name
@@ -896,4 +897,25 @@ class CandidateSubscriptionPreference(db.Model):
 
     def __repr__(self):
         return "<CandidateSubscriptionPreference (candidate_id = %r)>" % self.candidate_id
+
+
+class CandidateDevice(db.Model):
+    __tablename__ = 'candidate_device'
+    id = db.Column(db.Integer, primary_key=True)
+    one_signal_player_id = db.Column(db.String)
+    candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.id', ondelete='CASCADE'))
+    registered_at = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
+
+    def __repr__(self):
+        return "<PushNotificationBlast (Sends: %s, Clicks: %s)>" % (self.sends, self.clicks)
+
+    @classmethod
+    def get_candidate_ids_from_device_ids(cls, device_ids):
+        assert isinstance(device_ids, list) and len(device_ids), 'device_ids list should contain at least one id'
+        return cls.query.filter_by(cls.one_signal_player_id.in_(device_ids)).all()
+
+    @classmethod
+    def get_candidate_id_from_one_signal_device_id(cls, device_id):
+        assert device_id, 'device_id has invalid value'
+        cls.query.filter_by(one_signal_player_id=device_id).first()
 

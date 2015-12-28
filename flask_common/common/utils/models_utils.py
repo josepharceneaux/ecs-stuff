@@ -117,6 +117,30 @@ def update(instance, **data):
 
 
 @classmethod
+def create_or_update(cls, conditions, **data):
+    """
+    This method allows a model instance to update itself in database by calling update
+    e.g.
+    event = Event(**kwargs)
+    event.save()
+    :return: same model instance
+    """
+    # update this instance by given data
+    assert isinstance(conditions, dict) and any(conditions), 'first argument should be a valid dictionary'
+    query = cls.query
+    for key, value in conditions.iteritems():
+        query.filter(getattr(cls, key) == value)
+    instance = query.first()
+    if instance:
+        instance.update(**data)
+    else:
+        instance = cls(**data)
+        cls.save(instance)
+    db.session.commit()
+    return instance
+
+
+@classmethod
 def get_by_id(cls, _id):
     """
     This method takes an Integer id and returns a model instance of

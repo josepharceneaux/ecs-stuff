@@ -134,6 +134,7 @@ class TalentActivityManager(object):
     CAMPAIGN_SMS_CLICK = 25
     CAMPAIGN_SMS_REPLY = 26
     CAMPAIGN_SMS_CREATE = 27
+    CAMPAIGN_PUSH_NOTIFICATION_CREATE = 28
 
     MESSAGES = {
         RSVP_EVENT: ("%(firstName)s  %(lastName)s responded <b>%(response)s</b> "
@@ -203,6 +204,9 @@ class TalentActivityManager(object):
         CAMPAIGN_SMS_REPLY: ("%(candidate_name)s replied <b>%(reply_text)s</b> on SMS campaign %(campaign_name)s.",
                      "%(candidate_name)s replied '%(reply_text)s' on campaign %(campaign_name)s.",
                      "campaign.png"),
+        CAMPAIGN_PUSH_NOTIFICATION_CREATE: ("%(user_name)s created a Push Notification campaign: '%(campaign_name)s'",
+                                            "%(user_name)s created a Push Notification campaign: '%(campaign_name)s'",
+                                            "campaign.png")
     }
 
     def __init__(self):

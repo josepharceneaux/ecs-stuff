@@ -80,7 +80,6 @@ class CampaignBase(object):
         self.body_text = None  # This is 'text' to be sent to candidates as part of campaign.
         # Child classes will get this from respective campaign table.
         # e.g. in case of SMS campaign, this is get from "sms_campaign" database table.
-        self.smartlist_id = None
 
     @staticmethod
     def get_authorization_header(user_id):
