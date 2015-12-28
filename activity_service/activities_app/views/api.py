@@ -215,7 +215,7 @@ class TalentActivityManager(object):
                      "campaign.png"),
         CAMPAIGN_PUSH_NOTIFICATION_CREATE: ("%(user_name)s created a Push Notification campaign: '%(campaign_name)s'",
                                             "%(user_name)s created a Push Notification campaign: '%(campaign_name)s'",
-                                            "campaign.png")
+                                            "campaign.png"),
         ActivityMessageIds.SMARTLIST_ADD_CANDIDATE: (
             "%(formattedName)s was added to list %(name)s",
             "%(count)s candidates were added to list %(name)s",
