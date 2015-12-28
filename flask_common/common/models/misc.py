@@ -247,7 +247,8 @@ class CustomField(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationship
-    candidate_custom_fields = relationship('CandidateCustomField', backref='custom_field')
+    candidate_custom_fields = relationship('CandidateCustomField', backref='custom_field',
+                                           cascade="all, delete-orphan", passive_deletes=True)
 
     def __repr__(self):
         return "<CustomField (name = %r)>" % self.name
@@ -289,3 +290,9 @@ class EmailTemplateFolder(db.Model):
     parent = relationship(u'EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
                                                                                        cascade="all, delete-orphan"))
 
+class CustomFieldCategory(db.Model):
+    __tablename__ = 'custom_field_category'
+    id = db.Column(db.Integer, primary_key=True)
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))
+    name = db.Column('Name', db.String(255))
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())

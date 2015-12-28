@@ -106,6 +106,19 @@
                     }
                 }
             })
+            .state('candidates', {
+                parent: 'site',
+                url: '/candidates',
+                redirectTo: 'candidates.profile'
+            })
+            .state('candidates.profile', {
+                url: '/profile',
+                views: {
+                    '@site': {
+                        template: '<gt-candidate-profile></gt-candidate-profile>'
+                    }
+                }
+            })
             .state('campaigns', {
                 parent: 'site',
                 url: '/campaigns',
@@ -181,6 +194,31 @@
                 views: {
                     '@site': {
                         template: '<gt-admin-settings></gt-admin-settings>'
+                    }
+                }
+            })
+            .state('styleguide', {
+                parent: 'site',
+                url: '/styleguide',
+                redirectTo: 'styleguide.dashboard',
+                data: {
+                    loginRequired: false,
+                    demoModeRequired: true
+                }
+            })
+            .state('styleguide.dashboard', {
+                url: '/dashboard',
+                views: {
+                    '@site': {
+                        template: '<gt-styleguide-dashboard></gt-styleguide-dashboard>'
+                    }
+                }
+            })
+            .state('styleguide.colors', {
+                url: '/colors',
+                views: {
+                    '@site': {
+                        template: '<gt-styleguide-colors></gt-styleguide-colors>'
                     }
                 }
             });

@@ -2,6 +2,10 @@ from flask import Flask
 from flask.ext.script import Manager
 from flask.ext.migrate import Migrate, MigrateCommand
 from candidate_service.common.models.user import *
+from candidate_service.common.models import (
+    associations, candidate, candidate_edit, email_marketing, event, event_organizer,
+    language, misc, rsvp, talent_pools_pipelines, university, user, venue, widget
+)
 
 app = Flask(__name__)
 app.config.from_object('config')

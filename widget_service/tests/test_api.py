@@ -33,7 +33,7 @@ from widget_service.widget_app import app
 
 db.init_app(app)
 db.app = app
-APP_URL = 'http://0.0.0.0:8006/v1'
+APP_URL = 'http://0.0.0.0:8007/v1'
 
 
 def test_api_returns_domain_filtered_aois(domain_fixture, request):
@@ -165,7 +165,7 @@ def test_parse_location_ids_from_form(extra_field_fixtures, request):
 
 def test_health_check():
     import requests
-    response = requests.get('http://127.0.0.1:8006/healthcheck')
+    response = requests.get('http://127.0.0.1:8007/healthcheck')
     assert response.status_code == 200
 
 
