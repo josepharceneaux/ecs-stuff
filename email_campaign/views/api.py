@@ -5,8 +5,8 @@ from flask import current_app as app
 from flask import request
 from flask.ext.cors import CORS
 from ..modules.email_marketing import create_email_campaign, send_emails_to_campaign
-from ..modules.validations import validate_lists_belongs_to_domain, validate_and_format_request_data
-from email_campaign.common.error_handling import ForbiddenError
+from ..modules.validations import validate_and_format_request_data
+from email_campaign.common.error_handling import InvalidUsage
 from email_campaign.common.utils.auth_utils import require_oauth
 
 __author__ = 'jitesh'
@@ -24,7 +24,7 @@ CORS(mod, resources={
 @mod.route('/email_campaign', methods=['POST'])
 @require_oauth
 def email_campaigns():
-    """Creates new email campaign
+    """Creates new email campaign and schedules it
     Requires: Bearer token for Authorization in headers
     Input: (post data)
         email_campaign_name
@@ -41,19 +41,10 @@ def email_campaigns():
     """
     user_id = request.user.id
     # Get and validate request data
-    data = validate_and_format_request_data(request.form)
-
-    if data['email_client_id']:
-        template_id = None
-    else:
-        template_id = request.form.get('selected_template_id')
-    # convert list_ids (unicode, separated by comma) to list
-    list_ids = data['list_ids']
-    if isinstance(list_ids, basestring):
-        list_ids = [long(list_id) for list_id in list_ids.split(',')]
-    # Validation for list ids belonging to same domain
-    if not validate_lists_belongs_to_domain(list_ids, user_id):
-        raise ForbiddenError("Provided list does not belong to user's domain")
+    data = request.get_json(silent=True)
+    if not data:
+        raise InvalidUsage("Received empty request body")
+    data = validate_and_format_request_data(data, user_id)
 
     campaign_id = create_email_campaign(user_id=user_id,
                                         oauth_token=request.oauth_token,
@@ -65,9 +56,9 @@ def email_campaigns():
                                         email_body_text=data['email_body_text'],
                                         list_ids=data['list_ids'],
                                         email_client_id=data['email_client_id'],
-                                        template_id=template_id,
-                                        send_time=data['send_time'],
-                                        stop_time=data['stop_time'],
+                                        template_id=data['template_id'],
+                                        send_time=data['send_datetime'],
+                                        stop_time=data['stop_datetime'],
                                         frequency=data['frequency'])
 
     app.logger.info('Email campaign created, campaign id is %s.' % campaign_id)

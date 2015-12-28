@@ -51,8 +51,6 @@ fake-factory==0.5.2
 greenlet==0.4.7
 loggly-python-handler==1.0.0
 
-celery[redis]
-
 mixer==5.2.2
 python-dateutil==2.4.2
 pytz==2015.4

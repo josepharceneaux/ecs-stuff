@@ -67,12 +67,11 @@ class ForbiddenError(TalentError):
 
 
 class UnprocessableEntity(TalentError):
+    """https://tools.ietf.org/html/rfc4918#section-11.2"""
     @classmethod
     def http_status_code(cls):
         return 422
-    @classmethod
-    def status_code(cls):
-        return 422
+
 
 class ResourceNotFound(TalentError):
     @classmethod

@@ -4,7 +4,6 @@ from sqlalchemy.orm import relationship
 import datetime
 from sqlalchemy.dialects.mysql import TINYINT
 
-from email_marketing import EmailCampaign, EmailCampaignSend
 from associations import ReferenceEmail
 from venue import Venue
 from event import Event
@@ -280,7 +279,7 @@ class RatingTag(db.Model):
     candidates = relationship('Candidate', secondary="candidate_rating")
 
     def __repr__(self):
-        return "<RatingTag (desctiption=' %r')>" % self.description
+        return "<RatingTag (description=' %r')>" % self.description
 
 
 class RatingTagUser(db.Model):
