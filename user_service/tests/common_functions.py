@@ -12,6 +12,8 @@ DOMAIN_GROUPS = USER_SERVICE_ENDPOINT % 'domain/%s/groups'
 DOMAIN_GROUPS_UPDATE = USER_SERVICE_ENDPOINT % 'domain/groups/%s'
 USER_GROUPS = USER_SERVICE_ENDPOINT % 'groups/%s/users'
 UPDATE_PASSWORD = USER_SERVICE_ENDPOINT % 'users/update_password'
+FORGOT_PASSWORD = USER_SERVICE_ENDPOINT % 'users/forgot_password'
+RESET_PASSWORD = USER_SERVICE_ENDPOINT % 'users/reset_password/%s'
 
 USER_API = USER_SERVICE_ENDPOINT % 'users'
 DOMAIN_API = USER_SERVICE_ENDPOINT % 'domains'
@@ -84,6 +86,22 @@ def update_password(access_token, old_password, new_password):
     data = {"old_password": old_password, "new_password": new_password}
     response = requests.put(url=UPDATE_PASSWORD, headers=headers, data=json.dumps(data))
     return response.status_code
+
+
+def forgot_password(email='', action='GET'):
+    if action == 'GET':
+        return requests.get(FORGOT_PASSWORD).status_code
+    else:
+        response = requests.post(url=FORGOT_PASSWORD, data={"username": email})
+        return response.status_code
+
+
+def reset_password(token, password='', action='GET'):
+    if action == 'GET':
+        return requests.get(RESET_PASSWORD % token).status_code
+    else:
+        response = requests.post(url=RESET_PASSWORD % token, data={"password": password})
+        return response.status_code
 
 
 def user_api(access_token, user_id='', data='', action='GET'):

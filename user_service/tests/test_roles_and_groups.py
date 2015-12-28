@@ -380,22 +380,6 @@ def test_domain_groups_api_put(access_token_first, first_group, second_group, us
     assert first_group.description == data['description']
 
 
-def test_update_password(access_token_first):
-
-    # Logged-in user updating its password but providing empty values of old and new password
-    assert update_password(access_token_first, '', '') == 404
-
-    # Logged-in user updating its password but providing wrong value of old_password
-    assert update_password(access_token_first, PASSWORD + 'temp', CHANGED_PASSWORD) == 401
-
-    # Logged-in user updating its password
-    assert update_password(access_token_first, PASSWORD, CHANGED_PASSWORD) == 200
-
-    # Logged-in user changing its own password but as its password has changed before so all of its tokens have been
-    # revoked. So 401 status code should be returned
-    assert update_password(access_token_first, CHANGED_PASSWORD, PASSWORD) == 401
-
-
 def test_health_check():
     import requests
     response = requests.get('http://127.0.0.1:8004/healthcheck')

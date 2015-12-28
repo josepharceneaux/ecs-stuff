@@ -15,7 +15,6 @@ from user_service.common.utils.auth_utils import require_oauth, require_all_role
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 
-
 @app.route('/domain/<int:domain_id>/roles', methods=['GET'])
 @require_oauth
 @require_all_roles('CAN_GET_DOMAIN_ROLES')
