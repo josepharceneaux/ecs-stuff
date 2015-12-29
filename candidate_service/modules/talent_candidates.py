@@ -1037,7 +1037,7 @@ def _add_or_update_educations(candidate_id, educations, added_time, user_id, edi
                         raise InvalidUsage(error_message=error_message)
 
                     # CandidateEducationDegree must belong to Candidate
-                    if can_edu_degree_query.candidate_education.candidate_id != candidate_id:
+                    if can_edu_degree_query.first().candidate_education.candidate_id != candidate_id:
                         raise ForbiddenError(error_message='Unauthorized candidate degree')
 
                     # Track all changes made to CandidateEducationDegree

@@ -736,9 +736,6 @@ class CandidateEducationDegreeBullet(db.Model):
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
-    # Relationships
-    candidate_education_degree = relationship('CandidateEducationDegree', backref='candidate_education_degree_bullet')
-
     def __repr__(self):
         return "<CandidateEducationDegreeBullet (candidate_education_degree_id=' %r')>" % \
                self.candidate_education_degree_id
@@ -792,9 +789,6 @@ class CandidateExperienceBullet(db.Model):
     description = db.Column('Description', db.String(10000))
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-
-    # Relationships
-    candidate_experience = relationship('CandidateExperience', backref='candidate_experience_bullet')
 
     def __repr__(self):
         return "<CandidateExperienceBullet (candidate_experience_id=' %r')>" % self.candidate_experience_id
