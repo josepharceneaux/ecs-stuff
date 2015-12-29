@@ -1130,5 +1130,5 @@ class CandidateOpenWebResource(Resource):
             candiate = fetch_candidate_info(find_candidate)
             return {'candidate': candiate}
         else:
-            raise NotFoundError()
+            raise NotFoundError(error_message="Candidate not found")
 
