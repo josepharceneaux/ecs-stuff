@@ -9,6 +9,7 @@ Scheduler - APScheduler initialization, set jobstore, threadpoolexecutor
 import re
 
 # Third-party imports
+import datetime
 from pytz import timezone
 from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.events import EVENT_JOB_EXECUTED
@@ -21,7 +22,8 @@ from dateutil.parser import parse
 from scheduler_service import logger
 from scheduler_service.apscheduler_config import executors, job_store, jobstores
 from scheduler_service.common.error_handling import InvalidUsage
-from scheduler_service.custom_exceptions import FieldRequiredError, TriggerTypeError, JobNotCreatedError
+from scheduler_service.custom_exceptions import FieldRequiredError, TriggerTypeError, JobNotCreatedError, \
+    JobTimeExpiredError, InvalidJobTimeError
 from scheduler_service.tasks import send_request
 
 
@@ -55,22 +57,32 @@ def apscheduler_listener(event):
         logger.error('The job crashed :(\n')
         logger.error(str(event.exception.message) + '\n')
     else:
-        logger.info('The job worked :)')
         job = scheduler.get_job(event.job_id)
-        if job.next_run_time is not None and job.next_run_time > job.trigger.end_date:
-            logger.info('Stopping job')
-            try:
+        logger.info('The job with id %s worked :)' % job.id)
+        if job:
+            if isinstance(job.trigger, IntervalTrigger) and job.next_run_time and job.next_run_time > job.trigger.end_date:
+                logger.info('Stopping job')
+                try:
+                    scheduler.remove_job(job_id=job.id)
+                    logger.info("apscheduler_listener: Job with id %s removed successfully" % job.id)
+                except Exception as e:
+                    logger.exception("apscheduler_listener: Error occurred while removing job")
+                    raise e
+            elif isinstance(job.trigger, DateTrigger) and not job.run_date:
                 scheduler.remove_job(job_id=job.id)
-                logger.info("APScheduler_listener: Job removed successfully")
-            except Exception as e:
-                logger.exception("apscheduler_listener: Error occurred while removing job")
-                raise e
+                logger.info("apscheduler_listener: Job with %s removed successfully" % job.id)
 
 
 scheduler.add_listener(apscheduler_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 
 
 def validate_one_time_job(data):
+    """
+    Validate one time job post data.
+    if run_datetime is already passed then raise error 500
+    :param data:
+    :return:
+    """
     valid_data = dict()
     try:
         run_datetime = data['run_datetime']
@@ -80,13 +92,24 @@ def validate_one_time_job(data):
         run_datetime = parse(run_datetime)
         run_datetime = run_datetime.replace(tzinfo=timezone('UTC'))
         valid_data.update({'run_datetime': run_datetime})
-        return valid_data
     except Exception:
         InvalidUsage(
             error_message="Invalid value of run_datetime %s. run_datetime should be datetime format" % run_datetime)
 
+    current_datetime = datetime.datetime.utcnow()
+    current_datetime = current_datetime.replace(tzinfo=timezone('UTC'))
+    if run_datetime < current_datetime:
+        raise JobTimeExpiredError("No need to schedule job of already passed time")
+
+    return valid_data
+
 
 def validate_periodic_job(data):
+    """
+    Validate periodic job and check for missing or invalid data. if found then raise error
+    :param data:
+    :return:
+    """
     valid_data = dict()
     try:
         try:
@@ -118,10 +141,20 @@ def validate_periodic_job(data):
 
         frequency = int(frequency)
         valid_data.update({'frequency': frequency})
-        return valid_data
 
     except KeyError:
         raise FieldRequiredError(error_message="Missing or invalid data.")
+
+    current_datetime = datetime.datetime.utcnow()
+    current_datetime = current_datetime.replace(tzinfo=timezone('UTC'))
+
+    if start_datetime > end_datetime:
+        raise InvalidJobTimeError("Start datetime should be lesser than end datetime.")
+
+    if current_datetime > end_datetime:
+        raise JobTimeExpiredError("Current datetime is greater than end_datetime. No need to schedule expired job")
+
+    return valid_data
 
 
 def schedule_job(data, user_id=None, access_token=None):
@@ -221,11 +254,11 @@ def serialize_task(task):
     if isinstance(task.trigger, IntervalTrigger):
         task_dict = dict(
             id=task.id,
-            url=task.args[1],
+            url=task.args[2],
             start_datetime=str(task.trigger.start_date),
             end_datetime=str(task.trigger.end_date),
             next_run_datetime=str(task.next_run_time),
-            frequency=dict(seconds=task.trigger.interval.seconds),
+            frequency=dict(seconds=task.trigger.interval_length),
             post_data=task.kwargs,
             pending=task.pending,
             task_type='periodic'
@@ -233,7 +266,7 @@ def serialize_task(task):
     elif isinstance(task.trigger, DateTrigger):
         task_dict = dict(
             id=task.id,
-            url=task.args[1],
+            url=task.args[2],
             run_datetime=str(task.trigger.run_date),
             post_data=task.kwargs,
             pending=task.pending,
