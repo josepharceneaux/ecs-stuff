@@ -1,4 +1,6 @@
 __author__='erik@gettalent.com'
+# Standard Library
+import random
 # Third party.
 from bs4 import BeautifulSoup as bs4
 # JSON outputs.
@@ -10,6 +12,9 @@ from .resume_xml import GET_646
 from .resume_xml import PDF
 from .resume_xml import PDF_13
 from .resume_xml import PDF_14
+# Dependencies
+from resume_service.common.utils.handy_functions import random_word
+from resume_service.common.redis_conn import redis_client
 # Modules being tested.
 from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_addresses
 from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_educations
@@ -18,6 +23,7 @@ from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candid
 from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_name
 from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_phones
 from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_skills
+from resume_service.resume_parsing_app.views.batch_lib import add_file_names_to_queue
 
 EDUCATIONS_KEYS = ('city', 'degrees', 'state', 'country', 'school_name')
 WORK_EXPERIENCES_KEYS = ('city', 'state', 'end_date', 'country', 'company', 'role', 'is_current',
@@ -145,3 +151,19 @@ def test_626_experience_parsing():
         assert all(k in e for k in WORK_EXPERIENCES_KEYS if e)
     for e in experiences_b:
         assert all(k in e for k in WORK_EXPERIENCES_KEYS if e)
+
+def test_add_single_item_to_batch_queue():
+    user_id = random_word(6)
+    queue_string = 'batch:{}:fp_keys'.format(user_id)
+    response = add_file_names_to_queue(['file1'], user_id)
+    redis_client.expire(queue_string, 20)
+    assert response == '{} - Size: {}'.format(queue_string, 1)
+
+def test_add_multiple_items_to_batch_queue():
+    user_id = random_word(6)
+    file_count = random.randrange(1, 100)
+    filenames = ['file{}'.format(i) for i in xrange(file_count)]
+    queue_string = 'batch:{}:fp_keys'.format(user_id)
+    response = add_file_names_to_queue(filenames, user_id)
+    redis_client.expire(queue_string, 20)
+    assert response == '{} - Size: {}'.format(queue_string, file_count)
