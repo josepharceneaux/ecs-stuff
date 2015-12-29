@@ -31,7 +31,6 @@ test:
         background: true
     - python candidate_service/run.py:
         parallel: true
-        background: true
     - python social_network_service/run.py:
         parallel: true
         background: true

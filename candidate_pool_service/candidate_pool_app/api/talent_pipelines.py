@@ -1,13 +1,13 @@
 __author__ = 'ufarooqi'
 
 import json
-from flask import request
+from flask import request, Blueprint
 from dateutil import parser
 from sqlalchemy import and_
 from dateutil.parser import parse
 from flask_restful import Resource
-from candidate_pool_service.candidate_pool_app import app
 from candidate_pool_service.common.error_handling import *
+from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
@@ -15,6 +15,9 @@ from candidate_pool_service.common.utils.talent_reporting import email_error_to_
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import TALENT_PIPELINE_SEARCH_PARAMS
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import get_candidates_of_talent_pipeline
+
+
+talent_pipeline_blueprint = Blueprint('talent_pipeline_api', __name__)
 
 
 class TalentPipelineApi(Resource):
@@ -486,7 +489,7 @@ class TalentPipelineCandidates(Resource):
         return get_candidates_of_talent_pipeline(talent_pipeline)
 
 
-@app.route('/talent-pipelines/stats', methods=['POST'])
+@talent_pipeline_blueprint.route('/talent-pipelines/stats', methods=['POST'])
 @require_oauth(allow_basic_auth=True, allow_null_user=True)
 @require_all_roles('CAN_UPDATE_TALENT_PIPELINES_STATS')
 def update_talent_pipelines_stats():
@@ -533,7 +536,7 @@ def update_talent_pipelines_stats():
         raise InvalidUsage(error_message="Couldn't update statistics of TalentPools because: %s" % e.message)
 
 
-@app.route('/talent-pipeline/<int:talent_pipeline_id>/stats', methods=['GET'])
+@talent_pipeline_blueprint.route('/talent-pipeline/<int:talent_pipeline_id>/stats', methods=['GET'])
 @require_oauth()
 def get_talent_pipeline_stats(talent_pipeline_id):
     """
@@ -575,4 +578,7 @@ def get_talent_pipeline_stats(talent_pipeline_id):
         for talent_pipeline_stat in talent_pipeline_stats
     ]})
 
-
+api = TalentApi(talent_pipeline_blueprint)
+api.add_resource(TalentPipelineApi, '/talent-pipelines/<int:id>', '/talent-pipelines')
+api.add_resource(TalentPipelineSmartListApi, '/talent-pipeline/<int:id>/smart_lists')
+api.add_resource(TalentPipelineCandidates, '/talent-pipeline/<int:id>/candidates')

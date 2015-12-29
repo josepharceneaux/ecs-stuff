@@ -100,13 +100,13 @@ class CandidatePoolApiUrl:
     env = os.environ.get('GT_ENVIRONMENT')
 
     if env == 'dev' or env == 'circle':
-        CANDIDATE_POOL_SERVICE_HOST_NAME = 'http://127.0.0.1:8008/%s'
+        CANDIDATE_POOL_SERVICE_HOST_NAME = 'http://127.0.0.1:8008/v1/%s'
     elif env == 'qa':
         # TODO: Change this url after deployment
-        CANDIDATE_POOL_SERVICE_HOST_NAME = 'http://127.0.0.1:8008/%s'
+        CANDIDATE_POOL_SERVICE_HOST_NAME = 'http://127.0.0.1:8008/v1/%s'
     elif env == 'prod':
         # TODO: Change this url after deployment
-        CANDIDATE_POOL_SERVICE_HOST_NAME = 'http://127.0.0.1:8008/%s'
+        CANDIDATE_POOL_SERVICE_HOST_NAME = 'http://127.0.0.1:8008/v1/%s'
     else:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
 

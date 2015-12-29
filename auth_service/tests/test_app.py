@@ -9,7 +9,7 @@ from werkzeug.security import generate_password_hash, gen_salt
 from auth_service.oauth import app
 from auth_service.common.models.user import *
 
-OAUTH_ENDPOINT = 'http://127.0.0.1:8001/%s'
+OAUTH_ENDPOINT = 'http://127.0.0.1:8001/v1/%s'
 TOKEN_URL = OAUTH_ENDPOINT % 'oauth2/token'
 REVOKE_URL = OAUTH_ENDPOINT % 'oauth2/revoke'
 AUTHORIZE_URL = OAUTH_ENDPOINT % 'oauth2/authorize'

@@ -19,7 +19,7 @@ db.init_app(app)
 db.app = app
 
 # wrap the flask app and give a heathcheck url
-health = HealthCheck(app, "/healthcheck")
+health = HealthCheck(app, "/v1/healthcheck")
 
 gt_oauth = OAuth2Provider()
 gt_oauth.init_app(app)

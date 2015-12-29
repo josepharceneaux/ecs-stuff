@@ -1,12 +1,13 @@
 __author__ = 'ufarooqi'
-from flask_restful import Resource
-from flask import request
 from dateutil import parser
-from user_service.common.models.user import User, Domain, db
+from flask_restful import Resource
+from flask import request, Blueprint
+from user_service.common.error_handling import *
 from user_service.common.models.misc import Culture
+from user_service.common.talent_api import TalentApi
+from user_service.common.models.user import User, Domain, db
 from user_service.user_app.user_service_utilties import get_or_create_domain
 from user_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
-from user_service.common.error_handling import *
 
 
 class DomainApi(Resource):
@@ -190,3 +191,7 @@ class DomainApi(Resource):
         db.session.commit()
 
         return {'updated_domain': {'id': requested_domain_id}}
+
+domain_blueprint = Blueprint('domain_api', __name__)
+api = TalentApi(domain_blueprint)
+api.add_resource(DomainApi, "/domains", "/domains/<int:id>")

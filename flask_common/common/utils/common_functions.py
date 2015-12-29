@@ -6,7 +6,7 @@ from werkzeug.security import generate_password_hash
 from sqlalchemy.sql.expression import ClauseElement
 from ..models.user import User, UserScopedRoles
 
-OAUTH_ENDPOINT = 'http://127.0.0.1:8001/%s'
+OAUTH_ENDPOINT = 'http://127.0.0.1:8001/v1/%s'
 TOKEN_URL = OAUTH_ENDPOINT % 'oauth2/token'
 
 

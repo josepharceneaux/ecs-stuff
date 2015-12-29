@@ -2,18 +2,21 @@ __author__ = 'ufarooqi'
 
 import json
 import requests
-from flask import request
+from flask import request, Blueprint
 from flask_restful import Resource
 from sqlalchemy import and_
 from dateutil.parser import parse
 from candidate_pool_service.candidate_pool_app import app
 from candidate_pool_service.common.error_handling import *
+from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.routes import CandidateApiUrl
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
 from candidate_pool_service.common.utils.talent_reporting import email_error_to_admins
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
+
+talent_pool_blueprint = Blueprint('talent_pool_api', __name__)
 
 
 class TalentPoolApi(Resource):
@@ -527,7 +530,7 @@ class TalentPoolCandidateApi(Resource):
                                            talent_pool_candidate_ids]}
 
 
-@app.route('/talent-pools/stats', methods=['POST'])
+@talent_pool_blueprint.route('/talent-pools/stats', methods=['POST'])
 @require_oauth(allow_basic_auth=True, allow_null_user=True)
 @require_all_roles('CAN_UPDATE_TALENT_POOLS_STATS')
 def update_talent_pools_stats():
@@ -571,7 +574,7 @@ def update_talent_pools_stats():
         raise InvalidUsage(error_message="Couldn't update statistics of TalentPools because: %s" % e.message)
 
 
-@app.route('/talent-pool/<int:talent_pool_id>/stats', methods=['GET'])
+@talent_pool_blueprint.route('/talent-pool/<int:talent_pool_id>/stats', methods=['GET'])
 @require_oauth()
 def get_talent_pool_stats(talent_pool_id):
     """
@@ -612,3 +615,8 @@ def get_talent_pool_stats(talent_pool_id):
         }
         for talent_pool_stat in talent_pool_stats
     ]})
+
+api = TalentApi(talent_pool_blueprint)
+api.add_resource(TalentPoolApi, '/talent-pools/<int:id>', '/talent-pools')
+api.add_resource(TalentPoolGroupApi, '/groups/<int:group_id>/talent_pools')
+api.add_resource(TalentPoolCandidateApi, '/talent-pools/<int:id>/candidates')

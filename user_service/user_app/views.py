@@ -1,14 +1,15 @@
 __author__ = 'ufarooqi'
 
-from . import app
 from user_service.common.models.user import Domain, DomainRole, Token, db
-from flask import request
+from flask import request, Blueprint
 from user_service.common.error_handling import *
 from user_service.common.utils.auth_utils import require_oauth, require_all_roles
 from werkzeug.security import generate_password_hash, check_password_hash
 
+users_utilities_blueprint = Blueprint('users_utilities_api', __name__)
 
-@app.route('/domain/<int:domain_id>/roles', methods=['GET'])
+
+@users_utilities_blueprint.route('/domain/<int:domain_id>/roles', methods=['GET'])
 @require_oauth()
 @require_all_roles('CAN_GET_DOMAIN_ROLES')
 def get_all_roles_of_domain(domain_id):
@@ -21,7 +22,7 @@ def get_all_roles_of_domain(domain_id):
         raise InvalidUsage(error_message='Either domain_id is invalid or it is different than that of logged-in user')
 
 
-@app.route('/users/update_password', methods=['PUT'])
+@users_utilities_blueprint.route('/users/update_password', methods=['PUT'])
 @require_oauth()
 def update_password():
     """

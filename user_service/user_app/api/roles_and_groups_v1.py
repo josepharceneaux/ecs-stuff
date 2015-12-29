@@ -1,8 +1,9 @@
 from flask_restful import Resource
-from flask import request
+from flask import request, Blueprint
+from user_service.common.error_handling import *
+from user_service.common.talent_api import TalentApi
 from user_service.common.models.user import User, Domain, UserScopedRoles, UserGroup, db
 from user_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
-from user_service.common.error_handling import *
 
 
 class UserScopedRolesApi(Resource):
@@ -264,3 +265,10 @@ class DomainGroupsApi(Resource):
 
         UserGroup.delete_groups(requested_domain_id, posted_data.get('groups'))
         return {"success_message": "All given user_groups have been removed successfully from given domain"}
+
+
+groups_and_roles_blueprint = Blueprint('groups_and_roles_api', __name__)
+api = TalentApi(groups_and_roles_blueprint)
+api.add_resource(UserScopedRolesApi, "/users/<int:user_id>/roles")
+api.add_resource(UserGroupsApi, "/groups/<int:group_id>/users")
+api.add_resource(DomainGroupsApi, "/domain/<int:domain_id>/groups", "/domain/groups/<int:group_id>")

@@ -5,7 +5,7 @@ from werkzeug.security import gen_salt
 from candidate_pool_service.common.routes import CandidateApiUrl, CandidatePoolApiUrl
 from candidate_pool_service.common.models.talent_pools_pipelines import Smartlist, SmartlistCandidate
 
-CANDIDATE_POOL_SERVICE_ENDPOINT = 'http://127.0.0.1:8008/%s'
+CANDIDATE_POOL_SERVICE_ENDPOINT = 'http://127.0.0.1:8008/v1/%s'
 TALENT_POOL_API = CANDIDATE_POOL_SERVICE_ENDPOINT % 'talent-pools'
 TALENT_POOL_GROUP_API = CANDIDATE_POOL_SERVICE_ENDPOINT % 'groups/%s/talent_pools'
 TALENT_POOL_CANDIDATE_API = CANDIDATE_POOL_SERVICE_ENDPOINT % 'talent-pools/%s/candidates'
