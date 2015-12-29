@@ -13,7 +13,7 @@
                         </div>
 
                         <div class="col--full-4 hero__header__stats--column">
-                            <h3>Talent Pipelines <a class="hero__header__link" href="#" title="New Pipeline">+</a></h3>
+                            <h3>Talent Pipelines <a class="hero__header__new-pipeline" href="#" title="New Pipeline">+</a></h3>
                             <h1>14</h1>
                         </div>
 
@@ -366,36 +366,11 @@
                 <h4>Next 60 Days (Predictive)</h4>
             </header>
 
-            <figure class="progress">
-                <h4>Senior Java Developers in CA</h4>
+            <figure class="progress" ng-repeat="pipeline in vm.pipelines track by pipeline.id">
+                <h4>{{pipeline.name}}</h4>
 
-                <div class="progress__inner" style="width: 100%">
-                    <div class="progress__bar"></div>
-                    <div class="progress__label">120</div>
-                </div>
-            </figure>
-            <figure class="progress">
-                <h4>Vererans Hiring Initiative</h4>
-
-                <div class="progress__inner"    style="width: 78%">
-                    <div class="progress__bar"></div>
-                    <div class="progress__label">78</div>
-                </div>
-            </figure>
-            <figure class="progress">
-                <h4>Oracle DBAs Overseas</h4>
-
-                <div class="progress__inner" style="width: 25%">
-                    <div class="progress__bar--red"></div>
-                    <div class="progress__label">25</div>
-                </div>
-            </figure>
-            <figure class="progress">
-                <h4>Oracle DBAs Overseas</h4>
-
-                <div class="progress__inner" style="width: 50%">
-                    <div class="progress__bar--red"></div>
-                    <div class="progress__label">50</div>
+                <div class="progress__inner" ng-style="{'width': pipeline.progress * 100 + '%'}">
+                    <div class="progress__bar" ng-class="{'progress__bar--red': pipeline.progress <= .5}"></div>
                 </div>
             </figure>
         </div>
