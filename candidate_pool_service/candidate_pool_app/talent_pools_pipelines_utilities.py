@@ -37,7 +37,7 @@ TALENT_PIPELINE_SEARCH_PARAMS = [
 ]
 
 
-def get_candidates_of_talent_pipeline(talent_pipeline):
+def get_candidates_of_talent_pipeline(talent_pipeline, fields=''):
         """
         Fetch all candidates of a talent-pipeline
         :param talent_pipeline: TalentPipeline Object
@@ -72,7 +72,7 @@ def get_candidates_of_talent_pipeline(talent_pipeline):
         request_params = dict()
 
         request_params['talent_pool_id'] = talent_pipeline.talent_pool_id
-        request_params['fields'] = request.args.get('fields', '')
+        request_params['fields'] = request.args.get('fields', '') or fields
         request_params['sort_by'] = request.args.get('sort_by', '')
         request_params['limit'] = request.args.get('limit', '')
         request_params['page'] = request.args.get('page', '')
@@ -93,14 +93,14 @@ def get_candidates_of_talent_pipeline(talent_pipeline):
                                              "%s" % e.message)
 
 
-def schedule_talent_pool_and_pipelines_weekly_stats_update():
+def schedule_talent_pool_and_pipelines_daily_stats_update():
 
     env = os.getenv('GT_ENVIRONMENT')
 
     if not redis_store.get('IS_TALENT_POOL_AND_PIPELINE_STAT_API_REGISTERED') and env != 'circle':
 
         data = {
-            "frequency": 3600 * 24 * 7,  # Weekly
+            "frequency": 3600 * 24,  # Daily
             "task_type": "periodic",
             "start_datetime": str(datetime.utcnow()),
             "end_datetime": "2099-01-05T08:00:00",
@@ -125,6 +125,6 @@ def schedule_talent_pool_and_pipelines_weekly_stats_update():
             redis_store.set('IS_TALENT_POOL_AND_PIPELINE_STAT_API_REGISTERED', True)
 
         except Exception as e:
-            logger.error("Couldn't register TalentPool or TalentPipeline statistics update endpoint to Scheduler "
-                         "Service because: %s" % e.message)
+            logger.exception("Couldn't register TalentPool or TalentPipeline statistics update endpoint to Scheduler "
+                             "Service because: %s" % e.message)
 

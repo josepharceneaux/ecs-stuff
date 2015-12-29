@@ -11,6 +11,7 @@ from candidate_pool_service.common.error_handling import *
 from candidate_pool_service.common.routes import CandidateApiUrl
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.talent_pools_pipelines import *
+from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
 from candidate_pool_service.common.utils.talent_reporting import email_error_to_admins
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
 
@@ -531,7 +532,7 @@ class TalentPoolCandidateApi(Resource):
 @require_all_roles('CAN_UPDATE_TALENT_POOLS_STATS')
 def update_talent_pools_stats():
     """
-    This method will update the statistics of all talent-pools once in a week.
+    This method will update the statistics of all talent-pools daily.
     :return: None
     """
 
@@ -540,14 +541,24 @@ def update_talent_pools_stats():
         for talent_pool in talent_pools:
             last_week_stat = TalentPoolStats.query.filter_by(talent_pool_id=talent_pool.id).\
                 order_by(TalentPoolStats.id.desc()).first()
-            total_candidates = len(TalentPoolCandidate.query.filter_by(talent_pool_id=talent_pool.id).all())
+            talent_pool_candidate_ids =[talent_pool_candidate.candidate_id for talent_pool_candidate in
+                                        TalentPoolCandidate.query.filter_by(talent_pool_id=talent_pool.id).all()]
+            total_candidates = len(talent_pool_candidate_ids)
+            engaged_candidates = len(db.session.query(EmailCampaignSend.candidate_id).filter(
+                EmailCampaignSend.candidate_id.in_(talent_pool_candidate_ids)).all() or [])
+            candidates_engagement = int(float(engaged_candidates)/total_candidates*100) if \
+                int(total_candidates) else 0
+            # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
+
             if last_week_stat:
                 talent_pool_stat = TalentPoolStats(talent_pool_id=talent_pool.id, total_candidates=total_candidates,
                                                    number_of_candidates_removed_or_added=
-                                                   total_candidates - last_week_stat.total_candidates)
+                                                   total_candidates - last_week_stat.total_candidates,
+                                                   candidates_engagement=candidates_engagement)
             else:
                 talent_pool_stat = TalentPoolStats(talent_pool_id=talent_pool.id, total_candidates=total_candidates,
-                                                   number_of_candidates_removed_or_added=total_candidates)
+                                                   number_of_candidates_removed_or_added=total_candidates,
+                                                   candidates_engagement=candidates_engagement)
             db.session.add(talent_pool_stat)
 
         db.session.commit()
@@ -564,7 +575,7 @@ def update_talent_pools_stats():
 @require_oauth()
 def get_talent_pool_stats(talent_pool_id):
     """
-    This method will return the statistics of a talent_pool over a given period of time with time-period = 1 week
+    This method will return the statistics of a talent_pool over a given period of time with time-period = 1 day
     :param talent_pool_id: Id of a talent-pool
     :return: A list of time-series data
     """
@@ -596,7 +607,8 @@ def get_talent_pool_stats(talent_pool_id):
         {
             'total_number_of_candidates': talent_pool_stat.total_candidates,
             'number_of_candidates_removed_or_added': talent_pool_stat.number_of_candidates_removed_or_added,
-            'added_time': talent_pool_stat.added_time
+            'added_time': talent_pool_stat.added_time,
+            'candidates_engagement': talent_pool_stat.candidates_engagement
         }
         for talent_pool_stat in talent_pool_stats
     ]})

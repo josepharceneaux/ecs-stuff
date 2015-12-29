@@ -1,7 +1,6 @@
 __author__ = 'ufarooqi'
 
 import json
-import requests
 from flask import request
 from dateutil import parser
 from sqlalchemy import and_
@@ -11,8 +10,8 @@ from candidate_pool_service.candidate_pool_app import app
 from candidate_pool_service.common.error_handling import *
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.talent_pools_pipelines import *
+from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
 from candidate_pool_service.common.utils.talent_reporting import email_error_to_admins
-from candidate_pool_service.tests.common_functions import TALENT_PIPELINE_CANDIDATE_API
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import TALENT_PIPELINE_SEARCH_PARAMS
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import get_candidates_of_talent_pipeline
@@ -492,7 +491,7 @@ class TalentPipelineCandidates(Resource):
 @require_all_roles('CAN_UPDATE_TALENT_PIPELINES_STATS')
 def update_talent_pipelines_stats():
     """
-    This method will update the statistics of all talent-pipelines once in a week.
+    This method will update the statistics of all talent-pipelines daily.
     :return: None
     """
     try:
@@ -501,17 +500,27 @@ def update_talent_pipelines_stats():
             last_week_stat = TalentPipelineStats.query.filter_by(talent_pipeline_id=talent_pipeline.id).\
                 order_by(TalentPipelineStats.id.desc()).first()
 
-            response = get_candidates_of_talent_pipeline(talent_pipeline)
+            # Return only candidate_ids
+            response = get_candidates_of_talent_pipeline(talent_pipeline, 'id')
             total_candidates = response.get('total_found')
+            talent_pipeline_candidate_ids = [candidate.get('id') for candidate in response.get('candidates')]
+            engaged_candidates = len(db.session.query(EmailCampaignSend.candidate_id).filter(
+                EmailCampaignSend.candidate_id.in_(talent_pipeline_candidate_ids)).all() or [])
+            candidates_engagement = int(float(engaged_candidates)/total_candidates*100) if int(total_candidates) else 0
+            # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
+
             if last_week_stat:
                 talent_pipeline_stat = TalentPipelineStats(talent_pipeline_id=talent_pipeline.id,
                                                            total_candidates=total_candidates,
                                                            number_of_candidates_removed_or_added=
-                                                           total_candidates - last_week_stat.total_candidates)
+                                                           total_candidates - last_week_stat.total_candidates,
+                                                           candidates_engagement=candidates_engagement)
             else:
                 talent_pipeline_stat = TalentPipelineStats(talent_pipeline_id=talent_pipeline.id,
                                                            total_candidates=total_candidates,
-                                                           number_of_candidates_removed_or_added=total_candidates)
+                                                           number_of_candidates_removed_or_added=total_candidates,
+                                                           candidates_engagement=candidates_engagement
+                                                           )
             db.session.add(talent_pipeline_stat)
 
         db.session.commit()
@@ -528,7 +537,7 @@ def update_talent_pipelines_stats():
 @require_oauth()
 def get_talent_pipeline_stats(talent_pipeline_id):
     """
-    This method will return the statistics of a talent_pipeline over a given period of time with time-period = 1 week
+    This method will return the statistics of a talent_pipeline over a given period of time with time-period = 1 day
     :param talent_pipeline_id: Id of a talent-pipeline
     :return: A list of time-series data
     """
@@ -560,7 +569,8 @@ def get_talent_pipeline_stats(talent_pipeline_id):
         {
             'total_number_of_candidates': talent_pipeline_stat.total_candidates,
             'number_of_candidates_removed_or_added': talent_pipeline_stat.number_of_candidates_removed_or_added,
-            'added_time': talent_pipeline_stat.added_time
+            'added_time': talent_pipeline_stat.added_time,
+            'candidates_engagement': talent_pipeline_stat.candidates_engagement
         }
         for talent_pipeline_stat in talent_pipeline_stats
     ]})
