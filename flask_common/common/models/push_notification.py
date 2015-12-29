@@ -73,13 +73,9 @@ class PushNotificationSend(db.Model):
             return cls.query.filter_by(candidate_id=candidate_id).all()
 
 
-
 class PushNotificationBlast(db.Model):
     __tablename__ = 'push_notification_blast'
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(20))
-    content = db.Column(db.String(80))
-    url = db.Column(db.String(255))
     sends = db.Column(db.Integer, default=0)
     clicks = db.Column(db.Integer, default=0)
     push_notification_id = db.Column(db.Integer, db.ForeignKey('push_notification.id', ondelete='CASCADE'))

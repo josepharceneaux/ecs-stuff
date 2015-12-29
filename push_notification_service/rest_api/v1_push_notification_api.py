@@ -3,6 +3,7 @@ import json
 import types
 
 # Third Party
+import requests
 from flask import request
 from flask import Blueprint
 from flask.ext.cors import CORS
@@ -10,6 +11,7 @@ from flask.ext.restful import Resource
 
 # Application Specific
 from push_notification_service.common.utils.common_functions import (frequency_id_to_seconds,
+                                                                     is_valid_datetime_format,
                                                                      ONCE, DAILY, WEEKLY, BIWEEKLY,
                                                                      MONTHLY, YEARLY)
 from push_notification_service import logger
@@ -19,7 +21,8 @@ from push_notification_service.common.utils.auth_utils import require_oauth
 from push_notification_service.common.utils.api_utils import api_route, ApiResponse
 from push_notification_service.common.models.push_notification import PushNotification
 from push_notification_service.common.models.misc import Frequency
-from push_notification_service.custom_exceptions import RequiredFieldsMissing, InvalidFrequency
+from push_notification_service.common.routes import SchedulerApiUrl
+from push_notification_service.custom_exceptions import *
 from push_notification_service.one_signal_sdk import OneSignalSdk
 from push_notification_service.constants import ONE_SIGNAL_REST_API_KEY, ONE_SIGNAL_APP_ID, DEFAULT_NOTIFICATION_OFFSET, \
     DEFAULT_NOTIFICATION_LIMIT, DEFAULT_PLAYERS_OFFSET, DEFAULT_PLAYERS_LIMIT
@@ -31,6 +34,7 @@ api = TalentApi()
 api.init_app(push_notification_blueprint)
 api.route = types.MethodType(api_route, api)
 
+URL = '127.0.0.1:8012'
 
 # Enable CORS
 CORS(push_notification_blueprint, resources={
@@ -85,31 +89,39 @@ class SchedulePushNotification(Resource):
         missing_values = [key for key in ['frequency', 'start_datetime', 'end_datetime'] if key not in data or not data[key]]
         if missing_values:
             raise RequiredFieldsMissing('Some required fields are missing: %s' % missing_values)
-        frequencies = [frequency.id for frequency in Frequency.query.all()]
-        frequency = data['frequency']
-        if frequency not in frequencies:
+        frequency_ids = [frequency.id for frequency in Frequency.query.all()]
+        frequency_id = data.get('frequency_id')
+        if frequency_id not in frequency_ids:
             raise InvalidFrequency('Invalid frequency for scheduling a campaign')
-        task_type = 'one_time' if frequency == ONCE else 'periodic'
-        frequency = frequency_id_to_seconds(frequency)
 
-        payload = {
-            "frequency": frequency,
-            "task_type": task_type,
-            "start_datetime": "2015-12-05 08:00:00",
-            "end_datetime": "2016-01-05 08:00:00",
-            "url": "http://getTalent.com/sms/send/",
+        schedule_data = {
+            "frequency_id": frequency_id,
             "post_data": {
-                "campaign_name": "SMS Campaign",
-                "phone_number": "09230862348",
-                "smart_list_id": 123456,
-                "content": "text to be sent as sms"
             }
+        }
+        start_datetime = data.get('start_datetime')
+        end_datetime = data.get('end_datetime')
+        if task_type == 'one_time':
 
-}
-        response = dict(id=push_notification.id, message='Push notification campaign was created successfully')
-        response = json.dump(response)
-        headers = dict(Location='/v1/push_notifications/%s' % push_notification.id)
-        return ApiResponse(response, headers=headers, status=201)
+            if is_valid_datetime_format(start_datetime):
+                payload.update({
+                    "start_datetime": start_datetime
+                })
+        else:
+            if is_valid_datetime_format(start_datetime) and is_valid_datetime_format(end_datetime):
+                payload.update({
+                    "start_datetime": start_datetime,
+                    "end_datetime": end_datetime
+                })
+
+        res = requests.post(SchedulerApiUrl.CREATE_TASK, data=payload, headers=request.headers)
+        if res.status_code == 201:
+            response = dict(id=push_notification.id, message='Push notification campaign was created successfully')
+            response = json.dump(response)
+            headers = dict(Location='/v1/push_notifications/%s' % push_notification.id)
+            return ApiResponse(response, headers=headers, status=201)
+        else:
+            raise FailedToSchedule('Unable to schedule campaign with id: %s' % push_notification_id)
 
 
 @api.route('/v1/push_notifications/<int:push_notification_id>/send')

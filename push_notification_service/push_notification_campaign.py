@@ -2,6 +2,7 @@ from push_notification_service.common.error_handling import *
 from push_notification_service.common.models.push_notification import PushNotification, PushNotificationSend
 from push_notification_service.common.utils.activity_utils import ActivityMessageIds
 from push_notification_service.common.utils.campaign_utils import CampaignBase
+from push_notification_service.common.routes import PushNotificationServiceApi
 from push_notification_service import logger
 from push_notification_service.custom_exceptions import *
 from push_notification_service.constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
@@ -48,6 +49,22 @@ class PushNotificationCampaign(CampaignBase):
         :rtype: int
         """
         pass
+
+    def schedule(self, data_to_schedule):
+        """
+        This method schedules a campaign by sending a POST request to scheduler service.
+        :param data_to_schedule:
+        :return:
+        """
+        data_to_schedule.update(
+            {'url_to_run_task': PushNotificationServiceApi.SEND % self.campaign.id}
+        )
+        # get scheduler task_id
+        task_id = super(PushNotificationCampaign, self).schedule(data_to_schedule)
+        data_to_schedule.update({'task_id': task_id})
+        # update push_notification_campaign record with task_id
+        self.campaign.update(task_id=task_id)
+        return task_id
 
     def process_send(self, push_notification_id):
         self.push_notification = PushNotification.get_by_id(push_notification_id)

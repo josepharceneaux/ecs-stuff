@@ -220,8 +220,7 @@ def url_conversion(long_url):
         return None, error_message
 
 
-
-def is_iso_8601_format(str_datetime):
+def is_valid_datetime_format(str_datetime):
     """
     This validates the given datetime is in ISO format or not. Proper format should be like
     '2015-10-08T06:16:55Z'.

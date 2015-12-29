@@ -60,6 +60,7 @@ class GTApis(object):
     DASHBOARD_SERVICE_PORT = 8010
     SCHEDULER_SERVICE_PORT = 8011
     SMS_CAMPAIGN_SERVICE_PORT = 8012
+    PUSH_NOTIFICATION_SERVICE_PORT = 8013
 
     # Names of flask micro services
     AUTH_SERVICE_NAME = 'auth-service'
@@ -74,6 +75,7 @@ class GTApis(object):
     DASHBOARD_SERVICE_NAME = 'frontend-service'
     SMS_CAMPAIGN_SERVICE_NAME = 'sms-campaign-service'
     SCHEDULER_SERVICE_NAME = 'scheduler-service'
+    PUSH_NOTIFICATION_SERVICE_NAME = 'push-notification-service'
 
 
 class AuthApiUrl(object):
@@ -266,3 +268,32 @@ class SchedulerApiUrl(object):
     SCHEDULER_HOST_NAME = _get_host_name(GTApis.SCHEDULER_SERVICE_NAME,
                                          GTApis.SCHEDULER_SERVICE_PORT)
     CREATE_TASK = SCHEDULER_HOST_NAME % '/tasks/'
+
+
+class PushNotificationServiceApi(object):
+    """
+    REST URLs for Push Notification Service endpoints
+    """
+    VERSION = 'v1'
+    # HOST_NAME is http://127.0.0.1:8013 for dev
+    HOST_NAME = _get_host_name(GTApis.PUSH_NOTIFICATION_SERVICE_NAME,
+                               GTApis.PUSH_NOTIFICATION_SERVICE_PORT)
+    # endpoint /v1/campaigns
+    # GET all campaigns of a user, POST new campaign, DELETE campaigns of a user from given ids
+    CAMPAIGNS = '/%s/%s' % (VERSION, 'campaigns')
+
+    # endpoint /v1/campaigns/:id
+    # GET campaign by its id, POST: updates a campaign, DELETE a campaign from given id
+    CAMPAIGN = '/%s/%s' % (VERSION, 'campaigns/<int:campaign_id>')
+
+    # endpoint /v1/campaigns/:id/sends
+    # This gives the records from "sends" for a given id of campaign
+    SENDS = CAMPAIGN + '/sends'
+
+    # endpoint /v1/campaigns/:id/send
+    # To send a campaign to candidates
+    SEND = CAMPAIGN + '/send'
+
+    # /v1/campaigns/:id/schedule
+    # To schedule an SMS campaign
+    SCHEDULE = CAMPAIGN + '/schedule'

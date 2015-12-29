@@ -186,14 +186,14 @@ class CampaignBase(object):
         if not frequency:  # This means it is a one time job
             task = {
                 "task_type": 'one_time',
-                "run_datetime": data_to_schedule['send_datetime'],
+                "run_datetime": data_to_schedule['start_datetime'],
             }
         else:
             task = {
                 "task_type": 'periodic',
                 "frequency": frequency,
-                "start_datetime": data_to_schedule['send_datetime'],
-                "end_datetime": data_to_schedule['stop_datetime'],
+                "start_datetime": data_to_schedule['start_datetime'],
+                "end_datetime": data_to_schedule['end_datetime'],
             }
         # set URL to be hit when time comes to run that task
         task['url'] = data_to_schedule['url_to_run_task']
@@ -207,7 +207,7 @@ class CampaignBase(object):
         if 'id' in response.json():
             return response.json()['id']
         else:
-            raise InvalidUsage(error_message="Error occured while scheduling a task")
+            raise InvalidUsage(error_message="Error occurred while scheduling a task")
 
     @abstractmethod
     def process_send(self, campaign):
