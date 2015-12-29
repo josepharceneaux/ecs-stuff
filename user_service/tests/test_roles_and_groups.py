@@ -398,5 +398,5 @@ def test_update_password(access_token_first):
 
 def test_health_check():
     import requests
-    response = requests.get('http://127.0.0.1:8004/v1/healthcheck')
+    response = requests.get('http://127.0.0.1:8004/healthcheck')
     assert response.status_code == 200

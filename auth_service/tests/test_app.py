@@ -153,5 +153,5 @@ def test_auth_service(app_context):
 
 def test_health_check():
     import requests
-    response = requests.get(OAUTH_ENDPOINT % 'healthcheck')
+    response = requests.get('http://127.0.0.1:8001/healthcheck')
     assert response.status_code == 200

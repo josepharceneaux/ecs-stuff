@@ -26,7 +26,7 @@ app.register_blueprint(users_utilities_blueprint, url_prefix='/v1')
 app.register_blueprint(groups_and_roles_blueprint, url_prefix='/v1')
 
 # wrap the flask app and give a heathcheck url
-health = HealthCheck(app, "/v1/healthcheck")
+health = HealthCheck(app, "/healthcheck")
 
 db.create_all()
 db.session.commit()

@@ -21,7 +21,7 @@ db.app = app
 redis_store.init_app(app)
 
 # wrap the flask app and give a heathcheck url
-health = HealthCheck(app, "/v1/healthcheck")
+health = HealthCheck(app, "/healthcheck")
 
 from api.talent_pools import talent_pool_blueprint
 from api.talent_pipelines import talent_pipeline_blueprint
