@@ -14,9 +14,6 @@ from sms_campaign_service.common.tests.conftest import *
 # to avoid circular we need to import app before SmsCampaignBase
 from sms_campaign_service.sms_campaign_app.app import app
 
-# from sms_campaign_service import init_sms_campaign_app_and_celery_app
-# flask_app, celery_app = init_sms_campaign_app_and_celery_app()
-
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL,
                                                              TWILIO_TEST_NUMBER,
@@ -44,8 +41,8 @@ CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
                         }
 # This is data to schedule an SMS campaign
 CAMPAIGN_SCHEDULE_DATA = {"frequency_id": 2,
-                          "send_datetime": "2015-11-26T08:00:00Z",
-                          "stop_datetime": "2015-11-30T08:00:00Z"}
+                          "start_datetime": "2015-11-26T08:00:00Z",
+                          "end_datetime": "2015-11-30T08:00:00Z"}
 
 
 def remove_any_user_phone_record_with_twilio_test_number():

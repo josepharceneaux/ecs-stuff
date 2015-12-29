@@ -137,10 +137,10 @@ class TestSmsCampaignWithIdHTTPPost(object):
         assert resp
         assert resp['name'] == modified_name
         assert resp['frequency_id'] == scheduler_data['frequency_id']
-        assert resp['send_datetime'] == \
-               scheduler_data['send_datetime'].replace('T', ' ').replace('Z', '')
-        assert resp['stop_datetime'] == \
-               scheduler_data['stop_datetime'].replace('T', ' ').replace('Z', '')
+        assert resp['start_datetime'] == \
+               scheduler_data['start_datetime'].replace('T', ' ').replace('Z', '')
+        assert resp['end_datetime'] == \
+               scheduler_data['end_datetime'].replace('T', ' ').replace('Z', '')
 
     def test_updating_not_owned_sms_campaign(self, valid_header, sms_campaign_of_other_user,
                                              campaign_valid_data, user_phone_1):
@@ -219,7 +219,8 @@ class TestSmsCampaignWithIdHTTPPost(object):
         assert response.json()['error']['code'] == SmsCampaignApiException.MISSING_REQUIRED_FIELD
 
     def test_campaign_update_with_invalid_url_in_body_text(self, campaign_valid_data,
-                                                          valid_header, sms_campaign_of_current_user):
+                                                           valid_header,
+                                                           sms_campaign_of_current_user):
         """
         User has one phone value, valid header and invalid URL in body text(random word).
         It should get internal server error, Custom error should be InvalidUrl.

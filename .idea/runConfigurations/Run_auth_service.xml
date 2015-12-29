@@ -6,7 +6,7 @@
       <env name="PYTHONUNBUFFERED" value="1" />
       <env name="GT_ENVIRONMENT" value="dev" />
     </envs>
-    <option name="SDK_HOME" value="$USER_HOME$/.pyenv/versions/2.7.9/bin/python2.7" />
+    <option name="SDK_HOME" value="$USER_HOME$/.pyenv/versions/2.7.9/bin/python" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/auth_service" />
     <option name="IS_MODULE_SDK" value="false" />
     <option name="ADD_CONTENT_ROOTS" value="true" />

@@ -1,7 +1,9 @@
+from werkzeug.exceptions import BadRequest
+
 from push_notification_service.common.error_handling import *
 from push_notification_service.common.models.push_notification import PushNotification, PushNotificationSend
 from push_notification_service.common.utils.activity_utils import ActivityMessageIds
-from push_notification_service.common.utils.campaign_utils import CampaignBase
+from push_notification_service.common.campaign_services.campaign_utils import CampaignBase
 from push_notification_service.common.routes import PushNotificationServiceApi
 from push_notification_service import logger
 from push_notification_service.custom_exceptions import *
@@ -50,6 +52,38 @@ class PushNotificationCampaign(CampaignBase):
         """
         pass
 
+    @classmethod
+    def pre_process_schedule(cls, request, campaign_id):
+        """
+        This implements the base class method. Before making HTTP POST/GET call on
+        scheduler_service, we do the following.
+        1- Check if request has valid JSON content-type header
+        2- Check if current user is an owner of given campaign_id
+        :return: dictionary containing Campaign obj, data to schedule SMS campaign,
+                    scheduled_task and bearer access token
+        :rtype: dict
+        """
+        campaign_obj = PushNotification.get_by_id_and_user_id(campaign_id, request.user.id)
+        # campaign_obj = cls.validate_ownership_of_campaign(campaign_id, request.user.id)
+        # check if campaign is already scheduled
+        scheduled_task = cls.is_already_scheduled(campaign_obj.scheduler_task_id,
+                                                  request.oauth_token)
+        # Updating scheduled task should not be allowed in POST request
+        if scheduled_task and request.method == 'POST':
+            raise ForbiddenError(error_message='Use PUT method to update task')
+        try:
+            data_to_schedule_campaign = request.get_json()
+        except BadRequest:
+            raise InvalidUsage(error_message='Given data should be in dict format')
+        if not data_to_schedule_campaign:
+            raise InvalidUsage(
+                error_message='No data provided to schedule %s (id:%s)'
+                              % (campaign_obj.__tablename__, campaign_id))
+        return {'campaign': campaign_obj,
+                'data_to_schedule': data_to_schedule_campaign,
+                'scheduled_task': scheduled_task,
+                'auth_header': {'Authorization': request.oauth_token}}
+
     def schedule(self, data_to_schedule):
         """
         This method schedules a campaign by sending a POST request to scheduler service.
@@ -79,31 +113,6 @@ class PushNotificationCampaign(CampaignBase):
             for candidate in cadidates:
                 self.send_campaign_to_candidate(candidate)
             return self.subscribed_candidate_ids, self.unsubscribed_candidate_ids
-            # device_ids = map(lambda device: device.one_signal_player_id, devices)
-            # req = one_signal_client.send_notification(push_notification.url,
-            #                                           push_notification.message,
-            #                                           push_notification.title,
-            #                                           players=device_ids)
-            # response = req.json()
-            # if req.ok:
-            #     one_signal_pn_id = response['id']
-            #     push_notification.update(one_signal_id=one_signal_pn_id)
-            #     recipients = response['recipients']
-            #     logger.info('%s recipients received a pushed notification (id: %s)' % (recipients, push_notification.id))
-            #     if 'errors' in response and 'invalid_player_ids' in response['errors']:
-            #         unsubscribed_device_ids = response['errors']['invalid_player_ids']
-            #         unsubscribed_devices = filter(lambda device: device.one_signal_player_id in unsubscribed_device_ids,
-            #                                       devices)
-            #         unsubscribed_candidate_ids = map(lambda device: device.candidate_id, unsubscribed_devices)
-            #         logger.warn('Push notification (id: %s) was not sent to candidates: %s' % (push_notification.id,
-            #                                                                                    unsubscribed_candidate_ids))
-            #         subscribed_candidate_ids = set(candidate_ids) - set(unsubscribed_candidate_ids)
-            #         return subscribed_candidate_ids, unsubscribed_candidate_ids
-            #     return subscribed_candidate_ids, unsubscribed_candidate_ids
-            #
-            # else:
-            #     errors = '\n'.join(response['errors'])
-            #     raise PushNotificationNotCreated('Unable to send push notification: Errors: %s' % errors)
         else:
             raise ResourceNotFound('Push notification was not found with id : %s' % push_notification_id)
 

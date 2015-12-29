@@ -12,9 +12,9 @@ import requests
 # Service Specific
 from sms_campaign_service.tests.conftest import app
 from sms_campaign_service.common.tests.conftest import fake
+from sms_campaign_service.modules.validators import (validate_url_by_http_request,
+                                                     validate_url_format, search_urls_in_text)
 from sms_campaign_service.custom_exceptions import (InvalidUrl, SmsCampaignApiException)
-from sms_campaign_service.utilities import (search_urls_in_text, validate_url_format,
-                                            validate_url_by_http_request)
 
 # Common Utils
 from sms_campaign_service.common.error_handling import InvalidUsage

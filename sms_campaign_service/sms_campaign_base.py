@@ -35,18 +35,16 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
 # common utils
 from sms_campaign_service.common.common_config import IS_DEV
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.utils.campaign_utils import CampaignBase
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
-from sms_campaign_service.common.utils.common_functions import (find_missing_items,
-                                                                url_conversion)
+from sms_campaign_service.common.campaign_services.campaign_utils import CampaignBase
+from sms_campaign_service.common.utils.common_functions import (find_missing_items, url_conversion)
 from sms_campaign_service.common.error_handling import (ResourceNotFound, ForbiddenError,
                                                         InvalidUsage)
 
 # Service Specific
 from sms_campaign_service import logger, db
 from sms_campaign_service.sms_campaign_app.app import celery_app, app
-from sms_campaign_service.utilities import (TwilioSMS, search_urls_in_text,
-                                            replace_localhost_with_ngrok, validate_url_format)
+from sms_campaign_service.utilities import (TwilioSMS, replace_localhost_with_ngrok)
 from sms_campaign_service.sms_campaign_app_constants import (MOBILE_PHONE_LABEL, TWILIO,
                                                              TWILIO_TEST_NUMBER, CELERY_QUEUE)
 from sms_campaign_service.custom_exceptions import (EmptySmsBody, MultipleTwilioNumbersFoundForUser,
@@ -60,6 +58,7 @@ from sms_campaign_service.custom_exceptions import (EmptySmsBody, MultipleTwilio
                                                     NoCandidateFoundForPhoneNumber,
                                                     NoUserFoundForPhoneNumber,
                                                     GoogleShortenUrlAPIError, TwilioAPIError)
+from sms_campaign_service.modules.validators import (validate_url_format, search_urls_in_text)
 
 
 class SmsCampaignBase(CampaignBase):
@@ -112,8 +111,8 @@ class SmsCampaignBase(CampaignBase):
     * schedule(self, data_to_schedule)
         This overrides the base class method and set the value of data_to_schedule.
         It then calls super constructor to get task_id for us. Then we will update
-        SMS campaign record in sms_campaign table with frequency_id, send_datetime,
-        stop_datetime and "task_id"(Task created on APScheduler).
+        SMS campaign record in sms_campaign table with frequency_id, start_datetime,
+        end_datetime and "task_id"(Task created on APScheduler).
 
     * process_send(self, campaign_id=None)
         This method is used to send the campaign to candidates.
@@ -382,8 +381,8 @@ class SmsCampaignBase(CampaignBase):
                                  body_text=form_data.get('body_text'),
                                  frequency_id=form_data.get('frequency_id'),
                                  added_datetime=datetime.now(),
-                                 send_datetime=form_data.get('send_datetime'),
-                                 stop_datetime=form_data.get('stop_datetime'),
+                                 start_datetime=form_data.get('start_datetime'),
+                                 end_datetime=form_data.get('end_datetime'),
                                  scheduler_task_id=form_data.get('task_id'))
         if campaign_id:
             sms_campaign_obj = SmsCampaign.get_by_id(campaign_id)
@@ -470,8 +469,8 @@ class SmsCampaignBase(CampaignBase):
         super constructor to get task_id for us. Finally we update the SMS campaign
         record in database table "sms_campaign" with
             1- frequency_id
-            2- send_datetime
-            3- stop_datetime
+            2- start_datetime
+            3- end_datetime
             4- task_id (Task created on APScheduler)
         Finally we return the "task_id".
 
@@ -479,22 +478,45 @@ class SmsCampaignBase(CampaignBase):
 
         :param data_to_schedule: required data to schedule an SMS campaign
         :type data_to_schedule: dict
-        :return: task_id (Task created on APScheduler)
-        :rtype: str
-
+        :return: task_id (Task created on APScheduler), and status of task(already scheduled
+                            or new scheduled)
+        :rtype: tuple
         **See Also**
         .. see also:: ScheduleSmsCampaign() method in v1_sms_campaign_api.py.
-
         """
         data_to_schedule.update(
             {'url_to_run_task': SmsCampaignApiUrl.SEND % self.campaign.id}
         )
-        # get scheduler task_id
+        # get scheduler task_id created on scheduler_service
         task_id = super(SmsCampaignBase, self).schedule(data_to_schedule)
         data_to_schedule.update({'task_id': task_id})
         # update sms_campaign record with task_id
         self.create_or_update_sms_campaign(data_to_schedule, campaign_id=self.campaign.id)
         return task_id
+
+    @staticmethod
+    def validate_ownership_of_campaign(campaign_id, current_user_id):
+        """
+        This function returns True if the current user is an owner for given
+        campaign_id. Otherwise it raises the Forbidden error.
+        :param campaign_id: id of campaign form getTalent database
+        :param current_user_id: Id of current user
+        :exception: InvalidUsage
+        :exception: ResourceNotFound
+        :exception: ForbiddenError
+        :return: Campaign obj if current user is an owner for given campaign.
+        :rtype: SmsCampaign
+        """
+        if not isinstance(campaign_id, (int, long)):
+            raise InvalidUsage(error_message='Include campaign_id as int|long')
+        campaign_obj = SmsCampaign.get_by_id(campaign_id)
+        if not campaign_obj:
+            raise ResourceNotFound(error_message='SMS Campaign(id=%s) not found.' % campaign_id)
+        campaign_user_id = UserPhone.get_by_id(campaign_obj.user_phone_id).user_id
+        if campaign_user_id == current_user_id:
+            return campaign_obj
+        else:
+            raise ForbiddenError(error_message='You are not the owner of SMS campaign(id:%s)' % campaign_id)
 
     def process_send(self, campaign):
         """

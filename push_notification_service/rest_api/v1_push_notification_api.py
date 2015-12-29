@@ -75,53 +75,61 @@ class PushNotifications(Resource):
         return ApiResponse(response, headers=headers, status=201)
 
 
-@api.route('/v1/push_notifications/<int:push_notification_id>/schedule')
+@api.route('/v1/push_notifications/<int:campaign_id>/schedule')
 class SchedulePushNotification(Resource):
 
     decorators = [require_oauth]
 
-    def post(self, push_notification_id):
+    def post(self, campaign_id):
+        """
+        It schedules an Push Notification campaign using given campaign_id by making HTTP request to
+         scheduler_service.
+
+        :Example:
+
+            headers = {'Authorization': 'Bearer <access_token>',
+                       'Content-type': 'application/json'}
+
+            schedule_data =
+                        {
+                            "frequency_id": 2,
+                            "start_datetime": "2015-11-26T08:00:00Z",
+                            "end_datetime": "2015-11-30T08:00:00Z"
+                        }
+
+            campaign_id = 1
+
+            response = requests.post(API_URL + '/v1/campaigns/' + str(campaign_id) + '/schedule',
+                                        headers=headers, data=schedule_data)
+
+        .. Response::
+
+                {
+                    "message": "Campaign(id:1) is has been scheduled.
+                    "task_id"; "33e32e8ac45e4e2aa710b2a04ed96371"
+                }
+
+        .. Status:: 200 (OK)
+                    400 (Bad request)
+                    401 (Unauthorized to access getTalent)
+                    403 (Forbidden Error)
+                    404 (Campaign not found)
+                    500 (Internal Server Error)
+
+        .. Error codes:
+                    7006 (CampaignAlreadyScheduled)
+
+        :param campaign_id: integer, unique id representing campaign in GT database
+        :return: JSON containing message and task_id.
+        """
         user = request.user
-        data = request.get_json()
-        push_notification = PushNotification.get_by_id_and_user_id(push_notification_id, user.id)
-        if not push_notification:
-            raise ResourceNotFound('Push notification was not found with id: %s' % push_notification_id)
-        missing_values = [key for key in ['frequency', 'start_datetime', 'end_datetime'] if key not in data or not data[key]]
-        if missing_values:
-            raise RequiredFieldsMissing('Some required fields are missing: %s' % missing_values)
-        frequency_ids = [frequency.id for frequency in Frequency.query.all()]
-        frequency_id = data.get('frequency_id')
-        if frequency_id not in frequency_ids:
-            raise InvalidFrequency('Invalid frequency for scheduling a campaign')
 
-        schedule_data = {
-            "frequency_id": frequency_id,
-            "post_data": {
-            }
-        }
-        start_datetime = data.get('start_datetime')
-        end_datetime = data.get('end_datetime')
-        if task_type == 'one_time':
-
-            if is_valid_datetime_format(start_datetime):
-                payload.update({
-                    "start_datetime": start_datetime
-                })
-        else:
-            if is_valid_datetime_format(start_datetime) and is_valid_datetime_format(end_datetime):
-                payload.update({
-                    "start_datetime": start_datetime,
-                    "end_datetime": end_datetime
-                })
-
-        res = requests.post(SchedulerApiUrl.CREATE_TASK, data=payload, headers=request.headers)
-        if res.status_code == 201:
-            response = dict(id=push_notification.id, message='Push notification campaign was created successfully')
-            response = json.dump(response)
-            headers = dict(Location='/v1/push_notifications/%s' % push_notification.id)
-            return ApiResponse(response, headers=headers, status=201)
-        else:
-            raise FailedToSchedule('Unable to schedule campaign with id: %s' % push_notification_id)
+        pre_processed_data = PushNotificationCampaign.pre_process_schedule(request, campaign_id)
+        campaign_obj = PushNotificationCampaign(user.id)
+        campaign_obj.campaign = pre_processed_data['campaign']
+        task_id = campaign_obj.schedule(pre_processed_data['data_to_schedule'])
+        return dict(message='Campaign(id:%s) has been scheduled.' % campaign_id,
+                    task_id=task_id), 200
 
 
 @api.route('/v1/push_notifications/<int:push_notification_id>/send')

@@ -6,7 +6,7 @@ import string
 import requests
 from pytz import timezone
 from datetime import datetime
-from dateutil.parser import parse
+
 
 from flask import current_app
 from ..routes import AuthApiUrl
@@ -235,9 +235,6 @@ def is_valid_datetime_format(str_datetime):
 
 
 def is_valid_url_format(url):
-    """
-    Reference: https://github.com/django/django-old/blob/1.3.X/django/core/validators.py#L42
-    """
     regex = re.compile(
         r'^(http|ftp)s?://'  # http:// or https://
         r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
@@ -246,6 +243,19 @@ def is_valid_url_format(url):
         r'(?::\d+)?'  # optional port
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)
     return url is not None and regex.search(url)
+
+
+def to_utc_str(dt):
+    """
+    This converts given datetime in '2015-10-08T06:16:55Z' format.
+    :param dt: given datetime
+    :type dt: datetime
+    :return: UTC date in str
+    :rtype: str
+    """
+    if not isinstance(dt, datetime):
+        raise InvalidUsage(error_message='Given param should be datetime obj')
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def frequency_id_to_seconds(frequency_id):

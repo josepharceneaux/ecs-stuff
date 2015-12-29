@@ -16,7 +16,7 @@ def _get_host_name(service_name, port_number):
 
     For DEV, CIRCLE, In case of auth_service we'll get
 
-        http://127.0.0.1:8001 in case of no api_version is provided
+        http://127.0.0.1:8001
 
     For QA:
             auth-service-webdev.gettalent.com ( for auth service)
@@ -70,8 +70,8 @@ class GTApis(object):
     CANDIDATE_SERVICE_NAME = 'candidate-service'
     WIDGET_SERVICE_NAME = 'widget-service'
     SOCIAL_NETWORK_SERVICE_NAME = 'social-network-service'
-    CANDIDATE_POOL_SERVICE_NAME = 'candidate_pool_service'
-    SPREADSHEET_IMPORT_SERVICE_NAME = 'spreadsheet_import_service'
+    CANDIDATE_POOL_SERVICE_NAME = 'candidate-pool-service'
+    SPREADSHEET_IMPORT_SERVICE_NAME = 'spreadsheet-import-service'
     DASHBOARD_SERVICE_NAME = 'frontend-service'
     SMS_CAMPAIGN_SERVICE_NAME = 'sms-campaign-service'
     SCHEDULER_SERVICE_NAME = 'scheduler-service'
@@ -268,6 +268,8 @@ class SchedulerApiUrl(object):
     SCHEDULER_HOST_NAME = _get_host_name(GTApis.SCHEDULER_SERVICE_NAME,
                                          GTApis.SCHEDULER_SERVICE_PORT)
     CREATE_TASK = SCHEDULER_HOST_NAME % '/tasks/'
+    TASKS = SCHEDULER_HOST_NAME % '/tasks/'
+    TASK = SCHEDULER_HOST_NAME % '/tasks/id/%s'
 
 
 class PushNotificationServiceApi(object):
@@ -289,6 +291,10 @@ class PushNotificationServiceApi(object):
     # endpoint /v1/campaigns/:id/sends
     # This gives the records from "sends" for a given id of campaign
     SENDS = CAMPAIGN + '/sends'
+
+    # endpoint /v1/campaigns/:id/blast
+    # This gives the blast (statistics of a campaign) from "push_notification_blast" table for a given id of campaign
+    BLAST = CAMPAIGN + '/blast'
 
     # endpoint /v1/campaigns/:id/send
     # To send a campaign to candidates
