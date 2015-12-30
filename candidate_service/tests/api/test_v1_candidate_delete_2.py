@@ -158,7 +158,7 @@ def test_delete_candidate_experiences(sample_user, user_auth):
     assert len(can_dict_after_update['work_experiences']) == 0
 
 
-def test_delete_cand_experience(sample_user, user_auth):
+def test_delete_candidate_experience(sample_user, user_auth):
     """
     Test:   Remove Candidate's experience from db
     Expect: 204, Candidate's experience must be less 1.
