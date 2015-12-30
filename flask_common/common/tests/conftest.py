@@ -9,7 +9,7 @@ from faker import Faker
 from werkzeug.security import gen_salt
 from ..models.candidate import Candidate
 from ..models.user import UserGroup, DomainRole
-from ..utils.common_functions import get_or_create, get_access_token, create_test_user
+from auth_utilities import get_access_token, create_test_user, get_or_create
 
 # Application Specific
 from ..models.db import db

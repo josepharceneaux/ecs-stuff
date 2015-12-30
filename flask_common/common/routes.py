@@ -1,6 +1,28 @@
 import os
 
 
+class AuthApiUrl:
+    def __init__(self):
+        pass
+
+    env = os.environ.get('GT_ENVIRONMENT')
+
+    if env == 'dev' or env == 'circle':
+        AUTH_SERVICE_HOST_NAME = 'http://127.0.0.1:8001/v1/%s'
+    elif env == 'qa':
+        # TODO: Change this url after deployment
+        AUTH_SERVICE_HOST_NAME = 'http://127.0.0.1:8001/v1/%s'
+    elif env == 'prod':
+        # TODO: Change this url after deployment
+        AUTH_SERVICE_HOST_NAME = 'http://127.0.0.1:8001/v1/%s'
+    else:
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
+
+    AUTH_SERVICE_TOKEN_CREATE_URI = AUTH_SERVICE_HOST_NAME % 'oauth2/token'
+    AUTH_SERVICE_TOKEN_REVOKE_URI = AUTH_SERVICE_HOST_NAME % 'oauth2/revoke'
+    AUTH_SERVICE_AUTHORIZE_URI = AUTH_SERVICE_HOST_NAME % 'oauth2/authorize'
+
+
 class CandidateApiUrl:
     def __init__(self):
         pass
