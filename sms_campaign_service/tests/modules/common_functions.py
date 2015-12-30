@@ -19,7 +19,7 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaignSendUrlC
                                                              SmsCampaignReply, SmsCampaignBlast,
                                                              SmsCampaignSend)
 
-SLEEP_TIME = 30
+SLEEP_TIME = 20
 
 
 def assert_url_conversion(sms_campaign_sends, campaign_id):

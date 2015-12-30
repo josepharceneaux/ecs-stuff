@@ -4,11 +4,10 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com
     Here we have validators for SMS campaign service.
 """
 # Standard Imports
-import re
 
 # Service Specific
 from sms_campaign_service import logger
-from sms_campaign_service.custom_exceptions import (InvalidUrl, MissingRequiredField)
+from sms_campaign_service.modules.custom_exceptions import (InvalidUrl, MissingRequiredField)
 
 # Database models
 from sms_campaign_service.common.models.talent_pools_pipelines import Smartlist
@@ -17,6 +16,7 @@ from sms_campaign_service.common.models.talent_pools_pipelines import Smartlist
 from sms_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound)
 from sms_campaign_service.common.campaign_services.validators import is_valid_url_format
 from sms_campaign_service.common.utils.common_functions import (http_request, find_missing_items)
+from sms_campaign_service.modules.handy_functions import search_urls_in_text
 
 
 def validate_form_data(form_data):
@@ -41,16 +41,16 @@ def validate_form_data(form_data):
     missing_field_values = find_missing_items(form_data, required_fields)
     if missing_field_values:
         raise MissingRequiredField(
-            error_message='Required fields are empty to save '
-                          'sms_campaign. Empty fields are %s' % missing_field_values)
+            'Required fields are empty to save '
+            'sms_campaign. Empty fields are %s' % missing_field_values)
     # validate URLs present in SMS body text
     valid_urls, invalid_urls = validate_urls_in_body_text(form_data['body_text'])
     if invalid_urls:
-        raise InvalidUrl(error_message='Invalid URL(s) in body_text. %s' % invalid_urls)
+        raise InvalidUrl('Invalid URL(s) in body_text. %s' % invalid_urls)
 
     # validate smartlist ids are in a list
     if not isinstance(form_data.get('smartlist_ids'), list):
-        raise InvalidUsage(error_message='Include smartlist id(s) in a list.')
+        raise InvalidUsage('Include smartlist id(s) in a list.')
 
     not_found_smartlist_ids = []
     invalid_smartlist_ids = []
@@ -70,12 +70,12 @@ def validate_form_data(form_data):
     # If all provided smartlist ids are invalid, raise InvalidUsage
     if len(form_data.get('smartlist_ids')) == len(invalid_smartlist_ids):
         raise InvalidUsage(
-            error_message='smartlists(id(s):%s are invalid. Valid id must be int|long'
-                          % form_data.get('smartlist_ids'))
+            'smartlists(id(s):%s are invalid. Valid id must be int|long'
+            % form_data.get('smartlist_ids'))
     # If all provided smartlist ids do not exist in database, raise ResourceNotFound
     if len(form_data.get('smartlist_ids')) == len(not_found_smartlist_ids):
-        raise ResourceNotFound(error_message='smartlists(id(s):%s not found in database.'
-                                             % form_data.get('smartlist_ids'))
+        raise ResourceNotFound('smartlists(id(s):%s not found in database.'
+                               % form_data.get('smartlist_ids'))
     # filter out unknown smartlist ids, and keeping the valid ones
     form_data['smartlist_ids'] = list(set(form_data.get('smartlist_ids')) -
                                       set(invalid_smartlist_ids + not_found_smartlist_ids))
@@ -128,15 +128,3 @@ def validate_urls_in_body_text(text):
         except Exception:
             invalid_urls.append(url)
     return valid_urls, invalid_urls
-
-
-def search_urls_in_text(text):
-    """
-    This checks if given text has any URL link present in it and returns all urls in a list.
-    This checks for URLs starting with either http or https or www.
-    :param text: string in which we want to search URL
-    :type text: str
-    :return: list of all URLs present in given text | []
-    :rtype: list
-    """
-    return re.findall(r'(?:http|ftp)s?://[^\s<>"]+|www\.[^\s<>"]+', text)

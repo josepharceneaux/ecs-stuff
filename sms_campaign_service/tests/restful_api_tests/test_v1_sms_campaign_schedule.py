@@ -6,24 +6,21 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
 # Third Party Imports
 import json
+
 import requests
-from werkzeug.security import gen_salt
+
 
 # Service Specific
 from sms_campaign_service.common.tests.sample_data import fake
-from sms_campaign_service.tests.conftest import db, CAMPAIGN_SCHEDULE_DATA
-from sms_campaign_service.custom_exceptions import SmsCampaignApiException
-from sms_campaign_service.tests.modules.common_functions import assert_for_activity, \
-    assert_method_not_allowed, assert_campaign_schedule
+from sms_campaign_service.tests.conftest import CAMPAIGN_SCHEDULE_DATA
+from sms_campaign_service.tests.modules.common_functions import assert_method_not_allowed, assert_campaign_schedule
 
 # Models
-from sms_campaign_service.common.models.user import UserPhone
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.error_handling import (UnauthorizedError, InvalidUsage,
-                                                        InternalServerError, ForbiddenError,
+                                                        ForbiddenError,
                                                         ResourceNotFound)
 
 
@@ -54,16 +51,27 @@ class TestSmsCampaignSchedule(object):
                                    headers=dict(Authorization='Bearer %s' % auth_token))
         assert_method_not_allowed(response, 'DELETE')
 
-    def test_campaign_schedule(self, valid_header, sms_campaign_of_current_user):
+    def test_campaign_schedule_with_no_start_datetime(self, valid_header,
+                                                      sms_campaign_of_current_user):
         """
-        This is test to schedule SMS campaign with all valid parameters. This should get OK
-         response
+        This is test to schedule SMS campaign with no start datetime. This should get
+        forbidden error.
         """
-        # Try to schedule deleted campaign
+        data = CAMPAIGN_SCHEDULE_DATA.copy()
+        del data['start_datetime']
+        response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
+                                 headers=valid_header,
+                                 data=json.dumps(data))
+        assert response.status_code == InvalidUsage.http_status_code()
+
+    def test_campaign_schedule_with_past_date(self, valid_header, sms_campaign_of_current_user):
+        """
+        This is test to schedule SMS campaign with past datetime. This should get forbidden error.
+        """
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
                                  headers=valid_header,
                                  data=json.dumps(CAMPAIGN_SCHEDULE_DATA))
-        assert_campaign_schedule(response)
+        assert response.status_code == InvalidUsage.http_status_code()
 
     def test_campaign_schedule_with_no_auth_header(self, auth_token, sms_campaign_of_current_user):
         """
@@ -72,7 +80,6 @@ class TestSmsCampaignSchedule(object):
         :return:
         """
         try:
-
             requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
                           headers=auth_token)
         except AttributeError as e:

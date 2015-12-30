@@ -5,11 +5,13 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 """
 # Standard Imports
 import json
+
 import requests
+
 
 # Service Specific
 from sms_campaign_service.common.tests.sample_data import fake
-from sms_campaign_service.custom_exceptions import SmsCampaignApiException
+from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl

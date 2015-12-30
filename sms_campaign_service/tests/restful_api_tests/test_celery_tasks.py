@@ -23,8 +23,8 @@ import requests
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
+from sms_campaign_service.common.utils.common_functions import to_utc_str
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
-from sms_campaign_service.common.utils.common_functions import get_utc_datetime
 from sms_campaign_service.common.error_handling import (ResourceNotFound,
                                                         InternalServerError,
                                                         MethodNotAllowed)
@@ -36,14 +36,13 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
 # Service Specific
 from sms_campaign_service import db
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
-from sms_campaign_service.custom_exceptions import SmsCampaignApiException, EmptyDestinationUrl
 from sms_campaign_service.tests.conftest import CAMPAIGN_SCHEDULE_DATA
-from sms_campaign_service.utilities import replace_ngrok_link_with_localhost
+from sms_campaign_service.modules.handy_functions import replace_ngrok_link_with_localhost
+from sms_campaign_service.modules.custom_exceptions import (SmsCampaignApiException,
+                                                            EmptyDestinationUrl)
 from sms_campaign_service.tests.modules.common_functions import \
     (assert_on_blasts_sends_url_conversion_and_activity, assert_for_activity, get_reply_text,
      assert_api_send_response, assert_campaign_schedule, SLEEP_TIME)
-
-SLEEP_OFFSET = 15  # For those tasks which takes longer than usual
 
 
 class TestCeleryTasks(object):
@@ -68,7 +67,6 @@ class TestCeleryTasks(object):
         response_post = requests.post(
             SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        time.sleep(SLEEP_OFFSET)
         assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, 2,
                                                            str(sms_campaign_of_current_user.id))
@@ -139,7 +137,6 @@ class TestCeleryTasks(object):
         response_post = requests.post(
             SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        time.sleep(SLEEP_OFFSET)
         assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
                                                            2,
@@ -163,7 +160,7 @@ class TestCeleryTasks(object):
                                                            1,
                                                            str(sms_campaign_of_current_user.id))
 
-    def test_campaign_schedule_and_validate_task_run(
+    def test_campaign_schedule_and_validate_one_time_task_run(
             self, valid_header, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
             sample_sms_campaign_candidates, candidate_phone_1):
         """
@@ -171,14 +168,14 @@ class TestCeleryTasks(object):
          response
         """
         data = CAMPAIGN_SCHEDULE_DATA.copy()
-        data['frequency_id'] = 0  # for one_time job
-        data['start_datetime'] = get_utc_datetime(datetime.now() + timedelta(seconds=10),
-                                                  'Asia/Karachi')
+        del data['frequency_id']  # for one_time job
+        # run this task after 10 sec
+        data['start_datetime'] = to_utc_str(datetime.utcnow() + timedelta(seconds=10))
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
                                  headers=valid_header,
                                  data=json.dumps(data))
         assert_campaign_schedule(response)
-        time.sleep(SLEEP_TIME + SLEEP_OFFSET)
+        time.sleep(SLEEP_TIME)
         assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
                                                            1,
                                                            str(sms_campaign_of_current_user.id))
@@ -205,7 +202,6 @@ class TestCeleryTasks(object):
                                            'Body': reply_text})
         assert response_get.status_code == 200, 'Response should be ok'
         assert 'xml' in str(response_get.text).strip()
-        # time.sleep(SLEEP_OFFSET)  # Need to add this as processing of POST request runs on celery
         campaign_reply_in_db = get_reply_text(candidate_phone_1)
         assert campaign_reply_in_db.body_text == reply_text
         reply_count_after = get_replies_count(sms_campaign_of_current_user)
