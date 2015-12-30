@@ -13,8 +13,8 @@ from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
 from candidate_pool_service.common.utils.talent_reporting import email_error_to_admins
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
-from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import TALENT_PIPELINE_SEARCH_PARAMS
-from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import get_candidates_of_talent_pipeline
+from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (TALENT_PIPELINE_SEARCH_PARAMS,
+                                                                                        get_candidates_of_talent_pipeline)
 
 
 talent_pipeline_blueprint = Blueprint('talent_pipeline_api', __name__)

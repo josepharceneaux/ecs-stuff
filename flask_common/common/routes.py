@@ -11,10 +11,10 @@ class AuthApiUrl:
         AUTH_SERVICE_HOST_NAME = 'http://127.0.0.1:8001/v1/%s'
     elif env == 'qa':
         # TODO: Change this url after deployment
-        AUTH_SERVICE_HOST_NAME = 'http://127.0.0.1:8001/v1/%s'
+        AUTH_SERVICE_HOST_NAME = 'http://secure-webdev.gettalent.com/v1/%s'
     elif env == 'prod':
         # TODO: Change this url after deployment
-        AUTH_SERVICE_HOST_NAME = 'http://127.0.0.1:8001/v1/%s'
+        AUTH_SERVICE_HOST_NAME = 'http://secure.gettalent.com/v1/%s'
     else:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
 
