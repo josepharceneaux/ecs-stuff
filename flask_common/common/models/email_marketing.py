@@ -25,6 +25,7 @@ class EmailCampaign(db.Model):
     is_track_text_clicks = db.Column('isTrackTextClicks', db.Boolean, default=False)
     is_subscription = db.Column('isSubscription', db.Boolean, default=False)
     is_personalized_to_field = db.Column('isPersonalizedToField', db.Boolean, default=False)
+    scheduler_task_id = db.Column('SchedulerTaskIds', db.String(255))
     added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
     send_time = db.Column('SendTime', db.DateTime)
     stop_time = db.Column('StopTime', db.DateTime)
@@ -42,8 +43,14 @@ class EmailCampaign(db.Model):
 class EmailCampaignSmartList(db.Model):
     __tablename__ = 'email_campaign_smart_list'
     id = db.Column(db.Integer, primary_key=True)
-    smart_list_id = db.Column('SmartListId', db.Integer, db.ForeignKey('smart_list.id', ondelete='CASCADE'))
+    smartlist_id = db.Column('SmartListId', db.Integer, db.ForeignKey('smart_list.id', ondelete='CASCADE'))
     email_campaign_id = db.Column('EmailCampaignId', db.Integer, db.ForeignKey('email_campaign.id', ondelete='CASCADE'))
+
+    @classmethod
+    def get_smartlists_of_campaign(cls, campaign_id):
+        records = cls.query.with_entities(EmailCampaignSmartList.smartlist_id).filter(
+            EmailCampaignSmartList.email_campaign_id == campaign_id).all()
+        return [row.smartlist_id for row in records]
 
 
 class EmailCampaignSend(db.Model):

@@ -22,6 +22,7 @@ __author__ = 'jitesh'
 SCHEDULER_URL = 'http://localhost:8011/tasks/'
 EMAIL_CAMPAIGN_URL = 'http://localhost:8014/send-campaign-emails'
 
+
 def create_email_campaign_smart_lists(smart_list_ids, email_campaign_id):
     """ Maps smart lists to email campaign
     :param smart_list_ids:
@@ -32,7 +33,7 @@ def create_email_campaign_smart_lists(smart_list_ids, email_campaign_id):
     if type(smart_list_ids) in (int, long):
         smart_list_ids = [smart_list_ids]
     for smart_list_id in smart_list_ids:
-        email_campaign_smart_list = EmailCampaignSmartList(smart_list_id=smart_list_id,
+        email_campaign_smart_list = EmailCampaignSmartList(smartlist_id=smart_list_id,
                                                            email_campaign_id=email_campaign_id)
         db.session.add(email_campaign_smart_list)
 
@@ -92,6 +93,7 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
 
     # user = User.query.get(user_id)
     # send_emails_to_campaign(oauth_token, email_campaign.id, email_client_id, list_ids)
+
     schedule_task_params = {
         "task_type": "one_time",
         "url": EMAIL_CAMPAIGN_URL,
@@ -109,30 +111,32 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
         schedule_task_params["end_datetime"] = stop_time
     else:
         schedule_task_params["run_datetime"] = "2015-12-05 08:00:00"   # TODO: Check if this is needed.
+
     # Schedule email campaign
     headers = {'Authorization': oauth_token, 'Content-Type': 'application/json'}
     try:
         scheduler_response = requests.post(SCHEDULER_URL, headers=headers, data=json.dumps(schedule_task_params))
-        if scheduler_response.status_code != 201:
-            raise InternalServerError("Status Code: %s, Response: %s" % (scheduler_response.status_code, scheduler_response.json()))
-        scheduler_id = scheduler_response.json()['id']
     except Exception as ex:
         current_app.logger.exception('Exception occurred while calling scheduler. Exception: %s' % ex)
-
-    # TODO add scheduler id to email_campaign table.
+        raise InternalServerError("Error occurred while scheduling email campaign. Exception: %s" % ex)
+    if scheduler_response.status_code != 201:
+        raise InternalServerError("Error occurred while scheduling email campaign. Status Code: %s, Response: %s" % (scheduler_response.status_code, scheduler_response.json()))
+    scheduler_id = scheduler_response.json()['id']
+    # add scheduler task id to email_campaign.
+    email_campaign.scheduler_task_id = scheduler_id
+    db.session.commit()
 
     return dict(id=email_campaign.id)
 
 
-def send_emails_to_campaign(oauth_token, campaign_id, email_client_id=None, list_ids=None, new_candidates_only=False):
+def send_emails_to_campaign(oauth_token, campaign, list_ids=None, new_candidates_only=False):
     """
     new_candidates_only sends the emails only to candidates who haven't yet
     received any as part of this campaign.
 
-    :param campaign_id:    email campaign id
+    :param campaign:    email campaign object
     :return:            number of emails sent
     """
-    campaign = EmailCampaign.query.get(campaign_id)
     user = campaign.user
     emails_sent = 0
     candidate_ids_and_emails = get_email_campaign_candidate_ids_and_emails(oauth_token, campaign=campaign, user=user,
@@ -174,7 +178,7 @@ def send_emails_to_campaign(oauth_token, campaign_id, email_client_id=None, list
                     blast_params=blast_params,
                     email_campaign_blast_id=email_campaign_blast.id,
                     blast_datetime=blast_datetime,
-                    email_client_id=email_client_id
+                    email_client_id=campaign.email_client_id
             )
             # db.session.commit()
             if was_send:
@@ -198,8 +202,7 @@ def get_email_campaign_candidate_ids_and_emails(oauth_token, campaign, user, lis
     """
     if list_ids is None:
         # Get smartlists of this campaign
-        list_ids = db.session.query(EmailCampaignSmartList.smart_list_id).filter_by(email_campaign_id=campaign.id).all()
-        list_ids = [list_id[0] for list_id in list_ids]
+        list_ids = EmailCampaignSmartList.get_smartlists_of_campaign(campaign.id)
     # Get candidate ids
     candidate_ids_dict = dict()  # Store in hash to avoid duplicate candidate ids
     for list_id in list_ids:

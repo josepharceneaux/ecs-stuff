@@ -1,13 +1,14 @@
 import json
 
 from flask import Blueprint
-from flask import current_app as app
 from flask import request
 from flask.ext.cors import CORS
 from ..modules.email_marketing import create_email_campaign, send_emails_to_campaign
 from ..modules.validations import validate_and_format_request_data
-from email_campaign.common.error_handling import InvalidUsage
+from email_campaign.common.error_handling import InvalidUsage, NotFoundError
 from email_campaign.common.utils.auth_utils import require_oauth
+from email_campaign.common.utils.validators import is_number
+from email_campaign.common.models.email_marketing import EmailCampaign
 
 __author__ = 'jitesh'
 
@@ -61,14 +62,24 @@ def email_campaigns():
                                         stop_time=data['stop_datetime'],
                                         frequency=data['frequency'])
 
-    app.logger.info('Email campaign created, campaign id is %s.' % campaign_id)
-
     return json.dumps({'campaign': campaign_id})
 
 
-@mod.route('/send-campaign-emails', methods=['GET'])
+@mod.route('/send-campaign-emails', methods=['POST'])
+@require_oauth
 def send_email_campaigns():
-    campaign_id = request.args.get('campaign_id')
-    oauth_token = request.args.get('oauth_token')
-    email_send = send_emails_to_campaign(oauth_token, campaign_id, email_client_id=None, list_ids=None, new_candidates_only=False)
-    return json.dumps({'campaign': {'emails send': email_send}})
+    data = request.get_json(silent=True)
+    if not data:
+        raise InvalidUsage("Received empty request body")
+    campaign_id = data.get('campaign_id')
+    if not campaign_id:
+        raise InvalidUsage("`campaign_id` is required")
+    if not is_number(campaign_id):
+        raise InvalidUsage("`campaign_id` is expected to be a numeric value")
+    campaign = EmailCampaign.query.get(campaign_id)
+    if not campaign:
+        raise NotFoundError("Given `campaign_id` does not exists")
+    # remove oauth_token instead use trusted server to server calls
+    oauth_token = request.oauth_token
+    email_send = send_emails_to_campaign(oauth_token, campaign, new_candidates_only=False)
+    return json.dumps({'campaign': {'emails_send': email_send}})

@@ -154,7 +154,7 @@ def create_email_campaign_url_conversions(new_html, new_text, is_track_text_clic
         # If no images found, add a tracking pixel
         if not num_conversions:
             # image_url = URL('static', 'images/pixel.png', host=True)
-            image_url = "http://localhost:8007/images/pixel.png"  # TODO
+            image_url = "http://localhost:8014/static/images/pixel.png"  # TODO
             new_image_url = create_email_campaign_url_conversion(image_url, email_campaign_send_id, TRACKING_URL_TYPE)
             new_image_tag = Tag(soup, "img", [("src", new_image_url)])
             soup.insert(0, new_image_tag)
