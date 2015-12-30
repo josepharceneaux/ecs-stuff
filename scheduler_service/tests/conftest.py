@@ -8,12 +8,13 @@ from datetime import timedelta
 # Application imports
 from scheduler_service import init_app
 from scheduler_service.common.tests.conftest import *
+from scheduler_service.common.routes import AuthApiUrl
 # Application Specific
 
 APP, celery = init_app()
 APP_URL = 'http://0.0.0.0:8011'
 
-OAUTH_SERVER = APP.config['OAUTH_SERVER_URI']
+OAUTH_SERVER = AuthApiUrl.AUTH_SERVICE_AUTHORIZE_URI
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 

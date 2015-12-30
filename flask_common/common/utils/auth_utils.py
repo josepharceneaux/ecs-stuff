@@ -12,6 +12,7 @@ from ..utils.handy_functions import random_letter_digit_string
 from flask import current_app as app
 from ..models.user import *
 from ..error_handling import *
+from ..routes import AuthApiUrl
 
 
 def require_oauth(allow_basic_auth=False, allow_null_user=False):
@@ -28,7 +29,7 @@ def require_oauth(allow_basic_auth=False, allow_null_user=False):
                 raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
             if 'Bearer' in oauth_token:
                 try:
-                    response = requests.get(app.config['OAUTH_SERVER_URI'], headers={'Authorization': oauth_token})
+                    response = requests.get(AuthApiUrl.AUTH_SERVICE_AUTHORIZE_URI, headers={'Authorization': oauth_token})
                 except Exception as e:
                     raise InternalServerError(error_message=e.message)
                 if response.status_code == 429:
