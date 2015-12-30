@@ -6,7 +6,7 @@ from flask import request
 from flask import jsonify
 # Module specific.
 from resume_service.common.utils.auth_utils import require_oauth
-from resume_service.resume_parsing_app.views.batch_lib import add_file_names_to_queue
+from resume_service.resume_parsing_app.views.batch_lib import add_fp_keys_to_queue
 
 BATCH_MOD = Blueprint('batch_processing', __name__)
 
@@ -20,11 +20,9 @@ def post_files_to_queue():
     """
     user_id = request.user.id
     request_json = request.get_json()
-    filenames = request_json.get('filenames')
-    if filenames:
-        queue_with_size = add_file_names_to_queue(filenames, user_id)
-        # Should we return the list of filenames here? Possibly thousands of names.
-        # Possibly just queue details?
-        return queue_with_size, 201
+    filepicker_keys = request_json.get('filenames')
+    if filepicker_keys:
+        queue_details = add_fp_keys_to_queue(filepicker_keys, user_id)
+        return queue_details, 201
     else:
         return jsonify(**{'error': {'message': 'No filenames provided'}}), 400
