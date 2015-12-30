@@ -214,8 +214,8 @@ class PushCampaignBlastSends(Resource):
         blast = filter(lambda item: item.id == blast_id, push_campaign.blasts)
         if len(blast):
             blast = blast[0]
-            sends = [send.to_json() for send in blast.sends]
-            response = dict(sends=sends)
+            sends = [send.to_json() for send in blast.blast_sends]
+            response = dict(sends=sends, count=len(sends))
             return response, 200
         else:
             return ResourceNotFound('Push Campaign Blast not found with id: %s' % blast_id)
@@ -232,9 +232,9 @@ class PushCampaignSends(Resource):
         if not push_campaign:
             raise ResourceNotFound('Push campaign does not exists with id %s for this user' % campaign_id)
         sends = []
-        [sends.extend(blast.sends) for blast in push_campaign.blasts]
+        [sends.extend(blast.blast_sends) for blast in push_campaign.blasts]
         sends = [send.to_json() for send in sends]
-        response = dict(sends=sends)
+        response = dict(sends=sends, count=len(sends))
         return response, 200
 
 
@@ -250,7 +250,7 @@ class PushNotificationBlasts(Resource):
             raise ResourceNotFound('Push campaign does not exists with id %s for this user' % campaign_id)
         blasts = [blast.to_json() for blast in push_campaign.blasts]
 
-        response = dict(blasts=blasts)
+        response = dict(blasts=blasts, count=len(blasts))
         return response, 200
 
 

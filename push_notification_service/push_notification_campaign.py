@@ -243,14 +243,8 @@ class PushCampaignBase(CampaignBase):
                                                            self.push_notification.title,
                                                            players=device_ids)
                 if resp.ok:
-                    # push_notification_send = PushCampaignSend.get_by(
-                    #     campaign_id=self.push_notification.id,
-                    #     candidate_id=candidate.id
-                    # )
-                    resp = resp.json()
                     campaign_send = PushCampaignSend(campaign_blast_id=self.campaign_blast.id,
-                                                     candidate_id=candidate.id,
-                                                     one_signal_notification_id=resp['id']
+                                                     candidate_id=candidate.id
                                                      )
                     PushCampaignSend.save(campaign_send)
                     sends = self.campaign_blast.sends + 1

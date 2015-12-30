@@ -31,8 +31,8 @@ class PushCampaign(db.Model):
 
     @classmethod
     def get_by_id_and_user_id(cls, _id, user_id):
-        assert isinstance(_id, int) and _id > 0, 'PushCampaign id is not valid integer'
-        assert isinstance(user_id, int) and user_id > 0, 'User id is not valid integer'
+        assert isinstance(_id, (int, long)) and _id > 0, 'PushCampaign id is not valid integer'
+        assert isinstance(user_id, (int, long)) and user_id > 0, 'User id is not valid integer'
         return cls.query.filter_by(id=_id, user_id=user_id).first()
 
 
@@ -44,6 +44,10 @@ class PushCampaignBlast(db.Model):
     campaign_id = db.Column(db.Integer, db.ForeignKey('push_campaign.id', ondelete='CASCADE'))
     updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
 
+    # Relationships
+    blast_sends = relationship('PushCampaignSend', cascade='all, delete-orphan',
+                               passive_deletes=True, backref='blast')
+
     def __repr__(self):
         return "<PushCampaignBlast (Sends: %s, Clicks: %s)>" % (self.sends, self.clicks)
 
@@ -51,7 +55,6 @@ class PushCampaignBlast(db.Model):
 class PushCampaignSend(db.Model):
     __tablename__ = 'push_campaign_send'
     id = db.Column(db.Integer, primary_key=True)
-    one_signal_notification_id = db.column(db.String(100))
     candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.id', ondelete='CASCADE'))
     sent_datetime = db.Column(db.DateTime, default=datetime.datetime.now())
     campaign_blast_id = db.Column(db.Integer, db.ForeignKey("push_campaign_blast.id", ondelete='CASCADE'),
