@@ -78,8 +78,7 @@ def test_edit_candidate_address(sample_user, user_auth):
             {'id': old_address_dict['id'], 'address_line_1': '255 west santa clara'}
         ]}
     ]}
-    x = patch_to_candidate_resource(token, data)
-    print response_info(x)
+    patch_to_candidate_resource(token, data)
 
     # Retrieve Candidate addresses
     new_address_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['addresses'][0]
@@ -217,49 +216,49 @@ def test_edit_candidate_education_degree(sample_user, user_auth):
     assert candidate_edits[1]['new_value'] == new_education_dict['degrees'][0]['title']
 
 
-# def test_edit_candidate_education_degree_bullet(sample_user, user_auth):
-#     """
-#     Test:   Change Candidate's education degree bullet records
-#     Expect: 200
-#     :type sample_user:  User
-#     :type user_auth:    UserAuthentication
-#     """
-#     # Get access token
-#     token = user_auth.get_auth_token(sample_user, True)['access_token']
-#
-#     # Create Candidate
-#     create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
-#
-#     # Retrieve Candidate
-#     candidate_id = create_resp.json()['candidates'][0]['id']
-#     old_education_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['educations'][0]
-#     old_degree_bullet_dict = old_education_dict['degrees'][0]['bullets'][0]
-#
-#     # Update Candidate's education degree bullet
-#     data = {'candidates': [
-#         {'id': candidate_id, 'educations': [
-#             {'id': old_education_dict['id'], 'degrees': [
-#                 {'id': old_education_dict['degrees'][0]['id'], 'bullets': [
-#                     {'id': old_degree_bullet_dict['id'], 'major': 'nursing'}
-#                 ]}
-#             ]}
-#         ]}
-#     ]}
-#     patch_to_candidate_resource(token, data)
-#
-#     # Retrieve Candidate education
-#     new_education_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['educations'][0]
-#     new_degree_bullet_dict = new_education_dict['degrees'][0]['bullets'][0]
-#
-#     # Retrieve Candidate Edits
-#     edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
-#     print response_info(edit_resp)
-#
-#     candidate_edits = edit_resp.json()['candidate']['edits']
-#     assert edit_resp.status_code == 200
-#     assert new_degree_bullet_dict['major'] != old_degree_bullet_dict['major']
-#     assert candidate_edits[0]['old_value'] == old_degree_bullet_dict['major']
-#     assert candidate_edits[0]['new_value'] == new_degree_bullet_dict['major']
+def test_edit_candidate_education_degree_bullet(sample_user, user_auth):
+    """
+    Test:   Change Candidate's education degree bullet records
+    Expect: 200
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    # Get access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
+
+    # Retrieve Candidate
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    old_education_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['educations'][0]
+    old_degree_bullet_dict = old_education_dict['degrees'][0]['bullets'][0]
+
+    # Update Candidate's education degree bullet
+    data = {'candidates': [
+        {'id': candidate_id, 'educations': [
+            {'id': old_education_dict['id'], 'degrees': [
+                {'id': old_education_dict['degrees'][0]['id'], 'bullets': [
+                    {'id': old_degree_bullet_dict['id'], 'major': 'nursing'}
+                ]}
+            ]}
+        ]}
+    ]}
+    patch_to_candidate_resource(token, data)
+
+    # Retrieve Candidate education
+    new_education_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['educations'][0]
+    new_degree_bullet_dict = new_education_dict['degrees'][0]['bullets'][0]
+
+    # Retrieve Candidate Edits
+    edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
+    print response_info(edit_resp)
+
+    candidate_edits = edit_resp.json()['candidate']['edits']
+    assert edit_resp.status_code == 200
+    assert new_degree_bullet_dict['major'] != old_degree_bullet_dict['major']
+    assert candidate_edits[0]['old_value'] == old_degree_bullet_dict['major']
+    assert candidate_edits[0]['new_value'] == new_degree_bullet_dict['major']
 
 
 def test_edit_candidate_experience(sample_user, user_auth):

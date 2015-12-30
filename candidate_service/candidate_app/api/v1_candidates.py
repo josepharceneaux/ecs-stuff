@@ -14,7 +14,9 @@ from candidate_service.modules.validators import (
     does_candidate_belong_to_user, is_custom_field_authorized,
     is_area_of_interest_authorized, is_number
 )
-from candidate_service.modules.json_schema import (candidates_resource_schema_post, candidates_resource_schema_patch)
+from candidate_service.modules.json_schema import (
+    candidates_resource_schema_post, candidates_resource_schema_patch, validate_candidate_properties
+)
 from jsonschema import validate
 
 # Decorators
@@ -130,6 +132,8 @@ class CandidatesResource(Resource):
         except Exception as e:
             raise InvalidUsage(error_message=e.message)
 
+        validate_candidate_properties(data=body_dict)
+
         created_candidate_ids = []
         for candidate_dict in body_dict.get('candidates'):
 
@@ -185,7 +189,7 @@ class CandidatesResource(Resource):
             created_candidate_ids.append(resp_dict['candidate_id'])
 
         # Add candidates to cloud search
-        upload_candidate_documents(created_candidate_ids)
+        # upload_candidate_documents(created_candidate_ids)
 
         return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, 201
 
@@ -275,7 +279,7 @@ class CandidatesResource(Resource):
             updated_candidate_ids.append(resp_dict['candidate_id'])
 
         # Update candidates in cloud search
-        upload_candidate_documents(updated_candidate_ids)
+        # upload_candidate_documents(updated_candidate_ids)
 
         return {'candidates': [{'id': updated_candidate_id} for updated_candidate_id in updated_candidate_ids]}
 

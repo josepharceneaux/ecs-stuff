@@ -1069,7 +1069,7 @@ def _add_or_update_educations(candidate_id, educations, added_time, user_id, edi
                                 raise InvalidUsage(error_message=err_msg)
 
                             # CandidateEducationDegreeBullet must belong to Candidate
-                            if can_edu_degree_bullet_query.candidate_education_degree.\
+                            if can_edu_degree_bullet_query.first().candidate_education_degree.\
                                     candidate_education.candidate_id != candidate_id:
                                 raise ForbiddenError(error_message='Unauthorized candidate degree bullet')
 

@@ -24,6 +24,7 @@ from candidate_sample_data import (
     candidate_work_preference, candidate_emails, candidate_phones, candidate_custom_fields
 )
 
+
 ######################## Candidate ########################
 def test_update_existing_candidate(sample_user, user_auth):
     """
@@ -43,24 +44,24 @@ def test_update_existing_candidate(sample_user, user_auth):
     candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
 
     data = candidate_data_for_update(
-        candidate_id=candidate_id,
-        email_1_id=candidate_dict['emails'][0]['id'],
-        email_2_id=candidate_dict['emails'][1]['id'],
-        phone_1_id=candidate_dict['phones'][0]['id'],
-        phone_2_id=candidate_dict['phones'][1]['id'],
-        address_1_id=candidate_dict['addresses'][0]['id'],
-        address_2_id=candidate_dict['addresses'][1]['id'],
-        work_preference_id=candidate_dict['work_preference']['id'],
-        work_experience_1_id=candidate_dict['work_experiences'][0]['id'],
-        education_1_id=candidate_dict['educations'][0]['id'],
-        degree_1_id=candidate_dict['educations'][0]['degrees'][0]['id'],
-        military_1_id=candidate_dict['military_services'][0]['id'],
-        preferred_location_1_id=candidate_dict['preferred_locations'][0]['id'],
-        preferred_location_2_id=candidate_dict['preferred_locations'][1]['id'],
-        skill_1_id=candidate_dict['skills'][0]['id'],
-        skill_2_id=candidate_dict['skills'][1]['id'],
-        social_1_id=candidate_dict['social_networks'][0]['id'],
-        social_2_id=candidate_dict['social_networks'][1]['id']
+            candidate_id=candidate_id,
+            email_1_id=candidate_dict['emails'][0]['id'],
+            email_2_id=candidate_dict['emails'][1]['id'],
+            phone_1_id=candidate_dict['phones'][0]['id'],
+            phone_2_id=candidate_dict['phones'][1]['id'],
+            address_1_id=candidate_dict['addresses'][0]['id'],
+            address_2_id=candidate_dict['addresses'][1]['id'],
+            work_preference_id=candidate_dict['work_preference']['id'],
+            work_experience_1_id=candidate_dict['work_experiences'][0]['id'],
+            education_1_id=candidate_dict['educations'][0]['id'],
+            degree_1_id=candidate_dict['educations'][0]['degrees'][0]['id'],
+            military_1_id=candidate_dict['military_services'][0]['id'],
+            preferred_location_1_id=candidate_dict['preferred_locations'][0]['id'],
+            preferred_location_2_id=candidate_dict['preferred_locations'][1]['id'],
+            skill_1_id=candidate_dict['skills'][0]['id'],
+            skill_2_id=candidate_dict['skills'][1]['id'],
+            social_1_id=candidate_dict['social_networks'][0]['id'],
+            social_2_id=candidate_dict['social_networks'][1]['id']
     )
 
     # Create and update a Candidate
@@ -117,21 +118,6 @@ def test_data_validations(sample_user, user_auth):
     assert resp.status_code == 400
     print response_info(resp)
 
-    data = {'candidates': [{'id': 5, 'phones': [{'id': 10}]}]}
-    resp = patch_to_candidate_resource(token, data)
-    assert resp.status_code == 400
-    print response_info(resp)
-
-    data = {'candidates': [{'id': 5, 'phones': [{'id': 10, 'label': None}]}]}
-    resp = patch_to_candidate_resource(token, data)
-    assert resp.status_code == 400
-    print response_info(resp)
-
-    data = {'candidates': [{'id': 5, 'phones': [{'id': 10, 'label': None, 'value': None}]}]}
-    resp = patch_to_candidate_resource(token, data)
-    assert resp.status_code == 400
-    print response_info(resp)
-
     data = {'candidates': [{'id': 5, 'phones': [{'id': 10, 'label': None, 'value': None, 'is_default': False}]}]}
     resp = patch_to_candidate_resource(token, data)
     assert resp.status_code == 403
@@ -153,9 +139,9 @@ def test_update_candidate_names(sample_user, user_auth):
 
     # Update Candidate's first_name
     candidate_id = create_resp.json()['candidates'][0]['id']
-    data = {'candidate': {'id': candidate_id, 'first_name': fake.first_name(),
-                 'middle_name': fake.first_name(), 'last_name': fake.last_name()}
-            }
+    data = {'candidates': [{'id': candidate_id, 'first_name': fake.first_name(),
+                            'middle_name': fake.first_name(), 'last_name': fake.last_name()}
+                           ]}
     update_resp = patch_to_candidate_resource(token, data)
 
     print response_info(update_resp)
@@ -165,9 +151,10 @@ def test_update_candidate_names(sample_user, user_auth):
     candidate_dict = get_from_candidate_resource(token, candidate_id).json()
 
     # Assert on updated field
-    f_name, l_name = data['candidate']['first_name'], data['candidate']['last_name']
+    f_name, l_name = data['candidates'][0]['first_name'], data['candidates'][0]['last_name']
     full_name_from_data = str(f_name) + ' ' + str(l_name)
     assert candidate_dict['candidate']['full_name'] == full_name_from_data
+
 
 ######################## CandidateAddress ########################
 def test_add_new_candidate_address(sample_user, user_auth):
@@ -195,10 +182,10 @@ def test_add_new_candidate_address(sample_user, user_auth):
     candidate_address = updated_candidate_dict['addresses'][0]
     assert updated_candidate_dict['id'] == candidate_id
     assert isinstance(candidate_address, dict)
-    assert candidate_address['address_line_1'] == data['candidate']['addresses'][0]['address_line_1']
-    assert candidate_address['city'] == data['candidate']['addresses'][0]['city']
-    assert candidate_address['state'] == data['candidate']['addresses'][0]['state']
-    assert candidate_address['zip_code'] == data['candidate']['addresses'][0]['zip_code']
+    assert candidate_address['address_line_1'] == data['candidates'][0]['addresses'][0]['address_line_1']
+    assert candidate_address['city'] == data['candidates'][0]['addresses'][0]['city']
+    assert candidate_address['state'] == data['candidates'][0]['addresses'][0]['state']
+    assert candidate_address['zip_code'] == data['candidates'][0]['addresses'][0]['zip_code']
 
 
 def test_multiple_is_default_addresses(sample_user, user_auth):
@@ -216,7 +203,7 @@ def test_multiple_is_default_addresses(sample_user, user_auth):
 
     # Add a new address to the existing Candidate with is_default set to True
     candidate_id = create_resp.json()['candidates'][0]['id']
-    data=candidate_addresses(candidate_id=candidate_id)
+    data = candidate_addresses(candidate_id=candidate_id)
     patch_to_candidate_resource(token, data)
 
     # Retrieve Candidate after update
@@ -255,10 +242,10 @@ def test_update_an_existing_address(sample_user, user_auth):
     updated_address = updated_candidate_dict['addresses'][0]
     assert isinstance(updated_candidate_dict, dict)
     assert updated_candidate_dict['id'] == candidate_id
-    assert updated_address['address_line_1'] == data['candidate']['addresses'][0]['address_line_1']
-    assert updated_address['city'] == data['candidate']['addresses'][0]['city']
-    assert updated_address['state'] == data['candidate']['addresses'][0]['state']
-    assert updated_address['zip_code'] == data['candidate']['addresses'][0]['zip_code']
+    assert updated_address['address_line_1'] == data['candidates'][0]['addresses'][0]['address_line_1']
+    assert updated_address['city'] == data['candidates'][0]['addresses'][0]['city']
+    assert updated_address['state'] == data['candidates'][0]['addresses'][0]['state']
+    assert updated_address['zip_code'] == data['candidates'][0]['addresses'][0]['zip_code']
 
 
 def test_update_candidate_current_address(sample_user, user_auth):
@@ -296,6 +283,7 @@ def test_update_candidate_current_address(sample_user, user_auth):
     assert isinstance(updated_addresses, list)
     assert updated_addresses[0]['is_default'] == True
 
+
 # TODO: add/update CandidateAddress with bad input/format, etc.
 ######################## CandidateAreaOfInterest ########################
 def test_add_new_area_of_interest(sample_user, user_auth):
@@ -331,6 +319,7 @@ def test_add_new_area_of_interest(sample_user, user_auth):
     assert candidate_aois[1]['name'] == db.session.query(AreaOfInterest).get(candidate_aois[1]['id']).name
     assert len(candidate_aois) == candidate_area_of_interest_count + 2
 
+
 ######################## CandidateEducation ########################
 def test_add_new_education(sample_user, user_auth):
     """
@@ -361,7 +350,7 @@ def test_add_new_education(sample_user, user_auth):
     updated_can_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
     updated_educations = updated_can_dict['educations']
 
-    can_ed_from_data = data['candidate']['educations'][0]
+    can_ed_from_data = data['candidates'][0]['educations'][0]
     can_ed_degrees = can_ed_from_data['degrees'][0]
     can_ed_degree_bullets = can_ed_degrees['bullets'][0]
 
@@ -429,7 +418,7 @@ def test_update_education_primary_info(sample_user, user_auth):
     updated_can_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
     education_dict = updated_can_dict['educations'][0]
 
-    can_ed_from_data = data['candidate']['educations'][0]
+    can_ed_from_data = data['candidates'][0]['educations'][0]
     assert education_dict['city'] == can_ed_from_data['city']
     assert education_dict['state'] == can_ed_from_data['state']
     assert education_dict['school_name'] == can_ed_from_data['school_name']
@@ -458,13 +447,13 @@ def test_add_education_degree(sample_user, user_auth):
     candidate_education_count = len(candidate_dict['educations'][0]['degrees'])
 
     # Update existing CandidateEducation
-    data = {'candidate': {'id':  candidate_id, 'educations': [
+    data = {'candidates': [{'id': candidate_id, 'educations': [
         {'id': candidate_dict['educations'][0]['id'], 'degrees': [
             {'type': 'AA', 'title': 'associate', 'bullets': [
                 {'major': 'mathematics', 'comments': 'obtained a high GPA whilst working full time'}
             ]}
         ]}
-    ]}}
+    ]}]}
     updated_resp = patch_to_candidate_resource(token, data)
     print response_info(updated_resp)
 
@@ -477,6 +466,7 @@ def test_add_education_degree(sample_user, user_auth):
     assert education_dict['degrees'][-1]['type'] == 'AA'
     assert education_dict['degrees'][-1]['title'] == 'associate'
     assert education_dict['degrees'][-1]['bullets'][-1]['major'] == 'mathematics'
+
 
 ######################## CandidateExperience ########################
 def test_add_candidate_experience(sample_user, user_auth):
@@ -508,7 +498,7 @@ def test_add_candidate_experience(sample_user, user_auth):
     updated_can_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
     can_experiences = updated_can_dict['work_experiences']
 
-    can_experiences_from_data = data['candidate']['work_experiences']
+    can_experiences_from_data = data['candidates'][0]['work_experiences']
 
     assert candidate_id == updated_can_dict['id']
     assert isinstance(can_experiences, list)
@@ -575,7 +565,7 @@ def test_add_experience_bullet(sample_user, user_auth):
     updated_can_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
     updated_experiences = updated_can_dict['work_experiences']
 
-    can_exp_bullet_from_data = data['candidate']['work_experiences'][0]['bullets'][0]
+    can_exp_bullet_from_data = data['candidates'][0]['work_experiences'][0]['bullets'][0]
     assert isinstance(updated_experiences, list)
     assert candidate_id == updated_can_dict['id']
     assert updated_experiences[0]['bullets'][-1]['description'] == can_exp_bullet_from_data['description']
@@ -615,10 +605,11 @@ def test_update_experience_bullet(sample_user, user_auth):
     updated_can_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
     updated_exp_bullet_dict = updated_can_dict['work_experiences'][0]['bullets']
 
-    exp_bullet_dict_from_data = data['candidate']['work_experiences'][0]['bullets'][0]
+    exp_bullet_dict_from_data = data['candidates'][0]['work_experiences'][0]['bullets'][0]
 
     assert candidate_experience_bullet_count == len(updated_exp_bullet_dict)
     assert updated_exp_bullet_dict[0]['description'] == exp_bullet_dict_from_data['description']
+
 
 ######################## CandidateWorkPreference ########################
 def test_add_multiple_work_preference(sample_user, user_auth):
@@ -672,13 +663,14 @@ def test_update_work_preference(sample_user, user_auth):
     candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
     work_preference_dict = candidate_dict['work_preference']
 
-    work_pref_from_data = data['candidate']['work_preference']
+    work_pref_from_data = data['candidates'][0]['work_preference']
 
     assert candidate_id == candidate_dict['id']
     assert isinstance(work_preference_dict, dict)
     assert work_preference_dict['salary'] == work_pref_from_data['salary']
     assert work_preference_dict['hourly_rate'] == float(work_pref_from_data['hourly_rate'])
     assert work_preference_dict['travel_percentage'] == work_pref_from_data['travel_percentage']
+
 
 ######################## CandidateEmail ########################
 def test_add_eamils(sample_user, user_auth):
@@ -709,7 +701,7 @@ def test_add_eamils(sample_user, user_auth):
     candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
 
     emails = candidate_dict['emails']
-    email_from_data = data['candidate']['emails'][0]
+    email_from_data = data['candidates'][0]['emails'][0]
 
     assert candidate_id == candidate_dict['id']
     assert emails[-1]['label'] == email_from_data['label'].capitalize()
@@ -774,7 +766,7 @@ def test_update_existing_email(sample_user, user_auth):
     assert candidate_id == candidate_dict['id']
     assert emails_before_update[0]['id'] == emails_after_update[0]['id']
     assert emails_before_update[0]['address'] != emails_after_update[0]['address']
-    assert emails_after_update[0]['address'] == data['candidate']['emails'][0]['address']
+    assert emails_after_update[0]['address'] == data['candidates'][0]['emails'][0]['address']
     assert emails_count_before_update == len(emails_after_update)
 
 
@@ -798,9 +790,9 @@ def test_update_existing_email_with_bad_email_address(sample_user, user_auth):
     emails_count_before_update = len(emails_before_update)
 
     # Update first email with an invalid email address
-    data = {'candidate': {'id': candidate_id, 'emails': [
+    data = {'candidates': [{'id': candidate_id, 'emails': [
         {'id': emails_before_update[0]['id'], 'label': 'primary', 'address': 'bad_email.com'}
-    ]}}
+    ]}]}
     updated_resp = patch_to_candidate_resource(token, data)
     print response_info(updated_resp)
 
@@ -812,6 +804,7 @@ def test_update_existing_email_with_bad_email_address(sample_user, user_auth):
     assert candidate_id == candidate_dict['id']
     assert emails_count_before_update == len(emails_after_update)
     assert emails_before_update[0]['address'] == emails_after_update[0]['address']
+
 
 ######################## CandidatePhone ########################
 def test_add_candidate_phones(sample_user, user_auth):
@@ -842,7 +835,7 @@ def test_add_candidate_phones(sample_user, user_auth):
     candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
 
     phones_after_update = candidate_dict['phones']
-    phones_from_data = data['candidate']['phones']
+    phones_from_data = data['candidates'][0]['phones']
 
     assert candidate_id == candidate_dict['id']
     assert phones_after_update[-1]['label'] == phones_from_data[0]['label'].capitalize()
@@ -908,6 +901,7 @@ def test_update_existing_phone(sample_user, user_auth):
     assert phones_before_update[0]['value'] != phones_after_update[0]['value']
     assert phones_count_before_update == len(phones_after_update)
 
+
 ######################## CandidateMilitaryService ########################
 def test_add_military_service(sample_user, user_auth):
     """
@@ -925,14 +919,14 @@ def test_add_military_service(sample_user, user_auth):
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
 
-    military_services_before_update = get_from_candidate_resource(token, candidate_id).\
+    military_services_before_update = get_from_candidate_resource(token, candidate_id). \
         json()['candidate']['military_services']
     military_services_count_before_update = len(military_services_before_update)
 
     # Add CandidateMilitaryService
-    data = {'candidate': {'id': candidate_id, 'military_services': [
+    data = {'candidates': [{'id': candidate_id, 'military_services': [
         {'country': 'gb', 'branch': 'air force', 'comments': 'adept at killing cows with mad-cow-disease'}
-    ]}}
+    ]}]}
     updated_resp = patch_to_candidate_resource(token, data)
     print response_info(updated_resp)
 
@@ -942,7 +936,6 @@ def test_add_military_service(sample_user, user_auth):
     military_services_after_update = candidate_dict['military_services']
     assert candidate_id == candidate_dict['id']
     assert len(military_services_after_update) == military_services_count_before_update + 1
-    # assert military_services_after_update[-1]['country'] == 'United Kingdom'
     assert military_services_after_update[-1]['branch'] == 'air force'
     assert military_services_after_update[-1]['comments'] == 'adept at killing cows with mad-cow-disease'
 
@@ -963,15 +956,15 @@ def test_update_military_service(sample_user, user_auth):
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
 
-    military_services_before_update = get_from_candidate_resource(token, candidate_id).\
+    military_services_before_update = get_from_candidate_resource(token, candidate_id). \
         json()['candidate']['military_services']
     military_services_count_before_update = len(military_services_before_update)
 
     # Add CandidateMilitaryService
-    data = {'candidate': {'id': candidate_id, 'military_services': [
+    data = {'candidates': [{'id': candidate_id, 'military_services': [
         {'id': military_services_before_update[0]['id'], 'country': 'gb', 'branch': 'air force',
          'comments': 'adept at killing cows with mad-cow-disease'}
-    ]}}
+    ]}]}
     updated_resp = patch_to_candidate_resource(token, data)
     print response_info(updated_resp)
 
@@ -981,9 +974,9 @@ def test_update_military_service(sample_user, user_auth):
     military_services_after_update = candidate_dict['military_services']
     assert candidate_id == candidate_dict['id']
     assert len(military_services_after_update) == military_services_count_before_update
-    # assert military_services_after_update[0]['country'] == 'United Kingdom'
     assert military_services_after_update[0]['branch'] == 'air force'
     assert military_services_after_update[0]['comments'] == 'adept at killing cows with mad-cow-disease'
+
 
 ######################## CandidatePreferredLocation ########################
 def test_add_preferred_location(sample_user, user_auth):
@@ -1002,14 +995,14 @@ def test_add_preferred_location(sample_user, user_auth):
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
 
-    preferred_location_before_update = get_from_candidate_resource(token, candidate_id).\
+    preferred_location_before_update = get_from_candidate_resource(token, candidate_id). \
         json()['candidate']['preferred_locations']
     preferred_locations_count_before_update = len(preferred_location_before_update)
 
     # Add CandidatePreferredLocation
-    data = {'candidate': {'id': candidate_id, 'preferred_locations': [
+    data = {'candidates': [{'id': candidate_id, 'preferred_locations': [
         {'city': 'austin', 'state': 'texas'}
-    ]}}
+    ]}]}
     updated_resp = patch_to_candidate_resource(token, data)
     print response_info(updated_resp)
 
@@ -1039,14 +1032,14 @@ def test_update_preferred_location(sample_user, user_auth):
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
 
-    preferred_location_before_update = get_from_candidate_resource(token, candidate_id).\
+    preferred_location_before_update = get_from_candidate_resource(token, candidate_id). \
         json()['candidate']['preferred_locations']
     preferred_locations_count_before_update = len(preferred_location_before_update)
 
     # Add CandidatePreferredLocation
-    data = {'candidate': {'id': candidate_id, 'preferred_locations': [
+    data = {'candidates': [{'id': candidate_id, 'preferred_locations': [
         {'id': preferred_location_before_update[0]['id'], 'city': 'austin', 'state': 'texas'}
-    ]}}
+    ]}]}
     updated_resp = patch_to_candidate_resource(token, data)
     print response_info(updated_resp)
 
@@ -1058,6 +1051,7 @@ def test_update_preferred_location(sample_user, user_auth):
     assert len(preferred_locations_after_update) == preferred_locations_count_before_update + 0
     assert preferred_locations_after_update[0]['city'] == 'austin'
     assert preferred_locations_after_update[0]['state'] == 'texas'
+
 
 ######################## CandidateSkill ########################
 def test_add_skill(sample_user, user_auth):
@@ -1080,7 +1074,7 @@ def test_add_skill(sample_user, user_auth):
     skills_count_before_update = len(skills_before_update)
 
     # Add CandidateSkill
-    data = {'candidate': {'id': candidate_id, 'skills': [{'name': 'pos'}]}}
+    data = {'candidates': [{'id': candidate_id, 'skills': [{'name': 'pos'}]}]}
     updated_resp = patch_to_candidate_resource(token, data)
     print response_info(updated_resp)
 
@@ -1089,7 +1083,7 @@ def test_add_skill(sample_user, user_auth):
 
     skills_after_update = candidate_dict['skills']
     assert candidate_id == candidate_dict['id']
-    assert len(skills_after_update) ==  skills_count_before_update + 1
+    assert len(skills_after_update) == skills_count_before_update + 1
     assert skills_after_update[-1]['name'] == 'pos'
 
 
@@ -1113,9 +1107,9 @@ def test_update_skill(sample_user, user_auth):
     skills_count_before_update = len(skills_before_update)
 
     # Update CandidateSkill
-    data = {'candidate': {'id': candidate_id, 'skills': [
+    data = {'candidates': [{'id': candidate_id, 'skills': [
         {'id': skills_before_update[0]['id'], 'name': 'pos'}
-    ]}}
+    ]}]}
     updated_resp = patch_to_candidate_resource(token, data)
     print response_info(updated_resp)
 
@@ -1124,8 +1118,9 @@ def test_update_skill(sample_user, user_auth):
 
     skills_after_update = candidate_dict['skills']
     assert candidate_id == candidate_dict['id']
-    assert len(skills_after_update) ==  skills_count_before_update
+    assert len(skills_after_update) == skills_count_before_update
     assert skills_after_update[0]['name'] == 'pos'
+
 
 ######################## CandidateSocialNetwork ########################
 def test_add_social_network(sample_user, user_auth):
@@ -1144,14 +1139,14 @@ def test_add_social_network(sample_user, user_auth):
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
 
-    social_networks_before_update = get_from_candidate_resource(token, candidate_id).\
+    social_networks_before_update = get_from_candidate_resource(token, candidate_id). \
         json()['candidate']['social_networks']
     social_networks_count_before_update = len(social_networks_before_update)
 
-    # Add CandidateSocialNework
-    data = {'candidate': {'id': candidate_id, 'social_networks': [
+    # Add CandidateSocialNetwork
+    data = {'candidates': [{'id': candidate_id, 'social_networks': [
         {'name': 'linkedin', 'profile_url': 'https://www.linkedin.com/company/sara'}
-    ]}}
+    ]}]}
     updated_resp = patch_to_candidate_resource(token, data)
     print response_info(updated_resp)
 
@@ -1160,7 +1155,7 @@ def test_add_social_network(sample_user, user_auth):
 
     social_networks_after_update = candidate_dict['social_networks']
     assert candidate_id == candidate_dict['id']
-    assert len(social_networks_after_update) ==  social_networks_count_before_update + 1
+    assert len(social_networks_after_update) == social_networks_count_before_update + 1
     assert social_networks_after_update[-1]['name'] == 'LinkedIn'
     assert social_networks_after_update[-1]['profile_url'] == 'https://www.linkedin.com/company/sara'
 
@@ -1181,7 +1176,7 @@ def test_update_social_network(sample_user, user_auth):
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
 
-    social_networks_before_update = get_from_candidate_resource(token, candidate_id).\
+    social_networks_before_update = get_from_candidate_resource(token, candidate_id). \
         json()['candidate']['social_networks']
     social_networks_count_before_update = len(social_networks_before_update)
 
@@ -1198,6 +1193,6 @@ def test_update_social_network(sample_user, user_auth):
 
     social_networks_after_update = candidate_dict['social_networks']
     assert candidate_id == candidate_dict['id']
-    assert len(social_networks_after_update) ==  social_networks_count_before_update
-    assert social_networks_after_update[0]['name'] == 'LinkedIn'
-    assert social_networks_after_update[0]['profile_url'] == 'https://www.linkedin.com/company/sara'
+    assert len(social_networks_after_update) == social_networks_count_before_update
+    assert social_networks_after_update[0]['name'] == 'Facebook'
+    assert social_networks_after_update[0]['profile_url'] == 'http://www.facebook.com/1024359318'

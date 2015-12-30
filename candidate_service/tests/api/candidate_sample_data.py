@@ -86,7 +86,7 @@ def generate_single_candidate_data(domain_id=None):
                         'school_type': 'university', 'is_current': False, 'degrees': [
                         {
                             'type': 'BS', 'title': 'Bachelors', 'start_year': 2008, 'start_month': 9,
-                            'end_year': 2012, 'end_month': 12, 'gpa_num': 3.5,
+                            'end_year': 2012, 'end_month': 12, 'gpa': 3.5,
                             'bullets': [{'major': fake.job(), 'comments': fake.bs()}]
                         }
                     ]
@@ -96,7 +96,7 @@ def generate_single_candidate_data(domain_id=None):
                         'country': 'america', 'is_current': True, 'degrees': [
                         {
                             'type': 'AA', 'title': 'Associate', 'start_year': 2006, 'start_month': 9,
-                            'end_year': 2008, 'end_month': 9, 'gpa_num': 3,
+                            'end_year': 2008, 'end_month': 9, 'gpa': 3,
                             'bullets': [{'major': fake.job(), 'comments': fake.bs()}]
                         }
                     ]
@@ -219,12 +219,14 @@ def candidate_addresses(candidate_id=None, address_id=None):
             {'id': address_id, 'address_line_1': fake.street_address(), 'city': fake.city(),
              'state': fake.state(), 'zip_code': fake.zipcode(), 'country': fake.country()}
         ]}]}
+
     # Data for adding a CandidateAddress to an existing Candidate
     elif candidate_id and not address_id:
         data = {'candidates': [{'id': candidate_id, 'addresses': [
             {'address_line_1': fake.street_address(), 'city': fake.city(), 'is_default': True,
              'state': fake.state(), 'zip_code': fake.zipcode(), 'country': fake.country()}
         ]}]}
+
     # Data for creating a Candidate + CandidateAddress
     else:
         data = {'candidates': [{'emails': [{'address': fake.email()}], 'addresses': [
@@ -309,15 +311,7 @@ def candidate_educations(candidate_id=None, education_id=None):
 
     # Data for adding Candidate + CandidateEducation
     else:
-        data = {'candidates': [{'emails': [{'address': 'some@nice.com'}], 'educations': [
-            {'school_name': 'stanford', 'school_type': 'university', 'city': 'palo alto',
-             'state': 'ca', 'country': None, 'is_current': False, 'degrees': [
-                {'degree_type': 'bs', 'degree_title': 'engineer', 'start_year': '2002', 'start_month': '11',
-                 'end_year': '2006', 'end_month': '12', 'gpa': 1.5, 'bullets': [
-                    {'major': 'mathematics', 'comments': 'once a mathematician, always a mathematician'}
-                ]}
-            ]}
-        ]}]}
+        data = reset_all_data_except_param(generate_single_candidate_data(), 'educations')
 
     return data
 
@@ -352,10 +346,7 @@ def candidate_experience(candidate_id=None, experience_id=None, experience_bulle
 
     # Data for creating Candidate + CandidateExperience
     else:
-        data = {'candidates': [{'emails': [{'address': fake.email()}], 'work_experiences': [
-            {'organization': fake.company(), 'position': fake.job(), 'city': fake.city(),
-             'state': fake.state(), 'start_year': '2008', 'end_year': 2012, 'start_month': 10, 'end_month': 2,
-             'is_current': True, 'bullets': [{'description': fake.bs()}]}]}]}
+        data = reset_all_data_except_param(generate_single_candidate_data(), 'work_experiences')
 
     return data
 
@@ -373,23 +364,24 @@ def candidate_work_preference(candidate_id=None, work_preference_id=None):
             "salary": randrange(50000, 300000), "employment_type": "full-time employment", "third_party": False
         }}]}
 
+    # Data for updating an existing CandidateWorkPreference
     elif candidate_id and work_preference_id:
-        data = {'candidates': [{'id': candidate_id, 'work_preference': {'id': work_preference_id,
-                                                                        "relocate": True, "authorization": "us citizen",
-                                                                        "telecommute": False,
-                                                                        "travel_percentage": randrange(0, 100),
-                                                                        "hourly_rate": '%.2f' % random.uniform(20, 90),
-                                                                        "salary": randrange(50000, 300000),
-                                                                        "employment_type": "full-time employment",
-                                                                        "third_party": False
-                                                                        }}]}
+        data = {'candidates': [
+            {'id': candidate_id, 'work_preference': {
+                'id': work_preference_id,
+                "relocate": True, "authorization": "us citizen",
+                "telecommute": False,
+                "travel_percentage": randrange(0, 100),
+                "hourly_rate": '%.2f' % random.uniform(20, 90),
+                "salary": randrange(50000, 300000),
+                "employment_type": "full-time employment",
+                "third_party": False
+            }}
+        ]}
 
+    # Data for creating Candidate + CandidateWorkPreference
     else:
-        data = {'candidates': [{'emails': [{'address': fake.email()}], 'work_preference': {
-            "relocate": True, "authorization": "us citizen", "telecommute": False,
-            "travel_percentage": randrange(0, 100), "hourly_rate": '%.2f' % random.uniform(20, 90),
-            "salary": randrange(50000, 300000), "employment_type": "full-time employment", "third_party": False
-        }}]}
+        data = reset_all_data_except_param(generate_single_candidate_data(), 'work_preference')
 
     return data
 
@@ -434,9 +426,7 @@ def candidate_phones(candidate_id=None, phone_id=None):
 
     # Data for creating Candidate + CandidatePhone
     else:
-        data = {'candidates': [{'emails': [{'address': fake.email()}], 'phones': [
-            {'label': 'work', 'value': '6009346489'}
-        ]}]}
+        data = reset_all_data_except_param(generate_single_candidate_data(), 'phones')
 
     return data
 
@@ -446,10 +436,7 @@ def candidate_military_service():
     Sample data for Candidate and CandidateMilitaryService
     :rtype  dict
     """
-    data = {'candidates': [{'emails': [{'address': fake.email()}], 'military_services': [
-        {'country': 'bahrain', 'branch': fake.military_ship(), 'highest_rank': 'lieutenant',
-         'comments': fake.sentence()}
-    ]}]}
+    data = reset_all_data_except_param(generate_single_candidate_data(), 'military_services')
     return data
 
 
@@ -458,10 +445,7 @@ def candidate_preferred_locations():
     Sample data for Candidate and CandidatePreferredLocation
     :rtype  dict
     """
-    data = {'candidates': [{'emails': [{'address': fake.email()}], 'preferred_locations': [
-        {'address': fake.street_address(), 'country': 'al', 'city': fake.city(),
-         'state': fake.state()}
-    ]}]}
+    data = reset_all_data_except_param(generate_single_candidate_data(), 'preferred_locations')
     return data
 
 
@@ -470,10 +454,7 @@ def candidate_skills():
     Sample data for Candidate and CandidateSkill
     :rtype  dict
     """
-    data = {'candidates': [{'emails': [{'address': fake.email()}], 'skills': [
-        {'name': 'payroll', 'months_used': 48},
-        {'name': 'tinder', 'months_used': 2}
-    ]}]}
+    data = reset_all_data_except_param(generate_single_candidate_data(), 'skills')
     return data
 
 
@@ -482,8 +463,54 @@ def candidate_social_network():
     Sample data for Candidate and CandidateSocialNetwork
     :rtype  dict
     """
-    data = {'candidates': [{'emails': [{'address': fake.email()}], 'social_networks': [
-        {'name': 'linkedin', 'profile_url': 'http://www.linkedin.com/in/davemcnulla'},
-        {'name': 'google+', 'profile_url': 'https://plus.google.com/+davemcnulla'}
-    ]}]}
+    data = reset_all_data_except_param(generate_single_candidate_data(), 'social_networks')
     return data
+
+
+def reset_all_data_except_param(data, field):
+    """All required properties of the candidate data will be set to None or []
+    except the specified field.
+    Please see json_schema.py/candidates_resource_schema_post
+    :param data:  comprehensive candidate data
+    :param field: name of field that must not be resetted
+    :return:      candidate data
+    """
+    for _field in data['candidates'][0]:
+        if _field == field:
+            continue
+
+        if _field in ['first_name', 'middle_name', 'last_name']:
+            data['candidates'][0][_field] = None
+
+        if _field in ['addresses', 'phones', 'areas_of_interest', 'custom_fields',
+                      'work_experiences', 'preferred_locations', 'military_services', 'skills',
+                      'social_networks', 'educations']:
+            data['candidates'][0][_field] = []
+
+        if _field == 'work_preference':
+            data['candidates'][0][_field] = None
+    return data
+
+
+def complete_candidate_data_for_posting(data):
+    """Helps complete required fields for candidate's data to comply with
+    json_schema/candidates_resource_schema_post
+    :param data: incomplete candidate data, e.g. {'candidates': [{'first_name': 'joe'}]}
+    :return: comprehensive candidate data structure
+    """
+    template = {'candidates': [
+        {
+            'emails': [{'label': None, 'address': fake.safe_email(), 'is_default': None}],
+            'first_name': None, 'middle_name': None, 'last_name': None, 'addresses': [],
+            'social_networks': [], 'skills': [], 'work_experiences': [], 'work_preference': None,
+            'educations': [], 'custom_fields': [], 'preferred_locations': [], 'military_services': [],
+            'areas_of_interest': [], 'phones': []
+        }
+    ]}
+
+    data_field = data['candidates'][0].keys()[0]
+    for _field in template['candidates'][0]:
+        if _field == data_field:
+            template['candidates'][0][_field] = data['candidates'][0][data_field]
+
+    return template
