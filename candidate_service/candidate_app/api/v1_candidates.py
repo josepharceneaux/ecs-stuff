@@ -34,7 +34,6 @@ from candidate_service.common.models.candidate import (
 )
 from candidate_service.common.models.misc import AreaOfInterest, CustomField
 from candidate_service.common.models.associations import CandidateAreaOfInterest
-from candidate_service.common.models.user import User
 
 # Module
 from candidate_service.modules.talent_candidates import (
@@ -218,6 +217,8 @@ class CandidatesResource(Resource):
             validate(instance=body_dict, schema=candidates_resource_schema_patch)
         except Exception as e:
             raise InvalidUsage(error_message=e.message)
+
+        validate_candidate_properties(data=body_dict)
 
         updated_candidate_ids = []
         for candidate_dict in body_dict.get('candidates'):
