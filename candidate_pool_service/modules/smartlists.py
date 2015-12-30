@@ -2,10 +2,11 @@ import json
 
 from candidate_pool_service.common.models.db import db
 from candidate_pool_service.common.models.smartlist import SmartlistCandidate, Smartlist
-from candidate_pool_service.common.models.candidate import Candidate, CandidateEmail
+from candidate_pool_service.common.models.candidate import Candidate
 from candidate_pool_service.common.models.user import User
 from candidate_pool_service.common.error_handling import InternalServerError
-from candidate_pool_service.common.helper.api_calls import search_candidates_from_params, update_candidates_on_cloudsearch
+from candidate_pool_service.common.utils.candidate_service_calls import (search_candidates_from_params,
+                                                                         update_candidates_on_cloudsearch)
 
 __author__ = 'jitesh'
 

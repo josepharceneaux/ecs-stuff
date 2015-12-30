@@ -1,9 +1,9 @@
 from candidate_pool_service.candidate_pool_app import app
 from candidate_pool_service.common.tests.conftest import *
-from candidate_pool_service.common.helper.api_calls import create_candidates_from_candidate_api
 from candidate_pool_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from candidate_pool_service.modules.smartlists import save_smartlist
 from candidate_pool_service.common.models.smartlist import Smartlist
+from common_functions import create_candidates_from_candidate_api
 import json
 import random
 import time

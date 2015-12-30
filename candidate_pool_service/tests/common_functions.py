@@ -159,3 +159,16 @@ def add_candidates_to_dumb_list(session, access_token, test_dumb_list, candidate
                              data=json.dumps({'candidate_ids': candidate_ids}))
     assert response.status_code == 204
 
+
+def create_candidates_from_candidate_api(access_token, data):
+    """
+    Function sends a request to CandidateResource/post()
+    Returns: list of created candidate ids
+    """
+    resp = requests.post(
+        url=CandidateApiUrl.CANDIDATES,
+        headers={'Authorization': access_token if 'Bearer' in access_token else 'Bearer %s' % access_token},
+        data=json.dumps(data)
+    )
+    assert resp.status_code == 201
+    return [candidate['id'] for candidate in resp.json()['candidates']]

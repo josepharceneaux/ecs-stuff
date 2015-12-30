@@ -1,5 +1,4 @@
 import uuid
-import random
 from faker import Faker
 fake = Faker()
 
@@ -12,6 +11,10 @@ class FakeCandidatesData(object):
                address_list=False):
 
         """
+        Generates candidate data dictionary as required by candidate_service API.
+        Creates candidate data dictionary with given data or random data
+        if values are provided in params it will generate data with those values.
+        If params value is True it will generate random data.
         :param count: Number of candidates objects to be created
         :param first_name:
         :type first_name: bool | str
@@ -41,9 +44,13 @@ class FakeCandidatesData(object):
 
     @classmethod
     def create_emails_list(cls):
+        # Generate random emails list as required by candidate_service
         return [{'label': 'primary', 'address': fake.safe_email()}]
 
     @classmethod
     def create_address_list(cls):
+        # Generate random address list as required by candidate_service
         return [{'address_line_1': fake.street_address(), 'city': fake.city(),
                  'state': fake.state(), 'zip_code': fake.zipcode(), 'country': fake.country()}]
+
+    # Add other methods as an when required
