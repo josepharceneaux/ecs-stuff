@@ -193,7 +193,7 @@ def url_conversion(long_url):
     :rtype: tuple
     """
     if not isinstance(long_url, basestring):
-        raise InvalidUsage(error_message='Pass URL(to be shortened) as a string',
+        raise InvalidUsage('Pass URL(to be shortened) as a string',
                            error_code=InvalidUsage.http_status_code())
 
     payload = json.dumps({'longUrl': long_url})
@@ -221,7 +221,7 @@ def to_utc_str(dt):
     :rtype: str
     """
     if not isinstance(dt, datetime):
-        raise InvalidUsage(error_message='Given param should be datetime obj')
+        raise InvalidUsage('Given param should be datetime obj')
     return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
@@ -251,3 +251,4 @@ def get_utc_datetime(dt, tz):
         return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
     utc_dt = local_dt.astimezone(pytz.utc)
     return utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+

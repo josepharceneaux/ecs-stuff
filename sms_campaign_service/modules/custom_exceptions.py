@@ -73,7 +73,7 @@ class TwilioAPIError(SmsCampaignApiException):
     or purchasing new number etc.
 
     **Usage**
-        .. see also:: TwilioSMS() class in sms_campaign_service/utilities.py
+        .. see also:: TwilioSMS() class in sms_campaign_service/modules/handy_functions.py
     """
     error_code = SmsCampaignApiException.TWILIO_API_ERROR
 
@@ -223,7 +223,7 @@ class InvalidUrl(SmsCampaignApiException):
     If we are searching URLs in SMS body text, we also check if those URLs are in valid format.
     If any of the URL is not valid, we raise this exception.
     **Usage**
-        .. see also:: validate_form_data() function in utilities.py
+        .. see also:: validate_form_data() function in modules/handy_functions.py
     """
     error_code = SmsCampaignApiException.INVALID_URL_FORMAT
 
@@ -233,6 +233,6 @@ class CampaignAlreadyScheduled(SmsCampaignApiException):
     This exception is raised when we try to schedule an already scheduled SMS campaign
 
     **Usage**
-        .. see also:: validate_scheduler_data() function in utilities.py
+        .. see also:: validate_scheduler_data() function in modules/handy_functions.py
     """
     error_code = SmsCampaignApiException.CAMPAIGN_ALREADY_SCHEDULED

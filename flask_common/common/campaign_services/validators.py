@@ -10,6 +10,7 @@ from datetime import datetime
 
 # Common utils
 from ..error_handling import InvalidUsage
+from campaign_utils import get_utc_datetime_from_str
 from ..utils.common_functions import JSON_CONTENT_TYPE_HEADER
 
 
@@ -21,7 +22,8 @@ def validate_header(request):
     :return:
     """
     if not request.headers.get('CONTENT_TYPE') == JSON_CONTENT_TYPE_HEADER['content-type']:
-        raise InvalidUsage(error_message='Invalid header provided')
+        raise InvalidUsage('Invalid header provided')
+
 
 def validate_datetime_format(str_datetime):
     """
@@ -34,6 +36,8 @@ def validate_datetime_format(str_datetime):
     :return: True if given datetime is valid, False otherwise.
     :rtype: bool
     """
+    if not isinstance(str_datetime, basestring):
+        raise InvalidUsage('datetime should be provided in str format as 2015-10-08T06:16:55Z')
     utc_pattern = '\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z'
     if re.match(utc_pattern, str_datetime):
         return True
@@ -42,17 +46,32 @@ def validate_datetime_format(str_datetime):
                            'like 2015-10-08T06:16:55Z. Given Date is %s' % str_datetime)
 
 
-def to_utc_str(dt):
+def is_future_datetime(dt):
     """
-    This converts given datetime in '2015-10-08T06:16:55Z' format.
-    :param dt: given datetime
+    This function validates that given datetime obj has date and time in future by comparing
+    with current UTC datetime object.
+    :param dt: datetime obj
     :type dt: datetime
-    :return: UTC date in str
-    :rtype: str
+    :exception: Invalid usage
+    :return: True if given datetime is ahead of current datetime
+    :rtype: bool
     """
-    if isinstance(dt, datetime):
-        raise InvalidUsage(error_message='Given param should be datetime obj')
-    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    if not isinstance(dt, datetime):
+        raise InvalidUsage('param should be a datetime object')
+    return dt > datetime.utcnow().replace(tzinfo=timezone('UTC'))
+
+
+def validate_format_and_future_datetime(datetime_str):
+    """
+    Here we check given string datetime is in valid format, then we convert it into datetime obj.
+    Finally we check if it is in future.
+    This uses get_utc_datetime_from_str() and is_future_datetime() functions.
+    :param datetime_str:
+    :type datetime_str: str
+    :return:
+    """
+    if not is_future_datetime(get_utc_datetime_from_str(datetime_str)):
+        raise InvalidUsage("Given datetime(%s) should be in future" % datetime_str)
 
 
 def is_valid_url_format(url):
@@ -67,24 +86,3 @@ def is_valid_url_format(url):
         r'(?::\d+)?'  # optional port
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)
     return url is not None and regex.search(url)
-
-
-def frequency_id_to_seconds(frequency_id):
-    #  'Once', 'Daily', 'Weekly', 'Biweekly', 'Monthly', 'Yearly'
-    if not isinstance(frequency_id, int):
-        raise InvalidUsage(error_message='Include frequency id as int')
-    if not frequency_id or frequency_id == 1:
-        period = 0
-    elif frequency_id == 2:
-        period = 24 * 3600
-    elif frequency_id == 3:
-        period = 7 * 24 * 3600
-    elif frequency_id == 4:
-        period = 14 * 24 * 3600
-    elif frequency_id == 5:
-        period = 30 * 24 * 3600
-    elif frequency_id == 6:
-        period = 365 * 24 * 3600
-    else:
-        raise InvalidUsage("Unknown frequency ID: %s" % frequency_id)
-    return period

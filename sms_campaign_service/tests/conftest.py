@@ -4,7 +4,6 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
     This file contains pyTest fixtures for tests of SMS Campaign Service.
 """
 # Standard Import
-import re
 import time
 # Application Specific
 # common conftest
@@ -13,12 +12,11 @@ from sms_campaign_service.common.tests.conftest import *
 # Service specific
 # to avoid circular we need to import app before SmsCampaignBase
 from sms_campaign_service.sms_campaign_app.app import app
-
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
-from sms_campaign_service.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL,
-                                                             TWILIO_TEST_NUMBER,
-                                                             TWILIO_INVALID_TEST_NUMBER,
-                                                             TWILIO_PAID_NUMBER_1)
+from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL,
+                                                                     TWILIO_TEST_NUMBER,
+                                                                     TWILIO_INVALID_TEST_NUMBER,
+                                                                     TWILIO_PAID_NUMBER_1)
 
 # Database Models
 from sms_campaign_service.common.models.user import UserPhone

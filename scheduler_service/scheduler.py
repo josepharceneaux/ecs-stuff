@@ -7,22 +7,24 @@ Scheduler - APScheduler initialization, set jobstore, threadpoolexecutor
 """
 
 import re
+from pytz import timezone
+from dateutil.parser import parse
 
 # Third-party imports
-from pytz import timezone
 from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.events import EVENT_JOB_EXECUTED
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.date import DateTrigger
 from apscheduler.schedulers.background import BackgroundScheduler
-from dateutil.parser import parse
 
 # Application imports
 from scheduler_service import logger
 from scheduler_service.tasks import send_request
-from scheduler_service.common.error_handling import InvalidUsage
-from flask.ext.common.common.utils.common_functions import to_utc_str
+from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
+from scheduler_service.common.error_handling import InvalidUsage, ForbiddenError
 from scheduler_service.apscheduler_config import executors, job_store, jobstores
+from flask.ext.common.common.campaign_services.validators import is_future_datetime
+from flask.ext.common.common.campaign_services.campaign_utils import to_utc_str
 from scheduler_service.custom_exceptions import FieldRequiredError, TriggerTypeError, \
     JobNotCreatedError
 
@@ -99,7 +101,11 @@ def validate_periodic_job(data):
         try:
             start_datetime = parse(start_datetime)
             start_datetime = start_datetime.replace(tzinfo=timezone('UTC'))
+            if not is_future_datetime(start_datetime):
+                raise ForbiddenError("start_datetime should be in future")
             valid_data.update({'start_datetime': start_datetime})
+        except ForbiddenError:
+            raise
         except Exception:
             raise InvalidUsage(error_message="Invalid value of start_datetime %s" % start_datetime)
 
@@ -107,7 +113,11 @@ def validate_periodic_job(data):
         try:
             end_datetime = parse(end_datetime)
             end_datetime = end_datetime.replace(tzinfo=timezone('UTC'))
+            if not is_future_datetime(end_datetime):
+                raise ForbiddenError("end_datetime should be in future")
             valid_data.update({'end_datetime': end_datetime})
+        except ForbiddenError:
+            raise
         except Exception:
             raise InvalidUsage(error_message="Invalid value of end_datetime %s" % end_datetime)
 
@@ -153,7 +163,7 @@ def schedule_job(data, user_id=None, access_token=None):
 
     trigger = str(job_config['task_type']).lower().strip()
 
-    if trigger == 'periodic':
+    if trigger == SchedulerUtils.PERIODIC:
         valid_data = validate_periodic_job(data)
 
         try:
@@ -168,7 +178,7 @@ def schedule_job(data, user_id=None, access_token=None):
         except Exception:
             raise JobNotCreatedError("Unable to create the job.")
         return job.id
-    elif trigger == 'one_time':
+    elif trigger == SchedulerUtils.ONE_TIME:
         valid_data = validate_one_time_job(data)
         try:
             job = scheduler.add_job(run_job,
@@ -181,7 +191,8 @@ def schedule_job(data, user_id=None, access_token=None):
         except Exception:
             raise JobNotCreatedError("Unable to create job. Invalid data given")
     else:
-        raise TriggerTypeError("Task type not correct. Please use either 'periodic' or 'one_time' as task type.")
+        raise TriggerTypeError("Task type not correct. Please use either %s or %s as task type."
+                               % (SchedulerUtils.ONE_TIME, SchedulerUtils.PERIODIC))
 
 
 def run_job(user_id, access_token, url, content_type, **kwargs):
@@ -223,22 +234,23 @@ def serialize_task(task):
     if isinstance(task.trigger, IntervalTrigger):
         task_dict = dict(
             id=task.id,
-            url=task.args[1],
+            url=task.args[2],
             start_datetime=to_utc_str(task.trigger.start_date),
             end_datetime=to_utc_str(task.trigger.end_date),
             next_run_datetime=str(task.next_run_time),
-            frequency=dict(seconds=task.trigger.interval.seconds),
+            # frequency=dict(seconds=task.trigger.interval.seconds),
+            frequency=int(task.trigger.interval_length),
             post_data=task.kwargs,
             pending=task.pending,
-            task_type='periodic'
+            task_type=SchedulerUtils.PERIODIC
         )
     elif isinstance(task.trigger, DateTrigger):
         task_dict = dict(
             id=task.id,
-            url=task.args[1],
+            url=task.args[2],
             run_datetime=to_utc_str(task.trigger.run_date),
             post_data=task.kwargs,
             pending=task.pending,
-            task_type='one_time'
+            task_type=SchedulerUtils.ONE_TIME
         )
     return task_dict

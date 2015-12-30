@@ -31,9 +31,10 @@ This file contains API endpoints related to sms_campaign_service.
 """
 
 # Standard Library
-import json
 import types
+
 from werkzeug.exceptions import BadRequest
+
 
 # Third Party
 from flask import request
@@ -43,10 +44,10 @@ from flask.ext.restful import Resource
 
 # Service Specific
 from sms_campaign_service import logger
-from sms_campaign_service.sms_campaign_base import SmsCampaignBase
+from sms_campaign_service.sms_campaign_app.app import app
 from sms_campaign_service.modules.validators import validate_form_data
-from sms_campaign_service.custom_exceptions import ErrorDeletingSMSCampaign
-from sms_campaign_service.modules.handy_functions import delete_sms_campaign
+from sms_campaign_service.sms_campaign_base import SmsCampaignBase, delete_sms_campaign
+from sms_campaign_service.modules.custom_exceptions import ErrorDeletingSMSCampaign
 
 # Common Utils
 from sms_campaign_service.common.error_handling import *
@@ -186,9 +187,9 @@ class SMSCampaigns(Resource):
         try:
             data_from_ui = request.get_json()
         except BadRequest:
-            raise InvalidUsage(error_message='Given data is not in json format')
+            raise InvalidUsage('Given data is not in json format')
         if not data_from_ui:
-            raise InvalidUsage(error_message='No data provided to create SMS campaign')
+            raise InvalidUsage('No data provided to create SMS campaign')
         # apply validation on fields
         invalid_smartlist_ids, not_found_smartlist_ids = validate_form_data(data_from_ui)
         campaign_obj = SmsCampaignBase(request.user.id)
@@ -245,17 +246,17 @@ class SMSCampaigns(Resource):
         try:
             req_data = request.get_json()
         except Exception:
-            raise InvalidUsage(error_message='id(s) of campaign should be in a list')
+            raise InvalidUsage('id(s) of campaign should be in a list')
         campaign_ids = req_data['ids'] if 'ids' in req_data else []
         if not isinstance(req_data['ids'], list):
-            raise InvalidUsage(error_message='Bad request, include campaign_ids as list data',
+            raise InvalidUsage('Bad request, include campaign_ids as list data',
                                error_code=InvalidUsage.http_status_code())
         # check if campaigns_ids list is not empty
         if not campaign_ids:
             return dict(message='No campaign id provided to delete'), 200
 
         if not all([isinstance(campaign_id, (int, long)) for campaign_id in campaign_ids]):
-            raise InvalidUsage(error_message='Bad request, campaign_ids must be integer',
+            raise InvalidUsage('Bad request, campaign_ids must be integer',
                                error_code=InvalidUsage.http_status_code())
         not_deleted = []
         for campaign_id in campaign_ids:
@@ -358,6 +359,12 @@ class ScheduleSmsCampaign(Resource):
                     "message": "Campaign(id:1) is has been re-scheduled.
                     "task_id"; "33e32e8ac45e4e2aa710b2a04ed96371"
                 }
+            OR
+
+                {
+                    "message": "Campaign(id:1) is already scheduled with given data.
+                    "task_id"; "33e32e8ac45e4e2aa710b2a04ed96371"
+                }
 
         .. Status:: 200 (OK)
                     400 (Bad request)
@@ -369,13 +376,17 @@ class ScheduleSmsCampaign(Resource):
         :param campaign_id: integer, unique id representing campaign in GT database
         :return: JSON containing message and task_id.
         """
-        pre_processed_data= SmsCampaignBase.pre_process_schedule(request, campaign_id)
-        SmsCampaignBase.pre_process_re_schedule(pre_processed_data)
-        sms_camp_obj = SmsCampaignBase(request.user.id)
-        sms_camp_obj.campaign = pre_processed_data['campaign']
-        task_id = sms_camp_obj.schedule(pre_processed_data['data_to_schedule'])
-        return dict(message='Campaign(id:%s) has been re-scheduled.' % campaign_id,
-                    task_id=task_id), 200
+        pre_processed_data = SmsCampaignBase.pre_process_schedule(request, campaign_id)
+        scheduled_task_id = SmsCampaignBase.pre_process_re_schedule(pre_processed_data, logger)
+        if not scheduled_task_id:  # Task
+            sms_camp_obj = SmsCampaignBase(request.user.id)
+            sms_camp_obj.campaign = pre_processed_data['campaign']
+            task_id = sms_camp_obj.schedule(pre_processed_data['data_to_schedule'])
+            message = 'Campaign(id:%s) has been re-scheduled.' % campaign_id
+        else:
+            message = 'Campaign(id:%s) is already scheduled with given data.' % campaign_id
+            task_id = scheduled_task_id
+        return dict(message=message, task_id=task_id), 200
 
 
 @api.route(SmsCampaignApi.CAMPAIGN)
@@ -473,9 +484,9 @@ class CampaignById(Resource):
         try:
             campaign_data = request.get_json()
         except BadRequest:
-            raise InvalidUsage(error_message='Given data should be in dict format')
+            raise InvalidUsage('Given data should be in dict format')
         if not campaign_data:
-            raise InvalidUsage(error_message='No data provided to update SMS campaign')
+            raise InvalidUsage('No data provided to update SMS campaign')
         SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id)
         invalid_smartlist_ids, not_found_smartlist_ids = validate_form_data(campaign_data)
         camp_obj = SmsCampaignBase(request.user.id)
