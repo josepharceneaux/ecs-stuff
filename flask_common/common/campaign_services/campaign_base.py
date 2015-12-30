@@ -9,8 +9,9 @@ all campaigns. Methods are
 - create_activity()
 - get_campaign_data()
 - save()
-- process_send() etc.
-Any service can inherit from this class to implement functionality accordingly.
+- process_send()
+- process_delete_campaign() etc.
+Any service can inherit from this class to implement/override functionality accordingly.
 """
 
 # Standard Library
@@ -28,14 +29,15 @@ from flask import current_app
 from ..models.user import Token
 from ..models.misc import UrlConversion
 from ..models.candidate import Candidate
+from ..models.sms_campaign import SmsCampaign
+from campaign_utils import frequency_id_to_seconds
 from ..utils.scheduler_utils import SchedulerUtils
 from ..routes import CandidateApiUrl, ActivityApiUrl, SchedulerApiUrl
-from ..error_handling import ForbiddenError, InvalidUsage, ResourceNotFound
-from ..utils.common_functions import http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER
+from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
+from ..utils.common_functions import (http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER)
 from validators import (validate_header, validate_datetime_format,
-                        validate_format_and_future_datetime, get_utc_datetime_from_str)
-from flask.ext.common.common.campaign_services.campaign_utils import frequency_id_to_seconds, \
-    get_utc_datetime_from_str
+                        validate_format_and_future_datetime,
+                        validate_format_and_get_utc_datetime_from_str)
 
 
 class CampaignBase(object):
@@ -122,23 +124,32 @@ class CampaignBase(object):
         # so that tasks related to one service only assign to that particular queue.
 
     @staticmethod
-    def get_authorization_header(user_id):
+    def get_authorization_header(user_id, bearer_access_token=None):
         """
         This returns the authorization header containing access token token associated
         with current user. We use this access token to communicate with other services,
         like activity_service to create activity.
+        If access_token is provided, we return the auth header, otherwise we get the access token
+        from database table "Token" and then return the auth header.
+        If access token is not found by these two methods ,we raise Forbidden error.
 
         :param user_id: id of user
+        :param bearer_access_token: e.g. 'Bearer IxzJAm3RWFnZENln37E3ivs2gxUfzB'
+        :type user_id: int
+        :type bearer_access_token: str
         :exception: ForbiddenError
         :exception: ResourceNotFound
         :return: Authorization header
         :rtype: dict
         """
-        user_token_obj = Token.get_by_user_id(user_id)
-        if not user_token_obj:
-            raise ResourceNotFound('No auth token record found for user(id:%s)'
-                                   % user_id)
-        user_access_token = user_token_obj.access_token
+        if bearer_access_token:
+            return {'Authorization': bearer_access_token}
+        else:
+            user_token_obj = Token.get_by_user_id(user_id)
+            if not user_token_obj:
+                raise ResourceNotFound('No auth token record found for user(id:%s)'
+                                       % user_id)
+            user_access_token = user_token_obj.access_token
         if not user_access_token:
             raise ForbiddenError('User(id:%s) has no auth token associated.'
                                  % user_id)
@@ -178,6 +189,79 @@ class CampaignBase(object):
         :rtype: SmsCampaign or some other campaign obj
         """
         pass
+
+    @classmethod
+    def process_delete_campaign(cls, **kwargs):
+        """
+        This function is used to delete the campaign in following given steps.
+        1- Checks if any of the required field is missing from given data. It raise Invalid usage
+            exception there is any field missing from data.
+        2- Calls validate_ownership_of_campaign() method to validate that current user is an
+            owner of given campaign id and gets the campaign object.
+        3- Checks if campaign object has any scheduler_task_id assigned. If it has any, then do
+            the following steps:
+            3.1- Calls get_authorization_header() to get auth header (which is used to make
+                HTTP request to scheduler_service)
+            3.2- Makes HTTP DELETE request to scheduler service to remove the job from redis job
+                store.
+            If both of these two steps are successful, it returns True, otherwise returns False.
+        4- Deletes the campaign from database and returns True if campaign is deleted successfully.
+            Otherwise it returns False.
+
+        kwargs contains data should be like this (e.g).
+                campaign_id=1,
+                current_user_id=1,
+                bearer_access_token='Bearer sklnvladvpewohf3re2ln'
+
+        :Example:
+             In case of SMS campaign, this method is used as
+                SmsCampaignBase.process_delete_campaign(campaign_id=1, current_user_id=1,
+                                                bearer_access_token='Bearer sklnvladvpewohf3re2ln')
+
+        :param kwargs: dictionary containing data required to delete the campaign
+        :type kwargs: dict
+        :exception: Forbidden error (status_code = 403)
+        :exception: Resource not found error (status_code = 404)
+        :exception: Invalid Usage (status_code = 400)
+        :return: True if record deleted successfully, False otherwise.
+        :rtype: bool
+        """
+        missing_required_fields = find_missing_items(kwargs, verify_values_of_all_keys=True)
+        if missing_required_fields:
+            raise InvalidUsage('process_delete_campaign: Missing required fields are: %s'
+                               % missing_required_fields)
+        # validate if current user is an owner of given campaign id and get campaign object
+        campaign_obj = cls.validate_ownership_of_campaign(kwargs['campaign_id'],
+                                                          kwargs['current_user_id'])
+        if not isinstance(campaign_obj, SmsCampaign):  # TODO update for Push Campaign
+            raise InvalidUsage('Campaign must be an instance of SmsCampaign or PushCampaign etc.')
+        # campaign object has scheduler_task_id assigned
+        if campaign_obj.scheduler_task_id:
+            # get oauth header
+            oauth_header = cls.get_authorization_header(
+                kwargs.get('current_user_id'),
+                bearer_access_token=kwargs.get('bearer_access_token'))
+            # campaign was scheduled, remove task from scheduler_service
+            unschedule = cls.delete_scheduled_task(campaign_obj.scheduler_task_id,
+                                                   oauth_header)
+            if not unschedule:
+                current_app.config['LOGGER'].error(
+                    "process_delete_campaign: Task(id:%s) couldn't be deleted."
+                    % campaign_obj.scheduler_task_id)
+                raise False
+            else:
+                current_app.config['LOGGER'].info("Task(id:%s) has been unscheduled. (%s(id:%s)"
+                                                  % (campaign_obj.scheduler_task_id,
+                                                     campaign_obj.__tablename__,
+                                                     campaign_obj.id))
+        if not SmsCampaign.delete(campaign_obj):
+            current_app.config['LOGGER'].error("%s(id:%s) couldn't be deleted."
+                                               % (campaign_obj.__tablename__, campaign_obj.id))
+            return False
+        current_app.config['LOGGER'].info(
+            'process_delete_campaign: %s(id:%s) has been deleted successfully.'
+            % (campaign_obj.__tablename__, campaign_obj.id))
+        return True
 
     @classmethod
     def pre_process_schedule(cls, request, campaign_id):
@@ -230,7 +314,8 @@ class CampaignBase(object):
         if data_to_schedule_campaign.get('end_datetime'):
             end_datetime = data_to_schedule_campaign.get('end_datetime')
             # check if end_datetime is greater than start_datetime
-            if get_utc_datetime_from_str(end_datetime) < get_utc_datetime_from_str(start_datetime):
+            if validate_format_and_get_utc_datetime_from_str(
+                    end_datetime) < validate_format_and_get_utc_datetime_from_str(start_datetime):
                 raise InvalidUsage("end_datetime must be greater than start_datetime")
         # start datetime should be in valid format and in future
         validate_format_and_future_datetime(data_to_schedule_campaign.get('start_datetime'))
@@ -301,6 +386,8 @@ class CampaignBase(object):
                                 headers=self.oauth_header)
         # If any error occurs on POST call, we log the error inside http_request().
         if 'id' in response.json():
+            current_app.config['LOGGER'].info('%s(id:%s) has been scheduled.'
+                                              % (self.campaign.__tablename__, self.campaign.id))
             return response.json()['id']
         else:
             raise InvalidUsage(
@@ -352,7 +439,7 @@ class CampaignBase(object):
         return task
 
     @staticmethod
-    def pre_process_re_schedule(pre_processed_data, logger):
+    def pre_process_re_schedule(pre_processed_data):
         """
         UI sends data in following format:
 
@@ -424,17 +511,39 @@ class CampaignBase(object):
                     or scheduled_task['end_datetime'] != data_to_schedule.get('end_datetime') \
                     or scheduled_task['frequency'] != frequency_id_to_seconds(
                         data_to_schedule.get('frequency_id')):
-                    need_to_create_new_task = True
+                need_to_create_new_task = True
         if need_to_create_new_task:
             response = http_request('DELETE', SchedulerApiUrl.TASK % scheduled_task['id'],
                                     headers=pre_processed_data['auth_header'])
             if response.ok or response.status_code == ResourceNotFound.http_status_code():
-                logger.info('Task(id:%s) has been removed from scheduler_service'
-                            % scheduled_task['id'])
+                current_app.config['LOGGER'].info(
+                    'Task(id:%s) has been removed from scheduler_service'
+                    % scheduled_task['id'])
             return None
         else:
-            logger.info('Task(id:%s) is already scheduled with given data.' % scheduled_task['id'])
+            current_app.config['LOGGER'].info(
+                'Task(id:%s) is already scheduled with given data.' % scheduled_task['id'])
             return scheduled_task['id']
+
+    @staticmethod
+    def delete_scheduled_task(scheduled_task_id, auth_header):
+        """
+        Campaign (e.g. SMS campaign or Push Notification) has a field scheduler_task_id.
+        If a campaign was scheduled and user wants to delete that campaign, system should remove
+        the task from scheduler_service as well using scheduler_task_id.
+        This function is used to remove the job from scheduler_service when someone deletes
+        a campaign.
+        :return:
+        """
+        if not auth_header:
+            raise InvalidUsage('Auth header is required for deleting scheduled task.')
+        if not scheduled_task_id:
+            raise InvalidUsage('Provide task id to delete scheduled task from scheduler_service.')
+        response = http_request('DELETE', SchedulerApiUrl.TASK % scheduled_task_id,
+                                headers=auth_header)
+        if response.ok or response.status_code == ResourceNotFound.http_status_code():
+            return True
+        return False
 
     @abstractmethod
     def process_send(self, campaign):
@@ -474,15 +583,15 @@ class CampaignBase(object):
                              json.loads(response.text)['candidates']]
             candidates = [Candidate.get_by_id(_id) for _id in candidate_ids]
         except Exception:
-            current_app.logger.exception('get_smartlist_candidates: Error while '
-                                         'fetching candidates for smartlist(id:%s)'
-                                         % campaign_smartlist.smartlist_id)
+            current_app.config['LOGGER'].exception('get_smartlist_candidates: Error while '
+                                                   'fetching candidates for smartlist(id:%s)'
+                                                   % campaign_smartlist.smartlist_id)
             raise
         if not candidates:
-            current_app.logger.error('get_smartlist_candidates: '
-                                     'No Candidate found. smartlist id is %s. '
-                                     '(User(id:%s))' % (campaign_smartlist.smartlist_id,
-                                                        self.user_id))
+            current_app.config['LOGGER'].error('get_smartlist_candidates: '
+                                               'No Candidate found. smartlist id is %s. '
+                                               '(User(id:%s))' % (campaign_smartlist.smartlist_id,
+                                                                  self.user_id))
         return candidates
 
     def send_campaign_to_candidates(self, candidates, logger):
@@ -523,7 +632,8 @@ class CampaignBase(object):
             # results in failure status.
             chord(tasks)(callback)
         except Exception:
-            logger.exception('send_campaign_to_candidates: Error while sending tasks to Celery')
+            current_app.config['LOGGER'].exception(
+                'send_campaign_to_candidates: Error while sending tasks to Celery')
 
     def pre_process_celery_task(self, candidates):
         """

@@ -7,13 +7,8 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com
 # Standard Imports
 from datetime import datetime
 
-# Third Party Imports
-from pytz import timezone
-from dateutil.parser import parse
-
 # Application Specific
 from ..error_handling import InvalidUsage
-from validators import validate_datetime_format
 
 
 def frequency_id_to_seconds(frequency_id):
@@ -37,21 +32,6 @@ def frequency_id_to_seconds(frequency_id):
     else:
         raise InvalidUsage("Unknown frequency ID: %s" % frequency_id)
     return period
-
-
-def get_utc_datetime_from_str(str_datetime):
-    """
-    This converts given string datetime into UTC datetime obj.
-    This uses validate_datetime_format() to validate the format of given str.
-    Valid format should be like 2015-10-08T06:16:55
-    :param str_datetime:
-    :return: datetime obj
-    :rtype: datetime
-    """
-    if not isinstance(str_datetime, basestring):
-        raise InvalidUsage('param should be a string of datetime')
-    validate_datetime_format(str_datetime)
-    return parse(str_datetime).replace(tzinfo=timezone('UTC'))
 
 
 def to_utc_str(dt):

@@ -9,12 +9,14 @@ This contains following helper classes/functions for SMS Campaign Service.
 """
 # Third Party Imports
 import re
+
 import twilio
 import twilio.rest
 from twilio.rest import TwilioRestClient
 
+
 # Service specific
-from sms_campaign_service import logger
+from sms_campaign_service.sms_campaign_app import logger
 from sms_campaign_service.modules.custom_exceptions import TwilioAPIError
 from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO_ACCOUNT_SID,
                                                                      TWILIO_AUTH_TOKEN,

@@ -10,6 +10,11 @@ This file contains API endpoints related to sms_campaign_service.
             POST    : Creates new campaign and save it in database
             DELETE  : Deletes SMS campaigns of user using given campaign ids as a list
 
+        - ScheduleSmsCampaign: /v1/campaigns/:id/schedule
+
+            POST    : Schedules the campaign from given campaign_id and data provided
+            PUT     : Re-schedules the campaign from given campaign_id and data provided
+
         - SendSmsCampaign: /v1/campaigns/:id/schedule
 
             POST    : Schedules an SMS Campaign by campaign id
@@ -32,7 +37,6 @@ This file contains API endpoints related to sms_campaign_service.
 
 # Standard Library
 import types
-
 from werkzeug.exceptions import BadRequest
 
 
@@ -43,18 +47,17 @@ from flask.ext.cors import CORS
 from flask.ext.restful import Resource
 
 # Service Specific
-from sms_campaign_service import logger
-from sms_campaign_service.sms_campaign_app.app import app
+from sms_campaign_service.sms_campaign_app import logger
 from sms_campaign_service.modules.validators import validate_form_data
-from sms_campaign_service.sms_campaign_base import SmsCampaignBase, delete_sms_campaign
 from sms_campaign_service.modules.custom_exceptions import ErrorDeletingSMSCampaign
+from sms_campaign_service.sms_campaign_base import (SmsCampaignBase)
 
 # Common Utils
 from sms_campaign_service.common.error_handling import *
 from sms_campaign_service.common.talent_api import TalentApi
 from sms_campaign_service.common.routes import SmsCampaignApi
 from sms_campaign_service.common.utils.auth_utils import require_oauth
-from sms_campaign_service.common.utils.api_utils import api_route, ApiResponse
+from sms_campaign_service.common.utils.api_utils import (api_route, ApiResponse)
 from sms_campaign_service.common.campaign_services.validators import validate_header
 
 # Database Models
@@ -231,15 +234,12 @@ class SMSCampaigns(Resource):
             {
                 'message': '3 Campaigns have been deleted successfully'
             }
+
         .. Status:: 200 (Resource deleted)
                     207 (Not all deleted)
                     400 (Bad request)
                     403 (Forbidden error)
                     500 (Internal Server Error)
-
-        .. Error Codes::
-                    ErrorDeletingSMSCampaign (5010)
-
         """
         validate_header(request)
         # get campaign_ids for campaigns to be deleted
@@ -261,11 +261,16 @@ class SMSCampaigns(Resource):
         not_deleted = []
         for campaign_id in campaign_ids:
             try:
-                delete_sms_campaign(campaign_id, request.user.id)
-            except ForbiddenError or ResourceNotFound or ErrorDeletingSMSCampaign:
+                deleted = SmsCampaignBase.process_delete_campaign(
+                    campaign_id=campaign_id, current_user_id=request.user.id,
+                    bearer_access_token=request.oauth_token)
+                if not deleted:
+                    # error has been logged inside process_delete_campaign()
+                    not_deleted.append(campaign_id)
+            except ForbiddenError or ResourceNotFound or InvalidUsage:
                 if len(campaign_ids) == 1:
                     raise
-                # error has been logged inside delete_sms_campaign()
+                # error has been logged inside process_delete_campaign()
                 not_deleted.append(campaign_id)
         if not not_deleted:
             return dict(message='%s Campaigns deleted successfully' % len(campaign_ids)), 200
@@ -278,7 +283,9 @@ class SMSCampaigns(Resource):
 class ScheduleSmsCampaign(Resource):
     """
     Endpoint looks like /v1/campaigns/:id/schedule
-    This resource is used to schedule SMS Campaign using scheduler_service [POST]
+    This resource is used to
+        1- schedule SMS Campaign using scheduler_service [POST]
+        2- Re-schedule SMS Campaign using scheduler_service [PUT]
     """
     decorators = [require_oauth]
 
@@ -318,23 +325,24 @@ class ScheduleSmsCampaign(Resource):
                     404 (Campaign not found)
                     500 (Internal Server Error)
 
-        .. Error codes:
-                    5018 (CampaignAlreadyScheduled)
-
         :param campaign_id: integer, unique id representing campaign in GT database
         :return: JSON containing message and task_id.
         """
+        # validate data to schedule
         pre_processed_data = SmsCampaignBase.pre_process_schedule(request, campaign_id)
+        # create object of class SmsCampaignBase
         sms_camp_obj = SmsCampaignBase(request.user.id)
+        # assign campaign to object
         sms_camp_obj.campaign = pre_processed_data['campaign']
+        # call schedule() method to schedule the campaign and get the task_id
         task_id = sms_camp_obj.schedule(pre_processed_data['data_to_schedule'])
         return dict(message='Campaign(id:%s) has been scheduled.' % campaign_id,
                     task_id=task_id), 200
 
     def put(self, campaign_id):
         """
-        This endpoint is to reschedule a campaign. It first deletes the old schedule of
-        campaign from scheduler_service and then creates new task.
+        This endpoint is to re-schedule a campaign. It first deletes the old schedule of
+        campaign from scheduler_service and then creates new schedule.
 
         :Example:
 
@@ -376,11 +384,16 @@ class ScheduleSmsCampaign(Resource):
         :param campaign_id: integer, unique id representing campaign in GT database
         :return: JSON containing message and task_id.
         """
+        # validate data to schedule
         pre_processed_data = SmsCampaignBase.pre_process_schedule(request, campaign_id)
-        scheduled_task_id = SmsCampaignBase.pre_process_re_schedule(pre_processed_data, logger)
-        if not scheduled_task_id:  # Task
+        # check if task is already present on scheduler_service
+        scheduled_task_id = SmsCampaignBase.pre_process_re_schedule(pre_processed_data)
+        if not scheduled_task_id:  # Task not found on scheduler_service
+            # create object of class SmsCampaignBase
             sms_camp_obj = SmsCampaignBase(request.user.id)
+            # assign campaign to object
             sms_camp_obj.campaign = pre_processed_data['campaign']
+            # call method schedule() to schedule the campaign and get the task_id
             task_id = sms_camp_obj.schedule(pre_processed_data['data_to_schedule'])
             message = 'Campaign(id:%s) has been re-scheduled.' % campaign_id
         else:
@@ -518,7 +531,7 @@ class CampaignById(Resource):
         .. Response::
 
             {
-                'message': 'Campaign(id:%s) deleted successfully' % campaign_id
+                'message': 'Campaign(id:125) has been deleted successfully'
             }
         .. Status:: 200 (Resource Deleted)
                     403 (Forbidden: Current user cannot delete SMS campaign)
@@ -528,9 +541,13 @@ class CampaignById(Resource):
         ..Error codes::
                     5010 (ErrorDeletingSMSCampaign)
         """
-
-        delete_sms_campaign(campaign_id, request.user.id)
-        return dict(message='Campaign(id:%s) deleted successfully' % campaign_id), 200
+        deleted = SmsCampaignBase.process_delete_campaign(campaign_id=campaign_id,
+                                                current_user_id=request.user.id,
+                                                bearer_access_token=request.oauth_token)
+        if deleted:
+            return dict(message='Campaign(id:%s) has been deleted successfully' % campaign_id), 200
+        else:
+            raise ErrorDeletingSMSCampaign('Campaign(id:%s) was not deleted.' % campaign_id)
 
 
 @api.route(SmsCampaignApi.SENDS)

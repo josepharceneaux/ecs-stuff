@@ -8,9 +8,12 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com
 import re
 from datetime import datetime
 
+# Third Party
+from pytz import timezone
+from dateutil.parser import parse
+
 # Common utils
 from ..error_handling import InvalidUsage
-from campaign_utils import get_utc_datetime_from_str
 from ..utils.common_functions import JSON_CONTENT_TYPE_HEADER
 
 
@@ -65,12 +68,12 @@ def validate_format_and_future_datetime(datetime_str):
     """
     Here we check given string datetime is in valid format, then we convert it into datetime obj.
     Finally we check if it is in future.
-    This uses get_utc_datetime_from_str() and is_future_datetime() functions.
+    This uses validate_format_and_get_utc_datetime_from_str() and is_future_datetime() functions.
     :param datetime_str:
     :type datetime_str: str
     :return:
     """
-    if not is_future_datetime(get_utc_datetime_from_str(datetime_str)):
+    if not is_future_datetime(validate_format_and_get_utc_datetime_from_str(datetime_str)):
         raise InvalidUsage("Given datetime(%s) should be in future" % datetime_str)
 
 
@@ -86,3 +89,18 @@ def is_valid_url_format(url):
         r'(?::\d+)?'  # optional port
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)
     return url is not None and regex.search(url)
+
+
+def validate_format_and_get_utc_datetime_from_str(str_datetime):
+    """
+    This converts given string datetime into UTC datetime obj.
+    This uses validate_datetime_format() to validate the format of given str.
+    Valid format should be like 2015-10-08T06:16:55Z
+    :param str_datetime:
+    :return: datetime obj
+    :rtype: datetime
+    """
+    if not isinstance(str_datetime, basestring):
+        raise InvalidUsage('param should be a string of datetime')
+    validate_datetime_format(str_datetime)
+    return parse(str_datetime).replace(tzinfo=timezone('UTC'))

@@ -7,10 +7,8 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 import re
 import time
 
-# Service Specific
-from sms_campaign_service import db
-
 # Common Utils
+from sms_campaign_service.common.models.db import db
 from sms_campaign_service.common.routes import SmsCampaignApi
 from user_service.common.error_handling import MethodNotAllowed
 from sms_campaign_service.common.models.misc import (UrlConversion, Activity)

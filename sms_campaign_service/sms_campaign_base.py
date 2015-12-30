@@ -19,7 +19,6 @@ methods like
 It also contains private methods for this module as
     - _get_valid_user_phone_value()
     - _get_valid_user_phone_value()
-This also contains delete_sms_campaign() to delete campaign from given id
 """
 
 # Standard Library
@@ -34,6 +33,7 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
                                                              SmsCampaignSendUrlConversion,
                                                              SmsCampaignReply)
 # common utils
+from sms_campaign_service.common.models.db import db
 from sms_campaign_service.common.common_config import IS_DEV
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.utils.validators import format_phone_number
@@ -44,7 +44,7 @@ from sms_campaign_service.common.error_handling import (ResourceNotFound, Forbid
                                                         InvalidUsage)
 
 # Service Specific
-from sms_campaign_service import logger, db
+from sms_campaign_service.sms_campaign_app import logger
 from sms_campaign_service.sms_campaign_app.app import celery_app, app
 from sms_campaign_service.modules.validators import (validate_url_format, search_urls_in_text)
 from sms_campaign_service.modules.handy_functions import (TwilioSMS, replace_localhost_with_ngrok)
@@ -517,6 +517,8 @@ class SmsCampaignBase(CampaignBase):
         """
         if not isinstance(campaign_id, (int, long)):
             raise InvalidUsage('Include campaign_id as int|long')
+        if not isinstance(current_user_id, (int, long)):
+            raise InvalidUsage('Include current_user_id as int|long')
         campaign_obj = SmsCampaign.get_by_id(campaign_id)
         if not campaign_obj:
             raise ResourceNotFound('SMS Campaign(id=%s) not found.' % campaign_id)
@@ -1446,27 +1448,3 @@ def _validate_candidate_phone_value(candidate_phone_value):
         raise NoCandidateFoundForPhoneNumber(
             'No Candidate is associated with %s phone number' % candidate_phone_value)
     return candidate_phone
-
-
-def delete_sms_campaign(campaign_id, current_user_id):
-    """
-    This function is used to delete SMS campaign of a user. If current user is the
-    creator of given campaign id, it will delete the campaign, otherwise it will
-    raise the Forbidden error.
-    :param campaign_id: id of SMS campaign to be deleted
-    :param current_user_id: id of current user
-    :exception: Forbidden error (status_code = 403)
-    :exception: Resource not found error (status_code = 404)
-    :exception: ErrorDeletingSMSCampaign
-    :exception: InvalidUsage
-    :return: True if record deleted successfully, False otherwise.
-    :rtype: bool
-    """
-    if not isinstance(campaign_id, (int, long)):
-        raise InvalidUsage('Include campaign_id as int|long')
-    if SmsCampaignBase.validate_ownership_of_campaign(campaign_id, current_user_id):
-        deleted = SmsCampaign.delete(campaign_id)
-        if not deleted:
-            raise ErrorDeletingSMSCampaign("Campaign(id:%s) couldn't be deleted."
-                                           % campaign_id)
-    return False
