@@ -5,7 +5,7 @@ from candidate_service.common.error_handling import InvalidUsage
 
 
 def validate_candidate_properties(data):
-    candidate_fields = ['first_name', 'middle_name', 'last_name', 'full_name', 'addresses',
+    candidate_fields = ['id', 'first_name', 'middle_name', 'last_name', 'full_name', 'addresses',
                         'areas_of_interest', 'custom_fields', 'emails', 'educations', 'openweb_id',
                         'military_services', 'phones', 'preferred_locations', 'status_id',
                         'skills', 'social_networks', 'work_experiences', 'work_preference',
