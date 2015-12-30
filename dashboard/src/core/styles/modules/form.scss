@@ -137,6 +137,12 @@ input[type=number] {
   -webkit-appearance: menulist-button;
 }
 
+.form__input--select--small {
+  font-size: $font-size--small;
+  height: 34.5938px;
+  padding: $padding--tiny $padding--giant $padding--tiny $padding--tiny;
+}
+
 .form__input--textarea {
   @extend .form__input;
 
