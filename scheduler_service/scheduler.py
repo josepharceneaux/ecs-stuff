@@ -33,6 +33,29 @@ scheduler = BackgroundScheduler(jobstore=jobstores, executors=executors,
 scheduler.add_jobstore(job_store)
 
 
+def get_valid_data(data, key, object_type=None):
+    """
+    Check if key exist and returns associated value
+    :param data:
+    :param key:
+    :return: value of associated key
+    """
+    try:
+        value = data[key]
+    except KeyError:
+        raise FieldRequiredError(error_message="Missing key: %s" % key)
+    if object_type == 'datetime':
+        try:
+            value = parse(value).replace(tzinfo=timezone('UTC'))
+        except Exception:
+            raise InvalidUsage(
+                error_message="Invalid value of %s %s. %s should be datetime format" % (key, value, key))
+    elif object_type == 'int':
+        if not str(value).isdigit():
+            raise InvalidUsage(error_message='Invalid value of %s. It should be integer' % key)
+    return value
+
+
 def is_valid_url(url):
     """
     Reference: https://github.com/django/django-old/blob/1.3.X/django/core/validators.py#L42
@@ -84,17 +107,8 @@ def validate_one_time_job(data):
     :return:
     """
     valid_data = dict()
-    try:
-        run_datetime = data['run_datetime']
-    except KeyError:
-        raise FieldRequiredError(error_message="Field 'run_datetime' is missing")
-    try:
-        run_datetime = parse(run_datetime)
-        run_datetime = run_datetime.replace(tzinfo=timezone('UTC'))
-        valid_data.update({'run_datetime': run_datetime})
-    except Exception:
-        InvalidUsage(
-            error_message="Invalid value of run_datetime %s. run_datetime should be datetime format" % run_datetime)
+    run_datetime = get_valid_data(data, 'run_datetime', 'datetime')
+    valid_data.update({'run_datetime': run_datetime})
 
     current_datetime = datetime.datetime.utcnow()
     current_datetime = current_datetime.replace(tzinfo=timezone('UTC'))
@@ -111,39 +125,20 @@ def validate_periodic_job(data):
     :return:
     """
     valid_data = dict()
-    try:
-        try:
-            frequency = data['frequency']
-        except KeyError:
-            raise FieldRequiredError("Missing key: frequency")
-        start_datetime = data['start_datetime']
-        try:
-            start_datetime = parse(start_datetime)
-            start_datetime = start_datetime.replace(tzinfo=timezone('UTC'))
-            valid_data.update({'start_datetime': start_datetime})
-        except Exception:
-            raise InvalidUsage(error_message="Invalid value of start_datetime %s" % start_datetime)
+    frequency = get_valid_data(data, 'frequency', 'int')
+    start_datetime = get_valid_data(data, 'start_datetime', 'datetime')
+    end_datetime = get_valid_data(data, 'end_datetime', 'datetime')
 
-        end_datetime = data['end_datetime']
-        try:
-            end_datetime = parse(end_datetime)
-            end_datetime = end_datetime.replace(tzinfo=timezone('UTC'))
-            valid_data.update({'end_datetime': end_datetime})
-        except Exception:
-            raise InvalidUsage(error_message="Invalid value of end_datetime %s" % end_datetime)
+    valid_data.update({'start_datetime': start_datetime})
+    valid_data.update({'end_datetime': end_datetime})
 
-        # If value of frequency is not integer or lesser than 1 hour then throw exception
-        if not str(frequency).isdigit():
-            raise InvalidUsage(error_message='Invalid value of frequency. It should be integer')
-        if int(frequency) < 3600:
-            raise InvalidUsage(error_message='Invalid value of frequency. Value should '
-                                             'be greater than or equal to 3600')
+    # If value of frequency is not integer or lesser than 1 hour then throw exception
+    if int(frequency) < 3600:
+        raise InvalidUsage(error_message='Invalid value of frequency. Value should '
+                                         'be greater than or equal to 3600')
 
-        frequency = int(frequency)
-        valid_data.update({'frequency': frequency})
-
-    except KeyError:
-        raise FieldRequiredError(error_message="Missing or invalid data.")
+    frequency = int(frequency)
+    valid_data.update({'frequency': frequency})
 
     current_datetime = datetime.datetime.utcnow()
     current_datetime = current_datetime.replace(tzinfo=timezone('UTC'))
@@ -153,6 +148,9 @@ def validate_periodic_job(data):
 
     if current_datetime > end_datetime:
         raise JobTimeExpiredError("Current datetime is greater than end_datetime. No need to schedule expired job")
+
+    if current_datetime > start_datetime:
+        raise JobTimeExpiredError("Current datetime is greater than start_datetime. Start datetime should be in future")
 
     return valid_data
 
@@ -255,21 +253,38 @@ def serialize_task(task):
         task_dict = dict(
             id=task.id,
             url=task.args[2],
-            start_datetime=str(task.trigger.start_date),
-            end_datetime=str(task.trigger.end_date),
-            next_run_datetime=str(task.next_run_time),
+            start_datetime=task.trigger.start_date,
+            end_datetime=task.trigger.end_date,
+            next_run_datetime=task.next_run_time,
             frequency=dict(seconds=task.trigger.interval_length),
             post_data=task.kwargs,
             pending=task.pending,
             task_type='periodic'
         )
+        if task_dict['start_datetime'] is not None:
+            task_dict['start_datetime'] = task_dict['start_datetime'].strftime('%Y-%m-%d %H:%M:%S')
+
+        if task_dict['end_datetime'] is not None:
+            task_dict['end_datetime'] = task_dict['end_datetime'].strftime('%Y-%m-%d %H:%M:%S')
+
+        if task_dict['next_run_datetime'] is not None:
+            task_dict['next_run_datetime'] = task_dict['next_run_datetime'].strftime('%Y-%m-%d %H:%M:%S')
+
+        task_dict['start_datetime'] = str(task_dict['start_datetime'])
+        task_dict['end_datetime'] = str(task_dict['end_datetime'])
+        task_dict['next_run_datetime'] = str(task_dict['next_run_datetime'])
+
     elif isinstance(task.trigger, DateTrigger):
         task_dict = dict(
             id=task.id,
             url=task.args[2],
-            run_datetime=str(task.trigger.run_date),
+            run_datetime=task.trigger.run_date,
             post_data=task.kwargs,
             pending=task.pending,
             task_type='one_time'
         )
+        if task_dict['run_datetime'] is None:
+            task_dict['run_datetime'] = task_dict['run_datetime'].strftime('%Y-%m-%d %H:%M:%S')
+
+        task_dict['run_datetime'] = str(task_dict['run_datetime'])
     return task_dict

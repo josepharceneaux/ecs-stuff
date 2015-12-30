@@ -31,13 +31,22 @@ class TestSchedulerGet:
         response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
                                  headers=auth_header)
         assert response.status_code == 201
-        data = json.loads(response.text)
+        data = response.json()
 
         # Now get the job
         response_get = requests.get(APP_URL + '/tasks/id/' + data['id'],
                                     headers=auth_header)
         assert response_get.status_code == 200
         assert json.loads(response_get.text)['task']['id'] == data['id']
+
+        job_data = response_get.json()['task']
+
+        assert job_data['start_datetime'] == job_config['start_datetime']
+        assert job_data['end_datetime'] == job_config['end_datetime']
+        assert int(job_data['frequency']['seconds']) == job_config['frequency']
+        assert job_data['post_data'] == job_config['post_data']
+        assert job_data['task_type'] == job_config['task_type']
+        assert job_data['url'] == job_config['url']
 
         # Let's delete jobs now
         response_remove = requests.delete(APP_URL + '/tasks/id/' + data['id'],

@@ -155,8 +155,30 @@ class TestSchedulerExceptions:
         :return:
         """
         job_config = job_config.copy()
-        end_datetime = datetime.datetime.utcnow() - datetime.timedelta(seconds=8)
+        start_datetime = datetime.datetime.utcnow() - datetime.timedelta(minutes=15)
+        job_config['start_datetime'] = start_datetime.strftime('%Y-%m-%d %H:%M:%S')
+        end_datetime = datetime.datetime.utcnow() - datetime.timedelta(minutes=8)
         job_config['end_datetime'] = end_datetime.strftime('%Y-%m-%d %H:%M:%S')
+        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+                                 headers=auth_header)
+
+        # Time expired exception
+        assert response.status_code == 500 and \
+               response.json()['error']['code'] == SchedulerServiceApiException.CODE_TIME_ALREADY_PASSED
+
+    def test_already_passed_start_time_interval_exception(self, auth_header, job_config):
+        """
+        Create a job using expired end_datetime and it should raise exception
+
+        Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+        :return:
+        """
+        job_config = job_config.copy()
+        start_datetime = datetime.datetime.utcnow() - datetime.timedelta(minutes=15)
+        job_config['start_datetime'] = start_datetime.strftime('%Y-%m-%d %H:%M:%S')
         response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
                                  headers=auth_header)
 
