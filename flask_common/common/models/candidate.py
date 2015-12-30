@@ -904,20 +904,20 @@ class CandidateSubscriptionPreference(db.Model):
 class CandidateDevice(db.Model):
     __tablename__ = 'candidate_device'
     id = db.Column(db.Integer, primary_key=True)
-    one_signal_player_id = db.Column(db.String)
+    one_signal_device_id = db.Column(db.String(100))
     candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.id', ondelete='CASCADE'))
     registered_at = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
-        return "<PushNotificationBlast (Sends: %s, Clicks: %s)>" % (self.sends, self.clicks)
+        return "<PushCampaignBlast (Sends: %s, Clicks: %s)>" % (self.sends, self.clicks)
 
     @classmethod
     def get_candidate_ids_from_device_ids(cls, device_ids):
         assert isinstance(device_ids, list) and len(device_ids), 'device_ids list should contain at least one id'
-        return cls.query.filter_by(cls.one_signal_player_id.in_(device_ids)).all()
+        return cls.query.filter_by(cls.one_signal_device_id.in_(device_ids)).all()
 
     @classmethod
     def get_candidate_id_from_one_signal_device_id(cls, device_id):
         assert device_id, 'device_id has invalid value'
-        cls.query.filter_by(one_signal_player_id=device_id).first()
+        return cls.query.filter_by(one_signal_device_id=device_id).first()
 

@@ -1,7 +1,7 @@
 from werkzeug.exceptions import BadRequest
 
 from push_notification_service.common.error_handling import *
-from push_notification_service.common.models.push_notification import PushNotification, PushNotificationSend
+from push_notification_service.common.models.push_notification import *
 from push_notification_service.common.utils.activity_utils import ActivityMessageIds
 from push_notification_service.common.campaign_services.campaign_utils import CampaignBase
 from push_notification_service.common.routes import PushNotificationServiceApi
@@ -14,7 +14,7 @@ one_signal_client = OneSignalSdk(app_id=ONE_SIGNAL_APP_ID,
                                  rest_key=ONE_SIGNAL_REST_API_KEY)
 
 
-class PushNotificationCampaign(CampaignBase):
+class PushCampaignBase(CampaignBase):
 
     def __init__(self, user_id, *args, **kwargs):
         """
@@ -24,10 +24,11 @@ class PushNotificationCampaign(CampaignBase):
         :return:
         """
         # sets the user_id
-        super(PushNotificationCampaign, self).__init__(user_id, *args, **kwargs)
+        super(PushCampaignBase, self).__init__(user_id, *args, **kwargs)
         self.push_notification = None
         self.subscribed_candidate_ids = []
         self.unsubscribed_candidate_ids = []
+        self.campaign_blast = None
 
     def get_all_campaigns(self):
         """
@@ -35,7 +36,7 @@ class PushNotificationCampaign(CampaignBase):
         :return: all campaigns associated to with user
         :rtype: list
         """
-        return PushNotification.get_by_user_id(self.user_id)
+        return PushCampaign.get_by_user_id(self.user_id)
 
     def save(self, form_data):
         """
@@ -63,8 +64,7 @@ class PushNotificationCampaign(CampaignBase):
                     scheduled_task and bearer access token
         :rtype: dict
         """
-        campaign_obj = PushNotification.get_by_id_and_user_id(campaign_id, request.user.id)
-        # campaign_obj = cls.validate_ownership_of_campaign(campaign_id, request.user.id)
+        campaign_obj = cls.validate_ownership_of_campaign(campaign_id, request.user.id)
         # check if campaign is already scheduled
         scheduled_task = cls.is_already_scheduled(campaign_obj.scheduler_task_id,
                                                   request.oauth_token)
@@ -84,6 +84,29 @@ class PushNotificationCampaign(CampaignBase):
                 'scheduled_task': scheduled_task,
                 'auth_header': {'Authorization': request.oauth_token}}
 
+    @staticmethod
+    def validate_ownership_of_campaign(campaign_id, current_user_id):
+        """
+        This function returns True if the current user is an owner for given
+        campaign_id. Otherwise it raises the Forbidden error.
+        :param campaign_id: id of campaign form getTalent database
+        :param current_user_id: Id of current user
+        :exception: InvalidUsage
+        :exception: ResourceNotFound
+        :exception: ForbiddenError
+        :return: Campaign obj if current user is an owner for given campaign.
+        :rtype: PushNotification
+        """
+        if not isinstance(campaign_id, (int, long)):
+            raise InvalidUsage(error_message='Include campaign_id as int|long')
+        campaign_obj = PushCampaign.get_by_id(campaign_id)
+        if not campaign_obj:
+            raise ResourceNotFound(error_message='Push Campaign (id=%s) not found.' % campaign_id)
+        if campaign_obj.user_id == current_user_id:
+            return campaign_obj
+        else:
+            raise ForbiddenError(error_message='You are not the owner of Push campaign(id:%s)' % campaign_id)
+
     def schedule(self, data_to_schedule):
         """
         This method schedules a campaign by sending a POST request to scheduler service.
@@ -94,27 +117,29 @@ class PushNotificationCampaign(CampaignBase):
             {'url_to_run_task': PushNotificationServiceApi.SEND % self.campaign.id}
         )
         # get scheduler task_id
-        task_id = super(PushNotificationCampaign, self).schedule(data_to_schedule)
+        task_id = super(PushCampaignBase, self).schedule(data_to_schedule)
         data_to_schedule.update({'task_id': task_id})
         # update push_notification_campaign record with task_id
         self.campaign.update(task_id=task_id)
         return task_id
 
-    def process_send(self, push_notification_id):
-        self.push_notification = PushNotification.get_by_id(push_notification_id)
+    def process_send(self, campaign_id):
+        self.push_notification = PushCampaign.get_by_id(campaign_id)
         if self.push_notification:
-            cadidates = []
+            self.campaign_blast = PushCampaignBlast(campaign_id=campaign_id)
+            PushCampaignBlast.save(self.campaign_blast)
+            candidates = []
             smartlists = self.push_notification.smartlists
             if not smartlists:
-                raise NoSmartlistAssociated('No smartlist is associated with Push Notification '
-                                            'Campaign(id:%s). (User(id:%s))' % (self.push_notification.id, self.user_id))
+                raise NoSmartlistAssociated('No smartlist is associated with Push Campaign (id:%s). '
+                                            '(User(id:%s))' % (self.push_notification.id, self.user_id))
             for smartlist in smartlists:
-                cadidates += self.get_smartlist_candidates(smartlist)
-            for candidate in cadidates:
+                candidates += self.get_smartlist_candidates(smartlist)
+            for candidate in candidates:
                 self.send_campaign_to_candidate(candidate)
             return self.subscribed_candidate_ids, self.unsubscribed_candidate_ids
         else:
-            raise ResourceNotFound('Push notification was not found with id : %s' % push_notification_id)
+            raise ResourceNotFound('Push Campaign was not found with id : %s' % campaign_id)
 
     @staticmethod
     def callback_campaign_sent(sends_result, user_id, campaign, auth_header):
@@ -156,7 +181,7 @@ class PushNotificationCampaign(CampaignBase):
         """
         if isinstance(sends_result, list):
             total_sends = sends_result.count(True)
-            PushNotificationCampaign.create_campaign_send_activity(user_id,
+            PushCampaignBase.create_campaign_send_activity(user_id,
                                                           campaign, auth_header, total_sends) \
                 if total_sends else ''
             logger.debug('process_send: Push Notification Campaign(id:%s) has been sent to %s candidate(s).'
@@ -187,14 +212,14 @@ class PushNotificationCampaign(CampaignBase):
         **See Also**
         .. see also:: send_push_notification_campaign_to_candidates() method in PushNotificationCampaign class.
         """
-        if not isinstance(source, PushNotification):
+        if not isinstance(source, PushCampaign):
             raise InvalidUsage(error_message='source should be an instance of model PushNotification')
         params = {'campaign_name': source.title,
                   'num_candidates': num_candidates}
         cls.create_activity(user_id,
                             type_=ActivityMessageIds.CAMPAIGN_PUSH_NOTIFICATION_CREATE,
                             source_id=source.id,
-                            source_table=PushNotification.__tablename__,
+                            source_table=PushCampaign.__tablename__,
                             params=params,
                             headers=auth_header)
 
@@ -210,22 +235,27 @@ class PushNotificationCampaign(CampaignBase):
         pass
 
     def send_campaign_to_candidate(self, candidate):
-        device_ids = map(lambda device: device.id, candidate.devices)
+        device_ids = map(lambda device: device.one_signal_device_id, candidate.devices)
         if device_ids:
             try:
                 resp = one_signal_client.send_notification(self.push_notification.url,
-                                                           self.push_notification.messsage,
+                                                           self.push_notification.content,
                                                            self.push_notification.title,
                                                            players=device_ids)
                 if resp.ok:
-                    push_notification_send = PushNotificationSend.get_by(
-                        push_notification_id=self.push_notification.id,
-                        candidate_id=candidate.id
-                    )
+                    # push_notification_send = PushCampaignSend.get_by(
+                    #     campaign_id=self.push_notification.id,
+                    #     candidate_id=candidate.id
+                    # )
+                    resp = resp.json()
+                    campaign_send = PushCampaignSend(campaign_blast_id=self.campaign_blast.id,
+                                                     candidate_id=candidate.id,
+                                                     one_signal_notification_id=resp['id']
+                                                     )
+                    PushCampaignSend.save(campaign_send)
+                    sends = self.campaign_blast.sends + 1
+                    self.campaign_blast.update(sends=sends)
                     self.subscribed_candidate_ids.append(candidate.id)
-                    if push_notification_send:
-                        sends = push_notification_send.sends + 1
-                        push_notification_send.update(sends=sends)
                 else:
                     self.unsubscribed_candidate_ids.append(candidate.id)
                     response = resp.json()
@@ -233,7 +263,7 @@ class PushNotificationCampaign(CampaignBase):
                     logger.error('Error while sending push notification to candidate (id: %s),'
                                  'Errors: %s' % errors)
 
-            except:
+            except Exception as e:
                 logger.error('Unable to send push  notification (id: %s) to candidate (id: %s)'
                              % (self.push_notification.id, candidate.id))
                 self.unsubscribed_candidate_ids.append(candidate.id)

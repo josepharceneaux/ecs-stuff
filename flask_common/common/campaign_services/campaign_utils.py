@@ -280,14 +280,13 @@ class CampaignBase(object):
         # TODO: WIP
         # Check if all the scheduler parameters are same as saved in database
         data_to_schedule = pre_processed_data['data_to_schedule']
-        if all([pre_processed_data['scheduled_task']['frequency']['seconds'] ==
-                        frequency_id_to_seconds(data_to_schedule.get('frequency_id')),
-                pre_processed_data['scheduled_task']['start_datetime'] == data_to_schedule.get(
-                    'start_datetime'),
-                pre_processed_data['scheduled_task']['end_datetime'] == data_to_schedule.get(
-                    'end_datetime')]):
+        scheduled_task = pre_processed_data['scheduled_task']
+        frequency = frequency_id_to_seconds(data_to_schedule.get('frequency_id'))
+        if all([scheduled_task['frequency']['seconds'] == frequency,
+                scheduled_task['start_datetime'] == data_to_schedule.get('start_datetime'),
+                scheduled_task['end_datetime'] == data_to_schedule.get('end_datetime')]):
             response = http_request(
-                'DELETE', SchedulerApiUrl.TASK % pre_processed_data['scheduled_task']['id'],
+                'DELETE', SchedulerApiUrl.TASK % scheduled_task['id'],
                 headers=pre_processed_data['auth_header'])
             if response.ok:
                 pass
