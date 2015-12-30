@@ -32,6 +32,11 @@ api.add_resource(TalentPipelineApi, '/talent-pipelines/<int:id>', '/talent-pipel
 api.add_resource(TalentPipelineSmartListApi, '/talent-pipeline/<int:id>/smart_lists')
 api.add_resource(TalentPipelineCandidates, '/talent-pipeline/<int:id>/candidates')
 
+# Smartlists
+from api.smartlists import SmartlistResource, SmartlistCandidates
+api.add_resource(SmartlistResource, '/v1/smartlists/<int:id>', '/v1/smartlists')
+api.add_resource(SmartlistCandidates, '/v1/smartlists/<int:smartlist_id>/candidates')
+
 db.create_all()
 db.session.commit()
 
