@@ -3,7 +3,7 @@ from werkzeug.exceptions import BadRequest
 from push_notification_service.common.error_handling import *
 from push_notification_service.common.models.push_notification import *
 from push_notification_service.common.utils.activity_utils import ActivityMessageIds
-from push_notification_service.common.campaign_services.campaign_utils import CampaignBase
+from push_notification_service.common.campaign_services.campaign_base import CampaignBase
 from push_notification_service.common.routes import PushNotificationServiceApi
 from push_notification_service import logger
 from push_notification_service.custom_exceptions import *

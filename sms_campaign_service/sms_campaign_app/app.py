@@ -15,7 +15,7 @@
 """
 
 # Initializing App. This line should come before any imports from models
-from sms_campaign_service import init_sms_campaign_app_and_celery_app
+from sms_campaign_service.sms_campaign_app import init_sms_campaign_app_and_celery_app
 app, celery_app = init_sms_campaign_app_and_celery_app()
 
 
@@ -26,7 +26,7 @@ from flask.ext.cors import CORS
 from werkzeug.utils import redirect
 
 # Application specific Imports
-from sms_campaign_service import logger
+from sms_campaign_service.sms_campaign_app import logger
 from sms_campaign_service.common.routes import SmsCampaignApi
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 

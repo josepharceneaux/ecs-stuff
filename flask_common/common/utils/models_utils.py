@@ -96,12 +96,8 @@ def save(instance):
     :return: same model instance
     """
     # Add instance to db session and then commit that change to save that
-    try:
-        db.session.add(instance)
-        db.session.commit()
-    except Exception as error:
-        print 'save_error' + error.message
-        db.session.rollback()
+    db.session.add(instance)
+    db.session.commit()
     return instance
 
 
@@ -114,12 +110,8 @@ def update(instance, **data):
     :return: same model instance
     """
     # update this instance by given data
-    try:
-        instance.query.filter_by(id=instance.id).update(data)
-        db.session.commit()
-    except Exception as error:
-        print 'update_error' + error.message
-        db.session.rollback()
+    instance.query.filter_by(id=instance.id).update(data)
+    db.session.commit()
     return instance
 
 

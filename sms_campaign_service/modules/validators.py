@@ -6,7 +6,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com
 # Standard Imports
 
 # Service Specific
-from sms_campaign_service import logger
+from sms_campaign_service.sms_campaign_app import logger
 from sms_campaign_service.modules.custom_exceptions import (InvalidUrl, MissingRequiredField)
 
 # Database models

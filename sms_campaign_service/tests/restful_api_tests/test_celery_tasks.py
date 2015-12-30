@@ -14,9 +14,9 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 """
 
 # Standard Library
-from datetime import datetime, timedelta
 import json
 import time
+from datetime import datetime, timedelta
 
 # Third Party
 import requests
@@ -34,7 +34,7 @@ from sms_campaign_service.common.models.candidate import Candidate
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
 
 # Service Specific
-from sms_campaign_service import db
+from sms_campaign_service.common.models.db import db
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.tests.conftest import CAMPAIGN_SCHEDULE_DATA
 from sms_campaign_service.modules.handy_functions import replace_ngrok_link_with_localhost
