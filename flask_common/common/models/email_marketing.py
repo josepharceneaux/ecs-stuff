@@ -47,10 +47,11 @@ class EmailCampaignSmartList(db.Model):
     email_campaign_id = db.Column('EmailCampaignId', db.Integer, db.ForeignKey('email_campaign.id', ondelete='CASCADE'))
 
     @classmethod
-    def get_smartlists_of_campaign(cls, campaign_id):
-        records = cls.query.with_entities(EmailCampaignSmartList.smartlist_id).filter(
-            EmailCampaignSmartList.email_campaign_id == campaign_id).all()
-        return [row.smartlist_id for row in records]
+    def get_smartlists_of_campaign(cls, campaign_id, smartlist_ids_only=False):
+        records = cls.query.filter(EmailCampaignSmartList.email_campaign_id == campaign_id).all()
+        if smartlist_ids_only:
+            return [row.smartlist_id for row in records]
+        return records
 
 
 class EmailCampaignSend(db.Model):

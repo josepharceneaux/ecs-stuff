@@ -5,7 +5,6 @@ from urllib import urlencode
 from urlparse import parse_qs, urlsplit, urlunsplit
 from flask import current_app
 from BeautifulSoup import BeautifulSoup, Tag
-from email_campaign.common.common_config import CANDIDATE_SERVICE_BASE_URI
 from email_campaign.common.models.db import db
 from email_campaign.common.models.email_marketing import UrlConversion, EmailCampaignSendUrlConversion
 
@@ -16,31 +15,24 @@ DEFAULT_PREFERENCES_URL_MERGETAG = "*|PREFERENCES_URL|*"
 HTML_CLICK_URL_TYPE = 2
 TRACKING_URL_TYPE = 0
 # Candidate service URLs
-SMARTLIST_CANDIDATES_URI = CANDIDATE_SERVICE_BASE_URI + '/v1/smartlist/get_candidates/'
+SMARTLIST_CANDIDATES_URI = "http://localhost:8008/v1/smartlists/%d/candidates"
 
 
-def get_candidates(oauth_token, list_id, candidate_ids_only=False, count_only=False, max_candidates=0):
+def get_candidates_of_smartlist(oauth_token, list_id, candidate_ids_only=False):
     """
-    Gets the candidates of a smart or dumb list.
+    Calls smartlist API and retrieves the candidates of a smart or dumb list.
 
-    :param max_candidates: If set to 0, will have no limit.
-    :return:  dict of 'candidate_ids, total_found' if candidate_ids_only=True, otherwise returns
-    what TalentSearch.search_candidates returns
+    :param list_id: smartlist id.
+    :return:
     """
-    return_fields = []
+    query_params = {}
     if candidate_ids_only:
-        return_fields.append('candidate_ids_only')
-    if count_only:
-        return_fields.append('count_only')
-    if max_candidates:
-        return_fields.append('max_candidates')
-    query_params = {'id': list_id, 'return': ','.join(return_fields)}
-    r = requests.get(SMARTLIST_CANDIDATES_URI, params=query_params,
+        query_params = {'return':'candidate_ids_only'}
+    r = requests.get(SMARTLIST_CANDIDATES_URI % list_id, params=query_params,
                      headers={'Authorization': oauth_token})
     response_body = json.loads(r.content)
     candidates = response_body['candidates']
     if candidate_ids_only:
-        # If candidate ids only are requested, get candidate ids and return
         return [candidate['id'] for candidate in candidates]
     return candidates
 

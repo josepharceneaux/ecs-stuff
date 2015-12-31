@@ -15,7 +15,7 @@ from email_campaign.common.models.candidate import Candidate, CandidateEmail, Ca
 from email_campaign.common.error_handling import *
 from email_campaign.common.emails.admin_reporting import email_admins
 from email_campaign.common.emails.AWS_SES import send_email
-from email_campaign.modules.utils import create_email_campaign_url_conversions, do_mergetag_replacements, get_candidates
+from email_campaign.modules.utils import create_email_campaign_url_conversions, do_mergetag_replacements, get_candidates_of_smartlist
 
 __author__ = 'jitesh'
 
@@ -202,7 +202,7 @@ def get_email_campaign_candidate_ids_and_emails(oauth_token, campaign, user, lis
     """
     if list_ids is None:
         # Get smartlists of this campaign
-        list_ids = EmailCampaignSmartList.get_smartlists_of_campaign(campaign.id)
+        list_ids = EmailCampaignSmartList.get_smartlists_of_campaign(campaign.id, smartlist_ids_only=True)
     # Get candidate ids
     candidate_ids_dict = dict()  # Store in hash to avoid duplicate candidate ids
     for list_id in list_ids:
@@ -221,7 +221,7 @@ def get_email_campaign_candidate_ids_and_emails(oauth_token, campaign, user, lis
         else:
             # Otherwise, just filter out unsubscribed candidates:
             # their subscription preference's frequencyId is NULL, which means 'Never'
-            candidate_ids = get_candidates(oauth_token, list_id, candidate_ids_only=True)
+            candidate_ids = get_candidates_of_smartlist(oauth_token, list_id, candidate_ids_only=True)
             current_app.logger.debug("candidate_ids: %s" % candidate_ids)
             unsubscribed_candidate_ids = []
             for candidate_id in candidate_ids:
