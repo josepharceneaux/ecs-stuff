@@ -1,15 +1,16 @@
 __author__ = 'erikfarmer'
+import os
 import logging
 import logging.config
-import os
+from activity_service.common import talent_property_manager
 
 # Load logging configuration file
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 LOGGING_CONF = os.path.join(APP_ROOT, 'logging.conf')
 logging.config.fileConfig(LOGGING_CONF)
 
-# Auth Server URI
-GT_ENVIRONMENT = os.environ.get('GT_ENVIRONMENT')
+
+GT_ENVIRONMENT = talent_property_manager.get_env()
 if GT_ENVIRONMENT == 'dev':
     OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@localhost/talent_local'
@@ -32,4 +33,4 @@ elif GT_ENVIRONMENT == 'prod':
 else:
     raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")
 
-SECRET_KEY = os.urandom(24).encode('hex')
+SECRET_KEY = talent_property_manager.get_secret_key()

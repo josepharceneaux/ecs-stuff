@@ -22,20 +22,26 @@ LOCAL_CONFIG_PATH = "~/.talent/web.cfg"
 
 EC2_TAG_SECTION_SEPARATOR = "|"  # separates section name from key name in EC2 tags
 
-REGION_KEY = "region"
-DOMAIN_KEY = "domain"
-EMAIL_KEY = "email"
-ENV_KEY = "env"
-ACCOUNT_ID_KEY = "account-id"
-BUCKET_KEY = "bucket"
-INSTANCE_NAME = 'instance-name'
+CS_REGION_KEY = "CLOUD_SEARCH_REGION"
+CS_DOMAIN_KEY = "CLOUD_SEARCH_DOMAIN"
+EMAIL_KEY = "EMAIL"
+ENV_KEY = "GT_ENVIRONMENT"
+ACCOUNT_ID_KEY = "ACCOUNT_ID"
+S3_BUCKET_KEY = "S3_BUCKET_NAME"
+S3_REGION_KEY = "S3_BUCKET_REGION"
+S3_FILE_PICKER_BUCKET_KEY = "S3_FILEPICKER_BUCKET_NAME"
+INSTANCE_NAME = 'INSTANCE_NAME'
+AWS_KEY = "AWS_ACCESS_KEY_ID"
+AWS_SECRET = "AWS_SECRET_ACCESS_KEY"
+SECRET_KEY = "SECRET_KEY"
 
 
 class PropertySection(Enum):
-    cloudsearch = [DOMAIN_KEY, REGION_KEY]
+    cloudsearch = [CS_DOMAIN_KEY, CS_REGION_KEY]
     local = [EMAIL_KEY, ENV_KEY, INSTANCE_NAME]
     iam = [ACCOUNT_ID_KEY]
-    s3 = [BUCKET_KEY, REGION_KEY]
+    s3 = [S3_BUCKET_KEY, S3_REGION_KEY, S3_FILE_PICKER_BUCKET_KEY]
+    keys = [AWS_KEY, AWS_SECRET, SECRET_KEY]
 
 
 _config = None
@@ -80,15 +86,19 @@ def get_email():
 
 
 def get_cloudsearch_domain_name():
-    return _get_config_parser().get(PropertySection.cloudsearch.name, DOMAIN_KEY)
+    return _get_config_parser().get(PropertySection.cloudsearch.name, CS_DOMAIN_KEY)
 
 
 def get_cloudsearch_region():
-    return _get_config_parser().get(PropertySection.cloudsearch.name, REGION_KEY)
+    return _get_config_parser().get(PropertySection.cloudsearch.name, CS_REGION_KEY)
 
 
 def get_s3_bucket_name():
-    return _get_config_parser().get(PropertySection.s3.name, BUCKET_KEY)
+    return _get_config_parser().get(PropertySection.s3.name, S3_BUCKET_KEY)
+
+
+def get_s3_filepicker_bucket_name():
+    return _get_config_parser().get(PropertySection.s3.name, S3_FILE_PICKER_BUCKET_KEY)
 
 
 def get_s3_region():
@@ -96,11 +106,23 @@ def get_s3_region():
 
     :return: if returns '', uses S3 default region
     """
-    return _get_config_parser().get(PropertySection.s3.name, REGION_KEY)
+    return _get_config_parser().get(PropertySection.s3.name, S3_REGION_KEY)
 
 
 def get_aws_account_id():
     return _get_config_parser().get(PropertySection.iam.name, ACCOUNT_ID_KEY)
+
+
+def get_aws_key():
+    return _get_config_parser().get(PropertySection.keys.name, AWS_KEY)
+
+
+def get_aws_secret():
+    return _get_config_parser().get(PropertySection.keys.name, AWS_SECRET)
+
+
+def get_secret_key():
+    return _get_config_parser().get(PropertySection.keys.name, SECRET_KEY)
 
 
 def get_instance_id():

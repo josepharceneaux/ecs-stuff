@@ -62,35 +62,32 @@ def update_password():
         raise InvalidUsage(error_message='No request data is found')
 
 
-@app.route('/users/forgot_password', methods=['GET', 'POST'])
+@app.route('/users/forgot_password', methods=['POST'])
 def forgot_password():
-    if request.method == 'GET':
-        # TODO: Redirect to UI view which is yet to be created
-        pass
-    else:
-        email = request.form.get('username')
-        if not email or not is_valid_email(email):
-            raise InvalidUsage("A valid username should be provided")
 
-        user = User.query.filter_by(email=email).first()
-        if not user:
-            raise NotFoundError(error_message="User with username: %s doesn't exist" % email)
+    email = request.form.get('username')
+    if not email or not is_valid_email(email):
+        raise InvalidUsage("A valid username should be provided")
 
-        token = URLSafeTimedSerializer(app.config["SECRET_KEY"]).dumps(email, salt='recover-key')
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        raise NotFoundError(error_message="User with username: %s doesn't exist" % email)
 
-        user.reset_password_key = token
-        db.session.commit()
+    token = URLSafeTimedSerializer(app.config["SECRET_KEY"]).dumps(email, salt='recover-key')
 
-        # Create 6-digit numeric token for mobile app and store it into cache
-        six_digit_token = ''.join(random.choice(string.digits) for _ in range(6))
+    user.reset_password_key = token
+    db.session.commit()
 
-        redis_store.setex(six_digit_token, token, 46400)  # Key-value pair will be removed after 12 hours
-        reset_password_url = url_for('reset_password', token=token, _external=True)
+    # Create 6-digit numeric token for mobile app and store it into cache
+    six_digit_token = ''.join(random.choice(string.digits) for _ in range(6))
 
-        name = user.first_name or user.last_name or 'User'
-        send_reset_password_email(email, name, reset_password_url, six_digit_token)
+    redis_store.setex(six_digit_token, token, 46400)  # Key-value pair will be removed after 12 hours
+    reset_password_url = url_for('reset_password', token=token, _external=True)
 
-        return '', 204
+    name = user.first_name or user.last_name or 'User'
+    send_reset_password_email(email, name, reset_password_url, six_digit_token)
+
+    return '', 204
 
 
 @app.route('/users/reset_password/<token>', methods=['GET', 'POST'])
@@ -117,7 +114,6 @@ def reset_password(token):
         raise ForbiddenError(error_message="Your encrypted token is not valid")
 
     if request.method == 'GET':
-        # TODO: Redirect to UI view which is yet to be created
         return '', 204
     else:
         if not request.form.get('password'):

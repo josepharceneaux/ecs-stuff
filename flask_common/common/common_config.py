@@ -2,6 +2,7 @@ __author__ = 'ufarooqi'
 import os
 import logging
 import logging.config
+import talent_property_manager
 
 # load logging configuration file
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -9,7 +10,7 @@ LOGGING_CONF = os.path.join(APP_ROOT, 'logging.conf')
 logging.config.fileConfig(LOGGING_CONF)
 
 # SQL ALCHEMY DB URL
-GT_ENVIRONMENT = os.environ.get('GT_ENVIRONMENT')
+GT_ENVIRONMENT = talent_property_manager.get_env()
 if GT_ENVIRONMENT == 'dev':
     OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
     CANDIDATE_SERVICE_BASE_URI = 'http://0.0.0.0:8005'
@@ -50,5 +51,5 @@ else:
     raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")
 
 
-SECRET_KEY = os.environ.get('SECRET_KEY')
+SECRET_KEY = talent_property_manager.get_secret_key()
 OAUTH2_PROVIDER_TOKEN_EXPIRES_IN = 7200  # 2 hours expiry time for bearer token

@@ -60,7 +60,7 @@ def test_forgot_password(user_first):
     token = user_first.reset_password_key
 
     six_digit_token = ''
-    for key in redis_store.keys():
+    for key in redis_store.keys('[0-9]' * 6):
         if redis_store.get(key) == token:
             six_digit_token = key
             break
