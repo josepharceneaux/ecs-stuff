@@ -12,6 +12,10 @@ class PushCampaign(db.Model):
     content = db.Column(db.String(255))
     url = db.Column(db.String(255))
     scheduler_task_id = db.Column(db.Integer)
+    added_datetime = db.column(db.DateTime)
+    start_datetime = db.column(db.DateTime)
+    end_datetime = db.column(db.DateTime)
+    frequency_id = db.Column(db.Integer, db.ForeignKey('frequency.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'))
 
     # Relationships
