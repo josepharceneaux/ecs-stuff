@@ -11,7 +11,7 @@ dependencies:
     - pip install -r requirements.txt
   post:
     - mkdir ~/.talent
-    - "printf \"[cloudsearch]\ndomain: gettalent-circleci\nregion: us-west-1\n[s3]\nbucket: tcs-local-circleci\nregion: us-west-1\n[local]\nemail: jitesh.karesia+circleci@newvisionsoftware.in\nenv: dev\ninstance-name: local\n[iam]\naccount-id: 528222547498\" > ~/.talent/web.cfg"
+    - "printf \"[cloudsearch]\nCLOUD_SEARCH_DOMAIN: gettalent-circleci\nCLOUD_SEARCH_REGION: us-west-1\n\n[s3]\nS3_BUCKET_NAME: tcs-local-circleci\nS3_FILEPICKER_BUCKET_NAME: gettalent-filepicker\nS3_BUCKET_REGION: us-west-1\n\n[local]\nEMAIL: farooqiumar@rocketmail.com\nGT_ENVIRONMENT: circle\nINSTANCE_NAME: circleci\n\n[iam]\nACCOUNT_ID: 528222547498\n\n[keys]\nAWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID\nAWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY\nSECRET_KEY: $SECRET_KEY\n\" > ~/.talent/web.cfg"
 
 test:
   pre:
