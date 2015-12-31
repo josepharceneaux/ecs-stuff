@@ -39,9 +39,9 @@ from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.utils.validators import format_phone_number
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
-from sms_campaign_service.common.utils.common_functions import (find_missing_items, url_conversion)
 from sms_campaign_service.common.error_handling import (ResourceNotFound, ForbiddenError,
                                                         InvalidUsage)
+from sms_campaign_service.common.utils.handy_functions import (find_missing_items, url_conversion)
 
 # Service Specific
 from sms_campaign_service.sms_campaign_app import logger
@@ -65,8 +65,7 @@ from sms_campaign_service.modules.custom_exceptions import (EmptySmsBody,
                                                             NoCandidateFoundForPhoneNumber,
                                                             NoUserFoundForPhoneNumber,
                                                             GoogleShortenUrlAPIError,
-                                                            TwilioAPIError,
-                                                            ErrorDeletingSMSCampaign)
+                                                            TwilioAPIError)
 
 
 class SmsCampaignBase(CampaignBase):

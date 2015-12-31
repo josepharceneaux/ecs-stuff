@@ -1,16 +1,21 @@
 import time
+import os
+import uuid
 import datetime
 from sqlalchemy import and_
+from flask import request
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.dialects.mysql import TINYINT
 from db import db
 from ..utils.validators import is_number
 from ..error_handling import *
+from ..redis_cache import redis_store
 from candidate import CandidateSource
 from associations import CandidateAreaOfInterest
 from event_organizer import EventOrganizer
 from misc import AreaOfInterest
 from email_marketing import EmailCampaign
+from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
 
 
 class User(db.Model):
@@ -50,6 +55,35 @@ class User(db.Model):
     event_organizers = db.relationship('EventOrganizer', backref='user', lazy='dynamic')
     venues = db.relationship('Venue', backref='user', lazy='dynamic')
     culture = relationship(u'Culture', backref=db.backref('user', cascade="all, delete-orphan"))
+
+    @staticmethod
+    def generate_auth_token(expiration=600, user_id=None):
+        secret_key = str(uuid.uuid4())[0:10]
+        secret_value = os.urandom(24)
+        redis_store.setex(secret_key, secret_value, expiration)
+        s = Serializer(secret_value, expires_in=expiration)
+        return secret_key, 'Basic %s' % s.dumps({'user_id': user_id})
+
+    @staticmethod
+    def verify_auth_token(secret_key, token, allow_null_user=False):
+        s = Serializer(redis_store.get(secret_key))
+        try:
+            data = s.loads(token)
+        except SignatureExpired:
+            raise UnauthorizedError(error_message="Your encrypted token has been expired")
+        except BadSignature:
+            raise UnauthorizedError(error_message="Your encrypted token is not valid")
+
+        if data['user_id']:
+            user = User.query.get(data['user_id'])
+            if user:
+                request.user = user
+                return
+        elif allow_null_user:
+            request.user = None
+            return
+
+        raise UnauthorizedError(error_message="User with id=%s doesn't exist in database" % data['user_id'])
 
     def is_authenticated(self):
         return True

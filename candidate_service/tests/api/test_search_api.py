@@ -7,14 +7,14 @@ from candidate_service.common.tests.conftest import *
 from candidate_service.common.models.candidate import Candidate, CandidateSource
 from candidate_service.common.models.misc import CustomFieldCategory
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents
-from candidate_service.common.common_config import CANDIDATE_SERVICE_BASE_URI
+from candidate_service.common.routes import CandidateApiUrl
 import random
 import datetime
 import uuid
 import time
 import requests
 
-SEARCH_URI = CANDIDATE_SERVICE_BASE_URI+"/v1/candidates/search"
+SEARCH_URI = CandidateApiUrl.CANDIDATE_SEARCH_URI
 
 
 def test_search_all_candidates_in_domain(sample_user, user_auth):
@@ -98,8 +98,11 @@ def test_search_status(sample_user, user_auth):
     status_id = get_or_create_status(db, status_name="Hired")
     # Change status of last candidate
     Candidate.query.filter_by(id=candidate_ids[-1]).update(dict(candidate_status_id=status_id))
+    db.session.commit()
     # Update cloud_search
-    upload_candidate_documents(candidate_ids)
+    upload_candidate_documents(candidate_ids[-1])
+    # Wait for 10 more seconds for cloudsearch to update data.
+    time.sleep(10)
     response = get_response_from_authorized_user(user_auth, sample_user, '?status_ids=%d' % status_id)
     # Only last candidate should appear in result.
     _assert_results(candidate_ids[-1:], response.json())

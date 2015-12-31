@@ -17,7 +17,7 @@ Any service can inherit from this class to implement/override functionality acco
 # Standard Library
 import json
 from abc import ABCMeta
-from datetime import datetime
+from datetime import datetime, timedelta
 from abc import abstractmethod
 from werkzeug.exceptions import BadRequest
 
@@ -32,12 +32,12 @@ from ..models.candidate import Candidate
 from ..models.sms_campaign import SmsCampaign
 from campaign_utils import frequency_id_to_seconds
 from ..utils.scheduler_utils import SchedulerUtils
-from ..routes import CandidateApiUrl, ActivityApiUrl, SchedulerApiUrl
+from ..routes import ActivityApiUrl, SchedulerApiUrl, CandidatePoolApiUrl
 from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
-from ..utils.common_functions import (http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER)
+from ..utils.handy_functions import (http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER)
 from validators import (validate_header, validate_datetime_format,
                         validate_format_and_future_datetime,
-                        validate_format_and_get_utc_datetime_from_str)
+                        is_datetime_in_valid_format_and_in_future)
 
 
 class CampaignBase(object):
@@ -309,14 +309,24 @@ class CampaignBase(object):
         # check if data has start_datetime
         if not data_to_schedule_campaign.get('start_datetime'):
             raise InvalidUsage('start_datetime is required field')
-        start_datetime = data_to_schedule_campaign.get('start_datetime')
-        # check if data has end_datetime
-        if data_to_schedule_campaign.get('end_datetime'):
-            end_datetime = data_to_schedule_campaign.get('end_datetime')
+        # get start_datetime object
+        start_datetime = is_datetime_in_valid_format_and_in_future(
+            data_to_schedule_campaign.get('start_datetime'))
+        end_datetime_str = data_to_schedule_campaign.get('end_datetime')
+        # get number of seconds from frequency id
+        frequency = frequency_id_to_seconds(data_to_schedule_campaign.get('frequency_id'))
+        # check if task to be schedule is periodic
+        if end_datetime_str and frequency:
             # check if end_datetime is greater than start_datetime
-            if validate_format_and_get_utc_datetime_from_str(
-                    end_datetime) < validate_format_and_get_utc_datetime_from_str(start_datetime):
+            end_datetime_plus_frequency = \
+                is_datetime_in_valid_format_and_in_future(end_datetime_str) + \
+                timedelta(seconds=frequency)
+            if end_datetime_plus_frequency < start_datetime:
                 raise InvalidUsage("end_datetime must be greater than start_datetime")
+        if data_to_schedule_campaign.get('frequency_id'):
+            # delete frequency_id and add frequency(number of seconds) in data_to_schedule_campaign
+            del data_to_schedule_campaign['frequency_id']
+            data_to_schedule_campaign['frequency_id'] = frequency
         # start datetime should be in valid format and in future
         validate_format_and_future_datetime(data_to_schedule_campaign.get('start_datetime'))
         return {'campaign': campaign_obj,
@@ -411,8 +421,7 @@ class CampaignBase(object):
         :return: data in dict format to send to scheduler_service
         :rtype: dict
         """
-        # get number of seconds from frequency id
-        frequency = frequency_id_to_seconds(data_to_schedule.get('frequency_id'))
+        frequency = data_to_schedule.get('frequency')
         if not frequency:  # This means it is a one time job
             validate_datetime_format(data_to_schedule['start_datetime'])
             task = {
@@ -573,9 +582,10 @@ class CampaignBase(object):
         **See Also**
         .. see also:: process_send() method in SmsCampaignBase class.
         """
-        params = {'id': campaign_smartlist.smartlist_id, 'return': 'all'}
+        params = {'return': 'all'}
         # HTTP GET call to candidate_service to get candidates associated with given smartlist id.
-        response = http_request('GET', CandidateApiUrl.SMARTLIST_CANDIDATES,
+        response = http_request('GET', CandidatePoolApiUrl.SMARTLIST_CANDIDATES
+                                % campaign_smartlist.smartlist_id,
                                 headers=self.oauth_header, params=params, user_id=self.user_id)
         # get candidate ids
         try:

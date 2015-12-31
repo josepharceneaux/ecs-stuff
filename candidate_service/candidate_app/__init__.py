@@ -7,6 +7,7 @@ app = Flask(__name__)
 print "Running app: %s" % app
 
 from candidate_service.common import common_config
+from candidate_service.common.redis_cache import redis_store
 app.config.from_object(common_config)
 
 logger = app.config['LOGGER']
@@ -16,6 +17,7 @@ register_error_handlers(app=app, logger=logger)
 
 db.init_app(app=app)
 db.app = app
+redis_store.init_app(app)
 
 # Wrap the flask app and give a healthcheck url
 health = HealthCheck(app, "/healthcheck")
@@ -26,13 +28,10 @@ from candidate_service.candidate_app.api.v1_candidates import (
     CandidateExperienceResource, CandidateExperienceBulletResource, CandidateWorkPreferenceResource,
     CandidateEmailResource, CandidatePhoneResource, CandidateMilitaryServiceResource,
     CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
-    CandidateCustomFieldResource, CandidateEditResource, CandidatesResource
+    CandidateCustomFieldResource, CandidateEditResource, CandidatesResource, CandidateOpenWebResource
 )
 
-from candidate_service.candidate_app.api.smartlists_api import SmartlistCandidates, SmartlistResource
-from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch
 from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
-
 
 api = GetTalentApi(app=app)
 
@@ -246,11 +245,8 @@ api.add_resource(CandidateSearch, '/v1/candidates/search')
 # ****** Candidate Documents *******
 api.add_resource(CandidateDocuments, '/v1/candidates/documents')
 
-
-api.add_resource(SmartlistResource,
-                 '/v1/smartlist/<int:id>')
-api.add_resource(SmartlistCandidates,
-                 '/v1/smartlist/get_candidates/')
+# ****** OPENWEB Request *******
+api.add_resource(CandidateOpenWebResource, '/v1/candidates/openweb', endpoint='openweb')
 
 db.create_all()
 db.session.commit()

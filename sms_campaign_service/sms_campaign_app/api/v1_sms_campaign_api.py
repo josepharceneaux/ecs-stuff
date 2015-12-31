@@ -89,7 +89,7 @@ class SMSCampaigns(Resource):
         2- Create an SMS campaign [POST]
         3- Delete campaigns by taking campaign ids [DELETE]
     """
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def get(self):
         """
@@ -287,7 +287,7 @@ class ScheduleSmsCampaign(Resource):
         1- schedule SMS Campaign using scheduler_service [POST]
         2- Re-schedule SMS Campaign using scheduler_service [PUT]
     """
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def post(self, campaign_id):
         """
@@ -411,7 +411,7 @@ class CampaignById(Resource):
         2- Update an existing SMS campaign [POST]
         3- Delete campaign by given campaign id [DELETE]
     """
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def get(self, campaign_id):
         """
@@ -556,7 +556,7 @@ class SmsCampaignSends(Resource):
     Endpoint looks like /v1/campaigns/:id/sends
     This resource is used to GET Campaign sends
     """
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def get(self, campaign_id):
         """
@@ -616,11 +616,11 @@ class SendSmsCampaign(Resource):
     Endpoint looks like /v1/campaigns/:id/send
     This resource is used to send SMS Campaign to candidates [POST]
     """
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def post(self, campaign_id):
         """
-        It sends given Campaign (from given campaign id) to the smart list candidates
+        It sends given Campaign (from given campaign id) to the smartlist candidates
             associated with given campaign.
 
         :Example:

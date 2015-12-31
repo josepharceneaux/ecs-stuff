@@ -10,13 +10,13 @@ from sms_campaign_service.sms_campaign_app import logger
 from sms_campaign_service.modules.custom_exceptions import (InvalidUrl, MissingRequiredField)
 
 # Database models
-from sms_campaign_service.common.models.talent_pools_pipelines import Smartlist
+from sms_campaign_service.common.models.smartlist import Smartlist
 
 # Common stuff
+from sms_campaign_service.modules.handy_functions import search_urls_in_text
 from sms_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound)
 from sms_campaign_service.common.campaign_services.validators import is_valid_url_format
-from sms_campaign_service.common.utils.common_functions import (http_request, find_missing_items)
-from sms_campaign_service.modules.handy_functions import search_urls_in_text
+from sms_campaign_service.common.utils.handy_functions import (http_request, find_missing_items)
 
 
 def validate_form_data(form_data):

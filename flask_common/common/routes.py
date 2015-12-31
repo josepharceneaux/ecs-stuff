@@ -16,7 +16,7 @@ def _get_host_name(service_name, port_number):
 
     For DEV, CIRCLE, In case of auth_service we'll get
 
-        http://127.0.0.1:8001
+        http://127.0.0.1:8001%s
 
     For QA:
             auth-service-webdev.gettalent.com ( for auth service)
@@ -80,10 +80,13 @@ class AuthApiUrl(object):
     """
     Rest URLs of auth_service
     """
-
-    AUTH_HOST_NAME = _get_host_name(GTApis.AUTH_SERVICE_NAME,
-                                    GTApis.AUTH_SERVICE_PORT)
-    TOKEN_URL = AUTH_HOST_NAME % 'oauth2/token'
+    API_VERSION = 'v1'
+    AUTH_SERVICE_HOST_NAME = _get_host_name(GTApis.AUTH_SERVICE_NAME,
+                                            GTApis.AUTH_SERVICE_PORT)
+    API_URL = AUTH_SERVICE_HOST_NAME % '/%s/%s' % (API_VERSION, '%s')
+    AUTH_SERVICE_TOKEN_CREATE_URI = API_URL % 'oauth2/token'
+    AUTH_SERVICE_TOKEN_REVOKE_URI = API_URL % 'oauth2/revoke'
+    AUTH_SERVICE_AUTHORIZE_URI = API_URL % 'oauth2/authorize'
 
 
 class ActivityApiUrl(object):
@@ -131,8 +134,16 @@ class CandidatePoolApiUrl(object):
     """
     Rest URLs of candidate_pool_service
     """
-    CANDIDATE_POOL_HOST_NAME = _get_host_name(GTApis.CANDIDATE_POOL_SERVICE_NAME,
-                                              GTApis.CANDIDATE_POOL_SERVICE_PORT)
+    API_VERSION = 'v1'
+    CANDIDATE_POOL_SERVICE_HOST_NAME = _get_host_name(GTApis.CANDIDATE_POOL_SERVICE_NAME,
+                                                      GTApis.CANDIDATE_POOL_SERVICE_PORT)
+    API_URL = CANDIDATE_POOL_SERVICE_HOST_NAME % '/%s/%s' % (API_VERSION, '%s')
+    TALENT_POOL_STATS = API_URL % "talent-pools/stats"
+    TALENT_POOL_GET_STATS = API_URL % "talent-pool/%s/stats"
+    TALENT_PIPELINE_STATS = API_URL % "talent-pipelines/stats"
+    TALENT_PIPELINE_GET_STATS = API_URL % "talent-pipeline/%s/stats"
+    SMARTLIST_CANDIDATES = API_URL % 'smartlists/%s/candidates'
+    SMARTLISTS = API_URL % 'smartlists'
 
 
 class SpreadSheetImportApiUrl(object):
@@ -212,7 +223,6 @@ class CandidateApiUrl(object):
     AOI = API_URL % "/candidates/%s/areas_of_interest/%s"
     AOIS = API_URL % "/candidates/%s/areas_of_interest"
 
-
     CUSTOM_FIELD = API_URL % "/candidates/%s/custom_fields/%s"
     CUSTOM_FIELDS = API_URL % "/candidates/%s/custom_fields"
 
@@ -256,14 +266,12 @@ class CandidateApiUrl(object):
     WORK_PREFERENCE = API_URL % "/candidates/%s/work_preference/%s"
     CANDIDATE_EDIT = API_URL % "/candidates/%s/edits"
 
-    SMARTLIST_CANDIDATES = API_URL % '/smartlist/get_candidates/'
-
 
 class SchedulerApiUrl(object):
     """
     Rest URLs of scheduler_service
     """
-    SCHEDULER_HOST_NAME = _get_host_name(GTApis.SCHEDULER_SERVICE_NAME,
-                                         GTApis.SCHEDULER_SERVICE_PORT)
-    TASKS = SCHEDULER_HOST_NAME % '/tasks/'
-    TASK = SCHEDULER_HOST_NAME % '/tasks/id/%s'
+    SCHEDULER_SERVICE_HOST_NAME = _get_host_name(GTApis.SCHEDULER_SERVICE_NAME,
+                                                 GTApis.SCHEDULER_SERVICE_PORT)
+    TASKS = SCHEDULER_SERVICE_HOST_NAME % '/tasks/'
+    TASK = SCHEDULER_SERVICE_HOST_NAME % '/tasks/id/%s'

@@ -60,7 +60,7 @@ def sms_campaign_url_redirection(campaign_id, url_conversion_id):
     (which is created during the process of sending campaign to candidate) to redirect the
     candidate to our app. This long_url looks like
 
-            http://127.0.0.1:8008/v1/sms_campaign/2/redirect/67/?candidate_id=2
+            http://127.0.0.1:8012/v1/campaign/2/redirect/67/?candidate_id=2
 
     For this we first convert this long_url in shorter URL (using Google's shorten URL API) and
     send in SMS body text to candidate. This is the endpoint which redirect the candidate. Short

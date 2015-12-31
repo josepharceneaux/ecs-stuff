@@ -13,17 +13,19 @@ from dateutil.parser import parse
 # Third-party imports
 from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.events import EVENT_JOB_EXECUTED
-from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.date import DateTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.schedulers.background import BackgroundScheduler
 
 # Application imports
 from scheduler_service import logger
+
 from scheduler_service.tasks import send_request
+from scheduler_service.common.models.user import User
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 from scheduler_service.common.error_handling import InvalidUsage, ForbiddenError
 from scheduler_service.apscheduler_config import executors, job_store, jobstores
-from flask.ext.common.common.campaign_services.validators import is_future_datetime
+from flask.ext.common.common.campaign_services.validators import is_datetime_in_future
 from flask.ext.common.common.campaign_services.campaign_utils import to_utc_str
 from scheduler_service.custom_exceptions import FieldRequiredError, TriggerTypeError, \
     JobNotCreatedError
@@ -101,7 +103,7 @@ def validate_periodic_job(data):
         try:
             start_datetime = parse(start_datetime)
             start_datetime = start_datetime.replace(tzinfo=timezone('UTC'))
-            if not is_future_datetime(start_datetime):
+            if not is_datetime_in_future(start_datetime):
                 raise ForbiddenError("start_datetime should be in future")
             valid_data.update({'start_datetime': start_datetime})
         except ForbiddenError:
@@ -113,7 +115,7 @@ def validate_periodic_job(data):
         try:
             end_datetime = parse(end_datetime)
             end_datetime = end_datetime.replace(tzinfo=timezone('UTC'))
-            if not is_future_datetime(end_datetime):
+            if not is_datetime_in_future(end_datetime):
                 raise ForbiddenError("end_datetime should be in future")
             valid_data.update({'end_datetime': end_datetime})
         except ForbiddenError:
@@ -205,9 +207,12 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
     :param kwargs: post data like campaign name, smartlist ids etc
     :return:
     """
+    secret_key = None
+    if not access_token:
+        secret_key, access_token = User.generate_auth_token(user_id=user_id)
     logger.info('User ID: %s, URL: %s, Content-Type: %s' % (user_id, url, content_type))
     # Call celery task to send post_data to url
-    send_request.apply_async([access_token, url, content_type, kwargs])
+    send_request.apply_async([access_token, secret_key, url, content_type, kwargs])
 
 
 def remove_tasks(ids, user_id):
