@@ -23,7 +23,7 @@ class TestSchedulerExceptions:
         """
             Create a job by missing data and check if exception occur with status code 500 and error code 6055
 
-            Args:
+            Args:re
                 auth_data: Fixture that contains token.
                 job_config (dict): Fixture that contains job config to be used as
                 POST data while hitting the endpoint.
