@@ -30,6 +30,21 @@ $breakpoints: (
 // Extender classes
 // -----
 
+.col--medium-half {
+  @include inc--align--clearfix;
+
+  position: relative;
+
+  @include helper--media($breakpoint--medium) {
+    &:nth-of-type(1) {
+      padding-right: $margin--row;
+    }
+    &:nth-of-type(2) {
+      padding-left: $margin--row;
+    }
+  }
+}
+
 .col--vmiddle {
   vertical-align: middle;
 }

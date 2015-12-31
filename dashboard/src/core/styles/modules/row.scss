@@ -71,3 +71,10 @@
   color: $color--white;
   background-color: $color--nearBlack;
 }
+
+.row--orange-pink-gradient {
+  @extend .row;
+  @include gradients--orange-to-pink;
+
+  color: $color--white;
+}

@@ -50,14 +50,14 @@
     <div class="row--widget">
         <!-- Graph: Pipeline Engagement -->
         <div class="col--full-6--cell box--nested-outer box--green" style="height:400px;">
-            <div class="col--full-8--cell box--nested-inner">
+            <div class="box--nested-inner">
                 <header class="row--expanded">
                     <div class="col--large-10">
                         <h2>Campaign Engagement</h2>
                         <h4>Sep 30 - Nov 30</h4>
                     </div>
                     <div class="col--large-2 align--right">
-                        <select id="mostEngagedCandidates" class="form__input--select" name="mostEngagedCandidates">
+                        <select id="campaignEngagement" class="form__input--select" name="campaignEngagement">
                             <option value="5d">5d</option>
                             <option selected value="15d">15d</option>
                             <option value="30d">30d</option>
@@ -197,7 +197,7 @@
         <div class="col--full-12--cell box">
             <header class="row--expanded">
                 <div class="col--large-9">
-                    <h2>Active Engagement Campaigns <span>(15)</span></h2>
+                    <h2>Active Engagement Campaigns <span>({{vm.campaigns.length}})</span></h2>
                 </div>
                 <div class="col--large-3 align--right">
                     <select id="activeEngagementCharts" class="form__input--select" name="activeEngagementCharts">
@@ -222,68 +222,26 @@
                         <th class="table__header">User</th>
                     </tr>
 
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">9/22/2015</td>
-                        <td class="table__col--morePadding">Email</td>
-                        <td class="table__col--morePadding">Python developer blast</td>
-                        <td class="table__col--morePadding">67%</td>
-                        <td class="table__col--morePadding">Python developer</td>
-                        <td class="table__col--morePadding">Jane Quon</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">10/11/2015</td>
-                        <td class="table__col--morePadding">Event</td>
-                        <td class="table__col--morePadding">Site Engineers meetup</td>
-                        <td class="table__col--morePadding">23%</td>
-                        <td class="table__col--morePadding">Site Reliability Engineers</td>
-                        <td class="table__col--morePadding">Wally Gibson</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">8/3/2015</td>
-                        <td class="table__col--morePadding">SMS</td>
-                        <td class="table__col--morePadding">iOS Developer reachout</td>
-                        <td class="table__col--morePadding">19%</td>
-                        <td class="table__col--morePadding">iOS Sr. Developer</td>
-                        <td class="table__col--morePadding">Tula Martin</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">7/27/2015</td>
-                        <td class="table__col--morePadding">Email</td>
-                        <td class="table__col--morePadding">Finance Opportunities</td>
-                        <td class="table__col--morePadding">72%</td>
-                        <td class="table__col--morePadding">Finance Analyst</td>
-                        <td class="table__col--morePadding">Lee River</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">5/15/2015</td>
-                        <td class="table__col--morePadding">Social</td>
-                        <td class="table__col--morePadding">QA Engineers & Automation</td>
-                        <td class="table__col--morePadding">56%</td>
-                        <td class="table__col--morePadding">Sr. QA Engineer</td>
-                        <td class="table__col--morePadding">Iris Denney</td>
+                    <tr class="table__row" dir-paginate="item in vm.campaigns | itemsPerPage: vm.campaignsPerPage track by item.id" pagination-id="campaignsPagination">
+                        <td class="table__col--morePadding">{{item.date | date: 'MM/dd/yyyy'}}</td>
+                        <td class="table__col--morePadding">{{item.type}}</td>
+                        <td class="table__col--morePadding">{{item.name}}</td>
+                        <td class="table__col--morePadding">{{item.engagement}}</td>
+                        <td class="table__col--morePadding">{{item.pipeline}}</td>
+                        <td class="table__col--morePadding">{{item.user}}</td>
                     </tr>
 
                 </table>
             </div>
 
-            <div class="pagination col--12">
+            <div class="pagination__controls col--12">
                 <div class="col--large-2">
-                    <select id="show" class="form__input--select" name="show">
-                        <option value="5">5 per page</option>
-                        <option value="10">10 per page</option>
-                        <option value="15">15 per page</option>
+                    <select ng-model="vm.campaignsPerPage" ng-options="option.value as option.name for option in vm.itemsPerPageOptions"
+                        id="campaignsPerPage" class="form__input--select" name="campaignsPerPage">
                     </select>
                 </div>
                 <div class="col--large-10 align--right">
-                    <a class="pagination__page-link" href="#">1</a>
-                    <a class="is-active pagination__page-link" href="#">2</a>
-                    <a class="pagination__page-link" href="#">3</a>
-                    <a class="pagination__page-link" href="#">4</a>
-                    <a class="pagination__page-link" href="#">5</a>
+                    <dir-pagination-controls direction-links="false" boundary-links="false" pagination-id="campaignsPagination"></dir-pagination-controls>
                 </div>
             </div>
 
