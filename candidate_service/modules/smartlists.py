@@ -1,7 +1,7 @@
 import json
 
 from candidate_service.candidate_app import db, logger
-from candidate_service.common.models.talent_pools_pipelines import SmartlistCandidate
+from candidate_service.common.models.smartlist import SmartlistCandidate
 from candidate_service.common.models.candidate import Candidate, CandidateEmail, CandidateSocialNetwork, CandidatePhone
 
 __author__ = 'jitesh'

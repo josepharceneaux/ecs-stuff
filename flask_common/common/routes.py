@@ -319,26 +319,25 @@ class PushNotificationServiceApi(object):
     SCHEDULE = CAMPAIGN + '/schedule'
 
 
-
-class SchedulerApiUrl:
-    def __init__(self):
-        pass
-
-    env = os.environ.get('GT_ENVIRONMENT')
-
-    if env == 'dev' or env == 'circle':
-        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
-    elif env == 'qa':
-        # TODO: Change this url after deployment
-        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
-    elif env == 'prod':
-        # TODO: Change this url after deployment
-        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
-    else:
-        raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
-
-    TASKS = SCHEDULER_SERVICE_HOST_NAME % "tasks/"
-    SINGLE_TASK = SCHEDULER_SERVICE_HOST_NAME % 'tasks/id/%s'
+# class SchedulerApiUrl:
+#     def __init__(self):
+#         pass
+#
+#     env = os.environ.get('GT_ENVIRONMENT')
+#
+#     if env == 'dev' or env == 'circle':
+#         SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
+#     elif env == 'qa':
+#         # TODO: Change this url after deployment
+#         SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
+#     elif env == 'prod':
+#         # TODO: Change this url after deployment
+#         SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
+#     else:
+#         raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
+#
+#     TASKS = SCHEDULER_SERVICE_HOST_NAME % "tasks/"
+#     SINGLE_TASK = SCHEDULER_SERVICE_HOST_NAME % 'tasks/id/%s'
 
 
 class CandidatePoolApiUrl:

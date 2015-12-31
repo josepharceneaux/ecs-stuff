@@ -5,7 +5,7 @@ from candidate_service.common.utils.auth_utils import require_oauth
 from ...modules.smartlists import get_candidates, create_smartlist_dict
 from ...modules.validators import validate_and_parse_request_data, validate_list_belongs_to_domain
 from candidate_service.common.error_handling import ForbiddenError
-from candidate_service.common.models.talent_pools_pipelines import Smartlist
+from candidate_service.common.models.smartlist import Smartlist
 
 __author__ = 'jitesh'
 

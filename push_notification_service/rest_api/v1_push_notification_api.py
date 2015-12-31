@@ -46,7 +46,7 @@ one_signal_client = OneSignalSdk(app_id=ONE_SIGNAL_APP_ID,
 @api.route('/v1/campaigns')
 class PushCampaigns(Resource):
 
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def get(self, *args, **kwargs):
         # data = request.values
@@ -81,7 +81,7 @@ class PushCampaigns(Resource):
 @api.route('/v1/campaigns/<int:campaign_id>/schedule')
 class SchedulePushCampaign(Resource):
 
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def post(self, campaign_id):
         """
@@ -185,7 +185,7 @@ class SchedulePushCampaign(Resource):
 @api.route('/v1/campaigns/<int:campaign_id>/send')
 class SendPushCampaign(Resource):
 
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def post(self, campaign_id):
         user = request.user
@@ -204,7 +204,7 @@ class SendPushCampaign(Resource):
 @api.route('/v1/campaigns/<int:campaign_id>/blasts/<int:blast_id>/sends')
 class PushCampaignBlastSends(Resource):
 
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def get(self, campaign_id, blast_id):
         user = request.user
@@ -224,7 +224,7 @@ class PushCampaignBlastSends(Resource):
 @api.route('/v1/campaigns/<int:campaign_id>/sends')
 class PushCampaignSends(Resource):
 
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def get(self, campaign_id):
         user = request.user
@@ -241,7 +241,7 @@ class PushCampaignSends(Resource):
 @api.route('/v1/campaigns/<int:campaign_id>/blasts')
 class PushNotificationBlasts(Resource):
 
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def get(self, campaign_id):
         user = request.user
@@ -257,7 +257,7 @@ class PushNotificationBlasts(Resource):
 @api.route('/v1/devices')
 class Devices(Resource):
 
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     # def get(self, *args, **kwargs):
     #     data = request.values
