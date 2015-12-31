@@ -16,6 +16,8 @@ if GT_ENVIRONMENT == 'dev':
     CANDIDATE_CREATION_URI = 'http://127.0.0.1:8005/v1/candidates'
     DEBUG = True
     LOGGER = logging.getLogger("resume_service.dev")
+    REDIS_HOST = '127.0.0.1'
+    REDIS_PORT = '6379'
     OAUTH_SERVER_URI = 'http://127.0.0.1:8001/oauth2/authorize'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@localhost/talent_local'
 elif GT_ENVIRONMENT == 'circle':

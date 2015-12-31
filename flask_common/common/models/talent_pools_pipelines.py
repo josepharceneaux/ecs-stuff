@@ -83,37 +83,3 @@ class TalentPipeline(db.Model):
     def delete(self):
         db.session.delete(self)
         db.session.commit()
-
-
-class Smartlist(db.Model):
-
-    __tablename__ = 'smart_list'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('name', db.String(127))
-    search_params = db.Column('searchParams', db.String(1023))
-    user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'))
-    talent_pipeline_id = db.Column('talentPipelineId', db.Integer, db.ForeignKey('talent_pipeline.id'))
-    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
-    is_hidden = db.Column('isHidden', db.Boolean, default=False)
-
-    user = db.relationship('User', backref=db.backref('smart_list', cascade="all, delete-orphan"))
-    talent_pipeline = db.relationship('TalentPipeline', backref=db.backref('smart_list'))
-
-    def __repr__(self):
-        return "<SmartList(name= %r)>" % self.name
-
-
-class SmartlistCandidate(db.Model):
-
-    __tablename__ = 'smart_list_candidate'
-
-    id = db.Column(db.Integer, primary_key=True)
-    smart_list_id = db.Column('SmartlistId', db.Integer, db.ForeignKey('smart_list.id', ondelete='CASCADE'), nullable=False)
-    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id', ondelete='CASCADE'), nullable=False)
-    added_time = db.Column('AddedTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
-    updated_time = db.Column('UpdatedTime', db.DateTime,
-                             server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"), nullable=False)
-
-    smart_list = db.relationship('Smartlist', backref=db.backref('smart_list_candidate', cascade="all, delete-orphan"))
-    candidate = db.relationship('Candidate', backref=db.backref('smart_list_candidate', cascade="all, delete-orphan"))

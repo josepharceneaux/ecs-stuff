@@ -110,7 +110,7 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
         schedule_task_params["start_datetime"] = send_time
         schedule_task_params["end_datetime"] = stop_time
     else:
-        schedule_task_params["run_datetime"] = "2015-12-05 08:00:00"   # TODO: Check if this is needed.
+        schedule_task_params["run_datetime"] = datetime.datetime.strftime(datetime.datetime.utcnow(), "%Y-%m-%d %H:%M:%S")   # TODO: Check if this is needed.
 
     # Schedule email campaign
     headers = {'Authorization': oauth_token, 'Content-Type': 'application/json'}
