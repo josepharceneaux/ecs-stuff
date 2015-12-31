@@ -8,11 +8,11 @@ class UserServiceApiUrl:
     env = talent_property_manager.get_env()
 
     if env == 'dev' or env == 'circle':
-        USER_SERVICE_HOST_NAME = 'http://127.0.0.1:8004/%s'
+        USER_SERVICE_HOST_NAME = 'http://127.0.0.1:8004/v1/%s'
     elif env == 'qa':
-        USER_SERVICE_HOST_NAME = 'http://user-webdev.gettalent.com/%s'
+        USER_SERVICE_HOST_NAME = 'http://user-webdev.gettalent.com/v1/%s'
     elif env == 'prod':
-        USER_SERVICE_HOST_NAME = 'http://user.gettalent.com/%s'
+        USER_SERVICE_HOST_NAME = 'http://user.gettalent.com/v1/%s'
     else:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
 
@@ -32,7 +32,7 @@ class AuthApiUrl:
     def __init__(self):
         pass
 
-    env = os.environ.get('GT_ENVIRONMENT')
+    env = talent_property_manager.get_env()
 
     if env == 'dev' or env == 'circle':
         AUTH_SERVICE_HOST_NAME = 'http://127.0.0.1:8001/v1/%s'
@@ -125,7 +125,7 @@ class SchedulerApiUrl:
     def __init__(self):
         pass
 
-    env = os.environ.get('GT_ENVIRONMENT')
+    env = talent_property_manager.get_env()
 
     if env == 'dev' or env == 'circle':
         SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
@@ -146,7 +146,7 @@ class CandidatePoolApiUrl:
     def __init__(self):
         pass
 
-    env = os.environ.get('GT_ENVIRONMENT')
+    env = talent_property_manager.get_env()
 
     if env == 'dev' or env == 'circle':
         CANDIDATE_POOL_SERVICE_HOST_NAME = 'http://127.0.0.1:8008/v1/%s'

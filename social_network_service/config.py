@@ -11,34 +11,30 @@ LOGGING_CONF = os.path.join(APP_ROOT, 'logging.conf')
 logging.config.fileConfig(LOGGING_CONF)
 
 # SQL ALCHEMY DB URL
-env = talent_property_manager.get_env()
-if env == 'dev':
+GT_ENVIRONMENT = talent_property_manager.get_env()
+if GT_ENVIRONMENT == 'dev':
     APP_URL = 'http://0.0.0.0:8006'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@localhost/talent_local'
     LOGGER = logging.getLogger("social_network_service.dev")
-    GT_ENVIRONMENT = os.environ.get('GT_ENVIRONMENT')
     DEBUG = True
-elif env == 'circle':
+elif GT_ENVIRONMENT == 'circle':
     APP_URL = 'http://0.0.0.0:8006'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_ci'
     LOGGER = logging.getLogger("social_network_service.ci")
-    GT_ENVIRONMENT = os.environ.get('GT_ENVIRONMENT')
     DEBUG = True
-elif env == 'qa':
+elif GT_ENVIRONMENT == 'qa':
     APP_URL = 'http://0.0.0.0:8006'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!web976892@devdb.gettalent.com/talent_staging'
     LOGGER = logging.getLogger("social_network_service.qa")
-    GT_ENVIRONMENT = os.environ.get('GT_ENVIRONMENT')
     DEBUG = False
-elif env == 'prod':
+elif GT_ENVIRONMENT == 'prod':
     APP_URL = 'http://0.0.0.0:8006'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = os.environ.get('DB_STRING')
     LOGGER = logging.getLogger("social_network_service.prod")
-    GT_ENVIRONMENT = os.environ.get('GT_ENVIRONMENT')
     DEBUG = False
 else:
     raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")
