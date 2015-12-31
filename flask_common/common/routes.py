@@ -85,11 +85,10 @@ class SchedulerApiUrl:
     if env == 'dev' or env == 'circle':
         SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
     elif env == 'qa':
-        # TODO: Change this url after deployment
-        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
+        SCHEDULER_SERVICE_HOST_NAME = 'http://scheduler-service-webdev.gettalent.com/%s'
     elif env == 'prod':
         # TODO: Change this url after deployment
-        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
+        SCHEDULER_SERVICE_HOST_NAME = 'http://scheduler-service.gettalent.com/%s'
     else:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
 
@@ -115,4 +114,4 @@ class SpreadsheetImportApiUrl:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
 
     CONVERT_TO_TABLE = SPREADSHEET_IMPORT_SERVICE_HOST_NAME % "convert_to_table"
-    IMPORT_FROM_TABLE = SPREADSHEET_IMPORT_SERVICE_HOST_NAME % 'import_from_table'
+    IMPORT_CANDIDATES = SPREADSHEET_IMPORT_SERVICE_HOST_NAME % 'import_candidates'

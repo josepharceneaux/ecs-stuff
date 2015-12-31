@@ -49,7 +49,7 @@ def spreadsheet_to_table():
     return jsonify(dict(table=first_rows))
 
 
-@mod.route('/parse_spreadsheet/import_from_table', methods=['POST'])
+@mod.route('/parse_spreadsheet/import_candidates', methods=['POST'])
 @require_oauth
 @require_all_roles('CAN_ADD_CANDIDATES')
 def import_from_table():

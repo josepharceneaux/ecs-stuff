@@ -11,16 +11,13 @@ import json
 import StringIO
 import requests
 from spreadsheet_import_service.common.utils.talent_s3 import upload_to_filepicker_s3
+from spreadsheet_import_service.common.routes import SpreadsheetImportApiUrl
 
-SPREADSHEET_IMPORT_HOST = 'http://127.0.0.1:8009/%s'
-SPREADSHEET_IMPORT_ENDPOINT = SPREADSHEET_IMPORT_HOST % 'v1/parse_spreadsheet/%s'
-CONVERT_TO_TABLE_ENDPOINT = SPREADSHEET_IMPORT_ENDPOINT % 'convert_to_table'
-IMPORT_FROM_TABLE_ENDPOINT = SPREADSHEET_IMPORT_ENDPOINT % 'import_from_table'
-HEALTH_ENDPOINT = SPREADSHEET_IMPORT_HOST % 'healthcheck'
+HEALTH_ENDPOINT = 'http://127.0.0.1:8009/healthcheck'
 
 
 def import_spreadsheet_candidates(access_token, candidate_data=None, spreadsheet_file_name=None, is_csv=True,
-                                  import_candidates=False):
+                                  import_candidates=False, is_import_scheduled=False):
 
     header_row = ['candidate.formattedName', 'candidate_email.address', 'candidate_phone.value',
                   'candidate_experience.organization', 'candidate_experience.position',
@@ -52,10 +49,12 @@ def import_spreadsheet_candidates(access_token, candidate_data=None, spreadsheet
     upload_to_filepicker_s3(file_content=spreadsheet_file_data, file_name=s3_key_name)
 
     if import_candidates:
-        response = requests.post(IMPORT_FROM_TABLE_ENDPOINT, headers=headers,
-                                 data=json.dumps({"file_picker_key": s3_key_name, 'header_row': header_row}))
+        response = requests.post(SpreadsheetImportApiUrl.IMPORT_CANDIDATES, headers=headers,
+                                 data=json.dumps({"file_picker_key": s3_key_name, 'header_row': header_row,
+                                                  'is_import_scheduled': is_import_scheduled}))
     else:
-        response = requests.get(CONVERT_TO_TABLE_ENDPOINT, headers=headers, params={'file_picker_key': s3_key_name})
+        response = requests.get(SpreadsheetImportApiUrl.CONVERT_TO_TABLE, headers=headers,
+                                arams={'file_picker_key': s3_key_name})
 
     return response.json(), response.status_code
 

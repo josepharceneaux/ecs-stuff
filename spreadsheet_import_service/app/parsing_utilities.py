@@ -19,6 +19,7 @@ from spreadsheet_import_service.common.models.user import User
 from spreadsheet_import_service.common.models.misc import AreaOfInterest
 from spreadsheet_import_service.common.models.candidate import CandidateSource
 from spreadsheet_import_service.common.utils.talent_reporting import email_error_to_admins
+from spreadsheet_import_service.common.error_handling import InternalServerError
 from spreadsheet_import_service.common.routes import CandidateApiUrl, SchedulerApiUrl, SpreadsheetImportApiUrl
 
 
@@ -329,7 +330,7 @@ def schedule_spreadsheet_import(import_args):
     data = {
         "task_type": "one_time",
         "run_datetime": str(datetime.datetime.utcnow()),
-        "url": SpreadsheetImportApiUrl.IMPORT_FROM_TABLE,
+        "url": SpreadsheetImportApiUrl.IMPORT_CANDIDATES,
         "post_data": import_args
     }
     headers = {'Authorization': request.oauth_token, 'Content-Type': 'application/json'}
@@ -340,4 +341,5 @@ def schedule_spreadsheet_import(import_args):
             raise Exception("Status Code: %s, Response: %s" % (response.status_code, response.json()))
 
     except Exception as e:
-        raise InvalidUsage("Couldn't schedule Spreadsheet import using scheduling service because: %s", e.message)
+        raise InternalServerError("Couldn't schedule Spreadsheet import using scheduling service "
+                                  "because: %s", e.message)
