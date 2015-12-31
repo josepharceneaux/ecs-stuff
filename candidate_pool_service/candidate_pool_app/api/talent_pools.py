@@ -6,7 +6,6 @@ from flask import request, Blueprint
 from flask_restful import Resource
 from sqlalchemy import and_
 from dateutil.parser import parse
-from candidate_pool_service.candidate_pool_app import app
 from candidate_pool_service.common.error_handling import *
 from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.routes import CandidateApiUrl

@@ -98,8 +98,11 @@ def test_search_status(sample_user, user_auth):
     status_id = get_or_create_status(db, status_name="Hired")
     # Change status of last candidate
     Candidate.query.filter_by(id=candidate_ids[-1]).update(dict(candidate_status_id=status_id))
+    db.session.commit()
     # Update cloud_search
-    upload_candidate_documents(candidate_ids)
+    upload_candidate_documents(candidate_ids[-1])
+    # Wait for 10 more seconds for cloudsearch to update data.
+    time.sleep(10)
     response = get_response_from_authorized_user(user_auth, sample_user, '?status_ids=%d' % status_id)
     # Only last candidate should appear in result.
     _assert_results(candidate_ids[-1:], response.json())

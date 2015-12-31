@@ -25,9 +25,11 @@ health = HealthCheck(app, "/healthcheck")
 
 from api.talent_pools import talent_pool_blueprint
 from api.talent_pipelines import talent_pipeline_blueprint
+from api.smartlists import smartlist_blueprint
 
 app.register_blueprint(talent_pipeline_blueprint, url_prefix='/v1')
 app.register_blueprint(talent_pool_blueprint, url_prefix='/v1')
+app.register_blueprint(smartlist_blueprint, url_prefix='/v1')
 
 db.create_all()
 db.session.commit()

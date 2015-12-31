@@ -28,7 +28,7 @@ from candidate_service.candidate_app.api.v1_candidates import (
     CandidateExperienceResource, CandidateExperienceBulletResource, CandidateWorkPreferenceResource,
     CandidateEmailResource, CandidatePhoneResource, CandidateMilitaryServiceResource,
     CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
-    CandidateCustomFieldResource, CandidateEditResource, CandidatesResource
+    CandidateCustomFieldResource, CandidateEditResource, CandidatesResource, CandidateOpenWebResource
 )
 from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
 
@@ -244,6 +244,8 @@ api.add_resource(CandidateSearch, '/v1/candidates/search')
 # ****** Candidate Documents *******
 api.add_resource(CandidateDocuments, '/v1/candidates/documents')
 
+# ****** OPENWEB Request *******
+api.add_resource(CandidateOpenWebResource, '/v1/candidates/openweb', endpoint='openweb')
 
 db.create_all()
 db.session.commit()

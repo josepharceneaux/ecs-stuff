@@ -150,6 +150,11 @@
     @include helper--media($breakpoint--large) {
       width: auto;
       margin-left: $padding--tiny;
+      margin-right: $padding--tiny;
+
+      &:last-child {
+        margin-right: 0;
+      }
     }
   }
 

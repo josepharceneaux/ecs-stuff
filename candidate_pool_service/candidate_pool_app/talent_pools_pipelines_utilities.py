@@ -8,7 +8,7 @@ from candidate_pool_service.common.models.user import User
 from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.redis_cache import redis_store
 from candidate_pool_service.common.error_handling import InvalidUsage
-from candidate_pool_service.common.models.talent_pools_pipelines import Smartlist
+from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.common.routes import CandidatePoolApiUrl, SchedulerApiUrl, CandidateApiUrl
 
 
