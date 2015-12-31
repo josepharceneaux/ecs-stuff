@@ -23,11 +23,11 @@ import requests
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.utils.common_functions import to_utc_str
+from sms_campaign_service.common.utils.handy_functions import to_utc_str
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.error_handling import (ResourceNotFound,
                                                         InternalServerError,
-                                                        MethodNotAllowed)
+                                                        MethodNotAllowed, InvalidUsage)
 # Database Models
 from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.candidate import Candidate
@@ -168,7 +168,7 @@ class TestCeleryTasks(object):
          response
         """
         data = CAMPAIGN_SCHEDULE_DATA.copy()
-        del data['frequency_id']  # for one_time job
+        data['frequency_id'] = 0  # for one_time job
         # run this task after 10 sec
         data['start_datetime'] = to_utc_str(datetime.utcnow() + timedelta(seconds=10))
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
@@ -179,6 +179,20 @@ class TestCeleryTasks(object):
         assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
                                                            1,
                                                            str(sms_campaign_of_current_user.id))
+    def test_schedule_periodic_campaign_with_past_end_date(
+            self, valid_header, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
+            sample_sms_campaign_candidates, candidate_phone_1):
+        """
+        This is test to schedule SMS campaign with all valid parameters. This should get OK
+         response
+        """
+        data = CAMPAIGN_SCHEDULE_DATA.copy()
+        # run this task after 10 sec
+        data['start_datetime'] = to_utc_str(datetime.utcnow() + timedelta(seconds=10))
+        response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
+                                 headers=valid_header,
+                                 data=json.dumps(data))
+        assert response.status_code == InvalidUsage.http_status_code()
 
     def test_sms_receive_with_valid_data_and_one_campaign_sent(self, user_phone_1,
                                                                sms_campaign_of_current_user,

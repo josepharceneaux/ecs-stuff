@@ -14,7 +14,7 @@ from dateutil.parser import parse
 
 # Common utils
 from ..error_handling import InvalidUsage
-from ..utils.common_functions import JSON_CONTENT_TYPE_HEADER
+from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 
 
 def validate_header(request):
@@ -49,7 +49,7 @@ def validate_datetime_format(str_datetime):
                            'like 2015-10-08T06:16:55Z. Given Date is %s' % str_datetime)
 
 
-def is_future_datetime(dt):
+def is_datetime_in_future(dt):
     """
     This function validates that given datetime obj has date and time in future by comparing
     with current UTC datetime object.
@@ -68,12 +68,12 @@ def validate_format_and_future_datetime(datetime_str):
     """
     Here we check given string datetime is in valid format, then we convert it into datetime obj.
     Finally we check if it is in future.
-    This uses validate_format_and_get_utc_datetime_from_str() and is_future_datetime() functions.
+    This uses is_datetime_in_valid_format_and_in_future() and is_datetime_in_future() functions.
     :param datetime_str:
     :type datetime_str: str
     :return:
     """
-    if not is_future_datetime(validate_format_and_get_utc_datetime_from_str(datetime_str)):
+    if not is_datetime_in_future(is_datetime_in_valid_format_and_in_future(datetime_str)):
         raise InvalidUsage("Given datetime(%s) should be in future" % datetime_str)
 
 
@@ -91,7 +91,7 @@ def is_valid_url_format(url):
     return url is not None and regex.search(url)
 
 
-def validate_format_and_get_utc_datetime_from_str(str_datetime):
+def is_datetime_in_valid_format_and_in_future(str_datetime):
     """
     This converts given string datetime into UTC datetime obj.
     This uses validate_datetime_format() to validate the format of given str.

@@ -1,4 +1,5 @@
 from candidate_pool_service.candidate_pool_app import app
+from candidate_pool_service.common.routes import CandidatePoolApiUrl
 from candidate_pool_service.common.tests.conftest import *
 from candidate_pool_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from candidate_pool_service.modules.smartlists import save_smartlist
@@ -12,16 +13,11 @@ import requests
 __author__ = 'jitesh'
 
 
-# TODO: Use routes.py once it is ready
-SMARTLIST_URL = 'http://localhost:8008/v1/smartlists'
-SMARTLIST_CANDIDATES_URL = 'http://localhost:8008/v1/smartlists/%s/candidates'
-
-
 class TestSmartlistResource(object):
     class TestSmartlistResourcePOST(object):
         def call_post_api(self, data, access_token):
             return requests.post(
-                url=SMARTLIST_URL,
+                url=CandidatePoolApiUrl.SMARTLISTS,
                 data=json.dumps(data),
                 headers={'Authorization': 'Bearer %s' % access_token,
                          'content-type': 'application/json'}
@@ -166,7 +162,7 @@ class TestSmartlistResource(object):
         def call_get_api(self, access_token, list_id=None):
             """Calls GET API of SmartlistResource"""
             return requests.get(
-                url=SMARTLIST_URL + '/%s' % list_id if list_id else SMARTLIST_URL,
+                url=CandidatePoolApiUrl.SMARTLISTS + '/%s' % list_id if list_id else CandidatePoolApiUrl.SMARTLISTS,
                 headers={'Authorization': 'Bearer %s' % access_token}
             )
 
@@ -228,7 +224,7 @@ class TestSmartlistResource(object):
         def call_delete_api(self, access_token, list_id=None):
             """Calls DELETE API of SmartlistResource"""
             return requests.delete(
-                url=SMARTLIST_URL + '/%s' % list_id if list_id else SMARTLIST_URL,
+                url=CandidatePoolApiUrl.SMARTLISTS + '/%s' % list_id if list_id else CandidatePoolApiUrl.SMARTLISTS,
                 headers={'Authorization': 'Bearer %s' % access_token}
             )
 
@@ -255,7 +251,7 @@ class TestSmartlistResource(object):
             assert smartlist_after_deletion.is_hidden is True  # Verify smartlist is hidden
             # Try calling GET method with deleted (hidden) list id and it should give 404 Not found
             output = requests.get(
-                url=SMARTLIST_URL + '/%s' % smartlist_after_deletion.id,
+                url=CandidatePoolApiUrl.SMARTLISTS + '/%s' % smartlist_after_deletion.id,
                 headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
             )
             assert output.status_code == 404  # Get method should give 404 for hidden smartlist
@@ -269,7 +265,7 @@ class TestSmartlistResource(object):
                                         search_params=json.dumps({'maximum_years_experience': '5'}))
             # Call GET all smartlists and it should give both the smartlist ids
             resp1 = requests.get(
-                url=SMARTLIST_URL,
+                url=CandidatePoolApiUrl.SMARTLISTS,
                 headers={'Authorization': 'Bearer %s' % access_token_first}
             )
             assert resp1.status_code == 200
@@ -281,7 +277,7 @@ class TestSmartlistResource(object):
             assert resp2.status_code == 200
             # Call GET all smartlists and it should give single smartlist, i.e. smartlist2
             resp3 = requests.get(
-                url=SMARTLIST_URL,
+                url=CandidatePoolApiUrl.SMARTLISTS,
                 headers={'Authorization': 'Bearer %s' % access_token_first}
             )
             assert resp3.status_code == 200
@@ -320,7 +316,7 @@ class TestSmartlistResource(object):
 class TestSmartlistCandidatesApi(object):
     def call_smartlist_candidates_get_api(self, smartlist_id, params, access_token):
         return requests.get(
-                url=SMARTLIST_CANDIDATES_URL % smartlist_id,
+                url=CandidatePoolApiUrl.SMARTLIST_CANDIDATES % smartlist_id,
                 params=params,
                 headers={'Authorization': 'Bearer %s' % access_token})
 
@@ -420,7 +416,7 @@ class TestSmartlistCandidatesApi(object):
                                    name=list_name,
                                    search_params=search_params)
         # Delete (hide) this smartlist
-        response = requests.delete(url=SMARTLIST_URL + '/%s' % smartlist.id,
+        response = requests.delete(url=CandidatePoolApiUrl.SMARTLISTS + '/%s' % smartlist.id,
                                    headers={'Authorization': 'Bearer %s' % access_token_first})
         assert response.status_code == 200
         # Now try getting candidates from this deleted(hidden) smartlist, it should raise 404(not found)

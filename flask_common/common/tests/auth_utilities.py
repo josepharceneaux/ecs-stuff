@@ -1,16 +1,22 @@
+__author__ = 'ufarooqi'
+
+# Standard Imports
 import re
 import json
-import pytz
 import random
 import string
-import requests
-from pytz import timezone
 from datetime import datetime
 
+# Third Party
+import pytz
+import requests
+from pytz import timezone
 
+# Application Specific
 from flask import current_app
+from ..models.user import User
 from ..routes import AuthApiUrl
-from ..models.user import User, UserScopedRoles
+from ..models.user import UserScopedRoles
 from sqlalchemy.sql.expression import ClauseElement
 from werkzeug.security import generate_password_hash
 from ..error_handling import ForbiddenError, InvalidUsage

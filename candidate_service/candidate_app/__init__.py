@@ -31,9 +31,6 @@ from candidate_service.candidate_app.api.v1_candidates import (
     CandidateCustomFieldResource, CandidateEditResource, CandidatesResource, CandidateOpenWebResource
 )
 
-from candidate_service.candidate_app.api.smartlists_api import SmartlistCandidates, SmartlistResource
-from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch
-from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
 from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
 
 api = GetTalentApi(app=app)

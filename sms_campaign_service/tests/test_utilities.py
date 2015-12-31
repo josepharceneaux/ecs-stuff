@@ -19,8 +19,8 @@ from sms_campaign_service.modules.custom_exceptions import (InvalidUrl, SmsCampa
 
 # Common Utils
 from sms_campaign_service.common.error_handling import InvalidUsage
-from sms_campaign_service.common.utils.common_functions import url_conversion
 from sms_campaign_service.common.routes import (LOCAL_HOST, SmsCampaignApi)
+from sms_campaign_service.common.utils.handy_functions import url_conversion
 
 
 # Test for healthcheck

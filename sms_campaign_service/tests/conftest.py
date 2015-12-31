@@ -22,13 +22,12 @@ from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO, MOB
 from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.candidate import (PhoneLabel, CandidatePhone)
-from sms_campaign_service.common.models.talent_pools_pipelines import (Smartlist,
-                                                                       SmartlistCandidate)
+from sms_campaign_service.common.models.smartlist import (Smartlist, SmartlistCandidate)
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignSmartlist,
                                                              SmsCampaignBlast, SmsCampaignSend,
                                                              SmsCampaignSendUrlConversion)
 # Common Utils
-from sms_campaign_service.common.utils.common_functions import JSON_CONTENT_TYPE_HEADER
+from sms_campaign_service.common.utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 
 SLEEP_TIME = 10  # needed to add this because tasks run on Celery
 
@@ -166,10 +165,10 @@ def sample_sms_campaign_candidates(sample_user,
     """
     candidate_first.update(user_id=sample_user.id)
     candidate_second.update(user_id=sample_user.id)
-    smartlist_candidate_1 = SmartlistCandidate(smart_list_id=sample_smartlist.id,
+    smartlist_candidate_1 = SmartlistCandidate(smartlist_id=sample_smartlist.id,
                                                candidate_id=candidate_first.id)
     SmartlistCandidate.save(smartlist_candidate_1)
-    smartlist_candidate_2 = SmartlistCandidate(smart_list_id=sample_smartlist.id,
+    smartlist_candidate_2 = SmartlistCandidate(smartlist_id=sample_smartlist.id,
                                                candidate_id=candidate_second.id)
     SmartlistCandidate.save(smartlist_candidate_2)
 

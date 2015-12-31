@@ -111,5 +111,3 @@ class TalentPipelineStats(db.Model):
     talent_pipeline = db.relationship('TalentPipeline', backref=db.backref('talent_pipeline_stats',
                                                                            cascade="all, delete-orphan"))
 
-
-
