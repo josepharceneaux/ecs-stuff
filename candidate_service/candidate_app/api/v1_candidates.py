@@ -15,9 +15,9 @@ from candidate_service.modules.validators import (
     is_area_of_interest_authorized, is_number
 )
 from candidate_service.modules.json_schema import (
-    candidates_resource_schema_post, candidates_resource_schema_patch, validate_candidate_properties
+    candidates_resource_schema_post, candidates_resource_schema_patch
 )
-from jsonschema import validate
+from jsonschema import validate, FormatChecker
 
 # Decorators
 from candidate_service.common.utils.auth_utils import require_oauth
@@ -127,11 +127,10 @@ class CandidatesResource(Resource):
 
         # Validate json data
         try:
-            validate(instance=body_dict, schema=candidates_resource_schema_post)
+            validate(instance=body_dict, schema=candidates_resource_schema_post,
+                     format_checker=FormatChecker())
         except Exception as e:
             raise InvalidUsage(error_message=e.message)
-
-        validate_candidate_properties(data=body_dict)
 
         created_candidate_ids = []
         for candidate_dict in body_dict.get('candidates'):
@@ -166,6 +165,7 @@ class CandidatesResource(Resource):
                 user_id=authed_user.id,
                 is_creating=True,
                 first_name=candidate_dict.get('first_name'),
+                middle_name=candidate_dict.get('middle_name'),
                 last_name=candidate_dict.get('last_name'),
                 formatted_name=candidate_dict.get('full_name'),
                 status_id=candidate_dict.get('status_id'),
@@ -183,6 +183,10 @@ class CandidatesResource(Resource):
                 skills=candidate_dict.get('skills'),
                 dice_social_profile_id=candidate_dict.get('openweb_id'),
                 dice_profile_id=candidate_dict.get('dice_profile_id'),
+                added_time=candidate_dict.get('added_time'),
+                source_id=candidate_dict.get('source_id'),
+                objective=candidate_dict.get('objective'),
+                summary=candidate_dict.get('summary'),
                 talent_pool_ids=candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []}),
             )
             created_candidate_ids.append(resp_dict['candidate_id'])
@@ -214,11 +218,10 @@ class CandidatesResource(Resource):
 
         # Validate json data
         try:
-            validate(instance=body_dict, schema=candidates_resource_schema_patch)
+            validate(instance=body_dict, schema=candidates_resource_schema_patch,
+                     format_checker=FormatChecker())
         except Exception as e:
             raise InvalidUsage(error_message=e.message)
-
-        validate_candidate_properties(data=body_dict)
 
         updated_candidate_ids = []
         for candidate_dict in body_dict.get('candidates'):
@@ -258,6 +261,7 @@ class CandidatesResource(Resource):
                 is_updating=True,
                 candidate_id=candidate_dict.get('id'),
                 first_name=candidate_dict.get('first_name'),
+                middle_name=candidate_dict.get('middle_name'),
                 last_name=candidate_dict.get('last_name'),
                 formatted_name=candidate_dict.get('full_name'),
                 status_id=candidate_dict.get('status_id'),
@@ -275,6 +279,10 @@ class CandidatesResource(Resource):
                 skills=candidate_dict.get('skills'),
                 dice_social_profile_id=candidate_dict.get('openweb_id'),
                 dice_profile_id=candidate_dict.get('dice_profile_id'),
+                added_time=candidate_dict.get('added_time'),
+                source_id=candidate_dict.get('source_id'),
+                objective=candidate_dict.get('objective'),
+                summary=candidate_dict.get('summary'),
                 talent_pool_ids=candidate_dict.get('talent_pool_id', {'add': [], 'delete': []})
             )
             updated_candidate_ids.append(resp_dict['candidate_id'])

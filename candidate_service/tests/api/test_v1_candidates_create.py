@@ -64,7 +64,7 @@ def test_schema_validation(sample_user, user_auth):
         {
             'emails': [{'label': None, 'address': fake.safe_email(), 'is_default': True}],
             'first_name': 'john', 'middle_name': '', 'last_name': '', 'addresses': [],
-            'social_networks': [], 'skills': [], 'work_experiences': [], 'work_preference': None,
+            'social_networks': [], 'skills': [], 'work_experiences': [], 'work_preference': {},
             'educations': [], 'custom_fields': [], 'preferred_locations': [], 'military_services': [],
             'areas_of_interest': [], 'phones': []
         }
@@ -72,6 +72,9 @@ def test_schema_validation(sample_user, user_auth):
     create_resp = post_to_candidate_resource(token, data)
     assert create_resp.status_code == 201
     print response_info(create_resp)
+    # candidate_id = create_resp.json()['candidates'][0]['id']
+    # cand_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+    # print "\ncand_dict = %s" % cand_dict
 
 
 def test_create_candidate_and_retrieve_it(sample_user, user_auth):

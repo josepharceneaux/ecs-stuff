@@ -37,7 +37,7 @@ class FakeCandidatesData(object):
                 'last_name': {True: uuid.uuid4().__str__()[0:8], False: None}.get(last_name, last_name),
                 # 'added_time': {True: datetime.datetime.now(), False: None}.get(added_time, added_time),
                 'emails': {True: cls.create_emails_list(), False: None}.get(emails_list, emails_list),
-                'addresses': cls.create_address_list() if address_list is True else address_list or None
+                'addresses': cls.create_address_list() if address_list is True else address_list
             }
             candidates.append(candidate)
         return {'candidates': candidates}

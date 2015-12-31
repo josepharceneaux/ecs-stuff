@@ -1412,9 +1412,11 @@ def _add_or_update_military_services(candidate_id, military_services, user_id, e
         # Convert ISO 8061 date object to datetime object
         from_date, to_date = military_service.get('from_date'), military_service.get('to_date')
         if from_date:
-            from_date = dateutil.parser.parse(from_date)
+            if isinstance(from_date, basestring):
+                from_date = dateutil.parser.parse(from_date)
         if to_date:
-            to_date = dateutil.parser.parse(to_date)
+            if isinstance(to_date, basestring):
+                to_date = dateutil.parser.parse(to_date)
 
         military_service_dict = dict(
             country_id=Country.country_id_from_name_or_code(military_service.get('country')),

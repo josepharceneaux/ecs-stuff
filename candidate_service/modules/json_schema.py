@@ -1,20 +1,8 @@
 """
-JSON Schemas for validating data sent to CandidatesResource/post()
+JSON Schemas for validating data sent to CandidatesResource
 """
-from candidate_service.common.error_handling import InvalidUsage
-
-
-def validate_candidate_properties(data):
-    candidate_fields = ['id', 'first_name', 'middle_name', 'last_name', 'full_name', 'addresses',
-                        'areas_of_interest', 'custom_fields', 'emails', 'educations', 'openweb_id',
-                        'military_services', 'phones', 'preferred_locations', 'status_id',
-                        'skills', 'social_networks', 'work_experiences', 'work_preference',
-                        'dice_profile_id', 'talent_pools_id']
-
-    for key in data['candidates'][0]:
-        if key not in candidate_fields:
-            raise InvalidUsage(error_message="Property not recognized: {}".format(key))
-
+from datetime import datetime
+CURRENT_YEAR = datetime.now().year
 
 candidates_resource_schema_post = {
     "$schema": "http://json-schema.org/draft-04/schema#",
@@ -29,6 +17,7 @@ candidates_resource_schema_post = {
                 # "id": "http://jsonschema.net/candidates/0",
                 "type": "object",
                 "required": ["emails"],
+                "additionalProperties": False,
                 "properties": {
                     "first_name": {
                         # "id": "http://jsonschema.net/first_name",
@@ -45,20 +34,53 @@ candidates_resource_schema_post = {
                         "type": ["string", "null"],
                         "maxLength": 35
                     },
+                    "full_name": {
+                        # "id": "http://jsonschema.net/full_name",
+                        "type": ["string", "null"],
+                        "maxLength": 150
+                    },
+                    "status_id": {
+                        # "id": "http://jsonschema.net/status_id",
+                        "type": ["integer", "null"]
+                    },
+                    "openweb_id": {
+                        # "id": "http://jsonschema.net/openweb_id",
+                        "type": ["integer", "null"]
+                    },
+                    "dice_profile_id": {
+                        # "id": "http://jsonschema.net/dice_profile_id",
+                        "type": ["integer", "null"]
+                    },
+                    "talent_pool_id": {
+                        # "id": "http://jsonschema.net/talent_pool_id",
+                        "type": ["integer", "null"]
+                    },
+                    "source_id": {
+                        # "id": "http://jsonschema.net/source_id",
+                        "type": ["integer", "null"]
+                    },
+                    "objective": {
+                        # "id": "http://jsonschema.net/objective",
+                        "type": ["string", "null"]
+                    },
+                    "summary": {
+                        # "id": "http://jsonschema.net/summary",
+                        "type": ["string", "null"]
+                    },
                     "emails": {
                         # "id": "http://jsonschema.net/emails",
                         "type": "array",
                         "minItems": 1,
-                        "maxItems": 5,
                         "items": {
                             # "id": "http://jsonschema.net/emails/0",
                             "type": "object",
-                            "required": ["label", "address", "is_default"],
+                            "required": ["address"],
+                            "additionalProperties": False,
                             "properties": {
                                 "label": {
                                     # "id": "http://jsonschema.net/emails/0/label",
                                     "type": ["string", "null"],
-                                    "maxLength": 7
+                                    "maxLength": 50
                                 },
                                 "address": {
                                     # "id": "http://jsonschema.net/emails/0/address",
@@ -78,12 +100,13 @@ candidates_resource_schema_post = {
                         "items": {
                             # "id": "http://jsonschema.net/phones/0",
                             "type": "object",
-                            "required": ["label", "value", "is_default"],
+                            "required": ["value"],
+                            "additionalProperties": False,
                             "properties": {
                                 "label": {
                                     # "id": "http://jsonschema.net/phones/0/label",
                                     "type": ["string", "null"],
-                                    "maxLength": 10
+                                    "maxLength": 50
                                 },
                                 "value": {
                                     # "id": "http://jsonschema.net/phones/0/value",
@@ -103,6 +126,8 @@ candidates_resource_schema_post = {
                         "items": {
                             # "id": "http://jsonschema.net/areas_of_interest/0",
                             "type": "object",
+                            "required": ["area_of_interest_id"],
+                            "additionalProperties": False,
                             "properties": {
                                 "area_of_interest_id": {
                                     # "id": "http://jsonschema.net/areas_of_interest/0/area_of_interest_id",
@@ -117,8 +142,12 @@ candidates_resource_schema_post = {
                         "items": {
                             # "id": "http://jsonschema.net/custom_fields/0",
                             "type": "object",
-                            "required": ["value"],
+                            "additionalProperties": False,
                             "properties": {
+                                "id": {
+                                    # "id": "http://jsonschema.net/custom_fields/0/id",
+                                    "type": ["integer", "null"]
+                                },
                                 "custom_field_id": {
                                     # "id": "http://jsonschema.net/custom_fields/0/custom_field_id",
                                     "type": ["integer", "null"]
@@ -134,12 +163,15 @@ candidates_resource_schema_post = {
                     "work_preference": {
                         # "id": "http://jsonschema.net/work_preference",
                         "type": ["object", "null"],
-                        "required": ["authorization", "employment_type", "relocate", "telecommute",
-                                     "travel_percentage", "security_clearance", "third_party", "hourly_rate",
-                                     "salary"],
+                        "additionalProperties": False,
                         "properties": {
                             "authorization": {
                                 # "id": "http://jsonschema.net/work_preference/authorization",
+                                "type": ["string", "null"],
+                                "maxLength": 50
+                            },
+                            "tax_terms": {
+                                # "id": "http://jsonschema.net/work_preference/tax_terms",
                                 "type": ["string", "null"],
                                 "maxLength": 50
                             },
@@ -159,7 +191,8 @@ candidates_resource_schema_post = {
                             "travel_percentage": {
                                 # "id": "http://jsonschema.net/work_preference/travel_percentage",
                                 "type": ["string", "integer", "null"],
-                                "maxLength": 3
+                                "maxLength": 3,
+                                "minimum": 0, "maximum": 100
                             },
                             "security_clearance": {
                                 # "id": "http://jsonschema.net/work_preference/security_clearance",
@@ -172,12 +205,14 @@ candidates_resource_schema_post = {
                             "hourly_rate": {
                                 # "id": "http://jsonschema.net/work_preference/hourly_rate",
                                 "type": ["string", "number", "null"],
-                                "maxLength": 6
+                                "maxLength": 6,
+                                "minimum": 0  # Negative values are not allowed
                             },
                             "salary": {
                                 # "id": "http://jsonschema.net/work_preference/salary",
                                 "type": ["string", "number", "integer", "null"],
-                                "maxLength": 10
+                                "maxLength": 10,
+                                "minimum": 0  # Negative values are not allowed
                             }
                         }
                     },
@@ -187,8 +222,7 @@ candidates_resource_schema_post = {
                         "items": {
                             # "id": "http://jsonschema.net/addresses/0",
                             "type": "object",
-                            "required": ["address_line_1", "city", "state", "country",
-                                         "po_box", "zip_code", "is_default"],
+                            "additionalProperties": False,
                             "properties": {
                                 "address_line_1": {
                                     # "id": "http://jsonschema.net/addresses/0/address_line_1",
@@ -229,7 +263,7 @@ candidates_resource_schema_post = {
                                     # "id": "http://jsonschema.net/addresses/0/is_default",
                                     "type": ["boolean", "null"]
                                 }
-                            },
+                            }
                         }
                     },
                     "social_networks": {
@@ -239,6 +273,7 @@ candidates_resource_schema_post = {
                             # "id": "http://jsonschema.net/social_networks/0",
                             "type": "object",
                             "required": ["name", "profile_url"],
+                            "additionalProperties": False,
                             "properties": {
                                 "name": {
                                     # "id": "http://jsonschema.net/social_networks/0/name",
@@ -259,8 +294,7 @@ candidates_resource_schema_post = {
                         "items": {
                             # "id": "http://jsonschema.net/educations/0",
                             "type": "object",
-                            "required": ["school_name", "school_type", "city", "state", "country",
-                                         "is_current", "degrees"],
+                            "additionalProperties": False,
                             "properties": {
                                 "school_name": {
                                     # "id": "http://jsonschema.net/educations/0/school_name",
@@ -297,8 +331,7 @@ candidates_resource_schema_post = {
                                     "items": {
                                         # "id": "http://jsonschema.net/educations/0/degrees/0",
                                         "type": "object",
-                                        "required": ["title", "type", "start_year", "end_year", "start_month",
-                                                     "end_month", "gpa", "bullets"],
+                                        "additionalProperties": False,
                                         "properties": {
                                             "type": {
                                                 # "id": "http://jsonschema.net/educations/0/degrees/0/type",
@@ -313,27 +346,30 @@ candidates_resource_schema_post = {
                                             "start_year": {
                                                 # "id": "http://jsonschema.net/educations/0/degrees/0/start_year",
                                                 "type": ["string", "integer", "null"],
-                                                "maxLength": 4
+                                                "maxLength": 4,
+                                                "minimum": 1900, "maximum": CURRENT_YEAR,
                                             },
                                             "start_month": {
                                                 # "id": "http://jsonschema.net/educations/0/degrees/0/start_month",
                                                 "type": ["string", "integer", "null"],
-                                                "maxLength": 2
+                                                "maxLength": 2,
+                                                "minimum": 1, "maximum": 12,
                                             },
                                             "end_year": {
                                                 # "id": "http://jsonschema.net/educations/0/degrees/0/end_year",
                                                 "type": ["string", "integer", "null"],
-                                                "maxLength": 4
+                                                "maxLength": 4,
+                                                "minimum": 1900, "maximum": CURRENT_YEAR,
                                             },
                                             "end_month": {
                                                 # "id": "http://jsonschema.net/educations/0/degrees/0/end_month",
                                                 "type": ["string", "integer", "null"],
-                                                "maxLength": 2
+                                                "maxLength": 2,
+                                                "minimum": 1, "maximum": 12,
                                             },
                                             "gpa": {
                                                 # "id": "http://jsonschema.net/educations/0/degrees/0/gpa_num",
-                                                "type": ["number", "null"],
-                                                "maxLength": 4
+                                                "type": ["number", "null"]
                                             },
                                             "bullets": {
                                                 # "id": "http://jsonschema.net/educations/0/degrees/0/bullets",
@@ -341,7 +377,7 @@ candidates_resource_schema_post = {
                                                 "items": {
                                                     # "id": "http://jsonschema.net/educations/0/degrees/0/bullets/0",
                                                     "type": "object",
-                                                    "required": ["major", "comments"],
+                                                    "additionalProperties": False,
                                                     "properties": {
                                                         "major": {
                                                             # "id": "http://jsonschema.net/educations/0/degrees/0/bullets/0/major",
@@ -368,7 +404,7 @@ candidates_resource_schema_post = {
                         "items": {
                             # "id": "http://jsonschema.net/preferred_locations/0",
                             "type": "object",
-                            "required": ["city", "state", "country"],
+                            "additionalProperties": False,
                             "properties": {
                                 "address": {
                                     # "id": "http://jsonschema.net/preferred_locations/0/address",
@@ -382,6 +418,11 @@ candidates_resource_schema_post = {
                                 },
                                 "state": {
                                     # "id": "http://jsonschema.net/preferred_locations/0/state",
+                                    "type": ["string", "null"],
+                                    "maxLength": 100
+                                },
+                                "region": {
+                                    # "id": "http://jsonschema.net/preferred_locations/0/region",
                                     "type": ["string", "null"],
                                     "maxLength": 100
                                 },
@@ -404,8 +445,7 @@ candidates_resource_schema_post = {
                         "items": {
                             # "id": "http://jsonschema.net/work_experiences/0",
                             "type": "object",
-                            "required": ["position", "organization", "city", "state", "country", "is_current",
-                                         "bullets", "start_year", "end_year", "start_month", "end_month"],
+                            "additionalProperties": False,
                             "properties": {
                                 "position": {
                                     # "id": "http://jsonschema.net/work_experiences/0/position",
@@ -435,22 +475,26 @@ candidates_resource_schema_post = {
                                 "start_year": {
                                     # "id": "http://jsonschema.net/work_experiences/0/start_date",
                                     "type": ["integer", "null"],
-                                    "maxLength": 4
+                                    "maxLength": 4,
+                                    "minimum": 1900, "maximum": CURRENT_YEAR
                                 },
                                 "end_year": {
                                     # "id": "http://jsonschema.net/work_experiences/0/end_date",
                                     "type": ["integer", "null"],
-                                    "maxLength": 4
+                                    "maxLength": 4,
+                                    "minimum": 1900, "maximum": CURRENT_YEAR
                                 },
                                 "start_month": {
                                     # "id": "http://jsonschema.net/work_experiences/0/start_date",
                                     "type": ["integer", "null"],
-                                    "maxLength": 2
+                                    "maxLength": 2,
+                                    "minimum": 1, "maximum": 12
                                 },
                                 "end_month": {
                                     # "id": "http://jsonschema.net/work_experiences/0/end_date",
                                     "type": ["integer", "null"],
-                                    "maxLength": 2
+                                    "maxLength": 2,
+                                    "minimum": 1, "maximum": 12
                                 },
                                 "is_current": {
                                     # "id": "http://jsonschema.net/work_experiences/0/is_current",
@@ -462,7 +506,7 @@ candidates_resource_schema_post = {
                                     "items": {
                                         # "id": "http://jsonschema.net/work_experiences/0/bullets/0",
                                         "type": "object",
-                                        "required": ["description"],
+                                        "additionalProperties": False,
                                         "properties": {
                                             "description": {
                                                 # "id": "http://jsonschema.net/work_experiences/0/bullets/0/description",
@@ -481,8 +525,7 @@ candidates_resource_schema_post = {
                         "items": {
                             # "id": "http://jsonschema.net/military_services/0",
                             "type": "object",
-                            "required": ["country", "highest_rank", "branch", "status",
-                                         "highest_grade", "from_date", "to_date", "comments"],
+                            "additionalProperties": False,
                             "properties": {
                                 "country": {
                                     # "id": "http://jsonschema.net/military_services/0/country",
@@ -515,7 +558,8 @@ candidates_resource_schema_post = {
                                 },
                                 "to_date": {
                                     # "id": "http://jsonschema.net/military_services/0/to_date",
-                                    "type": ["string", "null"]
+                                    "type": ["string", "null"],
+                                    # "format": "date-time"
                                 },
                                 "comments": {
                                     # "id": "http://jsonschema.net/military_services/0/comments",
@@ -531,7 +575,7 @@ candidates_resource_schema_post = {
                         "items": {
                             # "id": "http://jsonschema.net/skills/0",
                             "type": "object",
-                            "required": ["name", "months_used", "last_used_date"],
+                            "additionalProperties": False,
                             "properties": {
                                 "name": {
                                     # "id": "http://jsonschema.net/skills/0/name",
@@ -541,11 +585,12 @@ candidates_resource_schema_post = {
                                 "months_used": {
                                     # "id": "http://jsonschema.net/skills/0/months_used",
                                     "type": ["integer", "null"],
-                                    "maxLength": 3  # TODO: custom validation for setting maxLength of a number/integer
+                                    "minimum": 1, "maximum": 720
                                 },
                                 "last_used_date": {
                                     # "id": "http://jsonschema.net/skills/0/last_used_date",
-                                    "type": ["string", "null"]
+                                    "type": ["string", "null"],
+                                    # "format": "date-time"
                                 }
                             }
                         }
@@ -569,6 +614,7 @@ candidates_resource_schema_patch = {
                 # "id": "http://jsonschema.net/candidates/0",
                 "type": "object",
                 "required": ["id"],
+                "additionalProperties": False,
                 "properties": {
                     "id": {
                         # "id": "http://jsonschema.net/candidates/0/id",
@@ -589,14 +635,47 @@ candidates_resource_schema_patch = {
                         "type": ["string", "null"],
                         "maxLength": 35
                     },
+                    "full_name": {
+                        # "id": "http://jsonschema.net/full_name",
+                        "type": ["string", "null"],
+                        "maxLength": 150
+                    },
+                    "status_id": {
+                        # "id": "http://jsonschema.net/status_id",
+                        "type": ["integer", "null"]
+                    },
+                    "openweb_id": {
+                        # "id": "http://jsonschema.net/openweb_id",
+                        "type": ["integer", "null"]
+                    },
+                    "dice_profile_id": {
+                        # "id": "http://jsonschema.net/dice_profile_id",
+                        "type": ["integer", "null"]
+                    },
+                    "talent_pool_id": {
+                        # "id": "http://jsonschema.net/talent_pool_id",
+                        "type": ["integer", "null"]
+                    },
+                    "source_id": {
+                        # "id": "http://jsonschema.net/source_id",
+                        "type": ["integer", "null"]
+                    },
+                    "objective": {
+                        # "id": "http://jsonschema.net/objective",
+                        "type": ["string", "null"]
+                    },
+                    "summary": {
+                        # "id": "http://jsonschema.net/summary",
+                        "type": ["string", "null"]
+                    },
                     "emails": {
                         # "id": "http://jsonschema.net/candidates/0/emails",
                         "type": "array",
                         "minItems": 1,
-                        "maxItems": 5,
                         "items": {
                             # "id": "http://jsonschema.net/candidates/0/emails/0",
                             "type": "object",
+                            "additionalProperties": False,
                             "properties": {
                                 "id": {
                                     # "id": "http://jsonschema.net/candidates/0/emails/0/id",
@@ -605,7 +684,7 @@ candidates_resource_schema_patch = {
                                 "label": {
                                     # "id": "http://jsonschema.net/candidates/0/emails/0/label",
                                     "type": ["string", "null"],
-                                    "maxLength": 7
+                                    "maxLength": 50
                                 },
                                 "address": {
                                     # "id": "http://jsonschema.net/candidates/0/emails/0/address",
@@ -626,6 +705,7 @@ candidates_resource_schema_patch = {
                             # "id": "http://jsonschema.net/candidates/0/phones/0",
                             "type": "object",
                             "required": ["value"],
+                            "additionalProperties": False,
                             "properties": {
                                 "id": {
                                     # "id": "http://jsonschema.net/candidates/0/phones/0/id",
@@ -634,7 +714,7 @@ candidates_resource_schema_patch = {
                                 "label": {
                                     # "id": "http://jsonschema.net/candidates/0/phones/0/label",
                                     "type": ["string", "null"],
-                                    "maxLength": 10
+                                    "maxLength": 50
                                 },
                                 "value": {
                                     # "id": "http://jsonschema.net/candidates/0/phones/0/value",
@@ -643,7 +723,7 @@ candidates_resource_schema_patch = {
                                 },
                                 "is_default": {
                                     # "id": "http://jsonschema.net/candidates/0/phones/0/is_default",
-                                    "type": "boolean"
+                                    "type": ["boolean", "null"]
                                 }
                             }
                         }
@@ -654,6 +734,7 @@ candidates_resource_schema_patch = {
                         "items": {
                             # "id": "http://jsonschema.net/candidates/0/areas_of_interest/0",
                             "type": "object",
+                            "additionalProperties": False,
                             "properties": {
                                 "area_of_interest_id": {
                                     # "id": "http://jsonschema.net/candidates/0/areas_of_interest/0/area_of_interest_id",
@@ -668,8 +749,12 @@ candidates_resource_schema_patch = {
                         "items": {
                             # "id": "http://jsonschema.net/candidates/0/custom_fields/0",
                             "type": "object",
-                            "required": ["value"],
+                            "additionalProperties": False,
                             "properties": {
+                                "id": {
+                                    # "id": "http://jsonschema.net/candidates/0/custom_fields/0/id",
+                                    "type": ["integer", "null"]
+                                },
                                 "custom_field_id": {
                                     # "id": "http://jsonschema.net/candidates/0/custom_fields/0/custom_field_id",
                                     "type": ["integer", "null"]
@@ -685,6 +770,7 @@ candidates_resource_schema_patch = {
                     "work_preference": {
                         # "id": "http://jsonschema.net/candidates/0/work_preference",
                         "type": ["object", "null"],
+                        "additionalProperties": False,
                         "properties": {
                             "id": {
                                 # "id": "http://jsonschema.net/candidates/0/work_preference/id",
@@ -692,6 +778,11 @@ candidates_resource_schema_patch = {
                             },
                             "authorization": {
                                 # "id": "http://jsonschema.net/candidates/0/work_preference/authorization",
+                                "type": ["string", "null"],
+                                "maxLength": 50
+                            },
+                            "tax_terms": {
+                                # "id": "http://jsonschema.net/work_preference/tax_terms",
                                 "type": ["string", "null"],
                                 "maxLength": 50
                             },
@@ -711,7 +802,8 @@ candidates_resource_schema_patch = {
                             "travel_percentage": {
                                 # "id": "http://jsonschema.net/candidates/0/work_preference/travel_percentage",
                                 "type": ["string", "integer", "null"],
-                                "maxLength": 3
+                                "maxLength": 3,
+                                "minimum": 0, "maximum": 100
                             },
                             "security_clearance": {
                                 # "id": "http://jsonschema.net/candidates/0/work_preference/security_clearance",
@@ -724,12 +816,14 @@ candidates_resource_schema_patch = {
                             "hourly_rate": {
                                 # "id": "http://jsonschema.net/candidates/0/work_preference/hourly_rate",
                                 "type": ["string", "number", "null"],
-                                "maxLength": 6
+                                "maxLength": 6,
+                                "minimum": 0  # Negative values are not permitted
                             },
                             "salary": {
                                 # "id": "http://jsonschema.net/candidates/0/work_preference/salary",
-                                "type": ["string", "number", "integer", "null"],
-                                "maxLength": 10
+                                "type": ["string", "number", "null"],
+                                "maxLength": 10,
+                                "minimum": 0  # Negative values are not permitted
                             }
                         }
                     },
@@ -739,6 +833,7 @@ candidates_resource_schema_patch = {
                         "items": {
                             # "id": "http://jsonschema.net/candidates/0/addresses/0",
                             "type": "object",
+                            "additionalProperties": False,
                             "properties": {
                                 "id": {
                                     # "id": "http://jsonschema.net/candidates/0/addresses/0/id",
@@ -783,7 +878,7 @@ candidates_resource_schema_patch = {
                                     # "id": "http://jsonschema.net/candidates/0/addresses/0/is_default",
                                     "type": ["boolean", "null"]
                                 }
-                            },
+                            }
                         }
                     },
                     "social_networks": {
@@ -792,6 +887,7 @@ candidates_resource_schema_patch = {
                         "items": {
                             # "id": "http://jsonschema.net/candidates/0/social_networks/0",
                             "type": "object",
+                            "additionalProperties": False,
                             "properties": {
                                 "id": {
                                     # "id": "http://jsonschema.net/candidates/0/social_networks/0/id",
@@ -816,6 +912,7 @@ candidates_resource_schema_patch = {
                         "items": {
                             # "id": "http://jsonschema.net/candidates/0/educations/0",
                             "type": "object",
+                            "additionalProperties": False,
                             "properties": {
                                 "id": {
                                     # "id": "http://jsonschema.net/candidates/0/educations/0/id",
@@ -856,6 +953,7 @@ candidates_resource_schema_patch = {
                                     "items": {
                                         # "id": "http://jsonschema.net/candidates/0/educations/0/degrees/0",
                                         "type": "object",
+                                        "additionalProperties": False,
                                         "properties": {
                                             "id": {
                                                 # "id": "http://jsonschema.net/candidates/0/educations/0/degrees/0/id",
@@ -874,27 +972,30 @@ candidates_resource_schema_patch = {
                                             "start_year": {
                                                 # "id": "http://jsonschema.net/candidates/0/educations/0/degrees/0/start_year",
                                                 "type": ["string", "integer", "null"],
-                                                "maxLength": 4
+                                                "maxLength": 4,
+                                                "minimum": 1900, "maximum": CURRENT_YEAR
                                             },
                                             "start_month": {
                                                 # "id": "http://jsonschema.net/candidates/0/educations/0/degrees/0/start_month",
                                                 "type": ["string", "integer", "null"],
-                                                "maxLength": 2
+                                                "maxLength": 2,
+                                                "minimum": 1, "maximum": 12
                                             },
                                             "end_year": {
                                                 # "id": "http://jsonschema.net/candidates/0/educations/0/degrees/0/end_year",
                                                 "type": ["string", "integer", "null"],
-                                                "maxLength": 4
+                                                "maxLength": 4,
+                                                "minimum": 1900, "maximum": CURRENT_YEAR
                                             },
                                             "end_month": {
                                                 # "id": "http://jsonschema.net/candidates/0/educations/0/degrees/0/end_month",
                                                 "type": ["string", "integer", "null"],
-                                                "maxLength": 2
+                                                "maxLength": 2,
+                                                "minimum": 1, "maximum": 12
                                             },
                                             "gpa": {
                                                 # "id": "http://jsonschema.net/candidates/0/educations/0/degrees/0/gpa_num",
-                                                "type": ["number", "null"],
-                                                "maxLength": 4
+                                                "type": ["number", "null"]
                                             },
                                             "bullets": {
                                                 # "id": "http://jsonschema.net/candidates/0/educations/0/degrees/0/bullets",
@@ -902,6 +1003,7 @@ candidates_resource_schema_patch = {
                                                 "items": {
                                                     # "id": "http://jsonschema.net/candidates/0/educations/0/degrees/0/bullets/0",
                                                     "type": "object",
+                                                    "additionalProperties": False,
                                                     "properties": {
                                                         "id": {
                                                             # "id": "http://jsonschema.net/candidates/0/educations/0/degrees/0/bullets/0/id",
@@ -932,6 +1034,7 @@ candidates_resource_schema_patch = {
                         "items": {
                             # "id": "http://jsonschema.net/candidates/0/preferred_locations/0",
                             "type": "object",
+                            "additionalProperties": False,
                             "properties": {
                                 "id": {
                                     # "id": "http://jsonschema.net/candidates/0/preferred_locations/0/id",
@@ -949,6 +1052,11 @@ candidates_resource_schema_patch = {
                                 },
                                 "state": {
                                     # "id": "http://jsonschema.net/candidates/0/preferred_locations/0/state",
+                                    "type": ["string", "null"],
+                                    "maxLength": 100
+                                },
+                                "region": {
+                                    # "id": "http://jsonschema.net/candidates/0/preferred_locations/0/region",
                                     "type": ["string", "null"],
                                     "maxLength": 100
                                 },
@@ -1004,22 +1112,26 @@ candidates_resource_schema_patch = {
                                 "start_year": {
                                     # "id": "http://jsonschema.net/candidates/0/work_experiences/0/start_date",
                                     "type": ["integer", "string", "null"],
-                                    "maxLength": 4
+                                    "maxLength": 4,
+                                    "minimum": 1900, "maximum": CURRENT_YEAR
                                 },
                                 "end_year": {
                                     # "id": "http://jsonschema.net/candidates/0/work_experiences/0/end_date",
                                     "type": ["integer", "string", "null"],
-                                    "maxLength": 4
+                                    "maxLength": 4,
+                                    "minimum": 1900, "maximum": CURRENT_YEAR
                                 },
                                 "start_month": {
                                     # "id": "http://jsonschema.net/candidates/0/work_experiences/0/start_date",
                                     "type": ["integer", "string", "null"],
-                                    "maxLength": 2
+                                    "maxLength": 2,
+                                    "minimum": 1, "maximum": 12
                                 },
                                 "end_month": {
                                     # "id": "http://jsonschema.net/candidates/0/work_experiences/0/end_date",
                                     "type": ["integer", "string", "null"],
-                                    "maxLength": 2
+                                    "maxLength": 2,
+                                    "minimum": 1, "maximum": 12
                                 },
                                 "is_current": {
                                     # "id": "http://jsonschema.net/candidates/0/work_experiences/0/is_current",
@@ -1031,6 +1143,7 @@ candidates_resource_schema_patch = {
                                     "items": {
                                         # "id": "http://jsonschema.net/candidates/0/work_experiences/0/bullets/0",
                                         "type": "object",
+                                        "additionalProperties": False,
                                         "properties": {
                                             "id": {
                                                 # "id": "http://jsonschema.net/candidates/0/work_experiences/0/bullets/0/id",
@@ -1053,6 +1166,7 @@ candidates_resource_schema_patch = {
                         "items": {
                             # "id": "http://jsonschema.net/candidates/0/military_services/0",
                             "type": "object",
+                            "additionalProperties": False,
                             "properties": {
                                 "id": {
                                     # "id": "http://jsonschema.net/candidates/0/military_services/0/id",
@@ -1105,6 +1219,7 @@ candidates_resource_schema_patch = {
                         "items": {
                             # "id": "http://jsonschema.net/candidates/0/skills/0",
                             "type": "object",
+                            "additionalProperties": False,
                             "properties": {
                                 "id": {
                                     # "id": "http://jsonschema.net/candidates/0/skills/0/id",
@@ -1118,7 +1233,7 @@ candidates_resource_schema_patch = {
                                 "months_used": {
                                     # "id": "http://jsonschema.net/candidates/0/skills/0/months_used",
                                     "type": ["integer", "null"],
-                                    "maxLength": 3  # TODO: custom validation for setting maxLength of a number/integer
+                                    "minimum": 1, "maximum": 720
                                 },
                                 "last_used_date": {
                                     # "id": "http://jsonschema.net/candidates/0/skills/0/last_used_date",

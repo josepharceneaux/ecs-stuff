@@ -74,3 +74,4 @@ flaskhmac==1.2.1
 
 jsonschema==2.5.1
 functools32
+strict-rfc3339==0.6

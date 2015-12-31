@@ -152,7 +152,8 @@ def test_update_candidate_names(sample_user, user_auth):
 
     # Assert on updated field
     f_name, l_name = data['candidates'][0]['first_name'], data['candidates'][0]['last_name']
-    full_name_from_data = str(f_name) + ' ' + str(l_name)
+    m_name = data['candidates'][0]['middle_name']
+    full_name_from_data = str(f_name) + ' ' + str(m_name) + ' ' + str(l_name)
     assert candidate_dict['candidate']['full_name'] == full_name_from_data
 
 

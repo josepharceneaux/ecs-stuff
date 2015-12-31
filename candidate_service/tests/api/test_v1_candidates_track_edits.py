@@ -109,7 +109,8 @@ def test_edit_candidate_custom_field(sample_user, user_auth):
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    old_custom_field_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['custom_fields'][0]
+    old_custom_field_dict = get_from_candidate_resource(token, candidate_id)\
+        .json()['candidate']['custom_fields'][0]
     db.session.commit()
 
     # Update Candidate's custom field
