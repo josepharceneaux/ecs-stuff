@@ -356,6 +356,7 @@ class SmsCampaignBase(CampaignBase):
             logger.error('save: No data received from UI. (User(id:%s))' % self.user_id)
         else:
             # Save Campaign in database table "sms_campaign"
+            form_data['user_phone_id'] = self.user_phone.id
             sms_campaign = self.create_or_update_sms_campaign(form_data)
             # Create record in database table "sms_campaign_smartlist"
             self.create_or_update_sms_campaign_smartlist(sms_campaign,
@@ -364,33 +365,37 @@ class SmsCampaignBase(CampaignBase):
             self.campaign_create_activity(sms_campaign)
             return sms_campaign.id
 
-    def create_or_update_sms_campaign(self, form_data, campaign_id=None):
+    @staticmethod
+    def create_or_update_sms_campaign(form_data, campaign_id=None, remove_task_id=False):
         """
         - Here we save/update sms_campaign in database table "sms_campaign".
-
-        - This method is called from save() method of class
-            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
-
+        - This method is called from
+            1) save()
+            2) schedule()
+            3) unschedule methods of class SmsCampaignBase inside
+            sms_campaign_service/sms_campaign_base.py.
         :param form_data: data of SMS campaign from UI to save
         :param campaign_id: id of "sms_campaign" obj, default None
+        :param remove_task_id: indicator if to remove scheduler_task_id from database
         :type form_data: dict
         :type campaign_id: int
+        :type remove_task_id: bool
         :exception: ResourceNotFound
         :exception: ErrorSavingSMSCampaign
         :return: "sms_campaign" obj
         :rtype: SmsCampaign
 
         **See Also**
-        .. see also:: save() method in SmsCampaignBase class.
+        .. see also:: save(), schedule(), unschedule() methods in SmsCampaignBase class.
         """
         sms_campaign_data = dict(name=form_data.get('name'),
-                                 user_phone_id=self.user_phone.id,
+                                 user_phone_id=form_data.get('user_phone_id'),
                                  body_text=form_data.get('body_text'),
-                                 frequency_id=form_data.get('frequency_id'),
+                                 frequency_id=form_data.get('frequency_id') or 1,
                                  added_datetime=datetime.now(),
                                  start_datetime=form_data.get('start_datetime'),
                                  end_datetime=form_data.get('end_datetime'),
-                                 scheduler_task_id=form_data.get('task_id'))
+                                 scheduler_task_id=form_data.get('scheduler_task_id'))
         if campaign_id:
             sms_campaign_obj = SmsCampaign.get_by_id(campaign_id)
             if not sms_campaign_obj:
@@ -398,6 +403,8 @@ class SmsCampaignBase(CampaignBase):
             for key, value in sms_campaign_data.iteritems():
                 # update old values with new ones if provided, else preserve old ones.
                 sms_campaign_data[key] = value if value else getattr(sms_campaign_obj, key)
+            if remove_task_id:
+                sms_campaign_data['scheduler_task_id'] = None
             sms_campaign_obj.update(**sms_campaign_data)
         else:
             try:
@@ -426,9 +433,8 @@ class SmsCampaignBase(CampaignBase):
         .. see also:: save() method in SmsCampaignBase class.
         """
         if not isinstance(campaign, SmsCampaign):
-            raise InvalidUsage('create_or_update_sms_campaign_smartlist: '
-                               'Given campaign is not instance '
-                               'of model sms_campaign.')
+            raise InvalidUsage('create_or_update_sms_campaign_smartlist: Given campaign '
+                               'is not instance of model sms_campaign.')
         for smartlist_id in smartlist_ids:
             data = {'smartlist_id': smartlist_id,
                     'sms_campaign_id': campaign.id}
@@ -488,6 +494,7 @@ class SmsCampaignBase(CampaignBase):
         :return: task_id (Task created on APScheduler), and status of task(already scheduled
                             or new scheduled)
         :rtype: tuple
+
         **See Also**
         .. see also:: ScheduleSmsCampaign() method in v1_sms_campaign_api.py.
         """
@@ -496,10 +503,28 @@ class SmsCampaignBase(CampaignBase):
         )
         # get scheduler task_id created on scheduler_service
         task_id = super(SmsCampaignBase, self).schedule(data_to_schedule)
-        data_to_schedule.update({'task_id': task_id})
+        data_to_schedule.update({'scheduler_task_id': task_id})
         # update sms_campaign record with task_id
         self.create_or_update_sms_campaign(data_to_schedule, campaign_id=self.campaign.id)
         return task_id
+
+    @classmethod
+    def unschedule(cls, campaign_id, request):
+        """
+        This function calls CampaignBase class method to unschedule the campaign from
+        scheduler_service. On success we delete scheduler_task_id from campaign object in database.
+        If above action is successful, we return True otherwise we return False.
+        :return: True or False
+        :rtype: bool
+
+        **See Also**
+        .. see also:: unschedule() method in CampaignBase class.
+        """
+        campaign_obj = super(SmsCampaignBase, cls).unschedule(campaign_id, request)
+        if not campaign_obj:
+            return False
+        cls.create_or_update_sms_campaign({}, campaign_id=campaign_id, remove_task_id=True)
+        return True
 
     @staticmethod
     def validate_ownership_of_campaign(campaign_id, current_user_id):
@@ -591,7 +616,7 @@ class SmsCampaignBase(CampaignBase):
                 'smartlist ids are %s' % (campaign.id, smartlists))
         # create SMS campaign blast
         self.sms_campaign_blast_id = self.create_or_update_sms_campaign_blast(self.campaign.id)
-        self.send_campaign_to_candidates(candidates, logger)
+        self.send_campaign_to_candidates(candidates)
 
     def is_candidate_have_unique_mobile_phone(self, candidate):
         """
@@ -958,7 +983,7 @@ class SmsCampaignBase(CampaignBase):
             # send SMS using Twilio Test Credentials
             sender_phone = TWILIO_TEST_NUMBER
         else:
-            sender_phone = self.user_phone.value
+            sender_phone = format_phone_number(self.user_phone.value)
         twilio_obj = TwilioSMS()
         message_response = twilio_obj.send_sms(body_text=message_body,
                                                sender_phone=sender_phone,

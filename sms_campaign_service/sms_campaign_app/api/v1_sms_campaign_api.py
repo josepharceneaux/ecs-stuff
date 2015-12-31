@@ -14,6 +14,7 @@ This file contains API endpoints related to sms_campaign_service.
 
             POST    : Schedules the campaign from given campaign_id and data provided
             PUT     : Re-schedules the campaign from given campaign_id and data provided
+            DELETE  : Un-schedules the campaign from given campaign_id
 
         - SendSmsCampaign: /v1/campaigns/:id/schedule
 
@@ -48,9 +49,9 @@ from flask.ext.restful import Resource
 
 # Service Specific
 from sms_campaign_service.sms_campaign_app import logger
+from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.validators import validate_form_data
 from sms_campaign_service.modules.custom_exceptions import ErrorDeletingSMSCampaign
-from sms_campaign_service.sms_campaign_base import (SmsCampaignBase)
 
 # Common Utils
 from sms_campaign_service.common.error_handling import *
@@ -64,7 +65,6 @@ from sms_campaign_service.common.campaign_services.validators import validate_he
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaignBlast, SmsCampaignSend)
 
 # creating blueprint
-
 sms_campaign_blueprint = Blueprint('sms_campaign_api', __name__)
 api = TalentApi()
 api.init_app(sms_campaign_blueprint)
@@ -341,13 +341,15 @@ class ScheduleSmsCampaign(Resource):
 
     def put(self, campaign_id):
         """
-        This endpoint is to re-schedule a campaign. It first deletes the old schedule of
-        campaign from scheduler_service and then creates new schedule.
+        This endpoint is to re-schedule a campaign. We Check if given campaign has task_id and
+        task is scheduled on scheduler_service, If task is not scheduled, return 200 with message
+        that task has stopped already
+        Otherwise, remove the task from scheduler_service and remove task_id from  database table
+        'sms_campaign' as well.
 
         :Example:
 
-            headers = {'Authorization': 'Bearer <access_token>',
-                       'Content-type': 'application/json'}
+            headers = {'Authorization': 'Bearer <access_token>'}
 
             schedule_data =
                         {
@@ -400,6 +402,40 @@ class ScheduleSmsCampaign(Resource):
             message = 'Campaign(id:%s) is already scheduled with given data.' % campaign_id
             task_id = scheduled_task_id
         return dict(message=message, task_id=task_id), 200
+
+    def delete(self, campaign_id):
+        """
+        Unschedule a single campaign from scheduler_service and removes the scheduler_task_id
+        from getTalent's database.
+
+        :param campaign_id: (Integer) unique id in sms_campaign table on GT database.
+
+        :Example:
+            headers = {
+                        'Authorization': 'Bearer <access_token>',
+                       }
+
+            campaign_id = 1
+            response = requests.delete(API_URL + '/campaigns/' + str(campaign_id) + '/schedule',
+                                        headers=headers,
+                                    )
+
+        .. Response::
+
+            {
+                'message': 'Campaign(id:125) has been unscheduled.'
+            }
+
+        .. Status:: 200 (Resource Deleted)
+                    403 (Forbidden: Current user cannot delete SMS campaign)
+                    404 (Campaign not found)
+                    500 (Internal Server Error)
+        """
+        task_unscheduled = SmsCampaignBase.unschedule(campaign_id, request)
+        if task_unscheduled:
+            return dict(message='Campaign(id:%s) has been unschedule.' % campaign_id), 200
+        else:
+            return dict(message='Campaign(id:%s) is already unscheduled.' % campaign_id), 200
 
 
 @api.route(SmsCampaignApi.CAMPAIGN)
@@ -541,10 +577,10 @@ class CampaignById(Resource):
         ..Error codes::
                     5010 (ErrorDeletingSMSCampaign)
         """
-        deleted = SmsCampaignBase.process_delete_campaign(campaign_id=campaign_id,
-                                                current_user_id=request.user.id,
-                                                bearer_access_token=request.oauth_token)
-        if deleted:
+        campaign_deleted = SmsCampaignBase.process_delete_campaign(campaign_id=campaign_id,
+                                                          current_user_id=request.user.id,
+                                                          bearer_access_token=request.oauth_token)
+        if campaign_deleted:
             return dict(message='Campaign(id:%s) has been deleted successfully' % campaign_id), 200
         else:
             raise ErrorDeletingSMSCampaign('Campaign(id:%s) was not deleted.' % campaign_id)

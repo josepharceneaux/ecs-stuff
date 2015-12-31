@@ -6,7 +6,8 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com
 
 # Standard Imports
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
+from werkzeug.exceptions import BadRequest
 
 # Third Party
 from pytz import timezone
@@ -14,6 +15,7 @@ from dateutil.parser import parse
 
 # Common utils
 from ..error_handling import InvalidUsage
+from campaign_utils import frequency_id_to_seconds
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 
 
@@ -64,16 +66,16 @@ def is_datetime_in_future(dt):
     return dt > datetime.utcnow().replace(tzinfo=timezone('UTC'))
 
 
-def validate_format_and_future_datetime(datetime_str):
+def is_datetime_in_valid_format_and_in_future(datetime_str):
     """
     Here we check given string datetime is in valid format, then we convert it into datetime obj.
     Finally we check if it is in future.
-    This uses is_datetime_in_valid_format_and_in_future() and is_datetime_in_future() functions.
+    This uses if_str_datetime_in_valid_format_get_datetime_obj() and is_datetime_in_future() functions.
     :param datetime_str:
     :type datetime_str: str
     :return:
     """
-    if not is_datetime_in_future(is_datetime_in_valid_format_and_in_future(datetime_str)):
+    if not is_datetime_in_future(if_str_datetime_in_valid_format_get_datetime_obj(datetime_str)):
         raise InvalidUsage("Given datetime(%s) should be in future" % datetime_str)
 
 
@@ -91,7 +93,7 @@ def is_valid_url_format(url):
     return url is not None and regex.search(url)
 
 
-def is_datetime_in_valid_format_and_in_future(str_datetime):
+def if_str_datetime_in_valid_format_get_datetime_obj(str_datetime):
     """
     This converts given string datetime into UTC datetime obj.
     This uses validate_datetime_format() to validate the format of given str.
@@ -104,3 +106,53 @@ def is_datetime_in_valid_format_and_in_future(str_datetime):
         raise InvalidUsage('param should be a string of datetime')
     validate_datetime_format(str_datetime)
     return parse(str_datetime).replace(tzinfo=timezone('UTC'))
+
+
+def validation_of_data_to_schedule_campaign(campaign_obj, request):
+    """
+    This validates the data provided to schedule a campaign.
+    1- Get JSON data from request and raise Invalid Usage exception if no data is found or
+            data is not JSON serializable.
+    2- If start datetime is not provide/given in invalid format/is in past, we raise Invalid usage
+        error as start_datetime is required field for both 'periodic' and 'one_time' schedule.
+    3- Get number of seconds by validating given frequency_id
+    4- If end_datetime and frequency, both are provided then we validate same checks for
+        end_datetime as we did in step 2 for start_datetime.
+    5- Removes the frequency_id from given dict of data and put frequency (number of seconds) in it.
+    6- Returns data_to_schedule
+
+    This function is used in pre_process_schedule() of CampaignBase class.
+
+    :param campaign_obj: campaign obj
+    :param request: request received on API
+    :return: data_to_schedule
+    :rtype: dict
+    """
+    try:
+        data_to_schedule_campaign = request.get_json()
+    except BadRequest:
+        raise InvalidUsage('Given data is not JSON serializable.')
+    if not data_to_schedule_campaign:
+        raise InvalidUsage('No data provided to schedule %s (id:%s)'
+                           % (campaign_obj.__tablename__, campaign_obj.id))
+    # check if data has start_datetime
+    if not data_to_schedule_campaign.get('start_datetime'):
+        raise InvalidUsage('start_datetime is required field.')
+    # start datetime should be in valid format and in future
+    is_datetime_in_valid_format_and_in_future(data_to_schedule_campaign.get('start_datetime'))
+    # get start_datetime object
+    start_datetime = if_str_datetime_in_valid_format_get_datetime_obj(
+        data_to_schedule_campaign.get('start_datetime'))
+    end_datetime_str = data_to_schedule_campaign.get('end_datetime')
+    # get number of seconds from frequency id
+    frequency = frequency_id_to_seconds(data_to_schedule_campaign.get('frequency_id'))
+    # check if task to be schedule is periodic
+    if end_datetime_str and frequency:
+        # check if end_datetime is greater than start_datetime
+        end_datetime_plus_frequency = \
+            if_str_datetime_in_valid_format_get_datetime_obj(end_datetime_str)\
+            + timedelta(seconds=frequency)
+        if end_datetime_plus_frequency < start_datetime:
+            raise InvalidUsage("end_datetime must be greater than start_datetime")
+    data_to_schedule_campaign['frequency'] = frequency
+    return data_to_schedule_campaign

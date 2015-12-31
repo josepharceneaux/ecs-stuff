@@ -11,27 +11,44 @@ from datetime import datetime
 from ..error_handling import InvalidUsage
 
 
+class FrequencyIds(object):
+    """
+    This is the class to avoid global variables for following names.
+    These variables show the frequency_id associated with type of schedule.
+    """
+    ONCE = 1
+    DAILY = 2
+    WEEKLY = 3
+    BIWEEKLY = 4
+    MONTHLY = 5
+    YEARLY = 6
+
+
 def frequency_id_to_seconds(frequency_id):
-    #  'Once', 'Daily', 'Weekly', 'Biweekly', 'Monthly', 'Yearly'
+    """
+    This gives us the number of seconds for given frequency_id.
+    frequency_id is in range 1 to 6 representing
+        'Once', 'Daily', 'Weekly', 'Biweekly', 'Monthly', 'Yearly'
+    respectively.
+    :param frequency_id: int
+    :return: seconds
+    :rtype: int
+    """
     if not frequency_id:
         return 0
     if not isinstance(frequency_id, int):
         raise InvalidUsage('Include frequency id as int')
-    if frequency_id == 1:
-        period = 0
-    elif frequency_id == 2:
-        period = 24 * 3600
-    elif frequency_id == 3:
-        period = 7 * 24 * 3600
-    elif frequency_id == 4:
-        period = 14 * 24 * 3600
-    elif frequency_id == 5:
-        period = 30 * 24 * 3600
-    elif frequency_id == 6:
-        period = 365 * 24 * 3600
-    else:
+    seconds_from_frequency_id = {
+        FrequencyIds.ONCE: 0,
+        FrequencyIds.DAILY: 24 * 3600,
+        FrequencyIds.WEEKLY: 7 * 24 * 3600,
+        FrequencyIds.BIWEEKLY: 14 * 24 * 3600,
+        FrequencyIds.MONTHLY: 30 * 24 * 3600,
+        FrequencyIds.YEARLY: 365 * 24 * 3600
+    }
+    if not seconds_from_frequency_id.get(frequency_id):
         raise InvalidUsage("Unknown frequency ID: %s" % frequency_id)
-    return period
+    return seconds_from_frequency_id.get(frequency_id)
 
 
 def to_utc_str(dt):

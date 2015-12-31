@@ -33,7 +33,6 @@ class SmsCampaignApiException(sms_campaign_service.common.error_handling.Interna
     NO_CANDIDATE_FOR_PHONE_NUMBER = 5015
     NO_USER_FOR_PHONE_NUMBER = 5016
     INVALID_URL_FORMAT = 5017
-    CAMPAIGN_ALREADY_SCHEDULED = 5018
 
     def to_dict(self):
         error_dict = super(SmsCampaignApiException, self).to_dict()
@@ -227,12 +226,3 @@ class InvalidUrl(SmsCampaignApiException):
     """
     error_code = SmsCampaignApiException.INVALID_URL_FORMAT
 
-
-class CampaignAlreadyScheduled(SmsCampaignApiException):
-    """
-    This exception is raised when we try to schedule an already scheduled SMS campaign
-
-    **Usage**
-        .. see also:: validate_scheduler_data() function in modules/handy_functions.py
-    """
-    error_code = SmsCampaignApiException.CAMPAIGN_ALREADY_SCHEDULED
