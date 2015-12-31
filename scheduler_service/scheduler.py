@@ -86,7 +86,7 @@ def validate_one_time_job(data):
     current_datetime = datetime.datetime.utcnow()
     current_datetime = current_datetime.replace(tzinfo=timezone('UTC'))
     # If job is not in 0-30 seconds in past or greater than current datetime.
-    if run_datetime < (current_datetime - datetime.timedelta(seconds=30)):
+    if run_datetime < current_datetime:
         raise InvalidUsage("No need to schedule job of already passed time")
 
     return valid_data
@@ -155,6 +155,13 @@ def schedule_job(data, user_id=None, access_token=None):
                                     end_date=valid_data['end_datetime'],
                                     args=[user_id, access_token, job_config['url'], content_type],
                                     kwargs=job_config['post_data'])
+
+            current_datetime = datetime.datetime.utcnow()
+            current_datetime = current_datetime.replace(tzinfo=timezone('UTC'))
+
+            # If job is in past but in range of 0-30 seconds interval then run the job
+            if (current_datetime - datetime.timedelta(seconds=30)) < valid_data['start_datetime']:
+                run_job(user_id, access_token, job_config['url'], content_type)
             logger.info('schedule_job: Task has been added and will start at %s ' % valid_data['start_datetime'])
         except Exception:
             raise JobNotCreatedError("Unable to create the job.")
