@@ -8,7 +8,6 @@ import pytest
 import requests
 
 # Application imports
-from scheduler_service.scheduler import scheduler
 from scheduler_service.tests.conftest import APP_URL
 
 __author__ = 'saad'

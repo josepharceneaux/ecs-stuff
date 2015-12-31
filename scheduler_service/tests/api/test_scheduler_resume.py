@@ -45,7 +45,7 @@ class TestSchedulerResume:
         # Paused jobs have their next_run_datetime set to 'None'
         response = requests.get(APP_URL + '/tasks/id/' + job_id, headers=auth_header)
         next_run_datetime = response.json()['task']['next_run_datetime']
-        assert next_run_datetime == 'None'
+        assert next_run_datetime is None
 
         # Resume job stop request
         response_resume = requests.post(APP_URL + '/tasks/' + job_id + '/resume/',
@@ -212,7 +212,7 @@ class TestSchedulerResume:
         # Paused jobs should have their next run time set to None
         for res in jobs:
             next_run_datetime = res['task']['next_run_datetime']
-            assert next_run_datetime == 'None'
+            assert next_run_datetime is None
 
         # Delete all jobs
         response_remove = requests.delete(APP_URL + '/tasks/', data=json.dumps(dict(ids=jobs_id)),

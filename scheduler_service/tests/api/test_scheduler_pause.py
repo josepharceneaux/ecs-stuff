@@ -45,7 +45,7 @@ class TestSchedulerPause:
         # Paused jobs have their 'next_run_datetime' set to 'None'
         response = requests.get(APP_URL + '/tasks/id/' + job_id, headers=auth_header)
         next_run_datetime = response.json()['task']['next_run_datetime']
-        assert next_run_datetime == 'None'
+        assert next_run_datetime is None
 
         # Try stopping again, it should throw exception
         response_stop_again = requests.post(APP_URL + '/tasks/' + job_id + '/pause/',
@@ -105,7 +105,7 @@ class TestSchedulerPause:
         # Now after getting jobs check their next run time
         for res in jobs:
             next_run_datetime = res['next_run_datetime']
-            assert next_run_datetime == 'None'
+            assert next_run_datetime is None
 
         # Delete all jobs
         response_remove = requests.delete(APP_URL + '/tasks/', data=json.dumps(dict(ids=jobs_id)),

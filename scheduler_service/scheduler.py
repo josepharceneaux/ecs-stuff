@@ -6,25 +6,27 @@ Scheduler - APScheduler initialization, set jobstore, threadpoolexecutor
 - get tasks from APScheduler and serialize tasks using json
 """
 
-import re
-
 # Third-party imports
 import datetime
-from pytz import timezone
+import os
+
 from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.events import EVENT_JOB_EXECUTED
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.date import DateTrigger
 from apscheduler.schedulers.background import BackgroundScheduler
-from dateutil.parser import parse
 
 # Application imports
+from pytz import timezone
+
 from scheduler_service import logger
 from scheduler_service.common.models.user import User
 from scheduler_service.apscheduler_config import executors, job_store, jobstores
 from scheduler_service.common.error_handling import InvalidUsage
-from scheduler_service.custom_exceptions import FieldRequiredError, TriggerTypeError, JobNotCreatedError, \
-    JobTimeExpiredError, InvalidJobTimeError
+from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
+from scheduler_service.common.utils.validators import get_valid_data, get_valid_url, get_valid_datetime, \
+    get_valid_integer
+from scheduler_service.custom_exceptions import TriggerTypeError, JobNotCreatedError
 from scheduler_service.tasks import send_request
 
 
@@ -33,42 +35,12 @@ scheduler = BackgroundScheduler(jobstore=jobstores, executors=executors,
                                 timezone='UTC')
 scheduler.add_jobstore(job_store)
 
-
-def get_valid_data(data, key, object_type=None):
-    """
-    Check if key exist and returns associated value
-    :param data:
-    :param key:
-    :return: value of associated key
-    """
-    try:
-        value = data[key]
-    except KeyError:
-        raise FieldRequiredError(error_message="Missing key: %s" % key)
-    if object_type == 'datetime':
-        try:
-            value = parse(value).replace(tzinfo=timezone('UTC'))
-        except Exception:
-            raise InvalidUsage(
-                error_message="Invalid value of %s %s. %s should be datetime format" % (key, value, key))
-    elif object_type == 'int':
-        if not str(value).isdigit():
-            raise InvalidUsage(error_message='Invalid value of %s. It should be integer' % key)
-    return value
-
-
-def is_valid_url(url):
-    """
-    Reference: https://github.com/django/django-old/blob/1.3.X/django/core/validators.py#L42
-    """
-    regex = re.compile(
-        r'^https?://'  # http:// or https://
-        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
-        r'localhost|'  # localhost...
-        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
-        r'(?::\d+)?'  # optional port
-        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
-    return url is not None and regex.search(url)
+# Set the minimum frequency in seconds
+if os.environ.get('GT_ENVIRONMENT') == 'dev' or os.environ.get('GT_ENVIRONMENT') == 'circle':
+    MIN_ALLOWED_FREQUENCY = 4
+else:
+    # For qa and production minimum frequency would be one hour
+    MIN_ALLOWED_FREQUENCY = 3600
 
 
 def apscheduler_listener(event):
@@ -108,13 +80,13 @@ def validate_one_time_job(data):
     :return:
     """
     valid_data = dict()
-    run_datetime = get_valid_data(data, 'run_datetime', 'datetime')
+    run_datetime = get_valid_datetime(data, 'run_datetime')
     valid_data.update({'run_datetime': run_datetime})
 
     current_datetime = datetime.datetime.utcnow()
     current_datetime = current_datetime.replace(tzinfo=timezone('UTC'))
     if run_datetime < current_datetime:
-        raise JobTimeExpiredError("No need to schedule job of already passed time")
+        raise InvalidUsage("No need to schedule job of already passed time")
 
     return valid_data
 
@@ -126,17 +98,17 @@ def validate_periodic_job(data):
     :return:
     """
     valid_data = dict()
-    frequency = get_valid_data(data, 'frequency', 'int')
-    start_datetime = get_valid_data(data, 'start_datetime', 'datetime')
-    end_datetime = get_valid_data(data, 'end_datetime', 'datetime')
+    frequency = get_valid_integer(data, 'frequency')
+    start_datetime = get_valid_datetime(data, 'start_datetime')
+    end_datetime = get_valid_datetime(data, 'end_datetime')
 
     valid_data.update({'start_datetime': start_datetime})
     valid_data.update({'end_datetime': end_datetime})
 
     # If value of frequency is not integer or lesser than 1 hour then throw exception
-    if int(frequency) < 3600:
+    if int(frequency) < MIN_ALLOWED_FREQUENCY:
         raise InvalidUsage(error_message='Invalid value of frequency. Value should '
-                                         'be greater than or equal to 3600')
+                                         'be greater than or equal to %s' % MIN_ALLOWED_FREQUENCY)
 
     frequency = int(frequency)
     valid_data.update({'frequency': frequency})
@@ -144,14 +116,8 @@ def validate_periodic_job(data):
     current_datetime = datetime.datetime.utcnow()
     current_datetime = current_datetime.replace(tzinfo=timezone('UTC'))
 
-    if start_datetime > end_datetime:
-        raise InvalidJobTimeError("Start datetime should be lesser than end datetime.")
-
-    if current_datetime > end_datetime:
-        raise JobTimeExpiredError("Current datetime is greater than end_datetime. No need to schedule expired job")
-
-    if current_datetime > start_datetime:
-        raise JobTimeExpiredError("Current datetime is greater than start_datetime. Start datetime should be in future")
+    if not (current_datetime < start_datetime < (end_datetime - datetime.timedelta(seconds=frequency))):
+        raise InvalidUsage("start_datetime and end_datetime should be in future.")
 
     return valid_data
 
@@ -170,20 +136,12 @@ def schedule_job(data, user_id=None, access_token=None):
     content_type = data.get('content_type', 'application/json')
     # will return None if key not found. We also need to check for valid values not just keys
     # in dict because a value can be '' and it can be valid or invalid
-    job_config['task_type'] = data.get('task_type')
-    job_config['url'] = data.get('url')
-
-    # Get missing keys
-    missing_keys = filter(lambda _key: job_config[_key] is None, job_config.keys())
-    if len(missing_keys) > 0:
-        raise FieldRequiredError(error_message="Missing keys: %s" % ', '.join(missing_keys))
-
-    if not is_valid_url(job_config['url']):
-        raise InvalidUsage("URL is not valid")
+    job_config['task_type'] = get_valid_data(data, 'task_type')
+    job_config['url'] = get_valid_url(data, 'url')
 
     trigger = str(job_config['task_type']).lower().strip()
 
-    if trigger == 'periodic':
+    if trigger == SchedulerUtils.PERIODIC:
         valid_data = validate_periodic_job(data)
 
         try:
@@ -198,7 +156,7 @@ def schedule_job(data, user_id=None, access_token=None):
         except Exception:
             raise JobNotCreatedError("Unable to create the job.")
         return job.id
-    elif trigger == 'one_time':
+    elif trigger == SchedulerUtils.ONE_TIME:
         valid_data = validate_one_time_job(data)
         try:
             job = scheduler.add_job(run_job,
@@ -266,17 +224,13 @@ def serialize_task(task):
             task_type='periodic'
         )
         if task_dict['start_datetime'] is not None:
-            task_dict['start_datetime'] = task_dict['start_datetime'].strftime('%Y-%m-%d %H:%M:%S')
+            task_dict['start_datetime'] = task_dict['start_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
 
         if task_dict['end_datetime'] is not None:
-            task_dict['end_datetime'] = task_dict['end_datetime'].strftime('%Y-%m-%d %H:%M:%S')
+            task_dict['end_datetime'] = task_dict['end_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
 
         if task_dict['next_run_datetime'] is not None:
-            task_dict['next_run_datetime'] = task_dict['next_run_datetime'].strftime('%Y-%m-%d %H:%M:%S')
-
-        task_dict['start_datetime'] = str(task_dict['start_datetime'])
-        task_dict['end_datetime'] = str(task_dict['end_datetime'])
-        task_dict['next_run_datetime'] = str(task_dict['next_run_datetime'])
+            task_dict['next_run_datetime'] = task_dict['next_run_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
 
     elif isinstance(task.trigger, DateTrigger):
         task_dict = dict(
@@ -288,7 +242,6 @@ def serialize_task(task):
             task_type='one_time'
         )
         if task_dict['run_datetime'] is None:
-            task_dict['run_datetime'] = task_dict['run_datetime'].strftime('%Y-%m-%d %H:%M:%S')
+            task_dict['run_datetime'] = task_dict['run_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        task_dict['run_datetime'] = str(task_dict['run_datetime'])
     return task_dict

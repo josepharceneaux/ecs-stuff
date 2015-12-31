@@ -18,11 +18,8 @@ class SchedulerServiceApiException(scheduler_service.common.error_handling.Inter
     CODE_PENDING = 6052
     CODE_ALREADY_PAUSED = 6053
     CODE_ALREADY_RUNNING = 6054
-    CODE_FIELD_REQUIRED = 6055
-    CODE_TRIGGER_TYPE = 6056
-    CODE_NOT_CREATED_TYPE = 6057
-    CODE_TIME_ALREADY_PASSED = 6058
-    CODE_INVALID_TIME_INTERVAL_PASSED = 6059
+    CODE_TRIGGER_TYPE = 6055
+    CODE_NOT_CREATED_TYPE = 6056
 
     def to_dict(self):
         error_dict = super(SchedulerServiceApiException, self).to_dict()
@@ -33,14 +30,6 @@ class SchedulerServiceApiException(scheduler_service.common.error_handling.Inter
         error_dict = super(SchedulerServiceApiException, self).to_dict()
         error_dict['error']['code'] = self.__class__.error_code
         return json.dumps(error_dict)
-
-
-class InvalidJobTimeError(SchedulerServiceApiException):
-    error_code = SchedulerServiceApiException.CODE_INVALID_TIME_INTERVAL_PASSED
-
-
-class JobTimeExpiredError(SchedulerServiceApiException):
-    error_code = SchedulerServiceApiException.CODE_TIME_ALREADY_PASSED
 
 
 class SchedulerNotRunningError(SchedulerServiceApiException):
@@ -57,10 +46,6 @@ class PendingJobError(SchedulerServiceApiException):
 
 class JobAlreadyRunningError(SchedulerServiceApiException):
     error_code = SchedulerServiceApiException.CODE_ALREADY_RUNNING
-
-
-class FieldRequiredError(SchedulerServiceApiException):
-    error_code = SchedulerServiceApiException.CODE_FIELD_REQUIRED
 
 
 class TriggerTypeError(SchedulerServiceApiException):
