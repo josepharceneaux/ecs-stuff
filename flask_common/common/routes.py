@@ -280,6 +280,7 @@ class PushNotificationServiceApi(object):
     # HOST_NAME is http://127.0.0.1:8013 for dev
     HOST_NAME = _get_host_name(GTApis.PUSH_NOTIFICATION_SERVICE_NAME,
                                GTApis.PUSH_NOTIFICATION_SERVICE_PORT)
+    HOST_NAME %= ''
     # endpoint /v1/campaigns
     # GET all campaigns of a user, POST new campaign, DELETE campaigns of a user from given ids
     CAMPAIGNS = '/%s/%s' % (VERSION, 'campaigns')

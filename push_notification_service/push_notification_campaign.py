@@ -114,13 +114,13 @@ class PushCampaignBase(CampaignBase):
         :return:
         """
         data_to_schedule.update(
-            {'url_to_run_task': PushNotificationServiceApi.SEND % self.campaign.id}
+            {'url_to_run_task': PushNotificationServiceApi.HOST_NAME + '/v1/campaigns/%s/send' % self.campaign.id}
         )
         # get scheduler task_id
         task_id = super(PushCampaignBase, self).schedule(data_to_schedule)
         data_to_schedule.update({'task_id': task_id})
         # update push_notification_campaign record with task_id
-        self.campaign.update(task_id=task_id)
+        self.campaign.update(scheduler_task_id=task_id)
         return task_id
 
     def process_send(self, campaign_id):

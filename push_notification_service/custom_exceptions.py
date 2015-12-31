@@ -1,5 +1,5 @@
 import json
-from push_notification_service.common.error_handling import InternalServerError
+from flask_common.common.error_handling import InternalServerError
 
 PUSH_NOTIFICATION_ERROR = 7000
 PUSH_NOTIFICATION_NOT_CREATED = 7001
@@ -7,6 +7,7 @@ NO_SMARTLIST_ASSOCIATED = 7002
 REQUIRED_FIELDS_MISSING = 7003
 INVALID_FREQUENCY = 7004
 FAILED_TO_SCHEDULE = 7005
+
 
 class PushNotificationApiException(InternalServerError):
     error_code = PUSH_NOTIFICATION_ERROR
