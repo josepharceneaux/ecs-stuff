@@ -84,7 +84,7 @@ def forgot_password():
     six_digit_token = ''.join(random.choice(string.digits) for _ in range(6))
 
     redis_store.setex(six_digit_token, token, 46400)  # Key-value pair will be removed after 12 hours
-    reset_password_url = url_for('reset_password', token=token, _external=True)
+    reset_password_url = url_for('.reset_password', token=token, _external=True)
 
     name = user.first_name or user.last_name or 'User'
     send_reset_password_email(email, name, reset_password_url, six_digit_token)
