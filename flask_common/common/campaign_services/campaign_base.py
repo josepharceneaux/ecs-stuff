@@ -32,7 +32,7 @@ from ..models.candidate import Candidate
 from ..models.sms_campaign import SmsCampaign
 from campaign_utils import frequency_id_to_seconds
 from ..utils.scheduler_utils import SchedulerUtils
-from ..routes import CandidateApiUrl, ActivityApiUrl, SchedulerApiUrl
+from ..routes import CandidatePoolApiUrl, ActivityApiUrl, SchedulerApiUrl
 from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
 from ..utils.common_functions import (http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER)
 from validators import (validate_header, validate_datetime_format,
@@ -576,7 +576,7 @@ class CampaignBase(object):
         """
         params = {'id': campaign_smartlist.smartlist_id, 'return': 'all'}
         # HTTP GET call to candidate_service to get candidates associated with given smartlist id.
-        response = http_request('GET', CandidateApiUrl.SMARTLIST_CANDIDATES,
+        response = http_request('GET', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % campaign_smartlist.smartlist_id,
                                 headers=self.oauth_header, params=params, user_id=self.user_id)
         # get candidate ids
         try:

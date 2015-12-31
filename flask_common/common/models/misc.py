@@ -242,7 +242,7 @@ class UrlConversion(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     source_url = db.Column('sourceUrl', db.String(512))
     destination_url = db.Column('destinationUrl', db.String(512))
-    hit_count = db.Column('hitCount', db.Integer)
+    hit_count = db.Column('hitCount', db.Integer, default=0)
     added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
     last_hit_time = db.Column('lastHitTime', db.DateTime)
 

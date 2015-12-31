@@ -2,6 +2,7 @@
 import json
 import types
 from datetime import datetime
+from urlparse import urlparse
 
 # Third Party
 import requests
@@ -10,13 +11,16 @@ from flask import Blueprint
 from flask.ext.cors import CORS
 from flask.ext.restful import Resource
 
+
 # Application Specific
 from push_notification_service import logger
 from push_notification_service.common.models.candidate import Candidate, CandidateDevice
+from push_notification_service.common.models.misc import UrlConversion
 from push_notification_service.common.talent_api import TalentApi
 from push_notification_service.common.utils.auth_utils import require_oauth
 from push_notification_service.common.utils.api_utils import api_route, ApiResponse
-from push_notification_service.common.models.push_notification import PushCampaign, PushCampaignSmartlist
+from push_notification_service.common.models.push_notification import PushCampaign, PushCampaignSmartlist, \
+    PushCampaignBlast
 from push_notification_service.common.error_handling import *
 from push_notification_service.custom_exceptions import *
 from push_notification_service.one_signal_sdk import OneSignalSdk
@@ -285,4 +289,5 @@ class Devices(Resource):
                 raise ResourceNotFound('Device is not registered with OneSignal with id %s' % device_id)
         else:
             raise InvalidUsage('device_id is not found in post data')
+
 

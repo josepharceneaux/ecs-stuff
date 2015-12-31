@@ -1,6 +1,10 @@
-from flask import render_template, request
+import json
 
-from push_notification_service import init_push_notification_app
+from flask import render_template
+from werkzeug.utils import redirect
+from push_notification_service import init_push_notification_app, logger
+from push_notification_service.common.models.misc import UrlConversion
+from push_notification_service.common.models.push_notification import PushCampaignBlast
 
 app = init_push_notification_app()
 
@@ -14,12 +18,22 @@ def index():
     return render_template('index.html')
 
 
-@app.route('/send', methods=['GET', 'POST'])
-def send():
-    data = request.get_json()
-    players = data.get('players')
-    req = one_signal_client.create_notification(data['url'], data['message'], data['title'], players=players)
-    if req.ok:
-        return req.content
-    else:
-        return {"error": "Unable to send notification"}
+@app.route('/url_hits/<int:url_id>')
+def url_hit_counts(url_id):
+    url_obj = UrlConversion.get_by_id(url_id)
+    # source url is actually json dumps data which contains info about candidate, campaign and blast
+    data = json.loads(url_obj.source_url)
+    # data will be something like
+    # {
+    #    campaign_id: 12,
+    #    blast_id   : 22,
+    #    candidateId: 33
+    # }
+    campaign_id = data['campaign_id']
+    blast_id = data['blast_id']
+    candidate_id = data['candidate_id']
+    blast_obj = PushCampaignBlast.get_by_id(blast_id)
+    sends = blast_obj.sends + 1
+    blast_obj.update(sends=sends)
+    logger.info('Candidate (id: %s) open the url for Puh Campaign (id: %s)' % (candidate_id, campaign_id))
+    return redirect(url_obj.destination_url)

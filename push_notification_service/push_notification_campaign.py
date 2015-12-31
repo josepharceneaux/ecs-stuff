@@ -2,6 +2,7 @@ from werkzeug.exceptions import BadRequest
 
 from push_notification_service.common.error_handling import *
 from push_notification_service.common.models.push_notification import *
+from push_notification_service.common.models.misc import UrlConversion
 from push_notification_service.common.utils.activity_utils import ActivityMessageIds
 from push_notification_service.common.campaign_services.campaign_base import CampaignBase
 from push_notification_service.common.routes import PushNotificationServiceApi
@@ -25,7 +26,6 @@ class PushCampaignBase(CampaignBase):
         """
         # sets the user_id
         super(PushCampaignBase, self).__init__(user_id, *args, **kwargs)
-        self.push_notification = None
         self.subscribed_candidate_ids = []
         self.unsubscribed_candidate_ids = []
         self.campaign_blast = None
@@ -124,15 +124,15 @@ class PushCampaignBase(CampaignBase):
         return task_id
 
     def process_send(self, campaign_id):
-        self.push_notification = PushCampaign.get_by_id(campaign_id)
-        if self.push_notification:
+        self.campaign = PushCampaign.get_by_id(campaign_id)
+        if self.campaign:
             self.campaign_blast = PushCampaignBlast(campaign_id=campaign_id)
             PushCampaignBlast.save(self.campaign_blast)
             candidates = []
-            smartlists = self.push_notification.smartlists
+            smartlists = self.campaign.smartlists
             if not smartlists:
                 raise NoSmartlistAssociated('No smartlist is associated with Push Campaign (id:%s). '
-                                            '(User(id:%s))' % (self.push_notification.id, self.user_id))
+                                            '(User(id:%s))' % (self.campaign.id, self.user_id))
             for smartlist in smartlists:
                 candidates += self.get_smartlist_candidates(smartlist)
             for candidate in candidates:
@@ -238,9 +238,13 @@ class PushCampaignBase(CampaignBase):
         device_ids = map(lambda device: device.one_signal_device_id, candidate.devices)
         if device_ids:
             try:
-                resp = one_signal_client.send_notification(self.push_notification.url,
-                                                           self.push_notification.content,
-                                                           self.push_notification.title,
+                destination_url = self.campaign.url
+                url_conversion = UrlConversion(source_url='', destination_url=destination_url)
+                UrlConversion.save(url_conversion)
+                url_to_send = PushNotificationServiceApi.HOST_NAME + '/url_hits/%s' % url_conversion.id
+                resp = one_signal_client.send_notification(url_to_send,
+                                                           self.campaign.content,
+                                                           self.campaign.title,
                                                            players=device_ids)
                 if resp.ok:
                     campaign_send = PushCampaignSend(campaign_blast_id=self.campaign_blast.id,
@@ -249,6 +253,11 @@ class PushCampaignBase(CampaignBase):
                     PushCampaignSend.save(campaign_send)
                     sends = self.campaign_blast.sends + 1
                     self.campaign_blast.update(sends=sends)
+                    data = dict(campaign_id=self.campaign.id,
+                                blast_id=self.campaign_blast.id,
+                                candidate_id=candidate.id)
+
+                    url_conversion.update(source_url=json.dumps(data))
                     self.subscribed_candidate_ids.append(candidate.id)
                 else:
                     self.unsubscribed_candidate_ids.append(candidate.id)
@@ -259,7 +268,7 @@ class PushCampaignBase(CampaignBase):
 
             except Exception as e:
                 logger.error('Unable to send push  notification (id: %s) to candidate (id: %s)'
-                             % (self.push_notification.id, candidate.id))
+                             % (self.campaign.id, candidate.id))
                 self.unsubscribed_candidate_ids.append(candidate.id)
         else:
             logger.error('Candidate has not subscribed for push notification')

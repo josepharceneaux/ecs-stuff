@@ -1,7 +1,6 @@
 import datetime
 from db import db
 from sqlalchemy.orm import relationship
-from smartlist import Smartlist
 
 __author__ = 'Zohaib Ijaz <mzohaib.qc@gmail.com>'
 
