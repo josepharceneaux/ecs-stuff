@@ -8,11 +8,7 @@ import requests
 from werkzeug.security import generate_password_hash, gen_salt
 from auth_service.oauth import app
 from auth_service.common.models.user import *
-
-OAUTH_ENDPOINT = 'http://127.0.0.1:8001/%s'
-TOKEN_URL = OAUTH_ENDPOINT % 'oauth2/token'
-REVOKE_URL = OAUTH_ENDPOINT % 'oauth2/revoke'
-AUTHORIZE_URL = OAUTH_ENDPOINT % 'oauth2/authorize'
+from auth_service.common.routes import AuthApiUrl
 
 
 class AuthServiceTestsContext:
@@ -63,7 +59,7 @@ class AuthServiceTestsContext:
 
     def authorize_token(self):
         headers = {'Authorization': 'Bearer %s' % self.access_token}
-        response = requests.get(AUTHORIZE_URL, headers=headers)
+        response = requests.get(AuthApiUrl.AUTH_SERVICE_AUTHORIZE_URI, headers=headers)
         if response.status_code == 200:
             response_data = json.loads(response.text)
             return response.status_code, response_data.get('user_id') if response_data else ''
@@ -86,8 +82,8 @@ class AuthServiceTestsContext:
         else:
             raise Exception("%s is not a valid action" % action)
 
-        response = requests.post(REVOKE_URL if action == 'revoke' else TOKEN_URL, data=urlencode(params),
-                                 headers=headers)
+        response = requests.post(AuthApiUrl.AUTH_SERVICE_TOKEN_REVOKE_URI if action == 'revoke' else
+                                 AuthApiUrl.AUTH_SERVICE_TOKEN_CREATE_URI, data=urlencode(params), headers=headers)
         db.session.commit()
         if action == 'revoke':
             return response.status_code
@@ -153,5 +149,5 @@ def test_auth_service(app_context):
 
 def test_health_check():
     import requests
-    response = requests.get(OAUTH_ENDPOINT % 'healthcheck')
+    response = requests.get('http://127.0.0.1:8001/healthcheck')
     assert response.status_code == 200

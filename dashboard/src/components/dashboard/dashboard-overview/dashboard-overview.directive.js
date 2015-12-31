@@ -417,6 +417,57 @@
                     progress: .5
                 }
             ];
+
+            vm.topSkills = [
+                { name: 'Automatic Data Processing' },
+                { name: 'Angular JS' },
+                { name: 'Hadoop' },
+                { name: 'HTML5' },
+                { name: 'Apache Jackrabbit' },
+                { name: 'Linux' },
+                { name: 'Production Management' },
+                { name: 'Software Troubleshooting' },
+                { name: 'Sybase Unwired Platform' },
+                { name: 'Location-Based Services' },
+                { name: 'DevOps' },
+                { name: 'LTX Credence' }
+            ];
+
+            vm.topLocations = [
+                { formattedLocation: 'Portland, OR' },
+                { formattedLocation: 'Detroit, MI' },
+                { formattedLocation: 'Orlando, FL' },
+                { formattedLocation: 'Santa Cruz, CA' },
+                { formattedLocation: 'Miami, FL' },
+                { formattedLocation: 'Seattle, WA' },
+                { formattedLocation: 'Olympia, WA' },
+                { formattedLocation: 'Dallas, TX' },
+                { formattedLocation: 'Denver, CO' }
+            ];
+
+            vm.topSites = [
+                { location: 'Seattle, WA' },
+                { location: 'Olympia, WA' },
+                { location: 'Dallas, TX' },
+                { location: 'Portland, OR' },
+                { location: 'Detroit, MI' },
+                { location: 'Orlando, FL' },
+                { location: 'Santa Cruz, CA' },
+                { location: 'Miami, FL' },
+                { location: 'Denver, CO' }
+            ];
+
+            vm.topReferrals = [
+                { location: 'Miami, FL' },
+                { location: 'Seattle, WA' },
+                { location: 'Olympia, WA' },
+                { location: 'Dallas, TX' },
+                { location: 'Denver, CO' },
+                { location: 'Portland, OR' },
+                { location: 'Detroit, MI' },
+                { location: 'Orlando, FL' },
+                { location: 'Santa Cruz, CA' }
+            ];
         }
 
         function activate() {
