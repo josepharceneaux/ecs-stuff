@@ -36,6 +36,17 @@ AWS_SECRET = "AWS_SECRET_ACCESS_KEY"
 SECRET_KEY = "SECRET_KEY"
 
 
+class TalentConfigParser(SafeConfigParser, object):
+
+    def get(self, section, option, raw=False, vars=None):
+
+        value = os.getenv(option)
+        if not value:
+            value = super(TalentConfigParser, self).get(section, option)
+
+        return value
+
+
 class PropertySection(Enum):
     cloudsearch = [CS_DOMAIN_KEY, CS_REGION_KEY]
     local = [EMAIL_KEY, ENV_KEY, INSTANCE_NAME]
@@ -133,7 +144,7 @@ def _get_config_parser():
     global _config
 
     if not _config:
-        _config = SafeConfigParser()
+        _config = TalentConfigParser()
 
         expanded_config_path = os.path.expanduser(LOCAL_CONFIG_PATH)
         if os.path.isfile(expanded_config_path):

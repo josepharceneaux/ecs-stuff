@@ -9,10 +9,7 @@ machine:
 dependencies:
   override:
     - pip install -r requirements.txt
-  post:
-    - mkdir ~/.talent
-    - "printf \"[cloudsearch]\nCLOUD_SEARCH_DOMAIN: gettalent-circleci\nCLOUD_SEARCH_REGION: us-west-1\n\n[s3]\nS3_BUCKET_NAME: tcs-local-circleci\nS3_FILEPICKER_BUCKET_NAME: gettalent-filepicker\nS3_BUCKET_REGION: us-west-1\n\n[local]\nEMAIL: farooqiumar@rocketmail.com\nGT_ENVIRONMENT: circle\nINSTANCE_NAME: circleci\n\n[iam]\nACCOUNT_ID: 528222547498\n\n[keys]\nAWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID\nAWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY\nSECRET_KEY: $SECRET_KEY\n\" > ~/.talent/web.cfg"
-
+    
 test:
   pre:
     - sudo chown -R ubuntu /var/log:

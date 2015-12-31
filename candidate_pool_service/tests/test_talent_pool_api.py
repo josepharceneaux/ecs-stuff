@@ -472,8 +472,8 @@ def test_update_talent_pool_stats(access_token_first, access_token_second, user_
     response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id)
     assert status_code == 400
 
-    from_date = str(datetime.now() - timedelta(2))
-    to_date = str(datetime.now() - timedelta(1))
+    from_date = str(datetime.utcnow() - timedelta(2))
+    to_date = str(datetime.utcnow() - timedelta(1))
 
     # Logged-in user trying to get statistics of a talent_pipeline
     response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id, {'from_date': from_date,
@@ -481,8 +481,8 @@ def test_update_talent_pool_stats(access_token_first, access_token_second, user_
     assert status_code == 200
     assert not response.get('talent_pool_data')
 
-    from_date = str(datetime.now() - timedelta(1))
-    to_date = str(datetime.now())
+    from_date = str(datetime.utcnow() - timedelta(1))
+    to_date = str(datetime.utcnow())
 
     # Logged-in user trying to get statistics of a talent_pool
     response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id, {'from_date': from_date,
