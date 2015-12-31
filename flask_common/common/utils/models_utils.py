@@ -46,7 +46,7 @@ other model classes inherit. But this changes will only effect this app or the a
 from types import MethodType
 from ..models.db import db
 from ..error_handling import register_error_handlers
-from ..utils.common_functions import camel_case_to_snake_case
+from ..utils.handy_functions import camel_case_to_snake_case
 
 
 def to_json(instance):

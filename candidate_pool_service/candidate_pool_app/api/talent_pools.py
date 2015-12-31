@@ -2,20 +2,26 @@ __author__ = 'ufarooqi'
 
 import json
 import requests
-from flask import request
+from flask import request, Blueprint
 from flask_restful import Resource
 from sqlalchemy import and_
-from candidate_pool_service.common.utils.validators import is_number
-from candidate_pool_service.common.routes import CandidateApiUrl
-from candidate_pool_service.common.models.talent_pools_pipelines import *
-from candidate_pool_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
+from dateutil.parser import parse
 from candidate_pool_service.common.error_handling import *
+from candidate_pool_service.common.talent_api import TalentApi
+from candidate_pool_service.common.routes import CandidateApiUrl
+from candidate_pool_service.common.utils.validators import is_number
+from candidate_pool_service.common.models.talent_pools_pipelines import *
+from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
+from candidate_pool_service.common.utils.talent_reporting import email_error_to_admins
+from candidate_pool_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
+
+talent_pool_blueprint = Blueprint('talent_pool_api', __name__)
 
 
 class TalentPoolApi(Resource):
 
     # Access token decorator
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
     @require_any_role('SELF', 'CAN_GET_TALENT_POOLS')
@@ -189,7 +195,7 @@ class TalentPoolApi(Resource):
 class TalentPoolGroupApi(Resource):
 
     # Access token decorator
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
     @require_any_role('SELF', 'CAN_GET_TALENT_POOLS_OF_GROUP')
@@ -338,7 +344,7 @@ class TalentPoolGroupApi(Resource):
 class TalentPoolCandidateApi(Resource):
 
     # Access token decorator
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
     @require_any_role('SELF', 'CAN_GET_CANDIDATES_FROM_TALENT_POOL')
@@ -521,3 +527,95 @@ class TalentPoolCandidateApi(Resource):
 
         return {'talent_pool_candidates': [int(talent_pool_candidate_id) for talent_pool_candidate_id in
                                            talent_pool_candidate_ids]}
+
+
+@talent_pool_blueprint.route('/talent-pools/stats', methods=['POST'])
+@require_oauth(allow_basic_auth=True, allow_null_user=True)
+@require_all_roles('CAN_UPDATE_TALENT_POOLS_STATS')
+def update_talent_pools_stats():
+    """
+    This method will update the statistics of all talent-pools daily.
+    :return: None
+    """
+
+    try:
+        talent_pools = TalentPool.query.all()
+        for talent_pool in talent_pools:
+            last_week_stat = TalentPoolStats.query.filter_by(talent_pool_id=talent_pool.id).\
+                order_by(TalentPoolStats.id.desc()).first()
+            talent_pool_candidate_ids =[talent_pool_candidate.candidate_id for talent_pool_candidate in
+                                        TalentPoolCandidate.query.filter_by(talent_pool_id=talent_pool.id).all()]
+            total_candidates = len(talent_pool_candidate_ids)
+            engaged_candidates = len(db.session.query(EmailCampaignSend.candidate_id).filter(
+                EmailCampaignSend.candidate_id.in_(talent_pool_candidate_ids)).all() or [])
+            candidates_engagement = int(float(engaged_candidates)/total_candidates*100) if \
+                int(total_candidates) else 0
+            # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
+
+            if last_week_stat:
+                talent_pool_stat = TalentPoolStats(talent_pool_id=talent_pool.id, total_candidates=total_candidates,
+                                                   number_of_candidates_removed_or_added=
+                                                   total_candidates - last_week_stat.total_candidates,
+                                                   candidates_engagement=candidates_engagement)
+            else:
+                talent_pool_stat = TalentPoolStats(talent_pool_id=talent_pool.id, total_candidates=total_candidates,
+                                                   number_of_candidates_removed_or_added=total_candidates,
+                                                   candidates_engagement=candidates_engagement)
+            db.session.add(talent_pool_stat)
+
+        db.session.commit()
+        return '', 204
+
+    except Exception as e:
+        db.session.rollback()
+        email_error_to_admins("Couldn't update statistics of TalentPools because: %s" % e.message,
+                              subject="TalentPool Statistics")
+        raise InvalidUsage(error_message="Couldn't update statistics of TalentPools because: %s" % e.message)
+
+
+@talent_pool_blueprint.route('/talent-pool/<int:talent_pool_id>/stats', methods=['GET'])
+@require_oauth()
+def get_talent_pool_stats(talent_pool_id):
+    """
+    This method will return the statistics of a talent_pool over a given period of time with time-period = 1 day
+    :param talent_pool_id: Id of a talent-pool
+    :return: A list of time-series data
+    """
+    talent_pool = TalentPool.query.get(talent_pool_id)
+    if not talent_pool:
+        raise NotFoundError(error_message="TalentPool with id=%s doesn't exist in database" % talent_pool_id)
+
+    if talent_pool.owner_user_id != request.user.id:
+        raise ForbiddenError(error_message="Logged-in user %s is unauthorized to get stats of talent-pool %s"
+                                           % (request.user.id, talent_pool.id))
+
+    from_date_string = request.args.get('from_date', '')
+    to_date_string = request.args.get('to_date', '')
+
+    if not from_date_string and not to_date_string:
+        raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is missing from request parameters")
+
+    try:
+        from_date = parse(from_date_string)
+        to_date = parse(to_date_string)
+    except Exception as e:
+        raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
+
+    talent_pool_stats = TalentPoolStats.query.filter(and_(TalentPoolStats.talent_pool_id == talent_pool_id,
+                                                          TalentPoolStats.added_time >= from_date,
+                                                          TalentPoolStats.added_time <= to_date))
+
+    return jsonify({'talent_pool_data': [
+        {
+            'total_number_of_candidates': talent_pool_stat.total_candidates,
+            'number_of_candidates_removed_or_added': talent_pool_stat.number_of_candidates_removed_or_added,
+            'added_time': talent_pool_stat.added_time,
+            'candidates_engagement': talent_pool_stat.candidates_engagement
+        }
+        for talent_pool_stat in talent_pool_stats
+    ]})
+
+api = TalentApi(talent_pool_blueprint)
+api.add_resource(TalentPoolApi, '/talent-pools/<int:id>', '/talent-pools')
+api.add_resource(TalentPoolGroupApi, '/groups/<int:group_id>/talent_pools')
+api.add_resource(TalentPoolCandidateApi, '/talent-pools/<int:id>/candidates')

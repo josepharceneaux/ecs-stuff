@@ -4,7 +4,7 @@ import json
 from user_service.user_app import db
 from user_service.common.models.user import DomainRole
 
-USER_SERVICE_ENDPOINT = 'http://127.0.0.1:8004/%s'
+USER_SERVICE_ENDPOINT = 'http://127.0.0.1:8004/v1/%s'
 USER_ROLES = USER_SERVICE_ENDPOINT % 'users/%s/roles'
 USER_ROLES_VERIFY = USER_SERVICE_ENDPOINT % 'roles/verify'
 USER_DOMAIN_ROLES = USER_SERVICE_ENDPOINT % 'domain/%s/roles'
