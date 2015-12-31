@@ -9,7 +9,7 @@ from candidate_service.modules.talent_cloud_search import search_candidates, upl
 
 
 class CandidateSearch(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth(allow_basic_auth=True)]
 
     def get(self):
         """
@@ -38,7 +38,7 @@ class CandidateSearch(Resource):
 
 class CandidateDocuments(Resource):
 
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def post(self):
         """

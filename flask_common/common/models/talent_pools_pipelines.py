@@ -1,6 +1,5 @@
 __author__ = 'ufarooqi'
 
-import datetime
 from db import db
 from user import Domain, UserGroup, User
 from candidate import Candidate
@@ -40,6 +39,20 @@ class TalentPoolCandidate(db.Model):
 
     candidate = db.relationship('Candidate', backref=db.backref('talent_pool_candidate', cascade="all, delete-orphan"))
     talent_pool = db.relationship('TalentPool', backref=db.backref('talent_pool_candidate', cascade="all, delete-orphan"))
+
+
+class TalentPoolStats(db.Model):
+
+    __tablename__ = 'talent_pool_stats'
+
+    id = db.Column(db.Integer, primary_key=True)
+    talent_pool_id = db.Column(db.Integer, db.ForeignKey('talent_pool.id', ondelete='CASCADE'), nullable=False)
+    total_candidates = db.Column(db.Integer, nullable=False, default=0)
+    number_of_candidates_removed_or_added = db.Column(db.Integer, nullable=False, default=0)
+    candidates_engagement = db.Column(db.Integer, nullable=False, default=0)
+    added_time = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
+
+    talent_pool = db.relationship('TalentPool', backref=db.backref('talent_pool_stats', cascade="all, delete-orphan"))
 
 
 class TalentPoolGroup(db.Model):
@@ -83,3 +96,19 @@ class TalentPipeline(db.Model):
     def delete(self):
         db.session.delete(self)
         db.session.commit()
+
+
+class TalentPipelineStats(db.Model):
+
+    __tablename__ = 'talent_pipeline_stats'
+
+    id = db.Column(db.Integer, primary_key=True)
+    talent_pipeline_id = db.Column(db.Integer, db.ForeignKey('talent_pipeline.id', ondelete='CASCADE'), nullable=False)
+    total_candidates = db.Column(db.Integer, nullable=False, default=0)
+    number_of_candidates_removed_or_added = db.Column(db.Integer, nullable=False, default=0)
+    candidates_engagement = db.Column(db.Integer, nullable=False, default=0)
+    added_time = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
+
+    talent_pipeline = db.relationship('TalentPipeline', backref=db.backref('talent_pipeline_stats',
+                                                                           cascade="all, delete-orphan"))
+

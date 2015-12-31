@@ -14,7 +14,6 @@ logging.config.fileConfig(LOGGING_CONF)
 env = talent_property_manager.get_env()
 if env == 'dev':
     APP_URL = 'http://0.0.0.0:8006'
-    OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@localhost/talent_local'
     LOGGER = logging.getLogger("social_network_service.dev")
@@ -22,7 +21,6 @@ if env == 'dev':
     DEBUG = True
 elif env == 'circle':
     APP_URL = 'http://0.0.0.0:8006'
-    OAUTH_SERVER_URI = 'http://0.0.0.0:8001/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_ci'
     LOGGER = logging.getLogger("social_network_service.ci")
@@ -30,7 +28,6 @@ elif env == 'circle':
     DEBUG = True
 elif env == 'qa':
     APP_URL = 'http://0.0.0.0:8006'
-    OAUTH_SERVER_URI = 'https://secure-webdev.gettalent.com/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!web976892@devdb.gettalent.com/talent_staging'
     LOGGER = logging.getLogger("social_network_service.qa")
@@ -38,7 +35,6 @@ elif env == 'qa':
     DEBUG = False
 elif env == 'prod':
     APP_URL = 'http://0.0.0.0:8006'
-    OAUTH_SERVER_URI = 'https://secure.gettalent.com/oauth2/authorize'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = os.environ.get('DB_STRING')
     LOGGER = logging.getLogger("social_network_service.prod")

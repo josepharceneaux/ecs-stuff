@@ -12,7 +12,7 @@ BATCH_MOD = Blueprint('batch_processing', __name__)
 
 
 @BATCH_MOD.route('/', methods=['POST'])
-@require_oauth
+@require_oauth()
 def post_files_to_queue():
     """
     Endpoint for posting files in format {'filenames': ['file1', 'file2, ...]

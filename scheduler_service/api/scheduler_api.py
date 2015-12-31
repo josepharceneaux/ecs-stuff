@@ -12,8 +12,6 @@ import types
 from flask import Blueprint, request
 from flask.ext.restful import Resource
 from flask.ext.cors import CORS
-from flask_hmac import Hmac
-from flask_hmac.exceptions import HmacException, UnknownKeyName
 
 # Application imports
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse
@@ -22,7 +20,6 @@ from scheduler_service.common.error_handling import *
 from scheduler_service.common.utils.auth_utils import require_oauth
 from scheduler_service.custom_exceptions import JobAlreadyPausedError, PendingJobError, JobAlreadyRunningError, \
     SchedulerNotRunningError, SchedulerServiceApiException
-from scheduler_service.run import hmac
 from scheduler_service.scheduler import scheduler, schedule_job, serialize_task, remove_tasks
 
 api = TalentApi()
@@ -44,8 +41,7 @@ class Tasks(Resource):
     """
         This resource returns a list of tasks or it can be used to create or schedule a task using POST.
     """
-    decorators = [require_oauth]
-
+    @require_oauth()
     def get(self, **kwargs):
         """
         This action returns a list of user tasks and their count
@@ -94,6 +90,7 @@ class Tasks(Resource):
         tasks = filter(lambda job: job is not None, tasks)
         return dict(tasks=tasks, count=len(tasks))
 
+    @require_oauth(allow_basic_auth=True, allow_null_user=True)
     def post(self, **kwargs):
         """
         This method takes data to create or schedule a task for scheduler.
@@ -150,19 +147,19 @@ class Tasks(Resource):
         :return: id of created task
         """
         # get json post request data
-        user_id = request.user.id
         schedule_state_exceptions()
         try:
             task = request.get_json()
         except Exception:
             raise InvalidUsage("Bad Request, data should be in json")
-        bearer = request.headers.get('Authorization')
-        access_token = bearer.lower().replace('bearer ', '')
-        task_id = schedule_job(task, user_id, access_token)
+
+        task_id = schedule_job(task, request.user.id if request.user else None, request.oauth_token)
+
         headers = {'Location': '/tasks/%s' % task_id}
         response = json.dumps(dict(id=task_id))
         return ApiResponse(response, status=201, headers=headers)
 
+    @require_oauth()
     def delete(self, **kwargs):
         """
         Deletes multiple tasks whose ids are given in list in request data.
@@ -228,7 +225,7 @@ class ResumeTasks(Resource):
     """
         This resource resumes a previously paused jobs/tasks
     """
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def post(self, **kwargs):
         """
@@ -285,7 +282,7 @@ class PauseTasks(Resource):
     """
         This resource pauses jobs/tasks which can be resumed again
     """
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def post(self, **kwargs):
         """
@@ -343,7 +340,7 @@ class TaskById(Resource):
     """
         This resource returns a specific task based on id or update a task
     """
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def get(self, _id, **kwargs):
         """
@@ -449,7 +446,7 @@ class ResumeTaskById(Resource):
     """
         This resource resumes a previously paused job/task
     """
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def post(self, _id, **kwargs):
         """
@@ -491,7 +488,7 @@ class PauseTaskById(Resource):
     """
         This resource pauses job/task which can be resumed again
     """
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def post(self, _id, **kwargs):
         """
@@ -558,75 +555,3 @@ def job_state_exceptions(job_id, func):
         raise JobAlreadyRunningError("Task with id '%s' is already in running state" % job_id)
 
     return job
-
-
-@api.route('/schedule/')
-class GeneralTasks(Resource):
-
-    def post(self, **kwargs):
-        """
-        This method takes data to create or schedule a task for scheduler but without authenticated user.
-
-        :Example:
-            for interval or periodic schedule
-            task = {
-                "frequency": 3601,
-                "task_type": "periodic",
-                "start_datetime": "2015-12-05T08:00:00",
-                "end_datetime": "2016-01-05T08:00:00",
-                "url": "http://getTalent.com/sms/send/",
-                "post_data": {
-                    "campaign_name": "SMS Campaign",
-                    "phone_number": "09230862348",
-                    "smart_list_id": 123456,
-                    "content": "text to be sent as sms"
-                }
-            }
-            for one_time schedule
-            task = {
-                "task_type": "one_time",
-                "run_datetime": "2015-12-05T08:00:00",
-                "url": "http://getTalent.com/email/send/",
-                "post_data": {
-                    "campaign_name": "Email Campaign",
-                    "email": "user1@hotmail.com",
-                    "smart_list_id": 123456,
-                    "content": "content to be sent as email"
-                }
-            }
-
-            headers = {
-                        'Signature': 'signature key HMAC',
-                        'Content-Type': 'application/json'
-                       }
-            data = json.dumps(task)
-            response = requests.post(
-                                        API_URL + '/tasks/',
-                                        data=data,
-                                        headers=headers,
-                                    )
-
-        .. Response::
-
-            {
-                "id" : "5das76nbv950nghg8j8-33ddd3kfdw2"
-            }
-        .. Status:: 201 (Resource Created)
-                    400 (Bad Request)
-                    401 (Unauthorized to access getTalent)
-                    500 (Internal Server Error)
-
-        :return: id of created task
-        """
-        try:
-            hmac.validate_signature(request)
-        except HmacException:
-            raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
-        # get json post request data
-        schedule_state_exceptions()
-        try:
-            task = json.loads(request.data)
-        except Exception:
-            raise InvalidUsage("Bad Request, data should be in json")
-        task_id = schedule_job(task)
-        return task_id, 201

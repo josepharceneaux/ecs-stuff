@@ -17,6 +17,7 @@ import traceback
 from flask import Response
 from requests_oauthlib import OAuth2Session
 from social_network_service.common.error_handling import *
+from social_network_service.common.routes import AuthApiUrl
 from social_network_service import logger
 from flask import current_app as app
 
@@ -49,7 +50,7 @@ def authenticate(func):
             access_token = bearer.lower().replace('bearer ', '')
             oauth = OAuth2Session(token={'access_token': access_token})
             # db_data = Token.query.filter_by(access_token=access_token).first()
-            response = oauth.get(app.config['OAUTH_SERVER_URI'])
+            response = oauth.get(AuthApiUrl.AUTH_SERVICE_AUTHORIZE_URI)
             if response.status_code == 200 and response.json().get('user_id'):
                 kwargs['user_id'] = response.json()['user_id']
                 return func(*args, **kwargs)

@@ -7,6 +7,7 @@ app = Flask(__name__)
 print "Running app: %s" % app
 
 from candidate_service.common import common_config
+from candidate_service.common.redis_cache import redis_store
 app.config.from_object(common_config)
 
 logger = app.config['LOGGER']
@@ -16,6 +17,7 @@ register_error_handlers(app=app, logger=logger)
 
 db.init_app(app=app)
 db.app = app
+redis_store.init_app(app)
 
 # Wrap the flask app and give a healthcheck url
 health = HealthCheck(app, "/healthcheck")

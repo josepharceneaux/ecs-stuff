@@ -9,7 +9,7 @@ from faker import Faker
 from werkzeug.security import gen_salt
 from ..models.candidate import Candidate
 from ..models.user import UserGroup, DomainRole
-from ..utils.common_functions import get_or_create, get_access_token, create_test_user
+from auth_utilities import get_access_token, create_test_user, get_or_create
 
 # Application Specific
 from ..models.db import db
@@ -75,7 +75,7 @@ def get_token(user_login_credentials):
             'username': user_login_credentials['user_row'].email,
             'password': 'Talent15',
             'grant_type':'password'}
-    resp = requests.post('http://localhost:8001/oauth2/token', data=data)
+    resp = requests.post('http://localhost:8001/v1/oauth2/token', data=data)
     assert resp.status_code == 200
     return resp.json()
 
@@ -86,7 +86,7 @@ def revoke_token(user_logout_credentials):
                    'client_secret': user_logout_credentials['client_secret'],
                    'token': access_token,
                    'grant_type': 'password'}
-    resp = requests.post('http://localhost:8001/oauth2/revoke', data=revoke_data)
+    resp = requests.post('http://localhost:8001/v1/oauth2/revoke', data=revoke_data)
     assert resp.status_code == 200
     return
 

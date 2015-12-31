@@ -3,7 +3,7 @@ __author__ = 'ufarooqi'
 import random
 import string
 from . import app
-from flask import request, url_for
+from flask import request, url_for, Blueprint
 from user_service.common.models.user import User
 from user_service.common.redis_cache import redis_store
 from user_service_utilties import send_reset_password_email
@@ -14,9 +14,11 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from user_service.common.utils.auth_utils import require_oauth, require_all_roles
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
+users_utilities_blueprint = Blueprint('users_utilities_api', __name__)
 
-@app.route('/domain/<int:domain_id>/roles', methods=['GET'])
-@require_oauth
+
+@users_utilities_blueprint.route('/domain/<int:domain_id>/roles', methods=['GET'])
+@require_oauth()
 @require_all_roles('CAN_GET_DOMAIN_ROLES')
 def get_all_roles_of_domain(domain_id):
     # if logged-in user should belong to same domain as input domain_id
@@ -28,8 +30,8 @@ def get_all_roles_of_domain(domain_id):
         raise InvalidUsage(error_message='Either domain_id is invalid or it is different than that of logged-in user')
 
 
-@app.route('/users/update_password', methods=['PUT'])
-@require_oauth
+@users_utilities_blueprint.route('/users/update_password', methods=['PUT'])
+@require_oauth()
 def update_password():
     """
     This endpoint will be used to update the password of a user given old password
@@ -62,7 +64,7 @@ def update_password():
         raise InvalidUsage(error_message='No request data is found')
 
 
-@app.route('/users/forgot_password', methods=['POST'])
+@users_utilities_blueprint.route('/users/forgot_password', methods=['POST'])
 def forgot_password():
 
     email = request.form.get('username')
@@ -90,7 +92,7 @@ def forgot_password():
     return '', 204
 
 
-@app.route('/users/reset_password/<token>', methods=['GET', 'POST'])
+@users_utilities_blueprint.route('/users/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
 
     try:
