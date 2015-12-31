@@ -116,7 +116,7 @@ class TestSchedulerExceptions:
         """
         job_config = job_config_one_time.copy()
         run_datetime = datetime.datetime.utcnow() - datetime.timedelta(hours=5)
-        job_config['run_datetime'] = run_datetime.strftime('%Y-%m-%dT%H:%M:%S.0Z')
+        job_config['run_datetime'] = run_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
         response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
                                  headers=auth_header)
 

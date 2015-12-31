@@ -6,10 +6,12 @@ Scheduler - APScheduler initialization, set jobstore, threadpoolexecutor
 - get tasks from APScheduler and serialize tasks using json
 """
 
-# Third-party imports
+# Standard imports
 import datetime
 import os
 
+# Third-party imports
+from pytz import timezone
 from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.events import EVENT_JOB_EXECUTED
 from apscheduler.triggers.interval import IntervalTrigger
@@ -17,8 +19,6 @@ from apscheduler.triggers.date import DateTrigger
 from apscheduler.schedulers.background import BackgroundScheduler
 
 # Application imports
-from pytz import timezone
-
 from scheduler_service import logger
 from scheduler_service.common.models.user import User
 from scheduler_service.apscheduler_config import executors, job_store, jobstores
