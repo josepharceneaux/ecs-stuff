@@ -1,12 +1,35 @@
 """
 This file contains Base APP URls, and Urls of REST endpoints of all services
 """
+import os
 
 from common_config import GT_ENVIRONMENT
 
 LOCAL_HOST = 'http://127.0.0.1'
 TALENT_DOMAIN = '.gettalent.com'
 QA_EXTENSION = '-webdev'
+
+
+class AuthApiUrl:
+    def __init__(self):
+        pass
+
+    env = os.environ.get('GT_ENVIRONMENT')
+
+    if env == 'dev' or env == 'circle':
+        AUTH_SERVICE_HOST_NAME = 'http://127.0.0.1:8001/v1/%s'
+    elif env == 'qa':
+        # TODO: Change this url after deployment
+        AUTH_SERVICE_HOST_NAME = 'http://secure-webdev.gettalent.com/v1/%s'
+    elif env == 'prod':
+        # TODO: Change this url after deployment
+        AUTH_SERVICE_HOST_NAME = 'http://secure.gettalent.com/v1/%s'
+    else:
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
+
+    AUTH_SERVICE_TOKEN_CREATE_URI = AUTH_SERVICE_HOST_NAME % 'oauth2/token'
+    AUTH_SERVICE_TOKEN_REVOKE_URI = AUTH_SERVICE_HOST_NAME % 'oauth2/revoke'
+    AUTH_SERVICE_AUTHORIZE_URI = AUTH_SERVICE_HOST_NAME % 'oauth2/authorize'
 
 
 def _get_host_name(service_name, port_number):
@@ -76,16 +99,6 @@ class GTApis(object):
     SMS_CAMPAIGN_SERVICE_NAME = 'sms-campaign-service'
     SCHEDULER_SERVICE_NAME = 'scheduler-service'
     PUSH_NOTIFICATION_SERVICE_NAME = 'push-notification-service'
-
-
-class AuthApiUrl(object):
-    """
-    Rest URLs of auth_service
-    """
-
-    AUTH_HOST_NAME = _get_host_name(GTApis.AUTH_SERVICE_NAME,
-                                    GTApis.AUTH_SERVICE_PORT)
-    TOKEN_URL = AUTH_HOST_NAME % 'oauth2/token'
 
 
 class ActivityApiUrl(object):
@@ -304,3 +317,48 @@ class PushNotificationServiceApi(object):
     # /v1/campaigns/:id/schedule
     # To schedule an SMS campaign
     SCHEDULE = CAMPAIGN + '/schedule'
+
+
+
+class SchedulerApiUrl:
+    def __init__(self):
+        pass
+
+    env = os.environ.get('GT_ENVIRONMENT')
+
+    if env == 'dev' or env == 'circle':
+        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
+    elif env == 'qa':
+        # TODO: Change this url after deployment
+        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
+    elif env == 'prod':
+        # TODO: Change this url after deployment
+        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
+    else:
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
+
+    TASKS = SCHEDULER_SERVICE_HOST_NAME % "tasks/"
+    SINGLE_TASK = SCHEDULER_SERVICE_HOST_NAME % 'tasks/id/%s'
+
+
+class CandidatePoolApiUrl:
+    def __init__(self):
+        pass
+
+    env = os.environ.get('GT_ENVIRONMENT')
+
+    if env == 'dev' or env == 'circle':
+        CANDIDATE_POOL_SERVICE_HOST_NAME = 'http://127.0.0.1:8008/v1/%s'
+    elif env == 'qa':
+        # TODO: Change this url after deployment
+        CANDIDATE_POOL_SERVICE_HOST_NAME = 'http://127.0.0.1:8008/v1/%s'
+    elif env == 'prod':
+        # TODO: Change this url after deployment
+        CANDIDATE_POOL_SERVICE_HOST_NAME = 'http://127.0.0.1:8008/v1/%s'
+    else:
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
+
+    TALENT_POOL_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "talent-pools/stats"
+    TALENT_POOL_GET_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "talent-pool/%s/stats"
+    TALENT_PIPELINE_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "talent-pipelines/stats"
+    TALENT_PIPELINE_GET_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "talent-pipeline/%s/stats"

@@ -27,6 +27,15 @@ WEEKLY = 3
 BIWEEKLY = 4
 MONTHLY = 5
 YEARLY = 6
+__author__ = 'ufarooqi'
+
+import random
+import string
+import requests
+from ..models.user import User
+from ..routes import AuthApiUrl
+from sqlalchemy.sql.expression import ClauseElement
+from werkzeug.security import generate_password_hash
 
 
 def get_or_create(session, model, defaults=None, **kwargs):
@@ -154,7 +163,7 @@ def create_test_user(session, domain_id, password):
 
 def get_access_token(user, password, client_id, client_secret):
     params = dict(grant_type="password", username=user.email, password=password)
-    auth_service_token_response = requests.post(AuthApiUrl.TOKEN_URL,
+    auth_service_token_response = requests.post(AuthApiUrl.AUTH_SERVICE_TOKEN_CREATE_URI,
                                                 params=params, auth=(client_id, client_secret)).json()
     if not (auth_service_token_response.get(u'access_token') and auth_service_token_response.get(u'refresh_token')):
         raise Exception("Either Access Token or Refresh Token is missing")
@@ -313,3 +322,4 @@ def get_utc_datetime(dt, tz):
         return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
     utc_dt = local_dt.astimezone(pytz.utc)
     return utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+

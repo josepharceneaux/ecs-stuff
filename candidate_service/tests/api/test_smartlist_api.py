@@ -1,7 +1,8 @@
 import requests
 import json
 from faker import Faker
-from candidate_service.common.models.talent_pools_pipelines import Smartlist, SmartlistCandidate
+from candidate_service.common.models.smartlist import Smartlist
+from candidate_service.common.models.talent_pools_pipelines import SmartlistCandidate
 from candidate_service.common.tests.conftest import UserAuthentication
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.tests.sample_data import generate_single_candidate_data
