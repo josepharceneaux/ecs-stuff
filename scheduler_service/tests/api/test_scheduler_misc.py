@@ -4,6 +4,8 @@ Also test bulk tests for jobs
 """
 # Third party imports
 import json
+
+import datetime
 import pytest
 import requests
 
@@ -46,3 +48,23 @@ class TestSchedulerMisc:
                                                    headers=auth_header)
 
             assert response_remove_jobs.status_code == 200
+
+    def test_start_datetime_in_past(self, auth_header, job_config):
+        """
+        For testing the time in 0-30 seconds. if yes then it should schedule job. If more then exception should be thrown
+        :param auth_header: Fixture that contains token.
+        :param job_config: (dict): Fixture that contains job config to be used as
+        :return:
+        """
+        start_datetime = datetime.datetime.utcnow() - datetime.timedelta(seconds=20)
+        job_config['start_datetime'] = start_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
+        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+                                 headers=auth_header)
+        assert response.status_code == 201
+        data = response.json()
+        assert data['id'] is not None
+
+        # Let's delete jobs now
+        response_remove = requests.delete(APP_URL + '/tasks/id/' + data['id'],
+                                          headers=auth_header)
+        assert response_remove.status_code == 200

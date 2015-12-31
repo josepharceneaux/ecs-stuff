@@ -85,7 +85,8 @@ def validate_one_time_job(data):
 
     current_datetime = datetime.datetime.utcnow()
     current_datetime = current_datetime.replace(tzinfo=timezone('UTC'))
-    if run_datetime < current_datetime:
+    # If job is not in 0-30 seconds in past or greater than current datetime.
+    if run_datetime < (current_datetime - datetime.timedelta(seconds=30)):
         raise InvalidUsage("No need to schedule job of already passed time")
 
     return valid_data
@@ -116,7 +117,9 @@ def validate_periodic_job(data):
     current_datetime = datetime.datetime.utcnow()
     current_datetime = current_datetime.replace(tzinfo=timezone('UTC'))
 
-    if not (current_datetime < start_datetime < (end_datetime - datetime.timedelta(seconds=frequency))):
+    # If job is not in 0-30 seconds in past or greater than current datetime.
+    if not ((current_datetime - datetime.timedelta(seconds=30)) < start_datetime <
+                (end_datetime - datetime.timedelta(seconds=frequency))):
         raise InvalidUsage("start_datetime and end_datetime should be in future.")
 
     return valid_data
