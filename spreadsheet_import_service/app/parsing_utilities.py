@@ -165,7 +165,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, source_id=N
                     else:
                         logger.warning("Unknown AOI when importing from CSV, user %s: %s", user_id, column)
                 elif column_name == 'candidate_experience.organization':
-                    prepare_candidate_data(work_experiences, 'company', column)
+                    prepare_candidate_data(work_experiences, 'organization', column)
                 elif column_name == 'candidate_experience.position':
                     prepare_candidate_data(work_experiences, 'position', column)
                 elif column_name == 'candidate_education.schoolName':

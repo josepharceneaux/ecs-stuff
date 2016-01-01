@@ -52,7 +52,6 @@ def test_import_candidates_from_spreadsheet(access_token_first, user_first):
     response, status_code = import_spreadsheet_candidates(access_token_first, candidate_data=candidate_data,
                                                           import_candidates=True)
     print "\nresponse = {}".format(response)
-    print response_info(response)
     assert status_code == 201
     assert response.get('count') == len(candidate_data)
     assert response.get('status') == 'complete'
