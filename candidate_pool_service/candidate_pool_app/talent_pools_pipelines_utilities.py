@@ -7,6 +7,7 @@ from datetime import datetime
 from candidate_pool_service.common.models.user import User
 from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.redis_cache import redis_store
+from candidate_pool_service.common import talent_property_manager
 from candidate_pool_service.common.error_handling import InvalidUsage
 from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.common.routes import CandidatePoolApiUrl, SchedulerApiUrl, CandidateApiUrl
@@ -95,7 +96,7 @@ def get_candidates_of_talent_pipeline(talent_pipeline, fields=''):
 
 def schedule_talent_pool_and_pipelines_daily_stats_update():
 
-    env = os.getenv('GT_ENVIRONMENT')
+    env = talent_property_manager.get_env()
 
     if not redis_store.get('IS_TALENT_POOL_AND_PIPELINE_STAT_API_REGISTERED') and env != 'circle':
 

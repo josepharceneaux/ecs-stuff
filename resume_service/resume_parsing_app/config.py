@@ -1,7 +1,9 @@
 """Application config file."""
+
+import os
 import logging
 import logging.config
-import os
+from resume_service.common import talent_property_manager
 
 __author__ = 'erikfarmer'
 
@@ -10,7 +12,7 @@ APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 LOGGING_CONF = os.path.join(APP_ROOT, '../logging.conf')
 logging.config.fileConfig(LOGGING_CONF)
 
-GT_ENVIRONMENT = os.environ.get('GT_ENVIRONMENT')
+GT_ENVIRONMENT = talent_property_manager.get_env()
 if GT_ENVIRONMENT == 'dev':
     BG_URL = 'http://sandbox-lensapi.burning-glass.com/v1.7/parserservice/resume'
     CANDIDATE_CREATION_URI = 'http://127.0.0.1:8005/v1/candidates'
@@ -38,4 +40,4 @@ elif GT_ENVIRONMENT == 'prod':
 else:
     raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")
 
-SECRET_KEY = os.urandom(24).encode('hex')
+SECRET_KEY = talent_property_manager.get_secret_key()

@@ -1,10 +1,18 @@
 __author__ = 'ufarooqi'
 
-from user_service.common.models.user import Domain, DomainRole, Token, db
-from flask import request, Blueprint
+import random
+import string
+from . import app
+from flask import request, url_for, Blueprint
+from user_service.common.models.user import User
+from user_service.common.redis_cache import redis_store
+from user_service_utilties import send_reset_password_email
 from user_service.common.error_handling import *
-from user_service.common.utils.auth_utils import require_oauth, require_all_roles
+from user_service.common.utils.validators import is_valid_email
+from user_service.common.models.user import Domain, DomainRole, Token, db
 from werkzeug.security import generate_password_hash, check_password_hash
+from user_service.common.utils.auth_utils import require_oauth, require_all_roles
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 users_utilities_blueprint = Blueprint('users_utilities_api', __name__)
 
@@ -54,3 +62,72 @@ def update_password():
             raise UnauthorizedError(error_message="Old password is not correct")
     else:
         raise InvalidUsage(error_message='No request data is found')
+
+
+@users_utilities_blueprint.route('/users/forgot_password', methods=['POST'])
+def forgot_password():
+
+    email = request.form.get('username')
+    if not email or not is_valid_email(email):
+        raise InvalidUsage("A valid username should be provided")
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        raise NotFoundError(error_message="User with username: %s doesn't exist" % email)
+
+    token = URLSafeTimedSerializer(app.config["SECRET_KEY"]).dumps(email, salt='recover-key')
+
+    user.reset_password_key = token
+    db.session.commit()
+
+    # Create 6-digit numeric token for mobile app and store it into cache
+    six_digit_token = ''.join(random.choice(string.digits) for _ in range(6))
+
+    redis_store.setex(six_digit_token, token, 46400)  # Key-value pair will be removed after 12 hours
+    reset_password_url = url_for('.reset_password', token=token, _external=True)
+
+    name = user.first_name or user.last_name or 'User'
+    send_reset_password_email(email, name, reset_password_url, six_digit_token)
+
+    return '', 204
+
+
+@users_utilities_blueprint.route('/users/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+
+    try:
+        # Check if token is six digit long (For Mobile)
+        six_digit_token = ''
+        if len(token) == 6:
+            six_digit_token = token
+            token = redis_store.get(six_digit_token)
+
+        email = URLSafeTimedSerializer(app.config["SECRET_KEY"]).loads(token, salt='recover-key', max_age=46400)
+
+        user = User.query.filter_by(email=email).first()
+        if user.reset_password_key != token:
+            raise Exception()
+
+    except SignatureExpired:
+        raise ForbiddenError(error_message="Your encrypted token has been expired")
+    except BadSignature:
+        raise ForbiddenError(error_message="Your encrypted token is not valid")
+    except:
+        raise ForbiddenError(error_message="Your encrypted token is not valid")
+
+    if request.method == 'GET':
+        return '', 204
+    else:
+        if not request.form.get('password'):
+            raise InvalidUsage(error_message="A valid password should be provided")
+
+        # Remove key-value pair from redis-cache
+        if six_digit_token:
+            redis_store.delete(six_digit_token)
+
+        user.reset_password_key = ''
+        user.password = generate_password_hash(request.form.get('password'), method='pbkdf2:sha512')
+        db.session.commit()
+        return '', 204
+
+

@@ -4,6 +4,7 @@ from flask import Flask
 from healthcheck import HealthCheck
 from user_service.common.models.db import db
 from user_service.common import common_config
+from user_service.common.redis_cache import redis_store
 
 app = Flask(__name__)
 app.config.from_object(common_config)
@@ -14,6 +15,8 @@ register_error_handlers(app, logger)
 
 db.init_app(app)
 db.app = app
+
+redis_store.init_app(app)
 
 from views import users_utilities_blueprint
 from api.users_v1 import users_blueprint
