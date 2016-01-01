@@ -5,7 +5,7 @@ import json
 
 import requests
 
-from push_notification_service.constants import GET_TALENT_ICON_URL
+from constants import GET_TALENT_ICON_URL
 
 CREATE_NOTIFICATION_URL = 'https://onesignal.com/api/v1/notifications'
 GET_NOTIFICATIONS_URL = 'https://onesignal.com/api/v1/notifications?app_id=%s&limit=%s&offset=%s'

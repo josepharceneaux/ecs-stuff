@@ -6,10 +6,10 @@ from push_notification_service.common.models.misc import UrlConversion
 from push_notification_service.common.utils.activity_utils import ActivityMessageIds
 from push_notification_service.common.campaign_services.campaign_base import CampaignBase
 from push_notification_service.common.routes import PushNotificationServiceApi
-from push_notification_service import logger
-from push_notification_service.custom_exceptions import *
-from push_notification_service.constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
-from push_notification_service.one_signal_sdk import OneSignalSdk
+from push_notification_service.push_campaign_app import logger
+from custom_exceptions import *
+from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
+from one_signal_sdk import OneSignalSdk
 
 one_signal_client = OneSignalSdk(app_id=ONE_SIGNAL_APP_ID,
                                  rest_key=ONE_SIGNAL_REST_API_KEY)

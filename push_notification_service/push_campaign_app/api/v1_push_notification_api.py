@@ -1,6 +1,68 @@
+"""
+This module contains Restful API endpoints for Push Campaign Service.
+
+A brief overview of all endpoints is as follows:
+
+    1. Create a push campaign
+        URL: /v1/campaigns [POST]
+
+        Send a POST request to this endpoint with required data to create a push campaign.
+        It actually creates a draft for campaign. To send a campaign, you need to schedule it.
+
+    2. Get campaigns of a user
+        URL: /v1/campaigns [GET]
+
+        To get all campaigns of a user, send a GET request to this endpoint
+
+    3. Schedule a campaign
+        URL: /v1/campaigns/<int:campaign_id>/schedule [POST]
+
+        User can schedule a campaign by sending a POST request to this endpoint with frequency,
+        start_datetime and end_datetime.
+
+    4. Reschedule a campaign
+        URL: /v1/campaigns/<int:campaign_id>/schedule [PUT]
+
+        User can reschedule his campaign by updating the frequency, start_datetime or end_datetime
+        by sending a PUT request to this point.
+
+    5. Send a campaign
+        URL: /v1/campaigns/<int:campaign_id>/send [POST]
+
+        This endpoint is used to send a campaign (that has already been created) to associated
+        candidates by send a POST request to this endpoint.
+
+    6. Get `Sends` of a Blast
+        URL: /v1/campaigns/<int:campaign_id>/blasts/<int:blast_id>/sends [GET]
+
+        A campaign can have multiple blast. To get sends of a single blast for a specific campaign
+        send a GET request to this endpoint.
+
+    7. Get `Sends` of a campaign
+        URL: /v1/campaigns/<int:campaign_id>/sends [GET]
+
+        To get all sends of a campaign, use this endpoint
+
+    8. Get `Blasts` of a campaign
+        URL: /v1/campaigns/<int:campaign_id>/blasts [GET]
+
+        To get a list of all blasts associated to a campaign, send a GET request
+        to this endpoint.A blast contains statistics of a campaign when a campaign
+        is sent once to associated candidates.
+
+    9. Register a device for candidate
+        URL: /v1/devices [POST]
+
+        Push notifications are sent to candidate devices using OneSignal API. One signal
+        assigns a device id to each device which we need to assign to a candidate in getTalent
+        database. In order to do that, we need to send a POST request to this endpoint with
+        candidate id and device id (from OneSignal).
+
+
+"""
 # Standard Library
+import json
 import types
-from datetime import datetime
 
 # Third Party
 from flask import request
@@ -14,12 +76,12 @@ from push_notification_service.common.models.candidate import Candidate, Candida
 from push_notification_service.common.talent_api import TalentApi
 from push_notification_service.common.utils.auth_utils import require_oauth
 from push_notification_service.common.utils.api_utils import api_route, ApiResponse
-from push_notification_service.common.models.push_notification import PushCampaign, PushCampaignSmartlist
+from push_notification_service.common.models.push_notification import *
 from push_notification_service.common.error_handling import *
-from push_notification_service.custom_exceptions import *
-from push_notification_service.one_signal_sdk import OneSignalSdk
-from push_notification_service.constants import ONE_SIGNAL_REST_API_KEY, ONE_SIGNAL_APP_ID
-from push_notification_service.push_notification_campaign import PushCampaignBase
+from push_notification_service.modules.custom_exceptions import *
+from push_notification_service.modules.one_signal_sdk import OneSignalSdk
+from push_notification_service.modules.constants import ONE_SIGNAL_REST_API_KEY, ONE_SIGNAL_APP_ID
+from push_notification_service.modules.push_notification_campaign import PushCampaignBase
 
 # creating blueprint
 push_notification_blueprint = Blueprint('push_notification_api', __name__)
@@ -308,12 +370,12 @@ class PushCampaignBlastSends(Resource):
 
     def get(self, campaign_id, blast_id):
         user = request.user
+        # Get a campaign that was created by this user
         push_campaign = PushCampaign.get_by_id_and_user_id(campaign_id, user.id)
         if not push_campaign:
             raise ResourceNotFound('Push campaign does not exists with id %s for this user' % campaign_id)
-        blast = filter(lambda item: item.id == blast_id, push_campaign.blasts)
-        if len(blast):
-            blast = blast[0]
+        blast = PushCampaignBlast.get_by_id(blast_id)
+        if blast and blast.campaign_id == campaign_id:
             sends = [send.to_json() for send in blast.blast_sends]
             response = dict(sends=sends, count=len(sends))
             return response, 200
@@ -366,11 +428,15 @@ class PushCampaignSends(Resource):
                     500 (Internal Server Error)
         """
         user = request.user
+        # Get a campaign that was created by this user
         push_campaign = PushCampaign.get_by_id_and_user_id(campaign_id, user.id)
         if not push_campaign:
             raise ResourceNotFound('Push campaign does not exists with id %s for this user' % campaign_id)
         sends = []
+        # Add sends for every blast to `sends` list to get all sends of a campaign.
+        # A campaign can have multiple blasts
         [sends.extend(blast.blast_sends) for blast in push_campaign.blasts]
+        # Get JSON serializable data
         sends = [send.to_json() for send in sends]
         response = dict(campaign_sends=sends, count=len(sends))
         return response, 200
@@ -424,11 +490,12 @@ class PushNotificationBlasts(Resource):
                     500 (Internal Server Error)
         """
         user = request.user
+        # Get a campaign that was created by this user
         push_campaign = PushCampaign.get_by_id_and_user_id(campaign_id, user.id)
         if not push_campaign:
             raise ResourceNotFound('Push campaign does not exists with id %s for this user' % campaign_id)
+        # Serialize blasts of a campaign
         blasts = [blast.to_json() for blast in push_campaign.blasts]
-
         response = dict(blasts=blasts, count=len(blasts))
         return response, 200
 
@@ -471,17 +538,21 @@ class Devices(Resource):
         candidate_id = data.get('candidate_id')
         device_id = data.get('device_id')
         candidate = Candidate.get_by_id(candidate_id)
+        # if candidate does not exists with given id, we can not add this device id
         if not candidate:
             raise ForbiddenError('Unable to create a device for a non existing candidate id: %s' % candidate_id)
         if device_id:
+            # Send a GET request to OneSignal API to confirm that this device id is valid
             resp = one_signal_client.get_player(device_id)
             if resp.ok:
+                # Device exists with id
                 candidate_device = CandidateDevice(candidate_id=candidate_id,
                                                    one_signal_device_id=device_id,
                                                    registered_at=datetime.now())
                 CandidateDevice.save(candidate_device)
                 return dict(messgae='Device registered successfully with candidate (id: %s)' % candidate_id)
             else:
+                # No device was found on OneSignal database.
                 raise ResourceNotFound('Device is not registered with OneSignal with id %s' % device_id)
         else:
             raise InvalidUsage('device_id is not found in post data')
