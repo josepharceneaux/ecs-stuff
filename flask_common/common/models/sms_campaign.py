@@ -3,6 +3,7 @@ __author__ = 'basit'
 import datetime
 from db import db
 from sqlalchemy.orm import relationship
+from candidate import Candidate
 
 
 class SmsCampaign(db.Model):
@@ -72,6 +73,8 @@ class SmsCampaignSend(db.Model):
                                                       cascade='all,delete-orphan',
                                                       passive_deletes=True,
                                                       backref='sms_campaign_send')
+    candidate = relationship('Candidate', cascade='all', passive_deletes=True,
+                             backref='sms_campaign_send')
 
     def __repr__(self):
         return "<SmsCampaignSend (id = %r)>" % self.id

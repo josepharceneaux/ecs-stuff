@@ -70,6 +70,10 @@ class Candidate(db.Model):
     def get_id(self):
         return unicode(self.id)
 
+    @property
+    def name(self):
+        return self.first_name + " " + self.last_name
+
     @classmethod
     def get_by_id(cls, candidate_id):
         return cls.query.filter_by(id=candidate_id).first()

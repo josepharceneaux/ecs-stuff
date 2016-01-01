@@ -14,7 +14,7 @@ from pytz import timezone
 from dateutil.parser import parse
 
 # Common utils
-from ..error_handling import InvalidUsage
+from ..error_handling import InvalidUsage, ResourceNotFound
 from campaign_utils import frequency_id_to_seconds
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 
@@ -156,3 +156,40 @@ def validation_of_data_to_schedule_campaign(campaign_obj, request):
             raise InvalidUsage("end_datetime must be greater than start_datetime")
     data_to_schedule_campaign['frequency'] = frequency
     return data_to_schedule_campaign
+
+
+def validate_blast_candidate_url_conversion_in_db(campaign_blast_obj, candidate,
+                                                  url_conversion_obj, campaign_name):
+    """
+    This method is used for the pre-processing of URL redirection
+        It checks if campaign blast object, candidate, campaign and url_conversion object
+        is present in database. If any of them is missing it raise ResourceNotFound.
+
+    :param campaign_blast_obj: campaign blast object
+    :param candidate: candidate object
+    :param url_conversion_obj: url_conversion obj
+    :type campaign_blast_obj: SmsCampaignBlast | EmailCampaignBlast or any other campaign type
+    :type candidate: Candidate
+    :type url_conversion_obj: UrlConversion
+    :exception: ResourceNotFound
+    **See Also**
+    .. see also:: sms_campaign_url_redirection() function in sms_campaign_app/app.py
+    """
+    # check if candidate exists in database
+    if not candidate:
+        raise ResourceNotFound('pre_process_url_redirect: Candidate(id:%s) not found.'
+                               % candidate.id, error_code=ResourceNotFound.http_status_code())
+    # check if campaign_blasts exists in database
+    if not campaign_blast_obj:
+        raise ResourceNotFound('pre_process_url_redirect: %s(id=%s) not found.'
+                               % (campaign_blast_obj.__tablename__, campaign_blast_obj.id),
+                               error_code=ResourceNotFound.http_status_code())
+    if not getattr(campaign_blast_obj, campaign_name):
+        raise ResourceNotFound('pre_process_url_redirect: Campaign not found for %s.'
+            % campaign_blast_obj.__tablename__, error_code=ResourceNotFound.http_status_code())
+    # check if url_conversion record exists in database
+    if not url_conversion_obj:
+        raise ResourceNotFound('pre_process_url_redirect: Url Conversion(id=%s) not found.'
+                               % url_conversion_obj.id,
+                               error_code=ResourceNotFound.http_status_code())
+    return getattr(campaign_blast_obj, campaign_name)

@@ -26,7 +26,6 @@ from datetime import datetime
 
 # Database Models
 from sms_campaign_service.common.models.user import UserPhone
-from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.candidate import (PhoneLabel, Candidate, CandidatePhone)
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignSend,
                                                              SmsCampaignBlast, SmsCampaignSmartlist,
@@ -53,7 +52,6 @@ from sms_campaign_service.modules.sms_campaign_app_constants import (MOBILE_PHON
                                                                      CELERY_QUEUE)
 from sms_campaign_service.modules.custom_exceptions import (EmptySmsBody,
                                                             MultipleTwilioNumbersFoundForUser,
-                                                            EmptyDestinationUrl,
                                                             MissingRequiredField,
                                                             MultipleUsersFound,
                                                             MultipleCandidatesFound,
@@ -229,6 +227,7 @@ class SmsCampaignBase(CampaignBase):
         :return:
         """
         # sets the user_id
+        __name__ = CELERY_QUEUE
         super(SmsCampaignBase, self).__init__(user_id)
         self.user_phone = self.get_user_phone()
         if not self.user_phone:
@@ -1122,143 +1121,6 @@ class SmsCampaignBase(CampaignBase):
                             source_table=SmsCampaign.__tablename__,
                             params=params,
                             headers=auth_header)
-
-    @staticmethod
-    def pre_process_url_redirect(campaign_id, url_conversion_id, candidate_id):
-        """
-        This method is used for the pre-processing of URL redirection
-            It checks if candidate and campaign is present in database. If both are
-            present, returns them otherwise raise ResourceNotFound.
-
-        :param campaign_id: id of SMS campaign
-        :param url_conversion_id: id of URL conversion record
-        :param candidate_id: id of Candidate
-        :exception: MissingRequiredField
-        :exception: ResourceNotFound
-        :return: SMS Campaign and Candidate obj
-        :rtype: tuple (sms_campaign, candidate)
-
-        **See Also**
-        .. see also:: sms_campaign_url_redirection() function in sms_campaign_app/app.py
-        """
-        url_redirect_data = {'campaign_id': campaign_id,
-                             'url_conversion_id': url_conversion_id,
-                             'candidate_id': candidate_id}
-        missing_items = find_missing_items(url_redirect_data, verify_values_of_all_keys=True)
-        if missing_items:
-            raise MissingRequiredField(
-                'pre_process_url_redirect: Missing required fields are: %s'
-                % missing_items)
-        # check if candidate exists in database
-        candidate = Candidate.get_by_id(candidate_id)
-        if not candidate:
-            raise ResourceNotFound(
-                'pre_process_url_redirect: Candidate(id:%s) not found.'
-                % candidate_id, error_code=ResourceNotFound.http_status_code())
-        # check if campaign exists in database
-        campaign = SmsCampaign.get_by_id(campaign_id)
-        if not campaign:
-            raise ResourceNotFound(
-                'pre_process_url_redirect: SMS Campaign(id=%s) Not found.'
-                % campaign_id, error_code=ResourceNotFound.http_status_code())
-        # check if url_conversion record exists in database
-        url_conversion_record = UrlConversion.get_by_id(url_conversion_id)
-        if not url_conversion_record:
-            raise ResourceNotFound(
-                'pre_process_url_redirect: Url Conversion(id=%s) Not found.'
-                % url_conversion_id,
-                error_code=ResourceNotFound.http_status_code())
-        return campaign, url_conversion_record, candidate
-
-    def process_url_redirect(self, campaign, url_conversion_db_record, candidate):
-        """
-        This does the following steps to send campaign to candidates.
-
-        1- Get the "url_conversion" obj from db.
-        2- Get the "sms_campaign_blast" obj from db.
-        3- Increase "hit_count" by 1 for "url_conversion" record.
-        4- Increase "clicks" by 1 for "sms_campaign_blast" record.
-        5- Add activity that abc candidate clicked on xyz campaign.
-            "'Alvaro Oliveira' clicked URL of campaign 'Jobs at Google'"
-        6- return the destination URL (actual URL provided by recruiter(user)
-            where we want our candidate to be redirected.
-
-        :Example:
-
-            1- Create class object
-                from sms_campaign_service.sms_campaign_base import SmsCampaignBase
-                camp_obj = SmsCampaignBase(1)
-
-            2- Call method process_send with campaign_id
-                redirection_url = camp_obj.process_url_redirect(campaign_id=1, url_conversion_id=1)
-
-        .. Status:: 200 (OK)
-                    404 (Resource not found)
-                    500 (Internal Server Error)
-                    5005 (EmptyDestinationUrl)
-
-        :param campaign: sms_campaign record
-        :param url_conversion_db_record: url_conversion record
-        :param candidate: Campaign object form db
-        :type campaign: SmsCampaign
-        :type url_conversion_db_record: UrlConversion
-        :type candidate: Candidate
-        :exception: EmptyDestinationUrl
-        :return: URL where to redirect the candidate
-        :rtype: str
-
-        **See Also**
-        .. see also:: sms_campaign_url_redirection() function in sms_campaign_app/app.py
-        """
-        logger.debug('process_url_redirect: Processing for URL redirection. (User(id:%s))'
-                     % self.user_id)
-        self.campaign = campaign
-        # Update SMS campaign blast
-        self.create_or_update_sms_campaign_blast(campaign.id,
-                                                 increment_clicks=True)
-        # Update hit count
-        self.create_or_update_url_conversion(url_conversion_id=url_conversion_db_record.id,
-                                             hit_count_update=True)
-        # Create Activity
-        self.create_campaign_url_click_activity(candidate)
-        logger.info('process_url_redirect: candidate(id:%s) clicked on SMS '
-                    'campaign(id:%s). (User(id:%s))'
-                    % (candidate.id, self.campaign.id, self.user_id))
-        # Get URL to redirect candidate to actual URL
-        if not url_conversion_db_record.destination_url:
-            raise EmptyDestinationUrl(
-                'process_url_redirect: Destination_url is empty for '
-                'url_conversion(id:%s)' % url_conversion_db_record.id)
-        return url_conversion_db_record.destination_url
-
-    def create_campaign_url_click_activity(self, source):
-        """
-        - Here we set "params" and "type" of activity to be stored in db table "Activity"
-            for Campaign URL click.
-
-        - Activity will appear as
-            "Michal Jordan clicked on SMS Campaign "abc". "
-
-        - This method is called from process_url_redirect() method of class
-            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
-
-        :param source: Candidate obj
-        :type source: Candidate
-        :exception: InvalidUsage
-
-        **See Also**
-        .. see also:: process_url_redirect() method in SmsCampaignBase class.
-        """
-        if not isinstance(source, Candidate):
-            raise InvalidUsage('source should be an instance of model candidate')
-        params = {'candidate_name': source.first_name + ' ' + source.last_name,
-                  'campaign_name': self.campaign.name}
-        self.create_activity(self.user_id,
-                             _type=ActivityMessageIds.CAMPAIGN_SMS_CLICK,
-                             source_id=self.campaign.id,
-                             source_table=SmsCampaign.__tablename__,
-                             params=params,
-                             headers=self.oauth_header)
 
     @classmethod
     def process_candidate_reply(cls, reply_data):

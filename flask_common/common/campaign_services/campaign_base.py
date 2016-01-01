@@ -24,18 +24,26 @@ from abc import abstractmethod
 from celery import chord
 from flask import current_app
 
-# Application Specific
+# Database Models
+from ..models.db import db
 from ..models.user import Token
 from ..models.misc import UrlConversion
 from ..models.candidate import Candidate
-from ..models.sms_campaign import SmsCampaign
+from ..models.email_marketing import EmailCampaignBlast
+from ...common.models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
+
+# Common Utils
 from ..utils.scheduler_utils import SchedulerUtils
-from ..routes import ActivityApiUrl, SchedulerApiUrl, CandidatePoolApiUrl
+from ..utils.activity_utils import ActivityMessageIds
+from ..utils.handy_functions import (http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER,
+                                     camel_case_to_snake_case)
+from ..routes import (ActivityApiUrl, SchedulerApiUrl, CandidatePoolApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
-from ..utils.handy_functions import (http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER)
+
+from campaign_utils import get_model, get_activity_type
 from validators import (validate_header, validate_datetime_format,
-                        is_datetime_in_valid_format_and_in_future,
-                        validation_of_data_to_schedule_campaign)
+                        validation_of_data_to_schedule_campaign,
+                        validate_blast_candidate_url_conversion_in_db)
 
 
 class CampaignBase(object):
@@ -100,7 +108,7 @@ class CampaignBase(object):
             SMS campaign 'We are hiring' has been sent to 500 candidates.
 
     * create_or_update_url_conversion(destination_url=None, source_url='', hit_count=0,
-                                    url_conversion_id=None, hit_count_update=None): [static]
+                                    url_conversion_id=None, increment_hit_count=None): [static]
         Here we save/update record of url_conversion in db table "url_conversion".
         This is common for all child classes.
 
@@ -682,9 +690,206 @@ class CampaignBase(object):
         """
         pass
 
+    @classmethod
+    def process_url_redirect(cls, url_conversion_id):
+        """
+        This does the following steps to send campaign to candidates.
+
+        1- Get the "url_conversion" obj from db.
+        2- Get the "sms_campaign_blast" obj from db.
+        3- Increase "hit_count" by 1 for "url_conversion" record.
+        4- Increase "clicks" by 1 for "sms_campaign_blast" record.
+        5- Add activity that abc candidate clicked on xyz campaign.
+            "'Alvaro Oliveira' clicked URL of campaign 'Jobs at Google'"
+        6- return the destination URL (actual URL provided by recruiter(user)
+            where we want our candidate to be redirected.
+
+        :Example:
+
+            1- Create class object
+                from sms_campaign_service.sms_campaign_base import SmsCampaignBase
+                camp_obj = SmsCampaignBase(1)
+
+            2- Call method process_send with campaign_id
+                redirection_url = camp_obj.process_url_redirect(campaign_id=1, url_conversion_id=1)
+
+        .. Status:: 200 (OK)
+                    404 (Resource not found)
+                    500 (Internal Server Error)
+                    5005 (EmptyDestinationUrl)
+
+        :param campaign: sms_campaign record
+        :param url_conversion_db_record: url_conversion record
+        :param candidate: Campaign object form db
+        :type campaign: SmsCampaign
+        :type url_conversion_db_record: UrlConversion
+        :type candidate: Candidate
+        :exception: EmptyDestinationUrl
+        :return: URL where to redirect the candidate
+        :rtype: str
+
+        **See Also**
+        .. see also:: sms_campaign_url_redirection() function in sms_campaign_app/app.py
+        """
+        current_app.config['LOGGER'].debug(
+            'process_url_redirect: Processing for URL redirection(id:%s).' % url_conversion_id)
+
+        campaign_name = cls.__name__.replace('Base', '')
+        campaign_name_snake_case = camel_case_to_snake_case(campaign_name)
+        campaign_send_url_conversion_model = get_model(campaign_name_snake_case,
+                                                       campaign_name + 'SendUrlConversion')
+        record = campaign_send_url_conversion_model.query.filter_by(
+            url_conversion_id=url_conversion_id).first()
+        if not record:
+            raise ResourceNotFound('record not found')
+        # get url_conversion obj
+        url_conversion_obj = UrlConversion.get_by_id(url_conversion_id)
+        # get campaign_send object
+        campaign_send_obj = getattr(record, campaign_name_snake_case + '_send')
+        # get campaign_blast object
+        campaign_blast_obj = getattr(campaign_send_obj, campaign_name_snake_case + '_blast')
+        # get candidate object
+        candidate_obj = getattr(campaign_send_obj, 'candidate')
+        # Validate if all the required items are present in database.
+        campaign_obj = validate_blast_candidate_url_conversion_in_db(campaign_blast_obj,
+                                                                     candidate_obj,
+                                                                     url_conversion_obj,
+                                                                     campaign_name_snake_case)
+        if not url_conversion_obj.destination_url:
+            raise InvalidUsage('process_url_redirect: Destination_url is empty for '
+                               'url_conversion(id:%s)' % url_conversion_obj.id)
+        # Update hit_count, number of clicks and create activity
+        cls.update_blast_and_create_click_activity(campaign_blast_obj, candidate_obj,
+                                                   url_conversion_obj, campaign_obj,
+                                                   campaign_name_snake_case)
+        # Get URL to redirect candidate to actual URL
+
+        return url_conversion_obj.destination_url
+
+    @classmethod
+    def update_blast_and_create_click_activity(cls, campaign_blast_obj, candidate,
+                                               url_conversion_obj, campaign_obj, campaign_name):
+        """
+        When a candidate is redirected to our app, we use this method to
+
+        1)  update the hit_count in 'url_conversion' table by 1
+        2)  update the clicks in campaign blast table by 1
+        3)  Create activity that "Jordan has clicked on SMS campaign 'Job Openings'"
+        :param url_conversion_id: id of url_conversion record from database
+        :return: url_conversion object
+        :rtype: UrlConversion
+        """
+        # update hit_count
+        cls.create_or_update_url_conversion(url_conversion_id=url_conversion_obj.id,
+                                            increment_hit_count=True)
+        # update the number of clicks
+        cls.update_blast_stats(campaign_blast_obj, clicks=True)
+        # get auth_header
+        auth_header = cls.get_authorization_header(candidate.user_id)
+        # get activity type id to create activity
+        activity_name = "_".join(campaign_name.split('_')[::-1]).upper() + '_CLICK'
+        try:
+            _type= get_activity_type(activity_name)
+            # create_activity
+            cls.create_campaign_url_click_activity(campaign_obj, candidate, _type, auth_header)
+        except InvalidUsage:
+            current_app.config['LOGGER'].exception(
+                'update_blast_and_create_click_activity: Activity type not found for %s. '
+                'Cannot create click activity' % activity_name)
+
+    @classmethod
+    def create_campaign_url_click_activity(cls, source, candidate,
+                                           _type, auth_header):
+        """
+        - Here we set "params" and "type" of activity to be stored in db table "Activity"
+            for Campaign URL click.
+
+        - Activity will appear as e.g.
+            "Michal Jordan clicked on SMS Campaign "abc". "
+
+        - This method is called from update_blast_and_create_click_activity() method
+        :param source: Campaign obj
+        :param candidate: Candidate obj
+        :param activity_message_name
+        :type source: Candidate
+        :exception: InvalidUsage
+
+        **See Also**
+        .. see also:: process_url_redirect() method in SmsCampaignBase class.
+        """
+        if not isinstance(candidate, Candidate):
+            raise InvalidUsage('candidate should be an instance of model Candidate')
+        # Any service can add the entry of respective model name here
+        if not isinstance(source, SmsCampaign):
+            raise InvalidUsage('source object should be an instance of model %s.' %
+                               SmsCampaign.__tablename__)
+        params = {'candidate_name': candidate.name, 'campaign_name': source.name}
+        # call activity_service to create activity
+        cls.create_activity(candidate.user_id,
+                            _type=_type,
+                            source_id=source.id,
+                            source_table=source.__tablename__,
+                            params=params,
+                            headers=auth_header)
+        current_app.config['LOGGER'].info(
+            'create_campaign_url_click_activity: candidate(id:%s) clicked on %s(id:%s). '
+            '(User(id:%s))' % (candidate.id, source.__tablename__, source.id, candidate.user_id))
+
+    @staticmethod
+    def update_blast_stats(campaign_blast_obj, **kwargs):
+        """
+        - This updates the stats of a campaign for given campaign blast object.
+            kwargs dict looks like e.g.
+                    dict(clicks=True, sends=False, replies=False)
+
+        - If we set any attribute say clicks=True, this will update the number of clicks of given
+            campaign blast object by 1.
+        - This can also update values of multiple attributes provided.
+
+        **Usage**
+            For updating clicks of a campaign, we will use this method as
+                CampaignBase.update_blast_stats(campaign_blast_obj, clicks=True)
+
+        - This method is called from process_send() and send_sms_campaign_to_candidates()
+            methods of class SmsCampaignBase inside
+            sms_campaign_service/sms_campaign_base.py.
+
+        :param campaign_blast_obj: campaign blast object for which we want to update stats
+        :param kwargs: dictionary containing attributes of campaign object to update
+        :type campaign_blast_obj: SmsCampaignBlast or EmailCampaignBlast or PushBlast
+        :type kwargs: dict
+
+        **See Also**
+        .. see also:: update_blast_and_create_click_activity() method in CampaignBase class.
+        """
+        # Any new campaign can add the entry in this statement
+        if not isinstance(campaign_blast_obj, (SmsCampaignBlast, EmailCampaignBlast)):
+            raise InvalidUsage('campaign object should be an instance of models %s, %s etc.' %
+                               (SmsCampaignBlast.__tablename__, EmailCampaignBlast.__tablename__))
+        not_found_attr = None
+        for key, value in kwargs.iteritems():
+            try:
+                # If given attribute has value True, and campaign_obj has that attr and then
+                # we update its value by 1
+                if hasattr(campaign_blast_obj, key) and value is True:
+                    updated_value = getattr(campaign_blast_obj, key) + 1
+                    kwargs[key] = updated_value
+                # If campaign_obj does not have that attr  we raise Invalid Usage.
+                else:
+                    not_found_attr = key
+                    raise InvalidUsage('%s object has no attribute %s'
+                                       % (campaign_blast_obj.__tablename__, key))
+            except InvalidUsage:
+                # Remove the attributes which are not part of given campaign_blast_object
+                del kwargs[not_found_attr]
+        if kwargs:
+            # Update the campaign_blast stats like sends, clicks
+            campaign_blast_obj.query.filter_by(id=campaign_blast_obj.id).update(kwargs)
+            db.session.commit()
+
     @staticmethod
     def create_or_update_url_conversion(destination_url=None, source_url=None, hit_count=0,
-                                        url_conversion_id=None, hit_count_update=None):
+                                        url_conversion_id=None, increment_hit_count=False):
         """
         - Here we save the source_url(provided in body text) and the shortened_url
             to redirect to our endpoint in db table "url_conversion".
@@ -696,12 +901,12 @@ class CampaignBase(object):
         :param source_url: shortened URL of the link present in body text
         :param hit_count: Count of hits
         :param url_conversion_id: id of URL conversion record if needs to update
-        :param hit_count_update: True if needs to increase "hit_count" by 1, False otherwise
+        :param increment_hit_count: True if needs to increase "hit_count" by 1, False otherwise
         :type destination_url: str
         :type source_url: str
         :type hit_count: int
         :type url_conversion_id: int
-        :type hit_count_update: bool
+        :type increment_hit_count: bool
         :exception: ResourceNotFound
         :exception: ForbiddenError
         :return: id of the url_conversion record in database
@@ -718,9 +923,9 @@ class CampaignBase(object):
             if record_in_db:
                 data['destination_url'] = record_in_db.destination_url
                 data['source_url'] = source_url if source_url else record_in_db.source_url
-                data['hit_count'] = record_in_db.hit_count + 1 if hit_count_update else \
+                data['hit_count'] = record_in_db.hit_count + 1 if increment_hit_count else \
                     record_in_db.hit_count
-                data.update({'last_hit_time': datetime.now()}) if hit_count_update else ''
+                data.update({'last_hit_time': datetime.now()}) if increment_hit_count else ''
                 record_in_db.update(**data)
                 url_conversion_id = record_in_db.id
             else:

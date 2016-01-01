@@ -49,9 +49,10 @@ CORS(app, resources={
 def root():
     return 'Welcome to SMS Campaign Service'
 
-
-@app.route(SmsCampaignApi.APP_REDIRECTION, methods=['GET'])
-def sms_campaign_url_redirection(campaign_id, url_conversion_id):
+# TODO: change hard code value
+# @app.route(SmsCampaignApi.APP_REDIRECTION, methods=['GET'])
+@app.route('/v1/redirect/<int:url_conversion_id>', methods=['GET'])
+def sms_campaign_url_redirection(url_conversion_id):
     """
     This endpoint is /v1/campaign/:id/redirect/:id/?candidate_id=:id.
 
@@ -95,17 +96,7 @@ def sms_campaign_url_redirection(campaign_id, url_conversion_id):
             logger.info(data['message'])
             return flask.jsonify(**data), 200
     try:
-
-        campaign_in_db, url_conversion_in_db, candidate_in_db = \
-            SmsCampaignBase.pre_process_url_redirect(campaign_id,
-                                                     url_conversion_id,
-                                                     request.args.get('candidate_id'))
-
-        user_id = candidate_in_db.user_id
-        camp_obj = SmsCampaignBase(user_id)
-        redirection_url = camp_obj.process_url_redirect(campaign_in_db,
-                                                        url_conversion_in_db,
-                                                        candidate_in_db)
+        redirection_url = SmsCampaignBase.process_url_redirect(url_conversion_id)
         return redirect(redirection_url)
     except Exception:
         # As this endpoint is hit by client, so we log the error, and return internal server error.
