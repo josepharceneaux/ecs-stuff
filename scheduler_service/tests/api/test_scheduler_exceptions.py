@@ -21,7 +21,7 @@ class TestSchedulerExceptions:
 
     def test_incomplete_post_data_exception(self, auth_header, job_config):
         """
-            Create a job by missing data and check if exception occur with status code 500 and error code 6055
+            Create a job by missing data and check if exception occur then invalid usage exception should be thrown
 
             Args:re
                 auth_data: Fixture that contains token.
@@ -108,8 +108,8 @@ class TestSchedulerExceptions:
 
     def test_already_passed_time_exception(self, auth_header, job_config_one_time):
         """
-        Create a job using expired run_datetime and it should raise exception.
-
+        For one_time job. If run_datetime is already passed then it should throw exception and job shouldn't be scheduled.
+        
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
@@ -123,7 +123,7 @@ class TestSchedulerExceptions:
         response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
                                  headers=auth_header)
 
-        # Time expired exception
+        # Invalid usage exception. run_datetime cannot be in past
         assert response.status_code == 400
 
     def test_invalid_job_time_interval_exception(self, auth_header, job_config):
@@ -143,13 +143,15 @@ class TestSchedulerExceptions:
         response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
                                  headers=auth_header)
 
-        # Time expired exception
+        # Invalid usage exception
         assert response.status_code == 400
 
     def test_already_passed_time_interval_exception(self, auth_header, job_config):
         """
         If both start_datetime and end_datetime are in past then it should raise
-        an exception
+        an exception. If the start_datetime and end_datetime both are in past, then both jobs will not be
+        executed but will be add to scheduler. So, if both start_datetime and end_datetime are in past, scheduler
+        service should give invalid usage exception.
 
         Args:
             auth_data: Fixture that contains token.
@@ -158,19 +160,20 @@ class TestSchedulerExceptions:
         :return:
         """
         job_config = job_config.copy()
-        start_datetime = datetime.datetime.utcnow() - datetime.timedelta(minutes=15)
+        start_datetime = datetime.datetime.utcnow() - datetime.timedelta(seconds=15)
         job_config['start_datetime'] = start_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
-        end_datetime = datetime.datetime.utcnow() - datetime.timedelta(minutes=8)
+        end_datetime = datetime.datetime.utcnow() - datetime.timedelta(seconds=8)
         job_config['end_datetime'] = end_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
         response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
                                  headers=auth_header)
 
-        # Time expired exception
+        # Invalid Usage exception
         assert response.status_code == 400
 
     def test_already_passed_start_time_interval_exception(self, auth_header, job_config):
         """
-        If start_datetime is in past, it should raise an exception.
+        If start_datetime is in past and also lesser than the request timeout period which is 30.
+        Then scheduler service should throw invalid usage exception.
 
         Args:
             auth_data: Fixture that contains token.
@@ -184,12 +187,14 @@ class TestSchedulerExceptions:
         response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
                                  headers=auth_header)
 
-        # Time expired exception
+        # Invalid Usage exception
         assert response.status_code == 400
 
     def test_already_passed_frequency_interval_exception(self, auth_header, job_config):
         """
-        Create a job using expired end_datetime and it should raise exception
+        Create a job using expired end_datetime and it should raise exception.
+        If frequency is one hour and end_datetime period is lesser than frequency then it job shouldn't be scheduled.
+        Instead it should throw invalid usage exception.
 
         Args:
             auth_data: Fixture that contains token.
@@ -203,5 +208,5 @@ class TestSchedulerExceptions:
         response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
                                  headers=auth_header)
 
-        # Frequency is greater than end
+        # Frequency is greater than end_datetime. Invalid Usage exception
         assert response.status_code == 400

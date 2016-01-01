@@ -51,13 +51,13 @@ class TestSchedulerMisc:
 
     def test_start_datetime_in_past(self, auth_header, job_config):
         """
-        If job's start time is in past and within one last minute we should schedule it, otherwise
+        If job's start time is in past and within past 0-30 seconds we should schedule it, otherwise
         an exception should be thrown.
         :param auth_header: Fixture that contains token.
         :param job_config: (dict): Fixture that contains job config to be used as
         :return:
         """
-        start_datetime = datetime.datetime.utcnow() - datetime.timedelta(seconds=20)
+        start_datetime = datetime.datetime.utcnow() - datetime.timedelta(seconds=29)
         job_config['start_datetime'] = start_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
         response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
                                  headers=auth_header)
