@@ -7,6 +7,7 @@ NO_SMARTLIST_ASSOCIATED = 7002
 REQUIRED_FIELDS_MISSING = 7003
 INVALID_FREQUENCY = 7004
 FAILED_TO_SCHEDULE = 7005
+INVALID_FIELD = 7006
 
 
 class PushNotificationApiException(push_notification_service.common.error_handling.InternalServerError):
@@ -41,3 +42,7 @@ class InvalidFrequency(PushNotificationApiException):
 
 class FailedToSchedule(PushNotificationApiException):
     error_code = FAILED_TO_SCHEDULE
+
+
+class InvalidField(PushNotificationApiException):
+    error_code = INVALID_FIELD

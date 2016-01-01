@@ -61,7 +61,6 @@ A brief overview of all endpoints is as follows:
 
 """
 # Standard Library
-import json
 import types
 
 # Third Party
@@ -82,6 +81,8 @@ from push_notification_service.modules.custom_exceptions import *
 from push_notification_service.modules.one_signal_sdk import OneSignalSdk
 from push_notification_service.modules.constants import ONE_SIGNAL_REST_API_KEY, ONE_SIGNAL_APP_ID
 from push_notification_service.modules.push_notification_campaign import PushCampaignBase
+from push_notification_service.modules.utilities import associate_smart_list_with_campaign
+from push_notification_service.push_campaign_app import logger
 
 # creating blueprint
 push_notification_blueprint = Blueprint('push_notification_api', __name__)
@@ -148,7 +149,6 @@ class PushCampaigns(Resource):
 
         .. Status:: 200 (OK)
                     401 (Unauthorized to access getTalent)
-                    403 (Forbidden error)
                     500 (Internal Server Error)
         """
         user = request.user
@@ -198,9 +198,10 @@ class PushCampaigns(Resource):
         """
         user = request.user
         data = request.get_json()
-        missing_values = [key for key in ['title', 'content', 'url', 'smartlist_ids'] if key not in data or not data[key]]
-        if missing_values:
-            raise RequiredFieldsMissing('Some required fields are missing: %s' % missing_values)
+        missing_fields = [key for key in ['title', 'content', 'url', 'smartlist_ids'] if key not in data or not data[key]]
+        if missing_fields:
+            raise RequiredFieldsMissing('Some required fields are missing',
+                                        additional_error_info=dict(missing_fields=missing_fields))
         push_campaign = PushCampaign(content=data['content'], url=data['url'],
                                      title=data['title'], user_id=user.id)
         PushCampaign.save(push_campaign)
@@ -213,6 +214,130 @@ class PushCampaigns(Resource):
         response = json.dumps(response)
         headers = dict(Location='/v1/campaigns/%s' % push_campaign.id)
         return ApiResponse(response, headers=headers, status=201)
+
+
+@api.route('/v1/campaigns/<int:campaign_id>')
+class CampaignById(Resource):
+
+    decorators = [require_oauth()]
+
+    def get(self, campaign_id):
+        """
+        This action returns a single campaign created by current user.
+
+        :return campaign_data: a dictionary containing campaign json serializable data
+        :rtype json
+
+        :Example:
+            headers = {'Authorization': 'Bearer <access_token>'}
+            campaign_id = 1
+            response = requests.get(API_URL + '/campaigns/%s' % campaign_id,
+                                    headers=headers)
+
+        .. Response::
+
+            {
+                "campaign":{
+                              "added_datetime": "2015-11-19 18:54:04",
+                              "frequency_id": 2,
+                              "id": 1,
+                              "title": "QC Technologies",
+                              "start_datetime": "2015-11-19 18:55:08",
+                              "end_datetime": "2015-11-25 18:55:08"
+                              "content": "Join QC Technologies.",
+                              "url": "https://www.qc-technologies.com/careers"
+                            }
+            }
+        .. Status:: 200 (OK)
+                    401 (Unauthorized to access getTalent)
+                    404 (ResourceNotFound)
+                    500 (Internal Server Error)
+        """
+        user = request.user
+        campaign = PushCampaign.get_by_id_and_user_id(campaign_id, user.id)
+        if not campaign:
+            raise ResourceNotFound('Campaign not found with id %s' % campaign_id)
+        response = dict(campaign=campaign.to_json())
+        return response, 200
+
+    def put(self, campaign_id):
+        """
+        This method takes data to update a Push campaign components.
+
+        :param campaign_id: unique id of push campaign
+        :type campaign_id: int, long
+        :return: success message
+        :type: json
+
+        :Example:
+
+            campaign_data = {
+                                "title": "QC Technologies",
+                                "content": "New job openings...",
+                                "url": "https://www.qc-technologies.com",
+                                "smartlist_ids": [1, 2, 3]
+                             }
+
+            headers = {
+                        'Authorization': 'Bearer <access_token>',
+                        'content-type': 'application/json'
+
+                       }
+            campaign_id = 1
+            data = json.dumps(campaign_data)
+            response = requests.put(
+                                        API_URL + '/v1/campaigns/%s' % campaign_id ,
+                                        data=data,
+                                        headers=headers,
+                                    )
+
+        .. Response::
+
+            {
+                "message": "Push campaign has been updated successfully"
+            }
+
+        .. Status:: 201 (Resource Created)
+                    401 (Unauthorized to access getTalent)
+                    400 (Invalid Usage)
+                    500 (Internal Server Error)
+
+        ..Error Codes:: 7003 (RequiredFieldsMissing)
+        """
+        user = request.user
+        data = request.get_json()
+        # check if there is no field in data to be updated, raise InvalidUsage error
+        if not len(data):
+            raise InvalidUsage('No data given to be updated')
+        campaign = PushCampaign.get_by_id_and_user_id(campaign_id, user.id)
+        if not campaign:
+            raise ResourceNotFound('Campaign not found with id %s' % campaign_id)
+
+        for key, value in data.items():
+            if key not in ['title', 'content', 'url', 'smartlist_ids']:
+                raise InvalidUsage('Invalid field in campaign data',
+                                   additional_error_info=dict(invalid_field=key))
+            if not value:
+                raise InvalidUsage('Invalid value for field in campaign data',
+                                   additional_error_info=dict(field=key,
+                                                              invalid_value=value))
+
+        data['user_id'] = user.id
+        # We are confirmed that this key has some value after above validation
+        smartlist_ids = data.pop('smartlist_ids')
+        campaign.update(**data)
+        associated_smartlist_ids = [smartlist.id for smartlist in campaign.smartlists]
+        if isinstance(smartlist_ids, list):
+            for smartlist_id in smartlist_ids:
+                if smartlist_id not in associated_smartlist_ids:
+                    associate_smart_list_with_campaign(smartlist_id, campaign.id)
+                else:
+                    logger.info('Smartlist (id: %s) already associated with campaign' % smartlist_id)
+        elif isinstance(smartlist_ids, (int, long)):
+            associate_smart_list_with_campaign(smartlist_ids, campaign.id)
+
+        response = dict(message='Push campaign was updated successfully')
+        return response, 200
 
 
 @api.route('/v1/campaigns/<int:campaign_id>/schedule')
@@ -556,5 +681,4 @@ class Devices(Resource):
                 raise ResourceNotFound('Device is not registered with OneSignal with id %s' % device_id)
         else:
             raise InvalidUsage('device_id is not found in post data')
-
 
