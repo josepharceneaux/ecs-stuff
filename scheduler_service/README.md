@@ -529,3 +529,18 @@ and they can be resumed again using scheduler service.
             {
                 "error" : {"message": "Task not found"}
             }
+
+
+## Monitoring
+
+- Running celery using commandline (scheduler_service directory)
+
+    `celery -A scheduler_service.run.celery  worker --concurrency=4 --loglevel=info`
+
+- Running celery flower using commandline (scheduler_service directory)
+
+    `celery flower -A scheduler_service.run.celery`
+
+- Default url for celery flower
+
+    `localhost:5555`
