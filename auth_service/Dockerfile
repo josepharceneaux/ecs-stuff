@@ -29,4 +29,5 @@ CMD\
 
     export NEW_RELIC_ENVIRONMENT=$GT_ENVIRONMENT && export NEW_RELIC_CONFIG_FILE=newrelic.ini && \
 
-    newrelic-admin run-program uwsgi --env GT_ENVIRONMENT=$GT_ENVIRONMENT --env DB_STRING=$DB_STRING --ini ./talent-uwsgi.ini
+    newrelic-admin run-program uwsgi --logto /var/log/uwsgi_log --env GT_ENVIRONMENT=$GT_ENVIRONMENT \
+    --env DB_STRING=$DB_STRING --ini ./talent-uwsgi.ini
