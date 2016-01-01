@@ -44,7 +44,6 @@ def test_import_candidates_from_spreadsheet(access_token_first, user_first):
     # Logged-in user trying to import 15 candidates from a csv spreadsheet without appropriate roles
     response, status_code = import_spreadsheet_candidates(access_token_first, candidate_data=candidate_data,
                                                           import_candidates=True)
-    print response_info(response)
     assert status_code == 401
 
     add_role_to_test_user(user_first, ['CAN_ADD_CANDIDATES'])
