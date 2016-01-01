@@ -36,17 +36,6 @@ AWS_SECRET = "AWS_SECRET_ACCESS_KEY"
 SECRET_KEY = "SECRET_KEY"
 
 
-class TalentConfigParser(SafeConfigParser, object):
-
-    def get(self, section, option, raw=False, vars=None):
-
-        value = os.getenv(option)
-        if not value:
-            value = super(TalentConfigParser, self).get(section, option)
-
-        return value
-
-
 class PropertySection(Enum):
     cloudsearch = [CS_DOMAIN_KEY, CS_REGION_KEY]
     local = [EMAIL_KEY, ENV_KEY, INSTANCE_NAME]
@@ -89,27 +78,27 @@ def get_env():
 
     :return: 'prod', 'qa', or 'dev'
     """
-    return _get_config_parser().get(PropertySection.local.name, ENV_KEY)
+    return get_property(PropertySection.local.name, ENV_KEY)
 
 
 def get_email():
-    return _get_config_parser().get(PropertySection.local.name, EMAIL_KEY)
+    return get_property(PropertySection.local.name, EMAIL_KEY)
 
 
 def get_cloudsearch_domain_name():
-    return _get_config_parser().get(PropertySection.cloudsearch.name, CS_DOMAIN_KEY)
+    return get_property(PropertySection.cloudsearch.name, CS_DOMAIN_KEY)
 
 
 def get_cloudsearch_region():
-    return _get_config_parser().get(PropertySection.cloudsearch.name, CS_REGION_KEY)
+    return get_property(PropertySection.cloudsearch.name, CS_REGION_KEY)
 
 
 def get_s3_bucket_name():
-    return _get_config_parser().get(PropertySection.s3.name, S3_BUCKET_KEY)
+    return get_property(PropertySection.s3.name, S3_BUCKET_KEY)
 
 
 def get_s3_filepicker_bucket_name():
-    return _get_config_parser().get(PropertySection.s3.name, S3_FILE_PICKER_BUCKET_KEY)
+    return get_property(PropertySection.s3.name, S3_FILE_PICKER_BUCKET_KEY)
 
 
 def get_s3_region():
@@ -117,34 +106,43 @@ def get_s3_region():
 
     :return: if returns '', uses S3 default region
     """
-    return _get_config_parser().get(PropertySection.s3.name, S3_REGION_KEY)
+    return get_property(PropertySection.s3.name, S3_REGION_KEY)
 
 
 def get_aws_account_id():
-    return _get_config_parser().get(PropertySection.iam.name, ACCOUNT_ID_KEY)
+    return get_property(PropertySection.iam.name, ACCOUNT_ID_KEY)
 
 
 def get_aws_key():
-    return _get_config_parser().get(PropertySection.keys.name, AWS_KEY)
+    return get_property(PropertySection.keys.name, AWS_KEY)
 
 
 def get_aws_secret():
-    return _get_config_parser().get(PropertySection.keys.name, AWS_SECRET)
+    return get_property(PropertySection.keys.name, AWS_SECRET)
 
 
 def get_secret_key():
-    return _get_config_parser().get(PropertySection.keys.name, SECRET_KEY)
+    return get_property(PropertySection.keys.name, SECRET_KEY)
 
 
 def get_instance_id():
-    return _get_config_parser().get(PropertySection.local.name, INSTANCE_NAME)
+    return get_property(PropertySection.local.name, INSTANCE_NAME)
+
+
+def get_property(section, option):
+
+    value = os.getenv(option)
+    if not value:
+        value = _get_config_parser().get(section, option)
+
+        return value
 
 
 def _get_config_parser():
     global _config
 
     if not _config:
-        _config = TalentConfigParser()
+        _config = SafeConfigParser()
 
         expanded_config_path = os.path.expanduser(LOCAL_CONFIG_PATH)
         if os.path.isfile(expanded_config_path):
