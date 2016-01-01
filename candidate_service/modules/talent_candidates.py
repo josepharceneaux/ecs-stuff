@@ -166,7 +166,7 @@ def format_candidate_full_name(candidate):
     if last_name:
         full_name = '%s%s' % (full_name, last_name)
 
-    return full_name.title()
+    return full_name
 
 
 def candidate_emails(candidate):

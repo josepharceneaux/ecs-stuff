@@ -196,10 +196,13 @@ def create_candidates_from_candidate_api(access_token, data):
     Function sends a request to CandidateResource/post()
     Returns: list of created candidate ids
     """
+    from candidate_service.tests.api.helpers import response_info
+    print "\ndata = {}".format(data)
     resp = requests.post(
         url=CandidateApiUrl.CANDIDATES,
         headers={'Authorization': access_token if 'Bearer' in access_token else 'Bearer %s' % access_token},
         data=json.dumps(data)
     )
+    print response_info(resp)
     assert resp.status_code == 201
     return [candidate['id'] for candidate in resp.json()['candidates']]
