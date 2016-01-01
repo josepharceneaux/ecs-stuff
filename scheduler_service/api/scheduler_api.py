@@ -1,6 +1,6 @@
 """
 Scheduler Restful-API which has endpoints to schedule, remove, delete, pause, resume single
-or multiple jobs
+or multiple jobs.
 This API also checks for authentication token
 """
 
@@ -69,7 +69,7 @@ class Tasks(Resource):
                             "some_other_kwarg": "abc",
                             "campaign_name": "SMS Campaign"
                         },
-                        "frequency": 3601,      #in seconds
+                        "frequency": 3601,      # in seconds
                         "start_datetime": "2015-11-05T08:00:00",
                         "end_datetime": "2015-12-05T08:00:00"
                         "next_run_datetime": "2015-11-05T08:20:30",
@@ -83,7 +83,7 @@ class Tasks(Resource):
 
         """
         user_id = request.user.id
-        schedule_state_exceptions()
+        check_if_scheduler_is_running()
         tasks = scheduler.get_jobs()
         tasks = filter(lambda task: task.args[0] == user_id, tasks)
         tasks = [serialize_task(task) for task in tasks]
@@ -146,8 +146,8 @@ class Tasks(Resource):
 
         :return: id of created task
         """
-        # get json post request data
-        schedule_state_exceptions()
+        # get JSON post request data
+        check_if_scheduler_is_running()
         try:
             task = request.get_json()
         except Exception:
@@ -194,12 +194,12 @@ class Tasks(Resource):
         """
 
         user_id = request.user.id
-        schedule_state_exceptions()
+        check_if_scheduler_is_running()
         # get task_ids for tasks to be removed
         try:
             req_data = request.get_json()
         except Exception:
-            raise InvalidUsage("Bad Request, data should be in json",
+            raise InvalidUsage("Bad Request, data should be in JSON",
                                error_code=SchedulerServiceApiException.CODE_INVALID_USAGE)
         task_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else None
         if not task_ids:
@@ -255,17 +255,20 @@ class ResumeTasks(Resource):
 
         """
         user_id = request.user.id
-        schedule_state_exceptions()
+        check_if_scheduler_is_running()
         try:
             req_data = request.get_json()
         except Exception:
-            raise InvalidUsage("Bad Request, data should be in json")
+            raise InvalidUsage("Bad Request, data should be in JSON")
         task_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else None
         if not task_ids:
             raise InvalidUsage("Bad Request, No data in ids", error_code=400)
+        # Filter jobs that are not None
         valid_tasks = filter(lambda task_id: scheduler.get_job(job_id=task_id) is not None, task_ids)
         if valid_tasks:
+            # Only keep jobs that belonged to the auth user
             valid_tasks = filter(lambda task_id: scheduler.get_job(job_id=task_id).args[0] == user_id, valid_tasks)
+            # Resume each job
             for _id in valid_tasks:
                 scheduler.resume_job(job_id=_id)
             if len(valid_tasks) != len(task_ids):
@@ -311,7 +314,7 @@ class PauseTasks(Resource):
 
         """
         user_id = request.user.id
-        schedule_state_exceptions()
+        check_if_scheduler_is_running()
         try:
             req_data = request.get_json()
         except Exception:
@@ -399,8 +402,9 @@ class TaskById(Resource):
 
         """
         user_id = request.user.id
-        schedule_state_exceptions()
+        check_if_scheduler_is_running()
         task = scheduler.get_job(_id)
+        # Make sure task is valid and belongs to logged-in user
         if task and task.args[0] == user_id:
             task = serialize_task(task)
             if task:
@@ -433,8 +437,9 @@ class TaskById(Resource):
 
         """
         user_id = request.user.id
-        schedule_state_exceptions()
+        check_if_scheduler_is_running()
         task = scheduler.get_job(_id)
+        # Check if task is valid and belongs to the logged-in user
         if task and task.args[0] == user_id:
             scheduler.remove_job(task.id)
             return dict(message="Task has been removed successfully")
@@ -474,9 +479,9 @@ class ResumeTaskById(Resource):
 
         """
         user_id = request.user.id
-        schedule_state_exceptions()
+        check_if_scheduler_is_running()
         # check and raise exception if job is already paused or not present
-        task = job_state_exceptions(job_id=_id, func='running')
+        task = check_job_state(job_id=_id, job_state_to_check='running')
         if task and task.args[0] == user_id:
             scheduler.resume_job(job_id=_id)
             return dict(message="Task has been successfully resumed")
@@ -517,26 +522,29 @@ class PauseTaskById(Resource):
         """
         # check and raise exception if job is already paused or not present
         user_id = request.user.id
-        schedule_state_exceptions()
-        task = job_state_exceptions(job_id=_id, func='paused')
+        check_if_scheduler_is_running()
+        task = check_job_state(job_id=_id, job_state_to_check='paused')
         if task and task.args[0] == user_id:
             scheduler.pause_job(job_id=_id)
             return dict(message="Task has been successfully paused")
         raise ResourceNotFound(error_message="Task not found")
 
 
-def schedule_state_exceptions():
+def check_if_scheduler_is_running():
     # if scheduler is not running
     if not scheduler.running:
         raise SchedulerNotRunningError("Scheduler is not running")
 
 
-def job_state_exceptions(job_id, func):
+def check_job_state(job_id, job_state_to_check):
     """
-    raise exception if condition matches
+    We retrieve a job and if it's pending we raise an error. If job_state_to_check
+    is 'paused' and job's next_run_time is None then we raise an error indicating job
+    is already in paused state. Likewise, if job_state_to_check is 'running' and
+    next_run_time is not None then we raise an error indicating job is already running.
     :param job_id: job_id of task which is in APScheduler
-    :param func: the state to check, if doesn't meet with requirement then raise exception,
-            func can be running, paused
+    :param job_state_to_check: the state to check, if doesn't meet requirement then raise exception.
+            'func' can be 'running' or 'paused'.
     :return:
     """
     # get job from scheduler by job_id
@@ -547,11 +555,11 @@ def job_state_exceptions(job_id, func):
         raise PendingJobError("Task with id '%s' is in pending state. Scheduler not running" % job_id)
 
     # if job has next_run_datetime none, then job is in paused state
-    if job.next_run_time is None and func == 'paused':
+    if job.next_run_time is None and job_state_to_check == 'paused':
         raise JobAlreadyPausedError("Task with id '%s' is already in paused state" % job_id)
 
     # if job has_next_run_datetime is not None, then job is in running state
-    if job.next_run_time is not None and func == 'running':
+    if job.next_run_time is not None and job_state_to_check == 'running':
         raise JobAlreadyRunningError("Task with id '%s' is already in running state" % job_id)
 
     return job

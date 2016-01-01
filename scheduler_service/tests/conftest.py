@@ -66,7 +66,7 @@ def auth_token(user_auth, sample_user):
 @pytest.fixture(scope='function')
 def auth_header(request, auth_token):
     """
-    returns the header which contains bearer token and content Type
+    returns the header which contains bearer token and content type
     :param auth_data: fixture to get access token
     :return: header dict object
     """

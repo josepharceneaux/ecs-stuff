@@ -40,7 +40,7 @@ class TestSchedulerMisc:
 
         chunk_size = 200
 
-        # Delete all created jobs
+        # Delete all created jobs in chunks specified above
         for i in range(0, load_number, chunk_size):
             jobs_chunk = jobs[i:i + chunk_size]
             response_remove_jobs = requests.delete(APP_URL + '/tasks/',
@@ -51,7 +51,8 @@ class TestSchedulerMisc:
 
     def test_start_datetime_in_past(self, auth_header, job_config):
         """
-        For testing the time in 0-30 seconds. if yes then it should schedule job. If more then exception should be thrown
+        If job's start time is in past and within one last minute we should schedule it, otherwise
+        an exception should be thrown.
         :param auth_header: Fixture that contains token.
         :param job_config: (dict): Fixture that contains job config to be used as
         :return:

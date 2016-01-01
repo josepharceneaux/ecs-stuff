@@ -73,12 +73,14 @@ class TestSchedulerExceptions:
                                  headers=auth_header)
 
         # Invalid trigger type exception
-        assert response.status_code == 500 and response.json()['error']['code'] == SchedulerServiceApiException.CODE_TRIGGER_TYPE
+        assert response.status_code == 500 and \
+               response.json()['error']['code'] == SchedulerServiceApiException.CODE_TRIGGER_TYPE
 
-    def test_invalid_frequency_job(self, auth_header, job_config):
+    def test_invalid_frequency(self, auth_header, job_config):
         """
-        Create a job by hitting the endpoint and make sure response
-        is correct.
+        Create a job by hitting the endpoint with invalid frequency and we will get a 400. Then we
+        create a job with correct data and it should be created just fine, finally we delete the
+        job.
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
@@ -106,7 +108,7 @@ class TestSchedulerExceptions:
 
     def test_already_passed_time_exception(self, auth_header, job_config_one_time):
         """
-        Create a job using expired run_datetime and it should raise exception
+        Create a job using expired run_datetime and it should raise exception.
 
         Args:
             auth_data: Fixture that contains token.
@@ -115,6 +117,7 @@ class TestSchedulerExceptions:
         :return:
         """
         job_config = job_config_one_time.copy()
+        # set run_datetime to 5 hours in past from now
         run_datetime = datetime.datetime.utcnow() - datetime.timedelta(hours=5)
         job_config['run_datetime'] = run_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
         response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
@@ -125,7 +128,7 @@ class TestSchedulerExceptions:
 
     def test_invalid_job_time_interval_exception(self, auth_header, job_config):
         """
-        Create a job using expired end_datetime and it should raise exception
+        If end_datetime is in past, it should raise an exception.
 
         Args:
             auth_data: Fixture that contains token.
@@ -134,6 +137,7 @@ class TestSchedulerExceptions:
         :return:
         """
         job_config = job_config.copy()
+        # Set the end_datetime to 5 hours in past from now
         end_datetime = datetime.datetime.utcnow() - datetime.timedelta(hours=5)
         job_config['end_datetime'] = end_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
         response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
@@ -144,7 +148,8 @@ class TestSchedulerExceptions:
 
     def test_already_passed_time_interval_exception(self, auth_header, job_config):
         """
-        Create a job using expired end_datetime and it should raise exception
+        If both start_datetime and end_datetime are in past then it should raise
+        an exception
 
         Args:
             auth_data: Fixture that contains token.
@@ -165,7 +170,7 @@ class TestSchedulerExceptions:
 
     def test_already_passed_start_time_interval_exception(self, auth_header, job_config):
         """
-        Create a job using expired end_datetime and it should raise exception
+        If start_datetime is in past, it should raise an exception.
 
         Args:
             auth_data: Fixture that contains token.

@@ -1,7 +1,7 @@
 """
-Test cases for delete job with and with out token.
+Test cases for deleting job with and with out token.
 First create few jobs using service endpoint. After that delete these jobs using job_id of each job and
-also check for the case when invalid bearer token is passed
+also check for the case when invalid bearer token is passed.
 """
 
 # Third party imports
@@ -19,7 +19,7 @@ __author__ = 'saad'
 @pytest.mark.usefixtures('auth_header', 'job_config')
 class TestSchedulerDelete:
 
-    def test_single_delete_job(self, auth_header, job_config):
+    def test_single_job(self, auth_header, job_config):
         """
         Create a single job and it should give 200 status code, then delete that created job.
         after that check if the job is still there, it should give 404 status code while accessing
@@ -45,12 +45,12 @@ class TestSchedulerDelete:
         response = requests.get(APP_URL + '/tasks/id/' + job_id, headers=auth_header)
         assert response.status_code == 404
 
-    def test_multiple_delete_job(self, auth_header, job_config):
+    def test_multiple_jobs(self, auth_header, job_config):
         """
         First, create jobs using correct ids, should return 200 status code.
         Then we delete all jobs. Then we create 10 scheduled jobs and 1 invalid job (which
         doesn't exist on the server). Then we try to delete all the jobs. Server does delete
-        all scheduled jobs but couldn't find the invalid one and hence returnrs 207.
+        all scheduled jobs but couldn't find the invalid one and hence returns 207.
 
          Args:
             auth_data: Fixture that contains token.
@@ -127,7 +127,7 @@ class TestSchedulerDelete:
 
         assert response_delete.status_code == 200
 
-        # send job delete request, job should n't exist now, hence we will get a 404
+        # send job delete request, job shouldn't exist now, hence we will get a 404
         response_delete = requests.delete(APP_URL + '/tasks/id/' + data['id'],
                                                     headers=auth_header)
 

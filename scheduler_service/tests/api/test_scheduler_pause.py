@@ -18,7 +18,7 @@ __author__ = 'saad'
 @pytest.mark.usefixtures('auth_header', 'job_config')
 class TestSchedulerPause:
 
-    def test_single_pause_job(self, auth_header, job_config):
+    def test_single_job(self, auth_header, job_config):
         """
         Create a job by hitting endpoint. Then stop it using endpoint. We then stop it again and
         it should give error (6053).
@@ -70,7 +70,7 @@ class TestSchedulerPause:
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
-    def test_multiple_pause_jobs(self, auth_header, job_config):
+    def test_multiple_jobs(self, auth_header, job_config):
         """
         Pause already running scheduled jobs and then see it returns 200 status code and also get jobs
         and check their next_run_datetime is none (Paused job has next_run_datetime equal to None)

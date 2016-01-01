@@ -18,7 +18,7 @@ __author__ = 'saad'
 @pytest.mark.usefixtures('auth_header', 'job_config')
 class TestSchedulerGet:
 
-    def test_single_get_job(self, auth_header, job_config):
+    def test_single_job(self, auth_header, job_config):
         """
         Get job using id and then delete it. Again try to get that job using id should give 404 status code
         Args:
@@ -57,7 +57,7 @@ class TestSchedulerGet:
         response = requests.get(APP_URL + '/tasks/id/' + data['id'], headers=auth_header)
         assert response.status_code == 404
 
-    def test_multiple_get_jobs(self, auth_header, job_config):
+    def test_multiple_jobs(self, auth_header, job_config):
         """
         Create multiple jobs and save the ids in a list. Then get all tasks of the current user.
         Then check if the jobs created are in the tasks of user. If yes, then show status code 200

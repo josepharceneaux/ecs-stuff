@@ -18,7 +18,7 @@ __author__ = 'saad'
 @pytest.mark.usefixtures('auth_header', 'job_config')
 class TestSchedulerResume:
 
-    def test_single_resume_job(self, auth_header, job_config):
+    def test_single_job(self, auth_header, job_config):
         """
         Create and pause a job using service endpoints and then after it is paused, resume the job and check its
         next_run_datetime is not None (Running Job has next_run_datetime equal to next running datetime)
@@ -83,7 +83,7 @@ class TestSchedulerResume:
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
-    def test_multiple_resume_jobs(self, auth_header, job_config):
+    def test_multiple_jobs(self, auth_header, job_config):
         """
         Create and pause 10 job using service endpoints and then after they are paused, resume all jobs and check their
         next_run_datetime which should not be None (Running Job has next_run_datetime equal to next running datetime)
