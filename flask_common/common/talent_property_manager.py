@@ -135,7 +135,7 @@ def get_property(section, option):
     if not value:
         value = _get_config_parser().get(section, option)
 
-        return value
+    return value
 
 
 def _get_config_parser():
