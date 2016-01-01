@@ -20,6 +20,35 @@ Scheduler Task:
 Task type:
   - one_time => Runs only one time. 
   - periodic => Runs peridically as per a given frequency. It runs whenever its time is due and ends when stop_datetime is reached.
+  
+## Monitoring
+
+  To monitor task status, a third party package, celery flower is used. Which shows the state of each task i.e
+  Running, Failure, Success, Pending.
+  
+  In case of failure status, celery flower will show error trace. Using which error can be diagnosed easily.
+
+**Dependencies:**
+ 
+   - [Celery](https://pypi.python.org/pypi/celery/)
+     - pip install celery==3.1.19
+   - [Flower](http://flower.readthedocs.org/en/latest/)
+     - pip install flower==0.9.0
+
+**Using the terminal**
+
+- Running celery using commandline (scheduler_service directory)
+
+    `celery -A scheduler_service.run.celery  worker --concurrency=4 --loglevel=info`
+
+- Running celery flower using commandline (scheduler_service directory)
+
+    `celery flower -A scheduler_service.run.celery`
+
+- Default URL for celery flower
+
+    `localhost:5555`
+
    
 ### Examples:     
 
@@ -529,18 +558,3 @@ and they can be resumed again using scheduler service.
             {
                 "error" : {"message": "Task not found"}
             }
-
-
-## Monitoring
-
-- Running celery using commandline (scheduler_service directory)
-
-    `celery -A scheduler_service.run.celery  worker --concurrency=4 --loglevel=info`
-
-- Running celery flower using commandline (scheduler_service directory)
-
-    `celery flower -A scheduler_service.run.celery`
-
-- Default url for celery flower
-
-    `localhost:5555`
