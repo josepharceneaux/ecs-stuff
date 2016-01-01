@@ -329,7 +329,7 @@ def schedule_spreadsheet_import(import_args):
 
     data = {
         "task_type": "one_time",
-        "run_datetime": str(datetime.datetime.utcnow()),
+        "run_datetime": str(datetime.datetime.utcnow() + datetime.timedelta(seconds=10)),
         "url": SpreadsheetImportApiUrl.IMPORT_CANDIDATES,
         "post_data": import_args
     }

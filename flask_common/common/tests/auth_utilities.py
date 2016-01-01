@@ -1,13 +1,12 @@
-import re
-import requests
+__author__ = 'ufarooqi'
+
 import random
 import string
-from werkzeug.security import generate_password_hash
+import requests
+from ..models.user import User
+from ..routes import AuthApiUrl
 from sqlalchemy.sql.expression import ClauseElement
-from ..models.user import User, UserScopedRoles
-
-OAUTH_ENDPOINT = 'http://127.0.0.1:8001/%s'
-TOKEN_URL = OAUTH_ENDPOINT % 'oauth2/token'
+from werkzeug.security import generate_password_hash
 
 
 def get_or_create(session, model, defaults=None, **kwargs):
@@ -42,36 +41,9 @@ def create_test_user(session, domain_id, password):
 
 def get_access_token(user, password, client_id, client_secret):
     params = dict(grant_type="password", username=user.email, password=password)
-    auth_service_token_response = requests.post(TOKEN_URL,
+    auth_service_token_response = requests.post(AuthApiUrl.AUTH_SERVICE_TOKEN_CREATE_URI,
                                                 params=params, auth=(client_id, client_secret)).json()
     if not (auth_service_token_response.get(u'access_token') and auth_service_token_response.get(u'refresh_token')):
         raise Exception("Either Access Token or Refresh Token is missing")
     else:
         return auth_service_token_response.get(u'access_token')
-
-
-def add_role_to_test_user(test_user, role_names):
-    """
-    This function will add roles to a test_user just for testing purpose
-    :param User test_user: User object
-    :param list[str] role_names: List of role names
-    :return:
-    """
-    UserScopedRoles.add_roles(test_user, role_names)
-
-
-def camel_case_to_snake_case(name):
-    """ Convert camel case to underscore case
-        socialNetworkId --> social_network_id
-
-            :Example:
-
-                result = camel_case_to_snake_case('socialNetworkId')
-                assert result == 'social_network_id'
-
-    """
-    # name_ = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    # return re.sub('([a-z0-9])([A-Z0-9])', r'\1_\2', name_).lower()
-    name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    name = re.sub('(.)([0-9]+)', r'\1_\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()

@@ -1,12 +1,13 @@
 __author__ = 'ufarooqi'
 import json
+import requests
 from werkzeug.security import gen_salt
+from candidate_pool_service.common.routes import CandidatePoolApiUrl
 from candidate_pool_service.common.routes import CandidateApiUrl
 from candidate_pool_service.common.models.smartlist import Smartlist, SmartlistCandidate
 
-import requests
 
-CANDIDATE_POOL_SERVICE_ENDPOINT = 'http://127.0.0.1:8008/%s'
+CANDIDATE_POOL_SERVICE_ENDPOINT = 'http://127.0.0.1:8008/v1/%s'
 TALENT_POOL_API = CANDIDATE_POOL_SERVICE_ENDPOINT % 'talent-pools'
 TALENT_POOL_GROUP_API = CANDIDATE_POOL_SERVICE_ENDPOINT % 'groups/%s/talent_pools'
 TALENT_POOL_CANDIDATE_API = CANDIDATE_POOL_SERVICE_ENDPOINT % 'talent-pools/%s/candidates'
@@ -116,6 +117,36 @@ def talent_pipeline_candidate_api(access_token, talent_pipeline_id, params=''):
 
     headers = {'Authorization': 'Bearer %s' % access_token}
     response = requests.get(url=TALENT_PIPELINE_CANDIDATE_API % talent_pipeline_id, headers=headers, params=params)
+    return response.json(), response.status_code
+
+
+def talent_pool_update_stats(access_token):
+
+    headers = {'Authorization': 'Bearer %s' % access_token}
+    response = requests.post(url=CandidatePoolApiUrl.TALENT_POOL_STATS, headers=headers)
+    return response.status_code
+
+
+def talent_pool_get_stats(access_token, talent_pool_id, params=''):
+
+    headers = {'Authorization': 'Bearer %s' % access_token}
+    response = requests.get(url=CandidatePoolApiUrl.TALENT_POOL_GET_STATS % talent_pool_id, headers=headers,
+                            params=params)
+    return response.json(), response.status_code
+
+
+def talent_pipeline_update_stats(access_token):
+
+    headers = {'Authorization': 'Bearer %s' % access_token}
+    response = requests.post(url=CandidatePoolApiUrl.TALENT_PIPELINE_STATS, headers=headers)
+    return response.status_code
+
+
+def talent_pipeline_get_stats(access_token, talent_pipeline_id, params=''):
+
+    headers = {'Authorization': 'Bearer %s' % access_token}
+    response = requests.get(url=CandidatePoolApiUrl.TALENT_PIPELINE_GET_STATS % talent_pipeline_id, headers=headers,
+                            params=params)
     return response.json(), response.status_code
 
 

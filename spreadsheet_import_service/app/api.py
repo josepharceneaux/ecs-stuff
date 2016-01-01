@@ -25,7 +25,7 @@ HEADER_ROW_PARAMS = ['first_name', 'last_name', 'email']
 
 
 @mod.route('/parse_spreadsheet/convert_to_table/', methods=['GET'])
-@require_oauth
+@require_oauth()
 @require_all_roles('CAN_ADD_CANDIDATES')
 def spreadsheet_to_table():
     """
@@ -50,7 +50,7 @@ def spreadsheet_to_table():
 
 
 @mod.route('/parse_spreadsheet/import_candidates', methods=['POST'])
-@require_oauth
+@require_oauth()
 @require_all_roles('CAN_ADD_CANDIDATES')
 def import_from_table():
     """

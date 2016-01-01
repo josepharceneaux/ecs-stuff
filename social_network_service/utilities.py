@@ -28,9 +28,10 @@ from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service import logger
 from social_network_service import flask_app as app
 from social_network_service.custom_exceptions import *
+from scheduler_service.common.routes import AuthApiUrl
 
 
-OAUTH_SERVER = app.config['OAUTH_SERVER_URI']
+OAUTH_SERVER = AuthApiUrl.AUTH_SERVICE_AUTHORIZE_URI
 
 
 class Attendee(object):

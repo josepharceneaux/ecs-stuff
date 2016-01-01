@@ -1,6 +1,6 @@
-from flask import request
+from flask import request, Blueprint
 from flask_restful import Resource
-
+from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.utils.auth_utils import require_oauth
 from candidate_pool_service.common.error_handling import ForbiddenError, NotFoundError, InvalidUsage
 from candidate_pool_service.common.models.smartlist import Smartlist
@@ -10,10 +10,11 @@ from candidate_pool_service.modules.validators import (validate_and_parse_reques
 
 __author__ = 'jitesh'
 
+smartlist_blueprint = Blueprint('smartlist_api', __name__)
 
 class SmartlistCandidates(Resource):
 
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def get(self, **kwargs):
         """
@@ -41,7 +42,7 @@ class SmartlistCandidates(Resource):
 
 
 class SmartlistResource(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def get(self, **kwargs):
         """Retrieve list information
@@ -113,3 +114,7 @@ class SmartlistResource(Resource):
             raise ForbiddenError("List does not belong to user's domain")
         smartlist.delete()
         return {'smartlist': {'id': smartlist.id}}
+
+api = TalentApi(smartlist_blueprint)
+api.add_resource(SmartlistResource, '/smartlists/<int:id>', '/smartlists')
+api.add_resource(SmartlistCandidates, '/smartlists/<int:smartlist_id>/candidates')

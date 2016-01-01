@@ -14,45 +14,8 @@ from scheduler_service.tests.conftest import APP_URL
 __author__ = 'saad'
 
 
-@pytest.mark.usefixtures('auth_header', 'job_config', 'general_task_data')
+@pytest.mark.usefixtures('auth_header', 'job_config')
 class TestSchedulerCreate:
-
-    def test_single_schedule_general_job(self, general_task_data):
-        """
-        Create a job by hitting the endpoint but by using valid HMAC signature and make sure response
-        is correct and job id is returned.
-        In case of no user or no valid token job should not be created. So create generate HMAC key
-        and pass that in header while sending data to endpoint. Check the response status code
-        and see that it is 201.
-        Args:
-            auth_data: Fixture that contains token.
-            job_config (dict): Fixture that contains job config to be used as
-            POST data while hitting the endpoint.
-        :return:
-        """
-        data, header = general_task_data
-        response = requests.post(APP_URL + '/schedule/', data=data,
-                                 headers=header)
-        assert response.status_code == 201
-        data = json.loads(response.text)
-        assert data is not None
-
-        scheduler.remove_job(job_id=data)
-
-    def test_single_schedule_general_job_invalid_signature(self, general_task_data):
-        """
-        Try to Create a job with invalid signature. It should return 401 status code
-        Args:
-            auth_data: Fixture that contains token.
-            general_task_data: Fixture that contains job config to be used as
-            POST data while hitting the endpoint and signature header.
-        :return:
-        """
-        data, header = general_task_data
-        header['Signature'] = 'Invalid'
-        response = requests.post(APP_URL + '/schedule/', data=data,
-                                 headers=header)
-        assert response.status_code == 401
 
     def test_single_schedule_job(self, auth_header, job_config):
         """
