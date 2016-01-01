@@ -60,9 +60,9 @@ def test_import_candidates_from_spreadsheet(access_token_first, user_first):
 
     # Logged-in user trying to import 501 candidates from a csv spreadsheet
     response, status_code = import_spreadsheet_candidates(access_token_first, candidate_data=candidate_data,
-                                                          import_candidates=True, is_import_scheduled=True)
+                                                          import_candidates=True)
     assert response.get('count') == len(candidate_data)
-    assert response.get('status') == 'complete'
+    assert response.get('status') == 'pending'
 
 
 def test_health_check():

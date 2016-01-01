@@ -17,7 +17,7 @@ HEALTH_ENDPOINT = 'http://127.0.0.1:8009/healthcheck'
 
 
 def import_spreadsheet_candidates(access_token, candidate_data=None, spreadsheet_file_name=None, is_csv=True,
-                                  import_candidates=False, is_import_scheduled=False):
+                                  import_candidates=False):
 
     header_row = ['candidate.formattedName', 'candidate_email.address', 'candidate_phone.value',
                   'candidate_experience.organization', 'candidate_experience.position',
@@ -50,8 +50,7 @@ def import_spreadsheet_candidates(access_token, candidate_data=None, spreadsheet
 
     if import_candidates:
         response = requests.post(SpreadsheetImportApiUrl.IMPORT_CANDIDATES, headers=headers,
-                                 data=json.dumps({"file_picker_key": s3_key_name, 'header_row': header_row,
-                                                  'is_import_scheduled': is_import_scheduled}))
+                                 data=json.dumps({"file_picker_key": s3_key_name, 'header_row': header_row}))
     else:
         response = requests.get(SpreadsheetImportApiUrl.CONVERT_TO_TABLE, headers=headers,
                                 arams={'file_picker_key': s3_key_name})
