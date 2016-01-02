@@ -16,6 +16,17 @@ __author__ = 'saad'
 @pytest.mark.usefixtures('auth_header', 'job_config')
 class TestSchedulerCreate:
 
+    def test_request_send_url(self, auth_header, job_config):
+        """
+        Test dummy endpoint SendRequest to test send_request method is working fine
+        :param auth_header:
+        :param job_config:
+        :return:
+        """
+        response = requests.post(APP_URL + '/tasks/test/', data=json.dumps(job_config),
+                                 headers=auth_header)
+        assert response.status_code == 200
+
     def test_single_scheduled_job(self, auth_header, job_config):
         """
         Create a job by hitting the endpoint and make sure response

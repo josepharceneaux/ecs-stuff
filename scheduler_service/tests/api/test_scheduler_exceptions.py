@@ -109,7 +109,7 @@ class TestSchedulerExceptions:
     def test_already_passed_time_exception(self, auth_header, job_config_one_time):
         """
         For one_time job. If run_datetime is already passed then it should throw exception and job shouldn't be scheduled.
-        
+
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as

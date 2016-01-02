@@ -6,6 +6,7 @@ This API also checks for authentication token
 
 # Standard imports
 import json
+import os
 import types
 
 # Third party imports
@@ -20,7 +21,7 @@ from scheduler_service.common.error_handling import *
 from scheduler_service.common.utils.auth_utils import require_oauth
 from scheduler_service.custom_exceptions import JobAlreadyPausedError, PendingJobError, JobAlreadyRunningError, \
     SchedulerNotRunningError, SchedulerServiceApiException
-from scheduler_service.scheduler import scheduler, schedule_job, serialize_task, remove_tasks
+from scheduler_service.scheduler import scheduler, schedule_job, serialize_task, remove_tasks, run_job
 
 api = TalentApi()
 scheduler_blueprint = Blueprint('scheduler_api', __name__)
@@ -528,6 +529,27 @@ class PauseTaskById(Resource):
             scheduler.pause_job(job_id=_id)
             return dict(message="Task has been successfully paused")
         raise ResourceNotFound(error_message="Task not found")
+
+
+@api.route('/tasks/test/')
+class SendRequestTest(Resource):
+    """
+        This resource is dummy endpoint which is used to call send_request method for testing
+    """
+    decorators = [require_oauth()]
+
+    def post(self):
+
+        if not (os.getenv('GT_ENVIRONMENT') == 'dev' or os.getenv('GT_ENVIRONMENT') == 'circle'):
+            raise ResourceNotFound(error_message="Page not found")
+
+        user_id = request.user.id
+        task = request.get_json()
+        url = task.get('url', '')
+        run_job(user_id, request.oauth_token, url, task.get('content_type', 'application/json'),
+                kwargs=task.get('post_data', dict()))
+
+        return dict(message="Request sent to url %s" % url)
 
 
 def check_if_scheduler_is_running():

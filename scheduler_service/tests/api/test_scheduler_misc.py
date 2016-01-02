@@ -53,11 +53,12 @@ class TestSchedulerMisc:
         """
         If job's start time is in past and within past 0-30 seconds we should schedule it, otherwise
         an exception should be thrown.
+        Check if time is 1 minute in past, then schedule job and it should throw exception
         :param auth_header: Fixture that contains token.
         :param job_config: (dict): Fixture that contains job config to be used as
         :return:
         """
-        start_datetime = datetime.datetime.utcnow() - datetime.timedelta(seconds=29)
+        start_datetime = datetime.datetime.utcnow() - datetime.timedelta(seconds=25)
         job_config['start_datetime'] = start_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
         response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
                                  headers=auth_header)
@@ -69,3 +70,14 @@ class TestSchedulerMisc:
         response_remove = requests.delete(APP_URL + '/tasks/id/' + data['id'],
                                           headers=auth_header)
         assert response_remove.status_code == 200
+
+        start_datetime = datetime.datetime.utcnow() - datetime.timedelta(seconds=31)
+        job_config['start_datetime'] = start_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
+        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+                                 headers=auth_header)
+
+        assert response.status_code == 400
+
+
+
+

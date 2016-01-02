@@ -11,18 +11,22 @@ import datetime
 import os
 
 # Third-party imports
+import requests
 from pytz import timezone
 from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.events import EVENT_JOB_EXECUTED
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.date import DateTrigger
 from apscheduler.schedulers.background import BackgroundScheduler
+from urllib import urlencode
 
 # Application imports
+from auth_service.common.models.user import Token
 from scheduler_service import logger
 from scheduler_service.common.models.user import User
 from scheduler_service.apscheduler_config import executors, job_store, jobstores
 from scheduler_service.common.error_handling import InvalidUsage
+from scheduler_service.common.routes import AuthApiUrl
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 from scheduler_service.common.utils.validators import get_valid_data, get_valid_url, get_valid_datetime, \
     get_valid_integer
@@ -192,9 +196,22 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
     :param kwargs: post data like campaign name, smartlist ids etc
     :return:
     """
+    Token
+    headers = {'content-type': 'application/x-www-form-urlencoded'}
     secret_key = None
     if not access_token:
         secret_key, access_token = User.generate_auth_token(user_id=user_id)
+    elif 'bearer' in access_token.lower():
+        token = Token.get_token(access_token=access_token)
+        if token and (token.expires - datetime.timedelta(seconds=30)) < datetime.datetime.utcnow():
+             data = {'client_id': token.client_id,
+                     'client_secret': token.client.client_secret,
+                     'refresh_token': token.refresh_token,
+                     'grant_type': u'refresh_token'}
+             resp = requests.post(AuthApiUrl.AUTH_SERVICE_TOKEN_CREATE_URI, data=urlencode(data),
+                                  headers=headers)
+             access_token = "Bearer " + resp.json()['access_token']
+
     logger.info('User ID: %s, URL: %s, Content-Type: %s' % (user_id, url, content_type))
     # Call celery task to send post_data to url
     send_request.apply_async([access_token, secret_key, url, content_type, kwargs])

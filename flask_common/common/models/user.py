@@ -236,6 +236,13 @@ class Token(db.Model):
             return self._scopes.split()
         return []
 
+    @staticmethod
+    def get_token(access_token):
+        if access_token is None:
+            return None
+        token = Token.query.filter_by(access_token=access_token.split(' ')[1]).first()
+        return token
+
 
 class DomainRole(db.Model):
     __tablename__ = 'domain_role'
