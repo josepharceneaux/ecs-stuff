@@ -1,5 +1,5 @@
-import os
 import talent_property_manager
+
 
 class UserServiceApiUrl:
     def __init__(self):
@@ -131,10 +131,10 @@ class SchedulerApiUrl:
         SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
     elif env == 'qa':
         # TODO: Change this url after deployment
-        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
+        SCHEDULER_SERVICE_HOST_NAME = 'http://scheduler-service-webdev.gettalent.com/%s'
     elif env == 'prod':
         # TODO: Change this url after deployment
-        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
+        SCHEDULER_SERVICE_HOST_NAME = 'http://scheduler-service.gettalent.com/%s'
     else:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
 
@@ -163,3 +163,24 @@ class CandidatePoolApiUrl:
     TALENT_POOL_GET_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "talent-pool/%s/stats"
     TALENT_PIPELINE_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "talent-pipelines/stats"
     TALENT_PIPELINE_GET_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "talent-pipeline/%s/stats"
+
+
+class SpreadsheetImportApiUrl:
+    def __init__(self):
+        pass
+
+    env = talent_property_manager.get_env()
+
+    if env == 'dev' or env == 'circle':
+        SPREADSHEET_IMPORT_SERVICE_HOST_NAME = 'http://127.0.0.1:8009/v1/parse_spreadsheet/%s'
+    elif env == 'qa':
+        # TODO: Change this url after deployment
+        SPREADSHEET_IMPORT_SERVICE_HOST_NAME = 'http://127.0.0.1:8009/v1/parse_spreadsheet/%s'
+    elif env == 'prod':
+        # TODO: Change this url after deployment
+        SPREADSHEET_IMPORT_SERVICE_HOST_NAME = 'http://127.0.0.1:8009/v1/parse_spreadsheet/%s'
+    else:
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
+
+    CONVERT_TO_TABLE = SPREADSHEET_IMPORT_SERVICE_HOST_NAME % "convert_to_table"
+    IMPORT_CANDIDATES = SPREADSHEET_IMPORT_SERVICE_HOST_NAME % 'import_candidates'
