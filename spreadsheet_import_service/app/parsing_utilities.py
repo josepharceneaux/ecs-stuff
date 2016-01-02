@@ -342,4 +342,4 @@ def schedule_spreadsheet_import(import_args):
 
     except Exception as e:
         raise InternalServerError("Couldn't schedule Spreadsheet import using scheduling service "
-                                  "because: %s", e.message)
+                                  "because: %s" % e.message)
