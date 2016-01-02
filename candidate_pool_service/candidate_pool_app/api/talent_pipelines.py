@@ -568,7 +568,7 @@ def get_talent_pipeline_stats(talent_pipeline_id):
 
     talent_pipeline_stats = TalentPipelineStats.query.filter(
         TalentPipelineStats.talent_pipeline_id == talent_pipeline_id, TalentPipelineStats.added_time >= from_date,
-        TalentPipelineStats.added_time <= to_date)
+        TalentPipelineStats.added_time <= to_date).all()
 
     return jsonify({'talent_pipeline_data': [
         {

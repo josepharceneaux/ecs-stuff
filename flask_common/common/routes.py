@@ -1,11 +1,38 @@
-import os
+import talent_property_manager
+
+
+class UserServiceApiUrl:
+    def __init__(self):
+        pass
+
+    env = talent_property_manager.get_env()
+
+    if env == 'dev' or env == 'circle':
+        USER_SERVICE_HOST_NAME = 'http://127.0.0.1:8004/v1/%s'
+    elif env == 'qa':
+        USER_SERVICE_HOST_NAME = 'http://user-webdev.gettalent.com/v1/%s'
+    elif env == 'prod':
+        USER_SERVICE_HOST_NAME = 'http://user.gettalent.com/v1/%s'
+    else:
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
+
+    USERS_API = USER_SERVICE_HOST_NAME % 'users'
+    DOMAINS_API = USER_SERVICE_HOST_NAME % 'domains'
+    USER_ROLES_API = USER_SERVICE_HOST_NAME % 'users/%s/roles'
+    DOMAIN_ROLES_API = USER_SERVICE_HOST_NAME % 'domain/%s/roles'
+    DOMAIN_GROUPS_API = USER_SERVICE_HOST_NAME % 'domain/%s/groups'
+    DOMAIN_GROUPS_UPDATE_API = USER_SERVICE_HOST_NAME % 'domain/groups/%s'
+    USER_GROUPS_API = USER_SERVICE_HOST_NAME % 'groups/%s/users'
+    UPDATE_PASSWORD_API = USER_SERVICE_HOST_NAME % 'users/update_password'
+    FORGOT_PASSWORD_API = USER_SERVICE_HOST_NAME % 'users/forgot_password'
+    RESET_PASSWORD_API = USER_SERVICE_HOST_NAME % 'users/reset_password/%s'
 
 
 class AuthApiUrl:
     def __init__(self):
         pass
 
-    env = os.environ.get('GT_ENVIRONMENT')
+    env = talent_property_manager.get_env()
 
     if env == 'dev' or env == 'circle':
         AUTH_SERVICE_HOST_NAME = 'http://127.0.0.1:8001/v1/%s'
@@ -27,7 +54,7 @@ class CandidateApiUrl:
     def __init__(self):
         pass
 
-    env = os.environ.get('GT_ENVIRONMENT')
+    env = talent_property_manager.get_env()
 
     if env == 'dev' or env == 'circle':
         CANDIDATE_SERVICE_HOST_NAME = 'http://127.0.0.1:8005/%s'
@@ -98,16 +125,16 @@ class SchedulerApiUrl:
     def __init__(self):
         pass
 
-    env = os.environ.get('GT_ENVIRONMENT')
+    env = talent_property_manager.get_env()
 
     if env == 'dev' or env == 'circle':
         SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
     elif env == 'qa':
         # TODO: Change this url after deployment
-        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
+        SCHEDULER_SERVICE_HOST_NAME = 'http://scheduler-service-webdev.gettalent.com/%s'
     elif env == 'prod':
         # TODO: Change this url after deployment
-        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
+        SCHEDULER_SERVICE_HOST_NAME = 'http://scheduler-service.gettalent.com/%s'
     else:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
 
@@ -119,7 +146,7 @@ class CandidatePoolApiUrl:
     def __init__(self):
         pass
 
-    env = os.environ.get('GT_ENVIRONMENT')
+    env = talent_property_manager.get_env()
 
     if env == 'dev' or env == 'circle':
         CANDIDATE_POOL_SERVICE_HOST_NAME = 'http://127.0.0.1:8008/v1/%s'
@@ -136,3 +163,24 @@ class CandidatePoolApiUrl:
     TALENT_POOL_GET_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "talent-pool/%s/stats"
     TALENT_PIPELINE_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "talent-pipelines/stats"
     TALENT_PIPELINE_GET_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "talent-pipeline/%s/stats"
+
+
+class SpreadsheetImportApiUrl:
+    def __init__(self):
+        pass
+
+    env = talent_property_manager.get_env()
+
+    if env == 'dev' or env == 'circle':
+        SPREADSHEET_IMPORT_SERVICE_HOST_NAME = 'http://127.0.0.1:8009/v1/parse_spreadsheet/%s'
+    elif env == 'qa':
+        # TODO: Change this url after deployment
+        SPREADSHEET_IMPORT_SERVICE_HOST_NAME = 'http://127.0.0.1:8009/v1/parse_spreadsheet/%s'
+    elif env == 'prod':
+        # TODO: Change this url after deployment
+        SPREADSHEET_IMPORT_SERVICE_HOST_NAME = 'http://127.0.0.1:8009/v1/parse_spreadsheet/%s'
+    else:
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
+
+    CONVERT_TO_TABLE = SPREADSHEET_IMPORT_SERVICE_HOST_NAME % "convert_to_table"
+    IMPORT_CANDIDATES = SPREADSHEET_IMPORT_SERVICE_HOST_NAME % 'import_candidates'

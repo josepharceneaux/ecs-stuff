@@ -603,7 +603,7 @@ def get_talent_pool_stats(talent_pool_id):
 
     talent_pool_stats = TalentPoolStats.query.filter(and_(TalentPoolStats.talent_pool_id == talent_pool_id,
                                                           TalentPoolStats.added_time >= from_date,
-                                                          TalentPoolStats.added_time <= to_date))
+                                                          TalentPoolStats.added_time <= to_date)).all()
 
     return jsonify({'talent_pool_data': [
         {
