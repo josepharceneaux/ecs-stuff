@@ -196,7 +196,6 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
     :param kwargs: post data like campaign name, smartlist ids etc
     :return:
     """
-    Token
     headers = {'content-type': 'application/x-www-form-urlencoded'}
     secret_key = None
     if not access_token:

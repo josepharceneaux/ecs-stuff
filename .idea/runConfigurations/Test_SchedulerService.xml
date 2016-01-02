@@ -2,7 +2,9 @@
   <configuration default="false" name="Test SchedulerService" type="tests" factoryName="py.test" singleton="true">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
-    <envs />
+    <envs>
+      <env name="GT_ENVIRONMENT" value="dev" />
+    </envs>
     <option name="SDK_HOME" value="$USER_HOME$/.pyenv/versions/2.7.9/bin/python" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
     <option name="IS_MODULE_SDK" value="false" />

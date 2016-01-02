@@ -58,7 +58,7 @@ class TestSchedulerMisc:
         :param job_config: (dict): Fixture that contains job config to be used as
         :return:
         """
-        start_datetime = datetime.datetime.utcnow() - datetime.timedelta(seconds=25)
+        start_datetime = datetime.datetime.utcnow()
         job_config['start_datetime'] = start_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
         response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
                                  headers=auth_header)

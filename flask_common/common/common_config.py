@@ -4,10 +4,12 @@ import logging
 import logging.config
 import talent_property_manager
 
+
 # load logging configuration file
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 LOGGING_CONF = os.path.join(APP_ROOT, 'logging.conf')
 logging.config.fileConfig(LOGGING_CONF)
+
 
 # SQL ALCHEMY DB URL
 GT_ENVIRONMENT = talent_property_manager.get_env()
