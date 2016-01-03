@@ -789,7 +789,7 @@ def get_username_facet_info_with_ids(facet_owner):
         new_tmp_dict = {}
         user_row = User.query.filter_by(email=username_facet['value']).first()
         new_tmp_dict['id'] = username_facet['id']
-        new_tmp_dict['value'] = user_row.first_name+" "+user_row.last_name
+        new_tmp_dict['value'] = (user_row.first_name or "") + " " + (user_row.last_name or "")
         new_tmp_dict['count'] = username_facet['count']
         username_facets.append(new_tmp_dict)
     return username_facets

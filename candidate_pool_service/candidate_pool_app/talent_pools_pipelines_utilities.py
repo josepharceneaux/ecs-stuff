@@ -1,9 +1,8 @@
 __author__ = 'ufarooqi'
 import json
-import os
 import requests
 from flask import request
-from datetime import datetime
+from datetime import datetime, timedelta
 from candidate_pool_service.common.models.user import User
 from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.redis_cache import redis_store
@@ -94,16 +93,16 @@ def get_candidates_of_talent_pipeline(talent_pipeline, fields=''):
                                              "%s" % e.message)
 
 
-def schedule_talent_pool_and_pipelines_daily_stats_update():
+def schedule_candidate_daily_stats_update():
 
     env = talent_property_manager.get_env()
 
-    if not redis_store.get('IS_TALENT_POOL_AND_PIPELINE_STAT_API_REGISTERED') and env != 'circle':
+    if not redis_store.get('IS_CANDIDATE_STAT_API_REGISTERED') and env != 'circle':
 
         data = {
             "frequency": 3600 * 24,  # Daily
             "task_type": "periodic",
-            "start_datetime": str(datetime.utcnow()),
+            "start_datetime": str(datetime.utcnow() + timedelta(seconds=10)),
             "end_datetime": "2099-01-05T08:00:00",
             "url": CandidatePoolApiUrl.TALENT_POOL_STATS
         }
@@ -123,9 +122,15 @@ def schedule_talent_pool_and_pipelines_daily_stats_update():
             if response.status_code != 201:
                 raise Exception("Status Code: %s, Response: %s" % (response.status_code, response.json()))
 
-            redis_store.set('IS_TALENT_POOL_AND_PIPELINE_STAT_API_REGISTERED', True)
+            data['url'] = CandidatePoolApiUrl.SMARTLIST_STATS
+            response = requests.post(SchedulerApiUrl.TASKS, headers=headers, data=json.dumps(data))
+
+            if response.status_code != 201:
+                raise Exception("Status Code: %s, Response: %s" % (response.status_code, response.json()))
+
+            redis_store.set('IS_CANDIDATE_STAT_API_REGISTERED', True)
 
         except Exception as e:
-            logger.exception("Couldn't register TalentPool or TalentPipeline statistics update endpoint to Scheduler "
+            logger.exception("Couldn't register Candidate statistics update endpoint to Scheduler "
                              "Service because: %s" % e.message)
 
