@@ -187,7 +187,7 @@ class CandidatesResource(Resource):
                 source_id=candidate_dict.get('source_id'),
                 objective=candidate_dict.get('objective'),
                 summary=candidate_dict.get('summary'),
-                talent_pool_ids=candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []}),
+                talent_pool_ids=candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []})
             )
             created_candidate_ids.append(resp_dict['candidate_id'])
 

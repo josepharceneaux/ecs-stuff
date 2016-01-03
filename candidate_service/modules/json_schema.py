@@ -17,7 +17,7 @@ candidates_resource_schema_post = {
                 # "id": "http://jsonschema.net/candidates/0",
                 "type": "object",
                 "required": ["emails"],
-                "additionalProperties": False,
+                # "additionalProperties": False,
                 "properties": {
                     "first_name": {
                         # "id": "http://jsonschema.net/first_name",
@@ -51,9 +51,9 @@ candidates_resource_schema_post = {
                         # "id": "http://jsonschema.net/dice_profile_id",
                         "type": ["integer", "null"]
                     },
-                    "talent_pool_id": {
+                    "talent_pool_ids": {
                         # "id": "http://jsonschema.net/talent_pool_id",
-                        "type": ["integer", "null"]
+                        "type": ["object", "null"]
                     },
                     "source_id": {
                         # "id": "http://jsonschema.net/source_id",
@@ -654,7 +654,7 @@ candidates_resource_schema_patch = {
                     },
                     "talent_pool_id": {
                         # "id": "http://jsonschema.net/talent_pool_id",
-                        "type": ["integer", "null"]
+                        "type": ["object", "null"]
                     },
                     "source_id": {
                         # "id": "http://jsonschema.net/source_id",
