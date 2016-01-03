@@ -509,8 +509,12 @@ def update_talent_pipelines_stats():
             response = get_candidates_of_talent_pipeline(talent_pipeline, 'id')
             total_candidates = response.get('total_found')
             talent_pipeline_candidate_ids = [candidate.get('id') for candidate in response.get('candidates')]
-            engaged_candidates = len(db.session.query(EmailCampaignSend.candidate_id).filter(
-                EmailCampaignSend.candidate_id.in_(talent_pipeline_candidate_ids)).all() or [])
+
+            engaged_candidates = 0
+            if talent_pipeline_candidate_ids:
+                engaged_candidates = len(db.session.query(EmailCampaignSend.candidate_id).filter(
+                        EmailCampaignSend.candidate_id.in_(talent_pipeline_candidate_ids)).all() or [])
+
             candidates_engagement = int(float(engaged_candidates)/total_candidates*100) if int(total_candidates) else 0
             # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
 

@@ -138,8 +138,12 @@ def update_smartlists_stats():
             response = get_candidates(smartlist, True)
             total_candidates = response.get('total_found')
             smartlist_candidate_ids = [candidate.get('id') for candidate in response.get('candidates')]
-            engaged_candidates = len(db.session.query(EmailCampaignSend.candidate_id).filter(
-                EmailCampaignSend.candidate_id.in_(smartlist_candidate_ids)).all() or [])
+
+            engaged_candidates = 0
+            if smartlist_candidate_ids:
+                engaged_candidates = len(db.session.query(EmailCampaignSend.candidate_id).filter(
+                        EmailCampaignSend.candidate_id.in_(smartlist_candidate_ids)).all() or [])
+
             candidates_engagement = int(float(engaged_candidates)/total_candidates*100) if int(total_candidates) else 0
             # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
 
@@ -195,8 +199,8 @@ def get_smartlist_stats(smartlist_id):
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
 
     smartlist_stats = SmartlistStats.query.filter(SmartlistStats.smartlist_id == smartlist_id,
-                                                        SmartlistStats.added_time >= from_date,
-                                                        SmartlistStats.added_time <= to_date).all()
+                                                  SmartlistStats.added_time >= from_date,
+                                                  SmartlistStats.added_time <= to_date).all()
 
     return jsonify({'smartlist_data': [
         {

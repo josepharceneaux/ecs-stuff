@@ -546,8 +546,12 @@ def update_talent_pools_stats():
             talent_pool_candidate_ids =[talent_pool_candidate.candidate_id for talent_pool_candidate in
                                         TalentPoolCandidate.query.filter_by(talent_pool_id=talent_pool.id).all()]
             total_candidates = len(talent_pool_candidate_ids)
-            engaged_candidates = len(db.session.query(EmailCampaignSend.candidate_id).filter(
-                EmailCampaignSend.candidate_id.in_(talent_pool_candidate_ids)).all() or [])
+
+            engaged_candidates = 0
+            if talent_pool_candidate_ids:
+                engaged_candidates = len(db.session.query(EmailCampaignSend.candidate_id).filter(
+                        EmailCampaignSend.candidate_id.in_(talent_pool_candidate_ids)).all() or [])
+
             candidates_engagement = int(float(engaged_candidates)/total_candidates*100) if \
                 int(total_candidates) else 0
             # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
