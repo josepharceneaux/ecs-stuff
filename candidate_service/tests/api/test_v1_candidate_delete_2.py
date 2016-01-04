@@ -118,7 +118,7 @@ def test_delete_candidate_experience_with_no_id(sample_user, user_auth):
     assert updated_resp.status_code == 404
 
 
-def test_delete_candidate_experiences_without_candidate_id(sample_user, user_auth):
+def test_delete_candidate_experiences_without_can_id(sample_user, user_auth):
     """
     Test:   Attempt to delete Candidate's experiences without providing candidate_id
     Expect: 404
@@ -145,10 +145,7 @@ def test_delete_candidate_experiences(sample_user, user_auth):
     token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create Candidate
-    create_resp = post_to_candidate_resource(token)
-
-    # Retrieve Candidate
-    candidate_id = create_resp.json()['candidates'][0]['id']
+    candidate_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
 
     # Remove all of Candidate's experiences
     updated_resp = request_to_candidate_experience_resource(token, 'delete', candidate_id, True)
@@ -161,7 +158,7 @@ def test_delete_candidate_experiences(sample_user, user_auth):
     assert len(can_dict_after_update['work_experiences']) == 0
 
 
-def test_delete_cand_experience(sample_user, user_auth):
+def test_delete_candidate_experience(sample_user, user_auth):
     """
     Test:   Remove Candidate's experience from db
     Expect: 204, Candidate's experience must be less 1.
