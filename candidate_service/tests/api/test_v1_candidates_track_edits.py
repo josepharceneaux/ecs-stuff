@@ -51,8 +51,6 @@ def test_edit_candidate_primary_info(sample_user, user_auth):
 
     candidate_edits = edit_resp.json()['candidate']['edits']
     assert edit_resp.status_code == 200
-    # assert new_candidate_dict['full_name'] != old_candidate_dict['full_name']
-    # assert candidate_edits[0]['old_value'] == old_candidate_dict['full_name']
 
 
 def test_edit_candidate_address(sample_user, user_auth):

@@ -479,7 +479,7 @@ def reset_all_data_except_param(data, field):
         if _field == field:
             continue
 
-        if _field in ['first_name', 'middle_name', 'last_name']:
+        if _field in ['first_name', 'middle_name', 'last_name', 'work_preference']:
             data['candidates'][0][_field] = None
 
         if _field in ['addresses', 'phones', 'areas_of_interest', 'custom_fields',
@@ -487,8 +487,6 @@ def reset_all_data_except_param(data, field):
                       'social_networks', 'educations']:
             data['candidates'][0][_field] = []
 
-        if _field == 'work_preference':
-            data['candidates'][0][_field] = None
     return data
 
 
