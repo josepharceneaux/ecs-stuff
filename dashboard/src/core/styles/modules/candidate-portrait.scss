@@ -1,0 +1,30 @@
+// ------------
+// Portrait Placeholder
+// ------------
+
+.candidate-protrait__placeholder {
+  display: block;
+  position: relative;
+  width: 150px;
+  height: 150px;
+  background: $color--orange;
+  border-radius: 50%;
+  text-align: center;
+
+  @include helper--media($breakpoint--small) {
+    width: 100%;
+    height: 0;
+    padding-bottom: 100%;
+  }
+}
+
+.candidate-protrait__placeholder__initials {
+  color: $color--white;
+  font-size: $font-size--large;
+  font-weight: $font-weight--medium;
+  display: block;
+  position: absolute;
+  top: 50%;
+  width: 100%;
+  transform: translateY(-50%);
+}

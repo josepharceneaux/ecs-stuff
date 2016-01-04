@@ -1,0 +1,40 @@
+<main class="view--login">
+
+    <!-- Main view -->
+    <section class="view__main--login">
+        <div class="row--skinny header--login">
+            <div class="header__logo--login">
+                <h1>GetTalent</h1>
+            </div>
+        </div>
+
+        <div class="row--skinny">
+            <div class="box">
+                <h2>Log In</h2>
+
+                <form class="form" ng-submit="vm.login()">
+                    <div class="form__fieldset row--expanded">
+                        <!-- Form: Email Address -->
+                        <div class="alert alert-danger animated fadeIn" ng-show="vm.errorMessage">{{vm.errorMessage}}</div>
+                        <div class="col--medium-12 form__col form__col--stacked">
+                            <label class="form__label" for="emailAddress">Email Address</label>
+                            <input gt-float-label class="form__input--icon--email" id="emailAddress" name="emailAddress" type="email" placeholder="Email Address" required autofocus ng-model="vm.username">
+                        </div>
+                        <!-- Form: Password -->
+                        <div class="col--medium-12 form__col form__col--stacked">
+                            <label class="form__label" for="password">Password</label>
+                            <input gt-float-label class="form__input--icon--password" id="password" name="password" type="password" placeholder="Password" required ng-model="vm.password">
+                        </div>
+                    </div>
+                    <div class="form__fieldset--footer row--expanded">
+                        <div class="col--medium-12">
+                            <button class="button--blue button--small" type="submit">Login</button>
+                            <a class="form__fieldset__link" ui-sref="forgot-password">Forgot Password</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+</main>

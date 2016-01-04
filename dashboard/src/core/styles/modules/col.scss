@@ -1,0 +1,61 @@
+// ---------------------------------------------------
+// Modules / Cols
+// ---------------------------------------------------
+
+// -----
+// Define the different breakpoints
+// -----
+
+$breakpoints: (
+  teeny:  $breakpoint--teeny,
+  tiny:   $breakpoint--tiny,
+  small:  $breakpoint--small,
+  medium: $breakpoint--medium,
+  large:  $breakpoint--large,
+  full:   $breakpoint--full
+);
+
+// -----
+// Generate the columns for each breakpoint
+// -----
+
+// Create all of the columns
+@for $i from 1 through 12 {
+
+ @include helper--generate-col($i, $breakpoints);
+
+}
+
+// -----
+// Extender classes
+// -----
+
+.col--medium-half {
+  @include inc--align--clearfix;
+
+  position: relative;
+
+  @include helper--media($breakpoint--medium) {
+    &:nth-of-type(1) {
+      padding-right: $margin--row;
+    }
+    &:nth-of-type(2) {
+      padding-left: $margin--row;
+    }
+  }
+}
+
+.col--vmiddle {
+  vertical-align: middle;
+}
+
+.col--pad {
+  padding-top: $padding--large;
+  padding-bottom: $padding--large;
+  padding-left: $padding--large;
+  padding-right: $padding--large;
+}
+
+.col--right {
+  @include inc--col--right;
+}

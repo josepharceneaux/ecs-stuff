@@ -1,0 +1,17 @@
+// ---------------------------------------------------
+// Modules // Create Pipeline/Smart List
+// ---------------------------------------------------
+.create-smart-list__fields,
+.create-pipeline__fields {
+  @include inc--align--clearfix;
+
+  display: none;
+
+  &.is--active {
+    display: block;
+  }
+}
+
+.current__results {
+  padding-left: $padding--small;
+}

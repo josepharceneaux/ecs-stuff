@@ -1,0 +1,173 @@
+// ---------------------------------------------------
+// Modules / Hero
+// ---------------------------------------------------
+
+.hero {
+
+  .form__input--select {
+    display: inline-block;
+    color: $color--white;
+    width: auto;
+    background: transparent;
+    margin-left: .2em;
+    margin-right: .2em;
+    margin-bottom: .1em;
+
+    &:focus {
+        color: $color--nearBlack;
+        background: $color--lightGray;
+        border: 2px solid $color--lightGray;
+    }
+  }
+
+  // Fancy select style change
+  .fancy-select {
+    display: inline-block;
+    vertical-align: middle;
+
+    .trigger {
+      color: $color--white;
+      width: auto;
+      padding: $padding--tiny $padding--giant $padding--tiny $padding--tiny;
+      background: transparent;
+      border: 2px solid $color--white;
+
+      &:after { border-top-color: $color--white; }
+
+      &.open {
+        color: $color--nearBlack;
+        background: $color--lightGray;
+        border: 2px solid $color--lightGray;
+
+        &:after { border-top-color: $color--nearBlack; }
+      }
+    }
+  }
+}
+
+.hero__header {
+  position: relative;
+  z-index: $z-index--1;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: $padding--teeny;
+  padding-bottom: $padding--teeny;
+  background-color: rgba($color--white, .25);
+
+  h2 {
+    font-size: $font-size--jumbo;
+
+    @include helper--media($breakpoint--large) {
+      font-size: $font-size--mega;
+    }
+  }
+}
+
+.hero__header__link {
+  color: $color--white;
+  opacity: .75;
+  transition: color $easing--normal,
+              opacity $easing--normal;
+
+  &:hover {
+    color: $color--white;
+    opacity: 1;
+  }
+}
+
+.hero__header__new-pipeline {
+  color: $color--blue;
+  display: inline-block;
+  position: relative;
+  margin-left: $padding--teeny;
+  padding: 0 .35em;
+  background-color: $color--white;
+  border-radius: $border-radius--container;
+  transition: color $easing--normal,
+              background-color $easing--normal;
+
+  &:hover {
+    color: $color--white;
+    background: $color--green;
+  }
+}
+
+.hero__header__action {
+  margin-bottom: $padding--huge;
+
+  a {
+    color: $color--white;
+    transition: opacity $easing--normal;
+
+    &:hover {
+      color: $color--white;
+      opacity: .75;
+    }
+  }
+
+  @include helper--media($breakpoint--full) {
+    text-align: right;
+    margin-bottom: 0;
+  }
+}
+
+.hero__header__action--icon-link {
+  color: $color--white;
+  font-size: $font-size--jumbo;
+  opacity: 1;
+  margin: 0 $padding--tiny;
+  vertical-align: middle;
+  transition: opacity $easing--normal;
+
+  &:hover {
+    color: $color--white;
+    opacity: .75;
+  }
+
+  [class^="icon--"],
+  [class*=" icon--"] {
+    vertical-align: middle;
+  }
+}
+
+.hero__header__action--stacked-buttons {
+  @include helper--media($breakpoint--full) {
+    text-align: right;
+  }
+
+  a {
+    margin-bottom: $padding--small;
+
+    &:last-of-type {
+      margin-bottom: 0;
+    }
+  }
+}
+
+// .hero__header__stats {
+//   padding-top: 0;
+//   padding-bottom: $padding--mega;
+// }
+
+.hero__header__stats--column {
+  margin-bottom: $padding--normal;
+
+  &:last-of-type {
+    margin-bottom: 0;
+  }
+
+  @include helper--media($breakpoint--large) {
+    margin-bottom: 0;
+  }
+}
+
+.hero__header__stats--stat-subhead {
+  font-size: $font-size--small;
+}
+
+.hero__content {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: $padding--large;
+  padding-bottom: $padding--normal;
+}

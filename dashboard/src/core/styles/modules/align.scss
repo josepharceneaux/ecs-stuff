@@ -1,0 +1,19 @@
+// ---------------------------------------------------
+// Modules / Align
+// ---------------------------------------------------
+
+.align {}
+
+.align--center {
+  text-align: center;
+}
+
+.align--right {
+  text-align: right;
+}
+
+.align--right-tiny {
+  @include helper--media($breakpoint--tiny) {
+    text-align: right;
+  }
+}

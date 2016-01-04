@@ -1,0 +1,88 @@
+// ---------------------------------------------------
+// Modules / Pagination
+// ---------------------------------------------------
+.pagination__controls {
+  @include inc--align--clearfix;
+
+  margin-top: $margin--line;
+
+  .form__input--select {
+    color: $color--blue;
+    background: transparent;
+    border-color: transparent;
+
+    &:focus {
+      color: $color--nearBlack;
+      background: $color--lightGray;
+      border-color: $color--blue;
+    }
+  }
+
+  // Fancy select style change
+  .fancy-select {
+    .trigger {
+      color: $color--blue;
+      padding: $padding--tiny $padding--giant $padding--tiny $padding--tiny;
+      background: transparent;
+      border: 2px solid transparent;
+
+      &:after { border-top-color: $color--blue; }
+
+      &.open {
+        color: $color--nearBlack;
+        background: $color--lightGray;
+        border: 2px solid $color--lightGray;
+
+        &:after { border-top-color: $color--nearBlack; }
+      }
+    }
+  }
+}
+
+%activePageLink {
+  color: $color--white;
+  background-color: $color--blue;
+}
+
+.pagination {
+  margin: 0;
+  padding: 0;
+
+  li {
+    display: inline-block;
+    list-style-type: none;
+    margin: 0 $padding--teeny;
+    padding: 0;
+    vertical-align: middle;
+    line-height: inherit;
+
+    &.active {
+      a {
+        @extend %activePageLink;
+      }
+    }
+
+    &.disabled {
+      a {
+        color: $color--darkGray;
+        background: transparent;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  a {
+    color: $color--blue;
+    display: inline-block;
+    vertical-align: middle;
+    padding: $padding--tiny $padding--small;
+    background-color: transparent;
+    border-radius: $border-radius--button;
+    transition: color $easing--normal,
+                background-color $easing--normal;
+
+    &:hover {
+      @extend %activePageLink;
+    }
+  }
+}

@@ -1,0 +1,84 @@
+
+/*  GetTalent
+    Design By Cosmic 2015 */
+
+// ---------------------------------------------------
+//  This is the master import file for the SCSS stylesheets.
+//  Please preserve the order of vendor, base, pieces, and modules.
+// ---------------------------------------------------
+
+// -----
+// Vendors
+// -----
+
+@import 'vendor/normalize/normalize';
+@import 'vendor/typebase/typebase';
+
+// -----
+// Base
+// -----
+
+@import 'base/vars';
+@import 'base/helpers';
+@import 'base/layout';
+@import 'base/type';
+
+// -----
+// Pieces
+// -----
+
+@import 'includes/align';
+@import 'includes/gradients';
+@import 'includes/figure';
+@import 'includes/space';
+@import 'includes/col';
+
+@import 'vendor/pickadate/pickadate';
+@import 'vendor/magnific-popup/magnific-popup';
+
+// -----
+// Modules
+// -----
+
+@import 'modules/align';
+@import 'modules/row';
+@import 'modules/col';
+@import 'modules/header';
+@import 'modules/footer';
+@import 'modules/view';
+//@import 'modules/icon';
+@import '../icon-font/gettalent-icons';
+@import 'modules/box';
+@import 'modules/label';
+@import 'modules/table';
+@import 'modules/figure';
+@import 'modules/graph';
+@import 'modules/excerpt';
+@import 'modules/form';
+@import 'modules/button';
+@import 'modules/tabs';
+@import 'modules/responsive';
+@import 'modules/dragDrop';
+@import 'modules/list';
+@import 'modules/progress';
+@import 'modules/code';
+@import 'modules/hero';
+@import 'modules/notifications';
+@import 'modules/pill';
+@import 'modules/pagination';
+@import 'modules/social';
+@import 'modules/notes';
+@import 'modules/team-views';
+@import 'modules/recent-engagements';
+@import 'modules/contact-info';
+@import 'modules/candidate-portrait';
+@import 'modules/candidate-jobs';
+@import 'modules/candidate-search-results';
+@import 'modules/pipeline-inclusion';
+@import 'modules/search-filters';
+@import 'modules/available-candidates';
+@import 'modules/create-pipeline-smartlist';
+@import 'modules/campaign-detail';
+
+@import 'modules/styleguide';
+@import 'base/admin';

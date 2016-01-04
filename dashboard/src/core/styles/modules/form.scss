@@ -1,0 +1,968 @@
+// ---------------------------------------------------
+// Modules / Form
+// ---------------------------------------------------
+
+// -----
+// Global Overrides
+// -----
+
+::-webkit-input-placeholder {
+  color: $color--nearBlack;
+}
+::-moz-placeholder { /* Firefox 19+ */
+  color: $color--nearBlack;
+}
+:-ms-input-placeholder {
+  color: $color--nearBlack;
+}
+:-moz-placeholder { /* Firefox 18- */
+  color: $color--nearBlack;
+}
+:invalid {
+  box-shadow: none;
+}
+:-moz-submit-invalid {
+  box-shadow: none;
+}
+:-moz-ui-invalid {
+  box-shadow:none;
+}
+
+select:not([multiple]) { vertical-align: middle; }
+
+input[type=number] {
+  text-align: center;
+}
+
+// -----
+// Form
+// -----
+
+.form {}
+
+.form--white {
+  .form__input { border-color: $color--white; }
+  .form__label { color: $color--white; }
+  .form__instruction { color: $color--lightGray; }
+
+  tags-input {
+    .tags {
+      .tag-item {
+        color: $color--nearBlack;
+        background: $color--lightGray;
+      }
+
+      input {
+        color: $color--white;
+
+        &::-webkit-input-placeholder {
+          color: $color--white;
+        }
+        &::-moz-placeholder { /* Firefox 19+ */
+          color: $color--white;
+        }
+        &:-ms-input-placeholder {
+          color: $color--white;
+        }
+        &:-moz-placeholder { /* Firefox 18- */
+          color: $color--white;
+        }
+      }
+    }
+  }
+
+  .fancy-select {
+    .trigger {
+      color: $color--white;
+      background: transparent;
+      border: 2px solid $color--white;
+
+      &:after { border-top-color: $color--white; }
+
+      &.open {
+        color: $color--nearBlack;
+        background: $color--white;
+        border: 2px solid $color--white;
+
+        &:after { border-top-color: $color--nearBlack; }
+      }
+    }
+  }
+}
+
+// -----
+// Input
+// -----
+
+.form__input  {
+  font-family: $font--main;
+  font-size: 1rem;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  margin-top: $margin--row;
+  padding: $padding--small $padding--tiny;
+  box-sizing: border-box;
+  background-color: transparent;
+  border: 2px solid $color--lightGray;
+  border-radius: $border-radius--container;
+  outline: none;
+  vertical-align: middle;
+
+  &:focus {
+    outline: none;
+    background-color: $color--lightGray;
+    border-color: $color--blue;
+  }
+}
+
+.form__input--inline {
+  @extend .form__input;
+
+  display: inline-block;
+  width: auto;
+}
+
+.form__input--select {
+  @extend .form__input;
+
+  color: $color--nearBlack;
+  line-height: 1;
+  height: 48px;
+  margin-top: 0;
+  padding: $padding--small $padding--tiny;
+  background-color: $color--lightGray;;
+  border: 2px solid $color--lightGray;
+  border-radius: $border-radius--container;
+  -webkit-appearance: menulist-button;
+}
+
+.form__input--select--small {
+  font-size: $font-size--small;
+  height: 34.5938px;
+  padding: $padding--tiny $padding--giant $padding--tiny $padding--tiny;
+}
+
+.form__input--textarea {
+  @extend .form__input;
+
+  line-height: 1.25;
+  min-height: 200px;
+  -webkit-appearance: none;
+  resize: vertical;
+}
+
+.form__input--shortTextarea {
+  @extend .form__input--textarea;
+
+  min-height: 6em;
+}
+
+.form__input--noMargin {
+  @extend .form__input;
+
+  margin-top: 0;
+}
+
+// -----
+// Inputs with Icons
+// -----
+.form__input--icon {
+  @extend .form__input;
+  padding-left: $padding--mega;
+  background-repeat: no-repeat;
+}
+
+.form__input--icon--email {
+  @extend .form__input--icon;
+  background-image: url('../images/ui/icon--mail.svg');
+  background-size: 24px 16px;
+  background-position: .5em center;
+}
+
+.form__input--icon--password {
+  @extend .form__input--icon;
+  background-image: url('../images/ui/icon--lock.svg');
+  background-size: 18px 24px;
+  background-position: .75em center;
+}
+
+// -----
+// Fieldset
+// -----
+
+.form__fieldset {
+  padding: 0;
+  margin-top: 0;
+  margin-left: 0;
+  margin-right: 0;
+  border: 0;
+
+  .form__input--select {
+    margin-top: $margin--row;
+  }
+
+  // Fancy select overrides
+  .fancy-select {
+    .trigger { margin-top: $margin--row; }
+  }
+
+  h3 {
+    margin-top: $margin--row;
+    margin-bottom: $margin--row;
+  }
+
+  &:last-of-type {
+    margin-bottom: 0;
+  }
+}
+
+.form__fieldset--column {
+  @include helper--media($breakpoint--medium) {
+    &:nth-of-type(1) {
+      padding-right: $padding--small;
+    }
+    &:nth-of-type(2) {
+      padding-left: $padding--small;
+    }
+  }
+}
+
+.form__fieldset--footer {
+  @extend .form__fieldset;
+  @include inc--align--clearfix;
+
+  margin-top: $margin--row;
+
+  @include helper--media($breakpoint--medium) {
+    a {
+      margin-right: $margin--inline;
+
+      &:last-of-type { margin-right: 0; }
+    }
+  }
+}
+
+.form__fieldset__link {
+  font-family: $font-size--small;
+  margin-left: $margin--line;
+  margin-right: $margin--line;
+}
+
+// -----
+// Col
+// -----
+
+.form__col {
+  @include inc--align--clearfix;
+
+  position: relative;
+
+  @include helper--media($breakpoint--medium) {
+    &:nth-of-type(1) {
+      padding-right: $padding--small;
+    }
+    &:nth-of-type(2) {
+      padding-left: $padding--small;
+    }
+  }
+}
+
+.form__col--stacked {
+  @extend .form__col;
+
+  &:nth-of-type(1),
+  &:nth-of-type(2),
+  &:nth-of-type(3) {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+.form__col--static {
+  @extend .form__col;
+
+  position: static;
+}
+
+.form__col--error {
+  @extend .form__col;
+
+  .form__label,
+  .form__input--checkbox {
+    color: $color--red;
+  }
+
+  .form__input {
+    background-color: rgba($color--red, .25);
+    border-color: $color--red;
+  }
+}
+
+// Should only be used if there are only three inputs in a form.
+.form__col--third {
+  position: relative;
+
+  @include helper--media($breakpoint--medium) {
+    &:nth-of-type(1) {
+      padding-right: $padding--small;
+    }
+    &:nth-of-type(2) {
+      padding-right: $padding--small;
+    }
+  }
+}
+
+// -----
+// Label
+// -----
+
+.form__label {
+  visibility: hidden;
+  opacity: 0;
+  color: $color--blue;
+  font-size: $font-size--small;
+  font-weight: 600;
+  display: block;
+  position: absolute;
+  z-index: 1;
+  top: $padding--small;
+  margin-left: 10px;
+  transition: opacity $easing--normal,
+              top $easing--normal,
+              visibility $easing--normal;
+}
+
+// .has-value is added by JS
+.form__col--has-value {
+  .form__label {
+    visibility: visible;
+    opacity: 1;
+    top: .75em;
+  }
+
+  .form__label--shown { // doesn't float the label when the input has value
+    top: .75em;
+  }
+}
+
+.form__label--shown { // doesn't float the label when the input has value
+  @extend .form__label;
+
+  visibility: visible;
+  opacity: 1;
+  position: absolute;
+  top: .75em;
+}
+
+.form__label--inbetweenInputs {
+  position: relative;
+  top: 1em;
+  padding-right: $padding--small;
+  padding-left: $padding--small;
+}
+
+// -----
+// Instruction
+// -----
+.form__instruction {
+  color: $color--gray;
+  font-weight: 400;
+  margin-left: $padding--teeny;
+  padding: 0;
+}
+
+// -----
+// Info below input
+// -----
+.form__input-info {
+  color: $color--gray;
+  display: block;
+  font-weight: $font-weight--bold;
+  text-align: right;
+  padding-top: $padding--tiny;
+}
+
+// -----
+// Checkbox
+// -----
+.form__input--checkbox {
+  color: inherit;
+  position: relative;
+  display: inline-block;
+  padding-left: 2rem;
+  padding-right: .5rem;
+  cursor: pointer;
+  margin-top: $margin--line;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    z-index: -1; /* Put the hidden input behind the label so it doesn't overlay */
+
+    /* Checked state */
+    &:checked ~ span {
+      @extend .icon--checked;
+    }
+  }
+
+  span {
+    @extend .icon--unchecked;
+    color: inherit;
+    font-size: 1.5em;
+    line-height: 1rem;
+    text-align: center;
+    position: absolute;
+    top: .15rem;
+    left: 0;
+    display: block;
+    width:  1.5rem;
+    height: 1.5rem;
+    -webkit-user-select: none; // Including all prefixes because autoprefixer doesn't include all of these
+       -moz-user-select: none;
+        -ms-user-select: none;
+            user-select: none;
+  }
+}
+
+
+/*
+ * Checkboxes and radios
+ */
+
+.control {
+  position: relative;
+  display: inline-block;
+  padding-left: 2em;
+  color: $color--nearBlack;
+  cursor: pointer;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    z-index: -1; /* Put the input behind the label so it doesn't overlay text */
+
+    /* Checked state */
+    &:checked ~ .control-indicator {
+      color: #fff;
+      background-color: $color--blue;
+    }
+
+    /* Active */
+    &:active ~ .control-indicator {
+      color: #fff;
+      background-color: $color--lightBlue;
+    }
+  }
+}
+
+.control-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width:  1em;
+  height: 1em;
+  line-height: 1rem;
+  font-size: 1.25em;
+  color: #eee;
+  text-align: center;
+  background-color: #eee;
+  background-size: 50% 50%;
+  background-position: center center;
+  background-repeat: no-repeat;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+
+  .checkbox & {
+    border-radius: .25rem;
+  }
+
+  .radio & {
+    border-radius: 50%;
+  }
+}
+
+.checkbox input:checked ~ .control-indicator {
+  background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjwhLS0gR2VuZXJhdG9yOiBBZG9iZSBJbGx1c3RyYXRvciAxNy4xLjAsIFNWRyBFeHBvcnQgUGx1Zy1JbiAuIFNWRyBWZXJzaW9uOiA2LjAwIEJ1aWxkIDApICAtLT4NCjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+DQo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4Ig0KCSB2aWV3Qm94PSIwIDAgOCA4IiBlbmFibGUtYmFja2dyb3VuZD0ibmV3IDAgMCA4IDgiIHhtbDpzcGFjZT0icHJlc2VydmUiPg0KPHBhdGggZmlsbD0iI0ZGRkZGRiIgZD0iTTYuNCwxTDUuNywxLjdMMi45LDQuNUwyLjEsMy43TDEuNCwzTDAsNC40bDAuNywwLjdsMS41LDEuNWwwLjcsMC43bDAuNy0wLjdsMy41LTMuNWwwLjctMC43TDYuNCwxTDYuNCwxeiINCgkvPg0KPC9zdmc+DQo=');
+}
+
+.radio input:checked ~ .control-indicator {
+  background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjwhLS0gR2VuZXJhdG9yOiBBZG9iZSBJbGx1c3RyYXRvciAxNy4xLjAsIFNWRyBFeHBvcnQgUGx1Zy1JbiAuIFNWRyBWZXJzaW9uOiA2LjAwIEJ1aWxkIDApICAtLT4NCjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+DQo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4Ig0KCSB2aWV3Qm94PSIwIDAgOCA4IiBlbmFibGUtYmFja2dyb3VuZD0ibmV3IDAgMCA4IDgiIHhtbDpzcGFjZT0icHJlc2VydmUiPg0KPHBhdGggZmlsbD0iI0ZGRkZGRiIgZD0iTTQsMUMyLjMsMSwxLDIuMywxLDRzMS4zLDMsMywzczMtMS4zLDMtM1M1LjcsMSw0LDF6Ii8+DQo8L3N2Zz4NCg==');
+}
+
+.controls-stacked {
+  margin: 1em 0;
+
+  .control {
+    display: block;
+
+    + .control {
+      margin-top: .5em;
+    }
+  }
+}
+
+.controls-inline {
+  margin: 1em 0;
+
+  .control {
+    display: inline-block;
+    height: 1em;
+
+    + .control {
+      margin-left: 1em;
+    }
+  }
+}
+
+// -----
+// Lightswitch
+// -----
+.form__input--toggle {
+  color: inherit;
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  height: 50px;
+  margin-top: $margin--row;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    z-index: -1; /* Put the hidden input behind the label so it doesn't overlay */
+
+    /* Checked state */
+    &:checked ~ span {
+      background: $color--lightGreen;
+
+      &:after { left: 50%; }
+    }
+  }
+
+  span {
+    display: block;
+    position: relative;
+    top: 9px;
+    width: 4em;
+    height: 2em;
+    padding: 2px;
+    background: $color--lightGray;
+    border-radius: 2em;
+    outline: 0;
+    cursor: pointer;
+    user-select: none;
+    transition: all .4s ease;
+
+    &:after,
+    &:before {
+      position: relative;
+      display: block;
+      content: "";
+      width: 50%;
+      height: 100%;
+    }
+
+    &:after {
+      left: 0;
+      border-radius: 50%;
+      background: $color--white;
+      transition: all .2s ease;
+    }
+
+    &:before { display: none; }
+  }
+}
+
+
+// -----
+// File Upload
+// -----
+.form__input--file {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  cursor: pointer;
+  margin-top: $margin--row;
+  width: 100%;
+
+  input {
+    min-width: 14rem;
+    margin: 0;
+    filter: alpha(opacity=0);
+    opacity: 0;
+
+    &:focus ~ .file-custom {
+      box-shadow: 0 0 0 .075rem $color--white,
+                  0 0 0 .2rem $color--blue;
+    }
+  }
+
+  span {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 5;
+    padding: $padding--small $padding--tiny;
+    line-height: 1.5;
+    color: $color--nearBlack;
+    background-color: transparent;
+    border: 2px solid $color--lightGray;
+    border-radius: .25rem;
+    -webkit-user-select: none;
+    user-select: none;
+
+    &:after {
+      content: attr(data-placeholder);
+    }
+
+    &:before {
+      position: absolute;
+      top: -.075rem;
+      right: -.075rem;
+      bottom: -.075rem;
+      z-index: 6;
+      display: block;
+      content: "Browse";
+      padding: $padding--small $padding--tiny;
+      line-height: 1.5;
+      color: $color--nearBlack;
+      background-color: $color--lightGray;
+      border: 2px solid $color--lightGray;
+      border-radius: 0 .25rem .25rem 0;
+    }
+  }
+}
+
+// -----
+// Tag Inputs
+// -----
+tags-input {
+  display: block;
+
+  .host {
+    &:active {
+        outline: none;
+    }
+  }
+
+  .tags {
+    @extend .form__input;
+
+    padding: $padding--tiny;
+    padding-bottom: 0;
+    overflow-x: auto;
+    cursor: text;
+
+    &.focused {
+      //background-color: $color--lightGray;
+      border-color: $color--blue;
+    }
+
+    .tag-list {
+      margin: 0;
+      padding: 0;
+      list-style-type: none;
+    }
+
+    .tag-item {
+      color: $color--nearBlack;
+      font-size: $font-size--small;
+      font-weight: $font-weight--medium;
+      line-height: 1.2;
+      text-decoration: none;
+      position: relative;
+      float: left;
+      margin-right: $padding--teeny;
+      margin-bottom: $padding--tiny;
+      padding: $padding--tiny;
+      background: $color--lightGray;
+      border-radius: $border-radius--container;
+      cursor: text;
+
+      &.selected {
+        color: $color--white;
+        background-color: $color--red;
+
+        .remove-button {
+          color: $color--white;
+          transition: color 0s;
+
+          &:hover {
+            color: inherit;
+          }
+        }
+      }
+
+      span {
+        margin-right: $padding--tiny;
+        vertical-align: middle;
+      }
+
+      .remove-button {
+        @extend .icon--close;
+
+        position: relative;
+        display: inline-block;
+        padding-right: 1rem;
+        white-space: nowrap;
+        text-indent: -9999px;
+
+        color: $color--nearBlack;
+        text-decoration: none;
+        vertical-align: middle;
+        cursor: pointer;
+
+        &:after {
+          position: absolute;
+          right: 0;
+          text-indent: 0;
+        }
+
+        &:hover {
+          color: $color--red;
+        }
+      }
+    }
+
+    input {
+      color: $color--nearBlack;
+      font-size: $font-size--small;
+      float: left;
+      margin-top: 0;
+      margin-right: $padding--tiny;
+      margin-bottom: $padding--tiny;
+      margin-left: 0;
+      padding: $padding--tiny;
+      background: transparent;
+      border: 0;
+      outline: 0;
+
+      &.invalid-tag {
+        color: $color--white;
+        background: $color--red;
+      }
+
+      &::-ms-clear {
+        display: none;
+      }
+    }
+  }
+
+  &[disabled] {
+    pointer-events: none;
+
+    .host:focus {
+      outline: none;
+    }
+
+    .tags {
+      background-color: #eee;
+      cursor: default;
+
+      .tag-item {
+        opacity: 0.65;
+        background: -webkit-linear-gradient(top, #f0f9ff 0%, rgba(203, 235, 255, 0.75) 47%, rgba(161, 219, 255, 0.62) 100%);
+        background: linear-gradient(to bottom, #f0f9ff 0%, rgba(203, 235, 255, 0.75) 47%, rgba(161, 219, 255, 0.62) 100%);
+
+        .remove-button {
+          cursor: default;
+
+          &:active {
+            color: #585858;
+          }
+        }
+      }
+
+      input {
+        background-color: #eee;
+        cursor: default;
+      }
+    }
+  }
+
+  .autocomplete {
+    margin-top: 5px;
+    position: absolute;
+    padding: 5px 0;
+    z-index: 999;
+    width: 100%;
+    background-color: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+
+    .suggestion-list {
+      margin: 0;
+      padding: 0;
+      list-style-type: none;
+      max-height: 280px;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .suggestion-item {
+      padding: 5px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font: 16px "Helvetica Neue", Helvetica, Arial, sans-serif;
+      color: #000;
+      background-color: #fff;
+
+      &.selected {
+        color: #fff;
+        background-color: #0097cf;
+
+        em {
+          color: #fff;
+          background-color: #0097cf;
+        }
+      }
+
+      em {
+        font: normal bold 16px "Helvetica Neue", Helvetica, Arial, sans-serif;
+        color: #000;
+        background-color: #fff;
+      }
+    }
+  }
+}
+
+
+// -----
+// Fancy Select
+// -----
+
+.fancy-select {
+  position: relative;
+  z-index: 3;
+  display: block;
+
+  &.disabled {
+    opacity: 50;
+  }
+
+  .trigger {
+    text-overflow: ellipsis;
+    position: relative;
+    width: 100%;
+    padding: $padding--small $padding--mega $padding--small $padding--small;
+    background: $color--lightGray;
+    border: 1px solid $color--lightGray;
+    border-radius: $border-radius--container;
+    color: $color--nearBlack;
+    overflow: hidden;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all .24s ease-out;
+    text-align: left;
+
+    &:after {
+      content: "";
+      display: block;
+      position: absolute;
+      top: 50%;
+      right: .75em;
+      width: 0;
+      height: 0;
+      border: 5px solid transparent;
+      border-top-color: $color--black;
+      transform: translateY(-25%);
+      transition: border-top-color .24s ease;
+    }
+
+    &.open {
+      color: $color--black;
+      background: $color--lightGray;
+      border-color: $color--lightGray;
+    }
+
+    &.error,
+    &.error.open {
+      color: $color--black;
+      background-color: rgba($color--red, .25);
+      border-color: $color--red;
+    }
+  }
+
+  .options {
+    opacity: 0;
+    font-size: $font-size--small;
+    text-align: right;
+    line-height: 1;
+    width: 100%;
+    list-style: none;
+    position: absolute;
+    top: 40px;
+    left: 0;
+    z-index: 50;
+    max-height: 275px;
+    margin: 0;
+    padding: 0;
+    visibility: hidden;
+    overflow: auto;
+    background: $color--white;
+    border: 1px solid $color--lightGray;
+    border-radius: 0 0 3px 3px;
+    box-shadow: 0px 2px 5px 0px rgba($color--black, 0.1);
+    transition: opacity .3s ease-out,
+                top .3s ease-out,
+                visibility .3s ease-out;
+
+    &.open {
+      opacity: 100;
+      visibility: visible;
+      top: 44px;
+
+      /* have to use a non-visibility transition to prevent this iOS issue (bug?): */
+      /*http://stackoverflow.com/questions/10736478/css-animation-visibility-visible-works-on-chrome-and-safari-but-not-on-ios*/
+      transition: opacity .3s ease-out,
+                  top .3s ease-out;
+    }
+
+    &.overflowing {
+      top: auto;
+      bottom: 40px;
+      box-shadow: 0 -2px -5px 0 rgba($color--black, 0.1);
+      transition: opacity .3s ease-out,
+                  bottom .3s ease-out,
+                  visibility .3s ease-out;
+    }
+
+    &.overflowing.open {
+      top: auto;
+      bottom: 50px;
+      transition: opacity .3s ease-out,
+                  bottom .3s ease-out;
+    }
+
+    li {
+      color: $color--black;
+      margin: 0;
+      padding: $padding--small $padding--normal;
+      cursor: pointer;
+      white-space: nowrap;
+
+      &.selected,
+      &.hover {
+        @include gradients--green;
+        color: $color--white;
+      }
+    }
+  }
+}
+
+.fancy-select--small .fancy-select {
+  .trigger {
+    font-size: $font-size--small;
+    padding: $padding--tiny $padding--giant $padding--tiny $padding--tiny;
+  }
+
+  .options {
+    font-size: $font-size--small;
+  }
+}

@@ -1,0 +1,32 @@
+<!-- Header -->
+<header class="header row--expanded">
+    <figure class="header__logo col--medium-4 col--large-12">
+        <a ui-sref="dashboard"></a>
+        <img src="./images/logo--main--white.svg" alt="getTalent">
+    </figure>
+    <nav class="header__nav col--medium-8 col--large-12">
+        <div class="row--expanded row--table header__inner">
+            <div class="col--tiny-4--cell col--vmiddle header__select">
+                <select ng-options="option.name for option in vm.dashboardScopeOptions track by option.id"
+                    ng-model="vm.selectedDashboardScope" id="dashboardScope" class="form__input--select" name="dashboardScope">
+                </select>
+            </div>
+            <div class="col--tiny-8--cell col--vmiddle header__actions">
+                <form class="header__search">
+                    <input class="header__search__input" type="text" name="query" autocomplete="off">
+                    <button class="header__search__submit">
+                        <span class="icon--search"></span>
+                    </button>
+                </form>
+                <a href="#" class="header__upload">
+                    <span class="icon--upload"></span>
+                </a>
+                <a href="#" class="header__profile">
+                    <img ng-src="{{vm.userProfilePicThumbSrc}}" alt="Change settings">
+                </a>
+                <a class="header__logout" ng-click="vm.logout()">Logout</a>
+            </div>
+        </div>
+    </nav>
+</header>
+<!-- End Header -->

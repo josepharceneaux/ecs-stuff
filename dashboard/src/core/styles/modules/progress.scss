@@ -1,0 +1,48 @@
+// ---------------------------------------------------
+// Modules / Progress
+// ---------------------------------------------------
+
+.progress {
+  @include inc--space--stubbedLast;
+
+  position: relative;
+  margin-bottom: $margin--line;
+
+  h4 {
+    color: $color--nearBlack;
+    font-size: $font-size--big;
+    padding-bottom: $padding--teeny;
+  }
+}
+
+// -----
+// Inner
+// -----
+
+.progress__inner {
+  padding-right: 2.5em;
+  position: relative;
+}
+
+// -----
+// Progress bar
+// -----
+
+.progress__bar {
+  @include gradients--green;
+
+  padding: $padding--small;
+  border-radius: $border-radius--button;
+}
+
+.progress__bar--red {
+  @extend .progress__bar;
+  @include gradients--red;
+}
+
+.progress__label {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}

@@ -1,0 +1,113 @@
+// ---------------------------------------------------
+// Base / Type
+// ---------------------------------------------------
+
+// -----
+// Font embeds
+// -----
+
+//@include helper--embed-font('gettalent-icons', '../fonts/gettalent-icons');
+
+// -----
+// Base style overrides
+// -----
+
+::selection {
+  color: $color--white;
+  background-color: $color--blue;
+}
+
+::-moz-selection {
+  color: $color--white;
+  background-color: $color--blue;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  font-size: $font-size--main;
+  color: $color--darkerGray;
+  font-family: $font--main;
+}
+
+h1,h2,h3,h4,h5,h6 {
+  font-family: $font--main;
+  font-weight: $font-weight--regular;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin-top: 0;
+  margin-bottom: 0;
+  line-height: $line-height--main;
+}
+
+h1 {
+  font-size: $font-size--mega;
+}
+
+h2 {
+  font-size: $font-size--large;
+}
+
+h3 {
+  font-size: $font-size--big;
+}
+
+h4 {
+  font-size: $font-size--main;
+}
+
+p {
+  line-height: $line-height--main;
+
+  &.subtext {
+    font-size: $font-size--small;
+    margin: 0;
+  }
+
+  &:first-of-type {
+    margin-top: 0;
+  }
+
+  &:last-of-type {
+    margin-bottom: 0;
+  }
+}
+
+a {
+  color: $color--blue;
+  text-decoration: none;
+  transition: color $easing--normal;
+
+  &:hover {
+    color: $color--green;
+  }
+}
+
+ol {
+  padding-left: $padding--normal;
+  list-style-type: decimal;
+}
+
+ul {
+  padding-left: $padding--normal;
+  list-style-type: disc;
+}
+
+li {
+  margin-bottom: $margin--inline;
+}
+
+strong {
+  font-weight: $font-weight--bold;
+}
+
+em {
+  font-style: italic;
+}

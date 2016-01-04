@@ -1,9 +1,0 @@
-[servers:children]
-production
-staging
-
-[staging]
-ec2-54-67-115-48.us-west-1.compute.amazonaws.com branch=develop GT_ENVIRONMENT=qa
-
-[production]
-ec2-54-153-71-226.us-west-1.compute.amazonaws.com branch=master GT_ENVIRONMENT=prod
