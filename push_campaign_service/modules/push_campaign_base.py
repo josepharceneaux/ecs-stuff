@@ -7,6 +7,8 @@ from push_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from push_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from push_campaign_service.common.routes import PushNotificationServiceApi
 from push_campaign_service.push_campaign_app import logger
+from push_campaign_service.push_campaign_app.app import celery_app
+
 from custom_exceptions import *
 from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
 from one_signal_sdk import OneSignalSdk
@@ -189,6 +191,11 @@ class PushCampaignBase(CampaignBase):
         else:
             logger.error('callback_campaign_sent: Result is not a list')
 
+    @staticmethod
+    @celery_app.task(name='celery_error_handler')
+    def celery_error_handler(uuid):
+        db.session.rollback()
+
     @classmethod
     def create_campaign_send_activity(cls, user_id, source, auth_header, num_candidates):
         """
@@ -234,6 +241,7 @@ class PushCampaignBase(CampaignBase):
     def campaign_create_activity(self, source):
         pass
 
+    # @celery_app.task(name='send_campaign_to_candidate')
     def send_campaign_to_candidate(self, candidate):
         device_ids = map(lambda device: device.one_signal_device_id, candidate.devices)
         if device_ids:
