@@ -4,9 +4,6 @@
     <option name="PARENT_ENVS" value="true" />
     <envs>
       <env name="PYTHONUNBUFFERED" value="1" />
-      <env name="AWS_SECRET_ACCESS_KEY" value="tHv3P1nrC4pvO8WxfmtJgpjyvSBc8ox83E+xMpFC" />
-      <env name="GT_ENVIRONMENT" value="dev" />
-      <env name="AWS_ACCESS_KEY_ID" value="AKIAI3422SZ6SL46EYBQ" />
     </envs>
     <option name="SDK_HOME" value="$USER_HOME$/.pyenv/versions/2.7.9/bin/python" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/user_service" />

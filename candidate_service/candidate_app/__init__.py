@@ -7,6 +7,7 @@ app = Flask(__name__)
 print "Running app: %s" % app
 
 from candidate_service.common import common_config
+from candidate_service.common.redis_cache import redis_store
 app.config.from_object(common_config)
 
 logger = app.config['LOGGER']
@@ -16,6 +17,7 @@ register_error_handlers(app=app, logger=logger)
 
 db.init_app(app=app)
 db.app = app
+redis_store.init_app(app)
 
 # Wrap the flask app and give a healthcheck url
 health = HealthCheck(app, "/healthcheck")
@@ -26,7 +28,7 @@ from candidate_service.candidate_app.api.v1_candidates import (
     CandidateExperienceResource, CandidateExperienceBulletResource, CandidateWorkPreferenceResource,
     CandidateEmailResource, CandidatePhoneResource, CandidateMilitaryServiceResource,
     CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
-    CandidateCustomFieldResource, CandidateEditResource, CandidatesResource
+    CandidateCustomFieldResource, CandidateEditResource, CandidatesResource, CandidateOpenWebResource
 )
 from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
 
@@ -242,8 +244,15 @@ api.add_resource(CandidateSearch, '/v1/candidates/search')
 # ****** Candidate Documents *******
 api.add_resource(CandidateDocuments, '/v1/candidates/documents')
 
+# ****** OPENWEB Request *******
+api.add_resource(CandidateOpenWebResource, '/v1/candidates/openweb', endpoint='openweb')
 
 db.create_all()
 db.session.commit()
 
 logger.info('Starting candidate_service in %s environment', app.config['GT_ENVIRONMENT'])
+
+# Index Amazon Cloud Search
+# from candidate_service.modules.talent_cloud_search import define_index_fields, index_documents
+# define_index_fields()
+# index_documents()

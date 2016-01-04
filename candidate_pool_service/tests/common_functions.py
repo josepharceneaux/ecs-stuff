@@ -1,11 +1,13 @@
 __author__ = 'ufarooqi'
-import requests
 import json
+import requests
 from werkzeug.security import gen_salt
+from candidate_pool_service.common.routes import CandidatePoolApiUrl
 from candidate_pool_service.common.routes import CandidateApiUrl
-from candidate_pool_service.common.models.talent_pools_pipelines import Smartlist, SmartlistCandidate
+from candidate_pool_service.common.models.smartlist import Smartlist, SmartlistCandidate
 
-CANDIDATE_POOL_SERVICE_ENDPOINT = 'http://127.0.0.1:8008/%s'
+
+CANDIDATE_POOL_SERVICE_ENDPOINT = 'http://127.0.0.1:8008/v1/%s'
 TALENT_POOL_API = CANDIDATE_POOL_SERVICE_ENDPOINT % 'talent-pools'
 TALENT_POOL_GROUP_API = CANDIDATE_POOL_SERVICE_ENDPOINT % 'groups/%s/talent_pools'
 TALENT_POOL_CANDIDATE_API = CANDIDATE_POOL_SERVICE_ENDPOINT % 'talent-pools/%s/candidates'
@@ -118,6 +120,36 @@ def talent_pipeline_candidate_api(access_token, talent_pipeline_id, params=''):
     return response.json(), response.status_code
 
 
+def talent_pool_update_stats(access_token):
+
+    headers = {'Authorization': 'Bearer %s' % access_token}
+    response = requests.post(url=CandidatePoolApiUrl.TALENT_POOL_STATS, headers=headers)
+    return response.status_code
+
+
+def talent_pool_get_stats(access_token, talent_pool_id, params=''):
+
+    headers = {'Authorization': 'Bearer %s' % access_token}
+    response = requests.get(url=CandidatePoolApiUrl.TALENT_POOL_GET_STATS % talent_pool_id, headers=headers,
+                            params=params)
+    return response.json(), response.status_code
+
+
+def talent_pipeline_update_stats(access_token):
+
+    headers = {'Authorization': 'Bearer %s' % access_token}
+    response = requests.post(url=CandidatePoolApiUrl.TALENT_PIPELINE_STATS, headers=headers)
+    return response.status_code
+
+
+def talent_pipeline_get_stats(access_token, talent_pipeline_id, params=''):
+
+    headers = {'Authorization': 'Bearer %s' % access_token}
+    response = requests.get(url=CandidatePoolApiUrl.TALENT_PIPELINE_GET_STATS % talent_pipeline_id, headers=headers,
+                            params=params)
+    return response.json(), response.status_code
+
+
 def prepare_pipeline_candidate_data(session, talent_pipeline, user):
     """
     This function will add a test dumb_list and smart_list to database and talent-pipeline
@@ -147,7 +179,7 @@ def add_candidates_to_dumb_list(session, access_token, test_dumb_list, candidate
     """
 
     for candidate_id in candidate_ids:
-        dumb_list_candidate = SmartlistCandidate(candidate_id=candidate_id, smart_list_id=test_dumb_list.id)
+        dumb_list_candidate = SmartlistCandidate(candidate_id=candidate_id, smartlist_id=test_dumb_list.id)
         session.add(dumb_list_candidate)
 
     session.commit()
@@ -158,3 +190,16 @@ def add_candidates_to_dumb_list(session, access_token, test_dumb_list, candidate
                              data=json.dumps({'candidate_ids': candidate_ids}))
     assert response.status_code == 204
 
+
+def create_candidates_from_candidate_api(access_token, data):
+    """
+    Function sends a request to CandidateResource/post()
+    Returns: list of created candidate ids
+    """
+    resp = requests.post(
+        url=CandidateApiUrl.CANDIDATES,
+        headers={'Authorization': access_token if 'Bearer' in access_token else 'Bearer %s' % access_token},
+        data=json.dumps(data)
+    )
+    assert resp.status_code == 201
+    return [candidate['id'] for candidate in resp.json()['candidates']]

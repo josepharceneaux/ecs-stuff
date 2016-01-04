@@ -1,7 +1,7 @@
 __author__ = 'ufarooqi'
 from user_service.user_app import app
 from user_service.common.tests.conftest import *
-from user_service.common.utils.common_functions import add_role_to_test_user
+from user_service.common.utils.handy_functions import add_role_to_test_user
 from common_functions import *
 
 

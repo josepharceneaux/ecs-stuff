@@ -131,8 +131,8 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
 }
 
 # Get all the credentials from environment variable
-AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY')
-AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+AWS_ACCESS_KEY_ID = talent_property_manager.get_aws_key()
+AWS_SECRET_ACCESS_KEY = talent_property_manager.get_aws_secret()
 
 CLOUD_SEARCH_REGION = talent_property_manager.get_cloudsearch_region()
 CLOUD_SEARCH_DOMAIN_NAME = talent_property_manager.get_cloudsearch_domain_name()

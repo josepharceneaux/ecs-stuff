@@ -32,7 +32,7 @@ def index():
 
 
 @mod.route('/parse_resume', methods=['POST'])
-@require_oauth
+@require_oauth()
 def parse_file_picker_resume():
     """
     Builds a kwargs dict for used in abstracted _parse_file_picker_resume.

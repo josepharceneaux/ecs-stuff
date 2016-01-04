@@ -18,29 +18,30 @@ default url for celery flower =>
 from scheduler_service.run import celery
 
 # Third-Party imports
-import json
 import requests
 
 
 @celery.task(name="send_request")
-def send_request(access_token, url, content_type, kwargs):
+def send_request(access_token, secret_key, url, content_type, kwargs):
     """
     This method will be called by run_job asynchronously
     :param access_token: authorization token for user
     :param url: the url where to send post request
     :param content_type: the content type i.e json or xml
+    :param secret_key: Redis key which have a corresponding secret value to decrypt data
     :param kwargs: post data i.e campaign name, smartlist ids
     :return:
     """
     headers = {
         'Content-Type': content_type,
+        'Authorization': access_token,
+        'X-Talent-Server-Key': secret_key
     }
-    if access_token:
-        headers['Authorization'] = 'Bearer %s' % access_token
-    if content_type == 'application/json':
-        kwargs = json.dumps(kwargs)
 
     response = requests.post(url, data=kwargs, headers=headers)
-    return response.json()
+    try:
+        return response.json()
+    except:
+        return {'message': "JSON object couldn't be decoded", 'status_code': response.status_code}
 
 

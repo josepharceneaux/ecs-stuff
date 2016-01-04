@@ -19,7 +19,9 @@ from spreadsheet_import_service.common.models.user import User
 from spreadsheet_import_service.common.models.misc import AreaOfInterest
 from spreadsheet_import_service.common.models.candidate import CandidateSource
 from spreadsheet_import_service.common.utils.talent_reporting import email_error_to_admins
-from spreadsheet_import_service.common.routes import CandidateApiUrl
+from spreadsheet_import_service.common.error_handling import InternalServerError
+from spreadsheet_import_service.common.routes import CandidateApiUrl, SchedulerApiUrl, SpreadsheetImportApiUrl
+
 
 DEFAULT_AREAS_OF_INTEREST = ['Production & Development', 'Marketing', 'Sales', 'Design', 'Finance',
                              'Business & Legal Affairs', 'Human Resources', 'Technology', 'Other']
@@ -163,7 +165,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, source_id=N
                     else:
                         logger.warning("Unknown AOI when importing from CSV, user %s: %s", user_id, column)
                 elif column_name == 'candidate_experience.organization':
-                    prepare_candidate_data(work_experiences, 'company', column)
+                    prepare_candidate_data(work_experiences, 'organization', column)
                 elif column_name == 'candidate_experience.position':
                     prepare_candidate_data(work_experiences, 'position', column)
                 elif column_name == 'candidate_education.schoolName':
@@ -321,3 +323,23 @@ def prepare_candidate_data(data_array, key, value):
             return
 
     data_array.append({key: value})
+
+
+def schedule_spreadsheet_import(import_args):
+
+    data = {
+        "task_type": "one_time",
+        "run_datetime": str(datetime.datetime.utcnow() + datetime.timedelta(seconds=10)),
+        "url": SpreadsheetImportApiUrl.IMPORT_CANDIDATES,
+        "post_data": import_args
+    }
+    headers = {'Authorization': request.oauth_token, 'Content-Type': 'application/json'}
+    try:
+        response = requests.post(SchedulerApiUrl.TASKS, headers=headers, data=json.dumps(data))
+
+        if response.status_code != 201:
+            raise Exception("Status Code: %s, Response: %s" % (response.status_code, response.json()))
+
+    except Exception as e:
+        raise InternalServerError("Couldn't schedule Spreadsheet import using scheduling service "
+                                  "because: %s" % e.message)

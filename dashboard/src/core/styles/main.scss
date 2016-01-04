@@ -34,6 +34,7 @@
 @import 'includes/col';
 
 @import 'vendor/pickadate/pickadate';
+@import 'vendor/magnific-popup/magnific-popup';
 
 // -----
 // Modules
@@ -65,7 +66,6 @@
 @import 'modules/notifications';
 @import 'modules/pill';
 @import 'modules/pagination';
-
 @import 'modules/social';
 @import 'modules/notes';
 @import 'modules/team-views';
@@ -73,6 +73,12 @@
 @import 'modules/contact-info';
 @import 'modules/candidate-portrait';
 @import 'modules/candidate-jobs';
+@import 'modules/candidate-search-results';
 @import 'modules/pipeline-inclusion';
+@import 'modules/search-filters';
+@import 'modules/available-candidates';
+@import 'modules/create-pipeline-smartlist';
+@import 'modules/campaign-detail';
+
 @import 'modules/styleguide';
 @import 'base/admin';

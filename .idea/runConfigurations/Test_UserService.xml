@@ -2,11 +2,7 @@
   <configuration default="false" name="Test UserService" type="tests" factoryName="py.test">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="false" />
-    <envs>
-      <env name="AWS_SECRET_ACCESS_KEY" value="tHv3P1nrC4pvO8WxfmtJgpjyvSBc8ox83E+xMpFC" />
-      <env name="GT_ENVIRONMENT" value="dev" />
-      <env name="AWS_ACCESS_KEY_ID" value="AKIAI3422SZ6SL46EYBQ" />
-    </envs>
+    <envs />
     <option name="SDK_HOME" value="$USER_HOME$/.pyenv/versions/2.7.9/bin/python" />
     <option name="WORKING_DIRECTORY" value="" />
     <option name="IS_MODULE_SDK" value="false" />

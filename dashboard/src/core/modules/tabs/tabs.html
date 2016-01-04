@@ -1,0 +1,6 @@
+<div class="tabs">
+    <nav class="tabs__nav">
+        <a ng-repeat="pane in tabsCtrl.panes" class="tabs__nav__link" ng-class="{'tabs__nav__link--active': pane.selected}" href="" ng-click="tabsCtrl.select(pane)">{{pane.title}}</a>
+    </nav>
+    <div class="tabs__container" ng-transclude></div>
+</div>

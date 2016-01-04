@@ -212,62 +212,20 @@
 
                 <div class="row">
                     <div id="skill-bars" class="js-tab--content tabs__content tabs__content--active">
-                        <figure class="progress">
-                            <h4>Senior Java Developers in CA</h4>
+                        <figure class="progress" ng-repeat="pipeline in vm.pipelines track by pipeline.id">
+                            <h4>{{pipeline.name}}</h4>
 
-                            <div class="progress__inner" style="width: 100%">
-                                <div class="progress__bar"></div>
-                            </div>
-                        </figure>
-                        <figure class="progress">
-                            <h4>Vererans Hiring Initiative</h4>
-
-                            <div class="progress__inner"  style="width: 78%">
-                                <div class="progress__bar"></div>
-                            </div>
-                        </figure>
-                        <figure class="progress">
-                            <h4>Oracle DBAs Overseas</h4>
-
-                            <div class="progress__inner" style="width: 50%">
-                                <div class="progress__bar"></div>
-                            </div>
-                        </figure>
-                        <figure class="progress">
-                            <h4>Oracle DBAs Overseas</h4>
-
-                            <div class="progress__inner" style="width: 25%">
+                            <div class="progress__inner" ng-style="{'width': pipeline.progress * 100 + '%'}">
                                 <div class="progress__bar"></div>
                             </div>
                         </figure>
                     </div>
 
                     <div id="cloud" class="js-tab--content tabs__content">
-                        <figure class="progress">
-                            <h4>Noodle Maker</h4>
+                        <figure class="progress" ng-repeat="pipeline in vm.pipelines track by pipeline.id">
+                            <h4>{{pipeline.name}}</h4>
 
-                            <div class="progress__inner" style="width: 80%">
-                                <div class="progress__bar"></div>
-                            </div>
-                        </figure>
-                        <figure class="progress">
-                            <h4>Vererans Hiring Initiative</h4>
-
-                            <div class="progress__inner"  style="width: 72%">
-                                <div class="progress__bar"></div>
-                            </div>
-                        </figure>
-                        <figure class="progress">
-                            <h4>Oracle DBAs Overseas</h4>
-
-                            <div class="progress__inner" style="width: 50%">
-                                <div class="progress__bar"></div>
-                            </div>
-                        </figure>
-                        <figure class="progress">
-                            <h4>Oracle DBAs Overseas</h4>
-
-                            <div class="progress__inner" style="width: 45%">
+                            <div class="progress__inner" ng-style="{'width': pipeline.progress * 100 + '%'}">
                                 <div class="progress__bar"></div>
                             </div>
                         </figure>
@@ -427,8 +385,8 @@
                             <span class="icon--speech"></span> Recent Activity
                         </h2>
                     </div>
-                    <div class="col--large-6 align--right box__header__with-link fancy-select--small">
-                        <select id="activeEngagementCharts" class="form__input--select" name="activeEngagementCharts">
+                    <div class="col--large-6 box__header__with-link">
+                        <select id="activeEngagementCharts" class="form__input--select form__input--select--small" name="activeEngagementCharts">
                             <option value="">Select Filter</option>
                             <option value="everything">Everything</option>
                             <option value="socialMedia">Social Media</option>
