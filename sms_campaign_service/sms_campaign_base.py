@@ -848,12 +848,12 @@ class SmsCampaignBase(CampaignBase):
             # TODO: remove this when app is up
             app_redirect_url = replace_localhost_with_ngrok(SmsCampaignApiUrl.REDIRECT)
             # long_url looks like
-            # http://127.0.0.1:8011/v1/campaigns/1/redirect/1?candidate_id=1
-            long_url = str(app_redirect_url % (self.campaign.id, str(url_conversion_id)
-                                               + '?candidate_id=%s') % candidate_id)
+            # http://127.0.0.1:8012/redirect/1
+            long_url = str(app_redirect_url % url_conversion_id)
             # Use Google's API to shorten the long Url
-            with app.app_context():
-                short_url, error = url_conversion(long_url)
+            short_url, error = url_conversion(long_url)
+            logger.info("url_conversion: Long URL was: %s" % long_url)
+            logger.info("url_conversion: Shortened URL is: %s" % short_url)
             if error:
                 raise GoogleShortenUrlAPIError(error)
             # update the source_url in "url_conversion" record
@@ -1080,12 +1080,13 @@ class SmsCampaignBase(CampaignBase):
                 'Source should be instance of model SmsCampaignSend')
         params = {'candidate_name': candidate.first_name + ' ' + candidate.last_name,
                   'campaign_name': self.campaign.name}
-        self.create_activity(self.user_id,
-                             _type=ActivityMessageIds.CAMPAIGN_SMS_SEND,
-                             source_id=source.id,
-                             source_table=SmsCampaignSend.__tablename__,
-                             params=params,
-                             headers=self.oauth_header)
+        with app.app_context():  # Need to to this as Celery app use different logger
+            self.create_activity(self.user_id,
+                                 _type=ActivityMessageIds.CAMPAIGN_SMS_SEND,
+                                 source_id=source.id,
+                                 source_table=SmsCampaignSend.__tablename__,
+                                 params=params,
+                                 headers=self.oauth_header)
 
     @classmethod
     def create_campaign_send_activity(cls, user_id, source, auth_header, num_candidates):

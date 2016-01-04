@@ -49,19 +49,18 @@ CORS(app, resources={
 def root():
     return 'Welcome to SMS Campaign Service'
 
-# TODO: change hard code value
-# @app.route(SmsCampaignApi.APP_REDIRECTION, methods=['GET'])
-@app.route('/v1/redirect/<int:url_conversion_id>', methods=['GET'])
+
+@app.route(SmsCampaignApi.REDIRECT, methods=['GET'])
 def sms_campaign_url_redirection(url_conversion_id):
     """
-    This endpoint is /v1/campaign/:id/redirect/:id/?candidate_id=:id.
+    This endpoint is /redirect/:id
 
     When recruiter(user) adds some URL in SMS body text, we save the original URL as
     destination URL in "url_conversion" database table. Then we create a new URL called long_url
     (which is created during the process of sending campaign to candidate) to redirect the
     candidate to our app. This long_url looks like
 
-            http://127.0.0.1:8012/v1/campaign/2/redirect/67/?candidate_id=2
+            http://127.0.0.1:8012/redirect/1
 
     For this we first convert this long_url in shorter URL (using Google's shorten URL API) and
     send in SMS body text to candidate. This is the endpoint which redirect the candidate. Short
@@ -82,9 +81,7 @@ def sms_campaign_url_redirection(url_conversion_id):
                 5005 (EmptyDestinationUrl)
                 5006 (MissingRequiredField)
 
-    :param campaign_id: id of sms_campaign in db
     :param url_conversion_id: id of url_conversion record in db
-    :type campaign_id: int
     :type url_conversion_id: int
     :return: redirects to the destination URL else raises exception
     """
@@ -98,6 +95,7 @@ def sms_campaign_url_redirection(url_conversion_id):
     try:
         redirection_url = SmsCampaignBase.process_url_redirect(url_conversion_id)
         return redirect(redirection_url)
+    # In case any type of exception occurs, candidate should only get internal server error
     except Exception:
         # As this endpoint is hit by client, so we log the error, and return internal server error.
         logger.exception("Error occurred while URL redirection for SMS campaign.")

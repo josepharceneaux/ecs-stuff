@@ -177,19 +177,16 @@ class SmsCampaignApi(object):
     # endpoint /v1/campaigns/:id/send
     # To send a campaign to candidates
     SEND = CAMPAIGN + '/send'
-
     # /v1/campaigns/:id/schedule
     # To schedule an SMS campaign
     SCHEDULE = CAMPAIGN + '/schedule'
-
     """ Followings are not REST endpoints, but App endpoints """
-    # endpoint /v1/receive
+    # endpoint /receive
     # This endpoint is callback URL when candidate replies to a campaign via SMS
-    RECEIVE = '/%s/%s' % (VERSION, 'receive')
-
-    # endpoint /v1/campaigns/:id/redirect/:id?candidate_id=id
+    RECEIVE = '/receive'
+    # endpoint /redirect/:id
     # This endpoint is hit when candidate clicks on any URL present in SMS body text.
-    APP_REDIRECTION = CAMPAIGN + '/redirect/<int:url_conversion_id>'
+    REDIRECT = '/redirect/<int:url_conversion_id>'
 
 
 class SmsCampaignApiUrl(object):
@@ -201,9 +198,9 @@ class SmsCampaignApiUrl(object):
     CAMPAIGN = SmsCampaignApi.HOST_NAME % '/%s/%s' % (SmsCampaignApi.VERSION, 'campaigns/%s')
     SENDS = CAMPAIGN + '/sends'
     SEND = CAMPAIGN + '/send'
-    SCHEDULE = CAMPAIGN + '/schedule'
+    SCHEDULE = SmsCampaignApi.HOST_NAME % SmsCampaignApi.SCHEDULE
     RECEIVE = SmsCampaignApi.HOST_NAME % SmsCampaignApi.RECEIVE
-    REDIRECT = CAMPAIGN % '%s/redirect/%s'
+    REDIRECT = SmsCampaignApi.HOST_NAME % '/redirect/%s'
 
 
 class CandidateApiUrl(object):
