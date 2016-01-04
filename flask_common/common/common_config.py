@@ -2,6 +2,7 @@ __author__ = 'ufarooqi'
 import os
 import logging
 import logging.config
+import talent_property_manager
 
 # load logging configuration file
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -9,7 +10,7 @@ LOGGING_CONF = os.path.join(APP_ROOT, 'logging.conf')
 logging.config.fileConfig(LOGGING_CONF)
 
 # SQL ALCHEMY DB URL
-GT_ENVIRONMENT = os.environ.get('GT_ENVIRONMENT')
+GT_ENVIRONMENT = talent_property_manager.get_env()
 if GT_ENVIRONMENT == 'dev':
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@127.0.0.1/talent_local'
     BACKEND_URL = 'redis://localhost:6379'
@@ -46,5 +47,5 @@ else:
     raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")
 
 
-SECRET_KEY = os.urandom(24).encode('hex')
+SECRET_KEY = talent_property_manager.get_secret_key()
 OAUTH2_PROVIDER_TOKEN_EXPIRES_IN = 7200  # 2 hours expiry time for bearer token

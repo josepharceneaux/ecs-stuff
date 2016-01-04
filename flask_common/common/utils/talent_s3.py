@@ -5,14 +5,15 @@ import boto
 import boto.exception
 from boto.s3.bucket import Bucket
 from boto.s3.key import Key
-from boto.s3.connection import OrdinaryCallingFormat, S3Connection
 from ..error_handling import InvalidUsage
+from .. import talent_property_manager
+from boto.s3.connection import OrdinaryCallingFormat, S3Connection
 
-TCS_BUCKET_NAME = os.environ.get('TCS_BUCKET_NAME')
-TCS_BUCKET_REGION = os.environ.get('TCS_BUCKET_REGION')
-FILEPICKER_BUCKET_NAME = os.environ.get('FILEPICKER_BUCKET_NAME')
-AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+S3_BUCKET_NAME = talent_property_manager.get_s3_bucket_name()
+S3_BUCKET_REGION = talent_property_manager.get_s3_region()
+S3_FILEPICKER_BUCKET_NAME = talent_property_manager.get_s3_filepicker_bucket_name()
+AWS_ACCESS_KEY_ID = talent_property_manager.get_aws_key()
+AWS_SECRET_ACCESS_KEY = talent_property_manager.get_aws_secret()
 
 
 def get_s3_bucket_and_conn():
@@ -22,13 +23,13 @@ def get_s3_bucket_and_conn():
     """
     c = get_s3_conn()
     try:
-        b = c.get_bucket(TCS_BUCKET_NAME, validate=False)
+        b = c.get_bucket(S3_BUCKET_NAME, validate=False)
         if not b:
-            raise InvalidUsage(error_message="Bucket '%s' doesn't exist in S3" % TCS_BUCKET_NAME)
+            raise InvalidUsage(error_message="Bucket '%s' doesn't exist in S3" % S3_BUCKET_NAME)
         else:
             return b, c
     except Exception as e:
-        raise InvalidUsage(error_message="Couldn't get bucket '%s' because %s" % (TCS_BUCKET_NAME, e.message))
+        raise InvalidUsage(error_message="Couldn't get bucket '%s' because %s" % (S3_BUCKET_NAME, e.message))
 
 
 def get_s3_filepicker_bucket_and_conn():
@@ -38,13 +39,13 @@ def get_s3_filepicker_bucket_and_conn():
     """
     c = get_s3_conn('us-west-1')
     try:
-        b = c.get_bucket(FILEPICKER_BUCKET_NAME, validate=False)
+        b = c.get_bucket(S3_FILEPICKER_BUCKET_NAME, validate=False)
         if not b:
-            raise InvalidUsage(error_message="Bucket '%s' doesn't exist in S3" % FILEPICKER_BUCKET_NAME)
+            raise InvalidUsage(error_message="Bucket '%s' doesn't exist in S3" % S3_FILEPICKER_BUCKET_NAME)
         else:
             return b, c
     except Exception as e:
-        raise InvalidUsage(error_message="Couldn't get bucket '%s' because %s" % (FILEPICKER_BUCKET_NAME, e.message))
+        raise InvalidUsage(error_message="Couldn't get bucket '%s' because %s" % (S3_FILEPICKER_BUCKET_NAME, e.message))
 
 
 def download_file(bucket, key_name):
@@ -73,7 +74,7 @@ def get_s3_conn(region=None):
     """
     aws_access_key_id = AWS_ACCESS_KEY_ID
     aws_secret_access_key = AWS_SECRET_ACCESS_KEY
-    region = region or TCS_BUCKET_REGION
+    region = region or S3_BUCKET_REGION
 
     try:
         connection = boto.s3.connect_to_region(region,
@@ -99,7 +100,7 @@ def get_s3_url(folder_path, name):
 
     b, c = get_s3_bucket_and_conn()
     # Query-string authentication
-    bucket_name = TCS_BUCKET_NAME
+    bucket_name = S3_BUCKET_NAME
     return c.generate_url(
         expires_in=3600 * 24 * 365,  # expires in 1 year, lol
         method='GET',
@@ -158,7 +159,7 @@ def upload_to_s3(file_content, folder_path, name, public=False):
         k.set_metadata('Content-Type', 'text/csv')
 
     # Query-string authentication
-    bucket_name = TCS_BUCKET_NAME
+    bucket_name = S3_BUCKET_NAME
     url = c.generate_url(
         expires_in=3600 * 24 * 365,  # expires in 1 year, lol
         method='GET',
@@ -213,8 +214,8 @@ def create_bucket():
     :rtype: Bucket
     """
     connection = get_s3_conn()
-    name = TCS_BUCKET_NAME
-    region = TCS_BUCKET_REGION
+    name = S3_BUCKET_NAME
+    region = S3_BUCKET_REGION
     # Only create if doesn't exist
     bucket = connection.lookup(name)
     if not bucket:
