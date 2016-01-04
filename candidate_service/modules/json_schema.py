@@ -17,7 +17,7 @@ candidates_resource_schema_post = {
                 # "id": "http://jsonschema.net/candidates/0",
                 "type": "object",
                 "required": ["emails"],
-                # "additionalProperties": False,
+                "additionalProperties": False,
                 "properties": {
                     "first_name": {
                         # "id": "http://jsonschema.net/first_name",
