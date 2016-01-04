@@ -5,6 +5,8 @@ import json
 import os
 # Third party
 import requests as r
+# Module Specific.
+from resume_service.common.utils.handy_functions import random_word
 # Test fixtures, imports required even though not 'used'
 from test_fixtures import client_fixture
 from test_fixtures import country_fixture
@@ -113,6 +115,16 @@ def test_v15_pdf_by_post(token_fixture):
     response = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode='True')
     assert 'candidate' in response
     assert 'id' in response['candidate']
+
+
+def test_batch_process():
+    # user_id = random_word(6)
+    # queue_string = 'batch:{}:fp_keys'.format(user_id)
+    # unused_response = add_fp_keys_to_queue(['0169173d35beaf1053e79fdf1b5db864.docx'], user_id)
+    # redis_client.expire(queue_string, 20)
+    # resume_dict = process_batch(user_id, create_candidate=False)
+    # assert 'candidate' in resume_dict
+    pass
 
 
 def test_health_check():
