@@ -42,8 +42,9 @@ other model classes inherit. But this changes will only effect this app or the a
              This will add all these method on db.Model and all its child classes.
 
 """
-from types import MethodType
 from ..models.db import db
+from types import MethodType
+from flask import current_app
 from ..error_handling import register_error_handlers
 from ..utils.handy_functions import camel_case_to_snake_case
 
@@ -155,8 +156,8 @@ def get_by_id(cls, _id):
         # get Model instance given by id
         obj = cls.query.get(_id)
     except Exception as error:
-        cls.logger("Couldn't get record from db table %s. Error is: %s"
-                   % (cls.__name__, error.message))
+        current_app.config['LOGGER'].exception("Couldn't get record from db table %s. Error is: %s"
+                                               % (cls.__name__, error.message))
         return None
     return obj
 
@@ -178,7 +179,8 @@ def delete(cls, ref):
         db.session.delete(obj)
         db.session.commit()
     except Exception as error:
-        cls.logger.error("Couldn't delete record from db. Error is: %s" % error.message)
+        current_app.config['LOGGER'].error("Couldn't delete record from db. Error is: %s"
+                                           % error.message)
         return False
     return True
 
@@ -200,7 +202,6 @@ def add_model_helpers(cls, logger):
     :return:
     """
     cls.session = db.session
-    cls.logger = logger
     # this method converts model instance to json serializable dictionary
     cls.to_json = MethodType(to_json, None, db.Model)
     # This method saves model instance in database as model object

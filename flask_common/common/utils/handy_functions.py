@@ -8,7 +8,6 @@ import requests
 from pytz import timezone
 from datetime import datetime
 
-
 from flask import current_app
 from ..routes import AuthApiUrl
 from ..models.user import User, UserScopedRoles
@@ -44,6 +43,12 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     :param headers: headers for Authorization.
     :param data: data to be sent.
     :param user_id: Id of logged in user.
+    :type method_type: str
+    :type url: str
+    :type params: dict
+    :type headers: dict
+    :type data: dict
+    :type user_id: int | long
     :return: response from HTTP request or None
     """
     response = None
@@ -68,9 +73,11 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                         # So, tyring to log as much
                         # details of error as we can.
                         if 'errors' in e.response.json():
-                            error_message = e.message + ', Details: ' + json.dumps(e.response.json().get('errors'))
+                            error_message = e.message + ', Details: ' + json.dumps(
+                                e.response.json().get('errors'))
                         elif 'error_description' in e.response.json():
-                            error_message = e.message + ', Details: ' + json.dumps(e.response.json().get('error_description'))
+                            error_message = e.message + ', Details: ' + json.dumps(
+                                e.response.json().get('error_description'))
                         else:
                             error_message = e.message
                     except Exception:
@@ -81,21 +88,21 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
             except requests.RequestException as e:
                 if hasattr(e.message, 'args'):
                     if 'Connection aborted' in e.message.args[0]:
-                        current_app.logger.exception(
+                        current_app.config['LOGGER'].exception(
                             "http_request: Couldn't make %s call on %s. "
                             "Make sure requested server is running." % (method_type, url))
                         raise ForbiddenError
                 error_message = e.message
             if error_message:
-                current_app.logger.exception('http_request: HTTP request failed, %s, '
-                                             'user_id: %s', error_message, user_id)
+                current_app.config['LOGGER'].exception('http_request: HTTP request failed, %s, '
+                                                       'user_id: %s', error_message, user_id)
             return response
         else:
             error_message = 'URL is None. Unable to make "%s" Call' % method_type
-            current_app.logger.error('http_request: Error: %s, user_id: %s'
-                                     % (error_message, user_id))
+            current_app.config['LOGGER'].error('http_request: Error: %s, user_id: %s'
+                                               % (error_message, user_id))
     else:
-        current_app.logger.error('Unknown Method type %s ' % method_type)
+        current_app.config['LOGGER'].error('Unknown Method type %s ' % method_type)
 
 
 def find_missing_items(data_dict, required_fields=None, verify_values_of_all_keys=False):
@@ -127,7 +134,8 @@ def find_missing_items(data_dict, required_fields=None, verify_values_of_all_key
 
 
 def create_test_user(session, domain_id, password):
-    random_email = ''.join([random.choice(string.ascii_letters + string.digits) for n in xrange(12)])
+    random_email = ''.join(
+        [random.choice(string.ascii_letters + string.digits) for n in xrange(12)])
     email = '%s.sample@example.com' % random_email
     first_name = 'John'
     last_name = 'Sample'
@@ -147,8 +155,10 @@ def create_test_user(session, domain_id, password):
 def get_access_token(user, password, client_id, client_secret):
     params = dict(grant_type="password", username=user.email, password=password)
     auth_service_token_response = requests.post(AuthApiUrl.AUTH_SERVICE_TOKEN_CREATE_URI,
-                                                params=params, auth=(client_id, client_secret)).json()
-    if not (auth_service_token_response.get(u'access_token') and auth_service_token_response.get(u'refresh_token')):
+                                                params=params,
+                                                auth=(client_id, client_secret)).json()
+    if not (auth_service_token_response.get(u'access_token') and auth_service_token_response.get(
+            u'refresh_token')):
         raise Exception("Either Access Token or Refresh Token is missing")
     else:
         return auth_service_token_response.get(u'access_token')
@@ -198,11 +208,7 @@ def url_conversion(long_url):
                             headers=JSON_CONTENT_TYPE_HEADER, data=payload)
     json_data = response.json()
     if 'error' not in json_data:
-        short_url = json_data['id']
-        # long_url = json_data['longUrl']
-        current_app.logger.info("url_conversion: Long URL was: %s" % long_url)
-        current_app.logger.info("url_conversion: Shortened URL is: %s" % short_url)
-        return short_url, ''
+        return json_data['id'], ''
     else:
         error_message = "Error while shortening URL. Long URL is %s. " \
                         "Error dict is %s" % (long_url, json_data['error']['errors'][0])

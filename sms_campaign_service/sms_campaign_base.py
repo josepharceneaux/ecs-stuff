@@ -26,7 +26,6 @@ from datetime import datetime
 
 # Database Models
 from sms_campaign_service.common.models.user import UserPhone
-from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.candidate import (PhoneLabel, Candidate, CandidatePhone)
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignSend,
                                                              SmsCampaignBlast, SmsCampaignSmartlist,
@@ -53,7 +52,6 @@ from sms_campaign_service.modules.sms_campaign_app_constants import (MOBILE_PHON
                                                                      CELERY_QUEUE)
 from sms_campaign_service.modules.custom_exceptions import (EmptySmsBody,
                                                             MultipleTwilioNumbersFoundForUser,
-                                                            EmptyDestinationUrl,
                                                             MissingRequiredField,
                                                             MultipleUsersFound,
                                                             MultipleCandidatesFound,
@@ -229,6 +227,7 @@ class SmsCampaignBase(CampaignBase):
         :return:
         """
         # sets the user_id
+        __name__ = CELERY_QUEUE
         super(SmsCampaignBase, self).__init__(user_id)
         self.user_phone = self.get_user_phone()
         if not self.user_phone:
@@ -356,6 +355,7 @@ class SmsCampaignBase(CampaignBase):
             logger.error('save: No data received from UI. (User(id:%s))' % self.user_id)
         else:
             # Save Campaign in database table "sms_campaign"
+            form_data['user_phone_id'] = self.user_phone.id
             sms_campaign = self.create_or_update_sms_campaign(form_data)
             # Create record in database table "sms_campaign_smartlist"
             self.create_or_update_sms_campaign_smartlist(sms_campaign,
@@ -364,33 +364,37 @@ class SmsCampaignBase(CampaignBase):
             self.campaign_create_activity(sms_campaign)
             return sms_campaign.id
 
-    def create_or_update_sms_campaign(self, form_data, campaign_id=None):
+    @staticmethod
+    def create_or_update_sms_campaign(form_data, campaign_id=None, remove_task_id=False):
         """
         - Here we save/update sms_campaign in database table "sms_campaign".
-
-        - This method is called from save() method of class
-            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
-
+        - This method is called from
+            1) save()
+            2) schedule()
+            3) unschedule methods of class SmsCampaignBase inside
+            sms_campaign_service/sms_campaign_base.py.
         :param form_data: data of SMS campaign from UI to save
         :param campaign_id: id of "sms_campaign" obj, default None
+        :param remove_task_id: indicator if to remove scheduler_task_id from database
         :type form_data: dict
         :type campaign_id: int
+        :type remove_task_id: bool
         :exception: ResourceNotFound
         :exception: ErrorSavingSMSCampaign
         :return: "sms_campaign" obj
         :rtype: SmsCampaign
 
         **See Also**
-        .. see also:: save() method in SmsCampaignBase class.
+        .. see also:: save(), schedule(), unschedule() methods in SmsCampaignBase class.
         """
         sms_campaign_data = dict(name=form_data.get('name'),
-                                 user_phone_id=self.user_phone.id,
+                                 user_phone_id=form_data.get('user_phone_id'),
                                  body_text=form_data.get('body_text'),
-                                 frequency_id=form_data.get('frequency_id'),
+                                 frequency_id=form_data.get('frequency_id') or 1,
                                  added_datetime=datetime.now(),
                                  start_datetime=form_data.get('start_datetime'),
                                  end_datetime=form_data.get('end_datetime'),
-                                 scheduler_task_id=form_data.get('task_id'))
+                                 scheduler_task_id=form_data.get('scheduler_task_id'))
         if campaign_id:
             sms_campaign_obj = SmsCampaign.get_by_id(campaign_id)
             if not sms_campaign_obj:
@@ -398,6 +402,8 @@ class SmsCampaignBase(CampaignBase):
             for key, value in sms_campaign_data.iteritems():
                 # update old values with new ones if provided, else preserve old ones.
                 sms_campaign_data[key] = value if value else getattr(sms_campaign_obj, key)
+            if remove_task_id:
+                sms_campaign_data['scheduler_task_id'] = None
             sms_campaign_obj.update(**sms_campaign_data)
         else:
             try:
@@ -426,9 +432,8 @@ class SmsCampaignBase(CampaignBase):
         .. see also:: save() method in SmsCampaignBase class.
         """
         if not isinstance(campaign, SmsCampaign):
-            raise InvalidUsage('create_or_update_sms_campaign_smartlist: '
-                               'Given campaign is not instance '
-                               'of model sms_campaign.')
+            raise InvalidUsage('create_or_update_sms_campaign_smartlist: Given campaign '
+                               'is not instance of model sms_campaign.')
         for smartlist_id in smartlist_ids:
             data = {'smartlist_id': smartlist_id,
                     'sms_campaign_id': campaign.id}
@@ -488,6 +493,7 @@ class SmsCampaignBase(CampaignBase):
         :return: task_id (Task created on APScheduler), and status of task(already scheduled
                             or new scheduled)
         :rtype: tuple
+
         **See Also**
         .. see also:: ScheduleSmsCampaign() method in v1_sms_campaign_api.py.
         """
@@ -496,10 +502,28 @@ class SmsCampaignBase(CampaignBase):
         )
         # get scheduler task_id created on scheduler_service
         task_id = super(SmsCampaignBase, self).schedule(data_to_schedule)
-        data_to_schedule.update({'task_id': task_id})
+        data_to_schedule.update({'scheduler_task_id': task_id})
         # update sms_campaign record with task_id
         self.create_or_update_sms_campaign(data_to_schedule, campaign_id=self.campaign.id)
         return task_id
+
+    @classmethod
+    def unschedule(cls, campaign_id, request):
+        """
+        This function calls CampaignBase class method to unschedule the campaign from
+        scheduler_service. On success we delete scheduler_task_id from campaign object in database.
+        If above action is successful, we return True otherwise we return False.
+        :return: True or False
+        :rtype: bool
+
+        **See Also**
+        .. see also:: unschedule() method in CampaignBase class.
+        """
+        campaign_obj = super(SmsCampaignBase, cls).unschedule(campaign_id, request)
+        if not campaign_obj:
+            return False
+        cls.create_or_update_sms_campaign({}, campaign_id=campaign_id, remove_task_id=True)
+        return True
 
     @staticmethod
     def validate_ownership_of_campaign(campaign_id, current_user_id):
@@ -591,7 +615,7 @@ class SmsCampaignBase(CampaignBase):
                 'smartlist ids are %s' % (campaign.id, smartlists))
         # create SMS campaign blast
         self.sms_campaign_blast_id = self.create_or_update_sms_campaign_blast(self.campaign.id)
-        self.send_campaign_to_candidates(candidates, logger)
+        self.send_campaign_to_candidates(candidates)
 
     def is_candidate_have_unique_mobile_phone(self, candidate):
         """
@@ -824,12 +848,12 @@ class SmsCampaignBase(CampaignBase):
             # TODO: remove this when app is up
             app_redirect_url = replace_localhost_with_ngrok(SmsCampaignApiUrl.REDIRECT)
             # long_url looks like
-            # http://127.0.0.1:8011/v1/campaigns/1/redirect/1?candidate_id=1
-            long_url = str(app_redirect_url % (self.campaign.id, str(url_conversion_id)
-                                               + '?candidate_id=%s') % candidate_id)
+            # http://127.0.0.1:8012/redirect/1
+            long_url = str(app_redirect_url % url_conversion_id)
             # Use Google's API to shorten the long Url
-            with app.app_context():
-                short_url, error = url_conversion(long_url)
+            short_url, error = url_conversion(long_url)
+            logger.info("url_conversion: Long URL was: %s" % long_url)
+            logger.info("url_conversion: Shortened URL is: %s" % short_url)
             if error:
                 raise GoogleShortenUrlAPIError(error)
             # update the source_url in "url_conversion" record
@@ -958,7 +982,7 @@ class SmsCampaignBase(CampaignBase):
             # send SMS using Twilio Test Credentials
             sender_phone = TWILIO_TEST_NUMBER
         else:
-            sender_phone = self.user_phone.value
+            sender_phone = format_phone_number(self.user_phone.value)
         twilio_obj = TwilioSMS()
         message_response = twilio_obj.send_sms(body_text=message_body,
                                                sender_phone=sender_phone,
@@ -1056,12 +1080,13 @@ class SmsCampaignBase(CampaignBase):
                 'Source should be instance of model SmsCampaignSend')
         params = {'candidate_name': candidate.first_name + ' ' + candidate.last_name,
                   'campaign_name': self.campaign.name}
-        self.create_activity(self.user_id,
-                             _type=ActivityMessageIds.CAMPAIGN_SMS_SEND,
-                             source_id=source.id,
-                             source_table=SmsCampaignSend.__tablename__,
-                             params=params,
-                             headers=self.oauth_header)
+        with app.app_context():  # Need to to this as Celery app use different logger
+            self.create_activity(self.user_id,
+                                 _type=ActivityMessageIds.CAMPAIGN_SMS_SEND,
+                                 source_id=source.id,
+                                 source_table=SmsCampaignSend.__tablename__,
+                                 params=params,
+                                 headers=self.oauth_header)
 
     @classmethod
     def create_campaign_send_activity(cls, user_id, source, auth_header, num_candidates):
@@ -1097,143 +1122,6 @@ class SmsCampaignBase(CampaignBase):
                             source_table=SmsCampaign.__tablename__,
                             params=params,
                             headers=auth_header)
-
-    @staticmethod
-    def pre_process_url_redirect(campaign_id, url_conversion_id, candidate_id):
-        """
-        This method is used for the pre-processing of URL redirection
-            It checks if candidate and campaign is present in database. If both are
-            present, returns them otherwise raise ResourceNotFound.
-
-        :param campaign_id: id of SMS campaign
-        :param url_conversion_id: id of URL conversion record
-        :param candidate_id: id of Candidate
-        :exception: MissingRequiredField
-        :exception: ResourceNotFound
-        :return: SMS Campaign and Candidate obj
-        :rtype: tuple (sms_campaign, candidate)
-
-        **See Also**
-        .. see also:: sms_campaign_url_redirection() function in sms_campaign_app/app.py
-        """
-        url_redirect_data = {'campaign_id': campaign_id,
-                             'url_conversion_id': url_conversion_id,
-                             'candidate_id': candidate_id}
-        missing_items = find_missing_items(url_redirect_data, verify_values_of_all_keys=True)
-        if missing_items:
-            raise MissingRequiredField(
-                'pre_process_url_redirect: Missing required fields are: %s'
-                % missing_items)
-        # check if candidate exists in database
-        candidate = Candidate.get_by_id(candidate_id)
-        if not candidate:
-            raise ResourceNotFound(
-                'pre_process_url_redirect: Candidate(id:%s) not found.'
-                % candidate_id, error_code=ResourceNotFound.http_status_code())
-        # check if campaign exists in database
-        campaign = SmsCampaign.get_by_id(campaign_id)
-        if not campaign:
-            raise ResourceNotFound(
-                'pre_process_url_redirect: SMS Campaign(id=%s) Not found.'
-                % campaign_id, error_code=ResourceNotFound.http_status_code())
-        # check if url_conversion record exists in database
-        url_conversion_record = UrlConversion.get_by_id(url_conversion_id)
-        if not url_conversion_record:
-            raise ResourceNotFound(
-                'pre_process_url_redirect: Url Conversion(id=%s) Not found.'
-                % url_conversion_id,
-                error_code=ResourceNotFound.http_status_code())
-        return campaign, url_conversion_record, candidate
-
-    def process_url_redirect(self, campaign, url_conversion_db_record, candidate):
-        """
-        This does the following steps to send campaign to candidates.
-
-        1- Get the "url_conversion" obj from db.
-        2- Get the "sms_campaign_blast" obj from db.
-        3- Increase "hit_count" by 1 for "url_conversion" record.
-        4- Increase "clicks" by 1 for "sms_campaign_blast" record.
-        5- Add activity that abc candidate clicked on xyz campaign.
-            "'Alvaro Oliveira' clicked URL of campaign 'Jobs at Google'"
-        6- return the destination URL (actual URL provided by recruiter(user)
-            where we want our candidate to be redirected.
-
-        :Example:
-
-            1- Create class object
-                from sms_campaign_service.sms_campaign_base import SmsCampaignBase
-                camp_obj = SmsCampaignBase(1)
-
-            2- Call method process_send with campaign_id
-                redirection_url = camp_obj.process_url_redirect(campaign_id=1, url_conversion_id=1)
-
-        .. Status:: 200 (OK)
-                    404 (Resource not found)
-                    500 (Internal Server Error)
-                    5005 (EmptyDestinationUrl)
-
-        :param campaign: sms_campaign record
-        :param url_conversion_db_record: url_conversion record
-        :param candidate: Campaign object form db
-        :type campaign: SmsCampaign
-        :type url_conversion_db_record: UrlConversion
-        :type candidate: Candidate
-        :exception: EmptyDestinationUrl
-        :return: URL where to redirect the candidate
-        :rtype: str
-
-        **See Also**
-        .. see also:: sms_campaign_url_redirection() function in sms_campaign_app/app.py
-        """
-        logger.debug('process_url_redirect: Processing for URL redirection. (User(id:%s))'
-                     % self.user_id)
-        self.campaign = campaign
-        # Update SMS campaign blast
-        self.create_or_update_sms_campaign_blast(campaign.id,
-                                                 increment_clicks=True)
-        # Update hit count
-        self.create_or_update_url_conversion(url_conversion_id=url_conversion_db_record.id,
-                                             hit_count_update=True)
-        # Create Activity
-        self.create_campaign_url_click_activity(candidate)
-        logger.info('process_url_redirect: candidate(id:%s) clicked on SMS '
-                    'campaign(id:%s). (User(id:%s))'
-                    % (candidate.id, self.campaign.id, self.user_id))
-        # Get URL to redirect candidate to actual URL
-        if not url_conversion_db_record.destination_url:
-            raise EmptyDestinationUrl(
-                'process_url_redirect: Destination_url is empty for '
-                'url_conversion(id:%s)' % url_conversion_db_record.id)
-        return url_conversion_db_record.destination_url
-
-    def create_campaign_url_click_activity(self, source):
-        """
-        - Here we set "params" and "type" of activity to be stored in db table "Activity"
-            for Campaign URL click.
-
-        - Activity will appear as
-            "Michal Jordan clicked on SMS Campaign "abc". "
-
-        - This method is called from process_url_redirect() method of class
-            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
-
-        :param source: Candidate obj
-        :type source: Candidate
-        :exception: InvalidUsage
-
-        **See Also**
-        .. see also:: process_url_redirect() method in SmsCampaignBase class.
-        """
-        if not isinstance(source, Candidate):
-            raise InvalidUsage('source should be an instance of model candidate')
-        params = {'candidate_name': source.first_name + ' ' + source.last_name,
-                  'campaign_name': self.campaign.name}
-        self.create_activity(self.user_id,
-                             _type=ActivityMessageIds.CAMPAIGN_SMS_CLICK,
-                             source_id=self.campaign.id,
-                             source_table=SmsCampaign.__tablename__,
-                             params=params,
-                             headers=self.oauth_header)
 
     @classmethod
     def process_candidate_reply(cls, reply_data):
