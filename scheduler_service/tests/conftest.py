@@ -8,11 +8,12 @@ from datetime import timedelta
 # Application imports
 from scheduler_service import init_app
 from scheduler_service.common.tests.conftest import *
-from scheduler_service.common.routes import AuthApiUrl
+from scheduler_service.common.routes import AuthApiUrl, SchedulerApiUrl
+
 # Application Specific
 
 APP, celery = init_app()
-APP_URL = 'http://0.0.0.0:8011'
+APP_URL = SchedulerApiUrl.SCHEDULER_SERVICE_HOST_NAME % 'v1'
 
 OAUTH_SERVER = AuthApiUrl.AUTH_SERVICE_AUTHORIZE_URI
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
@@ -71,6 +72,20 @@ def auth_header(request, auth_token):
     :return: header dict object
     """
     header = {'Authorization': 'Bearer ' + auth_token,
+              'Content-Type': 'application/json'}
+    return header
+
+
+@pytest.fixture(scope='function')
+def auth_header_no_user(request):
+    """
+    returns the header which contains bearer token and content type
+    :param auth_data: fixture to get access token
+    :return: header dict object
+    """
+    secret_key, token = User.generate_auth_token()
+    header = {'Authorization': 'Basic ' + token,
+              'X-Talent-Server-Key': secret_key,
               'Content-Type': 'application/json'}
     return header
 

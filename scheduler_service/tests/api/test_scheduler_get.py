@@ -15,7 +15,7 @@ from scheduler_service.tests.conftest import APP_URL
 __author__ = 'saad'
 
 
-@pytest.mark.usefixtures('auth_header', 'job_config')
+@pytest.mark.usefixtures('auth_header', 'auth_header_no_user', 'job_config')
 class TestSchedulerGet:
 
     def test_single_job(self, auth_header, job_config):
@@ -56,6 +56,68 @@ class TestSchedulerGet:
         # There shouldn't be any more jobs now
         response = requests.get(APP_URL + '/tasks/id/' + data['id'], headers=auth_header)
         assert response.status_code == 404
+
+    def test_single_job_without_user(self, auth_header_no_user, job_config):
+        """
+        Create a job by hitting the endpoint with secret_key (no authenticated user) and make sure we get job_id in
+        response.
+        Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+        :return:
+        """
+        # Assign task_name in job post data (general task)
+        job_config['task_name'] = 'Custom General Named Task'
+        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+                                 headers=auth_header_no_user)
+        assert response.status_code == 201
+        data = response.json()
+        assert data['id'] is not None
+
+        # Assign task_name in job post data (general task)
+        job_config['task_name'] = 'Custom Task'
+        # Now get the job
+        response_get = requests.get(APP_URL + '/tasks/id/' + data['id'],
+                                    headers=auth_header_no_user)
+        assert response_get.status_code == 200
+
+        # Let's delete jobs now
+        response_remove = requests.delete(APP_URL + '/tasks/id/' + data['id'],
+                                          headers=auth_header_no_user)
+        assert response_remove.status_code == 200
+
+    def test_multiple_jobs_without_user(self, auth_header_no_user, job_config):
+        """
+        Create multiple jobs and save the ids in a list. Then get all tasks of the current user which is None in this case.
+        Then check if the jobs created are in the tasks of user. If yes, then show status code 200
+        Finally, delete the jobs
+        Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+        :return:
+        """
+        jobs_id = []
+
+        for i in range(10):
+            job_config['task_name'] = 'Custom General Named Task %s' % i
+            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+                                     headers=auth_header_no_user)
+            assert response.status_code == 201
+            jobs_id.append(response.json()['id'])
+
+        response_get = requests.get(APP_URL + '/tasks/', data=json.dumps(dict(ids=jobs_id)),
+                                    headers=auth_header_no_user)
+
+        get_jobs_id = map(lambda job_: job_['id'], response_get.json()['tasks'])
+        for job in jobs_id:
+            assert job in get_jobs_id
+        # Delete all jobs
+        for job_id in jobs_id:
+            response_remove = requests.delete(APP_URL + '/tasks/id/%s' % job_id,
+                                              headers=auth_header_no_user)
+            assert response_remove.status_code == 200
 
     def test_multiple_jobs(self, auth_header, job_config):
         """

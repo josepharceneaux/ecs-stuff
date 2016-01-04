@@ -30,19 +30,19 @@ api.route = types.MethodType(api_route, api)
 
 # Enable CORS
 CORS(scheduler_blueprint, resources={
-    r'/tasks/*': {
+    r'/v1/tasks/*': {
         'origins': '*',
         'allow_headers': ['Content-Type', 'Authorization']
     }
 })
 
 
-@api.route('/tasks/')
+@api.route('/v1/tasks/')
 class Tasks(Resource):
     """
         This resource returns a list of tasks or it can be used to create or schedule a task using POST.
     """
-    @require_oauth()
+    @require_oauth(allow_basic_auth=True, allow_null_user=True)
     def get(self, **kwargs):
         """
         This action returns a list of user tasks and their count
@@ -52,8 +52,16 @@ class Tasks(Resource):
         :rtype json
 
         :Example:
+        In case of authenticated user
+
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/tasks/', headers=headers)
+            response = requests.get(API_URL + '/v1//tasks/', headers=headers)
+
+        In case of SECRET_KEY
+
+            headers = {'Authorization': 'Basic <access_token>',
+                        'X-Talent-Server-Key': '<secret_key>'}
+            response = requests.get(API_URL + '/v1//tasks/', headers=headers)
 
         .. Response::
 
@@ -83,7 +91,7 @@ class Tasks(Resource):
                     500 (Internal Server Error)
 
         """
-        user_id = request.user.id
+        user_id = request.user.id if request.user else None
         check_if_scheduler_is_running()
         tasks = scheduler.get_jobs()
         tasks = filter(lambda task: task.args[0] == user_id, tasks)
@@ -124,13 +132,23 @@ class Tasks(Resource):
                 }
             }
 
+            In case of authenticated user
+
             headers = {
                         'Authorization': 'Bearer <access_token>',
                         'Content-Type': 'application/json'
                        }
+
+            In case of SECRET_KEY
+
+            headers = {'Authorization': 'Basic <access_token>',
+                        'X-Talent-Server-Key': '<secret_key>',
+                        'Content-Type': 'application/json'
+                        }
+
             data = json.dumps(task)
             response = requests.post(
-                                        API_URL + '/tasks/',
+                                        API_URL + '/v1/tasks/',
                                         data=data,
                                         headers=headers,
                                     )
@@ -156,7 +174,7 @@ class Tasks(Resource):
 
         task_id = schedule_job(task, request.user.id if request.user else None, request.oauth_token)
 
-        headers = {'Location': '/tasks/%s' % task_id}
+        headers = {'Location': '/v1/tasks/%s' % task_id}
         response = json.dumps(dict(id=task_id))
         return ApiResponse(response, status=201, headers=headers)
 
@@ -177,7 +195,7 @@ class Tasks(Resource):
                        }
             data = json.dumps(task_ids)
             response = requests.delete(
-                                        API_URL + '/tasks/',
+                                        API_URL + '/v1/tasks/',
                                         data=data,
                                         headers=headers,
                                     )
@@ -221,7 +239,7 @@ class Tasks(Resource):
                         not_removed=not_removed), 207
 
 
-@api.route('/tasks/resume/')
+@api.route('/v1/tasks/resume/')
 class ResumeTasks(Resource):
     """
         This resource resumes a previously paused jobs/tasks
@@ -242,7 +260,7 @@ class ResumeTasks(Resource):
                 'ids': [fasdff12n22m2jnr5n6skf,ascv3h5k1j43k6k8k32k345jmn,123n23n4n43m2kkcj53vdsxc]
             }
             headers = {'Authorization': 'Bearer <access_token>', 'Content-Type' : 'application/json'}
-            response = requests.post(API_URL + '/tasks/resume/', headers=headers, data=json.dumps(task_ids))
+            response = requests.post(API_URL + '/v1/tasks/resume/', headers=headers, data=json.dumps(task_ids))
 
         .. Response::
             {
@@ -281,7 +299,7 @@ class ResumeTasks(Resource):
         raise InvalidUsage('Bad request, invalid data in request', error_code=400)
 
 
-@api.route('/tasks/pause/')
+@api.route('/v1/tasks/pause/')
 class PauseTasks(Resource):
     """
         This resource pauses jobs/tasks which can be resumed again
@@ -301,7 +319,7 @@ class PauseTasks(Resource):
                 'ids': [fasdff12n22m2jnr5n6skf,ascv3h5k1j43k6k8k32k345jmn,123n23n4n43m2kkcj53vdsxc]
             }
             headers = {'Authorization': 'Bearer <access_token>', 'Content-Type' : 'application/json'}
-            response = requests.post(API_URL + '/tasks/resume/', headers=headers, data=json.dumps(task_ids))
+            response = requests.post(API_URL + '/v1/tasks/resume/', headers=headers, data=json.dumps(task_ids))
 
         .. Response::
             {
@@ -339,13 +357,13 @@ class PauseTasks(Resource):
         raise InvalidUsage('Bad request, invalid data in request', error_code=400)
 
 
-@api.route('/tasks/id/<string:_id>')
+@api.route('/v1/tasks/id/<string:_id>')
 class TaskById(Resource):
     """
         This resource returns a specific task based on id or update a task
     """
-    decorators = [require_oauth()]
 
+    @require_oauth(allow_basic_auth=True, allow_null_user=True)
     def get(self, _id, **kwargs):
         """
         This action returns a task owned by a this user
@@ -357,8 +375,17 @@ class TaskById(Resource):
         :rtype json
 
         :Example:
+
+        In case of authenticated user
+
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/tasks/5das76nbv950nghg8j8-33ddd3kfdw2', headers=headers)
+            response = requests.get(API_URL + '/v1//tasks/5das76nbv950nghg8j8-33ddd3kfdw2', headers=headers)
+
+        In case of SECRET_KEY
+
+            headers = {'Authorization': 'Basic <access_token>',
+                        'X-Talent-Server-Key': '<secret_key>'}
+            response = requests.get(API_URL + '/v1//tasks/5das76nbv950nghg8j8-33ddd3kfdw2', headers=headers)
 
         .. Response::
             {
@@ -402,7 +429,7 @@ class TaskById(Resource):
                     500 (Internal Server Error)
 
         """
-        user_id = request.user.id
+        user_id = request.user.id if request.user else None
         check_if_scheduler_is_running()
         task = scheduler.get_job(_id)
         # Make sure task is valid and belongs to logged-in user
@@ -412,6 +439,7 @@ class TaskById(Resource):
                 return dict(task=task)
         raise ResourceNotFound(error_message="Task not found")
 
+    @require_oauth(allow_basic_auth=True, allow_null_user=True)
     def delete(self, _id, **kwargs):
         """
         Deletes/removes a tasks from scheduler store
@@ -419,13 +447,17 @@ class TaskById(Resource):
         :return:
 
         :Example:
-            headers = {
-                        'Authorization': 'Bearer <access_token>'
-                       }
-            response = requests.delete(
-                                        API_URL + '/tasks/5das76nbv950nghg8j8-33ddd3kfdw2',
-                                        headers=headers,
-                                    )
+         In case of authenticated user
+
+            headers = {'Authorization': 'Bearer <access_token>'}
+            response = requests.delete(API_URL + '/v1//tasks/5das76nbv950nghg8j8-33ddd3kfdw2', headers=headers)
+
+        In case of SECRET_KEY
+
+            headers = {'Authorization': 'Basic <access_token>',
+                        'X-Talent-Server-Key': '<secret_key>'}
+            response = requests.delete(API_URL + '/v1//tasks/5das76nbv950nghg8j8-33ddd3kfdw2', headers=headers)
+
 
         .. Response::
 
@@ -437,7 +469,7 @@ class TaskById(Resource):
                     500 (Internal Server Error)
 
         """
-        user_id = request.user.id
+        user_id = request.user.id if request.user else None
         check_if_scheduler_is_running()
         task = scheduler.get_job(_id)
         # Check if task is valid and belongs to the logged-in user
@@ -447,7 +479,7 @@ class TaskById(Resource):
         raise ResourceNotFound(error_message="Task not found")
 
 
-@api.route('/tasks/<string:_id>/resume/')
+@api.route('/v1/tasks/<string:_id>/resume/')
 class ResumeTaskById(Resource):
     """
         This resource resumes a previously paused job/task
@@ -465,7 +497,7 @@ class ResumeTaskById(Resource):
 
         :Example:
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.post(API_URL + '/tasks/5das76nbv950nghg8j8-33ddd3kfdw2/resume/', headers=headers)
+            response = requests.post(API_URL + '/v1/tasks/5das76nbv950nghg8j8-33ddd3kfdw2/resume/', headers=headers)
 
         .. Response::
             {
@@ -489,7 +521,7 @@ class ResumeTaskById(Resource):
         raise ResourceNotFound(error_message="Task not found")
 
 
-@api.route('/tasks/<string:_id>/pause/')
+@api.route('/v1/tasks/<string:_id>/pause/')
 class PauseTaskById(Resource):
     """
         This resource pauses job/task which can be resumed again
@@ -507,7 +539,7 @@ class PauseTaskById(Resource):
 
         :Example:
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.post(API_URL + '/tasks/5das76nbv950nghg8j8-33ddd3kfdw2/resume/', headers=headers)
+            response = requests.post(API_URL + '/v1/tasks/5das76nbv950nghg8j8-33ddd3kfdw2/resume/', headers=headers)
 
         .. Response::
             {
@@ -531,7 +563,7 @@ class PauseTaskById(Resource):
         raise ResourceNotFound(error_message="Task not found")
 
 
-@api.route('/tasks/test/')
+@api.route('/v1/tasks/test/')
 class SendRequestTest(Resource):
     """
         This resource is dummy endpoint which is used to call send_request method for testing

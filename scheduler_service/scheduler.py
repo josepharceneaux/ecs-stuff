@@ -21,7 +21,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from urllib import urlencode
 
 # Application imports
-from auth_service.common.models.user import Token
+from scheduler_service.common.models.user import Token
 from scheduler_service import logger
 from scheduler_service.common.models.user import User
 from scheduler_service.apscheduler_config import executors, job_store, jobstores
@@ -58,8 +58,8 @@ def apscheduler_listener(event):
         logger.error(str(event.exception.message) + '\n')
     else:
         job = scheduler.get_job(event.job_id)
-        logger.info('The job with id %s worked :)' % job.id)
         if job:
+            logger.info('The job with id %s worked :)' % job.id)
             if isinstance(job.trigger, IntervalTrigger) and job.next_run_time and job.next_run_time > job.trigger.end_date:
                 logger.info('Stopping job')
                 try:
@@ -146,6 +146,16 @@ def schedule_job(data, user_id=None, access_token=None):
     job_config['task_type'] = get_valid_data(data, 'task_type')
     job_config['url'] = get_valid_url(data, 'url')
 
+    # Server to Server call
+    if user_id is None:
+        job_config['task_name'] = get_valid_data(data, 'task_name')
+        jobs = scheduler.get_jobs()
+        jobs = filter(lambda task: task.name == job_config['task_name'], jobs)
+        if jobs:
+            raise InvalidUsage('Task name %s is already scheduled' % jobs[0].name)
+    else:
+        job_config['task_name'] = None
+
     trigger = str(job_config['task_type']).lower().strip()
 
     if trigger == SchedulerUtils.PERIODIC:
@@ -153,6 +163,7 @@ def schedule_job(data, user_id=None, access_token=None):
 
         try:
             job = scheduler.add_job(run_job,
+                                    name=job_config['task_name'],
                                     trigger='interval',
                                     seconds=valid_data['frequency'],
                                     start_date=valid_data['start_datetime'],
@@ -174,6 +185,7 @@ def schedule_job(data, user_id=None, access_token=None):
         valid_data = validate_one_time_job(data)
         try:
             job = scheduler.add_job(run_job,
+                                    name=job_config['task_name'],
                                     trigger='date',
                                     run_date=valid_data['run_datetime'],
                                     args=[user_id, access_token, job_config['url'], content_type],
@@ -234,6 +246,7 @@ def serialize_task(task):
     """
     Serialize task data to json object
     :param task: APScheduler task to convert to json dict
+                 task.args: user_id, access_token, url, content_type
     :return: json converted dict object
     """
     task_dict = None
@@ -258,6 +271,9 @@ def serialize_task(task):
         if task_dict['next_run_datetime'] is not None:
             task_dict['next_run_datetime'] = task_dict['next_run_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
 
+        if task.name is not None and task.args[0] is None:
+            task_dict['task_name'] = task.name
+
     elif isinstance(task.trigger, DateTrigger):
         task_dict = dict(
             id=task.id,
@@ -269,5 +285,8 @@ def serialize_task(task):
         )
         if task_dict['run_datetime'] is None:
             task_dict['run_datetime'] = task_dict['run_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        if task.name is not None and task.args[0] is None:
+            task_dict['task_name'] = task.name
 
     return task_dict
