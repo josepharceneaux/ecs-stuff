@@ -1,6 +1,6 @@
-from push_notification_service.common.error_handling import ResourceNotFound
-from push_notification_service.common.models.push_notification import PushCampaignSmartlist
-from push_notification_service.common.models.smartlist import Smartlist
+from push_campaign_service.common.error_handling import ResourceNotFound
+from push_campaign_service.common.models.push_notification import PushCampaignSmartlist
+from push_campaign_service.common.models.smartlist import Smartlist
 
 
 def associate_smart_list_with_campaign(_id, camapaign_id):

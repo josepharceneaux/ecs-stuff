@@ -3,7 +3,7 @@ import json
 import requests
 from faker import Faker
 
-from push_notification_service.common.routes import PushNotificationServiceApi
+from push_campaign_service.common.routes import PushNotificationServiceApi
 
 
 fake = Faker()

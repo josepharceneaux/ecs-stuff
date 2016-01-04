@@ -1,5 +1,5 @@
 import json
-import push_notification_service.common.error_handling
+import push_campaign_service.common.error_handling
 
 PUSH_NOTIFICATION_ERROR = 7000
 PUSH_NOTIFICATION_NOT_CREATED = 7001
@@ -10,7 +10,7 @@ FAILED_TO_SCHEDULE = 7005
 INVALID_FIELD = 7006
 
 
-class PushNotificationApiException(push_notification_service.common.error_handling.InternalServerError):
+class PushNotificationApiException(push_campaign_service.common.error_handling.InternalServerError):
     error_code = PUSH_NOTIFICATION_ERROR
 
     def to_dict(self):

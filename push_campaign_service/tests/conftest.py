@@ -1,20 +1,20 @@
 """
 Author: Zohaib Ijaz <mzohaib.qc@gmail.com>
 """
-from push_notification_service.common.tests.conftest import *
-from push_notification_service.common.models.smartlist import *
-from push_notification_service.common.models.candidate import *
-from push_notification_service.common.models.push_notification import *
+from push_campaign_service.common.tests.conftest import *
+from push_campaign_service.common.models.smartlist import *
+from push_campaign_service.common.models.candidate import *
+from push_campaign_service.common.models.push_notification import *
 
 from faker import Faker
 
 from werkzeug.security import gen_salt
 
-from push_notification_service.tests.helper_methods import generate_campaign_data
+from push_campaign_service.tests.helper_methods import generate_campaign_data
 
 fake = Faker()
 # Service specific
-from push_notification_service.push_campaign_app.app import app
+from push_campaign_service.push_campaign_app.app import app
 
 # This is data to create/update SMS campaign
 # This is data to schedule an SMS campaign

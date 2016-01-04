@@ -71,18 +71,18 @@ from flask.ext.restful import Resource
 
 
 # Application Specific
-from push_notification_service.common.models.candidate import Candidate, CandidateDevice
-from push_notification_service.common.talent_api import TalentApi
-from push_notification_service.common.utils.auth_utils import require_oauth
-from push_notification_service.common.utils.api_utils import api_route, ApiResponse
-from push_notification_service.common.models.push_notification import *
-from push_notification_service.common.error_handling import *
-from push_notification_service.modules.custom_exceptions import *
-from push_notification_service.modules.one_signal_sdk import OneSignalSdk
-from push_notification_service.modules.constants import ONE_SIGNAL_REST_API_KEY, ONE_SIGNAL_APP_ID
-from push_notification_service.modules.push_notification_campaign import PushCampaignBase
-from push_notification_service.modules.utilities import associate_smart_list_with_campaign
-from push_notification_service.push_campaign_app import logger
+from push_campaign_service.common.models.candidate import Candidate, CandidateDevice
+from push_campaign_service.common.talent_api import TalentApi
+from push_campaign_service.common.utils.auth_utils import require_oauth
+from push_campaign_service.common.utils.api_utils import api_route, ApiResponse
+from push_campaign_service.common.models.push_notification import *
+from push_campaign_service.common.error_handling import *
+from push_campaign_service.modules.custom_exceptions import *
+from push_campaign_service.modules.one_signal_sdk import OneSignalSdk
+from push_campaign_service.modules.constants import ONE_SIGNAL_REST_API_KEY, ONE_SIGNAL_APP_ID
+from push_campaign_service.modules.push_campaign_base import PushCampaignBase
+from push_campaign_service.modules.utilities import associate_smart_list_with_campaign
+from push_campaign_service.push_campaign_app import logger
 
 # creating blueprint
 push_notification_blueprint = Blueprint('push_notification_api', __name__)

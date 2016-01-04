@@ -1,12 +1,12 @@
 import json
 
 import requests
-from push_notification_service.common.routes import PushNotificationServiceApi
-from push_notification_service.common.models.push_notification import PushCampaign
+from push_campaign_service.common.routes import PushNotificationServiceApi
+from push_campaign_service.common.models.push_notification import PushCampaign
 
 API_URL = PushNotificationServiceApi.HOST_NAME
 VERSION = PushNotificationServiceApi.VERSION
-from push_notification_service.tests.helper_methods import *
+from push_campaign_service.tests.helper_methods import *
 
 
 class TestCreateCampaign():

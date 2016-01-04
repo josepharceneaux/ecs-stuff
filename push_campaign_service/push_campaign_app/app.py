@@ -3,11 +3,11 @@ import json
 from flask import render_template
 from werkzeug.utils import redirect
 
-from push_notification_service.push_campaign_app import init_push_notification_app, logger
-from push_notification_service.common.models.misc import UrlConversion
-from push_notification_service.common.models.push_notification import PushCampaignBlast
+from push_campaign_service.push_campaign_app import init_push_notification_app, logger
+from push_campaign_service.common.models.misc import UrlConversion
+from push_campaign_service.common.models.push_notification import PushCampaignBlast
 
-app = init_push_notification_app()
+app, celery_app = init_push_notification_app()
 
 from api.v1_push_notification_api import push_notification_blueprint
 
