@@ -16,7 +16,7 @@ def search_candidates_from_params(search_params, access_token):
     :return: search result based on search criteria.
     """
     return requests.get(
-        url=CandidateApiUrl.SEARCH,
+        url=CandidateApiUrl.CANDIDATE_SEARCH_URI,
         params=search_params,
         headers={'Authorization': access_token if 'Bearer' in access_token else 'Bearer %s' % access_token}
     ).json()

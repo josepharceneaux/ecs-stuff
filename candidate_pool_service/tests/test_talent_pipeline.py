@@ -3,9 +3,8 @@ __author__ = 'ufarooqi'
 from datetime import timedelta
 from candidate_pool_service.candidate_pool_app import app
 from candidate_pool_service.common.tests.conftest import *
+from candidate_pool_service.common.utils.handy_functions import add_role_to_test_user
 from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline
-from candidate_pool_service.common.models.smartlist import Smartlist
-from candidate_pool_service.common.utils.common_functions import add_role_to_test_user
 from candidate_pool_service.common.tests.cloud_search_common_functions import *
 from common_functions import *
 
@@ -467,4 +466,6 @@ def test_talent_pipeline_smart_list_api_get(access_token_first, access_token_sec
     assert response['smart_lists'][0]['user_id'] == test_smart_first.user_id
     assert response['smart_lists'][1]['name'] == test_smart_second.name
     assert response['smart_lists'][1]['user_id'] == test_smart_second.user_id
+
+
 

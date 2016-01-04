@@ -7,14 +7,14 @@ from candidate_service.common.tests.conftest import *
 from candidate_service.common.models.candidate import Candidate, CandidateSource
 from candidate_service.common.models.misc import CustomFieldCategory
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents
-from candidate_service.common.common_config import CANDIDATE_SERVICE_BASE_URI
+from candidate_service.common.routes import CandidateApiUrl
 import random
 import datetime
 import uuid
 import time
 import requests
 
-SEARCH_URI = CANDIDATE_SERVICE_BASE_URI+"/v1/candidates/search"
+SEARCH_URI = CandidateApiUrl.CANDIDATE_SEARCH_URI
 
 
 def test_search_all_candidates_in_domain(sample_user, user_auth):
