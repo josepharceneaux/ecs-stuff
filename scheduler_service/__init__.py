@@ -4,15 +4,16 @@ from scheduler_service.common.error_handling import register_error_handlers
 from scheduler_service.common.models.db import db
 from scheduler_service.common.redis_cache import redis_store
 from scheduler_service.common.utils.models_utils import add_model_helpers
-from scheduler_service.common.common_config import BACKEND_URL, REDIS_URL
+from scheduler_service.common.talent_config_manager import TalentConfig, ConfigKeys
 
 
 __author__ = 'saad'
 
 
 flask_app = Flask(__name__)
-flask_app.config.from_object('scheduler_service.common.common_config')
-logger = flask_app.config['LOGGER']
+flask_app.config = TalentConfig(flask_app.config).app_config
+
+logger = flask_app.config[ConfigKeys.LOGGER]
 
 
 def init_app():
@@ -30,6 +31,6 @@ def init_app():
                 flask_app.config['GT_ENVIRONMENT'])
 
     # Celery settings
-    celery_app = Celery(flask_app, broker=REDIS_URL, backend=BACKEND_URL,
+    celery_app = Celery(flask_app, broker=flask_app.config['REDIS_URL'], backend=flask_app.config['BACKEND_URL'],
                         include=['scheduler_service.tasks'])
     return flask_app, celery_app

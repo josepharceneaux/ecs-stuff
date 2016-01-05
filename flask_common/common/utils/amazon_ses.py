@@ -4,14 +4,14 @@ import boto
 import os
 import re
 from flask import current_app as app
-from .. import talent_property_manager
+from .. import talent_config_manager
 
 DEFAULT_MAIL_SENDER = '"getTalent Web" <no-reply@gettalent.com>'
 
 
 def get_boto_ses_connection():
-    conn = boto.connect_ses(aws_access_key_id=talent_property_manager.get_aws_key(),
-                            aws_secret_access_key=talent_property_manager.get_aws_secret())
+    conn = boto.connect_ses(aws_access_key_id=talent_config_manager.get_aws_key(),
+                            aws_secret_access_key=talent_config_manager.get_aws_secret())
     return conn
 
 

@@ -1,15 +1,15 @@
 __author__ = 'ufarooqi'
 
 from flask import Flask
+from healthcheck import HealthCheck
 from candidate_pool_service.common.models.db import db
 from candidate_pool_service.common.redis_cache import redis_store
-from candidate_pool_service.common import common_config
-from healthcheck import HealthCheck
+from candidate_pool_service.common.talent_config_manager import TalentConfig, ConfigKeys
 
 app = Flask(__name__)
-app.config.from_object(common_config)
+app.config = TalentConfig(app.config).app_config
 
-logger = app.config['LOGGER']
+logger = app.config[ConfigKeys.LOGGER]
 from candidate_pool_service.common.error_handling import register_error_handlers
 print "register error handlers"
 register_error_handlers(app, logger)
@@ -39,4 +39,4 @@ from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities 
 
 schedule_talent_pool_and_pipelines_daily_stats_update()
 
-logger.info("Starting candidate_pool_service in %s environment", app.config['GT_ENVIRONMENT'])
+logger.info("Starting candidate_pool_service in %s environment", app.config[ConfigKeys.LOGGER])

@@ -1,16 +1,14 @@
 from flask import Flask
-from candidate_service.common.models.db import db
 from gt_custom_restful import *
 from healthcheck import HealthCheck
+from candidate_service.common.models.db import db
+from candidate_service.common.redis_cache import redis_store
+from candidate_service.common.talent_config_manager import TalentConfig, ConfigKeys
 
 app = Flask(__name__)
-print "Running app: %s" % app
+app.config = TalentConfig(app.config).app_config
 
-from candidate_service.common import common_config
-from candidate_service.common.redis_cache import redis_store
-app.config.from_object(common_config)
-
-logger = app.config['LOGGER']
+logger = app.config[ConfigKeys.LOGGER]
 
 from candidate_service.common.error_handling import register_error_handlers
 register_error_handlers(app=app, logger=logger)
@@ -250,9 +248,4 @@ api.add_resource(CandidateOpenWebResource, '/v1/candidates/openweb', endpoint='o
 db.create_all()
 db.session.commit()
 
-logger.info('Starting candidate_service in %s environment', app.config['GT_ENVIRONMENT'])
-
-# Index Amazon Cloud Search
-# from candidate_service.modules.talent_cloud_search import define_index_fields, index_documents
-# define_index_fields()
-# index_documents()
+logger.info('Starting candidate_service in %s environment', app.config[ConfigKeys.LOGGER])

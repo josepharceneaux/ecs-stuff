@@ -1,16 +1,15 @@
 __author__ = 'ufarooqi'
 
 from flask import Flask
-from flask_oauthlib.provider import OAuth2Provider
-
-from auth_service.common.models.db import db
-from auth_service.common import common_config
 from healthcheck import HealthCheck
+from flask_oauthlib.provider import OAuth2Provider
+from auth_service.common.models.db import db
+from auth_service.common.talent_config_manager import TalentConfig, ConfigKeys
 
 app = Flask(__name__)
-app.config.from_object(common_config)
+app.config = TalentConfig(app.config).app_config
 
-logger = app.config['LOGGER']
+logger = app.config[ConfigKeys.LOGGER]
 from auth_service.common.error_handling import register_error_handlers
 print "register error handlers"
 register_error_handlers(app, logger)
@@ -32,4 +31,4 @@ import views
 db.create_all()
 db.session.commit()
 
-logger.info("Starting auth_service in %s environment", app.config['GT_ENVIRONMENT'])
+logger.info("Starting auth_service in %s environment", app.config[ConfigKeys.ENV_KEY])

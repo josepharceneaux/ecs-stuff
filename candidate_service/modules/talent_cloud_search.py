@@ -15,8 +15,8 @@ from candidate_service.candidate_app import db, logger
 from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateStatus
 from candidate_service.common.models.user import User, Domain
 from candidate_service.common.models.misc import AreaOfInterest
+from candidate_service.common.talent_config_manager import ConfigKeys
 from candidate_service.common.error_handling import InternalServerError
-from candidate_service.common import talent_property_manager
 from flask.ext.common.common.geo_services.geo_coordinates import get_geocoordinates_bounding
 
 API_VERSION = "2013-01-01"
@@ -131,11 +131,11 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
 }
 
 # Get all the credentials from environment variable
-AWS_ACCESS_KEY_ID = talent_property_manager.get_aws_key()
-AWS_SECRET_ACCESS_KEY = talent_property_manager.get_aws_secret()
+AWS_ACCESS_KEY_ID = current_app.config[ConfigKeys.AWS_KEY]
+AWS_SECRET_ACCESS_KEY = current_app.config[ConfigKeys.AWS_SECRET]
 
-CLOUD_SEARCH_REGION = talent_property_manager.get_cloudsearch_region()
-CLOUD_SEARCH_DOMAIN_NAME = talent_property_manager.get_cloudsearch_domain_name()
+CLOUD_SEARCH_REGION = current_app.config[ConfigKeys.CS_REGION_KEY]
+CLOUD_SEARCH_DOMAIN_NAME = current_app.config[ConfigKeys.CS_DOMAIN_KEY]
 
 filter_queries_list = []
 search_queries_list = []
@@ -219,7 +219,7 @@ def delete_index_fields():
     Deletes above defined index fields.
     :return:
     """
-    if current_app.config['GT_ENVIRONMENT'] is not 'dev':
+    if current_app.config[ConfigKeys.ENV_KEY] is not 'dev':
         raise Exception("Can't call delete_index_fields() in prod! Use the console instead")
     conn = get_cloud_search_connection()
     for index_field_name in INDEX_FIELD_NAME_TO_OPTIONS:
@@ -449,7 +449,7 @@ def delete_all_candidate_documents():
     It only works on dev domain (to avoid the function hitting accidentally on production)
 
     """
-    if current_app.config('GT_ENVIRONMENT') is not 'dev':
+    if current_app.config(ConfigKeys.ENV_KEY) is not 'dev':
         raise Exception("Can't call delete_all_candidate_documents() in prod! Use the console instead")
 
     # Get all candidate ids by searching for everything except a nonsense string

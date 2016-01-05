@@ -6,14 +6,14 @@ import boto.exception
 from boto.s3.bucket import Bucket
 from boto.s3.key import Key
 from ..error_handling import InvalidUsage
-from .. import talent_property_manager
+from .. import talent_config_manager
 from boto.s3.connection import OrdinaryCallingFormat, S3Connection
 
-S3_BUCKET_NAME = talent_property_manager.get_s3_bucket_name()
-S3_BUCKET_REGION = talent_property_manager.get_s3_region()
-S3_FILEPICKER_BUCKET_NAME = talent_property_manager.get_s3_filepicker_bucket_name()
-AWS_ACCESS_KEY_ID = talent_property_manager.get_aws_key()
-AWS_SECRET_ACCESS_KEY = talent_property_manager.get_aws_secret()
+S3_BUCKET_NAME = talent_config_manager.get_s3_bucket_name()
+S3_BUCKET_REGION = talent_config_manager.get_s3_region()
+S3_FILEPICKER_BUCKET_NAME = talent_config_manager.get_s3_filepicker_bucket_name()
+AWS_ACCESS_KEY_ID = talent_config_manager.get_aws_key()
+AWS_SECRET_ACCESS_KEY = talent_config_manager.get_aws_secret()
 
 
 def get_s3_bucket_and_conn():

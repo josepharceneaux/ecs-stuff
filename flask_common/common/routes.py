@@ -1,11 +1,11 @@
-import talent_property_manager
+import talent_config_manager
 
 
 class UserServiceApiUrl:
     def __init__(self):
         pass
 
-    env = talent_property_manager.get_env()
+    env = talent_config_manager.get_env()
 
     if env == 'dev' or env == 'circle':
         USER_SERVICE_HOST_NAME = 'http://127.0.0.1:8004/v1/%s'
@@ -32,7 +32,7 @@ class AuthApiUrl:
     def __init__(self):
         pass
 
-    env = talent_property_manager.get_env()
+    env = talent_config_manager.get_env()
 
     if env == 'dev' or env == 'circle':
         AUTH_SERVICE_HOST_NAME = 'http://127.0.0.1:8001/v1/%s'
@@ -52,7 +52,7 @@ class CandidateApiUrl:
     def __init__(self):
         pass
 
-    env = talent_property_manager.get_env()
+    env = talent_config_manager.get_env()
 
     if env == 'dev' or env == 'circle':
         CANDIDATE_SERVICE_HOST_NAME = 'http://127.0.0.1:8005/%s'
@@ -121,7 +121,7 @@ class SchedulerApiUrl:
     def __init__(self):
         pass
 
-    env = talent_property_manager.get_env()
+    env = talent_config_manager.get_env()
 
     if env == 'dev' or env == 'circle':
         SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
@@ -140,7 +140,7 @@ class CandidatePoolApiUrl:
     def __init__(self):
         pass
 
-    env = talent_property_manager.get_env()
+    env = talent_config_manager.get_env()
 
     if env == 'dev' or env == 'circle':
         CANDIDATE_POOL_SERVICE_HOST_NAME = 'http://127.0.0.1:8008/v1/%s'
@@ -161,7 +161,7 @@ class SpreadsheetImportApiUrl:
     def __init__(self):
         pass
 
-    env = talent_property_manager.get_env()
+    env = talent_config_manager.get_env()
 
     if env == 'dev' or env == 'circle':
         SPREADSHEET_IMPORT_SERVICE_HOST_NAME = 'http://127.0.0.1:8009/v1/parse_spreadsheet/%s'

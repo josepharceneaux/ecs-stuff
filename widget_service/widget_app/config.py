@@ -1,6 +1,5 @@
 __author__ = 'erikfarmer'
 import os
-from widget_service.common import talent_property_manager
 # from widget_service.common.utils.handy_functions import random_word
 #
 # def valid_oauth_credentials():
@@ -35,7 +34,7 @@ from widget_service.common import talent_property_manager
 #     return c_id, c_secret
 
 
-env = talent_property_manager.get_env()
+env = os.getenv('GT_ENVIRONMENT')
 if env == 'dev':
     ENVIRONMENT = 'dev'
     WIDGET_CLIENT_ID = 'dev_client_id'
@@ -68,4 +67,4 @@ else:
     raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")
 
 ENCRYPTION_KEY = 'heylookeveryonewegotasupersecretkeyoverhere'
-SECRET_KEY = talent_property_manager.get_secret_key()
+SECRET_KEY = os.getenv('SECRET_KEY')
