@@ -12,6 +12,7 @@ import os
 
 # Third-party imports
 import requests
+from dateutil.tz import tzutc
 from pytz import timezone
 from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.events import EVENT_JOB_EXECUTED
@@ -60,6 +61,7 @@ def apscheduler_listener(event):
         job = scheduler.get_job(event.job_id)
         if job:
             logger.info('The job with id %s worked :)' % job.id)
+            # TODO add comment
             if isinstance(job.trigger, IntervalTrigger) and job.next_run_time and job.next_run_time > job.trigger.end_date:
                 logger.info('Stopping job')
                 try:
@@ -68,6 +70,7 @@ def apscheduler_listener(event):
                 except Exception as e:
                     logger.exception("apscheduler_listener: Error occurred while removing job")
                     raise e
+            # TODO add comment
             elif isinstance(job.trigger, DateTrigger) and not job.run_date:
                 scheduler.remove_job(job_id=job.id)
                 logger.info("apscheduler_listener: Job with %s removed successfully" % job.id)
@@ -78,7 +81,7 @@ scheduler.add_listener(apscheduler_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERRO
 
 def validate_one_time_job(data):
     """
-    Validate one time job post data.
+    Validate one time job POST data.
     if run_datetime is already passed then raise error 500
     :param data:
     :return:
@@ -154,6 +157,7 @@ def schedule_job(data, user_id=None, access_token=None):
         job_config['task_name'] = get_valid_data(data, 'task_name')
         jobs = scheduler.get_jobs()
         jobs = filter(lambda task: task.name == job_config['task_name'], jobs)
+        # TODO add jobs length check
         if jobs:
             raise InvalidUsage('Task name %s is already scheduled' % jobs[0].name)
     else:
@@ -173,12 +177,13 @@ def schedule_job(data, user_id=None, access_token=None):
                                     end_date=valid_data['end_datetime'],
                                     args=[user_id, access_token, job_config['url'], content_type],
                                     kwargs=job_config['post_data'])
-
+            # Assert on job TODO
             current_datetime = datetime.datetime.utcnow()
-            current_datetime = current_datetime.replace(tzinfo=timezone('UTC'))
+            current_datetime = current_datetime.replace(tzinfo=tzutc())
 
-            # TODO; need to understand this more
+            # TODO; 30 secs should be const
             # If job is in past but in range of 0-30 seconds interval then run the job
+
             if (current_datetime - datetime.timedelta(seconds=30)) < valid_data['start_datetime']:
                 run_job(user_id, access_token, job_config['url'], content_type)
             logger.info('schedule_job: Task has been added and will start at %s ' % valid_data['start_datetime'])
@@ -255,8 +260,8 @@ def remove_tasks(ids, user_id):
 
 def serialize_task(task):
     """
-    Serialize task data to json object
-    :param task: APScheduler task to convert to json dict
+    Serialize task data to JSON object
+    :param task: APScheduler task to convert to JSON dict
                  task.args: user_id, access_token, url, content_type
     :return: json converted dict object
     """
@@ -294,6 +299,7 @@ def serialize_task(task):
             run_datetime=task.trigger.run_date,
             post_data=task.kwargs,
             pending=task.pending,
+            #TODO kindly use constant which you have already defined
             task_type='one_time'
         )
 
