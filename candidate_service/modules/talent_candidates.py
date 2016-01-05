@@ -1372,8 +1372,8 @@ def _add_or_update_phones(candidate_id, phones, user_id, edit_time):
         phone_number_dict = format_phone_number(value) if value else None
 
         phone_dict = dict(
-            value=phone_number_dict.get('formatted_number'),
-            extension=phone_number_dict.get('extension'),
+            value=phone_number_dict.get('formatted_number') if phone_number_dict else None,
+            extension=phone_number_dict.get('extension') if phone_number_dict else None,
             phone_label_id = PhoneLabel.phone_label_id_from_phone_label(phone_label=phone_label),
             is_default=is_default
         )
