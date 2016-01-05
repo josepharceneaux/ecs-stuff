@@ -4,16 +4,16 @@ from scheduler_service.common.error_handling import register_error_handlers
 from scheduler_service.common.models.db import db
 from scheduler_service.common.redis_cache import redis_store
 from scheduler_service.common.utils.models_utils import add_model_helpers
-from scheduler_service.common.talent_config_manager import TalentConfig, ConfigKeys
+from scheduler_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 
 
 __author__ = 'saad'
 
 
 flask_app = Flask(__name__)
-flask_app.config = TalentConfig(flask_app.config).app_config
+load_gettalent_config(flask_app.config)
 
-logger = flask_app.config[ConfigKeys.LOGGER]
+logger = flask_app.config[TalentConfigKeys.LOGGER]
 
 
 def init_app():

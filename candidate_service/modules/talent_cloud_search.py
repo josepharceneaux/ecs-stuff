@@ -15,7 +15,7 @@ from candidate_service.candidate_app import db, logger
 from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateStatus
 from candidate_service.common.models.user import User, Domain
 from candidate_service.common.models.misc import AreaOfInterest
-from candidate_service.common.talent_config_manager import ConfigKeys
+from candidate_service.common.talent_config_manager import TalentConfigKeys
 from candidate_service.common.error_handling import InternalServerError
 from candidate_service.common.geo_services.geo_coordinates import get_geocoordinates_bounding
 
@@ -145,15 +145,15 @@ def get_cloud_search_connection():
     global _cloud_search_connection_layer_2, _cloud_search_domain
     if not _cloud_search_connection_layer_2:
         _cloud_search_connection_layer_2 = boto.connect_cloudsearch2(aws_access_key_id=app.
-                                                                     config[ConfigKeys.AWS_KEY],
+                                                                     config[TalentConfigKeys.AWS_KEY],
                                                                      aws_secret_access_key=app.
-                                                                     config[ConfigKeys.AWS_SECRET],
+                                                                     config[TalentConfigKeys.AWS_SECRET],
                                                                      sign_request=True,
-                                                                     region=app.config[ConfigKeys.CS_REGION_KEY])
+                                                                     region=app.config[TalentConfigKeys.CS_REGION_KEY])
 
-        _cloud_search_domain = _cloud_search_connection_layer_2.lookup(app.config[ConfigKeys.CS_DOMAIN_KEY])
+        _cloud_search_domain = _cloud_search_connection_layer_2.lookup(app.config[TalentConfigKeys.CS_DOMAIN_KEY])
         if not _cloud_search_domain:
-            _cloud_search_connection_layer_2.create_domain(app.config[ConfigKeys.CS_DOMAIN_KEY])
+            _cloud_search_connection_layer_2.create_domain(app.config[TalentConfigKeys.CS_DOMAIN_KEY])
 
     return _cloud_search_connection_layer_2
 
@@ -215,7 +215,7 @@ def delete_index_fields():
     Deletes above defined index fields.
     :return:
     """
-    if app.config[ConfigKeys.ENV_KEY] is not 'dev':
+    if app.config[TalentConfigKeys.ENV_KEY] is not 'dev':
         raise Exception("Can't call delete_index_fields() in prod! Use the console instead")
     conn = get_cloud_search_connection()
     for index_field_name in INDEX_FIELD_NAME_TO_OPTIONS:
@@ -445,7 +445,7 @@ def delete_all_candidate_documents():
     It only works on dev domain (to avoid the function hitting accidentally on production)
 
     """
-    if app.config(ConfigKeys.ENV_KEY) is not 'dev':
+    if app.config(TalentConfigKeys.ENV_KEY) is not 'dev':
         raise Exception("Can't call delete_all_candidate_documents() in prod! Use the console instead")
 
     # Get all candidate ids by searching for everything except a nonsense string

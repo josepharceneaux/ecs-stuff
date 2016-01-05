@@ -12,8 +12,9 @@ from widget_app.flask_scripts.url_encode import encode_domain_ids
 from widget_app.flask_scripts.url_encode import encode_widget_ids
 
 manager = Manager(app)
+env = os.getenv('GT_ENVIRONMENT') or 'dev'
 
-if not os.getenv('GT_ENVIRONMENT') == 'dev':
+if env != 'dev':
     raise Exception("Environment variable GT_ENVIRONMENT detecting non dev environment.")
 
 

@@ -34,7 +34,7 @@ import os
 #     return c_id, c_secret
 
 
-env = os.getenv('GT_ENVIRONMENT')
+env = os.getenv('GT_ENVIRONMENT') or 'dev'
 if env == 'dev':
     ENVIRONMENT = 'dev'
     WIDGET_CLIENT_ID = 'dev_client_id'

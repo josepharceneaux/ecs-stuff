@@ -10,7 +10,6 @@ Rather, the properties are obtained from ECS Environment Variables.
 import os
 import logging
 import logging.config
-from flask.config import Config
 
 # load logging configuration file
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -20,7 +19,7 @@ logging.config.fileConfig(LOGGING_CONF)
 LOCAL_CONFIG_PATH = ".talent/web.cfg"
 
 
-class ConfigKeys(object):
+class TalentConfigKeys(object):
 
     CS_REGION_KEY = "CLOUD_SEARCH_REGION"
     CS_DOMAIN_KEY = "CLOUD_SEARCH_DOMAIN"
@@ -37,58 +36,59 @@ class ConfigKeys(object):
     LOGGER = "LOGGER"
 
 
-class TalentConfig(Config):
+def load_gettalent_config(app_config):
+    """
+    Load configuration variables from conf file or environment varaibles
+    :param flask.config.Config app_config: Flask configuration object
+    :return: None
+    """
 
-    app_config = None
+    app_config.root_path = os.path.expanduser('~')
 
-    def __init__(self, app_config):
+    # LOCAL_CONFIG_PATH will not exist for Production and QA that's why we provided silent=True to avoid exception
+    app_config.from_pyfile(LOCAL_CONFIG_PATH, silent=True)
 
-        app_config.root_path = os.path.expanduser('~')
+    for key, value in TalentConfigKeys.__dict__.iteritems():
+        if not key.startswith('__'):
 
-        # LOCAL_CONFIG_PATH will not exist for Production and QA that's why we provided silent=True to avoid exception
-        app_config.from_pyfile(LOCAL_CONFIG_PATH, silent=True)
+            # If a configuration variable is set in environment variables then it should be given preference
+            app_config[value] = os.getenv(value) or app_config.get(value, '')
+            if not app_config[value] and value != 'LOGGER':
+                raise Exception('Configuration variable: "%s" is missing' % value)
 
-        for key, value in ConfigKeys.__dict__.iteritems():
-            if not key.startswith('__'):
+    _set_environment_specific_configurations(app_config)
 
-                # If a configuration variable is set in environment variables then it should be given preference
-                app_config[value] = os.getenv(value) or app_config.get(value, '')
-                if not app_config[value] and value != 'LOGGER':
-                    raise Exception('Configuration variable: "%s" is missing' % value)
 
-        self.app_config = app_config
-        self.__set_environment_specific_configurations()
+def _set_environment_specific_configurations(app_config):
 
-    def __set_environment_specific_configurations(self):
+    environment = app_config.get(TalentConfigKeys.ENV_KEY)
 
-        environment = self.app_config.get(ConfigKeys.ENV_KEY)
+    if environment == 'dev':
+        app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_web:s!loc976892@127.0.0.1/talent_local'
+        app_config['BACKEND_URL'] = app_config['REDIS_URL'] = 'redis://localhost:6379'
+        app_config['LOGGER'] = logging.getLogger("flask_service.dev")
+        app_config['DEBUG'] = True
+    elif environment == 'circle':
+        app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west' \
+                                                     '-1.rds.amazonaws.com/talent_ci'
+        app_config['BACKEND_URL'] = app_config['REDIS_URL'] = 'redis://localhost:6379'
+        app_config['LOGGER'] = logging.getLogger("flask_service.ci")
+        app_config['DEBUG'] = True
+    elif environment == 'qa':
+        app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_web:s!web976892@devdb.gettalent.' \
+                                                     'com/talent_staging'
+        app_config['BACKEND_URL'] = app_config['REDIS_URL'] = 'dev-redis-vpc.znj3iz.0001.usw1.cache.' \
+                                                                        'amazonaws.com:6379'
+        app_config['LOGGER'] = logging.getLogger("flask_service.qa")
+    elif environment == 'prod':
+        app_config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DB_STRING')
+        app_config['BACKEND_URL'] = app_config['REDIS_URL'] = 'redis-prod.znj3iz.0001.' \
+                                                                        'usw1.cache.amazonaws.com:6379'
+        app_config['LOGGER'] = logging.getLogger("flask_service.prod")
+    else:
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")
 
-        if environment == 'dev':
-            self.app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_web:s!loc976892@127.0.0.1/talent_local'
-            self.app_config['BACKEND_URL'] = self.app_config['REDIS_URL'] = 'redis://localhost:6379'
-            self.app_config['LOGGER'] = logging.getLogger("flask_service.dev")
-            self.app_config['DEBUG'] = True
-        elif environment == 'circle':
-            self.app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west' \
-                                                         '-1.rds.amazonaws.com/talent_ci'
-            self.app_config['BACKEND_URL'] = self.app_config['REDIS_URL'] = 'redis://localhost:6379'
-            self.app_config['LOGGER'] = logging.getLogger("flask_service.ci")
-            self.app_config['DEBUG'] = True
-        elif environment == 'qa':
-            self.app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_web:s!web976892@devdb.gettalent.' \
-                                                         'com/talent_staging'
-            self.app_config['BACKEND_URL'] = self.app_config['REDIS_URL'] = 'dev-redis-vpc.znj3iz.0001.usw1.cache.' \
-                                                                            'amazonaws.com:6379'
-            self.app_config['LOGGER'] = logging.getLogger("flask_service.qa")
-        elif environment == 'prod':
-            self.app_config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DB_STRING')
-            self.app_config['BACKEND_URL'] = self.app_config['REDIS_URL'] = 'redis-prod.znj3iz.0001.' \
-                                                                            'usw1.cache.amazonaws.com:6379'
-            self.app_config['LOGGER'] = logging.getLogger("flask_service.prod")
-        else:
-            raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")
-
-        self.app_config['OAUTH2_PROVIDER_TOKEN_EXPIRES_IN'] = 7200  # 2 hours expiry time for bearer token
+    app_config['OAUTH2_PROVIDER_TOKEN_EXPIRES_IN'] = 7200  # 2 hours expiry time for bearer token
 
 
 
