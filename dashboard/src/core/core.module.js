@@ -13,6 +13,7 @@
         'app.config',
 
         // 3rd Party modules
+        '720kb.tooltips',
         'angularUtils.directives.dirPagination',
         'ngTagsInput',
         'pickadate',
