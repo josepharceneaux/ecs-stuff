@@ -49,19 +49,6 @@ def format_phone_number(phone_number, country_code='US'):
         raise InvalidUsage(error_message="format_phone_number(%s, %s): Received other exception" %
                                          (phone_number, country_code))
 
-# def separate_phone_number_extension(phone_number):
-#     """Function will separate out the phone number from the extension"
-#     :param phone_number: a formatted phone number
-#     :rtype  tuple
-#     :return (extension, phone_number)
-#     """
-#     matched = re.match(r'([^a-zA-Z]+)([a-zA-Z]+\D*)(\d+)', phone_number)
-#     if matched:
-#         matched_tuple = matched.groups()
-#         if len(matched_tuple) > 1:
-#             return matched_tuple[2], matched_tuple[0]
-#     return '', phone_number
-
 
 def sanitize_zip_code(zip_code):
     """
