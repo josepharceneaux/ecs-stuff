@@ -37,7 +37,7 @@ from candidate_service.common.error_handling import InvalidUsage, NotFoundError,
 from candidate_service.common.utils.validators import (sanitize_zip_code, is_number, format_phone_number)
 
 # Common utilities
-from flask.ext.common.common.geo_services.geo_coordinates import get_coordinates
+from candidate_service.common.geo_services.geo_coordinates import get_coordinates
 
 ##################################################
 # Helper Functions For Retrieving Candidate Info #
@@ -1369,10 +1369,11 @@ def _add_or_update_phones(candidate_id, phones, user_id, edit_time):
         phone_label = 'Home' if (not phones_has_label and i == 0) else phone.get('label')
         # Format phone number
         value = phone.get('value')
-        phone_number = format_phone_number(value) if value else None
+        phone_number_dict = format_phone_number(value) if value else None
 
         phone_dict = dict(
-            value=phone_number,
+            value=phone_number_dict.get('formatted_number') if phone_number_dict else None,
+            extension=phone_number_dict.get('extension') if phone_number_dict else None,
             phone_label_id = PhoneLabel.phone_label_id_from_phone_label(phone_label=phone_label),
             is_default=is_default
         )

@@ -1,29 +1,30 @@
 """Initializer for Resume Parsing App"""
 __author__ = 'erikfarmer'
-# Third party
 from flask import Flask
-# Module specific
-from resume_service.common.models.db import db
-from resume_service.common.talent_config_manager import TalentConfig, ConfigKeys
-from healthcheck import HealthCheck
 import config
 
 app = Flask(__name__)
-app.config = TalentConfig(app.config).app_config
 app.config.from_object(config)
+logger = app.config['LOGGER']
 
-db.init_app(app)
-db.app = app
+try:
 
-from views import api
-app.register_blueprint(api.mod, url_prefix='/v1')
+    from resume_service.common.models.db import db
+    db.init_app(app)
+    db.app = app
 
-logger = app.config[ConfigKeys.LOGGER]
+    from views import api
+    app.register_blueprint(api.mod, url_prefix='/v1')
 
-# wrap the flask app and give a heathcheck url
-health = HealthCheck(app, "/healthcheck")
+    # wrap the flask app and give a heathcheck url
+    from healthcheck import HealthCheck
+    health = HealthCheck(app, "/healthcheck")
 
-from resume_service.common.error_handling import register_error_handlers
-register_error_handlers(app, logger)
+    from resume_service.common.error_handling import register_error_handlers
+    register_error_handlers(app, logger)
 
-logger.info("Starting resume_service in %s environment", app.config[ConfigKeys.ENV_KEY])
+    logger.info("Starting resume_service in %s environment", app.config['GT_ENVIRONMENT'])
+
+except Exception as e:
+    logger.exception("Couldn't start resume_service in %s environment because: %s"
+                     % (app.config['GT_ENVIRONMENT'], e.message))

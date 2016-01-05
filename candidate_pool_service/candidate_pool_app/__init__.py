@@ -1,42 +1,49 @@
 __author__ = 'ufarooqi'
 
 from flask import Flask
-from healthcheck import HealthCheck
-from candidate_pool_service.common.models.db import db
-from candidate_pool_service.common.redis_cache import redis_store
-from candidate_pool_service.common.talent_config_manager import TalentConfig, ConfigKeys
+from candidate_pool_service.common import common_config
 
 app = Flask(__name__)
-app.config = TalentConfig(app.config).app_config
+app.config.from_object(common_config)
 
-logger = app.config[ConfigKeys.LOGGER]
-from candidate_pool_service.common.error_handling import register_error_handlers
-print "register error handlers"
-register_error_handlers(app, logger)
+logger = app.config['LOGGER']
 
-db.init_app(app)
-db.app = app
+try:
+    from candidate_pool_service.common.error_handling import register_error_handlers
+    print "register error handlers"
+    register_error_handlers(app, logger)
 
-# Initialize Redis Cache
-redis_store.init_app(app)
 
-# wrap the flask app and give a heathcheck url
-health = HealthCheck(app, "/healthcheck")
+    from candidate_pool_service.common.models.db import db
+    db.init_app(app)
+    db.app = app
 
-from api.talent_pools import talent_pool_blueprint
-from api.talent_pipelines import talent_pipeline_blueprint
-from api.smartlists import smartlist_blueprint
+    # Initialize Redis Cache
+    from candidate_pool_service.common.redis_cache import redis_store
+    redis_store.init_app(app)
 
-app.register_blueprint(talent_pipeline_blueprint, url_prefix='/v1')
-app.register_blueprint(talent_pool_blueprint, url_prefix='/v1')
-app.register_blueprint(smartlist_blueprint, url_prefix='/v1')
+    # wrap the flask app and give a heathcheck url
+    from healthcheck import HealthCheck
+    health = HealthCheck(app, "/healthcheck")
 
-db.create_all()
-db.session.commit()
+    from api.talent_pools import talent_pool_blueprint
+    from api.talent_pipelines import talent_pipeline_blueprint
+    from api.smartlists import smartlist_blueprint
 
-from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import \
-    schedule_talent_pool_and_pipelines_daily_stats_update
+    app.register_blueprint(talent_pipeline_blueprint, url_prefix='/v1')
+    app.register_blueprint(talent_pool_blueprint, url_prefix='/v1')
+    app.register_blueprint(smartlist_blueprint, url_prefix='/v1')
 
-schedule_talent_pool_and_pipelines_daily_stats_update()
+    db.create_all()
+    db.session.commit()
 
-logger.info("Starting candidate_pool_service in %s environment", app.config[ConfigKeys.LOGGER])
+    from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import \
+        schedule_talent_pool_and_pipelines_daily_stats_update
+
+    schedule_talent_pool_and_pipelines_daily_stats_update()
+
+    logger.info("Starting candidate_pool_service in %s environment", app.config['GT_ENVIRONMENT'])
+
+except Exception as e:
+    logger.exception("Couldn't start candidate_pool_service in %s environment because: %s"
+                     % (app.config['GT_ENVIRONMENT'], e.message))

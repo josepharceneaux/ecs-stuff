@@ -1,34 +1,41 @@
 __author__ = 'ufarooqi'
 
 from flask import Flask
-from healthcheck import HealthCheck
 from flask_oauthlib.provider import OAuth2Provider
-from auth_service.common.models.db import db
-from auth_service.common.talent_config_manager import TalentConfig, ConfigKeys
+from auth_service.common import common_config
 
 app = Flask(__name__)
-app.config = TalentConfig(app.config).app_config
+app.config.from_object(common_config)
 
-logger = app.config[ConfigKeys.LOGGER]
-from auth_service.common.error_handling import register_error_handlers
-print "register error handlers"
-register_error_handlers(app, logger)
+logger = app.config['LOGGER']
 
-db.init_app(app)
-db.app = app
+try:
+    from auth_service.common.error_handling import register_error_handlers
+    print "register error handlers"
+    register_error_handlers(app, logger)
 
-# wrap the flask app and give a heathcheck url
-health = HealthCheck(app, "/healthcheck")
+    from auth_service.common.models.db import db
+    db.init_app(app)
+    db.app = app
 
-gt_oauth = OAuth2Provider()
-gt_oauth.init_app(app)
+    # wrap the flask app and give a heathcheck url
 
-from oauth_utilities import GetTalentOauthValidator
-gt_oauth._validator = GetTalentOauthValidator()
+    from healthcheck import HealthCheck
+    health = HealthCheck(app, "/healthcheck")
 
-import views
+    gt_oauth = OAuth2Provider()
+    gt_oauth.init_app(app)
 
-db.create_all()
-db.session.commit()
+    from oauth_utilities import GetTalentOauthValidator
+    gt_oauth._validator = GetTalentOauthValidator()
 
-logger.info("Starting auth_service in %s environment", app.config[ConfigKeys.ENV_KEY])
+    import views
+
+    db.create_all()
+    db.session.commit()
+
+    logger.info("Starting auth_service in %s environment", app.config['GT_ENVIRONMENT'])
+
+except Exception as e:
+    logger.exception("Couldn't start auth_service in %s environment because: %s"
+                     % (app.config['GT_ENVIRONMENT'], e.message))
