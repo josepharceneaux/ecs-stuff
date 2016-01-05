@@ -1369,11 +1369,11 @@ def _add_or_update_phones(candidate_id, phones, user_id, edit_time):
         phone_label = 'Home' if (not phones_has_label and i == 0) else phone.get('label')
         # Format phone number
         value = phone.get('value')
-        phone_number_tuple = format_phone_number(value) if value else None
+        phone_number_dict = format_phone_number(value) if value else None
 
         phone_dict = dict(
-            value=phone_number_tuple[0] if phone_number_tuple else None,
-            extension=phone_number_tuple[1] if phone_number_tuple else None,
+            value=phone_number_dict.get('formatted_number'),
+            extension=phone_number_dict.get('extension'),
             phone_label_id = PhoneLabel.phone_label_id_from_phone_label(phone_label=phone_label),
             is_default=is_default
         )
