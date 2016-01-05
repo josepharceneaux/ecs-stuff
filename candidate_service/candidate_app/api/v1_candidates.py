@@ -14,7 +14,10 @@ from candidate_service.modules.validators import (
     does_candidate_belong_to_user, is_custom_field_authorized,
     is_area_of_interest_authorized, is_number
 )
-from candidate_service.modules.resource_schemas import validate_request_body_keys
+from candidate_service.modules.json_schema import (
+    candidates_resource_schema_post, candidates_resource_schema_patch
+)
+from jsonschema import validate, FormatChecker
 
 # Decorators
 from candidate_service.common.utils.auth_utils import require_oauth
@@ -31,7 +34,6 @@ from candidate_service.common.models.candidate import (
 )
 from candidate_service.common.models.misc import AreaOfInterest, CustomField
 from candidate_service.common.models.associations import CandidateAreaOfInterest
-from candidate_service.common.models.user import User
 
 # Module
 from candidate_service.modules.talent_candidates import (
@@ -123,27 +125,15 @@ class CandidatesResource(Resource):
         if not any(body_dict):
             raise InvalidUsage(error_message="JSON body cannot be empty.")
 
-        # Retrieve candidate object(s)
-        list_of_candidate_dicts = body_dict.get('candidates') or [body_dict.get('candidate')]
-
-        # list_of_candidate_dicts must be in a list
-        if not isinstance(list_of_candidate_dicts, list):
-            list_of_candidate_dicts = [list_of_candidate_dicts]
-
-        # List of Candidate dicts must not be empty
-        if not any(list_of_candidate_dicts):
-            error_message = "Missing input: At least one Candidate-object is required for candidate creation"
-            raise InvalidUsage(error_message=error_message)
+        # Validate json data
+        try:
+            validate(instance=body_dict, schema=candidates_resource_schema_post,
+                     format_checker=FormatChecker())
+        except Exception as e:
+            raise InvalidUsage(error_message=e.message)
 
         created_candidate_ids = []
-        for candidate_dict in list_of_candidate_dicts:
-
-            # Candidate object must contain valid keys/fields
-            # validate_request_body_keys(request_body=candidate_dict) TODO: update to handle all fields from the db
-
-            # Ensure emails list is provided
-            if not candidate_dict.get('emails'):
-                raise InvalidUsage(error_message="Email address is required for creating candidate")
+        for candidate_dict in body_dict.get('candidates'):
 
             emails = [{'label': email.get('label'), 'address': email.get('address'),
                        'is_default': email.get('is_default')} for email in candidate_dict.get('emails')]
@@ -171,47 +161,33 @@ class CandidatesResource(Resource):
             if not is_authorized:
                 raise ForbiddenError(error_message="Unauthorized area of interest IDs")
 
-            # TODO: Validate all input formats and existence
-            user_id = authed_user.id
-            addresses = candidate_dict.get('addresses')
-            first_name = candidate_dict.get('first_name')
-            last_name = candidate_dict.get('last_name')
-            full_name = candidate_dict.get('full_name')
-            status_id = body_dict.get('status_id')
-            phones = candidate_dict.get('phones')
-            educations = candidate_dict.get('educations')
-            military_services = candidate_dict.get('military_services')
-            social_networks = candidate_dict.get('social_networks')
-            work_experiences = candidate_dict.get('work_experiences')
-            work_preference = candidate_dict.get('work_preference')
-            preferred_locations = candidate_dict.get('preferred_locations')
-            skills = candidate_dict.get('skills')
-            dice_social_profile_id = body_dict.get('openweb_id')
-            dice_profile_id = body_dict.get('dice_profile_id')
-            talent_pool_ids = candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []})
-
             resp_dict = create_or_update_candidate_from_params(
-                user_id=user_id,
+                user_id=authed_user.id,
                 is_creating=True,
-                first_name=first_name,
-                last_name=last_name,
-                formatted_name=full_name,
-                status_id=status_id,
+                first_name=candidate_dict.get('first_name'),
+                middle_name=candidate_dict.get('middle_name'),
+                last_name=candidate_dict.get('last_name'),
+                formatted_name=candidate_dict.get('full_name'),
+                status_id=candidate_dict.get('status_id'),
                 emails=emails,
-                phones=phones,
-                addresses=addresses,
-                educations=educations,
-                military_services=military_services,
+                phones=candidate_dict.get('phones'),
+                addresses=candidate_dict.get('addresses'),
+                educations=candidate_dict.get('educations'),
+                military_services=candidate_dict.get('military_services'),
                 areas_of_interest=areas_of_interest,
                 custom_fields=custom_fields,
-                social_networks=social_networks,
-                work_experiences=work_experiences,
-                work_preference=work_preference,
-                preferred_locations=preferred_locations,
-                skills=skills,
-                dice_social_profile_id=dice_social_profile_id,
-                dice_profile_id=dice_profile_id,
-                talent_pool_ids=talent_pool_ids,
+                social_networks=candidate_dict.get('social_networks'),
+                work_experiences=candidate_dict.get('work_experiences'),
+                work_preference=candidate_dict.get('work_preference'),
+                preferred_locations=candidate_dict.get('preferred_locations'),
+                skills=candidate_dict.get('skills'),
+                dice_social_profile_id=candidate_dict.get('openweb_id'),
+                dice_profile_id=candidate_dict.get('dice_profile_id'),
+                added_time=candidate_dict.get('added_time'),
+                source_id=candidate_dict.get('source_id'),
+                objective=candidate_dict.get('objective'),
+                summary=candidate_dict.get('summary'),
+                talent_pool_ids=candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []})
             )
             created_candidate_ids.append(resp_dict['candidate_id'])
 
@@ -240,25 +216,17 @@ class CandidatesResource(Resource):
         if not any(body_dict):
             raise InvalidUsage(error_message="JSON body cannot be empty.")
 
-        # Retrieve candidate object(s)
-        list_of_candidate_dicts = body_dict.get('candidates') or [body_dict.get('candidate')]
-
-        # list_of_candidate_dicts must be in a list
-        if not isinstance(list_of_candidate_dicts, list):
-            list_of_candidate_dicts = [list_of_candidate_dicts]
-
-        # List of Candidate dicts must not be empty
-        if not any(list_of_candidate_dicts):
-            error_message = "Missing input: At least one Candidate-object is required for candidate creation"
-            raise InvalidUsage(error_message=error_message)
+        # Validate json data
+        try:
+            validate(instance=body_dict, schema=candidates_resource_schema_patch,
+                     format_checker=FormatChecker())
+        except Exception as e:
+            raise InvalidUsage(error_message=e.message)
 
         updated_candidate_ids = []
-        for candidate_dict in list_of_candidate_dicts:
+        for candidate_dict in body_dict.get('candidates'):
 
-            # Candidate object must contain valid keys/fields
-            # validate_request_body_keys(request_body=candidate_dict) TODO: update to handle all fields from the db
-
-            emails = candidate_dict.get('emails') # TODO: validate emails and format
+            emails = candidate_dict.get('emails')
             if emails:
                 emails = [{'id': email.get('id'), 'label': email.get('label'), 'address': email.get('address'),
                            'is_default': email.get('is_default')} for email in candidate_dict.get('emails')]
@@ -288,49 +256,34 @@ class CandidatesResource(Resource):
             if not is_authorized:
                 raise ForbiddenError(error_message="Unauthorized area of interest IDs")
 
-            # TODO: Validate all input formats and existence
-            user_id = authed_user.id
-            candidate_id = candidate_dict.get('id')
-            addresses = candidate_dict.get('addresses')
-            first_name = candidate_dict.get('first_name')
-            last_name = candidate_dict.get('last_name')
-            full_name = candidate_dict.get('full_name')
-            status_id = body_dict.get('status_id')
-            phones = candidate_dict.get('phones')
-            educations = candidate_dict.get('educations')
-            military_services = candidate_dict.get('military_services')
-            social_networks = candidate_dict.get('social_networks')
-            work_experiences = candidate_dict.get('work_experiences')
-            work_preference = candidate_dict.get('work_preference')
-            preferred_locations = candidate_dict.get('preferred_locations')
-            skills = candidate_dict.get('skills')
-            dice_social_profile_id = body_dict.get('openweb_id')
-            dice_profile_id=body_dict.get('dice_profile_id')
-            talent_pool_ids = candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []})
-
             resp_dict = create_or_update_candidate_from_params(
-                user_id=user_id,
+                user_id=authed_user.id,
                 is_updating=True,
-                candidate_id=candidate_id,
-                first_name=first_name,
-                last_name=last_name,
-                formatted_name=full_name,
-                status_id=status_id,
+                candidate_id=candidate_dict.get('id'),
+                first_name=candidate_dict.get('first_name'),
+                middle_name=candidate_dict.get('middle_name'),
+                last_name=candidate_dict.get('last_name'),
+                formatted_name=candidate_dict.get('full_name'),
+                status_id=candidate_dict.get('status_id'),
                 emails=emails,
-                phones=phones,
-                addresses=addresses,
-                educations=educations,
-                military_services=military_services,
+                phones=candidate_dict.get('phones'),
+                addresses=candidate_dict.get('addresses'),
+                educations=candidate_dict.get('educations'),
+                military_services=candidate_dict.get('military_services'),
                 areas_of_interest=areas_of_interest,
                 custom_fields=custom_fields,
-                social_networks=social_networks,
-                work_experiences=work_experiences,
-                work_preference=work_preference,
-                preferred_locations=preferred_locations,
-                skills=skills,
-                dice_social_profile_id=dice_social_profile_id,
-                dice_profile_id=dice_profile_id,
-                talent_pool_ids=talent_pool_ids
+                social_networks=candidate_dict.get('social_networks'),
+                work_experiences=candidate_dict.get('work_experiences'),
+                work_preference=candidate_dict.get('work_preference'),
+                preferred_locations=candidate_dict.get('preferred_locations'),
+                skills=candidate_dict.get('skills'),
+                dice_social_profile_id=candidate_dict.get('openweb_id'),
+                dice_profile_id=candidate_dict.get('dice_profile_id'),
+                added_time=candidate_dict.get('added_time'),
+                source_id=candidate_dict.get('source_id'),
+                objective=candidate_dict.get('objective'),
+                summary=candidate_dict.get('summary'),
+                talent_pool_ids=candidate_dict.get('talent_pool_id', {'add': [], 'delete': []})
             )
             updated_candidate_ids.append(resp_dict['candidate_id'])
 
