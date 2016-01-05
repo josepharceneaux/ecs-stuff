@@ -13,7 +13,7 @@ app.config.from_object(config)
 db.init_app(app)
 db.app = app
 
-app.register_blueprint(api.mod, url_prefix='/v1')
+app.register_blueprint(api.PARSE_MOD, url_prefix='/v1')
 
 logger = app.config['LOGGER']
 

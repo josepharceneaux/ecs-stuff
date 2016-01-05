@@ -14,11 +14,11 @@ from .utils import create_candidate_from_parsed_resume
 from resume_service.common.utils.talent_s3 import download_file, get_s3_filepicker_bucket_and_conn
 from resume_service.common.utils.auth_utils import require_oauth
 
-mod = Blueprint('resume_api', __name__)
+PARSE_MOD = Blueprint('resume_api', __name__)
 
 
 # Enable CORS
-CORS(mod, resources={
+CORS(PARSE_MOD, resources={
     r'/parse_resume': {
         'origins': '*',
         'allow_headers': ['Content-Type', 'Authorization']
@@ -26,12 +26,13 @@ CORS(mod, resources={
 })
 
 
-@mod.route('/')
+@PARSE_MOD.route('/')
 def index():
+    """Uptime checkable URL"""
     return '/parse_resume'
 
 
-@mod.route('/parse_resume', methods=['POST'])
+@PARSE_MOD.route('/parse_resume', methods=['POST'])
 @require_oauth()
 def parse_file_picker_resume():
     """
@@ -68,7 +69,7 @@ def _parse_file_picker_resume(parse_params):
     filepicker_key = parse_params.get('filepicker_key')
     create_candidate = parse_params.get('create_candidate')
     if filepicker_key:
-        file_picker_bucket, conn = get_s3_filepicker_bucket_and_conn()
+        file_picker_bucket, unused_conn = get_s3_filepicker_bucket_and_conn()
         filename_str = filepicker_key
         resume_file = download_file(file_picker_bucket, filename_str)
     elif parse_params.get('filename'):

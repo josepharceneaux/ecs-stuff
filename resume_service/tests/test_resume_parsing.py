@@ -6,18 +6,17 @@ import os
 # Third party
 import requests as r
 # Module Specific.
-from resume_service.common.utils.handy_functions import random_word
 # Test fixtures, imports required even though not 'used'
-from test_fixtures import client_fixture
-from test_fixtures import country_fixture
-from test_fixtures import culture_fixture
-from test_fixtures import domain_fixture
-from test_fixtures import email_label_fixture
-from test_fixtures import org_fixture
-from test_fixtures import token_fixture
-from test_fixtures import user_fixture
-from test_fixtures import phone_label_fixture
-from test_fixtures import product_fixture
+from resume_service.tests.test_fixtures import client_fixture
+from resume_service.tests.test_fixtures import country_fixture
+from resume_service.tests.test_fixtures import culture_fixture
+from resume_service.tests.test_fixtures import domain_fixture
+from resume_service.tests.test_fixtures import email_label_fixture
+from resume_service.tests.test_fixtures import org_fixture
+from resume_service.tests.test_fixtures import token_fixture
+from resume_service.tests.test_fixtures import user_fixture
+from resume_service.tests.test_fixtures import phone_label_fixture
+from resume_service.tests.test_fixtures import product_fixture
 
 APP_URL = 'http://0.0.0.0:8003/v1'
 API_URL = APP_URL + '/parse_resume'
@@ -117,19 +116,9 @@ def test_v15_pdf_by_post(token_fixture):
     assert 'id' in response['candidate']
 
 
-def test_batch_process():
-    # user_id = random_word(6)
-    # queue_string = 'batch:{}:fp_keys'.format(user_id)
-    # unused_response = add_fp_keys_to_queue(['0169173d35beaf1053e79fdf1b5db864.docx'], user_id)
-    # redis_client.expire(queue_string, 20)
-    # resume_dict = process_batch(user_id, create_candidate=False)
-    # assert 'candidate' in resume_dict
-    pass
-
-
 def test_health_check():
-    import requests
-    response = requests.get('http://127.0.0.1:8003/healthcheck')
+    """HealthCheck/PingDom test endpoint."""
+    response = r.get('http://127.0.0.1:8003/healthcheck')
     assert response.status_code == 200
 
 
@@ -138,19 +127,19 @@ def fetch_resume_post_response(token_fixture, file_name, create_mode=''):
     current_dir = os.path.dirname(__file__)
     with open(os.path.join(current_dir, 'test_resumes/{}'.format(file_name)), 'rb') as resume_file:
         response = r.post(API_URL,
-                            headers={'Authorization': 'Bearer %s' % token_fixture.access_token},
-                            data=dict(
-                                # files = dict(resume_file=raw_file),
-                                resume_file_name=file_name,
-                                create_candidate=create_mode,
-                            ),
-                          files = dict(resume_file=resume_file),
-                          )
+                          headers={'Authorization': 'Bearer %s' % token_fixture.access_token},
+                          data=dict(
+                              resume_file_name=file_name,
+                              create_candidate=create_mode,
+                          ),
+                          files=dict(resume_file=resume_file),
+                         )
     return json.loads(response.content)
 
 
 def fetch_resume_fp_key_response(token_fixture, fp_key):
     """Posts FilePicker key to local test auth server for json formatted resumes."""
-    test_response = r.post(API_URL, headers={'Authorization': 'Bearer %s' % token_fixture.access_token},
+    test_response = r.post(API_URL,
+                           headers={'Authorization': 'Bearer %s' % token_fixture.access_token},
                            data=dict(filepicker_key=fp_key))
     return json.loads(test_response.content)

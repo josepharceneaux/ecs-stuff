@@ -33,6 +33,13 @@ def post_files_to_queue():
 @BATCH_MOD.route('/process/<int:user_id>', methods=['POST'])
 @require_oauth
 def process_batch_item(user_id, create_candidate=True, oauth=None):
+    """
+    Endpoint for scheduler service to parse resumes update status data.
+    :param user_id:
+    :param create_candidate:
+    :param oauth:
+    :return:
+    """
     queue_string = 'batch:{}:fp_keys'.format(user_id)
     fp_key = redis_client.lpop(queue_string)
     # we need to get the token from the db
