@@ -17,7 +17,7 @@ from candidate_service.common.models.user import User, Domain
 from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.error_handling import InternalServerError
 from candidate_service.common import talent_property_manager
-from flask.ext.common.common.geo_services.geo_coordinates import get_geocoordinates_bounding
+from candidate_service.common.geo_services.geo_coordinates import get_geocoordinates_bounding
 
 API_VERSION = "2013-01-01"
 MYSQL_DATE_FORMAT = '%Y-%m-%dT%H:%i:%S.%fZ'

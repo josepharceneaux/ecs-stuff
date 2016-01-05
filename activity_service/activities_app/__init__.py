@@ -2,23 +2,29 @@
 __author__ = 'Erik Farmer'
 
 from flask import Flask
-from activity_service.common.models.db import db
-from views import api
-from activity_service.common.error_handling import register_error_handlers
-from healthcheck import HealthCheck
 
 app = Flask(__name__)
 app.config.from_object('activity_service.config')
-app.register_blueprint(api.mod)
 
 logger = app.config['LOGGER']
 
-db.init_app(app)
-db.app = app
+try:
+    from activity_service.common.models.db import db
+    db.init_app(app)
+    db.app = app
 
-# wrap the flask app and give a heathcheck url
-health = HealthCheck(app, "/healthcheck")
+    from views import api
+    app.register_blueprint(api.mod)
 
-register_error_handlers(app, logger)
+    # wrap the flask app and give a heathcheck url
+    from healthcheck import HealthCheck
+    health = HealthCheck(app, "/healthcheck")
 
-logger.info("Starting activity_service in %s environment", app.config['GT_ENVIRONMENT'])
+    from activity_service.common.error_handling import register_error_handlers
+    register_error_handlers(app, logger)
+
+    logger.info("Starting activity_service in %s environment", app.config['GT_ENVIRONMENT'])
+
+except Exception as e:
+    logger.exception("Couldn't start activity_service in %s environment because: %s"
+                     % (app.config['GT_ENVIRONMENT'], e.message))
