@@ -17,15 +17,15 @@
     "tests"
   ],
   "devDependencies": {
-    "angular-mocks": "~1.4.0",
+    "angular-mocks": "~1.4.8",
     "bardjs": "~0.1.4"
   },
   "dependencies": {
-    "angular": "~1.4.0",
-    "angular-cookies":  "~1.4.0",
+    "angular": "~1.4.8",
+    "angular-cookies": "~1.4.8",
     "angular-moment": "~0.10.3",
     "angular-oauth2": "~3.0.1",
-    "angular-sanitize": "~1.4.0",
+    "angular-sanitize": "~1.4.8",
     "angular-tooltips": "~1.0.6",
     "angular-toastr": "~1.4.1",
     "angular-ui-router": "~0.2.15",
