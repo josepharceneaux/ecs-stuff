@@ -109,7 +109,7 @@ class TestSendSmsCampaign(object):
         assert 'No Smartlist'.lower() in response_post.json()['error']['message'].lower()
 
     def test_post_with_no_smartlist_candidate(self, auth_token,
-                                              sms_campaign_of_current_user,
+                                              scheduled_sms_campaign_of_current_user,
                                               sms_campaign_smartlist):
         """
         User auth token is valid, campaign has one smart list associated. But smartlist has
@@ -118,7 +118,7 @@ class TestSendSmsCampaign(object):
         :return:
         """
         response_post = requests.post(
-            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.SEND % scheduled_sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_post.status_code == InternalServerError.http_status_code(), \
             'It should be internal server error (500)'
@@ -127,7 +127,8 @@ class TestSendSmsCampaign(object):
         assert 'No Candidate'.lower() in response_post.json()['error']['message'].lower()
 
     def test_post_with_one_smartlist_two_candidates_with_no_phone(
-            self, auth_token, sample_user, sms_campaign_of_current_user, sms_campaign_smartlist,
+            self, auth_token, sample_user, scheduled_sms_campaign_of_current_user,
+            sms_campaign_smartlist,
             sample_sms_campaign_candidates):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
@@ -135,17 +136,15 @@ class TestSendSmsCampaign(object):
         :return:
         """
         response_post = requests.post(
-            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.SEND % scheduled_sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
-        assert_on_blasts_sends_url_conversion_and_activity(sample_user.id,
-                                                           0,
-                                                           str(sms_campaign_of_current_user.id))
+        assert_api_send_response(scheduled_sms_campaign_of_current_user, response_post, 200)
+        assert_on_blasts_sends_url_conversion_and_activity(
+            sample_user.id, 0, str(scheduled_sms_campaign_of_current_user.id))
 
     def test_pre_process_celery_task_with_two_candidates_having_same_phone(
-            self, auth_token, sms_campaign_of_current_user, sample_user, sms_campaign_smartlist,
-            sample_sms_campaign_candidates, candidates_with_same_phone,
-            candidate_first, candidate_second):
+            self, auth_token, sample_user, sms_campaign_smartlist, sample_sms_campaign_candidates,
+            candidates_with_same_phone, candidate_first, candidate_second):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates. Both candidates have same phone numbers. It should return Internal server error.
@@ -157,3 +156,18 @@ class TestSendSmsCampaign(object):
             obj.pre_process_celery_task([candidate_first, candidate_second])
         except MultipleCandidatesFound as error:
             assert error.error_code == SmsCampaignApiException.MULTIPLE_CANDIDATES_FOUND
+
+    def test_pre_process_celery_task_with_no_auth_token(
+            self, sample_user, sms_campaign_smartlist, sample_sms_campaign_candidates,
+            candidates_with_same_phone, candidate_first, candidate_second):
+        """
+        User auth token is valid, campaign has one smart list associated. Smartlist has two
+        candidates. Both candidates have same phone numbers. It should return Internal server error.
+        Error code should be 5008 (MultipleCandidatesFound)
+        :return:
+        """
+        try:
+            obj = SmsCampaignBase(sample_user.id)
+            obj.pre_process_celery_task([candidate_first, candidate_second])
+        except ResourceNotFound as error:
+            assert error.status_code == ResourceNotFound.http_status_code()

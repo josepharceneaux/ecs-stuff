@@ -16,7 +16,6 @@ if GT_ENVIRONMENT == 'dev':
     BACKEND_URL = 'redis://localhost:6379'
     REDIS_URL = 'redis://localhost:6379'
     LOGGER = logging.getLogger("flask_service.dev")
-    REDIS_SERVER_URL = 'redis://localhost:6379'
     IS_DEV = True
     DEBUG = True
 elif GT_ENVIRONMENT == 'circle':
@@ -24,7 +23,6 @@ elif GT_ENVIRONMENT == 'circle':
     BACKEND_URL = 'redis://0.0.0.0:6379'
     REDIS_URL = 'redis://0.0.0.0:6379'
     LOGGER = logging.getLogger("flask_service.ci")
-    REDIS_SERVER_URL = 'redis://localhost:6379'
     IS_DEV = True
     DEBUG = True
 elif GT_ENVIRONMENT == 'qa':
@@ -32,7 +30,6 @@ elif GT_ENVIRONMENT == 'qa':
     BACKEND_URL = 'dev-redis-vpc.znj3iz.0001.usw1.cache.amazonaws.com:6379'
     REDIS_URL = 'dev-redis-vpc.znj3iz.0001.usw1.cache.amazonaws.com:6379'
     LOGGER = logging.getLogger("flask_service.qa")
-    REDIS_SERVER_URL = 'dev-redis-vpc.znj3iz.0001.usw1.cache.amazonaws.com:6379'
     IS_DEV = True
     DEBUG = False
 elif GT_ENVIRONMENT == 'prod':
@@ -40,7 +37,6 @@ elif GT_ENVIRONMENT == 'prod':
     BACKEND_URL = 'redis-prod.znj3iz.0001.usw1.cache.amazonaws.com:6379'
     REDIS_URL = 'redis-prod.znj3iz.0001.usw1.cache.amazonaws.com:6379'
     LOGGER = logging.getLogger("flask_service.prod")
-    REDIS_SERVER_URL = 'redis-prod.znj3iz.0001.usw1.cache.amazonaws.com:6379'
     IS_DEV = False
     DEBUG = False
 else:

@@ -8,10 +8,25 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com
 import importlib
 from datetime import datetime
 
-# Application Specific
+# Third Party
+from ska import sign_url, Signature
+from pytz import timezone
+from dateutil.tz import tzutc
 from flask import current_app
+
+# Application Specific
+from ..models.misc import UrlConversion
 from ..error_handling import InvalidUsage
+from ..talent_property_manager import get_secret_key
 from ..utils.activity_utils import ActivityMessageIds
+
+
+class CampaignName(object):
+    """
+    This is the class to avoid global variables for names of campaign
+    """
+    SMS = 'sms_campaign'
+    PUSH = 'push_campaign'
 
 
 class FrequencyIds(object):
@@ -67,6 +82,19 @@ def to_utc_str(dt):
     return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def unix_time(dt):
+    """
+    Converts dt(UTC) datetime object to epoch in seconds
+    :param dt:
+    :type dt: datetime
+    :return: returns epoch time in milliseconds.
+    :rtype: long
+    """
+    epoch = datetime(1970, 1, 1, tzinfo=timezone('UTC'))
+    delta = dt - epoch
+    return delta.total_seconds()
+
+
 def get_model(file_name, model_name):
     """
     This function is used to import module from given parameters.
@@ -103,3 +131,62 @@ def get_activity_type(activity_message_id):
     if not getattr(ActivityMessageIds, activity_message_id):
         raise InvalidUsage('No Activity message %s found for id.' % activity_message_id)
     return getattr(ActivityMessageIds, activity_message_id)
+
+
+def get_candidate_url_conversion_campaign_send_and_blast_obj(campaign_send_url_conversion_obj,
+                                                             campaign_name):
+    """
+    Depending on campaign name and CampaignSendUrlConversion (e.g. SmsCampaignSendUrlConversion)
+    model, here we get candidate obj, url_conversion obj, campaign_send obj and campaign_blast obj.
+    :param campaign_send_url_conversion_obj:
+    :param campaign_name: name of campaign in snake_case format
+    :type campaign_send_url_conversion_obj: SmsCampaignSendUrlConversion etc
+    :type campaign_name: str
+    :return: candidate obj, url_conversion obj, campaign_send obj and campaign_blast obj.
+    :rtype: tuple
+    """
+    # get url_conversion obj
+    url_conversion_obj = UrlConversion.get_by_id(campaign_send_url_conversion_obj.url_conversion_id)
+    # get campaign_send object
+    campaign_send_obj = getattr(campaign_send_url_conversion_obj, campaign_name + '_send')
+    # get campaign_blast object
+    campaign_blast_obj = getattr(campaign_send_obj, campaign_name + '_blast')
+    # get candidate object
+    candidate_obj = getattr(campaign_send_obj, 'candidate')
+    return candidate_obj, url_conversion_obj, campaign_send_obj, campaign_blast_obj
+
+
+def sign_redirect_url(redirect_url, end_datetime):
+    """
+    This function is used to sign the redirect URL (URL to redirect candidate to our app when
+    candidate clicks on a URL in SMS campaign or Email campaign etc.)
+    This used ska
+    :param redirect_url: URL for redirection. e.g. http://127.0.0.1:8012/redirect/1
+    :param end_datetime: end_datetime of campaign
+    :type redirect_url: str
+    :type end_datetime: datetime
+    :return:
+    """
+    if not isinstance(end_datetime, datetime):
+        raise InvalidUsage('end_datetime must be instance of datetime')
+    return sign_url(auth_user='no_user', secret_key=get_secret_key(), url=redirect_url,
+                    valid_until=unix_time(end_datetime.replace(tzinfo=tzutc())))
+
+
+def validate_signed_url(request_args):
+    """
+    This validates the signed url by checking
+    1) if secret_key provided is same as was given at time of signing the URL
+    2) valid_until datetime is in future
+    3) signature is valid
+    4) auth_user is same as was given at the time of signing the URL
+    5) extra params are same as were given
+    :param request_args: arguments of request
+    :return: True if signature is valid, False otherwise
+    :rtype: bool
+    """
+    return Signature.validate_signature(signature=request_args['signature'],
+                                        auth_user=request_args['auth_user'],
+                                        valid_until=request_args['valid_until'],
+                                        extra=request_args['extra'],
+                                        secret_key=get_secret_key())

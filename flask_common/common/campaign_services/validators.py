@@ -172,8 +172,9 @@ def validate_blast_candidate_url_conversion_in_db(campaign_blast_obj, candidate,
     :type candidate: Candidate
     :type url_conversion_obj: UrlConversion
     :exception: ResourceNotFound
+
     **See Also**
-    .. see also:: sms_campaign_url_redirection() function in sms_campaign_app/app.py
+    .. see also:: process_url_redirect() method of CampaignBase class
     """
     # check if candidate exists in database
     if not candidate:

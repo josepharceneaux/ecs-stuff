@@ -8,6 +8,7 @@ import re
 import time
 
 # Common Utils
+from sms_campaign_service.common.campaign_services.campaign_utils import validate_signed_url
 from sms_campaign_service.common.models.db import db
 from sms_campaign_service.common.routes import SmsCampaignApi
 from user_service.common.error_handling import MethodNotAllowed
@@ -44,12 +45,6 @@ def assert_url_conversion(sms_campaign_sends, campaign_id):
     for send_url_conversion in campaign_send_url_conversions:
         # get URL conversion record from database table 'url_conversion'
         url_conversion = UrlConversion.get_by_id(send_url_conversion.url_conversion_id)
-        # assert if source_url is in valid form i.e,
-        # 'http://127.0.0.1:8011/v1/campaigns/1710/url_redirection/1453/?candidate_id=780'
-        assert re.match('(/campaigns/)\w+(/redirect/)\w+(\?candidate_id=)',
-                        url_conversion.source_url.split(SmsCampaignApi.VERSION)[1])
-        # assert that campaign_id is in source URL
-        assert campaign_id in url_conversion.source_url
         # assert that url_conversion_id is in source URL
         assert str(url_conversion.id) in url_conversion.source_url
         # delete url_conversion record
@@ -129,7 +124,8 @@ def assert_api_send_response(campaign, response, expected_status_code):
     :param response: HTTP POST response
     :param expected_status_code: status code like 200, 404
     """
-    assert response.status_code == expected_status_code, 'Response should be' + expected_status_code
+    assert response.status_code == expected_status_code, \
+        'Response should be ' + str(expected_status_code)
     assert response.json()
     json_resp = response.json()
     assert str(campaign.id) in json_resp['message']

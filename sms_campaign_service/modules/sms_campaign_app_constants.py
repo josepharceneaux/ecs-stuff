@@ -24,5 +24,5 @@ TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"
 
 # TODO: remove this when app is up
-NGROK_URL = 'http://6b20c71b.ngrok.io%s'
+NGROK_URL = 'http://3184f3f4.ngrok.io%s'
 

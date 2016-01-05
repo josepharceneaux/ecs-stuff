@@ -35,15 +35,16 @@ from ...common.models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
 # Common Utils
 from ..utils.scheduler_utils import SchedulerUtils
 from ..utils.handy_functions import (http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER,
-                                     camel_case_to_snake_case)
+                                     snake_case_to_pascal_case)
 from ..routes import (ActivityApiUrl, SchedulerApiUrl, CandidatePoolApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
 
-from campaign_utils import get_model, get_activity_type
+from campaign_utils import (get_model, get_activity_type, validate_signed_url,
+                            get_candidate_url_conversion_campaign_send_and_blast_obj)
+
 from validators import (validate_header, validate_datetime_format,
                         validation_of_data_to_schedule_campaign,
                         validate_blast_candidate_url_conversion_in_db)
-
 
 class CampaignBase(object):
     """
@@ -153,7 +154,7 @@ class CampaignBase(object):
             user_token_obj = Token.get_by_user_id(user_id)
             if not user_token_obj:
                 raise ResourceNotFound('No auth token record found for user(id:%s)'
-                                       % user_id)
+                                       % user_id, error_code=ResourceNotFound.http_status_code())
             user_access_token = user_token_obj.access_token
         if not user_access_token:
             raise ForbiddenError('User(id:%s) has no auth token associated.'
@@ -365,6 +366,10 @@ class CampaignBase(object):
 
         e.g, in case of SMS campaign, we have
         data_to_schedule = {
+                            'frequency': 0,
+                            'frequency_id': 0,
+                            'start_datetime': '2016-10-30T17:55:00Z',
+                            'end_datetime': '2016-12-30T17:55:00Z',
                             'url_to_run_task': 'http://127.0.0.1:8012/v1/campaigns/1/send',
                             'task_type': 'one_time',
                             'data_to_post': None
@@ -373,8 +378,8 @@ class CampaignBase(object):
 
         :param data_to_schedule: This contains the required data to schedule a particular job
         :type data_to_schedule: dict
-        :return: Task Id on APScheduler
-        :rtype: str
+        :return: Dict containing newly created task id
+        :rtype: dict
 
         **See Also**
         .. see also:: schedule() method in CampaignBase class.
@@ -385,16 +390,18 @@ class CampaignBase(object):
         if not data_to_schedule.get('url_to_run_task'):
             raise ForbiddenError('No URL given for the task.')
         # format data to create new task
-        data_to_schedule = self.format_data_to_schedule(data_to_schedule)
+        data_to_schedule_task = self.format_data_to_schedule(data_to_schedule.copy())
         # set content-type in header
         self.oauth_header.update(JSON_CONTENT_TYPE_HEADER)
-        response = http_request('POST', SchedulerApiUrl.TASKS, data=json.dumps(data_to_schedule),
+        response = http_request('POST', SchedulerApiUrl.TASKS,
+                                data=json.dumps(data_to_schedule_task),
                                 headers=self.oauth_header)
         # If any error occurs on POST call, we log the error inside http_request().
         if 'id' in response.json():
             current_app.config['LOGGER'].info('%s(id:%s) has been scheduled.'
                                               % (self.campaign.__tablename__, self.campaign.id))
-            return response.json()['id']
+            data_to_schedule.update({'scheduler_task_id': response.json()['id']})
+            return data_to_schedule
         else:
             raise InvalidUsage(
                 "Error occurred while scheduling a task. Error details are '%s'."
@@ -693,7 +700,31 @@ class CampaignBase(object):
         pass
 
     @classmethod
-    def process_url_redirect(cls, url_conversion_id):
+    def pre_process_url_redirect(cls, request_args, requested_url):
+        """
+        This does the validation of signed URL.
+        :param request_args: arguments in request
+        :param requested_url: URL on which candidate clicks
+        :type request_args: dict
+        :return:
+        """
+        if not isinstance(request_args, dict):
+            raise InvalidUsage('request args must be passed as dict.',
+                               error_code=InvalidUsage.http_status_code())
+        missing_item = find_missing_items(request_args, ['auth_user', 'signature', 'valid_until'])
+        if missing_item:
+            raise InvalidUsage('Requested URL %s has required field(s) missing. %s'
+                               % (requested_url, missing_item),
+                               error_code=InvalidUsage.http_status_code())
+        result = validate_signed_url(request_args)
+        if not result:
+            raise InvalidUsage("request from URL %s was not verified." % requested_url,
+                               error_code=InvalidUsage.http_status_code())
+        current_app.config['LOGGER'].info("Requested URL %s has been verified." % requested_url)
+
+    @classmethod
+    def process_url_redirect(cls, url_conversion_id, campaign_name, verify_signature=False,
+                             request_args=None, requested_url=None):
         """
         When candidate clicks on a URL present in any campaign e.g. in SMS, Email etc. it is
         redirected to our app first to keep track of number of clicks, hit_count and to create
@@ -722,11 +753,7 @@ class CampaignBase(object):
 
     **How to use this method**
         To use this method, one need to
-            1- Create a class containing the name of campaign
-                (e.g. SMS campaign has class name SmsCampaignBase,
-                      Push Campaign has PushCampaignBase etc) which will inherit from CampaignBase.
-                (you can see an example at sms_campaign_service/sms_campaign_base.py)
-            2- Make sure following model classes have been defined for that campaign
+            1- Make sure following model classes have been defined for that campaign
                 (e.g. for push campaign, we must have following model classes defined and proper
                 relationships added)
                 2.1. PushCampaign
@@ -734,15 +761,13 @@ class CampaignBase(object):
                 2.3. PushCampaignSend
                 2.4. PushCampaignSmartlist
                 2.5. PushCampaignSendUrlConversion
-
-            This is important to note that base class name of campaign must have first two words
-            same as name of the model class of that campaign.
-            e.g. PushCampaignBase (base class name) -> PushCampaign (model class name)
+            2- Need to pass url_conversion id and name of the campaign as
+                    CampaignBase.process_url_redirect(1, 'sms_campaign')
 
         :Example:
                 In case of SMS campaign, this method is used as
 
-                redirection_url = SmsCampaignBase.process_url_redirect(1)
+                redirection_url = CampaignBase.process_url_redirect(1, 'sms_campaign')
                 return redirect(redirection_url)
 
         .. Status:: 200 (OK)
@@ -752,48 +777,49 @@ class CampaignBase(object):
                     500 (Internal Server Error)
 
         :param url_conversion_id: id of url_conversion record
+        :param campaign_name: name of campaign in snake_case
+        :param verify_signature: Indicator to validate signed_url
+        :param request_args: arguments of request
+        :param requested_url: URL at which candidate clicks
         :type url_conversion_id: int
+        :type campaign_name: str
+        :type request_args: dict
+        :type requested_url: str
         :return: URL where to redirect the candidate
         :rtype: str
 
         **See Also**
-        .. see also:: sms_campaign_url_redirection() function in
-                        sms_campaign_service/sms_campaign_app/app.py
+        .. see also:: SmsCampaignUrlRedirection() class in
+                    sms_campaign_service/sms_campaign_app/v1_sms_campaign_api.py
         """
         current_app.config['LOGGER'].debug(
             'process_url_redirect: Processing for URL redirection(id:%s).' % url_conversion_id)
-        campaign_name = cls.__name__.replace('Base', '')
-        campaign_name_snake_case = camel_case_to_snake_case(campaign_name)
-        campaign_send_url_conversion_model = get_model(campaign_name_snake_case,
-                                                       campaign_name + 'SendUrlConversion')
+        if verify_signature:  # Need to validate the signed URL
+            cls.pre_process_url_redirect(request_args, requested_url)
+        campaign_send_url_conversion_model = get_model(
+            campaign_name, snake_case_to_pascal_case(campaign_name) + 'SendUrlConversion')
         campaign_send_url_conversion_obj = campaign_send_url_conversion_model.query.filter_by(
             url_conversion_id=url_conversion_id).first()
         if not campaign_send_url_conversion_obj:
             raise ResourceNotFound(
                 'process_url_redirect: campaign_send_url_conversion_obj not found for '
                 'url_conversion(id:%s)' % url_conversion_id)
-        # get url_conversion obj
-        url_conversion_obj = UrlConversion.get_by_id(url_conversion_id)
-        # get campaign_send object
-        campaign_send_obj = getattr(campaign_send_url_conversion_obj,
-                                    campaign_name_snake_case + '_send')
-        # get campaign_blast object
-        campaign_blast_obj = getattr(campaign_send_obj, campaign_name_snake_case + '_blast')
-        # get candidate object
-        candidate_obj = getattr(campaign_send_obj, 'candidate')
+        # get candidate obj, url_conversion obj, campaign_send obj and get campaign_blast obj
+        candidate_obj, url_conversion_obj, campaign_send_obj, campaign_blast_obj = \
+            get_candidate_url_conversion_campaign_send_and_blast_obj(
+                campaign_send_url_conversion_obj, campaign_name)
         # Validate if all the required items are present in database.
         campaign_obj = validate_blast_candidate_url_conversion_in_db(campaign_blast_obj,
                                                                      candidate_obj,
                                                                      url_conversion_obj,
-                                                                     campaign_name_snake_case)
+                                                                     campaign_name)
         if not url_conversion_obj.destination_url:
             raise InvalidUsage('process_url_redirect: Destination_url is empty for '
                                'url_conversion(id:%s)' % url_conversion_obj.id)
         # Update hit_count, number of clicks and create activity
         cls.update_stats_and_create_click_activity(campaign_blast_obj, candidate_obj,
                                                    url_conversion_obj, campaign_obj)
-        # Get URL to redirect candidate to actual URL
-
+        # return URL to redirect candidate to actual URL
         return url_conversion_obj.destination_url
 
     @classmethod

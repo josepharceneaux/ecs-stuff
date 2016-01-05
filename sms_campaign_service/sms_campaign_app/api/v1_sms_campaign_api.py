@@ -34,12 +34,18 @@ This file contains API endpoints related to sms_campaign_service.
         - SendSmsCampaign: /v1/campaigns/:id/send
 
             POST    : Sends the SMS Campaign by campaign id
+
+        - SmsCampaignUrlRedirection: /v1/redirect/:id
+
+            GET    : Redirects the candidate to our app to keep track of number of clicks, hit_count
+                    and create activity.
 """
+
 
 # Standard Library
 import types
+from werkzeug.utils import redirect
 from werkzeug.exceptions import BadRequest
-
 
 # Third Party
 from flask import request
@@ -52,6 +58,7 @@ from sms_campaign_service.sms_campaign_app import logger
 from sms_campaign_service.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.validators import validate_form_data
 from sms_campaign_service.modules.custom_exceptions import ErrorDeletingSMSCampaign
+from sms_campaign_service.modules.handy_functions import request_from_google_shorten_url_api
 
 # Common Utils
 from sms_campaign_service.common.error_handling import *
@@ -59,7 +66,9 @@ from sms_campaign_service.common.talent_api import TalentApi
 from sms_campaign_service.common.routes import SmsCampaignApi
 from sms_campaign_service.common.utils.auth_utils import require_oauth
 from sms_campaign_service.common.utils.api_utils import (api_route, ApiResponse)
+from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from sms_campaign_service.common.campaign_services.validators import validate_header
+from sms_campaign_service.common.campaign_services.campaign_utils import CampaignName
 
 # Database Models
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaignBlast, SmsCampaignSend)
@@ -578,8 +587,8 @@ class CampaignById(Resource):
                     5010 (ErrorDeletingSMSCampaign)
         """
         campaign_deleted = SmsCampaignBase.process_delete_campaign(campaign_id=campaign_id,
-                                                          current_user_id=request.user.id,
-                                                          bearer_access_token=request.oauth_token)
+                                                                   current_user_id=request.user.id,
+                                                                   bearer_access_token=request.oauth_token)
         if campaign_deleted:
             return dict(message='Campaign(id:%s) has been deleted successfully' % campaign_id), 200
         else:
@@ -689,3 +698,64 @@ class SendSmsCampaign(Resource):
         camp_obj = SmsCampaignBase(request.user.id)
         camp_obj.process_send(campaign)
         return dict(message='Campaign(id:%s) is being sent to candidates.' % campaign_id), 200
+
+
+@api.route(SmsCampaignApi.REDIRECT, methods=['GET'])
+class SmsCampaignUrlRedirection(Resource):
+    """
+    This endpoint redirects the candidate to our app.
+    """
+    def get(self, url_conversion_id):
+        """
+        This endpoint is /v1/redirect/:id
+
+        When recruiter(user) adds some URL in SMS body text, we save the original URL as
+        destination URL in "url_conversion" database table. Then we create a new URL (which is
+        created during the process of sending campaign to candidate) to redirect the candidate
+        to our app. This looks like
+
+                http://127.0.0.1:8012/v1/redirect/1
+        After signing this URL, it looks like
+        http://127.0.0.1:8012/v1/redirect/1052?valid_until=1453990099.0&auth_user=no_user&extra=
+                &signature=cWQ43J%2BkYetfmE2KmR85%2BLmvuIw%3D
+        This is called long_url. So, we first convert this long_url in short URL (using Google's
+        shorten URL API) and send in SMS body text to candidate. Short URL looks like
+
+                https://goo.gl/CazBJG
+
+        When candidate clicks on above url, it is redirected to this flask endpoint, where we
+        keep track of number of clicks and hit_counts for a URL. We then create activity that
+        'this' candidate has clicked on 'this' campaign. Finally we redirect the candidate to
+        destination URL (Original URL provided by the recruiter)
+
+        .. Status:: 200 (OK)
+                    400 (Invalid Usage)
+                    401 (Unauthorized to access getTalent)
+                    403 (Forbidden Error)
+                    404 (Campaign not found)
+                    500 (Internal Server Error)
+
+        ., Error codes::
+                    5005 (EmptyDestinationUrl)
+                    5006 (MissingRequiredField)
+
+        :param url_conversion_id: id of url_conversion record in db
+        :type url_conversion_id: int
+        :return: redirects to the destination URL else raises exception
+        """
+        # Google's shorten URL API hits this end point while converting long_url to shorter version.
+        if request_from_google_shorten_url_api(request.headers.environ):
+            return 200
+        try:
+            redirection_url = CampaignBase.process_url_redirect(url_conversion_id, CampaignName.SMS,
+                                                                verify_signature=True,
+                                                                request_args=request.args,
+                                                                requested_url=request.full_path)
+            return redirect(redirection_url)
+        # In case any type of exception occurs, candidate should only get internal server error
+        except Exception:
+            # As this endpoint is hit by client, so we log the error, and return internal server
+            #  error.
+            logger.exception("Error occurred while URL redirection for SMS campaign.")
+            message='Internal Server Error'
+        return dict(message=message), 500

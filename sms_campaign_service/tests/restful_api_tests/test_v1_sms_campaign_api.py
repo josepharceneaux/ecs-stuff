@@ -12,8 +12,8 @@ from werkzeug.security import gen_salt
 
 
 # Service Specific
+from sms_campaign_service.tests.conftest import db, CREATE_CAMPAIGN_DATA
 from sms_campaign_service.common.tests.sample_data import fake
-from sms_campaign_service.tests.conftest import db
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.modules.common_functions import assert_for_activity
 
@@ -179,18 +179,19 @@ class TestSmsCampaignHTTPPost(object):
         assert 'body_text' in response.json()['error']['message']
 
     def test_campaign_creation_with_missing_key_smartlist_ids_in_data(
-            self, campaign_data_missing_smartlist_ids, valid_header, user_phone_1):
+            self, valid_header, user_phone_1):
         """
         User has one phone value, valid header and invalid data (Missing key "smartlist_ids").
         It should get internal server error. Error code should be 5006.
-        :param campaign_data_missing_smartlist_ids: Invalid data to create SMS campaign.
         :param valid_header: valid header to POST data
         :param user_phone_1: user_phone fixture to assign a test phone number to user
         :return:
         """
+        campaign_data = CREATE_CAMPAIGN_DATA.copy()
+        del campaign_data['smartlist_ids']
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
-                                 data=json.dumps(campaign_data_missing_smartlist_ids))
+                                 data=json.dumps(campaign_data))
         assert response.status_code == InternalServerError.http_status_code(), \
             'Internal server error should occur (500)'
         assert response.json()['error']['code'] == SmsCampaignApiException.MISSING_REQUIRED_FIELD

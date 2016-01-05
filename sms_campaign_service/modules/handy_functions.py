@@ -164,7 +164,7 @@ def replace_localhost_with_ngrok(localhost_url):
     looks for valid URL to convert into shorter version. While making HTTP request to this endpoint,
     if ngrok is not running somehow, we replace localhost_url with the ngrok exposed URL. i.e.
 
-        https://127.0.0.1:801/redirect/294
+        https://127.0.0.1:8012/redirect/294
 
     will become
 
@@ -188,3 +188,16 @@ def search_urls_in_text(text):
     :rtype: list
     """
     return re.findall(r'(?:http|ftp)s?://[^\s<>"]+|www\.[^\s<>"]+', text)
+
+
+def request_from_google_shorten_url_api(requested_header):
+    """
+    When we use Google's shorten URL API, it hits the provided long_url.
+    :param header_of_request:
+    :
+    :return:
+    """
+    keys = ['HTTP_FROM', 'HTTP_REFERER']
+    for key in keys:
+        if key in requested_header and 'google' in requested_header[key]:
+            logger.info("Successfully verified by Google's shorten URL API")

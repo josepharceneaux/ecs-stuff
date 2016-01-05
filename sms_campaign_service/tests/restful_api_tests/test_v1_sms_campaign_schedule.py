@@ -28,7 +28,7 @@ class TestSmsCampaignSchedule(object):
     """
     This class contains tests for endpoint /v1/campaigns/:id/schedule.
     """
-
+    # TODO: add tests for re-schedule and stop campaign
     def test_for_get_request(self, auth_token, sms_campaign_of_current_user):
         """
         GET method is not allowed on this endpoint, should get 405 (Method not allowed)
@@ -39,17 +39,6 @@ class TestSmsCampaignSchedule(object):
         response = requests.get(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
         assert_method_not_allowed(response, 'GET')
-
-    def test_for_delete_request(self, auth_token, sms_campaign_of_current_user):
-        """
-        DELETE method is not allowed on this endpoint, should get 405 (Method not allowed)
-        :param auth_token: access token for sample user
-        :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
-        :return:
-        """
-        response = requests.delete(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
-                                   headers=dict(Authorization='Bearer %s' % auth_token))
-        assert_method_not_allowed(response, 'DELETE')
 
     def test_campaign_schedule_with_no_start_datetime(self, valid_header,
                                                       sms_campaign_of_current_user):

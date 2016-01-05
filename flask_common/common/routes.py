@@ -190,6 +190,7 @@ class SmsCampaignApi(object):
     # HOST_NAME is http://127.0.0.1:8011 for dev
     HOST_NAME = _get_host_name(GTApis.SMS_CAMPAIGN_SERVICE_NAME,
                                GTApis.SMS_CAMPAIGN_SERVICE_PORT)
+    API_URL = '/%s/%s' % (VERSION, '%s')
     # endpoint /v1/campaigns
     # GET all campaigns of a user, POST new campaign, DELETE campaigns of a user from given ids
     CAMPAIGNS = '/%s/%s' % (VERSION, 'campaigns')
@@ -212,9 +213,9 @@ class SmsCampaignApi(object):
     # endpoint /receive
     # This endpoint is callback URL when candidate replies to a campaign via SMS
     RECEIVE = '/receive'
-    # endpoint /redirect/:id
+    # endpoint /v1/redirect/:id
     # This endpoint is hit when candidate clicks on any URL present in SMS body text.
-    REDIRECT = '/redirect/<int:url_conversion_id>'
+    REDIRECT = API_URL % 'redirect/<int:url_conversion_id>'
 
 
 class SmsCampaignApiUrl(object):
@@ -226,9 +227,9 @@ class SmsCampaignApiUrl(object):
     CAMPAIGN = SmsCampaignApi.HOST_NAME % '/%s/%s' % (SmsCampaignApi.VERSION, 'campaigns/%s')
     SENDS = CAMPAIGN + '/sends'
     SEND = CAMPAIGN + '/send'
-    SCHEDULE = SmsCampaignApi.HOST_NAME % SmsCampaignApi.SCHEDULE
+    SCHEDULE = CAMPAIGN + '/schedule'
     RECEIVE = SmsCampaignApi.HOST_NAME % SmsCampaignApi.RECEIVE
-    REDIRECT = SmsCampaignApi.HOST_NAME % '/redirect/%s'
+    REDIRECT = SmsCampaignApi.HOST_NAME % '/%s/%s' % (SmsCampaignApi.VERSION, 'redirect/%s')
 
 
 class CandidateApiUrl(object):

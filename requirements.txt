@@ -53,6 +53,7 @@ loggly-python-handler==1.0.0
 
 # SMS Campaign code
 twilio
+ska==1.5
 
 mixer==5.2.2
 python-dateutil==2.4.2

@@ -35,6 +35,7 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
 from sms_campaign_service.common.models.db import db
 from sms_campaign_service.common.common_config import IS_DEV
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
+from sms_campaign_service.common.talent_property_manager import get_secret_key
 from sms_campaign_service.common.utils.validators import format_phone_number
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
@@ -45,6 +46,8 @@ from sms_campaign_service.common.utils.handy_functions import (find_missing_item
 # Service Specific
 from sms_campaign_service.sms_campaign_app import logger
 from sms_campaign_service.sms_campaign_app.app import celery_app, app
+from sms_campaign_service.common.campaign_services.campaign_utils import unix_time, \
+    sign_redirect_url
 from sms_campaign_service.modules.validators import (validate_url_format, search_urls_in_text)
 from sms_campaign_service.modules.handy_functions import (TwilioSMS, replace_localhost_with_ngrok)
 from sms_campaign_service.modules.sms_campaign_app_constants import (MOBILE_PHONE_LABEL, TWILIO,
@@ -227,7 +230,6 @@ class SmsCampaignBase(CampaignBase):
         :return:
         """
         # sets the user_id
-        __name__ = CELERY_QUEUE
         super(SmsCampaignBase, self).__init__(user_id)
         self.user_phone = self.get_user_phone()
         if not self.user_phone:
@@ -501,11 +503,10 @@ class SmsCampaignBase(CampaignBase):
             {'url_to_run_task': SmsCampaignApiUrl.SEND % self.campaign.id}
         )
         # get scheduler task_id created on scheduler_service
-        task_id = super(SmsCampaignBase, self).schedule(data_to_schedule)
-        data_to_schedule.update({'scheduler_task_id': task_id})
+        updated_data = super(SmsCampaignBase, self).schedule(data_to_schedule)
         # update sms_campaign record with task_id
-        self.create_or_update_sms_campaign(data_to_schedule, campaign_id=self.campaign.id)
-        return task_id
+        self.create_or_update_sms_campaign(updated_data, campaign_id=self.campaign.id)
+        return updated_data['scheduler_task_id']
 
     @classmethod
     def unschedule(cls, campaign_id, request):
@@ -847,9 +848,14 @@ class SmsCampaignBase(CampaignBase):
             # URL to redirect candidates to our end point
             # TODO: remove this when app is up
             app_redirect_url = replace_localhost_with_ngrok(SmsCampaignApiUrl.REDIRECT)
-            # long_url looks like
+            # redirect URL looks like
             # http://127.0.0.1:8012/redirect/1
-            long_url = str(app_redirect_url % url_conversion_id)
+            redirect_url = str(app_redirect_url % url_conversion_id)
+            # sign the redirect URL
+            long_url = sign_redirect_url(redirect_url, self.campaign.end_datetime)
+            # long_url looks like
+            # http://127.0.0.1:8012/v1/redirect/1052?valid_until=1453990099.0
+            #           &auth_user=no_user&extra=&signature=cWQ43J%2BkYetfmE2KmR85%2BLmvuIw%3D
             # Use Google's API to shorten the long Url
             short_url, error = url_conversion(long_url)
             logger.info("url_conversion: Long URL was: %s" % long_url)
@@ -1080,7 +1086,9 @@ class SmsCampaignBase(CampaignBase):
                 'Source should be instance of model SmsCampaignSend')
         params = {'candidate_name': candidate.first_name + ' ' + candidate.last_name,
                   'campaign_name': self.campaign.name}
-        with app.app_context():  # Need to to this as Celery app use different logger
+        # Need to add this as Celery app use different logger, and current_app.config['LOGGER']
+        # does not work in this case
+        with app.app_context():
             self.create_activity(self.user_id,
                                  _type=ActivityMessageIds.CAMPAIGN_SMS_SEND,
                                  source_id=source.id,
