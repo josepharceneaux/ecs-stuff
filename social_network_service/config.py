@@ -10,7 +10,7 @@ LOGGING_CONF = os.path.join(APP_ROOT, 'logging.conf')
 logging.config.fileConfig(LOGGING_CONF)
 
 # SQL ALCHEMY DB URL
-GT_ENVIRONMENT = os.getenv('GT_ENVIRONMENT')
+GT_ENVIRONMENT = os.getenv('GT_ENVIRONMENT') or 'dev'
 if GT_ENVIRONMENT == 'dev':
     APP_URL = 'http://0.0.0.0:8006'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'

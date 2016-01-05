@@ -130,13 +130,6 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
     'dumb_lists':                    dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
 }
 
-# Get all the credentials from environment variable
-AWS_ACCESS_KEY_ID = current_app.config[ConfigKeys.AWS_KEY]
-AWS_SECRET_ACCESS_KEY = current_app.config[ConfigKeys.AWS_SECRET]
-
-CLOUD_SEARCH_REGION = current_app.config[ConfigKeys.CS_REGION_KEY]
-CLOUD_SEARCH_DOMAIN_NAME = current_app.config[ConfigKeys.CS_DOMAIN_KEY]
-
 filter_queries_list = []
 search_queries_list = []
 coordinates = []
@@ -148,14 +141,17 @@ def get_cloud_search_connection():
     Get cloud search connection
     :return:
     """
+
     global _cloud_search_connection_layer_2, _cloud_search_domain
     if not _cloud_search_connection_layer_2:
-        _cloud_search_connection_layer_2 = boto.connect_cloudsearch2(aws_access_key_id=AWS_ACCESS_KEY_ID,
-                                                                     aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        _cloud_search_connection_layer_2 = boto.connect_cloudsearch2(aws_access_key_id=current_app.
+                                                                     config[ConfigKeys.AWS_KEY],
+                                                                     aws_secret_access_key=current_app.
+                                                                     config[ConfigKeys.AWS_SECRET],
                                                                      sign_request=True,
-                                                                     region=CLOUD_SEARCH_REGION)
+                                                                     region=current_app.config[ConfigKeys.CS_REGION_KEY])
 
-        _cloud_search_domain = _cloud_search_connection_layer_2.lookup(CLOUD_SEARCH_DOMAIN_NAME)
+        _cloud_search_domain = _cloud_search_connection_layer_2.lookup(current_app.config[ConfigKeys.CS_DOMAIN_KEY])
         if not _cloud_search_domain:
             _cloud_search_connection_layer_2.create_domain(CLOUD_SEARCH_DOMAIN_NAME)
 
