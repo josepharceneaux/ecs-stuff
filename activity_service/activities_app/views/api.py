@@ -136,7 +136,9 @@ class TalentActivityManager(object):
     CAMPAIGN_SMS_CLICK = 25
     CAMPAIGN_SMS_REPLY = 26
     CAMPAIGN_SMS_CREATE = 27
-    CAMPAIGN_PUSH_NOTIFICATION_CREATE = 28
+    CAMPAIGN_PUSH_CREATE = 28
+    CAMPAIGN_PUSH_SEND = 29
+    CAMPAIGN_PUSH_CLICK = 30
 
     MESSAGES = {
         ActivityMessageIds.RSVP_EVENT: (
@@ -213,9 +215,15 @@ class TalentActivityManager(object):
         CAMPAIGN_SMS_REPLY: ("%(candidate_name)s replied <b>%(reply_text)s</b> on SMS campaign %(campaign_name)s.",
                      "%(candidate_name)s replied '%(reply_text)s' on campaign %(campaign_name)s.",
                      "campaign.png"),
-        CAMPAIGN_PUSH_NOTIFICATION_CREATE: ("%(user_name)s created a Push Notification campaign: '%(campaign_name)s'",
-                                            "%(user_name)s created a Push Notification campaign: '%(campaign_name)s'",
-                                            "campaign.png"),
+        CAMPAIGN_PUSH_CREATE: ("%(user_name)s created a Push campaign: '%(campaign_name)s'",
+                               "%(user_name)s created a Push campaign: '%(campaign_name)s'",
+                               "campaign.png"),
+        CAMPAIGN_PUSH_SEND: ("Push Campaign <b>%(campaign_name)s</b> has been sent to %(candidate_name)s.",
+                             "Push Campaign %(campaign_name)s has been sent to %(candidate_name)s.",
+                             "campaign.png"),
+        CAMPAIGN_PUSH_CLICK: ("%(candidate_name)s clicked on Push Campaign <b>%(campaign_name)s</b>.",
+                              "%(candidate_name)s clicked on %(campaign_name)s.",
+                              "campaign.png"),
         ActivityMessageIds.SMARTLIST_ADD_CANDIDATE: (
             "%(formattedName)s was added to list %(name)s",
             "%(count)s candidates were added to list %(name)s",

@@ -80,17 +80,17 @@ from push_campaign_service.common.error_handling import *
 from push_campaign_service.modules.custom_exceptions import *
 from push_campaign_service.modules.one_signal_sdk import OneSignalSdk
 from push_campaign_service.modules.constants import ONE_SIGNAL_REST_API_KEY, ONE_SIGNAL_APP_ID
-from push_campaign_service.modules.push_campaign_base import PushCampaignBase
 from push_campaign_service.modules.utilities import associate_smart_list_with_campaign
 from push_campaign_service.push_campaign_app import logger
+from push_campaign_service.modules.push_campaign_base import PushCampaignBase
 
 # creating blueprint
+
+
 push_notification_blueprint = Blueprint('push_notification_api', __name__)
 api = TalentApi()
 api.init_app(push_notification_blueprint)
 api.route = types.MethodType(api_route, api)
-
-
 # Enable CORS
 CORS(push_notification_blueprint, resources={
     r'v1/campaigns/*': {
@@ -476,16 +476,10 @@ class SendPushCampaign(Resource):
         :param campaign_id: integer, unique id representing campaign in GT database
         """
         user = request.user
-        campaign = PushCampaignBase(user_id=user.id)
-        subscribed_candidate_ids, unsubscribed_candidate_ids = campaign.process_send(campaign_id)
-        if unsubscribed_candidate_ids:
-            response = dict(message='Unable to send Push notification to some candidates as they have unsubscribed',
-                            unsubscribed_candiate_ids=unsubscribed_candidate_ids,
-                            subscribed_candidate_ids=subscribed_candidate_ids)
-            return response, 207
-        else:
-            response = dict(message='Push campaign (id:%s) has been sent successfully to all candidates' % campaign_id)
-            return response, 200
+        campaign = PushCampaignBase.validate_ownership_of_campaign(campaign_id, user.id)
+        campaign_obj = PushCampaignBase(user_id=user.id)
+        campaign_obj.process_send(campaign)
+        return dict(message='Campaign(id:%s) is being sent to candidates.' % campaign_id), 200
 
 
 @api.route('/v1/campaigns/<int:campaign_id>/blasts/<int:blast_id>/sends')

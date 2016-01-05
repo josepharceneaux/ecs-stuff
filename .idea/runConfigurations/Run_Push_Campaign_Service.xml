@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run Push Campaign Service" type="PythonConfigurationType" factoryName="Python" folderName="push_notification_service">
+  <configuration default="false" name="Run Push Campaign Service" type="PythonConfigurationType" factoryName="Python" folderName="push_campaign_service">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>

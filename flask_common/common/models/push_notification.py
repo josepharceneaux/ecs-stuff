@@ -22,10 +22,10 @@ class PushCampaign(db.Model):
     # Relationships
 
     blasts = relationship('PushCampaignBlast', cascade='all, delete-orphan',
-                          passive_deletes=True, backref='push_campaign')
+                          passive_deletes=True, backref='push_campaign', lazy='dynamic')
 
     smartlists = relationship('PushCampaignSmartlist', cascade='all, delete-orphan',
-                              passive_deletes=True, backref='push_campaign')
+                              passive_deletes=True, backref='push_campaign', lazy='dynamic')
 
     def __repr__(self):
         return "<PushCampaign ( = %r)>" % self.content
@@ -52,7 +52,7 @@ class PushCampaignBlast(db.Model):
 
     # Relationships
     blast_sends = relationship('PushCampaignSend', cascade='all, delete-orphan',
-                               passive_deletes=True, backref='blast')
+                               passive_deletes=True, backref='blast', lazy='dynamic')
 
     def __repr__(self):
         return "<PushCampaignBlast (Sends: %s, Clicks: %s)>" % (self.sends, self.clicks)

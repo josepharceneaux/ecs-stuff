@@ -63,7 +63,8 @@ class Candidate(db.Model):
     candidate_unidentifieds = relationship('CandidateUnidentified', cascade='all, delete-orphan', passive_deletes=True)
     email_campaign_sends = relationship('EmailCampaignSend', cascade='all, delete-orphan', passive_deletes=True)
     voice_comments = relationship('VoiceComment', cascade='all, delete-orphan', passive_deletes=True)
-    devices = relationship('CandidateDevice', cascade='all, delete-orphan', passive_deletes=True, backref='candidate')
+    devices = relationship('CandidateDevice', cascade='all, delete-orphan', passive_deletes=True,
+                           backref='candidate', lazy='dynamic')
 
     def __repr__(self):
         return "<Candidate(formatted_name=' %r')>" % self.formatted_name
@@ -913,6 +914,12 @@ class CandidateDevice(db.Model):
 
     def __repr__(self):
         return "<PushCampaignBlast (Sends: %s, Clicks: %s)>" % (self.sends, self.clicks)
+
+    @classmethod
+    def get_devices_by_candidate_id(cls, candidate_id):
+        assert isinstance(candidate_id, (int, long)) and candidate_id > 0, \
+            'device_ids list should contain at least one id'
+        return cls.query.filter_by(candidate_id=candidate_id).all()
 
     @classmethod
     def get_candidate_ids_from_device_ids(cls, device_ids):
