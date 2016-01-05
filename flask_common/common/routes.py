@@ -273,9 +273,9 @@ class SchedulerApiUrl(object):
     """
     SCHEDULER_HOST_NAME = _get_host_name(GTApis.SCHEDULER_SERVICE_NAME,
                                          GTApis.SCHEDULER_SERVICE_PORT)
-    CREATE_TASK = SCHEDULER_HOST_NAME % '/tasks/'
-    TASKS = SCHEDULER_HOST_NAME % '/tasks/'
-    TASK = SCHEDULER_HOST_NAME % '/tasks/id/%s'
+    CREATE_TASK = SCHEDULER_HOST_NAME % '/v1/tasks/'
+    TASKS = SCHEDULER_HOST_NAME % '/v1/tasks/'
+    TASK = SCHEDULER_HOST_NAME % '/v1/tasks/id/%s'
 
 
 class PushNotificationServiceApi(object):
