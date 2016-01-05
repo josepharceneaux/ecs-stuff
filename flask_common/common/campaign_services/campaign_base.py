@@ -628,6 +628,7 @@ class CampaignBase(object):
             # Each service will use its own queue so that tasks related to one service only
             # assign to that particular queue.
             callback = self.callback_campaign_sent.subtask((self.user_id, self.campaign,
+                                                            self.campaign_blast_id,
                                                             self.oauth_header,),
                                                            queue=self.queue_name)
             # Here we create list of all tasks and assign a self.celery_error_handler() as a
@@ -677,9 +678,8 @@ class CampaignBase(object):
         """
         pass
 
-    @staticmethod
     @abstractmethod
-    def callback_campaign_sent(sends_result, user_id, campaign, auth_header):
+    def callback_campaign_sent(sends_result, user_id, campaign, blast_id, auth_header):
         """
         This is the callback function for campaign sent.
         Child classes will implement this.

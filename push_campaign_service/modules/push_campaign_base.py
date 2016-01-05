@@ -9,7 +9,7 @@ from push_campaign_service.common.models.misc import UrlConversion
 from push_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from push_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from push_campaign_service.common.routes import PushNotificationServiceApi
-from push_campaign_service.push_campaign_app import logger, celery_app, app
+from push_campaign_service.push_campaign_app import logger, celery_app
 from custom_exceptions import *
 from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY, CELERY_QUEUE
 from one_signal_sdk import OneSignalSdk
@@ -172,6 +172,7 @@ class PushCampaignBase(CampaignBase):
                                 candidate_id=candidate.id)
 
                     url_conversion.update(source_url=json.dumps(data))
+                    return True
                 else:
                     response = resp.json()
                     errors = response['errors']
@@ -185,8 +186,9 @@ class PushCampaignBase(CampaignBase):
         else:
             logger.error('Candidate has not subscribed for push notification')
 
+    @staticmethod
     @celery_app.task(name='callback_campaign_sent')
-    def callback_campaign_sent(self, sends_result, user_id, campaign, auth_header):
+    def callback_campaign_sent(sends_result, user_id, campaign, blast_id, auth_header):
         """
         Once a Push Notification campaign has been sent to all candidates, this function is hit, and here we
 
@@ -209,9 +211,9 @@ class PushCampaignBase(CampaignBase):
             total_sends = sends_result.count(True)
             if total_sends:
                 # Need to refresh blast object because this celery task has it's own scoped session
-                self.campaign_blast = PushCampaignBlast.get_by_id(self.campaign_blast_id)
-                sends = self.campaign_blast.sends + total_sends
-                self.campaign_blast.update(sends=sends)
+                campaign_blast = PushCampaignBlast.get_by_id(blast_id)
+                sends = campaign_blast.sends + total_sends
+                campaign_blast.update(sends=sends)
                 PushCampaignBase.create_campaign_send_activity(user_id,
                                                                campaign,
                                                                auth_header,
@@ -254,7 +256,7 @@ class PushCampaignBase(CampaignBase):
         params = {'campaign_name': source.title,
                   'num_candidates': num_candidates}
         cls.create_activity(user_id,
-                            type_=ActivityMessageIds.CAMPAIGN_PUSH_CREATE,
+                            _type=ActivityMessageIds.CAMPAIGN_PUSH_SEND,
                             source_id=source.id,
                             source_table=PushCampaign.__tablename__,
                             params=params,
