@@ -1,6 +1,6 @@
 from sqlalchemy import and_
 from db import db
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 import datetime
 from sqlalchemy.dialects.mysql import TINYINT
 
@@ -187,6 +187,9 @@ class CandidatePhone(db.Model):
 
     def __repr__(self):
         return "<CandidatePhone (value=' %r', extention= ' %r')>" % (self.value, self.extension)
+
+    # Relationships
+    candidate = relationship('Candidate', backref='candidate_phone')
 
     @classmethod
     def get_by_id(cls, _id):
@@ -713,9 +716,12 @@ class CandidateEducationDegree(db.Model):
     end_time = db.Column('EndTime', db.DateTime)
 
     # Relationships
-    candidate_education_degree_bullets = relationship('CandidateEducationDegreeBullet',
-                                                      cascade='all, delete-orphan',
-                                                      passive_deletes=True)
+    candidate_education = relationship('CandidateEducation', backref=backref(
+        'candidate_education_degree', cascade='all, delete-orphan', passive_deletes=True
+    ))
+    candidate_education_degree_bullets = relationship(
+            'CandidateEducationDegreeBullet', cascade='all, delete-orphan', passive_deletes=True
+    )
 
     def __repr__(self):
         return "<CandidateEducationDegree (candidate_education_id=' %r')>" % self.candidate_education_id
@@ -730,6 +736,11 @@ class CandidateEducationDegreeBullet(db.Model):
     comments = db.Column('Comments', db.String(5000))
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+    # Relationships
+    candidate_education_degree = relationship('CandidateEducationDegree', backref=backref(
+        'candidate_education_degree_bullet', cascade='all, delete-orphan', passive_deletes=True
+    ))
 
     def __repr__(self):
         return "<CandidateEducationDegreeBullet (candidate_education_degree_id=' %r')>" % \
@@ -758,8 +769,12 @@ class CandidateExperience(db.Model):
     resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
 
     # Relationships
-    candidate_experience_bullets = relationship('CandidateExperienceBullet',
-                                                cascade='all, delete-orphan', passive_deletes=True)
+    candidate = relationship('Candidate', backref=backref(
+        'candidate_experience', cascade='all, delete-orphan', passive_deletes=True
+    ))
+    candidate_experience_bullets = relationship(
+            'CandidateExperienceBullet', cascade='all, delete-orphan', passive_deletes=True
+    )
 
     def __repr__(self):
         return "<CandidateExperience (candidate_id=' %r)>" % self.candidate_id
@@ -783,6 +798,11 @@ class CandidateExperienceBullet(db.Model):
     description = db.Column('Description', db.String(10000))
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+    # Relationship
+    candidate_experience = relationship('CandidateExperience', backref=backref(
+            'candidate_experience_bullet', cascade='all, delete-orphan', passive_deletes=True
+    ))
 
     def __repr__(self):
         return "<CandidateExperienceBullet (candidate_experience_id=' %r')>" % self.candidate_experience_id

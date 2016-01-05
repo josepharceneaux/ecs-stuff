@@ -86,9 +86,6 @@ class EmailClient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
 
-    # Relationships
-    email_campaigns = relationship('EmailCampaign', backref='email_client')
-
     def __repr__(self):
         return "<EmailClient (name = %r)>" % self.name
 

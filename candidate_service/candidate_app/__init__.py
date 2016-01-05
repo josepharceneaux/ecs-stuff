@@ -251,3 +251,8 @@ db.create_all()
 db.session.commit()
 
 logger.info('Starting candidate_service in %s environment', app.config['GT_ENVIRONMENT'])
+
+# Index Amazon Cloud Search
+# from candidate_service.modules.talent_cloud_search import define_index_fields, index_documents
+# define_index_fields()
+# index_documents()
