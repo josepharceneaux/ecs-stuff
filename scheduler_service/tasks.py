@@ -37,11 +37,13 @@ def send_request(access_token, secret_key, url, content_type, kwargs):
         'Authorization': access_token,
         'X-Talent-Server-Key': secret_key
     }
-
+    #TODO use http_request()
     response = requests.post(url, data=kwargs, headers=headers)
     try:
+        # TODO use response.content
         return response.json()
-    except:
+    except: #TODO catch Exception and also comment here that following is for flower
+        # TODO
         return {'message': "JSON object couldn't be decoded", 'status_code': response.status_code}
 
 
