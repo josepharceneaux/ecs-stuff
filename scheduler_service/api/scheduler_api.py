@@ -10,11 +10,15 @@ import os
 import types
 
 # Third party imports
+from time import sleep
+
+from datetime import timedelta, datetime
 from flask import Blueprint, request
 from flask.ext.restful import Resource
 from flask.ext.cors import CORS
 
 # Application imports
+from scheduler_service.common.models.user import Token
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse
 from scheduler_service.common.talent_api import TalentApi
 from scheduler_service.common.error_handling import *
@@ -578,6 +582,16 @@ class SendRequestTest(Resource):
         user_id = request.user.id
         task = request.get_json()
         url = task.get('url', '')
+
+        expiry = datetime.utcnow() - timedelta(days=5)
+        expiry = expiry.strftime('%Y-%m-%d %H:%M:%S')
+
+        # DB is not updating when token expiry is updated first time. Updating one more time updates column value in db
+        token = Token.query.filter_by(user_id=request.user.id).first()
+        token.update(expires=expiry)
+        token = Token.query.filter_by(user_id=request.user.id).first()
+        token.update(expires=expiry)
+
         run_job(user_id, request.oauth_token, url, task.get('content_type', 'application/json'),
                 kwargs=task.get('post_data', dict()))
 

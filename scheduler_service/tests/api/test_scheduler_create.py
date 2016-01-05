@@ -4,6 +4,8 @@ Test cases for creating schedule job with and without token.
 
 # Third party imports
 import json
+from time import sleep
+
 import pytest
 import requests
 
@@ -33,23 +35,21 @@ class TestSchedulerCreate:
         """
 
         auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-        # Expire token
-        expiry = datetime.utcnow() - timedelta(days=10)
-        # token = Token.query.filter_by(user_id=auth_token_row['user_id']).update(expires=expiry)
-        token = Token.query.filter_by(user_id=auth_token_row['user_id']).first()
-        db.session.flush()
-        token.update(expires=expiry)
-        db.session.flush()
 
         auth_token = auth_token_row['access_token']
 
         Token.query.filter_by(user_id=auth_token_row['user_id']).first()
         auth_header = {'Authorization': 'Bearer ' + auth_token,
                        'Content-Type': 'application/json'}
-        response = requests.post(APP_URL + '/tasks/test/', data=json.dumps(job_config),
+
+        response = requests.post(APP_URL % 'tasks/test/', data=json.dumps(job_config),
                                  headers=auth_header)
 
+        # Check the token which was expired
         token = Token.query.filter_by(user_id=auth_token_row['user_id']).first()
+
+        assert token.expires > datetime.utcnow()
+
         assert response.status_code == 200
 
     def test_single_scheduled_job_without_user(self, auth_header_no_user, job_config):
@@ -62,25 +62,25 @@ class TestSchedulerCreate:
             POST data while hitting the endpoint.
         :return:
         """
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+        response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
                                  headers=auth_header_no_user)
         assert response.status_code == 400
 
         # Assign task_name in job post data (general task)
         job_config['task_name'] = 'Custom General Named Task'
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+        response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
                                  headers=auth_header_no_user)
         assert response.status_code == 201
         data = response.json()
         assert data['id'] is not None
 
         # Try to create already named job and it should throw 400 invalid usage error
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+        response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
                                  headers=auth_header_no_user)
         assert response.status_code == 400
 
         # Let's delete jobs now
-        response_remove = requests.delete(APP_URL + '/tasks/id/' + data['id'],
+        response_remove = requests.delete(APP_URL % 'tasks/id/' + data['id'],
                                           headers=auth_header_no_user)
         assert response_remove.status_code == 200
 
@@ -91,7 +91,7 @@ class TestSchedulerCreate:
         :param job_config:
         :return:
         """
-        response = requests.post(APP_URL + '/tasks/test/', data=json.dumps(job_config),
+        response = requests.post(APP_URL % 'tasks/test/', data=json.dumps(job_config),
                                  headers=auth_header)
         assert response.status_code == 200
 
@@ -105,14 +105,14 @@ class TestSchedulerCreate:
             POST data while hitting the endpoint.
         :return:
         """
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+        response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
                                  headers=auth_header)
         assert response.status_code == 201
         data = response.json()
         assert data['id'] is not None
 
         # Let's delete jobs now
-        response_remove = requests.delete(APP_URL + '/tasks/id/' + data['id'],
+        response_remove = requests.delete(APP_URL % 'tasks/id/' + data['id'],
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
@@ -129,12 +129,12 @@ class TestSchedulerCreate:
 
         # schedule some jobs and remove all of them
         for i in range(10):
-            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+            response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
                                      headers=auth_header)
             assert response.status_code == 201
             jobs.append(json.loads(response.text)['id'])
 
-        response_remove_jobs = requests.delete(APP_URL + '/tasks/',
+        response_remove_jobs = requests.delete(APP_URL % 'tasks/',
                                                data=json.dumps(dict(ids=jobs)),
                                                headers=auth_header)
 
@@ -152,7 +152,7 @@ class TestSchedulerCreate:
         invalid_header = {'Authorization': 'Bearer invalid_token',
                           'Content-Type': 'application/json'}
 
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+        response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
                                  headers=invalid_header)
         assert response.status_code == 401
 

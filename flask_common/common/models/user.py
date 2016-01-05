@@ -241,9 +241,9 @@ class Token(db.Model):
         if access_token is None:
             return None
         if 'bearer ' in access_token.lower():
-            token = Token.query.filter_by(access_token=access_token.split(' ')[1])
+            token = Token.query.filter_by(access_token=access_token.split(' ')[1]).first()
         else:
-            token = Token.query.filter_by(access_token=access_token)
+            token = Token.query.filter_by(access_token=access_token).first()
         return token
 
 

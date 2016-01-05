@@ -31,40 +31,40 @@ class TestSchedulerResume:
         jobs = []
 
         for i in range(10):
-            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+            response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
                                      headers=auth_header)
             assert response.status_code == 201
             jobs.append(response.json()['id'])
         job_id = jobs[0]
 
         # Send job stop request
-        response_stop = requests.post(APP_URL + '/tasks/' + job_id + '/pause/',
+        response_stop = requests.post(APP_URL % 'tasks/' + job_id + '/pause/',
                                       headers=auth_header)
         assert response_stop.status_code == 200
 
         # Paused jobs have their next_run_datetime set to 'None'
-        response = requests.get(APP_URL + '/tasks/id/' + job_id, headers=auth_header)
+        response = requests.get(APP_URL % 'tasks/id/' + job_id, headers=auth_header)
         next_run_datetime = response.json()['task']['next_run_datetime']
         assert next_run_datetime is None
 
         # Resume job stop request
-        response_resume = requests.post(APP_URL + '/tasks/' + job_id + '/resume/',
+        response_resume = requests.post(APP_URL % 'tasks/' + job_id + '/resume/',
                                         headers=auth_header)
         assert response_resume.status_code == 200
 
         # Normal jobs don't have their next_run_datetime set to 'None'
-        response = requests.get(APP_URL + '/tasks/id/' + job_id, headers=auth_header)
+        response = requests.get(APP_URL % 'tasks/id/' + job_id, headers=auth_header)
         next_run_datetime = response.json()['task']['next_run_datetime']
         assert next_run_datetime != 'None'
 
         # Resume job stop request again - does not affect
-        response_resume_again = requests.post(APP_URL + '/tasks/' + job_id + '/resume/',
+        response_resume_again = requests.post(APP_URL % 'tasks/' + job_id + '/resume/',
                                               headers=auth_header)
         assert response_resume_again.status_code == 500 and \
                response_resume_again.json()['error']['code'] == SchedulerServiceApiException.CODE_ALREADY_RUNNING
 
         # Let's delete jobs now
-        response_remove = requests.delete(APP_URL + '/tasks/id/' + job_id,
+        response_remove = requests.delete(APP_URL % 'tasks/id/' + job_id,
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
@@ -73,13 +73,13 @@ class TestSchedulerResume:
 
         # Get all jobs except for the one which we just deleted
         for job_id in jobs:
-            response_get = requests.get(APP_URL + '/tasks/id/' + job_id,
+            response_get = requests.get(APP_URL % 'tasks/id/' + job_id,
                                         headers=auth_header)
             assert response_get.json()['task']['id'] == job_id and \
                    response_get.json()['task']['next_run_datetime'] is not None
 
         # Delete all jobs
-        response_remove = requests.delete(APP_URL + '/tasks/', data=json.dumps(dict(ids=jobs)),
+        response_remove = requests.delete(APP_URL % 'tasks/', data=json.dumps(dict(ids=jobs)),
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
@@ -96,18 +96,18 @@ class TestSchedulerResume:
         jobs_id = []
 
         for i in range(10):
-            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+            response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
                                      headers=auth_header)
             assert response.status_code == 201
             jobs_id.append(response.json()['id'])
 
         # Send job stop request i.e. stop all jobs
-        response_stop = requests.post(APP_URL + '/tasks/pause/', data=json.dumps(dict(ids=jobs_id)),
+        response_stop = requests.post(APP_URL % 'tasks/pause/', data=json.dumps(dict(ids=jobs_id)),
                                       headers=auth_header)
         assert response_stop.status_code == 200
 
         # Resume all jobs
-        response_resume = requests.post(APP_URL + '/tasks/resume/', data=json.dumps(dict(ids=jobs_id)),
+        response_resume = requests.post(APP_URL % 'tasks/resume/', data=json.dumps(dict(ids=jobs_id)),
                                         headers=auth_header)
 
         assert response_resume.status_code == 200
@@ -115,7 +115,7 @@ class TestSchedulerResume:
         jobs = []
         # Resume jobs have their next_run_datetime set to not 'None'
         for job_id in jobs_id:
-            response_get = requests.get(APP_URL + '/tasks/id/' + job_id,
+            response_get = requests.get(APP_URL % 'tasks/id/' + job_id,
                                         headers=auth_header)
             jobs.append(response_get.json()['task'])
 
@@ -124,7 +124,7 @@ class TestSchedulerResume:
             assert next_run_datetime is not 'None'
 
         # Delete all jobs
-        response_remove = requests.delete(APP_URL + '/tasks/', data=json.dumps(dict(ids=jobs_id)),
+        response_remove = requests.delete(APP_URL % 'tasks/', data=json.dumps(dict(ids=jobs_id)),
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
@@ -137,7 +137,7 @@ class TestSchedulerResume:
             POST data while hitting the endpoint.
         :return:
         """
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+        response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
                                  headers=auth_header)
 
         assert response.status_code == 201
@@ -145,7 +145,7 @@ class TestSchedulerResume:
         assert data['id'] is not None
 
         # Send job stop request
-        response_stop = requests.post(APP_URL + '/tasks/' + data['id'] + '/pause/',
+        response_stop = requests.post(APP_URL % 'tasks/' + data['id'] + '/pause/',
                                       headers=auth_header)
         assert response_stop.status_code == 200
 
@@ -154,18 +154,18 @@ class TestSchedulerResume:
         invalid_header['Authorization'] = 'Bearer invalid_token'
 
         # Now try resume with invalid token
-        response_get = requests.post(APP_URL + '/tasks/' + data['id'] + '/resume/',
+        response_get = requests.post(APP_URL % 'tasks/' + data['id'] + '/resume/',
                                      headers=invalid_header)
 
         assert response_get.status_code == 401
 
         # Let's delete jobs now
-        response_remove = requests.delete(APP_URL + '/tasks/id/' + data['id'],
+        response_remove = requests.delete(APP_URL % 'tasks/id/' + data['id'],
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
         # There shouldn't be any more jobs now
-        response = requests.get(APP_URL + '/tasks/id/' + data['id'], headers=auth_header)
+        response = requests.get(APP_URL % 'tasks/id/' + data['id'], headers=auth_header)
         assert response.status_code == 404
 
     def test_multiple_resume_jobs_without_token(self, auth_header, job_config):
@@ -181,13 +181,13 @@ class TestSchedulerResume:
         jobs_id = []
 
         for i in range(10):
-            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+            response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
                                      headers=auth_header)
             assert response.status_code == 201
             jobs_id.append(response.json()['id'])
 
         # Stop all jobs
-        response_stop = requests.post(APP_URL + '/tasks/pause/', data=json.dumps(dict(ids=jobs_id)),
+        response_stop = requests.post(APP_URL % 'tasks/pause/', data=json.dumps(dict(ids=jobs_id)),
                                       headers=auth_header)
         assert response_stop.status_code == 200
 
@@ -195,7 +195,7 @@ class TestSchedulerResume:
         invalid_header['Authorization'] = 'Bearer invalid_token'
 
         # Then try to resume all jobs with invalid token
-        response_resume = requests.post(APP_URL + '/tasks/resume/', data=json.dumps(dict(ids=jobs_id)),
+        response_resume = requests.post(APP_URL % 'tasks/resume/', data=json.dumps(dict(ids=jobs_id)),
                                         headers=invalid_header)
 
         assert response_resume.status_code == 401
@@ -205,7 +205,7 @@ class TestSchedulerResume:
 
         # Get all jobs
         for job_id in jobs_id:
-            response_get = requests.get(APP_URL + '/tasks/id/' + job_id, data=json.dumps(dict(ids=jobs_id)),
+            response_get = requests.get(APP_URL % 'tasks/id/' + job_id, data=json.dumps(dict(ids=jobs_id)),
                                         headers=auth_header)
             jobs.append(response_get.json())
 
@@ -215,6 +215,6 @@ class TestSchedulerResume:
             assert next_run_datetime is None
 
         # Delete all jobs
-        response_remove = requests.delete(APP_URL + '/tasks/', data=json.dumps(dict(ids=jobs_id)),
+        response_remove = requests.delete(APP_URL % 'tasks/', data=json.dumps(dict(ids=jobs_id)),
                                           headers=auth_header)
         assert response_remove.status_code == 200

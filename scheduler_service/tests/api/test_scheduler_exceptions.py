@@ -34,7 +34,7 @@ class TestSchedulerExceptions:
         del invalid_job_config['frequency']
 
         # Create job with invalid string
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(invalid_job_config),
+        response = requests.post(APP_URL % 'tasks/', data=json.dumps(invalid_job_config),
                                  headers=auth_header)
         assert response.status_code == 400
 
@@ -48,7 +48,7 @@ class TestSchedulerExceptions:
             :return:
             """
         # Create job with invalid string
-        response = requests.post(APP_URL + '/tasks/', data='invalid data',
+        response = requests.post(APP_URL % 'tasks/', data='invalid data',
                                  headers=auth_header)
         assert response.status_code == 400
 
@@ -63,13 +63,13 @@ class TestSchedulerExceptions:
             :return:
             """
         # Create job with invalid string
-        response = requests.post(APP_URL + '/tasks/', data='invalid data',
+        response = requests.post(APP_URL % 'tasks/', data='invalid data',
                                  headers=auth_header)
         assert response.status_code == 400
 
         # Post with invalid task type
         job_config['task_type'] = 'Some invalid type'
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+        response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
                                  headers=auth_header)
 
         # Invalid trigger type exception
@@ -89,12 +89,12 @@ class TestSchedulerExceptions:
         """
         temp_job_config = job_config.copy()
         temp_job_config['frequency'] = 'abc'
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(temp_job_config),
+        response = requests.post(APP_URL % 'tasks/', data=json.dumps(temp_job_config),
                                  headers=auth_header)
 
         assert response.status_code == 400
 
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+        response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
                                  headers=auth_header)
 
         assert response.status_code == 201
@@ -102,7 +102,7 @@ class TestSchedulerExceptions:
         data = response.json()
         assert data['id'] is not None
         # Let's delete jobs now
-        response_remove = requests.delete(APP_URL + '/tasks/id/' + data['id'],
+        response_remove = requests.delete(APP_URL % 'tasks/id/' + data['id'],
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
@@ -120,7 +120,7 @@ class TestSchedulerExceptions:
         # set run_datetime to 5 hours in past from now
         run_datetime = datetime.datetime.utcnow() - datetime.timedelta(hours=5)
         job_config['run_datetime'] = run_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+        response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
                                  headers=auth_header)
 
         # Invalid usage exception. run_datetime cannot be in past
@@ -140,7 +140,7 @@ class TestSchedulerExceptions:
         # Set the end_datetime to 5 hours in past from now
         end_datetime = datetime.datetime.utcnow() - datetime.timedelta(hours=5)
         job_config['end_datetime'] = end_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+        response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
                                  headers=auth_header)
 
         # Invalid usage exception
@@ -164,7 +164,7 @@ class TestSchedulerExceptions:
         job_config['start_datetime'] = start_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
         end_datetime = datetime.datetime.utcnow() - datetime.timedelta(seconds=8)
         job_config['end_datetime'] = end_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+        response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
                                  headers=auth_header)
 
         # Invalid Usage exception
@@ -184,7 +184,7 @@ class TestSchedulerExceptions:
         job_config = job_config.copy()
         start_datetime = datetime.datetime.utcnow() - datetime.timedelta(minutes=15)
         job_config['start_datetime'] = start_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+        response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
                                  headers=auth_header)
 
         # Invalid Usage exception
@@ -205,7 +205,7 @@ class TestSchedulerExceptions:
         job_config = job_config.copy()
         end_datetime = datetime.datetime.utcnow() + datetime.timedelta(minutes=16)
         job_config['end_datetime'] = end_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+        response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
                                  headers=auth_header)
 
         # Frequency is greater than end_datetime. Invalid Usage exception
