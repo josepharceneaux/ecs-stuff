@@ -75,8 +75,6 @@ class TestSchedulerGet:
         data = response.json()
         assert data['id'] is not None
 
-        # Assign task_name in job post data (general task)
-        job_config['task_name'] = 'Custom Task'
         # Now get the job
         response_get = requests.get(APP_URL + '/tasks/id/' + data['id'],
                                     headers=auth_header_no_user)
@@ -90,8 +88,8 @@ class TestSchedulerGet:
     def test_multiple_jobs_without_user(self, auth_header_no_user, job_config):
         """
         Create multiple jobs and save the ids in a list. Then get all tasks of the current user which is None in this case.
-        Then check if the jobs created are in the tasks of user. If yes, then show status code 200
-        Finally, delete the jobs
+        Then check if the jobs created are in the tasks of user. If yes, then show status code 200.
+        Finally, delete the jobs.
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
@@ -99,7 +97,7 @@ class TestSchedulerGet:
         :return:
         """
         jobs_id = []
-
+        # Create tasks
         for i in range(10):
             job_config['task_name'] = 'Custom General Named Task %s' % i
             response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
@@ -107,12 +105,15 @@ class TestSchedulerGet:
             assert response.status_code == 201
             jobs_id.append(response.json()['id'])
 
+        # Get tasks
         response_get = requests.get(APP_URL + '/tasks/', data=json.dumps(dict(ids=jobs_id)),
                                     headers=auth_header_no_user)
 
         get_jobs_id = map(lambda job_: job_['id'], response_get.json()['tasks'])
+        # Assert the job ids in the retrieved jobs
         for job in jobs_id:
             assert job in get_jobs_id
+
         # Delete all jobs
         for job_id in jobs_id:
             response_remove = requests.delete(APP_URL + '/tasks/id/%s' % job_id,

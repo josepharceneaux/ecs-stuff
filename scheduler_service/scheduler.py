@@ -132,7 +132,7 @@ def validate_periodic_job(data):
 
 def schedule_job(data, user_id=None, access_token=None):
     """
-    Schedule job using post data and add it to APScheduler. Which calls the callback method when job time comes
+    Schedule job using POST data and add it to APScheduler. Which calls the callback method when job time comes
     :param data: the data like url, frequency, post_data, start_datetime and end_datetime of job which is required
     for creating job of APScheduler
     :param user_id: the user_id of user who is creating job
@@ -142,12 +142,15 @@ def schedule_job(data, user_id=None, access_token=None):
     job_config = dict()
     job_config['post_data'] = data.get('post_data', dict())
     content_type = data.get('content_type', 'application/json')
+    # TODO; am unsure if following comment belongs to above line or lines below
     # will return None if key not found. We also need to check for valid values not just keys
     # in dict because a value can be '' and it can be valid or invalid
     job_config['task_type'] = get_valid_data(data, 'task_type')
     job_config['url'] = get_valid_url(data, 'url')
 
-    # Server to Server call
+    # Server to Server call. We check if a job with a certain 'task_name'
+    # is already running as we only allow one such task to run at a time.
+    # If there is already such task we raise an exception.
     if user_id is None:
         job_config['task_name'] = get_valid_data(data, 'task_name')
         jobs = scheduler.get_jobs()
@@ -175,6 +178,7 @@ def schedule_job(data, user_id=None, access_token=None):
             current_datetime = datetime.datetime.utcnow()
             current_datetime = current_datetime.replace(tzinfo=timezone('UTC'))
 
+            # TODO; need to understand this more
             # If job is in past but in range of 0-30 seconds interval then run the job
             if (current_datetime - datetime.timedelta(seconds=30)) < valid_data['start_datetime']:
                 run_job(user_id, access_token, job_config['url'], content_type)
@@ -211,21 +215,26 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
     """
     headers = {'content-type': 'application/x-www-form-urlencoded'}
     secret_key = None
+    # TODO; comment why are we doing this
     if not access_token:
         secret_key, access_token = User.generate_auth_token(user_id=user_id)
     elif 'bearer' in access_token.lower():
         token = Token.get_token(access_token=access_token)
+        # If token has expired we refresh it
         if token and (token.expires - datetime.timedelta(seconds=30)) < datetime.datetime.utcnow():
-             data = {'client_id': token.client_id,
-                     'client_secret': token.client.client_secret,
-                     'refresh_token': token.refresh_token,
-                     'grant_type': u'refresh_token'}
-             resp = http_request('POST', AuthApiUrl.AUTH_SERVICE_TOKEN_CREATE_URI, headers=headers,
+            data = {
+                'client_id': token.client_id,
+                'client_secret': token.client.client_secret,
+                'refresh_token': token.refresh_token,
+                'grant_type': u'refresh_token'
+            }
+            # TODO; need to use Basit's code that takes care of the errors
+            resp = http_request('POST', AuthApiUrl.AUTH_SERVICE_TOKEN_CREATE_URI, headers=headers,
                                  data=urlencode(data))
-             access_token = "Bearer " + resp.json()['access_token']
+            access_token = "Bearer " + resp.json()['access_token']
 
     logger.info('User ID: %s, URL: %s, Content-Type: %s' % (user_id, url, content_type))
-    # Call celery task to send post_data to url
+    # Call celery task to send post_data to URL
     send_request.apply_async([access_token, secret_key, url, content_type, kwargs])
 
 
@@ -236,21 +245,25 @@ def remove_tasks(ids, user_id):
     :param user_id: tasks owned by user
     :return: tasks which are removed
     """
+    # Get all jobs from APScheduler
     jobs_aps = map(lambda job_id: scheduler.get_job(job_id=job_id), ids)
+    # Now only keep those that belong to the user
     jobs_aps = filter(lambda job: job is not None and job.args[0] == user_id, jobs_aps)
-
+    # Finally remove all such jobs
     removed = map(lambda job: (scheduler.remove_job(job.id), job.id), jobs_aps)
     return removed
 
 
 def serialize_task(task):
     """
-    Serialize task data to json object
+    Serialize task data to JSON object
     :param task: APScheduler task to convert to json dict
                  task.args: user_id, access_token, url, content_type
     :return: json converted dict object
     """
     task_dict = None
+    # TODO; comment what task, kwargs, task.arg[0] and task.arg[2] contains
+    # TODO; comment the significance of IntervalTrigger and DateTrigger
     if isinstance(task.trigger, IntervalTrigger):
         task_dict = dict(
             id=task.id,
@@ -284,9 +297,12 @@ def serialize_task(task):
             pending=task.pending,
             task_type='one_time'
         )
+
+        # TODO; Following is a bug
         if task_dict['run_datetime'] is None:
             task_dict['run_datetime'] = task_dict['run_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
 
+        # TODO; We can take out the following line out of if/else as it's common
         if task.name is not None and task.args[0] is None:
             task_dict['task_name'] = task.name
 
