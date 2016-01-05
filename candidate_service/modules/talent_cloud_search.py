@@ -10,7 +10,7 @@ import simplejson
 from copy import deepcopy
 from datetime import datetime
 from flask import request
-from flask import current_app
+from candidate_service.candidate_app import app
 from candidate_service.candidate_app import db, logger
 from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateStatus
 from candidate_service.common.models.user import User, Domain
@@ -144,16 +144,16 @@ def get_cloud_search_connection():
 
     global _cloud_search_connection_layer_2, _cloud_search_domain
     if not _cloud_search_connection_layer_2:
-        _cloud_search_connection_layer_2 = boto.connect_cloudsearch2(aws_access_key_id=current_app.
+        _cloud_search_connection_layer_2 = boto.connect_cloudsearch2(aws_access_key_id=app.
                                                                      config[ConfigKeys.AWS_KEY],
-                                                                     aws_secret_access_key=current_app.
+                                                                     aws_secret_access_key=app.
                                                                      config[ConfigKeys.AWS_SECRET],
                                                                      sign_request=True,
-                                                                     region=current_app.config[ConfigKeys.CS_REGION_KEY])
+                                                                     region=app.config[ConfigKeys.CS_REGION_KEY])
 
-        _cloud_search_domain = _cloud_search_connection_layer_2.lookup(current_app.config[ConfigKeys.CS_DOMAIN_KEY])
+        _cloud_search_domain = _cloud_search_connection_layer_2.lookup(app.config[ConfigKeys.CS_DOMAIN_KEY])
         if not _cloud_search_domain:
-            _cloud_search_connection_layer_2.create_domain(CLOUD_SEARCH_DOMAIN_NAME)
+            _cloud_search_connection_layer_2.create_domain(app.config[ConfigKeys.CS_DOMAIN_KEY])
 
     return _cloud_search_connection_layer_2
 
@@ -215,7 +215,7 @@ def delete_index_fields():
     Deletes above defined index fields.
     :return:
     """
-    if current_app.config[ConfigKeys.ENV_KEY] is not 'dev':
+    if app.config[ConfigKeys.ENV_KEY] is not 'dev':
         raise Exception("Can't call delete_index_fields() in prod! Use the console instead")
     conn = get_cloud_search_connection()
     for index_field_name in INDEX_FIELD_NAME_TO_OPTIONS:
@@ -445,7 +445,7 @@ def delete_all_candidate_documents():
     It only works on dev domain (to avoid the function hitting accidentally on production)
 
     """
-    if current_app.config(ConfigKeys.ENV_KEY) is not 'dev':
+    if app.config(ConfigKeys.ENV_KEY) is not 'dev':
         raise Exception("Can't call delete_all_candidate_documents() in prod! Use the console instead")
 
     # Get all candidate ids by searching for everything except a nonsense string
