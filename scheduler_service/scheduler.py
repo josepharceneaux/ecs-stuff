@@ -27,6 +27,7 @@ from scheduler_service.common.models.user import User
 from scheduler_service.apscheduler_config import executors, job_store, jobstores
 from scheduler_service.common.error_handling import InvalidUsage
 from scheduler_service.common.routes import AuthApiUrl
+from scheduler_service.common.utils.handy_functions import http_request
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 from scheduler_service.common.utils.validators import get_valid_data, get_valid_url, get_valid_datetime, \
     get_valid_integer
@@ -219,8 +220,8 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
                      'client_secret': token.client.client_secret,
                      'refresh_token': token.refresh_token,
                      'grant_type': u'refresh_token'}
-             resp = requests.post(AuthApiUrl.AUTH_SERVICE_TOKEN_CREATE_URI, data=urlencode(data),
-                                  headers=headers)
+             resp = http_request('POST', AuthApiUrl.AUTH_SERVICE_TOKEN_CREATE_URI, headers=headers,
+                                 data=urlencode(data))
              access_token = "Bearer " + resp.json()['access_token']
 
     logger.info('User ID: %s, URL: %s, Content-Type: %s' % (user_id, url, content_type))
