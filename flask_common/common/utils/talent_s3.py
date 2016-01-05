@@ -1,19 +1,19 @@
 __author__ = 'ufarooqi'
 
-import os
 import boto
+from flask import current_app as app
 import boto.exception
 from boto.s3.bucket import Bucket
 from boto.s3.key import Key
 from ..error_handling import InvalidUsage
-from .. import talent_config_manager
+from ..talent_config_manager import ConfigKeys
 from boto.s3.connection import OrdinaryCallingFormat, S3Connection
 
-S3_BUCKET_NAME = talent_config_manager.get_s3_bucket_name()
-S3_BUCKET_REGION = talent_config_manager.get_s3_region()
-S3_FILEPICKER_BUCKET_NAME = talent_config_manager.get_s3_filepicker_bucket_name()
-AWS_ACCESS_KEY_ID = talent_config_manager.get_aws_key()
-AWS_SECRET_ACCESS_KEY = talent_config_manager.get_aws_secret()
+S3_BUCKET_NAME = app.config[ConfigKeys.S3_BUCKET_KEY]
+S3_BUCKET_REGION = app.config[ConfigKeys.S3_REGION_KEY]
+S3_FILEPICKER_BUCKET_NAME = app.config[ConfigKeys.S3_FILE_PICKER_BUCKET_KEY]
+AWS_ACCESS_KEY_ID = app.config[ConfigKeys.AWS_KEY]
+AWS_SECRET_ACCESS_KEY = app.config[ConfigKeys.AWS_SECRET]
 
 
 def get_s3_bucket_and_conn():

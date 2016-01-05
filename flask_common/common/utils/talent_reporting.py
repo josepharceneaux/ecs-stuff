@@ -1,8 +1,9 @@
 __author__ = 'ufarooqi'
 
 from flask import request
+from flask import current_app as app
 from amazon_ses import send_email, DEFAULT_MAIL_SENDER
-from .. import talent_config_manager
+from ..talent_config_manager import ConfigKeys
 
 ADMINS = ['osman@gettalent.com', 'vincent.mendolia@dice.com', 'ahmed@janim.me', 'jitesh.karesia@newvisionsoftware.in',
           'ashwin@gettalent.com', 'umar.farooqi.gt@gmail.com']
@@ -18,7 +19,7 @@ def email_notification_to_admins(body, subject=""):
 
 def email_admins(body, prefix, subject):
 
-    env = talent_config_manager.get_env()
+    env = app.config[ConfigKeys.ENV_KEY]
     # For development and circle ci do not send email notification to getTalent admins.
     if env == 'dev' or env == 'circle':
         return
