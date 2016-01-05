@@ -128,13 +128,13 @@ class SchedulerApiUrl:
     env = talent_property_manager.get_env()
 
     if env == 'dev' or env == 'circle':
-        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/%s'
+        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/v1/%s'
     elif env == 'qa':
         # TODO: Change this url after deployment
-        SCHEDULER_SERVICE_HOST_NAME = 'http://scheduler-service-webdev.gettalent.com/%s'
+        SCHEDULER_SERVICE_HOST_NAME = 'http://scheduler-service-webdev.gettalent.com/v1/%s'
     elif env == 'prod':
         # TODO: Change this url after deployment
-        SCHEDULER_SERVICE_HOST_NAME = 'http://scheduler-service.gettalent.com/%s'
+        SCHEDULER_SERVICE_HOST_NAME = 'http://scheduler-service.gettalent.com/v1/%s'
     else:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
 

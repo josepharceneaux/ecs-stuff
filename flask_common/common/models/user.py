@@ -240,7 +240,10 @@ class Token(db.Model):
     def get_token(access_token):
         if access_token is None:
             return None
-        token = Token.query.filter_by(access_token=access_token.split(' ')[1]).first()
+        if 'bearer ' in access_token.lower():
+            token = Token.query.filter_by(access_token=access_token.split(' ')[1])
+        else:
+            token = Token.query.filter_by(access_token=access_token)
         return token
 
 

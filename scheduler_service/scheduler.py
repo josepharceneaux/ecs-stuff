@@ -3,7 +3,7 @@ Scheduler - APScheduler initialization, set jobstore, threadpoolexecutor
 - Add task to APScheduler
 - run_job callback method, runs when times come
 - remove multiple tasks from APScheduler
-- get tasks from APScheduler and serialize tasks using json
+- get tasks from APScheduler and serialize tasks using JSON
 """
 
 # Standard imports
@@ -11,7 +11,6 @@ import datetime
 import os
 
 # Third-party imports
-import requests
 from dateutil.tz import tzutc
 from pytz import timezone
 from apscheduler.events import EVENT_JOB_ERROR
@@ -49,6 +48,10 @@ else:
     MIN_ALLOWED_FREQUENCY = 3600
 
 
+# Request timeout is 30 seconds.
+REQUEST_TIMEOUT = 30
+
+
 def apscheduler_listener(event):
     """
     APScheduler listener for logging on job crashed or job time expires
@@ -62,7 +65,8 @@ def apscheduler_listener(event):
         job = scheduler.get_job(event.job_id)
         if job:
             logger.info('The job with id %s worked :)' % job.id)
-            # TODO add comment
+            # In case of periodic job, if next_run_time is greater than end_date. This mean job is expired and will
+            # not run in future. So, just simply delete.
             if isinstance(job.trigger, IntervalTrigger) and job.next_run_time and job.next_run_time > job.trigger.end_date:
                 logger.info('Stopping job')
                 try:
@@ -71,7 +75,6 @@ def apscheduler_listener(event):
                 except Exception as e:
                     logger.exception("apscheduler_listener: Error occurred while removing job")
                     raise e
-            # TODO add comment
             elif isinstance(job.trigger, DateTrigger) and not job.run_date:
                 scheduler.remove_job(job_id=job.id)
                 logger.info("apscheduler_listener: Job with %s removed successfully" % job.id)
@@ -126,7 +129,7 @@ def validate_periodic_job(data):
     current_datetime = current_datetime.replace(tzinfo=timezone('UTC'))
 
     # If job is not in 0-30 seconds in past or greater than current datetime.
-    if not ((current_datetime - datetime.timedelta(seconds=30)) < start_datetime <
+    if not ((current_datetime - datetime.timedelta(seconds=REQUEST_TIMEOUT)) < start_datetime <
                 (end_datetime - datetime.timedelta(seconds=frequency))):
         raise InvalidUsage("start_datetime and end_datetime should be in future.")
 
@@ -145,9 +148,6 @@ def schedule_job(data, user_id=None, access_token=None):
     job_config = dict()
     job_config['post_data'] = data.get('post_data', dict())
     content_type = data.get('content_type', 'application/json')
-    # TODO; am unsure if following comment belongs to above line or lines below
-    # will return None if key not found. We also need to check for valid values not just keys
-    # in dict because a value can be '' and it can be valid or invalid
     job_config['task_type'] = get_valid_data(data, 'task_type')
     job_config['url'] = get_valid_url(data, 'url')
 
@@ -158,8 +158,8 @@ def schedule_job(data, user_id=None, access_token=None):
         job_config['task_name'] = get_valid_data(data, 'task_name')
         jobs = scheduler.get_jobs()
         jobs = filter(lambda task: task.name == job_config['task_name'], jobs)
-        # TODO add jobs length check
-        if jobs:
+        # There should be a unique task named job. If a job already exist then it should raise error
+        if jobs and len(jobs) == 1:
             raise InvalidUsage('Task name %s is already scheduled' % jobs[0].name)
     else:
         job_config['task_name'] = None
@@ -178,14 +178,12 @@ def schedule_job(data, user_id=None, access_token=None):
                                     end_date=valid_data['end_datetime'],
                                     args=[user_id, access_token, job_config['url'], content_type],
                                     kwargs=job_config['post_data'])
-            # Assert on job TODO
+
             current_datetime = datetime.datetime.utcnow()
             current_datetime = current_datetime.replace(tzinfo=tzutc())
 
-            # TODO; 30 secs should be const
-            # If job is in past but in range of 0-30 seconds interval then run the job
-
-            if (current_datetime - datetime.timedelta(seconds=30)) < valid_data['start_datetime']:
+            # If job time is passed because of request timeout delay then run the job
+            if current_datetime < valid_data['start_datetime']:
                 run_job(user_id, access_token, job_config['url'], content_type)
             logger.info('schedule_job: Task has been added and will start at %s ' % valid_data['start_datetime'])
         except Exception:
@@ -218,24 +216,26 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
     :param kwargs: post data like campaign name, smartlist ids etc
     :return:
     """
-    headers = {'content-type': 'application/x-www-form-urlencoded'}
     secret_key = None
-    # TODO; comment why are we doing this
+    # In case of global tasks there is no access_token and token expires in 600 seconds. So, a new token should be
+    # created because frequency can be set minimum of 1 hour.
     if not access_token:
-        secret_key, access_token = User.generate_auth_token(user_id=user_id)
+        secret_key, access_token = User.generate_auth_token()
     elif 'bearer' in access_token.lower():
+        headers = {'content-type': 'application/x-www-form-urlencoded'}
         token = Token.get_token(access_token=access_token)
         # If token has expired we refresh it
-        if token and (token.expires - datetime.timedelta(seconds=30)) < datetime.datetime.utcnow():
+        if token and (token.expires - datetime.timedelta(seconds=REQUEST_TIMEOUT)) < datetime.datetime.utcnow():
             data = {
                 'client_id': token.client_id,
                 'client_secret': token.client.client_secret,
                 'refresh_token': token.refresh_token,
                 'grant_type': u'refresh_token'
             }
-            # TODO; need to use Basit's code that takes care of the errors
+            # We need to refresh token if token is expired. For that send request to auth service and request a
+            # refresh token.
             resp = http_request('POST', AuthApiUrl.AUTH_SERVICE_TOKEN_CREATE_URI, headers=headers,
-                                 data=urlencode(data))
+                                data=urlencode(data))
             access_token = "Bearer " + resp.json()['access_token']
 
     logger.info('User ID: %s, URL: %s, Content-Type: %s' % (user_id, url, content_type))
@@ -264,11 +264,10 @@ def serialize_task(task):
     Serialize task data to JSON object
     :param task: APScheduler task to convert to JSON dict
                  task.args: user_id, access_token, url, content_type
-    :return: json converted dict object
+    :return: JSON converted dict object
     """
     task_dict = None
-    # TODO; comment what task, kwargs, task.arg[0] and task.arg[2] contains
-    # TODO; comment the significance of IntervalTrigger and DateTrigger
+    # Interval Trigger is periodic task_type
     if isinstance(task.trigger, IntervalTrigger):
         task_dict = dict(
             id=task.id,
@@ -290,9 +289,7 @@ def serialize_task(task):
         if task_dict['next_run_datetime'] is not None:
             task_dict['next_run_datetime'] = task_dict['next_run_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        if task.name is not None and task.args[0] is None:
-            task_dict['task_name'] = task.name
-
+    # Date Trigger is a one_time task_type
     elif isinstance(task.trigger, DateTrigger):
         task_dict = dict(
             id=task.id,
@@ -300,16 +297,13 @@ def serialize_task(task):
             run_datetime=task.trigger.run_date,
             post_data=task.kwargs,
             pending=task.pending,
-            #TODO kindly use constant which you have already defined
-            task_type='one_time'
+            task_type=SchedulerUtils.ONE_TIME
         )
 
-        # TODO; Following is a bug
-        if task_dict['run_datetime'] is None:
+        if task_dict['run_datetime'] is not None:
             task_dict['run_datetime'] = task_dict['run_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        # TODO; We can take out the following line out of if/else as it's common
-        if task.name is not None and task.args[0] is None:
-            task_dict['task_name'] = task.name
+    if task_dict and task.name is not None and task.args[0] is None:
+        task_dict['task_name'] = task.name
 
     return task_dict

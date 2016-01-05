@@ -8,13 +8,49 @@ import pytest
 import requests
 
 # Application imports
+from datetime import timedelta, datetime
+
+from scheduler_service.common.models.db import db
+from scheduler_service.common.models.user import Token
+from scheduler_service.common.utils.models_utils import update
 from scheduler_service.tests.conftest import APP_URL
 
 __author__ = 'saad'
 
 
-@pytest.mark.usefixtures('auth_header', 'auth_header_no_user', 'job_config')
+@pytest.mark.usefixtures('auth_header', 'auth_header_no_user', 'job_config', 'sample_user')
 class TestSchedulerCreate:
+
+    def test_scheduled_job_with_expired_token(self, sample_user, user_auth, job_config):
+        """
+        Create a job by hitting the endpoint and make sure response
+        is correct.
+        Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+        :return:
+        """
+
+        auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+        # Expire token
+        expiry = datetime.utcnow() - timedelta(days=10)
+        # token = Token.query.filter_by(user_id=auth_token_row['user_id']).update(expires=expiry)
+        token = Token.query.filter_by(user_id=auth_token_row['user_id']).first()
+        db.session.flush()
+        token.update(expires=expiry)
+        db.session.flush()
+
+        auth_token = auth_token_row['access_token']
+
+        Token.query.filter_by(user_id=auth_token_row['user_id']).first()
+        auth_header = {'Authorization': 'Bearer ' + auth_token,
+                       'Content-Type': 'application/json'}
+        response = requests.post(APP_URL + '/tasks/test/', data=json.dumps(job_config),
+                                 headers=auth_header)
+
+        token = Token.query.filter_by(user_id=auth_token_row['user_id']).first()
+        assert response.status_code == 200
 
     def test_single_scheduled_job_without_user(self, auth_header_no_user, job_config):
         """

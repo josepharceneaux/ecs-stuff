@@ -13,7 +13,7 @@ from scheduler_service.common.routes import AuthApiUrl, SchedulerApiUrl
 # Application Specific
 
 APP, celery = init_app()
-APP_URL = SchedulerApiUrl.SCHEDULER_SERVICE_HOST_NAME % 'v1'
+APP_URL = SchedulerApiUrl.SCHEDULER_SERVICE_HOST_NAME
 
 OAUTH_SERVER = AuthApiUrl.AUTH_SERVICE_AUTHORIZE_URI
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
