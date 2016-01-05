@@ -1,37 +1,45 @@
 __author__ = 'ufarooqi'
 
 from flask import Flask
-from healthcheck import HealthCheck
-from user_service.common.models.db import db
 from user_service.common import common_config
-from user_service.common.redis_cache import redis_store
 
 app = Flask(__name__)
 app.config.from_object(common_config)
 
 logger = app.config['LOGGER']
-from user_service.common.error_handling import register_error_handlers
-register_error_handlers(app, logger)
 
-db.init_app(app)
-db.app = app
+try:
+    from user_service.common.error_handling import register_error_handlers
+    register_error_handlers(app, logger)
 
-redis_store.init_app(app)
+    from user_service.common.models.db import db
+    db.init_app(app)
+    db.app = app
 
-from views import users_utilities_blueprint
-from api.users_v1 import users_blueprint
-from api.domain_v1 import domain_blueprint
-from api.roles_and_groups_v1 import groups_and_roles_blueprint
+    from user_service.common.redis_cache import redis_store
+    redis_store.init_app(app)
 
-app.register_blueprint(users_blueprint, url_prefix='/v1')
-app.register_blueprint(domain_blueprint, url_prefix='/v1')
-app.register_blueprint(users_utilities_blueprint, url_prefix='/v1')
-app.register_blueprint(groups_and_roles_blueprint, url_prefix='/v1')
+    from views import users_utilities_blueprint
+    from api.users_v1 import users_blueprint
+    from api.domain_v1 import domain_blueprint
+    from api.roles_and_groups_v1 import groups_and_roles_blueprint
 
-# wrap the flask app and give a heathcheck url
-health = HealthCheck(app, "/healthcheck")
+    app.register_blueprint(users_blueprint, url_prefix='/v1')
+    app.register_blueprint(domain_blueprint, url_prefix='/v1')
+    app.register_blueprint(users_utilities_blueprint, url_prefix='/v1')
+    app.register_blueprint(groups_and_roles_blueprint, url_prefix='/v1')
 
-db.create_all()
-db.session.commit()
+    # wrap the flask app and give a heathcheck url
+    from healthcheck import HealthCheck
+    health = HealthCheck(app, "/healthcheck")
 
-logger.info("Starting user_service in %s environment", app.config['GT_ENVIRONMENT'])
+    db.create_all()
+    db.session.commit()
+
+    logger.info("Starting user_service in %s environment", app.config['GT_ENVIRONMENT'])
+
+except Exception as e:
+    logger.exception("Couldn't start user_service in %s environment because: %s"
+                     % (app.config['GT_ENVIRONMENT'], e.message))
+
+

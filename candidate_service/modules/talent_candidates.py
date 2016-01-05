@@ -37,7 +37,7 @@ from candidate_service.common.error_handling import InvalidUsage, NotFoundError,
 from candidate_service.common.utils.validators import (sanitize_zip_code, is_number, format_phone_number)
 
 # Common utilities
-from flask.ext.common.common.geo_services.geo_coordinates import get_coordinates
+from candidate_service.common.geo_services.geo_coordinates import get_coordinates
 
 ##################################################
 # Helper Functions For Retrieving Candidate Info #

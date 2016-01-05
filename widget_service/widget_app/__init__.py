@@ -1,7 +1,7 @@
 __author__ = 'erikfarmer'
 
 from flask import Flask
-from healthcheck  import HealthCheck
+from healthcheck import HealthCheck
 import config
 from widget_service.common.models.db import db
 
