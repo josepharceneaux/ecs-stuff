@@ -53,6 +53,8 @@ class TalentConfig(Config):
 
                 # If a configuration variable is set in environment variables then it should be given preference
                 app_config[value] = os.getenv(value) or app_config.get(value, '')
+                if not app_config[value] and value != 'LOGGER':
+                    raise Exception('Configuration variable: "%s" is missing' % value)
 
         self.app_config = app_config
         self.__set_environment_specific_configurations()
