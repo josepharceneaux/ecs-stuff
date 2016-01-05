@@ -1,19 +1,25 @@
 import json
+import time
 
 import requests
 from push_campaign_service.common.routes import PushNotificationServiceApi
-from push_campaign_service.common.models.push_notification import PushCampaign
+from push_campaign_service.common.models.push_notification import *
+from push_campaign_service.common.utils.models_utils import db
 
 API_URL = PushNotificationServiceApi.HOST_NAME
 VERSION = PushNotificationServiceApi.VERSION
+
+SLEEP_TIME = 20
 from push_campaign_service.tests.helper_methods import *
 
 
 class TestCreateCampaign():
 
-    def test_create_campaign(self, auth_data, campaign_data):
+    # URL: /v1/campaigns [POST]
+    def test_create_campaign(self, auth_data, campaign_data, test_campaign, test_smartlist):
         """
         This method tests push campaign creation endpoint.
+
         :param auth_data: token, validity_status
         :param campaign_data:
         :return:
@@ -23,10 +29,13 @@ class TestCreateCampaign():
             # First test with missing keys
             for key in ['title', 'content', 'url', 'smartlist_ids']:
                 data = campaign_data.copy()
+                data['smartlist_ids'] = [test_smartlist.id]
                 missing_key_test(data, key, token)
 
             # Success case. Send a valid data and campaign should be created (201)
-            response = send_request('post', PushNotificationServiceApi.CAMPAIGNS, token, campaign_data)
+            data = campaign_data.copy()
+            data['smartlist_ids'] = [test_smartlist.id]
+            response = send_request('post', PushNotificationServiceApi.CAMPAIGNS, token, data)
             assert response.status_code == 201, 'Push campaign has been created'
             json_response = response.json()
             _id = json_response['id']
@@ -38,6 +47,7 @@ class TestCreateCampaign():
         else:
             unauthorize_test('post', PushNotificationServiceApi.CAMPAIGNS, token, campaign_data)
 
+    # URL: /v1/campaigns/ [GET]
     def test_get_list_of_zero_campaigns(self, auth_data):
         """
         This method tests get list of push campaign created by this user.
@@ -57,6 +67,7 @@ class TestCreateCampaign():
         else:
             unauthorize_test('get', PushNotificationServiceApi.CAMPAIGNS, token)
 
+    # URL: /v1/campaigns [GET]
     def test_get_list_of_one_campaign(self, auth_data, test_campaign):
         """
         This method tests get list of push campaign created by this user.
@@ -86,6 +97,7 @@ class TestCreateCampaign():
 
 class TestCampaignById():
 
+    # URL: /v1/campaigns/:id [GET]
     def test_get_by_id(self, auth_data, test_campaign):
         token, is_valid = auth_data
         if is_valid:
@@ -102,7 +114,8 @@ class TestCampaignById():
             unauthorize_test('get', '/v1/campaigns/%s' % test_campaign.id, token)
 
     # update campaign test
-    def test_put_by_id(self, auth_data, test_campaign, campaign_data):
+    # URL: /v1/campaigns/:id [PUT]
+    def test_put_by_id(self, auth_data, test_campaign, campaign_data, test_smartlist):
         token, is_valid = auth_data
         if is_valid:
             # First get already created campaign
@@ -120,6 +133,7 @@ class TestCampaignById():
 
             # Test `raise ResourceNotFound('Campaign not found with id %s' % campaign_id)`
             data = campaign_data.copy()
+            data['smartlist_ids'] = [test_smartlist.id]
             if 'user_id' in data: del data['user_id']
             last_obj = PushCampaign.query.order_by(PushCampaign.id.desc()).first()
             non_existing_id = last_obj.id + 1
@@ -157,14 +171,38 @@ class TestCampaignById():
             campaign = json_response['campaign']
             # Compare sent campaign dict and campaign dict returned by API.
             compare_campaign_data(data, campaign)
-
-
-
-
-
-
-
         else:
             unauthorize_test('get', '/v1/campaigns/%s' % test_campaign.id, token)
+
+
+class TestSendCmapign():
+
+    # Send a campaign
+    # URL: /v1/campaigns/<int:campaign_id>/send [POST]
+    def test_send_a_camapign(self, auth_data, test_campaign, test_smartlist):
+        token, is_valid = auth_data
+        if is_valid:
+            # 404 case. Send a non existing campaign id
+            last_obj = PushCampaign.query.order_by(PushCampaign.id.desc()).first()
+            response = send_request('post', '/v1/campaigns/%s/send' % (last_obj.id + 1), token)
+            assert response.status_code == 404, 'Push campaign does not exists with this id'
+
+            # 200 case: Campaign Sent successfully
+            response = send_request('post', '/v1/campaigns/%s/send' % test_campaign.id, token)
+            assert response.status_code == 200, 'Push campaign has been sent'
+            response = response.json()
+            assert response['message'] == 'Campaign(id:%s) is being sent to candidates' % test_campaign.id
+
+            # Wait for 20 seconds to run celery which will send campaign and creates blast
+            time.sleep(SLEEP_TIME)
+            # Update session to get latest changes in database. Celery has added some records
+            db.session.commit()
+            # There should be only one blast for this campaign
+            blasts = test_campaign.blasts.all()
+            assert len(blasts) == 1
+            assert test_campaign.blasts[0].sends == 1, 'Campaign was sent to one candidate'
+        else:
+            unauthorize_test('post', '/v1/campaigns/%s/send' % test_campaign.id, token)
+
 
 

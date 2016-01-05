@@ -633,8 +633,6 @@ class CampaignBase(object):
                                                            queue=self.queue_name)
             # Here we create list of all tasks and assign a self.celery_error_handler() as a
             # callback function in case any of the tasks in the list encounter some error.
-            for candidate in candidates:
-                self.send_campaign_to_candidate.apply_async([candidate])
             tasks = [self.send_campaign_to_candidate.subtask(
                 (self, record), link_error=self.celery_error_handler.subtask(queue=self.queue_name)
                 , queue=self.queue_name) for record in pre_processed_data]

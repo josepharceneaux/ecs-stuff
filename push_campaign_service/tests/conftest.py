@@ -38,27 +38,47 @@ def auth_data(request, user_auth, sample_user):
         return 'invalid_token', False
 
 
+@pytest.fixture()
+def test_campaign(request, sample_user, campaign_data):
+    campaign_data['user_id'] = sample_user.id
+    campaign = PushCampaign(**campaign_data)
+    PushCampaign.save(campaign)
+
+    def tear_down():
+        PushCampaign.delete(campaign)
+    request.addfinalizer(tear_down)
+    return campaign
+
+
 @pytest.fixture(scope='function')
-def campaign_data(request, test_smartlist):
+def campaign_data(request):
     """ Generate random data for a push campaign
     """
     data = generate_campaign_data()
-    data["smartlist_ids"] = [test_smartlist.id]
 
     def tear_down():
         if 'id' in data:
+            db.session.commit()
             PushCampaign.delete(data['id'])
     request.addfinalizer(tear_down)
     return data
 
 
-@pytest.fixture()
-def test_smartlist(request, sample_user, test_candidate):
+@pytest.fixture(scope='function')
+def test_smartlist(request, sample_user, test_candidate, test_campaign):
     """ TODO
     """
     smartlist = Smartlist(user_id=sample_user.id,
                           name=fake.word())
     Smartlist.save(smartlist)
+
+    smartlist_candidate = SmartlistCandidate(candidate_id=test_candidate.id,
+                                             smartlist_id=smartlist.id)
+    SmartlistCandidate.save(smartlist_candidate)
+
+    push_smartlist = PushCampaignSmartlist(smartlist_id=smartlist.id,
+                                           campaign_id=test_campaign.id)
+    PushCampaignSmartlist.save(push_smartlist)
 
     def tear_down():
             Smartlist.delete(smartlist)
@@ -66,21 +86,46 @@ def test_smartlist(request, sample_user, test_candidate):
     return smartlist
 
 
-@pytest.fixture()
-def test_smartlist_candidate(request, test_candidate, test_smartlist):
-    """ TODO
-    """
-    smartlist_candidate = SmartlistCandidate(candidate_id=test_candidate.id,
-                                             smartlist_id=test_smartlist.id)
-    SmartlistCandidate.save(smartlist_candidate)
+# @pytest.fixture()
+# def test_push_campaign_smartlist(request, test_smartlist, test_campaign):
+#     """ TODO
+#     """
+#     push_smartlist = PushCampaignSmartlist(smartlist_id=test_smartlist.id,
+#                                            campaign_id=test_campaign.id)
+#     PushCampaignSmartlist.save(push_smartlist)
+#
+#     def tear_down():
+#             PushCampaignSmartlist.delete(push_smartlist)
+#     request.addfinalizer(tear_down)
+#     return push_smartlist
 
-    def tear_down():
-        SmartlistCandidate.delete(smartlist_candidate)
-    request.addfinalizer(tear_down)
-    return smartlist_candidate
+
+# @pytest.fixture()
+# def test_candidate_device(request, test_candidate):
+#     """ TODO
+#     """
+#     device = CandidateDevice(candidate_id=test_candidate.id,
+#                              one_signal_device_id='56c1d574-237e-4a41-992e-c0094b6f2ded',
+#                              registered_at=datetime.datetime.utcnow())
+#     CandidateDevice.save(device)
+#     return device
 
 
-@pytest.fixture()
+# @pytest.fixture()
+# def test_smartlist_candidate(request, test_candidate, test_smartlist):
+#     """ TODO
+#     """
+#     smartlist_candidate = SmartlistCandidate(candidate_id=test_candidate.id,
+#                                              smartlist_id=test_smartlist.id)
+#     SmartlistCandidate.save(smartlist_candidate)
+#
+#     def tear_down():
+#         SmartlistCandidate.delete(smartlist_candidate)
+#     request.addfinalizer(tear_down)
+#     return smartlist_candidate
+
+
+@pytest.fixture(scope='function')
 def test_candidate(request):
     """ TODO
     """
@@ -95,24 +140,13 @@ def test_candidate(request):
                                      is_default=True)
     CandidateEmail.save(candidate_email)
 
+    device = CandidateDevice(candidate_id=candidate.id,
+                             one_signal_device_id='56c1d574-237e-4a41-992e-c0094b6f2ded',
+                             registered_at=datetime.datetime.utcnow())
+    CandidateDevice.save(device)
+
     def tear_down():
         Candidate.delete(candidate)
     request.addfinalizer(tear_down)
     return candidate
 
-
-@pytest.fixture()
-def test_campaign(request, sample_user, campaign_data):
-    smartlist_ids = campaign_data.pop('smartlist_ids')
-    campaign_data['user_id'] = sample_user.id
-    campaign = PushCampaign(**campaign_data)
-    PushCampaign.save(campaign)
-    campaign_data['smartlist_ids'] = smartlist_ids
-    for smartlist_id in smartlist_ids:
-        campaign_smartlist = PushCampaignSmartlist(smartlist_id=smartlist_id, campaign_id=campaign.id)
-        PushCampaignSmartlist.save(campaign_smartlist)
-
-    def tear_down():
-        PushCampaign.delete(campaign)
-    request.addfinalizer(tear_down)
-    return campaign

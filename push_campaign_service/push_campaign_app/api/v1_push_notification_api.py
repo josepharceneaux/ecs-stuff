@@ -479,7 +479,7 @@ class SendPushCampaign(Resource):
         campaign = PushCampaignBase.validate_ownership_of_campaign(campaign_id, user.id)
         campaign_obj = PushCampaignBase(user_id=user.id)
         campaign_obj.process_send(campaign)
-        return dict(message='Campaign(id:%s) is being sent to candidates.' % campaign_id), 200
+        return dict(message='Campaign(id:%s) is being sent to candidates' % campaign_id), 200
 
 
 @api.route('/v1/campaigns/<int:campaign_id>/blasts/<int:blast_id>/sends')
