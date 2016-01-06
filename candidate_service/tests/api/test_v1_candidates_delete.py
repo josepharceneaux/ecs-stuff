@@ -23,7 +23,7 @@ from helpers import (
 
 
 ######################## Candidate ########################
-def test_delete_candidate(sample_user, user_auth):
+def test_delete_candidate_and_retrieve_it(sample_user, user_auth):
     """
     Test:   "Delete" a Candidate by setting is_web_hidden to True, and then retrieve Candidate
     Expect: 404, Not Found error
