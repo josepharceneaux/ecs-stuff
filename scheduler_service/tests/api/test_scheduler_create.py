@@ -30,10 +30,11 @@ class TestSchedulerCreate:
 
     def test_scheduled_job_with_expired_token(self, sample_user, user_auth, job_config):
         """
-        Schedule a job 8 seconds from now and then set token expiry after 5 seconds.
-        So that after 5 seconds token will expire and job will run after 8 seconds.
-        When job time comes, endpoint will call run_job method and which will refresh the expired token.
-        Then check the new expiry time of expired token in test which should be in future
+        Schedule a job 8 seconds from now and then set token expiry after 5 seconds. Then
+        we create a job and then sleep for 12 seconds. While we sleep, job would supposedly be
+        run and token must have expired. Our expectation is that run_job will refresh the token
+        before it runs the job. In the end, after the sleep, we make sure token is no more
+        expired because run_job would have refreshed it.
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
