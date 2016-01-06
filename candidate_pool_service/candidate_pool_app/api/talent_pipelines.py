@@ -112,7 +112,7 @@ class TalentPipelineApi(Resource):
         talent_pipeline.delete()
 
         return {
-            'talent_pipeline': {'id': talent_pipeline.id}
+            'talent_pipeline': {'id': talent_pipeline_id}
         }
 
     @require_all_roles('CAN_ADD_TALENT_PIPELINES')
