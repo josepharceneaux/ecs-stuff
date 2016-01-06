@@ -1,25 +1,31 @@
 __author__ = 'ufarooqi'
 
 from flask import Flask
-from spreadsheet_import_service.common.models.db import db
-from healthcheck import HealthCheck
-from spreadsheet_import_service.common import common_config
+from spreadsheet_import_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 
 app = Flask(__name__)
-app.config.from_object(common_config)
+load_gettalent_config(app.config)
 
-db.init_app(app)
-db.app = app
+logger = app.config[TalentConfigKeys.LOGGER]
 
-logger = app.config['LOGGER']
+try:
 
-import api
-app.register_blueprint(api.mod, url_prefix='/v1')
+    from spreadsheet_import_service.common.models.db import db
+    db.init_app(app)
+    db.app = app
 
-# wrap the flask app and give a heathcheck url
-health = HealthCheck(app, "/healthcheck")
+    import api
+    app.register_blueprint(api.mod, url_prefix='/v1')
 
-from spreadsheet_import_service.common.error_handling import register_error_handlers
-register_error_handlers(app, logger)
+    # wrap the flask app and give a heathcheck url
+    from healthcheck import HealthCheck
+    health = HealthCheck(app, "/healthcheck")
 
-logger.info("Starting spreadsheet_import_service in %s environment", app.config['GT_ENVIRONMENT'])
+    from spreadsheet_import_service.common.error_handling import register_error_handlers
+    register_error_handlers(app, logger)
+
+    logger.info("Starting spreadsheet_import_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
+
+except Exception as e:
+    logger.exception("Couldn't start spreadsheet_import_service in %s environment because: %s"
+                     % (app.config[TalentConfigKeys.ENV_KEY], e.message))
