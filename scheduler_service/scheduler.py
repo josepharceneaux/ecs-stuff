@@ -187,7 +187,7 @@ def schedule_job(data, user_id=None, access_token=None):
 
             # Due to request timeout delay, there will be a delay in scheduling job sometimes.
             # And if start time is passed due to this request delay, then job should be run
-            if job_start_time > current_datetime:
+            if job_start_time < current_datetime:
                 run_job(user_id, access_token, job_config['url'], content_type)
             logger.info('schedule_job: Task has been added and will start at %s ' % valid_data['start_datetime'])
         except Exception:
@@ -227,7 +227,7 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
         secret_key, access_token = User.generate_auth_token()
     elif 'bearer' in access_token.lower():
         headers = {'content-type': 'application/x-www-form-urlencoded'}
-        token = Token.get_token(access_token=access_token)
+        token = Token.get_token(access_token=access_token.split(' ')[1])
         # If token has expired we refresh it
         if token and (token.expires - datetime.timedelta(seconds=REQUEST_TIMEOUT)) < datetime.datetime.utcnow():
             data = {
@@ -240,6 +240,7 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
             # refresh token.
             resp = http_request('POST', AuthApiUrl.AUTH_SERVICE_TOKEN_CREATE_URI, headers=headers,
                                 data=urlencode(data))
+            logger.info('Token refreshed %s' % resp.json()['expires_at'])
             access_token = "Bearer " + resp.json()['access_token']
 
     logger.info('User ID: %s, URL: %s, Content-Type: %s' % (user_id, url, content_type))

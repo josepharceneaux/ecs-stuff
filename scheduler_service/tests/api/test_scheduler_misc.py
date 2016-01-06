@@ -19,10 +19,12 @@ __author__ = 'saad'
 @pytest.mark.usefixtures('auth_header', 'job_config')
 class TestSchedulerMisc:
 
-    def test_scheduled_job_with_expired_token(self, sample_user, user_auth, job_config):
+    def test_run_job_with_expired_token(self, sample_user, user_auth, job_config):
         """
         Create a job by hitting the endpoint and make sure response
         is correct.
+        After post request to endpoint /tasks/test. oauth token will be expired and also refreshed.
+        So, check if token is refreshed (i.e token expiry should be in future before and after post request)
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
@@ -34,20 +36,19 @@ class TestSchedulerMisc:
 
         auth_token = auth_token_row['access_token']
 
-        Token.query.filter_by(user_id=auth_token_row['user_id']).first()
         auth_header = {'Authorization': 'Bearer ' + auth_token,
                        'Content-Type': 'application/json'}
+
+        job_config.update({'expired': True})
 
         response = requests.post(APP_URL % 'tasks/test/', data=json.dumps(job_config),
                                  headers=auth_header)
 
-        # After post request to endpoint /tasks/test. oauth token will be expired and also refreshed.
-        # So, check if token is refreshed (i.e token expiry should be in future before and after post request)
+        assert response.status_code == 200
+
         token = Token.query.filter_by(user_id=auth_token_row['user_id']).first()
 
         assert token.expires > datetime.datetime.utcnow()
-
-        assert response.status_code == 200
 
     def test_bulk_schedule_jobs(self, auth_header, job_config):
         """

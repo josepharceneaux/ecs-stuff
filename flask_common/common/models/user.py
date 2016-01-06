@@ -238,12 +238,14 @@ class Token(db.Model):
 
     @staticmethod
     def get_token(access_token):
+        """
+        Filter Token based on access_token and return token object from db
+        :param access_token: User access_token
+        :return: Token object matched with access_token
+        """
         if access_token is None:
             return None
-        if 'bearer ' in access_token.lower():
-            token = Token.query.filter_by(access_token=access_token.split(' ')[1]).first()
-        else:
-            token = Token.query.filter_by(access_token=access_token).first()
+        token = Token.query.filter_by(access_token=access_token).first()
         return token
 
 

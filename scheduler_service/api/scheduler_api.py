@@ -584,16 +584,21 @@ class SendRequestTest(Resource):
 
         user_id = request.user.id
         task = request.get_json()
+
+        # Post data param expired. If yes, then expire the token
+        expired = task.get('expired', False)
+
         url = task.get('url', '')
 
-        # Set the date in past to expire request oauth token.
-        # This is to test that run_job method refresh token or not
-        expiry = datetime.utcnow() - timedelta(days=5)
-        expiry = expiry.strftime('%Y-%m-%d %H:%M:%S')
+        if expired:
+            # Set the date in past to expire request oauth token.
+            # This is to test that run_job method refresh token or not
+            expiry = datetime.utcnow() - timedelta(days=5)
+            expiry = expiry.strftime('%Y-%m-%d %H:%M:%S')
 
-        # Expire oauth token and then pass it to run_job. And run_job should refresh token and send request to URL
-        token = Token.query.filter_by(user_id=request.user.id).first()
-        token.update(expires=expiry)
+            # Expire oauth token and then pass it to run_job. And run_job should refresh token and send request to URL
+            token = Token.query.filter_by(user_id=request.user.id).first()
+            token.update(expires=expiry)
 
         run_job(user_id, request.oauth_token, url, task.get('content_type', 'application/json'),
                 kwargs=task.get('post_data', dict()))
