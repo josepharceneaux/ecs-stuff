@@ -4,17 +4,14 @@ Test cases for creating schedule job with and without token.
 
 # Third party imports
 import json
-from time import sleep
 
 import pytest
 import requests
 
 # Application imports
-from datetime import timedelta, datetime
+from datetime import datetime
 
-from scheduler_service.common.models.db import db
 from scheduler_service.common.models.user import Token
-from scheduler_service.common.utils.models_utils import update
 from scheduler_service.tests.conftest import APP_URL
 
 __author__ = 'saad'
