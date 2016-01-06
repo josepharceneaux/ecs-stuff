@@ -17,16 +17,18 @@ from flask import current_app
 # Application Specific
 from ..models.misc import UrlConversion
 from ..error_handling import InvalidUsage
+from ..models.sms_campaign import SmsCampaign
 from ..talent_property_manager import get_secret_key
 from ..utils.activity_utils import ActivityMessageIds
+from ..utils.handy_functions import snake_case_to_pascal_case
 
 
-class CampaignName(object):
+class CampaignType(object):
     """
     This is the class to avoid global variables for names of campaign
     """
-    SMS = 'sms_campaign'
-    PUSH = 'push_campaign'
+    SMS = SmsCampaign.__tablename__
+    PUSH = 'push_campaign'  # TODO: remove hard code
 
 
 class FrequencyIds(object):
@@ -117,21 +119,55 @@ def get_model(file_name, model_name):
     return _class
 
 
-def get_activity_type(activity_message_id):
+def get_activity_message_name(campaign_name, postfix):
     """
-    For a given message id, we get the activity type id from class ActivityMessageIds.
-    :param activity_message_id: e.g. CAMPAIGN_SMS_CLICK or CAMPAIGN_PUSH_CLICK
-    :type activity_message_id: str
+    This function gets the id of activity message. For example if we want to get id of
+    SMS_CAMPAIGN_CLICK, we'll pass campaign_name='sms_campaign' anf postfix='CLICK'
+    :param campaign_name: name of campaign in snake_case
+    :param postfix: word to be appended
+    :type campaign_name: str
+    :type postfix: str
+    :exception: Invalid usage
+    :return: id of activity message
+    :rtype: int
+    """
+    return "_".join(campaign_name.split('_')[::-1]).upper() + '_' + postfix
+
+
+def get_activity_message_id(activity_name):
+    """
+    Activity messages have names and ids. e.g. CAMPAIGN_SEND = 6.
+    So we pass here CAMPAIGN_SNED and it will give us 6.
+    For a given message name, we get the its id from class ActivityMessageIds.
+    :param activity_name: e.g. CAMPAIGN_SMS_CLICK or CAMPAIGN_PUSH_CLICK
+    :type activity_name: str
     :exception:  Invalid Usage
     :return: activity type
     :rtype: int
     """
-    if not hasattr(ActivityMessageIds, activity_message_id):
-        raise InvalidUsage('Unknown activity message id %s.' % activity_message_id)
-    if not getattr(ActivityMessageIds, activity_message_id):
-        raise InvalidUsage('No Activity message %s found for id.' % activity_message_id)
-    return getattr(ActivityMessageIds, activity_message_id)
+    if not hasattr(ActivityMessageIds, activity_name):
+        raise InvalidUsage('Unknown activity message id %s.' % activity_name)
+    if not getattr(ActivityMessageIds, activity_name):
+        raise InvalidUsage('No Activity message %s found for id.' % activity_name)
+    return getattr(ActivityMessageIds, activity_name)
 
+
+def get_activity_message_id_from_name(activity_name):
+    """
+    From given Activity name, we get the id of that activity message and handle exception
+    if any occurs.
+    :param activity_name: Name of activity
+    :type activity_name: str
+    :return: id of activity message
+    :rtype: int
+    """
+    try:
+        _type = get_activity_message_id(activity_name)
+        return _type
+    except InvalidUsage:
+        current_app.config['LOGGER'].exception(
+            'update_stats_and_create_click_activity: Activity type not found for %s. '
+            'Cannot create click activity' % activity_name)
 
 def get_candidate_url_conversion_campaign_send_and_blast_obj(campaign_send_url_conversion_obj,
                                                              campaign_name):
@@ -190,3 +226,53 @@ def validate_signed_url(request_args):
                                         valid_until=request_args['valid_until'],
                                         extra=request_args['extra'],
                                         secret_key=get_secret_key())
+
+
+def processing_after_campaign_sent(base_class, sends_result, user_id, campaign_type, blast_id,
+                                   auth_header):
+    """
+    Once SMS campaign has been sent to all candidates, this function is hit. This is
+        a Celery task. Here we
+
+        1) Update number of sends in campaign blast
+        2) Add activity e.g. (SMS Campaign "abc" was sent to "1000" candidates")
+
+    :param base_class: CampaignBase class (Need to pass this as import results in circular
+                        import issue)
+    :param sends_result: Result of executed task
+    :param user_id: id of user (owner of campaign)
+    :param campaign_type: type of campaign. i.e. sms_campaign or push_campaign
+    :param blast_id: id of blast object
+    :param auth_header: auth header of current user to make HTTP request to other services
+    :type base_class: CampaignBase
+    :type sends_result: list
+    :type user_id: int
+    :type campaign_type: str
+    :type blast_id: int
+    :type auth_header: dict
+
+        **See Also**
+        .. see also:: callback_campaign_sent() method in SmsCampaignBase class inside
+                        sms_campaign_service/sms_campaign_base.py
+    """
+    if isinstance(sends_result, list):
+        total_sends = sends_result.count(True)
+        blast_model = get_model(campaign_type, snake_case_to_pascal_case(campaign_type) + 'Blast')
+        blast_obj = blast_model.get_by_id(blast_id)
+        campaign = getattr(blast_obj, campaign_type)
+        if total_sends:
+            # update SMS campaign blast. i.e. update number of sends.
+            for _ in sends_result:
+                try:
+                    base_class.update_campaign_blast(blast_obj, sends=True)
+                except Exception:
+                    current_app.config['LOGGER'].exception(
+                        'callback_campaign_sent: Error updating campaign(id:%s) blast(id:%s)'
+                        % (campaign.id, blast_obj.id))
+            base_class.create_campaign_send_activity(user_id, campaign,
+                                                     auth_header, total_sends)
+        current_app.config['LOGGER'].debug(
+            'process_send: SMS Campaign(id:%s) has been sent to %s candidate(s).'
+            '(User(id:%s))' % (campaign.id, total_sends, user_id))
+    else:
+        current_app.config['LOGGER'].error('callback_campaign_sent: Result is not a list')

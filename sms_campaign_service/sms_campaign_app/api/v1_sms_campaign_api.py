@@ -68,7 +68,7 @@ from sms_campaign_service.common.utils.auth_utils import require_oauth
 from sms_campaign_service.common.utils.api_utils import (api_route, ApiResponse)
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from sms_campaign_service.common.campaign_services.validators import validate_header
-from sms_campaign_service.common.campaign_services.campaign_utils import CampaignName
+from sms_campaign_service.common.campaign_services.campaign_utils import CampaignType
 
 # Database Models
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaignBlast, SmsCampaignSend)
@@ -747,7 +747,7 @@ class SmsCampaignUrlRedirection(Resource):
         if request_from_google_shorten_url_api(request.headers.environ):
             return 200
         try:
-            redirection_url = CampaignBase.process_url_redirect(url_conversion_id, CampaignName.SMS,
+            redirection_url = CampaignBase.process_url_redirect(url_conversion_id, CampaignType.SMS,
                                                                 verify_signature=True,
                                                                 request_args=request.args,
                                                                 requested_url=request.full_path)

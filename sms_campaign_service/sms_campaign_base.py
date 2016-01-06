@@ -41,13 +41,14 @@ from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from sms_campaign_service.common.error_handling import (ResourceNotFound, ForbiddenError,
                                                         InvalidUsage)
-from sms_campaign_service.common.utils.handy_functions import (find_missing_items, url_conversion)
+from sms_campaign_service.common.utils.handy_functions import (find_missing_items, url_conversion,
+                                                               snake_case_to_pascal_case)
 
 # Service Specific
 from sms_campaign_service.sms_campaign_app import logger
 from sms_campaign_service.sms_campaign_app.app import celery_app, app
 from sms_campaign_service.common.campaign_services.campaign_utils import unix_time, \
-    sign_redirect_url
+    sign_redirect_url, CampaignType, get_model, processing_after_campaign_sent
 from sms_campaign_service.modules.validators import (validate_url_format, search_urls_in_text)
 from sms_campaign_service.modules.handy_functions import (TwilioSMS, replace_localhost_with_ngrok)
 from sms_campaign_service.modules.sms_campaign_app_constants import (MOBILE_PHONE_LABEL, TWILIO,
@@ -152,9 +153,7 @@ class SmsCampaignBase(CampaignBase):
     * transform_body_text(self, link_in_body_text, short_url)
         This replaces the original URL present in "body_text" with the shortened URL.
 
-    * create_or_update_sms_campaign_blast(campaign_id, send=0, clicks=0, replies=0,
-                            increment_sends=False, increment_clicks=False,
-                            increment_replies=False): [static]
+    * create_sms_campaign_blast(campaign_id, send=0, clicks=0, replies=0): [static]
         For each campaign, here we create/update stats of that particular campaign.
 
     * send_sms(self, candidate_phone_value)
@@ -237,8 +236,8 @@ class SmsCampaignBase(CampaignBase):
         # If sms_body_test has some URL present in it, we process to make short URL
         # and this contains the updated text to be sent via SMS.
         # This is the id of record in sms_campaign_blast" database table
-        self.sms_campaign_blast_id = None
         self.queue_name = CELERY_QUEUE
+        self.campaign_type = CampaignType.SMS
 
     def get_user_phone(self):
         """
@@ -615,7 +614,7 @@ class SmsCampaignBase(CampaignBase):
                 'No candidate is associated to smartlist(s). SMS Campaign(id:%s). '
                 'smartlist ids are %s' % (campaign.id, smartlists))
         # create SMS campaign blast
-        self.sms_campaign_blast_id = self.create_or_update_sms_campaign_blast(self.campaign.id)
+        self.campaign_blast_id = self.create_sms_campaign_blast(self.campaign.id)
         self.send_campaign_to_candidates(candidates)
 
     def is_candidate_have_unique_mobile_phone(self, candidate):
@@ -728,7 +727,7 @@ class SmsCampaignBase(CampaignBase):
         # to the candidate
         try:
             sms_campaign_send_obj = \
-                self.create_or_update_sms_campaign_send(self.sms_campaign_blast_id,
+                self.create_or_update_sms_campaign_send(self.campaign_blast_id,
                                                         candidate.id,
                                                         message_sent_datetime)
         except Exception:
@@ -743,12 +742,6 @@ class SmsCampaignBase(CampaignBase):
         except Exception:
             logger.exception('send_campaign_to_candidate: Error adding entry in '
                              'sms_campaign_send_url_conversion.')
-            return False
-        # update SMS campaign blast
-        try:
-            self.create_or_update_sms_campaign_blast(self.campaign.id, increment_sends=True)
-        except Exception:
-            logger.exception('send_campaign_to_candidate: Error updating campaign blasts')
             return False
         # Create SMS sent activity
         try:
@@ -765,34 +758,35 @@ class SmsCampaignBase(CampaignBase):
 
     @staticmethod
     @celery_app.task(name='callback_campaign_sent')
-    def callback_campaign_sent(sends_result, user_id, campaign, auth_header):
+    def callback_campaign_sent(sends_result, user_id, campaign_type, blast_id, auth_header):
         """
-        Once SMS campaign has been sent to all candidates, this function is hit, and here we
+        Once SMS campaign has been sent to all candidates, this function is hit. This is
+        a Celery task. Here we
 
-        add activity e.g. (SMS Campaign "abc" was sent to "1000" candidates")
+        1) Update number of sends in campaign blast
+        2) Add activity e.g. (SMS Campaign "abc" was sent to "1000" candidates")
+
+        This uses processing_after_campaign_sent() function defined in
+            common/campaign_services/campaign_utils.py
 
         :param sends_result: Result of executed task
         :param user_id: id of user (owner of campaign)
-        :param campaign: sms_campaign obj
+        :param campaign_type: type of campaign. i.e. sms_campaign or push_campaign
+        :param blast_id: id of blast object
         :param auth_header: auth header of current user to make HTTP request to other services
         :type sends_result: list
         :type user_id: int
-        :type campaign: SmsCampaign
+        :type campaign_type: str
+        :type blast_id: int
         :type auth_header: dict
 
         **See Also**
         .. see also:: send_campaign_to_candidates() method in CampaignBase class inside
                         common/utils/campaign_base.py
         """
-        if isinstance(sends_result, list):
-            total_sends = sends_result.count(True)
-            SmsCampaignBase.create_campaign_send_activity(user_id,
-                                                          campaign, auth_header, total_sends) \
-                if total_sends else ''
-            logger.debug('process_send: SMS Campaign(id:%s) has been sent to %s candidate(s).'
-                         '(User(id:%s))' % (campaign.id, total_sends, user_id))
-        else:
-            logger.error('callback_campaign_sent: Result is not a list')
+        with app.app_context():
+            processing_after_campaign_sent(CampaignBase, sends_result, user_id, campaign_type,
+                                           blast_id, auth_header)
 
     @staticmethod
     @celery_app.task(name='celery_error_handler')
@@ -916,10 +910,7 @@ class SmsCampaignBase(CampaignBase):
         return modified_body_text
 
     @staticmethod
-    def create_or_update_sms_campaign_blast(campaign_id,
-                                            sends=0, clicks=0, replies=0,
-                                            increment_clicks=False, increment_sends=False,
-                                            increment_replies=False):
+    def create_sms_campaign_blast(campaign_id, sends=0, clicks=0, replies=0):
         """
         - Here we create SMS blast for a campaign. We also use this to update
             record with every new send. This gives the statistics about a campaign.
@@ -932,9 +923,6 @@ class SmsCampaignBase(CampaignBase):
         :param sends: numbers of sends, default 0
         :param clicks: number of clicks on a sent SMS, default 0
         :param replies: number of replies on a sent SMS, default 0
-        :param increment_sends: True if sends to be updated ,False otherwise
-        :param increment_clicks: True if clicks to be updated ,False otherwise
-        :param increment_replies: True if replies to be updated ,False otherwise
         :type campaign_id: int
         :type sends: int
         :type clicks: int
@@ -947,24 +935,14 @@ class SmsCampaignBase(CampaignBase):
 
         .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
         """
-        record_in_db = SmsCampaignBlast.get_by_campaign_id(campaign_id)
         data = {'sms_campaign_id': campaign_id,
                 'sends': sends,
                 'clicks': clicks,
                 'replies': replies,
                 'sent_datetime': datetime.now()}
-        if record_in_db:
-            data['sends'] = record_in_db.sends + 1 if increment_sends else record_in_db.sends
-            data['clicks'] = record_in_db.clicks + 1 if increment_clicks else record_in_db.clicks
-            data[
-                'replies'] = record_in_db.replies + 1 if increment_replies else record_in_db.replies
-            record_in_db.update(**data)
-            sms_campaign_blast_id = record_in_db.id
-        else:
-            new_record = SmsCampaignBlast(**data)
-            SmsCampaignBlast.save(new_record)
-            sms_campaign_blast_id = new_record.id
-        return sms_campaign_blast_id
+        blast_obj = SmsCampaignBlast(**data)
+        SmsCampaignBlast.save(blast_obj)
+        return blast_obj.id
 
     def send_sms(self, candidate_phone_value, message_body):
         """
@@ -1097,41 +1075,6 @@ class SmsCampaignBase(CampaignBase):
                                  headers=self.oauth_header)
 
     @classmethod
-    def create_campaign_send_activity(cls, user_id, source, auth_header, num_candidates):
-        """
-        - Here we set "params" and "type" of activity to be stored in db table "Activity"
-            for Campaign sent.
-
-        - Activity will appear as " 'Jobs at Oculus' has been sent to '50' candidates".
-
-        - This method is called from send_sms_campaign_to_candidates() method of class
-            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
-
-        :param user_id: id of user
-        :param source: sms_campaign obj
-        :param auth_header: Authorization header
-        :param num_candidates: number of candidates to which campaign is sent
-        :type user_id: int
-        :type source: SmsCampaign
-        :type auth_header: dict
-        :type num_candidates: int
-        :exception: InvalidUsage
-
-        **See Also**
-        .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
-        """
-        if not isinstance(source, SmsCampaign):
-            raise InvalidUsage('source should be an instance of model sms_campaign')
-        params = {'name': source.name,
-                  'num_candidates': num_candidates}
-        cls.create_activity(user_id,
-                            _type=ActivityMessageIds.CAMPAIGN_SEND,
-                            source_id=source.id,
-                            source_table=SmsCampaign.__tablename__,
-                            params=params,
-                            headers=auth_header)
-
-    @classmethod
     def process_candidate_reply(cls, reply_data):
         """
         - Recruiters(users) are assigned to one unique twilio number.sms_callback_url of
@@ -1211,9 +1154,8 @@ class SmsCampaignBase(CampaignBase):
                                            sms_campaign_blast,
                                            candidate_phone.candidate_id,
                                            user_phone.user_id)
-        # get/update SMS campaign blast
-        cls.create_or_update_sms_campaign_blast(sms_campaign_blast.sms_campaign_id,
-                                                increment_replies=True)
+        # get/update SMS campaign blast i.e. increase number of replies by 1
+        cls.update_campaign_blast(sms_campaign_blast, replies=True)
         logger.debug('Candidate(id:%s) replied "%s" to Campaign(id:%s).(User(id:%s))'
                      % (candidate_phone.candidate_id, reply_data.get('Body'),
                         sms_campaign_blast.sms_campaign_id, user_phone.user_id))

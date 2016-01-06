@@ -244,7 +244,7 @@ def create_sms_campaign_blast(sms_campaign_of_current_user):
     :param sms_campaign_of_current_user:
     :return:
     """
-    return SmsCampaignBase.create_or_update_sms_campaign_blast(sms_campaign_of_current_user.id)
+    return SmsCampaignBase.create_sms_campaign_blast(sms_campaign_of_current_user.id)
 
 
 @pytest.fixture()

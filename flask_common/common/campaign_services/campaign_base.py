@@ -34,17 +34,20 @@ from ...common.models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
 
 # Common Utils
 from ..utils.scheduler_utils import SchedulerUtils
+from ..utils.activity_utils import ActivityMessageIds
 from ..utils.handy_functions import (http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER,
                                      snake_case_to_pascal_case)
 from ..routes import (ActivityApiUrl, SchedulerApiUrl, CandidatePoolApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
 
-from campaign_utils import (get_model, get_activity_type, validate_signed_url,
-                            get_candidate_url_conversion_campaign_send_and_blast_obj)
+from campaign_utils import (get_model, validate_signed_url,
+                            get_candidate_url_conversion_campaign_send_and_blast_obj,
+                            get_activity_message_name, get_activity_message_id_from_name)
 
 from validators import (validate_header, validate_datetime_format,
                         validation_of_data_to_schedule_campaign,
                         validate_blast_candidate_url_conversion_in_db)
+
 
 class CampaignBase(object):
     """
@@ -128,6 +131,8 @@ class CampaignBase(object):
         # e.g. in case of SMS campaign, this is get from "sms_campaign" database table.
         self.queue_name = None  # name of Celery Queue. Each service will use its own queue
         # so that tasks related to one service only assign to that particular queue.
+        self.campaign_blast_id = None
+        self.campaign_type = ''
 
     @staticmethod
     def get_authorization_header(user_id, bearer_access_token=None):
@@ -633,7 +638,8 @@ class CampaignBase(object):
             # is called by celery as a callback function.
             # Each service will use its own queue so that tasks related to one service only
             # assign to that particular queue.
-            callback = self.callback_campaign_sent.subtask((self.user_id, self.campaign,
+            callback = self.callback_campaign_sent.subtask((self.user_id, self.campaign_type,
+                                                            self.campaign_blast_id,
                                                             self.oauth_header,),
                                                            queue=self.queue_name)
             # Here we create list of all tasks and assign a self.celery_error_handler() as a
@@ -683,21 +689,58 @@ class CampaignBase(object):
 
     @staticmethod
     @abstractmethod
-    def callback_campaign_sent(sends_result, user_id, campaign, auth_header):
+    def callback_campaign_sent(sends_result, user_id, campaign_type, blast_id, auth_header):
         """
         This is the callback function for campaign sent.
         Child classes will implement this.
         :param sends_result: Result of executed task
         :param user_id: id of user (owner of campaign)
-        :param campaign: id of campaign which was sent to candidates
+        :param campaign_type: type of campaign. i.e. sms_campaign or push_campaign
+        :param blast_id: id of blast object
         :param auth_header: auth header of current user to make HTTP request to other services
         :type sends_result: list
         :type user_id: int
-        :type campaign: object (e.g SmsCampaign)
+        :type campaign_type: str
+        :type blast_id: int
         :type auth_header: dict
         :return:
         """
         pass
+
+    @classmethod
+    def create_campaign_send_activity(cls, user_id, source, auth_header, num_candidates):
+        """
+        - Here we set "params" and "type" of activity to be stored in db table "Activity"
+            for Campaign sent.
+
+        - Activity will appear as " 'Jobs at Oculus' has been sent to '50' candidates".
+
+        - This method is called from send_sms_campaign_to_candidates() method of class
+            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
+
+        :param user_id: id of user
+        :param source: sms_campaign obj
+        :param auth_header: Authorization header
+        :param num_candidates: number of candidates to which campaign is sent
+        :type user_id: int
+        :type source: SmsCampaign
+        :type auth_header: dict
+        :type num_candidates: int
+        :exception: InvalidUsage
+
+        **See Also**
+        .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
+        """
+        if not isinstance(source, SmsCampaign):
+            raise InvalidUsage('source should be an instance of model sms_campaign')
+        params = {'name': source.name,
+                  'num_candidates': num_candidates}
+        cls.create_activity(user_id,
+                            _type=ActivityMessageIds.CAMPAIGN_SEND,
+                            source_id=source.id,
+                            source_table=source.__tablename__,
+                            params=params,
+                            headers=auth_header)
 
     @classmethod
     def pre_process_url_redirect(cls, request_args, requested_url):
@@ -723,7 +766,7 @@ class CampaignBase(object):
         current_app.config['LOGGER'].info("Requested URL %s has been verified." % requested_url)
 
     @classmethod
-    def process_url_redirect(cls, url_conversion_id, campaign_name, verify_signature=False,
+    def process_url_redirect(cls, url_conversion_id, campaign_type, verify_signature=False,
                              request_args=None, requested_url=None):
         """
         When candidate clicks on a URL present in any campaign e.g. in SMS, Email etc. it is
@@ -777,12 +820,12 @@ class CampaignBase(object):
                     500 (Internal Server Error)
 
         :param url_conversion_id: id of url_conversion record
-        :param campaign_name: name of campaign in snake_case
+        :param campaign_type: name of campaign in snake_case
         :param verify_signature: Indicator to validate signed_url
         :param request_args: arguments of request
         :param requested_url: URL at which candidate clicks
         :type url_conversion_id: int
-        :type campaign_name: str
+        :type campaign_type: str
         :type request_args: dict
         :type requested_url: str
         :return: URL where to redirect the candidate
@@ -797,7 +840,7 @@ class CampaignBase(object):
         if verify_signature:  # Need to validate the signed URL
             cls.pre_process_url_redirect(request_args, requested_url)
         campaign_send_url_conversion_model = get_model(
-            campaign_name, snake_case_to_pascal_case(campaign_name) + 'SendUrlConversion')
+            campaign_type, snake_case_to_pascal_case(campaign_type) + 'SendUrlConversion')
         campaign_send_url_conversion_obj = campaign_send_url_conversion_model.query.filter_by(
             url_conversion_id=url_conversion_id).first()
         if not campaign_send_url_conversion_obj:
@@ -807,12 +850,12 @@ class CampaignBase(object):
         # get candidate obj, url_conversion obj, campaign_send obj and get campaign_blast obj
         candidate_obj, url_conversion_obj, campaign_send_obj, campaign_blast_obj = \
             get_candidate_url_conversion_campaign_send_and_blast_obj(
-                campaign_send_url_conversion_obj, campaign_name)
+                campaign_send_url_conversion_obj, campaign_type)
         # Validate if all the required items are present in database.
         campaign_obj = validate_blast_candidate_url_conversion_in_db(campaign_blast_obj,
                                                                      candidate_obj,
                                                                      url_conversion_obj,
-                                                                     campaign_name)
+                                                                     campaign_type)
         if not url_conversion_obj.destination_url:
             raise InvalidUsage('process_url_redirect: Destination_url is empty for '
                                'url_conversion(id:%s)' % url_conversion_obj.id)
@@ -849,15 +892,10 @@ class CampaignBase(object):
         # get auth_header
         auth_header = cls.get_authorization_header(candidate.user_id)
         # get activity type id to create activity
-        activity_name = "_".join(campaign_obj.__tablename__.split('_')[::-1]).upper() + '_CLICK'
-        try:
-            _type= get_activity_type(activity_name)
-            # create_activity
-            cls.create_campaign_url_click_activity(campaign_obj, candidate, _type, auth_header)
-        except InvalidUsage:
-            current_app.config['LOGGER'].exception(
-                'update_stats_and_create_click_activity: Activity type not found for %s. '
-                'Cannot create click activity' % activity_name)
+        _type= get_activity_message_id_from_name(get_activity_message_name(
+            campaign_obj.__tablename__, 'CLICK'))
+        # create_activity
+        cls.create_campaign_url_click_activity(campaign_obj, candidate, _type, auth_header)
 
     @classmethod
     def create_campaign_url_click_activity(cls, source, candidate, _type, auth_header):
@@ -920,7 +958,7 @@ class CampaignBase(object):
 
         :param campaign_blast_obj: campaign blast object for which we want to update stats
         :param kwargs: dictionary containing attributes of campaign object to update
-        :type campaign_blast_obj: SmsCampaignBlast or EmailCampaignBlast or PushBlast
+        :type campaign_blast_obj: SmsCampaignBlast or EmailCampaignBlast or PushCampaignBlast
         :type kwargs: dict
 
         **See Also**
