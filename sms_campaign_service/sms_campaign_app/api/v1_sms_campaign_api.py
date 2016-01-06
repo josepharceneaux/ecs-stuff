@@ -39,6 +39,11 @@ This file contains API endpoints related to sms_campaign_service.
 
             GET    : Redirects the candidate to our app to keep track of number of clicks, hit_count
                     and create activity.
+
+        - SmsReceive: /v1/receive
+
+            POST    : When candidate replies to an SMS campaign, this endpoint is hit from Twilio
+                        to notify our app.
 """
 
 
@@ -700,7 +705,7 @@ class SendSmsCampaign(Resource):
         return dict(message='Campaign(id:%s) is being sent to candidates.' % campaign_id), 200
 
 
-@api.route(SmsCampaignApi.REDIRECT, methods=['GET'])
+@api.route(SmsCampaignApi.REDIRECT)
 class SmsCampaignUrlRedirection(Resource):
     """
     This endpoint redirects the candidate to our app.
@@ -755,7 +760,57 @@ class SmsCampaignUrlRedirection(Resource):
         # In case any type of exception occurs, candidate should only get internal server error
         except Exception:
             # As this endpoint is hit by client, so we log the error, and return internal server
-            #  error.
+            # error.
             logger.exception("Error occurred while URL redirection for SMS campaign.")
-            message='Internal Server Error'
-        return dict(message=message), 500
+        return dict(message='Internal Server Error'), 500
+
+
+@api.route(SmsCampaignApi.RECEIVE)
+class SmsReceive(Resource):
+    """
+    This end point is is /v1/receive and is used by Twilio to notify getTalent when a candidate
+    replies to an SMS.
+    """
+    def post(self):
+        """
+        - Recruiters(users) are assigned to one unique Twilio number. That number is configured with
+         "sms_callback_url" which redirect the request at this end point with following data:
+
+                    {
+                          "From": "+12015617985",
+                          "To": "+15039255479",
+                          "Body": "Dear all, we have few openings at http://www.qc-technologies.com",
+                          "SmsStatus": "received",
+                          "FromCity": "FELTON",
+                          "FromCountry": "US",
+                          "FromZip": "95018",
+                          "ToCity": "SHERWOOD",
+                          "ToCountry": "US",
+                          "ToZip": "97132",
+                     }
+
+         So whenever someone replies to that particular recruiter's SMS (from within getTalent), this
+         endpoint is hit and we do the following:
+
+            1- Search the candidate in GT database using "From" key
+            2- Search the user in GT database using "To" key
+            3- Stores the candidate's reply in database table "sms_campaign_reply"
+            4- Create activity that 'abc' candidate has replied "Body"(key)
+                on 'xyz' SMS campaign.
+
+        :return: XML response to Twilio API
+        """
+        if request.values:
+            try:
+                logger.debug('SMS received from %(From)s on %(To)s.\n Body text is "%(Body)s"'
+                             % request.values)
+                SmsCampaignBase.process_candidate_reply(request.values)
+            # Any type of exception should be catch as response returns to Twilio API.
+            except Exception:
+                logger.exception("sms_receive: Error Processing received SMS.")
+        # So in the end we need to send properly formatted XML response back to Twilio
+        return """
+            <?xml version="1.0" encoding="UTF-8"?>
+                <Response>
+                </Response>
+                """

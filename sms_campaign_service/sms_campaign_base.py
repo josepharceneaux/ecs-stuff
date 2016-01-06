@@ -33,27 +33,22 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
                                                              SmsCampaignReply)
 # common utils
 from sms_campaign_service.common.models.db import db
-from sms_campaign_service.common.common_config import IS_DEV
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.talent_property_manager import get_secret_key
 from sms_campaign_service.common.utils.validators import format_phone_number
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from sms_campaign_service.common.error_handling import (ResourceNotFound, ForbiddenError,
                                                         InvalidUsage)
-from sms_campaign_service.common.utils.handy_functions import (find_missing_items, url_conversion,
-                                                               snake_case_to_pascal_case)
+from sms_campaign_service.common.utils.handy_functions import (find_missing_items, url_conversion)
 
 # Service Specific
-from sms_campaign_service.sms_campaign_app import logger
-from sms_campaign_service.sms_campaign_app.app import celery_app, app
-from sms_campaign_service.common.campaign_services.campaign_utils import unix_time, \
-    sign_redirect_url, CampaignType, get_model, processing_after_campaign_sent
+from sms_campaign_service.sms_campaign_app import celery_app, app, logger
+from sms_campaign_service.common.campaign_services.campaign_utils import \
+    (sign_redirect_url, CampaignType, processing_after_campaign_sent)
 from sms_campaign_service.modules.validators import (validate_url_format, search_urls_in_text)
 from sms_campaign_service.modules.handy_functions import (TwilioSMS, replace_localhost_with_ngrok)
 from sms_campaign_service.modules.sms_campaign_app_constants import (MOBILE_PHONE_LABEL, TWILIO,
-                                                                     TWILIO_TEST_NUMBER,
-                                                                     CELERY_QUEUE)
+                                                                     TWILIO_TEST_NUMBER)
 from sms_campaign_service.modules.custom_exceptions import (EmptySmsBody,
                                                             MultipleTwilioNumbersFoundForUser,
                                                             MissingRequiredField,
@@ -236,7 +231,6 @@ class SmsCampaignBase(CampaignBase):
         # If sms_body_test has some URL present in it, we process to make short URL
         # and this contains the updated text to be sent via SMS.
         # This is the id of record in sms_campaign_blast" database table
-        self.queue_name = CELERY_QUEUE
         self.campaign_type = CampaignType.SMS
 
     def get_user_phone(self):
@@ -285,7 +279,7 @@ class SmsCampaignBase(CampaignBase):
         :rtype: UserPhone
         """
         twilio_obj = TwilioSMS()
-        if IS_DEV:
+        if app.config['IS_DEV']:
             # Buy Twilio TEST number so that we won't be charged
             number_to_buy = TWILIO_TEST_NUMBER
         else:
@@ -708,53 +702,56 @@ class SmsCampaignBase(CampaignBase):
         **See Also**
         .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
         """
-        candidate, candidate_phone_value = candidate_and_phone
-        try:
-            modified_body_text, url_conversion_ids = \
-                self.process_urls_in_sms_body_text(candidate.id)
-        except Exception:
-            logger.exception('send_campaign_to_candidate: Error processing URLs in SMS body')
-            return False
-        # send SMS
-        try:
-            # format the number
-            candidate_phone_value = format_phone_number(candidate_phone_value)
-            message_sent_datetime = self.send_sms(candidate_phone_value, modified_body_text)
-        except TwilioAPIError or InvalidUsage:
-            logger.exception('send_campaign_to_candidate: Cannot send SMS.')
-            return False
-        # Create sms_campaign_send i.e. it will record that an SMS has been sent
-        # to the candidate
-        try:
-            sms_campaign_send_obj = \
-                self.create_or_update_sms_campaign_send(self.campaign_blast_id,
-                                                        candidate.id,
-                                                        message_sent_datetime)
-        except Exception:
-            logger.exception('send_campaign_to_candidate: Error saving record in sms_campaign_send')
-            return False
-        # We keep track of all URLs sent, in sms_send_url_conversion table,
-        # so we can later retrieve that to perform some tasks
-        try:
-            for url_conversion_id in url_conversion_ids:
-                self.create_or_update_sms_send_url_conversion(sms_campaign_send_obj,
-                                                              url_conversion_id)
-        except Exception:
-            logger.exception('send_campaign_to_candidate: Error adding entry in '
-                             'sms_campaign_send_url_conversion.')
-            return False
-        # Create SMS sent activity
-        try:
-            self.create_sms_send_activity(candidate, sms_campaign_send_obj)
-        except Exception:
-            logger.exception('send_campaign_to_candidate: Error creating SMS send activity.')
-            return False
+        with app.app_context():
+            candidate, candidate_phone_value = candidate_and_phone
+            try:
+                modified_body_text, url_conversion_ids = \
+                    self.process_urls_in_sms_body_text(candidate.id)
+            except Exception:
+                logger.exception('send_campaign_to_candidate: Error processing URLs in SMS body')
+                return False
+            # send SMS
+            try:
+                # format the number
+                candidate_phone_value = format_phone_number(candidate_phone_value)
+                message_sent_datetime = self.send_sms(str(candidate_phone_value),
+                                                      modified_body_text)
+            except TwilioAPIError or InvalidUsage:
+                logger.exception('send_campaign_to_candidate: Cannot send SMS.')
+                return False
+            # Create sms_campaign_send i.e. it will record that an SMS has been sent
+            # to the candidate
+            try:
+                sms_campaign_send_obj = \
+                    self.create_or_update_sms_campaign_send(self.campaign_blast_id,
+                                                            candidate.id,
+                                                            message_sent_datetime)
+            except Exception:
+                logger.exception('send_campaign_to_candidate: Error saving '
+                                 'record in sms_campaign_send')
+                return False
+            # We keep track of all URLs sent, in sms_send_url_conversion table,
+            # so we can later retrieve that to perform some tasks
+            try:
+                for url_conversion_id in url_conversion_ids:
+                    self.create_or_update_sms_send_url_conversion(sms_campaign_send_obj,
+                                                                  url_conversion_id)
+            except Exception:
+                logger.exception('send_campaign_to_candidate: Error adding entry in '
+                                 'sms_campaign_send_url_conversion.')
+                return False
+            # Create SMS sent activity
+            try:
+                self.create_sms_send_activity(candidate, sms_campaign_send_obj)
+            except Exception:
+                logger.exception('send_campaign_to_candidate: Error creating SMS send activity.')
+                return False
 
-        logger.info('send_sms_campaign_to_candidate: SMS has been sent to candidate(id:%s).'
-                    ' Campaign(id:%s). (User(id:%s))' % (candidate.id,
-                                                         self.campaign.id,
-                                                         self.user_id))
-        return True
+            logger.info('send_sms_campaign_to_candidate: SMS has been sent to candidate(id:%s).'
+                        ' Campaign(id:%s). (User(id:%s))' % (candidate.id,
+                                                             self.campaign.id,
+                                                             self.user_id))
+            return True
 
     @staticmethod
     @celery_app.task(name='callback_campaign_sent')
@@ -962,7 +959,7 @@ class SmsCampaignBase(CampaignBase):
         """
         if not isinstance(candidate_phone_value, basestring):
             raise InvalidUsage('Include candidate_phone as str')
-        if IS_DEV:
+        if app.config['IS_DEV']:
             # send SMS using Twilio Test Credentials
             sender_phone = TWILIO_TEST_NUMBER
         else:
@@ -1064,15 +1061,12 @@ class SmsCampaignBase(CampaignBase):
                 'Source should be instance of model SmsCampaignSend')
         params = {'candidate_name': candidate.first_name + ' ' + candidate.last_name,
                   'campaign_name': self.campaign.name}
-        # Need to add this as Celery app use different logger, and current_app.config['LOGGER']
-        # does not work in this case
-        with app.app_context():
-            self.create_activity(self.user_id,
-                                 _type=ActivityMessageIds.CAMPAIGN_SMS_SEND,
-                                 source_id=source.id,
-                                 source_table=SmsCampaignSend.__tablename__,
-                                 params=params,
-                                 headers=self.oauth_header)
+        self.create_activity(self.user_id,
+                             _type=ActivityMessageIds.CAMPAIGN_SMS_SEND,
+                             source_id=source.id,
+                             source_table=SmsCampaignSend.__tablename__,
+                             params=params,
+                             headers=self.oauth_header)
 
     @classmethod
     def process_candidate_reply(cls, reply_data):

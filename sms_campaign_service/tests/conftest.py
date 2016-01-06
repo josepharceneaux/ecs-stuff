@@ -40,7 +40,7 @@ CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
                         }
 # This is data to schedule an SMS campaign
 CAMPAIGN_SCHEDULE_DATA = {
-    "frequency_id": FrequencyIds.DAILY,
+    "frequency_id": FrequencyIds.ONCE,
     "start_datetime": to_utc_str(datetime.utcnow() + timedelta(seconds=SLEEP_TIME)),
     "end_datetime": to_utc_str(datetime.utcnow() + timedelta(hours=1))}
 

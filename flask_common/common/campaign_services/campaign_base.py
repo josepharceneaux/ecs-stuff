@@ -129,10 +129,9 @@ class CampaignBase(object):
         self.body_text = None  # This is 'text' to be sent to candidates as part of campaign.
         # Child classes will get this from respective campaign table.
         # e.g. in case of SMS campaign, this is get from "sms_campaign" database table.
-        self.queue_name = None  # name of Celery Queue. Each service will use its own queue
         # so that tasks related to one service only assign to that particular queue.
-        self.campaign_blast_id = None
-        self.campaign_type = ''
+        self.campaign_blast_id = None  # Campaign's blast id in database
+        self.campaign_type = ''  # Child classes will set this e.g. sms_campaign
 
     @staticmethod
     def get_authorization_header(user_id, bearer_access_token=None):
@@ -641,12 +640,13 @@ class CampaignBase(object):
             callback = self.callback_campaign_sent.subtask((self.user_id, self.campaign_type,
                                                             self.campaign_blast_id,
                                                             self.oauth_header,),
-                                                           queue=self.queue_name)
+                                                           queue=self.campaign_type)
             # Here we create list of all tasks and assign a self.celery_error_handler() as a
             # callback function in case any of the tasks in the list encounter some error.
             tasks = [self.send_campaign_to_candidate.subtask(
-                (self, record), link_error=self.celery_error_handler.subtask(queue=self.queue_name)
-                , queue=self.queue_name) for record in pre_processed_data]
+                (self, record), link_error=self.celery_error_handler.subtask(queue=
+                                                                             self.campaign_type)
+                , queue=self.campaign_type) for record in pre_processed_data]
             # This runs all tasks asynchronously and sets callback function to be hit once all
             # tasks in list finish running without raising any error. Otherwise callback
             # results in failure status.

@@ -1,8 +1,8 @@
 """
 This file contains Base APP URls, and Urls of REST endpoints of all services
 """
-import talent_property_manager
-from common_config import GT_ENVIRONMENT
+import os
+from talent_config_manager import TalentConfigKeys
 
 LOCAL_HOST = 'http://127.0.0.1'
 TALENT_DOMAIN = '.gettalent.com'
@@ -29,13 +29,14 @@ def _get_host_name(service_name, port_number):
     :type port_number: int
     :return:
     """
-    if GT_ENVIRONMENT in ['dev', 'circle']:
+    env = os.getenv(TalentConfigKeys.ENV_KEY) or 'dev'
+    if env in ['dev', 'circle']:
         return LOCAL_HOST + ':' + str(port_number) + '%s'
-    elif GT_ENVIRONMENT == 'qa':
+    elif env == 'qa':
         # This looks like auth-service-webdev.gettalent.com ( for auth service)
         # TODO: Verify this URL after deployment
         return service_name + QA_EXTENSION + TALENT_DOMAIN
-    elif GT_ENVIRONMENT == 'prod':
+    elif env == 'prod':
         # This looks like auth-service.gettalent.com
         # TODO: Verify this URL after deployment
         return service_name + TALENT_DOMAIN
@@ -114,28 +115,20 @@ class UserServiceApiUrl:
     def __init__(self):
         pass
 
-    env = talent_property_manager.get_env()
-
-    if env == 'dev' or env == 'circle':
-        USER_SERVICE_HOST_NAME = 'http://127.0.0.1:8004/v1/%s'
-    elif env == 'qa':
-        USER_SERVICE_HOST_NAME = 'http://user-webdev.gettalent.com/v1/%s'
-    elif env == 'prod':
-        USER_SERVICE_HOST_NAME = 'http://user.gettalent.com/v1/%s'
-    else:
-        raise Exception("Environment variable GT_ENVIRONMENT not set correctly - "
-                        "could not get environment")
-
-    USERS_API = USER_SERVICE_HOST_NAME % 'users'
-    DOMAINS_API = USER_SERVICE_HOST_NAME % 'domains'
-    USER_ROLES_API = USER_SERVICE_HOST_NAME % 'users/%s/roles'
-    DOMAIN_ROLES_API = USER_SERVICE_HOST_NAME % 'domain/%s/roles'
-    DOMAIN_GROUPS_API = USER_SERVICE_HOST_NAME % 'domain/%s/groups'
-    DOMAIN_GROUPS_UPDATE_API = USER_SERVICE_HOST_NAME % 'domain/groups/%s'
-    USER_GROUPS_API = USER_SERVICE_HOST_NAME % 'groups/%s/users'
-    UPDATE_PASSWORD_API = USER_SERVICE_HOST_NAME % 'users/update_password'
-    FORGOT_PASSWORD_API = USER_SERVICE_HOST_NAME % 'users/forgot_password'
-    RESET_PASSWORD_API = USER_SERVICE_HOST_NAME % 'users/reset_password/%s'
+    API_VERSION = 'v1'
+    USER_SERVICE_HOST_NAME = _get_host_name(GTApis.USER_SERVICE_NAME,
+                                      GTApis.USER_SERVICE_PORT)
+    API_URL = USER_SERVICE_HOST_NAME % '/%s/%s' % (API_VERSION, '%s')
+    USERS_API = API_URL % 'users'
+    DOMAINS_API = API_URL % 'domains'
+    USER_ROLES_API = API_URL % 'users/%s/roles'
+    DOMAIN_ROLES_API = API_URL % 'domain/%s/roles'
+    DOMAIN_GROUPS_API = API_URL % 'domain/%s/groups'
+    DOMAIN_GROUPS_UPDATE_API = API_URL % 'domain/groups/%s'
+    USER_GROUPS_API = API_URL % 'groups/%s/users'
+    UPDATE_PASSWORD_API = API_URL % 'users/update_password'
+    FORGOT_PASSWORD_API = API_URL % 'users/forgot_password'
+    RESET_PASSWORD_API = API_URL % 'users/reset_password/%s'
 
 
 class WidgetApiUrl(object):
@@ -194,15 +187,12 @@ class SmsCampaignApi(object):
     # endpoint /v1/campaigns
     # GET all campaigns of a user, POST new campaign, DELETE campaigns of a user from given ids
     CAMPAIGNS = '/%s/%s' % (VERSION, 'campaigns')
-
     # endpoint /v1/campaigns/:id
     # GET campaign by its id, POST: updates a campaign, DELETE a campaign from given id
     CAMPAIGN = '/%s/%s' % (VERSION, 'campaigns/<int:campaign_id>')
-
     # endpoint /v1/campaigns/:id/sends
     # This gives the records from "sends" for a given id of campaign
     SENDS = CAMPAIGN + '/sends'
-
     # endpoint /v1/campaigns/:id/send
     # To send a campaign to candidates
     SEND = CAMPAIGN + '/send'
@@ -212,7 +202,7 @@ class SmsCampaignApi(object):
     """ Followings are not REST endpoints, but App endpoints """
     # endpoint /receive
     # This endpoint is callback URL when candidate replies to a campaign via SMS
-    RECEIVE = '/receive'
+    RECEIVE = API_URL % 'receive'
     # endpoint /v1/redirect/:id
     # This endpoint is hit when candidate clicks on any URL present in SMS body text.
     REDIRECT = API_URL % 'redirect/<int:url_conversion_id>'

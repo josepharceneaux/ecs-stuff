@@ -1,3 +1,4 @@
+
 __author__ = 'erikfarmer'
 import re
 import json
@@ -15,9 +16,6 @@ from sqlalchemy.sql.expression import ClauseElement
 from werkzeug.security import generate_password_hash
 from ..error_handling import ForbiddenError, InvalidUsage
 
-GOOGLE_URL_SHORTENER_API_KEY = 'AIzaSyCT7Gg3zfB0yXaBXSPNVhFCZRJzu9WHo4o'
-GOOGLE_URL_SHORTENER_API_URL = 'https://www.googleapis.com/urlshortener/v1/url?key=' \
-                               + GOOGLE_URL_SHORTENER_API_KEY
 JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
 
 
@@ -243,7 +241,8 @@ def url_conversion(long_url):
                            error_code=InvalidUsage.http_status_code())
 
     payload = json.dumps({'longUrl': long_url})
-    response = http_request('POST', GOOGLE_URL_SHORTENER_API_URL,
+    response = http_request('POST', 'https://www.googleapis.com/urlshortener/v1/url?key='
+                            + current_app.config['GOOGLE_URL_SHORTENER_API_KEY'],
                             headers=JSON_CONTENT_TYPE_HEADER, data=payload)
     json_data = response.json()
     if 'error' not in json_data:

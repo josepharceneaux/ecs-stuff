@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run celery_worker" type="PythonConfigurationType" factoryName="Python" folderName="sms_campaign_service">
+  <configuration default="false" name="Run sms_campaign_celery" type="PythonConfigurationType" factoryName="Python" folderName="sms_campaign_service">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>

@@ -9,16 +9,16 @@ import importlib
 from datetime import datetime
 
 # Third Party
-from ska import sign_url, Signature
 from pytz import timezone
 from dateutil.tz import tzutc
 from flask import current_app
+from ska import sign_url, Signature
 
 # Application Specific
 from ..models.misc import UrlConversion
 from ..error_handling import InvalidUsage
 from ..models.sms_campaign import SmsCampaign
-from ..talent_property_manager import get_secret_key
+from ..talent_config_manager import TalentConfigKeys
 from ..utils.activity_utils import ActivityMessageIds
 from ..utils.handy_functions import snake_case_to_pascal_case
 
@@ -66,9 +66,10 @@ def frequency_id_to_seconds(frequency_id):
         FrequencyIds.MONTHLY: 30 * 24 * 3600,
         FrequencyIds.YEARLY: 365 * 24 * 3600
     }
-    if not seconds_from_frequency_id.get(frequency_id):
+    seconds = seconds_from_frequency_id.get(frequency_id)
+    if not seconds and seconds != 0:
         raise InvalidUsage("Unknown frequency ID: %s" % frequency_id)
-    return seconds_from_frequency_id.get(frequency_id)
+    return seconds
 
 
 def to_utc_str(dt):
@@ -205,8 +206,8 @@ def sign_redirect_url(redirect_url, end_datetime):
     """
     if not isinstance(end_datetime, datetime):
         raise InvalidUsage('end_datetime must be instance of datetime')
-    return sign_url(auth_user='no_user', secret_key=get_secret_key(), url=redirect_url,
-                    valid_until=unix_time(end_datetime.replace(tzinfo=tzutc())))
+    return sign_url(auth_user='no_user', secret_key=current_app.config[TalentConfigKeys.SECRET_KEY],
+                    url=redirect_url, valid_until=unix_time(end_datetime.replace(tzinfo=tzutc())))
 
 
 def validate_signed_url(request_args):
@@ -225,7 +226,7 @@ def validate_signed_url(request_args):
                                         auth_user=request_args['auth_user'],
                                         valid_until=request_args['valid_until'],
                                         extra=request_args['extra'],
-                                        secret_key=get_secret_key())
+                                        secret_key=current_app.config[TalentConfigKeys.SECRET_KEY])
 
 
 def processing_after_campaign_sent(base_class, sends_result, user_id, campaign_type, blast_id,
@@ -262,7 +263,7 @@ def processing_after_campaign_sent(base_class, sends_result, user_id, campaign_t
         campaign = getattr(blast_obj, campaign_type)
         if total_sends:
             # update SMS campaign blast. i.e. update number of sends.
-            for _ in sends_result:
+            for _ in xrange(0, total_sends):
                 try:
                     base_class.update_campaign_blast(blast_obj, sends=True)
                 except Exception:

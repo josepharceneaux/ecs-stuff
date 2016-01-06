@@ -8,9 +8,7 @@ import re
 import time
 
 # Common Utils
-from sms_campaign_service.common.campaign_services.campaign_utils import validate_signed_url
 from sms_campaign_service.common.models.db import db
-from sms_campaign_service.common.routes import SmsCampaignApi
 from user_service.common.error_handling import MethodNotAllowed
 from sms_campaign_service.common.models.misc import (UrlConversion, Activity)
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
@@ -21,14 +19,14 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaignSendUrlC
 SLEEP_TIME = 20
 
 
-def assert_url_conversion(sms_campaign_sends, campaign_id):
+def assert_url_conversion(sms_campaign_sends):
     """
     This function verifies that source_url saved in database table "url_conversion" is in
     valid format as expected.
 
     URL to redirect candidate to our app looks like e.g.
 
-    https://www.gettalent.com/campaigns/1/redirect/30/?candidate_id=2
+    https://www.gettalent.com/campaigns/1/redirect/30
 
     So we will verify whether source_url has same format as above URL.
 
@@ -55,7 +53,7 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_count, 
     """
     This function assert the number of sends in database table "sms_campaign_blast" and
     records in database table "sms_campaign_sends"
-    :param expected_count: Excpeted number of sends
+    :param expected_count: Expected number of sends
     :param campaign_id: id of SMS campaign
     :return:
     """
@@ -74,7 +72,7 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_count, 
     if sms_campaign_sends:
         # assert on activity for whole campaign send
         assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_SEND, campaign_id)
-    assert_url_conversion(sms_campaign_sends, campaign_id)
+    assert_url_conversion(sms_campaign_sends)
 
 
 def assert_for_activity(user_id, type_, source_id):

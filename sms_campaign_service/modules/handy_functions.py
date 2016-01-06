@@ -16,16 +16,12 @@ from twilio.rest import TwilioRestClient
 
 
 # Service specific
-from sms_campaign_service.sms_campaign_app import logger
+from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
+from sms_campaign_service.sms_campaign_app import flask_app, logger, app
 from sms_campaign_service.modules.custom_exceptions import TwilioAPIError
-from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO_ACCOUNT_SID,
-                                                                     TWILIO_AUTH_TOKEN,
-                                                                     NGROK_URL,
-                                                                     TWILIO_TEST_ACCOUNT_SID,
-                                                                     TWILIO_TEST_AUTH_TOKEN)
+from sms_campaign_service.modules.sms_campaign_app_constants import NGROK_URL
 
 # Common utils
-from sms_campaign_service.common.common_config import IS_DEV
 from sms_campaign_service.common.error_handling import InvalidUsage
 from sms_campaign_service.common.routes import (GTApis, SmsCampaignApi)
 
@@ -36,13 +32,18 @@ class TwilioSMS(object):
     """
 
     def __init__(self):
-        if IS_DEV:
+        if flask_app.config['IS_DEV']:
             # This client is created using test_credentials of Twilio
-            self.client = twilio.rest.TwilioRestClient(TWILIO_TEST_ACCOUNT_SID,
-                                                       TWILIO_TEST_AUTH_TOKEN)
+            self.client = twilio.rest.TwilioRestClient(
+                app.config[TalentConfigKeys.TWILIO_TEST_ACCOUNT_SID],
+                app.config[TalentConfigKeys.TWILIO_TEST_AUTH_TOKEN]
+            )
         else:
             # This client has actual app credentials of Twilio
-            self.client = twilio.rest.TwilioRestClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+            self.client = twilio.rest.TwilioRestClient(
+                app.config[TalentConfigKeys.TWILIO_ACCOUNT_SID],
+                app.config[TalentConfigKeys.TWILIO_AUTH_TOKEN]
+            )
         self.country = 'US'
         self.phone_type = 'local'
         self.sms_enabled = True

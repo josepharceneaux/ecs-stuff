@@ -21,6 +21,7 @@ from datetime import datetime, timedelta
 import requests
 
 # Common Utils
+from sms_campaign_service.common.campaign_services.campaign_utils import FrequencyIds
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.utils.handy_functions import to_utc_str
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
@@ -74,7 +75,7 @@ class TestCeleryTasks(object):
         assert_on_blasts_sends_url_conversion_and_activity(
             sample_user.id, 2, str(scheduled_sms_campaign_of_current_user.id))
 
-    def test_campaign_send_witht_two_candidates_with_valid_and_invalid_phones(
+    def test_campaign_send_with_two_candidates_with_valid_and_invalid_phones(
             self, auth_token, sample_user, scheduled_sms_campaign_of_current_user,
             sms_campaign_smartlist, sample_sms_campaign_candidates, candidate_phone_1,
             candidate_invalid_phone):
@@ -94,7 +95,7 @@ class TestCeleryTasks(object):
         assert_on_blasts_sends_url_conversion_and_activity(
             sample_user.id, 1, str(scheduled_sms_campaign_of_current_user.id))
 
-    def test_campaign_send_witht_two_candidates_with_one_phone(
+    def test_campaign_send_with_two_candidates_with_one_phone(
             self, auth_token, sample_user, scheduled_sms_campaign_of_current_user,
             sms_campaign_smartlist, sample_sms_campaign_candidates, candidate_phone_1):
         """
@@ -164,68 +165,64 @@ class TestCeleryTasks(object):
         assert_on_blasts_sends_url_conversion_and_activity(
             sample_user.id, 1, str(scheduled_sms_campaign_of_current_user.id))
 
-    # def test_campaign_schedule_and_validate_one_time_task_run(
-    #         self, valid_header, sample_user, scheduled_sms_campaign_of_current_user,
-    #         sms_campaign_smartlist, sample_sms_campaign_candidates, candidate_phone_1):
-    #     """
-    #     This is test to schedule SMS campaign with all valid parameters. This should get OK
-    #      response
-    #     """
-    #     data = CAMPAIGN_SCHEDULE_DATA.copy()
-    #     data['frequency_id'] = 0  # for one_time job
-    #     # run this task after 10 sec
-    #     data['start_datetime'] = to_utc_str(datetime.utcnow() + timedelta(seconds=10))
-    #     response = requests.post(
-    #         SmsCampaignApiUrl.SCHEDULE % scheduled_sms_campaign_of_current_user.id,
-    #         headers=valid_header, data=json.dumps(data))
-    #     assert_campaign_schedule(response)
-    #     time.sleep(SLEEP_TIME)
-    #     assert_on_blasts_sends_url_conversion_and_activity(
-    #         sample_user.id, 1, str(scheduled_sms_campaign_of_current_user.id))
-    #
-    # def test_schedule_periodic_campaign_with_past_end_date(
-    #         self, valid_header, sample_user, scheduled_sms_campaign_of_current_user,
-    #         sms_campaign_smartlist, sample_sms_campaign_candidates, candidate_phone_1):
-    #     """
-    #     This is test to schedule SMS campaign with all valid parameters. This should get OK
-    #      response
-    #     """
-    #     data = CAMPAIGN_SCHEDULE_DATA.copy()
-    #     # run this task after 10 sec
-    #     data['start_datetime'] = to_utc_str(datetime.utcnow() + timedelta(seconds=10))
-    #     response = requests.post(
-    #         SmsCampaignApiUrl.SCHEDULE % scheduled_sms_campaign_of_current_user.id,
-    #         headers=valid_header, data=json.dumps(data))
-    #     assert response.status_code == InvalidUsage.http_status_code()
-    #
-    # def test_sms_receive_with_valid_data_and_one_campaign_sent(self, user_phone_1,
-    #                                                            sms_campaign_of_current_user,
-    #                                                            candidate_phone_1,
-    #                                                            process_send_sms_campaign):
-    #     """
-    #     - This tests the endpoint /v1/receive
-    #
-    #     Here we make HTTP POST  request with no data, Response should be OK as this response
-    #     is returned to Twilio API.
-    #     Candidate is associated with an SMS campaign. Then we assert that reply has been saved
-    #     and replies count has been incremented by 1. Finally we assert that activity has been
-    #     created in database table 'Activity'
-    #     :return:
-    #     """
-    #     reply_text = "What's the venue?"
-    #     reply_count_before = get_replies_count(sms_campaign_of_current_user)
-    #     response_get = requests.post(SmsCampaignApiUrl.RECEIVE,
-    #                                  data={'To': user_phone_1.value,
-    #                                        'From': candidate_phone_1.value,
-    #                                        'Body': reply_text})
-    #     assert response_get.status_code == 200, 'Response should be ok'
-    #     assert 'xml' in str(response_get.text).strip()
-    #     campaign_reply_in_db = get_reply_text(candidate_phone_1)
-    #     assert campaign_reply_in_db.body_text == reply_text
-    #     reply_count_after = get_replies_count(sms_campaign_of_current_user)
-    #     assert reply_count_after == reply_count_before + 1
-    #     assert_for_activity(user_phone_1.user_id, ActivityMessageIds.CAMPAIGN_SMS_REPLY,
-    #                         campaign_reply_in_db.id)
+    def test_campaign_schedule_and_validate_one_time_task_run(
+            self, valid_header, sample_user, scheduled_sms_campaign_of_current_user,
+            sms_campaign_smartlist, sample_sms_campaign_candidates, candidate_phone_1):
+        """
+        This is test to schedule SMS campaign with all valid parameters. This should get OK
+         response
+        """
+        data = CAMPAIGN_SCHEDULE_DATA.copy()
+        response = requests.post(
+            SmsCampaignApiUrl.SCHEDULE % scheduled_sms_campaign_of_current_user.id,
+            headers=valid_header, data=json.dumps(data))
+        assert_campaign_schedule(response)
+        time.sleep(SLEEP_TIME)
+        assert_on_blasts_sends_url_conversion_and_activity(
+            sample_user.id, 1, str(scheduled_sms_campaign_of_current_user.id))
+
+    def test_schedule_periodic_campaign_with_past_end_date(
+            self, valid_header, sample_user, scheduled_sms_campaign_of_current_user,
+            sms_campaign_smartlist, sample_sms_campaign_candidates, candidate_phone_1):
+        """
+        This is test to schedule SMS campaign with all valid parameters. This should get OK
+         response
+        """
+        data = CAMPAIGN_SCHEDULE_DATA.copy()
+        data['frequency_id'] = FrequencyIds.DAILY  # for Periodic job
+        data['end_datetime'] = to_utc_str(datetime.utcnow() - timedelta(hours=SLEEP_TIME))
+        response = requests.post(
+            SmsCampaignApiUrl.SCHEDULE % scheduled_sms_campaign_of_current_user.id,
+            headers=valid_header, data=json.dumps(data))
+        assert response.status_code == InvalidUsage.http_status_code()
+
+    def test_sms_receive_with_valid_data_and_one_campaign_sent(
+            self, user_phone_1, scheduled_sms_campaign_of_current_user,
+            candidate_phone_1, process_send_sms_campaign):
+        """
+        - This tests the endpoint /v1/receive
+
+        Here we make HTTP POST  request with no data, Response should be OK as this response
+        is returned to Twilio API.
+        Candidate is associated with an SMS campaign. Then we assert that reply has been saved
+        and replies count has been incremented by 1. Finally we assert that activity has been
+        created in database table 'Activity'
+        :return:
+        """
+        reply_text = "What's the venue?"
+        reply_count_before = get_replies_count(scheduled_sms_campaign_of_current_user)
+        response_get = requests.post(SmsCampaignApiUrl.RECEIVE,
+                                     data={'To': user_phone_1.value,
+                                           'From': candidate_phone_1.value,
+                                           'Body': reply_text})
+        assert response_get.status_code == 200, 'Response should be ok'
+        assert 'xml' in str(response_get.text).strip()
+        campaign_reply_in_db = get_reply_text(candidate_phone_1)
+        assert campaign_reply_in_db.body_text == reply_text
+        reply_count_after = get_replies_count(scheduled_sms_campaign_of_current_user)
+        assert reply_count_after == reply_count_before + 1
+        assert_for_activity(user_phone_1.user_id, ActivityMessageIds.CAMPAIGN_SMS_REPLY,
+                            campaign_reply_in_db.id)
 
 
 def get_replies_count(campaign):
