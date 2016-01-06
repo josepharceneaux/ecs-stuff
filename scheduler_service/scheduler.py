@@ -184,7 +184,9 @@ def schedule_job(data, user_id=None, access_token=None):
             current_datetime = datetime.datetime.utcnow()
             current_datetime = current_datetime.replace(tzinfo=tzutc())
             job_start_time = valid_data['start_datetime']
-            # If job time is passed because of request timeout delay then run the job
+
+            # Due to request timeout delay, there will be a delay in scheduling job sometimes.
+            # And if start time is passed due to this request delay, then job should be run
             if job_start_time > current_datetime:
                 run_job(user_id, access_token, job_config['url'], content_type)
             logger.info('schedule_job: Task has been added and will start at %s ' % valid_data['start_datetime'])
