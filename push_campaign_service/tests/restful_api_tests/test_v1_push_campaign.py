@@ -1,16 +1,18 @@
-import json
+"""
+This module contains tests related to Push Campaign RESTful API endpoints.
+"""
+# Builtin imports
 import time
 
-import requests
-from push_campaign_service.common.routes import PushNotificationServiceApi
+# Application specific imports
+from push_campaign_service.tests.helper_methods import *
 from push_campaign_service.common.models.push_notification import *
-from push_campaign_service.common.utils.models_utils import db
-
+from push_campaign_service.common.routes import PushNotificationServiceApi
+# Constants
 API_URL = PushNotificationServiceApi.HOST_NAME
 VERSION = PushNotificationServiceApi.VERSION
 
 SLEEP_TIME = 20
-from push_campaign_service.tests.helper_methods import *
 
 
 class TestCreateCampaign():
@@ -194,13 +196,13 @@ class TestSendCmapign():
             assert response['message'] == 'Campaign(id:%s) is being sent to candidates' % test_campaign.id
 
             # Wait for 20 seconds to run celery which will send campaign and creates blast
-            time.sleep(SLEEP_TIME)
+            time.sleep(2 * SLEEP_TIME)
             # Update session to get latest changes in database. Celery has added some records
             db.session.commit()
             # There should be only one blast for this campaign
             blasts = test_campaign.blasts.all()
             assert len(blasts) == 1
-            assert test_campaign.blasts[0].sends == 1, 'Campaign was sent to one candidate'
+            assert blasts[0].sends == 1, 'Campaign was sent to one candidate'
         else:
             unauthorize_test('post', '/v1/campaigns/%s/send' % test_campaign.id, token)
 
@@ -253,4 +255,38 @@ class TestCampaignSends():
             unauthorize_test('get', '/v1/campaigns/%s/sends' % test_campaign.id, token)
 
 
+class TestCampaignBlastSends():
+
+    # Test URL: /v1/campaigns/<int:campaign_id>/blasts/<int:blast_id>/sends [GET]
+    def test_get_campaign_blast_sends(self, auth_data, test_campaign, test_smartlist, campaign_blasts_count):
+        token, is_valid = auth_data
+        if is_valid:
+            # Wait for campaigns to be sent
+            time.sleep(SLEEP_TIME)
+            last_campaign = PushCampaign.query.order_by(PushCampaign.id.desc()).first()
+            last_blast = PushCampaignBlast.query.order_by(PushCampaignBlast.id.desc()).first()
+            for blast in test_campaign.blasts.all():
+                # 404 Case, Campaign not found
+
+                # 404 with invalid campaign id and valid blast id
+                response = send_request('get', '/v1/campaigns/%s/blasts/%s/sends' % ((last_campaign.id + 1),
+                                                                                     blast.id), token)
+                assert response.status_code == 404, 'Resource not found'
+
+                # 404 with valid campaign id but invalid blast id
+                response = send_request('get', '/v1/campaigns/%s/blasts/%s/sends' % (test_campaign.id,
+                                                                                     (last_blast.id + 1)), token)
+                assert response.status_code == 404, 'Resource not found'
+
+                # 200 case: Got Campaign Sends successfully
+                response = send_request('get', '/v1/campaigns/%s/blasts/%s/sends' % (test_campaign.id, blast.id), token)
+                assert response.status_code == 200, 'Successfully got campaign sends info'
+                response = response.json()
+                # Since each blast have one send, so total sends will be equal to number of blasts
+                assert response['count'] == 1
+                assert len(response['sends']) == 1
+
+        else:
+            # We are testing 401 here. so campaign and blast ids will not matter.
+            unauthorize_test('get',  '/v1/campaigns/%s/blasts/%s/sends' % (test_campaign.id, 1), token)
 

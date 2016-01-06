@@ -499,7 +499,7 @@ class PushCampaignBlastSends(Resource):
             response = dict(sends=sends, count=len(sends))
             return response, 200
         else:
-            return ResourceNotFound('Push Campaign Blast not found with id: %s' % blast_id)
+            raise ResourceNotFound('Push Campaign Blast not found with id: %s' % blast_id)
 
 
 @api.route('/v1/campaigns/<int:campaign_id>/sends')

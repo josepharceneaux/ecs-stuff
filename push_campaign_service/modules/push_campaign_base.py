@@ -211,6 +211,7 @@ class PushCampaignBase(CampaignBase):
             total_sends = sends_result.count(True)
             if total_sends:
                 # Need to refresh blast object because this celery task has it's own scoped session
+                db.session.commit()
                 campaign_blast = PushCampaignBlast.get_by_id(blast_id)
                 sends = campaign_blast.sends + total_sends
                 campaign_blast.update(sends=sends)
