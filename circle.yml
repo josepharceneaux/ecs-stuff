@@ -47,7 +47,7 @@ test:
   override:
 
     - ? >
-          py.test
+          py.test -n auto
           auth_service/tests/
           user_service/tests/
           resume_service/tests/
