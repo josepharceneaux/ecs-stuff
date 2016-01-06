@@ -378,10 +378,10 @@ def test_edit_candidate_work_preference(sample_user, user_auth):
 
     candidate_edits = edit_resp.json()['candidate']['edits']
     assert edit_resp.status_code == 200
-    assert candidate_edits[0]['old_value'] == int(old_work_pref_dict['salary']).__str__()
-    assert candidate_edits[5]['old_value'] == int(old_work_pref_dict['hourly_rate']).__str__()
-    assert candidate_edits[0]['new_value'] == int(new_work_pref_dict['salary']).__str__()
-    assert candidate_edits[5]['new_value'] == int(new_work_pref_dict['hourly_rate']).__str__()
+    assert int(candidate_edits[0]['old_value']) == int(old_work_pref_dict['salary'])
+    assert int(candidate_edits[5]['old_value']) == int(old_work_pref_dict['hourly_rate'])
+    assert int(candidate_edits[0]['new_value']) == int(new_work_pref_dict['salary'])
+    assert int(candidate_edits[5]['new_value']) == int(new_work_pref_dict['hourly_rate'])
 
 
 def test_edit_candidate_email(sample_user, user_auth):
