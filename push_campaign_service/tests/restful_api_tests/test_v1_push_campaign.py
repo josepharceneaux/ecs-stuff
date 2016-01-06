@@ -205,4 +205,29 @@ class TestSendCmapign():
             unauthorize_test('post', '/v1/campaigns/%s/send' % test_campaign.id, token)
 
 
+class TestCampaignBlasts():
+
+    # Test URL: /v1/campaigns/<int:campaign_id>/blasts [GET]
+    def test_get_campaign_blasts(self, auth_data, test_campaign, test_smartlist, campaign_blasts_count):
+        token, is_valid = auth_data
+        if is_valid:
+            # Wait for campaigns to be sent
+            time.sleep(SLEEP_TIME)
+
+            # 404 Case, Campaign not found
+            last_obj = PushCampaign.query.order_by(PushCampaign.id.desc()).first()
+            response = send_request('get', '/v1/campaigns/%s/blasts' % (last_obj.id + 1), token)
+            assert response.status_code == 404, 'Resource not found'
+            # 200 case: Campaign Blast successfully
+            response = send_request('get', '/v1/campaigns/%s/blasts' % test_campaign.id, token)
+            assert response.status_code == 200, 'Successfully got campaign blasts info'
+            response = response.json()
+            assert response['count'] == campaign_blasts_count
+            assert len(response['blasts']) == campaign_blasts_count
+        else:
+            unauthorize_test('get', '/v1/campaigns/%s/blasts' % test_campaign.id, token)
+
+
+
+
 

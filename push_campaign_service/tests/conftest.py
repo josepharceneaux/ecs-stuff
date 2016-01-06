@@ -10,6 +10,7 @@ from faker import Faker
 
 from werkzeug.security import gen_salt
 
+from push_campaign_service.modules.push_campaign_base import PushCampaignBase
 from push_campaign_service.tests.helper_methods import generate_campaign_data
 
 fake = Faker()
@@ -86,18 +87,18 @@ def test_smartlist(request, sample_user, test_candidate, test_campaign):
     return smartlist
 
 
-# @pytest.fixture()
-# def test_push_campaign_smartlist(request, test_smartlist, test_campaign):
-#     """ TODO
-#     """
-#     push_smartlist = PushCampaignSmartlist(smartlist_id=test_smartlist.id,
-#                                            campaign_id=test_campaign.id)
-#     PushCampaignSmartlist.save(push_smartlist)
-#
-#     def tear_down():
-#             PushCampaignSmartlist.delete(push_smartlist)
-#     request.addfinalizer(tear_down)
-#     return push_smartlist
+@pytest.fixture()
+def campaign_blasts_count(request, sample_user, test_smartlist, test_campaign, auth_data):
+    """ TODO
+    """
+    token, is_valid = auth_data
+
+    blasts_counts = 3
+    if is_valid:
+        campaign_obj = PushCampaignBase(user_id=sample_user.id)
+        for num in range(blasts_counts):
+            campaign_obj.process_send(test_campaign)
+    return blasts_counts
 
 
 # @pytest.fixture()
