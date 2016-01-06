@@ -557,7 +557,7 @@ class PushCampaignSends(Resource):
         [sends.extend(blast.blast_sends) for blast in push_campaign.blasts]
         # Get JSON serializable data
         sends = [send.to_json() for send in sends]
-        response = dict(campaign_sends=sends, count=len(sends))
+        response = dict(sends=sends, count=len(sends))
         return response, 200
 
 
