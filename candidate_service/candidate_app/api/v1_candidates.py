@@ -24,6 +24,10 @@ from candidate_service.common.utils.auth_utils import require_oauth
 
 # Error handling
 from candidate_service.common.error_handling import ForbiddenError, InvalidUsage, NotFoundError
+from candidate_service.custom_exceptions import (
+    CandidateNotFound, CandidateIsHidden, CandidateForbidden, InvalidEmail,
+    CustomFieldForbidden, AOIForbidden
+)
 
 # Models
 from candidate_service.common.models.candidate import (
@@ -44,6 +48,7 @@ from candidate_service.modules.talent_cloud_search import upload_candidate_docum
 
 from candidate_service.modules.talent_openweb import find_candidate_from_openweb
 
+
 class CandidatesResource(Resource):
     decorators = [require_oauth()]
 
@@ -60,7 +65,7 @@ class CandidatesResource(Resource):
 
         # Parse request body
         body_dict = request.get_json()
-        if not body_dict:
+        if not body_dict.get('candidate_ids'):
             get_all_domain_candidates = True
 
         if get_all_domain_candidates:  # Retrieve user's candidates
@@ -71,7 +76,7 @@ class CandidatesResource(Resource):
 
                 # If Candidate is web hidden, it is assumed "deleted"
                 if candidate.is_web_hidden:
-                    raise NotFoundError(error_message='Candidate not found.')
+                    raise CandidateIsHidden(error_message='Candidate not found')
 
                 retrieved_candidates.append(fetch_candidate_info(candidate))
 
@@ -80,24 +85,29 @@ class CandidatesResource(Resource):
             candidate_ids = body_dict.get('candidate_ids')
             if not isinstance(candidate_ids, list):
                 raise InvalidUsage(error_message='Candidate IDs must be in a list/array.')
+                # TODO: utilize jsonschema
 
             # Candidate IDs must be integers
             if filter(lambda candidate_id: not is_number(candidate_id), candidate_ids):
                 raise InvalidUsage(error_message='Candidate IDs must be integers.')
+                # TODO: utilize jsonschema
 
             retrieved_candidates = []
             for candidate_id in candidate_ids:
                 candidate = Candidate.get_by_id(candidate_id=candidate_id)
                 if not candidate:
-                    raise NotFoundError(error_message='Candidate not found.')
+                    raise CandidateNotFound(error_message='Candidate not found')
 
                 # If Candidate is web hidden, it is assumed "deleted"
                 if candidate.is_web_hidden:
-                    raise NotFoundError(error_message='Candidate not found.')
+                    raise CandidateIsHidden(error_message='Candidate not found')
 
                 # Candidate ID must belong to user and its domain
                 if not does_candidate_belong_to_user(authed_user, candidate_id):
-                    raise ForbiddenError(error_message='Not authorized')
+                    raise CandidateForbidden(
+                            error_message='Not authorized',
+                            additional_error_info='Candidate does not belong to user'
+                    )
 
                 retrieved_candidates.append(fetch_candidate_info(candidate))
 
@@ -140,10 +150,11 @@ class CandidatesResource(Resource):
             # Email address is required for creating a candidate
             if not any(emails):
                 raise InvalidUsage(error_message="Email address required")
+            # TODO: utilize jsonschema
 
             # Validate email addresses' format
             if filter(lambda email: not is_valid_email(email['address']), emails):
-                raise InvalidUsage(error_message="Invalid email address/format")
+                raise InvalidEmail(error_message="Invalid email address/format")
 
             # Prevent user from adding custom field(s) to other domains
             custom_fields = candidate_dict.get('custom_fields') or []
@@ -151,7 +162,7 @@ class CandidatesResource(Resource):
             is_authorized = is_custom_field_authorized(custom_field_ids=custom_field_ids,
                                                        user_domain_id=authed_user.domain_id)
             if not is_authorized:
-                raise ForbiddenError(error_message="Unauthorized custom field IDs")
+                raise CustomFieldForbidden(error_message="Unauthorized custom field IDs")
 
             # Prevent user from adding area(s) of interest to other domains
             areas_of_interest = candidate_dict.get('areas_of_interest') or []
@@ -159,7 +170,7 @@ class CandidatesResource(Resource):
             is_authorized = is_area_of_interest_authorized(area_of_interest_ids=area_of_interest_ids,
                                                            user_domain_id=authed_user.domain_id)
             if not is_authorized:
-                raise ForbiddenError(error_message="Unauthorized area of interest IDs")
+                raise AOIForbidden(error_message="Unauthorized area of interest IDs")
 
             resp_dict = create_or_update_candidate_from_params(
                 user_id=authed_user.id,
@@ -233,7 +244,7 @@ class CandidatesResource(Resource):
 
                 # Validate email addresses' format
                 if filter(lambda email: not is_valid_email(email['address']), emails):
-                    raise InvalidUsage(error_message="Invalid email address/format")
+                    raise InvalidEmail(error_message="Invalid email address/format")
 
             # Prevent user from updating custom field(s) from other domains
             custom_fields = candidate_dict.get('custom_fields') or []
@@ -241,7 +252,7 @@ class CandidatesResource(Resource):
             is_authorized = is_custom_field_authorized(custom_field_ids=custom_field_ids,
                                                        user_domain_id=authed_user.domain_id)
             if not is_authorized:
-                raise ForbiddenError(error_message="Unauthorized custom field IDs")
+                raise CustomFieldForbidden(error_message="Unauthorized custom field IDs")
 
             # Retrieve areas_of_interest
             areas_of_interest = candidate_dict.get('areas_of_interest') or []
@@ -254,7 +265,7 @@ class CandidatesResource(Resource):
             # Prevent user from updating area(s) of interest from other domains
             is_authorized = is_area_of_interest_authorized(authed_user.domain_id, area_of_interest_ids)
             if not is_authorized:
-                raise ForbiddenError(error_message="Unauthorized area of interest IDs")
+                raise AOIForbidden(error_message="Unauthorized area of interest IDs")
 
             resp_dict = create_or_update_candidate_from_params(
                 user_id=authed_user.id,
@@ -334,7 +345,7 @@ class CandidateResource(Resource):
 
         # If Candidate is web hidden, it is assumed "deleted"
         if candidate.is_web_hidden:
-            raise NotFoundError(error_message='Candidate not found.')
+            raise CandidateNotFound(error_message='Candidate not found.')
 
         # Candidate must belong to user, and must be in the same domain as the user's domain
         if not does_candidate_belong_to_user(user_row=authed_user, candidate_id=candidate_id):
