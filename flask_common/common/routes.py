@@ -135,9 +135,12 @@ class SchedulerApiUrl:
     else:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
 
-    TASKS = "/%s/%s" % (VERSION, "tasks/")
+    TASKS = SCHEDULER_SERVICE_HOST_NAME % "tasks/"
+    SINGLE_TASK = SCHEDULER_SERVICE_HOST_NAME % 'tasks/id/%s'
+
+    MULTIPLE_TASKS = "/%s/%s" % (VERSION, "tasks/")
     TASKS_TEST = "/%s/%s" % (VERSION, "tasks/test/")
-    SINGLE_TASK = "/%s/%s" % (VERSION, "tasks/id/<string:_id>")
+    ONE_TASK = "/%s/%s" % (VERSION, "tasks/id/<string:_id>")
     MULTIPLE_TASK_RESUME = "/%s/%s" % (VERSION, "tasks/resume/")
     MULTIPLE_TASK_PAUSE = "/%s/%s" % (VERSION, "tasks/pause/")
     SINGLE_TASK_RESUME = "/%s/%s" % (VERSION, "tasks/<string:_id>/resume/")

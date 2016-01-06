@@ -16,7 +16,6 @@ from flask.ext.restful import Resource
 from flask.ext.cors import CORS
 
 # Application imports
-from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse
@@ -34,14 +33,14 @@ api.route = types.MethodType(api_route, api)
 
 # Enable CORS
 CORS(scheduler_blueprint, resources={
-    SchedulerApiUrl.TASKS + '*': {
+    SchedulerApiUrl.MULTIPLE_TASKS + '*': {
         'origins': '*',
         'allow_headers': ['Content-Type', 'Authorization']
     }
 })
 
 
-@api.route(SchedulerApiUrl.TASKS)
+@api.route(SchedulerApiUrl.MULTIPLE_TASKS)
 class Tasks(Resource):
     """
         This resource returns a list of tasks or it can be used to create or schedule a task using POST.
@@ -361,7 +360,7 @@ class PauseTasks(Resource):
         raise InvalidUsage('Bad request, invalid data in request', error_code=400)
 
 
-@api.route(SchedulerApiUrl.SINGLE_TASK)
+@api.route(SchedulerApiUrl.ONE_TASK)
 class TaskById(Resource):
     """
         This resource returns a specific task based on id or update a task
@@ -597,7 +596,6 @@ class SendRequestTest(Resource):
             expiry = expiry.strftime('%Y-%m-%d %H:%M:%S')
 
             # Expire oauth token and then pass it to run_job. And run_job should refresh token and send request to URL
-            # db.db.session.commit()
             token = Token.query.filter_by(user_id=request.user.id).first()
             token.update(expires=expiry)
 
