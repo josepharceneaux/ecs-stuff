@@ -180,19 +180,21 @@ def validate_blast_candidate_url_conversion_in_db(campaign_blast_obj, candidate,
     """
     # check if candidate exists in database
     if not candidate:
-        raise ResourceNotFound('pre_process_url_redirect: Candidate(id:%s) not found.'
-                               % candidate.id, error_code=ResourceNotFound.http_status_code())
+        raise ResourceNotFound(
+            'validate_blast_candidate_url_conversion_in_db: Candidate not found.',
+            error_code=ResourceNotFound.http_status_code())
     # check if campaign_blasts exists in database
     if not campaign_blast_obj:
-        raise ResourceNotFound('pre_process_url_redirect: %s(id=%s) not found.'
+        raise ResourceNotFound('validate_blast_candidate_url_conversion_in_db: %s(id=%s) not found.'
                                % (campaign_blast_obj.__tablename__, campaign_blast_obj.id),
                                error_code=ResourceNotFound.http_status_code())
-    if not getattr(campaign_blast_obj, campaign_name):
-        raise ResourceNotFound('pre_process_url_redirect: Campaign not found for %s.'
-            % campaign_blast_obj.__tablename__, error_code=ResourceNotFound.http_status_code())
+    if not getattr(campaign_blast_obj, 'campaign'):
+        raise ResourceNotFound('validate_blast_candidate_url_conversion_in_db: '
+                               'Campaign not found for %s.' % campaign_blast_obj.__tablename__,
+                               error_code=ResourceNotFound.http_status_code())
     # check if url_conversion record exists in database
     if not url_conversion_obj:
-        raise ResourceNotFound('pre_process_url_redirect: Url Conversion(id=%s) not found.'
-                               % url_conversion_obj.id,
+        raise ResourceNotFound('validate_blast_candidate_url_conversion_in_db: '
+                               'Url Conversion(id=%s) not found.' % url_conversion_obj.id,
                                error_code=ResourceNotFound.http_status_code())
-    return getattr(campaign_blast_obj, campaign_name)
+    return getattr(campaign_blast_obj, 'campaign')

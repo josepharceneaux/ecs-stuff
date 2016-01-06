@@ -130,8 +130,8 @@ def get_activity_message_name(campaign_name, postfix):
     :type campaign_name: str
     :type postfix: str
     :exception: Invalid usage
-    :return: id of activity message
-    :rtype: int
+    :return: Activity message name
+    :rtype: str
     """
     return "_".join(campaign_name.split('_')[::-1]).upper() + '_' + postfix
 
@@ -171,24 +171,22 @@ def get_activity_message_id_from_name(activity_name):
             'update_stats_and_create_click_activity: Activity type not found for %s. '
             'Cannot create click activity' % activity_name)
 
-def get_candidate_url_conversion_campaign_send_and_blast_obj(campaign_send_url_conversion_obj,
-                                                             campaign_name):
+
+def get_candidate_url_conversion_campaign_send_and_blast_obj(campaign_send_url_conversion_obj):
     """
     Depending on campaign name and CampaignSendUrlConversion (e.g. SmsCampaignSendUrlConversion)
     model, here we get candidate obj, url_conversion obj, campaign_send obj and campaign_blast obj.
     :param campaign_send_url_conversion_obj:
-    :param campaign_name: name of campaign in snake_case format
     :type campaign_send_url_conversion_obj: SmsCampaignSendUrlConversion etc
-    :type campaign_name: str
     :return: candidate obj, url_conversion obj, campaign_send obj and campaign_blast obj.
     :rtype: tuple
     """
     # get url_conversion obj
     url_conversion_obj = UrlConversion.get_by_id(campaign_send_url_conversion_obj.url_conversion_id)
     # get campaign_send object
-    campaign_send_obj = getattr(campaign_send_url_conversion_obj, campaign_name + '_send')
+    campaign_send_obj = getattr(campaign_send_url_conversion_obj, 'send')
     # get campaign_blast object
-    campaign_blast_obj = getattr(campaign_send_obj, campaign_name + '_blast')
+    campaign_blast_obj = getattr(campaign_send_obj, 'blast')
     # get candidate object
     candidate_obj = getattr(campaign_send_obj, 'candidate')
     return candidate_obj, url_conversion_obj, campaign_send_obj, campaign_blast_obj
@@ -253,7 +251,7 @@ def processing_after_campaign_sent(base_class, sends_result, user_id, campaign_t
     :type blast_id: int
     :type auth_header: dict
 
-        **See Also**
+    **See Also**
         .. see also:: callback_campaign_sent() method in SmsCampaignBase class inside
                         sms_campaign_service/sms_campaign_base.py
     """
@@ -264,17 +262,17 @@ def processing_after_campaign_sent(base_class, sends_result, user_id, campaign_t
         campaign = getattr(blast_obj, campaign_type)
         if total_sends:
             # update SMS campaign blast. i.e. update number of sends.
-            for _ in xrange(0, total_sends):
-                try:
-                    base_class.update_campaign_blast(blast_obj, sends=True)
-                except Exception:
-                    current_app.config['LOGGER'].exception(
-                        'callback_campaign_sent: Error updating campaign(id:%s) blast(id:%s)'
-                        % (campaign.id, blast_obj.id))
+            try:
+                blast_obj.update(sends=blast_obj.sends+total_sends)
+            except Exception:
+                current_app.config['LOGGER'].exception(
+                    'callback_campaign_sent: Error updating campaign(id:%s) blast(id:%s)'
+                    % (campaign.id, blast_obj.id))
+                raise
             base_class.create_campaign_send_activity(user_id, campaign,
                                                      auth_header, total_sends)
         current_app.config['LOGGER'].debug(
-            'process_send: SMS Campaign(id:%s) has been sent to %s candidate(s).'
-            '(User(id:%s))' % (campaign.id, total_sends, user_id))
+            'process_send: %s(id:%s) has been sent to %s candidate(s).'
+            '(User(id:%s))' % (campaign_type, campaign.id, total_sends, user_id))
     else:
         current_app.config['LOGGER'].error('callback_campaign_sent: Result is not a list')

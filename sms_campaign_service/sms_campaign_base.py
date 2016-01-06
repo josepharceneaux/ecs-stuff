@@ -702,6 +702,8 @@ class SmsCampaignBase(CampaignBase):
         **See Also**
         .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
         """
+        # Celery app is not configured with flask app, so need to use app.app_context() here
+        # so that Celery tasks know the config of flask app,
         with app.app_context():
             candidate, candidate_phone_value = candidate_and_phone
             try:

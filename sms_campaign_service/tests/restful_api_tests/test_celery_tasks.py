@@ -21,14 +21,16 @@ from datetime import datetime, timedelta
 import requests
 
 # Common Utils
-from sms_campaign_service.common.campaign_services.campaign_utils import FrequencyIds
-from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.utils.handy_functions import to_utc_str
+from sms_campaign_service.common.campaign_services.validators import \
+    validate_blast_candidate_url_conversion_in_db
+from sms_campaign_service.common.routes import SmsCampaignApiUrl, CandidateApiUrl
+from sms_campaign_service.common.utils.handy_functions import to_utc_str, http_request
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.error_handling import (ResourceNotFound,
                                                         InternalServerError,
                                                         MethodNotAllowed, InvalidUsage)
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
+from sms_campaign_service.common.campaign_services.campaign_utils import FrequencyIds, CampaignType
 
 # Database Models
 from sms_campaign_service.common.models.misc import UrlConversion
@@ -317,14 +319,48 @@ class TestSmsCampaignURLRedirection(object):
         assert response_get.status_code == InternalServerError.http_status_code(), \
             'It should get internal server error'
 
-    def test_pre_process_url_redirect_with_None_data(self):
+    def test_get_with_deleted_campaign(
+            self, valid_header, scheduled_sms_campaign_of_current_user,
+            url_conversion_by_send_test_sms_campaign):
+        """
+        Here we first delete the campaign, and then test functionality of process_url_redirect
+        by making HTTP GET call to endpoint /v1/redirect. It should give ResourceNotFound Error.
+        But candidate should get Internal server error. Hence this test should get internal server
+        error.
+        """
+        _delete_sms_campaign(scheduled_sms_campaign_of_current_user, valid_header)
+        response_get = _use_ngrok_or_local_address(
+            url_conversion_by_send_test_sms_campaign.source_url)
+        assert response_get.status_code == InternalServerError.http_status_code(), \
+            'It should get Internal server error'
+
+    def test_validate_blast_candidate_url_conversion_in_db_with_deleted_candidate(
+            self, valid_header, scheduled_sms_campaign_of_current_user,
+            url_conversion_by_send_test_sms_campaign, candidate_first):
+        """
+        Here we first delete the candidate, and then test functionality of
+        validate_blast_candidate_url_conversion_in_db() handy function in campaign_utils.py.
+        It should give ResourceNotFound Error.
+        """
+        blast_obj = SmsCampaignBlast.get_by_campaign_id(scheduled_sms_campaign_of_current_user.id)
+        Candidate.delete(candidate_first)
+        try:
+            validate_blast_candidate_url_conversion_in_db(blast_obj,
+                                                          candidate_first,
+                                                          url_conversion_by_send_test_sms_campaign,
+                                                          CampaignType.SMS)
+        except ResourceNotFound as error:
+            assert error.status_code == ResourceNotFound.http_status_code(), \
+                'It should get Resource not found error'
+
+    def test_pre_process_url_redirect_with_empty_data(self):
         """
         This tests the functionality of pre_process_url_redirect() class method of CampaignBase.
         All parameters passed are None, So, it should raise Invalid Usage Error.
         :return:
         """
         try:
-            CampaignBase.pre_process_url_redirect(None, None)
+            CampaignBase.pre_process_url_redirect({}, None)
         except InvalidUsage as error:
             assert error.status_code == InvalidUsage.http_status_code()
 
@@ -366,25 +402,7 @@ class TestSmsCampaignURLRedirection(object):
         except InvalidUsage as error:
             assert error.status_code == InvalidUsage.http_status_code()
 
-    # def test_pre_process_url_redirect_with_deleted_campaign(
-    #         self, valid_header, sms_campaign_of_current_user,
-    #         url_conversion_by_send_test_sms_campaign, candidate_first):
-    #     """
-    #     This tests the functionality of pre_process_url_redirect() class method of SmsCampaignBase.
-    #     Here we first delete the campaign, and then test functionality of pre_process_url_redirect
-    #     class method of SmsCampaignBase. It should give ResourceNotFound Error.
-    #     """
-    #     campaing_id = sms_campaign_of_current_user.id
-    #     _delete_sms_campaign(sms_campaign_of_current_user, valid_header)
-    #     try:
-    #         SmsCampaignBase.pre_process_url_redirect(campaing_id,
-    #                                                  url_conversion_by_send_test_sms_campaign.id,
-    #                                                  candidate_first.id)
-    #
-    #     except Exception as error:
-    #         assert error.status_code == ResourceNotFound.http_status_code()
-    #         str(campaing_id) in error.message
-    #
+
     # def test_pre_process_url_redirect_with_deleted_candidate(
     #         self, sms_campaign_of_current_user, url_conversion_by_send_test_sms_campaign,
     #         candidate_first):
@@ -455,6 +473,7 @@ def _delete_sms_campaign(campaign, header):
     """
     response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % campaign.id,
                                headers=header)
+    db.session.commit()
     assert response.status_code == 200, 'should get ok response (200)'
 
 
