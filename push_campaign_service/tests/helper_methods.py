@@ -53,8 +53,8 @@ def generate_campaign_data():
     """ Get random campaign data
     """
     data = {
-        "title": fake.domain_name(),
-        "content": fake.paragraph(1),
+        "name": fake.domain_name(),
+        "body_text": fake.paragraph(1),
         "url": fake.url()
     }
     return data
@@ -62,10 +62,10 @@ def generate_campaign_data():
 
 def compare_campaign_data(campaign_obj, campaign_dict):
     _id = campaign_obj['id'] if isinstance(campaign_obj, dict) else campaign_obj.id
-    content = campaign_obj['content'] if isinstance(campaign_obj, dict) else campaign_obj.content
-    title = campaign_obj['title'] if isinstance(campaign_obj, dict) else campaign_obj.title
+    body_text = campaign_obj['body_text'] if isinstance(campaign_obj, dict) else campaign_obj.body_text
+    name = campaign_obj['name'] if isinstance(campaign_obj, dict) else campaign_obj.name
     url = campaign_obj['url'] if isinstance(campaign_obj, dict) else campaign_obj.url
     assert _id == campaign_dict['id']
-    assert content == campaign_dict['content']
-    assert title == campaign_dict['title']
+    assert body_text == campaign_dict['body_text']
+    assert name == campaign_dict['name']
     assert url == campaign_dict['url']

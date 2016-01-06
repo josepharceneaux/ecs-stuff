@@ -1,5 +1,5 @@
 from push_campaign_service.common.error_handling import ResourceNotFound
-from push_campaign_service.common.models.push_notification import PushCampaignSmartlist
+from push_campaign_service.common.models.push_campaign import PushCampaignSmartlist
 from push_campaign_service.common.models.smartlist import Smartlist
 
 

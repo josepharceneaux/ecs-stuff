@@ -6,7 +6,7 @@ import time
 
 # Application specific imports
 from push_campaign_service.tests.helper_methods import *
-from push_campaign_service.common.models.push_notification import *
+from push_campaign_service.common.models.push_campaign import *
 from push_campaign_service.common.routes import PushNotificationServiceApi
 # Constants
 API_URL = PushNotificationServiceApi.HOST_NAME
@@ -29,7 +29,7 @@ class TestCreateCampaign():
         token, is_valid = auth_data
         if is_valid:
             # First test with missing keys
-            for key in ['title', 'content', 'url', 'smartlist_ids']:
+            for key in ['name', 'body_text', 'url', 'smartlist_ids']:
                 data = campaign_data.copy()
                 data['smartlist_ids'] = [test_smartlist.id]
                 missing_key_test(data, key, token)
@@ -90,8 +90,8 @@ class TestCreateCampaign():
             assert json_response['count'] == 1, 'Campaign Count should be 1 this time'
             assert len(json_response['campaigns']) == 1, 'Got one campaign in list'
             campaign = json_response['campaigns'][0]
-            assert test_campaign.content == campaign['content']
-            assert test_campaign.title == campaign['title']
+            assert test_campaign.body_text == campaign['body_text']
+            assert test_campaign.name == campaign['name']
             assert test_campaign.url == campaign['url']
         else:
             unauthorize_test('get', PushNotificationServiceApi.CAMPAIGNS, token)
@@ -109,8 +109,8 @@ class TestCampaignById():
             json_response = response.json()
             campaign = json_response['campaign']
             assert test_campaign.id == campaign['id']
-            assert test_campaign.content == campaign['content']
-            assert test_campaign.title == campaign['title']
+            assert test_campaign.body_text == campaign['body_text']
+            assert test_campaign.name == campaign['name']
             assert test_campaign.url == campaign['url']
         else:
             unauthorize_test('get', '/v1/campaigns/%s' % test_campaign.id, token)
@@ -156,7 +156,7 @@ class TestCampaignById():
             smartlist_ids = data['smartlist_ids']
 
             # Test valid fields with invalid/ empty values
-            for key in ['title', 'content', 'url', 'smartlist_ids']:
+            for key in ['name', 'body_text', 'url', 'smartlist_ids']:
                 invalid_value_test(data, key, token, test_campaign.id)
 
             # Test positive case with valid data

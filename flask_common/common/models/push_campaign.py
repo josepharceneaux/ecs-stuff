@@ -9,8 +9,8 @@ __author__ = 'Zohaib Ijaz <mzohaib.qc@gmail.com>'
 class PushCampaign(db.Model):
     __tablename__ = 'push_campaign'
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(50))
-    content = db.Column(db.String(255))
+    name = db.Column(db.String(50))
+    body_text = db.Column(db.String(255))
     url = db.Column(db.String(255))
     scheduler_task_id = db.Column(db.Integer)
     added_datetime = db.column(db.DateTime)

@@ -3,13 +3,14 @@ from werkzeug.exceptions import BadRequest
 
 # Application Specific
 from push_campaign_service.common.error_handling import *
-from push_campaign_service.common.models.push_notification import *
+from push_campaign_service.common.models.push_campaign import *
 from push_campaign_service.common.models.candidate import CandidateDevice
 from push_campaign_service.common.models.misc import UrlConversion
 from push_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from push_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from push_campaign_service.common.routes import PushNotificationServiceApi
-from push_campaign_service.push_campaign_app import logger, celery_app
+from push_campaign_service.push_campaign_app import logger, celery_app, app
+from push_campaign_service.common.campaign_services.campaign_utils import processing_after_campaign_sent, CampaignType
 from custom_exceptions import *
 from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY, CELERY_QUEUE
 from one_signal_sdk import OneSignalSdk
@@ -32,6 +33,7 @@ class PushCampaignBase(CampaignBase):
         self.campaign_blast = None
         self.campaign_blast_id = None
         self.queue_name = CELERY_QUEUE
+        self.campaign_type = CampaignType.PUSH
 
     def get_all_campaigns(self):
         """
@@ -160,7 +162,7 @@ class PushCampaignBase(CampaignBase):
                 url_to_send = PushNotificationServiceApi.HOST_NAME + '/url_hits/%s' % url_conversion.id
                 resp = one_signal_client.send_notification(url_to_send,
                                                            self.campaign.content,
-                                                           self.campaign.title,
+                                                           self.campaign.name,
                                                            players=device_ids)
                 if resp.ok:
                     campaign_send = PushCampaignSend(campaign_blast_id=self.campaign_blast_id,
@@ -188,41 +190,51 @@ class PushCampaignBase(CampaignBase):
 
     @staticmethod
     @celery_app.task(name='callback_campaign_sent')
-    def callback_campaign_sent(sends_result, user_id, campaign, blast_id, auth_header):
+    def callback_campaign_sent(sends_result, user_id, campaign_type, blast_id, auth_header):
         """
-        Once a Push Notification campaign has been sent to all candidates, this function is hit, and here we
+        Once Push campaign has been sent to all candidates, this function is hit. This is
+        a Celery task. Here we
 
-        add activity e.g. (Push Notification Campaign "abc" was sent to "200" candidates")
+        1) Update number of sends in campaign blast
+        2) Add activity e.g. (Push Campaign "abc" was sent to "1000" candidates")
+
+        This uses processing_after_campaign_sent() function defined in
+            common/campaign_services/campaign_utils.py
 
         :param sends_result: Result of executed task
         :param user_id: id of user (owner of campaign)
-        :param campaign: id of campaign which was sent to candidates
+        :param campaign_type: type of campaign. i.e. sms_campaign or push_campaign
+        :param blast_id: id of blast object
         :param auth_header: auth header of current user to make HTTP request to other services
         :type sends_result: list
         :type user_id: int
-        :type campaign: row
+        :type campaign_type: str
+        :type blast_id: int
         :type auth_header: dict
 
         **See Also**
         .. see also:: send_campaign_to_candidates() method in CampaignBase class inside
-                        common/utils/campaign_utils.py
+                        common/utils/campaign_base.py
         """
-        if isinstance(sends_result, list):
-            total_sends = sends_result.count(True)
-            if total_sends:
-                # Need to refresh blast object because this celery task has it's own scoped session
-                db.session.commit()
-                campaign_blast = PushCampaignBlast.get_by_id(blast_id)
-                sends = campaign_blast.sends + total_sends
-                campaign_blast.update(sends=sends)
-                PushCampaignBase.create_campaign_send_activity(user_id,
-                                                               campaign,
-                                                               auth_header,
-                                                               total_sends)
-                logger.debug('process_send: Push Notification Campaign(id:%s) has been sent to %s candidate(s).'
-                             '(User(id:%s))' % (campaign.id, total_sends, user_id))
-        else:
-            logger.error('callback_campaign_sent: Result is not a list')
+        with app.app_context():
+            processing_after_campaign_sent(CampaignBase, sends_result, user_id, campaign_type,
+                                           blast_id, auth_header)
+        # if isinstance(sends_result, list):
+        #     total_sends = sends_result.count(True)
+        #     if total_sends:
+        #         # Need to refresh blast object because this celery task has it's own scoped session
+        #         db.session.commit()
+        #         campaign_blast = PushCampaignBlast.get_by_id(blast_id)
+        #         sends = campaign_blast.sends + total_sends
+        #         campaign_blast.update(sends=sends)
+        #         PushCampaignBase.create_campaign_send_activity(user_id,
+        #                                                        campaign,
+        #                                                        auth_header,
+        #                                                        total_sends)
+        #         logger.debug('process_send: Push Notification Campaign(id:%s) has been sent to %s candidate(s).'
+        #                      '(User(id:%s))' % (campaign.id, total_sends, user_id))
+        # else:
+        #     logger.error('callback_campaign_sent: Result is not a list')
 
     @staticmethod
     @celery_app.task(name='celery_error_handler')
@@ -254,7 +266,7 @@ class PushCampaignBase(CampaignBase):
         """
         if not isinstance(source, PushCampaign):
             raise InvalidUsage(error_message='source should be an instance of model PushCampaign')
-        params = {'campaign_name': source.title,
+        params = {'campaign_name': source.name,
                   'num_candidates': num_candidates}
         cls.create_activity(user_id,
                             _type=ActivityMessageIds.CAMPAIGN_PUSH_SEND,

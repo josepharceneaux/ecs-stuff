@@ -4,7 +4,7 @@ Author: Zohaib Ijaz <mzohaib.qc@gmail.com>
 from push_campaign_service.common.tests.conftest import *
 from push_campaign_service.common.models.smartlist import *
 from push_campaign_service.common.models.candidate import *
-from push_campaign_service.common.models.push_notification import *
+from push_campaign_service.common.models.push_campaign import *
 
 from faker import Faker
 

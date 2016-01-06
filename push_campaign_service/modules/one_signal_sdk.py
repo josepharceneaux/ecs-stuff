@@ -44,7 +44,7 @@ class OneSignalSdk(object):
         url = GET_PLAYER_URL % _id
         return send_request(url, method='GET')
 
-    def send_notification(self, url, message, title, players=None, **kwargs):
+    def send_notification(self, url, message, name, players=None, **kwargs):
 
         segments = kwargs.get('segments')
         segments = segments if isinstance(segments, list) and len(segments) else ['All']
@@ -53,7 +53,7 @@ class OneSignalSdk(object):
         data = {
             "app_id": self.app_id,
             "contents": {"en": message},
-            "headings": {"en": title},
+            "headings": {"en": name},
             "url": url,
             "chrome_web_icon": GET_TALENT_ICON_URL
         }

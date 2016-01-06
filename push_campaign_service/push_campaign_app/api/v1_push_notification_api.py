@@ -75,7 +75,7 @@ from push_campaign_service.common.models.candidate import Candidate, CandidateDe
 from push_campaign_service.common.talent_api import TalentApi
 from push_campaign_service.common.utils.auth_utils import require_oauth
 from push_campaign_service.common.utils.api_utils import api_route, ApiResponse
-from push_campaign_service.common.models.push_notification import *
+from push_campaign_service.common.models.push_campaign import *
 from push_campaign_service.common.error_handling import *
 from push_campaign_service.modules.custom_exceptions import *
 from push_campaign_service.modules.one_signal_sdk import OneSignalSdk
@@ -128,20 +128,20 @@ class PushCampaigns(Resource):
                               "added_datetime": "2015-11-19 18:54:04",
                               "frequency_id": 2,
                               "id": 3,
-                              "title": "QC Technologies",
+                              "name": "QC Technologies",
                               "start_datetime": "2015-11-19 18:55:08",
                               "end_datetime": "2015-11-25 18:55:08"
-                              "content": "Join QC Technologies.",
+                              "body_text": "Join QC Technologies.",
                               "url": "https://www.qc-technologies.com/careers"
                             },
                             {
                               "added_datetime": "2015-11-19 18:55:08",
                               "frequency_id": 1,
                               "id": 4,
-                              "title": "getTalent",
+                              "name": "getTalent",
                               "start_datetime": "2015-12-12 10:55:08",
                               "end_datetime": "2015-12-31 18:55:08"
-                              "content": "Job opening at QC Technologies",
+                              "body_text": "Job opening at QC Technologies",
                               "url": "https://www.qc-technologies.com/careers"
                             }
               ]
@@ -165,8 +165,8 @@ class PushCampaigns(Resource):
         :Example:
 
             campaign_data = {
-                                "title": "QC Technologies",
-                                "content": "New job openings...",
+                                "name": "QC Technologies",
+                                "body_text": "New job openings...",
                                 "url": "https://www.qc-technologies.com",
                                 "smartlist_ids": [1, 2, 3]
                              }
@@ -198,12 +198,12 @@ class PushCampaigns(Resource):
         """
         user = request.user
         data = request.get_json()
-        missing_fields = [key for key in ['title', 'content', 'url', 'smartlist_ids'] if key not in data or not data[key]]
+        missing_fields = [key for key in ['name', 'body_text', 'url', 'smartlist_ids'] if key not in data or not data[key]]
         if missing_fields:
             raise RequiredFieldsMissing('Some required fields are missing',
                                         additional_error_info=dict(missing_fields=missing_fields))
-        push_campaign = PushCampaign(content=data['content'], url=data['url'],
-                                     title=data['title'], user_id=user.id)
+        push_campaign = PushCampaign(body_text=data['body_text'], url=data['url'],
+                                     name=data['name'], user_id=user.id)
         PushCampaign.save(push_campaign)
         smartlist_ids = data.get('smartlist_ids')
         if isinstance(smartlist_ids, list):
@@ -241,10 +241,10 @@ class CampaignById(Resource):
                               "added_datetime": "2015-11-19 18:54:04",
                               "frequency_id": 2,
                               "id": 1,
-                              "title": "QC Technologies",
+                              "name": "QC Technologies",
                               "start_datetime": "2015-11-19 18:55:08",
                               "end_datetime": "2015-11-25 18:55:08"
-                              "content": "Join QC Technologies.",
+                              "body_text": "Join QC Technologies.",
                               "url": "https://www.qc-technologies.com/careers"
                             }
             }
@@ -272,8 +272,8 @@ class CampaignById(Resource):
         :Example:
 
             campaign_data = {
-                                "title": "QC Technologies",
-                                "content": "New job openings...",
+                                "name": "QC Technologies",
+                                "body_text": "New job openings...",
                                 "url": "https://www.qc-technologies.com",
                                 "smartlist_ids": [1, 2, 3]
                              }
@@ -314,7 +314,7 @@ class CampaignById(Resource):
             raise ResourceNotFound('Campaign not found with id %s' % campaign_id)
 
         for key, value in data.items():
-            if key not in ['title', 'content', 'url', 'smartlist_ids']:
+            if key not in ['name', 'body_text', 'url', 'smartlist_ids']:
                 raise InvalidUsage('Invalid field in campaign data',
                                    additional_error_info=dict(invalid_field=key))
             if not value:

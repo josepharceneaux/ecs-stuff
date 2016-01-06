@@ -29,6 +29,7 @@ from ..models.db import db
 from ..models.user import Token
 from ..models.misc import UrlConversion
 from ..models.candidate import Candidate
+from ..models.push_campaign import PushCampaign
 from ..models.email_marketing import EmailCampaignBlast
 from ...common.models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
 
@@ -195,7 +196,7 @@ class CampaignBase(object):
         """
         campaign_obj = cls.validate_ownership_of_campaign(campaign_id, user_id)
         # Any campaign service will add the entry of respective model name here
-        if not isinstance(campaign_obj, SmsCampaign):
+        if not isinstance(campaign_obj, (SmsCampaign, PushCampaign)):
             raise InvalidUsage('Campaign must be an instance of SmsCampaign or PushCampaign etc.')
         auth_header = cls.get_authorization_header(user_id)
         # check if campaign is already scheduled
@@ -732,7 +733,7 @@ class CampaignBase(object):
         **See Also**
         .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
         """
-        if not isinstance(source, SmsCampaign):
+        if not isinstance(source, (SmsCampaign, PushCampaign)):
             raise InvalidUsage('source should be an instance of model sms_campaign')
         params = {'name': source.name,
                   'num_candidates': num_candidates}
@@ -923,7 +924,7 @@ class CampaignBase(object):
         if not isinstance(candidate, Candidate):
             raise InvalidUsage('candidate should be an instance of model Candidate')
         # Any campaign service will add the entry of respective model name here
-        if not isinstance(source, SmsCampaign):
+        if not isinstance(source, (SmsCampaign, PushCampaign)):
             raise InvalidUsage('source object should be an instance of model %s.' %
                                SmsCampaign.__tablename__)
         params = {'candidate_name': candidate.name, 'campaign_name': source.name}
@@ -966,7 +967,7 @@ class CampaignBase(object):
         .. see also:: update_stats_and_create_click_activity() method in CampaignBase class.
         """
         # Any new campaign can add the entry in this statement
-        if not isinstance(campaign_blast_obj, (SmsCampaignBlast, EmailCampaignBlast)):
+        if not isinstance(campaign_blast_obj, (SmsCampaignBlast, EmailCampaignBlast, EmailCampaignBlast)):
             raise InvalidUsage('campaign object should be an instance of models %s, %s etc.' %
                                (SmsCampaignBlast.__tablename__, EmailCampaignBlast.__tablename__))
         not_found_attr = None

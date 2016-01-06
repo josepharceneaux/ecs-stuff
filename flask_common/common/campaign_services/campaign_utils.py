@@ -18,6 +18,7 @@ from ska import sign_url, Signature
 from ..models.misc import UrlConversion
 from ..error_handling import InvalidUsage
 from ..models.sms_campaign import SmsCampaign
+from ..models.push_campaign import PushCampaign
 from ..talent_config_manager import TalentConfigKeys
 from ..utils.activity_utils import ActivityMessageIds
 from ..utils.handy_functions import snake_case_to_pascal_case
@@ -28,7 +29,7 @@ class CampaignType(object):
     This is the class to avoid global variables for names of campaign
     """
     SMS = SmsCampaign.__tablename__
-    PUSH = 'push_campaign'  # TODO: remove hard code
+    PUSH = PushCampaign.__tablename__
 
 
 class FrequencyIds(object):
