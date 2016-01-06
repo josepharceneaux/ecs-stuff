@@ -42,6 +42,7 @@ class TestSchedulerCreate:
         response = requests.post(APP_URL % 'tasks/test/', data=json.dumps(job_config),
                                  headers=auth_header)
 
+        # TODO didn't understand the comment?
         # Check the token which was expired
         token = Token.query.filter_by(user_id=auth_token_row['user_id']).first()
 
@@ -59,6 +60,7 @@ class TestSchedulerCreate:
             POST data while hitting the endpoint.
         :return:
         """
+        # TODO: We should add comment here that this is for server to server stuff in above comments
         response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
                                  headers=auth_header_no_user)
         assert response.status_code == 400

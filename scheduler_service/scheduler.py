@@ -58,6 +58,7 @@ def apscheduler_listener(event):
     :param event:
     :return:
     """
+    #TODO need to improve the above comment, need tad more detail
     if event.exception:
         logger.error('The job crashed :(\n')
         logger.error(str(event.exception.message) + '\n')
@@ -181,9 +182,11 @@ def schedule_job(data, user_id=None, access_token=None):
 
             current_datetime = datetime.datetime.utcnow()
             current_datetime = current_datetime.replace(tzinfo=tzutc())
-
+            # TODO made small improvement please verify, but now it looks as if it will run every job
+            # TODO do we have a test that runs the following if
+            job_start_time = valid_data['start_datetime']
             # If job time is passed because of request timeout delay then run the job
-            if current_datetime < valid_data['start_datetime']:
+            if job_start_time > current_datetime:
                 run_job(user_id, access_token, job_config['url'], content_type)
             logger.info('schedule_job: Task has been added and will start at %s ' % valid_data['start_datetime'])
         except Exception:
@@ -218,7 +221,7 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
     """
     secret_key = None
     # In case of global tasks there is no access_token and token expires in 600 seconds. So, a new token should be
-    # created because frequency can be set minimum of 1 hour.
+    # created because frequency can be set to minimum of 1 hour.
     if not access_token:
         secret_key, access_token = User.generate_auth_token()
     elif 'bearer' in access_token.lower():

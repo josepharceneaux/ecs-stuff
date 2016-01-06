@@ -582,6 +582,7 @@ class SendRequestTest(Resource):
         user_id = request.user.id
         task = request.get_json()
         url = task.get('url', '')
+        # TODO add a comment as to why are we doing this
 
         expiry = datetime.utcnow() - timedelta(days=5)
         expiry = expiry.strftime('%Y-%m-%d %H:%M:%S')
