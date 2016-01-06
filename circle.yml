@@ -47,7 +47,7 @@ test:
   override:
 
     - ? >
-          py.test -n 5
+          py.test -n 10
           auth_service/tests/
           user_service/tests/
           resume_service/tests/
