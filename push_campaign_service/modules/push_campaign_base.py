@@ -161,7 +161,7 @@ class PushCampaignBase(CampaignBase):
                 UrlConversion.save(url_conversion)
                 url_to_send = PushNotificationServiceApi.HOST_NAME + '/url_hits/%s' % url_conversion.id
                 resp = one_signal_client.send_notification(url_to_send,
-                                                           self.campaign.content,
+                                                           self.campaign.body_text,
                                                            self.campaign.name,
                                                            players=device_ids)
                 if resp.ok:
@@ -183,7 +183,7 @@ class PushCampaignBase(CampaignBase):
 
             except Exception as e:
                 print(e)
-                logger.error('Unable to send push  notification (id: %s) to candidate (id: %s)'
+                logger.error('Unable to send push  campaign (id: %s) to candidate (id: %s)'
                              % (self.campaign.id, candidate.id))
         else:
             logger.error('Candidate has not subscribed for push notification')

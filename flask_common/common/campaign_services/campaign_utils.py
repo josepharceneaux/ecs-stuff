@@ -259,7 +259,7 @@ def processing_after_campaign_sent(base_class, sends_result, user_id, campaign_t
         total_sends = sends_result.count(True)
         blast_model = get_model(campaign_type, snake_case_to_pascal_case(campaign_type) + 'Blast')
         blast_obj = blast_model.get_by_id(blast_id)
-        campaign = getattr(blast_obj, campaign_type)
+        campaign = blast_obj.campaign
         if total_sends:
             # update SMS campaign blast. i.e. update number of sends.
             try:
