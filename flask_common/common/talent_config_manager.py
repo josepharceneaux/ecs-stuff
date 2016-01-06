@@ -18,7 +18,7 @@ logging.config.fileConfig(LOGGING_CONF)
 
 
 # Kindly refer to following url for sample web.cfg
-# https://github.com/gettalent/talent-flask-services/wiki/Local-Development-Setup#local-configurations
+#https://github.com/gettalent/talent-flask-services/wiki/Local-environment-setup#local-configurations
 LOCAL_CONFIG_PATH = ".talent/web.cfg"
 
 
