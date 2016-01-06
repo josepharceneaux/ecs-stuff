@@ -38,7 +38,7 @@ def send_request(access_token, secret_key, url, content_type, kwargs):
     if secret_key:
         headers.update({'X-Talent-Server-Key': secret_key})
     # Send request to URL with job post data
-    response = http_request(url, data=kwargs, headers=headers)
+    response = http_request(method_type='POST', url=url, data=kwargs, headers=headers)
     try:
         return response.text
     except Exception as e:

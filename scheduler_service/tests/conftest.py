@@ -11,6 +11,7 @@ from scheduler_service.common.tests.conftest import *
 from scheduler_service.common.routes import AuthApiUrl, SchedulerApiUrl
 
 # Application Specific
+from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 
 APP, celery = init_app()
 APP_URL = SchedulerApiUrl.SCHEDULER_SERVICE_HOST_NAME
@@ -23,7 +24,7 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 def job_config_periodic(request):
     return {
         "frequency": 3600,
-        'task_type': 'periodic',
+        'task_type': SchedulerUtils.PERIODIC,
         "content_type": "application/json",
         "url": "http://getTalent.com/sms/send/",
         "start_datetime": "2015-12-05T08:00:00",
@@ -40,7 +41,7 @@ def job_config_periodic(request):
 @pytest.fixture(scope='session')
 def job_config_one_time(request):
     return {
-        'task_type': 'one_time',
+        'task_type': SchedulerUtils.ONE_TIME,
         "content_type": "application/json",
         "url": "http://getTalent.com/email/send/",
         "run_datetime": "2017-05-05T08:00:00",
@@ -84,7 +85,7 @@ def auth_header_no_user(request):
     :return: header dict object
     """
     secret_key, token = User.generate_auth_token()
-    header = {'Authorization': 'Basic ' + token,
+    header = {'Authorization': token,
               'X-Talent-Server-Key': secret_key,
               'Content-Type': 'application/json'}
     return header

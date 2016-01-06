@@ -122,6 +122,7 @@ class SchedulerApiUrl:
         pass
 
     env = os.getenv('GT_ENVIRONMENT') or 'dev'
+    VERSION = 'v1'
 
     if env == 'dev' or env == 'circle':
         SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/v1/%s'
@@ -134,8 +135,13 @@ class SchedulerApiUrl:
     else:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
 
-    TASKS = SCHEDULER_SERVICE_HOST_NAME % "tasks/"
-    SINGLE_TASK = SCHEDULER_SERVICE_HOST_NAME % 'tasks/id/%s'
+    TASKS = "/%s/%s" % (VERSION, "tasks/")
+    TASKS_TEST = "/%s/%s" % (VERSION, "tasks/test/")
+    SINGLE_TASK = "/%s/%s" % (VERSION, "tasks/id/<string:_id>")
+    MULTIPLE_TASK_RESUME = "/%s/%s" % (VERSION, "tasks/resume/")
+    MULTIPLE_TASK_PAUSE = "/%s/%s" % (VERSION, "tasks/pause/")
+    SINGLE_TASK_RESUME = "/%s/%s" % (VERSION, "tasks/<string:_id>/resume/")
+    SINGLE_TASK_PAUSE = "/%s/%s" % (VERSION, "tasks/<string:_id>/pause/")
 
 
 class CandidatePoolApiUrl:

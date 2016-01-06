@@ -79,7 +79,7 @@ def apscheduler_listener(event):
                     raise e
             elif isinstance(job.trigger, DateTrigger) and not job.run_date:
                 scheduler.remove_job(job_id=job.id)
-                logger.info("apscheduler_listener: Job with %s removed successfully" % job.id)
+                logger.info("apscheduler_listener: Job with id %s removed successfully" % job.id)
 
 
 scheduler.add_listener(apscheduler_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
@@ -100,7 +100,7 @@ def validate_one_time_job(data):
     current_datetime = current_datetime.replace(tzinfo=timezone('UTC'))
     # If job is not in 0-30 seconds in past or greater than current datetime.
     if run_datetime < current_datetime:
-        raise InvalidUsage("No need to schedule job of already passed time")
+        raise InvalidUsage("No need to schedule job of already passed time. run_datetime is in past")
 
     return valid_data
 
@@ -283,7 +283,7 @@ def serialize_task(task):
             frequency=dict(seconds=task.trigger.interval_length),
             post_data=task.kwargs,
             pending=task.pending,
-            task_type='periodic'
+            task_type=SchedulerUtils.PERIODIC
         )
         if task_dict['start_datetime'] is not None:
             task_dict['start_datetime'] = task_dict['start_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
