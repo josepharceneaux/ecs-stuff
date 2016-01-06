@@ -9,9 +9,6 @@ import pytest
 import requests
 
 # Application imports
-from datetime import datetime
-
-from scheduler_service.common.models.user import Token
 from scheduler_service.tests.conftest import APP_URL
 
 __author__ = 'saad'
@@ -20,47 +17,17 @@ __author__ = 'saad'
 @pytest.mark.usefixtures('auth_header', 'auth_header_no_user', 'job_config', 'sample_user')
 class TestSchedulerCreate:
 
-    def test_scheduled_job_with_expired_token(self, sample_user, user_auth, job_config):
-        """
-        Create a job by hitting the endpoint and make sure response
-        is correct.
-        Args:
-            auth_data: Fixture that contains token.
-            job_config (dict): Fixture that contains job config to be used as
-            POST data while hitting the endpoint.
-        :return:
-        """
-
-        auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-
-        auth_token = auth_token_row['access_token']
-
-        Token.query.filter_by(user_id=auth_token_row['user_id']).first()
-        auth_header = {'Authorization': 'Bearer ' + auth_token,
-                       'Content-Type': 'application/json'}
-
-        response = requests.post(APP_URL % 'tasks/test/', data=json.dumps(job_config),
-                                 headers=auth_header)
-
-        # TODO didn't understand the comment?
-        # Check the token which was expired
-        token = Token.query.filter_by(user_id=auth_token_row['user_id']).first()
-
-        assert token.expires > datetime.utcnow()
-
-        assert response.status_code == 200
-
     def test_single_scheduled_job_without_user(self, auth_header_no_user, job_config):
         """
-        Create a job by hitting the endpoint with secret_key (no authenticated user) and make sure we get job_id in
+        Create a job by hitting the endpoint with secret_key (global tasks) and make sure we get job_id in
         response.
+        This test case is to create a named task which is in case of server to server communication (global tasks)
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
             POST data while hitting the endpoint.
         :return:
         """
-        # TODO: We should add comment here that this is for server to server stuff in above comments
         response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
                                  headers=auth_header_no_user)
         assert response.status_code == 400
@@ -85,7 +52,7 @@ class TestSchedulerCreate:
 
     def test_request_send_url(self, auth_header, job_config):
         """
-        Test dummy endpoint SendRequest to test send_request method is working fine
+        Test dummy endpoint SendRequest to test send_request method is working fine.
         :param auth_header:
         :param job_config:
         :return:

@@ -571,6 +571,9 @@ class PauseTaskById(Resource):
 class SendRequestTest(Resource):
     """
         This resource is dummy endpoint which is used to call send_request method for testing
+        This dummy endpoint serve two purposes.
+        1. To check if endpoint is working then send response 201 (run callback function directly)
+        2. To check if authentication token is refreshed after expiry.
     """
     decorators = [require_oauth()]
 
@@ -582,12 +585,13 @@ class SendRequestTest(Resource):
         user_id = request.user.id
         task = request.get_json()
         url = task.get('url', '')
-        # TODO add a comment as to why are we doing this
 
+        # Set the date in past to expire request oauth token.
+        # This is to test that run_job method refresh token or not
         expiry = datetime.utcnow() - timedelta(days=5)
         expiry = expiry.strftime('%Y-%m-%d %H:%M:%S')
 
-        # Expire token
+        # Expire oauth token and then pass it to run_job. And run_job should refresh token and send request to URL
         token = Token.query.filter_by(user_id=request.user.id).first()
         token.update(expires=expiry)
 

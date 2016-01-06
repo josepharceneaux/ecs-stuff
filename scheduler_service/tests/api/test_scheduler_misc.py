@@ -10,6 +10,7 @@ import pytest
 import requests
 
 # Application imports
+from scheduler_service.common.models.user import Token
 from scheduler_service.tests.conftest import APP_URL
 
 __author__ = 'saad'
@@ -17,6 +18,36 @@ __author__ = 'saad'
 
 @pytest.mark.usefixtures('auth_header', 'job_config')
 class TestSchedulerMisc:
+
+    def test_scheduled_job_with_expired_token(self, sample_user, user_auth, job_config):
+        """
+        Create a job by hitting the endpoint and make sure response
+        is correct.
+        Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+        :return:
+        """
+
+        auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+
+        auth_token = auth_token_row['access_token']
+
+        Token.query.filter_by(user_id=auth_token_row['user_id']).first()
+        auth_header = {'Authorization': 'Bearer ' + auth_token,
+                       'Content-Type': 'application/json'}
+
+        response = requests.post(APP_URL % 'tasks/test/', data=json.dumps(job_config),
+                                 headers=auth_header)
+
+        # After post request to endpoint /tasks/test. oauth token will be expired and also refreshed.
+        # So, check if token is refreshed (i.e token expiry should be in future before and after post request)
+        token = Token.query.filter_by(user_id=auth_token_row['user_id']).first()
+
+        assert token.expires > datetime.datetime.utcnow()
+
+        assert response.status_code == 200
 
     def test_bulk_schedule_jobs(self, auth_header, job_config):
         """

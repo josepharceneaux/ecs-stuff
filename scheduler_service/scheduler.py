@@ -55,10 +55,11 @@ REQUEST_TIMEOUT = 30
 def apscheduler_listener(event):
     """
     APScheduler listener for logging on job crashed or job time expires
+    The method also checks if a job time is passed. If yes, then it remove job from apscheduler because there is no
+    use of expired job.
     :param event:
     :return:
     """
-    #TODO need to improve the above comment, need tad more detail
     if event.exception:
         logger.error('The job crashed :(\n')
         logger.error(str(event.exception.message) + '\n')
@@ -182,8 +183,6 @@ def schedule_job(data, user_id=None, access_token=None):
 
             current_datetime = datetime.datetime.utcnow()
             current_datetime = current_datetime.replace(tzinfo=tzutc())
-            # TODO made small improvement please verify, but now it looks as if it will run every job
-            # TODO do we have a test that runs the following if
             job_start_time = valid_data['start_datetime']
             # If job time is passed because of request timeout delay then run the job
             if job_start_time > current_datetime:
