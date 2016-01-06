@@ -326,7 +326,7 @@ class CandidateResource(Resource):
 
         # Either candidate_id or candidate_email must be provided
         candidate_id, candidate_email = kwargs.get('id'), kwargs.get('email')
-        if not candidate_id and not candidate_email:
+        if not candidate_id and not candidate_email: #TODO: flask already handles this exception
             raise InvalidUsage(error_message="Candidate's ID or candidate's email is required")
 
         if candidate_email:
