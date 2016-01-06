@@ -586,9 +586,7 @@ class SendRequestTest(Resource):
         expiry = datetime.utcnow() - timedelta(days=5)
         expiry = expiry.strftime('%Y-%m-%d %H:%M:%S')
 
-        # DB is not updating when token expiry is updated first time. Updating one more time updates column value in db
-        token = Token.query.filter_by(user_id=request.user.id).first()
-        token.update(expires=expiry)
+        # Expire token
         token = Token.query.filter_by(user_id=request.user.id).first()
         token.update(expires=expiry)
 
