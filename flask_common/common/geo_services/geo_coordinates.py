@@ -3,7 +3,7 @@ This file is for all geo related functions
 """
 import requests
 
-from flask.ext.common.common.geo_services.geo_location import GeoLocation
+from .geo_location import GeoLocation
 
 url = 'http://maps.google.com/maps/api/geocode/json'
 

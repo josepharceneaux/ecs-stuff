@@ -27,8 +27,8 @@ def is_valid_email(email):
 def format_phone_number(phone_number, country_code='US'):
     """
     Format US/Canada phone numbers in +1 (123) 456-7899 format
-    :return: Formatted phone numbers
-    :rtype: str
+    :return: {"formatted_number": "+118006952635" , "extension": "165"}
+    :rtype: dict
     """
     try:
         import phonenumbers
@@ -45,14 +45,13 @@ def format_phone_number(phone_number, country_code='US'):
         try:
             parsed_phone_number = phonenumbers.parse(str(phone_number), region=country_code)
             formatted_number = phonenumbers.format_number(parsed_phone_number, phonenumbers.PhoneNumberFormat.E164)
-            return formatted_number
+            return dict(formatted_number=formatted_number, extension=parsed_phone_number.extension)
         except phonenumbers.NumberParseException:
-            raise InvalidUsage(error_message="format_phone_number(%s, %s): Couldn't parse phone number" % (phone_number,
-                                                                                                           country_code))
-
+            raise InvalidUsage(error_message="format_phone_number(%s, %s): Couldn't parse phone number" %
+                                             (phone_number, country_code))
     except:
-        raise InvalidUsage(error_message="format_phone_number(%s, %s): Received other exception" % (phone_number,
-                                                                                                    country_code))
+        raise InvalidUsage(error_message="format_phone_number(%s, %s): Received other exception" %
+                                         (phone_number, country_code))
 
 
 def sanitize_zip_code(zip_code):

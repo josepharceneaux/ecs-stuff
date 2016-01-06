@@ -93,7 +93,6 @@ def test_remove_id_key(sample_user, user_auth):
 
     # Create Candidate
     data = generate_single_candidate_data()
-    print "\ndata = %s" % data['candidate']
     create_resp = post_to_candidate_resource(token, data)
 
     # Retrieve Candidate

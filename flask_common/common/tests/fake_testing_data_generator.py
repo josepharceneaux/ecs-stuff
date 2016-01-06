@@ -8,7 +8,7 @@ __author__ = 'jitesh'
 class FakeCandidatesData(object):
     @classmethod
     def create(cls, count=1, first_name=True, middle_name=False, last_name=True, added_time=True, emails_list=True,
-               address_list=False):
+               address_list=None):
 
         """
         Generates candidate data dictionary as required by candidate_service API.

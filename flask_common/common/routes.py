@@ -1,18 +1,18 @@
-import talent_property_manager
+import os
 
 
 class UserServiceApiUrl:
     def __init__(self):
         pass
 
-    env = talent_property_manager.get_env()
+    env = os.getenv('GT_ENVIRONMENT') or 'dev'
 
     if env == 'dev' or env == 'circle':
         USER_SERVICE_HOST_NAME = 'http://127.0.0.1:8004/v1/%s'
     elif env == 'qa':
-        USER_SERVICE_HOST_NAME = 'http://user-webdev.gettalent.com/v1/%s'
+        USER_SERVICE_HOST_NAME = 'https://user-service-staging.gettalent.com/v1/%s'
     elif env == 'prod':
-        USER_SERVICE_HOST_NAME = 'http://user.gettalent.com/v1/%s'
+        USER_SERVICE_HOST_NAME = 'https://user-service.gettalent.com/v1/%s'
     else:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
 
@@ -32,16 +32,14 @@ class AuthApiUrl:
     def __init__(self):
         pass
 
-    env = talent_property_manager.get_env()
+    env = os.getenv('GT_ENVIRONMENT') or 'dev'
 
     if env == 'dev' or env == 'circle':
         AUTH_SERVICE_HOST_NAME = 'http://127.0.0.1:8001/v1/%s'
     elif env == 'qa':
-        # TODO: Change this url after deployment
-        AUTH_SERVICE_HOST_NAME = 'http://secure-webdev.gettalent.com/v1/%s'
+        AUTH_SERVICE_HOST_NAME = 'https://auth-service-staging.gettalent.com/v1/%s'
     elif env == 'prod':
-        # TODO: Change this url after deployment
-        AUTH_SERVICE_HOST_NAME = 'http://secure.gettalent.com/v1/%s'
+        AUTH_SERVICE_HOST_NAME = 'https://auth-service.gettalent.com/v1/%s'
     else:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
 
@@ -54,16 +52,14 @@ class CandidateApiUrl:
     def __init__(self):
         pass
 
-    env = talent_property_manager.get_env()
+    env = os.getenv('GT_ENVIRONMENT') or 'dev'
 
     if env == 'dev' or env == 'circle':
         CANDIDATE_SERVICE_HOST_NAME = 'http://127.0.0.1:8005/%s'
     elif env == 'qa':
-        # TODO: Change this url after deployment
-        CANDIDATE_SERVICE_HOST_NAME = 'http://127.0.0.1:8005/%s'
+        CANDIDATE_SERVICE_HOST_NAME = 'https://candidate-service-staging.gettalent.com/%s'
     elif env == 'prod':
-        # TODO: Change this url after deployment
-        CANDIDATE_SERVICE_HOST_NAME = 'http://127.0.0.1:8005/%s'
+        CANDIDATE_SERVICE_HOST_NAME = 'https://candidate-service.gettalent.com/%s'
     else:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
 
@@ -125,7 +121,7 @@ class SchedulerApiUrl:
     def __init__(self):
         pass
 
-    env = talent_property_manager.get_env()
+    env = os.getenv('GT_ENVIRONMENT') or 'dev'
 
     if env == 'dev' or env == 'circle':
         SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/v1/%s'
@@ -146,16 +142,14 @@ class CandidatePoolApiUrl:
     def __init__(self):
         pass
 
-    env = talent_property_manager.get_env()
+    env = os.getenv('GT_ENVIRONMENT') or 'dev'
 
     if env == 'dev' or env == 'circle':
         CANDIDATE_POOL_SERVICE_HOST_NAME = 'http://127.0.0.1:8008/v1/%s'
     elif env == 'qa':
-        # TODO: Change this url after deployment
-        CANDIDATE_POOL_SERVICE_HOST_NAME = 'http://127.0.0.1:8008/v1/%s'
+        CANDIDATE_POOL_SERVICE_HOST_NAME = 'https://candidate-pool-service-staging.gettalent.com/v1/%s'
     elif env == 'prod':
-        # TODO: Change this url after deployment
-        CANDIDATE_POOL_SERVICE_HOST_NAME = 'http://127.0.0.1:8008/v1/%s'
+        CANDIDATE_POOL_SERVICE_HOST_NAME = 'https://candidate-pool-service.gettalent.com/v1/%s'
     else:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
 
@@ -169,16 +163,16 @@ class SpreadsheetImportApiUrl:
     def __init__(self):
         pass
 
-    env = talent_property_manager.get_env()
+    env = os.getenv('GT_ENVIRONMENT') or 'dev'
 
     if env == 'dev' or env == 'circle':
         SPREADSHEET_IMPORT_SERVICE_HOST_NAME = 'http://127.0.0.1:8009/v1/parse_spreadsheet/%s'
     elif env == 'qa':
-        # TODO: Change this url after deployment
-        SPREADSHEET_IMPORT_SERVICE_HOST_NAME = 'http://127.0.0.1:8009/v1/parse_spreadsheet/%s'
+        SPREADSHEET_IMPORT_SERVICE_HOST_NAME = \
+            'https://spreadsheet-import-service-staging.gettalent.com/v1/parse_spreadsheet/%s'
     elif env == 'prod':
-        # TODO: Change this url after deployment
-        SPREADSHEET_IMPORT_SERVICE_HOST_NAME = 'http://127.0.0.1:8009/v1/parse_spreadsheet/%s'
+        SPREADSHEET_IMPORT_SERVICE_HOST_NAME = \
+            'https://spreadsheet-import-service.gettalent.com/v1/parse_spreadsheet/%s'
     else:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
 

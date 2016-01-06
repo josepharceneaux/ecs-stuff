@@ -31,13 +31,13 @@ from candidate_service.common.models.misc import (Country, AreaOfInterest)
 from candidate_service.common.models.user import User
 
 # Error handling
-from candidate_service.common.error_handling import InvalidUsage, NotFoundError, UnauthorizedError
+from candidate_service.common.error_handling import InvalidUsage, NotFoundError, UnauthorizedError, ForbiddenError
 
 # Validations
 from candidate_service.common.utils.validators import (sanitize_zip_code, is_number, format_phone_number)
 
 # Common utilities
-from flask.ext.common.common.geo_services.geo_coordinates import get_coordinates
+from candidate_service.common.geo_services.geo_coordinates import get_coordinates
 
 ##################################################
 # Helper Functions For Retrieving Candidate Info #
@@ -166,7 +166,7 @@ def format_candidate_full_name(candidate):
     if last_name:
         full_name = '%s%s' % (full_name, last_name)
 
-    return full_name.title()
+    return full_name
 
 
 def candidate_emails(candidate):
@@ -775,7 +775,6 @@ def does_candidate_id_exist(dice_social_profile_id, dice_profile_id, domain_id, 
     return None
 
 
-# TODO: convert to classmethod in models
 def classification_type_id_from_degree_type(degree_type):
     """
     Function will return classification_type ID of the classification_type that matches
@@ -790,7 +789,6 @@ def classification_type_id_from_degree_type(degree_type):
     return matching_classification_type_id
 
 
-# TODO: convert to classmethod in models
 def social_network_id_from_name(name):
     """
     Function gets social_network ID from social network's name
@@ -900,6 +898,10 @@ def _add_or_update_candidate_addresses(candidate_id, addresses, user_id, edited_
                 error_message = "Candidate address you are requesting to update does not exist."
                 raise InvalidUsage(error_message=error_message)
 
+            # CandidateAddress must belong to Candidate
+            if candidate_address_query.first().candidate_id != candidate_id:
+                raise ForbiddenError(error_message="Unauthorized candidate address")
+
             # Track all edits
             _track_candidate_address_edits(address_dict, candidate_id, candidate_address_query.first(),
                                            user_id, edited_time)
@@ -937,11 +939,14 @@ def _add_or_update_candidate_custom_field_ids(candidate_id, custom_fields, added
             custom_field_dict = dict((k, v) for k, v in custom_field_dict.iteritems() if v is not None)
 
             # CandidateCustomField must be recognized
-            can_custom_field_query = db.session.query(CandidateCustomField).\
-                filter_by(id=candidate_custom_field_id)
+            can_custom_field_query = db.session.query(CandidateCustomField).filter_by(id=candidate_custom_field_id)
             if not can_custom_field_query.first():
                 error_message = 'Candidate custom field you are requesting to update does not exist.'
                 raise InvalidUsage(error_message=error_message)
+
+            # CandidateCustomField must belong to Candidate
+            if can_custom_field_query.first().candidate_id != candidate_id:
+                raise ForbiddenError(error_message="Unauthorized candidate custom field")
 
             # Track all edits
             _track_candidate_custom_field_edits(custom_field_dict, can_custom_field_query.first(),
@@ -989,6 +994,10 @@ def _add_or_update_educations(candidate_id, educations, added_time, user_id, edi
             if not can_education_query.first():
                 raise InvalidUsage(error_message='Candidate education you are requesting does not exist.')
 
+            # CandidateEducation must belong to Candidate
+            if can_education_query.first().candidate_id != candidate_id:
+                raise ForbiddenError('Unauthorized candidate education')
+
             # Track all changes made to CandidateEducation
             _track_candidate_education_edits(education_dict, can_education_query.first(),
                                              candidate_id, user_id, edit_time)
@@ -1027,6 +1036,10 @@ def _add_or_update_educations(candidate_id, educations, added_time, user_id, edi
                         error_message = 'Candidate education degree you are requesting does not exist.'
                         raise InvalidUsage(error_message=error_message)
 
+                    # CandidateEducationDegree must belong to Candidate
+                    if can_edu_degree_query.first().candidate_education.candidate_id != candidate_id:
+                        raise ForbiddenError(error_message='Unauthorized candidate degree')
+
                     # Track all changes made to CandidateEducationDegree
                     _track_candidate_education_degree_edits(education_degree_dict, can_edu_degree_query.first(),
                                                             candidate_id, user_id, edit_time)
@@ -1054,6 +1067,11 @@ def _add_or_update_educations(candidate_id, educations, added_time, user_id, edi
                             if not can_edu_degree_bullet_query.first():
                                 err_msg = 'Candidate education degree bullet you are requesting does not exist.'
                                 raise InvalidUsage(error_message=err_msg)
+
+                            # CandidateEducationDegreeBullet must belong to Candidate
+                            if can_edu_degree_bullet_query.first().candidate_education_degree.\
+                                    candidate_education.candidate_id != candidate_id:
+                                raise ForbiddenError(error_message='Unauthorized candidate degree bullet')
 
                             # Track all changes made to CandidateEducationDegreeBullet
                             _track_candidate_education_degree_bullet_edits(education_degree_bullet_dict,
@@ -1167,6 +1185,10 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, 
             if not can_exp_query.first():
                 raise InvalidUsage(error_message='Candidate experience you are requesting does not exist.')
 
+            # CandidateExperience must belong to Candidate
+            if can_exp_query.first().candidate_id != candidate_id:
+                raise ForbiddenError(error_message='Unauthorized candidate experience')
+
             # Track all changes made to CandidateExperience
             _track_candidate_experience_edits(experience_dict, can_exp_query.first(),
                                               candidate_id, user_id, edit_time)
@@ -1195,6 +1217,10 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, 
                     if not can_exp_bullet_query.first():
                         err_msg = 'Candidate experience bullet you are requesting does not exist.'
                         raise InvalidUsage(error_message=err_msg)
+
+                    # CandidateExperienceBullet must belong to Candidate
+                    if can_exp_bullet_query.first().candidate_experience.candidate_id != candidate_id:
+                        raise ForbiddenError(error_message='Unauthorized candidate experience bullet')
 
                     # Track all changes made to CandidateExperienceBullet
                     _track_candidate_experience_bullet_edits(experience_bullet_dict,
@@ -1252,6 +1278,10 @@ def _add_or_update_work_preference(candidate_id, work_preference, user_id, edit_
         if not can_work_pref_query.first():
             raise InvalidUsage(error_message='Candidate work preference you are requesting does not exist.')
 
+        # CandidateWorkPreference must belong to Candidate
+        if can_work_pref_query.first().candidate_id != candidate_id:
+            raise ForbiddenError(error_message='Unauthorized candidate work preference')
+
         # Track all changes
         _track_candidate_work_preference_edits(work_preference_dict, can_work_pref_query.first(),
                                                candidate_id, user_id, edit_time)
@@ -1305,6 +1335,10 @@ def _add_or_update_emails(candidate_id, emails, user_id, edit_time):
             if not candidate_email_query.first():
                 raise InvalidUsage(error_message='Candidate email you are requesting does not exist.')
 
+            # CandidateEmail must belong to Candidate
+            if candidate_email_query.first().candidate_id != candidate_id:
+                raise ForbiddenError(error_message='Unauthrized candidate email')
+
             # Track all changes
             _track_candidate_email_edits(email_dict, candidate_email_query.first(),
                                          candidate_id, user_id, edit_time)
@@ -1335,10 +1369,11 @@ def _add_or_update_phones(candidate_id, phones, user_id, edit_time):
         phone_label = 'Home' if (not phones_has_label and i == 0) else phone.get('label')
         # Format phone number
         value = phone.get('value')
-        phone_number = format_phone_number(value) if value else None
+        phone_number_dict = format_phone_number(value) if value else None
 
         phone_dict = dict(
-            value=phone_number,
+            value=phone_number_dict.get('formatted_number') if phone_number_dict else None,
+            extension=phone_number_dict.get('extension') if phone_number_dict else None,
             phone_label_id = PhoneLabel.phone_label_id_from_phone_label(phone_label=phone_label),
             is_default=is_default
         )
@@ -1353,6 +1388,10 @@ def _add_or_update_phones(candidate_id, phones, user_id, edit_time):
             can_phone_query = db.session.query(CandidatePhone).filter_by(id=candidate_phone_id)
             if not can_phone_query.first():
                 raise InvalidUsage(error_message='Candidate phone you are requesting does not exist.')
+
+            # CandidatePhone must belong to Candidate
+            if can_phone_query.first().candidate_id != candidate_id:
+                raise ForbiddenError(error_message='Unauthorized candidate phone')
 
             # Track all changes
             _track_candidate_phone_edits(phone_dict, can_phone_query.first(), candidate_id, user_id, edit_time)
@@ -1374,9 +1413,11 @@ def _add_or_update_military_services(candidate_id, military_services, user_id, e
         # Convert ISO 8061 date object to datetime object
         from_date, to_date = military_service.get('from_date'), military_service.get('to_date')
         if from_date:
-            from_date = dateutil.parser.parse(from_date)
+            if isinstance(from_date, basestring):
+                from_date = dateutil.parser.parse(from_date)
         if to_date:
-            to_date = dateutil.parser.parse(to_date)
+            if isinstance(to_date, basestring):
+                to_date = dateutil.parser.parse(to_date)
 
         military_service_dict = dict(
             country_id=Country.country_id_from_name_or_code(military_service.get('country')),
@@ -1400,6 +1441,10 @@ def _add_or_update_military_services(candidate_id, military_services, user_id, e
                 filter_by(id=military_service_id)
             if not can_military_service_query.first():
                 raise InvalidUsage(error_message='Candidate military service you are requesting does not exist.')
+
+            # CandidateMilitaryService must belong to Candidate
+            if can_military_service_query.first().candidate_id != candidate_id:
+                raise ForbiddenError(error_message='Unauthorized candidate military service')
 
             # Track all changes
             _track_candidate_military_service_edits(military_service_dict,
@@ -1440,6 +1485,10 @@ def _add_or_update_preferred_locations(candidate_id, preferred_locations, user_i
             if not can_preferred_location_query.first():
                 err_msg = 'Candidate preferred location you are requesting does not exist.'
                 raise InvalidUsage(error_message=err_msg)
+
+            # CandidatePreferredLocation must belong to Candidate
+            if can_preferred_location_query.first().candidate_id != candidate_id:
+                raise ForbiddenError(error_message='Unauthorized candidate preferred location')
 
             # Track all changes
             _track_candidate_preferred_location_edits(preferred_location_dict,
@@ -1483,6 +1532,10 @@ def _add_or_update_skills(candidate_id, skills, added_time, user_id, edit_time):
             if not can_skill_query.first():
                 raise InvalidUsage(error_message='Candidate skill you are requesting does not exist.')
 
+            # CandidateSkill must belong to Candidate
+            if can_skill_query.first().candidate_id != candidate_id:
+                raise ForbiddenError(error_message='Unauthorized candidate skill')
+
             # Track all changes
             _track_candidate_skill_edits(skills_dict, can_skill_query.first(), candidate_id, user_id, edit_time)
 
@@ -1513,6 +1566,10 @@ def _add_or_update_social_networks(candidate_id, social_networks, user_id, edit_
             can_sn_query = db.session.query(CandidateSocialNetwork).filter_by(id=social_network_id)
             if not can_sn_query.first():
                 raise InvalidUsage(error_message='Candidate social network you are requesting does not exist.')
+
+            # CandidateSocialNetwork must belong to Candidate
+            if can_sn_query.first().candidate_id != candidate_id:
+                raise ForbiddenError(error_message='Unauthorized candidate social network')
 
             # Track all changes
             _track_candidate_social_network_edits(social_network_dict, can_sn_query.first(),
