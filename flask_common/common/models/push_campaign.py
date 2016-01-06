@@ -28,7 +28,7 @@ class PushCampaign(db.Model):
                               passive_deletes=True, backref='campaign', lazy='dynamic')
 
     def __repr__(self):
-        return "<PushCampaign ( = %r)>" % self.content
+        return "<PushCampaign ( = %r)>" % self.body_text
 
     @classmethod
     def get_by_user_id(cls, user_id):

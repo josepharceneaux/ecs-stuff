@@ -71,22 +71,21 @@ from flask.ext.restful import Resource
 
 
 # Application Specific
-from push_campaign_service.common.models.candidate import Candidate, CandidateDevice
+from push_campaign_service.common.error_handling import *
 from push_campaign_service.common.talent_api import TalentApi
+from push_campaign_service.common.models.push_campaign import *
 from push_campaign_service.common.utils.auth_utils import require_oauth
 from push_campaign_service.common.utils.api_utils import api_route, ApiResponse
-from push_campaign_service.common.models.push_campaign import *
-from push_campaign_service.common.error_handling import *
+from push_campaign_service.common.models.candidate import Candidate, CandidateDevice
+
 from push_campaign_service.modules.custom_exceptions import *
 from push_campaign_service.modules.one_signal_sdk import OneSignalSdk
-from push_campaign_service.modules.constants import ONE_SIGNAL_REST_API_KEY, ONE_SIGNAL_APP_ID
-from push_campaign_service.modules.utilities import associate_smart_list_with_campaign
-from push_campaign_service.push_campaign_app import logger
 from push_campaign_service.modules.push_campaign_base import PushCampaignBase
+from push_campaign_service.modules.constants import ONE_SIGNAL_REST_API_KEY, ONE_SIGNAL_APP_ID
+from push_campaign_service.modules.utilities import associate_smart_list_with_campaign, get_valid_json_data
+from push_campaign_service.push_campaign_app import logger
 
 # creating blueprint
-
-
 push_notification_blueprint = Blueprint('push_notification_api', __name__)
 api = TalentApi()
 api.init_app(push_notification_blueprint)
@@ -197,7 +196,7 @@ class PushCampaigns(Resource):
         ..Error Codes:: 7003 (RequiredFieldsMissing)
         """
         user = request.user
-        data = request.get_json()
+        data = get_valid_json_data(request)
         missing_fields = [key for key in ['name', 'body_text', 'url', 'smartlist_ids'] if key not in data or not data[key]]
         if missing_fields:
             raise RequiredFieldsMissing('Some required fields are missing',
@@ -305,10 +304,7 @@ class CampaignById(Resource):
         ..Error Codes:: 7003 (RequiredFieldsMissing)
         """
         user = request.user
-        data = request.get_json()
-        # check if there is no field in data to be updated, raise InvalidUsage error
-        if not len(data):
-            raise InvalidUsage('No data given to be updated')
+        data = get_valid_json_data(request)
         campaign = PushCampaign.get_by_id_and_user_id(campaign_id, user.id)
         if not campaign:
             raise ResourceNotFound('Campaign not found with id %s' % campaign_id)
@@ -653,26 +649,30 @@ class Devices(Resource):
                     403 (Can't add device for non existing candidate)
                     500 (Internal Server Error)
         """
-        data = request.get_json()
+        data = get_valid_json_data(request)
         candidate_id = data.get('candidate_id')
+        if not candidate_id:
+            raise InvalidUsage('candidate_id is not given in post data')
         device_id = data.get('device_id')
+        if not device_id:
+            raise InvalidUsage('device_id is not given in post data')
+
         candidate = Candidate.get_by_id(candidate_id)
         # if candidate does not exists with given id, we can not add this device id
         if not candidate:
-            raise ForbiddenError('Unable to create a device for a non existing candidate id: %s' % candidate_id)
-        if device_id:
-            # Send a GET request to OneSignal API to confirm that this device id is valid
-            resp = one_signal_client.get_player(device_id)
-            if resp.ok:
-                # Device exists with id
-                candidate_device = CandidateDevice(candidate_id=candidate_id,
-                                                   one_signal_device_id=device_id,
-                                                   registered_at=datetime.now())
-                CandidateDevice.save(candidate_device)
-                return dict(messgae='Device registered successfully with candidate (id: %s)' % candidate_id)
-            else:
-                # No device was found on OneSignal database.
-                raise ResourceNotFound('Device is not registered with OneSignal with id %s' % device_id)
+            raise ResourceNotFound('Unable to associate device with a non existing candidate id: %s' % candidate_id)
+
+        # Send a GET request to OneSignal API to confirm that this device id is valid
+        resp = one_signal_client.get_player(device_id)
+        if resp.ok:
+            # Device exists with id
+            candidate_device = CandidateDevice(candidate_id=candidate_id,
+                                               one_signal_device_id=device_id,
+                                               registered_at=datetime.now())
+            CandidateDevice.save(candidate_device)
+            return dict(messgae='Device registered successfully with candidate (id: %s)' % candidate_id)
         else:
-            raise InvalidUsage('device_id is not found in post data')
+            # No device was found on OneSignal database.
+            raise ResourceNotFound('Device is not registered with OneSignal with id %s' % device_id)
+
 

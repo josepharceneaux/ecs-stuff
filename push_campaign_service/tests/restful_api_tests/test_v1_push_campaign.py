@@ -131,7 +131,7 @@ class TestCampaignById():
             data = {}
             response = send_request('put', '/v1/campaigns/%s' % test_campaign.id, token, data)
             response.status_code == 400, 'InvalidUsage exception raised'
-            assert response.json()['error']['message'] == 'No data given to be updated'
+            assert response.json()['error']['message'] == 'POST data is empty. Kindly send required fields.'
 
             # Test `raise ResourceNotFound('Campaign not found with id %s' % campaign_id)`
             data = campaign_data.copy()
@@ -290,3 +290,14 @@ class TestCampaignBlastSends():
             # We are testing 401 here. so campaign and blast ids will not matter.
             unauthorize_test('get',  '/v1/campaigns/%s/blasts/%s/sends' % (test_campaign.id, 1), token)
 
+
+class TestRegisterCandidateDevice():
+
+    # Test URL: /v1/devices [POST]
+    def test_associate_a_device_to_candidate(self, auth_data, test_candidate):
+        token, is_valid = auth_data
+        if is_valid:
+            pass
+        else:
+            # We are testing 401 here. so campaign and blast ids will not matter.
+            unauthorize_test('post',  '/v1/devices', token)

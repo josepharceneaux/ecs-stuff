@@ -66,7 +66,7 @@ def campaign_data(request):
 
 
 @pytest.fixture(scope='function')
-def test_smartlist(request, sample_user, test_candidate, test_campaign):
+def test_smartlist(request, sample_user, test_candidate, test_candidate_device, test_campaign):
     """ TODO
     """
     smartlist = Smartlist(user_id=sample_user.id,
@@ -141,13 +141,22 @@ def test_candidate(request):
                                      is_default=True)
     CandidateEmail.save(candidate_email)
 
-    device = CandidateDevice(candidate_id=candidate.id,
-                             one_signal_device_id='56c1d574-237e-4a41-992e-c0094b6f2ded',
-                             registered_at=datetime.datetime.utcnow())
-    CandidateDevice.save(device)
-
     def tear_down():
         Candidate.delete(candidate)
     request.addfinalizer(tear_down)
     return candidate
+
+
+@pytest.fixture(scope='function')
+def test_candidate_device(request, test_candidate):
+    """ TODO
+    """
+    device = CandidateDevice(candidate_id=test_candidate.id,
+                             one_signal_device_id='56c1d574-237e-4a41-992e-c0094b6f2ded',
+                             registered_at=datetime.datetime.utcnow())
+    CandidateDevice.save(device)
+
+    return device
+
+
 
