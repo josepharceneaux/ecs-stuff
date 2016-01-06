@@ -850,7 +850,7 @@ class CampaignBase(object):
         # get candidate obj, url_conversion obj, campaign_send obj and get campaign_blast obj
         candidate_obj, url_conversion_obj, campaign_send_obj, campaign_blast_obj = \
             get_candidate_url_conversion_campaign_send_and_blast_obj(
-                campaign_send_url_conversion_obj, campaign_type)
+                campaign_send_url_conversion_obj)
         # Validate if all the required items are present in database.
         campaign_obj = validate_blast_candidate_url_conversion_in_db(campaign_blast_obj,
                                                                      candidate_obj,
@@ -892,8 +892,8 @@ class CampaignBase(object):
         # get auth_header
         auth_header = cls.get_authorization_header(candidate.user_id)
         # get activity type id to create activity
-        _type= get_activity_message_id_from_name(get_activity_message_name(
-            campaign_obj.__tablename__, 'CLICK'))
+        _type= get_activity_message_id_from_name(
+            get_activity_message_name(campaign_obj.__tablename__, 'CLICK'))
         # create_activity
         cls.create_campaign_url_click_activity(campaign_obj, candidate, _type, auth_header)
 

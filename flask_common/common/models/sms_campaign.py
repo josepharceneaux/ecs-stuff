@@ -21,9 +21,9 @@ class SmsCampaign(db.Model):
 
     # Relationships
     sms_campaign_blasts = relationship('SmsCampaignBlast', cascade='all, delete-orphan',
-                                       passive_deletes=True, backref='sms_campaign')
+                                       passive_deletes=True, backref='campaign')
     sms_campaign_smartlists = relationship('SmsCampaignSmartlist', cascade='all, delete-orphan',
-                                           passive_deletes=True, backref='sms_campaign')
+                                           passive_deletes=True, backref='campaign')
 
     def __repr__(self):
         return "<SmsCampaign (name = %r)>" % self.name
@@ -46,9 +46,9 @@ class SmsCampaignBlast(db.Model):
 
     # Relationships
     sms_campaign_sends = relationship('SmsCampaignSend', cascade='all,delete-orphan',
-                                      passive_deletes=True, backref='sms_campaign_blast')
+                                      passive_deletes=True, backref='blast')
     sms_campaign_replies = relationship('SmsCampaignReply', cascade='all,delete-orphan',
-                                        passive_deletes=True, backref='sms_campaign_blast')
+                                        passive_deletes=True, backref='blast')
 
     def __repr__(self):
         return "<SmsCampaignBlast (id = %r)>" % self.id
@@ -72,8 +72,7 @@ class SmsCampaignSend(db.Model):
     sms_campaign_sends_url_conversions = relationship('SmsCampaignSendUrlConversion',
                                                       cascade='all,delete-orphan',
                                                       passive_deletes=True,
-                                                      backref='sms_campaign_send')
-    candidate = relationship('Candidate', cascade='all', backref='sms_campaign_send')
+                                                      backref='send')
 
     def __repr__(self):
         return "<SmsCampaignSend (id = %r)>" % self.id

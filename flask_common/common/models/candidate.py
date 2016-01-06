@@ -62,6 +62,7 @@ class Candidate(db.Model):
     candidate_work_preferences = relationship('CandidateWorkPreference', cascade='all, delete-orphan', passive_deletes=True)
     candidate_unidentifieds = relationship('CandidateUnidentified', cascade='all, delete-orphan', passive_deletes=True)
     email_campaign_sends = relationship('EmailCampaignSend', cascade='all, delete-orphan', passive_deletes=True)
+    sms_campaign_sends = relationship('SmsCampaignSend', cascade='all, delete-orphan', passive_deletes=True, backref='candidate')
     voice_comments = relationship('VoiceComment', cascade='all, delete-orphan', passive_deletes=True)
 
     def __repr__(self):
