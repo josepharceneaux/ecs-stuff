@@ -11,8 +11,8 @@ from flask import Blueprint
 from flask import jsonify
 from flask import request
 from flask.ext.cors import CORS
+
 # application specific
-# from activity_service.common.models.db import db
 from activity_service.activities_app import db
 from activity_service.common.models.user import User
 from activity_service.common.models.misc import Activity

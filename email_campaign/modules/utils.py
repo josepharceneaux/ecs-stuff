@@ -27,7 +27,7 @@ def get_candidates_of_smartlist(oauth_token, list_id, candidate_ids_only=False):
     """
     query_params = {}
     if candidate_ids_only:
-        query_params = {'return':'candidate_ids_only'}
+        query_params = {'return': 'candidate_ids_only'}
     r = requests.get(SMARTLIST_CANDIDATES_URI % list_id, params=query_params,
                      headers={'Authorization': oauth_token})
     response_body = json.loads(r.content)

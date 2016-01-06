@@ -36,6 +36,7 @@ def create_email_campaign_smart_lists(smart_list_ids, email_campaign_id):
         email_campaign_smart_list = EmailCampaignSmartList(smartlist_id=smart_list_id,
                                                            email_campaign_id=email_campaign_id)
         db.session.add(email_campaign_smart_list)
+    db.session.commit()
 
 
 def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subject,
@@ -76,8 +77,6 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
     create_email_campaign_smart_lists(smart_list_ids=list_ids,
                                       email_campaign_id=email_campaign.id)
 
-    db.session.commit()
-
     # if it's a client from api, we don't schedule campaign sends, we create it on the fly.
     # also we enable tracking by default for the clients.
     if email_client_id:
@@ -112,11 +111,12 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
     else:
         schedule_task_params["run_datetime"] = datetime.datetime.strftime(datetime.datetime.utcnow(), "%Y-%m-%d %H:%M:%S")   # TODO: Check if this is needed.
 
-    # Schedule email campaign
+    # Schedule email campaign; call Scheduler API
     headers = {'Authorization': oauth_token, 'Content-Type': 'application/json'}
     try:
         scheduler_response = requests.post(SCHEDULER_URL, headers=headers, data=json.dumps(schedule_task_params))
     except Exception as ex:
+        # TODO: Ask if we need to throw exception or we just need to log it and then retry?
         current_app.logger.exception('Exception occurred while calling scheduler. Exception: %s' % ex)
         raise InternalServerError("Error occurred while scheduling email campaign. Exception: %s" % ex)
     if scheduler_response.status_code != 201:
