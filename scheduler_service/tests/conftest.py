@@ -84,9 +84,9 @@ def auth_header_no_user(request):
     :param auth_data: fixture to get access token
     :return: header dict object
     """
-    secret_key, token = User.generate_auth_token()
+    secret_key, token = User.generate_jw_token()
     header = {'Authorization': token,
-              'X-Talent-Server-Key': secret_key,
+              'X-Talent-Secret-Key-ID': secret_key,
               'Content-Type': 'application/json'}
     return header
 

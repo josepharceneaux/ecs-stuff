@@ -36,7 +36,7 @@ def send_request(access_token, secret_key_id, url, content_type, kwargs):
         'Authorization': access_token
     }
     if secret_key_id:
-        headers.update({'X-Talent-Server-Key': secret_key_id})
+        headers.update({'X-Talent-Secret-Key-ID': secret_key_id})
     # Send request to URL with job post data
     response = http_request(method_type='POST', url=url, data=kwargs, headers=headers)
     try:

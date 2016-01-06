@@ -46,7 +46,7 @@ class Tasks(Resource):
     """
         This resource returns a list of tasks or it can be used to create or schedule a task using POST.
     """
-    @require_oauth(allow_basic_auth=True, allow_null_user=True)
+    @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
     def get(self, **kwargs):
         """
         This action returns a list of user tasks and their count
@@ -367,7 +367,7 @@ class TaskById(Resource):
         This resource returns a specific task based on id or update a task
     """
 
-    @require_oauth(allow_basic_auth=True, allow_null_user=True)
+    @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
     def get(self, _id, **kwargs):
         """
         This action returns a task owned by a this user
@@ -443,7 +443,7 @@ class TaskById(Resource):
                 return dict(task=task)
         raise ResourceNotFound(error_message="Task not found")
 
-    @require_oauth(allow_basic_auth=True, allow_null_user=True)
+    @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
     def delete(self, _id, **kwargs):
         """
         Deletes/removes a tasks from scheduler store
