@@ -7,8 +7,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     This module also contains pyTests for endpoint
                 /v1/redirect/:id
-
-    of SMS Campaign APP.
+    of SMS Campaign API.
 """
 
 # Standard Library
@@ -21,16 +20,17 @@ from datetime import datetime, timedelta
 import requests
 
 # Common Utils
-from sms_campaign_service.common.campaign_services.validators import \
-    validate_blast_candidate_url_conversion_in_db
-from sms_campaign_service.common.routes import SmsCampaignApiUrl, CandidateApiUrl
-from sms_campaign_service.common.utils.handy_functions import to_utc_str, http_request
+from sms_campaign_service.common.routes import SmsCampaignApiUrl
+from sms_campaign_service.common.utils.handy_functions import to_utc_str
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.error_handling import (ResourceNotFound,
                                                         InternalServerError,
                                                         MethodNotAllowed, InvalidUsage)
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
-from sms_campaign_service.common.campaign_services.campaign_utils import FrequencyIds, CampaignType
+from sms_campaign_service.common.campaign_services.campaign_utils import (FrequencyIds,
+                                                                          delete_scheduled_task)
+from sms_campaign_service.common.campaign_services.validators import \
+    validate_blast_candidate_url_conversion_in_db
 
 # Database Models
 from sms_campaign_service.common.models.misc import UrlConversion
@@ -38,13 +38,11 @@ from sms_campaign_service.common.models.candidate import Candidate
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
 
 # Service Specific
-from sms_campaign_service.tests.conftest import app
 from sms_campaign_service.common.models.db import db
-from sms_campaign_service.sms_campaign_base import SmsCampaignBase
-from sms_campaign_service.tests.conftest import CAMPAIGN_SCHEDULE_DATA
+from sms_campaign_service.sms_campaign_app import app
+from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.handy_functions import replace_ngrok_link_with_localhost
-from sms_campaign_service.modules.custom_exceptions import (SmsCampaignApiException,
-                                                            EmptyDestinationUrl)
+from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
 from sms_campaign_service.tests.modules.common_functions import \
     (assert_on_blasts_sends_url_conversion_and_activity, assert_for_activity, get_reply_text,
      assert_api_send_response, assert_campaign_schedule, SLEEP_TIME)
@@ -167,22 +165,6 @@ class TestCeleryTasks(object):
         assert_on_blasts_sends_url_conversion_and_activity(
             sample_user.id, 1, str(scheduled_sms_campaign_of_current_user.id))
 
-    def test_campaign_schedule_and_validate_one_time_task_run(
-            self, valid_header, sample_user, scheduled_sms_campaign_of_current_user,
-            sms_campaign_smartlist, sample_sms_campaign_candidates, candidate_phone_1):
-        """
-        This is test to schedule SMS campaign with all valid parameters. This should get OK
-         response
-        """
-        data = CAMPAIGN_SCHEDULE_DATA.copy()
-        response = requests.post(
-            SmsCampaignApiUrl.SCHEDULE % scheduled_sms_campaign_of_current_user.id,
-            headers=valid_header, data=json.dumps(data))
-        assert_campaign_schedule(response)
-        time.sleep(SLEEP_TIME)
-        assert_on_blasts_sends_url_conversion_and_activity(
-            sample_user.id, 1, str(scheduled_sms_campaign_of_current_user.id))
-
     def test_schedule_periodic_campaign_with_past_end_date(
             self, valid_header, sample_user, scheduled_sms_campaign_of_current_user,
             sms_campaign_smartlist, sample_sms_campaign_candidates, candidate_phone_1):
@@ -190,7 +172,7 @@ class TestCeleryTasks(object):
         This is test to schedule SMS campaign with all valid parameters. This should get OK
          response
         """
-        data = CAMPAIGN_SCHEDULE_DATA.copy()
+        data = generate_campaign_schedule_data()
         data['frequency_id'] = FrequencyIds.DAILY  # for Periodic job
         data['end_datetime'] = to_utc_str(datetime.utcnow() - timedelta(hours=SLEEP_TIME))
         response = requests.post(
@@ -236,6 +218,42 @@ def get_replies_count(campaign):
     db.session.commit()
     sms_campaign_blasts = SmsCampaignBlast.get_by_campaign_id(campaign.id)
     return sms_campaign_blasts.replies
+
+
+class TestCampaignSchedule(object):
+    """
+    This is the test for scheduling a campaign ans verify it is sent to candidate as
+    per send time.
+    """
+
+    def test_campaign_schedule_and_validate_one_time_task_run(
+            self, valid_header, sample_user, scheduled_sms_campaign_of_current_user,
+            sms_campaign_smartlist, sample_sms_campaign_candidates, candidate_phone_1):
+        """
+        This is test to schedule SMS campaign with all valid parameters. This should get OK
+         response
+        """
+        response = requests.post(
+            SmsCampaignApiUrl.SCHEDULE % scheduled_sms_campaign_of_current_user.id,
+            headers=valid_header, data=json.dumps(generate_campaign_schedule_data()))
+        task_id = assert_campaign_schedule(response)
+        time.sleep(SLEEP_TIME)
+        assert_on_blasts_sends_url_conversion_and_activity(
+            sample_user.id, 1, str(scheduled_sms_campaign_of_current_user.id))
+        _delete_scheduled_task(task_id, valid_header)
+
+# TODO: add test for periodic job as well when we have configurable frequency in scheduler_service
+
+
+def _delete_scheduled_task(task_id, headers):
+    """
+    This deletes the scheduled task from scheduler_service
+    :param task_id:
+    :param headers:
+    :return:
+    """
+    with app.app_context():
+        delete_scheduled_task(task_id, headers)
 
 
 class TestSmsCampaignURLRedirection(object):
@@ -334,24 +352,67 @@ class TestSmsCampaignURLRedirection(object):
         assert response_get.status_code == InternalServerError.http_status_code(), \
             'It should get Internal server error'
 
-    def test_validate_blast_candidate_url_conversion_in_db_with_deleted_candidate(
-            self, valid_header, scheduled_sms_campaign_of_current_user,
-            url_conversion_by_send_test_sms_campaign, candidate_first):
+    def test_get_with_deleted_candidate(self, url_conversion_by_send_test_sms_campaign,
+                                        candidate_first):
+        """
+        Here we first delete the candidate, which internally deletes the sms_campaign_send record
+        as it uses candidate as primary key. We then test functionality of process_url_redirect
+        by making HTTP GET call to endpoint /v1/redirect. It should get ResourceNotFound Error.
+        But candidate should only get internal server error. So this test asserts we get internal
+        server error.
+        """
+        _delete_candidate(candidate_first)
+        response_get = _use_ngrok_or_local_address(
+            url_conversion_by_send_test_sms_campaign.source_url)
+        assert response_get.status_code == InternalServerError.http_status_code(), \
+            'It should get Internal server error'
+
+    def test_get_with_deleted_url_conversion(self, url_conversion_by_send_test_sms_campaign):
+        """
+        Here we first delete the url_conversion object. which internally deletes the
+        sms_campaign_send record as it uses url_conversion as primary key. We then test
+        functionality of process_url_redirect by making HTTP GET call to endpoint /v1/redirect.
+        It should get ResourceNotFound Error. But candidate should only get internal server error.
+        So this test asserts we get internal server error.
+        """
+        source_url = url_conversion_by_send_test_sms_campaign.source_url
+        _delete_url_conversion(url_conversion_by_send_test_sms_campaign)
+        response_get = _use_ngrok_or_local_address(source_url)
+        assert response_get.status_code == InternalServerError.http_status_code(), \
+            'It should get Internal server error'
+
+    def test_validate_blast_candidate_url_conversion_in_db_with_no_candidate(
+            self, scheduled_sms_campaign_of_current_user,
+            url_conversion_by_send_test_sms_campaign):
         """
         Here we first delete the candidate, and then test functionality of
         validate_blast_candidate_url_conversion_in_db() handy function in campaign_utils.py.
         It should give ResourceNotFound Error.
         """
         blast_obj = SmsCampaignBlast.get_by_campaign_id(scheduled_sms_campaign_of_current_user.id)
-        Candidate.delete(candidate_first)
-        try:
-            validate_blast_candidate_url_conversion_in_db(blast_obj,
-                                                          candidate_first,
-                                                          url_conversion_by_send_test_sms_campaign,
-                                                          CampaignType.SMS)
-        except ResourceNotFound as error:
-            assert error.status_code == ResourceNotFound.http_status_code(), \
-                'It should get Resource not found error'
+        _test_validate_blast_candidate_url_conversion_in_db(
+            blast_obj, None, url_conversion_by_send_test_sms_campaign)
+
+    def test_validate_blast_candidate_url_conversion_in_db_with_no_blast(
+            self, candidate_first, url_conversion_by_send_test_sms_campaign):
+        """
+        Here we pass blast as None, and then test functionality of
+        validate_blast_candidate_url_conversion_in_db() handy function in campaign_utils.py.
+        It should give ResourceNotFound Error.
+        """
+        _test_validate_blast_candidate_url_conversion_in_db(
+            None, candidate_first, url_conversion_by_send_test_sms_campaign)
+
+    def test_validate_blast_candidate_url_conversion_in_db_with_no_url_conversion(
+            self, candidate_first, scheduled_sms_campaign_of_current_user):
+        """
+        Here we pass url_conversion obj  as None, and then test functionality of
+        validate_blast_candidate_url_conversion_in_db() handy function in campaign_utils.py.
+        It should give ResourceNotFound Error.
+        """
+        blast_obj = SmsCampaignBlast.get_by_campaign_id(scheduled_sms_campaign_of_current_user.id)
+        _test_validate_blast_candidate_url_conversion_in_db(
+            blast_obj, candidate_first, None)
 
     def test_pre_process_url_redirect_with_empty_data(self):
         """
@@ -365,15 +426,11 @@ class TestSmsCampaignURLRedirection(object):
             assert error.status_code == InvalidUsage.http_status_code()
 
     def test_pre_process_url_redirect_with_valid_data(self,
-                                                      scheduled_sms_campaign_of_current_user,
-                                                      url_conversion_by_send_test_sms_campaign,
-                                                      candidate_first):
+                                                      url_conversion_by_send_test_sms_campaign):
         """
         This tests the functionality of pre_process_url_redirect() class method of CampaignBase.
         All parameters passed are valid, So, it should get OK response.
-        :param scheduled_sms_campaign_of_current_user:
         :param url_conversion_by_send_test_sms_campaign:
-        :param candidate_first:
         :return:
         """
         try:
@@ -403,67 +460,6 @@ class TestSmsCampaignURLRedirection(object):
             assert error.status_code == InvalidUsage.http_status_code()
 
 
-    # def test_pre_process_url_redirect_with_deleted_candidate(
-    #         self, sms_campaign_of_current_user, url_conversion_by_send_test_sms_campaign,
-    #         candidate_first):
-    #     """
-    #     This tests the functionality of pre_process_url_redirect() class method of SmsCampaignBase.
-    #     Here we first delete the candidate, and then test functionality of pre_process_url_redirect
-    #     class method of SmsCampaignBase. It should give ResourceNotFound Error.
-    #     """
-    #     Candidate.delete(candidate_first)
-    #     try:
-    #         SmsCampaignBase.pre_process_url_redirect(sms_campaign_of_current_user.id,
-    #                                                  url_conversion_by_send_test_sms_campaign.id,
-    #                                                  candidate_first.id)
-    #
-    #     except Exception as error:
-    #         assert error.status_code == ResourceNotFound.http_status_code()
-    #         assert str(candidate_first.id) in error.message
-    #
-    # def test_pre_process_url_redirect_with_deleted_url_conversion(
-    #         self, sms_campaign_of_current_user, url_conversion_by_send_test_sms_campaign,
-    #         candidate_first):
-    #     """
-    #     This tests the functionality of pre_process_url_redirect() class method of SmsCampaignBase.
-    #     Here we first delete the url_conversion db record, and then test functionality of
-    #     pre_process_url_redirect class method of SmsCampaignBase.
-    #     It should give ResourceNotFound Error.
-    #     """
-    #     url_conversion_id = str(url_conversion_by_send_test_sms_campaign.id)
-    #     UrlConversion.delete(url_conversion_by_send_test_sms_campaign)
-    #     try:
-    #         SmsCampaignBase.pre_process_url_redirect(sms_campaign_of_current_user.id,
-    #                                                  url_conversion_by_send_test_sms_campaign.id,
-    #                                                  candidate_first.id)
-    #
-    #     except Exception as error:
-    #         assert error.status_code == ResourceNotFound.http_status_code()
-    #         assert url_conversion_id in error.message
-    #
-    # def test_pre_process_url_redirect_with_empty_destination_url(
-    #         self, sample_user, sms_campaign_of_current_user,
-    #         url_conversion_by_send_test_sms_campaign,
-    #         candidate_first):
-    #     """
-    #     Making destination URL an empty string here, it should get internal server error.
-    #     Custom error should be EmptyDestinationUrl.
-    #     :return:
-    #     """
-    #     # forcing destination URL to be empty
-    #     url_conversion_by_send_test_sms_campaign.update(destination_url='')
-    #     try:
-    #         campaign, url_conversion_record, candidate = \
-    #             SmsCampaignBase.pre_process_url_redirect(
-    #                 sms_campaign_of_current_user.id,
-    #                 url_conversion_by_send_test_sms_campaign.id,
-    #                 candidate_first.id)
-    #         camp_obj = SmsCampaignBase(sample_user.id)
-    #         camp_obj.process_url_redirect(campaign, url_conversion_record, candidate)
-    #     except EmptyDestinationUrl as error:
-    #         assert error.error_code == SmsCampaignApiException.EMPTY_DESTINATION_URL
-
-
 def _delete_sms_campaign(campaign, header):
     """
     This calls the API /campaigns/:id to delete the given campaign
@@ -475,6 +471,41 @@ def _delete_sms_campaign(campaign, header):
                                headers=header)
     db.session.commit()
     assert response.status_code == 200, 'should get ok response (200)'
+
+
+def _delete_candidate(candidate_first):
+    """
+    This deletes the candidate of given id
+    :param candidate_first:
+    :return:
+    """
+    Candidate.delete(candidate_first)
+
+
+def _delete_url_conversion(url_conversion_obj):
+    """
+    This deletes the candidate of given id
+    :param url_conversion_obj:
+    :return:
+    """
+    UrlConversion.delete(url_conversion_obj)
+
+
+def _test_validate_blast_candidate_url_conversion_in_db(blast, candidate, url_conversion_obj):
+    """
+    This tests the functionality of validate_blast_candidate_url_conversion_in_db() method in
+        campaign_utils.py.
+    :param blast:
+    :param candidate:
+    :param url_conversion_obj:
+    :return:
+    """
+    try:
+        validate_blast_candidate_url_conversion_in_db(blast, candidate, url_conversion_obj)
+        assert None, 'It should get resource not found error'
+    except ResourceNotFound as error:
+        assert error.status_code == ResourceNotFound.http_status_code(), \
+            'It should get Resource not found error'
 
 
 def _get_hit_count_and_clicks(url_conversion, campaign):
@@ -521,4 +552,3 @@ def _use_ngrok_or_local_address(url):
         localhost_url = replace_ngrok_link_with_localhost(url)
         response_get = requests.get(localhost_url)
     return response_get
-

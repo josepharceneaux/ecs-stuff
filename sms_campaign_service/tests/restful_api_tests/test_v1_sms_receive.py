@@ -15,7 +15,7 @@ from sms_campaign_service.common.routes import SmsCampaignApiUrl
 
 # Service Specific
 from sms_campaign_service.tests.conftest import fake
-from sms_campaign_service.sms_campaign_base import SmsCampaignBase
+from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.modules.common_functions import (get_reply_text,
                                                                  assert_method_not_allowed)
@@ -52,9 +52,7 @@ class TestSmsReceive(object):
         assert response_get.status_code == 200, 'Response should be ok'
         assert 'xml' in str(response_get.text).strip()
 
-    def test_post_with_valid_data_no_campaign_sent(self, user_phone_1,
-                                                   candidate_phone_1
-                                                   ):
+    def test_post_with_valid_data_no_campaign_sent(self, user_phone_1, candidate_phone_1):
         """
         POST with valid data but no campaign is sent to candidate,
         This is the case when a saved candidates sends an SMS to some recruiter's (user's)

@@ -161,7 +161,7 @@ def validation_of_data_to_schedule_campaign(campaign_obj, request):
 
 
 def validate_blast_candidate_url_conversion_in_db(campaign_blast_obj, candidate,
-                                                  url_conversion_obj, campaign_name):
+                                                  url_conversion_obj):
     """
     This method is used for the pre-processing of URL redirection
         It checks if campaign blast object, candidate, campaign and url_conversion object
@@ -185,10 +185,9 @@ def validate_blast_candidate_url_conversion_in_db(campaign_blast_obj, candidate,
             error_code=ResourceNotFound.http_status_code())
     # check if campaign_blasts exists in database
     if not campaign_blast_obj:
-        raise ResourceNotFound('validate_blast_candidate_url_conversion_in_db: %s(id=%s) not found.'
-                               % (campaign_blast_obj.__tablename__, campaign_blast_obj.id),
-                               error_code=ResourceNotFound.http_status_code())
-    if not getattr(campaign_blast_obj, 'campaign'):
+        raise ResourceNotFound('validate_blast_candidate_url_conversion_in_db: campaign blast'
+                               ' not found.', error_code=ResourceNotFound.http_status_code())
+    if not campaign_blast_obj.campaign:
         raise ResourceNotFound('validate_blast_candidate_url_conversion_in_db: '
                                'Campaign not found for %s.' % campaign_blast_obj.__tablename__,
                                error_code=ResourceNotFound.http_status_code())
@@ -197,4 +196,4 @@ def validate_blast_candidate_url_conversion_in_db(campaign_blast_obj, candidate,
         raise ResourceNotFound('validate_blast_candidate_url_conversion_in_db: '
                                'Url Conversion(id=%s) not found.' % url_conversion_obj.id,
                                error_code=ResourceNotFound.http_status_code())
-    return getattr(campaign_blast_obj, 'campaign')
+    return campaign_blast_obj.campaign

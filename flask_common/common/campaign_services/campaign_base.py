@@ -40,7 +40,7 @@ from ..utils.handy_functions import (http_request, find_missing_items, JSON_CONT
 from ..routes import (ActivityApiUrl, SchedulerApiUrl, CandidatePoolApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
 
-from campaign_utils import (get_model, validate_signed_url,
+from campaign_utils import (get_model, validate_signed_url, delete_scheduled_task,
                             get_candidate_url_conversion_campaign_send_and_blast_obj,
                             get_activity_message_name, get_activity_message_id_from_name)
 
@@ -269,7 +269,7 @@ class CampaignBase(object):
         # campaign object has scheduler_task_id assigned
         if scheduled_task:
             # campaign was scheduled, remove task from scheduler_service
-            unschedule = _delete_scheduled_task(scheduled_task['id'], auth_header)
+            unschedule = delete_scheduled_task(scheduled_task['id'], auth_header)
             if not unschedule:
                 raise False
         # TODO: remove specific campaign
@@ -472,7 +472,7 @@ class CampaignBase(object):
             cls.get_authorized_campaign_obj_and_scheduled_task(campaign_id, request.user.id)
         if not scheduled_task:
             return None
-        if _delete_scheduled_task(scheduled_task['id'], auth_header):
+        if delete_scheduled_task(scheduled_task['id'], auth_header):
             return campaign_obj
         return None
 
@@ -554,7 +554,7 @@ class CampaignBase(object):
                 need_to_create_new_task = True
         if need_to_create_new_task:
             # First delete the old schedule of campaign
-            unscheduled = _delete_scheduled_task(scheduled_task['id'],
+            unscheduled = delete_scheduled_task(scheduled_task['id'],
                                                  pre_processed_data['auth_header'])
             if not unscheduled:
                 return None
@@ -854,8 +854,7 @@ class CampaignBase(object):
         # Validate if all the required items are present in database.
         campaign_obj = validate_blast_candidate_url_conversion_in_db(campaign_blast_obj,
                                                                      candidate_obj,
-                                                                     url_conversion_obj,
-                                                                     campaign_type)
+                                                                     url_conversion_obj)
         if not url_conversion_obj.destination_url:
             raise InvalidUsage('process_url_redirect: Destination_url is empty for '
                                'url_conversion(id:%s)' % url_conversion_obj.id)
@@ -1085,29 +1084,3 @@ class CampaignBase(object):
         # POST call to activity_service to create activity
         http_request('POST', ActivityApiUrl.CREATE_ACTIVITY, headers=headers,
                      data=json_data, user_id=user_id)
-
-
-def _delete_scheduled_task(scheduled_task_id, auth_header):
-    """
-    Campaign (e.g. SMS campaign or Push Notification) has a field scheduler_task_id.
-    If a campaign was scheduled and user wants to delete that campaign, system should remove
-    the task from scheduler_service as well using scheduler_task_id.
-    This function is used to remove the job from scheduler_service when someone deletes
-    a campaign.
-    :return: True if task is not present or has been unscheduled successfully, False otherwise
-    :rtype: bool
-    """
-    if not auth_header:
-        raise InvalidUsage('Auth header is required for deleting scheduled task.')
-    if not scheduled_task_id:
-        raise InvalidUsage('Provide task id to delete scheduled task from scheduler_service.')
-    response = http_request('DELETE', SchedulerApiUrl.TASK % scheduled_task_id,
-                            headers=auth_header)
-    if response.ok or response.status_code == ResourceNotFound.http_status_code():
-        current_app.config['LOGGER'].info(
-            "_delete_scheduled_task: Task(id:%s) has been removed from scheduler_service"
-            % scheduled_task_id)
-        return True
-    current_app.config['LOGGER'].error(
-        "_delete_scheduled_task: Task(id:%s) couldn't be deleted." % scheduled_task_id)
-    return False

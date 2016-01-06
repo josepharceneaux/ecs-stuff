@@ -12,9 +12,7 @@ from sms_campaign_service.common.campaign_services.campaign_utils import Frequen
 from sms_campaign_service.common.tests.conftest import *
 
 # Service specific
-# to avoid circular we need to import app before SmsCampaignBase
-from sms_campaign_service.sms_campaign_app.app import app
-from sms_campaign_service.sms_campaign_base import SmsCampaignBase
+from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL,
                                                                      TWILIO_TEST_NUMBER,
                                                                      TWILIO_INVALID_TEST_NUMBER,
@@ -39,11 +37,12 @@ CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
                         "smartlist_ids": ""
                         }
 # This is data to schedule an SMS campaign
-CAMPAIGN_SCHEDULE_DATA = {
-    "frequency_id": FrequencyIds.ONCE,
-    "start_datetime": to_utc_str(datetime.utcnow() + timedelta(seconds=SLEEP_TIME)),
-    "end_datetime": to_utc_str(datetime.utcnow() + timedelta(hours=1))}
 
+
+def generate_campaign_schedule_data():
+    return {"frequency_id": FrequencyIds.ONCE,
+            "start_datetime": to_utc_str(datetime.utcnow() + timedelta(seconds=SLEEP_TIME)),
+            "end_datetime": to_utc_str(datetime.utcnow() + timedelta(hours=1))}
 
 def remove_any_user_phone_record_with_twilio_test_number():
     """
@@ -222,7 +221,7 @@ def scheduled_sms_campaign_of_current_user(campaign_valid_data, user_phone_1):
     :return:
     """
     campaign_data = campaign_valid_data.copy()
-    campaign_data.update(CAMPAIGN_SCHEDULE_DATA)
+    campaign_data.update(generate_campaign_schedule_data())
     return _create_sms_campaign(campaign_data, user_phone_1)
 
 
@@ -398,7 +397,8 @@ def process_send_sms_campaign(sample_user, auth_token,
                               candidate_phone_1,
                               ):
     """
-    This function serves the sending part of SMS campaign
+    This function serves the sending part of SMS campaign.
+    This sends campaign to one candidate.
     :return:
     """
 

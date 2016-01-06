@@ -18,6 +18,9 @@ from ska import sign_url, Signature
 from ..models.misc import UrlConversion
 from ..error_handling import InvalidUsage
 from ..models.sms_campaign import SmsCampaign
+from sms_campaign_service.common.error_handling import InvalidUsage, ResourceNotFound
+from sms_campaign_service.common.routes import SchedulerApiUrl
+from sms_campaign_service.common.utils.handy_functions import http_request
 from ..talent_config_manager import TalentConfigKeys
 from ..utils.activity_utils import ActivityMessageIds
 from ..utils.handy_functions import snake_case_to_pascal_case
@@ -183,11 +186,11 @@ def get_candidate_url_conversion_campaign_send_and_blast_obj(campaign_send_url_c
     # get url_conversion obj
     url_conversion_obj = UrlConversion.get_by_id(campaign_send_url_conversion_obj.url_conversion_id)
     # get campaign_send object
-    campaign_send_obj = getattr(campaign_send_url_conversion_obj, 'send')
+    campaign_send_obj = campaign_send_url_conversion_obj.send
     # get campaign_blast object
-    campaign_blast_obj = getattr(campaign_send_obj, 'blast')
+    campaign_blast_obj = campaign_send_obj.blast
     # get candidate object
-    candidate_obj = getattr(campaign_send_obj, 'candidate')
+    candidate_obj = campaign_send_obj.candidate
     return candidate_obj, url_conversion_obj, campaign_send_obj, campaign_blast_obj
 
 
@@ -258,7 +261,7 @@ def processing_after_campaign_sent(base_class, sends_result, user_id, campaign_t
         total_sends = sends_result.count(True)
         blast_model = get_model(campaign_type, snake_case_to_pascal_case(campaign_type) + 'Blast')
         blast_obj = blast_model.get_by_id(blast_id)
-        campaign = getattr(blast_obj, campaign_type)
+        campaign = blast_obj.campaign
         if total_sends:
             # update SMS campaign blast. i.e. update number of sends.
             try:
@@ -275,3 +278,29 @@ def processing_after_campaign_sent(base_class, sends_result, user_id, campaign_t
             '(User(id:%s))' % (campaign_type, campaign.id, total_sends, user_id))
     else:
         current_app.config['LOGGER'].error('callback_campaign_sent: Result is not a list')
+
+
+def delete_scheduled_task(scheduled_task_id, auth_header):
+    """
+    Campaign (e.g. SMS campaign or Push Notification) has a field scheduler_task_id.
+    If a campaign was scheduled and user wants to delete that campaign, system should remove
+    the task from scheduler_service as well using scheduler_task_id.
+    This function is used to remove the job from scheduler_service when someone deletes
+    a campaign.
+    :return: True if task is not present or has been unscheduled successfully, False otherwise
+    :rtype: bool
+    """
+    if not auth_header:
+        raise InvalidUsage('Auth header is required for deleting scheduled task.')
+    if not scheduled_task_id:
+        raise InvalidUsage('Provide task id to delete scheduled task from scheduler_service.')
+    response = http_request('DELETE', SchedulerApiUrl.TASK % scheduled_task_id,
+                            headers=auth_header)
+    if response.ok or response.status_code == ResourceNotFound.http_status_code():
+        current_app.config['LOGGER'].info(
+            "delete_scheduled_task: Task(id:%s) has been removed from scheduler_service"
+            % scheduled_task_id)
+        return True
+    current_app.config['LOGGER'].error(
+        "delete_scheduled_task: Task(id:%s) couldn't be deleted." % scheduled_task_id)
+    return False

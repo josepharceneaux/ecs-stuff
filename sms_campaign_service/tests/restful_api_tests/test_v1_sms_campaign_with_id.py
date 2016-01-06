@@ -18,7 +18,7 @@ from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import (UnauthorizedError, ResourceNotFound,
                                                         ForbiddenError, InternalServerError,
                                                         InvalidUsage)
-from sms_campaign_service.tests.conftest import CAMPAIGN_SCHEDULE_DATA
+from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
 
 
 class TestSmsCampaignWithIdHTTPGet(object):
@@ -121,8 +121,8 @@ class TestSmsCampaignWithIdHTTPPost(object):
         data = campaign_valid_data.copy()
         modified_name = 'Modified Name'
         data.update({'name': modified_name})
-        scheduler_data = CAMPAIGN_SCHEDULE_DATA.copy()
-        data.update(scheduler_data)
+        scheduler_data = generate_campaign_schedule_data()
+        data.update(generate_campaign_schedule_data())
         response_post = requests.post(
             SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
             headers=valid_header,

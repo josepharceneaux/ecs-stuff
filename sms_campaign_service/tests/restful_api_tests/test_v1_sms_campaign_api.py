@@ -12,8 +12,8 @@ from werkzeug.security import gen_salt
 
 
 # Service Specific
-from sms_campaign_service.tests.conftest import db, CREATE_CAMPAIGN_DATA
 from sms_campaign_service.common.tests.sample_data import fake
+from sms_campaign_service.tests.conftest import db, CREATE_CAMPAIGN_DATA
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.modules.common_functions import assert_for_activity
 

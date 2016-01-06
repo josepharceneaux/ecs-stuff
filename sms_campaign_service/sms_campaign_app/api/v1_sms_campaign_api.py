@@ -49,8 +49,10 @@ This file contains API endpoints related to sms_campaign_service.
 
 # Standard Library
 import types
+
 from werkzeug.utils import redirect
 from werkzeug.exceptions import BadRequest
+
 
 # Third Party
 from flask import request
@@ -60,7 +62,7 @@ from flask.ext.restful import Resource
 
 # Service Specific
 from sms_campaign_service.sms_campaign_app import logger
-from sms_campaign_service.sms_campaign_base import SmsCampaignBase
+from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.validators import validate_form_data
 from sms_campaign_service.modules.custom_exceptions import ErrorDeletingSMSCampaign
 from sms_campaign_service.modules.handy_functions import request_from_google_shorten_url_api

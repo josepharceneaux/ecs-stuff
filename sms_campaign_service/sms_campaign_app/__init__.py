@@ -29,9 +29,9 @@ def init_sms_campaign_app_and_celery_app():
                 % flask_app.config[TalentConfigKeys.ENV_KEY])
     initialized_app = init_talent_app(flask_app, logger)
     # Celery settings
-    celery_app = Celery(initialized_app, broker=initialized_app.config['BACKEND_URL'],
-                        backend=flask_app.config['BACKEND_URL'],
-                        include=['sms_campaign_service.sms_campaign_base'])
+    celery_app = Celery(initialized_app, broker=initialized_app.config['REDIS_URL'],
+                        backend=initialized_app.config['BACKEND_URL'],
+                        include=['sms_campaign_service.modules.sms_campaign_base'])
     # load_gettalent_config(celery_app.conf)
     return initialized_app, celery_app
 

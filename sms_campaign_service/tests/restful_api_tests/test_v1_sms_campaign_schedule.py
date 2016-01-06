@@ -12,10 +12,8 @@ import requests
 
 # Service Specific
 from sms_campaign_service.common.tests.sample_data import fake
-from sms_campaign_service.tests.conftest import CAMPAIGN_SCHEDULE_DATA
-from sms_campaign_service.tests.modules.common_functions import assert_method_not_allowed, assert_campaign_schedule
-
-# Models
+from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
+from sms_campaign_service.tests.modules.common_functions import assert_method_not_allowed
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
@@ -46,7 +44,7 @@ class TestSmsCampaignSchedule(object):
         This is test to schedule SMS campaign with no start datetime. This should get
         forbidden error.
         """
-        data = CAMPAIGN_SCHEDULE_DATA.copy()
+        data = generate_campaign_schedule_data()
         del data['start_datetime']
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
                                  headers=valid_header,
@@ -59,7 +57,7 @@ class TestSmsCampaignSchedule(object):
         """
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
                                  headers=valid_header,
-                                 data=json.dumps(CAMPAIGN_SCHEDULE_DATA))
+                                 data=json.dumps(generate_campaign_schedule_data()))
         assert response.status_code == InvalidUsage.http_status_code()
 
     def test_campaign_schedule_with_no_auth_header(self, auth_token, sms_campaign_of_current_user):
@@ -103,7 +101,7 @@ class TestSmsCampaignSchedule(object):
         :param valid_header: valid header to POST data
         :return:
         """
-        data = CAMPAIGN_SCHEDULE_DATA.copy()
+        data = generate_campaign_schedule_data()
         data['start_datetime'] = data['start_datetime'].split('Z')[0]
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
                                  headers=valid_header,
@@ -117,7 +115,7 @@ class TestSmsCampaignSchedule(object):
         now. It should get bad request error.
         :return:
         """
-        data = CAMPAIGN_SCHEDULE_DATA.copy()
+        data = generate_campaign_schedule_data()
         data['frequency_id'] = fake.numerify()  # this returns a three digit random number
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
                                  headers=valid_header,
@@ -130,7 +128,7 @@ class TestSmsCampaignSchedule(object):
         Trying to schedule a campaign with non int frequency Id, It should get bad request error,
         :return:
         """
-        data = CAMPAIGN_SCHEDULE_DATA.copy()
+        data = generate_campaign_schedule_data()
         data['frequency_id'] = fake.word()
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
                                  headers=valid_header,
@@ -145,7 +143,7 @@ class TestSmsCampaignSchedule(object):
         """
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_other_user.id,
                                  headers=valid_header,
-                                 data=json.dumps(CAMPAIGN_SCHEDULE_DATA))
+                                 data=json.dumps(generate_campaign_schedule_data()))
         assert response.status_code == ForbiddenError.http_status_code()
 
     def test_campaign_schedule_with_non_json_data_type(self, valid_header,
@@ -156,7 +154,7 @@ class TestSmsCampaignSchedule(object):
         """
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
                                  headers=valid_header,
-                                 data=CAMPAIGN_SCHEDULE_DATA)
+                                 data=generate_campaign_schedule_data())
         assert response.status_code == InvalidUsage.http_status_code()
 
     def test_campaign_schedule_with_no_data(self, valid_header, sms_campaign_of_current_user):
@@ -181,6 +179,6 @@ class TestSmsCampaignSchedule(object):
         # Try to schedule deleted campaign
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
                                  headers=valid_header,
-                                 data=json.dumps(CAMPAIGN_SCHEDULE_DATA))
+                                 data=json.dumps(generate_campaign_schedule_data()))
         assert response.status_code == ResourceNotFound.http_status_code()
 
