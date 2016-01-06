@@ -11,14 +11,15 @@ __author__ = 'jitesh'
 
 def search_candidates_from_params(search_params, access_token, user_id=None):
     """
-    Calls the search service with given search criteria and returns the search result.
+    Calls the candidate_service's Search API with given search criteria and returns the search result.
     :param search_params: Search params or search criteria upon which candidates would be filtered.
-    :param access_token: User access token TODO: Change once server to server trusted calls are implemented.
+    :param access_token: Oauth-based or JWT-based token
+    :param user_id: Id of logged-in user
     :return: search result based on search criteria.
     """
     if not access_token:
-        secret_key, oauth_token = User.generate_auth_token(user_id=user_id)
-        headers = {'Authorization': oauth_token, 'X-Talent-Server-Key': secret_key, 'Content-Type': 'application/json'}
+        secret_key_id, jw_token = User.generate_jw_token(user_id=user_id)
+        headers = {'Authorization': jw_token, 'X-Talent-Secret-Key-ID': secret_key_id, 'Content-Type': 'application/json'}
     else:
         access_token = access_token if 'Bearer' in access_token else 'Bearer %s' % access_token
         headers = {'Authorization': access_token, 'Content-Type': 'application/json'}

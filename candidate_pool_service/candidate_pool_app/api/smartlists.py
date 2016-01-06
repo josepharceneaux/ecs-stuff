@@ -1,4 +1,5 @@
 from dateutil.parser import parse
+from datetime import datetime, timedelta
 from flask_restful import Resource
 from flask import request, Blueprint, jsonify
 from candidate_pool_service.common.talent_api import TalentApi
@@ -121,7 +122,7 @@ class SmartlistResource(Resource):
 
 
 @smartlist_blueprint.route('/smartlists/stats', methods=['POST'])
-@require_oauth(allow_basic_auth=True, allow_null_user=True)
+@require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
 @require_all_roles('CAN_UPDATE_SMARTLISTS_STATS')
 def update_smartlists_stats():
     """
@@ -130,34 +131,39 @@ def update_smartlists_stats():
     """
     try:
         smartlists = Smartlist.query.all()
+
+        # 2 hours are added to account for scheduled job run time
+        yesterday_datetime = datetime.utcnow() - timedelta(days=1, hours=2)
+
         for smartlist in smartlists:
-            last_week_stat = SmartlistStats.query.filter_by(smartlist_id=smartlist.id).\
-                order_by(SmartlistStats.id.desc()).first()
+            yesterday_stat = SmartlistStats.query.filter(SmartlistStats.smartlist_id == smartlist.id,
+                                                        SmartlistStats.added_datetime > yesterday_datetime).first()
 
             # Return only candidate_ids
-            response = get_candidates(smartlist, True)
+            response = get_candidates(smartlist, candidate_ids_only=True)
             total_candidates = response.get('total_found')
             smartlist_candidate_ids = [candidate.get('id') for candidate in response.get('candidates')]
 
-            engaged_candidates = 0
+            number_of_engaged_candidates = 0
             if smartlist_candidate_ids:
-                engaged_candidates = len(db.session.query(EmailCampaignSend.candidate_id).filter(
-                        EmailCampaignSend.candidate_id.in_(smartlist_candidate_ids)).all() or [])
+                number_of_engaged_candidates = db.session.query(EmailCampaignSend.candidate_id).filter(
+                        EmailCampaignSend.candidate_id.in_(smartlist_candidate_ids)).count()
 
-            candidates_engagement = int(float(engaged_candidates)/total_candidates*100) if int(total_candidates) else 0
+            percentage_candidates_engagement = int(float(number_of_engaged_candidates)/total_candidates*100) \
+                if int(total_candidates) else 0
             # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
 
-            if last_week_stat:
+            if yesterday_stat:
                 smartlist_stat = SmartlistStats(smartlist_id=smartlist.id,
                                                 total_candidates=total_candidates,
                                                 number_of_candidates_removed_or_added=
-                                                total_candidates - last_week_stat.total_candidates,
-                                                candidates_engagement=candidates_engagement)
+                                                total_candidates - yesterday_stat.total_candidates,
+                                                candidates_engagement=percentage_candidates_engagement)
             else:
                 smartlist_stat = SmartlistStats(smartlist_id=smartlist.id,
                                                 total_candidates=total_candidates,
                                                 number_of_candidates_removed_or_added=total_candidates,
-                                                candidates_engagement=candidates_engagement)
+                                                candidates_engagement=percentage_candidates_engagement)
             db.session.add(smartlist_stat)
 
         db.session.commit()
@@ -189,7 +195,7 @@ def get_smartlist_stats(smartlist_id):
     from_date_string = request.args.get('from_date', '')
     to_date_string = request.args.get('to_date', '')
 
-    if not from_date_string and not to_date_string:
+    if not from_date_string or not to_date_string:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is missing from request parameters")
 
     try:
@@ -199,14 +205,14 @@ def get_smartlist_stats(smartlist_id):
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
 
     smartlist_stats = SmartlistStats.query.filter(SmartlistStats.smartlist_id == smartlist_id,
-                                                  SmartlistStats.added_time >= from_date,
-                                                  SmartlistStats.added_time <= to_date).all()
+                                                  SmartlistStats.added_datetime >= from_date,
+                                                  SmartlistStats.added_datetime <= to_date).all()
 
     return jsonify({'smartlist_data': [
         {
             'total_number_of_candidates': smartlist_stat.total_candidates,
             'number_of_candidates_removed_or_added': smartlist_stat.number_of_candidates_removed_or_added,
-            'added_time': smartlist_stat.added_time,
+            'added_datetime': smartlist_stat.added_datetime,
             'candidates_engagement': smartlist_stat.candidates_engagement
         }
         for smartlist_stat in smartlist_stats

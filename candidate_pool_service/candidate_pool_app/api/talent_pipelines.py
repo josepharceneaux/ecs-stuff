@@ -1,11 +1,11 @@
 __author__ = 'ufarooqi'
 
-import datetime
 import json
 from flask import request, Blueprint
 from dateutil import parser
 from sqlalchemy import and_
 from dateutil.parser import parse
+from datetime import datetime, timedelta
 from flask_restful import Resource
 from candidate_pool_service.common.error_handling import *
 from candidate_pool_service.common.talent_api import TalentApi
@@ -164,7 +164,7 @@ class TalentPipelineApi(Resource):
             except Exception as e:
                 raise InvalidUsage(error_message="Date_needed is not valid as: %s" % e.message)
 
-            if parser.parse(date_needed) < datetime.datetime.utcnow():
+            if parser.parse(date_needed) < datetime.utcnow():
                 raise InvalidUsage(error_message="Date_needed %s cannot be before current date" % date_needed)
 
             if not is_number(positions) or not int(positions) > 0:
@@ -255,7 +255,7 @@ class TalentPipelineApi(Resource):
             except Exception as e:
                 raise InvalidUsage(error_message="Date_needed is not valid as: %s" % e.message)
 
-            if parser.parse(date_needed) < datetime.datetime.utcnow():
+            if parser.parse(date_needed) < datetime.utcnow():
                 raise InvalidUsage(error_message="Date_needed %s cannot be before current date" % date_needed)
 
             talent_pipeline.date_needed = date_needed
@@ -492,7 +492,7 @@ class TalentPipelineCandidates(Resource):
 
 
 @talent_pipeline_blueprint.route('/talent-pipelines/stats', methods=['POST'])
-@require_oauth(allow_basic_auth=True, allow_null_user=True)
+@require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
 @require_all_roles('CAN_UPDATE_TALENT_PIPELINES_STATS')
 def update_talent_pipelines_stats():
     """
@@ -501,34 +501,40 @@ def update_talent_pipelines_stats():
     """
     try:
         talent_pipelines = TalentPipeline.query.all()
+
+        # 2 hours are added to account for scheduled job run time
+        yesterday_datetime = datetime.utcnow() - timedelta(days=1, hours=2)
+
         for talent_pipeline in talent_pipelines:
-            last_week_stat = TalentPipelineStats.query.filter_by(talent_pipeline_id=talent_pipeline.id).\
-                order_by(TalentPipelineStats.id.desc()).first()
+            yesterday_stat = TalentPipelineStats.query.filter(
+                    TalentPipelineStats.talent_pipeline_id == talent_pipeline.id,
+                    TalentPipelineStats.added_datetime > yesterday_datetime).first()
 
             # Return only candidate_ids
-            response = get_candidates_of_talent_pipeline(talent_pipeline, 'id')
+            response = get_candidates_of_talent_pipeline(talent_pipeline, fields='id')
             total_candidates = response.get('total_found')
             talent_pipeline_candidate_ids = [candidate.get('id') for candidate in response.get('candidates')]
 
-            engaged_candidates = 0
+            number_of_engaged_candidates = 0
             if talent_pipeline_candidate_ids:
-                engaged_candidates = len(db.session.query(EmailCampaignSend.candidate_id).filter(
-                        EmailCampaignSend.candidate_id.in_(talent_pipeline_candidate_ids)).all() or [])
+                number_of_engaged_candidates = db.session.query(EmailCampaignSend.candidate_id).filter(
+                        EmailCampaignSend.candidate_id.in_(talent_pipeline_candidate_ids)).count()
 
-            candidates_engagement = int(float(engaged_candidates)/total_candidates*100) if int(total_candidates) else 0
+            percentage_candidates_engagement = int(float(number_of_engaged_candidates)/total_candidates*100) if \
+                int(total_candidates) else 0
             # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
 
-            if last_week_stat:
+            if yesterday_stat:
                 talent_pipeline_stat = TalentPipelineStats(talent_pipeline_id=talent_pipeline.id,
                                                            total_candidates=total_candidates,
                                                            number_of_candidates_removed_or_added=
-                                                           total_candidates - last_week_stat.total_candidates,
-                                                           candidates_engagement=candidates_engagement)
+                                                           total_candidates - yesterday_stat.total_candidates,
+                                                           candidates_engagement=percentage_candidates_engagement)
             else:
                 talent_pipeline_stat = TalentPipelineStats(talent_pipeline_id=talent_pipeline.id,
                                                            total_candidates=total_candidates,
                                                            number_of_candidates_removed_or_added=total_candidates,
-                                                           candidates_engagement=candidates_engagement
+                                                           candidates_engagement=percentage_candidates_engagement
                                                            )
             db.session.add(talent_pipeline_stat)
 
@@ -561,7 +567,7 @@ def get_talent_pipeline_stats(talent_pipeline_id):
     from_date_string = request.args.get('from_date', '')
     to_date_string = request.args.get('to_date', '')
 
-    if not from_date_string and not to_date_string:
+    if not from_date_string or not to_date_string:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is missing from request parameters")
 
     try:
@@ -571,14 +577,14 @@ def get_talent_pipeline_stats(talent_pipeline_id):
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
 
     talent_pipeline_stats = TalentPipelineStats.query.filter(
-        TalentPipelineStats.talent_pipeline_id == talent_pipeline_id, TalentPipelineStats.added_time >= from_date,
-        TalentPipelineStats.added_time <= to_date).all()
+        TalentPipelineStats.talent_pipeline_id == talent_pipeline_id, TalentPipelineStats.added_datetime >= from_date,
+        TalentPipelineStats.added_datetime <= to_date).all()
 
     return jsonify({'talent_pipeline_data': [
         {
             'total_number_of_candidates': talent_pipeline_stat.total_candidates,
             'number_of_candidates_removed_or_added': talent_pipeline_stat.number_of_candidates_removed_or_added,
-            'added_time': talent_pipeline_stat.added_time,
+            'added_datetime': talent_pipeline_stat.added_datetime,
             'candidates_engagement': talent_pipeline_stat.candidates_engagement
         }
         for talent_pipeline_stat in talent_pipeline_stats

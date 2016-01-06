@@ -63,8 +63,8 @@ def get_candidates_of_talent_pipeline(talent_pipeline, fields=''):
                                              "because: %s" % e.message)
 
         if not request.oauth_token:
-            secret_key, oauth_token = User.generate_auth_token(user_id=talent_pipeline.owner_user_id)
-            headers = {'Authorization': oauth_token, 'X-Talent-Server-Key': secret_key,
+            secret_key, oauth_token = User.generate_jw_token(user_id=talent_pipeline.owner_user_id)
+            headers = {'Authorization': oauth_token, 'X-Talent-Secret-Key-ID': secret_key,
                        'Content-Type': 'application/json'}
         else:
             headers = {'Authorization': request.oauth_token, 'Content-Type': 'application/json'}
@@ -107,8 +107,8 @@ def schedule_candidate_daily_stats_update():
             "url": CandidatePoolApiUrl.TALENT_POOL_STATS
         }
 
-        secret_key, oauth_token = User.generate_auth_token()
-        headers = {'Authorization': oauth_token, 'X-Talent-Server-Key': secret_key, 'Content-Type': 'application/json'}
+        secret_key, oauth_token = User.generate_jw_token()
+        headers = {'Authorization': oauth_token, 'X-Talent-Secret-Key-ID': secret_key, 'Content-Type': 'application/json'}
 
         try:
             response = requests.post(SchedulerApiUrl.TASKS, headers=headers, data=json.dumps(data))
