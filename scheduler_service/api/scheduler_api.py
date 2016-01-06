@@ -103,7 +103,7 @@ class Tasks(Resource):
         tasks = filter(lambda job: job is not None, tasks)
         return dict(tasks=tasks, count=len(tasks))
 
-    @require_oauth(allow_basic_auth=True, allow_null_user=True)
+    @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
     def post(self, **kwargs):
         """
         This method takes data to create or schedule a task for scheduler.

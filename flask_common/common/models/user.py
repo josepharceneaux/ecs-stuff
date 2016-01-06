@@ -53,22 +53,22 @@ class User(db.Model):
     venues = db.relationship('Venue', backref='user', lazy='dynamic')
 
     @staticmethod
-    def generate_auth_token(expiration=600, user_id=None):
-        secret_key = str(uuid.uuid4())[0:10]
-        secret_value = os.urandom(24)
-        redis_store.setex(secret_key, secret_value, expiration)
-        s = Serializer(secret_value, expires_in=expiration)
-        return secret_key, 'Basic %s' % s.dumps({'user_id': user_id})
+    def generate_jw_token(expiration=600, user_id=None):
+        secret_key_id = str(uuid.uuid4())[0:10]
+        secret_key = os.urandom(24)
+        redis_store.setex(secret_key_id, secret_key, expiration)
+        s = Serializer(secret_key, expires_in=expiration)
+        return secret_key_id, 'Bearer %s' % s.dumps({'user_id': user_id})
 
     @staticmethod
-    def verify_auth_token(secret_key, token, allow_null_user=False):
-        s = Serializer(redis_store.get(secret_key))
+    def verify_jw_token(secret_key_id, token, allow_null_user=False):
+        s = Serializer(redis_store.get(secret_key_id))
         try:
             data = s.loads(token)
         except SignatureExpired:
-            raise UnauthorizedError(error_message="Your encrypted token has been expired")
+            raise UnauthorizedError(error_message="Your JSON web token has been expired")
         except BadSignature:
-            raise UnauthorizedError(error_message="Your encrypted token is not valid")
+            raise UnauthorizedError(error_message="Your JSON web token is not valid")
 
         if data['user_id']:
             user = User.query.get(data['user_id'])
