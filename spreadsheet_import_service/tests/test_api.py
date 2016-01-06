@@ -6,7 +6,6 @@
         * test_health_check: It'll test either the service is up
 """
 
-from spreadsheet_import_service.app import app
 from spreadsheet_import_service.common.tests.conftest import *
 from spreadsheet_import_service.common.utils.handy_functions import add_role_to_test_user
 from common_functions import *

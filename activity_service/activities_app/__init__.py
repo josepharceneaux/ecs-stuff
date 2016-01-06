@@ -2,11 +2,12 @@
 __author__ = 'Erik Farmer'
 
 from flask import Flask
+from activity_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 
 app = Flask(__name__)
-app.config.from_object('activity_service.config')
+load_gettalent_config(app.config)
 
-logger = app.config['LOGGER']
+logger = app.config[TalentConfigKeys.LOGGER]
 
 try:
     from activity_service.common.models.db import db
@@ -23,8 +24,8 @@ try:
     from activity_service.common.error_handling import register_error_handlers
     register_error_handlers(app, logger)
 
-    logger.info("Starting activity_service in %s environment", app.config['GT_ENVIRONMENT'])
+    logger.info("Starting activity_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 
 except Exception as e:
     logger.exception("Couldn't start activity_service in %s environment because: %s"
-                     % (app.config['GT_ENVIRONMENT'], e.message))
+                     % (app.config[TalentConfigKeys.ENV_KEY], e.message))

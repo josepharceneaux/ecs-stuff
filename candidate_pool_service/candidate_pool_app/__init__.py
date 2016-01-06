@@ -1,12 +1,12 @@
 __author__ = 'ufarooqi'
 
 from flask import Flask
-from candidate_pool_service.common import common_config
+from candidate_pool_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 
 app = Flask(__name__)
-app.config.from_object(common_config)
+load_gettalent_config(app.config)
 
-logger = app.config['LOGGER']
+logger = app.config[TalentConfigKeys.LOGGER]
 
 try:
     from candidate_pool_service.common.error_handling import register_error_handlers
@@ -42,8 +42,8 @@ try:
 
     schedule_talent_pool_and_pipelines_daily_stats_update()
 
-    logger.info("Starting candidate_pool_service in %s environment", app.config['GT_ENVIRONMENT'])
+    logger.info("Starting candidate_pool_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 
 except Exception as e:
     logger.exception("Couldn't start candidate_pool_service in %s environment because: %s"
-                     % (app.config['GT_ENVIRONMENT'], e.message))
+                     % (app.config[TalentConfigKeys.ENV_KEY], e.message))
