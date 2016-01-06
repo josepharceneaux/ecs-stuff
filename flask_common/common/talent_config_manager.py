@@ -16,6 +16,9 @@ APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 LOGGING_CONF = os.path.join(APP_ROOT, 'logging.conf')
 logging.config.fileConfig(LOGGING_CONF)
 
+
+# Kindly refer to following url for sample web.cfg
+# https://github.com/gettalent/talent-flask-services/wiki/Local-Development-Setup#local-configurations
 LOCAL_CONFIG_PATH = ".talent/web.cfg"
 
 
