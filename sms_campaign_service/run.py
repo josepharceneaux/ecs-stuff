@@ -4,7 +4,7 @@
 import os
 
 # Service Specific
-from sms_campaign_service.sms_campaign_app.app import app
+from sms_campaign_app.app import app
 
 # Common Utils
 from sms_campaign_service.common.routes import GTApis

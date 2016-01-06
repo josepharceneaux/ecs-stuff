@@ -1,3 +1,4 @@
+
 __author__ = 'erikfarmer'
 import re
 import json
@@ -15,9 +16,6 @@ from sqlalchemy.sql.expression import ClauseElement
 from werkzeug.security import generate_password_hash
 from ..error_handling import ForbiddenError, InvalidUsage
 
-GOOGLE_URL_SHORTENER_API_KEY = 'AIzaSyCT7Gg3zfB0yXaBXSPNVhFCZRJzu9WHo4o'
-GOOGLE_URL_SHORTENER_API_URL = 'https://www.googleapis.com/urlshortener/v1/url?key=' \
-                               + GOOGLE_URL_SHORTENER_API_KEY
 JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
 
 
@@ -123,15 +121,39 @@ def find_missing_items(data_dict, required_fields=None, verify_values_of_all_key
     if not data_dict:  # If data_dict is empty, return all the required_fields as missing_item
         return [{item: ''} for item in required_fields]
     elif verify_values_of_all_keys:
+        # Check if required keys are present
+        missing_keys = get_missing_keys(data_dict)
+        if missing_keys:
+            raise InvalidUsage('Required fields are missing from given data.%s' % missing_keys,
+                               error_code=InvalidUsage.http_status_code())
         # verify that all keys in the data_dict have valid values
         missing_items = [{key: value} for key, value in data_dict.iteritems()
                          if not value and not value == 0]
     else:
+        missing_keys = get_missing_keys(data_dict, required_fields=required_fields)
+        if missing_keys:
+            raise InvalidUsage('Required fields are missing from given data. %s' % missing_keys,
+                               error_code=InvalidUsage.http_status_code())
         # verify that keys of data_dict present in required_field have valid values
         missing_items = [{key: value} for key, value in data_dict.iteritems()
                          if key in required_fields and not value and not value == 0]
     return [missing_item for missing_item in missing_items]
 
+
+def get_missing_keys(data_dict, required_fields=None):
+    """
+    This function returns the keys that are not present in the data_dict.
+    If required_fields is provided, it only checks for those keys otherwise it checks all
+    the keys of data_dict.
+    :param data_dict:
+    :param required_fields:
+    :type data_dict: dict
+    :type required_fields: list | None
+    :return:
+    """
+    missing_keys = filter(lambda required_key: required_key not in data_dict,
+                          required_fields if required_fields else data_dict.keys())
+    return missing_keys
 
 def create_test_user(session, domain_id, password):
     random_email = ''.join(
@@ -188,6 +210,21 @@ def camel_case_to_snake_case(name):
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
 
 
+def snake_case_to_pascal_case(name):
+    """ Convert string or unicode from lower-case underscore to camel-case
+        e.g. appt_type_id --> ApptTypeId
+
+            :Example:
+
+                result = snake_case_to_camel_case('social_network_id')
+                assert result == 'SocialNetworkId'
+    """
+    splitted_string = name.split('_')
+    # use string's class to work on the string to keep its type
+    class_ = name.__class__
+    return class_.join('', map(class_.capitalize, splitted_string))
+
+
 def url_conversion(long_url):
     """
     We use Google's URL Shortener API to shorten the given URL.
@@ -204,7 +241,8 @@ def url_conversion(long_url):
                            error_code=InvalidUsage.http_status_code())
 
     payload = json.dumps({'longUrl': long_url})
-    response = http_request('POST', GOOGLE_URL_SHORTENER_API_URL,
+    response = http_request('POST', 'https://www.googleapis.com/urlshortener/v1/url?key='
+                            + current_app.config['GOOGLE_URL_SHORTENER_API_KEY'],
                             headers=JSON_CONTENT_TYPE_HEADER, data=payload)
     json_data = response.json()
     if 'error' not in json_data:

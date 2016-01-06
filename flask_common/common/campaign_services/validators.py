@@ -7,10 +7,11 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com
 # Standard Imports
 import re
 from datetime import datetime, timedelta
+from dateutil.tz import tzutc
+from flask import current_app
 from werkzeug.exceptions import BadRequest
 
 # Third Party
-from pytz import timezone
 from dateutil.parser import parse
 
 # Common utils
@@ -63,7 +64,7 @@ def is_datetime_in_future(dt):
     """
     if not isinstance(dt, datetime):
         raise InvalidUsage('param should be a datetime object')
-    return dt > datetime.utcnow().replace(tzinfo=timezone('UTC'))
+    return dt > datetime.utcnow().replace(tzinfo=tzutc())
 
 
 def is_datetime_in_valid_format_and_in_future(datetime_str):
@@ -76,6 +77,7 @@ def is_datetime_in_valid_format_and_in_future(datetime_str):
     :return:
     """
     if not is_datetime_in_future(if_str_datetime_in_valid_format_get_datetime_obj(datetime_str)):
+        current_app.config['LOGGER'].error('Datetime str should be in future. %s' % datetime_str)
         raise InvalidUsage("Given datetime(%s) should be in future" % datetime_str)
 
 
@@ -105,7 +107,7 @@ def if_str_datetime_in_valid_format_get_datetime_obj(str_datetime):
     if not isinstance(str_datetime, basestring):
         raise InvalidUsage('param should be a string of datetime')
     validate_datetime_format(str_datetime)
-    return parse(str_datetime).replace(tzinfo=timezone('UTC'))
+    return parse(str_datetime).replace(tzinfo=tzutc())
 
 
 def validation_of_data_to_schedule_campaign(campaign_obj, request):
@@ -172,8 +174,9 @@ def validate_blast_candidate_url_conversion_in_db(campaign_blast_obj, candidate,
     :type candidate: Candidate
     :type url_conversion_obj: UrlConversion
     :exception: ResourceNotFound
+
     **See Also**
-    .. see also:: sms_campaign_url_redirection() function in sms_campaign_app/app.py
+    .. see also:: process_url_redirect() method of CampaignBase class
     """
     # check if candidate exists in database
     if not candidate:

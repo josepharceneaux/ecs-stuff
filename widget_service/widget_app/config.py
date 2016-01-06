@@ -1,6 +1,5 @@
 __author__ = 'erikfarmer'
 import os
-
 # from widget_service.common.utils.handy_functions import random_word
 #
 # def valid_oauth_credentials():
@@ -34,8 +33,9 @@ import os
 #
 #     return c_id, c_secret
 
-# Auth Server URI
-if os.environ.get('GT_ENVIRONMENT') == 'dev':
+
+env = os.getenv('GT_ENVIRONMENT') or 'dev'
+if env == 'dev':
     ENVIRONMENT = 'dev'
     WIDGET_CLIENT_ID = 'dev_client_id'
     WIDGET_CLIENT_SECRET = 'dev_client_secret'
@@ -45,11 +45,11 @@ if os.environ.get('GT_ENVIRONMENT') == 'dev':
     OAUTH_TOKEN_URI = OAUTH_ROOT % '/oauth2/token'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@localhost/talent_local'
     DEBUG = True
-elif os.environ.get('GT_ENVIRONMENT') == 'circle':
+elif env == 'circle':
     ENVIRONMENT = 'circle'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_ci'
     DEBUG = True
-elif os.environ.get('GT_ENVIRONMENT') == 'qa':
+elif env == 'qa':
     ENVIRONMENT = 'qa'
     CANDIDATE_CREATION_URI = 'https://webdev.gettalent.com/web/api/candidates.json'
     OAUTH_ROOT = 'https://secure-webdev.gettalent.com%s'
@@ -57,7 +57,7 @@ elif os.environ.get('GT_ENVIRONMENT') == 'qa':
     OAUTH_TOKEN_URI = OAUTH_ROOT % '/oauth2/token'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!web976892@devdb.gettalent.com/talent_staging'
     DEBUG = False
-elif os.environ.get('GT_ENVIRONMENT') == 'prod':
+elif env == 'prod':
     ENVIRONMENT = 'prod'
     OAUTH_ROOT = 'https://secure.gettalent.com%s'
     OAUTH_AUTHORIZE_URI = OAUTH_ROOT % '/oauth2/authorize'
@@ -67,4 +67,4 @@ else:
     raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")
 
 ENCRYPTION_KEY = 'heylookeveryonewegotasupersecretkeyoverhere'
-SECRET_KEY = os.urandom(24).encode('hex')
+SECRET_KEY = os.getenv('SECRET_KEY')

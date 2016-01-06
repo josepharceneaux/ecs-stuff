@@ -4,9 +4,11 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
     This file contains pyTest fixtures for tests of SMS Campaign Service.
 """
 # Standard Import
+from datetime import timedelta
 import time
 # Application Specific
 # common conftest
+from sms_campaign_service.common.campaign_services.campaign_utils import FrequencyIds
 from sms_campaign_service.common.tests.conftest import *
 
 # Service specific
@@ -27,7 +29,7 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
                                                              SmsCampaignBlast, SmsCampaignSend,
                                                              SmsCampaignSendUrlConversion)
 # Common Utils
-from sms_campaign_service.common.utils.handy_functions import JSON_CONTENT_TYPE_HEADER
+from sms_campaign_service.common.utils.handy_functions import JSON_CONTENT_TYPE_HEADER, to_utc_str
 
 SLEEP_TIME = 10  # needed to add this because tasks run on Celery
 
@@ -37,9 +39,10 @@ CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
                         "smartlist_ids": ""
                         }
 # This is data to schedule an SMS campaign
-CAMPAIGN_SCHEDULE_DATA = {"frequency_id": 2,
-                          "start_datetime": "2015-11-26T08:00:00Z",
-                          "end_datetime": "2015-11-30T08:00:00Z"}
+CAMPAIGN_SCHEDULE_DATA = {
+    "frequency_id": FrequencyIds.ONCE,
+    "start_datetime": to_utc_str(datetime.utcnow() + timedelta(seconds=SLEEP_TIME)),
+    "end_datetime": to_utc_str(datetime.utcnow() + timedelta(hours=1))}
 
 
 def remove_any_user_phone_record_with_twilio_test_number():
@@ -52,9 +55,12 @@ def remove_any_user_phone_record_with_twilio_test_number():
     records = UserPhone.get_by_phone_value(TWILIO_TEST_NUMBER)
     records += UserPhone.get_by_phone_value(TWILIO_INVALID_TEST_NUMBER)
     map(UserPhone.delete, records)
-    records = CandidatePhone.get_by_phone_value(TWILIO_TEST_NUMBER)
-    records += CandidatePhone.get_by_phone_value(TWILIO_INVALID_TEST_NUMBER)
-    map(CandidatePhone.delete, records)
+    test_numbers = [TWILIO_PAID_NUMBER_1, TWILIO_PAID_NUMBER_1, TWILIO_PAID_NUMBER_1,
+                    TWILIO_TEST_NUMBER, TWILIO_INVALID_TEST_NUMBER]
+    candidate_phones = []
+    for test_number in test_numbers:
+        candidate_phones += CandidatePhone.get_by_phone_value(test_number)
+    map(CandidatePhone.delete, candidate_phones)
 
 
 # clean database tables user_phone and candidate_phone first
@@ -197,18 +203,6 @@ def campaign_data_unknown_key_text():
 
 
 @pytest.fixture()
-def campaign_data_missing_smartlist_ids():
-    """
-    This returns invalid data to save an SMS campaign. 'smartlist_ids' required field
-    is missing here.
-    :return:
-    """
-    campaign_data = CREATE_CAMPAIGN_DATA.copy()
-    del campaign_data['smartlist_ids']
-    return campaign_data
-
-
-@pytest.fixture()
 def sms_campaign_of_current_user(campaign_valid_data, user_phone_1):
     """
     This creates the SMS campaign for sammple_user using valid data.
@@ -220,15 +214,16 @@ def sms_campaign_of_current_user(campaign_valid_data, user_phone_1):
 
 
 @pytest.fixture()
-def sms_campaign_of_current_user_with_no_link(campaign_valid_data, user_phone_1):
+def scheduled_sms_campaign_of_current_user(campaign_valid_data, user_phone_1):
     """
-    This creates SMS campaign for sample_user using valid data but 'body_text' has no URL present.
+    This creates the SMS campaign for sample_user using valid data.
     :param campaign_valid_data:
     :param user_phone_1:
     :return:
     """
-    campaign_valid_data['body_text'] = 'HI all'
-    return _create_sms_campaign(campaign_valid_data, user_phone_1)
+    campaign_data = campaign_valid_data.copy()
+    campaign_data.update(CAMPAIGN_SCHEDULE_DATA)
+    return _create_sms_campaign(campaign_data, user_phone_1)
 
 
 @pytest.fixture()
@@ -249,7 +244,7 @@ def create_sms_campaign_blast(sms_campaign_of_current_user):
     :param sms_campaign_of_current_user:
     :return:
     """
-    return SmsCampaignBase.create_or_update_sms_campaign_blast(sms_campaign_of_current_user.id)
+    return SmsCampaignBase.create_sms_campaign_blast(sms_campaign_of_current_user.id)
 
 
 @pytest.fixture()
@@ -286,29 +281,29 @@ def sample_smartlist_2(request, sample_user):
 
 
 @pytest.fixture()
-def sms_campaign_smartlist(sample_smartlist, sms_campaign_of_current_user):
+def sms_campaign_smartlist(sample_smartlist, scheduled_sms_campaign_of_current_user):
     """
-    This associates sample_smartlist with the sms_campaign_of_current_user
+    This associates sample_smartlist with the scheduled_sms_campaign_of_current_user
     :param sample_smartlist:
-    :param sms_campaign_of_current_user:
+    :param scheduled_sms_campaign_of_current_user:
     :return:
     """
-    sms_campaign_smartlist = SmsCampaignSmartlist(smartlist_id=sample_smartlist.id,
-                                                  sms_campaign_id=sms_campaign_of_current_user.id)
+    sms_campaign_smartlist = SmsCampaignSmartlist(
+        smartlist_id=sample_smartlist.id, sms_campaign_id=scheduled_sms_campaign_of_current_user.id)
     SmsCampaignSmartlist.save(sms_campaign_smartlist)
     return sms_campaign_smartlist
 
 
 @pytest.fixture()
-def sms_campaign_smartlist_2(sample_smartlist_2, sms_campaign_of_current_user):
+def sms_campaign_smartlist_2(sample_smartlist_2, scheduled_sms_campaign_of_current_user):
     """
-    This associates sample_smartlist with the sms_campaign_of_current_user
-    :param sample_smartlist:
-    :param sms_campaign_of_current_user:
+    This associates sample_smartlist with the scheduled_sms_campaign_of_current_user
+    :param scheduled_sms_campaign_of_current_user:
     :return:
     """
-    sms_campaign_smartlist = SmsCampaignSmartlist(smartlist_id=sample_smartlist_2.id,
-                                                  sms_campaign_id=sms_campaign_of_current_user.id)
+    sms_campaign_smartlist = SmsCampaignSmartlist(
+        smartlist_id=sample_smartlist_2.id,
+        sms_campaign_id=scheduled_sms_campaign_of_current_user.id)
     SmsCampaignSmartlist.save(sms_campaign_smartlist)
     return sms_campaign_smartlist
 
@@ -397,7 +392,7 @@ def users_with_same_phone(request, sample_user, sample_user_2):
 
 @pytest.fixture()
 def process_send_sms_campaign(sample_user, auth_token,
-                              sms_campaign_of_current_user,
+                              scheduled_sms_campaign_of_current_user,
                               sample_sms_campaign_candidates,
                               sms_campaign_smartlist,
                               candidate_phone_1,
@@ -409,13 +404,13 @@ def process_send_sms_campaign(sample_user, auth_token,
 
     campaign_obj = SmsCampaignBase(sample_user.id)
     # send campaign to candidates, which will be sent by a Celery task
-    campaign_obj.process_send(sms_campaign_of_current_user)
+    campaign_obj.process_send(scheduled_sms_campaign_of_current_user)
     time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
 
 
 @pytest.fixture()
 def url_conversion_by_send_test_sms_campaign(request,
-                                             sms_campaign_of_current_user,
+                                             scheduled_sms_campaign_of_current_user,
                                              process_send_sms_campaign):
     """
     This sends SMS campaign (using process_send_sms_campaign fixture)
@@ -427,7 +422,8 @@ def url_conversion_by_send_test_sms_campaign(request,
     # know about the changes that Celery session has made.
     db.session.commit()
     # get campaign blast
-    sms_campaign_blast = SmsCampaignBlast.get_by_campaign_id(sms_campaign_of_current_user.id)
+    sms_campaign_blast = \
+        SmsCampaignBlast.get_by_campaign_id(scheduled_sms_campaign_of_current_user.id)
     # get campaign sends
     sms_campaign_sends = SmsCampaignSend.get_by_blast_id(str(sms_campaign_blast.id))
     # get if of record of sms_campaign_send_url_conversion for this campaign

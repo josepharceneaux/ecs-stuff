@@ -120,6 +120,14 @@ def create_user(email, domain_id, first_name, last_name, expiration, phone="", d
 
 def send_new_account_email(email, temp_password):
     new_user_email = render_template('new_user.html', email=email, password=temp_password)
-    send_email(source='"GetTalent Registration" <registration@gettalent.com>',
+    send_email(source='"getTalent Registration" <registration@gettalent.com>',
                subject='Setup Your New Account',
+               body=new_user_email, to_addresses=[email], email_format='html')
+
+
+def send_reset_password_email(email, name, reset_password_url, six_digit_token):
+    new_user_email = render_template('reset_password.html', email=email, name=name, six_digit_token=six_digit_token,
+                                     reset_password_url=reset_password_url)
+    send_email(source='"getTalent Registration" <registration@gettalent.com>',
+               subject='getTalent password reset',
                body=new_user_email, to_addresses=[email], email_format='html')

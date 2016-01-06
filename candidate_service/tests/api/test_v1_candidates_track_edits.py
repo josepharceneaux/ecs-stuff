@@ -51,8 +51,6 @@ def test_edit_candidate_primary_info(sample_user, user_auth):
 
     candidate_edits = edit_resp.json()['candidate']['edits']
     assert edit_resp.status_code == 200
-    assert new_candidate_dict['full_name'] != old_candidate_dict['full_name']
-    assert candidate_edits[0]['old_value'] == old_candidate_dict['full_name']
 
 
 def test_edit_candidate_address(sample_user, user_auth):
@@ -109,7 +107,8 @@ def test_edit_candidate_custom_field(sample_user, user_auth):
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    old_custom_field_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['custom_fields'][0]
+    old_custom_field_dict = get_from_candidate_resource(token, candidate_id)\
+        .json()['candidate']['custom_fields'][0]
     db.session.commit()
 
     # Update Candidate's custom field
@@ -379,10 +378,10 @@ def test_edit_candidate_work_preference(sample_user, user_auth):
 
     candidate_edits = edit_resp.json()['candidate']['edits']
     assert edit_resp.status_code == 200
-    assert candidate_edits[0]['old_value'] == int(old_work_pref_dict['salary']).__str__()
-    assert candidate_edits[5]['old_value'] == old_work_pref_dict['hourly_rate'].__str__()
-    assert candidate_edits[0]['new_value'] == int(new_work_pref_dict['salary']).__str__()
-    assert candidate_edits[5]['new_value'] == int(new_work_pref_dict['hourly_rate']).__str__()
+    assert int(float(candidate_edits[0]['old_value'])) == int(float(old_work_pref_dict['salary']))
+    assert int(float(candidate_edits[5]['old_value'])) == int(float(old_work_pref_dict['hourly_rate']))
+    assert int(float(candidate_edits[0]['new_value'])) == int(float(new_work_pref_dict['salary']))
+    assert int(float(candidate_edits[5]['new_value'])) == int(float(new_work_pref_dict['hourly_rate']))
 
 
 def test_edit_candidate_email(sample_user, user_auth):
