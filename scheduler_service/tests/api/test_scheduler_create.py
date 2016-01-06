@@ -30,10 +30,10 @@ class TestSchedulerCreate:
 
     def test_scheduled_job_with_expired_token(self, sample_user, user_auth, job_config):
         """
-        Create a job by hitting the endpoint and make sure response
-        is correct.
-        Schedule a job 5 seconds from now and then expire oauth token after scheduling.
-        After 5 seconds check if token is refreshed.
+        Schedule a job 8 seconds from now and then set token expiry after 5 seconds.
+        So that after 5 seconds token will expire and job will run after 8 seconds.
+        When job time comes, endpoint will call run_job method and which will refresh the expired token.
+        Then check the new expiry time of expired token in test which should be in future
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
@@ -49,12 +49,10 @@ class TestSchedulerCreate:
         current_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=8)
         job_config['start_datetime'] = current_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        # Set the date in past to expire request oauth token.
-        # This is to test that run_job method refresh token or not
+        # Set the expiry after 5 seconds and update token expiry in db
         expiry = datetime.datetime.utcnow() + datetime.timedelta(seconds=5)
         expiry = expiry.strftime('%Y-%m-%d %H:%M:%S')
 
-        # Expire oauth token and update expiry datetime in db
         db.db.session.commit()
         _update_token_expiry_(auth_token_row['user_id'], expiry)
 
@@ -65,7 +63,7 @@ class TestSchedulerCreate:
         data = response.json()
         assert data['id'] is not None
 
-        # Sleep for 12 seconds till the job start
+        # Sleep for 12 seconds till the job start and refreshes oauth token
         sleep(12)
 
         # After running the job first time. Token should be refreshed
