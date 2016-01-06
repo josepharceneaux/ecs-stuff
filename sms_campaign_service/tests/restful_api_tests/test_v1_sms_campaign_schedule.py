@@ -6,11 +6,13 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
 # Third Party Imports
 import json
-
 import requests
-
+from datetime import datetime
+from datetime import timedelta
 
 # Service Specific
+from sms_campaign_service.common.campaign_services.campaign_utils import FrequencyIds
+from sms_campaign_service.common.tests.auth_utilities import to_utc_str
 from sms_campaign_service.common.tests.sample_data import fake
 from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
 from sms_campaign_service.tests.modules.common_functions import assert_method_not_allowed
@@ -55,9 +57,12 @@ class TestSmsCampaignSchedule(object):
         """
         This is test to schedule SMS campaign with past datetime. This should get forbidden error.
         """
+        data = generate_campaign_schedule_data()
+        data['end_datetime'] = to_utc_str(datetime.utcnow() - timedelta(days=1))
+        data['frequency_id'] = FrequencyIds.DAILY
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
                                  headers=valid_header,
-                                 data=json.dumps(generate_campaign_schedule_data()))
+                                 data=json.dumps(data))
         assert response.status_code == InvalidUsage.http_status_code()
 
     def test_campaign_schedule_with_no_auth_header(self, auth_token, sms_campaign_of_current_user):
