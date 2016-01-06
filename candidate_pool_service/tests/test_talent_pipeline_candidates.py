@@ -1,6 +1,6 @@
 __author__ = 'ufarooqi'
-from datetime import timedelta
 from time import sleep
+from datetime import timedelta
 from candidate_pool_service.candidate_pool_app import app
 from candidate_pool_service.common.tests.conftest import *
 from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipelineStats
@@ -140,9 +140,9 @@ def test_update_talent_pipeline_stats(access_token_first, access_token_second, u
                                                                                                'to_date': to_date})
     assert status_code == 200
     assert len(response.get('talent_pipeline_data')) >= 1
-    assert 3 in [talent_pool_data.get('number_of_candidates_removed_or_added') for talent_pool_data in
+    assert 3 in [talent_pipeline_data.get('number_of_candidates_removed_or_added') for talent_pipeline_data in
                  response.get('talent_pipeline_data')]
-    assert 3 in [talent_pool_data.get('total_number_of_candidates') for talent_pool_data in
+    assert 3 in [talent_pipeline_data.get('total_number_of_candidates') for talent_pipeline_data in
                  response.get('talent_pipeline_data')]
 
 

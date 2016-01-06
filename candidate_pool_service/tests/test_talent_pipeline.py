@@ -467,5 +467,3 @@ def test_talent_pipeline_smart_list_api_get(access_token_first, access_token_sec
     assert response['smart_lists'][1]['name'] == test_smart_second.name
     assert response['smart_lists'][1]['user_id'] == test_smart_second.user_id
 
-
-

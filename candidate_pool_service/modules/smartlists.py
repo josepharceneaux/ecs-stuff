@@ -1,5 +1,5 @@
 import json
-
+from flask import request
 from candidate_pool_service.common.models.db import db
 from candidate_pool_service.common.models.smartlist import SmartlistCandidate, Smartlist
 from candidate_pool_service.common.models.candidate import Candidate
@@ -11,7 +11,7 @@ from candidate_pool_service.common.utils.candidate_service_calls import (search_
 __author__ = 'jitesh'
 
 
-def get_candidates(smartlist, access_token, candidate_ids_only=False, count_only=False, max_candidates=0):
+def get_candidates(smartlist, candidate_ids_only=False, count_only=False, max_candidates=0):
     """
     Get the candidates of a smart or dumb list.
     :param smartlist: Smartlist row object
@@ -26,7 +26,7 @@ def get_candidates(smartlist, access_token, candidate_ids_only=False, count_only
             search_params['fields'] = 'id'
         if count_only:
             search_params['fields'] = 'count_only'
-        search_results = search_candidates_from_params(search_params, access_token)
+        search_results = search_candidates_from_params(search_params, request.oauth_token, smartlist.user_id)
     # If a dumblist & getting count only, just do count
     elif count_only:
         count = SmartlistCandidate.query.with_entities(SmartlistCandidate.candidate_id).filter_by(
