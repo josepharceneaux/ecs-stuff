@@ -452,10 +452,6 @@ def test_update_talent_pool_stats(access_token_first, access_token_second, user_
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='POST')
     assert status_code == 200
 
-    # Emptying TalentPoolStats table
-    TalentPoolStats.query.delete()
-    db.session.commit()
-
     # Logged-in user trying to update statistics of all talent_pools in database
     status_code = talent_pool_update_stats(access_token_first)
     assert status_code == 204
