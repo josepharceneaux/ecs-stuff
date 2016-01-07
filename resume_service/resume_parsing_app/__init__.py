@@ -1,8 +1,10 @@
 """Initializer for Resume Parsing App"""
+
 __author__ = 'erikfarmer'
-from flask import Flask
-from resume_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 import config
+from flask import Flask
+from flask.ext.common.common.routes import ResumeApi
+from resume_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 
 app = Flask(__name__)
 load_gettalent_config(app.config)
@@ -17,7 +19,7 @@ try:
     db.app = app
 
     from views import api
-    app.register_blueprint(api.mod, url_prefix='/v1')
+    app.register_blueprint(api.mod, url_prefix='/' + ResumeApi.VERSION + '/')
 
     # wrap the flask app and give a heathcheck url
     from healthcheck import HealthCheck

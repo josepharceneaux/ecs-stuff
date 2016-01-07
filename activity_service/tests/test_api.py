@@ -7,6 +7,7 @@ import json
 import requests
 # Application Specific
 from activity_service.common.utils.handy_functions import random_word
+from flask.ext.common.common.routes import ActivityApiUrl
 from .fixtures import activities_fixture
 from .fixtures import candidate_fixture
 from .fixtures import candidate_source_fixture
@@ -17,12 +18,10 @@ from .fixtures import org_fixture
 from .fixtures import token_fixture
 from .fixtures import user_fixture
 
-APP_ENDPOINT = 'http://127.0.0.1:8002'
-
 
 def test_call_requires_auth(token_fixture):
     # this should become a test for non-aggregate responses.
-    test_url = '{}/activities/1'.format(APP_ENDPOINT)
+    test_url = ActivityApiUrl.ACTIVITIES_PAGE % '1'
     response = requests.get(test_url, headers={'Authorization': 'Bearer {}'.format(
         token_fixture.access_token)})
     assert response.status_code == 200
@@ -32,7 +31,7 @@ def test_call_requires_auth(token_fixture):
 
 
 def test_reponse_is_user_filtered(token_fixture):
-    test_url = '{}/activities/1'.format(APP_ENDPOINT)
+    test_url = ActivityApiUrl.ACTIVITIES_PAGE % '1'
     response = requests.get(test_url, headers={'Authorization': 'Bearer {}'.format(
         token_fixture.access_token)})
     assert json.loads(response.content)['total_count'] == 4
@@ -40,14 +39,14 @@ def test_reponse_is_user_filtered(token_fixture):
 
 def test_response_can_be_time_filtered(token_fixture):
     today = (datetime.today() + timedelta(minutes=-1)).isoformat()
-    test_url = '{}/activities/1?start_time={}'.format(APP_ENDPOINT, today)
+    test_url = ActivityApiUrl.ACTIVITIES_PAGE % '1?start_time={}'.format(today)
     response = requests.get(test_url, headers={'Authorization': 'Bearer {}'.format(
         token_fixture.access_token)})
     assert json.loads(response.content)['total_count'] == 3
 
 
 def test_basic_post(user_fixture, token_fixture):
-    test_url = '{}/activities/'.format(APP_ENDPOINT)
+    test_url = ActivityApiUrl.ACTIVITIES
     response = requests.post(test_url,
                              headers={
                                  'Authorization': 'Bearer {}'.format(token_fixture.access_token),
@@ -63,7 +62,7 @@ def test_basic_post(user_fixture, token_fixture):
 
 
 def test_recent_readable(token_fixture):
-    test_url = '{}/activities/1?aggregate=1'.format(APP_ENDPOINT)
+    test_url = ActivityApiUrl.ACTIVITIES_PAGE % '1?aggregate=1'
     response = requests.get(test_url,
                             headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
     assert response.status_code == 200
@@ -74,5 +73,5 @@ def test_recent_readable(token_fixture):
 
 
 def test_health_check():
-    response = requests.get('{}/healthcheck'.format(APP_ENDPOINT))
+    response = requests.get(ActivityApiUrl.HOST_NAME % '/healthcheck')
     assert response.status_code == 200

@@ -59,7 +59,7 @@ class AuthServiceTestsContext:
 
     def authorize_token(self):
         headers = {'Authorization': 'Bearer %s' % self.access_token}
-        response = requests.get(AuthApiUrl.AUTH_SERVICE_AUTHORIZE_URI, headers=headers)
+        response = requests.get(AuthApiUrl.AUTHORIZE, headers=headers)
         if response.status_code == 200:
             response_data = json.loads(response.text)
             return response.status_code, response_data.get('user_id') if response_data else ''
@@ -82,8 +82,8 @@ class AuthServiceTestsContext:
         else:
             raise Exception("%s is not a valid action" % action)
 
-        response = requests.post(AuthApiUrl.AUTH_SERVICE_TOKEN_REVOKE_URI if action == 'revoke' else
-                                 AuthApiUrl.AUTH_SERVICE_TOKEN_CREATE_URI, data=urlencode(params), headers=headers)
+        response = requests.post(AuthApiUrl.TOKEN_REVOKE if action == 'revoke' else
+                                 AuthApiUrl.TOKEN_CREATE, data=urlencode(params), headers=headers)
         db.session.commit()
         if action == 'revoke':
             return response.status_code
@@ -149,5 +149,5 @@ def test_auth_service(app_context):
 
 def test_health_check():
     import requests
-    response = requests.get('http://127.0.0.1:8001/healthcheck')
+    response = requests.get(AuthApiUrl.AUTH_SERVICE_HOST_NAME % '/healthcheck')
     assert response.status_code == 200

@@ -42,7 +42,7 @@ def require_oauth(allow_jwt_based_auth=False, allow_null_user=False):
                     pass
 
             try:
-                response = requests.get(AuthApiUrl.AUTH_SERVICE_AUTHORIZE_URI, headers={'Authorization': oauth_token})
+                response = requests.get(AuthApiUrl.AUTHORIZE, headers={'Authorization': oauth_token})
             except Exception as e:
                 raise InternalServerError(error_message=e.message)
             if response.status_code == 429:

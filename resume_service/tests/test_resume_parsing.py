@@ -1,4 +1,5 @@
 """Test suite for Flask Resume Parsing MicroService."""
+
 __author__ = 'erik@getTalent.com'
 # Standard library
 import json
@@ -16,15 +17,13 @@ from test_fixtures import token_fixture
 from test_fixtures import user_fixture
 from test_fixtures import phone_label_fixture
 from test_fixtures import product_fixture
-
-APP_URL = 'http://0.0.0.0:8003/v1'
-API_URL = APP_URL + '/parse_resume'
+from flask.ext.common.common.routes import ResumeApiUrl, ResumeApi
 
 
 def test_base_url():
     """Test that the application root lists the endpoint."""
-    base_response = r.get(APP_URL)
-    assert '/parse_resume' in base_response.content
+    base_response = r.get(ResumeApiUrl.API_URL % '')
+    assert ResumeApi.PARSE in base_response.content
 
 
 def test_doc_from_fp_key(token_fixture):
@@ -93,7 +92,7 @@ def test_2448_3264_jpg_by_post(token_fixture):
 def test_no_token_fails():
     """Test that tokens are required."""
     filepicker_key = '0169173d35beaf1053e79fdf1b5db864.docx'
-    test_response = r.post(API_URL, data=dict(filepicker_key=filepicker_key))
+    test_response = r.post(ResumeApiUrl.PARSE, data=dict(filepicker_key=filepicker_key))
     json_obj = json.loads(test_response.content)
     assert 'error' in json_obj
 
@@ -101,7 +100,7 @@ def test_no_token_fails():
 def test_invalid_token_fails():
     """Test that VALID tokens are required."""
     filepicker_key = '0169173d35beaf1053e79fdf1b5db864.docx'
-    test_response = r.post(API_URL,
+    test_response = r.post(ResumeApiUrl.PARSE,
                            headers={'Authorization': 'Bearer %s' % 'invalidtokenzzzz'},
                            data=dict(filepicker_key=filepicker_key))
     json_obj = json.loads(test_response.content)
@@ -117,7 +116,7 @@ def test_v15_pdf_by_post(token_fixture):
 
 def test_health_check():
     import requests
-    response = requests.get('http://127.0.0.1:8003/healthcheck')
+    response = requests.get(ResumeApiUrl.HOST_NAME % '/healthcheck')
     assert response.status_code == 200
 
 
@@ -125,7 +124,7 @@ def fetch_resume_post_response(token_fixture, file_name, create_mode=''):
     """Posts file to local test auth server for json formatted resumes."""
     current_dir = os.path.dirname(__file__)
     with open(os.path.join(current_dir, 'test_resumes/{}'.format(file_name)), 'rb') as resume_file:
-        response = r.post(API_URL,
+        response = r.post(ResumeApiUrl.PARSE,
                             headers={'Authorization': 'Bearer %s' % token_fixture.access_token},
                             data=dict(
                                 # files = dict(resume_file=raw_file),
@@ -139,6 +138,6 @@ def fetch_resume_post_response(token_fixture, file_name, create_mode=''):
 
 def fetch_resume_fp_key_response(token_fixture, fp_key):
     """Posts FilePicker key to local test auth server for json formatted resumes."""
-    test_response = r.post(API_URL, headers={'Authorization': 'Bearer %s' % token_fixture.access_token},
+    test_response = r.post(ResumeApiUrl.PARSE, headers={'Authorization': 'Bearer %s' % token_fixture.access_token},
                            data=dict(filepicker_key=fp_key))
     return json.loads(test_response.content)

@@ -8,6 +8,7 @@
 import os
 
 from scheduler_service import init_app
+from flask.ext.common.common.routes import GTApis
 
 app, celery = init_app()
 
@@ -27,6 +28,6 @@ def scheduler_app():
 if __name__ == '__main__':
     os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
     scheduler_app()
-    app.run(host='0.0.0.0', port=8011, debug=False)
+    app.run(host='0.0.0.0', port=GTApis.SCHEDULER_SERVICE_PORT, debug=False)
 
 
