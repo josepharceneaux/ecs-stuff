@@ -7,13 +7,15 @@ from push_campaign_service.common.routes import PushCampaignApi, PushCampaignApi
 fake = Faker()
 
 
-def send_request(method, url, access_token, data=None):
+def send_request(method, url, access_token, data=None, is_json=True):
     # This method is being used for test cases, so it is sure that method has
     #  a valid value like 'get', 'post' etc.
     request_method = getattr(requests, method)
-    return request_method(url, data=json.dumps(data),
-                          headers={'Authorization': 'Bearer %s' % access_token,
-                                   'Content-Type': 'application/json'})
+    headers = dict(Authorization='Bearer %s' % access_token)
+    if is_json:
+        headers['Content-Type'] = 'application/json'
+        data = json.dumps(data)
+    return request_method(url, data=json.dumps(data), headers=headers)
 
 
 def unauthorize_test(method, url, access_token, data=None):
@@ -24,7 +26,7 @@ def unauthorize_test(method, url, access_token, data=None):
 def missing_key_test(data, key, token):
     del data[key]
     response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token, data)
-    assert response.status_code == 500
+    assert response.status_code == 400
     response = response.json()
     error = response['error']
     assert error['code'] == 7003
@@ -42,6 +44,18 @@ def invalid_value_test(data, key, token, campaign_id):
     assert error['message'] == 'Invalid value for field in campaign data'
     assert error['field'] == key
     assert error['invalid_value'] == data[key]
+
+
+def invalid_data_test(method, url, token):
+    data = None
+    response = send_request(method, url, token, data, is_json=True)
+    assert response.status_code == 400
+    error = response.json()['error']
+    assert error['message'] == 'Invalid POST data. Kindly send valid JSON data'
+    response = send_request(method, url, token, data, is_json=False)
+    assert response.status_code == 400
+    error = response.json()['error']
+    assert error['message'] == 'Kindly send request with JSON data and application/json content-type header'
 
 
 def generate_campaign_data():

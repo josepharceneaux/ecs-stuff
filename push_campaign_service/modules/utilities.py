@@ -14,8 +14,7 @@ def associate_smart_list_with_campaign(_id, camapaign_id):
 def get_valid_json_data(req):
     data = req.get_json()
     if data is None:
-        raise InvalidUsage('No valid JSON data in request. Kindly send request with JSON data and '
-                           'application/json content-type header')
-    if isinstance(data, dict) and not len(data):
-        raise InvalidUsage('POST data is empty. Kindly send required fields.')
+        raise InvalidUsage('Kindly send request with JSON data and application/json content-type header')
+    if not isinstance(data, dict):
+        raise InvalidUsage('Invalid POST data. Kindly send valid JSON data')
     return data

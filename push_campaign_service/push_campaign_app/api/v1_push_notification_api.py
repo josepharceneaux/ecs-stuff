@@ -198,7 +198,8 @@ class PushCampaigns(Resource):
         """
         user = request.user
         data = get_valid_json_data(request)
-        missing_fields = [key for key in ['name', 'body_text', 'url', 'smartlist_ids'] if key not in data or not data[key]]
+        missing_fields = [key for key in ['name', 'body_text',
+                                          'url', 'smartlist_ids'] if key not in data or not data[key]]
         if missing_fields:
             raise RequiredFieldsMissing('Some required fields are missing',
                                         additional_error_info=dict(missing_fields=missing_fields))

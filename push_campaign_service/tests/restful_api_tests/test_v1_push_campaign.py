@@ -28,6 +28,7 @@ class TestCreateCampaign():
         """
         token, is_valid = auth_data
         if is_valid:
+            invalid_data_test('post', PushCampaignApiUrl.CAMPAIGNS, token)
             # First test with missing keys
             for key in ['name', 'body_text', 'url', 'smartlist_ids']:
                 data = campaign_data.copy()
@@ -124,7 +125,7 @@ class TestCampaignById():
             json_response = response.json()
             campaign = json_response['campaign']
             compare_campaign_data(test_campaign, campaign)
-
+            invalid_data_test('put', PushCampaignApiUrl.CAMPAIGN % test_campaign.id, token)
             # Test `raise InvalidUsage('No data given to be updated')`
             data = {}
             response = send_request('put', PushCampaignApiUrl.CAMPAIGN % test_campaign.id, token, data)
@@ -289,13 +290,13 @@ class TestCampaignBlastSends():
             unauthorize_test('get',  PushCampaignApiUrl.BLASTS_SENDS % (test_campaign.id, 1), token)
 
 
-# class TestRegisterCandidateDevice():
-#
-#     # Test URL: /v1/devices [POST]
-#     def test_associate_a_device_to_candidate(self, auth_data, test_candidate):
-#         token, is_valid = auth_data
-#         if is_valid:
-#             pass
-#         else:
-#             # We are testing 401 here. so campaign and blast ids will not matter.
-#             unauthorize_test('post',  PushCampaignApiUrl.DEVICES, token)
+class TestRegisterCandidateDevice():
+
+    # Test URL: /v1/devices [POST]
+    def test_associate_a_device_to_candidate(self, auth_data, test_candidate):
+        token, is_valid = auth_data
+        if is_valid:
+            invalid_data_test('post', PushCampaignApiUrl.DEVICES, token)
+        else:
+            # We are testing 401 here. so campaign and blast ids will not matter.
+            unauthorize_test('post',  PushCampaignApiUrl.DEVICES, token)
