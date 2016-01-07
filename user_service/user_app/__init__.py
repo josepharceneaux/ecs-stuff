@@ -1,6 +1,7 @@
 __author__ = 'ufarooqi'
 
 from flask import Flask
+from flask.ext.common.common.routes import UserServiceApi
 from user_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 
 app = Flask(__name__)
@@ -24,10 +25,10 @@ try:
     from api.domain_v1 import domain_blueprint
     from api.roles_and_groups_v1 import groups_and_roles_blueprint
 
-    app.register_blueprint(users_blueprint, url_prefix='/v1')
-    app.register_blueprint(domain_blueprint, url_prefix='/v1')
-    app.register_blueprint(users_utilities_blueprint, url_prefix='/v1')
-    app.register_blueprint(groups_and_roles_blueprint, url_prefix='/v1')
+    app.register_blueprint(users_blueprint, url_prefix='/' + UserServiceApi.VERSION + '/')
+    app.register_blueprint(domain_blueprint, url_prefix='/' + UserServiceApi.VERSION + '/')
+    app.register_blueprint(users_utilities_blueprint, url_prefix='/' + UserServiceApi.VERSION + '/')
+    app.register_blueprint(groups_and_roles_blueprint, url_prefix='/' + UserServiceApi.VERSION + '/')
 
     # wrap the flask app and give a heathcheck url
     from healthcheck import HealthCheck

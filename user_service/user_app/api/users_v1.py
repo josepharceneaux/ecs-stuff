@@ -1,5 +1,6 @@
 from flask_restful import Resource
 from flask import request, Blueprint
+from flask.ext.common.common.routes import UserServiceApi
 from user_service.common.error_handling import *
 from user_service.common.talent_api import TalentApi
 from user_service.common.models.user import User, db
@@ -207,4 +208,4 @@ class UserApi(Resource):
 
 users_blueprint = Blueprint('users_api', __name__)
 api = TalentApi(users_blueprint)
-api.add_resource(UserApi, "/users", "/users/<int:id>")
+api.add_resource(UserApi, UserServiceApi.USERS, UserServiceApi.USER)

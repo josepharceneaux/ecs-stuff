@@ -147,6 +147,31 @@ class ResumeApiUrl(object):
     PARSE = API_URL % ResumeApi.PARSE
 
 
+class UserServiceApi:
+    """
+    Rest endpoints of user_service
+    """
+
+    def __init__(self):
+        pass
+
+    VERSION = 'v1'
+    USERS = 'users'
+    DOMAINS = 'domains'
+    GROUPS = 'groups'
+    GROUP = GROUPS + '/<int:group_id>/'
+    USER = USERS + "/<int:id>"
+    DOMAIN = DOMAINS + "/<int:id>"
+    USER_ROLES = USERS + "/<int:user_id>/roles"
+    DOMAIN_ROLES = 'domain/<int:domain_id>/roles'
+    DOMAIN_GROUPS = "domain/<int:domain_id>/" + GROUPS
+    DOMAIN_GROUPS_UPDATE = "domain/" + GROUPS + '/<int:group_id>'
+    USER_GROUPS = GROUP + USERS
+    UPDATE_PASSWORD = USERS + '/update_password'
+    FORGOT_PASSWORD = USERS + '/forgot_password'
+    RESET_PASSWORD = USERS + '/reset_password/<token>'
+
+
 class UserServiceApiUrl:
     """
     Rest URLs of user_service
@@ -159,16 +184,18 @@ class UserServiceApiUrl:
     USER_SERVICE_HOST_NAME = _get_host_name(GTApis.USER_SERVICE_NAME,
                                             GTApis.USER_SERVICE_PORT)
     API_URL = USER_SERVICE_HOST_NAME % '/%s/%s' % (API_VERSION, '%s')
-    USERS_API = API_URL % 'users'
-    DOMAINS_API = API_URL % 'domains'
+    USERS = API_URL % UserServiceApi.USERS
+    USER = USERS + '/%s'
+    DOMAINS = API_URL % UserServiceApi.DOMAINS
+    DOMAIN = DOMAINS + '/%s'
     USER_ROLES_API = API_URL % 'users/%s/roles'
     DOMAIN_ROLES_API = API_URL % 'domain/%s/roles'
     DOMAIN_GROUPS_API = API_URL % 'domain/%s/groups'
     DOMAIN_GROUPS_UPDATE_API = API_URL % 'domain/groups/%s'
     USER_GROUPS_API = API_URL % 'groups/%s/users'
-    UPDATE_PASSWORD_API = API_URL % 'users/update_password'
-    FORGOT_PASSWORD_API = API_URL % 'users/forgot_password'
-    RESET_PASSWORD_API = API_URL % 'users/reset_password/%s'
+    UPDATE_PASSWORD_API = API_URL % UserServiceApi.UPDATE_PASSWORD
+    FORGOT_PASSWORD_API = API_URL % UserServiceApi.FORGOT_PASSWORD
+    RESET_PASSWORD_API = API_URL % UserServiceApi.RESET_PASSWORD
 
 
 class WidgetApiUrl(object):

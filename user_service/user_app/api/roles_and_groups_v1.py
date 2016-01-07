@@ -1,5 +1,6 @@
 from flask_restful import Resource
 from flask import request, Blueprint
+from flask.ext.common.common.routes import UserServiceApi
 from user_service.common.error_handling import *
 from user_service.common.talent_api import TalentApi
 from user_service.common.models.user import User, Domain, UserScopedRoles, UserGroup, db
@@ -269,6 +270,6 @@ class DomainGroupsApi(Resource):
 
 groups_and_roles_blueprint = Blueprint('groups_and_roles_api', __name__)
 api = TalentApi(groups_and_roles_blueprint)
-api.add_resource(UserScopedRolesApi, "/users/<int:user_id>/roles")
-api.add_resource(UserGroupsApi, "/groups/<int:group_id>/users")
-api.add_resource(DomainGroupsApi, "/domain/<int:domain_id>/groups", "/domain/groups/<int:group_id>")
+api.add_resource(UserScopedRolesApi, UserServiceApi.USER_ROLES)
+api.add_resource(UserGroupsApi, UserServiceApi.USER_GROUPS)
+api.add_resource(DomainGroupsApi, UserServiceApi.DOMAIN_GROUPS, UserServiceApi.DOMAIN_GROUPS_UPDATE)

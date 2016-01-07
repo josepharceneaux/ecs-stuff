@@ -1,3 +1,4 @@
+
 __author__ = 'ufarooqi'
 from dateutil import parser
 from flask_restful import Resource
@@ -5,6 +6,7 @@ from flask import request, Blueprint
 from user_service.common.error_handling import *
 from user_service.common.models.misc import Culture
 from user_service.common.talent_api import TalentApi
+from flask.ext.common.common.routes import UserServiceApi
 from user_service.common.models.user import User, Domain, db
 from user_service.user_app.user_service_utilties import get_or_create_domain
 from user_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
@@ -194,4 +196,4 @@ class DomainApi(Resource):
 
 domain_blueprint = Blueprint('domain_api', __name__)
 api = TalentApi(domain_blueprint)
-api.add_resource(DomainApi, "/domains", "/domains/<int:id>")
+api.add_resource(DomainApi, UserServiceApi.DOMAINS, UserServiceApi.DOMAIN)
