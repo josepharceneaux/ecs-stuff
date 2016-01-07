@@ -22,20 +22,20 @@ import requests
 
 
 @celery.task(name="send_request")
-def send_request(access_token, secret_key, url, content_type, kwargs):
+def send_request(access_token, secret_key_id, url, content_type, kwargs):
     """
     This method will be called by run_job asynchronously
     :param access_token: authorization token for user
     :param url: the url where to send post request
     :param content_type: the content type i.e json or xml
-    :param secret_key: Redis key which have a corresponding secret value to decrypt data
+    :param secret_key_id: Redis key which have a corresponding secret value to decrypt data
     :param kwargs: post data i.e campaign name, smartlist ids
     :return:
     """
     headers = {
         'Content-Type': content_type,
         'Authorization': access_token,
-        'X-Talent-Server-Key': secret_key
+        'X-Talent-Secret-Key-ID': secret_key_id
     }
 
     response = requests.post(url, data=kwargs, headers=headers)
