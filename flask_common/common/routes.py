@@ -155,6 +155,8 @@ class CandidatePoolApiUrl:
     TALENT_POOL_GET_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "talent-pool/%s/stats"
     TALENT_PIPELINE_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "talent-pipelines/stats"
     TALENT_PIPELINE_GET_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "talent-pipeline/%s/stats"
+    SMARTLIST_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "smartlists/stats"
+    SMARTLIST_GET_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "smartlists/%s/stats"
 
 
 class SpreadsheetImportApiUrl:
