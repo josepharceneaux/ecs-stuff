@@ -1,44 +1,24 @@
-from candidate_service.common.error_handling import (
-    TalentError, NotFoundError, ForbiddenError, InvalidUsage
-)
+# General error codes
+INVALID_INPUT = 3000
+MISSING_INPUT = 3001
+REQUIRED_FIELD_ERROR = 3002
 
+# Error codes for Candidate(s)
+CANDIDATE_NOT_FOUND = 3010
+CANDIDATE_IS_HIDDEN = 3011
+CANDIDATE_FORBIDDEN = 3013
+CANDIDATE_ALREADY_EXISTS = 3014
+INVALID_EMAIL = 3015
+CUSTOM_FIELD_FORBIDDEN = 3016
 
-class CandidateApiException(TalentError):
-    status_code = 3000
+# Error codes for CandidateAddress(s)
+CAN_ADDRESS_NOT_FOUND = 3030
+CAN_ADDRESS_FORBIDDEN = 3031
 
-    def to_dict(self):
-        error_dict = super(CandidateApiException, self).to_dict()
-        error_dict['error']['code'] = self.__class__.status_code
-        return error_dict
+# Error codes for CandidateAreaOfInterest
+AOI_FORBIDDEN = 3040
+AOI_NOT_FOUND = 3041
 
-# ***** NotFound Errors *****
-class CandidateNotFound(CandidateApiException, NotFoundError):
-    status_code = 3010
-
-
-class CandidateIsHidden(CandidateApiException, NotFoundError):
-    status_code = 3011
-
-# ***** Forbidden Errors *****
-class CandidateForbidden(CandidateApiException, ForbiddenError):
-    status_code = 3030
-
-class CustomFieldForbidden(CandidateApiException, ForbiddenError):
-    status_code = 3031
-
-class AOIForbidden(CandidateApiException, ForbiddenError):
-    status_code = 3032
-
-
-# ***** Invalid Errors *****
-class InvalidInput(CandidateApiException, InvalidUsage):
-    status_code = 3050
-
-class InvalidEmail(CandidateApiException, InvalidUsage):
-    status_code = 3051
-
-class CandidateAlreadyExists(CandidateApiException, InvalidUsage):
-    status_code = 3052
-
-class RequiredFieldError(CandidateApiException, InvalidUsage):
-    status_code = 3053
+# Error codes for CandidateCustomField
+CF_FORBIDDEN = 3050
+CF_NOT_FOUND = 3051
