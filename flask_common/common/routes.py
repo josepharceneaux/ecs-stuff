@@ -232,7 +232,7 @@ class CandidatePoolApiUrl(object):
     SMARTLIST_GET_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "smartlists/%s/stats"
 
 
-class SpreadSheetImportApiUrl(object):
+class SpreadsheetImportApiUrl(object):
     """
     Rest URLs of spreadsheet_import_service
     """
