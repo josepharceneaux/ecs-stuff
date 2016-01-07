@@ -9,10 +9,10 @@ from flask import request
 from flask import jsonify
 from flask.ext.cors import CORS
 # Module Specific
-from .parse_lib import parse_resume
-from .utils import create_candidate_from_parsed_resume
-from resume_service.common.utils.talent_s3 import download_file, get_s3_filepicker_bucket_and_conn
 from resume_service.common.utils.auth_utils import require_oauth
+from resume_service.resume_parsing_app.views.parse_lib import _parse_file_picker_resume
+from resume_service.resume_parsing_app.views.batch_lib import add_fp_keys_to_queue
+from resume_service.resume_parsing_app.views.batch_lib import _process_batch_item
 
 PARSE_MOD = Blueprint('resume_api', __name__)
 
@@ -34,7 +34,7 @@ def index():
 
 @PARSE_MOD.route('/parse_resume', methods=['POST'])
 @require_oauth()
-def parse_file_picker_resume():
+def resume_post_reciever():
     """
     Builds a kwargs dict for used in abstracted _parse_file_picker_resume.
     :return: dict: {'candidate': {}}
@@ -61,41 +61,31 @@ def parse_file_picker_resume():
     return jsonify(**(_parse_file_picker_resume(parse_params)))
 
 
-def _parse_file_picker_resume(parse_params):
+@PARSE_MOD.route('/batch', methods=['POST'])
+@require_oauth()
+def post_files_to_queue():
     """
-    Parses a resume based on a provided: filepicker key or binary, filename
-    :return: dict: {'candidate': {}}
+    Endpoint for posting files in format {'filenames': ['file1', 'file2, ...]
+    :return: Error/Success Response.
     """
-    filepicker_key = parse_params.get('filepicker_key')
-    create_candidate = parse_params.get('create_candidate')
-    if filepicker_key:
-        file_picker_bucket, unused_conn = get_s3_filepicker_bucket_and_conn()
-        filename_str = filepicker_key
-        resume_file = download_file(file_picker_bucket, filename_str)
-    elif parse_params.get('filename'):
-        resume_bin = parse_params.get('resume_file')
-        resume_file = StringIO(resume_bin.read())
-        filename_str = parse_params.get('filename')
+    user_id = request.user.id
+    request_json = request.get_json()
+    filepicker_keys = request_json.get('filenames')
+    if filepicker_keys:
+        queue_details = add_fp_keys_to_queue(filepicker_keys, user_id)
+        return queue_details, 201
     else:
-        return {'error': 'Invalid query params'}, 400
-    # Parse the actual resume content.
-    result_dict = parse_resume(file_obj=resume_file, filename_str=filename_str)
-    # Emails are the ONLY thing required to create a candidate.
-    email_present = True if result_dict.get('emails') else False
-    if create_candidate:
-        if email_present:
-            candidate_response = create_candidate_from_parsed_resume(result_dict,
-                                                                     parse_params.get('oauth'))
-            # TODO: add handling for candidate exists case.
-            # Bad Response is:
-            #             '{
-            #   "error": {
-            #     "message": "Candidate already exists, creation failed."
-            #   }
-            # }'
-            candidate_id = json.loads(candidate_response).get('candidates')
-            result_dict['id'] = candidate_id[0]['id'] if candidate_id else None
-        else:
-            return {'error': {'code': 3, 'message': 'Parsed resume did not have email',
-                                        'candidate': result_dict}}, 400
-    return {'candidate': result_dict}
+        return jsonify(**{'error': {'message': 'No filenames provided'}}), 400
+
+
+@PARSE_MOD.route('/process/<int:user_id>', methods=['GET'])
+@require_oauth
+def process_batch_item(user_id):
+    """
+    End Point for getting the processed candidate object representing the first item in a users
+    resume processing queue.
+    :param int user_id: The user who 'owns' the queue.
+    :return: HTTP/JSON response containing parsed resume information.
+    """
+    parsing_response = _process_batch_item(user_id)
+    return jsonify(**parsing_response), 200

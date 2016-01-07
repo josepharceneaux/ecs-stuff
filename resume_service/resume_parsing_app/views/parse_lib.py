@@ -6,21 +6,65 @@ from os.path import splitext
 from time import sleep
 from time import time
 import base64
+import json
 # Third Party
+from BeautifulSoup import BeautifulSoup
+from pdfminer.converter import TextConverter
+from pdfminer.layout import LAParams
 from pdfminer.pdfinterp import PDFResourceManager
 from pdfminer.pdfinterp import process_pdf
-from pdfminer.pdfparser import PDFParser
 from pdfminer.pdfparser import PDFDocument
-from pdfminer.layout import LAParams
-from pdfminer.converter import TextConverter
+from pdfminer.pdfparser import PDFParser
 from xhtml2pdf import pisa
-import requests
-from BeautifulSoup import BeautifulSoup
 import magic
+import requests
 # Module Specific
+from .utils import create_candidate_from_parsed_resume
 from flask import current_app
-from resume_service.resume_parsing_app.views.optic_parse_lib import parse_optic_json
+from resume_service.common.utils.talent_s3 import download_file
+from resume_service.common.utils.talent_s3 import get_s3_filepicker_bucket_and_conn
 from resume_service.resume_parsing_app.views.optic_parse_lib import fetch_optic_response
+from resume_service.resume_parsing_app.views.optic_parse_lib import parse_optic_json
+
+
+def _parse_file_picker_resume(parse_params):
+    """
+    Parses a resume based on a provided: filepicker key or binary, filename
+    :return: dict: {'candidate': {}}
+    """
+    filepicker_key = parse_params.get('filepicker_key')
+    create_candidate = parse_params.get('create_candidate')
+    if filepicker_key:
+        file_picker_bucket, unused_conn = get_s3_filepicker_bucket_and_conn()
+        filename_str = filepicker_key
+        resume_file = download_file(file_picker_bucket, filename_str)
+    elif parse_params.get('filename'):
+        resume_bin = parse_params.get('resume_file')
+        resume_file = StringIO(resume_bin.read())
+        filename_str = parse_params.get('filename')
+    else:
+        return {'error': 'Invalid query params'}, 400
+    # Parse the actual resume content.
+    result_dict = parse_resume(file_obj=resume_file, filename_str=filename_str)
+    # Emails are the ONLY thing required to create a candidate.
+    email_present = True if result_dict.get('emails') else False
+    if create_candidate:
+        if email_present:
+            candidate_response = create_candidate_from_parsed_resume(result_dict,
+                                                                     parse_params.get('oauth'))
+            # TODO: add handling for candidate exists case.
+            # Bad Response is:
+            #             '{
+            #   "error": {
+            #     "message": "Candidate already exists, creation failed."
+            #   }
+            # }'
+            candidate_id = json.loads(candidate_response).get('candidates')
+            result_dict['id'] = candidate_id[0]['id'] if candidate_id else None
+        else:
+            return {'error': {'code': 3, 'message': 'Parsed resume did not have email',
+                                        'candidate': result_dict}}, 400
+    return {'candidate': result_dict}
 
 
 def parse_resume(file_obj, filename_str):

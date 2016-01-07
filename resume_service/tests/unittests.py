@@ -24,6 +24,7 @@ from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candid
 from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_phones
 from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_skills
 from resume_service.resume_parsing_app.views.batch_lib import add_fp_keys_to_queue
+# from resume_service.resume_parsing_app.views.batch_lib  import _process_batch_item
 
 EDUCATIONS_KEYS = ('city', 'degrees', 'state', 'country', 'school_name')
 WORK_EXPERIENCES_KEYS = ('city', 'state', 'end_date', 'country', 'company', 'role', 'is_current',
@@ -157,13 +158,26 @@ def test_add_single_item_to_batch_queue():
     queue_string = 'batch:{}:fp_keys'.format(user_id)
     response = add_fp_keys_to_queue(['file1'], user_id)
     redis_client.expire(queue_string, 20)
-    assert response == '{} - Size: {}'.format(queue_string, 1)
+    assert response == {'redis_key': queue_string, 'quantity': 1}
+
 
 def test_add_multiple_items_to_batch_queue():
     user_id = random_word(6)
     file_count = random.randrange(1, 100)
     filenames = ['file{}'.format(i) for i in xrange(file_count)]
     queue_string = 'batch:{}:fp_keys'.format(user_id)
-    response = add_fp_keys_to_queue(filenames, user_id)
-    redis_client.expire(queue_string, 20)
-    assert response == {'redis_key': queue_string, 'quantity': file_count}
+    queue_status = add_fp_keys_to_queue(filenames, user_id)
+    redis_client.expire(queue_string, 10)
+    assert queue_status == {'redis_key': queue_string, 'quantity': file_count}
+
+# This could be useful for debugging but requires an application context (keys in .cfg) to run.
+# TODO: investigate 'offline' options in talent_s3 lib
+# def test_process_batch_item_without_saving():
+#     # Create a single file queue.
+#     user_id = random_word(6)
+#     queue_string = 'batch:{}:fp_keys'.format(user_id)
+#     unused_queue_status = add_fp_keys_to_queue(['0169173d35beaf1053e79fdf1b5db864.docx'], user_id)
+#     redis_client.expire(queue_string, 10)
+#     # Mock a call to process/<user_id> endpoint
+#     candidate_response = _process_batch_item(user_id, create_candidate=False)
+#     assert 'candidate' in candidate_response

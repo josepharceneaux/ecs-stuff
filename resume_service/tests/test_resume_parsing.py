@@ -6,6 +6,8 @@ import os
 # Third party
 import requests as r
 # Module Specific.
+from resume_service.common.redis_conn import redis_client
+from resume_service.resume_parsing_app.views.batch_lib import add_fp_keys_to_queue
 # Test fixtures, imports required even though not 'used'
 from resume_service.tests.test_fixtures import client_fixture
 from resume_service.tests.test_fixtures import country_fixture
@@ -20,6 +22,7 @@ from resume_service.tests.test_fixtures import product_fixture
 
 APP_URL = 'http://0.0.0.0:8003/v1'
 API_URL = APP_URL + '/parse_resume'
+BATCH_URL = APP_URL + '/batch'
 
 
 def test_base_url():
@@ -114,6 +117,17 @@ def test_v15_pdf_by_post(token_fixture):
     response = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode='True')
     assert 'candidate' in response
     assert 'id' in response['candidate']
+
+
+def test_batch_processing(user_fixture):
+    # create a single file queue
+    user_id = user_fixture.id
+    queue_string = 'batch:{}:fp_keys'.format(user_id)
+    unused_queue_status = add_fp_keys_to_queue(['0169173d35beaf1053e79fdf1b5db864.docx'], user_id)
+    redis_client.expire(queue_string, 10)
+    # mock hit from scheduler service.
+    response = r.get(BATCH_URL + '/{}'.format(user_id))
+    pass
 
 
 def test_health_check():
