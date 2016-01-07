@@ -153,7 +153,7 @@ class CandidatesResource(Resource):
                                                        user_domain_id=authed_user.domain_id)
             if not is_authorized:
                 raise ForbiddenError(error_message="Unauthorized custom field IDs",
-                                     error_code=CUSTOM_FIELD_FORBIDDEN)
+                                     error_code=CF_FORBIDDEN)
 
             # Prevent user from adding area(s) of interest to other domains
             areas_of_interest = candidate_dict.get('areas_of_interest') or []
@@ -419,12 +419,12 @@ class CandidateAddressResource(Resource):
             candidate_address = CandidateAddress.get_by_id(_id=address_id)
             if not candidate_address:
                 raise NotFoundError(error_message='Candidate address not found',
-                                    error_code=CAN_ADDRESS_NOT_FOUND)
+                                    error_code=ADDRESS_NOT_FOUND)
 
             # Address must belong to Candidate
             if candidate_address.candidate_id != candidate_id:
                 raise ForbiddenError(error_message='Not authorized',
-                                     error_code=CAN_ADDRESS_FORBIDDEN)
+                                     error_code=ADDRESS_FORBIDDEN)
 
             db.session.delete(candidate_address)
 
@@ -562,16 +562,18 @@ class CandidateEducationResource(Resource):
         if education_id:  # Delete specified Candidate's education
             can_education = CandidateEducation.get_by_id(_id=education_id)
             if not can_education:
-                raise NotFoundError(error_message='Education not found')
+                raise NotFoundError(error_message='Education not found',
+                                    error_code=EDUCATION_NOT_FOUND)
 
             # Education must belong to Candidate
             if can_education.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized')
+                raise ForbiddenError(error_message='Not authorized', error_code=EDUCATION_FORBIDDEN)
 
             db.session.delete(can_education)
 
         else:  # Delete all of Candidate's educations
-            can_educations = db.session.query(CandidateEducation).filter_by(candidate_id=candidate_id).all()
+            can_educations = db.session.query(CandidateEducation).\
+                filter_by(candidate_id=candidate_id).all()
             for can_education in can_educations:
                 db.session.delete(can_education)
 
@@ -607,18 +609,20 @@ class CandidateEducationDegreeResource(Resource):
                 filter(CandidateEducation.candidate_id == candidate_id).\
                 filter(CandidateEducationDegree.id == degree_id).first()
             if not candidate_degree:
-                raise NotFoundError(error_message='Education degree not found.')
+                raise NotFoundError(error_message='Education degree not found',
+                                    error_code=DEGREE_NOT_FOUND)
 
             db.session.delete(candidate_degree)
 
         else: # Delete all degrees
             education = CandidateEducation.get_by_id(_id=education_id)
             if not education:
-                raise NotFoundError(error_message='Education not found')
+                raise NotFoundError(error_message='Education not found',
+                                    error_code=EDUCATION_NOT_FOUND)
 
             # Education must belong to candidate
             if education.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not Authorized')
+                raise ForbiddenError(error_message='Not Authorized', error_code=EDUCATION_FORBIDDEN)
 
             degrees = education.candidate_education_degrees
             for degree in degrees:
@@ -660,26 +664,30 @@ class CandidateEducationDegreeBulletResource(Resource):
                 filter(CandidateEducationDegree.id == degree_id).\
                 filter(CandidateEducationDegreeBullet.id == bullet_id).first()
             if not candidate_degree_bullet:
-                raise NotFoundError(error_message='Degree bullet not found.')
+                raise NotFoundError(error_message='Degree bullet not found',
+                                    error_code=DEGREE_NOT_FOUND)
 
             db.session.delete(candidate_degree_bullet)
 
         else: # Delete all bullets
             education = CandidateEducation.get_by_id(_id=education_id)
             if not education:
-                raise NotFoundError(error_message='Candidate education not found.')
+                raise NotFoundError(error_message='Candidate education not found',
+                                    error_code=EDUCATION_NOT_FOUND)
 
             # Education must belong to Candidate
             if education.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized')
+                raise ForbiddenError(error_message='Not authorized', error_code=EDUCATION_FORBIDDEN)
 
             degree = db.session.query(CandidateEducationDegree).get(degree_id)
             if not degree:
-                raise NotFoundError(error_message='Candidate education degree not found.')
+                raise NotFoundError(error_message='Candidate education degree not found',
+                                    error_code=DEGREE_NOT_FOUND)
 
             degree_bullets = degree.candidate_education_degree_bullets
             if not degree_bullets:
-                raise NotFoundError(error_message='Candidate education degree bullet not found.')
+                raise NotFoundError(error_message='Candidate education degree bullet not found',
+                                    error_code=DEGREE_BULLET_NOT_FOUND)
 
             for degree_bullet in degree_bullets:
                 db.session.delete(degree_bullet)
@@ -712,16 +720,19 @@ class CandidateExperienceResource(Resource):
         if experience_id:  # Delete specified experience
             experience = CandidateExperience.get_by_id(_id=experience_id)
             if not experience:
-                raise NotFoundError(error_message='Candidate experience not found')
+                raise NotFoundError(error_message='Candidate experience not found',
+                                    error_code=EXPERIENCE_NOT_FOUND)
 
             # Experience must belong to Candidate
             if experience.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized')
+                raise ForbiddenError(error_message='Not authorized',
+                                     error_code=EXPERIENCE_FORBIDDEN)
 
             db.session.delete(experience)
 
         else:  # Delete all experiences
-            experiences = db.session.query(CandidateExperience).filter_by(candidate_id=candidate_id).all()
+            experiences = db.session.query(CandidateExperience).\
+                filter_by(candidate_id=candidate_id).all()
             for experience in experiences:
                 db.session.delete(experience)
 
@@ -758,22 +769,26 @@ class CandidateExperienceBulletResource(Resource):
                         filter(CandidateExperience.id == experience_id).\
                         filter(CandidateExperience.candidate_id == candidate_id).first()
             if not bullet:
-                raise NotFoundError(error_message='Candidate experience bullet not found')
+                raise NotFoundError(error_message='Candidate experience bullet not found',
+                                    error_code=EXPERIENCE_BULLET_NOT_FOUND)
 
             db.session.delete(bullet)
 
         else: # Delete all bullets
             experience = CandidateExperience.get_by_id(_id=experience_id)
             if not experience:
-                raise NotFoundError(error_message='Candidate experience not found')
+                raise NotFoundError(error_message='Candidate experience not found',
+                                    error_code=EXPERIENCE_NOT_FOUND)
 
-            # Experience msut belong to Candidate
+            # Experience must belong to Candidate
             if experience.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized')
+                raise ForbiddenError(error_message='Not authorized',
+                                     error_code=EXPERIENCE_FORBIDDEN)
 
             bullets = experience.candidate_experience_bullets
             if not bullets:
-                raise NotFoundError(error_message='Candidate experience bullet not found')
+                raise NotFoundError(error_message='Candidate experience bullet not found',
+                                    error_code=EXPERIENCE_BULLET_NOT_FOUND)
 
             for bullet in bullets:
                 db.session.delete(bullet)
@@ -806,11 +821,12 @@ class CandidateEmailResource(Resource):
         if email_id: # Delete specified email
             email = CandidateEmail.get_by_id(_id=email_id)
             if not email:
-                raise NotFoundError(error_message='Candidate email not found')
+                raise NotFoundError(error_message='Candidate email not found',
+                                    error_code=EMAIL_NOT_FOUND)
 
             # Email must belong to candidate
             if email.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized')
+                raise ForbiddenError(error_message='Not authorized', error_code=EMAIL_FORBIDDEN)
 
             db.session.delete(email)
 
@@ -847,16 +863,18 @@ class CandidateMilitaryServiceResource(Resource):
         if military_service_id:  # Delete specified military-service
             military_service = CandidateMilitaryService.get_by_id(_id=military_service_id)
             if not military_service:
-                raise NotFoundError(error_message='Candidate military service not found')
+                raise NotFoundError(error_message='Candidate military service not found',
+                                    error_code=MILITARY_NOT_FOUND)
 
             # CandidateMilitaryService must belong to Candidate
             if military_service.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized')
+                raise ForbiddenError(error_message='Not authorized', error_code=MILITARY_FORBIDDEN)
 
             db.session.delete(military_service)
 
         else:  # Delete all of Candidate's military services
-            military_services = db.session.query(CandidateMilitaryService).filter_by(candidate_id=candidate_id).all()
+            military_services = db.session.query(CandidateMilitaryService).\
+                filter_by(candidate_id=candidate_id).all()
             for military_service in military_services:
                 db.session.delete(military_service)
 
@@ -888,11 +906,12 @@ class CandidatePhoneResource(Resource):
         if phone_id:  # Delete specified phone
             phone = CandidatePhone.get_by_id(_id=phone_id)
             if not phone:
-                raise NotFoundError(error_message='Candidate phone not found')
+                raise NotFoundError(error_message='Candidate phone not found',
+                                    error_code=PHONE_NOT_FOUND)
 
             # Phone must belong to Candidate
             if phone.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized')
+                raise ForbiddenError(error_message='Not authorized', error_code=PHONE_FORBIDDEN)
 
             db.session.delete(phone)
 
@@ -929,11 +948,13 @@ class CandidatePreferredLocationResource(Resource):
         if preferred_location_id:  # Delete specified preferred location
             preferred_location = CandidatePreferredLocation.get_by_id(_id=preferred_location_id)
             if not preferred_location_id:
-                raise NotFoundError(error_message='Candidate preferred location not found')
+                raise NotFoundError(error_message='Candidate preferred location not found',
+                                    error_code=PREFERRED_LOCATION_NOT_FOUND)
 
             # Preferred location must belong to Candidate
             if preferred_location.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized')
+                raise ForbiddenError(error_message='Not authorized',
+                                     error_code=PREFERRED_LOCATION_FORBIDDEN)
 
             db.session.delete(preferred_location)
 
@@ -972,11 +993,12 @@ class CandidateSkillResource(Resource):
             # skill = CandidateSkill.get_by_id(_id=skill_id)
             skill = db.session.query(CandidateSkill).get(skill_id)
             if not skill:
-                raise NotFoundError(error_message='Candidate skill not found')
+                raise NotFoundError(error_message='Candidate skill not found',
+                                    error_code=SKILL_NOT_FOUND)
 
             # Skill must belong to Candidate
             if skill.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized')
+                raise ForbiddenError(error_message='Not authorized', error_code=SKILL_FORBIDDEN)
 
             db.session.delete(skill)
 
@@ -1015,11 +1037,12 @@ class CandidateSocialNetworkResource(Resource):
             social_network = db.session.query(CandidateSocialNetwork).get(social_networks_id)
 
             if not social_network:
-                raise NotFoundError(error_message='Candidate social network not found')
+                raise NotFoundError(error_message='Candidate social network not found',
+                                    error_code=SN_NOT_FOUND)
 
             # Social network must belong to Candidate
             if social_network.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized')
+                raise ForbiddenError(error_message='Not authorized', error_code=SN_FORBIDDEN)
 
             db.session.delete(social_network)
 
@@ -1052,11 +1075,12 @@ class CandidateWorkPreferenceResource(Resource):
 
         work_preference = CandidateWorkPreference.get_by_id(_id=work_preference_id)
         if not work_preference:
-            raise NotFoundError(error_message='Candidate work preference not found.')
+            raise NotFoundError(error_message='Candidate work preference not found',
+                                error_code=WORK_PREF_NOT_FOUND)
 
         # CandidateWorkPreference must belong to Candidate
         if work_preference.candidate_id != candidate_id:
-            raise ForbiddenError(error_message='Not authorized')
+            raise ForbiddenError(error_message='Not authorized', error_code=WORK_PREF_FORBIDDEN)
 
         db.session.delete(work_preference)
         db.session.commit()
@@ -1099,5 +1123,5 @@ class CandidateOpenWebResource(Resource):
             candiate = fetch_candidate_info(find_candidate)
             return {'candidate': candiate}
         else:
-            raise NotFoundError(error_message="Candidate not found")
+            raise NotFoundError(error_message="Candidate not found", error_code=CANDIDATE_NOT_FOUND)
 
