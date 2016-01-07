@@ -98,7 +98,7 @@ def get_valid_datetime_from_dict(data, key):
     return value
 
 
-def get_valid_integer(data, key):
+def get_valid_integer_from_dict(data, key):
     """
     Check if integer is valid, if no, then raise invalid value exception
     """
@@ -109,7 +109,7 @@ def get_valid_integer(data, key):
     return value
 
 
-def get_valid_url(data, key):
+def get_valid_url_from_dict(data, key):
     """
     Check if url is valid, if no, then raise invalid value exception
     """

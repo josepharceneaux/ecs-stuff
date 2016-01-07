@@ -29,8 +29,8 @@ from scheduler_service.common.error_handling import InvalidUsage
 from scheduler_service.common.routes import AuthApiUrl
 from scheduler_service.common.utils.handy_functions import http_request
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
-from scheduler_service.common.utils.validators import get_valid_data, get_valid_url, get_valid_datetime, \
-    get_valid_integer
+from scheduler_service.common.utils.validators import get_valid_data_from_dict, get_valid_url_from_dict, \
+    get_valid_datetime_from_dict, get_valid_integer_from_dict
 from scheduler_service.custom_exceptions import TriggerTypeError, JobNotCreatedError
 from scheduler_service.tasks import send_request
 
@@ -93,7 +93,7 @@ def validate_one_time_job(data):
     :return:
     """
     valid_data = dict()
-    run_datetime = get_valid_datetime(data, 'run_datetime')
+    run_datetime = get_valid_datetime_from_dict(data, 'run_datetime')
     valid_data.update({'run_datetime': run_datetime})
 
     current_datetime = datetime.datetime.utcnow()
@@ -112,9 +112,9 @@ def validate_periodic_job(data):
     :return:
     """
     valid_data = dict()
-    frequency = get_valid_integer(data, 'frequency')
-    start_datetime = get_valid_datetime(data, 'start_datetime')
-    end_datetime = get_valid_datetime(data, 'end_datetime')
+    frequency = get_valid_integer_from_dict(data, 'frequency')
+    start_datetime = get_valid_datetime_from_dict(data, 'start_datetime')
+    end_datetime = get_valid_datetime_from_dict(data, 'end_datetime')
 
     valid_data.update({'start_datetime': start_datetime})
     valid_data.update({'end_datetime': end_datetime})
@@ -151,14 +151,14 @@ def schedule_job(data, user_id=None, access_token=None):
     job_config = dict()
     job_config['post_data'] = data.get('post_data', dict())
     content_type = data.get('content_type', 'application/json')
-    job_config['task_type'] = get_valid_data(data, 'task_type')
-    job_config['url'] = get_valid_url(data, 'url')
+    job_config['task_type'] = get_valid_data_from_dict(data, 'task_type')
+    job_config['url'] = get_valid_url_from_dict(data, 'url')
 
     # Server to Server call. We check if a job with a certain 'task_name'
     # is already running as we only allow one such task to run at a time.
     # If there is already such task we raise an exception.
     if user_id is None:
-        job_config['task_name'] = get_valid_data(data, 'task_name')
+        job_config['task_name'] = get_valid_data_from_dict(data, 'task_name')
         jobs = scheduler.get_jobs()
         jobs = filter(lambda task: task.name == job_config['task_name'], jobs)
         # There should be a unique task named job. If a job already exist then it should raise error
