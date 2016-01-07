@@ -26,6 +26,6 @@ try:
 
     logger.info("Starting resume_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 
-except Exception as e:
+except Exception as error:
     logger.exception("Couldn't start resume_service in %s environment because: %s"
-                     % (app.config[TalentConfigKeys.ENV_KEY], e.message))
+                     % (app.config[TalentConfigKeys.ENV_KEY], error.message))

@@ -31,7 +31,7 @@ def _process_batch_item(user_id, create_candidate=True):
     fp_key = redis_client.lpop(queue_string)
     # LPOP returns none if the list is empty so we should end our current batch.
     if fp_key is None:
-        return jsonify(**{'error': {'message': 'Empty Queue for user'.format(user_id)}})
+        return jsonify(**{'error': {'message': 'Empty Queue for user: {}'.format(user_id)}})
 
     # Adding none here allows for unit-testing and will still result in unauthorized responses
     # given a user does not have a Token.

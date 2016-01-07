@@ -63,7 +63,7 @@ def _parse_file_picker_resume(parse_params):
             result_dict['id'] = candidate_id[0]['id'] if candidate_id else None
         else:
             return {'error': {'code': 3, 'message': 'Parsed resume did not have email',
-                                        'candidate': result_dict}}, 400
+                              'candidate': result_dict}}, 400
     return {'candidate': result_dict}
 
 
@@ -74,17 +74,7 @@ def parse_resume(file_obj, filename_str):
     :param str filename_str: The file_obj file name.
     :return: A dictionary of processed candidate data or an appropriate error message.
     """
-    """
 
-    Args:
-        file_obj: .
-        filename_str: the file's name
-        is_test_parser: debugging/test mode Bool.
-
-    Returns:
-        Dictionary containing error message or candidate data.
-
-    """
     current_app.logger.info("Beginning parse_resume(%s)", filename_str)
     file_ext = basename(splitext(filename_str.lower())[-1]) if filename_str else ""
 
@@ -181,12 +171,7 @@ def ocr_image(img_file_obj, export_format='pdfSearchable'):
     certain number of tries.
     :param cStringIO.StringI img_file_obj: File initially posted to the resume parsing service.
     :param string export_format: Abby OCR param.
-    :return:
-    """
-    """
-
-    Return:
-        Image file OCR'd in desired format.
+    :return: Image file OCR'd in desired format.
     """
 
     abby_ocr_api_auth_tuple = ('gettalent', 'lfnJdQNWyevJtg7diX7ot0je')

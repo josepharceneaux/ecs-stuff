@@ -9,6 +9,7 @@ import requests as r
 from resume_service.common.redis_conn import redis_client
 from resume_service.resume_parsing_app.views.batch_lib import add_fp_keys_to_queue
 # Test fixtures, imports required even though not 'used'
+# TODO: Look into importing these once and use via namespacing.
 from resume_service.tests.test_fixtures import client_fixture
 from resume_service.tests.test_fixtures import country_fixture
 from resume_service.tests.test_fixtures import culture_fixture
