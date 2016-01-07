@@ -23,8 +23,8 @@ from urllib import urlencode
 # Application imports
 from scheduler_service.common.models.user import Token
 from scheduler_service import logger
-from scheduler_service.common.models.user import User
 from scheduler_service.apscheduler_config import executors, job_store, jobstores
+from scheduler_service.common.models.user import User
 from scheduler_service.common.error_handling import InvalidUsage
 from scheduler_service.common.routes import AuthApiUrl
 from scheduler_service.common.utils.handy_functions import http_request
@@ -131,8 +131,9 @@ def validate_periodic_job(data):
     current_datetime = current_datetime.replace(tzinfo=timezone('UTC'))
 
     # If job is not in 0-30 seconds in past or greater than current datetime.
-    if not ((current_datetime - datetime.timedelta(seconds=REQUEST_TIMEOUT)) < start_datetime <
-                (end_datetime - datetime.timedelta(seconds=frequency))):
+    past_datetime = current_datetime - datetime.timedelta(seconds=REQUEST_TIMEOUT)
+    future_datetime = end_datetime - datetime.timedelta(seconds=frequency)
+    if not (past_datetime < start_datetime < future_datetime):
         raise InvalidUsage("start_datetime and end_datetime should be in future.")
 
     return valid_data
@@ -228,8 +229,11 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
     elif 'bearer' in access_token.lower():
         headers = {'content-type': 'application/x-www-form-urlencoded'}
         token = Token.get_token(access_token=access_token.split(' ')[1])
+        if not token:
+            raise InvalidUsage("Wrong token provided. Token is expired or not present in db.")
         # If token has expired we refresh it
-        if token and (token.expires - datetime.timedelta(seconds=REQUEST_TIMEOUT)) < datetime.datetime.utcnow():
+        past_datetime = token.expires - datetime.timedelta(seconds=REQUEST_TIMEOUT)
+        if token and past_datetime < datetime.datetime.utcnow():
             data = {
                 'client_id': token.client_id,
                 'client_secret': token.client.client_secret,
