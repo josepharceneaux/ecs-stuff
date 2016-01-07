@@ -31,8 +31,10 @@ from candidate_service.common.models.misc import (Country, AreaOfInterest)
 from candidate_service.common.models.user import User
 
 # Error handling
-from candidate_service.common.error_handling import InvalidUsage, NotFoundError, UnauthorizedError, ForbiddenError
-from candidate_service.custom_exceptions import CandidateAlreadyExists, RequiredFieldError
+from candidate_service.common.error_handling import (
+    InvalidUsage, NotFoundError, UnauthorizedError, ForbiddenError
+)
+from candidate_service.custom_exceptions import *
 
 # Validations
 from candidate_service.common.utils.validators import (sanitize_zip_code, is_number, format_phone_number)
@@ -613,7 +615,8 @@ def create_or_update_candidate_from_params(
 
     # Raise an error if creation is requested and candidate_id is provided/found
     if candidate_id and is_creating:
-        raise CandidateAlreadyExists(error_message="Candidate already exists, creation failed")
+        raise InvalidUsage(error_message='Candidate already exists, creation failed.',
+                           error_code=CANDIDATE_ALREADY_EXISTS)
 
     # Update if an update is requested and candidate_id is provided/found
     elif candidate_id and is_updating:
@@ -621,7 +624,8 @@ def create_or_update_candidate_from_params(
 
     # Update is not possible without candidate ID
     elif not candidate_id and is_updating:
-        raise RequiredFieldError(error_message="Candidate ID is required for updating.")
+        raise InvalidUsage(error_message='Candidate ID is required for updating',
+                           error_code=MISSING_INPUT)
 
     if is_update:  # Update Candidate
         candidate_id = _update_candidate(first_name, middle_name, last_name,
