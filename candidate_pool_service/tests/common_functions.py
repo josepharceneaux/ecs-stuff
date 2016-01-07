@@ -124,7 +124,6 @@ def talent_pool_update_stats(access_token):
 
     headers = {'Authorization': 'Bearer %s' % access_token}
     response = requests.post(url=CandidatePoolApiUrl.TALENT_POOL_STATS, headers=headers)
-    print response.json()
     return response.status_code
 
 
