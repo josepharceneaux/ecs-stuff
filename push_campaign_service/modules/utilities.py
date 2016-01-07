@@ -17,4 +17,6 @@ def get_valid_json_data(req):
         raise InvalidUsage('Kindly send request with JSON data and application/json content-type header')
     if not isinstance(data, dict):
         raise InvalidUsage('Invalid POST data. Kindly send valid JSON data')
+    if not len(data):
+        raise InvalidUsage('Request data is empty')
     return data

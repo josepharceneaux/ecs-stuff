@@ -15,7 +15,7 @@ def send_request(method, url, access_token, data=None, is_json=True):
     if is_json:
         headers['Content-Type'] = 'application/json'
         data = json.dumps(data)
-    return request_method(url, data=json.dumps(data), headers=headers)
+    return request_method(url, data=data, headers=headers)
 
 
 def unauthorize_test(method, url, access_token, data=None):
@@ -26,7 +26,7 @@ def unauthorize_test(method, url, access_token, data=None):
 def missing_key_test(data, key, token):
     del data[key]
     response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token, data)
-    assert response.status_code == 400
+    assert response.status_code == 500
     response = response.json()
     error = response['error']
     assert error['code'] == 7003
@@ -51,7 +51,21 @@ def invalid_data_test(method, url, token):
     response = send_request(method, url, token, data, is_json=True)
     assert response.status_code == 400
     error = response.json()['error']
-    assert error['message'] == 'Invalid POST data. Kindly send valid JSON data'
+    assert error['message'] == 'Kindly send request with JSON data and application/json content-type header'
+    response = send_request(method, url, token, data, is_json=False)
+    assert response.status_code == 400
+    error = response.json()['error']
+    assert error['message'] == 'Kindly send request with JSON data and application/json content-type header'
+    data = {}
+    response = send_request(method, url, token, data, is_json=True)
+    assert response.status_code == 400
+    error = response.json()['error']
+    assert error['message'] == 'Request data is empty'
+    response = send_request(method, url, token, data, is_json=False)
+    assert response.status_code == 400
+    error = response.json()['error']
+    assert error['message'] == 'Kindly send request with JSON data and application/json content-type header'
+    data = get_fake_dict()
     response = send_request(method, url, token, data, is_json=False)
     assert response.status_code == 400
     error = response.json()['error']
@@ -66,6 +80,26 @@ def generate_campaign_data():
         "body_text": fake.paragraph(1),
         "url": fake.url()
     }
+    return data
+
+
+def get_fake_dict():
+    """
+    This method just creates a dictionary with 3 random keys and values
+
+    : Example:
+
+        data = {
+                    'excepturi': 'qui',
+                    'unde': 'ipsam',
+                    'magni': 'voluptate'
+                }
+    :return: data
+    :rtype dict
+    """
+    data = dict()
+    for _ in range(3):
+        data[fake.word()] = fake.word()
     return data
 
 
