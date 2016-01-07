@@ -24,10 +24,7 @@ from candidate_service.common.utils.auth_utils import require_oauth
 
 # Error handling
 from candidate_service.common.error_handling import ForbiddenError, InvalidUsage, NotFoundError
-from candidate_service.custom_exceptions import (
-    CandidateNotFound, CandidateIsHidden, CandidateForbidden, InvalidEmail,
-    CustomFieldForbidden, AOIForbidden
-)
+from candidate_service.custom_exceptions import *
 
 # Models
 from candidate_service.common.models.candidate import (
@@ -76,7 +73,7 @@ class CandidatesResource(Resource):
 
                 # If Candidate is web hidden, it is assumed "deleted"
                 if candidate.is_web_hidden:
-                    raise CandidateIsHidden(error_message='Candidate not found')
+                    raise NotFoundError(error_message='Candidate not found', error_code=CANDIDATE_IS_HIDDEN)
 
                 retrieved_candidates.append(fetch_candidate_info(candidate))
 
@@ -96,18 +93,15 @@ class CandidatesResource(Resource):
             for candidate_id in candidate_ids:
                 candidate = Candidate.get_by_id(candidate_id=candidate_id)
                 if not candidate:
-                    raise CandidateNotFound(error_message='Candidate not found')
+                    raise NotFoundError(error_message='Candidate not found', error_code=CANDIDATE_NOT_FOUND)
 
                 # If Candidate is web hidden, it is assumed "deleted"
                 if candidate.is_web_hidden:
-                    raise CandidateIsHidden(error_message='Candidate not found')
+                    raise NotFoundError(error_message='Candidate not found', error_code=CANDIDATE_NOT_FOUND)
 
                 # Candidate ID must belong to user and its domain
                 if not does_candidate_belong_to_user(authed_user, candidate_id):
-                    raise CandidateForbidden(
-                            error_message='Not authorized',
-                            additional_error_info='Candidate does not belong to user'
-                    )
+                    raise ForbiddenError(error_message='Not authorized', error_code=CANDIDATE_FORBIDDEN)
 
                 retrieved_candidates.append(fetch_candidate_info(candidate))
 
@@ -132,29 +126,25 @@ class CandidatesResource(Resource):
 
         # Parse request body
         body_dict = request.get_json(force=True)
-        if not any(body_dict):
-            raise InvalidUsage(error_message="JSON body cannot be empty.")
+        if not any(body_dict): # TODO: jsonschema handles this
+            raise InvalidUsage(error_message="JSON body cannot be empty", error_code=MISSING_INPUT)
 
         # Validate json data
         try:
             validate(instance=body_dict, schema=candidates_resource_schema_post,
                      format_checker=FormatChecker())
         except Exception as e:
-            raise InvalidUsage(error_message=e.message)
+            raise InvalidUsage(error_message=e.message, error_code=INVALID_INPUT)
 
         created_candidate_ids = []
         for candidate_dict in body_dict.get('candidates'):
 
             emails = [{'label': email.get('label'), 'address': email.get('address'),
                        'is_default': email.get('is_default')} for email in candidate_dict.get('emails')]
-            # Email address is required for creating a candidate
-            if not any(emails):
-                raise InvalidUsage(error_message="Email address required")
-            # TODO: utilize jsonschema
 
             # Validate email addresses' format
             if filter(lambda email: not is_valid_email(email['address']), emails):
-                raise InvalidEmail(error_message="Invalid email address/format")
+                raise InvalidUsage(error_message="Invalid email address/format", error_code=INVALID_EMAIL)
 
             # Prevent user from adding custom field(s) to other domains
             custom_fields = candidate_dict.get('custom_fields') or []
@@ -162,7 +152,8 @@ class CandidatesResource(Resource):
             is_authorized = is_custom_field_authorized(custom_field_ids=custom_field_ids,
                                                        user_domain_id=authed_user.domain_id)
             if not is_authorized:
-                raise CustomFieldForbidden(error_message="Unauthorized custom field IDs")
+                raise ForbiddenError(error_message="Unauthorized custom field IDs",
+                                     error_code=CUSTOM_FIELD_FORBIDDEN)
 
             # Prevent user from adding area(s) of interest to other domains
             areas_of_interest = candidate_dict.get('areas_of_interest') or []
@@ -170,7 +161,7 @@ class CandidatesResource(Resource):
             is_authorized = is_area_of_interest_authorized(area_of_interest_ids=area_of_interest_ids,
                                                            user_domain_id=authed_user.domain_id)
             if not is_authorized:
-                raise AOIForbidden(error_message="Unauthorized area of interest IDs")
+                raise ForbiddenError(error_message="Unauthorized area of interest IDs", error_code=AOI_FORBIDDEN)
 
             resp_dict = create_or_update_candidate_from_params(
                 user_id=authed_user.id,
@@ -225,14 +216,14 @@ class CandidatesResource(Resource):
         # Parse request body
         body_dict = request.get_json(force=True)
         if not any(body_dict):
-            raise InvalidUsage(error_message="JSON body cannot be empty.")
+            raise InvalidUsage(error_message="JSON body cannot be empty", error_code=MISSING_INPUT)
 
         # Validate json data
         try:
             validate(instance=body_dict, schema=candidates_resource_schema_patch,
                      format_checker=FormatChecker())
         except Exception as e:
-            raise InvalidUsage(error_message=e.message)
+            raise InvalidUsage(error_message=e.message, error_code=INVALID_INPUT)
 
         updated_candidate_ids = []
         for candidate_dict in body_dict.get('candidates'):
@@ -244,7 +235,7 @@ class CandidatesResource(Resource):
 
                 # Validate email addresses' format
                 if filter(lambda email: not is_valid_email(email['address']), emails):
-                    raise InvalidEmail(error_message="Invalid email address/format")
+                    raise InvalidUsage(error_message="Invalid email address/format", error_code=INVALID_EMAIL)
 
             # Prevent user from updating custom field(s) from other domains
             custom_fields = candidate_dict.get('custom_fields') or []
@@ -252,7 +243,8 @@ class CandidatesResource(Resource):
             is_authorized = is_custom_field_authorized(custom_field_ids=custom_field_ids,
                                                        user_domain_id=authed_user.domain_id)
             if not is_authorized:
-                raise CustomFieldForbidden(error_message="Unauthorized custom field IDs")
+                raise ForbiddenError(error_message="Unauthorized custom field IDs",
+                                     error_code=CUSTOM_FIELD_FORBIDDEN)
 
             # Retrieve areas_of_interest
             areas_of_interest = candidate_dict.get('areas_of_interest') or []
@@ -265,7 +257,7 @@ class CandidatesResource(Resource):
             # Prevent user from updating area(s) of interest from other domains
             is_authorized = is_area_of_interest_authorized(authed_user.domain_id, area_of_interest_ids)
             if not is_authorized:
-                raise AOIForbidden(error_message="Unauthorized area of interest IDs")
+                raise ForbiddenError(error_message="Unauthorized area of interest IDs", error_code=AOI_FORBIDDEN)
 
             resp_dict = create_or_update_candidate_from_params(
                 user_id=authed_user.id,
@@ -332,24 +324,27 @@ class CandidateResource(Resource):
         if candidate_email:
             # Email address must be valid
             if not is_valid_email(candidate_email):
-                raise InvalidUsage(error_message="A valid email address is required")
+                raise InvalidUsage(error_message="A valid email address is required",
+                                   error_code=INVALID_EMAIL)
 
             # Get candidate ID from candidate's email
             candidate_id = get_candidate_id_from_candidate_email(candidate_email)
             if not candidate_id:
-                raise NotFoundError(error_message='Candidate email not recognized')
+                raise NotFoundError(error_message='Candidate email not recognized',
+                                    error_code=CANDIDATE_NOT_FOUND)
 
         candidate = Candidate.get_by_id(candidate_id=candidate_id)
         if not candidate:
-            raise NotFoundError(error_message='Candidate not found.')
+            raise NotFoundError(error_message='Candidate email not recognized',
+                                    error_code=CANDIDATE_NOT_FOUND)
 
         # If Candidate is web hidden, it is assumed "deleted"
         if candidate.is_web_hidden:
-            raise CandidateNotFound(error_message='Candidate not found.')
+            raise NotFoundError(error_message='Candidate not found', error_code=CANDIDATE_IS_HIDDEN)
 
         # Candidate must belong to user, and must be in the same domain as the user's domain
         if not does_candidate_belong_to_user(user_row=authed_user, candidate_id=candidate_id):
-            raise ForbiddenError(error_message="Not authorized")
+            raise ForbiddenError(error_message="Not authorized", error_code=CANDIDATE_FORBIDDEN)
 
         candidate_data_dict = fetch_candidate_info(candidate=candidate)
 
@@ -372,22 +367,24 @@ class CandidateResource(Resource):
 
         # candidate_id or candidate_email must be provided
         candidate_id, candidate_email = kwargs.get('id'), kwargs.get('email')
-        if not candidate_id and not candidate_email:
+        if not candidate_id and not candidate_email: #TODO: Flask already handles this, write test
             raise InvalidUsage(error_message="Candidate's ID or candidate's email must be provided.")
 
         if candidate_email:
             # Email address must be valid
             if not is_valid_email(candidate_email):
-                raise InvalidUsage(error_message="A valid email address is required")
+                raise InvalidUsage(error_message="A valid email address is required",
+                                   error_code=INVALID_EMAIL)
 
             # Get candidate ID from candidate's email
             candidate_id = get_candidate_id_from_candidate_email(candidate_email)
             if not candidate_id:
-                raise NotFoundError(error_message='Candidate email not recognized')
+                raise NotFoundError(error_message='Candidate not found',
+                                    error_code=CANDIDATE_NOT_FOUND)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message="Not authorized")
+            raise ForbiddenError(error_message="Not authorized", error_code=CANDIDATE_FORBIDDEN)
 
         # Hide Candidate
         Candidate.set_is_web_hidden_to_true(candidate_id=candidate_id)
@@ -416,16 +413,18 @@ class CandidateAddressResource(Resource):
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message="Not authorized")
+            raise ForbiddenError(error_message="Not authorized", error_code=CANDIDATE_FORBIDDEN)
 
         if address_id:  # Delete specified address
             candidate_address = CandidateAddress.get_by_id(_id=address_id)
             if not candidate_address:
-                raise NotFoundError(error_message='Candidate address not found.')
+                raise NotFoundError(error_message='Candidate address not found',
+                                    error_code=CAN_ADDRESS_NOT_FOUND)
 
             # Address must belong to Candidate
             if candidate_address.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized')
+                raise ForbiddenError(error_message='Not authorized',
+                                     error_code=CAN_ADDRESS_FORBIDDEN)
 
             db.session.delete(candidate_address)
 
@@ -457,18 +456,21 @@ class CandidateAreaOfInterestResource(Resource):
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized')
+            raise ForbiddenError(error_message='Not authorized', error_code=CANDIDATE_FORBIDDEN)
 
         # Prevent user from deleting area_of_interest of candidates outside of its domain
         is_authorized = is_area_of_interest_authorized(authed_user.domain_id, [area_of_interest_id])
         if not is_authorized:
-            raise ForbiddenError(error_message="Unauthorized area of interest IDs")
+            raise ForbiddenError(error_message="Unauthorized area of interest IDs",
+                                 error_code=AOI_FORBIDDEN)
 
         if area_of_interest_id:  # Delete specified area of interest
             # Area of interest must be associated with candidate's CandidateAreaOfInterest
-            candidate_aoi = CandidateAreaOfInterest.get_areas_of_interest(candidate_id, area_of_interest_id)
+            candidate_aoi = CandidateAreaOfInterest.get_areas_of_interest(candidate_id,
+                                                                          area_of_interest_id)
             if not candidate_aoi:
-                raise ForbiddenError(error_message="Unauthorized area of interest IDs")
+                raise ForbiddenError(error_message="Unauthorized area of interest IDs",
+                                     error_code=AOI_FORBIDDEN)
 
             # Delete CandidateAreaOfInterest
             db.session.delete(candidate_aoi)
@@ -479,7 +481,8 @@ class CandidateAreaOfInterestResource(Resource):
             for aoi_id in areas_of_interest_id:
                 candidate_aoi = CandidateAreaOfInterest.get_areas_of_interest(candidate_id, aoi_id)
                 if not candidate_aoi:
-                    raise NotFoundError(error_message='Candidate area of interest not found.')
+                    raise NotFoundError(error_message='Candidate area of interest not found',
+                                        error_code=AOI_NOT_FOUND)
 
                 db.session.delete(candidate_aoi)
 
@@ -506,16 +509,17 @@ class CandidateCustomFieldResource(Resource):
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized')
+            raise ForbiddenError(error_message='Not authorized', error_code=CANDIDATE_FORBIDDEN)
 
         # Custom fields must belong to user's domain
         if not is_custom_field_authorized(authed_user.domain_id, [can_cf_id]):
-            raise ForbiddenError(error_message='Not authorized')
+            raise ForbiddenError(error_message='Not authorized', error_code=CF_FORBIDDEN)
 
         if can_cf_id:  # Delete specified custom field
             candidate_custom_field = CandidateCustomField.get_by_id(_id=can_cf_id)
             if not candidate_custom_field:
-                raise NotFoundError(error_message='Candidate custom field not found.')
+                raise NotFoundError(error_message='Candidate custom field not found',
+                                    error_code=CF_NOT_FOUND)
 
             db.session.delete(candidate_custom_field)
 
@@ -525,7 +529,8 @@ class CandidateCustomFieldResource(Resource):
             for cf_id in custom_field_ids:
                 candidate_custom_field = CandidateCustomField.get_custom_field(candidate_id, cf_id)
                 if not candidate_custom_field:
-                    raise NotFoundError(error_message='Candidate custom field not found.')
+                    raise NotFoundError(error_message='Candidate custom field not found',
+                                        error_code=CF_NOT_FOUND)
 
                 db.session.delete(candidate_custom_field)
 
@@ -552,7 +557,7 @@ class CandidateEducationResource(Resource):
 
          # Candidate must belong to user and its domain
         if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized')
+            raise ForbiddenError(error_message='Not authorized', error_code=CANDIDATE_FORBIDDEN)
 
         if education_id:  # Delete specified Candidate's education
             can_education = CandidateEducation.get_by_id(_id=education_id)
@@ -594,7 +599,7 @@ class CandidateEducationDegreeResource(Resource):
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized')
+            raise ForbiddenError(error_message='Not authorized', error_code=CANDIDATE_FORBIDDEN)
 
         if degree_id:  # Delete specified degree
             # Verify that degree belongs to education, and education belongs to candidate
@@ -643,7 +648,7 @@ class CandidateEducationDegreeBulletResource(Resource):
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized')
+            raise ForbiddenError(error_message='Not authorized', error_code=CANDIDATE_FORBIDDEN)
 
         if bullet_id:  # Delete specified bullet
             # degree_bullet must belongs to degree; degree must belongs to education;
@@ -702,7 +707,7 @@ class CandidateExperienceResource(Resource):
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized')
+            raise ForbiddenError(error_message='Not authorized', error_code=CANDIDATE_FORBIDDEN)
 
         if experience_id:  # Delete specified experience
             experience = CandidateExperience.get_by_id(_id=experience_id)
@@ -744,7 +749,7 @@ class CandidateExperienceBulletResource(Resource):
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized')
+            raise ForbiddenError(error_message='Not authorized', error_code=CANDIDATE_FORBIDDEN)
 
         if bullet_id:
             # Experience must belong to Candidate and bullet must belong to CandidateExperience
@@ -796,7 +801,7 @@ class CandidateEmailResource(Resource):
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized')
+            raise ForbiddenError(error_message='Not authorized', error_code=CANDIDATE_FORBIDDEN)
 
         if email_id: # Delete specified email
             email = CandidateEmail.get_by_id(_id=email_id)
@@ -837,7 +842,7 @@ class CandidateMilitaryServiceResource(Resource):
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized')
+            raise ForbiddenError(error_message='Not authorized', error_code=CANDIDATE_FORBIDDEN)
 
         if military_service_id:  # Delete specified military-service
             military_service = CandidateMilitaryService.get_by_id(_id=military_service_id)
@@ -878,7 +883,7 @@ class CandidatePhoneResource(Resource):
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized')
+            raise ForbiddenError(error_message='Not authorized', error_code=CANDIDATE_FORBIDDEN)
 
         if phone_id:  # Delete specified phone
             phone = CandidatePhone.get_by_id(_id=phone_id)
@@ -919,7 +924,7 @@ class CandidatePreferredLocationResource(Resource):
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized')
+            raise ForbiddenError(error_message='Not authorized', error_code=CANDIDATE_FORBIDDEN)
 
         if preferred_location_id:  # Delete specified preferred location
             preferred_location = CandidatePreferredLocation.get_by_id(_id=preferred_location_id)
@@ -961,7 +966,7 @@ class CandidateSkillResource(Resource):
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized')
+            raise ForbiddenError(error_message='Not authorized', error_code=CANDIDATE_FORBIDDEN)
 
         if skill_id:  # Delete specified skill
             # skill = CandidateSkill.get_by_id(_id=skill_id)
@@ -1003,7 +1008,7 @@ class CandidateSocialNetworkResource(Resource):
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized')
+            raise ForbiddenError(error_message='Not authorized', error_code=CANDIDATE_FORBIDDEN)
 
         if social_networks_id:  # Delete specified social network
             # social_network = CandidateSocialNetwork.get_by_id(_id=social_networks_id)
@@ -1043,7 +1048,7 @@ class CandidateWorkPreferenceResource(Resource):
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized')
+            raise ForbiddenError(error_message='Not authorized', error_code=CANDIDATE_FORBIDDEN)
 
         work_preference = CandidateWorkPreference.get_by_id(_id=work_preference_id)
         if not work_preference:
@@ -1071,7 +1076,7 @@ class CandidateEditResource(Resource):
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized')
+            raise ForbiddenError(error_message='Not authorized', error_code=CANDIDATE_FORBIDDEN)
 
         candidate_edits = fetch_candidate_edits(candidate_id=candidate_id)
         return {'candidate': {'id': candidate_id, 'edits': [
