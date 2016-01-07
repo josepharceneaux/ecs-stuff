@@ -75,7 +75,7 @@ def post_files_to_queue():
         return jsonify(**{'error': {'message': 'No filenames provided'}}), 400
 
 
-@PARSE_MOD.route('/process/<int:user_id>', methods=['GET'])
+@PARSE_MOD.route('/batch/<user_id>', methods=['GET'])
 @require_oauth
 def process_batch_item(user_id):
     """

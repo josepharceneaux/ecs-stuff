@@ -120,15 +120,16 @@ def test_v15_pdf_by_post(token_fixture):
     assert 'id' in response['candidate']
 
 
-def test_batch_processing(user_fixture):
+def test_batch_processing(user_fixture, token_fixture):
     # create a single file queue
     user_id = user_fixture.id
     queue_string = 'batch:{}:fp_keys'.format(user_id)
     unused_queue_status = add_fp_keys_to_queue(['0169173d35beaf1053e79fdf1b5db864.docx'], user_id)
     redis_client.expire(queue_string, 10)
     # mock hit from scheduler service.
-    response = r.get(BATCH_URL + '/{}'.format(user_id))
-    pass
+    response = r.get(BATCH_URL + '/{}'.format(user_id),
+                     headers={'Authorization': 'Bearer %s' % token_fixture.access_token})
+    assert 'candidate' in response
 
 
 def test_health_check():
