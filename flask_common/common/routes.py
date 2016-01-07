@@ -125,26 +125,31 @@ class SchedulerApiUrl:
     VERSION = 'v1'
 
     if env == 'dev' or env == 'circle':
-        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/v1/%s'
+        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/' + VERSION + '/%s'
     elif env == 'qa':
         # TODO: Change this url after deployment
-        SCHEDULER_SERVICE_HOST_NAME = 'http://scheduler-service-webdev.gettalent.com/v1/%s'
+        SCHEDULER_SERVICE_HOST_NAME = 'http://scheduler-service-webdev.gettalent.com/' + VERSION + '/%s'
     elif env == 'prod':
         # TODO: Change this url after deployment
-        SCHEDULER_SERVICE_HOST_NAME = 'http://scheduler-service.gettalent.com/v1/%s'
+        SCHEDULER_SERVICE_HOST_NAME = 'http://scheduler-service.gettalent.com/' + VERSION + '/%s'
     else:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
 
     TASKS = SCHEDULER_SERVICE_HOST_NAME % "tasks/"
     SINGLE_TASK = SCHEDULER_SERVICE_HOST_NAME % 'tasks/id/%s'
+    PAUSE_TASK = SCHEDULER_SERVICE_HOST_NAME % 'tasks/%s/pause/'
+    RESUME_TASK = SCHEDULER_SERVICE_HOST_NAME % 'tasks/%s/resume/'
+    PAUSE_TASKS = SCHEDULER_SERVICE_HOST_NAME % 'tasks/pause/'
+    RESUME_TASKS = SCHEDULER_SERVICE_HOST_NAME % 'tasks/resume/'
+    TEST_TASK = SCHEDULER_SERVICE_HOST_NAME % 'tasks/test/'
 
-    MULTIPLE_TASKS = "/%s/%s" % (VERSION, "tasks/")
-    TASKS_TEST = "/%s/%s" % (VERSION, "tasks/test/")
-    ONE_TASK = "/%s/%s" % (VERSION, "tasks/id/<string:_id>")
-    MULTIPLE_TASK_RESUME = "/%s/%s" % (VERSION, "tasks/resume/")
-    MULTIPLE_TASK_PAUSE = "/%s/%s" % (VERSION, "tasks/pause/")
-    SINGLE_TASK_RESUME = "/%s/%s" % (VERSION, "tasks/<string:_id>/resume/")
-    SINGLE_TASK_PAUSE = "/%s/%s" % (VERSION, "tasks/<string:_id>/pause/")
+    SCHEDULER_MULTIPLE_TASKS = "/%s/%s" % (VERSION, "tasks/")
+    SCHEDULER_TASKS_TEST = "/%s/%s" % (VERSION, "tasks/test/")
+    SCHEDULER_ONE_TASK = "/%s/%s" % (VERSION, "tasks/id/<string:_id>")
+    SCHEDULER_MULTIPLE_TASK_RESUME = "/%s/%s" % (VERSION, "tasks/resume/")
+    SCHEDULER_MULTIPLE_TASK_PAUSE = "/%s/%s" % (VERSION, "tasks/pause/")
+    SCHEDULER_SINGLE_TASK_RESUME = "/%s/%s" % (VERSION, "tasks/<string:_id>/resume/")
+    SCHEDULER_SINGLE_TASK_PAUSE = "/%s/%s" % (VERSION, "tasks/<string:_id>/pause/")
 
 
 class CandidatePoolApiUrl:

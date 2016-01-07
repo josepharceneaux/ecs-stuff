@@ -16,6 +16,8 @@ from flask.ext.restful import Resource
 from flask.ext.cors import CORS
 
 # Application imports
+from werkzeug.exceptions import BadRequest
+
 from scheduler_service.common.models.user import Token
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse
@@ -33,14 +35,14 @@ api.route = types.MethodType(api_route, api)
 
 # Enable CORS
 CORS(scheduler_blueprint, resources={
-    SchedulerApiUrl.MULTIPLE_TASKS + '*': {
+    SchedulerApiUrl.SCHEDULER_MULTIPLE_TASKS + '*': {
         'origins': '*',
         'allow_headers': ['Content-Type', 'Authorization']
     }
 })
 
 
-@api.route(SchedulerApiUrl.MULTIPLE_TASKS)
+@api.route(SchedulerApiUrl.SCHEDULER_MULTIPLE_TASKS)
 class Tasks(Resource):
     """
         This resource returns a list of tasks or it can be used to create or schedule a task using POST.
@@ -242,7 +244,7 @@ class Tasks(Resource):
                         not_removed=not_removed), 207
 
 
-@api.route(SchedulerApiUrl.MULTIPLE_TASK_RESUME)
+@api.route(SchedulerApiUrl.SCHEDULER_MULTIPLE_TASK_RESUME)
 class ResumeTasks(Resource):
     """
         This resource resumes a previously paused jobs/tasks
@@ -302,7 +304,7 @@ class ResumeTasks(Resource):
         raise InvalidUsage('Bad request, invalid data in request', error_code=400)
 
 
-@api.route(SchedulerApiUrl.MULTIPLE_TASK_PAUSE)
+@api.route(SchedulerApiUrl.SCHEDULER_MULTIPLE_TASK_PAUSE)
 class PauseTasks(Resource):
     """
         This resource pauses jobs/tasks which can be resumed again
@@ -360,7 +362,7 @@ class PauseTasks(Resource):
         raise InvalidUsage('Bad request, invalid data in request', error_code=400)
 
 
-@api.route(SchedulerApiUrl.ONE_TASK)
+@api.route(SchedulerApiUrl.SCHEDULER_ONE_TASK)
 class TaskById(Resource):
     """
         This resource returns a specific task based on id or update a task
@@ -482,7 +484,7 @@ class TaskById(Resource):
         raise ResourceNotFound(error_message="Task not found")
 
 
-@api.route(SchedulerApiUrl.SINGLE_TASK_RESUME)
+@api.route(SchedulerApiUrl.SCHEDULER_SINGLE_TASK_RESUME)
 class ResumeTaskById(Resource):
     """
         This resource resumes a previously paused job/task
@@ -524,7 +526,7 @@ class ResumeTaskById(Resource):
         raise ResourceNotFound(error_message="Task not found")
 
 
-@api.route(SchedulerApiUrl.SINGLE_TASK_PAUSE)
+@api.route(SchedulerApiUrl.SCHEDULER_SINGLE_TASK_PAUSE)
 class PauseTaskById(Resource):
     """
         This resource pauses job/task which can be resumed again
@@ -566,7 +568,7 @@ class PauseTaskById(Resource):
         raise ResourceNotFound(error_message="Task not found")
 
 
-@api.route(SchedulerApiUrl.TASKS_TEST)
+@api.route(SchedulerApiUrl.SCHEDULER_TASKS_TEST)
 class SendRequestTest(Resource):
     """
         This resource is dummy endpoint which is used to call send_request method for testing
@@ -579,10 +581,13 @@ class SendRequestTest(Resource):
     def post(self):
 
         if not (os.getenv('GT_ENVIRONMENT') == 'dev' or os.getenv('GT_ENVIRONMENT') == 'circle'):
-            raise Exception("Environment variable GT_ENVIRONMENT not set correctly.")
+            raise ForbiddenError("You are not authorized to access this endpoint.")
 
         user_id = request.user.id
-        task = request.get_json()
+        try:
+            task = request.get_json()
+        except BadRequest:
+            raise InvalidUsage('Given data is not JSON serializable')
 
         # Post data param expired. If yes, then expire the token
         expired = task.get('expired', False)

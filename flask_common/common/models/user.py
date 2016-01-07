@@ -243,9 +243,9 @@ class Token(db.Model):
         :param access_token: User access_token
         :return: Token object matched with access_token
         """
-        if access_token is None:
-            return None
+        assert access_token is not None
         token = Token.query.filter_by(access_token=access_token).first()
+        assert token is not None
         return token
 
 

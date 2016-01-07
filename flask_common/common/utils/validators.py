@@ -69,13 +69,14 @@ def sanitize_zip_code(zip_code):
     return None
 
 
-def get_valid_data(data, key):
+def get_valid_data_from_dict(data, key):
     """
     Methods to Check if key exist and returns associated value
     :param data: json data with keyvalue pair
     :param key: key to check if missing or invalid value
     :return: value of associated key
     """
+    assert isinstance(data, dict)
     try:
         value = data[key]
     except KeyError:
@@ -83,11 +84,12 @@ def get_valid_data(data, key):
     return value
 
 
-def get_valid_datetime(data, key):
+def get_valid_datetime_from_dict(data, key):
     """
     Check if datetime is valid, if no, then raise invalid value exception
     """
-    value = get_valid_data(data, key)
+    assert isinstance(data, dict)
+    value = get_valid_data_from_dict(data, key)
     try:
         value = parse(value).replace(tzinfo=timezone('UTC'))
     except Exception:
@@ -100,7 +102,8 @@ def get_valid_integer(data, key):
     """
     Check if integer is valid, if no, then raise invalid value exception
     """
-    value = get_valid_data(data, key)
+    assert isinstance(data, dict)
+    value = get_valid_data_from_dict(data, key)
     if not str(value).isdigit():
         raise InvalidUsage(error_message='Invalid value of %s. It should be integer' % key)
     return value
@@ -110,7 +113,8 @@ def get_valid_url(data, key):
     """
     Check if url is valid, if no, then raise invalid value exception
     """
-    value = get_valid_data(data, key)
+    assert isinstance(data, dict)
+    value = get_valid_data_from_dict(data, key)
     if not is_valid_url(value):
         raise InvalidUsage(error_message='Invalid value of %s.' % key)
     return value

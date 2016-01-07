@@ -8,7 +8,7 @@ import pytest
 import requests
 
 # Application imports
-from scheduler_service.tests.conftest import APP_URL
+from scheduler_service.common.routes import SchedulerApiUrl
 
 __author__ = 'saad'
 
@@ -27,25 +27,25 @@ class TestSchedulerCreate:
             POST data while hitting the endpoint.
         :return:
         """
-        response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header_no_user)
         assert response.status_code == 400
 
         # Assign task_name in job post data (general task)
         job_config['task_name'] = 'Custom General Named Task'
-        response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header_no_user)
         assert response.status_code == 201
         data = response.json()
         assert data['id'] is not None
 
         # Try to create already named job and it should throw 400 invalid usage error
-        response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header_no_user)
         assert response.status_code == 400
 
         # Let's delete jobs now
-        response_remove = requests.delete(APP_URL % 'tasks/id/' + data['id'],
+        response_remove = requests.delete(SchedulerApiUrl.SINGLE_TASK % data['id'],
                                           headers=auth_header_no_user)
         assert response_remove.status_code == 200
 
@@ -56,7 +56,7 @@ class TestSchedulerCreate:
         :param job_config:
         :return:
         """
-        response = requests.post(APP_URL % 'tasks/test/', data=json.dumps(job_config),
+        response = requests.post(SchedulerApiUrl.TEST_TASK, data=json.dumps(job_config),
                                  headers=auth_header)
         assert response.status_code == 200
 
@@ -70,14 +70,14 @@ class TestSchedulerCreate:
             POST data while hitting the endpoint.
         :return:
         """
-        response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header)
         assert response.status_code == 201
         data = response.json()
         assert data['id'] is not None
 
         # Let's delete jobs now
-        response_remove = requests.delete(APP_URL % 'tasks/id/' + data['id'],
+        response_remove = requests.delete(SchedulerApiUrl.SINGLE_TASK % data['id'],
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
@@ -94,12 +94,12 @@ class TestSchedulerCreate:
 
         # schedule some jobs and remove all of them
         for i in range(10):
-            response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
+            response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                      headers=auth_header)
             assert response.status_code == 201
             jobs.append(json.loads(response.text)['id'])
 
-        response_remove_jobs = requests.delete(APP_URL % 'tasks/',
+        response_remove_jobs = requests.delete(SchedulerApiUrl.TASKS,
                                                data=json.dumps(dict(ids=jobs)),
                                                headers=auth_header)
 
@@ -117,7 +117,7 @@ class TestSchedulerCreate:
         invalid_header = {'Authorization': 'Bearer invalid_token',
                           'Content-Type': 'application/json'}
 
-        response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=invalid_header)
         assert response.status_code == 401
 

@@ -9,7 +9,7 @@ import pytest
 import requests
 
 # Application imports
-from scheduler_service.tests.conftest import APP_URL
+from scheduler_service.common.routes import SchedulerApiUrl
 
 
 __author__ = 'saad'
@@ -28,13 +28,13 @@ class TestSchedulerGet:
         :return:
         """
         # Creating a job
-        response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header)
         assert response.status_code == 201
         data = response.json()
 
         # Now get the job
-        response_get = requests.get(APP_URL % 'tasks/id/' + data['id'],
+        response_get = requests.get(SchedulerApiUrl.SINGLE_TASK % data['id'],
                                     headers=auth_header)
         assert response_get.status_code == 200
         assert json.loads(response_get.text)['task']['id'] == data['id']
@@ -49,12 +49,12 @@ class TestSchedulerGet:
         assert job_data['url'] == job_config['url']
 
         # Let's delete jobs now
-        response_remove = requests.delete(APP_URL % 'tasks/id/' + data['id'],
+        response_remove = requests.delete(SchedulerApiUrl.SINGLE_TASK % data['id'],
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
         # There shouldn't be any more jobs now
-        response = requests.get(APP_URL % 'tasks/id/' + data['id'], headers=auth_header)
+        response = requests.get(SchedulerApiUrl.SINGLE_TASK % data['id'], headers=auth_header)
         assert response.status_code == 404
 
     def test_single_job_without_user(self, auth_header_no_user, job_config):
@@ -69,19 +69,19 @@ class TestSchedulerGet:
         """
         # Assign task_name in job post data (general task)
         job_config['task_name'] = 'Custom General Named Task'
-        response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header_no_user)
         assert response.status_code == 201
         data = response.json()
         assert data['id'] is not None
 
         # Now get the job
-        response_get = requests.get(APP_URL % 'tasks/id/' + data['id'],
+        response_get = requests.get(SchedulerApiUrl.SINGLE_TASK % data['id'],
                                     headers=auth_header_no_user)
         assert response_get.status_code == 200
 
         # Let's delete jobs now
-        response_remove = requests.delete(APP_URL % 'tasks/id/' + data['id'],
+        response_remove = requests.delete(SchedulerApiUrl.SINGLE_TASK % data['id'],
                                           headers=auth_header_no_user)
         assert response_remove.status_code == 200
 
@@ -100,13 +100,13 @@ class TestSchedulerGet:
         # Create tasks
         for i in range(10):
             job_config['task_name'] = 'Custom General Named Task %s' % i
-            response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
+            response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                      headers=auth_header_no_user)
             assert response.status_code == 201
             jobs_id.append(response.json()['id'])
 
         # Get tasks
-        response_get = requests.get(APP_URL % 'tasks/', data=json.dumps(dict(ids=jobs_id)),
+        response_get = requests.get(SchedulerApiUrl.TASKS, data=json.dumps(dict(ids=jobs_id)),
                                     headers=auth_header_no_user)
 
         get_jobs_id = map(lambda job_: job_['id'], response_get.json()['tasks'])
@@ -116,7 +116,7 @@ class TestSchedulerGet:
 
         # Delete all jobs
         for job_id in jobs_id:
-            response_remove = requests.delete(APP_URL % 'tasks/id/%s' % job_id,
+            response_remove = requests.delete(SchedulerApiUrl.SINGLE_TASK % job_id,
                                               headers=auth_header_no_user)
             assert response_remove.status_code == 200
 
@@ -133,19 +133,19 @@ class TestSchedulerGet:
         jobs_id = []
 
         for i in range(10):
-            response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
+            response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                      headers=auth_header)
             assert response.status_code == 201
             jobs_id.append(response.json()['id'])
 
-        response_get = requests.get(APP_URL % 'tasks/', data=json.dumps(dict(ids=jobs_id)),
+        response_get = requests.get(SchedulerApiUrl.TASKS, data=json.dumps(dict(ids=jobs_id)),
                                     headers=auth_header)
 
         get_jobs_id = map(lambda job_: job_['id'], response_get.json()['tasks'])
         for job in jobs_id:
             assert job in get_jobs_id
         # Delete all jobs
-        response_remove = requests.delete(APP_URL % 'tasks/', data=json.dumps(dict(ids=jobs_id)),
+        response_remove = requests.delete(SchedulerApiUrl.TASKS, data=json.dumps(dict(ids=jobs_id)),
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
@@ -158,7 +158,7 @@ class TestSchedulerGet:
             POST data while hitting the endpoint.
         :return:
         """
-        response = requests.post(APP_URL % 'tasks/', data=json.dumps(job_config),
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header)
 
         assert response.status_code == 201
@@ -171,15 +171,15 @@ class TestSchedulerGet:
         invalid_header['Authorization'] = 'Bearer invalid_token'
 
         # Get the job with invalid token
-        response_get = requests.get(APP_URL % 'tasks/id/' + data['id'],
+        response_get = requests.get(SchedulerApiUrl.SINGLE_TASK % data['id'],
                                     headers=invalid_header)
 
         assert response_get.status_code == 401
         # Let's delete jobs now
-        response_remove = requests.delete(APP_URL % 'tasks/id/' + data['id'],
+        response_remove = requests.delete(SchedulerApiUrl.SINGLE_TASK % data['id'],
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
         # There shouldn't be any more jobs now
-        response = requests.get(APP_URL % 'tasks/id/' + data['id'], headers=auth_header)
+        response = requests.get(SchedulerApiUrl.SINGLE_TASK % data['id'], headers=auth_header)
         assert response.status_code == 404

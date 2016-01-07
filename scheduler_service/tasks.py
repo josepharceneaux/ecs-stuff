@@ -17,7 +17,7 @@ default url for celery flower =>
 """
 # Application imports
 from scheduler_service.common.utils.handy_functions import http_request
-from scheduler_service.run import celery
+from scheduler_service.run import celery, app
 
 
 @celery.task(name="send_request")
@@ -31,18 +31,19 @@ def send_request(access_token, secret_key_id, url, content_type, kwargs):
     :param kwargs: post data i.e campaign name, smartlist ids
     :return:
     """
-    headers = {
-        'Content-Type': content_type,
-        'Authorization': access_token
-    }
-    if secret_key_id:
-        headers.update({'X-Talent-Secret-Key-ID': secret_key_id})
-    # Send request to URL with job post data
-    response = http_request(method_type='POST', url=url, data=kwargs, headers=headers)
-    try:
-        return response.text
-    except Exception as e:
-        # This exception will be caught by flower
-        return {'message': e.message, 'status_code': response.status_code}
+    with app.app_context():
+        headers = {
+            'Content-Type': content_type,
+            'Authorization': access_token
+        }
+        if secret_key_id:
+            headers.update({'X-Talent-Secret-Key-ID': secret_key_id})
+        # Send request to URL with job post data
+        response = http_request(method_type='POST', url=url, data=kwargs, headers=headers)
+        try:
+            return response.text
+        except Exception as e:
+            # This exception will be caught by flower
+            return {'message': e.message, 'status_code': response.status_code}
 
 
