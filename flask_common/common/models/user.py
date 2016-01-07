@@ -245,7 +245,7 @@ class Token(db.Model):
         """
         assert access_token is not None
         token = Token.query.filter_by(access_token=access_token).first()
-        assert not token
+        assert token
         return token
 
 
