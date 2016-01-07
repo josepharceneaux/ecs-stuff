@@ -10,12 +10,11 @@ code {
 }
 
 pre {
-  padding: $padding--tiny;
-  border-radius: $border-radius--container;
-  background-color: $color--lightGray;
-
   code {
-    background-color: transparent;
+    display: block;
+    overflow-x: auto;
+    padding: $padding--tiny;
+    border-radius: $border-radius--container;
   }
 }
 
