@@ -141,6 +141,11 @@ def test_candidate(request):
                                      is_default=True)
     CandidateEmail.save(candidate_email)
 
+    # device = CandidateDevice(candidate_id=candidate.id,
+    #                          one_signal_device_id='56c1d574-237e-4a41-992e-c0094b6f2ded',
+    #                          registered_at=datetime.datetime.utcnow())
+    # CandidateDevice.save(device)
+
     def tear_down():
         Candidate.delete(candidate)
     request.addfinalizer(tear_down)

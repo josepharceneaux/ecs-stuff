@@ -62,7 +62,7 @@ class GTApis(object):
     DASHBOARD_SERVICE_PORT = 8010
     SCHEDULER_SERVICE_PORT = 8011
     SMS_CAMPAIGN_SERVICE_PORT = 8012
-    PUSH_NOTIFICATION_SERVICE_PORT = 8013
+    PUSH_CAMPAIGN_SERVICE_PORT = 8013
 
     # Names of flask micro services
     AUTH_SERVICE_NAME = 'auth-service'
@@ -77,7 +77,7 @@ class GTApis(object):
     DASHBOARD_SERVICE_NAME = 'frontend-service'
     SMS_CAMPAIGN_SERVICE_NAME = 'sms-campaign-service'
     SCHEDULER_SERVICE_NAME = 'scheduler-service'
-    PUSH_NOTIFICATION_SERVICE_NAME = 'push-notification-service'
+    PUSH_CAMPAIGN_SERVICE_NAME = 'push-campaign-service'
 
 
 class AuthApiUrl(object):
@@ -297,37 +297,52 @@ class SchedulerApiUrl(object):
     TASK = SCHEDULER_HOST_NAME % '/v1/tasks/id/%s'
 
 
-class PushNotificationServiceApi(object):
+class PushCampaignApi(object):
     """
-    REST URLs for Push Notification Service endpoints
+    REST URLs for Push Campaign Service endpoints
     """
     VERSION = 'v1'
     # HOST_NAME is http://127.0.0.1:8013 for dev
-    HOST_NAME = _get_host_name(GTApis.PUSH_NOTIFICATION_SERVICE_NAME,
-                               GTApis.PUSH_NOTIFICATION_SERVICE_PORT)
-    HOST_NAME %= ''
+    HOST_NAME = _get_host_name(GTApis.PUSH_CAMPAIGN_SERVICE_NAME,
+                               GTApis.PUSH_CAMPAIGN_SERVICE_PORT)
+    API_URL = '/%s/%s' % (VERSION, '%s')
     # endpoint /v1/campaigns
     # GET all campaigns of a user, POST new campaign, DELETE campaigns of a user from given ids
     CAMPAIGNS = '/%s/%s' % (VERSION, 'campaigns')
-
     # endpoint /v1/campaigns/:id
     # GET campaign by its id, POST: updates a campaign, DELETE a campaign from given id
     CAMPAIGN = '/%s/%s' % (VERSION, 'campaigns/<int:campaign_id>')
-
     # endpoint /v1/campaigns/:id/sends
     # This gives the records from "sends" for a given id of campaign
     SENDS = CAMPAIGN + '/sends'
-
-    # endpoint /v1/campaigns/:id/blast
-    # This gives the blast (statistics of a campaign) from "push_notification_blast" table for a given id of campaign
-    BLAST = CAMPAIGN + '/blast'
-
+    BLASTS_SENDS = CAMPAIGN + '/blasts/<int:blast_id>/sends'
+    BLASTS = CAMPAIGN + '/blasts'
+    DEVICES = CAMPAIGN + '/devices'
     # endpoint /v1/campaigns/:id/send
     # To send a campaign to candidates
     SEND = CAMPAIGN + '/send'
-
     # /v1/campaigns/:id/schedule
-    # To schedule an SMS campaign
+    # To schedule an Push campaign
     SCHEDULE = CAMPAIGN + '/schedule'
+    """ Followings are not REST endpoints, but App endpoints """
+    # endpoint /v1/redirect/:id
+    # This endpoint is hit when candidate clicks on any URL present in SMS body text.
+    REDIRECT = API_URL % 'redirect/<int:url_conversion_id>'
+
+
+class PushCampaignApiUrl(object):
+    """
+    This class contains the REST URLs of push_campaign_service
+    """
+    """ Endpoints' complete URLs for pyTests """
+    CAMPAIGNS = PushCampaignApi.HOST_NAME % PushCampaignApi.CAMPAIGNS
+    CAMPAIGN = PushCampaignApi.HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'campaigns/%s')
+    SENDS = CAMPAIGN + '/sends'
+    BLASTS = CAMPAIGN + '/blasts'
+    BLASTS_SENDS = CAMPAIGN + '/blasts/%s/sends'
+    SEND = CAMPAIGN + '/send'
+    SCHEDULE = CAMPAIGN + '/schedule'
+    DEVICES = CAMPAIGN + '/devices'
+    REDIRECT = PushCampaignApi.HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'redirect/%s')
 
 

@@ -4,13 +4,15 @@ from werkzeug.exceptions import BadRequest
 # Application Specific
 from push_campaign_service.common.error_handling import *
 from push_campaign_service.common.models.push_campaign import *
-from push_campaign_service.common.models.candidate import CandidateDevice
 from push_campaign_service.common.models.misc import UrlConversion
+from push_campaign_service.common.models.candidate import CandidateDevice, Candidate
 from push_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from push_campaign_service.common.campaign_services.campaign_base import CampaignBase
-from push_campaign_service.common.routes import PushNotificationServiceApi
+from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.push_campaign_app import logger, celery_app, app
-from push_campaign_service.common.campaign_services.campaign_utils import processing_after_campaign_sent, CampaignType
+from push_campaign_service.common.campaign_services.campaign_utils import (processing_after_campaign_sent,
+                                                                           CampaignType,
+                                                                           sign_redirect_url)
 from custom_exceptions import *
 from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY, CELERY_QUEUE
 from one_signal_sdk import OneSignalSdk
@@ -42,21 +44,6 @@ class PushCampaignBase(CampaignBase):
         :rtype: list
         """
         return PushCampaign.get_by_user_id(self.user_id)
-
-    def save(self, form_data):
-        """
-        This saves the campaign in database table push_notification in following steps:
-
-            1- Save push notification in database
-            2 Create activity that
-                "%(user_name)s created an Push Notification campaign: '%(campaign_name)s'"
-
-        :param form_data: data from UI
-        :type form_data: dict
-        :return: id of sms_campaign in db
-        :rtype: int
-        """
-        pass
 
     @classmethod
     def pre_process_schedule(cls, request, campaign_id):
@@ -119,7 +106,7 @@ class PushCampaignBase(CampaignBase):
         :return:
         """
         data_to_schedule.update(
-            {'url_to_run_task': PushNotificationServiceApi.HOST_NAME + '/v1/campaigns/%s/send' % self.campaign.id}
+            {'url_to_run_task': PushCampaignApiUrl.SEND % self.campaign.id}
         )
         # get scheduler task_id
         task_id = super(PushCampaignBase, self).schedule(data_to_schedule)
@@ -144,12 +131,10 @@ class PushCampaignBase(CampaignBase):
             candidates += self.get_smartlist_candidates(smartlist)
         print('Sending campaign to candidates')
         self.send_campaign_to_candidates(candidates)
-        # for candidate in candidates:
-        #     self.send_campaign_to_candidate.delay(candidate)
-            # celery_app.current_app.send_task(self.send_campaign_to_candidate, args=[candidate])
 
     @celery_app.task(name='send_campaign_to_candidate')
     def send_campaign_to_candidate(self, candidate):
+        assert isinstance(candidate, Candidate), 'candidate should be instance of Candidate Model'
         print('Sending campaign to one candidate')
         logger.info('Going to send campaign to candidate (id: %s)' % candidate.id)
         devices = CandidateDevice.get_devices_by_candidate_id(candidate.id)
@@ -159,8 +144,11 @@ class PushCampaignBase(CampaignBase):
                 destination_url = self.campaign.url
                 url_conversion = UrlConversion(source_url='', destination_url=destination_url)
                 UrlConversion.save(url_conversion)
-                url_to_send = PushNotificationServiceApi.HOST_NAME + '/url_hits/%s' % url_conversion.id
-                resp = one_signal_client.send_notification(url_to_send,
+                redirect_url = PushCampaignApiUrl.REDIRECT % url_conversion.id
+                expiry_time = datetime.datetime.utcnow() + datetime.timedelta(weeks=8)
+                signed_url = sign_redirect_url(redirect_url, expiry_time)
+                url_conversion.update(source_url=signed_url)
+                resp = one_signal_client.send_notification(signed_url,
                                                            self.campaign.body_text,
                                                            self.campaign.name,
                                                            players=device_ids)
@@ -169,11 +157,6 @@ class PushCampaignBase(CampaignBase):
                                                      candidate_id=candidate.id
                                                      )
                     PushCampaignSend.save(campaign_send)
-                    data = dict(campaign_id=self.campaign.id,
-                                blast_id=self.campaign_blast_id,
-                                candidate_id=candidate.id)
-
-                    url_conversion.update(source_url=json.dumps(data))
                     return True
                 else:
                     response = resp.json()
@@ -219,27 +202,6 @@ class PushCampaignBase(CampaignBase):
         with app.app_context():
             processing_after_campaign_sent(CampaignBase, sends_result, user_id, campaign_type,
                                            blast_id, auth_header)
-        # if isinstance(sends_result, list):
-        #     total_sends = sends_result.count(True)
-        #     if total_sends:
-        #         # Need to refresh blast object because this celery task has it's own scoped session
-        #         db.session.commit()
-        #         campaign_blast = PushCampaignBlast.get_by_id(blast_id)
-        #         sends = campaign_blast.sends + total_sends
-        #         campaign_blast.update(sends=sends)
-        #         PushCampaignBase.create_campaign_send_activity(user_id,
-        #                                                        campaign,
-        #                                                        auth_header,
-        #                                                        total_sends)
-        #         logger.debug('process_send: Push Notification Campaign(id:%s) has been sent to %s candidate(s).'
-        #                      '(User(id:%s))' % (campaign.id, total_sends, user_id))
-        # else:
-        #     logger.error('callback_campaign_sent: Result is not a list')
-
-    @staticmethod
-    @celery_app.task(name='celery_error_handler')
-    def celery_error_handler(uuid):
-        db.session.rollback()
 
     @classmethod
     def create_campaign_send_activity(cls, user_id, source, auth_header, num_candidates):
@@ -275,15 +237,68 @@ class PushCampaignBase(CampaignBase):
                             params=params,
                             headers=auth_header)
 
-    @staticmethod
-    def celery_error(error):
-        """
-        This function logs any error occurred for tasks running on celery,
-        :return:
-        """
-        pass
-
     def campaign_create_activity(self, source):
+        """
+        - Here we set "params" and "type" of activity to be stored in db table "Activity"
+            for created Campaign.
+
+        - Activity will appear as (e.g)
+           "'Harvey Specter' created an Push campaign: 'Hiring at getTalent'"
+
+        - This method is called from save() method of class
+            PushCampaignBase inside push_campaign_service/modules/push_campaign_base.py.
+
+        :param source: "push_campaign" obj
+        :type source: PushCampaign
+        :exception: InvalidUsage
+
+        **See Also**
+        .. see also:: save() method in SmsCampaignBase class.
+        """
+        if not isinstance(source, PushCampaign):
+            raise InvalidUsage('source should be an instance of model push_campaign')
+        # set params
+        params = {'user_name': self.user.name,
+                  'campaign_name': source.name}
+
+        self.create_activity(self.user_id,
+                             _type=ActivityMessageIds.CAMPAIGN_PUSH_CREATE,
+                             source_id=source.id,
+                             source_table=PushCampaign.__tablename__,
+                             params=params,
+                             headers=self.oauth_header)
+
+    def save(self, form_data):
+        """
+        This saves the campaign in database table sms_campaign in following steps:
+
+            1- Save campaign in database
+            2- Create activity that (e,g)
+                "'Harvey Specter' created an SMS campaign: 'Hiring at getTalent'"
+
+        :param form_data: data from UI
+        :type form_data: dict
+        :return: id of sms_campaign in db
+        :rtype: int
+        """
         pass
+    #     if not form_data:
+    #         logger.error('save: No data received from UI. (User(id:%s))' % self.user_id)
+    #     else:
+    #         # Save Campaign in database table "sms_campaign"
+    #         form_data['user_phone_id'] = self.user_phone.id
+    #         push_campaign = self.create_or_update_push_campaign(form_data)
+    #         # Create record in database table "sms_campaign_smartlist"
+    #         self.create_or_update_push_campaign_smartlist(push_campaign,
+    #                                                      form_data.get('smartlist_ids'))
+    #         # Create Activity
+    #         self.campaign_create_activity(push_campaign)
+    #         return push_campaign.id
+
+    @staticmethod
+    @celery_app.task(name='celery_error_handler')
+    def celery_error_handler(uuid):
+        db.session.rollback()
+
 
 

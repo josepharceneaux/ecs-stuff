@@ -2,33 +2,28 @@ import json
 
 import requests
 from faker import Faker
-
-from push_campaign_service.common.routes import PushNotificationServiceApi
-
+from push_campaign_service.common.routes import PushCampaignApi, PushCampaignApiUrl
 
 fake = Faker()
 
-API_URL = PushNotificationServiceApi.HOST_NAME
-VERSION = PushNotificationServiceApi.VERSION
 
-
-def send_request(method, relative_url, access_token, data=None):
+def send_request(method, url, access_token, data=None):
     # This method is being used for test cases, so it is sure that method has
     #  a valid value like 'get', 'post' etc.
     request_method = getattr(requests, method)
-    return request_method(API_URL + relative_url, data=json.dumps(data),
+    return request_method(url, data=json.dumps(data),
                           headers={'Authorization': 'Bearer %s' % access_token,
                                    'Content-Type': 'application/json'})
 
 
-def unauthorize_test(method, relative_url, access_token, data=None):
-    response = send_request(method, relative_url, access_token,  data)
+def unauthorize_test(method, url, access_token, data=None):
+    response = send_request(method, url, access_token,  data)
     assert response.status_code == 401, 'Access token is not valid'
 
 
 def missing_key_test(data, key, token):
     del data[key]
-    response = send_request('post', PushNotificationServiceApi.CAMPAIGNS, token, data)
+    response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token, data)
     assert response.status_code == 500
     response = response.json()
     error = response['error']
@@ -40,7 +35,7 @@ def missing_key_test(data, key, token):
 def invalid_value_test(data, key, token, campaign_id):
     data.update(**generate_campaign_data())
     data[key] = ''
-    response = send_request('put', '/v1/campaigns/%s' % campaign_id, token, data)
+    response = send_request('put', PushCampaignApiUrl.CAMPAIGN % campaign_id, token, data)
     response.status_code == 400, 'InvalidUsage exception raised'
     response = response.json()
     error = response['error']

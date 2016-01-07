@@ -73,12 +73,13 @@ from flask.ext.restful import Resource
 # Application Specific
 from push_campaign_service.common.error_handling import *
 from push_campaign_service.common.talent_api import TalentApi
-from push_campaign_service.common.models.push_campaign import *
+from push_campaign_service.common.routes import PushCampaignApi, PushCampaignApiUrl
 from push_campaign_service.common.utils.auth_utils import require_oauth
 from push_campaign_service.common.utils.api_utils import api_route, ApiResponse
 from push_campaign_service.common.models.candidate import Candidate, CandidateDevice
 
 from push_campaign_service.modules.custom_exceptions import *
+from push_campaign_service.common.models.push_campaign import *
 from push_campaign_service.modules.one_signal_sdk import OneSignalSdk
 from push_campaign_service.modules.push_campaign_base import PushCampaignBase
 from push_campaign_service.modules.constants import ONE_SIGNAL_REST_API_KEY, ONE_SIGNAL_APP_ID
@@ -92,7 +93,7 @@ api.init_app(push_notification_blueprint)
 api.route = types.MethodType(api_route, api)
 # Enable CORS
 CORS(push_notification_blueprint, resources={
-    r'v1/campaigns/*': {
+    r'/%s/campaigns/*' % PushCampaignApi.VERSION: {
         'origins': '*',
         'allow_headers': ['Content-Type', 'Authorization']
     }
@@ -102,7 +103,7 @@ one_signal_client = OneSignalSdk(app_id=ONE_SIGNAL_APP_ID,
                                  rest_key=ONE_SIGNAL_REST_API_KEY)
 
 
-@api.route('/v1/campaigns')
+@api.route(PushCampaignApi.CAMPAIGNS)
 class PushCampaigns(Resource):
 
     decorators = [require_oauth()]
@@ -211,11 +212,11 @@ class PushCampaigns(Resource):
                 PushCampaignSmartlist.save(push_campaign_smartlist)
         response = dict(id=push_campaign.id, message='Push campaign was created successfully')
         response = json.dumps(response)
-        headers = dict(Location='/v1/campaigns/%s' % push_campaign.id)
+        headers = dict(Location='/%s/campaigns/%s' % (PushCampaignApi.VERSION, push_campaign.id))
         return ApiResponse(response, headers=headers, status=201)
 
 
-@api.route('/v1/campaigns/<int:campaign_id>')
+@api.route(PushCampaignApi.CAMPAIGN)
 class CampaignById(Resource):
 
     decorators = [require_oauth()]
@@ -336,7 +337,7 @@ class CampaignById(Resource):
         return response, 200
 
 
-@api.route('/v1/campaigns/<int:campaign_id>/schedule')
+@api.route(PushCampaignApi.SCHEDULE)
 class SchedulePushCampaign(Resource):
 
     decorators = [require_oauth()]
@@ -439,8 +440,42 @@ class SchedulePushCampaign(Resource):
         return dict(message='Campaign(id:%s) has been re-scheduled.' % campaign_id,
                     task_id=task_id), 200
 
+    def delete(self, campaign_id):
+        """
+        Unschedule a single campaign from scheduler_service and removes the scheduler_task_id
+        from getTalent's database.
 
-@api.route('/v1/campaigns/<int:campaign_id>/send')
+        :param campaign_id: (Integer) unique id in push_campaign table on GT database.
+
+        :Example:
+            headers = {
+                        'Authorization': 'Bearer <access_token>',
+                       }
+
+            campaign_id = 1
+            response = requests.delete(API_URL + '/campaigns/' + str(campaign_id) + '/schedule',
+                                        headers=headers,
+                                    )
+
+        .. Response::
+
+            {
+                'message': 'Campaign(id:125) has been unscheduled.'
+            }
+
+        .. Status:: 200 (Resource Deleted)
+                    403 (Forbidden: Current user cannot delete Push campaign)
+                    404 (Campaign not found)
+                    500 (Internal Server Error)
+        """
+        task_unscheduled = PushCampaignBase.unschedule(campaign_id, request)
+        if task_unscheduled:
+            return dict(message='Campaign(id:%s) has been unschedule.' % campaign_id), 200
+        else:
+            return dict(message='Campaign(id:%s) is already unscheduled.' % campaign_id), 200
+
+
+@api.route(PushCampaignApi.SEND)
 class SendPushCampaign(Resource):
 
     decorators = [require_oauth()]
@@ -478,7 +513,7 @@ class SendPushCampaign(Resource):
         return dict(message='Campaign(id:%s) is being sent to candidates' % campaign_id), 200
 
 
-@api.route('/v1/campaigns/<int:campaign_id>/blasts/<int:blast_id>/sends')
+@api.route(PushCampaignApi.BLASTS_SENDS)
 class PushCampaignBlastSends(Resource):
 
     decorators = [require_oauth()]
@@ -498,7 +533,7 @@ class PushCampaignBlastSends(Resource):
             raise ResourceNotFound('Push Campaign Blast not found with id: %s' % blast_id)
 
 
-@api.route('/v1/campaigns/<int:campaign_id>/sends')
+@api.route(PushCampaignApi.SENDS)
 class PushCampaignSends(Resource):
 
     decorators = [require_oauth()]
@@ -557,8 +592,8 @@ class PushCampaignSends(Resource):
         return response, 200
 
 
-@api.route('/v1/campaigns/<int:campaign_id>/blasts')
-class PushNotificationBlasts(Resource):
+@api.route(PushCampaignApi.BLASTS)
+class PushCampaignBlasts(Resource):
 
     decorators = [require_oauth()]
 
@@ -615,7 +650,7 @@ class PushNotificationBlasts(Resource):
         return response, 200
 
 
-@api.route('/v1/devices')
+@api.route(PushCampaignApi.DEVICES)
 class Devices(Resource):
 
     decorators = [require_oauth()]
