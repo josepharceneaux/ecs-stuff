@@ -1,6 +1,8 @@
+
 __author__ = 'ufarooqi'
 
 from flask import Flask
+from candidate_pool_service.common.routes import HEALTH_CHECK
 from candidate_pool_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 
 app = Flask(__name__)
@@ -24,7 +26,7 @@ try:
 
     # wrap the flask app and give a heathcheck url
     from healthcheck import HealthCheck
-    health = HealthCheck(app, "/healthcheck")
+    health = HealthCheck(app, HEALTH_CHECK)
 
     from api.talent_pools import talent_pool_blueprint
     from api.talent_pipelines import talent_pipeline_blueprint

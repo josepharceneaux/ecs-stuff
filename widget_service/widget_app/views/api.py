@@ -1,4 +1,5 @@
 """Widget serving/processing"""
+
 __author = 'erikfarmer'
 # Standard library
 import json
@@ -22,6 +23,7 @@ from widget_service.common.models.misc import Major
 from widget_service.common.models.user import Domain
 from widget_service.common.models.widget import WidgetPage
 from widget_service.widget_app import db
+from widget_service.common.routes import WidgetApi
 from widget_service.widget_app.views.utils import create_candidate_educations_dict
 from widget_service.widget_app.views.utils import parse_interest_ids_from_form
 from widget_service.widget_app.views.utils import parse_city_and_state_ids_from_form
@@ -34,7 +36,7 @@ simplecrypt.EXPANSION_COUNT = (10000, 10000, 10000)
 mod = Blueprint('widget_api', __name__)
 
 
-@mod.route('/domains/<path:encrypted_domain_id>/widgets/<path:encrypted_widget_id>', methods=['GET'])
+@mod.route(WidgetApi.DOMAIN_WIDGETS, methods=['GET'])
 def show_widget(encrypted_domain_id, encrypted_widget_id):
     """ Route for testing template rendering/js functions/etc.
     :param encrypted_widget_id: (string) The encrypted widget_id associated with an html template.
@@ -51,7 +53,7 @@ def show_widget(encrypted_domain_id, encrypted_widget_id):
         return 'We should have a 404 page here'
 
 
-@mod.route('/domains/<path:encrypted_domain_id>/widgets/<path:encrypted_widget_id>', methods=['POST'])
+@mod.route(WidgetApi.DOMAIN_WIDGETS, methods=['POST'])
 def create_candidate_from_widget(encrypted_domain_id, encrypted_widget_id):
     """ Post receiver for processing widget date.
     :param encrypted_widget_id: (string) the domain_uuid associated with a WidgetPage.
@@ -144,7 +146,7 @@ def create_candidate_from_widget(encrypted_domain_id, encrypted_widget_id):
     return jsonify({'success': {'message': 'candidate successfully created'}}), 201
 
 
-@mod.route('/domains/<path:encrypted_domain_id>/interests', methods=['GET'])
+@mod.route(WidgetApi.DOMAIN_INTERESTS, methods=['GET'])
 def get_areas_of_interest(encrypted_domain_id):
     """ API call that provides interests list filtered by the domain.
     :param encrypted_domain_id: (string)
@@ -168,7 +170,7 @@ def get_areas_of_interest(encrypted_domain_id):
                     'secondary_interests': secondary_interests})
 
 
-@mod.route('/domains/<path:encrypted_domain_id>/majors', methods=['GET'])
+@mod.route(WidgetApi.DOMAIN_MAJORS, methods=['GET'])
 def get_major_names(encrypted_domain_id):
     """API call for returning list of major names filtered by domain"""
     b64decoded_url = b64decode(encrypted_domain_id)
@@ -179,7 +181,7 @@ def get_major_names(encrypted_domain_id):
     return jsonify(majors=[serialize_queried_sa_obj(m) for m in majors])
 
 
-@mod.route('/universities', methods=['GET'])
+@mod.route(WidgetApi.UNIVERSITIES, methods=['GET'])
 def get_university_names():
     """API call for names of universities in db in format used by widget select tags."""
     universities = db.session.query(University).all()

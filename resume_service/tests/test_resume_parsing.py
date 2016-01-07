@@ -116,7 +116,7 @@ def test_v15_pdf_by_post(token_fixture):
 
 def test_health_check():
     import requests
-    response = requests.get(ResumeApiUrl.HOST_NAME % '/healthcheck')
+    response = requests.get(ResumeApiUrl.HEALTH_CHECK)
     assert response.status_code == 200
 
 

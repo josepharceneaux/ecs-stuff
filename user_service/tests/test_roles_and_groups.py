@@ -382,5 +382,5 @@ def test_domain_groups_api_put(access_token_first, first_group, second_group, us
 
 def test_health_check():
     import requests
-    response = requests.get('http://127.0.0.1:8004/healthcheck')
+    response = requests.get(UserServiceApiUrl.HEALTH_CHECK)
     assert response.status_code == 200

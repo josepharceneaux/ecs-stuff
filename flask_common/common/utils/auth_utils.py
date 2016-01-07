@@ -167,6 +167,6 @@ def refresh_expired_token(token, client_id, client_secret):
     # Sends a refresh request to the Oauth2 server.
     payload = {'grant_type': 'refresh_token', 'client_id': client_id,
                'client_secret': client_secret, 'refresh_token': token.refresh_token}
-    r = requests.post(app.config['OAUTH_TOKEN_URI'], data=payload)
+    r = requests.post(AuthApiUrl.TOKEN_CREATE, data=payload)
     # TODO: Add bad request handling.
     return json.loads(r.text)['access_token']

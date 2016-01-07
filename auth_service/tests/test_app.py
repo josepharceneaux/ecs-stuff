@@ -149,5 +149,5 @@ def test_auth_service(app_context):
 
 def test_health_check():
     import requests
-    response = requests.get(AuthApiUrl.AUTH_SERVICE_HOST_NAME % '/healthcheck')
+    response = requests.get(AuthApiUrl.HEALTH_CHECK)
     assert response.status_code == 200

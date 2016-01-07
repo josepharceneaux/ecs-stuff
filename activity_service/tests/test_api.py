@@ -73,5 +73,5 @@ def test_recent_readable(token_fixture):
 
 
 def test_health_check():
-    response = requests.get(ActivityApiUrl.HOST_NAME % '/healthcheck')
+    response = requests.get(ActivityApiUrl.HEALTH_CHECK)
     assert response.status_code == 200

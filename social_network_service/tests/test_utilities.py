@@ -1,3 +1,5 @@
+from social_network_service.common.routes import SocialNetworkApiUrl
+
 __author__ = 'zohaib'
 
 # Standard Library
@@ -229,5 +231,5 @@ def test_milliseconds_since_epoch_to_dt():
 
 def test_health_check():
     import requests
-    response = requests.get('http://127.0.0.1:8006/healthcheck')
+    response = requests.get(SocialNetworkApiUrl.HEALTH_CHECK)
     assert response.status_code == 200

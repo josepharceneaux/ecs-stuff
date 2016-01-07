@@ -3,7 +3,7 @@
 __author__ = 'erikfarmer'
 import config
 from flask import Flask
-from flask.ext.common.common.routes import ResumeApi
+from flask.ext.common.common.routes import ResumeApi, HEALTH_CHECK
 from resume_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 
 app = Flask(__name__)
@@ -19,11 +19,11 @@ try:
     db.app = app
 
     from views import api
-    app.register_blueprint(api.mod, url_prefix='/' + ResumeApi.VERSION + '/')
+    app.register_blueprint(api.mod, url_prefix=ResumeApi.URL_PREFIX)
 
     # wrap the flask app and give a heathcheck url
     from healthcheck import HealthCheck
-    health = HealthCheck(app, "/healthcheck")
+    health = HealthCheck(app, HEALTH_CHECK)
 
     from resume_service.common.error_handling import register_error_handlers
     register_error_handlers(app, logger)

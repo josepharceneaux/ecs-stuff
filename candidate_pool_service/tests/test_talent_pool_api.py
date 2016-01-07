@@ -493,6 +493,6 @@ def test_update_talent_pool_stats(access_token_first, access_token_second, user_
 
 def test_health_check():
     import requests
-    response = requests.get('http://127.0.0.1:8008/healthcheck')
+    response = requests.get(CandidatePoolApiUrl.HEALTH_CHECK)
     assert response.status_code == 200
 
