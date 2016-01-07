@@ -1023,14 +1023,14 @@
                 <div class="col--medium-6 form__col">
                     <h4>Button Code</h4>
 
-                    <pre><code class="code__wrap">&lt;object width=&quot;420&quot; height=&quot;315&quot; data=&quot;http://www.youtube.com/embed/XGSy3_Czz8k&quot;&gt;&lt;/object&gt;</code></pre>
+                    <div hljs no-escape language="html" class="code__wrap">&lt;object width=&quot;420&quot; height=&quot;315&quot; data=&quot;http://www.youtube.com/embed/XGSy3_Czz8k&quot;&gt;&lt;/object&gt;</div>
 
                     <a class="button--blue" href="#">Preview</a>
                 </div>
                 <div class="col--medium-6 form__col">
                     <h4>Widget Code</h4>
 
-                    <pre><code class="code__wrap">&lt;object width=&quot;420&quot; height=&quot;315&quot; data=&quot;http://www.youtube.com/embed/XGSy3_Czz8k&quot;&gt;&lt;/object&gt;</code></pre>
+                    <div hljs no-escape language="html" class="code__wrap">&lt;object width=&quot;420&quot; height=&quot;315&quot; data=&quot;http://www.youtube.com/embed/XGSy3_Czz8k&quot;&gt;&lt;/object&gt;</div>
 
                     <a class="button--blue" href="#">Preview</a>
                 </div>
@@ -1045,29 +1045,13 @@
             </header>
 
             <div class="form__fieldset row--expanded">
-                <div class="col--medium-12 form__col">
-
-                    <a class="button--blue" href="#" tooltips tooltip-template="Tooltip left" tooltip-side="left" tooltip-append-to-body="true">Left</a>
-
-                    <a class="button--blue" href="#" tooltips tooltip-template="Tooltip top" tooltip-side="top" tooltip-append-to-body="true">Top</a>
-
-                    <a class="button--blue" href="#" tooltips tooltip-template="Tooltip bottom" tooltip-side="bottom">Bottom</a>
-
-                    <a class="button--blue" href="#" tooltips tooltip-template="Tooltip right" tooltip-side="right" tooltip-append-to-body="false">Right</a>
-
-                </div>
+                <div class="col--medium-12 form__col" ng-include="'components/styleguide/styleguide-dashboard/partials/demos/tooltips/tooltips.html'"></div>
             </div>
+
             <div class="form__fieldset row--expanded">
                 <div class="col--medium-12 form__col">
                     <h4>Tooltip Code</h4>
-
-                    <pre><code>&lt;a class=&quot;button--blue&quot; href=&quot;#&quot; tooltips tooltip-template=&quot;Tooltip left&quot;&gt;Left&lt;/a&gt;
-
-&lt;a class=&quot;button--blue&quot; href=&quot;#&quot; tooltips tooltip-template=&quot;Tooltip top&quot;&gt;Top&lt;/a&gt;
-
-&lt;a class=&quot;button--blue&quot; href=&quot;#&quot; tooltips tooltip-template=&quot;Tooltip bottom&quot;&gt;Bottom&lt;/a&gt;
-
-&lt;a class=&quot;button--blue&quot; href=&quot;#&quot; tooltips tooltip-template=&quot;Tooltip right&quot;&gt;Right&lt;/a&gt;</code></pre>
+                    <div hljs include="'components/styleguide/styleguide-dashboard/partials/demos/tooltips/tooltips.html'" language="html"></div>
                 </div>
             </div>
         </div>
