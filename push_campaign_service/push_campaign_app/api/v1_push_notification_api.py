@@ -62,6 +62,7 @@ A brief overview of all endpoints is as follows:
 """
 # Standard Library
 import types
+from datetime import datetime
 
 # Third Party
 from flask import request
@@ -73,13 +74,14 @@ from flask.ext.restful import Resource
 # Application Specific
 from push_campaign_service.common.error_handling import *
 from push_campaign_service.common.talent_api import TalentApi
-from push_campaign_service.common.routes import PushCampaignApi, PushCampaignApiUrl
+from push_campaign_service.common.routes import PushCampaignApi
 from push_campaign_service.common.utils.auth_utils import require_oauth
 from push_campaign_service.common.utils.api_utils import api_route, ApiResponse
-from push_campaign_service.common.models.candidate import Candidate, CandidateDevice
+
 
 from push_campaign_service.modules.custom_exceptions import *
-from push_campaign_service.common.models.push_campaign import *
+from push_campaign_service.common.models.candidate import Candidate, CandidateDevice
+from push_campaign_service.common.models.push_campaign import (PushCampaign, PushCampaignBlast, PushCampaignSmartlist)
 from push_campaign_service.modules.one_signal_sdk import OneSignalSdk
 from push_campaign_service.modules.push_campaign_base import PushCampaignBase
 from push_campaign_service.modules.constants import ONE_SIGNAL_REST_API_KEY, ONE_SIGNAL_APP_ID
@@ -706,7 +708,7 @@ class Devices(Resource):
                                                one_signal_device_id=device_id,
                                                registered_at=datetime.now())
             CandidateDevice.save(candidate_device)
-            return dict(messgae='Device registered successfully with candidate (id: %s)' % candidate_id)
+            return dict(message='Device registered successfully with candidate (id: %s)' % candidate_id)
         else:
             # No device was found on OneSignal database.
             raise ResourceNotFound('Device is not registered with OneSignal with id %s' % device_id)

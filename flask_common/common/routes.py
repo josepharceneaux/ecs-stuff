@@ -309,6 +309,7 @@ class PushCampaignApi(object):
     # endpoint /v1/campaigns
     # GET all campaigns of a user, POST new campaign, DELETE campaigns of a user from given ids
     CAMPAIGNS = '/%s/%s' % (VERSION, 'campaigns')
+    DEVICES = '/%s/%s' % (VERSION, 'devices')
     # endpoint /v1/campaigns/:id
     # GET campaign by its id, POST: updates a campaign, DELETE a campaign from given id
     CAMPAIGN = '/%s/%s' % (VERSION, 'campaigns/<int:campaign_id>')
@@ -317,7 +318,6 @@ class PushCampaignApi(object):
     SENDS = CAMPAIGN + '/sends'
     BLASTS_SENDS = CAMPAIGN + '/blasts/<int:blast_id>/sends'
     BLASTS = CAMPAIGN + '/blasts'
-    DEVICES = CAMPAIGN + '/devices'
     # endpoint /v1/campaigns/:id/send
     # To send a campaign to candidates
     SEND = CAMPAIGN + '/send'
@@ -342,7 +342,7 @@ class PushCampaignApiUrl(object):
     BLASTS_SENDS = CAMPAIGN + '/blasts/%s/sends'
     SEND = CAMPAIGN + '/send'
     SCHEDULE = CAMPAIGN + '/schedule'
-    DEVICES = CAMPAIGN + '/devices'
+    DEVICES = PushCampaignApi.HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'devices')
     REDIRECT = PushCampaignApi.HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'redirect/%s')
 
 

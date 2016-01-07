@@ -5,6 +5,7 @@ This module contains tests related to Push Campaign RESTful API endpoints.
 import time
 
 # Application specific imports
+from push_campaign_service.common.models.candidate import Candidate
 from push_campaign_service.tests.helper_methods import *
 from push_campaign_service.common.models.push_campaign import *
 from push_campaign_service.common.routes import PushCampaignApiUrl, PushCampaignApi
@@ -126,11 +127,6 @@ class TestCampaignById():
             campaign = json_response['campaign']
             compare_campaign_data(test_campaign, campaign)
             invalid_data_test('put', PushCampaignApiUrl.CAMPAIGN % test_campaign.id, token)
-            # Test `raise InvalidUsage('No data given to be updated')`
-            data = {}
-            response = send_request('put', PushCampaignApiUrl.CAMPAIGN % test_campaign.id, token, data)
-            response.status_code == 400, 'InvalidUsage exception raised'
-            assert response.json()['error']['message'] == 'POST data is empty. Kindly send required fields.'
 
             # Test `raise ResourceNotFound('Campaign not found with id %s' % campaign_id)`
             data = campaign_data.copy()
@@ -236,7 +232,7 @@ class TestCampaignSends():
         token, is_valid = auth_data
         if is_valid:
             # Wait for campaigns to be sent
-            time.sleep(SLEEP_TIME)
+            time.sleep(2 * SLEEP_TIME)
 
             # 404 Case, Campaign not found
             last_obj = PushCampaign.query.order_by(PushCampaign.id.desc()).first()
@@ -297,6 +293,51 @@ class TestRegisterCandidateDevice():
         token, is_valid = auth_data
         if is_valid:
             invalid_data_test('post', PushCampaignApiUrl.DEVICES, token)
+            last_candidate = Candidate.query.order_by(Candidate.id.desc()).first()
+            invalid_candiate_id = last_candidate.id + 100
+            valid_device_id = '56c1d574-237e-4a41-992e-c0094b6f2ded'
+            invalid_candidate_data = {
+                '': (400, 'candidate_id is not given in post data'),
+                0: (400, 'candidate_id is not given in post data'),
+                -1: (404, 'Unable to associate device with a non existing candidate id: -1'),
+                invalid_candiate_id: (404, 'Unable to associate device with a non existing '
+                                           'candidate id: %s' % invalid_candiate_id)
+            }
+            invalid_device_data = {
+                '': (400, 'device_id is not given in post data'),
+                0: (400, 'device_id is not given in post data'),
+                'invalid_id': (404, 'Device is not registered with OneSignal with id invalid_id'),
+            }
+            for key in invalid_candidate_data:
+                data = dict(candidate_id=key, device_id=valid_device_id)
+                response = send_request('post', PushCampaignApiUrl.DEVICES, token, data)
+                status_code, message = invalid_candidate_data[key]
+                assert response.status_code == status_code, 'exception raised'
+                error = response.json()['error']
+                assert error['message'] == message
+
+            for key in invalid_device_data:
+                data = dict(candidate_id=test_candidate.id, device_id=key)
+                response = send_request('post', PushCampaignApiUrl.DEVICES, token, data)
+                status_code, message = invalid_device_data[key]
+                assert response.status_code == status_code, 'exception raised'
+                error = response.json()['error']
+                assert error['message'] == message
+
+            data = dict(candidate_id=test_candidate.id, device_id=valid_device_id)
+            response = send_request('post', PushCampaignApiUrl.DEVICES, token, data)
+            assert response.status_code == 200, 'Device was associated to candidate'
+            response = response.json()
+            assert response['message'] == 'Device registered successfully with candidate (id: %s)' % test_candidate.id
+
+            # A device has been associated to test_candidate through API but in tests
+            # we need to refresh our session to get those changes (using relationship)
+            db.session.commit()
+            devices = test_candidate.devices.all()
+            assert len(devices) == 1, 'One device should be associated to this test candidate'
+            device = devices[0]
+            assert device.one_signal_device_id == valid_device_id
+
         else:
             # We are testing 401 here. so campaign and blast ids will not matter.
             unauthorize_test('post',  PushCampaignApiUrl.DEVICES, token)
