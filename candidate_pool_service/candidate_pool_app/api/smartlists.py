@@ -166,7 +166,9 @@ def update_smartlists_stats():
                                                 candidates_engagement=percentage_candidates_engagement)
             db.session.add(smartlist_stat)
 
-        db.session.commit()
+        if smartlists:
+            db.session.commit()
+
         return '', 204
 
     except Exception as e:
