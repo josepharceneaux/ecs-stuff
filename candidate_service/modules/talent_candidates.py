@@ -34,10 +34,11 @@ from candidate_service.common.models.user import User
 from candidate_service.common.error_handling import (
     InvalidUsage, NotFoundError, UnauthorizedError, ForbiddenError
 )
-from candidate_service.custom_exceptions import *
+from candidate_service.custom_error_codes import *
 
 # Validations
 from candidate_service.common.utils.validators import (sanitize_zip_code, is_number, format_phone_number)
+from candidate_service.modules.validators import validate_input_type
 
 # Common utilities
 from candidate_service.common.geo_services.geo_coordinates import get_coordinates
@@ -54,7 +55,7 @@ def fetch_candidate_info(candidate, fields=None):
     :return:    Candidate dict
     :rtype:     dict[str, T]
     """
-    assert isinstance(candidate, Candidate)
+    validate_input_type(candidate, Candidate)
     candidate_id = candidate.id
 
     get_all_fields = fields is None  # if fields is None, then get ALL the fields
@@ -160,6 +161,12 @@ def fetch_candidate_info(candidate, fields=None):
 
 
 def format_candidate_full_name(candidate):
+    """
+    :type candidate:  Candidate
+    :return:
+    """
+    validate_input_type(candidate, Candidate)
+
     first_name, middle_name, last_name = candidate.first_name, candidate.middle_name, candidate.last_name
     full_name = ''
     if first_name:
@@ -177,7 +184,8 @@ def candidate_emails(candidate):
     :type candidate:    Candidate
     :rtype              [dict]
     """
-    assert isinstance(candidate, Candidate)
+    validate_input_type(candidate, Candidate)
+
     emails = candidate.candidate_emails
     return [{'id': email.id,
              'label': email.email_label.description,
@@ -191,7 +199,8 @@ def candidate_phones(candidate):
     :type candidate:    Candidate
     :rtype              [dict]
     """
-    assert isinstance(candidate, Candidate)
+    validate_input_type(candidate, Candidate)
+
     phones = candidate.candidate_phones
     return [{'id': phone.id,
              'label': phone.phone_label.description,
@@ -251,6 +260,8 @@ def _candidate_experience_bullets(experience):
     :type experience:   CandidateExperience
     :rtype              [dict]
     """
+    validate_input_type(experience, CandidateExperience)
+
     experience_bullets = experience.candidate_experience_bullets
     return [{'id': experience_bullet.id,
              'description': experience_bullet.description,
@@ -263,7 +274,8 @@ def candidate_work_preference(candidate):
     :type candidate:    Candidate
     :rtype              dict
     """
-    assert isinstance(candidate, Candidate)
+    validate_input_type(candidate, Candidate)
+
     work_preference = candidate.candidate_work_preferences
     return {'id': work_preference[0].id,
             'authorization': work_preference[0].authorization,
@@ -283,7 +295,8 @@ def candidate_preferred_locations(candidate):
     :type candidate:    Candidate
     :rtype              [dict]
     """
-    assert isinstance(candidate, Candidate)
+    validate_input_type(candidate, Candidate)
+
     preferred_locations = candidate.candidate_preferred_locations
     return [{'id': preferred_location.id,
              'address': preferred_location.address,
@@ -298,7 +311,8 @@ def candidate_educations(candidate):
     :type candidate:    Candidate
     :rtype              [dict]
     """
-    assert isinstance(candidate, Candidate)
+    validate_input_type(candidate, Candidate)
+
     educations = candidate.candidate_educations
     return [{'id': education.id,
              'school_name': education.school_name,
@@ -317,6 +331,8 @@ def _candidate_degrees(education):
     :type education:    CandidateEducation
     :rtype              [dict]
     """
+    validate_input_type(education, CandidateEducation)
+
     degrees = education.candidate_education_degrees
     return [{'id': degree.id,
              'type': degree.degree_type,
@@ -337,6 +353,8 @@ def _candidate_degree_bullets(degree):
     :type degree:  CandidateEducationDegree
     :rtype          [dict]
     """
+    validate_input_type(degree, CandidateEducationDegree)
+
     degree_bullets = degree.candidate_education_degree_bullets
     return [{'id': degree_bullet.id,
              'major': degree_bullet.concentration_type,
@@ -396,6 +414,8 @@ def candidate_custom_fields(candidate):
     :type candidate:    Candidate
     :rtype              [dict]
     """
+    validate_input_type(candidate, Candidate)
+
     custom_fields = db.session.query(CandidateCustomField).filter_by(candidate_id=candidate.id).all()
     return [{'id': custom_field.id,
              'value': custom_field.value,
@@ -408,6 +428,8 @@ def candidate_social_networks(candidate):
     :type candidate:    Candidate
     :rtype              [dict]
     """
+    validate_input_type(candidate, Candidate)
+
     social_networks = candidate.candidate_social_networks
     return [{'id': soc_net.id,
              'name': soc_net.social_network.name,
@@ -430,6 +452,7 @@ def candidate_contact_history(candidate):
     :type candidate:    Candidate
     :rtype              dict
     """
+    validate_input_type(candidate, Candidate)
     timeline = []
 
     # Campaign sends & campaigns
@@ -461,6 +484,8 @@ def get_candidate_id_from_candidate_email(candidate_email):
     :type candidate_email:  CandidateEmail
     :rtype                  int
     """
+    validate_input_type(candidate_email, CandidateEmail)
+
     candidate_email_row = db.session.query(CandidateEmail).filter_by(address=candidate_email).first()
     if not candidate_email_row:
         logger.info('get_candidate_id_from_candidate_email: candidate email not recognized: %s',
@@ -477,6 +502,8 @@ def retrieve_email_campaign_send(email_campaign, candidate_id):
     :type candidate_id:     int
     :rtype:                 list
     """
+    validate_input_type(email_campaign, EmailCampaign)
+
     email_campaign_send_rows = db.session.query(EmailCampaignSend). \
         filter_by(EmailCampaignSend.email_campaign_id == email_campaign.id,
                   EmailCampaignSend.candidate_id == candidate_id)
@@ -829,8 +856,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name,
     # Candidate ID must be recognized
     candidate_query = db.session.query(Candidate).filter_by(id=candidate_id)
     if not candidate_query.first():
-        error_message = "The Candidate you have requested to update does not exist."
-        raise InvalidUsage(error_message=error_message)
+        raise NotFoundError(error_message='Candidate not found', error_code=CANDIDATE_NOT_FOUND)
 
     # Track all edits
     _track_candidate_edits(update_dict, candidate_query.first(), user_id, edited_time)
@@ -901,11 +927,13 @@ def _add_or_update_candidate_addresses(candidate_id, addresses, user_id, edited_
             candidate_address_query = db.session.query(CandidateAddress).filter_by(id=address_id)
             if not candidate_address_query.first():
                 error_message = "Candidate address you are requesting to update does not exist."
-                raise InvalidUsage(error_message=error_message)
+                raise InvalidUsage(error_message='Candidate address not found',
+                                   error_code=ADDRESS_NOT_FOUND)
 
             # CandidateAddress must belong to Candidate
             if candidate_address_query.first().candidate_id != candidate_id:
-                raise ForbiddenError(error_message="Unauthorized candidate address")
+                raise ForbiddenError(error_message="Unauthorized candidate address",
+                                     error_code=ADDRESS_FORBIDDEN)
 
             # Track all edits
             _track_candidate_address_edits(address_dict, candidate_id, candidate_address_query.first(),
@@ -946,19 +974,19 @@ def _add_or_update_candidate_custom_field_ids(candidate_id, custom_fields, added
             # CandidateCustomField must be recognized
             can_custom_field_query = db.session.query(CandidateCustomField).filter_by(id=candidate_custom_field_id)
             if not can_custom_field_query.first():
-                error_message = 'Candidate custom field you are requesting to update does not exist.'
-                raise InvalidUsage(error_message=error_message)
+                error_message = 'Candidate custom field you are requesting to update does not exist'
+                raise InvalidUsage(error_message=error_message, error_code=CUSTOM_FIELD_NOT_FOUND)
 
             # CandidateCustomField must belong to Candidate
             if can_custom_field_query.first().candidate_id != candidate_id:
-                raise ForbiddenError(error_message="Unauthorized candidate custom field")
+                raise ForbiddenError(error_message="Unauthorized candidate custom field",
+                                     error_code=CUSTOM_FIELD_FORBIDDEN)
 
             # Track all edits
             _track_candidate_custom_field_edits(custom_field_dict, can_custom_field_query.first(),
                                                 candidate_id, user_id, edit_time)
 
             # Update CandidateCustomField
-            # TODO: this fails to update, why?
             can_custom_field_query.update(custom_field_dict)
 
         else:  # Add
@@ -997,11 +1025,13 @@ def _add_or_update_educations(candidate_id, educations, added_time, user_id, edi
             # CandidateEducation must be recognized
             can_education_query = db.session.query(CandidateEducation).filter_by(id=education_id)
             if not can_education_query.first():
-                raise InvalidUsage(error_message='Candidate education you are requesting does not exist.')
+                raise NotFoundError('Candidate education you are requesting does not exist',
+                                    error_code=EDUCATION_NOT_FOUND)
 
             # CandidateEducation must belong to Candidate
             if can_education_query.first().candidate_id != candidate_id:
-                raise ForbiddenError('Unauthorized candidate education')
+                raise ForbiddenError('Unauthorized candidate education',
+                                     error_code=EDUCATION_FORBIDDEN)
 
             # Track all changes made to CandidateEducation
             _track_candidate_education_edits(education_dict, can_education_query.first(),
@@ -1038,12 +1068,13 @@ def _add_or_update_educations(candidate_id, educations, added_time, user_id, edi
                     can_edu_degree_query = db.session.query(CandidateEducationDegree).\
                         filter_by(id=education_degree_id)
                     if not can_edu_degree_query.first():
-                        error_message = 'Candidate education degree you are requesting does not exist.'
-                        raise InvalidUsage(error_message=error_message)
+                        raise NotFoundError('Candidate education degree not found',
+                                            error_code=DEGREE_NOT_FOUND)
 
                     # CandidateEducationDegree must belong to Candidate
                     if can_edu_degree_query.first().candidate_education.candidate_id != candidate_id:
-                        raise ForbiddenError(error_message='Unauthorized candidate degree')
+                        raise ForbiddenError(error_message='Unauthorized candidate degree',
+                                             error_code=DEGREE_FORBIDDEN)
 
                     # Track all changes made to CandidateEducationDegree
                     _track_candidate_education_degree_edits(education_degree_dict, can_edu_degree_query.first(),
@@ -1070,13 +1101,14 @@ def _add_or_update_educations(candidate_id, educations, added_time, user_id, edi
                             can_edu_degree_bullet_query = db.session.query(CandidateEducationDegreeBullet).\
                                 filter_by(id=education_degree_bullet_id)
                             if not can_edu_degree_bullet_query.first():
-                                err_msg = 'Candidate education degree bullet you are requesting does not exist.'
-                                raise InvalidUsage(error_message=err_msg)
+                                raise NotFoundError('Candidate education degree bullet not found',
+                                                    error_code=DEGREE_BULLET_NOT_FOUND)
 
                             # CandidateEducationDegreeBullet must belong to Candidate
                             if can_edu_degree_bullet_query.first().candidate_education_degree.\
                                     candidate_education.candidate_id != candidate_id:
-                                raise ForbiddenError(error_message='Unauthorized candidate degree bullet')
+                                raise ForbiddenError('Unauthorized candidate degree bullet',
+                                                     error_code=DEGREE_BULLET_FORBIDDEN)
 
                             # Track all changes made to CandidateEducationDegreeBullet
                             _track_candidate_education_degree_bullet_edits(education_degree_bullet_dict,
@@ -1108,7 +1140,7 @@ def _add_or_update_educations(candidate_id, educations, added_time, user_id, edi
 
         else:  # Add
             # CandidateEducation
-            education_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id))  # TODO: this is to be removed once all tables have been added & migrated
+            education_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id))  # TODO: resume_id to be removed once all tables have been added & migrated
             candidate_education = CandidateEducation(**education_dict)
             db.session.add(candidate_education)
             db.session.flush()
@@ -1188,11 +1220,13 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, 
             # CandidateExperience must be recognized
             can_exp_query = db.session.query(CandidateExperience).filter_by(id=experience_id)
             if not can_exp_query.first():
-                raise InvalidUsage(error_message='Candidate experience you are requesting does not exist.')
+                raise InvalidUsage('Candidate experience not found',
+                                   error_code=EXPERIENCE_NOT_FOUND)
 
             # CandidateExperience must belong to Candidate
             if can_exp_query.first().candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Unauthorized candidate experience')
+                raise ForbiddenError('Unauthorized candidate experience',
+                                     error_code=EXPERIENCE_FORBIDDEN)
 
             # Track all changes made to CandidateExperience
             _track_candidate_experience_edits(experience_dict, can_exp_query.first(),
@@ -1211,7 +1245,8 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, 
                 )
 
                 # Remove keys with None values
-                experience_bullet_dict = dict((k, v) for k, v in experience_bullet_dict.iteritems() if v is not None)
+                experience_bullet_dict = dict((k, v) for k, v in experience_bullet_dict.iteritems()
+                                              if v is not None)
 
                 experience_bullet_id = experience_bullet.get('id')
                 if experience_bullet_id:  # Update
@@ -1220,12 +1255,13 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, 
                     can_exp_bullet_query = db.session.query(CandidateExperienceBullet).\
                         filter_by(id=experience_bullet_id)
                     if not can_exp_bullet_query.first():
-                        err_msg = 'Candidate experience bullet you are requesting does not exist.'
-                        raise InvalidUsage(error_message=err_msg)
+                        raise InvalidUsage('Candidate experience bullet not found',
+                                           error_code=EXPERIENCE_BULLET_NOT_FOUND)
 
                     # CandidateExperienceBullet must belong to Candidate
                     if can_exp_bullet_query.first().candidate_experience.candidate_id != candidate_id:
-                        raise ForbiddenError(error_message='Unauthorized candidate experience bullet')
+                        raise ForbiddenError('Unauthorized candidate experience bullet',
+                                             error_code=EXPERIENCE_BULLET_FORBIDDEN)
 
                     # Track all changes made to CandidateExperienceBullet
                     _track_candidate_experience_bullet_edits(experience_bullet_dict,
@@ -1281,11 +1317,13 @@ def _add_or_update_work_preference(candidate_id, work_preference, user_id, edit_
         # CandidateWorkPreference must be recognized
         can_work_pref_query = db.session.query(CandidateWorkPreference).filter_by(id=work_preference_id)
         if not can_work_pref_query.first():
-            raise InvalidUsage(error_message='Candidate work preference you are requesting does not exist.')
+            raise NotFoundError(error_message='Candidate work preference not found',
+                                error_code=WORK_PREF_NOT_FOUND)
 
         # CandidateWorkPreference must belong to Candidate
         if can_work_pref_query.first().candidate_id != candidate_id:
-            raise ForbiddenError(error_message='Unauthorized candidate work preference')
+            raise ForbiddenError('Unauthorized candidate work preference',
+                                 error_code=WORK_PREF_FORBIDDEN)
 
         # Track all changes
         _track_candidate_work_preference_edits(work_preference_dict, can_work_pref_query.first(),
@@ -1297,7 +1335,8 @@ def _add_or_update_work_preference(candidate_id, work_preference, user_id, edit_
     else:  # Add
         # Only 1 CandidateWorkPreference is permitted for each Candidate
         if db.session.query(CandidateWorkPreference).filter_by(candidate_id=candidate_id).first():
-            raise InvalidUsage(error_message="Candidate work preference already exists.")
+            raise InvalidUsage(error_message="Candidate work preference already exists",
+                               error_code=WORK_PREF_EXISTS)
 
         work_preference_dict.update(dict(candidate_id=candidate_id))
         db.session.add(CandidateWorkPreference(**work_preference_dict))
@@ -1329,20 +1368,18 @@ def _add_or_update_emails(candidate_id, emails, user_id, edit_time):
 
         email_id = email.get('id')
         if email_id:  # Update
-            if not email_address:
-                raise InvalidUsage(error_message="Email address is required for update.")
-
-            # Remove keys with None values
             email_dict = dict((k, v) for k, v in email_dict.iteritems() if v is not None)
 
             # CandidateEmail must be recognized
             candidate_email_query = db.session.query(CandidateEmail).filter_by(id=email_id)
             if not candidate_email_query.first():
-                raise InvalidUsage(error_message='Candidate email you are requesting does not exist.')
+                raise NotFoundError(error_message='Candidate email not found',
+                                    error_code=EMAIL_NOT_FOUND)
 
             # CandidateEmail must belong to Candidate
             if candidate_email_query.first().candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Unauthrized candidate email')
+                raise ForbiddenError(error_message='Unauthorized candidate email',
+                                     error_code=EMAIL_FORBIDDEN)
 
             # Track all changes
             _track_candidate_email_edits(email_dict, candidate_email_query.first(),
@@ -1392,11 +1429,13 @@ def _add_or_update_phones(candidate_id, phones, user_id, edit_time):
             # CandidatePhone must be recognized
             can_phone_query = db.session.query(CandidatePhone).filter_by(id=candidate_phone_id)
             if not can_phone_query.first():
-                raise InvalidUsage(error_message='Candidate phone you are requesting does not exist.')
+                raise NotFoundError(error_message='Candidate phone not found',
+                                    error_code=PHONE_NOT_FOUND)
 
             # CandidatePhone must belong to Candidate
             if can_phone_query.first().candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Unauthorized candidate phone')
+                raise ForbiddenError(error_message='Unauthorized candidate phone',
+                                     error_code=PHONE_FORBIDDEN)
 
             # Track all changes
             _track_candidate_phone_edits(phone_dict, can_phone_query.first(), candidate_id, user_id, edit_time)
@@ -1445,11 +1484,13 @@ def _add_or_update_military_services(candidate_id, military_services, user_id, e
             can_military_service_query = db.session.query(CandidateMilitaryService).\
                 filter_by(id=military_service_id)
             if not can_military_service_query.first():
-                raise InvalidUsage(error_message='Candidate military service you are requesting does not exist.')
+                raise NotFoundError(error_message='Candidate military service not found',
+                                    error_code=MILITARY_NOT_FOUND)
 
             # CandidateMilitaryService must belong to Candidate
             if can_military_service_query.first().candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Unauthorized candidate military service')
+                raise ForbiddenError(error_message='Unauthorized candidate military service',
+                                     error_code=MILITARY_FORBIDDEN)
 
             # Track all changes
             _track_candidate_military_service_edits(military_service_dict,
@@ -1488,12 +1529,13 @@ def _add_or_update_preferred_locations(candidate_id, preferred_locations, user_i
             can_preferred_location_query = db.session.query(CandidatePreferredLocation).\
                 filter_by(id=preferred_location_id)
             if not can_preferred_location_query.first():
-                err_msg = 'Candidate preferred location you are requesting does not exist.'
-                raise InvalidUsage(error_message=err_msg)
+                raise NotFoundError(error_message='Candidate preferred location not found',
+                                    error_code=PREFERRED_LOCATION_NOT_FOUND)
 
             # CandidatePreferredLocation must belong to Candidate
             if can_preferred_location_query.first().candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Unauthorized candidate preferred location')
+                raise ForbiddenError(error_message='Unauthorized candidate preferred location',
+                                     error_code=PREFERRED_LOCATION_FORBIDDEN)
 
             # Track all changes
             _track_candidate_preferred_location_edits(preferred_location_dict,
@@ -1535,11 +1577,13 @@ def _add_or_update_skills(candidate_id, skills, added_time, user_id, edit_time):
             # CandidateSkill must be recognized
             can_skill_query = db.session.query(CandidateSkill).filter_by(id=skill_id)
             if not can_skill_query.first():
-                raise InvalidUsage(error_message='Candidate skill you are requesting does not exist.')
+                raise NotFoundError(error_message='Candidate skill not found',
+                                    error_code=SKILL_NOT_FOUND)
 
             # CandidateSkill must belong to Candidate
             if can_skill_query.first().candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Unauthorized candidate skill')
+                raise ForbiddenError(error_message='Unauthorized candidate skill',
+                                     error_code=SKILL_FORBIDDEN)
 
             # Track all changes
             _track_candidate_skill_edits(skills_dict, can_skill_query.first(), candidate_id, user_id, edit_time)
@@ -1570,11 +1614,13 @@ def _add_or_update_social_networks(candidate_id, social_networks, user_id, edit_
             # CandidateSocialNetwork must be recognized
             can_sn_query = db.session.query(CandidateSocialNetwork).filter_by(id=social_network_id)
             if not can_sn_query.first():
-                raise InvalidUsage(error_message='Candidate social network you are requesting does not exist.')
+                raise NotFoundError(error_message='Candidate social network not found',
+                                    error_code=SOCIAL_NETWORK_NOT_FOUND)
 
             # CandidateSocialNetwork must belong to Candidate
             if can_sn_query.first().candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Unauthorized candidate social network')
+                raise ForbiddenError(error_message='Unauthorized candidate social network',
+                                     error_code=SOCIAL_NETWORK_FORBIDDEN)
 
             # Track all changes
             _track_candidate_social_network_edits(social_network_dict, can_sn_query.first(),

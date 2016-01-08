@@ -24,7 +24,7 @@ from candidate_service.common.utils.auth_utils import require_oauth
 
 # Error handling
 from candidate_service.common.error_handling import ForbiddenError, InvalidUsage, NotFoundError
-from candidate_service.custom_exceptions import *
+from candidate_service.custom_error_codes import *
 
 # Models
 from candidate_service.common.models.candidate import (
@@ -153,7 +153,7 @@ class CandidatesResource(Resource):
                                                        user_domain_id=authed_user.domain_id)
             if not is_authorized:
                 raise ForbiddenError(error_message="Unauthorized custom field IDs",
-                                     error_code=CF_FORBIDDEN)
+                                     error_code=CUSTOM_FIELD_FORBIDDEN)
 
             # Prevent user from adding area(s) of interest to other domains
             areas_of_interest = candidate_dict.get('areas_of_interest') or []
@@ -257,7 +257,8 @@ class CandidatesResource(Resource):
             # Prevent user from updating area(s) of interest from other domains
             is_authorized = is_area_of_interest_authorized(authed_user.domain_id, area_of_interest_ids)
             if not is_authorized:
-                raise ForbiddenError(error_message="Unauthorized area of interest IDs", error_code=AOI_FORBIDDEN)
+                raise ForbiddenError(error_message="Unauthorized area of interest IDs",
+                                     error_code=AOI_FORBIDDEN)
 
             resp_dict = create_or_update_candidate_from_params(
                 user_id=authed_user.id,
@@ -513,13 +514,13 @@ class CandidateCustomFieldResource(Resource):
 
         # Custom fields must belong to user's domain
         if not is_custom_field_authorized(authed_user.domain_id, [can_cf_id]):
-            raise ForbiddenError(error_message='Not authorized', error_code=CF_FORBIDDEN)
+            raise ForbiddenError(error_message='Not authorized', error_code=CUSTOM_FIELD_FORBIDDEN)
 
         if can_cf_id:  # Delete specified custom field
             candidate_custom_field = CandidateCustomField.get_by_id(_id=can_cf_id)
             if not candidate_custom_field:
                 raise NotFoundError(error_message='Candidate custom field not found',
-                                    error_code=CF_NOT_FOUND)
+                                    error_code=CUSTOM_FIELD_NOT_FOUND)
 
             db.session.delete(candidate_custom_field)
 
@@ -530,7 +531,7 @@ class CandidateCustomFieldResource(Resource):
                 candidate_custom_field = CandidateCustomField.get_custom_field(candidate_id, cf_id)
                 if not candidate_custom_field:
                     raise NotFoundError(error_message='Candidate custom field not found',
-                                        error_code=CF_NOT_FOUND)
+                                        error_code=CUSTOM_FIELD_NOT_FOUND)
 
                 db.session.delete(candidate_custom_field)
 
@@ -1038,11 +1039,11 @@ class CandidateSocialNetworkResource(Resource):
 
             if not social_network:
                 raise NotFoundError(error_message='Candidate social network not found',
-                                    error_code=SN_NOT_FOUND)
+                                    error_code=SOCIAL_NETWORK_NOT_FOUND)
 
             # Social network must belong to Candidate
             if social_network.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized', error_code=SN_FORBIDDEN)
+                raise ForbiddenError(error_message='Not authorized', error_code=SOCIAL_NETWORK_FORBIDDEN)
 
             db.session.delete(social_network)
 
