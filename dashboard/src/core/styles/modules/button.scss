@@ -44,6 +44,14 @@
     border-color: $color--teal;
     box-shadow: 0 0 0 2px $color--green;
   }
+
+  .form__fieldset & {
+    margin-top: $margin--row;
+  }
+
+  .form__fieldset--footer & {
+    margin-top: 0;
+  }
 }
 
 // -----
