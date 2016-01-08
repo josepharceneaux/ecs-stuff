@@ -352,7 +352,7 @@ class CampaignBase(object):
             raise InvalidUsage('auth_header is required param')
         if not scheduler_task_id:  # campaign has no scheduler_task_id associated
             return None
-        # HTTP GET request on scheduler_service
+        # HTTP GET request on scheduler_service to schedule campaign
         response = http_request('GET', SchedulerApiUrl.TASK % scheduler_task_id,
                                 headers=auth_header)
         # Task not found on APScheduler

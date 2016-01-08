@@ -163,7 +163,7 @@ class CandidatePoolApiUrl(object):
     SMARTLISTS = API_URL % 'smartlists'
 
 
-class SpreadSheetImportApiUrl(object):
+class SpreadsheetImportApiUrl(object):
     """
     Rest URLs of spreadsheet_import_service
     """
@@ -180,7 +180,7 @@ class SmsCampaignApi(object):
     This class contains the REST endpoints of sms_campaign_service
     """
     VERSION = 'v1'
-    # HOST_NAME is http://127.0.0.1:8011 for dev
+    # HOST_NAME is http://127.0.0.1:8012 for dev
     HOST_NAME = _get_host_name(GTApis.SMS_CAMPAIGN_SERVICE_NAME,
                                GTApis.SMS_CAMPAIGN_SERVICE_PORT)
     API_URL = '/%s/%s' % (VERSION, '%s')
@@ -189,7 +189,7 @@ class SmsCampaignApi(object):
     CAMPAIGNS = '/%s/%s' % (VERSION, 'campaigns')
     # endpoint /v1/campaigns/:id
     # GET campaign by its id, POST: updates a campaign, DELETE a campaign from given id
-    CAMPAIGN = '/%s/%s' % (VERSION, 'campaigns/<int:campaign_id>')
+    CAMPAIGN = CAMPAIGNS + '/<int:campaign_id>'
     # endpoint /v1/campaigns/:id/sends
     # This gives the records from "sends" for a given id of campaign
     SENDS = CAMPAIGN + '/sends'
@@ -199,8 +199,7 @@ class SmsCampaignApi(object):
     # /v1/campaigns/:id/schedule
     # To schedule an SMS campaign
     SCHEDULE = CAMPAIGN + '/schedule'
-    """ Followings are not REST endpoints, but App endpoints """
-    # endpoint /receive
+    # endpoint /v1/receive
     # This endpoint is callback URL when candidate replies to a campaign via SMS
     RECEIVE = API_URL % 'receive'
     # endpoint /v1/redirect/:id
@@ -214,7 +213,7 @@ class SmsCampaignApiUrl(object):
     """
     """ Endpoints' complete URLs for pyTests """
     CAMPAIGNS = SmsCampaignApi.HOST_NAME % SmsCampaignApi.CAMPAIGNS
-    CAMPAIGN = SmsCampaignApi.HOST_NAME % '/%s/%s' % (SmsCampaignApi.VERSION, 'campaigns/%s')
+    CAMPAIGN = CAMPAIGNS + '/%s'
     SENDS = CAMPAIGN + '/sends'
     SEND = CAMPAIGN + '/send'
     SCHEDULE = CAMPAIGN + '/schedule'

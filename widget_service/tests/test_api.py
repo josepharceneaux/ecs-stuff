@@ -33,7 +33,7 @@ from widget_service.widget_app import app
 
 db.init_app(app)
 db.app = app
-APP_URL = 'http://0.0.0.0:8007/v1'
+APP_URL = 'http://0.0.0.0:8006/v1'
 
 
 def test_api_returns_domain_filtered_aois(domain_fixture, request):

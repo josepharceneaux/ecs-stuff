@@ -206,7 +206,7 @@ class SMSCampaigns(Resource):
         try:
             data_from_ui = request.get_json()
         except BadRequest:
-            raise InvalidUsage('Given data is not in json format')
+            raise InvalidUsage('Given data is not JSON serializable')
         if not data_from_ui:
             raise InvalidUsage('No data provided to create SMS campaign')
         # apply validation on fields
