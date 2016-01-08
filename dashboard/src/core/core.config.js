@@ -14,14 +14,14 @@
     // Configure the app
     core.config(configFunction);
 
-    configFunction.$inject = ['$compileProvider', '$logProvider', 'exceptionHandlerProvider',
+    configFunction.$inject = ['$provide', '$compileProvider', '$logProvider', 'exceptionHandlerProvider',
         'OAuthProvider', 'OAuthTokenProvider', 'pickADateProvider', 'pickATimeProvider',
-        'tagsInputConfigProvider', 'authInfo'];
+        'tagsInputConfigProvider', 'authInfo', 'tooltipsConfProvider'];
 
     /* @ngInject */
-    function configFunction($compileProvider, $logProvider, exceptionHandlerProvider,
+    function configFunction($provide, $compileProvider, $logProvider, exceptionHandlerProvider,
                             OAuthProvider, OAuthTokenProvider, pickADateProvider, pickATimeProvider,
-                            tagsInputConfigProvider, authInfo) {
+                            tagsInputConfigProvider, authInfo, tooltipsConfProvider) {
 
         // During development, you may want to set debugInfoEnabled to true. This is required for tools like
         // Protractor, Batarang and ng-inspector to work correctly. However do not check in this change.
@@ -64,5 +64,30 @@
                 replaceSpacesWithDashes: false
             })
             .setTextAutosizeThreshold(13.6);
+
+        $provide.decorator('tooltipsDirective', tooltipsDecorator);
+
+        tooltipsConfProvider.configure({
+            smart: true
+        });
+
+        // The following decorator sets tooltips default appendToBody value to 'true'.
+        // The third party plugin doesn't allow configuring this default through its provider, the traditional method.
+        tooltipsDecorator.$inject = ['$delegate', 'tooltipsConf'];
+
+        /* @ngInject */
+        function tooltipsDecorator($delegate, tooltipsConf) {
+            var directive = $delegate[0];
+
+            tooltipsConf.appendToBody = true;
+
+            directive.compile = function () {
+                return function ($scope, $element, $attrs, $controllerDirective, $transcludeFunc) {
+                    $attrs.tooltipAppendToBody = $attrs.tooltipAppendToBody || (tooltipsConf.appendToBody ? 'true' : 'false');
+                    directive.link.apply(this, arguments);
+                };
+            }
+            return $delegate;
+        } // End tooltipsConf override
     }
 })();

@@ -12,11 +12,18 @@ code {
 pre {
   code {
     display: block;
-    padding: $padding--small $padding--tiny;
+    overflow-x: auto;
+    padding: $padding--tiny;
     border-radius: $border-radius--container;
   }
 }
 
 .code__wrap {
-  overflow-wrap: break-word;
+  &,
+  pre code {
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+  }
 }
