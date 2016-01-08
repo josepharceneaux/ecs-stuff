@@ -38,7 +38,6 @@ from candidate_service.custom_error_codes import *
 
 # Validations
 from candidate_service.common.utils.validators import (sanitize_zip_code, is_number, format_phone_number)
-from candidate_service.modules.validators import validate_input_type
 
 # Common utilities
 from candidate_service.common.geo_services.geo_coordinates import get_coordinates
@@ -55,7 +54,7 @@ def fetch_candidate_info(candidate, fields=None):
     :return:    Candidate dict
     :rtype:     dict[str, T]
     """
-    validate_input_type(candidate, Candidate)
+    assert isinstance(candidate, Candidate)
     candidate_id = candidate.id
 
     get_all_fields = fields is None  # if fields is None, then get ALL the fields
@@ -165,8 +164,7 @@ def format_candidate_full_name(candidate):
     :type candidate:  Candidate
     :return:
     """
-    validate_input_type(candidate, Candidate)
-
+    assert isinstance(candidate, Candidate)
     first_name, middle_name, last_name = candidate.first_name, candidate.middle_name, candidate.last_name
     full_name = ''
     if first_name:
@@ -184,8 +182,7 @@ def candidate_emails(candidate):
     :type candidate:    Candidate
     :rtype              [dict]
     """
-    validate_input_type(candidate, Candidate)
-
+    assert isinstance(candidate, Candidate)
     emails = candidate.candidate_emails
     return [{'id': email.id,
              'label': email.email_label.description,
@@ -199,8 +196,7 @@ def candidate_phones(candidate):
     :type candidate:    Candidate
     :rtype              [dict]
     """
-    validate_input_type(candidate, Candidate)
-
+    assert isinstance(candidate, Candidate)
     phones = candidate.candidate_phones
     return [{'id': phone.id,
              'label': phone.phone_label.description,
@@ -215,6 +211,7 @@ def candidate_addresses(candidate_id):
     :type candidate_id:     int
     :rtype                  [dict]
     """
+    assert isinstance(candidate_id, (int, long))
     # Default CandidateAddress must be returned first
     addresses = db.session.query(CandidateAddress).filter_by(candidate_id=candidate_id).\
         order_by(CandidateAddress.is_default.desc())
@@ -237,6 +234,7 @@ def candidate_experiences(candidate_id):
     :type candidate_id:     int
     :rtype                  [dict]
     """
+    assert isinstance(candidate_id, (int, long))
     # Query CandidateExperience from db in descending order based on start_date & is_current
     experiences = db.session.query(CandidateExperience).filter_by(candidate_id=candidate_id).\
         order_by(CandidateExperience.is_current.desc(),
@@ -260,8 +258,7 @@ def _candidate_experience_bullets(experience):
     :type experience:   CandidateExperience
     :rtype              [dict]
     """
-    validate_input_type(experience, CandidateExperience)
-
+    assert isinstance(experience, CandidateExperience)
     experience_bullets = experience.candidate_experience_bullets
     return [{'id': experience_bullet.id,
              'description': experience_bullet.description,
@@ -274,8 +271,7 @@ def candidate_work_preference(candidate):
     :type candidate:    Candidate
     :rtype              dict
     """
-    validate_input_type(candidate, Candidate)
-
+    assert isinstance(candidate, Candidate)
     work_preference = candidate.candidate_work_preferences
     return {'id': work_preference[0].id,
             'authorization': work_preference[0].authorization,
@@ -295,8 +291,7 @@ def candidate_preferred_locations(candidate):
     :type candidate:    Candidate
     :rtype              [dict]
     """
-    validate_input_type(candidate, Candidate)
-
+    assert isinstance(candidate, Candidate)
     preferred_locations = candidate.candidate_preferred_locations
     return [{'id': preferred_location.id,
              'address': preferred_location.address,
@@ -311,8 +306,7 @@ def candidate_educations(candidate):
     :type candidate:    Candidate
     :rtype              [dict]
     """
-    validate_input_type(candidate, Candidate)
-
+    assert isinstance(candidate, Candidate)
     educations = candidate.candidate_educations
     return [{'id': education.id,
              'school_name': education.school_name,
@@ -331,8 +325,7 @@ def _candidate_degrees(education):
     :type education:    CandidateEducation
     :rtype              [dict]
     """
-    validate_input_type(education, CandidateEducation)
-
+    assert isinstance(education, CandidateEducation)
     degrees = education.candidate_education_degrees
     return [{'id': degree.id,
              'type': degree.degree_type,
@@ -353,8 +346,7 @@ def _candidate_degree_bullets(degree):
     :type degree:  CandidateEducationDegree
     :rtype          [dict]
     """
-    validate_input_type(degree, CandidateEducationDegree)
-
+    assert isinstance(degree, CandidateEducationDegree)
     degree_bullets = degree.candidate_education_degree_bullets
     return [{'id': degree_bullet.id,
              'major': degree_bullet.concentration_type,
@@ -368,6 +360,7 @@ def candidate_skills(candidate_id):
     :type candidate_id: int
     :rtype              [dict]
     """
+    assert isinstance(candidate_id, (int, long))
     # Query CandidateSkill in descending order based on last_used
     skills = db.session.query(CandidateSkill).filter_by(candidate_id=candidate_id).\
         order_by(CandidateSkill.last_used.desc())
@@ -384,6 +377,7 @@ def candidate_areas_of_interest(candidate_id):
     :type candidate_id: int
     :rtype              [dict]
     """
+    assert isinstance(candidate_id, (int, long))
     areas_of_interest = db.session.query(CandidateAreaOfInterest).filter_by(candidate_id=candidate_id)
     return [{'id': db.session.query(AreaOfInterest).get(interest.area_of_interest_id).id,
              'name': db.session.query(AreaOfInterest).get(interest.area_of_interest_id).name
@@ -395,6 +389,7 @@ def candidate_military_services(candidate_id):
     :type candidate_id:  int
     :rtype              [dict]
     """
+    assert isinstance(candidate_id, (int, long))
     military_experiences = db.session.query(CandidateMilitaryService).\
         filter_by(candidate_id=candidate_id).order_by(CandidateMilitaryService.to_date.desc())
     return [{'id': military_info.id,
@@ -414,8 +409,7 @@ def candidate_custom_fields(candidate):
     :type candidate:    Candidate
     :rtype              [dict]
     """
-    validate_input_type(candidate, Candidate)
-
+    assert isinstance(candidate, Candidate)
     custom_fields = db.session.query(CandidateCustomField).filter_by(candidate_id=candidate.id).all()
     return [{'id': custom_field.id,
              'value': custom_field.value,
@@ -428,8 +422,7 @@ def candidate_social_networks(candidate):
     :type candidate:    Candidate
     :rtype              [dict]
     """
-    validate_input_type(candidate, Candidate)
-
+    assert isinstance(candidate, Candidate)
     social_networks = candidate.candidate_social_networks
     return [{'id': soc_net.id,
              'name': soc_net.social_network.name,
@@ -452,7 +445,7 @@ def candidate_contact_history(candidate):
     :type candidate:    Candidate
     :rtype              dict
     """
-    validate_input_type(candidate, Candidate)
+    assert isinstance(candidate, Candidate)
     timeline = []
 
     # Campaign sends & campaigns
@@ -481,12 +474,9 @@ def date_of_employment(year, month, day=1):
 
 def get_candidate_id_from_candidate_email(candidate_email):
     """
-    :type candidate_email:  CandidateEmail
-    :rtype                  int
     """
-    validate_input_type(candidate_email, CandidateEmail)
-
-    candidate_email_row = db.session.query(CandidateEmail).filter_by(address=candidate_email).first()
+    candidate_email_row = db.session.query(CandidateEmail). \
+        filter_by(address=candidate_email).first()
     if not candidate_email_row:
         logger.info('get_candidate_id_from_candidate_email: candidate email not recognized: %s',
                     candidate_email)
@@ -502,8 +492,7 @@ def retrieve_email_campaign_send(email_campaign, candidate_id):
     :type candidate_id:     int
     :rtype:                 list
     """
-    validate_input_type(email_campaign, EmailCampaign)
-
+    assert isinstance(email_campaign, EmailCampaign)
     email_campaign_send_rows = db.session.query(EmailCampaignSend). \
         filter_by(EmailCampaignSend.email_campaign_id == email_campaign.id,
                   EmailCampaignSend.candidate_id == candidate_id)
@@ -518,7 +507,6 @@ def retrieve_email_campaign_send(email_campaign, candidate_id):
 ###################################################
 def fetch_candidate_edits(candidate_id):
     assert isinstance(candidate_id, (int, long))
-
     all_edits = []
     for can_edit in CandidateEdit.get_by_candidate_id(candidate_id=candidate_id):
         table_and_field_names_tuple = CandidateEdit.get_table_and_field_names_from_id(can_edit.field_id)
