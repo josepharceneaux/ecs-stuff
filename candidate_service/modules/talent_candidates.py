@@ -34,7 +34,7 @@ from candidate_service.common.models.user import User
 from candidate_service.common.error_handling import (
     InvalidUsage, NotFoundError, UnauthorizedError, ForbiddenError
 )
-from candidate_service.custom_error_codes import *
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 # Validations
 from candidate_service.common.utils.validators import (sanitize_zip_code, is_number, format_phone_number)
@@ -631,7 +631,7 @@ def create_or_update_candidate_from_params(
     # Raise an error if creation is requested and candidate_id is provided/found
     if candidate_id and is_creating:
         raise InvalidUsage(error_message='Candidate already exists, creation failed.',
-                           error_code=CANDIDATE_ALREADY_EXISTS)
+                           error_code=custom_error.CANDIDATE_ALREADY_EXISTS)
 
     # Update if an update is requested and candidate_id is provided/found
     elif candidate_id and is_updating:
@@ -640,7 +640,7 @@ def create_or_update_candidate_from_params(
     # Update is not possible without candidate ID
     elif not candidate_id and is_updating:
         raise InvalidUsage(error_message='Candidate ID is required for updating',
-                           error_code=MISSING_INPUT)
+                           error_code=custom_error.MISSING_INPUT)
 
     if is_update:  # Update Candidate
         candidate_id = _update_candidate(first_name, middle_name, last_name,
@@ -844,7 +844,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name,
     # Candidate ID must be recognized
     candidate_query = db.session.query(Candidate).filter_by(id=candidate_id)
     if not candidate_query.first():
-        raise NotFoundError(error_message='Candidate not found', error_code=CANDIDATE_NOT_FOUND)
+        raise NotFoundError(error_message='Candidate not found', error_code=custom_error.CANDIDATE_NOT_FOUND)
 
     # Track all edits
     _track_candidate_edits(update_dict, candidate_query.first(), user_id, edited_time)
@@ -916,12 +916,12 @@ def _add_or_update_candidate_addresses(candidate_id, addresses, user_id, edited_
             if not candidate_address_query.first():
                 error_message = "Candidate address you are requesting to update does not exist."
                 raise InvalidUsage(error_message='Candidate address not found',
-                                   error_code=ADDRESS_NOT_FOUND)
+                                   error_code=custom_error.ADDRESS_NOT_FOUND)
 
             # CandidateAddress must belong to Candidate
             if candidate_address_query.first().candidate_id != candidate_id:
                 raise ForbiddenError(error_message="Unauthorized candidate address",
-                                     error_code=ADDRESS_FORBIDDEN)
+                                     error_code=custom_error.ADDRESS_FORBIDDEN)
 
             # Track all edits
             _track_candidate_address_edits(address_dict, candidate_id, candidate_address_query.first(),
@@ -940,7 +940,8 @@ def _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest):
     """
     for area_of_interest in areas_of_interest:
         aoi_id = area_of_interest['area_of_interest_id']
-        db.session.add(CandidateAreaOfInterest(candidate_id=candidate_id, area_of_interest_id=aoi_id))
+        db.session.add(CandidateAreaOfInterest(candidate_id=candidate_id,
+                                               area_of_interest_id=aoi_id))
 
 
 def _add_or_update_candidate_custom_field_ids(candidate_id, custom_fields, added_time, user_id, edit_time):
@@ -957,18 +958,21 @@ def _add_or_update_candidate_custom_field_ids(candidate_id, custom_fields, added
         if candidate_custom_field_id:   # Update
 
             # Remove keys with None values
-            custom_field_dict = dict((k, v) for k, v in custom_field_dict.iteritems() if v is not None)
+            custom_field_dict = dict((k, v) for k, v in custom_field_dict.iteritems()
+                                     if v is not None)
 
             # CandidateCustomField must be recognized
-            can_custom_field_query = db.session.query(CandidateCustomField).filter_by(id=candidate_custom_field_id)
+            can_custom_field_query = db.session.query(CandidateCustomField).\
+                filter_by(id=candidate_custom_field_id)
             if not can_custom_field_query.first():
                 error_message = 'Candidate custom field you are requesting to update does not exist'
-                raise InvalidUsage(error_message=error_message, error_code=CUSTOM_FIELD_NOT_FOUND)
+                raise InvalidUsage(error_message=error_message,
+                                   error_code=custom_error.CUSTOM_FIELD_NOT_FOUND)
 
             # CandidateCustomField must belong to Candidate
             if can_custom_field_query.first().candidate_id != candidate_id:
                 raise ForbiddenError(error_message="Unauthorized candidate custom field",
-                                     error_code=CUSTOM_FIELD_FORBIDDEN)
+                                     error_code=custom_error.CUSTOM_FIELD_FORBIDDEN)
 
             # Track all edits
             _track_candidate_custom_field_edits(custom_field_dict, can_custom_field_query.first(),
@@ -1014,12 +1018,12 @@ def _add_or_update_educations(candidate_id, educations, added_time, user_id, edi
             can_education_query = db.session.query(CandidateEducation).filter_by(id=education_id)
             if not can_education_query.first():
                 raise NotFoundError('Candidate education you are requesting does not exist',
-                                    error_code=EDUCATION_NOT_FOUND)
+                                    error_code=custom_error.EDUCATION_NOT_FOUND)
 
             # CandidateEducation must belong to Candidate
             if can_education_query.first().candidate_id != candidate_id:
                 raise ForbiddenError('Unauthorized candidate education',
-                                     error_code=EDUCATION_FORBIDDEN)
+                                     error_code=custom_error.EDUCATION_FORBIDDEN)
 
             # Track all changes made to CandidateEducation
             _track_candidate_education_edits(education_dict, can_education_query.first(),
@@ -1041,13 +1045,15 @@ def _add_or_update_educations(candidate_id, educations, added_time, user_id, edi
                     end_month=education_degree.get('end_month'),
                     gpa_num=education_degree.get('gpa'),
                     added_time=added_time,
-                    classification_type_id=classification_type_id_from_degree_type(education_degree.get('type')),
+                    classification_type_id=classification_type_id_from_degree_type(
+                            education_degree.get('type')),
                     start_time=education_degree.get('start_time'),
                     end_time=education_degree.get('end_time')
                 )
 
                 # Remove keys with None values
-                education_degree_dict = dict((k, v) for k, v in education_degree_dict.iteritems() if v is not None)
+                education_degree_dict = dict((k, v) for k, v in education_degree_dict.iteritems()
+                                             if v is not None)
 
                 education_degree_id = education_degree.get('id')
                 if education_degree_id:  # Update CandidateEducationDegree
@@ -1057,15 +1063,16 @@ def _add_or_update_educations(candidate_id, educations, added_time, user_id, edi
                         filter_by(id=education_degree_id)
                     if not can_edu_degree_query.first():
                         raise NotFoundError('Candidate education degree not found',
-                                            error_code=DEGREE_NOT_FOUND)
+                                            error_code=custom_error.DEGREE_NOT_FOUND)
 
                     # CandidateEducationDegree must belong to Candidate
                     if can_edu_degree_query.first().candidate_education.candidate_id != candidate_id:
                         raise ForbiddenError(error_message='Unauthorized candidate degree',
-                                             error_code=DEGREE_FORBIDDEN)
+                                             error_code=custom_error.DEGREE_FORBIDDEN)
 
                     # Track all changes made to CandidateEducationDegree
-                    _track_candidate_education_degree_edits(education_degree_dict, can_edu_degree_query.first(),
+                    _track_candidate_education_degree_edits(education_degree_dict,
+                                                            can_edu_degree_query.first(),
                                                             candidate_id, user_id, edit_time)
 
                     can_edu_degree_query.update(education_degree_dict)
@@ -1079,8 +1086,8 @@ def _add_or_update_educations(candidate_id, educations, added_time, user_id, edi
                         )
 
                         # Remove keys with None values
-                        education_degree_bullet_dict = dict((k, v) for k, v in
-                                                            education_degree_bullet_dict.iteritems() if v is not None)
+                        education_degree_bullet_dict = dict(
+                                (k, v) for k, v in education_degree_bullet_dict.iteritems() if v is not None)
 
                         education_degree_bullet_id = education_degree_bullet.get('id')
                         if education_degree_bullet_id:  # Update CandidateEducationDegreeBullet
@@ -1090,13 +1097,13 @@ def _add_or_update_educations(candidate_id, educations, added_time, user_id, edi
                                 filter_by(id=education_degree_bullet_id)
                             if not can_edu_degree_bullet_query.first():
                                 raise NotFoundError('Candidate education degree bullet not found',
-                                                    error_code=DEGREE_BULLET_NOT_FOUND)
+                                                    error_code=custom_error.DEGREE_BULLET_NOT_FOUND)
 
                             # CandidateEducationDegreeBullet must belong to Candidate
                             if can_edu_degree_bullet_query.first().candidate_education_degree.\
                                     candidate_education.candidate_id != candidate_id:
                                 raise ForbiddenError('Unauthorized candidate degree bullet',
-                                                     error_code=DEGREE_BULLET_FORBIDDEN)
+                                                     error_code=custom_error.DEGREE_BULLET_FORBIDDEN)
 
                             # Track all changes made to CandidateEducationDegreeBullet
                             _track_candidate_education_degree_bullet_edits(education_degree_bullet_dict,
@@ -1151,7 +1158,8 @@ def _add_or_update_educations(candidate_id, educations, added_time, user_id, edi
                     end_month=education_degree.get('end_month'),
                     gpa_num=education_degree.get('gpa'),
                     added_time=added_time,
-                    classification_type_id=classification_type_id_from_degree_type(education_degree.get('type')),
+                    classification_type_id=classification_type_id_from_degree_type(
+                            education_degree.get('type')),
                     start_time=education_degree.get('start_time'),
                     end_time=education_degree.get('end_time')
                 )
@@ -1209,12 +1217,12 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, 
             can_exp_query = db.session.query(CandidateExperience).filter_by(id=experience_id)
             if not can_exp_query.first():
                 raise InvalidUsage('Candidate experience not found',
-                                   error_code=EXPERIENCE_NOT_FOUND)
+                                   error_code=custom_error.EXPERIENCE_NOT_FOUND)
 
             # CandidateExperience must belong to Candidate
             if can_exp_query.first().candidate_id != candidate_id:
                 raise ForbiddenError('Unauthorized candidate experience',
-                                     error_code=EXPERIENCE_FORBIDDEN)
+                                     error_code=custom_error.EXPERIENCE_FORBIDDEN)
 
             # Track all changes made to CandidateExperience
             _track_candidate_experience_edits(experience_dict, can_exp_query.first(),
@@ -1244,12 +1252,12 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, 
                         filter_by(id=experience_bullet_id)
                     if not can_exp_bullet_query.first():
                         raise InvalidUsage('Candidate experience bullet not found',
-                                           error_code=EXPERIENCE_BULLET_NOT_FOUND)
+                                           error_code=custom_error.EXPERIENCE_BULLET_NOT_FOUND)
 
                     # CandidateExperienceBullet must belong to Candidate
                     if can_exp_bullet_query.first().candidate_experience.candidate_id != candidate_id:
                         raise ForbiddenError('Unauthorized candidate experience bullet',
-                                             error_code=EXPERIENCE_BULLET_FORBIDDEN)
+                                             error_code=custom_error.EXPERIENCE_BULLET_FORBIDDEN)
 
                     # Track all changes made to CandidateExperienceBullet
                     _track_candidate_experience_bullet_edits(experience_bullet_dict,
@@ -1262,7 +1270,8 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, 
                     db.session.add(CandidateExperienceBullet(**experience_bullet_dict))
 
         else:  # Add
-            experience_dict.update(dict(candidate_id=candidate_id, added_time=added_time, resume_id=candidate_id))
+            experience_dict.update(dict(candidate_id=candidate_id, added_time=added_time,
+                                        resume_id=candidate_id))
             experience = CandidateExperience(**experience_dict)
             db.session.add(experience)
             db.session.flush()
@@ -1303,15 +1312,16 @@ def _add_or_update_work_preference(candidate_id, work_preference, user_id, edit_
     if work_preference_id:  # Update
 
         # CandidateWorkPreference must be recognized
-        can_work_pref_query = db.session.query(CandidateWorkPreference).filter_by(id=work_preference_id)
+        can_work_pref_query = db.session.query(CandidateWorkPreference).\
+            filter_by(id=work_preference_id)
         if not can_work_pref_query.first():
             raise NotFoundError(error_message='Candidate work preference not found',
-                                error_code=WORK_PREF_NOT_FOUND)
+                                error_code=custom_error.WORK_PREF_NOT_FOUND)
 
         # CandidateWorkPreference must belong to Candidate
         if can_work_pref_query.first().candidate_id != candidate_id:
             raise ForbiddenError('Unauthorized candidate work preference',
-                                 error_code=WORK_PREF_FORBIDDEN)
+                                 error_code=custom_error.WORK_PREF_FORBIDDEN)
 
         # Track all changes
         _track_candidate_work_preference_edits(work_preference_dict, can_work_pref_query.first(),
@@ -1324,7 +1334,7 @@ def _add_or_update_work_preference(candidate_id, work_preference, user_id, edit_
         # Only 1 CandidateWorkPreference is permitted for each Candidate
         if db.session.query(CandidateWorkPreference).filter_by(candidate_id=candidate_id).first():
             raise InvalidUsage(error_message="Candidate work preference already exists",
-                               error_code=WORK_PREF_EXISTS)
+                               error_code=custom_error.WORK_PREF_EXISTS)
 
         work_preference_dict.update(dict(candidate_id=candidate_id))
         db.session.add(CandidateWorkPreference(**work_preference_dict))
@@ -1362,12 +1372,12 @@ def _add_or_update_emails(candidate_id, emails, user_id, edit_time):
             candidate_email_query = db.session.query(CandidateEmail).filter_by(id=email_id)
             if not candidate_email_query.first():
                 raise NotFoundError(error_message='Candidate email not found',
-                                    error_code=EMAIL_NOT_FOUND)
+                                    error_code=custom_error.EMAIL_NOT_FOUND)
 
             # CandidateEmail must belong to Candidate
             if candidate_email_query.first().candidate_id != candidate_id:
                 raise ForbiddenError(error_message='Unauthorized candidate email',
-                                     error_code=EMAIL_FORBIDDEN)
+                                     error_code=custom_error.EMAIL_FORBIDDEN)
 
             # Track all changes
             _track_candidate_email_edits(email_dict, candidate_email_query.first(),
@@ -1418,15 +1428,16 @@ def _add_or_update_phones(candidate_id, phones, user_id, edit_time):
             can_phone_query = db.session.query(CandidatePhone).filter_by(id=candidate_phone_id)
             if not can_phone_query.first():
                 raise NotFoundError(error_message='Candidate phone not found',
-                                    error_code=PHONE_NOT_FOUND)
+                                    error_code=custom_error.PHONE_NOT_FOUND)
 
             # CandidatePhone must belong to Candidate
             if can_phone_query.first().candidate_id != candidate_id:
                 raise ForbiddenError(error_message='Unauthorized candidate phone',
-                                     error_code=PHONE_FORBIDDEN)
+                                     error_code=custom_error.PHONE_FORBIDDEN)
 
             # Track all changes
-            _track_candidate_phone_edits(phone_dict, can_phone_query.first(), candidate_id, user_id, edit_time)
+            _track_candidate_phone_edits(phone_dict, can_phone_query.first(),
+                                         candidate_id, user_id, edit_time)
 
             # Update CandidatePhone
             can_phone_query.update(phone_dict)
@@ -1466,19 +1477,20 @@ def _add_or_update_military_services(candidate_id, military_services, user_id, e
         if military_service_id:  # Update
 
             # Remove keys with None values
-            military_service_dict = dict((k, v) for k, v in military_service_dict.iteritems() if v is not None)
+            military_service_dict = dict((k, v) for k, v in military_service_dict.iteritems()
+                                         if v is not None)
 
             # CandidateMilitaryService must be recognized
             can_military_service_query = db.session.query(CandidateMilitaryService).\
                 filter_by(id=military_service_id)
             if not can_military_service_query.first():
                 raise NotFoundError(error_message='Candidate military service not found',
-                                    error_code=MILITARY_NOT_FOUND)
+                                    error_code=custom_error.MILITARY_NOT_FOUND)
 
             # CandidateMilitaryService must belong to Candidate
             if can_military_service_query.first().candidate_id != candidate_id:
                 raise ForbiddenError(error_message='Unauthorized candidate military service',
-                                     error_code=MILITARY_FORBIDDEN)
+                                     error_code=custom_error.MILITARY_FORBIDDEN)
 
             # Track all changes
             _track_candidate_military_service_edits(military_service_dict,
@@ -1511,19 +1523,20 @@ def _add_or_update_preferred_locations(candidate_id, preferred_locations, user_i
         if preferred_location_id:  # Update
 
             # Remove keys with None values
-            preferred_location_dict = dict((k, v) for k, v in preferred_location_dict.iteritems() if v is not None)
+            preferred_location_dict = dict((k, v) for k, v in preferred_location_dict.iteritems()
+                                           if v is not None)
 
             # CandidatePreferredLocation must be recognized
             can_preferred_location_query = db.session.query(CandidatePreferredLocation).\
                 filter_by(id=preferred_location_id)
             if not can_preferred_location_query.first():
                 raise NotFoundError(error_message='Candidate preferred location not found',
-                                    error_code=PREFERRED_LOCATION_NOT_FOUND)
+                                    error_code=custom_error.PREFERRED_LOCATION_NOT_FOUND)
 
             # CandidatePreferredLocation must belong to Candidate
             if can_preferred_location_query.first().candidate_id != candidate_id:
                 raise ForbiddenError(error_message='Unauthorized candidate preferred location',
-                                     error_code=PREFERRED_LOCATION_FORBIDDEN)
+                                     error_code=custom_error.PREFERRED_LOCATION_FORBIDDEN)
 
             # Track all changes
             _track_candidate_preferred_location_edits(preferred_location_dict,
@@ -1566,21 +1579,23 @@ def _add_or_update_skills(candidate_id, skills, added_time, user_id, edit_time):
             can_skill_query = db.session.query(CandidateSkill).filter_by(id=skill_id)
             if not can_skill_query.first():
                 raise NotFoundError(error_message='Candidate skill not found',
-                                    error_code=SKILL_NOT_FOUND)
+                                    error_code=custom_error.SKILL_NOT_FOUND)
 
             # CandidateSkill must belong to Candidate
             if can_skill_query.first().candidate_id != candidate_id:
                 raise ForbiddenError(error_message='Unauthorized candidate skill',
-                                     error_code=SKILL_FORBIDDEN)
+                                     error_code=custom_error.SKILL_FORBIDDEN)
 
             # Track all changes
-            _track_candidate_skill_edits(skills_dict, can_skill_query.first(), candidate_id, user_id, edit_time)
+            _track_candidate_skill_edits(skills_dict, can_skill_query.first(),
+                                         candidate_id, user_id, edit_time)
 
             # Update CandidateSkill
             can_skill_query.update(skills_dict)
 
         else:  # Add
-            skills_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id, added_time=added_time))
+            skills_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id,
+                                    added_time=added_time))
             db.session.add(CandidateSkill(**skills_dict))
 
 
@@ -1603,12 +1618,12 @@ def _add_or_update_social_networks(candidate_id, social_networks, user_id, edit_
             can_sn_query = db.session.query(CandidateSocialNetwork).filter_by(id=social_network_id)
             if not can_sn_query.first():
                 raise NotFoundError(error_message='Candidate social network not found',
-                                    error_code=SOCIAL_NETWORK_NOT_FOUND)
+                                    error_code=custom_error.SOCIAL_NETWORK_NOT_FOUND)
 
             # CandidateSocialNetwork must belong to Candidate
             if can_sn_query.first().candidate_id != candidate_id:
                 raise ForbiddenError(error_message='Unauthorized candidate social network',
-                                     error_code=SOCIAL_NETWORK_FORBIDDEN)
+                                     error_code=custom_error.SOCIAL_NETWORK_FORBIDDEN)
 
             # Track all changes
             _track_candidate_social_network_edits(social_network_dict, can_sn_query.first(),
@@ -2026,48 +2041,3 @@ def _track_candidate_social_network_edits(sn_dict, candidate_social_network, can
             new_value=new_value,
             edit_datetime=edit_time
         ))
-
-
-################################################
-# Helper Functions For Deleting Candidate Info #
-################################################
-# def _delete_candidates(candidate_ids, user_id, source_product_id):
-#     """
-#     Mark as web_hidden in db, then delete from search & db, then delete all candidate data from S3
-#
-#     :type candidate_ids: list[int]
-#     :type user_id: int
-#     :type source_product_id: int
-#     :return: Number of deleted candidates
-#     """
-#     # Delete candidates from CloudSearch, 100 at a time
-#     list_offset = 0
-#     list_segment = candidate_ids[0:100]
-#     candidates = db.session.query(Candidate).filter(Candidate.id.in_(candidate_ids))
-#
-#     from activity_service.activities_app.views.api import (TalentActivityManager, create_activity)
-#
-#     activity_api = TalentActivityManager()
-#
-#     while list_segment:
-#         # Add activity for every candidate deleted
-#         for candidate_id in list_segment:
-#             candidate = candidates.filter(Candidate.id == candidate_id).first()
-#             if candidate:
-#                 create_activity(user_id=user_id, type_=activity_api.CANDIDATE_DELETE,
-#                                 source_table='candidate', source_id=candidate_id,
-#                                 params=dict(source_product_id=source_product_id,
-#                                             formatted_name=candidate.formatted_name))
-#
-#         # Delete all candidates in segment
-#         db.session.query(Candidate).filter(Candidate.id.in_(list_segment)).delete(synchronize_session=False)
-#
-#         # Get next segment
-#         list_offset += 100
-#         list_segment = candidate_ids[list_offset:(list_offset + 100)]
-#
-#     # TODO: Delete files from S3
-#     # TODO: Delete files from CloudSearch
-#
-#     db.session.commit()
-#     return len(candidate_ids)
