@@ -363,8 +363,9 @@ def _assert_results(candidate_ids, response):
     :return:
     """
     resultant_candidate_ids = [long(candidate['id']) for candidate in response['candidates']]
-    print candidate_ids
-    print resultant_candidate_ids
+    print "response: {}".format(response)
+    print 'candidate_ids: {}'.format(candidate_ids)
+    print 'resultant_candidate_ids: {}'.format(resultant_candidate_ids)
     # Test whether every element in the set candidate_ids is in resultant_candidate_ids.
     assert set(candidate_ids).issubset(resultant_candidate_ids)
 

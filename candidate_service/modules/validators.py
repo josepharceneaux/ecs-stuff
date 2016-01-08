@@ -231,9 +231,3 @@ def validate_and_format_data(request_data):
         if key.startswith('cf-'):
             request_vars[key] = value
     return request_vars
-
-
-def validate_input_type(_input, data_type):
-    if not isinstance(_input, data_type):
-        raise InternalServerError(error_message="{} must be of type {}".format(_input, data_type))
-
