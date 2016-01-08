@@ -7,7 +7,7 @@ from flask import jsonify
 from flask.ext.cors import CORS
 # Module Specific
 from resume_service.common.utils.auth_utils import require_oauth
-from resume_service.resume_parsing_app.views.parse_lib import _parse_file_picker_resume
+from resume_service.resume_parsing_app.views.parse_lib import process_resume
 from resume_service.resume_parsing_app.views.batch_lib import add_fp_keys_to_queue
 from resume_service.resume_parsing_app.views.batch_lib import _process_batch_item
 
@@ -33,7 +33,7 @@ def index():
 @require_oauth()
 def resume_post_reciever():
     """
-    Builds a kwargs dict for used in abstracted _parse_file_picker_resume.
+    Builds a kwargs dict for used in abstracted process_resume.
     :return: dict: {'candidate': {}}
     """
     # Get the resume file object from Filepicker or the request body, if provided
@@ -55,7 +55,7 @@ def resume_post_reciever():
         'create_candidate': create_candidate,
         'oauth': oauth
     }
-    return jsonify(**(_parse_file_picker_resume(parse_params)))
+    return jsonify(**(process_resume(parse_params)))
 
 
 @PARSE_MOD.route('/batch', methods=['POST'])
@@ -75,8 +75,8 @@ def post_files_to_queue():
         return jsonify(**{'error': {'message': 'No filenames provided'}}), 400
 
 
-@PARSE_MOD.route('/batch/<user_id>', methods=['GET'])
-@require_oauth
+@PARSE_MOD.route('/batch/<int:user_id>', methods=['GET'])
+@require_oauth()
 def process_batch_item(user_id):
     """
     End Point for getting the processed candidate object representing the first item in a users

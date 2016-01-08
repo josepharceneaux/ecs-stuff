@@ -27,7 +27,7 @@ from resume_service.resume_parsing_app.views.optic_parse_lib import fetch_optic_
 from resume_service.resume_parsing_app.views.optic_parse_lib import parse_optic_json
 
 
-def _parse_file_picker_resume(parse_params):
+def process_resume(parse_params):
     """
     Parses a resume based on a provided: filepicker key or binary, filename
     :return: dict: {'candidate': {}}

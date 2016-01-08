@@ -5,7 +5,7 @@ from flask import jsonify
 # Module Specific
 from resume_service.common.redis_conn import redis_client
 from resume_service.common.models.user import Token
-from resume_service.resume_parsing_app.views.parse_lib import _parse_file_picker_resume
+from resume_service.resume_parsing_app.views.parse_lib import process_resume
 
 
 def add_fp_keys_to_queue(filepicker_keys, user_id):
@@ -41,4 +41,4 @@ def _process_batch_item(user_id, create_candidate=True):
         'create_candidate': create_candidate,
         'oauth': oauth_token
     }
-    return _parse_file_picker_resume(parse_params)
+    return process_resume(parse_params)
