@@ -601,20 +601,20 @@ class CampaignBase(object):
         # get candidate ids
         try:
             candidate_ids = [candidate['id'] for candidate in response.json()['candidates']]
-            candidates = [Candidate.get_by_id(_id) for _id in candidate_ids]
+            # candidates = [Candidate.get_by_id(_id) for _id in candidate_ids]
         except Exception:
             current_app.config['LOGGER'].exception('get_smartlist_candidates: Error while '
                                                    'fetching candidates for smartlist(id:%s)'
                                                    % campaign_smartlist.smartlist_id)
             raise
-        if not candidates:
-            current_app.config['LOGGER'].error('get_smartlist_candidates: '
-                                               'No Candidate found. smartlist id is %s. '
-                                               '(User(id:%s))' % (campaign_smartlist.smartlist_id,
-                                                                  self.user_id))
-        return candidates
+        # if not candidates:
+        #     current_app.config['LOGGER'].error('get_smartlist_candidates: '
+        #                                        'No Candidate found. smartlist id is %s. '
+        #                                        '(User(id:%s))' % (campaign_smartlist.smartlist_id,
+        #                                                           self.user_id))
+        return candidate_ids
 
-    def send_campaign_to_candidates(self, candidates):
+    def send_campaign_to_candidates(self, _ids):
         """
         Once we have the candidates, we iterate each candidate, create celery task and call
         self.send_campaign_to_candidate() to send the campaign. Celery sends campaign to all
@@ -632,7 +632,7 @@ class CampaignBase(object):
         .. see also:: process_send() method in SmsCampaignBase class.
         """
         try:
-            pre_processed_data = self.pre_process_celery_task(candidates)
+            pre_processed_data = self.pre_process_celery_task(_ids)
             # callback is a function which will be hit after campaign is sent to all candidates i.e.
             # once the async task is done the self.callback_campaign_sent will be called
             # When all tasks assigned to Celery complete their execution, following function
@@ -652,6 +652,7 @@ class CampaignBase(object):
             # This runs all tasks asynchronously and sets callback function to be hit once all
             # tasks in list finish running without raising any error. Otherwise callback
             # results in failure status.
+            # TODO: Give URL for CHORD celery page
             chord(tasks)(callback)
         except Exception:
             current_app.config['LOGGER'].exception(

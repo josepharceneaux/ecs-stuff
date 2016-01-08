@@ -62,7 +62,6 @@ A brief overview of all endpoints is as follows:
 """
 # Standard Library
 import types
-from datetime import datetime
 
 # Third Party
 from flask import request
@@ -80,8 +79,8 @@ from push_campaign_service.common.utils.api_utils import api_route, ApiResponse
 
 
 from push_campaign_service.modules.custom_exceptions import *
-from push_campaign_service.common.models.candidate import Candidate, CandidateDevice
-from push_campaign_service.common.models.push_campaign import (PushCampaign, PushCampaignBlast, PushCampaignSmartlist)
+from push_campaign_service.common.models.candidate import *
+from push_campaign_service.common.models.push_campaign import *
 from push_campaign_service.modules.one_signal_sdk import OneSignalSdk
 from push_campaign_service.modules.push_campaign_base import PushCampaignBase
 from push_campaign_service.modules.constants import ONE_SIGNAL_REST_API_KEY, ONE_SIGNAL_APP_ID
@@ -654,7 +653,7 @@ class PushCampaignBlasts(Resource):
 
 
 @api.route(PushCampaignApi.DEVICES)
-class Devices(Resource):
+class AssociateDevice(Resource):
 
     decorators = [require_oauth()]
 
@@ -701,12 +700,12 @@ class Devices(Resource):
             raise ResourceNotFound('Unable to associate device with a non existing candidate id: %s' % candidate_id)
 
         # Send a GET request to OneSignal API to confirm that this device id is valid
-        resp = one_signal_client.get_player(device_id)
-        if resp.ok:
+        response = one_signal_client.get_player(device_id)
+        if response.ok:
             # Device exists with id
             candidate_device = CandidateDevice(candidate_id=candidate_id,
                                                one_signal_device_id=device_id,
-                                               registered_at=datetime.now())
+                                               registered_at=datetime.datetime.now())
             CandidateDevice.save(candidate_device)
             return dict(message='Device registered successfully with candidate (id: %s)' % candidate_id)
         else:

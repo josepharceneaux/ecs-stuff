@@ -11,7 +11,6 @@ from healthcheck import HealthCheck
 from push_campaign_service.common.utils.models_utils import init_talent_app
 from push_campaign_service.common.talent_config_manager import (load_gettalent_config,
                                                                 TalentConfigKeys)
-from push_campaign_service.common.models.db import db
 
 flask_app = Flask(__name__)
 load_gettalent_config(flask_app.config)
@@ -40,4 +39,3 @@ app = init_talent_app(flask_app, logger)
 celery_app = Celery(app, broker=app.config['BACKEND_URL'], backend=app.config['BACKEND_URL'],
                     include=['push_campaign_service.modules.push_campaign_base'])
 
-db.session.expire_on_commit = False

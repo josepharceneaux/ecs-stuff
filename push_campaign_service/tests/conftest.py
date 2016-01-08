@@ -40,6 +40,7 @@ def auth_data(request, user_auth, sample_user):
 
 
 @pytest.fixture()
+# TODO: rename it to campaihn_in_db
 def test_campaign(request, sample_user, campaign_data):
     campaign_data['user_id'] = sample_user.id
     campaign = PushCampaign(**campaign_data)

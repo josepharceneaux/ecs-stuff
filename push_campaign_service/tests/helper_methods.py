@@ -19,6 +19,7 @@ def send_request(method, url, access_token, data=None, is_json=True):
 
 
 def unauthorize_test(method, url, access_token, data=None):
+    # TODO: Use a hard coded token invalid
     response = send_request(method, url, access_token,  data)
     assert response.status_code == 401, 'Access token is not valid'
 

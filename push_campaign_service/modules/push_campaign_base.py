@@ -34,7 +34,7 @@ class PushCampaignBase(CampaignBase):
         super(PushCampaignBase, self).__init__(user_id, *args, **kwargs)
         self.campaign_blast = None
         self.campaign_blast_id = None
-        self.queue_name = CELERY_QUEUE
+        self.queue_name = CELERY_QUEUE    # TODO get from kwargs
         self.campaign_type = CampaignType.PUSH
 
     def get_all_campaigns(self):
@@ -122,28 +122,34 @@ class PushCampaignBase(CampaignBase):
         if not smartlists:
             raise NoSmartlistAssociated('No smartlist is associated with Push Campaign (id:%s). '
                                         '(User(id:%s))' % (campaign.id, self.user_id))
-        candidates = []
+        candidate_ids = []
         for smartlist in smartlists:
-            candidates += self.get_smartlist_candidates(smartlist)
-        if not candidates:
+            # TODO: use try catch to prevent exception loop failure
+            candidate_ids += self.get_smartlist_candidates(smartlist)
+        if not candidate_ids:
             raise InternalServerError('No candidate associated to campaign', error_code=NO_CANDIDATE_ASSOCIATED)
         self.campaign = campaign
         self.campaign_blast = PushCampaignBlast(campaign_id=self.campaign.id)
         PushCampaignBlast.save(self.campaign_blast)
         self.campaign_blast_id = self.campaign_blast.id
         print('Sending campaign to candidates')
-        self.send_campaign_to_candidates(candidates)
+        self.send_campaign_to_candidates(candidate_ids)
 
     @celery_app.task(name='send_campaign_to_candidate')
-    def send_campaign_to_candidate(self, record):
-        candidate, _ = record
-        # db.session.flush()
-        assert isinstance(candidate, Candidate), 'candidate should be instance of Candidate Model'
+    def send_campaign_to_candidate(self, candidate_id):
+        candidate = Candidate.get_by_id(candidate_id)
+        if not candidate:
+            logger.error('Unable to get candidate with id %s' % candidate_id)
+            return None
+        assert isinstance(candidate, Candidate), '"candidate" should be instance of Candidate Model'
         print('Sending campaign to one candidate')
         logger.info('Going to send campaign to candidate (id: %s)' % candidate.id)
+        # TODO: what id device?
         devices = CandidateDevice.get_devices_by_candidate_id(candidate.id)
         device_ids = [device.one_signal_device_id for device in devices]
-        if device_ids:
+        if not device_ids:
+            logger.error('Candidate has not subscribed for push notification')
+        else:
             try:
                 destination_url = self.campaign.url
                 url_conversion = UrlConversion(source_url='', destination_url=destination_url)
@@ -152,18 +158,18 @@ class PushCampaignBase(CampaignBase):
                 expiry_time = datetime.datetime.utcnow() + datetime.timedelta(weeks=8)
                 signed_url = sign_redirect_url(redirect_url, expiry_time)
                 url_conversion.update(source_url=signed_url)
-                resp = one_signal_client.send_notification(signed_url,
-                                                           self.campaign.body_text,
-                                                           self.campaign.name,
-                                                           players=device_ids)
-                if resp.ok:
+                response = one_signal_client.send_notification(signed_url,
+                                                               self.campaign.body_text,
+                                                               self.campaign.name,
+                                                               players=device_ids)
+                if response.ok:
                     campaign_send = PushCampaignSend(campaign_blast_id=self.campaign_blast_id,
                                                      candidate_id=candidate.id
                                                      )
                     PushCampaignSend.save(campaign_send)
                     return True
                 else:
-                    response = resp.json()
+                    response = response.json()
                     errors = response['errors']
                     logger.error('Error while sending push notification to candidate (id: %s),'
                                  'Errors: %s' % errors)
@@ -172,21 +178,6 @@ class PushCampaignBase(CampaignBase):
                 print(e)
                 logger.error('Unable to send push  campaign (id: %s) to candidate (id: %s)'
                              % (self.campaign.id, candidate.id))
-        else:
-            logger.error('Candidate has not subscribed for push notification')
-
-    def pre_process_celery_task(self, candidates):
-        """
-        Here we do any necessary processing before assigning task to Celery. Child classes
-        will override this if needed.
-
-         **See Also**
-        .. see also:: pre_process_celery_task() method in SmsCampaignBase class.
-        :param candidates:
-        :return:
-        """
-        records = [(candidate, None) for candidate in candidates]
-        return records
 
     @staticmethod
     @celery_app.task(name='callback_campaign_sent')
@@ -217,6 +208,7 @@ class PushCampaignBase(CampaignBase):
                         common/utils/campaign_base.py
         """
         with app.app_context():
+            # TODO: post_campaign_sent_processing rename
             processing_after_campaign_sent(CampaignBase, sends_result, user_id, campaign_type,
                                            blast_id, auth_header)
 
