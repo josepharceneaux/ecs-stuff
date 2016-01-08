@@ -6,6 +6,7 @@ import time
 
 # Application specific imports
 from push_campaign_service.common.models.candidate import Candidate
+from push_campaign_service.modules.custom_exceptions import *
 from push_campaign_service.tests.helper_methods import *
 from push_campaign_service.common.models.push_campaign import *
 from push_campaign_service.common.routes import PushCampaignApiUrl, PushCampaignApi
@@ -173,7 +174,6 @@ class TestCampaignById():
 
 
 class TestSendCmapign():
-
     # Send a campaign
     # URL: /v1/campaigns/<int:campaign_id>/send [POST]
     def test_send_a_camapign(self, auth_data, test_campaign, test_smartlist):
@@ -200,6 +200,25 @@ class TestSendCmapign():
             assert blasts[0].sends == 1, 'Campaign was sent to one candidate'
         else:
             unauthorize_test('post', PushCampaignApiUrl.SEND % test_campaign.id, token)
+
+    def test_send_campaign_without_smartlist(self, auth_data, test_campaign):
+        token, is_valid = auth_data
+        if is_valid:
+            response = send_request('post', PushCampaignApiUrl.SEND % test_campaign.id, token)
+            assert response.status_code == 500, 'Internal server error'
+            error = response.json()['error']
+            assert error['code'] == NO_SMARTLIST_ASSOCIATED
+        # 404 status code has been tested in above test
+
+    def test_send_campaign_to_smartlist_with_no_candidates_associated(self, auth_data, test_campaign,
+                                                                      test_smartlist_with_no_candidates):
+        token, is_valid = auth_data
+        if is_valid:
+            response = send_request('post', PushCampaignApiUrl.SEND % test_campaign.id, token)
+            assert response.status_code == 500, 'Internal server error'
+            error = response.json()['error']
+            assert error['code'] == NO_CANDIDATE_ASSOCIATED
+        # 404 status code has been tested in above test
 
 
 class TestCampaignBlasts():

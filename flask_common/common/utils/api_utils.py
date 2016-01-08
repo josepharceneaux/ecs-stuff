@@ -14,7 +14,7 @@ import json
 from flask import Response
 
 # Application Specific
-from .common_functions import JSON_CONTENT_TYPE_HEADER
+from .handy_functions import JSON_CONTENT_TYPE_HEADER
 
 
 class ApiResponse(Response):

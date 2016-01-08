@@ -8,6 +8,7 @@ REQUIRED_FIELDS_MISSING = 7003
 INVALID_FREQUENCY = 7004
 FAILED_TO_SCHEDULE = 7005
 INVALID_FIELD = 7006
+NO_CANDIDATE_ASSOCIATED = 7007
 
 
 class PushNotificationApiException(push_campaign_service.common.error_handling.InternalServerError):

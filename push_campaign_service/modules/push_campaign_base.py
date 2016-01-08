@@ -118,27 +118,31 @@ class PushCampaignBase(CampaignBase):
     def process_send(self, campaign):
         if not isinstance(campaign, PushCampaign):
             raise InvalidUsage('campaign should be instance of PushCampaign model')
+        smartlists = campaign.smartlists.all()
+        if not smartlists:
+            raise NoSmartlistAssociated('No smartlist is associated with Push Campaign (id:%s). '
+                                        '(User(id:%s))' % (campaign.id, self.user_id))
+        candidates = []
+        for smartlist in smartlists:
+            candidates += self.get_smartlist_candidates(smartlist)
+        if not candidates:
+            raise InternalServerError('No candidate associated to campaign', error_code=NO_CANDIDATE_ASSOCIATED)
         self.campaign = campaign
         self.campaign_blast = PushCampaignBlast(campaign_id=self.campaign.id)
         PushCampaignBlast.save(self.campaign_blast)
         self.campaign_blast_id = self.campaign_blast.id
-        candidates = []
-        smartlists = self.campaign.smartlists
-        if not smartlists:
-            raise NoSmartlistAssociated('No smartlist is associated with Push Campaign (id:%s). '
-                                        '(User(id:%s))' % (self.campaign.id, self.user_id))
-        for smartlist in smartlists:
-            candidates += self.get_smartlist_candidates(smartlist)
         print('Sending campaign to candidates')
         self.send_campaign_to_candidates(candidates)
 
     @celery_app.task(name='send_campaign_to_candidate')
-    def send_campaign_to_candidate(self, candidate):
+    def send_campaign_to_candidate(self, record):
+        candidate, _ = record
+        # db.session.flush()
         assert isinstance(candidate, Candidate), 'candidate should be instance of Candidate Model'
         print('Sending campaign to one candidate')
         logger.info('Going to send campaign to candidate (id: %s)' % candidate.id)
         devices = CandidateDevice.get_devices_by_candidate_id(candidate.id)
-        device_ids = map(lambda device: device.one_signal_device_id, devices)
+        device_ids = [device.one_signal_device_id for device in devices]
         if device_ids:
             try:
                 destination_url = self.campaign.url
@@ -170,6 +174,19 @@ class PushCampaignBase(CampaignBase):
                              % (self.campaign.id, candidate.id))
         else:
             logger.error('Candidate has not subscribed for push notification')
+
+    def pre_process_celery_task(self, candidates):
+        """
+        Here we do any necessary processing before assigning task to Celery. Child classes
+        will override this if needed.
+
+         **See Also**
+        .. see also:: pre_process_celery_task() method in SmsCampaignBase class.
+        :param candidates:
+        :return:
+        """
+        records = [(candidate, None) for candidate in candidates]
+        return records
 
     @staticmethod
     @celery_app.task(name='callback_campaign_sent')

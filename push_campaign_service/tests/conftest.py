@@ -7,8 +7,8 @@ from push_campaign_service.common.models.candidate import *
 from push_campaign_service.common.models.push_campaign import *
 
 from faker import Faker
+import pytest
 
-from werkzeug.security import gen_salt
 
 from push_campaign_service.modules.push_campaign_base import PushCampaignBase
 from push_campaign_service.tests.helper_methods import generate_campaign_data
@@ -87,6 +87,24 @@ def test_smartlist(request, sample_user, test_candidate, test_candidate_device, 
     return smartlist
 
 
+@pytest.fixture(scope='function')
+def test_smartlist_with_no_candidates(request, sample_user, test_campaign):
+    """ TODO
+    """
+    smartlist = Smartlist(user_id=sample_user.id,
+                          name=fake.word())
+    Smartlist.save(smartlist)
+
+    push_smartlist = PushCampaignSmartlist(smartlist_id=smartlist.id,
+                                           campaign_id=test_campaign.id)
+    PushCampaignSmartlist.save(push_smartlist)
+
+    def tear_down():
+            Smartlist.delete(smartlist)
+    request.addfinalizer(tear_down)
+    return smartlist
+
+
 @pytest.fixture()
 def campaign_blasts_count(request, sample_user, test_smartlist, test_campaign, auth_data):
     """ TODO
@@ -99,31 +117,6 @@ def campaign_blasts_count(request, sample_user, test_smartlist, test_campaign, a
         for num in range(blasts_counts):
             campaign_obj.process_send(test_campaign)
     return blasts_counts
-
-
-# @pytest.fixture()
-# def test_candidate_device(request, test_candidate):
-#     """ TODO
-#     """
-#     device = CandidateDevice(candidate_id=test_candidate.id,
-#                              one_signal_device_id='56c1d574-237e-4a41-992e-c0094b6f2ded',
-#                              registered_at=datetime.datetime.utcnow())
-#     CandidateDevice.save(device)
-#     return device
-
-
-# @pytest.fixture()
-# def test_smartlist_candidate(request, test_candidate, test_smartlist):
-#     """ TODO
-#     """
-#     smartlist_candidate = SmartlistCandidate(candidate_id=test_candidate.id,
-#                                              smartlist_id=test_smartlist.id)
-#     SmartlistCandidate.save(smartlist_candidate)
-#
-#     def tear_down():
-#         SmartlistCandidate.delete(smartlist_candidate)
-#     request.addfinalizer(tear_down)
-#     return smartlist_candidate
 
 
 @pytest.fixture(scope='function')
