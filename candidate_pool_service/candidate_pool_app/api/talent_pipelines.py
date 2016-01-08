@@ -1,3 +1,5 @@
+from candidate_pool_service.common.routes import CandidatePoolApi
+
 __author__ = 'ufarooqi'
 
 import json
@@ -491,7 +493,7 @@ class TalentPipelineCandidates(Resource):
         return get_candidates_of_talent_pipeline(talent_pipeline)
 
 
-@talent_pipeline_blueprint.route('/talent-pipelines/stats', methods=['POST'])
+@talent_pipeline_blueprint.route(CandidatePoolApi.TALENT_PIPELINE_STATS, methods=['POST'])
 @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
 @require_all_roles('CAN_UPDATE_TALENT_PIPELINES_STATS')
 def update_talent_pipelines_stats():
@@ -548,7 +550,7 @@ def update_talent_pipelines_stats():
         raise InvalidUsage(error_message="Couldn't update statistics of TalentPools because: %s" % e.message)
 
 
-@talent_pipeline_blueprint.route('/talent-pipeline/<int:talent_pipeline_id>/stats', methods=['GET'])
+@talent_pipeline_blueprint.route(CandidatePoolApi.TALENT_PIPELINE_GET_STATS, methods=['GET'])
 @require_oauth()
 def get_talent_pipeline_stats(talent_pipeline_id):
     """
@@ -591,6 +593,6 @@ def get_talent_pipeline_stats(talent_pipeline_id):
     ]})
 
 api = TalentApi(talent_pipeline_blueprint)
-api.add_resource(TalentPipelineApi, '/talent-pipelines/<int:id>', '/talent-pipelines')
-api.add_resource(TalentPipelineSmartListApi, '/talent-pipeline/<int:id>/smart_lists')
-api.add_resource(TalentPipelineCandidates, '/talent-pipeline/<int:id>/candidates')
+api.add_resource(TalentPipelineApi,CandidatePoolApi.TALENT_PIPELINE, CandidatePoolApi.TALENT_PIPELINES)
+api.add_resource(TalentPipelineSmartListApi, CandidatePoolApi.TALENT_PIPELINE_SMARTLISTS)
+api.add_resource(TalentPipelineCandidates, CandidatePoolApi.TALENT_PIPELINE_CANDIDATES)

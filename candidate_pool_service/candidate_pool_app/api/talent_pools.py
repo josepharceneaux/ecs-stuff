@@ -1,3 +1,4 @@
+
 __author__ = 'ufarooqi'
 
 import json
@@ -10,6 +11,7 @@ from dateutil.parser import parse
 from candidate_pool_service.common.error_handling import *
 from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.routes import CandidateApiUrl
+from candidate_pool_service.common.routes import CandidatePoolApi
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
@@ -530,7 +532,7 @@ class TalentPoolCandidateApi(Resource):
                                            talent_pool_candidate_ids]}
 
 
-@talent_pool_blueprint.route('/talent-pools/stats', methods=['POST'])
+@talent_pool_blueprint.route(CandidatePoolApi.TALENT_POOL_STATS, methods=['POST'])
 @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
 @require_all_roles('CAN_UPDATE_TALENT_POOLS_STATS')
 def update_talent_pools_stats():
@@ -625,6 +627,6 @@ def get_talent_pool_stats(talent_pool_id):
     ]})
 
 api = TalentApi(talent_pool_blueprint)
-api.add_resource(TalentPoolApi, '/talent-pools/<int:id>', '/talent-pools')
-api.add_resource(TalentPoolGroupApi, '/groups/<int:group_id>/talent_pools')
-api.add_resource(TalentPoolCandidateApi, '/talent-pools/<int:id>/candidates')
+api.add_resource(TalentPoolApi, CandidatePoolApi.TALENT_POOL, CandidatePoolApi.TALENT_POOLS)
+api.add_resource(TalentPoolGroupApi, CandidatePoolApi.TALENT_POOL_GROUPS)
+api.add_resource(TalentPoolCandidateApi, CandidatePoolApi.TALENT_POOL_CANDIDATES)

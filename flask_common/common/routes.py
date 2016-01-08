@@ -44,7 +44,7 @@ def _get_host_name(service_name, port_number):
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly")
 
 
-def _get_api_relative_url(api_version):
+def _get_api_relative_version(api_version):
     """
     Given version of API, this returns e.g. /v1/%s
     :param api_version:
@@ -108,10 +108,10 @@ class AuthApi(object):
     Rest endpoints of auth_service
     """
     VERSION = 'v1'
-    API_URL = _get_api_relative_url(VERSION)
-    TOKEN_CREATE = API_URL % 'oauth2/token'
-    TOKEN_REVOKE = API_URL % 'oauth2/revoke'
-    AUTHORIZE = API_URL % 'oauth2/authorize'
+    RELATIVE_VERSION = _get_api_relative_version(VERSION)
+    TOKEN_CREATE = RELATIVE_VERSION % 'oauth2/token'
+    TOKEN_REVOKE = RELATIVE_VERSION % 'oauth2/revoke'
+    AUTHORIZE = RELATIVE_VERSION % 'oauth2/authorize'
 
 
 class AuthApiUrl(object):
@@ -131,9 +131,9 @@ class ActivityApi(object):
     Rest endpoints of activity_service
     """
     VERSION = 'v1'
-    API_URL = _get_api_relative_url(VERSION)
+    RELATIVE_VERSION = _get_api_relative_version(VERSION)
     # /v1/activities/
-    ACTIVITIES = API_URL % 'activities/'
+    ACTIVITIES = RELATIVE_VERSION % 'activities/'
     # /v1/activities/<page>
     ACTIVITIES_PAGE = ACTIVITIES + '<page>'
 
@@ -155,7 +155,7 @@ class ResumeApi(object):
     """
     VERSION = 'v1'
     URL_PREFIX = _get_url_prefix(VERSION)
-    API_URL = _get_api_relative_url(VERSION)
+    RELATIVE_VERSION = _get_api_relative_version(VERSION)
     PARSE = 'parse_resume'
 
 
@@ -166,7 +166,7 @@ class ResumeApiUrl(object):
     HOST_NAME = _get_host_name(GTApis.RESUME_SERVICE_NAME,
                                GTApis.RESUME_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    API_URL = HOST_NAME % ResumeApi.API_URL
+    API_URL = HOST_NAME % ResumeApi.RELATIVE_VERSION
     PARSE = API_URL % ResumeApi.PARSE
 
 
@@ -204,11 +204,10 @@ class UserServiceApiUrl:
     def __init__(self):
         pass
 
-    API_VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.USER_SERVICE_NAME,
                                GTApis.USER_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    API_URL = HOST_NAME % '/%s/%s' % (API_VERSION, '%s')
+    API_URL = HOST_NAME % _get_api_relative_version(UserServiceApi.VERSION)
     USERS = API_URL % UserServiceApi.USERS
     USER = USERS + '/%s'
     DOMAINS = API_URL % UserServiceApi.DOMAINS
@@ -245,12 +244,12 @@ class WidgetApiUrl(object):
     HOST_NAME = _get_host_name(GTApis.WIDGET_SERVICE_NAME,
                                GTApis.WIDGET_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    API_URL = HOST_NAME % '/%s/%s' % (WidgetApi.VERSION, '%s')
+    API_URL = HOST_NAME % _get_api_relative_version(WidgetApi.VERSION)
     DOMAIN_WIDGETS = API_URL % (WidgetApi.DOMAINS + '/%s/widgets/%s')
     DOMAIN_INTERESTS = API_URL % (WidgetApi.DOMAINS + '/%s/interests')
-    UNIVERSITIES = API_URL % WidgetApi.UNIVERSITIES
     DOMAIN_MAJORS = API_URL % (WidgetApi.DOMAINS + '/%s/majors')
     DOMAINS = API_URL % UserServiceApi.DOMAINS
+    UNIVERSITIES = API_URL % WidgetApi.UNIVERSITIES
 
 
 class SocialNetworkApiUrl(object):
@@ -262,23 +261,66 @@ class SocialNetworkApiUrl(object):
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
 
 
+class CandidatePoolApi(object):
+    """
+    Rest URLs of candidate_pool_service
+    """
+    VERSION = 'v1'
+    # /v1/
+    URL_PREFIX = _get_url_prefix(VERSION)
+    _INT_ID = '/<int:id>'
+    _TALENT_POOL = 'talent-pool'
+    _TALENT_PIPELINE = 'talent-pipeline'
+    _STATS = '/stats'
+    # Talent Pools
+    TALENT_POOLS = 'talent-pools'
+    TALENT_POOL = TALENT_POOLS + _INT_ID
+    TALENT_POOL_CANDIDATES = TALENT_POOL + '/candidates'
+    TALENT_POOL_GROUPS = 'groups/<int:group_id>/talent_pools'
+    TALENT_POOL_STATS = TALENT_POOLS + _STATS
+    TALENT_POOL_GET_STATS = _TALENT_POOL + '/<int:talent_pool_id>' + _STATS
+    # Talent Pipelines
+    TALENT_PIPELINES = 'talent-pipelines'
+    TALENT_PIPELINE = TALENT_PIPELINES + _INT_ID
+    TALENT_PIPELINE_SMARTLISTS = _TALENT_PIPELINE + _INT_ID + '/smart_lists'
+    TALENT_PIPELINE_CANDIDATES = _TALENT_PIPELINE + _INT_ID + '/candidates'
+    TALENT_PIPELINE_STATS = TALENT_PIPELINES + _STATS
+    TALENT_PIPELINE_GET_STATS = _TALENT_PIPELINE + '/<int:talent_pipeline_id>' + _STATS
+    # Smartlists
+    SMARTLISTS = 'smartlists'
+    SMARTLIST = SMARTLISTS + _INT_ID
+    SMARTLIST_CANDIDATES = SMARTLISTS + '/<int:smartlist_id>/candidates'
+    SMARTLIST_STATS = SMARTLISTS + _STATS
+    SMARTLIST_GET_STATS = SMARTLISTS + '/<int:smartlist_id>' + _STATS
+
+
 class CandidatePoolApiUrl(object):
     """
     Rest URLs of candidate_pool_service
     """
-    API_VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.CANDIDATE_POOL_SERVICE_NAME,
                                GTApis.CANDIDATE_POOL_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    API_URL = HOST_NAME % '/%s/%s' % (API_VERSION, '%s')
-    TALENT_POOL_STATS = API_URL % "talent-pools/stats"
-    TALENT_POOL_GET_STATS = API_URL % "talent-pool/%s/stats"
-    TALENT_PIPELINE_STATS = API_URL % "talent-pipelines/stats"
+    API_URL = HOST_NAME % _get_api_relative_version(CandidatePoolApi.VERSION)
+    # Talent Pool
+    TALENT_POOLS = API_URL % CandidatePoolApi.TALENT_POOLS
+    TALENT_POOL = TALENT_POOLS + '/%s'
+    TALENT_POOL_STATS = API_URL % CandidatePoolApi.TALENT_POOL_STATS
+    TALENT_POOL_GET_STATS = TALENT_POOL + "/stats"
+    TALENT_POOL_CANDIDATE = API_URL % (CandidatePoolApi.TALENT_POOLS + '/%s/candidates')
+    TALENT_POOL_GROUP = API_URL % 'groups/%s/talent_pools'
+    # Talent Pipeline
+    TALENT_PIPELINES = API_URL % CandidatePoolApi.TALENT_PIPELINES
+    TALENT_PIPELINE = TALENT_PIPELINES + '/%s'
+    TALENT_PIPELINE_STATS = API_URL % CandidatePoolApi.TALENT_PIPELINE_STATS
+    TALENT_PIPELINE_CANDIDATE = API_URL % 'talent-pipeline/%s/candidates'
+    TALENT_PIPELINE_SMARTLISTS = API_URL % 'talent-pipeline/%s/smart_lists'
     TALENT_PIPELINE_GET_STATS = API_URL % "talent-pipeline/%s/stats"
-    SMARTLIST_CANDIDATES = API_URL % 'smartlists/%s/candidates'
-    SMARTLISTS = API_URL % 'smartlists'
-    SMARTLIST_STATS = HOST_NAME % "smartlists/stats"
-    SMARTLIST_GET_STATS = HOST_NAME % "smartlists/%s/stats"
+    # Smartlists
+    SMARTLISTS = API_URL % CandidatePoolApi.SMARTLISTS
+    SMARTLIST_STATS = API_URL % CandidatePoolApi.SMARTLIST_STATS
+    SMARTLIST_GET_STATS = SMARTLISTS + "/%s/stats"
+    SMARTLIST_CANDIDATES = SMARTLISTS + '/%s/candidates'
 
 
 class SpreadsheetImportApi(object):
@@ -300,7 +342,7 @@ class SpreadsheetImportApiUrl(object):
     HOST_NAME = _get_host_name(GTApis.SPREADSHEET_IMPORT_SERVICE_NAME,
                                GTApis.SPREADSHEET_IMPORT_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    API_URL = HOST_NAME % '/%s/%s' % (SpreadsheetImportApi.VERSION, '%s')
+    API_URL = HOST_NAME % _get_api_relative_version(SpreadsheetImportApi.VERSION)
     CONVERT_TO_TABLE = API_URL % SpreadsheetImportApi.CONVERT_TO_TABLE
     IMPORT_CANDIDATES = API_URL % SpreadsheetImportApi.IMPORT_CANDIDATES
 
@@ -313,19 +355,19 @@ class CandidateApi(object):
     _INT_ID = "/<int:id>"
     HOST_NAME = _get_host_name(GTApis.CANDIDATE_SERVICE_NAME,
                                GTApis.CANDIDATE_SERVICE_PORT)
-    API_URL = '/%s/%s' % (VERSION, '%s')
+    RELATIVE_VERSION = '/%s/%s' % (VERSION, '%s')
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
 
-    CANDIDATES = API_URL % "candidates"
+    CANDIDATES = RELATIVE_VERSION % "candidates"
     _CANDIDATE_ID = CANDIDATES + "/<int:candidate_id>"
-    CANDIDATE_ID = API_URL % "candidates/<int:id>"
-    CANDIDATE_EMAIL = API_URL % "candidates/<email>"
+    CANDIDATE_ID = RELATIVE_VERSION % "candidates/<int:id>"
+    CANDIDATE_EMAIL = RELATIVE_VERSION % "candidates/<email>"
 
     ADDRESSES = _CANDIDATE_ID + "/addresses"
     ADDRESS = ADDRESSES + _INT_ID
 
     AOIS = _CANDIDATE_ID + "/areas_of_interest"
-    AOI = AOIS + "/areas_of_interest" + _INT_ID
+    AOI = AOIS + _INT_ID
 
     CUSTOM_FIELDS = _CANDIDATE_ID + "/custom_fields"
     CUSTOM_FIELD = CUSTOM_FIELDS + _INT_ID
@@ -368,7 +410,7 @@ class CandidateApi(object):
 
     CANDIDATE_SEARCH = CANDIDATES + "/search"
     CANDIDATES_DOCUMENTS = CANDIDATES + "/documents"
-    OPENWEB = CANDIDATES_DOCUMENTS + '/openweb'
+    OPENWEB = CANDIDATES + '/openweb'
 
 
 class CandidateApiUrl(object):
@@ -377,80 +419,65 @@ class CandidateApiUrl(object):
     """
     HOST_NAME = _get_host_name(GTApis.CANDIDATE_SERVICE_NAME,
                                GTApis.CANDIDATE_SERVICE_PORT)
-    API_URL = HOST_NAME % '/%s%s' % (CandidateApi.VERSION, '%s')
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    CANDIDATE = API_URL % "/candidates/%s"
-    CANDIDATES = API_URL % "/candidates"
+    CANDIDATES = HOST_NAME % CandidateApi.CANDIDATES
+    CANDIDATE = CANDIDATES + "/%s"
 
-    ADDRESSES = CANDIDATE % "%s/addresses"
+    ADDRESSES = CANDIDATE + "/addresses"
     ADDRESS = ADDRESSES + "/%s"
 
-    AOI = API_URL % "/candidates/%s/areas_of_interest/%s"
-    AOIS = API_URL % "/candidates/%s/areas_of_interest"
+    AOIS = CANDIDATE + "/areas_of_interest"
+    AOI = AOIS + "/%s"
 
-    CUSTOM_FIELD = API_URL % "/candidates/%s/custom_fields/%s"
-    CUSTOM_FIELDS = API_URL % "/candidates/%s/custom_fields"
+    CUSTOM_FIELDS = CANDIDATE + "/custom_fields"
+    CUSTOM_FIELD = CUSTOM_FIELDS + "/%s"
 
-    CANDIDATE_SEARCH_URI = API_URL % "/candidates/search"
+    CANDIDATE_SEARCH_URI = CANDIDATES + "/search"
 
-    CANDIDATES_DOCUMENTS_URI = API_URL % "/candidates/documents"
+    CANDIDATES_DOCUMENTS_URI = CANDIDATES + "/documents"
 
-    EDUCATION = API_URL % "/candidates/%s/educations/%s"
-    EDUCATIONS = API_URL % "/candidates/%s/educations"
+    EDUCATIONS = CANDIDATE + "/educations"
+    EDUCATION = EDUCATIONS + "/%s"
 
-    DEGREE = API_URL % "/candidates/%s/educations/%s/degrees/%s"
-    DEGREES = API_URL % "/candidates/%s/educations/%s/degrees"
+    DEGREES = EDUCATION + "/degrees"
+    DEGREE = DEGREES + "/%s"
 
-    DEGREE_BULLET = API_URL % "/candidates/%s/educations/%s/degrees/%s/bullets/%s"
-    DEGREE_BULLETS = API_URL % "/candidates/%s/educations/%s/degrees/%s/bullets"
+    DEGREE_BULLETS = DEGREE + "/bullets"
+    DEGREE_BULLET = DEGREE_BULLETS + "/%s"
 
-    EMAIL = API_URL % "/candidates/%s/emails/%s"
-    EMAILS = API_URL % "/candidates/%s/emails"
+    EMAILS = CANDIDATE + "/emails"
+    EMAIL = EMAILS + "/%s"
 
-    EXPERIENCE = API_URL % "/candidates/%s/experiences/%s"
-    EXPERIENCES = API_URL % "/candidates/%s/experiences"
+    EXPERIENCES = CANDIDATE + "/experiences"
+    EXPERIENCE = EXPERIENCES + "/%s"
 
-    EXPERIENCE_BULLET = API_URL % "/candidates/%s/experiences/%s/bullets/%s"
-    EXPERIENCE_BULLETS = API_URL % "/candidates/%s/experiences/%s/bullets"
+    EXPERIENCE_BULLETS = EXPERIENCE + "/bullets"
+    EXPERIENCE_BULLET = EXPERIENCE_BULLETS + "/%s"
 
-    MILITARY_SERVICE = API_URL % "/candidates/%s/military_services/%s"
-    MILITARY_SERVICES = API_URL % "/candidates/%s/military_services"
+    MILITARY_SERVICES = CANDIDATE + "/military_services"
+    MILITARY_SERVICE = MILITARY_SERVICES + "/%s"
 
-    PHONE = API_URL % "/candidates/%s/phones/%s"
-    PHONES = API_URL % "/candidates/%s/phones"
+    PHONES = CANDIDATE + "/phones"
+    PHONE = PHONES + "/%s"
 
-    PREFERRED_LOCATION = API_URL % "/candidates/%s/preferred_locations/%s"
-    PREFERRED_LOCATIONS = API_URL % "/candidates/%s/preferred_locations"
+    PREFERRED_LOCATIONS = CANDIDATE + "/preferred_locations"
+    PREFERRED_LOCATION = PREFERRED_LOCATIONS + "/%s"
 
-    SKILL = API_URL % "/candidates/%s/skills/%s"
-    SKILLS = API_URL % "/candidates/%s/skills"
+    SKILLS = CANDIDATE + "/skills"
+    SKILL = SKILLS + "/%s"
 
-    SOCIAL_NETWORK = API_URL % "/candidates/%s/social_networks/%s"
-    SOCIAL_NETWORKS = API_URL % "/candidates/%s/social_networks"
+    SOCIAL_NETWORKS = CANDIDATE + "/social_networks"
+    SOCIAL_NETWORK = SOCIAL_NETWORKS + "/%s"
 
-    WORK_PREFERENCE = API_URL % "/candidates/%s/work_preference/%s"
-    CANDIDATE_EDIT = API_URL % "/candidates/%s/edits"
+    WORK_PREFERENCE = CANDIDATE + "/work_preference/%s"
+    CANDIDATE_EDIT = CANDIDATE + "/edits"
 
 
 class SchedulerApiUrl(object):
     """
     Rest URLs of scheduler_service
     """
-    SCHEDULER_SERVICE_HOST_NAME = _get_host_name(GTApis.SCHEDULER_SERVICE_NAME,
-                                                 GTApis.SCHEDULER_SERVICE_PORT)
-    TASKS = SCHEDULER_SERVICE_HOST_NAME % '/tasks/'
-    TASK = SCHEDULER_SERVICE_HOST_NAME % '/tasks/id/%s'
-
-
-class SchedulerApi(object):
-    """
-    Rest Emdpoints for scheduler_service
-    """
-    VERSION = 'v1'
-    # HOST_NAME is http://127.0.0.1:8011 for dev
-    SCHEDULER_SERVICE_HOST_NAME = _get_host_name(GTApis.SCHEDULER_SERVICE_NAME,
-                                                 GTApis.SCHEDULER_SERVICE_PORT)
-    API_URL = '/%s/%s' % (VERSION, '%s')
-    HEALTH_CHECK = _get_health_check_url(SCHEDULER_SERVICE_HOST_NAME)
-    TASKS = API_URL % '/tasks/'
-    TASK = API_URL % '/tasks/id/<string:_id>'
+    HOST_NAME = _get_host_name(GTApis.SCHEDULER_SERVICE_NAME,
+                               GTApis.SCHEDULER_SERVICE_PORT)
+    TASKS = HOST_NAME % '/tasks/'
+    TASK = HOST_NAME % '/tasks/id/%s'
