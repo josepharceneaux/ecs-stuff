@@ -119,7 +119,7 @@ class AuthApiUrl(object):
     Rest URLs of auth_service
     """
     HOST_NAME = _get_host_name(GTApis.AUTH_SERVICE_NAME,
-                                            GTApis.AUTH_SERVICE_PORT)
+                               GTApis.AUTH_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     TOKEN_CREATE = HOST_NAME % AuthApi.TOKEN_CREATE
     TOKEN_REVOKE = HOST_NAME % AuthApi.TOKEN_REVOKE
@@ -206,7 +206,7 @@ class UserServiceApiUrl:
 
     API_VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.USER_SERVICE_NAME,
-                                            GTApis.USER_SERVICE_PORT)
+                               GTApis.USER_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     API_URL = HOST_NAME % '/%s/%s' % (API_VERSION, '%s')
     USERS = API_URL % UserServiceApi.USERS
@@ -243,7 +243,7 @@ class WidgetApiUrl(object):
     Rest URLs of widget_service
     """
     HOST_NAME = _get_host_name(GTApis.WIDGET_SERVICE_NAME,
-                                      GTApis.WIDGET_SERVICE_PORT)
+                               GTApis.WIDGET_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     API_URL = HOST_NAME % '/%s/%s' % (WidgetApi.VERSION, '%s')
     DOMAIN_WIDGETS = API_URL % (WidgetApi.DOMAINS + '/%s/widgets/%s')
@@ -258,7 +258,7 @@ class SocialNetworkApiUrl(object):
     Rest URLs of social_network_service
     """
     HOST_NAME = _get_host_name(GTApis.SOCIAL_NETWORK_SERVICE_NAME,
-                                              GTApis.SOCIAL_NETWORK_SERVICE_PORT)
+                               GTApis.SOCIAL_NETWORK_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
 
 
@@ -298,27 +298,92 @@ class SpreadsheetImportApiUrl(object):
     Rest URLs of spreadsheet_import_service
     """
     HOST_NAME = _get_host_name(GTApis.SPREADSHEET_IMPORT_SERVICE_NAME,
-                                                          GTApis.SPREADSHEET_IMPORT_SERVICE_PORT)
+                               GTApis.SPREADSHEET_IMPORT_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     API_URL = HOST_NAME % '/%s/%s' % (SpreadsheetImportApi.VERSION, '%s')
     CONVERT_TO_TABLE = API_URL % SpreadsheetImportApi.CONVERT_TO_TABLE
     IMPORT_CANDIDATES = API_URL % SpreadsheetImportApi.IMPORT_CANDIDATES
 
 
+class CandidateApi(object):
+    """
+    API relative URLs for candidate_service
+    """
+    VERSION = 'v1'
+    _INT_ID = "/<int:id>"
+    HOST_NAME = _get_host_name(GTApis.CANDIDATE_SERVICE_NAME,
+                               GTApis.CANDIDATE_SERVICE_PORT)
+    API_URL = '/%s/%s' % (VERSION, '%s')
+    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
+
+    CANDIDATES = API_URL % "candidates"
+    _CANDIDATE_ID = CANDIDATES + "/<int:candidate_id>"
+    CANDIDATE_ID = API_URL % "candidates/<int:id>"
+    CANDIDATE_EMAIL = API_URL % "candidates/<email>"
+
+    ADDRESSES = _CANDIDATE_ID + "/addresses"
+    ADDRESS = ADDRESSES + _INT_ID
+
+    AOIS = _CANDIDATE_ID + "/areas_of_interest"
+    AOI = AOIS + "/areas_of_interest" + _INT_ID
+
+    CUSTOM_FIELDS = _CANDIDATE_ID + "/custom_fields"
+    CUSTOM_FIELD = CUSTOM_FIELDS + _INT_ID
+
+    EDUCATIONS = _CANDIDATE_ID + "/educations"
+    EDUCATION = EDUCATIONS + _INT_ID
+
+    DEGREES = EDUCATIONS + '/<int:education_id>/degrees'
+    DEGREE = DEGREES + _INT_ID
+
+    DEGREE_BULLETS = DEGREES + "/<int:degree_id>/bullets"
+    DEGREE_BULLET = DEGREE_BULLETS + _INT_ID
+
+    EXPERIENCES = _CANDIDATE_ID + "/experiences"
+    EXPERIENCE = EXPERIENCES + _INT_ID
+
+    EXPERIENCE_BULLETS = EXPERIENCES + "/<int:experience_id>/bullets"
+    EXPERIENCE_BULLET = EXPERIENCE_BULLETS + _INT_ID
+
+    EMAILS = _CANDIDATE_ID + "/emails"
+    EMAIL = EMAILS + _INT_ID
+
+    MILITARY_SERVICES = _CANDIDATE_ID + "/military_services/%s"
+    MILITARY_SERVICE = MILITARY_SERVICES + _INT_ID
+
+    PHONES = _CANDIDATE_ID + "/phones"
+    PHONE = PHONES + _INT_ID
+
+    PREFERRED_LOCATIONS = _CANDIDATE_ID + "/preferred_locations"
+    PREFERRED_LOCATION = PREFERRED_LOCATIONS + _INT_ID
+
+    SKILLS = _CANDIDATE_ID + "/skills"
+    SKILL = SKILLS + _INT_ID
+
+    SOCIAL_NETWORKS = _CANDIDATE_ID + "/social_networks"
+    SOCIAL_NETWORK = SOCIAL_NETWORKS + _INT_ID
+
+    WORK_PREFERENCE = _CANDIDATE_ID + "/work_preference" + _INT_ID
+    CANDIDATE_EDIT = CANDIDATE_ID + "/edits"
+
+    CANDIDATE_SEARCH = CANDIDATES + "/search"
+    CANDIDATES_DOCUMENTS = CANDIDATES + "/documents"
+    OPENWEB = CANDIDATES_DOCUMENTS + '/openweb'
+
+
 class CandidateApiUrl(object):
     """
     Rest URLs of candidate_service
     """
-    API_VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.CANDIDATE_SERVICE_NAME,
-                                                 GTApis.CANDIDATE_SERVICE_PORT)
-    API_URL = HOST_NAME % '/%s%s' % (API_VERSION, '%s')
+                               GTApis.CANDIDATE_SERVICE_PORT)
+    API_URL = HOST_NAME % '/%s%s' % (CandidateApi.VERSION, '%s')
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     CANDIDATE = API_URL % "/candidates/%s"
     CANDIDATES = API_URL % "/candidates"
 
-    ADDRESS = API_URL % "/candidates/%s/addresses/%s"
-    ADDRESSES = API_URL % "/candidates/%s/addresses"
+    ADDRESSES = CANDIDATE % "%s/addresses"
+    ADDRESS = ADDRESSES + "/%s"
 
     AOI = API_URL % "/candidates/%s/areas_of_interest/%s"
     AOIS = API_URL % "/candidates/%s/areas_of_interest"
