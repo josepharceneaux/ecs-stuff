@@ -1,7 +1,7 @@
-from email_campaign.common.models.smart_list import SmartList
-from email_campaign.common.models.email_marketing import EmailClient
-from email_campaign.common.models.user import User
-from email_campaign.common.error_handling import InvalidUsage, UnprocessableEntity, ForbiddenError
+from email_campaign_service.common.models.smartlist import Smartlist
+from email_campaign_service.common.models.email_marketing import EmailClient
+from email_campaign_service.common.models.user import User
+from email_campaign_service.common.error_handling import InvalidUsage, UnprocessableEntity, ForbiddenError
 import datetime
 __author__ = 'jitesh'
 
@@ -102,7 +102,7 @@ def validate_lists_belongs_to_domain(list_ids, user_id):
     :return:False, if any of list given not belongs to current user domain else True
     """
     user = User.query.get(user_id)
-    smart_lists = SmartList.query.with_entities(SmartList.id).join(SmartList.user).filter(
+    smart_lists = Smartlist.query.with_entities(Smartlist.id).join(Smartlist.user).filter(
         User.domain_id == user.domain_id).all()
 
     smart_list_ids = [smart_list.id for smart_list in smart_lists]

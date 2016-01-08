@@ -5,8 +5,8 @@ from urllib import urlencode
 from urlparse import parse_qs, urlsplit, urlunsplit
 from flask import current_app
 from BeautifulSoup import BeautifulSoup, Tag
-from email_campaign.common.models.db import db
-from email_campaign.common.models.email_marketing import UrlConversion, EmailCampaignSendUrlConversion
+from email_campaign_service.common.models.db import db
+from email_campaign_service.common.models.email_marketing import UrlConversion, EmailCampaignSendUrlConversion
 
 
 DEFAULT_FIRST_NAME_MERGETAG = "*|FIRSTNAME|*"

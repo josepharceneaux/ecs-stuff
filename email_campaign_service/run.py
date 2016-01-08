@@ -1,4 +1,4 @@
-from email_campaign import app
+from email_campaign_service.email_campaign_app import app
 
 __author__ = 'jitesh'
 

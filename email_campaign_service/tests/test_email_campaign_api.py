@@ -5,12 +5,11 @@ import time
 import email
 
 from faker import Faker
-from email_campaign.common.tests.conftest import UserAuthentication
-from email_campaign.common.tests.conftest import *
-from email_campaign.common.tests.sample_data import generate_single_candidate_data
-from email_campaign import db
-from email_campaign.common.models.smart_list import SmartList, SmartListCandidate
-from email_campaign.common.routes import CandidateApiUrl
+from email_campaign_service.common.tests.conftest import UserAuthentication
+from email_campaign_service.common.tests.conftest import *
+from email_campaign_service.common.tests.sample_data import generate_single_candidate_data
+from email_campaign_service.common.models.smartlist import Smartlist, SmartlistCandidate
+from email_campaign_service.common.routes import CandidateApiUrl
 __author__ = 'jitesh'
 
 fake = Faker()
@@ -96,10 +95,10 @@ def create_dumblist(auth_token_row):
     # create candidate
     candidate_id = create_candidate(auth_token_row)
     # Create smartlist
-    list_obj = SmartList(name=fake.word(), user_id=auth_token_row['user_id'])
+    list_obj = Smartlist(name=fake.word(), user_id=auth_token_row['user_id'])
     db.session.add(list_obj)
     db.session.commit()
-    smartlist_candidate = SmartListCandidate(smart_list_id=list_obj.id, candidate_id=candidate_id)
+    smartlist_candidate = SmartlistCandidate(smart_list_id=list_obj.id, candidate_id=candidate_id)
     db.session.add(smartlist_candidate)
     db.session.commit()
     return list_obj.id

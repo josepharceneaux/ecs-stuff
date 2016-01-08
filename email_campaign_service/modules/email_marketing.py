@@ -6,21 +6,21 @@ import json
 from flask import current_app
 from sqlalchemy import and_
 from sqlalchemy import desc
-from email_campaign.common.models.db import db
-from email_campaign.common.models.email_marketing import EmailCampaign, EmailCampaignSmartList, EmailCampaignBlast, \
+from email_campaign_service.common.models.db import db
+from email_campaign_service.common.models.email_marketing import EmailCampaign, EmailCampaignSmartList, EmailCampaignBlast, \
     EmailCampaignSend
-from email_campaign.common.models.misc import Frequency
-from email_campaign.common.models.user import User, Domain
-from email_campaign.common.models.candidate import Candidate, CandidateEmail, CandidateSubscriptionPreference
-from email_campaign.common.error_handling import *
-from email_campaign.common.emails.admin_reporting import email_admins
-from email_campaign.common.emails.AWS_SES import send_email
-from email_campaign.modules.utils import create_email_campaign_url_conversions, do_mergetag_replacements, get_candidates_of_smartlist
+from email_campaign_service.common.models.misc import Frequency
+from email_campaign_service.common.models.user import User, Domain
+from email_campaign_service.common.models.candidate import Candidate, CandidateEmail, CandidateSubscriptionPreference
+from email_campaign_service.common.error_handling import *
+from email_campaign_service.common.emails.admin_reporting import email_admins
+from email_campaign_service.common.emails.AWS_SES import send_email
+from email_campaign_service.modules.utils import create_email_campaign_url_conversions, do_mergetag_replacements, get_candidates_of_smartlist
 
 __author__ = 'jitesh'
 
 SCHEDULER_URL = 'http://localhost:8011/tasks/'
-EMAIL_CAMPAIGN_URL = 'http://localhost:8014/send-campaign-emails'
+EMAIL_CAMPAIGN_URL = 'http://localhost:8014/v1/send-campaign-emails'
 
 
 def create_email_campaign_smart_lists(smart_list_ids, email_campaign_id):
@@ -109,7 +109,7 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
         schedule_task_params["start_datetime"] = send_time
         schedule_task_params["end_datetime"] = stop_time
     else:
-        schedule_task_params["run_datetime"] = datetime.datetime.strftime(datetime.datetime.utcnow(), "%Y-%m-%d %H:%M:%S")   # TODO: Check if this is needed.
+        schedule_task_params["run_datetime"] = datetime.datetime.strftime(datetime.datetime.utcnow()+ datetime.timedelta(seconds=10), "%Y-%m-%d %H:%M:%S")   # TODO: Check if this is needed.
 
     # Schedule email campaign; call Scheduler API
     headers = {'Authorization': oauth_token, 'Content-Type': 'application/json'}

@@ -3,7 +3,7 @@ from db import db
 from sqlalchemy.orm import relationship, backref
 import datetime
 from sqlalchemy.dialects.mysql import TINYINT
-
+from email_marketing import EmailCampaignSend
 from associations import ReferenceEmail
 from venue import Venue
 from event import Event
