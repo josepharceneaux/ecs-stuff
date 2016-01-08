@@ -540,7 +540,8 @@ def update_talent_pipelines_stats():
                                                            )
             db.session.add(talent_pipeline_stat)
 
-        db.session.commit()
+        if talent_pipelines:
+            db.session.commit()
         return '', 204
 
     except Exception as e:

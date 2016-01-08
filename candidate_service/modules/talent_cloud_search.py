@@ -445,7 +445,8 @@ def delete_all_candidate_documents():
     It only works on dev domain (to avoid the function hitting accidentally on production)
 
     """
-    if app.config(TalentConfigKeys.ENV_KEY) is not 'dev':
+    env = app.config[TalentConfigKeys.ENV_KEY]
+    if env not in ['dev', 'circle']:
         raise Exception("Can't call delete_all_candidate_documents() in prod! Use the console instead")
 
     # Get all candidate ids by searching for everything except a nonsense string

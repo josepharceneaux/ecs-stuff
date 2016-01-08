@@ -574,7 +574,8 @@ def update_talent_pools_stats():
                                                    candidates_engagement=percentage_candidates_engagement)
             db.session.add(talent_pool_stat)
 
-        db.session.commit()
+        if talent_pools:
+            db.session.commit()
         return '', 204
 
     except Exception as e:

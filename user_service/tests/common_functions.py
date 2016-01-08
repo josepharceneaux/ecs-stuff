@@ -18,7 +18,7 @@ def user_scoped_roles(access_token, user_id, test_roles=None, action="GET", fals
         headers['content-type'] = 'application/json'
         test_role_second = DomainRole.get_by_name(test_role_second)
         if false_case:
-            data = {'roles': [int(test_role_second.id) + 10]}
+            data = {'roles': [int(test_role_second.id) + 1000]}
         else:
             data = {'roles': [test_role_first, test_role_second.id]}
         response = requests.post(UserServiceApiUrl.USER_ROLES_API % user_id, headers=headers, data=json.dumps(data))
