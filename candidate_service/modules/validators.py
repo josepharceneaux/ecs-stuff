@@ -13,6 +13,7 @@ from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPON
 from candidate_service.common.error_handling import InvalidUsage
 from candidate_service.common.utils.validators import is_number
 from datetime import datetime
+from candidate_service.common.error_handling import InternalServerError
 
 
 def does_candidate_belong_to_user(user_row, candidate_id):
@@ -230,3 +231,9 @@ def validate_and_format_data(request_data):
         if key.startswith('cf-'):
             request_vars[key] = value
     return request_vars
+
+
+def validate_input_type(_input, data_type):
+    if not isinstance(_input, data_type):
+        raise InternalServerError(error_message="{} must be of type {}".format(_input, data_type))
+
