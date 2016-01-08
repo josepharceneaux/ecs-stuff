@@ -62,13 +62,13 @@ class CandidatesResource(Resource):
         get_all_domain_candidates = False
 
         # Parse request body & validate data
-        body_dict = request.get_json(force=True)
+        body_dict = request.get_json()
         try:
             validate(instance=body_dict, schema=candidates_resource_schema_get)
         except Exception as e:
             raise InvalidUsage(error_message=e.message, error_code=INVALID_INPUT)
 
-        if not body_dict.get('candidate_ids'):
+        if not body_dict:
             get_all_domain_candidates = True
 
         if get_all_domain_candidates:  # Retrieve user's candidates
