@@ -220,7 +220,7 @@ class UserServiceApiUrl:
     USER_GROUPS_API = API_URL % 'groups/%s/users'
     UPDATE_PASSWORD_API = API_URL % UserServiceApi.UPDATE_PASSWORD
     FORGOT_PASSWORD_API = API_URL % UserServiceApi.FORGOT_PASSWORD
-    RESET_PASSWORD_API = API_URL % UserServiceApi.RESET_PASSWORD
+    RESET_PASSWORD_API = USERS + '/reset_password/%s'
 
 
 class WidgetApi(object):
