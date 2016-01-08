@@ -135,6 +135,7 @@ class SchedulerApiUrl:
     else:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
 
+    # URLs, in case of test cases
     TASKS = SCHEDULER_SERVICE_HOST_NAME % "tasks/"
     SINGLE_TASK = SCHEDULER_SERVICE_HOST_NAME % 'tasks/id/%s'
     PAUSE_TASK = SCHEDULER_SERVICE_HOST_NAME % 'tasks/%s/pause/'
@@ -143,6 +144,10 @@ class SchedulerApiUrl:
     RESUME_TASKS = SCHEDULER_SERVICE_HOST_NAME % 'tasks/resume/'
     TEST_TASK = SCHEDULER_SERVICE_HOST_NAME % 'tasks/test/'
 
+    # Use different port of scheduler service URL
+    FLOWER_MONITORING = '--port=5511'
+
+    # URLs, in case of API
     SCHEDULER_MULTIPLE_TASKS = "/%s/%s" % (VERSION, "tasks/")
     SCHEDULER_TASKS_TEST = "/%s/%s" % (VERSION, "tasks/test/")
     SCHEDULER_ONE_TASK = "/%s/%s" % (VERSION, "tasks/id/<string:_id>")

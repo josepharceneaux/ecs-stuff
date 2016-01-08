@@ -10,9 +10,9 @@ These methods are called by run_job method asynchronously
 
     celery flower -A scheduler_service.run.celery
 
-default url for celery flower =>
+For Scheduler Service, celery flower is =>
 
-    localhost:5555
+    localhost:5511
 
 """
 # Application imports
@@ -40,10 +40,10 @@ def send_request(access_token, secret_key_id, url, content_type, kwargs):
             headers.update({'X-Talent-Secret-Key-ID': secret_key_id})
         # Send request to URL with job post data
         response = http_request(method_type='POST', url=url, data=kwargs, headers=headers)
+
         try:
             return response.text
         except Exception as e:
             # This exception will be caught by flower
             return {'message': e.message, 'status_code': response.status_code}
-
 

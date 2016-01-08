@@ -4,7 +4,7 @@ import requests
 from flask import current_app
 
 from flask.ext.common.common.error_handling import ForbiddenError, InvalidUsage, UnauthorizedError, \
-    InternalServerError
+    InternalServerError, ResourceNotFound
 
 __author__ = 'erikfarmer'
 
@@ -93,7 +93,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
             # we can raise it with Response.raise_for_status():"""
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            if e.response.status_code in [UnauthorizedError.http_status_code()]:
+            if e.response.status_code in [UnauthorizedError.http_status_code(), ResourceNotFound.http_status_code()]:
                 # 401 is the error code for Not Authorized user(Expired Token)
                 raise
             # checks if error occurred on "Server" or is it a bad request

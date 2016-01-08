@@ -29,7 +29,7 @@ from scheduler_service.common.error_handling import InvalidUsage
 from scheduler_service.common.routes import AuthApiUrl
 from scheduler_service.common.utils.handy_functions import http_request
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
-from scheduler_service.common.utils.validators import get_valid_data_from_dict, get_valid_url_from_dict, \
+from scheduler_service.validators import get_valid_data_from_dict, get_valid_url_from_dict, \
     get_valid_datetime_from_dict, get_valid_integer_from_dict
 from scheduler_service.custom_exceptions import TriggerTypeError, JobNotCreatedError
 from scheduler_service.tasks import send_request
@@ -108,7 +108,7 @@ def validate_one_time_job(data):
 def validate_periodic_job(data):
     """
     Validate periodic job and check for missing or invalid data. if found then raise error
-    :param data:
+    :param data: JSON job post data
     :return:
     """
     valid_data = dict()
@@ -229,8 +229,6 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
     elif 'bearer' in access_token.lower():
         headers = {'content-type': 'application/x-www-form-urlencoded'}
         token = Token.get_token(access_token=access_token.split(' ')[1])
-        if not token:
-            raise InvalidUsage("Wrong token provided. Token is expired or not present in db.")
         # If token has expired we refresh it
         past_datetime = token.expires - datetime.timedelta(seconds=REQUEST_TIMEOUT)
         if token and past_datetime < datetime.datetime.utcnow():
@@ -249,7 +247,9 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
 
     logger.info('User ID: %s, URL: %s, Content-Type: %s' % (user_id, url, content_type))
     # Call celery task to send post_data to URL
-    send_request.apply_async([access_token, secret_key, url, content_type, kwargs])
+    send_request.apply_async([access_token, secret_key, url, content_type, kwargs],
+                             serializer='json',
+                             queue=SchedulerUtils.QUEUE)
 
 
 def remove_tasks(ids, user_id):
