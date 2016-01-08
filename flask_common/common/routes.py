@@ -289,7 +289,7 @@ class SpreadsheetImportApi(object):
     # This is /v1/
     URL_PREFIX = _get_url_prefix(VERSION)
     _PARSE_SPREADSHEET = 'parse_spreadsheet'
-    CONVERT_TO_TABLE = _PARSE_SPREADSHEET + '/convert_to_table/'
+    CONVERT_TO_TABLE = _PARSE_SPREADSHEET + '/convert_to_table'
     IMPORT_CANDIDATES = _PARSE_SPREADSHEET + '/import_candidates'
 
 
@@ -301,8 +301,8 @@ class SpreadsheetImportApiUrl(object):
                                                           GTApis.SPREADSHEET_IMPORT_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     API_URL = HOST_NAME % '/%s/%s' % (SpreadsheetImportApi.VERSION, '%s')
-    CONVERT_TO_TABLE = API_URL % "convert_to_table"
-    IMPORT_CANDIDATES = API_URL % 'import_candidates'
+    CONVERT_TO_TABLE = API_URL % SpreadsheetImportApi.CONVERT_TO_TABLE
+    IMPORT_CANDIDATES = API_URL % SpreadsheetImportApi.IMPORT_CANDIDATES
 
 
 class CandidateApiUrl(object):
