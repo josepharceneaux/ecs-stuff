@@ -456,7 +456,7 @@ class TestSmartlistStatsUpdateApi(object):
         assert status_code == 204
 
         # Logged-in user trying to get statistics of a non-existing smartlist
-        response, status_code = self.call_smartlist_stats_get_api(access_token_first, test_smartlist.id + 100)
+        response, status_code = self.call_smartlist_stats_get_api(access_token_first, test_smartlist.id + 1000)
         assert status_code == 404
 
         # Logged-in user trying to get statistics of a smartlist of different user

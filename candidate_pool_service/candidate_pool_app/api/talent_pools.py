@@ -585,7 +585,7 @@ def update_talent_pools_stats():
         raise InvalidUsage(error_message="Couldn't update statistics of TalentPools because: %s" % e.message)
 
 
-@talent_pool_blueprint.route('/talent-pool/<int:talent_pool_id>/stats', methods=['GET'])
+@talent_pool_blueprint.route(CandidatePoolApi.TALENT_POOL_GET_STATS, methods=['GET'])
 @require_oauth()
 def get_talent_pool_stats(talent_pool_id):
     """

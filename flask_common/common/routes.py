@@ -306,7 +306,7 @@ class CandidatePoolApiUrl(object):
     TALENT_POOLS = API_URL % CandidatePoolApi.TALENT_POOLS
     TALENT_POOL = TALENT_POOLS + '/%s'
     TALENT_POOL_STATS = API_URL % CandidatePoolApi.TALENT_POOL_STATS
-    TALENT_POOL_GET_STATS = TALENT_POOL + "/stats"
+    TALENT_POOL_GET_STATS = API_URL % "talent-pool/%s/stats"
     TALENT_POOL_CANDIDATE = API_URL % (CandidatePoolApi.TALENT_POOLS + '/%s/candidates')
     TALENT_POOL_GROUP = API_URL % 'groups/%s/talent_pools'
     # Talent Pipeline
