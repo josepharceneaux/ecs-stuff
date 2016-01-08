@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 
 """
-Script for developers to use to set up their local & remote resources, like DB data and AWS resources.
+Script for new developers to use to set up their local & remote resources, like DB data and AWS resources.
 
 Prerequisites:
 You must have MySQL running locally and a database called talent_local.
+
+Run:
+python setup_environment/run_setup.py
+
 """
 
 from flask import Flask
@@ -52,3 +56,5 @@ with app.app_context():
         from user_service.user_app.user_service_utilties import create_user
         create_user(email=app.config[TalentConfigKeys.EMAIL_KEY], domain_id=domain.id, first_name='John',
                     last_name='Doe', expiration=None)
+
+print 'Local Environment setup has been completed successfully'
