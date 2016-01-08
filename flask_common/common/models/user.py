@@ -346,7 +346,7 @@ class UserScopedRoles(db.Model):
                     if domain_role:
                         role_id = domain_role.id
                     else:
-                        raise InvalidUsage("Role: %s doesn't exist" % role)
+                        raise InvalidUsage(error_message="Role: %s doesn't exist" % role)
                 domain_role = DomainRole.query.get(role_id)
                 if domain_role and (not domain_role.domain_id or domain_role.domain_id == user.domain_id):
                     if not UserScopedRoles.query.filter((UserScopedRoles.user_id == user.id) &
@@ -354,12 +354,12 @@ class UserScopedRoles(db.Model):
                         user_scoped_role = UserScopedRoles(user_id=user.id, role_id=role_id)
                         db.session.add(user_scoped_role)
                     else:
-                        raise InvalidUsage("Role: %s already exists for user: %s" % (role, user.id))
+                        raise InvalidUsage(error_message="Role: %s already exists for user: %s" % (role, user.id))
                 else:
-                    raise InvalidUsage("Role: %s doesn't exist or it belongs to a different domain" % role)
+                    raise InvalidUsage(error_message="Role: %s doesn't exist or it belongs to a different domain" % role)
             db.session.commit()
         else:
-            raise InvalidUsage("User %s doesn't exist" % user.id)
+            raise InvalidUsage(error_message="User %s doesn't exist" % user.id)
 
     @staticmethod
     def delete_roles(user, roles_list):
@@ -376,14 +376,14 @@ class UserScopedRoles(db.Model):
                 if domain_role:
                     role_id = domain_role.id
                 else:
-                    raise InvalidUsage("Domain role %s doesn't exist" % role)
+                    raise InvalidUsage(error_message="Domain role %s doesn't exist" % role)
 
             user_scoped_role = UserScopedRoles.query.filter((UserScopedRoles.user_id == user.id)
                                                             & (UserScopedRoles.role_id == role_id)).first()
             if user_scoped_role:
                 db.session.delete(user_scoped_role)
             else:
-                raise InvalidUsage("User %s doesn't have any role %s or " % (user.id, role_id))
+                raise InvalidUsage(error_message="User %s doesn't have any role %s or " % (user.id, role_id))
         db.session.commit()
 
     @staticmethod
@@ -449,7 +449,8 @@ class UserGroup(db.Model):
             if not already_existing_group:
                 user_group = UserGroup(name=name, description=description, domain_id=domain_id)
             else:
-                raise InvalidUsage("Group '%s' already exists in same domain so it cannot be added again" % name)
+                raise InvalidUsage(error_message="Group '%s' already exists in same domain so it cannot be "
+                                                 "added again" % name)
             db.session.add(user_group)
             user_groups.append(user_group)
         db.session.commit()
@@ -493,11 +494,11 @@ class UserGroup(db.Model):
                 if group:
                     db.session.delete(group)
                 else:
-                    raise InvalidUsage("Group %s doesn't exist or either it doesn't belong to\
-                                            Domain %s " % (group_id, domain_id))
+                    raise InvalidUsage(error_message="Group %s doesn't exist or either it doesn't belong to "
+                                                     "Domain %s " % (group_id, domain_id))
             db.session.commit()
         else:
-            raise InvalidUsage("Domain %s doesn't exist" % domain_id)
+            raise InvalidUsage(error_message="Domain %s doesn't exist" % domain_id)
 
     @staticmethod
     def add_users_to_group(user_group, user_ids):
@@ -511,8 +512,8 @@ class UserGroup(db.Model):
             if user and user.domain_id == user_group.domain_id:
                 user.user_group_id = user_group.id
             else:
-                raise InvalidUsage("User: %s doesn't exist or either it doesn't belong to same Domain\
-                                        %s as user group" % (user_id, user_group.domain_id))
+                raise InvalidUsage(error_message="User: %s doesn't exist or either it doesn't belong to same Domain "
+                                                 "%s as user group" % (user_id, user_group.domain_id))
         db.session.commit()
 
 
