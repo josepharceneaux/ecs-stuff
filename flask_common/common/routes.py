@@ -348,7 +348,7 @@ class CandidateApi(object):
     EMAILS = _CANDIDATE_ID + "/emails"
     EMAIL = EMAILS + _INT_ID
 
-    MILITARY_SERVICES = _CANDIDATE_ID + "/military_services/%s"
+    MILITARY_SERVICES = _CANDIDATE_ID + "/military_services"
     MILITARY_SERVICE = MILITARY_SERVICES + _INT_ID
 
     PHONES = _CANDIDATE_ID + "/phones"
