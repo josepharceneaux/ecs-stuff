@@ -23,7 +23,20 @@ module.exports = function (config) {
         return gulp
             .src(templateCacheConfig.templateFiles)
             .pipe(config.$.if(config.args.verbose, config.$.bytediff.start()))
-            .pipe(config.$.minifyHtml({ empty: true }))
+            .pipe(config.$.htmlmin({
+                removeComments: true,
+                removeCommentsFromCDATA: true,
+                removeCDATASectionsFromCDATA: true,
+                collapseWhitespace: false,
+                removeAttributeQuotes: false,
+                removeRedundantAttributes: true,
+                removeEmptyAttributes: false,
+                removeScriptTypeAttributes: true,
+                removeStyleLinkTypeAttributes: true,
+                processScripts: [
+                    'text/ng-template'
+                ]
+            }))
             .pipe(config.$.if(config.args.verbose, config.$.bytediff.stop(bytediffFormatter)))
             .pipe(config.$.angularTemplatecache(templateCacheConfig.file, templateCacheConfig.options))
             .pipe(gulp.dest(templateCacheConfig.destDir));
