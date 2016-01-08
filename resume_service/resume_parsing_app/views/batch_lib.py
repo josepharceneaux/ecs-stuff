@@ -1,11 +1,15 @@
 """Functions used by batch processing endpoints."""
 __author__ = 'erik@getTalent'
+# Standard Library
+from datetime import datetime
+from datetime import timedelta
 # Framework specific
 from flask import jsonify
 # Module Specific
 from resume_service.common.redis_conn import redis_client
 from resume_service.common.models.user import Token
 from resume_service.resume_parsing_app.views.parse_lib import process_resume
+from resume_service.common.utils.handy_functions import grouper
 
 
 def add_fp_keys_to_queue(filepicker_keys, user_id):
@@ -17,34 +21,13 @@ def add_fp_keys_to_queue(filepicker_keys, user_id):
     """
     queue_string = 'batch:{}:fp_keys'.format(user_id)
     list_length = redis_client.rpush(queue_string, *filepicker_keys)
-    # from datetime import datetime
-    # from datetime import timedelta
-    # from itertools import izip_longest
-    #
-    # def grouper(iterable, n, fillvalue=None):
-    #     args = [iter(iterable)] * n
-    #     return izip_longest(*args, fillvalue=fillvalue)
-    #
-    #
-    # batch_ints = range(40)
-    # batch_size = 2
-    # batches = grouper(batch_ints, batch_size)
-    # scheduled = datetime.now()
-    # for batch in batches:
-    #     for item in batch:
-    #       print 'Item {} is scheduled for: {}'.format(item, scheduled)
-    #     scheduled += timedelta(seconds=20)
-    #
-    #
-    # batch_ints = range(400)
-    # batch_size = 100
-    # batch_count = 1
-    # batches = grouper(batch_ints, batch_size)
-    # scheduled = datetime.now()
-    # for batch in batches:
-    #     print 'Batch {} is scheduled for {}'.format(batch_count, scheduled)
-    #     scheduled += timedelta(seconds=20)
-    #     batch_count += 1
+    batches = grouper(filepicker_keys, 100)
+    scheduled = datetime.now()
+    for batch in batches:
+        for item in batch:
+            # This is where we talk to scheduler service
+            pass
+        scheduled += timedelta(seconds=20)
 
     return {'redis_key': queue_string, 'quantity': list_length}
 

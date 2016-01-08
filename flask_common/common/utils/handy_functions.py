@@ -4,6 +4,7 @@ import re
 import random
 import string
 from ..models.user import User, UserScopedRoles
+from itertools import izip_longest
 
 
 def random_word(length):
@@ -41,3 +42,10 @@ def camel_case_to_snake_case(name):
     name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     name = re.sub('(.)([0-9]+)', r'\1_\2', name)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
+
+
+def grouper(iterable, n, fillvalue=None):
+    "Collect data into fixed-length chunks or blocks"
+    # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx
+    args = [iter(iterable)] * n
+    return izip_longest(*args, fillvalue=fillvalue)
