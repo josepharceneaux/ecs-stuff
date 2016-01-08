@@ -7,8 +7,9 @@ from time import sleep
 from time import time
 import base64
 import json
-# Third Party
+# Third Party/Framework Specific.
 from BeautifulSoup import BeautifulSoup
+from flask import current_app
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 from pdfminer.pdfinterp import PDFResourceManager
@@ -20,7 +21,6 @@ import magic
 import requests
 # Module Specific
 from .utils import create_candidate_from_parsed_resume
-from flask import current_app
 from resume_service.common.utils.talent_s3 import download_file
 from resume_service.common.utils.talent_s3 import get_s3_filepicker_bucket_and_conn
 from resume_service.resume_parsing_app.views.optic_parse_lib import fetch_optic_response

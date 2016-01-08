@@ -77,7 +77,7 @@ def post_files_to_queue():
 
 @PARSE_MOD.route('/batch/<int:user_id>', methods=['GET'])
 @require_oauth()
-def process_batch_item(user_id):
+def process_batch_request(user_id):
     """
     End Point for getting the processed candidate object representing the first item in a users
     resume processing queue.

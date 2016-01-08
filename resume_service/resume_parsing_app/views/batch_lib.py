@@ -17,6 +17,35 @@ def add_fp_keys_to_queue(filepicker_keys, user_id):
     """
     queue_string = 'batch:{}:fp_keys'.format(user_id)
     list_length = redis_client.rpush(queue_string, *filepicker_keys)
+    # from datetime import datetime
+    # from datetime import timedelta
+    # from itertools import izip_longest
+    #
+    # def grouper(iterable, n, fillvalue=None):
+    #     args = [iter(iterable)] * n
+    #     return izip_longest(*args, fillvalue=fillvalue)
+    #
+    #
+    # batch_ints = range(40)
+    # batch_size = 2
+    # batches = grouper(batch_ints, batch_size)
+    # scheduled = datetime.now()
+    # for batch in batches:
+    #     for item in batch:
+    #       print 'Item {} is scheduled for: {}'.format(item, scheduled)
+    #     scheduled += timedelta(seconds=20)
+    #
+    #
+    # batch_ints = range(400)
+    # batch_size = 100
+    # batch_count = 1
+    # batches = grouper(batch_ints, batch_size)
+    # scheduled = datetime.now()
+    # for batch in batches:
+    #     print 'Batch {} is scheduled for {}'.format(batch_count, scheduled)
+    #     scheduled += timedelta(seconds=20)
+    #     batch_count += 1
+
     return {'redis_key': queue_string, 'quantity': list_length}
 
 
