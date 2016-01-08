@@ -10,13 +10,17 @@ python setup_environment/reset_database_and_cloud_search.py
 """
 
 from flask import Flask
-from common.talent_config_manager import load_gettalent_config
+from common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 
 static_tables = ['candidate_status', 'classification_type', 'country', 'culture', 'email_label', 'phone_label',
                  'frequency', 'organization', 'product', 'rating_tag', 'social_network', 'web_auth_group']
 
 app = Flask(__name__)
 load_gettalent_config(app.config)
+
+if app.config[TalentConfigKeys.ENV_KEY] not in ['dev', 'circle']:
+    print "You can reset your database and CloudSearch domain only in 'dev' or 'circle' environment"
+    raise SystemExit(0)
 
 from common.models.db import db
 db.init_app(app)
