@@ -457,7 +457,7 @@ def test_update_talent_pool_stats(access_token_first, access_token_second, user_
     assert status_code == 204
 
     # Logged-in user trying to get statistics of a non-existing talent_pool
-    response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id + 100)
+    response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id + 10000)
     assert status_code == 404
 
     # Logged-in user trying to get statistics of a talent_pool of different user
