@@ -15,7 +15,8 @@ from candidate_service.modules.validators import (
     is_area_of_interest_authorized, is_number
 )
 from candidate_service.modules.json_schema import (
-    candidates_resource_schema_post, candidates_resource_schema_patch
+    candidates_resource_schema_post, candidates_resource_schema_patch,
+    candidates_resource_schema_get
 )
 from jsonschema import validate, FormatChecker
 
@@ -60,8 +61,13 @@ class CandidatesResource(Resource):
 
         get_all_domain_candidates = False
 
-        # Parse request body
-        body_dict = request.get_json()
+        # Parse request body & validate data
+        body_dict = request.get_json(force=True)
+        try:
+            validate(instance=body_dict, schema=candidates_resource_schema_get)
+        except Exception as e:
+            raise InvalidUsage(error_message=e.message, error_code=INVALID_INPUT)
+
         if not body_dict.get('candidate_ids'):
             get_all_domain_candidates = True
 
@@ -73,35 +79,30 @@ class CandidatesResource(Resource):
 
                 # If Candidate is web hidden, it is assumed "deleted"
                 if candidate.is_web_hidden:
-                    raise NotFoundError(error_message='Candidate not found', error_code=CANDIDATE_IS_HIDDEN)
+                    raise NotFoundError(error_message='Candidate not found',
+                                        error_code=CANDIDATE_IS_HIDDEN)
 
                 retrieved_candidates.append(fetch_candidate_info(candidate))
 
         else: # Retrieve via a list of candidate IDs
-            # Candidate IDs must be in a list
             candidate_ids = body_dict.get('candidate_ids')
-            if not isinstance(candidate_ids, list):
-                raise InvalidUsage(error_message='Candidate IDs must be in a list/array.')
-                # TODO: utilize jsonschema
-
-            # Candidate IDs must be integers
-            if filter(lambda candidate_id: not is_number(candidate_id), candidate_ids):
-                raise InvalidUsage(error_message='Candidate IDs must be integers.')
-                # TODO: utilize jsonschema
 
             retrieved_candidates = []
             for candidate_id in candidate_ids:
                 candidate = Candidate.get_by_id(candidate_id=candidate_id)
                 if not candidate:
-                    raise NotFoundError(error_message='Candidate not found', error_code=CANDIDATE_NOT_FOUND)
+                    raise NotFoundError(error_message='Candidate not found',
+                                        error_code=CANDIDATE_NOT_FOUND)
 
                 # If Candidate is web hidden, it is assumed "deleted"
                 if candidate.is_web_hidden:
-                    raise NotFoundError(error_message='Candidate not found', error_code=CANDIDATE_NOT_FOUND)
+                    raise NotFoundError(error_message='Candidate not found',
+                                        error_code=CANDIDATE_NOT_FOUND)
 
                 # Candidate ID must belong to user and its domain
                 if not does_candidate_belong_to_user(authed_user, candidate_id):
-                    raise ForbiddenError(error_message='Not authorized', error_code=CANDIDATE_FORBIDDEN)
+                    raise ForbiddenError(error_message='Not authorized',
+                                         error_code=CANDIDATE_FORBIDDEN)
 
                 retrieved_candidates.append(fetch_candidate_info(candidate))
 
@@ -123,11 +124,7 @@ class CandidatesResource(Resource):
         """
         # Authenticate user
         authed_user = request.user
-
-        # Parse request body
         body_dict = request.get_json(force=True)
-        if not any(body_dict): # TODO: jsonschema handles this
-            raise InvalidUsage(error_message="JSON body cannot be empty", error_code=MISSING_INPUT)
 
         # Validate json data
         try:
@@ -161,7 +158,8 @@ class CandidatesResource(Resource):
             is_authorized = is_area_of_interest_authorized(area_of_interest_ids=area_of_interest_ids,
                                                            user_domain_id=authed_user.domain_id)
             if not is_authorized:
-                raise ForbiddenError(error_message="Unauthorized area of interest IDs", error_code=AOI_FORBIDDEN)
+                raise ForbiddenError(error_message="Unauthorized area of interest IDs",
+                                     error_code=AOI_FORBIDDEN)
 
             resp_dict = create_or_update_candidate_from_params(
                 user_id=authed_user.id,
@@ -212,11 +210,7 @@ class CandidatesResource(Resource):
         """
         # Authenticated user
         authed_user = request.user
-
-        # Parse request body
         body_dict = request.get_json(force=True)
-        if not any(body_dict):
-            raise InvalidUsage(error_message="JSON body cannot be empty", error_code=MISSING_INPUT)
 
         # Validate json data
         try:
@@ -294,7 +288,8 @@ class CandidatesResource(Resource):
         # Update candidates in cloud search
         upload_candidate_documents(updated_candidate_ids)
 
-        return {'candidates': [{'id': updated_candidate_id} for updated_candidate_id in updated_candidate_ids]}
+        return {'candidates': [{'id': updated_candidate_id}
+                               for updated_candidate_id in updated_candidate_ids]}
 
 
 class CandidateResource(Resource):
