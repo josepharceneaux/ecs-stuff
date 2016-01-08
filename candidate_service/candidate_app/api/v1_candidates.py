@@ -38,7 +38,8 @@ from candidate_service.common.models.associations import CandidateAreaOfInterest
 # Module
 from candidate_service.modules.talent_candidates import (
     fetch_candidate_info, get_candidate_id_from_candidate_email,
-    create_or_update_candidate_from_params, fetch_candidate_edits
+    create_or_update_candidate_from_params, fetch_candidate_edits, fetch_candidate_views,
+    _add_candidate_view
 )
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents, delete_candidate_documents
 
@@ -341,6 +342,9 @@ class CandidateResource(Resource):
             raise ForbiddenError(error_message="Not authorized")
 
         candidate_data_dict = fetch_candidate_info(candidate=candidate)
+
+        # Add to CandidateView
+        _add_candidate_view(user_id=authed_user.id, candidate_id=candidate_id)
 
         return {'candidate': candidate_data_dict}
 
@@ -1068,7 +1072,7 @@ class CandidateEditResource(Resource):
 
 
 class CandidateOpenWebResource(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def get(self, **kwargs):
         """
@@ -1084,4 +1088,26 @@ class CandidateOpenWebResource(Resource):
             return {'candidate': candiate}
         else:
             raise NotFoundError(error_message="Candidate not found")
+
+
+class CandidateViewResource(Resource):
+    decorators = [require_oauth()]
+
+    def get(self, **kwargs):
+        """
+        Endpoint:  GET /v1/candidates/:id/views
+        Function will return all view information pertaining to the requested Candidate
+        """
+        # Authenticated user & candidate_id
+        authed_user, candidate_id = request.user, kwargs.get('id')
+
+        # Candidate must belong to user and its domain
+        if not does_candidate_belong_to_user(authed_user, candidate_id):
+            raise ForbiddenError(error_message='Not authorized')
+
+        candidate_views = fetch_candidate_views(candidate_id=candidate_id)
+        return {'candidate': {'views': [view for view in candidate_views]}}
+
+
+
 
