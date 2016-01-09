@@ -1045,13 +1045,27 @@
             </header>
 
             <div class="form__fieldset row--expanded">
-                <div class="col--medium-12 form__col" ng-include="'components/styleguide/styleguide-dashboard/partials/demos/tooltips/tooltips.html'"></div>
+                <div class="col--medium-12 form__col">
+                    <h4>Examples</h4>
+                </div>
             </div>
 
             <div class="form__fieldset row--expanded">
+                <div class="col--medium-12 form__col" ng-include="'components/styleguide/styleguide-dashboard/demos/tooltips/tooltips.html'"></div>
+            </div>
+
+            <hr>
+
+            <div class="form__fieldset row--expanded">
                 <div class="col--medium-12 form__col">
-                    <h4>Tooltip Code</h4>
-                    <div hljs include="'components/styleguide/styleguide-dashboard/partials/demos/tooltips/tooltips.html'" language="html"></div>
+                    <gt-tabs>
+                        <gt-pane title="Markup">
+                            <div class="code__scrollable" hljs include="'components/styleguide/styleguide-dashboard/demos/tooltips/tooltips.html'" language="html"></div>
+                        </gt-pane>
+                        <gt-pane title="JavaScript">
+                            <div class="code__scrollable" hljs include="'components/styleguide/styleguide-dashboard/demos/tooltips/tooltip-demo.controller.js.html'" language="js"></div>
+                        </div>
+                    </gt-tabs>
                 </div>
             </div>
         </div>
