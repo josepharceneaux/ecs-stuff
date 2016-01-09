@@ -116,6 +116,8 @@ class CandidateApiUrl:
 
     CANDIDATE_EDIT = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/edits"
 
+    CANDIDATE_VIEW = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/views"
+
 
 class SchedulerApiUrl:
     def __init__(self):
