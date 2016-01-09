@@ -7,7 +7,7 @@ from datetime import timedelta
 
 # Application imports
 from scheduler_service import init_app
-from scheduler_service.common.tests.conftest import *
+from scheduler_service.common.tests.conftest import pytest, datetime, User, user_auth, sample_user, test_domain, test_org, test_culture
 from scheduler_service.common.routes import AuthApiUrl, SchedulerApiUrl
 
 # Application Specific
@@ -84,9 +84,9 @@ def auth_header_no_user(request):
     :param auth_data: fixture to get access token
     :return: header dict object
     """
-    secret_key, token = User.generate_jw_token()
+    secret_key_id, token = User.generate_jw_token()
     header = {'Authorization': token,
-              'X-Talent-Secret-Key-ID': secret_key,
+              'X-Talent-Secret-Key-ID': secret_key_id,
               'Content-Type': 'application/json'}
     return header
 

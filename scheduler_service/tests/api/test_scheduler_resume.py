@@ -76,7 +76,7 @@ class TestSchedulerResume:
             response_get = requests.get(SchedulerApiUrl.SINGLE_TASK % job_id,
                                         headers=auth_header)
             assert response_get.json()['task']['id'] == job_id and \
-                   response_get.json()['task']['next_run_datetime'] is not None
+                   response_get.json()['task']['next_run_datetime']
 
         # Delete all jobs
         response_remove = requests.delete(SchedulerApiUrl.TASKS, data=json.dumps(dict(ids=jobs)),
@@ -142,7 +142,7 @@ class TestSchedulerResume:
 
         assert response.status_code == 201
         data = json.loads(response.text)
-        assert data['id'] is not None
+        assert data['id']
 
         # Send job stop request
         response_stop = requests.post(SchedulerApiUrl.PAUSE_TASK % data['id'],

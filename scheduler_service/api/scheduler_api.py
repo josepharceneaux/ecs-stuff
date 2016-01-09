@@ -18,11 +18,12 @@ from flask.ext.cors import CORS
 # Application imports
 from werkzeug.exceptions import BadRequest
 
+from scheduler_service import TalentConfigKeys, flask_app
 from scheduler_service.common.models.user import Token
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse
 from scheduler_service.common.talent_api import TalentApi
-from scheduler_service.common.error_handling import *
+from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFound, ForbiddenError
 from scheduler_service.common.utils.auth_utils import require_oauth
 from scheduler_service.custom_exceptions import JobAlreadyPausedError, PendingJobError, JobAlreadyRunningError, \
     SchedulerNotRunningError, SchedulerServiceApiException
@@ -65,7 +66,7 @@ class Tasks(Resource):
         In case of SECRET_KEY
 
             headers = {'Authorization': 'Basic <access_token>',
-                        'X-Talent-Server-Key': '<secret_key>'}
+                        'X-Talent-Server-Key-ID': '<secret_key>'}
             response = requests.get(API_URL + '/v1//tasks/', headers=headers)
 
         .. Response::
@@ -101,7 +102,7 @@ class Tasks(Resource):
         tasks = scheduler.get_jobs()
         tasks = filter(lambda task: task.args[0] == user_id, tasks)
         tasks = [serialize_task(task) for task in tasks]
-        tasks = filter(lambda job: job is not None, tasks)
+        tasks = [x for x in tasks if x]
         return dict(tasks=tasks, count=len(tasks))
 
     @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
@@ -147,7 +148,7 @@ class Tasks(Resource):
             In case of SECRET_KEY
 
             headers = {'Authorization': 'Basic <access_token>',
-                        'X-Talent-Server-Key': '<secret_key>',
+                        'X-Talent-Server-Key-ID': '<secret_key>',
                         'Content-Type': 'application/json'
                         }
 
@@ -288,7 +289,7 @@ class ResumeTasks(Resource):
         if not task_ids:
             raise InvalidUsage("Bad Request, No data in ids", error_code=400)
         # Filter jobs that are not None
-        valid_tasks = filter(lambda task_id: scheduler.get_job(job_id=task_id) is not None, task_ids)
+        valid_tasks = [x for x in task_ids if scheduler.get_job(job_id=x)]
         if valid_tasks:
             # Only keep jobs that belonged to the auth user
             valid_tasks = filter(lambda task_id: scheduler.get_job(job_id=task_id).args[0] == user_id, valid_tasks)
@@ -347,7 +348,7 @@ class PauseTasks(Resource):
         if not task_ids:
             raise InvalidUsage("Bad request, No data in ids", error_code=400)
         # Filter tasks which are None and of the current user
-        valid_tasks = filter(lambda task_id: scheduler.get_job(job_id=task_id) is not None and
+        valid_tasks = filter(lambda task_id: scheduler.get_job(job_id=task_id) and
                                              scheduler.get_job(job_id=task_id).args[0] == user_id, task_ids)
         if valid_tasks:
             for _id in valid_tasks:
@@ -389,7 +390,7 @@ class TaskById(Resource):
         In case of SECRET_KEY
 
             headers = {'Authorization': 'Basic <access_token>',
-                        'X-Talent-Server-Key': '<secret_key>'}
+                        'X-Talent-Server-Key-ID': '<secret_key>'}
             response = requests.get(API_URL + '/v1//tasks/5das76nbv950nghg8j8-33ddd3kfdw2', headers=headers)
 
         .. Response::
@@ -460,7 +461,7 @@ class TaskById(Resource):
         In case of SECRET_KEY
 
             headers = {'Authorization': 'Basic <access_token>',
-                        'X-Talent-Server-Key': '<secret_key>'}
+                        'X-Talent-Server-Key-ID': '<secret_key>'}
             response = requests.delete(API_URL + '/v1//tasks/5das76nbv950nghg8j8-33ddd3kfdw2', headers=headers)
 
 
@@ -580,7 +581,8 @@ class SendRequestTest(Resource):
 
     def post(self):
 
-        if not (os.getenv('GT_ENVIRONMENT') == 'dev' or os.getenv('GT_ENVIRONMENT') == 'circle'):
+        key = flask_app.config[TalentConfigKeys.ENV_KEY]
+        if not (key == 'dev' or key == 'circle'):
             raise ForbiddenError("You are not authorized to access this endpoint.")
 
         user_id = request.user.id
@@ -635,11 +637,11 @@ def check_job_state(job_id, job_state_to_check):
         raise PendingJobError("Task with id '%s' is in pending state. Scheduler not running" % job_id)
 
     # if job has next_run_datetime none, then job is in paused state
-    if job.next_run_time is None and job_state_to_check == 'paused':
+    if not job.next_run_time and job_state_to_check == 'paused':
         raise JobAlreadyPausedError("Task with id '%s' is already in paused state" % job_id)
 
     # if job has_next_run_datetime is not None, then job is in running state
-    if job.next_run_time is not None and job_state_to_check == 'running':
+    if job.next_run_time and job_state_to_check == 'running':
         raise JobAlreadyRunningError("Task with id '%s' is already in running state" % job_id)
 
     return job

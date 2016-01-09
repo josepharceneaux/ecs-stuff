@@ -37,7 +37,7 @@ class TestSchedulerCreate:
                                  headers=auth_header_no_user)
         assert response.status_code == 201
         data = response.json()
-        assert data['id'] is not None
+        assert data['id']
 
         # Try to create already named job and it should throw 400 invalid usage error
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
@@ -74,7 +74,7 @@ class TestSchedulerCreate:
                                  headers=auth_header)
         assert response.status_code == 201
         data = response.json()
-        assert data['id'] is not None
+        assert data['id']
 
         # Let's delete jobs now
         response_remove = requests.delete(SchedulerApiUrl.SINGLE_TASK % data['id'],

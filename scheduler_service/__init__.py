@@ -33,7 +33,7 @@ def init_app():
     redis_store.init_app(flask_app)
     register_error_handlers(flask_app, logger)
     logger.info("Starting scheduler service in %s environment",
-                flask_app.config['GT_ENVIRONMENT'])
+                flask_app.config[TalentConfigKeys.ENV_KEY])
 
     # Celery settings
     default_queue = {'CELERY_DEFAULT_QUEUE': SchedulerUtils.QUEUE}

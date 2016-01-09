@@ -109,7 +109,7 @@ class TestSchedulerDelete:
 
         assert response.status_code == 201
         data = json.loads(response.text)
-        assert data['id'] is not None
+        assert data['id']
 
         invalid_header = auth_header.copy()
 

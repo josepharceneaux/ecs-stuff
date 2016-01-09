@@ -2,10 +2,11 @@
 Test cases for exceptions when post data in request is incorrect or missing
 """
 
-# Third party imports
+# Std imports
 import json
-
 import datetime
+
+# Third party imports
 import pytest
 import requests
 
@@ -100,7 +101,7 @@ class TestSchedulerExceptions:
         assert response.status_code == 201
 
         data = response.json()
-        assert data['id'] is not None
+        assert data['id']
         # Let's delete jobs now
         response_remove = requests.delete(SchedulerApiUrl.SINGLE_TASK % data['id'],
                                           headers=auth_header)

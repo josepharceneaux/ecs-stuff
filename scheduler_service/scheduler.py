@@ -22,7 +22,7 @@ from urllib import urlencode
 
 # Application imports
 from scheduler_service.common.models.user import Token
-from scheduler_service import logger
+from scheduler_service import logger, TalentConfigKeys, flask_app
 from scheduler_service.apscheduler_config import executors, job_store, jobstores
 from scheduler_service.common.models.user import User
 from scheduler_service.common.error_handling import InvalidUsage
@@ -41,7 +41,7 @@ scheduler = BackgroundScheduler(jobstore=jobstores, executors=executors,
 scheduler.add_jobstore(job_store)
 
 # Set the minimum frequency in seconds
-if os.environ.get('GT_ENVIRONMENT') == 'dev' or os.environ.get('GT_ENVIRONMENT') == 'circle':
+if flask_app.config.get(TalentConfigKeys.ENV_KEY) == 'dev' or flask_app.config.get(TalentConfigKeys.ENV_KEY) == 'circle':
     MIN_ALLOWED_FREQUENCY = 4
 else:
     # For qa and production minimum frequency would be one hour
@@ -133,7 +133,7 @@ def validate_periodic_job(data):
     # If job is not in 0-30 seconds in past or greater than current datetime.
     past_datetime = current_datetime - datetime.timedelta(seconds=REQUEST_TIMEOUT)
     future_datetime = end_datetime - datetime.timedelta(seconds=frequency)
-    if not (past_datetime < start_datetime < future_datetime):
+    if not past_datetime < start_datetime < future_datetime:
         raise InvalidUsage("start_datetime and end_datetime should be in future.")
 
     return valid_data
@@ -221,12 +221,11 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
     :param kwargs: post data like campaign name, smartlist ids etc
     :return:
     """
-    secret_key = None
     # In case of global tasks there is no access_token and token expires in 600 seconds. So, a new token should be
     # created because frequency can be set to minimum of 1 hour.
     if not access_token:
-        secret_key, access_token = User.generate_jw_token(user_id=user_id)
-    elif 'bearer' in access_token.lower():
+        secret_key_id, access_token = User.generate_jw_token(user_id=user_id)
+    else:
         headers = {'content-type': 'application/x-www-form-urlencoded'}
         token = Token.get_token(access_token=access_token.split(' ')[1])
         # If token has expired we refresh it
@@ -247,7 +246,7 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
 
     logger.info('User ID: %s, URL: %s, Content-Type: %s' % (user_id, url, content_type))
     # Call celery task to send post_data to URL
-    send_request.apply_async([access_token, secret_key, url, content_type, kwargs],
+    send_request.apply_async([access_token, secret_key_id, url, content_type, kwargs],
                              serializer='json',
                              queue=SchedulerUtils.QUEUE)
 
@@ -262,7 +261,7 @@ def remove_tasks(ids, user_id):
     # Get all jobs from APScheduler
     jobs_aps = map(lambda job_id: scheduler.get_job(job_id=job_id), ids)
     # Now only keep those that belong to the user
-    jobs_aps = filter(lambda job: job is not None and job.args[0] == user_id, jobs_aps)
+    jobs_aps = filter(lambda job: job and job.args[0] == user_id, jobs_aps)
     # Finally remove all such jobs
     removed = map(lambda job: (scheduler.remove_job(job.id), job.id), jobs_aps)
     return removed
@@ -289,13 +288,13 @@ def serialize_task(task):
             pending=task.pending,
             task_type=SchedulerUtils.PERIODIC
         )
-        if task_dict['start_datetime'] is not None:
+        if task_dict['start_datetime']:
             task_dict['start_datetime'] = task_dict['start_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        if task_dict['end_datetime'] is not None:
+        if task_dict['end_datetime']:
             task_dict['end_datetime'] = task_dict['end_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        if task_dict['next_run_datetime'] is not None:
+        if task_dict['next_run_datetime']:
             task_dict['next_run_datetime'] = task_dict['next_run_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
 
     # Date Trigger is a one_time task_type
@@ -309,10 +308,10 @@ def serialize_task(task):
             task_type=SchedulerUtils.ONE_TIME
         )
 
-        if task_dict['run_datetime'] is not None:
+        if task_dict['run_datetime']:
             task_dict['run_datetime'] = task_dict['run_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
 
-    if task_dict and task.name is not None and task.args[0] is None:
+    if task_dict and task.name and not task.args[0]:
         task_dict['task_name'] = task.name
 
     return task_dict

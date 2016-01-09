@@ -73,7 +73,7 @@ class TestSchedulerGet:
                                  headers=auth_header_no_user)
         assert response.status_code == 201
         data = response.json()
-        assert data['id'] is not None
+        assert data['id']
 
         # Now get the job
         response_get = requests.get(SchedulerApiUrl.SINGLE_TASK % data['id'],
@@ -163,7 +163,7 @@ class TestSchedulerGet:
 
         assert response.status_code == 201
         data = json.loads(response.text)
-        assert data['id'] is not None
+        assert data['id']
 
         invalid_header = auth_header.copy()
 

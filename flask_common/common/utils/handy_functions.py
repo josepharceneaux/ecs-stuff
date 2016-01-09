@@ -3,8 +3,8 @@ import json
 import requests
 from flask import current_app
 
-from flask.ext.common.common.error_handling import ForbiddenError, InvalidUsage, UnauthorizedError, \
-    InternalServerError, ResourceNotFound
+from scheduler_service import TalentConfigKeys
+from ..error_handling import ForbiddenError, UnauthorizedError, ResourceNotFound
 
 __author__ = 'erikfarmer'
 
@@ -71,67 +71,58 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     :type data: dict
     :type user_id: int | long
     :return: response from HTTP request or None
-
-    :Example:
-
-        If we are requesting scheduler_service to GET a task, we will use this method as
-
-            http_request('GET', SchedulerApiUrl.TASK % scheduler_task_id, headers=auth_header)
     """
-    if not isinstance(method_type, basestring):
-        raise InvalidUsage('Method type should be str. e.g. POST etc')
-    if not isinstance(url, basestring):
-        error_message = 'URL is None. Unable to make "%s" Call' % method_type
-        current_app.config['LOGGER'].error('http_request: Error: %s, user_id: %s'
-                                           % (error_message, user_id))
-        raise InvalidUsage('URL not found')
-    if method_type.upper() in ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']:
+    response = None
+    logger = current_app.config[TalentConfigKeys.LOGGER]
+    if method_type in ['GET', 'POST', 'PUT', 'DELETE']:
         method = getattr(requests, method_type.lower())
-        response = None
         error_message = None
-        try:
-            response = method(url, params=params, headers=headers, data=data, verify=False)
-            # If we made a bad request (a 4XX client error or 5XX server
-            # error response),
-            # we can raise it with Response.raise_for_status():"""
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code in [UnauthorizedError.http_status_code(), ResourceNotFound.http_status_code()]:
-                # 401 is the error code for Not Authorized user(Expired Token)
-                raise
-            # checks if error occurred on "Server" or is it a bad request
-            elif e.response.status_code < InternalServerError.http_status_code():
-                try:
-                    # In case of Meetup, we have error details in e.response.json()['errors'].
-                    # So, tyring to log as much
-                    # details of error as we can.
-                    if 'errors' in e.response.json():
-                        error_message = e.message + ', Details: ' + json.dumps(
-                            e.response.json().get('errors'))
-                    elif 'error_description' in e.response.json():
-                        error_message = e.message + ', Details: ' + json.dumps(
-                            e.response.json().get('error_description'))
-                    else:
+        if url:
+            try:
+                response = method(url, params=params, headers=headers, data=data, verify=False)
+                # If we made a bad request (a 4XX client error or 5XX server
+                # error response),
+                # we can raise it with Response.raise_for_status():"""
+                response.raise_for_status()
+            except requests.exceptions.HTTPError as e:
+                if e.response.status_code in [UnauthorizedError.http_status_code(), ResourceNotFound.http_status_code()]:
+                    # 401 is the error code for Not Authorized user(Expired Token)
+                    # 404 is the error code for Resource Not found
+                    raise
+                # checks if error occurred on "Server" or is it a bad request
+                elif e.response.status_code < 500:
+                    try:
+                        # In case of Meetup, we have error details in e.response.json()['errors'].
+                        # So, tyring to log as much
+                        # details of error as we can.
+                        if 'errors' in e.response.json():
+                            error_message = e.message + ', Details: ' + json.dumps(
+                                e.response.json().get('errors'))
+                        elif 'error_description' in e.response.json():
+                            error_message = e.message + ', Details: ' + json.dumps(
+                                e.response.json().get('error_description'))
+                        else:
+                            error_message = e.message
+                    except Exception:
                         error_message = e.message
-                except Exception:
-                    error_message = e.message
-            else:
-                # raise any Server error
-                raise
-        except requests.RequestException as e:
-            # This check is for if any talent service is not running. It logs the URL on
-            # which request was made.
-            if hasattr(e.message, 'args'):
-                if 'Connection aborted' in e.message.args[0]:
-                    current_app.config['LOGGER'].exception(
-                        "http_request: Couldn't make %s call on %s. "
-                        "Make sure requested server is running." % (method_type, url))
-                    raise ForbiddenError
-            error_message = e.message
-        if error_message:
-            current_app.config['LOGGER'].exception('http_request: HTTP request failed, %s, '
-                                                   'user_id: %s', error_message, user_id)
-        return response
+                else:
+                    # raise any Server error
+                    raise
+            except requests.RequestException as e:
+                if hasattr(e.message, 'args'):
+                    if 'Connection aborted' in e.message.args[0]:
+                        logger.exception(
+                            "http_request: Couldn't make %s call on %s. "
+                            "Make sure requested server is running." % (method_type, url))
+                        raise ForbiddenError
+                error_message = e.message
+            if error_message:
+                logger.exception('http_request: HTTP request failed, %s, '
+                                 'user_id: %s', error_message, user_id)
+            return response
+        else:
+            error_message = 'URL is None. Unable to make "%s" Call' % method_type
+            logger.error('http_request: Error: %s, user_id: %s'
+                                                              % (error_message, user_id))
     else:
-        current_app.config['LOGGER'].error('http_request: Unknown Method type %s ' % method_type)
-        raise InvalidUsage('Unknown method type(%s) provided' % method_type)
+        logger.error('Unknown Method type %s ' % method_type)

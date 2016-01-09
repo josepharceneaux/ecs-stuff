@@ -53,7 +53,7 @@ class TestSchedulerMisc:
 
         assert response.status_code == 201
         data = response.json()
-        assert data['id'] is not None
+        assert data['id']
 
         # Sleep for 20 seconds till the job start and refreshes oauth token
         sleep(20)
@@ -145,7 +145,7 @@ class TestSchedulerMisc:
                                  headers=auth_header)
         assert response.status_code == 201
         data = response.json()
-        assert data['id'] is not None
+        assert data['id']
 
         # Let's delete jobs now
         response_remove = requests.delete(SchedulerApiUrl.SINGLE_TASK % data['id'],
