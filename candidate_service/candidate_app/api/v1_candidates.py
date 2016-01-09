@@ -1163,15 +1163,15 @@ class CandidateViewResource(Resource):
     def get(self, **kwargs):
         """
         Endpoint:  GET /v1/candidates/:id/views
-        Function will return all view information pertaining to the requested Candidate
+        Function will retrieve all view information pertaining to the requested Candidate
         """
         # Authenticated user & candidate_id
         authed_user, candidate_id = request.user, kwargs.get('id')
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized')
+            raise ForbiddenError(error_message='Not authorized',
+                                 error_code=custom_error.CANDIDATE_FORBIDDEN)
 
         candidate_views = fetch_candidate_views(candidate_id=candidate_id)
-        return {'candidate': {'views': [view for view in candidate_views]}}
-
+        return {'candidate_views': [view for view in candidate_views]}

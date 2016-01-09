@@ -179,4 +179,4 @@ class CandidateView(db.Model):
 
     @classmethod
     def get_by_candidate_id(cls, candidate_id):
-        return cls.query.filter_by(candidate_id=candidate_id).first()
+        return cls.query.filter_by(candidate_id=candidate_id).all()

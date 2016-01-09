@@ -396,6 +396,7 @@ class CandidateApiWords(object):
     SEARCH = "/search"
     DOCUMENTS = "/documents"
     OPENWEB = '/openweb'
+    VIEWS = "/views"
 
 
 class CandidateApi(object):
@@ -521,7 +522,10 @@ class CandidateApiUrl(object):
     SOCIAL_NETWORK = SOCIAL_NETWORKS + "/%s"
 
     WORK_PREFERENCE = CANDIDATE + CandidateApiWords.WORK_PREFERENCES + "/%s"
+
     CANDIDATE_EDIT = CANDIDATE + CandidateApiWords.EDITS
+
+    CANDIDATE_VIEW = CANDIDATE + CandidateApiWords.VIEWS
 
 
 class SchedulerApiUrl(object):
