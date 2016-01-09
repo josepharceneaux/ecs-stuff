@@ -99,13 +99,13 @@ class GTApis(object):
     CANDIDATE_POOL_SERVICE_NAME = 'candidate-pool-service'
     SPREADSHEET_IMPORT_SERVICE_NAME = 'spreadsheet-import-service'
     DASHBOARD_SERVICE_NAME = 'frontend-service'
-    SMS_CAMPAIGN_SERVICE_NAME = 'sms-campaign-service'
     SCHEDULER_SERVICE_NAME = 'scheduler-service'
+    SMS_CAMPAIGN_SERVICE_NAME = 'sms-campaign-service'
 
 
 class AuthApi(object):
     """
-    Rest endpoints of auth_service
+    API relative URLs for auth_service. e.g. /v1/oauth2/token
     """
     VERSION = 'v1'
     RELATIVE_VERSION = _get_api_relative_version(VERSION)
@@ -128,7 +128,7 @@ class AuthApiUrl(object):
 
 class ActivityApi(object):
     """
-    Rest endpoints of activity_service
+    API relative URLs for activity_service. e.g /v1/activities/
     """
     VERSION = 'v1'
     RELATIVE_VERSION = _get_api_relative_version(VERSION)
@@ -151,7 +151,7 @@ class ActivityApiUrl(object):
 
 class ResumeApi(object):
     """
-    Rest endpoints of resume_service
+    API relative URLs for resume_service. e.g. /v1/parse_resume
     """
     VERSION = 'v1'
     URL_PREFIX = _get_url_prefix(VERSION)
@@ -170,14 +170,10 @@ class ResumeApiUrl(object):
     PARSE = API_URL % ResumeApi.PARSE
 
 
-class UserServiceApi:
+class UserServiceApi(object):
     """
-    Rest endpoints of user_service
+    API relative URLs for user_service. e.g. /v1/users
     """
-
-    def __init__(self):
-        pass
-
     VERSION = 'v1'
     URL_PREFIX = _get_url_prefix(VERSION)
     USERS = 'users'
@@ -196,14 +192,10 @@ class UserServiceApi:
     RESET_PASSWORD = USERS + '/reset_password/<token>'
 
 
-class UserServiceApiUrl:
+class UserServiceApiUrl(object):
     """
     Rest URLs of user_service
     """
-
-    def __init__(self):
-        pass
-
     HOST_NAME = _get_host_name(GTApis.USER_SERVICE_NAME,
                                GTApis.USER_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
@@ -224,7 +216,7 @@ class UserServiceApiUrl:
 
 class WidgetApi(object):
     """
-    Rest endpoints of widget_service
+    API relative URLs for widget_service. e.g. /v1/universities
     """
     VERSION = 'v1'
     # This is /v1/
@@ -254,7 +246,7 @@ class WidgetApiUrl(object):
 
 class SocialNetworkApiUrl(object):
     """
-    Rest URLs of social_network_service
+    API relative URLs for social_network_service
     """
     HOST_NAME = _get_host_name(GTApis.SOCIAL_NETWORK_SERVICE_NAME,
                                GTApis.SOCIAL_NETWORK_SERVICE_PORT)
@@ -263,7 +255,7 @@ class SocialNetworkApiUrl(object):
 
 class CandidatePoolApi(object):
     """
-    Rest URLs of candidate_pool_service
+    API relative URLs for candidate_pool_service. e.g. /v1/smartlists
     """
     VERSION = 'v1'
     # /v1/
@@ -325,7 +317,7 @@ class CandidatePoolApiUrl(object):
 
 class SpreadsheetImportApi(object):
     """
-    Rest URLs of spreadsheet_import_service
+    API relative URLs for spreadsheet_import_service. e.g. /v1/parse_spreadsheet/convert_to_table
     """
     VERSION = 'v1'
     # This is /v1/
@@ -349,7 +341,7 @@ class SpreadsheetImportApiUrl(object):
 
 class CandidateApi(object):
     """
-    API relative URLs for candidate_service
+    API relative URLs for candidate_service. e,g /v1/candidates
     """
     VERSION = 'v1'
     _INT_ID = "/<int:id>"
