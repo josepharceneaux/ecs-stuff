@@ -541,7 +541,7 @@ def fetch_candidate_views(candidate_id):
              } for view in candidate_views]
 
 
-def _add_candidate_view(user_id, candidate_id, view_datetime=datetime.datetime.now(), view_type=3):
+def add_candidate_view(user_id, candidate_id, view_datetime=datetime.datetime.now(), view_type=3):
     """
     Once a Candidate has been viewed, this function should be invoked
     and add a record to CandidateView
