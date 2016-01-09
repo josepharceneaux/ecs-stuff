@@ -652,6 +652,7 @@ class CampaignBase(object):
             # This runs all tasks asynchronously and sets callback function to be hit once all
             # tasks in list finish running without raising any error. Otherwise callback
             # results in failure status.
+            # http://ask.github.io/celery/userguide/tasksets.html#chords
             chord(tasks)(callback)
         except Exception:
             current_app.config['LOGGER'].exception(

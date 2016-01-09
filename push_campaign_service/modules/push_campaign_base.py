@@ -10,7 +10,7 @@ from push_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from push_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.push_campaign_app import logger, celery_app, app
-from push_campaign_service.common.campaign_services.campaign_utils import (processing_after_campaign_sent,
+from push_campaign_service.common.campaign_services.campaign_utils import (post_campaign_sent_processing,
                                                                            CampaignType,
                                                                            sign_redirect_url)
 from custom_exceptions import *
@@ -34,7 +34,7 @@ class PushCampaignBase(CampaignBase):
         super(PushCampaignBase, self).__init__(user_id, *args, **kwargs)
         self.campaign_blast = None
         self.campaign_blast_id = None
-        self.queue_name = CELERY_QUEUE    # TODO get from kwargs
+        self.queue_name = kwargs.get('queue_name', CELERY_QUEUE)
         self.campaign_type = CampaignType.PUSH
 
     def get_all_campaigns(self):
@@ -129,8 +129,10 @@ class PushCampaignBase(CampaignBase):
                                         '(User(id:%s))' % (campaign.id, self.user_id))
         candidates = []
         for smartlist in smartlists:
-            # TODO: use try catch to prevent exception loop failure
-            candidates += self.get_smartlist_candidates(smartlist)
+            try:
+                candidates += self.get_smartlist_candidates(smartlist)
+            except:
+                pass
         if not candidates:
             raise InternalServerError('No candidate associated to campaign', error_code=NO_CANDIDATE_ASSOCIATED)
         print('Sending campaign to candidates')
@@ -141,7 +143,8 @@ class PushCampaignBase(CampaignBase):
         assert isinstance(candidate, Candidate), '"candidate" should be instance of Candidate Model'
         print('Sending campaign to one candidate')
         logger.info('Going to send campaign to candidate (id: %s)' % candidate.id)
-        # TODO: what id device?
+        # A device is actually candidate's desktop, android or ios machine where
+        # candidate will receive push notifications. Device id is given by OneSignal.
         devices = CandidateDevice.get_devices_by_candidate_id(candidate.id)
         device_ids = [device.one_signal_device_id for device in devices]
         if not device_ids:
@@ -205,9 +208,8 @@ class PushCampaignBase(CampaignBase):
                         common/utils/campaign_base.py
         """
         with app.app_context():
-            # TODO: post_campaign_sent_processing rename
-            processing_after_campaign_sent(CampaignBase, sends_result, user_id, campaign_type,
-                                           blast_id, auth_header)
+            post_campaign_sent_processing(CampaignBase, sends_result, user_id, campaign_type,
+                                          blast_id, auth_header)
 
     @classmethod
     def create_campaign_send_activity(cls, user_id, source, auth_header, num_candidates):

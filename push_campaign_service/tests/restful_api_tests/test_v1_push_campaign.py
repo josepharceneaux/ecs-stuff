@@ -6,6 +6,7 @@ import time
 
 # Application specific imports
 from push_campaign_service.common.models.candidate import Candidate
+from push_campaign_service.modules.constants import TEST_DEVICE_ID
 from push_campaign_service.modules.custom_exceptions import *
 from push_campaign_service.tests.helper_methods import *
 from push_campaign_service.common.models.push_campaign import *
@@ -20,10 +21,6 @@ INVALID_USAGE = 400
 NOT_FOUND = 404
 FORBIDDEN = 403
 INTERNAL_SERVER_ERROR = 500
-
-
-# TODO: check that all tests have assert prefix
-# TODO: assertion messages should be nagative e.g. status code is not 200 etc
 
 
 class TestCreateCampaign:
@@ -139,17 +136,13 @@ class TestCampaignById:
             invalid_data_test('put', PushCampaignApiUrl.CAMPAIGN % test_campaign.id, token)
 
             # Test `raise ResourceNotFound('Campaign not found with id %s' % campaign_id)`
-            data = campaign_data.copy()
+            data = generate_campaign_data()
             data['smartlist_ids'] = [test_smartlist.id]
-            # TODO: why this, comment it
-            if 'user_id' in data: del data['user_id']
             last_obj = PushCampaign.query.order_by(PushCampaign.id.desc()).first()
-            non_existing_id = last_obj.id + 100
-            # TODO: Test with campaign_id=abc
-
-            response = send_request('put', PushCampaignApiUrl.CAMPAIGN % non_existing_id, token, data)
-            assert response.status_code == NOT_FOUND, 'ResourceNotFound exception should be raised'
-            assert response.json()['error']['message'] == 'Campaign not found with id %s' % non_existing_id
+            for _id in [0, last_obj.id + 100]:
+                response = send_request('put', PushCampaignApiUrl.CAMPAIGN % _id, token, data)
+                assert response.status_code == NOT_FOUND, 'ResourceNotFound exception should be raised'
+                assert response.json()['error']['message'] == 'Campaign not found with id %s' % _id
 
             # Test invalid field
             data.update(**generate_campaign_data())
@@ -333,8 +326,7 @@ class TestRegisterCandidateDevice:
             invalid_data_test('post', PushCampaignApiUrl.DEVICES, token)
             last_candidate = Candidate.query.order_by(Candidate.id.desc()).first()
             invalid_candiate_id = last_candidate.id + 100
-            # TODO: move it to constants
-            valid_device_id = '56c1d574-237e-4a41-992e-c0094b6f2ded'
+            valid_device_id = TEST_DEVICE_ID
             invalid_candidate_data = {
                 '': (INVALID_USAGE, 'candidate_id is not given in post data'),
                 0: (INVALID_USAGE, 'candidate_id is not given in post data'),

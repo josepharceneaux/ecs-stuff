@@ -308,6 +308,8 @@ class CampaignById(Resource):
         """
         user = request.user
         data = get_valid_json_data(request)
+        if not campaign_id > 0:
+            raise ResourceNotFound('Campaign not found with id %s' % campaign_id)
         campaign = PushCampaign.get_by_id_and_user_id(campaign_id, user.id)
         if not campaign:
             raise ResourceNotFound('Campaign not found with id %s' % campaign_id)

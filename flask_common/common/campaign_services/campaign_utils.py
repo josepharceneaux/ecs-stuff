@@ -228,8 +228,8 @@ def validate_signed_url(request_args):
                                         secret_key=current_app.config[TalentConfigKeys.SECRET_KEY])
 
 
-def processing_after_campaign_sent(base_class, sends_result, user_id, campaign_type, blast_id,
-                                   auth_header):
+def post_campaign_sent_processing(base_class, sends_result, user_id, campaign_type, blast_id,
+                                  auth_header):
     """
     Once SMS campaign has been sent to all candidates, this function is hit. This is
         a Celery task. Here we

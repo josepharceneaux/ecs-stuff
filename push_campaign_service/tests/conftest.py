@@ -9,7 +9,7 @@ from push_campaign_service.common.models.push_campaign import *
 from faker import Faker
 import pytest
 
-
+from push_campaign_service.modules.constants import TEST_DEVICE_ID
 from push_campaign_service.modules.push_campaign_base import PushCampaignBase
 from push_campaign_service.tests.helper_methods import generate_campaign_data
 
@@ -135,11 +135,6 @@ def test_candidate(request):
                                      is_default=True)
     CandidateEmail.save(candidate_email)
 
-    # device = CandidateDevice(candidate_id=candidate.id,
-    #                          one_signal_device_id='56c1d574-237e-4a41-992e-c0094b6f2ded',
-    #                          registered_at=datetime.datetime.utcnow())
-    # CandidateDevice.save(device)
-
     def tear_down():
         Candidate.delete(candidate)
     request.addfinalizer(tear_down)
@@ -151,7 +146,7 @@ def test_candidate_device(request, test_candidate):
     """ TODO
     """
     device = CandidateDevice(candidate_id=test_candidate.id,
-                             one_signal_device_id='56c1d574-237e-4a41-992e-c0094b6f2ded',
+                             one_signal_device_id=TEST_DEVICE_ID,
                              registered_at=datetime.datetime.utcnow())
     CandidateDevice.save(device)
 
