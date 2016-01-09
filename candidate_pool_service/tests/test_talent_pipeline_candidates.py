@@ -9,6 +9,68 @@ from candidate_pool_service.common.tests.cloud_search_common_functions import *
 from common_functions import *
 
 
+def test_update_talent_pipeline_stats(access_token_first, access_token_second, user_first, talent_pipeline):
+
+    # Logged-in user trying to update statistics of all talent_pipelines in database
+    status_code = talent_pipeline_update_stats(access_token_first)
+    assert status_code == 401
+
+    # Adding 'CAN_UPDATE_TALENT_PIPELINES_STATS' role to user_first
+    add_role_to_test_user(user_first, ['CAN_UPDATE_TALENT_PIPELINES_STATS'])
+
+    # Setting Empty search_params for talent_pipeline
+    talent_pipeline.search_params = json.dumps({})
+    db.session.commit()
+
+    # Adding candidates with 'Apple' as current company
+    populate_candidates(oauth_token=access_token_first, count=3, current_company='Apple',
+                        talent_pool_id=talent_pipeline.talent_pool_id)
+
+    sleep(25)
+
+    # Emptying TalentPipelineStats table
+    TalentPipelineStats.query.delete()
+    db.session.commit()
+
+    # Logged-in user trying to update statistics of all talent_pipelines in database
+    status_code = talent_pipeline_update_stats(access_token_first)
+    assert status_code == 204
+
+    # Logged-in user trying to get statistics of a non-existing talent_pipeline
+    response, status_code = talent_pipeline_get_stats(access_token_first, talent_pipeline.id + 1000)
+    assert status_code == 404
+
+    # Logged-in user trying to get statistics of a talent_pipeline of different user
+    response, status_code = talent_pipeline_get_stats(access_token_second, talent_pipeline.id)
+    assert status_code == 403
+
+    # Logged-in user trying to get statistics of a talent_pipeline but with empty params
+    response, status_code = talent_pipeline_get_stats(access_token_first, talent_pipeline.id)
+    assert status_code == 400
+
+    from_date = str(datetime.now() - timedelta(2))
+    to_date = str(datetime.now() - timedelta(1))
+
+    # Logged-in user trying to get statistics of a talent_pipeline
+    response, status_code = talent_pipeline_get_stats(access_token_first, talent_pipeline.id, {'from_date': from_date,
+                                                                                               'to_date': to_date})
+    assert status_code == 200
+    assert not response.get('talent_pipeline_data')
+
+    from_date = str(datetime.now() - timedelta(1))
+    to_date = str(datetime.now())
+
+    # Logged-in user trying to get statistics of a talent_pipeline
+    response, status_code = talent_pipeline_get_stats(access_token_first, talent_pipeline.id, {'from_date': from_date,
+                                                                                               'to_date': to_date})
+    assert status_code == 200
+    assert len(response.get('talent_pipeline_data')) >= 1
+    assert 3 in [talent_pipeline_data.get('number_of_candidates_removed_or_added') for talent_pipeline_data in
+                 response.get('talent_pipeline_data')]
+    assert 3 in [talent_pipeline_data.get('total_number_of_candidates') for talent_pipeline_data in
+                 response.get('talent_pipeline_data')]
+
+
 def test_talent_pipeline_candidate_get(access_token_first, access_token_second, talent_pool, talent_pipeline,
                                        user_first, user_second):
     """
@@ -82,67 +144,4 @@ def test_talent_pipeline_candidate_get(access_token_first, access_token_second, 
     response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id,
                                                           {'fields': 'count_only'})
     assert len(set(apple_candidate_ids + cs_sw_engineers_candidate_ids)) == response.get('total_found')
-
-
-def test_update_talent_pipeline_stats(access_token_first, access_token_second, user_first, talent_pipeline):
-
-    # Logged-in user trying to update statistics of all talent_pipelines in database
-    status_code = talent_pipeline_update_stats(access_token_first)
-    assert status_code == 401
-
-    # Adding 'CAN_UPDATE_TALENT_PIPELINES_STATS' role to user_first
-    add_role_to_test_user(user_first, ['CAN_UPDATE_TALENT_PIPELINES_STATS'])
-
-    # Setting Empty search_params for talent_pipeline
-    talent_pipeline.search_params = json.dumps({})
-    db.session.commit()
-
-    # Adding candidates with 'Apple' as current company
-    populate_candidates(oauth_token=access_token_first, count=3, current_company='Apple',
-                        talent_pool_id=talent_pipeline.talent_pool_id)
-
-    sleep(25)
-
-    # Emptying TalentPipelineStats table
-    TalentPipelineStats.query.delete()
-    db.session.commit()
-
-    # Logged-in user trying to update statistics of all talent_pipelines in database
-    status_code = talent_pipeline_update_stats(access_token_first)
-    assert status_code == 204
-
-    # Logged-in user trying to get statistics of a non-existing talent_pipeline
-    response, status_code = talent_pipeline_get_stats(access_token_first, talent_pipeline.id + 1000)
-    assert status_code == 404
-
-    # Logged-in user trying to get statistics of a talent_pipeline of different user
-    response, status_code = talent_pipeline_get_stats(access_token_second, talent_pipeline.id)
-    assert status_code == 403
-
-    # Logged-in user trying to get statistics of a talent_pipeline but with empty params
-    response, status_code = talent_pipeline_get_stats(access_token_first, talent_pipeline.id)
-    assert status_code == 400
-
-    from_date = str(datetime.now() - timedelta(2))
-    to_date = str(datetime.now() - timedelta(1))
-
-    # Logged-in user trying to get statistics of a talent_pipeline
-    response, status_code = talent_pipeline_get_stats(access_token_first, talent_pipeline.id, {'from_date': from_date,
-                                                                                               'to_date': to_date})
-    assert status_code == 200
-    assert not response.get('talent_pipeline_data')
-
-    from_date = str(datetime.now() - timedelta(1))
-    to_date = str(datetime.now())
-
-    # Logged-in user trying to get statistics of a talent_pipeline
-    response, status_code = talent_pipeline_get_stats(access_token_first, talent_pipeline.id, {'from_date': from_date,
-                                                                                               'to_date': to_date})
-    assert status_code == 200
-    assert len(response.get('talent_pipeline_data')) >= 1
-    assert 3 in [talent_pipeline_data.get('number_of_candidates_removed_or_added') for talent_pipeline_data in
-                 response.get('talent_pipeline_data')]
-    assert 3 in [talent_pipeline_data.get('total_number_of_candidates') for talent_pipeline_data in
-                 response.get('talent_pipeline_data')]
-
 
