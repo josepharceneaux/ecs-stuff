@@ -10,6 +10,8 @@ code {
 }
 
 pre {
+  margin-bottom: 0;
+
   code {
     display: block;
     overflow-x: auto;
@@ -25,5 +27,13 @@ pre {
     overflow-wrap: break-word;
     word-wrap: break-word;
     word-break: break-word;
+  }
+}
+
+.code__scrollable {
+  &,
+  pre code {
+    max-height: 350px;
+    overflow-x: auto;
   }
 }
