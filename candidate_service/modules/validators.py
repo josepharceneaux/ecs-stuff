@@ -15,7 +15,7 @@ from candidate_service.common.utils.validators import is_number
 from datetime import datetime
 
 
-def does_candidate_belong_to_user(user_row, candidate_id):
+def does_candidate_belong_to_user_and_its_domain(user_row, candidate_id):
     """
     Function checks if:
         1. Candidate belongs to user AND
@@ -33,7 +33,7 @@ def does_candidate_belong_to_user(user_row, candidate_id):
     return True if candidate_row else False
 
 
-def do_candidates_belong_to_user(user_row, candidate_ids):
+def do_candidates_belong_to_user_and_its_domain(user_row, candidate_ids):
     """
     Function checks if:
         1. Candidates belong to user AND
@@ -47,6 +47,19 @@ def do_candidates_belong_to_user(user_row, candidate_ids):
                  filter(Candidate.id.in_(candidate_ids),
                         User.domain_id != user_row.domain_id).count() == 0
     return exists
+
+
+def does_candidate_belong_to_users_domain(user, candidate_id):
+    """Checks if requested candidate ID belongs to the user's domain
+    :type   user:           User
+    :type  candidate_id:   Candidate.id
+    :rtype: bool
+    """
+    assert isinstance(candidate_id, (int, long))
+    exist = db.session.query(Candidate).join(User).filter(Candidate.id == candidate_id) \
+        .filter(User.domain_id == user.domain_id).first()
+
+    return True if exist else False
 
 
 def is_custom_field_authorized(user_domain_id, custom_field_ids):
