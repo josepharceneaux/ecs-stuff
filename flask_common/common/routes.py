@@ -1,5 +1,16 @@
 """
-This file contains Base APP URls, and Urls of REST endpoints of all services
+This file contains API REST endpoints of all services e.g. one of the endpoint of auth_service is
+    /v1/oauth2/token.
+
+This also contains complete URLs of REST endpoints of all services. e.g. for above example,
+complete URL will be 127.0.0.1:8011/v1/oauth2/token
+
+Here we have two(or maybe three) classes for each service.
+ e.g. for candidate_service
+ 1) CandidateApi which contains REST endpoints
+ 2) CandidateApiUrl which contains complete URLs of REST endpoints
+ 3) CandidateApiWords which contains common words for both above classes.
+
 """
 import os
 from talent_config_manager import TalentConfigKeys
@@ -170,26 +181,39 @@ class ResumeApiUrl(object):
     PARSE = API_URL % ResumeApi.PARSE
 
 
+class UserServiceApiWords(object):
+    """
+    This class contains words used for endpoints of user_service API.
+    """
+    USERS = 'users'
+    DOMAINS = 'domains'
+    DOMAIN = 'domain'
+    ROLES = '/roles'
+    GROUPS = 'groups'
+    RESET_PASSWORD = '/reset_password'
+    UPDATE_PASSWORD = '/update_password'
+    FORGOT_PASSWORD = '/forgot_password'
+
+
 class UserServiceApi(object):
     """
     API relative URLs for user_service. e.g. /v1/users
     """
     VERSION = 'v1'
+    USERS = UserServiceApiWords.USERS
+    DOMAINS = UserServiceApiWords.DOMAINS
     URL_PREFIX = _get_url_prefix(VERSION)
-    USERS = 'users'
-    DOMAINS = 'domains'
-    _GROUPS = 'groups'
-    _GROUP = _GROUPS + '/<int:group_id>/'
-    USER = USERS + "/<int:id>"
-    DOMAIN = DOMAINS + "/<int:id>"
-    USER_ROLES = USERS + "/<int:user_id>/roles"
-    DOMAIN_ROLES = 'domain/<int:domain_id>/roles'
-    DOMAIN_GROUPS = "domain/<int:domain_id>/" + _GROUPS
-    DOMAIN_GROUPS_UPDATE = "domain/" + _GROUPS + '/<int:group_id>'
-    USER_GROUPS = _GROUP + USERS
-    UPDATE_PASSWORD = USERS + '/update_password'
-    FORGOT_PASSWORD = USERS + '/forgot_password'
-    RESET_PASSWORD = USERS + '/reset_password/<token>'
+    _GROUP = UserServiceApiWords.GROUPS + '/<int:group_id>/'
+    USER = UserServiceApiWords.USERS + "/<int:id>"
+    DOMAIN = UserServiceApiWords.DOMAINS + "/<int:id>"
+    USER_ROLES = UserServiceApiWords.USERS + "/<int:user_id>" + UserServiceApiWords.ROLES
+    DOMAIN_ROLES = UserServiceApiWords.DOMAIN + '/<int:domain_id>' + UserServiceApiWords.ROLES
+    DOMAIN_GROUPS = UserServiceApiWords.DOMAIN + "/<int:domain_id>/" + UserServiceApiWords.GROUPS
+    DOMAIN_GROUPS_UPDATE = UserServiceApiWords.DOMAIN + "/" + UserServiceApiWords.GROUPS + '/<int:group_id>'
+    USER_GROUPS = _GROUP + UserServiceApiWords.USERS
+    UPDATE_PASSWORD = UserServiceApiWords.USERS + UserServiceApiWords.UPDATE_PASSWORD
+    FORGOT_PASSWORD = UserServiceApiWords.USERS + UserServiceApiWords.FORGOT_PASSWORD
+    RESET_PASSWORD = UserServiceApiWords.USERS + UserServiceApiWords.RESET_PASSWORD + '/<token>'
 
 
 class UserServiceApiUrl(object):
@@ -200,18 +224,18 @@ class UserServiceApiUrl(object):
                                GTApis.USER_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     API_URL = HOST_NAME % _get_api_relative_version(UserServiceApi.VERSION)
-    USERS = API_URL % UserServiceApi.USERS
+    USERS = API_URL % UserServiceApiWords.USERS
     USER = USERS + '/%s'
-    DOMAINS = API_URL % UserServiceApi.DOMAINS
+    DOMAINS = API_URL % UserServiceApiWords.DOMAINS
     DOMAIN = DOMAINS + '/%s'
-    USER_ROLES_API = API_URL % 'users/%s/roles'
-    DOMAIN_ROLES_API = API_URL % 'domain/%s/roles'
-    DOMAIN_GROUPS_API = API_URL % 'domain/%s/groups'
-    DOMAIN_GROUPS_UPDATE_API = API_URL % 'domain/groups/%s'
-    USER_GROUPS_API = API_URL % 'groups/%s/users'
+    USER_ROLES_API = API_URL % (UserServiceApiWords.USERS + '/%s' + UserServiceApiWords.ROLES)
+    DOMAIN_ROLES_API = API_URL % (UserServiceApiWords.DOMAIN + '/%s' + UserServiceApiWords.ROLES)
+    DOMAIN_GROUPS_API = API_URL % (UserServiceApiWords.DOMAIN + '/%s/' + UserServiceApiWords.GROUPS)
+    DOMAIN_GROUPS_UPDATE_API = API_URL % (UserServiceApiWords.DOMAIN + '/' + UserServiceApiWords.GROUPS + '/%s')
+    USER_GROUPS_API = API_URL % (UserServiceApiWords.GROUPS + '/%s/' + UserServiceApiWords.USERS)
     UPDATE_PASSWORD_API = API_URL % UserServiceApi.UPDATE_PASSWORD
     FORGOT_PASSWORD_API = API_URL % UserServiceApi.FORGOT_PASSWORD
-    RESET_PASSWORD_API = USERS + '/reset_password/%s'
+    RESET_PASSWORD_API = USERS + UserServiceApiWords.RESET_PASSWORD + '/%s'
 
 
 class WidgetApi(object):
@@ -240,7 +264,7 @@ class WidgetApiUrl(object):
     DOMAIN_WIDGETS = API_URL % (WidgetApi.DOMAINS + '/%s/widgets/%s')
     DOMAIN_INTERESTS = API_URL % (WidgetApi.DOMAINS + '/%s/interests')
     DOMAIN_MAJORS = API_URL % (WidgetApi.DOMAINS + '/%s/majors')
-    DOMAINS = API_URL % UserServiceApi.DOMAINS
+    DOMAINS = API_URL % WidgetApi.DOMAINS
     UNIVERSITIES = API_URL % WidgetApi.UNIVERSITIES
 
 
@@ -253,6 +277,20 @@ class SocialNetworkApiUrl(object):
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
 
 
+class CandidatePoolApiWords(object):
+    """
+    This class contains words used for endpoints of candidate_pool API.
+    """
+    TALENT_POOLS = 'talent-pools'
+    TALENT_POOL = 'talent-pool'
+    TALENT_PIPELINES = 'talent-pipelines'
+    TALENT_PIPELINE = 'talent-pipeline'
+    STATS = '/stats'
+    CANDIDATES = '/candidates'
+    GROUPS = 'groups'
+    SMART_LISTS = '/smart_lists'
+
+
 class CandidatePoolApi(object):
     """
     API relative URLs for candidate_pool_service. e.g. /v1/smartlists
@@ -261,29 +299,26 @@ class CandidatePoolApi(object):
     # /v1/
     URL_PREFIX = _get_url_prefix(VERSION)
     _INT_ID = '/<int:id>'
-    _TALENT_POOL = 'talent-pool'
-    _TALENT_PIPELINE = 'talent-pipeline'
-    _STATS = '/stats'
     # Talent Pools
-    TALENT_POOLS = 'talent-pools'
-    TALENT_POOL = TALENT_POOLS + _INT_ID
-    TALENT_POOL_CANDIDATES = TALENT_POOL + '/candidates'
-    TALENT_POOL_GROUPS = 'groups/<int:group_id>/talent_pools'
-    TALENT_POOL_STATS = TALENT_POOLS + _STATS
-    TALENT_POOL_GET_STATS = _TALENT_POOL + '/<int:talent_pool_id>' + _STATS
-    # Talent Pipelines
-    TALENT_PIPELINES = 'talent-pipelines'
-    TALENT_PIPELINE = TALENT_PIPELINES + _INT_ID
-    TALENT_PIPELINE_SMARTLISTS = _TALENT_PIPELINE + _INT_ID + '/smart_lists'
-    TALENT_PIPELINE_CANDIDATES = _TALENT_PIPELINE + _INT_ID + '/candidates'
-    TALENT_PIPELINE_STATS = TALENT_PIPELINES + _STATS
-    TALENT_PIPELINE_GET_STATS = _TALENT_PIPELINE + '/<int:talent_pipeline_id>' + _STATS
+    TALENT_PIPELINES = CandidatePoolApiWords.TALENT_PIPELINES
+    TALENT_POOLS = CandidatePoolApiWords.TALENT_POOLS
+    TALENT_POOL = CandidatePoolApiWords.TALENT_POOLS + _INT_ID
+    TALENT_POOL_CANDIDATES = TALENT_POOL + CandidatePoolApiWords.CANDIDATES
+    TALENT_POOL_GROUPS = CandidatePoolApiWords.GROUPS + '/<int:group_id>/' + CandidatePoolApiWords.TALENT_POOLS
+    TALENT_POOL_STATS = CandidatePoolApiWords.TALENT_POOLS + CandidatePoolApiWords.STATS
+    TALENT_POOL_GET_STATS = CandidatePoolApiWords.TALENT_POOL + '/<int:talent_pool_id>' + CandidatePoolApiWords.STATS
+    # Talent Pipelines1
+    TALENT_PIPELINE = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID
+    TALENT_PIPELINE_SMARTLISTS = CandidatePoolApiWords.TALENT_PIPELINE + _INT_ID + CandidatePoolApiWords.SMART_LISTS
+    TALENT_PIPELINE_CANDIDATES = CandidatePoolApiWords.TALENT_PIPELINE + _INT_ID + CandidatePoolApiWords.CANDIDATES
+    TALENT_PIPELINE_STATS = CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
+    TALENT_PIPELINE_GET_STATS = CandidatePoolApiWords.TALENT_PIPELINE + '/<int:talent_pipeline_id>' + CandidatePoolApiWords.STATS
     # Smartlists
     SMARTLISTS = 'smartlists'
     SMARTLIST = SMARTLISTS + _INT_ID
-    SMARTLIST_CANDIDATES = SMARTLISTS + '/<int:smartlist_id>/candidates'
-    SMARTLIST_STATS = SMARTLISTS + _STATS
-    SMARTLIST_GET_STATS = SMARTLISTS + '/<int:smartlist_id>' + _STATS
+    SMARTLIST_CANDIDATES = SMARTLISTS + '/<int:smartlist_id>' + CandidatePoolApiWords.CANDIDATES
+    SMARTLIST_STATS = SMARTLISTS + CandidatePoolApiWords.STATS
+    SMARTLIST_GET_STATS = SMARTLISTS + '/<int:smartlist_id>' + CandidatePoolApiWords.STATS
 
 
 class CandidatePoolApiUrl(object):
@@ -295,24 +330,24 @@ class CandidatePoolApiUrl(object):
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     API_URL = HOST_NAME % _get_api_relative_version(CandidatePoolApi.VERSION)
     # Talent Pool
-    TALENT_POOLS = API_URL % CandidatePoolApi.TALENT_POOLS
+    TALENT_POOLS = API_URL % CandidatePoolApiWords.TALENT_POOLS
     TALENT_POOL = TALENT_POOLS + '/%s'
     TALENT_POOL_STATS = API_URL % CandidatePoolApi.TALENT_POOL_STATS
-    TALENT_POOL_GET_STATS = API_URL % "talent-pool/%s/stats"
-    TALENT_POOL_CANDIDATE = API_URL % (CandidatePoolApi.TALENT_POOLS + '/%s/candidates')
-    TALENT_POOL_GROUP = API_URL % 'groups/%s/talent_pools'
+    TALENT_POOL_GET_STATS = API_URL % (CandidatePoolApiWords.TALENT_POOL+"/%s"+CandidatePoolApiWords.STATS)
+    TALENT_POOL_CANDIDATE = API_URL % (CandidatePoolApiWords.TALENT_POOLS +'/%s'+CandidatePoolApiWords.CANDIDATES)
+    TALENT_POOL_GROUP = API_URL % (CandidatePoolApiWords.GROUPS+'/%s/'+CandidatePoolApiWords.TALENT_POOLS)
     # Talent Pipeline
-    TALENT_PIPELINES = API_URL % CandidatePoolApi.TALENT_PIPELINES
+    TALENT_PIPELINES = API_URL % CandidatePoolApiWords.TALENT_PIPELINES
     TALENT_PIPELINE = TALENT_PIPELINES + '/%s'
     TALENT_PIPELINE_STATS = API_URL % CandidatePoolApi.TALENT_PIPELINE_STATS
-    TALENT_PIPELINE_CANDIDATE = API_URL % 'talent-pipeline/%s/candidates'
-    TALENT_PIPELINE_SMARTLISTS = API_URL % 'talent-pipeline/%s/smart_lists'
-    TALENT_PIPELINE_GET_STATS = API_URL % "talent-pipeline/%s/stats"
+    TALENT_PIPELINE_CANDIDATE = API_URL % (CandidatePoolApiWords.TALENT_PIPELINE+'/%s'+CandidatePoolApiWords.CANDIDATES)
+    TALENT_PIPELINE_SMARTLISTS = API_URL % (CandidatePoolApiWords.TALENT_PIPELINE+'/%s'+CandidatePoolApiWords.SMART_LISTS)
+    TALENT_PIPELINE_GET_STATS = API_URL % (CandidatePoolApiWords.TALENT_PIPELINE+"/%s"+CandidatePoolApiWords.STATS)
     # Smartlists
     SMARTLISTS = API_URL % CandidatePoolApi.SMARTLISTS
     SMARTLIST_STATS = API_URL % CandidatePoolApi.SMARTLIST_STATS
-    SMARTLIST_GET_STATS = SMARTLISTS + "/%s/stats"
-    SMARTLIST_CANDIDATES = SMARTLISTS + '/%s/candidates'
+    SMARTLIST_GET_STATS = SMARTLISTS + "/%s" + CandidatePoolApiWords.STATS
+    SMARTLIST_CANDIDATES = SMARTLISTS + '/%s' + CandidatePoolApiWords.CANDIDATES
 
 
 class SpreadsheetImportApi(object):
@@ -339,6 +374,31 @@ class SpreadsheetImportApiUrl(object):
     IMPORT_CANDIDATES = API_URL % SpreadsheetImportApi.IMPORT_CANDIDATES
 
 
+class CandidateApiWords(object):
+    """
+    This class contains words used for endpoints of Candidate API.
+    """
+    CANDIDATES = "candidates"
+    ADDRESSES = "/addresses"
+    AOIS = "/areas_of_interest"
+    CUSTOM_FIELD = "/custom_fields"
+    EDUCATIONS = "/educations"
+    DEGREES = "/degrees"
+    BULLETS = "/bullets"
+    EXPERIENCES = "/experiences"
+    EMAILS = "/emails"
+    MILITARY_SERVICES = "/military_services"
+    PHONES = "/phones"
+    PREFERRED_LOCATIONS = "/preferred_locations"
+    SKILLS = "/skills"
+    SOCIAL_NETWORKS = "/social_networks"
+    WORK_PREFERENCES = "/work_preference"
+    EDITS = "/edits"
+    SEARCH = "/search"
+    DOCUMENTS = "/documents"
+    OPENWEB = '/openweb'
+
+
 class CandidateApi(object):
     """
     API relative URLs for candidate_service. e,g /v1/candidates
@@ -350,59 +410,59 @@ class CandidateApi(object):
     RELATIVE_VERSION = '/%s/%s' % (VERSION, '%s')
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
 
-    CANDIDATES = RELATIVE_VERSION % "candidates"
+    CANDIDATES = RELATIVE_VERSION % CandidateApiWords.CANDIDATES
     _CANDIDATE_ID = CANDIDATES + "/<int:candidate_id>"
-    CANDIDATE_ID = RELATIVE_VERSION % "candidates/<int:id>"
-    CANDIDATE_EMAIL = RELATIVE_VERSION % "candidates/<email>"
+    CANDIDATE_ID = RELATIVE_VERSION % (CandidateApiWords.CANDIDATES + _INT_ID)
+    CANDIDATE_EMAIL = RELATIVE_VERSION % (CandidateApiWords.CANDIDATES + "/<email>")
 
-    ADDRESSES = _CANDIDATE_ID + "/addresses"
+    ADDRESSES = _CANDIDATE_ID + CandidateApiWords.ADDRESSES
     ADDRESS = ADDRESSES + _INT_ID
 
-    AOIS = _CANDIDATE_ID + "/areas_of_interest"
+    AOIS = _CANDIDATE_ID + CandidateApiWords.AOIS
     AOI = AOIS + _INT_ID
 
-    CUSTOM_FIELDS = _CANDIDATE_ID + "/custom_fields"
+    CUSTOM_FIELDS = _CANDIDATE_ID + CandidateApiWords.CUSTOM_FIELD
     CUSTOM_FIELD = CUSTOM_FIELDS + _INT_ID
 
-    EDUCATIONS = _CANDIDATE_ID + "/educations"
+    EDUCATIONS = _CANDIDATE_ID + CandidateApiWords.EDUCATIONS
     EDUCATION = EDUCATIONS + _INT_ID
 
-    DEGREES = EDUCATIONS + '/<int:education_id>/degrees'
+    DEGREES = EDUCATIONS + '/<int:education_id>' + CandidateApiWords.DEGREES
     DEGREE = DEGREES + _INT_ID
 
-    DEGREE_BULLETS = DEGREES + "/<int:degree_id>/bullets"
+    DEGREE_BULLETS = DEGREES + "/<int:degree_id>" + CandidateApiWords.BULLETS
     DEGREE_BULLET = DEGREE_BULLETS + _INT_ID
 
-    EXPERIENCES = _CANDIDATE_ID + "/experiences"
+    EXPERIENCES = _CANDIDATE_ID + CandidateApiWords.EXPERIENCES
     EXPERIENCE = EXPERIENCES + _INT_ID
 
-    EXPERIENCE_BULLETS = EXPERIENCES + "/<int:experience_id>/bullets"
+    EXPERIENCE_BULLETS = EXPERIENCES + "/<int:experience_id>" + CandidateApiWords.BULLETS
     EXPERIENCE_BULLET = EXPERIENCE_BULLETS + _INT_ID
 
-    EMAILS = _CANDIDATE_ID + "/emails"
+    EMAILS = _CANDIDATE_ID + CandidateApiWords.EMAILS
     EMAIL = EMAILS + _INT_ID
 
-    MILITARY_SERVICES = _CANDIDATE_ID + "/military_services"
+    MILITARY_SERVICES = _CANDIDATE_ID + CandidateApiWords.MILITARY_SERVICES
     MILITARY_SERVICE = MILITARY_SERVICES + _INT_ID
 
-    PHONES = _CANDIDATE_ID + "/phones"
+    PHONES = _CANDIDATE_ID + CandidateApiWords.PHONES
     PHONE = PHONES + _INT_ID
 
-    PREFERRED_LOCATIONS = _CANDIDATE_ID + "/preferred_locations"
+    PREFERRED_LOCATIONS = _CANDIDATE_ID + CandidateApiWords.PREFERRED_LOCATIONS
     PREFERRED_LOCATION = PREFERRED_LOCATIONS + _INT_ID
 
-    SKILLS = _CANDIDATE_ID + "/skills"
+    SKILLS = _CANDIDATE_ID + CandidateApiWords.SKILLS
     SKILL = SKILLS + _INT_ID
 
-    SOCIAL_NETWORKS = _CANDIDATE_ID + "/social_networks"
+    SOCIAL_NETWORKS = _CANDIDATE_ID + CandidateApiWords.SOCIAL_NETWORKS
     SOCIAL_NETWORK = SOCIAL_NETWORKS + _INT_ID
 
-    WORK_PREFERENCE = _CANDIDATE_ID + "/work_preference" + _INT_ID
-    CANDIDATE_EDIT = CANDIDATE_ID + "/edits"
+    WORK_PREFERENCE = _CANDIDATE_ID + CandidateApiWords.WORK_PREFERENCES + _INT_ID
+    CANDIDATE_EDIT = CANDIDATE_ID + CandidateApiWords.EDITS
 
-    CANDIDATE_SEARCH = CANDIDATES + "/search"
-    CANDIDATES_DOCUMENTS = CANDIDATES + "/documents"
-    OPENWEB = CANDIDATES + '/openweb'
+    CANDIDATE_SEARCH = CANDIDATES + CandidateApiWords.SEARCH
+    CANDIDATES_DOCUMENTS = CANDIDATES + CandidateApiWords.DOCUMENTS
+    OPENWEB = CANDIDATES + CandidateApiWords.OPENWEB
 
 
 class CandidateApiUrl(object):
@@ -415,54 +475,54 @@ class CandidateApiUrl(object):
     CANDIDATES = HOST_NAME % CandidateApi.CANDIDATES
     CANDIDATE = CANDIDATES + "/%s"
 
-    ADDRESSES = CANDIDATE + "/addresses"
+    ADDRESSES = CANDIDATE + CandidateApiWords.ADDRESSES
     ADDRESS = ADDRESSES + "/%s"
 
-    AOIS = CANDIDATE + "/areas_of_interest"
+    AOIS = CANDIDATE + CandidateApiWords.AOIS
     AOI = AOIS + "/%s"
 
-    CUSTOM_FIELDS = CANDIDATE + "/custom_fields"
+    CUSTOM_FIELDS = CANDIDATE + CandidateApiWords.CUSTOM_FIELD
     CUSTOM_FIELD = CUSTOM_FIELDS + "/%s"
 
-    CANDIDATE_SEARCH_URI = CANDIDATES + "/search"
+    CANDIDATE_SEARCH_URI = CANDIDATES + CandidateApiWords.SEARCH
 
-    CANDIDATES_DOCUMENTS_URI = CANDIDATES + "/documents"
+    CANDIDATES_DOCUMENTS_URI = CANDIDATES + CandidateApiWords.DOCUMENTS
 
-    EDUCATIONS = CANDIDATE + "/educations"
+    EDUCATIONS = CANDIDATE + CandidateApiWords.EDUCATIONS
     EDUCATION = EDUCATIONS + "/%s"
 
-    DEGREES = EDUCATION + "/degrees"
+    DEGREES = EDUCATION + CandidateApiWords.DEGREES
     DEGREE = DEGREES + "/%s"
 
-    DEGREE_BULLETS = DEGREE + "/bullets"
+    DEGREE_BULLETS = DEGREE + CandidateApiWords.BULLETS
     DEGREE_BULLET = DEGREE_BULLETS + "/%s"
 
-    EMAILS = CANDIDATE + "/emails"
+    EMAILS = CANDIDATE + CandidateApiWords.EMAILS
     EMAIL = EMAILS + "/%s"
 
-    EXPERIENCES = CANDIDATE + "/experiences"
+    EXPERIENCES = CANDIDATE + CandidateApiWords.EXPERIENCES
     EXPERIENCE = EXPERIENCES + "/%s"
 
-    EXPERIENCE_BULLETS = EXPERIENCE + "/bullets"
+    EXPERIENCE_BULLETS = EXPERIENCE + CandidateApiWords.BULLETS
     EXPERIENCE_BULLET = EXPERIENCE_BULLETS + "/%s"
 
-    MILITARY_SERVICES = CANDIDATE + "/military_services"
+    MILITARY_SERVICES = CANDIDATE + CandidateApiWords.MILITARY_SERVICES
     MILITARY_SERVICE = MILITARY_SERVICES + "/%s"
 
-    PHONES = CANDIDATE + "/phones"
+    PHONES = CANDIDATE + CandidateApiWords.PHONES
     PHONE = PHONES + "/%s"
 
-    PREFERRED_LOCATIONS = CANDIDATE + "/preferred_locations"
+    PREFERRED_LOCATIONS = CANDIDATE + CandidateApiWords.PREFERRED_LOCATIONS
     PREFERRED_LOCATION = PREFERRED_LOCATIONS + "/%s"
 
-    SKILLS = CANDIDATE + "/skills"
+    SKILLS = CANDIDATE + CandidateApiWords.SKILLS
     SKILL = SKILLS + "/%s"
 
-    SOCIAL_NETWORKS = CANDIDATE + "/social_networks"
+    SOCIAL_NETWORKS = CANDIDATE + CandidateApiWords.SOCIAL_NETWORKS
     SOCIAL_NETWORK = SOCIAL_NETWORKS + "/%s"
 
-    WORK_PREFERENCE = CANDIDATE + "/work_preference/%s"
-    CANDIDATE_EDIT = CANDIDATE + "/edits"
+    WORK_PREFERENCE = CANDIDATE + CandidateApiWords.WORK_PREFERENCES + "/%s"
+    CANDIDATE_EDIT = CANDIDATE + CandidateApiWords.EDITS
 
 
 class SchedulerApiUrl(object):
