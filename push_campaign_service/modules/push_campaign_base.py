@@ -118,29 +118,26 @@ class PushCampaignBase(CampaignBase):
     def process_send(self, campaign):
         if not isinstance(campaign, PushCampaign):
             raise InvalidUsage('campaign should be instance of PushCampaign model')
-        smartlists = campaign.smartlists.all()
-        if not smartlists:
-            raise NoSmartlistAssociated('No smartlist is associated with Push Campaign (id:%s). '
-                                        '(User(id:%s))' % (campaign.id, self.user_id))
-        candidate_ids = []
-        for smartlist in smartlists:
-            # TODO: use try catch to prevent exception loop failure
-            candidate_ids += self.get_smartlist_candidates(smartlist)
-        if not candidate_ids:
-            raise InternalServerError('No candidate associated to campaign', error_code=NO_CANDIDATE_ASSOCIATED)
+
         self.campaign = campaign
         self.campaign_blast = PushCampaignBlast(campaign_id=self.campaign.id)
         PushCampaignBlast.save(self.campaign_blast)
         self.campaign_blast_id = self.campaign_blast.id
+        smartlists = campaign.smartlists.all()
+        if not smartlists:
+            raise NoSmartlistAssociated('No smartlist is associated with Push Campaign (id:%s). '
+                                        '(User(id:%s))' % (campaign.id, self.user_id))
+        candidates = []
+        for smartlist in smartlists:
+            # TODO: use try catch to prevent exception loop failure
+            candidates += self.get_smartlist_candidates(smartlist)
+        if not candidates:
+            raise InternalServerError('No candidate associated to campaign', error_code=NO_CANDIDATE_ASSOCIATED)
         print('Sending campaign to candidates')
-        self.send_campaign_to_candidates(candidate_ids)
+        self.send_campaign_to_candidates(candidates)
 
     @celery_app.task(name='send_campaign_to_candidate')
-    def send_campaign_to_candidate(self, candidate_id):
-        candidate = Candidate.get_by_id(candidate_id)
-        if not candidate:
-            logger.error('Unable to get candidate with id %s' % candidate_id)
-            return None
+    def send_campaign_to_candidate(self, candidate):
         assert isinstance(candidate, Candidate), '"candidate" should be instance of Candidate Model'
         print('Sending campaign to one candidate')
         logger.info('Going to send campaign to candidate (id: %s)' % candidate.id)
