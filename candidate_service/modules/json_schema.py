@@ -13,6 +13,7 @@ candidates_resource_schema_post = {
         "candidates": {
             # "id": "http://jsonschema.net/candidates",
             "type": "array",
+            "minItems": 1,
             "items": {
                 # "id": "http://jsonschema.net/candidates/0",
                 "type": "object",
@@ -610,6 +611,7 @@ candidates_resource_schema_patch = {
         "candidates": {
             # "id": "http://jsonschema.net/candidates",
             "type": "array",
+            "minItems": 1,
             "items": {
                 # "id": "http://jsonschema.net/candidates/0",
                 "type": "object",
@@ -671,7 +673,6 @@ candidates_resource_schema_patch = {
                     "emails": {
                         # "id": "http://jsonschema.net/candidates/0/emails",
                         "type": "array",
-                        "minItems": 1,
                         "items": {
                             # "id": "http://jsonschema.net/candidates/0/emails/0",
                             "type": "object",
@@ -1243,6 +1244,24 @@ candidates_resource_schema_patch = {
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+candidates_resource_schema_get = {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    # "id": "http://jsonschema.net",
+    "type": ["object", "null"],
+    "additionalProperties": False,
+    "properties": {
+        "candidate_ids": {
+            # "id": "http://jsonschema.net/candidate_ids",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                # "id": "http://jsonschema.net/candidate_ids/0",
+                "type": "integer"
             }
         }
     }
