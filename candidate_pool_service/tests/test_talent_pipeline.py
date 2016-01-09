@@ -3,8 +3,8 @@ __author__ = 'ufarooqi'
 from datetime import timedelta
 from candidate_pool_service.candidate_pool_app import app
 from candidate_pool_service.common.tests.conftest import *
-from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline, Smartlist
-from candidate_pool_service.common.utils.common_functions import add_role_to_test_user
+from candidate_pool_service.common.utils.handy_functions import add_role_to_test_user
+from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline
 from candidate_pool_service.common.tests.cloud_search_common_functions import *
 from common_functions import *
 
@@ -69,7 +69,7 @@ def test_talent_pipeline_api_post(access_token_first, user_first, talent_pool, t
     assert status_code == 400
 
     # Logged-in user trying to add a new talent-pipeline with non-existing talent_pool
-    data['talent_pipelines'][0]['talent_pool_id'] = 100
+    data['talent_pipelines'][0]['talent_pool_id'] = 1000
     response, status_code = talent_pipeline_api(access_token_first, data=data, action='POST')
     assert status_code == 404
 
@@ -189,7 +189,7 @@ def test_talent_pipeline_api_put(access_token_first, access_token_second, user_s
     assert status_code == 400
 
     # Logged-in user trying to edit talent-pipeline with non-existing talent_pool_id
-    data['talent_pipeline']['talent_pool_id'] = 100
+    data['talent_pipeline']['talent_pool_id'] = 1000
     response, status_code = talent_pipeline_api(access_token_first, talent_pipeline_id=talent_pipeline_id, data=data,
                                                 action='PUT')
     assert status_code == 404
@@ -249,7 +249,7 @@ def test_talent_pipeline_api_get(access_token_first, access_token_second, user_s
     add_role_to_test_user(user_second, ['CAN_GET_TALENT_PIPELINES'])
 
     # Logged-in user trying to get information of a non-existing talent_pipeline
-    response, status_code = talent_pipeline_api(access_token_first, talent_pipeline_id=talent_pipeline_id + 100)
+    response, status_code = talent_pipeline_api(access_token_first, talent_pipeline_id=talent_pipeline_id + 1000)
     assert status_code == 404
 
     # Logged-in user trying to get information of a talent_pipeline of different domain
@@ -292,7 +292,7 @@ def test_talent_pipeline_api_delete(access_token_first, access_token_second, use
     add_role_to_test_user(user_second, ['CAN_DELETE_TALENT_PIPELINES'])
 
     # Logged-in user trying to delete a non-existing talent_pipeline
-    response, status_code = talent_pipeline_api(access_token_first, talent_pipeline_id=talent_pipeline_id + 100,
+    response, status_code = talent_pipeline_api(access_token_first, talent_pipeline_id=talent_pipeline_id + 1000,
                                                 action='DELETE')
     assert status_code == 404
 
@@ -338,7 +338,7 @@ def test_talent_pipeline_smart_list_api_post(access_token_first, access_token_se
     assert status_code == 400
 
     # Logged-in user trying to add smart_lists to a non-existing talent_pipeline
-    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id + 100, data=data,
+    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id + 1000, data=data,
                                                            action='POST')
     assert status_code == 404
 
@@ -401,7 +401,7 @@ def test_talent_pipeline_smart_list_api_delete(access_token_first, access_token_
     assert status_code == 400
 
     # Logged-in user trying to remove smart_lists from a non-existing talent_pipeline
-    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id + 100, data=data,
+    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id + 1000, data=data,
                                                            action='DELETE')
     assert status_code == 404
 
@@ -450,7 +450,7 @@ def test_talent_pipeline_smart_list_api_get(access_token_first, access_token_sec
     add_role_to_test_user(user_second, ['CAN_GET_TALENT_PIPELINE_SMART_LISTS'])
 
     # Logged-in user trying to get all smart_lists of a non-existing talent_pipeline
-    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id + 100)
+    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id + 1000)
     assert status_code == 404
 
     # Logged-in user trying to get all smart_lists of a talent_pipeline of different domain

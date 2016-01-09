@@ -1,0 +1,43 @@
+// ---------------------------------------------------
+// Modules / Campaign Detail
+// ---------------------------------------------------
+.campaign-detail__group {
+  margin-bottom: $padding--normal;
+
+  h4 {
+    color: $color--medGray;
+  }
+}
+
+.campaign-detail__action-link {
+  color: $color--nearBlack;
+
+  [class^="icon--"],
+  [class*=" icon--"] {
+    color: $color--blue;
+    font-size: $font-size--large;
+    padding-right: $padding--tiny;
+    vertical-align: middle;
+  }
+
+  &:hover {
+    color: $color--green;
+
+    [class^="icon--"],
+    [class*=" icon--"] {
+      color: $color--green;
+    }
+  }
+}
+
+.campaign-detail__share {
+  font-size: $font-size--large;
+
+  a {
+    margin-right: $padding--small;
+
+    &:last-of-type {
+      margin-right: 0;
+    }
+  }
+}

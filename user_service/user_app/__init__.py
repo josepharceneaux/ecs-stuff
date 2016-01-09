@@ -1,38 +1,45 @@
 __author__ = 'ufarooqi'
 
 from flask import Flask
-from user_service.common.models.db import db
-from user_service.common.talent_api import TalentApi
-from user_service.common import common_config
-from healthcheck import HealthCheck
+from user_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 
 app = Flask(__name__)
-app.config.from_object(common_config)
+load_gettalent_config(app.config)
 
-logger = app.config['LOGGER']
-from user_service.common.error_handling import register_error_handlers
-register_error_handlers(app, logger)
+logger = app.config[TalentConfigKeys.LOGGER]
 
-db.init_app(app)
-db.app = app
+try:
+    from user_service.common.error_handling import register_error_handlers
+    register_error_handlers(app, logger)
 
-from api.users_v1 import UserApi
-from api.domain_v1 import DomainApi
-from api.roles_and_groups_v1 import UserScopedRolesApi, UserGroupsApi, DomainGroupsApi
+    from user_service.common.models.db import db
+    db.init_app(app)
+    db.app = app
 
-# wrap the flask app and give a heathcheck url
-health = HealthCheck(app, "/healthcheck")
+    from user_service.common.redis_cache import redis_store
+    redis_store.init_app(app)
 
-api = TalentApi(app)
-api.add_resource(UserApi, "/users", "/users/<int:id>")
-api.add_resource(DomainApi, "/domains", "/domains/<int:id>")
-api.add_resource(UserScopedRolesApi, "/users/<int:user_id>/roles")
-api.add_resource(UserGroupsApi, "/groups/<int:group_id>/users")
-api.add_resource(DomainGroupsApi, "/domain/<int:domain_id>/groups", "/domain/groups/<int:group_id>")
+    from views import users_utilities_blueprint
+    from api.users_v1 import users_blueprint
+    from api.domain_v1 import domain_blueprint
+    from api.roles_and_groups_v1 import groups_and_roles_blueprint
 
-import views
+    app.register_blueprint(users_blueprint, url_prefix='/v1')
+    app.register_blueprint(domain_blueprint, url_prefix='/v1')
+    app.register_blueprint(users_utilities_blueprint, url_prefix='/v1')
+    app.register_blueprint(groups_and_roles_blueprint, url_prefix='/v1')
 
-db.create_all()
-db.session.commit()
+    # wrap the flask app and give a heathcheck url
+    from healthcheck import HealthCheck
+    health = HealthCheck(app, "/healthcheck")
 
-logger.info("Starting user_service in %s environment", app.config['GT_ENVIRONMENT'])
+    db.create_all()
+    db.session.commit()
+
+    logger.info("Starting user_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
+
+except Exception as e:
+    logger.exception("Couldn't start user_service in %s environment because: %s"
+                     % (app.config[TalentConfigKeys.ENV_KEY], e.message))
+
+

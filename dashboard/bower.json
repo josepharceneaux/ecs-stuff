@@ -1,8 +1,12 @@
 {
-  "name": "gettalent-dashboard",
+  "name": "gt-dashboard",
   "version": "0.1.0",
-  "description": "GetTalent",
-  "author": "Haohong Xu",
+  "description": "getTalent Dashboard",
+  "authors": [
+    "Haohong Xu",
+    "Jordan Seaberg",
+    "Jason Provencher"
+  ],
   "license": "MIT",
   "homepage": "",
   "ignore": [
@@ -13,18 +17,22 @@
     "tests"
   ],
   "devDependencies": {
-    "angular-mocks": "~1.4.0",
+    "angular-mocks": "~1.4.8",
     "bardjs": "~0.1.4"
   },
   "dependencies": {
-    "angular": "~1.4.0",
-    "angular-cookies":  "~1.4.0",
+    "angular": "~1.4.8",
+    "angular-cookies": "~1.4.8",
+    "angular-highlightjs": "~0.5.1",
     "angular-moment": "~0.10.3",
     "angular-oauth2": "~3.0.1",
-    "angular-sanitize": "~1.4.0",
+    "angular-sanitize": "~1.4.8",
+    "angular-tooltips": "~1.0.6",
     "angular-toastr": "~1.4.1",
     "angular-ui-router": "~0.2.15",
+    "angularUtils-pagination": "angular-utils-pagination#~0.9.3",
     "d3": "~3.5.9",
+    "highlightjs": "~9.0.0",
     "jquery": "~2.1.4",
     "lodash": "~3.9.3",
     "ng-pickadate": "~0.3.0",

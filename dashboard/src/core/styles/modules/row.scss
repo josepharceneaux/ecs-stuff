@@ -33,6 +33,7 @@
     width: 100%;
     display: table;
     border-collapse: separate;
+    table-layout: fixed;
 
     &:after { display: none; }
   }
@@ -70,4 +71,11 @@
 
   color: $color--white;
   background-color: $color--nearBlack;
+}
+
+.row--orange-pink-gradient {
+  @extend .row;
+  @include gradients--orange-to-pink;
+
+  color: $color--white;
 }

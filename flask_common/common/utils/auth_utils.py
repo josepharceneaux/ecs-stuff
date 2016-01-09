@@ -10,40 +10,58 @@ import requests
 # Application/Module Specific
 from ..utils.handy_functions import random_letter_digit_string
 from flask import current_app as app
-from flask import request
 from ..models.user import *
 from ..error_handling import *
+from ..routes import AuthApiUrl
 
 
-def require_oauth(func):
-    @wraps(func)
-    def authenticate(*args, **kwargs):
-        """
-        This method will verify Authorization header of request using getTalent AuthService and will set
-        request.user and request.oauth_token
-        """
-        try:
-            oauth_token = request.headers['Authorization']
-        except KeyError:
-            raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
-        try:
-            response = requests.get(app.config['OAUTH_SERVER_URI'], headers={'Authorization': oauth_token})
-        except Exception as e:
-            raise InternalServerError(error_message=e.message)
-        if response.status_code == 429:
-            raise UnauthorizedError(error_message='You have exceeded the access limit of this API')
-        elif not response.ok:
-            error_body = response.json()
-            if error_body['error']:
-                raise UnauthorizedError(error_message=error_body['error']['message'], error_code=error_body['error']['code'])
-            else:
+def require_oauth(allow_jwt_based_auth=False, allow_null_user=False):
+    """
+    This method will verify Authorization header of request using getTalent AuthService or Basic HTTP secret-key based
+    Auth and will set request.user and request.oauth_token
+    :param bool allow_jwt_based_auth: Either JWT based authentication is supported for a particular endpoint or not ?
+    :param allow_null_user: Is user is necessary for Authorization or not ?
+    """
+    def auth_wrapper(func):
+        @wraps(func)
+        def authenticate(*args, **kwargs):
+            try:
+                oauth_token = request.headers['Authorization']
+            except KeyError:
                 raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
-        else:
-            valid_user_id = response.json().get('user_id')
-            request.user = User.query.get(valid_user_id)
-            request.oauth_token = oauth_token
-            return func(*args, **kwargs)
-    return authenticate
+
+            # JWT based Authentication
+            if allow_jwt_based_auth:
+                try:
+                    secret_key_id = request.headers['X-Talent-Secret-Key-ID']
+                    json_web_token = oauth_token.replace('Bearer', '').strip()
+                    User.verify_jw_token(secret_key_id, json_web_token, allow_null_user)
+                    request.oauth_token = ''
+                    return func(*args, **kwargs)
+                except KeyError:
+                    pass
+
+            try:
+                response = requests.get(AuthApiUrl.AUTH_SERVICE_AUTHORIZE_URI, headers={'Authorization': oauth_token})
+            except Exception as e:
+                raise InternalServerError(error_message=e.message)
+            if response.status_code == 429:
+                raise UnauthorizedError(error_message='You have exceeded the access limit of this API')
+            elif not response.ok:
+                error_body = response.json()
+                if error_body['error']:
+                    raise UnauthorizedError(error_message=error_body['error']['message'],
+                                            error_code=error_body['error']['code'])
+                else:
+                    raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
+            else:
+                valid_user_id = response.json().get('user_id')
+                request.user = User.query.get(valid_user_id)
+                request.oauth_token = oauth_token
+                return func(*args, **kwargs)
+
+        return authenticate
+    return auth_wrapper
 
 
 def require_all_roles(*role_names):
@@ -51,6 +69,9 @@ def require_all_roles(*role_names):
     def domain_roles(func):
         @wraps(func)
         def authenticate_roles(*args, **kwargs):
+            # For server-to-server Auth roles check should be skipped
+            if not request.oauth_token:
+                return func(*args, **kwargs)
             if not role_names:
                 # Roles list is empty so it means func is not roles protected
                 return func(*args, **kwargs)
@@ -73,6 +94,10 @@ def require_any_role(*role_names):
     def domain_roles(func):
         @wraps(func)
         def authenticate_roles(*args, **kwargs):
+
+            # For server-to-server Auth roles check should be skipped
+            if not request.oauth_token:
+                return func(*args, **kwargs)
             user_roles = [DomainRole.query.get(user_role.role_id).role_name for user_role in
                           UserScopedRoles.get_all_roles_of_user(request.user.id)]
             user_roles.append('SELF')

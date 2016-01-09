@@ -9,14 +9,12 @@ machine:
 dependencies:
   override:
     - pip install -r requirements.txt
-  post:
-    - mkdir ~/.talent
-    - "printf \"[cloudsearch]\ndomain: gettalent-circleci\nregion: us-west-1\n[s3]\nbucket: tcs-local-circleci\nregion: us-west-1\n[local]\nemail: jitesh.karesia+circleci@newvisionsoftware.in\nenv: dev\ninstance-name: local\n[iam]\naccount-id: 528222547498\" > ~/.talent/web.cfg"
-
+    
 test:
   pre:
     - sudo chown -R ubuntu /var/log:
         parallel: true
+    - python setup_environment/reset_database_and_cloud_search.py
     - python auth_service/run.py:
         parallel: true
         background: true
@@ -41,10 +39,14 @@ test:
     - python spreadsheet_import_service/run.py:
         parallel: true
         background: true
+    - python scheduler_service/run.py:
+        parallel: true
+        background: true
     - sleep 5
 
 
   override:
+
     - ? >
           py.test
           auth_service/tests/
@@ -54,6 +56,7 @@ test:
           candidate_service/tests/
           candidate_pool_service/tests/
           spreadsheet_import_service/tests/
+          scheduler_service/tests/
       : parallel: true
 
 experimental:

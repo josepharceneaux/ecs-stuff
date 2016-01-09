@@ -13,7 +13,7 @@
                         </div>
 
                         <div class="col--full-4 hero__header__stats--column">
-                            <h3>Talent Pipelines <a class="hero__header__link" href="#" title="New Pipeline">+</a></h3>
+                            <h3>Talent Pipelines <a class="hero__header__new-pipeline" href="#" title="New Pipeline">+</a></h3>
                             <h1>14</h1>
                         </div>
 
@@ -280,83 +280,32 @@
             <header class="box__header">
                 <h2>Pipeline Breakdown</h2>
             </header>
-            <div class="tabs">
-                <nav class="tabs__nav">
-                    <a class="tabs__nav__link tabs__nav__link--active" href="#top-skills">
-                        Top Skills
-                    </a>
-                    <a class="tabs__nav__link" href="#top-locations">
-                        Top Locations
-                    </a>
-                    <a class="tabs__nav__link" href="#top-sites">
-                        Top Sites
-                    </a>
-                    <a class="tabs__nav__link" href="#top-referrals">
-                        Top Referrals
-                    </a>
-                </nav>
-                <div class="tabs__container">
-                    <div id="top-skills" class="tabs__content tabs__content--active">
-                        <ul class="list--sideBySide list-reset">
-                            <li>Automatic Data Processing</li>
-                            <li>Angular JS</li>
-                            <li>Hadoop</li>
-                            <li>HTML5</li>
-                            <li>Apache Jackrabbit</li>
-                            <li>Linux</li>
-                            <li>Production Management</li>
-                            <li>Software Troubleshooting</li>
-                            <li>Sybase Unwired Platform</li>
-                            <li>Location-Based Services</li>
-                            <li>DevOps</li>
-                            <li>LTX Credence</li>
-                        </ul>
-                    </div>
+            <gt-tabs>
+                <gt-pane title="Top Skills">
+                    <ul class="list--sideBySide list-reset">
+                        <li ng-repeat="item in vm.topSkills">{{item.name}}</li>
+                    </ul>
+                </gt-pane>
 
-                    <div id="top-locations" class="tabs__content">
-                        <ul class="list--sideBySide list-reset">
-                            <li>Portland, OR</li>
-                            <li>Detroit, MI</li>
-                            <li>Orlando, FL</li>
-                            <li>Santa Cruz, CA</li>
-                            <li>Miami, FL</li>
-                            <li>Seattle, WA</li>
-                            <li>Olympia, WA</li>
-                            <li>Dallas, TX</li>
-                            <li>Denver, CO</li>
-                        </ul>
-                    </div>
+                <gt-pane title="Top Locations">
+                    <ul class="list--sideBySide list-reset">
+                        <li ng-repeat="item in vm.topLocations">{{item.formattedLocation}}</li>
+                    </ul>
+                </gt-pane>
 
-                    <div id="top-sites" class="tabs__content">
-                        <ul class="list--sideBySide list-reset">
-                            <li>Seattle, WA</li>
-                            <li>Olympia, WA</li>
-                            <li>Dallas, TX</li>
-                            <li>Portland, OR</li>
-                            <li>Detroit, MI</li>
-                            <li>Orlando, FL</li>
-                            <li>Santa Cruz, CA</li>
-                            <li>Miami, FL</li>
-                            <li>Denver, CO</li>
-                        </ul>
-                    </div>
+                <gt-pane title="Top Sites">
+                    <ul class="list--sideBySide list-reset">
+                        <li ng-repeat="item in vm.topSites">{{item.location}}</li>
+                    </ul>
+                </gt-pane>
 
-                    <div id="top-referrals" class="tabs__content">
-                        <ul class="list--sideBySide list-reset">
-                            <li>Miami, FL</li>
-                            <li>Seattle, WA</li>
-                            <li>Olympia, WA</li>
-                            <li>Dallas, TX</li>
-                            <li>Denver, CO</li>
-                            <li>Portland, OR</li>
-                            <li>Detroit, MI</li>
-                            <li>Orlando, FL</li>
-                            <li>Santa Cruz, CA</li>
-                        </ul>
-                    </div>
+                <gt-pane title="Top Referrals">
+                    <ul class="list--sideBySide list-reset">
+                        <li ng-repeat="item in vm.topReferrals">{{item.location}}</li>
+                    </ul>
+                </gt-pane>
 
-                </div>
-            </div>
+            </gt-tabs>
         </div>
 
         <!-- Candidate Growth by Pipeline -->
@@ -366,36 +315,11 @@
                 <h4>Next 60 Days (Predictive)</h4>
             </header>
 
-            <figure class="progress">
-                <h4>Senior Java Developers in CA</h4>
+            <figure class="progress" ng-repeat="pipeline in vm.pipelines track by pipeline.id">
+                <h4>{{pipeline.name}}</h4>
 
-                <div class="progress__inner" style="width: 100%">
-                    <div class="progress__bar"></div>
-                    <div class="progress__label">120</div>
-                </div>
-            </figure>
-            <figure class="progress">
-                <h4>Vererans Hiring Initiative</h4>
-
-                <div class="progress__inner"    style="width: 78%">
-                    <div class="progress__bar"></div>
-                    <div class="progress__label">78</div>
-                </div>
-            </figure>
-            <figure class="progress">
-                <h4>Oracle DBAs Overseas</h4>
-
-                <div class="progress__inner" style="width: 25%">
-                    <div class="progress__bar--red"></div>
-                    <div class="progress__label">25</div>
-                </div>
-            </figure>
-            <figure class="progress">
-                <h4>Oracle DBAs Overseas</h4>
-
-                <div class="progress__inner" style="width: 50%">
-                    <div class="progress__bar--red"></div>
-                    <div class="progress__label">50</div>
+                <div class="progress__inner" ng-style="{'width': pipeline.progress * 100 + '%'}">
+                    <div class="progress__bar" ng-class="{'progress__bar--red': pipeline.progress <= .5}"></div>
                 </div>
             </figure>
         </div>
@@ -1088,7 +1012,6 @@
         </div>
     </div>
 
-
     <!-- Embed Code -->
     <div class="row--widget">
         <div class="col--full-12--cell box">
@@ -1100,16 +1023,49 @@
                 <div class="col--medium-6 form__col">
                     <h4>Button Code</h4>
 
-                    <pre><code class="code__wrap">&lt;object width=&quot;420&quot; height=&quot;315&quot; data=&quot;http://www.youtube.com/embed/XGSy3_Czz8k&quot;&gt;&lt;/object&gt;</code></pre>
+                    <div hljs no-escape language="html" class="code__wrap">&lt;object width=&quot;420&quot; height=&quot;315&quot; data=&quot;http://www.youtube.com/embed/XGSy3_Czz8k&quot;&gt;&lt;/object&gt;</div>
 
                     <a class="button--blue" href="#">Preview</a>
                 </div>
                 <div class="col--medium-6 form__col">
                     <h4>Widget Code</h4>
 
-                    <pre><code class="code__wrap">&lt;object width=&quot;420&quot; height=&quot;315&quot; data=&quot;http://www.youtube.com/embed/XGSy3_Czz8k&quot;&gt;&lt;/object&gt;</code></pre>
+                    <div hljs no-escape language="html" class="code__wrap">&lt;object width=&quot;420&quot; height=&quot;315&quot; data=&quot;http://www.youtube.com/embed/XGSy3_Czz8k&quot;&gt;&lt;/object&gt;</div>
 
                     <a class="button--blue" href="#">Preview</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row--widget">
+        <div class="col--full-12--cell box">
+            <header class="box__header">
+                <h2>Tooltips</h2>
+            </header>
+
+            <div class="form__fieldset row--expanded">
+                <div class="col--medium-12 form__col">
+                    <h4>Examples</h4>
+                </div>
+            </div>
+
+            <div class="form__fieldset row--expanded">
+                <div class="col--medium-12 form__col" ng-include="'components/styleguide/styleguide-dashboard/demos/tooltips/tooltips.html'"></div>
+            </div>
+
+            <hr>
+
+            <div class="form__fieldset row--expanded">
+                <div class="col--medium-12 form__col">
+                    <gt-tabs>
+                        <gt-pane title="Markup">
+                            <div class="code__scrollable" hljs include="'components/styleguide/styleguide-dashboard/demos/tooltips/tooltips.html'" language="html"></div>
+                        </gt-pane>
+                        <gt-pane title="JavaScript">
+                            <div class="code__scrollable" hljs include="'components/styleguide/styleguide-dashboard/demos/tooltips/tooltip-demo.controller.js.html'" language="js"></div>
+                        </div>
+                    </gt-tabs>
                 </div>
             </div>
         </div>

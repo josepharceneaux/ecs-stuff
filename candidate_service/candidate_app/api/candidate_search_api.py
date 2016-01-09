@@ -4,11 +4,12 @@ from flask_restful import Resource
 from candidate_service.common.utils.auth_utils import require_oauth
 from candidate_service.modules.validators import validate_and_format_data
 from candidate_service.common.error_handling import InvalidUsage
-from candidate_service.modules.talent_cloud_search import search_candidates, upload_candidate_documents, delete_candidate_documents
+from candidate_service.modules.talent_cloud_search import search_candidates, upload_candidate_documents, \
+    delete_candidate_documents
 
 
 class CandidateSearch(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth(allow_jwt_based_auth=True)]
 
     def get(self):
         """
@@ -37,7 +38,7 @@ class CandidateSearch(Resource):
 
 class CandidateDocuments(Resource):
 
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def post(self):
         """

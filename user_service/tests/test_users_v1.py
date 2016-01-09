@@ -1,6 +1,6 @@
 from user_service.user_app import app
 from user_service.common.tests.conftest import *
-from user_service.common.utils.common_functions import add_role_to_test_user
+from user_service.common.utils.handy_functions import add_role_to_test_user
 from common_functions import *
 
 
@@ -8,7 +8,7 @@ from common_functions import *
 def test_user_service_get(access_token_first, user_first, user_second):
 
     # Logged-in user trying to get info of non-existing user
-    response, status_code = user_api(access_token_first, user_first.id + 100)
+    response, status_code = user_api(access_token_first, user_first.id + 1000)
     assert status_code == 404
 
     # Logged-in user trying to get info of user of different domain
@@ -62,7 +62,7 @@ def test_user_service_delete(access_token_first, user_first, user_second):
     add_role_to_test_user(user_first, ['CAN_DELETE_USERS'])
 
     # User trying to delete non-existing user
-    response, status_code = user_api(access_token_first, user_first.id + 100, action='DELETE')
+    response, status_code = user_api(access_token_first, user_first.id + 1000, action='DELETE')
     assert status_code == 404
 
     # User trying to delete user of different domain
@@ -102,7 +102,7 @@ def test_user_service_put(access_token_first, user_first, user_second):
     data = {'first_name': gen_salt(6), 'last_name': gen_salt(6), 'phone': '+1 226-581-1027', 'email': ''}
 
     # Logged-in user trying to update non-existing user
-    response, status_code = user_api(access_token_first, user_first.id + 100, data=data, action='PUT')
+    response, status_code = user_api(access_token_first, user_first.id + 1000, data=data, action='PUT')
     assert status_code == 404
 
     # Logged-in user trying to update user with empty request body

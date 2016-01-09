@@ -25,11 +25,11 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-.icon--linkedin       { @extend .icon; &:after { content: ''; } }
+
 .icon--dropbox        { @extend .icon; &:after { content: ''; } }
 .icon--box            { @extend .icon; &:after { content: ''; } }
 .icon--googleDrive    { @extend .icon; &:after { content: ''; } }
-.icon--progress       { @extend .icon; &:after { content: ''; } }
+
 
 .icon--stack                { @extend .icon; &:after { content: "\61"; } }
 .icon--twitter-filled       { @extend .icon; &:after { content: "\62"; } }
@@ -65,11 +65,18 @@
 .icon--computer             { @extend .icon; &:after { content: "\49"; } }
 .icon--custom-fields        { @extend .icon; &:after { content: "\4a"; } }
 .icon--education            { @extend .icon; &:after { content: "\4b"; } }
+.icon--progress             { @extend .icon; &:after { content: '\56'; } }
 .icon--cloud                { @extend .icon; &:after { content: "\4c"; } }
 .icon--overview             { @extend .icon; &:after { content: "\63"; } }
 .icon--linkedin-filled      { @extend .icon; &:after { content: "\71"; } }
-.icon--linkedin             { @extend .icon; &:after { content: "\51"; } }
+.icon--linkedin             { @extend .icon; &:after { content: '\55'; } }
 .icon--stack-overflow       { @extend .icon; &:after { content: "\52"; } }
+.icon--checked-box          { @extend .icon; &:after { content: "\51"; } }
+.icon--unchecked-box        { @extend .icon; &:after { content: "\58"; } }
+.icon--grid                 { @extend .icon; &:after { content: "\59"; } }
+.icon--list                 { @extend .icon; &:after { content: "\5a"; } }
+.icon--facebook-filled      { @extend .icon; &:after { content: "\30"; } }
+
 
 .icon--github               { @extend .icon; &:after { content: "\57"; } }
 .icon--github-comment       { @extend .icon; &:after { content: "\72"; } }

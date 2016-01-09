@@ -1,16 +1,17 @@
 from flask_restful import Resource
-from flask import request
+from flask import request, Blueprint
+from user_service.common.error_handling import *
+from user_service.common.talent_api import TalentApi
 from user_service.common.models.user import User, db
-from user_service.user_app.user_service_utilties import check_if_user_exists, create_user_for_company
 from user_service.common.utils.validators import is_valid_email
 from user_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
-from user_service.common.error_handling import *
+from user_service.user_app.user_service_utilties import check_if_user_exists, create_user_for_company
 
 
 class UserApi(Resource):
 
     # Access token and role authentication decorators
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
     @require_any_role('SELF', 'CAN_GET_USERS')
@@ -202,3 +203,8 @@ class UserApi(Resource):
         db.session.commit()
 
         return {'updated_user': {'id': requested_user_id}}
+
+
+users_blueprint = Blueprint('users_api', __name__)
+api = TalentApi(users_blueprint)
+api.add_resource(UserApi, "/users", "/users/<int:id>")

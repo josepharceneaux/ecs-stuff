@@ -11,8 +11,8 @@ from flask import Blueprint
 from flask import jsonify
 from flask import request
 from flask.ext.cors import CORS
+
 # application specific
-# from activity_service.common.models.db import db
 from activity_service.activities_app import db
 from activity_service.common.models.user import User
 from activity_service.common.models.misc import Activity
@@ -33,7 +33,7 @@ CORS(mod, resources={
 
 
 @mod.route('/activities/<page>', methods=['GET'])
-@require_oauth
+@require_oauth()
 def get_activities(page):
     """
     :param int page: Page used in pagination for GET requests.
@@ -61,7 +61,7 @@ def get_activities(page):
 
 
 @mod.route('/activities/', methods=['POST'])
-@require_oauth
+@require_oauth()
 def post_activity():
     valid_user_id = request.user.id
     content = request.json

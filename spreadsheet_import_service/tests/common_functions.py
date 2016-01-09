@@ -10,13 +10,11 @@ import os
 import json
 import StringIO
 import requests
+from spreadsheet_import_service.app import app
 from spreadsheet_import_service.common.utils.talent_s3 import upload_to_filepicker_s3
+from spreadsheet_import_service.common.routes import SpreadsheetImportApiUrl
 
-SPREADSHEET_IMPORT_HOST = 'http://127.0.0.1:8009/%s'
-SPREADSHEET_IMPORT_ENDPOINT = SPREADSHEET_IMPORT_HOST % 'v1/parse_spreadsheet/%s'
-CONVERT_TO_TABLE_ENDPOINT = SPREADSHEET_IMPORT_ENDPOINT % 'convert_to_table'
-IMPORT_FROM_TABLE_ENDPOINT = SPREADSHEET_IMPORT_ENDPOINT % 'import_from_table'
-HEALTH_ENDPOINT = SPREADSHEET_IMPORT_HOST % 'healthcheck'
+HEALTH_ENDPOINT = 'http://127.0.0.1:8009/healthcheck'
 
 
 def import_spreadsheet_candidates(access_token, candidate_data=None, spreadsheet_file_name=None, is_csv=True,
@@ -49,13 +47,15 @@ def import_spreadsheet_candidates(access_token, candidate_data=None, spreadsheet
             spreadsheet_file_data = spreadsheet_file.read()
             s3_key_name = str(uuid.uuid4())[0:8] + spreadsheet_file_name.split('.')[1]
 
-    upload_to_filepicker_s3(file_content=spreadsheet_file_data, file_name=s3_key_name)
+    with app.app_context():
+        upload_to_filepicker_s3(file_content=spreadsheet_file_data, file_name=s3_key_name)
 
     if import_candidates:
-        response = requests.post(IMPORT_FROM_TABLE_ENDPOINT, headers=headers,
+        response = requests.post(SpreadsheetImportApiUrl.IMPORT_CANDIDATES, headers=headers,
                                  data=json.dumps({"file_picker_key": s3_key_name, 'header_row': header_row}))
     else:
-        response = requests.get(CONVERT_TO_TABLE_ENDPOINT, headers=headers, params={'file_picker_key': s3_key_name})
+        response = requests.get(SpreadsheetImportApiUrl.CONVERT_TO_TABLE, headers=headers,
+                                params={'file_picker_key': s3_key_name})
 
     return response.json(), response.status_code
 

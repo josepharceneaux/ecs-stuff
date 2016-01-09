@@ -32,7 +32,7 @@ def index():
 
 
 @mod.route('/parse_resume', methods=['POST'])
-@require_oauth
+@require_oauth()
 def parse_file_picker_resume():
     """
     Parses a resume based on a provided: filepicker key or binary, filename

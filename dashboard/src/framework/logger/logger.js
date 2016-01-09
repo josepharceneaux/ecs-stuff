@@ -21,32 +21,38 @@
         return service;
         /////////////////////
 
-        function log(message) {
-            $log.log('log: ' + message);
+        function log(/*arg1[, arg2[, arg3...]]*/) {
+            $log.log.apply(this, ['log:'].concat(Array.prototype.slice.call(arguments)));
         }
 
-        function info(message) {
-            toastr.info(message, 'Information');
-            $log.info('info: ' + message);
+        function info(/*arg1[, arg2[, arg3...]]*/) {
+            toastr.info(toString(arguments), 'Information');
+            $log.info.apply(this, ['info:'].concat(Array.prototype.slice.call(arguments)));
         }
 
-        function success(message) {
-            toastr.success(message, 'Success');
-            $log.info('success: ' + message);
+        function success(/*arg1[, arg2[, arg3...]]*/) {
+            toastr.success(toString(arguments), 'Success');
+            $log.info.apply(this, ['success:'].concat(Array.prototype.slice.call(arguments)));
         }
 
-        function warn(message) {
-            toastr.warning(message, 'Warning');
-            $log.warn('warn: ' + message);
+        function warn(/*arg1[, arg2[, arg3...]]*/) {
+            toastr.warning(toString(arguments), 'Warning');
+            $log.warn.apply(this, ['warn:'].concat(Array.prototype.slice.call(arguments)));
         }
 
-        function error(message) {
-            toastr.error(message, 'Error');
-            $log.error('error: ' + message);
+        function error(/*arg1[, arg2[, arg3...]]*/) {
+            toastr.error(toString(arguments), 'Error');
+            $log.error.apply(this, ['error:'].concat(Array.prototype.slice.call(arguments)));
         }
 
-        function debug(message) {
-            $log.debug('debug: ' + message);
+        function debug(/*arg1[, arg2[, arg3...]]*/) {
+            $log.debug.apply(this, ['debug:'].concat(Array.prototype.slice.call(arguments)));
+        }
+
+        function toString(args) {
+            return Array.prototype.reduce.call(args, function (prev, curr) {
+                return prev + ' ' + (typeof curr === 'object' && curr ? angular.toJson(curr) : curr);
+            }, '');
         }
     }
 }());
