@@ -9,7 +9,7 @@ from user_service.common.models.user import User
 from user_service.common.redis_cache import redis_store
 from user_service_utilties import send_reset_password_email
 from user_service.common.error_handling import *
-from flask.ext.common.common.routes import UserServiceApi
+from user_service.common.routes import UserServiceApi
 from user_service.common.utils.validators import is_valid_email
 from user_service.common.models.user import Domain, DomainRole, Token, db
 from werkzeug.security import generate_password_hash, check_password_hash

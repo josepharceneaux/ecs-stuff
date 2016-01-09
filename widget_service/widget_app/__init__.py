@@ -5,7 +5,7 @@ import config
 from flask import Flask
 from healthcheck import HealthCheck
 from widget_service.common.models.db import db
-from flask.ext.common.common.routes import WidgetApi, HEALTH_CHECK
+from widget_service.common.routes import WidgetApi, HEALTH_CHECK
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 app.config.from_object(config)

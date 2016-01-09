@@ -7,7 +7,7 @@ from auth_service.oauth import logger
 from flask import request, jsonify
 from auth_service.common.error_handling import *
 from flask.ext.cors import CORS
-from flask.ext.common.common.routes import AuthApi
+from auth_service.common.routes import AuthApi
 
 
 # Enable CORS

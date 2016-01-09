@@ -2,7 +2,7 @@
 __author__ = 'ufarooqi'
 
 from flask import Flask
-from flask.ext.common.common.routes import HEALTH_CHECK
+from spreadsheet_import_service.common.routes import HEALTH_CHECK
 from spreadsheet_import_service.common.routes import SpreadsheetImportApi
 from spreadsheet_import_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 

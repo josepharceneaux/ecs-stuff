@@ -7,7 +7,7 @@ import json
 import requests
 # Application Specific
 from activity_service.common.utils.handy_functions import random_word
-from flask.ext.common.common.routes import ActivityApiUrl
+from activity_service.common.routes import ActivityApiUrl
 from .fixtures import activities_fixture
 from .fixtures import candidate_fixture
 from .fixtures import candidate_source_fixture

@@ -8,7 +8,7 @@
 import os
 
 from scheduler_service import init_app
-from flask.ext.common.common.routes import GTApis
+from scheduler_service.common.routes import GTApis
 
 app, celery = init_app()
 

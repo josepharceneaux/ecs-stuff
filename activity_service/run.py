@@ -2,7 +2,7 @@
 __author__ = 'Erik Farmer'
 
 from activities_app import app
-from flask.ext.common.common.routes import GTApis
+from activity_service.common.routes import GTApis
 
 
 if __name__ == '__main__':

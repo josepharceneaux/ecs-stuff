@@ -1,6 +1,6 @@
 from flask import Flask
 from candidate_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
-from flask.ext.common.common.routes import CandidateApi, HEALTH_CHECK
+from candidate_service.common.routes import CandidateApi, HEALTH_CHECK
 
 app = Flask(__name__)
 load_gettalent_config(app.config)

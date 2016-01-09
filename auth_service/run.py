@@ -2,7 +2,7 @@ __author__ = 'ufarooqi'
 
 import os
 from auth_service.oauth import app
-from flask.ext.common.common.routes import GTApis
+from auth_service.common.routes import GTApis
 
 
 if __name__ == '__main__':

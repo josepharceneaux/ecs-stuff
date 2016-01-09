@@ -3,7 +3,7 @@
 __author__ = 'erikfarmer'
 import config
 from flask import Flask
-from flask.ext.common.common.routes import ResumeApi, HEALTH_CHECK
+from resume_service.common.routes import ResumeApi, HEALTH_CHECK
 from resume_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 
 app = Flask(__name__)

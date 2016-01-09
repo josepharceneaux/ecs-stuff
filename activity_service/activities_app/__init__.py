@@ -3,7 +3,7 @@
 __author__ = 'Erik Farmer'
 
 from flask import Flask
-from flask.ext.common.common.routes import HEALTH_CHECK
+from activity_service.common.routes import HEALTH_CHECK
 from activity_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 
 app = Flask(__name__)

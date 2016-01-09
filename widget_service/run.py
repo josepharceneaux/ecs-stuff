@@ -2,7 +2,7 @@
 __author__ = 'erikfarmer'
 
 from widget_app import app
-from flask.ext.common.common.routes import GTApis
+from widget_service.common.routes import GTApis
 
 
 if __name__ == '__main__':

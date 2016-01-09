@@ -2,7 +2,7 @@
 from social_network_service.app.app import app
 
 import os
-from flask.ext.common.common.routes import GTApis
+from social_network_service.common.routes import GTApis
 
 
 if __name__ == '__main__':

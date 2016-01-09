@@ -16,7 +16,7 @@ from flask.ext.cors import CORS
 # application specific
 from activity_service.activities_app import db
 from activity_service.common.models.user import User
-from flask.ext.common.common.routes import ActivityApi
+from activity_service.common.routes import ActivityApi
 from activity_service.common.models.misc import Activity
 from activity_service.common.utils.auth_utils import require_oauth
 

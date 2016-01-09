@@ -1,6 +1,6 @@
 """Local run file."""
 from resume_parsing_app import app
-from flask.ext.common.common.routes import GTApis
+from resume_service.common.routes import GTApis
 
 
 if __name__ == '__main__':

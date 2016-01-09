@@ -1,6 +1,6 @@
 from flask_restful import Resource
 from flask import request, Blueprint
-from flask.ext.common.common.routes import UserServiceApi
+from user_service.common.routes import UserServiceApi
 from user_service.common.error_handling import *
 from user_service.common.talent_api import TalentApi
 from user_service.common.models.user import User, db
