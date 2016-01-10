@@ -14,9 +14,11 @@
 
         // 3rd Party modules
         'angularUtils.directives.dirPagination',
+        'hljs',
         'ngTagsInput',
         'pickadate',
         'toastr',
+        'ui.bootstrap',
         'ui.router'
     ]);
 })();

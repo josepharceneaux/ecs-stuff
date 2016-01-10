@@ -207,12 +207,12 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
     :param kwargs: post data like campaign name, smartlist ids etc
     :return:
     """
-    secret_key = None
+    secret_key_id = None
     if not access_token:
-        secret_key, access_token = User.generate_auth_token(user_id=user_id)
+        secret_key_id, access_token = User.generate_jw_token(user_id=user_id)
     logger.info('User ID: %s, URL: %s, Content-Type: %s' % (user_id, url, content_type))
     # Call celery task to send post_data to url
-    send_request.apply_async([access_token, secret_key, url, content_type, kwargs])
+    send_request.apply_async([access_token, secret_key_id, url, content_type, kwargs])
 
 
 def remove_tasks(ids, user_id):

@@ -11,10 +11,10 @@ from datetime import datetime
 
 from flask import current_app
 from ..routes import AuthApiUrl
-from ..models.user import User, UserScopedRoles
+from ..error_handling import InvalidUsage
+from ..models.user import User, UserScopedRoles, DomainRole
 from sqlalchemy.sql.expression import ClauseElement
 from werkzeug.security import generate_password_hash
-from ..error_handling import ForbiddenError, InvalidUsage
 
 JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
 
@@ -193,6 +193,9 @@ def add_role_to_test_user(test_user, role_names):
     :param list[str] role_names: List of role names
     :return:
     """
+    for role_name in role_names:
+        if not DomainRole.get_by_name(role_name):
+            DomainRole.save(role_name)
     UserScopedRoles.add_roles(test_user, role_names)
 
 

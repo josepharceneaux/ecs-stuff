@@ -106,7 +106,6 @@ class ResumeApiUrl(object):
     RESUME_HOST_NAME = _get_host_name(GTApis.RESUME_SERVICE_NAME,
                                       GTApis.RESUME_SERVICE_PORT)
 
-
 class UserServiceApiUrl:
     """
     Rest URLs of user_service
