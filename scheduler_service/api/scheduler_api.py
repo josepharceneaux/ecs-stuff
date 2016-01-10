@@ -6,7 +6,6 @@ This API also checks for authentication token
 
 # Standard imports
 import json
-import os
 import types
 
 # Third party imports
@@ -102,7 +101,7 @@ class Tasks(Resource):
         tasks = scheduler.get_jobs()
         tasks = filter(lambda task: task.args[0] == user_id, tasks)
         tasks = [serialize_task(task) for task in tasks]
-        tasks = [x for x in tasks if x]
+        tasks = [task for task in tasks if task]
         return dict(tasks=tasks, count=len(tasks))
 
     @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
@@ -289,7 +288,7 @@ class ResumeTasks(Resource):
         if not task_ids:
             raise InvalidUsage("Bad Request, No data in ids", error_code=400)
         # Filter jobs that are not None
-        valid_tasks = [x for x in task_ids if scheduler.get_job(job_id=x)]
+        valid_tasks = [task for task in task_ids if scheduler.get_job(job_id=task)]
         if valid_tasks:
             # Only keep jobs that belonged to the auth user
             valid_tasks = filter(lambda task_id: scheduler.get_job(job_id=task_id).args[0] == user_id, valid_tasks)
@@ -581,7 +580,7 @@ class SendRequestTest(Resource):
 
     def post(self):
 
-        key = flask_app.config[TalentConfigKeys.ENV_KEY]
+        key = flask_app.config.get(TalentConfigKeys.ENV_KEY)
         if not (key == 'dev' or key == 'circle'):
             raise ForbiddenError("You are not authorized to access this endpoint.")
 

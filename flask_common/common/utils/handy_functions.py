@@ -3,7 +3,7 @@ import json
 import requests
 from flask import current_app
 
-from scheduler_service import TalentConfigKeys
+from flask.ext.common.common.talent_config_manager import TalentConfigKeys
 from ..error_handling import ForbiddenError, UnauthorizedError, ResourceNotFound
 
 __author__ = 'erikfarmer'

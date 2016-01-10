@@ -15,7 +15,6 @@ from scheduler_service.common.routes import SchedulerApiUrl
 __author__ = 'saad'
 
 
-@pytest.mark.usefixtures('auth_header', 'auth_header_no_user', 'job_config')
 class TestSchedulerGet:
 
     def test_single_job(self, auth_header, job_config):

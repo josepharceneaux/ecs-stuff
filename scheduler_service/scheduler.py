@@ -223,6 +223,7 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
     """
     # In case of global tasks there is no access_token and token expires in 600 seconds. So, a new token should be
     # created because frequency can be set to minimum of 1 hour.
+    secret_key_id = None
     if not access_token:
         secret_key_id, access_token = User.generate_jw_token(user_id=user_id)
     else:

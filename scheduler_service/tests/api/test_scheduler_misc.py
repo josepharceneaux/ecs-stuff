@@ -18,7 +18,6 @@ from scheduler_service.common.routes import SchedulerApiUrl
 __author__ = 'saad'
 
 
-@pytest.mark.usefixtures('auth_header', 'job_config')
 class TestSchedulerMisc:
 
     def test_scheduled_job_with_expired_token(self, sample_user, user_auth, job_config):
@@ -97,6 +96,7 @@ class TestSchedulerMisc:
 
         token = Token.query.filter_by(user_id=auth_token_row['user_id']).first()
 
+        assert token
         assert token.expires > datetime.datetime.utcnow()
 
     def test_bulk_schedule_jobs(self, auth_header, job_config):
@@ -162,6 +162,7 @@ class TestSchedulerMisc:
 
 def _update_token_expiry_(user_id, expiry):
     token = Token.query.filter_by(user_id=user_id).first()
+    assert token
     token.update(expires=expiry)
     return token
 

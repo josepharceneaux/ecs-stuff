@@ -15,7 +15,6 @@ from scheduler_service.custom_exceptions import SchedulerServiceApiException
 __author__ = 'saad'
 
 
-@pytest.mark.usefixtures('auth_header', 'job_config')
 class TestSchedulerPause:
 
     def test_single_job(self, auth_header, job_config):
