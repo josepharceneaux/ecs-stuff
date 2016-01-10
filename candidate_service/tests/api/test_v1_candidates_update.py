@@ -26,6 +26,30 @@ from candidate_sample_data import (
 
 
 ######################## Candidate ########################
+def test_update_candidate_outside_of_domain(sample_user, user_auth, user_from_different_domain):
+    """
+    Test: User attempts to update a candidate from a different domain
+    Expect: 403
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    :type user_from_different_domain:  User
+    """
+    # Get access tokens
+    sample_user_token = user_auth.get_auth_token(sample_user, True)['access_token']
+    user_from_other_domain_token = user_auth.\
+        get_auth_token(user_from_different_domain, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(sample_user_token)
+    candidate_id = create_resp.json()['candidates'][0]['id']
+
+    # User from different domain to update candidate
+    data = {'candidates': [{'id': candidate_id, 'first_name': 'moron'}]}
+    update_resp = patch_to_candidate_resource(user_from_other_domain_token, data)
+    print response_info(update_resp)
+    assert update_resp.status_code == 403
+
+
 def test_update_existing_candidate(sample_user, user_auth):
     """
     Test:   Update an existing Candidate

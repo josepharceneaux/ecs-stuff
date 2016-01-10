@@ -1,5 +1,8 @@
 """
-This file entails Candidate-restful-services for CRUD operations
+This file entails Candidate-restful-services for CRUD operations.
+Notes:
+    i. "optional-input" indicates that the resource can handle
+    other specified inputs or no inputs (if not specified)
 """
 # Flask specific
 from flask import request
@@ -54,11 +57,13 @@ class CandidatesResource(Resource):
 
     def get(self, **kwargs):
         """
-        Endpoint:   GET /v1/candidates
+        Endpoint:  GET /v1/candidates
         Optional-input:  {'candidate_ids': [int, int, int, ...]}
+
         Function retrieves candidates via two ways:
              i. Candidates from a list of candidate IDs, OR
             ii. If nothing is provided, all of user's candidates will be returned
+
         :return     [dict] -> list of candidate-dicts
         """
         # Authenticated user
@@ -93,7 +98,7 @@ class CandidatesResource(Resource):
 
             # Candidate IDs must belong to user's domain
             if not do_candidates_belong_to_users_domain(authed_user, candidate_ids):
-                raise ForbiddenError('Not authorzied', custom_error.CANDIDATE_FORBIDDEN)
+                raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
             retrieved_candidates = []
             for candidate_id in candidate_ids:
@@ -113,15 +118,15 @@ class CandidatesResource(Resource):
 
     def post(self, **kwargs):
         """
-        POST /v1/candidates
-        input: {'candidates': [candidateObject1, candidateObject2, ...]}
+        Endpoint:  POST /v1/candidates
+        Input: {'candidates': [CandidateObject, CandidateObject, ...]}
 
-        Creates new candidate(s).
+        Function Creates new candidate(s)
 
-        Takes a JSON dict containing:
-            - a candidates key and a list of candidate-object(s) as values
-        Function only accepts JSON dict.
-        JSON dict must contain candidate's email address(s).
+        Caveats:
+             i. Requires a JSON dict containing a 'candidates'-key
+                 and a-list-of-candidate-dict(s) as values
+            ii. JSON dict must contain at least one email-dict with an email-address.
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
@@ -150,18 +155,14 @@ class CandidatesResource(Resource):
             # Prevent user from adding custom field(s) to other domains
             custom_fields = candidate_dict.get('custom_fields') or []
             custom_field_ids = [custom_field.get('id') for custom_field in custom_fields]
-            is_authorized = is_custom_field_authorized(custom_field_ids=custom_field_ids,
-                                                       user_domain_id=authed_user.domain_id)
-            if not is_authorized:
+            if not is_custom_field_authorized(authed_user.domain_id, custom_field_ids):
                 raise ForbiddenError(error_message="Unauthorized custom field IDs",
                                      error_code=custom_error.CUSTOM_FIELD_FORBIDDEN)
 
             # Prevent user from adding area(s) of interest to other domains
             areas_of_interest = candidate_dict.get('areas_of_interest') or []
             area_of_interest_ids = [area_of_interest.get('id') for area_of_interest in areas_of_interest]
-            is_authorized = is_area_of_interest_authorized(area_of_interest_ids=area_of_interest_ids,
-                                                           user_domain_id=authed_user.domain_id)
-            if not is_authorized:
+            if not is_area_of_interest_authorized(authed_user.domain_id, area_of_interest_ids):
                 raise ForbiddenError(error_message="Unauthorized area of interest IDs",
                                      error_code=custom_error.AOI_FORBIDDEN)
 
@@ -202,13 +203,15 @@ class CandidatesResource(Resource):
 
     def patch(self, **kwargs):
         """
-        PATCH /v1/candidates
-        Function can update candidate(s).
+        Endpoint:  PATCH /v1/candidates
+        Input: {'candidates': [CandidateObject, CandidateObject, ...]}
 
-        Takes a JSON dict containing:
-            - a candidates key and a list of candidate-object(s) as values
-        Function only accepts JSON dict.
-        JSON dict must contain candidate's ID.
+        Function can update any of candidate(s)'s information.
+
+        Caveats:
+             i. Requires a JSON dict containing a 'candidates'-key
+                 and a-list-of-candidate-dict(s) as values
+            ii. Each JSON dict must contain candidate's ID
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
@@ -223,13 +226,20 @@ class CandidatesResource(Resource):
         except Exception as e:
             raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
 
+        # Candidates must belong to user's domain
+        candidates = body_dict.get('candidates')
+        list_of_candidate_ids = list(candidate['id'] for candidate in candidates)
+        if not do_candidates_belong_to_users_domain(authed_user, list_of_candidate_ids):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
         updated_candidate_ids = []
-        for candidate_dict in body_dict.get('candidates'): #TODO: PREVENT USER FROM UPDATING CANDIDATES FROM OTHER DOMAIN
+        for candidate_dict in candidates:
 
             emails = candidate_dict.get('emails')
             if emails:
-                emails = [{'id': email.get('id'), 'label': email.get('label'), 'address': email.get('address'),
-                           'is_default': email.get('is_default')} for email in candidate_dict.get('emails')]
+                emails = [{'id': email.get('id'), 'label': email.get('label'),
+                           'address': email.get('address'), 'is_default': email.get('is_default')}
+                          for email in candidate_dict.get('emails')]
 
                 # Validate email addresses' format
                 if filter(lambda email: not is_valid_email(email['address']), emails):
