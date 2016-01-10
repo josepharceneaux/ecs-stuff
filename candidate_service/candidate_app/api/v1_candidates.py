@@ -12,7 +12,8 @@ from candidate_service.common.models.db import db
 from candidate_service.common.utils.validators import (is_valid_email)
 from candidate_service.modules.validators import (
     does_candidate_belong_to_user_and_its_domain, is_custom_field_authorized,
-    is_area_of_interest_authorized, does_candidate_belong_to_users_domain
+    is_area_of_interest_authorized, does_candidate_belong_to_users_domain,
+    do_candidates_belong_to_users_domain
 )
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch,
@@ -54,12 +55,14 @@ class CandidatesResource(Resource):
     def get(self, **kwargs):
         """
         Endpoint:   GET /v1/candidates
-        :return     List of Candidate(s)
-        :rtype      [str]
+        Optional-input:  {'candidate_ids': [int, int, int, ...]}
+        Function retrieves candidates via two ways:
+             i. Candidates from a list of candidate IDs, OR
+            ii. If nothing is provided, all of user's candidates will be returned
+        :return     [dict] -> list of candidate-dicts
         """
         # Authenticated user
         authed_user = request.user
-
         get_all_domain_candidates = False
 
         # Parse request body & validate data
@@ -88,6 +91,10 @@ class CandidatesResource(Resource):
         else:  # Retrieve via a list of candidate IDs
             candidate_ids = body_dict.get('candidate_ids')
 
+            # Candidate IDs must belong to user's domain
+            if not do_candidates_belong_to_users_domain(authed_user, candidate_ids):
+                raise ForbiddenError('Not authorzied', custom_error.CANDIDATE_FORBIDDEN)
+
             retrieved_candidates = []
             for candidate_id in candidate_ids:
                 candidate = Candidate.get_by_id(candidate_id=candidate_id)
@@ -99,11 +106,6 @@ class CandidatesResource(Resource):
                 if candidate.is_web_hidden:
                     raise NotFoundError(error_message='Candidate not found',
                                         error_code=custom_error.CANDIDATE_NOT_FOUND)
-
-                # Candidate ID must belong to user and its domain
-                if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-                    raise ForbiddenError(error_message='Not authorized',
-                                         error_code=custom_error.CANDIDATE_FORBIDDEN)
 
                 retrieved_candidates.append(fetch_candidate_info(candidate))
 
