@@ -175,6 +175,18 @@ class SpreadsheetImportApiUrl(object):
     IMPORT_CANDIDATES = API_URL % 'import_candidates'
 
 
+class SmsCampaignWords(object):
+    """
+    This class contains words used for endpoints of SMS Campaign API.
+    """
+    CAMPAIGNS = 'campaigns'
+    SENDS = '/sends'
+    SEND = '/send'
+    SCHEDULE = '/schedule'
+    REDIRECT = 'redirect'
+    RECEIVE = 'receive'
+
+
 class SmsCampaignApi(object):
     """
     This class contains the REST endpoints of sms_campaign_service
@@ -186,25 +198,25 @@ class SmsCampaignApi(object):
     API_URL = '/%s/%s' % (VERSION, '%s')
     # endpoint /v1/campaigns
     # GET all campaigns of a user, POST new campaign, DELETE campaigns of a user from given ids
-    CAMPAIGNS = '/%s/%s' % (VERSION, 'campaigns')
+    CAMPAIGNS = '/%s/%s' % (VERSION, SmsCampaignWords.CAMPAIGNS)
     # endpoint /v1/campaigns/:id
     # GET campaign by its id, POST: updates a campaign, DELETE a campaign from given id
     CAMPAIGN = CAMPAIGNS + '/<int:campaign_id>'
     # endpoint /v1/campaigns/:id/sends
     # This gives the records from "sends" for a given id of campaign
-    SENDS = CAMPAIGN + '/sends'
+    SENDS = CAMPAIGN + SmsCampaignWords.SENDS
     # endpoint /v1/campaigns/:id/send
     # To send a campaign to candidates
-    SEND = CAMPAIGN + '/send'
+    SEND = CAMPAIGN + SmsCampaignWords.SEND
     # /v1/campaigns/:id/schedule
     # To schedule an SMS campaign
-    SCHEDULE = CAMPAIGN + '/schedule'
+    SCHEDULE = CAMPAIGN + SmsCampaignWords.SCHEDULE
     # endpoint /v1/receive
     # This endpoint is callback URL when candidate replies to a campaign via SMS
-    RECEIVE = API_URL % 'receive'
+    RECEIVE = API_URL % SmsCampaignWords.RECEIVE
     # endpoint /v1/redirect/:id
     # This endpoint is hit when candidate clicks on any URL present in SMS body text.
-    REDIRECT = API_URL % 'redirect/<int:url_conversion_id>'
+    REDIRECT = API_URL % (SmsCampaignWords.REDIRECT + '/<int:url_conversion_id>')
 
 
 class SmsCampaignApiUrl(object):
@@ -214,11 +226,14 @@ class SmsCampaignApiUrl(object):
     """ Endpoints' complete URLs for pyTests """
     CAMPAIGNS = SmsCampaignApi.HOST_NAME % SmsCampaignApi.CAMPAIGNS
     CAMPAIGN = CAMPAIGNS + '/%s'
-    SENDS = CAMPAIGN + '/sends'
-    SEND = CAMPAIGN + '/send'
-    SCHEDULE = CAMPAIGN + '/schedule'
+    SENDS = CAMPAIGN + SmsCampaignWords.SENDS
+    SEND = CAMPAIGN + SmsCampaignWords.SEND
+    SCHEDULE = CAMPAIGN + SmsCampaignWords.SCHEDULE
     RECEIVE = SmsCampaignApi.HOST_NAME % SmsCampaignApi.RECEIVE
-    REDIRECT = SmsCampaignApi.HOST_NAME % '/%s/%s' % (SmsCampaignApi.VERSION, 'redirect/%s')
+    REDIRECT = SmsCampaignApi.HOST_NAME % '/%s/%s' % (SmsCampaignApi.VERSION,
+                                                      SmsCampaignWords.REDIRECT + '/%s')
+
+
 
 
 class CandidateApiUrl(object):

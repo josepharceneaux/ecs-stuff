@@ -15,7 +15,7 @@ class SmsCampaign(db.Model):
     frequency_id = db.Column(db.Integer, db.ForeignKey('frequency.id', ondelete='CASCADE'))
     start_datetime = db.Column(db.DateTime)
     end_datetime = db.Column(db.DateTime)
-    added_datetime = db.Column(db.DateTime)
+    added_datetime = db.Column(db.DateTime, default=datetime.datetime.now())
     updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
     scheduler_task_id = db.Column(db.String(255))
 

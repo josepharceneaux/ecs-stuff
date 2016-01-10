@@ -15,9 +15,10 @@ from werkzeug.exceptions import BadRequest
 from dateutil.parser import parse
 
 # Common utils
-from ..error_handling import InvalidUsage, ResourceNotFound
+from ..models.smartlist import Smartlist
 from campaign_utils import frequency_id_to_seconds
-from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
+from ..error_handling import InvalidUsage, ResourceNotFound
+from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER, find_missing_items
 
 
 def validate_header(request):
@@ -197,3 +198,66 @@ def validate_blast_candidate_url_conversion_in_db(campaign_blast_obj, candidate,
                                'Url Conversion(id=%s) not found.' % url_conversion_obj.id,
                                error_code=ResourceNotFound.http_status_code())
     return campaign_blast_obj.campaign
+
+
+def validate_form_data(form_data, required_fields):
+    """
+    This does the validation of the data received to create/update a campaign.
+
+        1- If any key from (name, body_text, smartlist_ids) is missing from form data or
+            has no value we raise Invalid Usage error..
+        2- If smartlist_ids are not present in database, we raise ResourceNotFound exception.
+
+    :param form_data: Data from the UI
+    :type form_data: dict
+    :return: tuple of lists
+                    1)ids of smartlists which were not found in database.
+                    2)ids of unknown smartlist ids (not, int)
+    :rtype: tuple
+    """
+    if not isinstance(form_data, dict):
+        raise InvalidUsage('form_data should be instance of dict.')
+    # find if any required key is missing from data
+    missing_fields = filter(lambda required_key: required_key not in form_data, required_fields)
+    if missing_fields:
+        raise InvalidUsage('Required fields not provided to save sms_campaign. '
+                           'Missing fields are %s' % missing_fields)
+    # find if any required key has no value
+    missing_field_values = find_missing_items(form_data, required_fields)
+    if missing_field_values:
+        raise InvalidUsage(
+            'Required fields are empty to save '
+            'sms_campaign. Empty fields are %s' % missing_field_values)
+
+    # validate smartlist ids are in a list
+    if not isinstance(form_data.get('smartlist_ids'), list):
+        raise InvalidUsage('Include smartlist id(s) in a list.')
+
+    not_found_smartlist_ids = []
+    invalid_smartlist_ids = []
+    for smartlist_id in form_data.get('smartlist_ids'):
+        try:
+            if not isinstance(smartlist_id, (int, long)):
+                invalid_smartlist_ids.append(smartlist_id)
+                raise InvalidUsage('Include smartlist id as int|long')
+            if not Smartlist.get_by_id(smartlist_id):
+                not_found_smartlist_ids.append(smartlist_id)
+                raise ResourceNotFound
+        except InvalidUsage:
+            current_app.config['LOGGER'].exception('validate_form_data: Invalid smartlist id')
+        except ResourceNotFound:
+            current_app.config['LOGGER'].exception(
+                'validate_form_data: Smartlist(id:%s) not found in database.' % str(smartlist_id))
+    # If all provided smartlist ids are invalid, raise InvalidUsage
+    if len(form_data.get('smartlist_ids')) == len(invalid_smartlist_ids):
+        raise InvalidUsage(
+            'smartlists(id(s):%s are invalid. Valid id must be int|long'
+            % form_data.get('smartlist_ids'))
+    # If all provided smartlist ids do not exist in database, raise ResourceNotFound
+    if len(form_data.get('smartlist_ids')) == len(not_found_smartlist_ids):
+        raise ResourceNotFound('smartlists(id(s):%s not found in database.'
+                               % form_data.get('smartlist_ids'))
+    # filter out unknown smartlist ids, and keeping the valid ones
+    form_data['smartlist_ids'] = list(set(form_data.get('smartlist_ids')) -
+                                      set(invalid_smartlist_ids + not_found_smartlist_ids))
+    return invalid_smartlist_ids, not_found_smartlist_ids

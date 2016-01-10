@@ -12,6 +12,7 @@ import requests
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
+from sms_campaign_service.common.error_handling import InternalServerError
 
 # Service Specific
 from sms_campaign_service.tests.conftest import fake
@@ -72,13 +73,14 @@ class TestSmsReceive(object):
     def test_process_candidate_reply_with_no_data(self):
         """
         This tests the functionality of process_candidate_reply() class method of SmsCampaignBase.
-        Data passed is empty dict, so, it should get MissingRequiredField Error.
+        Data passed is empty dict, so, it should get Internal server Error. Error code should be
+        MISSING_REQUIRED_FIELD.
         :return:
         """
         try:
             SmsCampaignBase.process_candidate_reply(dict())
-        except Exception as error:
-            assert error.error_code == SmsCampaignApiException.MISSING_REQUIRED_FIELD
+        except InternalServerError as error:
+            assert error.status_code == SmsCampaignApiException.MISSING_REQUIRED_FIELD
             assert 'From' in error.message
             assert 'To' in error.message
             assert 'Body' in error.message
