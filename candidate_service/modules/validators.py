@@ -33,14 +33,11 @@ def does_candidate_belong_to_user_and_its_domain(user_row, candidate_id):
     return True if candidate_row else False
 
 
-def do_candidates_belong_to_user_and_its_domain(user_row, candidate_ids):
-    """
-    Function checks if:
-        1. Candidates belong to user AND
-        2. Candidates are in the same domain as the user
-    :type user_row:         User
-    :type candidate_ids:    list
-    :rtype  bool
+def do_candidates_belong_to_users_domain(user_row, candidate_ids):
+    """Checks if provided candidate-IDs belong to the user's domain
+    :type user:  User
+    :param candidate_ids:  [int]
+    :rtype:  bool
     """
     assert isinstance(candidate_ids, list)
     exists = db.session.query(Candidate).join(User). \
