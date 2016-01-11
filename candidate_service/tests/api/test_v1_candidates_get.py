@@ -40,6 +40,7 @@ def test_get_candidate_without_authed_user(sample_user, user_auth):
     resp = get_from_candidate_resource(access_token=None, candidate_id=candidate_id)
     print response_info(resp)
     assert resp.status_code == 401
+    assert resp.json()['error']['code'] == 11 # Bearer token not found
 
 
 def test_get_candidate_without_id_or_email(sample_user, user_auth):

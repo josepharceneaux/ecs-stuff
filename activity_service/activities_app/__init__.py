@@ -1,7 +1,9 @@
 """Initializer for activities_app"""
+
 __author__ = 'Erik Farmer'
 
 from flask import Flask
+from activity_service.common.routes import HEALTH_CHECK
 from activity_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 
 app = Flask(__name__)
@@ -19,7 +21,7 @@ try:
 
     # wrap the flask app and give a heathcheck url
     from healthcheck import HealthCheck
-    health = HealthCheck(app, "/healthcheck")
+    health = HealthCheck(app, HEALTH_CHECK)
 
     from activity_service.common.error_handling import register_error_handlers
     register_error_handlers(app, logger)

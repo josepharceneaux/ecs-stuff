@@ -40,6 +40,7 @@ class User(db.Model):
     updated_time = db.Column('updatedTime', db.DateTime)
     dice_user_id = db.Column('diceUserId', db.Integer)
     user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.id', ondelete='CASCADE'))
+    last_read_datetime  = db.Column('lastReadDateTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
     is_disabled = db.Column(TINYINT, default='0', nullable=False)
     # TODO: Set Nullable = False after setting user_group_id for existing data
 

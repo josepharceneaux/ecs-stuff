@@ -1,9 +1,8 @@
 __author__ = 'ufarooqi'
+
 import os
-
+from candidate_pool_service.common.routes import GTApis
 from candidate_pool_service.candidate_pool_app import app
-from social_network_service.common.routes import GTApis
-
 
 if __name__ == '__main__':
     os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'

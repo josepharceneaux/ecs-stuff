@@ -96,40 +96,40 @@ def user_api(access_token, user_id='', data='', action='GET'):
     headers = {'Authorization': 'Bearer %s' % access_token}
     if action == 'GET':
         if user_id:
-            response = requests.get(url=UserServiceApiUrl.USERS_API + '/%s' % user_id, headers=headers)
+            response = requests.get(url=UserServiceApiUrl.USER % user_id, headers=headers)
             return response.json(), response.status_code
         else:
-            response = requests.get(url=UserServiceApiUrl.USERS_API, headers=headers)
+            response = requests.get(url=UserServiceApiUrl.USERS, headers=headers)
             return response.json(), response.status_code
     elif action == 'DELETE':
-        response = requests.delete(url=UserServiceApiUrl.USERS_API + '/%s' % user_id, headers=headers)
+        response = requests.delete(url=UserServiceApiUrl.USER % user_id, headers=headers)
         return response.json(), response.status_code
     elif action == 'PUT':
         headers['content-type'] = 'application/json'
-        response = requests.put(url=UserServiceApiUrl.USERS_API + '/%s' % user_id, headers=headers, data=json.dumps(data))
+        response = requests.put(url=UserServiceApiUrl.USER % user_id, headers=headers, data=json.dumps(data))
         return response.json(), response.status_code
     elif action == 'POST':
         headers['content-type'] = 'application/json'
-        response = requests.post(url=UserServiceApiUrl.USERS_API, headers=headers, data=json.dumps(data))
+        response = requests.post(url=UserServiceApiUrl.USERS, headers=headers, data=json.dumps(data))
         return response.json(), response.status_code
 
 
 def domain_api(access_token, domain_id='', data='', action='GET'):
     headers = {'Authorization': 'Bearer %s' % access_token}
     if action == 'GET':
-        url = UserServiceApiUrl.DOMAINS_API + '/%s' % domain_id if domain_id else UserServiceApiUrl.DOMAINS_API
+        url = UserServiceApiUrl.DOMAIN % domain_id if domain_id else UserServiceApiUrl.DOMAINS
         response = requests.get(url=url, headers=headers)
         return response.json(), response.status_code
     elif action == 'DELETE':
-        url = UserServiceApiUrl.DOMAINS_API + '/%s' % domain_id if domain_id else UserServiceApiUrl.DOMAINS_API
+        url = UserServiceApiUrl.DOMAIN % domain_id if domain_id else UserServiceApiUrl.DOMAINS
         response = requests.delete(url=url, headers=headers)
         return response.json(), response.status_code
     elif action == 'PUT':
         headers['content-type'] = 'application/json'
-        response = requests.put(url=UserServiceApiUrl.DOMAINS_API + '/%s' % domain_id, headers=headers,
+        response = requests.put(url=UserServiceApiUrl.DOMAIN % domain_id, headers=headers,
                                 data=json.dumps(data))
         return response.json(), response.status_code
     elif action == 'POST':
         headers['content-type'] = 'application/json'
-        response = requests.post(url=UserServiceApiUrl.DOMAINS_API, headers=headers, data=json.dumps(data))
+        response = requests.post(url=UserServiceApiUrl.DOMAINS, headers=headers, data=json.dumps(data))
         return response.json(), response.status_code
