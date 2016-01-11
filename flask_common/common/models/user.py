@@ -244,7 +244,7 @@ class Token(db.Model):
         :param access_token: User access_token
         :return: Token object matched with access_token
         """
-        assert access_token
+        assert access_token, "access_token is empty"
         token = Token.query.filter_by(access_token=access_token).first()
         if not token:
             raise ResourceNotFound("Token not found")

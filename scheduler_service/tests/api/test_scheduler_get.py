@@ -5,7 +5,6 @@ using bearer token
 
 # Third party imports
 import json
-import pytest
 import requests
 
 # Application imports

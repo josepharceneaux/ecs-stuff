@@ -7,7 +7,8 @@ from datetime import timedelta
 
 # Application imports
 from scheduler_service import init_app
-from scheduler_service.common.tests.conftest import pytest, datetime, User, user_auth, sample_user, test_domain, test_org, test_culture
+from scheduler_service.common.tests.conftest import pytest, datetime, User, user_auth, sample_user, test_domain, \
+    test_org, test_culture
 from scheduler_service.common.routes import AuthApiUrl, SchedulerApiUrl
 # Application Specific
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils

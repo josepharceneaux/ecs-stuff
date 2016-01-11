@@ -4,8 +4,8 @@ import requests
 from flask import current_app
 from requests.packages.urllib3.connection import ConnectionError
 
-from flask.ext.common.common.talent_config_manager import TalentConfigKeys
-from ..error_handling import ForbiddenError, UnauthorizedError, ResourceNotFound, InvalidUsage, InternalServerError
+from ..talent_config_manager import TalentConfigKeys
+from ..error_handling import UnauthorizedError, ResourceNotFound, InvalidUsage, InternalServerError
 
 __author__ = 'erikfarmer'
 
@@ -76,13 +76,14 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
         If we are requesting scheduler_service to GET a task, we will use this method as
             http_request('GET', SchedulerApiUrl.TASK % scheduler_task_id, headers=auth_header)
     """
+    logger = current_app.config[TalentConfigKeys.LOGGER]
     if not isinstance(method_type, basestring):
         raise InvalidUsage('Method type should be str. e.g. POST etc')
     if not isinstance(url, basestring):
-        error_message = 'URL is None. Unable to make "%s" Call' % method_type
-        current_app.config['LOGGER'].error('http_request: Error: %s, user_id: %s'
-                                           % (error_message, user_id))
-        raise InvalidUsage('URL not found')
+        error_message = 'URL must be string. Unable to make "%s" Call' % method_type
+        logger.error('http_request: Error: %s, user_id: %s'
+                     % (error_message, user_id))
+        raise InvalidUsage(error_message)
     if method_type.upper() in ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']:
         method = getattr(requests, method_type.lower())
         response = None
@@ -120,18 +121,18 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
         except ConnectionError:
             # This check is for if any talent service is not running. It logs the URL on
             # which request was made.
-            current_app.config[TalentConfigKeys.LOGGER].exception(
+            logger.exception(
                             "http_request: Couldn't make %s call on %s. "
                             "Make sure requested server is running." % (method_type, url))
             raise
         except requests.RequestException as e:
-            current_app.config[TalentConfigKeys.LOGGER].exception('http_request: HTTP request failed, %s' % e.message)
+            logger.exception('http_request: HTTP request failed, %s' % e.message)
             raise
 
         if error_message:
-            current_app.config[TalentConfigKeys.LOGGER].exception('http_request: HTTP request failed, %s, '
+            logger.exception('http_request: HTTP request failed, %s, '
                                                    'user_id: %s', error_message, user_id)
         return response
     else:
-        current_app.config[TalentConfigKeys.LOGGER].error('http_request: Unknown Method type %s ' % method_type)
+        logger.error('http_request: Unknown Method type %s ' % method_type)
         raise InvalidUsage('Unknown method type(%s) provided' % method_type)

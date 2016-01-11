@@ -5,7 +5,6 @@ Also try to pause jobs without using token and it should give 401 status code
 
 # Third party imports
 import json
-import pytest
 import requests
 
 # Application imports

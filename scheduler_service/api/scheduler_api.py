@@ -65,7 +65,7 @@ class Tasks(Resource):
 
         In case of SECRET_KEY
 
-            headers = {'Authorization': 'Basic <access_token>',
+            headers = {'Authorization': 'Bearer <access_token>',
                         'X-Talent-Server-Key-ID': '<secret_key>'}
             response = requests.get(API_URL + '/v1/tasks/', headers=headers)
 
@@ -149,7 +149,7 @@ class Tasks(Resource):
 
             In case of SECRET_KEY
 
-            headers = {'Authorization': 'Basic <access_token>',
+            headers = {'Authorization': 'Bearer <access_token>',
                         'X-Talent-Server-Key-ID': '<secret_key>',
                         'Content-Type': 'application/json'
                         }
@@ -384,7 +384,7 @@ class TaskByName(Resource):
 
         In case of SECRET_KEY
 
-            headers = {'Authorization': 'Basic <access_token>',
+            headers = {'Authorization': 'Bearer <access_token>',
                         'X-Talent-Server-Key-ID': '<secret_key>'}
             response = requests.get(API_URL + '/v1/tasks/name/custom_task', headers=headers)
 
@@ -454,7 +454,7 @@ class TaskByName(Resource):
         :Example:
         In case of SECRET_KEY
 
-            headers = {'Authorization': 'Basic <access_token>',
+            headers = {'Authorization': 'Bearer <access_token>',
                         'X-Talent-Server-Key-ID': '<secret_key>'}
             response = requests.delete(API_URL + '/v1/tasks/name/custom_task', headers=headers)
 
@@ -506,7 +506,7 @@ class TaskById(Resource):
 
         In case of SECRET_KEY
 
-            headers = {'Authorization': 'Basic <access_token>',
+            headers = {'Authorization': 'Bearer <access_token>',
                         'X-Talent-Server-Key-ID': '<secret_key>'}
             response = requests.get(API_URL + '/v1/tasks/id/5das76nbv950nghg8j8-33ddd3kfdw2', headers=headers)
 
@@ -577,7 +577,7 @@ class TaskById(Resource):
 
         In case of SECRET_KEY
 
-            headers = {'Authorization': 'Basic <access_token>',
+            headers = {'Authorization': 'Bearer <access_token>',
                         'X-Talent-Server-Key-ID': '<secret_key>'}
             response = requests.delete(API_URL + '/v1/tasks/id/5das76nbv950nghg8j8-33ddd3kfdw2', headers=headers)
 
@@ -698,8 +698,8 @@ class SendRequestTest(Resource):
 
     def post(self):
 
-        key = flask_app.config.get(TalentConfigKeys.ENV_KEY)
-        if not (key == 'dev' or key == 'circle'):
+        env_key = flask_app.config.get(TalentConfigKeys.ENV_KEY)
+        if not (env_key == 'dev' or env_key == 'circle'):
             raise ForbiddenError("You are not authorized to access this endpoint.")
 
         user_id = request.user.id

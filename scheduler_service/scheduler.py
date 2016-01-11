@@ -41,7 +41,7 @@ scheduler = BackgroundScheduler(jobstore=jobstores, executors=executors,
 scheduler.add_jobstore(job_store)
 
 # Set the minimum frequency in seconds
-if flask_app.config.get(TalentConfigKeys.ENV_KEY) == 'dev' or flask_app.config.get(TalentConfigKeys.ENV_KEY) == 'circle':
+if flask_app.config.get(TalentConfigKeys.ENV_KEY) in ['dev', 'circle']:
     MIN_ALLOWED_FREQUENCY = 4
 else:
     # For qa and production minimum frequency would be one hour

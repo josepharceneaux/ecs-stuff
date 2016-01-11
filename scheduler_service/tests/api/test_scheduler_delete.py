@@ -6,7 +6,6 @@ also check for the case when invalid bearer token is passed.
 
 # Third party imports
 import json
-import pytest
 import requests
 
 # Application imports

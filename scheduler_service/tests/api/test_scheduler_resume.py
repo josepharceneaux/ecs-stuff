@@ -5,7 +5,6 @@ Also try to resume the jobs without using token and it should give 401 status co
 
 # Third party imports
 import json
-import pytest
 import requests
 
 # Application imports
