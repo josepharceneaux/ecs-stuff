@@ -133,9 +133,10 @@ def assert_api_send_response(campaign, response, expected_status_code):
 
 def assert_campaign_schedule(response):
     """
-    This asserts that campaign has scheduled  successfully and we get 'task_id' in response
+    This asserts that campaign has scheduled successfully and we get 'task_id' in response
     :param response:
     :return:
     """
-    assert response.status_code == 200, ' It should get ok response'
+    assert response.status_code == 200, response.json()['error']['message']
     assert 'task_id' in response.json()
+    return response.json()['task_id']

@@ -10,14 +10,14 @@ This module contains pyTest for utility functions like
 import requests
 
 # Service Specific
-from sms_campaign_service.tests.conftest import app
-from sms_campaign_service.common.tests.conftest import fake
+from sms_campaign_service.sms_campaign_app import app
+from sms_campaign_service.modules.handy_functions import search_urls_in_text
 from sms_campaign_service.modules.validators import (validate_url_by_http_request,
                                                      validate_url_format)
-from sms_campaign_service.modules.handy_functions import search_urls_in_text
 from sms_campaign_service.modules.custom_exceptions import (InvalidUrl, SmsCampaignApiException)
 
 # Common Utils
+from sms_campaign_service.common.tests.conftest import fake
 from sms_campaign_service.common.error_handling import InvalidUsage
 from sms_campaign_service.common.routes import (LOCAL_HOST, SmsCampaignApi)
 from sms_campaign_service.common.utils.handy_functions import url_conversion

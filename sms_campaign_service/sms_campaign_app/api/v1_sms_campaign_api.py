@@ -49,8 +49,10 @@ This file contains API endpoints related to sms_campaign_service.
 
 # Standard Library
 import types
+
 from werkzeug.utils import redirect
 from werkzeug.exceptions import BadRequest
+
 
 # Third Party
 from flask import request
@@ -60,8 +62,7 @@ from flask.ext.restful import Resource
 
 # Service Specific
 from sms_campaign_service.sms_campaign_app import logger
-from sms_campaign_service.sms_campaign_base import SmsCampaignBase
-from sms_campaign_service.modules.validators import validate_form_data
+from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.custom_exceptions import ErrorDeletingSMSCampaign
 from sms_campaign_service.modules.handy_functions import request_from_google_shorten_url_api
 
@@ -195,8 +196,6 @@ class SMSCampaigns(Resource):
 
         ..Error Codes:: 5002 (MultipleTwilioNumbersFoundForUser)
                         5003 (TwilioAPIError)
-                        5006 (MissingRequiredField)
-                        5009 (ErrorSavingSMSCampaign)
                         5017 (InvalidUrl)
         """
         validate_header(request)
@@ -204,13 +203,12 @@ class SMSCampaigns(Resource):
         try:
             data_from_ui = request.get_json()
         except BadRequest:
-            raise InvalidUsage('Given data is not in json format')
+            raise InvalidUsage('Given data is not JSON serializable')
         if not data_from_ui:
             raise InvalidUsage('No data provided to create SMS campaign')
-        # apply validation on fields
-        invalid_smartlist_ids, not_found_smartlist_ids = validate_form_data(data_from_ui)
         campaign_obj = SmsCampaignBase(request.user.id)
-        campaign_id = campaign_obj.save(data_from_ui)
+        campaign_id,invalid_smartlist_ids, not_found_smartlist_ids = \
+            campaign_obj.process_save_or_update(data_from_ui)
         headers = {'Location': '/campaigns/%s' % campaign_id}
         logger.debug('Campaign(id:%s) has been saved.' % campaign_id)
         if not_found_smartlist_ids or invalid_smartlist_ids:
@@ -447,7 +445,7 @@ class ScheduleSmsCampaign(Resource):
         """
         task_unscheduled = SmsCampaignBase.unschedule(campaign_id, request)
         if task_unscheduled:
-            return dict(message='Campaign(id:%s) has been unschedule.' % campaign_id), 200
+            return dict(message='Campaign(id:%s) has been unscheduled.' % campaign_id), 200
         else:
             return dict(message='Campaign(id:%s) is already unscheduled.' % campaign_id), 200
 
@@ -532,6 +530,7 @@ class CampaignById(Resource):
                                     )
 
         .. Status:: 200 (Resource Modified)
+                    207 (Not all modified)
                     400 (Bad request)
                     401 (Unauthorized to access getTalent)
                     403 (Forbidden: Current user cannot update SMS campaign)
@@ -539,8 +538,6 @@ class CampaignById(Resource):
                     500 (Internal Server Error)
 
         .. Error codes::
-                        5006 (MissingRequiredField)
-                        5009 (ErrorSavingSMSCampaign)
                         5017 (InvalidUrl)
         """
         validate_header(request)
@@ -550,10 +547,9 @@ class CampaignById(Resource):
             raise InvalidUsage('Given data should be in dict format')
         if not campaign_data:
             raise InvalidUsage('No data provided to update SMS campaign')
-        SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id)
-        invalid_smartlist_ids, not_found_smartlist_ids = validate_form_data(campaign_data)
         camp_obj = SmsCampaignBase(request.user.id)
-        camp_obj.create_or_update_sms_campaign(campaign_data, campaign_id=campaign_id)
+        _, invalid_smartlist_ids, not_found_smartlist_ids = \
+            camp_obj.create_or_update_campaign(campaign_data, campaign_id=campaign_id)
         if not_found_smartlist_ids or invalid_smartlist_ids:
             return dict(message='SMS Campaign(id:%s) has been updated successfully' % campaign_id,
                         not_found_smartlist_ids=not_found_smartlist_ids,
@@ -742,7 +738,6 @@ class SmsCampaignUrlRedirection(Resource):
 
         ., Error codes::
                     5005 (EmptyDestinationUrl)
-                    5006 (MissingRequiredField)
 
         :param url_conversion_id: id of url_conversion record in db
         :type url_conversion_id: int

@@ -100,15 +100,6 @@ class EmptyDestinationUrl(SmsCampaignApiException):
     error_code = SmsCampaignApiException.EMPTY_DESTINATION_URL
 
 
-class MissingRequiredField(SmsCampaignApiException):
-    """
-    If any required field is empty, then we raise this exception.
-    **Usage**
-        .. see also:: process_candidate_reply() method of SmsCampaignBase class.
-    """
-    error_code = SmsCampaignApiException.MISSING_REQUIRED_FIELD
-
-
 class MultipleUsersFound(SmsCampaignApiException):
     """
     If getTalent user has multiple Twilio numbers associated with it, we raise this error.
@@ -127,17 +118,6 @@ class MultipleCandidatesFound(SmsCampaignApiException):
         .. see also:: process_candidate_reply() method of SmsCampaignBase class.
     """
     error_code = SmsCampaignApiException.MULTIPLE_CANDIDATES_FOUND
-
-
-class ErrorSavingSMSCampaign(SmsCampaignApiException):
-    """
-    If we encounter a problem while saving SMS campaign in database table sms_campaign.
-    we raise this exception.
-
-    **Usage**
-        .. see also:: create_or_update_sms_campaign() method of SmsCampaignBase class.
-    """
-    error_code = SmsCampaignApiException.ERROR_SAVING_SMS_CAMPAIGN
 
 
 class ErrorDeletingSMSCampaign(SmsCampaignApiException):

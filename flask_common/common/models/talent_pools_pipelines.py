@@ -108,6 +108,7 @@ class TalentPipelineStats(db.Model):
     candidates_engagement = db.Column(db.Integer, nullable=False, default=0)
     added_datetime = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
 
+    # Relationships
     talent_pipeline = db.relationship('TalentPipeline', backref=db.backref('talent_pipeline_stats',
                                                                            cascade="all, delete-orphan"))
 

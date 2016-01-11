@@ -12,10 +12,11 @@ import requests
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
+from sms_campaign_service.common.error_handling import InternalServerError
 
 # Service Specific
 from sms_campaign_service.tests.conftest import fake
-from sms_campaign_service.sms_campaign_base import SmsCampaignBase
+from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.modules.common_functions import (get_reply_text,
                                                                  assert_method_not_allowed)
@@ -52,9 +53,7 @@ class TestSmsReceive(object):
         assert response_get.status_code == 200, 'Response should be ok'
         assert 'xml' in str(response_get.text).strip()
 
-    def test_post_with_valid_data_no_campaign_sent(self, user_phone_1,
-                                                   candidate_phone_1
-                                                   ):
+    def test_post_with_valid_data_no_campaign_sent(self, user_phone_1, candidate_phone_1):
         """
         POST with valid data but no campaign is sent to candidate,
         This is the case when a saved candidates sends an SMS to some recruiter's (user's)
@@ -74,13 +73,14 @@ class TestSmsReceive(object):
     def test_process_candidate_reply_with_no_data(self):
         """
         This tests the functionality of process_candidate_reply() class method of SmsCampaignBase.
-        Data passed is empty dict, so, it should get MissingRequiredField Error.
+        Data passed is empty dict, so, it should get Internal server Error. Error code should be
+        MISSING_REQUIRED_FIELD.
         :return:
         """
         try:
             SmsCampaignBase.process_candidate_reply(dict())
-        except Exception as error:
-            assert error.error_code == SmsCampaignApiException.MISSING_REQUIRED_FIELD
+        except InternalServerError as error:
+            assert error.status_code == SmsCampaignApiException.MISSING_REQUIRED_FIELD
             assert 'From' in error.message
             assert 'To' in error.message
             assert 'Body' in error.message

@@ -12,8 +12,8 @@ from werkzeug.security import gen_salt
 
 
 # Service Specific
-from sms_campaign_service.tests.conftest import db, CREATE_CAMPAIGN_DATA
 from sms_campaign_service.common.tests.sample_data import fake
+from sms_campaign_service.tests.conftest import db, CREATE_CAMPAIGN_DATA
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.modules.common_functions import assert_for_activity
 
@@ -160,11 +160,11 @@ class TestSmsCampaignHTTPPost(object):
         assert response.status_code == InvalidUsage.http_status_code(), \
             'Should be a bad request (400)'
 
-    def test_campaign_creation_with_unknown_key_in_data( self, campaign_data_unknown_key_text,
+    def test_campaign_creation_with_missing_body_text_in_data(self, campaign_data_unknown_key_text,
                                                          valid_header, user_phone_1):
         """
         User has one phone value, valid header and invalid data (unknown key "text") was sent.
-        It should get internal server error. Error code should be 5006.
+        It should get Invalid usage error.
         :param campaign_data_unknown_key_text: Invalid data to create SMS campaign.
         :param valid_header: valid header to POST data
         :param user_phone_1: user_phone fixture to assign a test phone number to user
@@ -173,16 +173,14 @@ class TestSmsCampaignHTTPPost(object):
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
                                  data=json.dumps(campaign_data_unknown_key_text))
-        assert response.status_code == InternalServerError.http_status_code(), \
-            'Internal server error should occur (500)'
-        assert response.json()['error']['code'] == SmsCampaignApiException.MISSING_REQUIRED_FIELD
-        assert 'body_text' in response.json()['error']['message']
+        assert response.status_code == InvalidUsage.http_status_code(), \
+            'It should get bad request error'
 
-    def test_campaign_creation_with_missing_key_smartlist_ids_in_data(
+    def test_campaign_creation_with_missing_smartlist_ids_in_data(
             self, valid_header, user_phone_1):
         """
         User has one phone value, valid header and invalid data (Missing key "smartlist_ids").
-        It should get internal server error. Error code should be 5006.
+        It should get Invalid usage error.
         :param valid_header: valid header to POST data
         :param user_phone_1: user_phone fixture to assign a test phone number to user
         :return:
@@ -192,10 +190,8 @@ class TestSmsCampaignHTTPPost(object):
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
                                  data=json.dumps(campaign_data))
-        assert response.status_code == InternalServerError.http_status_code(), \
-            'Internal server error should occur (500)'
-        assert response.json()['error']['code'] == SmsCampaignApiException.MISSING_REQUIRED_FIELD
-        assert 'smartlist_ids' in response.json()['error']['message']
+        assert response.status_code == InvalidUsage.http_status_code(), \
+            'It should get bad request error'
 
     def test_campaign_creation_with_one_user_phone_and_unknown_smartlist_ids(
             self, campaign_valid_data, valid_header, user_phone_1):

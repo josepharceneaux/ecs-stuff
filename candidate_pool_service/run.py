@@ -1,5 +1,4 @@
 __author__ = 'ufarooqi'
-
 import os
 from candidate_pool_service.common.routes import GTApis
 from candidate_pool_service.candidate_pool_app import app

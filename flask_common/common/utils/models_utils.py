@@ -45,6 +45,7 @@ other model classes inherit. But this changes will only effect this app or the a
 from ..models.db import db
 from types import MethodType
 from flask import current_app
+from ..talent_config_manager import TalentConfigKeys
 from ..error_handling import register_error_handlers
 from ..utils.handy_functions import camel_case_to_snake_case
 
@@ -156,8 +157,8 @@ def get_by_id(cls, _id):
         # get Model instance given by id
         obj = cls.query.get(_id)
     except Exception as error:
-        current_app.config['LOGGER'].exception("Couldn't get record from db table %s. Error is: %s"
-                                               % (cls.__name__, error.message))
+        current_app.config[TalentConfigKeys.LOGGER].exception(
+            "Couldn't get record from db table %s. Error is: %s" % (cls.__name__, error.message))
         return None
     return obj
 
@@ -179,8 +180,8 @@ def delete(cls, ref):
         db.session.delete(obj)
         db.session.commit()
     except Exception as error:
-        current_app.config['LOGGER'].error("Couldn't delete record from db. Error is: %s"
-                                           % error.message)
+        current_app.config[TalentConfigKeys.LOGGER].error(
+            "Couldn't delete record from db. Error is: %s" % error.message)
         return False
     return True
 

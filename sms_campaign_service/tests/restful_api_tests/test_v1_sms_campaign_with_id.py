@@ -18,7 +18,7 @@ from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import (UnauthorizedError, ResourceNotFound,
                                                         ForbiddenError, InternalServerError,
                                                         InvalidUsage)
-from sms_campaign_service.tests.conftest import CAMPAIGN_SCHEDULE_DATA
+from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
 
 
 class TestSmsCampaignWithIdHTTPGet(object):
@@ -121,8 +121,8 @@ class TestSmsCampaignWithIdHTTPPost(object):
         data = campaign_valid_data.copy()
         modified_name = 'Modified Name'
         data.update({'name': modified_name})
-        scheduler_data = CAMPAIGN_SCHEDULE_DATA.copy()
-        data.update(scheduler_data)
+        scheduler_data = generate_campaign_schedule_data()
+        data.update(generate_campaign_schedule_data())
         response_post = requests.post(
             SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
             headers=valid_header,
@@ -131,9 +131,7 @@ class TestSmsCampaignWithIdHTTPPost(object):
 
         # get updated record to verify the change we made in name
         response_get = requests.get(
-            SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
-            headers=valid_header,
-            data=json.dumps(campaign_valid_data))
+            SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id, headers=valid_header)
         assert response_get.status_code == 200, 'Response should be ok (200)'
         resp = response_get.json()['campaign']
         assert resp
@@ -201,13 +199,13 @@ class TestSmsCampaignWithIdHTTPPost(object):
         assert response.status_code == InvalidUsage.http_status_code(), \
             'Should be a bad request (400)'
 
-    def test_with_unknown_key_in_data(self, valid_header,
-                                      campaign_data_unknown_key_text,
-                                      sms_campaign_of_current_user):
+    def test_with_missing_body_text_in_data(self, valid_header,
+                                            campaign_data_unknown_key_text,
+                                            sms_campaign_of_current_user):
         """
         It tries to update the already present sms_campaign record with invalid_data.
         campaign_data_unknown_key_text (fixture) has no 'body_text' (which is mandatory) field
-        It should get internal server error. Error code should be 5006.
+        It should get bad request error.
         :param campaign_data_unknown_key_text: fixture to get invalid data to update old record
         :param sms_campaign_of_current_user: fixture to create sms_campaign record in database
                                             fo current user.
@@ -216,9 +214,8 @@ class TestSmsCampaignWithIdHTTPPost(object):
         response = requests.post(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
                                  headers=valid_header,
                                  data=json.dumps(campaign_data_unknown_key_text))
-        assert response.status_code == InternalServerError.http_status_code(), \
-            'Internal server error should occur (500)'
-        assert response.json()['error']['code'] == SmsCampaignApiException.MISSING_REQUIRED_FIELD
+        assert response.status_code == InvalidUsage.http_status_code(), \
+            'It should get bad request error'
 
     def test_campaign_update_with_invalid_url_in_body_text(self, campaign_valid_data,
                                                            valid_header,

@@ -18,7 +18,6 @@ from datetime import datetime
 
 from flask import current_app
 from ..routes import AuthApiUrl
-from ..models.user import User, UserScopedRoles
 from sqlalchemy.sql.expression import ClauseElement
 from werkzeug.security import generate_password_hash
 from ..error_handling import ForbiddenError, InvalidUsage
@@ -100,7 +99,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                         current_app.config['LOGGER'].exception(
                             "http_request: Couldn't make %s call on %s. "
                             "Make sure requested server is running." % (method_type, url))
-                        raise ForbiddenError
+                        raise
                 error_message = e.message
             if error_message:
                 current_app.config['LOGGER'].exception('http_request: HTTP request failed, %s, '
@@ -246,7 +245,6 @@ def url_conversion(long_url):
     success it saves record in database and returns its id.
     :param long_url: The URL which we want to be shortened
     :type long_url: str
-    :param long_url:
     :return: shortened URL, and error message if any else ''
     :rtype: tuple
     """
