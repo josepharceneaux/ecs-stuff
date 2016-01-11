@@ -63,5 +63,5 @@ def test_import_candidates_from_spreadsheet(access_token_first, user_first):
 
 
 def test_health_check():
-    response = requests.get(HEALTH_ENDPOINT)
+    response = requests.get(SpreadsheetImportApiUrl.HEALTH_CHECK)
     assert response.status_code == 200

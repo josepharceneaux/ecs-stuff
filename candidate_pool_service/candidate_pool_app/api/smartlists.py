@@ -2,7 +2,9 @@ from dateutil.parser import parse
 from datetime import datetime, timedelta
 from flask_restful import Resource
 from flask import request, Blueprint, jsonify
+from candidate_pool_service.common.routes import CandidatePoolApi
 from candidate_pool_service.common.talent_api import TalentApi
+from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
 from candidate_pool_service.common.utils.talent_reporting import email_error_to_admins
 from candidate_pool_service.common.models.smartlist import db, Smartlist, SmartlistStats
@@ -121,7 +123,7 @@ class SmartlistResource(Resource):
         return {'smartlist': {'id': smartlist.id}}
 
 
-@smartlist_blueprint.route('/smartlists/stats', methods=['POST'])
+@smartlist_blueprint.route(CandidatePoolApi.SMARTLIST_STATS, methods=['POST'])
 @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
 @require_all_roles('CAN_UPDATE_SMARTLISTS_STATS')
 def update_smartlists_stats():
@@ -129,13 +131,14 @@ def update_smartlists_stats():
     This method will update the statistics of all smartlists daily.
     :return: None
     """
-    try:
-        smartlists = Smartlist.query.all()
+    smartlists = Smartlist.query.all()
 
-        # 2 hours are added to account for scheduled job run time
-        yesterday_datetime = datetime.utcnow() - timedelta(days=1, hours=2)
+    # 2 hours are added to account for scheduled job run time
+    yesterday_datetime = datetime.utcnow() - timedelta(days=1, hours=2)
 
-        for smartlist in smartlists:
+    for smartlist in smartlists:
+
+        try:
             yesterday_stat = SmartlistStats.query.filter(SmartlistStats.smartlist_id == smartlist.id,
                                                         SmartlistStats.added_datetime > yesterday_datetime).first()
 
@@ -165,20 +168,16 @@ def update_smartlists_stats():
                                                 number_of_candidates_removed_or_added=total_candidates,
                                                 candidates_engagement=percentage_candidates_engagement)
             db.session.add(smartlist_stat)
-
-        if smartlists:
             db.session.commit()
 
-        return '', 204
+        except Exception as e:
+            db.session.rollback()
+            logger.exception("An exception occured update statistics of SmartLists because: %s" % e.message)
 
-    except Exception as e:
-        db.session.rollback()
-        email_error_to_admins("Couldn't update statistics of SmartLists because: %s" % e.message,
-                              subject="SmartLists Statistics")
-        raise InvalidUsage(error_message="Couldn't update statistics of SmartLists because: %s" % e.message)
+    return '', 204
 
 
-@smartlist_blueprint.route('/smartlists/<int:smartlist_id>/stats', methods=['GET'])
+@smartlist_blueprint.route(CandidatePoolApi.SMARTLIST_GET_STATS, methods=['GET'])
 @require_oauth()
 def get_smartlist_stats(smartlist_id):
     """
@@ -222,5 +221,5 @@ def get_smartlist_stats(smartlist_id):
 
 
 api = TalentApi(smartlist_blueprint)
-api.add_resource(SmartlistResource, '/smartlists/<int:id>', '/smartlists')
-api.add_resource(SmartlistCandidates, '/smartlists/<int:smartlist_id>/candidates')
+api.add_resource(SmartlistResource, CandidatePoolApi.SMARTLIST, CandidatePoolApi.SMARTLISTS)
+api.add_resource(SmartlistCandidates,CandidatePoolApi.SMARTLIST_CANDIDATES)
