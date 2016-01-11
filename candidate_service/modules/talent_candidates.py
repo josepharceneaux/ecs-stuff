@@ -876,7 +876,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name,
     # Candidate ID must be recognized
     candidate_query = db.session.query(Candidate).filter_by(id=candidate_id)
     if not candidate_query.first():
-        raise NotFoundError(error_message='Candidate not found', error_code=custom_error.CANDIDATE_NOT_FOUND)
+        raise NotFoundError('Candidate not found', custom_error.CANDIDATE_NOT_FOUND)
 
     # Track all edits
     _track_candidate_edits(update_dict, candidate_query.first(), user_id, edited_time)
