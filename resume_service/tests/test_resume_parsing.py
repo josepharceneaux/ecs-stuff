@@ -164,14 +164,14 @@ def fetch_resume_post_response(token_fixture, file_name, create_mode=''):
     current_dir = os.path.dirname(__file__)
     with open(os.path.join(current_dir, 'test_resumes/{}'.format(file_name)), 'rb') as resume_file:
         response = r.post(ResumeApiUrl.PARSE,
-                            headers={'Authorization': 'Bearer %s' % token_fixture.access_token},
-                            data=dict(
-                                # files = dict(resume_file=raw_file),
-                                resume_file_name=file_name,
-                                create_candidate=create_mode,
-                            ),
-                          files = dict(resume_file=resume_file),
-                          )
+                          headers={'Authorization': 'Bearer %s' % token_fixture.access_token},
+                          data=dict(
+                              # files = dict(resume_file=raw_file),
+                              resume_file_name=file_name,
+                              create_candidate=create_mode,
+                          ),
+                          files=dict(resume_file=resume_file),
+                         )
     return json.loads(response.content)
 
 
