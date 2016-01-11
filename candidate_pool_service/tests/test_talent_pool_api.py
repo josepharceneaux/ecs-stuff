@@ -502,6 +502,6 @@ def test_talent_pool_candidate_api_delete(access_token_first, user_first, talent
 
 def test_health_check():
     import requests
-    response = requests.get('http://127.0.0.1:8008/healthcheck')
+    response = requests.get(CandidatePoolApiUrl.HEALTH_CHECK)
     assert response.status_code == 200
 
