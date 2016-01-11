@@ -1,4 +1,5 @@
 """API for the Resume Parsing App"""
+
 __author__ = 'erikfarmer'
 # Standard lib
 from cStringIO import StringIO
@@ -13,6 +14,8 @@ from .parse_lib import parse_resume
 from .utils import create_candidate_from_parsed_resume
 from resume_service.common.utils.talent_s3 import download_file, get_s3_filepicker_bucket_and_conn
 from resume_service.common.utils.auth_utils import require_oauth
+from resume_service.common.routes import ResumeApi
+
 
 mod = Blueprint('resume_api', __name__)
 
@@ -28,10 +31,10 @@ CORS(mod, resources={
 
 @mod.route('/')
 def index():
-    return '/parse_resume'
+    return '/' + ResumeApi.PARSE
 
 
-@mod.route('/parse_resume', methods=['POST'])
+@mod.route(ResumeApi.PARSE, methods=['POST'])
 @require_oauth()
 def parse_file_picker_resume():
     """

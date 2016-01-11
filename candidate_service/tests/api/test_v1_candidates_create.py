@@ -444,13 +444,13 @@ def test_create_candidate_without_email(sample_user, user_auth):
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
 
     # Create Candidate with no email-object
-    data = {'candidate': {'first_name': 'john', 'last_name': 'stark'}}
+    data = {'candidates': [{'first_name': 'john', 'last_name': 'stark'}]}
     create_resp = post_to_candidate_resource(token, data)
     print response_info(create_resp)
     assert create_resp.status_code == 400
 
     # Create Candidate with empty email-list
-    data = {'candidate': {'first_name': 'john', 'last_name': 'stark', 'emails': [{}]}}
+    data = {'candidates': [{'first_name': 'john', 'last_name': 'stark', 'emails': [{}]}]}
     create_resp = post_to_candidate_resource(token, data)
     print response_info(create_resp)
     assert create_resp.status_code == 400

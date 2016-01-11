@@ -1,5 +1,7 @@
+from dateutil import parser
 from flask_restful import Resource
 from flask import request, Blueprint
+from user_service.common.routes import UserServiceApi
 from user_service.common.error_handling import *
 from user_service.common.talent_api import TalentApi
 from user_service.common.models.user import User, db
@@ -45,7 +47,8 @@ class UserApi(Resource):
                         'last_name': requested_user.last_name,
                         'phone': requested_user.phone,
                         'registration_id': requested_user.registration_id,
-                        'dice_user_id': requested_user.dice_user_id
+                        'dice_user_id': requested_user.dice_user_id,
+                        'last_read_datetime': requested_user.last_read_datetime.isoformat()
                         }}
 
         # User id is not provided so logged-in user wants to get all users of its domain
@@ -175,15 +178,18 @@ class UserApi(Resource):
         if requested_user.domain_id != request.user.domain_id:
             raise UnauthorizedError("User to be edited belongs to different domain than logged-in user")
 
-        a = request
         if requested_user_id != request.user.id and 'CAN_EDIT_USERS' not in request.valid_domain_roles:
             raise UnauthorizedError(error_message="Logged-in user doesn't have appropriate permissions to edit a user")
 
         first_name = posted_data.get('first_name', '').strip()
         last_name = posted_data.get('last_name', '').strip()
         email = posted_data.get('email', '').strip()
-        # TODO: Phone numbers formatting should be done on client side using country information for user
         phone = posted_data.get('phone', '').strip()
+        last_read_datetime = posted_data.get('last_read_datetime', '').strip()
+        try:
+            last_read_datetime = parser.parse(last_read_datetime)
+        except Exception as e:
+            raise InvalidUsage("Last read datetime %s is invalid because: %s" % (last_read_datetime, e.message))
 
         if email and not is_valid_email(email=email):
             raise InvalidUsage(error_message="Email Address %s is not properly formatted" % email)
@@ -196,7 +202,8 @@ class UserApi(Resource):
             'first_name': first_name,
             'last_name': last_name,
             'email': email,
-            'phone': phone
+            'phone': phone,
+            'last_read_datetime': last_read_datetime
         }
         update_user_dict = dict((k, v) for k, v in update_user_dict.iteritems() if v)
         User.query.filter(User.id == requested_user_id).update(update_user_dict)
@@ -207,4 +214,4 @@ class UserApi(Resource):
 
 users_blueprint = Blueprint('users_api', __name__)
 api = TalentApi(users_blueprint)
-api.add_resource(UserApi, "/users", "/users/<int:id>")
+api.add_resource(UserApi, UserServiceApi.USERS, UserServiceApi.USER)

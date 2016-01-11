@@ -1,3 +1,4 @@
+
 __author__ = 'ufarooqi'
 
 import random
@@ -8,6 +9,7 @@ from user_service.common.models.user import User
 from user_service.common.redis_cache import redis_store
 from user_service_utilties import send_reset_password_email
 from user_service.common.error_handling import *
+from user_service.common.routes import UserServiceApi
 from user_service.common.utils.validators import is_valid_email
 from user_service.common.models.user import Domain, DomainRole, Token, db
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -17,7 +19,7 @@ from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 users_utilities_blueprint = Blueprint('users_utilities_api', __name__)
 
 
-@users_utilities_blueprint.route('/domain/<int:domain_id>/roles', methods=['GET'])
+@users_utilities_blueprint.route(UserServiceApi.DOMAIN_ROLES, methods=['GET'])
 @require_oauth()
 @require_all_roles('CAN_GET_DOMAIN_ROLES')
 def get_all_roles_of_domain(domain_id):
@@ -30,7 +32,7 @@ def get_all_roles_of_domain(domain_id):
         raise InvalidUsage(error_message='Either domain_id is invalid or it is different than that of logged-in user')
 
 
-@users_utilities_blueprint.route('/users/update_password', methods=['PUT'])
+@users_utilities_blueprint.route(UserServiceApi.UPDATE_PASSWORD, methods=['PUT'])
 @require_oauth()
 def update_password():
     """
@@ -64,7 +66,7 @@ def update_password():
         raise InvalidUsage(error_message='No request data is found')
 
 
-@users_utilities_blueprint.route('/users/forgot_password', methods=['POST'])
+@users_utilities_blueprint.route(UserServiceApi.FORGOT_PASSWORD, methods=['POST'])
 def forgot_password():
 
     email = request.form.get('username')
@@ -92,7 +94,7 @@ def forgot_password():
     return '', 204
 
 
-@users_utilities_blueprint.route('/users/reset_password/<token>', methods=['GET', 'POST'])
+@users_utilities_blueprint.route(UserServiceApi.RESET_PASSWORD, methods=['GET', 'POST'])
 def reset_password(token):
 
     try:
