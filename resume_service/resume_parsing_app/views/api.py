@@ -69,10 +69,11 @@ def post_files_to_queue():
     :return: Error/Success Response.
     """
     user_id = request.user.id
+    oauth = request.oauth_token
     request_json = request.get_json()
     filepicker_keys = request_json.get('filenames')
     if filepicker_keys:
-        queue_details = add_fp_keys_to_queue(filepicker_keys, user_id)
+        queue_details = add_fp_keys_to_queue(filepicker_keys, user_id, oauth)
         return queue_details, 201
     else:
         return jsonify(**{'error': {'message': 'No filenames provided'}}), 400

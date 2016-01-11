@@ -6,10 +6,7 @@ Served on port 8003
 This service requires Oauth2 and forwards the token from a requesting client to the auth server. That is, this service is not a registered client in the database.
 
 ## Application config keys that MUST be set:
-BATCH_PROCESSING_URI
 BG_URL
-CANDIDATE_CREATION_URI
-SCHEDULER_SERVICE_URI
 
 ## TODOS
 Pylint reports that parselib in general has too many branches and statements. It would be good to break up some of the larger functions.

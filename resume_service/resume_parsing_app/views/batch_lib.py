@@ -3,19 +3,20 @@ __author__ = 'erik@getTalent'
 # Standard Library
 from datetime import datetime
 from datetime import timedelta
+import json
 # Framework specific
 from flask import jsonify
-from flask import current_app as app
 # Module Specific
 from resume_service.common.redis_conn import redis_client
 from resume_service.common.models.user import Token
 from resume_service.resume_parsing_app.views.parse_lib import process_resume
 from resume_service.common.utils.handy_functions import grouper
+from resume_service.common.routes import ResumeApiUrl, SchedulerApiUrl
 import requests
 
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 
-def add_fp_keys_to_queue(filepicker_keys, user_id):
+def add_fp_keys_to_queue(filepicker_keys, user_id, token):
     """
     Adds filename to redis list. The redis key is formed using the user_id.
     :param list filepicker_keys:
@@ -28,14 +29,15 @@ def add_fp_keys_to_queue(filepicker_keys, user_id):
     scheduled = datetime.now() + timedelta(seconds=15)
     for batch in batches:
         for key in batch:
-            payload = {
+            payload = json.dumps({
                 "task_type": "one_time",
                 "run_datetime": scheduled.strftime(DATE_FORMAT),
-                "url": app.config['BATCH_PROCESSING_URI'] + user_id,
-                "post_data": {}
-            }
+                "url": "{}/{}".format(ResumeApiUrl.BATCH_URL, user_id),
+            })
             # TODO Handle missed connections/http errors.
-            scheduler_request = requests.post(app.config['SCHEDULER_SERVICE_URI'], data=payload)
+            scheduler_request = requests.post(SchedulerApiUrl.TASKS, data=payload,
+                                              headers={'Authorization': 'bearer {}'.format(token),
+                                                       'Content-Type': 'application/json'})
         scheduled += timedelta(seconds=20)
 
     return {'redis_key': queue_string, 'quantity': list_length}

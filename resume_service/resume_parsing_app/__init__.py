@@ -17,7 +17,7 @@ try:
     db.app = app
 
     from views import api
-    app.register_blueprint(api.mod, url_prefix=ResumeApi.URL_PREFIX)
+    app.register_blueprint(api.PARSE_MOD, url_prefix=ResumeApi.URL_PREFIX)
 
     # wrap the flask app and give a heathcheck url
     from healthcheck import HealthCheck

@@ -1,15 +1,10 @@
 """Misc functions that have no logical grouping to a module."""
 __author__ = 'erikfarmer'
-
 import re
 import random
 import string
-<<<<<<< HEAD
-from ..models.user import User, UserScopedRoles
 from itertools import izip_longest
-=======
 from ..models.user import User, UserScopedRoles, DomainRole
->>>>>>> 3d5fd167d33af41992032f17745daedc3bbb1938
 
 
 def random_word(length):
