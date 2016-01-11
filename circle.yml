@@ -14,6 +14,7 @@ test:
   pre:
     - sudo chown -R ubuntu /var/log:
         parallel: true
+    - python setup_environment/reset_database_and_cloud_search.py
     - python auth_service/run.py:
         parallel: true
         background: true
@@ -45,6 +46,9 @@ test:
         parallel: true
         background: true
     - python scheduler_service/run.py:
+        parallel: true
+        background: true
+    - python scheduler_service/run_celery.py:
         parallel: true
         background: true
     - sleep 5

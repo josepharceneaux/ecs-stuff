@@ -445,7 +445,8 @@ def delete_all_candidate_documents():
     It only works on dev domain (to avoid the function hitting accidentally on production)
 
     """
-    if app.config(TalentConfigKeys.ENV_KEY) is not 'dev':
+    env = app.config[TalentConfigKeys.ENV_KEY]
+    if env not in ['dev', 'circle']:
         raise Exception("Can't call delete_all_candidate_documents() in prod! Use the console instead")
 
     # Get all candidate ids by searching for everything except a nonsense string
@@ -785,7 +786,7 @@ def get_username_facet_info_with_ids(facet_owner):
         new_tmp_dict = {}
         user_row = User.query.filter_by(email=username_facet['value']).first()
         new_tmp_dict['id'] = username_facet['id']
-        new_tmp_dict['value'] = user_row.first_name+" "+user_row.last_name
+        new_tmp_dict['value'] = (user_row.first_name or "") + " " + (user_row.last_name or "")
         new_tmp_dict['count'] = username_facet['count']
         username_facets.append(new_tmp_dict)
     return username_facets

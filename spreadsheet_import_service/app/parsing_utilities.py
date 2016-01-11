@@ -19,6 +19,7 @@ from spreadsheet_import_service.common.models.user import User
 from spreadsheet_import_service.common.models.misc import AreaOfInterest
 from spreadsheet_import_service.common.models.candidate import CandidateSource
 from spreadsheet_import_service.common.utils.talent_reporting import email_error_to_admins
+from spreadsheet_import_service.common.error_handling import InvalidUsage
 from spreadsheet_import_service.common.error_handling import InternalServerError
 from spreadsheet_import_service.common.routes import CandidateApiUrl, SchedulerApiUrl, SpreadsheetImportApiUrl
 

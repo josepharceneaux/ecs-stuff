@@ -1,10 +1,15 @@
-from flask import request, Blueprint
+from dateutil.parser import parse
+from datetime import datetime, timedelta
 from flask_restful import Resource
+from flask import request, Blueprint, jsonify
 from candidate_pool_service.common.talent_api import TalentApi
-from candidate_pool_service.common.utils.auth_utils import require_oauth
+from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
+from candidate_pool_service.common.utils.talent_reporting import email_error_to_admins
+from candidate_pool_service.common.models.smartlist import db, Smartlist, SmartlistStats
+from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
 from candidate_pool_service.common.error_handling import ForbiddenError, NotFoundError, InvalidUsage
-from candidate_pool_service.common.models.smartlist import Smartlist
-from candidate_pool_service.modules.smartlists import get_candidates, create_smartlist_dict, save_smartlist, get_all_smartlists
+from candidate_pool_service.modules.smartlists import (get_candidates, create_smartlist_dict,
+                                                       save_smartlist, get_all_smartlists)
 from candidate_pool_service.modules.validators import (validate_and_parse_request_data,
                                                        validate_and_format_smartlist_post_data)
 
@@ -38,7 +43,7 @@ class SmartlistCandidates(Resource):
         # check whether smartlist belongs to user's domain
         if smartlist.user.domain_id != request.user.domain_id:
             raise ForbiddenError("Provided list does not belong to user's domain")
-        return get_candidates(smartlist, request.oauth_token, data['candidate_ids_only'], data['count_only'])
+        return get_candidates(smartlist, data['candidate_ids_only'], data['count_only'])
 
 
 class SmartlistResource(Resource):
@@ -114,6 +119,107 @@ class SmartlistResource(Resource):
             raise ForbiddenError("List does not belong to user's domain")
         smartlist.delete()
         return {'smartlist': {'id': smartlist.id}}
+
+
+@smartlist_blueprint.route('/smartlists/stats', methods=['POST'])
+@require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
+@require_all_roles('CAN_UPDATE_SMARTLISTS_STATS')
+def update_smartlists_stats():
+    """
+    This method will update the statistics of all smartlists daily.
+    :return: None
+    """
+    try:
+        smartlists = Smartlist.query.all()
+
+        # 2 hours are added to account for scheduled job run time
+        yesterday_datetime = datetime.utcnow() - timedelta(days=1, hours=2)
+
+        for smartlist in smartlists:
+            yesterday_stat = SmartlistStats.query.filter(SmartlistStats.smartlist_id == smartlist.id,
+                                                        SmartlistStats.added_datetime > yesterday_datetime).first()
+
+            # Return only candidate_ids
+            response = get_candidates(smartlist, candidate_ids_only=True)
+            total_candidates = response.get('total_found')
+            smartlist_candidate_ids = [candidate.get('id') for candidate in response.get('candidates')]
+
+            number_of_engaged_candidates = 0
+            if smartlist_candidate_ids:
+                number_of_engaged_candidates = db.session.query(EmailCampaignSend.candidate_id).filter(
+                        EmailCampaignSend.candidate_id.in_(smartlist_candidate_ids)).count()
+
+            percentage_candidates_engagement = int(float(number_of_engaged_candidates)/total_candidates*100) \
+                if int(total_candidates) else 0
+            # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
+
+            if yesterday_stat:
+                smartlist_stat = SmartlistStats(smartlist_id=smartlist.id,
+                                                total_candidates=total_candidates,
+                                                number_of_candidates_removed_or_added=
+                                                total_candidates - yesterday_stat.total_candidates,
+                                                candidates_engagement=percentage_candidates_engagement)
+            else:
+                smartlist_stat = SmartlistStats(smartlist_id=smartlist.id,
+                                                total_candidates=total_candidates,
+                                                number_of_candidates_removed_or_added=total_candidates,
+                                                candidates_engagement=percentage_candidates_engagement)
+            db.session.add(smartlist_stat)
+
+        if smartlists:
+            db.session.commit()
+
+        return '', 204
+
+    except Exception as e:
+        db.session.rollback()
+        email_error_to_admins("Couldn't update statistics of SmartLists because: %s" % e.message,
+                              subject="SmartLists Statistics")
+        raise InvalidUsage(error_message="Couldn't update statistics of SmartLists because: %s" % e.message)
+
+
+@smartlist_blueprint.route('/smartlists/<int:smartlist_id>/stats', methods=['GET'])
+@require_oauth()
+def get_smartlist_stats(smartlist_id):
+    """
+    This method will return the statistics of a smartlist over a given period of time with time-period = 1 day
+    :param smartlist_id: Id of a smartlist
+    :return: A list of time-series data
+    """
+    smartlist = Smartlist.query.get(smartlist_id)
+    if not smartlist:
+        raise NotFoundError(error_message="SmartList with id=%s doesn't exist in database" % smartlist_id)
+
+    if smartlist.user_id != request.user.id:
+        raise ForbiddenError(error_message="Logged-in user %s is unauthorized to get stats of smartlist %s"
+                                           % (request.user.id, smartlist.id))
+
+    from_date_string = request.args.get('from_date', '')
+    to_date_string = request.args.get('to_date', '')
+
+    if not from_date_string or not to_date_string:
+        raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is missing from request parameters")
+
+    try:
+        from_date = parse(from_date_string)
+        to_date = parse(to_date_string)
+    except Exception as e:
+        raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
+
+    smartlist_stats = SmartlistStats.query.filter(SmartlistStats.smartlist_id == smartlist_id,
+                                                  SmartlistStats.added_datetime >= from_date,
+                                                  SmartlistStats.added_datetime <= to_date).all()
+
+    return jsonify({'smartlist_data': [
+        {
+            'total_number_of_candidates': smartlist_stat.total_candidates,
+            'number_of_candidates_removed_or_added': smartlist_stat.number_of_candidates_removed_or_added,
+            'added_datetime': smartlist_stat.added_datetime,
+            'candidates_engagement': smartlist_stat.candidates_engagement
+        }
+        for smartlist_stat in smartlist_stats
+    ]})
+
 
 api = TalentApi(smartlist_blueprint)
 api.add_resource(SmartlistResource, '/smartlists/<int:id>', '/smartlists')

@@ -1,7 +1,7 @@
 """
-Test cases for delete job with and with out token.
+Test cases for deleting job with and with out token.
 First create few jobs using service endpoint. After that delete these jobs using job_id of each job and
-also check for the case when invalid bearer token is passed
+also check for the case when invalid bearer token is passed.
 """
 
 # Third party imports
@@ -10,16 +10,15 @@ import pytest
 import requests
 
 # Application imports
-from scheduler_service.tests.conftest import APP_URL
+from scheduler_service.common.routes import SchedulerApiUrl
 
 
 __author__ = 'saad'
 
 
-@pytest.mark.usefixtures('auth_header', 'job_config')
 class TestSchedulerDelete:
 
-    def test_single_delete_job(self, auth_header, job_config):
+    def test_single_job(self, auth_header, job_config):
         """
         Create a single job and it should give 200 status code, then delete that created job.
         after that check if the job is still there, it should give 404 status code while accessing
@@ -31,26 +30,26 @@ class TestSchedulerDelete:
         :return:
         """
         # Creating a job
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header)
         assert response.status_code == 201
         job_id = response.json()['id']
 
         # Removing a job
-        response_remove = requests.delete(APP_URL + '/tasks/id/' + job_id,
+        response_remove = requests.delete(SchedulerApiUrl.SINGLE_TASK % job_id,
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
         # There shouldn't be any more jobs now
-        response = requests.get(APP_URL + '/tasks/id/' + job_id, headers=auth_header)
+        response = requests.get(SchedulerApiUrl.SINGLE_TASK % job_id, headers=auth_header)
         assert response.status_code == 404
 
-    def test_multiple_delete_job(self, auth_header, job_config):
+    def test_multiple_jobs(self, auth_header, job_config):
         """
         First, create jobs using correct ids, should return 200 status code.
         Then we delete all jobs. Then we create 10 scheduled jobs and 1 invalid job (which
         doesn't exist on the server). Then we try to delete all the jobs. Server does delete
-        all scheduled jobs but couldn't find the invalid one and hence returnrs 207.
+        all scheduled jobs but couldn't find the invalid one and hence returns 207.
 
          Args:
             auth_data: Fixture that contains token.
@@ -62,13 +61,13 @@ class TestSchedulerDelete:
 
         # schedule 10 jobs and remove all of them
         for i in range(10):
-            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+            response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                      headers=auth_header)
             assert response.status_code == 201
             jobs.append(json.loads(response.text)['id'])
 
         # Delete all of them
-        response_remove_jobs = requests.delete(APP_URL + '/tasks/',
+        response_remove_jobs = requests.delete(SchedulerApiUrl.TASKS,
                                                data=json.dumps(dict(ids=jobs)),
                                                headers=auth_header)
 
@@ -81,12 +80,12 @@ class TestSchedulerDelete:
         jobs.append('Non-existing job')
         # schedule 10 jobs and remove all of them
         for i in range(10):
-            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+            response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                      headers=auth_header)
             assert response.status_code == 201
             jobs.append(json.loads(response.text)['id'])
         # Then removed all scheduled jobs
-        response_remove_jobs = requests.delete(APP_URL + '/tasks/',
+        response_remove_jobs = requests.delete(SchedulerApiUrl.TASKS,
                                                data=json.dumps(dict(ids=jobs)),
                                                headers=auth_header)
         # Returning 207 because 'Non-existing job' doesn't exist and server couldn't find it
@@ -104,12 +103,12 @@ class TestSchedulerDelete:
             POST data while hitting the endpoint.
         :return:
         """
-        response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header)
 
         assert response.status_code == 201
         data = json.loads(response.text)
-        assert data['id'] is not None
+        assert data['id']
 
         invalid_header = auth_header.copy()
 
@@ -117,19 +116,19 @@ class TestSchedulerDelete:
         invalid_header['Authorization'] = 'Bearer invalid_token'
 
         # send job delete request
-        response_delete = requests.delete(APP_URL + '/tasks/id/' + data['id'],
+        response_delete = requests.delete(SchedulerApiUrl.SINGLE_TASK % data['id'],
                                           headers=invalid_header)
         assert response_delete.status_code == 401
 
         # Now try deleting job with correct token
-        response_delete = requests.delete(APP_URL + '/tasks/id/' + data['id'],
-                                                    headers=auth_header)
+        response_delete = requests.delete(SchedulerApiUrl.SINGLE_TASK % data['id'],
+                                          headers=auth_header)
 
         assert response_delete.status_code == 200
 
-        # send job delete request, job should n't exist now, hence we will get a 404
-        response_delete = requests.delete(APP_URL + '/tasks/id/' + data['id'],
-                                                    headers=auth_header)
+        # send job delete request, job shouldn't exist now, hence we will get a 404
+        response_delete = requests.delete(SchedulerApiUrl.SINGLE_TASK % data['id'],
+                                          headers=auth_header)
 
         assert response_delete.status_code == 404
 
@@ -147,7 +146,7 @@ class TestSchedulerDelete:
 
         # schedule some jobs
         for i in range(10):
-            response = requests.post(APP_URL + '/tasks/', data=json.dumps(job_config),
+            response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                      headers=auth_header)
             assert response.status_code == 201
             jobs.append(json.loads(response.text)['id'])
@@ -156,11 +155,11 @@ class TestSchedulerDelete:
         invalid_header['Authorization'] = 'Bearer invalid_token'
 
         for job_id in jobs:
-            response_remove = requests.delete(APP_URL + '/tasks/id/' + job_id,
+            response_remove = requests.delete(SchedulerApiUrl.SINGLE_TASK + job_id,
                                               headers=invalid_header)
             assert response_remove.status_code == 401
 
         # Let's delete jobs now
-        response_remove = requests.delete(APP_URL + '/tasks/', data=json.dumps(dict(ids=jobs)),
+        response_remove = requests.delete(SchedulerApiUrl.TASKS, data=json.dumps(dict(ids=jobs)),
                                           headers=auth_header)
         assert response_remove.status_code == 200

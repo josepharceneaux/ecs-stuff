@@ -46,7 +46,7 @@ class AreaOfInterest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
     name = db.Column('Description', db.String(255))
-    parent_id = db.Column('ParentId', db.BigInteger, db.ForeignKey('area_of_interest.id'))
+    parent_id = db.Column('ParentId', db.Integer, db.ForeignKey('area_of_interest.id'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):

@@ -110,6 +110,68 @@ class ResumeApiUrl(object):
                                       GTApis.RESUME_SERVICE_PORT)
 
 
+class SchedulerApiUrl:
+    def __init__(self):
+        pass
+
+    env = os.getenv('GT_ENVIRONMENT') or 'dev'
+    VERSION = 'v1'
+
+    if env == 'dev' or env == 'circle':
+        SCHEDULER_SERVICE_HOST_NAME = 'http://127.0.0.1:8011/' + VERSION + '/%s'
+    elif env == 'qa':
+        # TODO: Change this url after deployment
+        SCHEDULER_SERVICE_HOST_NAME = 'http://scheduler-service-webdev.gettalent.com/' + VERSION + '/%s'
+    elif env == 'prod':
+        # TODO: Change this url after deployment
+        SCHEDULER_SERVICE_HOST_NAME = 'http://scheduler-service.gettalent.com/' + VERSION + '/%s'
+    else:
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
+
+    # URLs, in case of test cases
+    TASKS = SCHEDULER_SERVICE_HOST_NAME % "tasks/"
+    SINGLE_TASK = SCHEDULER_SERVICE_HOST_NAME % 'tasks/id/%s'
+    PAUSE_TASK = SCHEDULER_SERVICE_HOST_NAME % 'tasks/%s/pause/'
+    RESUME_TASK = SCHEDULER_SERVICE_HOST_NAME % 'tasks/%s/resume/'
+    PAUSE_TASKS = SCHEDULER_SERVICE_HOST_NAME % 'tasks/pause/'
+    RESUME_TASKS = SCHEDULER_SERVICE_HOST_NAME % 'tasks/resume/'
+    TEST_TASK = SCHEDULER_SERVICE_HOST_NAME % 'tasks/test/'
+
+    # Use different port of scheduler service URL
+    FLOWER_MONITORING = '--port=5511'
+
+    # URLs, in case of API
+    SCHEDULER_MULTIPLE_TASKS = "/%s/%s" % (VERSION, "tasks/")
+    SCHEDULER_TASKS_TEST = "/%s/%s" % (VERSION, "tasks/test/")
+    SCHEDULER_ONE_TASK = "/%s/%s" % (VERSION, "tasks/id/<string:_id>")
+    SCHEDULER_MULTIPLE_TASK_RESUME = "/%s/%s" % (VERSION, "tasks/resume/")
+    SCHEDULER_MULTIPLE_TASK_PAUSE = "/%s/%s" % (VERSION, "tasks/pause/")
+    SCHEDULER_SINGLE_TASK_RESUME = "/%s/%s" % (VERSION, "tasks/<string:_id>/resume/")
+    SCHEDULER_SINGLE_TASK_PAUSE = "/%s/%s" % (VERSION, "tasks/<string:_id>/pause/")
+
+
+class CandidatePoolApiUrl:
+    def __init__(self):
+        pass
+
+    env = os.getenv('GT_ENVIRONMENT') or 'dev'
+
+    if env == 'dev' or env == 'circle':
+        CANDIDATE_POOL_SERVICE_HOST_NAME = 'http://127.0.0.1:8008/v1/%s'
+    elif env == 'qa':
+        CANDIDATE_POOL_SERVICE_HOST_NAME = 'https://candidate-pool-service-staging.gettalent.com/v1/%s'
+    elif env == 'prod':
+        CANDIDATE_POOL_SERVICE_HOST_NAME = 'https://candidate-pool-service.gettalent.com/v1/%s'
+    else:
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not get environment")
+
+    TALENT_POOL_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "talent-pools/stats"
+    TALENT_POOL_GET_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "talent-pool/%s/stats"
+    TALENT_PIPELINE_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "talent-pipelines/stats"
+    TALENT_PIPELINE_GET_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "talent-pipeline/%s/stats"
+    SMARTLIST_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "smartlists/stats"
+    SMARTLIST_GET_STATS = CANDIDATE_POOL_SERVICE_HOST_NAME % "smartlists/%s/stats"
+
 class UserServiceApiUrl:
     """
     Rest URLs of user_service
@@ -267,23 +329,24 @@ class CandidateApiUrl(object):
     EXPERIENCE_BULLET = API_URL % "/candidates/%s/experiences/%s/bullets/%s"
     EXPERIENCE_BULLETS = API_URL % "/candidates/%s/experiences/%s/bullets"
 
-    MILITARY_SERVICE = API_URL % "/candidates/%s/military_services/%s"
-    MILITARY_SERVICES = API_URL % "/candidates/%s/military_services"
+    MILITARY_SERVICE = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/military_services/%s"
+    MILITARY_SERVICES = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/military_services"
 
-    PHONE = API_URL % "/candidates/%s/phones/%s"
-    PHONES = API_URL % "/candidates/%s/phones"
+    PHONE = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/phones/%s"
+    PHONES = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/phones"
 
-    PREFERRED_LOCATION = API_URL % "/candidates/%s/preferred_locations/%s"
-    PREFERRED_LOCATIONS = API_URL % "/candidates/%s/preferred_locations"
+    PREFERRED_LOCATION = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/preferred_locations/%s"
+    PREFERRED_LOCATIONS = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/preferred_locations"
 
-    SKILL = API_URL % "/candidates/%s/skills/%s"
-    SKILLS = API_URL % "/candidates/%s/skills"
+    SKILL = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/skills/%s"
+    SKILLS = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/skills"
 
-    SOCIAL_NETWORK = API_URL % "/candidates/%s/social_networks/%s"
-    SOCIAL_NETWORKS = API_URL % "/candidates/%s/social_networks"
+    SOCIAL_NETWORK = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/social_networks/%s"
+    SOCIAL_NETWORKS = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/social_networks"
 
-    WORK_PREFERENCE = API_URL % "/candidates/%s/work_preference/%s"
-    CANDIDATE_EDIT = API_URL % "/candidates/%s/edits"
+    WORK_PREFERENCE = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/work_preference/%s"
+
+    CANDIDATE_EDIT = CANDIDATE_SERVICE_HOST_NAME % "v1/candidates/%s/edits"
 
 
 class SchedulerApiUrl(object):

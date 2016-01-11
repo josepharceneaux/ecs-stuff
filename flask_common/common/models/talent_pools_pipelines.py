@@ -50,7 +50,7 @@ class TalentPoolStats(db.Model):
     total_candidates = db.Column(db.Integer, nullable=False, default=0)
     number_of_candidates_removed_or_added = db.Column(db.Integer, nullable=False, default=0)
     candidates_engagement = db.Column(db.Integer, nullable=False, default=0)
-    added_time = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
+    added_datetime = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
 
     talent_pool = db.relationship('TalentPool', backref=db.backref('talent_pool_stats', cascade="all, delete-orphan"))
 
@@ -106,7 +106,7 @@ class TalentPipelineStats(db.Model):
     total_candidates = db.Column(db.Integer, nullable=False, default=0)
     number_of_candidates_removed_or_added = db.Column(db.Integer, nullable=False, default=0)
     candidates_engagement = db.Column(db.Integer, nullable=False, default=0)
-    added_time = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
+    added_datetime = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
 
     talent_pipeline = db.relationship('TalentPipeline', backref=db.backref('talent_pipeline_stats',
                                                                            cascade="all, delete-orphan"))
