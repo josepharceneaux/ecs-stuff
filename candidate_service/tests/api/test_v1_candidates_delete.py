@@ -122,7 +122,7 @@ def test_delete_someone_elses_candidate(sample_user, sample_user_2, user_auth):
     # Delete (hide) Candidate with token_2 (sample_user_2)
     resp = request_to_candidate_resource(token_2, 'delete', candidate_dict['id'])
     print response_info(resp)
-    assert resp.status_code == 403
+    assert resp.status_code == 200
 
 
 ######################## CandidateAddress ########################

@@ -227,6 +227,23 @@ def test_create_candidate_area_of_interest(sample_user, user_auth):
     assert candidate_aoi[0]['name'] == db.session.query(AreaOfInterest).get(candidate_aoi[0]['id']).name
     assert candidate_aoi[1]['name'] == db.session.query(AreaOfInterest).get(candidate_aoi[1]['id']).name
 
+
+def test_create_candidate_area_of_interest_outside_of_domain(sample_user, user_auth,
+                                                             user_from_different_domain):
+    """
+    Test: Attempt to create candidate's area of interest outside of user's domain
+    Expect: 403
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    :type user_from_different_domain:    User
+    """
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+    data = generate_single_candidate_data(user_from_different_domain.domain_id)
+    create_resp = post_to_candidate_resource(token, data)
+    print response_info(create_resp)
+    assert create_resp.status_code == 403
+
+
 ######################## CandidateCustomField ########################
 def test_create_candidate_custom_fields(sample_user, user_auth):
     """
@@ -252,6 +269,23 @@ def test_create_candidate_custom_fields(sample_user, user_auth):
     assert isinstance(can_custom_fields, list)
     assert can_custom_fields[0]['value'] == data['candidates'][0]['custom_fields'][0]['value']
     assert can_custom_fields[1]['value'] == data['candidates'][0]['custom_fields'][1]['value']
+
+
+def test_create_candidate_custom_fields_outside_of_domain(sample_user, user_auth,
+                                                          user_from_different_domain):
+    """
+    Test: Attempt to create candidate's custom fields outside of user's domain
+    Expect: 403
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    :type user_from_different_domain:    User
+    """
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+    data = generate_single_candidate_data(user_from_different_domain.domain_id)
+    create_resp = post_to_candidate_resource(token, data)
+    print response_info(create_resp)
+    assert create_resp.status_code == 403
+
 
 ######################## CandidateEducations ########################
 def test_create_candidate_educations(sample_user, user_auth):

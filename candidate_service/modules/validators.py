@@ -63,7 +63,7 @@ def is_custom_field_authorized(user_domain_id, custom_field_ids):
     """
     Function checks if custom_field_ids belong to the logged-in-user's domain
     :type   user_domain_id:   int
-    :type   custom_field_ids: [int]
+    :type   custom_field_ids: list
     :rtype: bool
     """
     assert isinstance(custom_field_ids, list)

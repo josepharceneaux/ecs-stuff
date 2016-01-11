@@ -16,6 +16,7 @@ from helpers import (
     response_info, post_to_candidate_resource, get_from_candidate_resource,
     patch_to_candidate_resource
 )
+from candidate_service.common.utils.handy_functions import add_role_to_test_user
 
 # Candidate sample data
 from candidate_sample_data import (
