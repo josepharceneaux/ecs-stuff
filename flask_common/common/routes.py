@@ -46,11 +46,11 @@ def _get_host_name(service_name, port_number):
     elif env == 'qa':
         # This looks like auth-service-webdev.gettalent.com (for auth service)
         # TODO: Verify this URL after deployment
-        return service_name + '-staging' + TALENT_DOMAIN
+        return service_name + '-staging' + TALENT_DOMAIN + '%s'
     elif env == 'prod':
         # This looks like auth-service.gettalent.com (for auth service)
         # TODO: Verify this URL after deployment
-        return service_name + TALENT_DOMAIN
+        return service_name + TALENT_DOMAIN + '%s'
     else:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly")
 
