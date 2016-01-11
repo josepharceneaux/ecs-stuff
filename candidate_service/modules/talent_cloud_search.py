@@ -10,14 +10,14 @@ import simplejson
 from copy import deepcopy
 from datetime import datetime
 from flask import request
-from flask import current_app
+from candidate_service.candidate_app import app
 from candidate_service.candidate_app import db, logger
 from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateStatus
 from candidate_service.common.models.user import User, Domain
 from candidate_service.common.models.misc import AreaOfInterest
+from candidate_service.common.talent_config_manager import TalentConfigKeys
 from candidate_service.common.error_handling import InternalServerError
-from candidate_service.common import talent_property_manager
-from flask.ext.common.common.geo_services.geo_coordinates import get_geocoordinates_bounding
+from candidate_service.common.geo_services.geo_coordinates import get_geocoordinates_bounding
 
 API_VERSION = "2013-01-01"
 MYSQL_DATE_FORMAT = '%Y-%m-%dT%H:%i:%S.%fZ'
@@ -130,13 +130,6 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
     'dumb_lists':                    dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
 }
 
-# Get all the credentials from environment variable
-AWS_ACCESS_KEY_ID = talent_property_manager.get_aws_key()
-AWS_SECRET_ACCESS_KEY = talent_property_manager.get_aws_secret()
-
-CLOUD_SEARCH_REGION = talent_property_manager.get_cloudsearch_region()
-CLOUD_SEARCH_DOMAIN_NAME = talent_property_manager.get_cloudsearch_domain_name()
-
 filter_queries_list = []
 search_queries_list = []
 coordinates = []
@@ -148,16 +141,19 @@ def get_cloud_search_connection():
     Get cloud search connection
     :return:
     """
+
     global _cloud_search_connection_layer_2, _cloud_search_domain
     if not _cloud_search_connection_layer_2:
-        _cloud_search_connection_layer_2 = boto.connect_cloudsearch2(aws_access_key_id=AWS_ACCESS_KEY_ID,
-                                                                     aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        _cloud_search_connection_layer_2 = boto.connect_cloudsearch2(aws_access_key_id=app.
+                                                                     config[TalentConfigKeys.AWS_KEY],
+                                                                     aws_secret_access_key=app.
+                                                                     config[TalentConfigKeys.AWS_SECRET],
                                                                      sign_request=True,
-                                                                     region=CLOUD_SEARCH_REGION)
+                                                                     region=app.config[TalentConfigKeys.CS_REGION_KEY])
 
-        _cloud_search_domain = _cloud_search_connection_layer_2.lookup(CLOUD_SEARCH_DOMAIN_NAME)
+        _cloud_search_domain = _cloud_search_connection_layer_2.lookup(app.config[TalentConfigKeys.CS_DOMAIN_KEY])
         if not _cloud_search_domain:
-            _cloud_search_connection_layer_2.create_domain(CLOUD_SEARCH_DOMAIN_NAME)
+            _cloud_search_connection_layer_2.create_domain(app.config[TalentConfigKeys.CS_DOMAIN_KEY])
 
     return _cloud_search_connection_layer_2
 
@@ -219,7 +215,7 @@ def delete_index_fields():
     Deletes above defined index fields.
     :return:
     """
-    if current_app.config['GT_ENVIRONMENT'] is not 'dev':
+    if app.config[TalentConfigKeys.ENV_KEY] is not 'dev':
         raise Exception("Can't call delete_index_fields() in prod! Use the console instead")
     conn = get_cloud_search_connection()
     for index_field_name in INDEX_FIELD_NAME_TO_OPTIONS:
@@ -449,7 +445,8 @@ def delete_all_candidate_documents():
     It only works on dev domain (to avoid the function hitting accidentally on production)
 
     """
-    if current_app.config('GT_ENVIRONMENT') is not 'dev':
+    env = app.config[TalentConfigKeys.ENV_KEY]
+    if env not in ['dev', 'circle']:
         raise Exception("Can't call delete_all_candidate_documents() in prod! Use the console instead")
 
     # Get all candidate ids by searching for everything except a nonsense string
@@ -789,7 +786,7 @@ def get_username_facet_info_with_ids(facet_owner):
         new_tmp_dict = {}
         user_row = User.query.filter_by(email=username_facet['value']).first()
         new_tmp_dict['id'] = username_facet['id']
-        new_tmp_dict['value'] = user_row.first_name+" "+user_row.last_name
+        new_tmp_dict['value'] = (user_row.first_name or "") + " " + (user_row.last_name or "")
         new_tmp_dict['count'] = username_facet['count']
         username_facets.append(new_tmp_dict)
     return username_facets

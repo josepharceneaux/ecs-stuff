@@ -1,15 +1,14 @@
 __author__ = 'ufarooqi'
 import json
-import os
 import requests
 from flask import request
-from datetime import datetime
+from datetime import datetime, timedelta
 from candidate_pool_service.common.models.user import User
-from candidate_pool_service.candidate_pool_app import logger
+from candidate_pool_service.candidate_pool_app import logger, app
 from candidate_pool_service.common.redis_cache import redis_store
-from candidate_pool_service.common import talent_property_manager
 from candidate_pool_service.common.error_handling import InvalidUsage
 from candidate_pool_service.common.models.smartlist import Smartlist
+from candidate_pool_service.common.talent_config_manager import TalentConfigKeys
 from candidate_pool_service.common.routes import CandidatePoolApiUrl, SchedulerApiUrl, CandidateApiUrl
 
 
@@ -64,8 +63,8 @@ def get_candidates_of_talent_pipeline(talent_pipeline, fields=''):
                                              "because: %s" % e.message)
 
         if not request.oauth_token:
-            secret_key, oauth_token = User.generate_auth_token(user_id=talent_pipeline.owner_user_id)
-            headers = {'Authorization': oauth_token, 'X-Talent-Server-Key': secret_key,
+            secret_key, oauth_token = User.generate_jw_token(user_id=talent_pipeline.owner_user_id)
+            headers = {'Authorization': oauth_token, 'X-Talent-Secret-Key-ID': secret_key,
                        'Content-Type': 'application/json'}
         else:
             headers = {'Authorization': request.oauth_token, 'Content-Type': 'application/json'}
@@ -94,22 +93,22 @@ def get_candidates_of_talent_pipeline(talent_pipeline, fields=''):
                                              "%s" % e.message)
 
 
-def schedule_talent_pool_and_pipelines_daily_stats_update():
+def schedule_candidate_daily_stats_update():
 
-    env = talent_property_manager.get_env()
+    env = app.config[TalentConfigKeys.ENV_KEY]
 
-    if not redis_store.get('IS_TALENT_POOL_AND_PIPELINE_STAT_API_REGISTERED') and env != 'circle':
+    if not redis_store.get('IS_CANDIDATE_STAT_API_REGISTERED') and env != 'circle':
 
         data = {
             "frequency": 3600 * 24,  # Daily
             "task_type": "periodic",
-            "start_datetime": str(datetime.utcnow()),
+            "start_datetime": str(datetime.utcnow() + timedelta(seconds=10)),
             "end_datetime": "2099-01-05T08:00:00",
             "url": CandidatePoolApiUrl.TALENT_POOL_STATS
         }
 
-        secret_key, oauth_token = User.generate_auth_token()
-        headers = {'Authorization': oauth_token, 'X-Talent-Server-Key': secret_key, 'Content-Type': 'application/json'}
+        secret_key, oauth_token = User.generate_jw_token()
+        headers = {'Authorization': oauth_token, 'X-Talent-Secret-Key-ID': secret_key, 'Content-Type': 'application/json'}
 
         try:
             response = requests.post(SchedulerApiUrl.TASKS, headers=headers, data=json.dumps(data))
@@ -123,9 +122,15 @@ def schedule_talent_pool_and_pipelines_daily_stats_update():
             if response.status_code != 201:
                 raise Exception("Status Code: %s, Response: %s" % (response.status_code, response.json()))
 
-            redis_store.set('IS_TALENT_POOL_AND_PIPELINE_STAT_API_REGISTERED', True)
+            data['url'] = CandidatePoolApiUrl.SMARTLIST_STATS
+            response = requests.post(SchedulerApiUrl.TASKS, headers=headers, data=json.dumps(data))
+
+            if response.status_code != 201:
+                raise Exception("Status Code: %s, Response: %s" % (response.status_code, response.json()))
+
+            redis_store.set('IS_CANDIDATE_STAT_API_REGISTERED', True)
 
         except Exception as e:
-            logger.exception("Couldn't register TalentPool or TalentPipeline statistics update endpoint to Scheduler "
+            logger.exception("Couldn't register Candidate statistics update endpoint to Scheduler "
                              "Service because: %s" % e.message)
 

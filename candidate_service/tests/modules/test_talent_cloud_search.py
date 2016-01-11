@@ -5,9 +5,9 @@ from candidate_service.common.tests.conftest import *
 from candidate_service.common.models.candidate import (Candidate, CandidateAddress, CandidateStatus, CandidateSource)
 from candidate_service.candidate_app import db, logger
 from candidate_service.common.models.misc import CustomField, CustomFieldCategory, AreaOfInterest
-from flask.ext.common.common.geo_services.geo_coordinates import get_geocoordinates_bounding
+from candidate_service.common.geo_services.geo_coordinates import get_geocoordinates_bounding
 from candidate_service.cloudsearch_constants import SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH
-from flask.ext.common.common.utils.talent_areas_of_interest import KAISER_PARENT_TO_CHILD_AOIS
+from candidate_service.common.utils.talent_areas_of_interest import KAISER_PARENT_TO_CHILD_AOIS
 from faker import Faker
 from random import randint
 import datetime

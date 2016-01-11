@@ -6,7 +6,6 @@
         * test_health_check: It'll test either the service is up
 """
 
-from spreadsheet_import_service.app import app
 from spreadsheet_import_service.common.tests.conftest import *
 from spreadsheet_import_service.common.utils.handy_functions import add_role_to_test_user
 from common_functions import *
@@ -64,5 +63,5 @@ def test_import_candidates_from_spreadsheet(access_token_first, user_first):
 
 
 def test_health_check():
-    response = requests.get(HEALTH_ENDPOINT)
+    response = requests.get(SpreadsheetImportApiUrl.HEALTH_CHECK)
     assert response.status_code == 200

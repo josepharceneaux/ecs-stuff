@@ -10,10 +10,9 @@ import os
 import json
 import StringIO
 import requests
+from spreadsheet_import_service.app import app
 from spreadsheet_import_service.common.utils.talent_s3 import upload_to_filepicker_s3
 from spreadsheet_import_service.common.routes import SpreadsheetImportApiUrl
-
-HEALTH_ENDPOINT = 'http://127.0.0.1:8009/healthcheck'
 
 
 def import_spreadsheet_candidates(access_token, candidate_data=None, spreadsheet_file_name=None, is_csv=True,
@@ -46,7 +45,8 @@ def import_spreadsheet_candidates(access_token, candidate_data=None, spreadsheet
             spreadsheet_file_data = spreadsheet_file.read()
             s3_key_name = str(uuid.uuid4())[0:8] + spreadsheet_file_name.split('.')[1]
 
-    upload_to_filepicker_s3(file_content=spreadsheet_file_data, file_name=s3_key_name)
+    with app.app_context():
+        upload_to_filepicker_s3(file_content=spreadsheet_file_data, file_name=s3_key_name)
 
     if import_candidates:
         response = requests.post(SpreadsheetImportApiUrl.IMPORT_CANDIDATES, headers=headers,

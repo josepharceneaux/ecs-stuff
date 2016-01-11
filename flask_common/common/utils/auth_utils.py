@@ -15,10 +15,12 @@ from ..error_handling import *
 from ..routes import AuthApiUrl
 
 
-def require_oauth(allow_basic_auth=False, allow_null_user=False):
+def require_oauth(allow_jwt_based_auth=False, allow_null_user=False):
     """
     This method will verify Authorization header of request using getTalent AuthService or Basic HTTP secret-key based
     Auth and will set request.user and request.oauth_token
+    :param bool allow_jwt_based_auth: Either JWT based authentication is supported for a particular endpoint or not ?
+    :param allow_null_user: Is user is necessary for Authorization or not ?
     """
     def auth_wrapper(func):
         @wraps(func)
@@ -27,36 +29,36 @@ def require_oauth(allow_basic_auth=False, allow_null_user=False):
                 oauth_token = request.headers['Authorization']
             except KeyError:
                 raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
-            if 'Bearer' in oauth_token:
+
+            # JWT based Authentication
+            if allow_jwt_based_auth:
                 try:
-                    response = requests.get(AuthApiUrl.AUTH_SERVICE_AUTHORIZE_URI, headers={'Authorization': oauth_token})
-                except Exception as e:
-                    raise InternalServerError(error_message=e.message)
-                if response.status_code == 429:
-                    raise UnauthorizedError(error_message='You have exceeded the access limit of this API')
-                elif not response.ok:
-                    error_body = response.json()
-                    if error_body['error']:
-                        raise UnauthorizedError(error_message=error_body['error']['message'],
-                                                error_code=error_body['error']['code'])
-                    else:
-                        raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
-                else:
-                    valid_user_id = response.json().get('user_id')
-                    request.user = User.query.get(valid_user_id)
-                    request.oauth_token = oauth_token
+                    secret_key_id = request.headers['X-Talent-Secret-Key-ID']
+                    json_web_token = oauth_token.replace('Bearer', '').strip()
+                    User.verify_jw_token(secret_key_id, json_web_token, allow_null_user)
+                    request.oauth_token = ''
                     return func(*args, **kwargs)
-            elif 'Basic' in oauth_token and allow_basic_auth:
-                token = oauth_token.replace('Basic', '').strip()
-                try:
-                    secret_key = request.headers['X-Talent-Server-Key']
                 except KeyError:
+                    pass
+
+            try:
+                response = requests.get(AuthApiUrl.AUTHORIZE, headers={'Authorization': oauth_token})
+            except Exception as e:
+                raise InternalServerError(error_message=e.message)
+            if response.status_code == 429:
+                raise UnauthorizedError(error_message='You have exceeded the access limit of this API')
+            elif not response.ok:
+                error_body = response.json()
+                if error_body['error']:
+                    raise UnauthorizedError(error_message=error_body['error']['message'],
+                                            error_code=error_body['error']['code'])
+                else:
                     raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
-                User.verify_auth_token(secret_key, token, allow_null_user)
-                request.oauth_token = ''
-                return func(*args, **kwargs)
             else:
-                raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
+                valid_user_id = response.json().get('user_id')
+                request.user = User.query.get(valid_user_id)
+                request.oauth_token = oauth_token
+                return func(*args, **kwargs)
 
         return authenticate
     return auth_wrapper
@@ -165,6 +167,6 @@ def refresh_expired_token(token, client_id, client_secret):
     # Sends a refresh request to the Oauth2 server.
     payload = {'grant_type': 'refresh_token', 'client_id': client_id,
                'client_secret': client_secret, 'refresh_token': token.refresh_token}
-    r = requests.post(app.config['OAUTH_TOKEN_URI'], data=payload)
+    r = requests.post(AuthApiUrl.TOKEN_CREATE, data=payload)
     # TODO: Add bad request handling.
     return json.loads(r.text)['access_token']
