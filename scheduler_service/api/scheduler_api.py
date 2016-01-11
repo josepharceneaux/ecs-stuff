@@ -18,6 +18,7 @@ from flask.ext.cors import CORS
 from werkzeug.exceptions import BadRequest
 
 from scheduler_service import TalentConfigKeys, flask_app
+from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse
@@ -602,6 +603,7 @@ class SendRequestTest(Resource):
             expiry = expiry.strftime('%Y-%m-%d %H:%M:%S')
 
             # Expire oauth token and then pass it to run_job. And run_job should refresh token and send request to URL
+            db.db.session.commit()
             token = Token.query.filter_by(user_id=request.user.id).first()
             token.update(expires=expiry)
 

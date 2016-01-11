@@ -8,17 +8,17 @@ import json
 import datetime
 from time import sleep
 
-import pytest
 import requests
 
 # Application imports
+from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token
 from scheduler_service.common.routes import SchedulerApiUrl
 
 __author__ = 'saad'
 
 
-class TestSchedulerMisc:
+class TestSchedulerMisc(object):
 
     def test_scheduled_job_with_expired_token(self, sample_user, user_auth, job_config):
         """
@@ -54,10 +54,11 @@ class TestSchedulerMisc:
         data = response.json()
         assert data['id']
 
-        # Sleep for 20 seconds till the job start and refreshes oauth token
-        sleep(20)
+        # Sleep for 20 seconds till the job start and refresh oauth token
+        sleep(25)
 
         # After running the job first time. Token should be refreshed
+        db.db.session.commit()
         token = Token.query.filter_by(user_id=auth_token_row['user_id']).first()
         assert token.expires > datetime.datetime.utcnow()
 
@@ -66,6 +67,7 @@ class TestSchedulerMisc:
         response_remove = requests.delete(SchedulerApiUrl.SINGLE_TASK %  data['id'],
                                           headers=auth_header)
         assert response_remove.status_code == 200
+
 
     def test_run_job_with_expired_token(self, sample_user, user_auth, job_config):
         """
@@ -94,6 +96,7 @@ class TestSchedulerMisc:
 
         assert response.status_code == 200
 
+        db.db.session.commit()
         token = Token.query.filter_by(user_id=auth_token_row['user_id']).first()
 
         assert token
@@ -161,6 +164,7 @@ class TestSchedulerMisc:
 
 
 def _update_token_expiry_(user_id, expiry):
+    db.db.session.commit()
     token = Token.query.filter_by(user_id=user_id).first()
     assert token
     token.update(expires=expiry)

@@ -16,7 +16,7 @@ from scheduler_service.common.routes import SchedulerApiUrl
 __author__ = 'saad'
 
 
-class TestSchedulerDelete:
+class TestSchedulerDelete(object):
 
     def test_single_job(self, auth_header, job_config):
         """

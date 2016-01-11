@@ -15,7 +15,7 @@ from scheduler_service.custom_exceptions import SchedulerServiceApiException
 __author__ = 'saad'
 
 
-class TestSchedulerPause:
+class TestSchedulerPause(object):
 
     def test_single_job(self, auth_header, job_config):
         """

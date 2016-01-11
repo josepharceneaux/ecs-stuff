@@ -7,7 +7,6 @@ import json
 import datetime
 
 # Third party imports
-import pytest
 import requests
 
 # Application imports
@@ -17,7 +16,7 @@ from scheduler_service.custom_exceptions import SchedulerServiceApiException
 __author__ = 'saad'
 
 
-class TestSchedulerExceptions:
+class TestSchedulerExceptions(object):
 
     def test_incomplete_post_data_exception(self, auth_header, job_config):
         """

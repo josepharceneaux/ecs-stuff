@@ -16,12 +16,12 @@
 
     configFunction.$inject = ['$compileProvider', '$logProvider', 'exceptionHandlerProvider',
         'OAuthProvider', 'OAuthTokenProvider', 'pickADateProvider', 'pickATimeProvider',
-        'tagsInputConfigProvider', 'authInfo'];
+        'tagsInputConfigProvider', 'authInfo', '$uibTooltipProvider'];
 
     /* @ngInject */
     function configFunction($compileProvider, $logProvider, exceptionHandlerProvider,
                             OAuthProvider, OAuthTokenProvider, pickADateProvider, pickATimeProvider,
-                            tagsInputConfigProvider, authInfo) {
+                            tagsInputConfigProvider, authInfo, $uibTooltipProvider) {
 
         // During development, you may want to set debugInfoEnabled to true. This is required for tools like
         // Protractor, Batarang and ng-inspector to work correctly. However do not check in this change.
@@ -64,5 +64,10 @@
                 replaceSpacesWithDashes: false
             })
             .setTextAutosizeThreshold(13.6);
+
+        $uibTooltipProvider.options({
+            appendToBody: true,
+            placement: 'auto'
+        });
     }
 })();

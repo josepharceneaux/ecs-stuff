@@ -4,7 +4,6 @@ Test cases for creating schedule job with and without token.
 
 # Third party imports
 import json
-import pytest
 import requests
 
 # Application imports
@@ -13,7 +12,7 @@ from scheduler_service.common.routes import SchedulerApiUrl
 __author__ = 'saad'
 
 
-class TestSchedulerCreate:
+class TestSchedulerCreate(object):
 
     def test_single_scheduled_job_without_user(self, auth_header_no_user, job_config):
         """

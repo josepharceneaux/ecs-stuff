@@ -30,7 +30,7 @@ def test_talent_pipeline_candidate_get(access_token_first, access_token_second, 
     add_role_to_test_user(user_second, ['CAN_GET_TALENT_PIPELINE_CANDIDATES'])
 
     # Logged-in user trying to get all candidates of non-existing talent-pipeline
-    response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id + 100)
+    response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id + 1000)
     assert status_code == 404
 
     # Logged-in user trying to get all candidates of talent-pipeline of different domain
@@ -101,7 +101,7 @@ def test_update_talent_pipeline_stats(access_token_first, access_token_second, u
     populate_candidates(oauth_token=access_token_first, count=3, current_company='Apple',
                         talent_pool_id=talent_pipeline.talent_pool_id)
 
-    sleep(20)
+    sleep(25)
 
     # Emptying TalentPipelineStats table
     TalentPipelineStats.query.delete()
@@ -112,7 +112,7 @@ def test_update_talent_pipeline_stats(access_token_first, access_token_second, u
     assert status_code == 204
 
     # Logged-in user trying to get statistics of a non-existing talent_pipeline
-    response, status_code = talent_pipeline_get_stats(access_token_first, talent_pipeline.id + 100)
+    response, status_code = talent_pipeline_get_stats(access_token_first, talent_pipeline.id + 1000)
     assert status_code == 404
 
     # Logged-in user trying to get statistics of a talent_pipeline of different user

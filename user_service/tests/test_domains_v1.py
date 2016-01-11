@@ -13,7 +13,7 @@ def test_domain_service_get(access_token_first, user_first, user_second, domain_
     assert status_code == 400
 
     # Logged-in user getting info of a domain which doesn't exist
-    response, status_code = domain_api(access_token_first, user_first.domain_id + 100)
+    response, status_code = domain_api(access_token_first, user_first.domain_id + 1000)
     assert status_code == 404
 
     # Logged-in user trying to get info of domain which different than its own domain
@@ -50,7 +50,7 @@ def test_domain_service_delete(access_token_first, user_first, user_second, doma
     assert status_code == 400
 
     # Logged-in user trying to delete a non-existing domain
-    response, status_code = domain_api(access_token_first, domain_first.id + 100, action='DELETE')
+    response, status_code = domain_api(access_token_first, domain_first.id + 1000, action='DELETE')
     assert status_code == 404
 
     # Logged-in user trying to delete a domain
@@ -84,7 +84,7 @@ def test_domain_service_put(access_token_first, user_first, domain_first, domain
     add_role_to_test_user(user_first, ['CAN_EDIT_DOMAINS'])
 
     # Logged-in user trying to update a non-existing domain
-    response, status_code = domain_api(access_token_first, domain_first.id + 100, data=data, action='PUT')
+    response, status_code = domain_api(access_token_first, domain_first.id + 1000, data=data, action='PUT')
     assert status_code == 404
 
     # Logged-in user trying to update a domain with empty request body
@@ -134,7 +134,7 @@ def test_domain_service_post(access_token_first, user_first, domain_first):
     first_domain = {
         'name': '',
         'expiration': gen_salt(6),
-        'default_culture_id': '100'
+        'default_culture_id': '1000'
     }
 
     second_domain = {

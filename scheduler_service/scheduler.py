@@ -240,10 +240,11 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
             }
             # We need to refresh token if token is expired. For that send request to auth service and request a
             # refresh token.
-            resp = http_request('POST', AuthApiUrl.AUTH_SERVICE_TOKEN_CREATE_URI, headers=headers,
-                                data=urlencode(data))
-            logger.info('Token refreshed %s' % resp.json()['expires_at'])
-            access_token = "Bearer " + resp.json()['access_token']
+            with flask_app.app_context():
+                resp = http_request('POST', AuthApiUrl.AUTH_SERVICE_TOKEN_CREATE_URI, headers=headers,
+                                    data=urlencode(data))
+                logger.info('Token refreshed %s' % resp.json()['expires_at'])
+                access_token = "Bearer " + resp.json()['access_token']
 
     logger.info('User ID: %s, URL: %s, Content-Type: %s' % (user_id, url, content_type))
     # Call celery task to send post_data to URL
