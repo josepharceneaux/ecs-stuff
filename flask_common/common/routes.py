@@ -13,6 +13,7 @@ Here we have two(or maybe three) classes for each service.
 
 """
 import os
+
 from talent_config_manager import TalentConfigKeys
 
 LOCAL_HOST = 'http://127.0.0.1'

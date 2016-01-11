@@ -246,7 +246,8 @@ class Token(db.Model):
         """
         assert access_token
         token = Token.query.filter_by(access_token=access_token).first()
-        assert token
+        if not token:
+            raise ResourceNotFound("Token not found")
         return token
 
 
