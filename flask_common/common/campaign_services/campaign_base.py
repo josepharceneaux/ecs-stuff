@@ -1086,7 +1086,7 @@ class CampaignBase(object):
                                  'into JSON. Error is: %s' % error.message)
         headers.update(JSON_CONTENT_TYPE_HEADER)  # Add content-type in header
         # POST call to activity_service to create activity
-        http_request('POST', ActivityApiUrl.CREATE_ACTIVITY, headers=headers,
+        http_request('POST', ActivityApiUrl.ACTIVITIES, headers=headers,
                      data=json_data, user_id=user_id)
 
 

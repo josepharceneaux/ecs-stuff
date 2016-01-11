@@ -532,8 +532,15 @@ class SchedulerApiUrl(object):
     """
     HOST_NAME = _get_host_name(GTApis.SCHEDULER_SERVICE_NAME,
                                GTApis.SCHEDULER_SERVICE_PORT)
-    TASKS = HOST_NAME % '/tasks/'
-    TASK = HOST_NAME % '/tasks/id/%s'
+    VERSION = 'v1'
+    # URLs, in case of API
+    TASKS = "/%s/%s" % (VERSION, "tasks/")
+    TEST_TASK = "/%s/%s" % (VERSION, "tasks/test/")
+    TASK = "/%s/%s" % (VERSION, "tasks/id/<string:_id>")
+    RESUME_TASKS = "/%s/%s" % (VERSION, "tasks/resume/")
+    PAUSE_TASKS = "/%s/%s" % (VERSION, "tasks/pause/")
+    RESUME_TASK = "/%s/%s" % (VERSION, "tasks/<string:_id>/resume/")
+    PAUSE_TASK = "/%s/%s" % (VERSION, "tasks/<string:_id>/pause/")
 
 
 class PushCampaignApi(object):
