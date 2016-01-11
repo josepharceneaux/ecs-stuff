@@ -5,12 +5,15 @@ from datetime import datetime
 from datetime import timedelta
 # Framework specific
 from flask import jsonify
+from flask import current_app as app
 # Module Specific
 from resume_service.common.redis_conn import redis_client
 from resume_service.common.models.user import Token
 from resume_service.resume_parsing_app.views.parse_lib import process_resume
 from resume_service.common.utils.handy_functions import grouper
+import requests
 
+DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 def add_fp_keys_to_queue(filepicker_keys, user_id):
     """
@@ -22,11 +25,17 @@ def add_fp_keys_to_queue(filepicker_keys, user_id):
     queue_string = 'batch:{}:fp_keys'.format(user_id)
     list_length = redis_client.rpush(queue_string, *filepicker_keys)
     batches = grouper(filepicker_keys, 100)
-    scheduled = datetime.now()
+    scheduled = datetime.now() + timedelta(seconds=15)
     for batch in batches:
-        for item in batch:
-            # This is where we talk to scheduler service
-            pass
+        for key in batch:
+            payload = {
+                "task_type": "one_time",
+                "run_datetime": scheduled.strftime(DATE_FORMAT),
+                "url": app.config['BATCH_PROCESSING_URI'] + user_id,
+                "post_data": {}
+            }
+            # TODO Handle missed connections/http errors.
+            scheduler_request = requests.post(app.config['SCHEDULER_SERVICE_URI'], data=payload)
         scheduled += timedelta(seconds=20)
 
     return {'redis_key': queue_string, 'quantity': list_length}
@@ -44,7 +53,6 @@ def _process_batch_item(user_id, create_candidate=True):
     # LPOP returns none if the list is empty so we should end our current batch.
     if fp_key is None:
         return jsonify(**{'error': {'message': 'Empty Queue for user: {}'.format(user_id)}})
-
     # Adding none here allows for unit-testing and will still result in unauthorized responses
     # given a user does not have a Token.
     oauth_token = Token.query.filter_by(user_id=user_id).first() or None
