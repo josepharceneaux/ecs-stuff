@@ -36,7 +36,7 @@ class TestSmartlistStatsUpdateApi(object):
                                 params=params)
         return response.json(), response.status_code
 
-    def test_update_smartlists_stats(self, access_token_first, access_token_second, user_first):
+    def test_update_smartlists_stats(self, access_token_first, user_first):
 
         # Logged-in user trying to update statistics of all smartlists in database
         status_code = self.call_smartlist_stats_update_api(access_token_first)
@@ -53,14 +53,26 @@ class TestSmartlistStatsUpdateApi(object):
         # Adding a test smartlist in database
         test_smartlist = Smartlist(name=gen_salt(5), user_id=user_first.id, search_params='{"query": "Apple"}')
         db.session.add(test_smartlist)
-
-        # Emptying TalentPipelineStats table
-        SmartlistStats.query.delete()
         db.session.commit()
 
         # Logged-in user trying to update statistics of all smartlists in database
         status_code = self.call_smartlist_stats_update_api(access_token_first)
         assert status_code == 204
+
+    def test_get_smartlists_stats(self, access_token_first, access_token_second, user_first):
+
+        # Adding a test smartlist in database
+        test_smartlist = Smartlist(name=gen_salt(5), user_id=user_first.id, search_params='{"query": "Apple"}')
+        db.session.add(test_smartlist)
+        db.session.flush()
+
+        # Emptying TalentPipelineStats table
+        SmartlistStats.query.delete()
+
+        smartlist_stat = SmartlistStats(smartlist_id=test_smartlist.id, total_candidates=10,
+                                        number_of_candidates_removed_or_added=3, candidates_engagement=40)
+        db.session.add(smartlist_stat)
+        db.session.commit()
 
         # Logged-in user trying to get statistics of a non-existing smartlist
         response, status_code = self.call_smartlist_stats_get_api(access_token_first, test_smartlist.id + 1000)
@@ -89,12 +101,11 @@ class TestSmartlistStatsUpdateApi(object):
         # Logged-in user trying to get statistics of a smartlist
         response, status_code = self.call_smartlist_stats_get_api(access_token_first, test_smartlist.id,
                                                                   {'from_date': from_date, 'to_date': to_date})
+
         assert status_code == 200
-        assert len(response.get('smartlist_data')) >= 1
-        assert 3 in [smartlist_data.get('number_of_candidates_removed_or_added') for smartlist_data in
-                     response.get('smartlist_data')]
-        assert 3 in [smartlist_data.get('total_number_of_candidates') for smartlist_data in
-                     response.get('smartlist_data')]
+        assert len(response.get('smartlist_data')) == 1
+        assert response.get('smartlist_data')[0].get('total_number_of_candidates') == 10
+        assert response.get('smartlist_data')[0].get('number_of_candidates_removed_or_added') == 3
 
 
 class TestSmartlistResource(object):

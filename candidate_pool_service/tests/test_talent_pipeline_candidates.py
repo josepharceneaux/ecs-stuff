@@ -9,7 +9,7 @@ from candidate_pool_service.common.tests.cloud_search_common_functions import *
 from common_functions import *
 
 
-def test_update_talent_pipeline_stats(access_token_first, access_token_second, user_first, talent_pipeline):
+def test_update_talent_pipeline_stats(access_token_first, user_first, talent_pipeline):
 
     # Logged-in user trying to update statistics of all talent_pipelines in database
     status_code = talent_pipeline_update_stats(access_token_first)
@@ -28,13 +28,20 @@ def test_update_talent_pipeline_stats(access_token_first, access_token_second, u
 
     sleep(25)
 
-    # Emptying TalentPipelineStats table
-    TalentPipelineStats.query.delete()
-    db.session.commit()
-
     # Logged-in user trying to update statistics of all talent_pipelines in database
     status_code = talent_pipeline_update_stats(access_token_first)
     assert status_code == 204
+
+
+def test_get_talent_pipeline_stats(access_token_first, access_token_second, talent_pipeline):
+
+    # Emptying TalentPipelineStats table
+    TalentPipelineStats.query.delete()
+    talent_pipeline_stat = TalentPipelineStats(talent_pipeline_id=talent_pipeline.id, total_candidates=10,
+                                               number_of_candidates_removed_or_added=3, candidates_engagement=40)
+
+    db.session.add(talent_pipeline_stat)
+    db.session.commit()
 
     # Logged-in user trying to get statistics of a non-existing talent_pipeline
     response, status_code = talent_pipeline_get_stats(access_token_first, talent_pipeline.id + 1000)
@@ -52,8 +59,8 @@ def test_update_talent_pipeline_stats(access_token_first, access_token_second, u
     to_date = str(datetime.now() - timedelta(1))
 
     # Logged-in user trying to get statistics of a talent_pipeline
-    response, status_code = talent_pipeline_get_stats(access_token_first, talent_pipeline.id, {'from_date': from_date,
-                                                                                               'to_date': to_date})
+    response, status_code = talent_pipeline_get_stats(access_token_first, talent_pipeline.id,
+                                                      {'from_date': from_date, 'to_date': to_date})
     assert status_code == 200
     assert not response.get('talent_pipeline_data')
 
@@ -61,14 +68,13 @@ def test_update_talent_pipeline_stats(access_token_first, access_token_second, u
     to_date = str(datetime.now())
 
     # Logged-in user trying to get statistics of a talent_pipeline
-    response, status_code = talent_pipeline_get_stats(access_token_first, talent_pipeline.id, {'from_date': from_date,
-                                                                                               'to_date': to_date})
+    response, status_code = talent_pipeline_get_stats(access_token_first, talent_pipeline.id,
+                                                      {'from_date': from_date, 'to_date': to_date})
+
     assert status_code == 200
-    assert len(response.get('talent_pipeline_data')) >= 1
-    assert 3 in [talent_pipeline_data.get('number_of_candidates_removed_or_added') for talent_pipeline_data in
-                 response.get('talent_pipeline_data')]
-    assert 3 in [talent_pipeline_data.get('total_number_of_candidates') for talent_pipeline_data in
-                 response.get('talent_pipeline_data')]
+    assert len(response.get('talent_pipeline_data')) == 1
+    assert response.get('talent_pipeline_data')[0].get('total_number_of_candidates') == 10
+    assert response.get('talent_pipeline_data')[0].get('number_of_candidates_removed_or_added') == 3
 
 
 def test_talent_pipeline_candidate_get(access_token_first, access_token_second, talent_pool, talent_pipeline,
