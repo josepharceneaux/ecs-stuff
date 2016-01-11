@@ -54,7 +54,7 @@ class TestSchedulerMisc(object):
         data = response.json()
         assert data['id']
 
-        # Sleep for 20 seconds till the job start and refresh oauth token
+        # Sleep for 25 seconds till the job start and refresh oauth token
         sleep(25)
 
         # After running the job first time. Token should be refreshed
@@ -64,10 +64,9 @@ class TestSchedulerMisc(object):
 
         # Delete the created job
         auth_header['Authorization'] = 'Bearer ' + token.access_token
-        response_remove = requests.delete(SchedulerApiUrl.SINGLE_TASK %  data['id'],
+        response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
                                           headers=auth_header)
         assert response_remove.status_code == 200
-
 
     def test_run_job_with_expired_token(self, sample_user, user_auth, job_config):
         """
@@ -151,7 +150,7 @@ class TestSchedulerMisc(object):
         assert data['id']
 
         # Let's delete jobs now
-        response_remove = requests.delete(SchedulerApiUrl.SINGLE_TASK % data['id'],
+        response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
@@ -164,6 +163,12 @@ class TestSchedulerMisc(object):
 
 
 def _update_token_expiry_(user_id, expiry):
+    """
+    Update expiry datetime of token filtered by user_id
+    :param user_id: user_id who owned token
+    :param expiry: expiry datetime to set
+    :return:
+    """
     db.db.session.commit()
     token = Token.query.filter_by(user_id=user_id).first()
     assert token

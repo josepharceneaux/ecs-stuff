@@ -13,7 +13,6 @@ Here we have two(or maybe three) classes for each service.
 
 """
 import os
-
 from talent_config_manager import TalentConfigKeys
 
 LOCAL_HOST = 'http://127.0.0.1'
@@ -525,6 +524,14 @@ class CandidateApiUrl(object):
     WORK_PREFERENCE = CANDIDATE + CandidateApiWords.WORK_PREFERENCES + "/%s"
     CANDIDATE_EDIT = CANDIDATE + CandidateApiWords.EDITS
 
+
+class SchedulerApiUrl(object):
+    """
+    Rest URLs of scheduler_service
+    """
+    HOST_NAME = _get_host_name(GTApis.SCHEDULER_SERVICE_NAME,
+                               GTApis.SCHEDULER_SERVICE_PORT)
+
     env = os.getenv('GT_ENVIRONMENT') or 'dev'
     VERSION = 'v1'
 
@@ -541,7 +548,8 @@ class CandidateApiUrl(object):
 
     # URLs, in case of test cases
     TASKS = SCHEDULER_SERVICE_HOST_NAME % "tasks/"
-    SINGLE_TASK = SCHEDULER_SERVICE_HOST_NAME % 'tasks/id/%s'
+    TASK = SCHEDULER_SERVICE_HOST_NAME % 'tasks/id/%s'
+    TASK_NAME = SCHEDULER_SERVICE_HOST_NAME % 'tasks/name/%s'
     PAUSE_TASK = SCHEDULER_SERVICE_HOST_NAME % 'tasks/%s/pause/'
     RESUME_TASK = SCHEDULER_SERVICE_HOST_NAME % 'tasks/%s/resume/'
     PAUSE_TASKS = SCHEDULER_SERVICE_HOST_NAME % 'tasks/pause/'
@@ -555,17 +563,9 @@ class CandidateApiUrl(object):
     SCHEDULER_MULTIPLE_TASKS = "/%s/%s" % (VERSION, "tasks/")
     SCHEDULER_TASKS_TEST = "/%s/%s" % (VERSION, "tasks/test/")
     SCHEDULER_ONE_TASK = "/%s/%s" % (VERSION, "tasks/id/<string:_id>")
+    SCHEDULER_NAMED_TASK = "/%s/%s" % (VERSION, "tasks/name/<string:_name>")
+    SCHEDULER_ONE_TASK_NAME = "/%s/%s" % (VERSION, "tasks/name/<string:_name>")
     SCHEDULER_MULTIPLE_TASK_RESUME = "/%s/%s" % (VERSION, "tasks/resume/")
     SCHEDULER_MULTIPLE_TASK_PAUSE = "/%s/%s" % (VERSION, "tasks/pause/")
     SCHEDULER_SINGLE_TASK_RESUME = "/%s/%s" % (VERSION, "tasks/<string:_id>/resume/")
     SCHEDULER_SINGLE_TASK_PAUSE = "/%s/%s" % (VERSION, "tasks/<string:_id>/pause/")
-
-
-class SchedulerApiUrl(object):
-    """
-    Rest URLs of scheduler_service
-    """
-    HOST_NAME = _get_host_name(GTApis.SCHEDULER_SERVICE_NAME,
-                               GTApis.SCHEDULER_SERVICE_PORT)
-    TASKS = HOST_NAME % '/tasks/'
-    TASK = HOST_NAME % '/tasks/id/%s'

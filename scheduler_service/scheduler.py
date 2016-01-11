@@ -30,7 +30,7 @@ from scheduler_service.common.routes import AuthApiUrl
 from scheduler_service.common.utils.handy_functions import http_request
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 from scheduler_service.validators import get_valid_data_from_dict, get_valid_url_from_dict, \
-    get_valid_datetime_from_dict, get_valid_integer_from_dict
+    get_valid_datetime_from_dict, get_valid_integer_from_dict, get_valid_task_name_from_dict
 from scheduler_service.custom_exceptions import TriggerTypeError, JobNotCreatedError
 from scheduler_service.tasks import send_request
 
@@ -158,7 +158,7 @@ def schedule_job(data, user_id=None, access_token=None):
     # is already running as we only allow one such task to run at a time.
     # If there is already such task we raise an exception.
     if user_id is None:
-        job_config['task_name'] = get_valid_data_from_dict(data, 'task_name')
+        job_config['task_name'] = get_valid_task_name_from_dict(data, 'task_name')
         jobs = scheduler.get_jobs()
         jobs = filter(lambda task: task.name == job_config['task_name'], jobs)
         # There should be a unique task named job. If a job already exist then it should raise error
@@ -241,7 +241,7 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
             # We need to refresh token if token is expired. For that send request to auth service and request a
             # refresh token.
             with flask_app.app_context():
-                resp = http_request('POST', AuthApiUrl.AUTH_SERVICE_TOKEN_CREATE_URI, headers=headers,
+                resp = http_request('POST', AuthApiUrl.TOKEN_CREATE, headers=headers,
                                     data=urlencode(data))
                 logger.info('Token refreshed %s' % resp.json()['expires_at'])
                 access_token = "Bearer " + resp.json()['access_token']

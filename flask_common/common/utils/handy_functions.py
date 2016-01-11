@@ -2,6 +2,7 @@ import json
 
 import requests
 from flask import current_app
+from requests.packages.urllib3.connection import ConnectionError
 
 from flask.ext.common.common.talent_config_manager import TalentConfigKeys
 from ..error_handling import ForbiddenError, UnauthorizedError, ResourceNotFound, InvalidUsage, InternalServerError
@@ -111,21 +112,22 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                             e.response.json().get('error_description'))
                     else:
                         error_message = e.message
-                except Exception:
+                except json.JSONDecoder:
                     error_message = e.message
             else:
                 # raise any Server error
                 raise
-        except requests.RequestException as e:
+        except ConnectionError:
             # This check is for if any talent service is not running. It logs the URL on
             # which request was made.
-            if hasattr(e.message, 'args'):
-                if 'Connection aborted' in e.message.args[0]:
-                    current_app.config[TalentConfigKeys.LOGGER].exception(
-                        "http_request: Couldn't make %s call on %s. "
-                        "Make sure requested server is running." % (method_type, url))
-                    raise ForbiddenError
-            error_message = e.message
+            current_app.config[TalentConfigKeys.LOGGER].exception(
+                            "http_request: Couldn't make %s call on %s. "
+                            "Make sure requested server is running." % (method_type, url))
+            raise
+        except requests.RequestException as e:
+            current_app.config[TalentConfigKeys.LOGGER].exception('http_request: HTTP request failed, %s' % e.message)
+            raise
+
         if error_message:
             current_app.config[TalentConfigKeys.LOGGER].exception('http_request: HTTP request failed, %s, '
                                                    'user_id: %s', error_message, user_id)

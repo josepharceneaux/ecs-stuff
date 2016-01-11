@@ -36,12 +36,12 @@ class TestSchedulerDelete(object):
         job_id = response.json()['id']
 
         # Removing a job
-        response_remove = requests.delete(SchedulerApiUrl.SINGLE_TASK % job_id,
+        response_remove = requests.delete(SchedulerApiUrl.TASK % job_id,
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
         # There shouldn't be any more jobs now
-        response = requests.get(SchedulerApiUrl.SINGLE_TASK % job_id, headers=auth_header)
+        response = requests.get(SchedulerApiUrl.TASK % job_id, headers=auth_header)
         assert response.status_code == 404
 
     def test_multiple_jobs(self, auth_header, job_config):
@@ -116,18 +116,18 @@ class TestSchedulerDelete(object):
         invalid_header['Authorization'] = 'Bearer invalid_token'
 
         # send job delete request
-        response_delete = requests.delete(SchedulerApiUrl.SINGLE_TASK % data['id'],
+        response_delete = requests.delete(SchedulerApiUrl.TASK % data['id'],
                                           headers=invalid_header)
         assert response_delete.status_code == 401
 
         # Now try deleting job with correct token
-        response_delete = requests.delete(SchedulerApiUrl.SINGLE_TASK % data['id'],
+        response_delete = requests.delete(SchedulerApiUrl.TASK % data['id'],
                                           headers=auth_header)
 
         assert response_delete.status_code == 200
 
         # send job delete request, job shouldn't exist now, hence we will get a 404
-        response_delete = requests.delete(SchedulerApiUrl.SINGLE_TASK % data['id'],
+        response_delete = requests.delete(SchedulerApiUrl.TASK % data['id'],
                                           headers=auth_header)
 
         assert response_delete.status_code == 404
@@ -155,7 +155,7 @@ class TestSchedulerDelete(object):
         invalid_header['Authorization'] = 'Bearer invalid_token'
 
         for job_id in jobs:
-            response_remove = requests.delete(SchedulerApiUrl.SINGLE_TASK + job_id,
+            response_remove = requests.delete(SchedulerApiUrl.TASK + job_id,
                                               headers=invalid_header)
             assert response_remove.status_code == 401
 

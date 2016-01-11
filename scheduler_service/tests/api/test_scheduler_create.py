@@ -30,7 +30,7 @@ class TestSchedulerCreate(object):
         assert response.status_code == 400
 
         # Assign task_name in job post data (general task)
-        job_config['task_name'] = 'Custom General Named Task'
+        job_config['task_name'] = 'Custom_General_Named_Task'
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header_no_user)
         assert response.status_code == 201
@@ -43,7 +43,7 @@ class TestSchedulerCreate(object):
         assert response.status_code == 400
 
         # Let's delete jobs now
-        response_remove = requests.delete(SchedulerApiUrl.SINGLE_TASK % data['id'],
+        response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
                                           headers=auth_header_no_user)
         assert response_remove.status_code == 200
 
@@ -75,7 +75,7 @@ class TestSchedulerCreate(object):
         assert data['id']
 
         # Let's delete jobs now
-        response_remove = requests.delete(SchedulerApiUrl.SINGLE_TASK % data['id'],
+        response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
