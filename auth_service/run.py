@@ -2,7 +2,7 @@ __author__ = 'ufarooqi'
 
 import os
 from auth_service.oauth import app
-from social_network_service.common.routes import GTApis
+from auth_service.common.routes import GTApis
 
 if __name__ == '__main__':
     os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'

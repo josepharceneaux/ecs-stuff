@@ -1,5 +1,6 @@
 """Run Social Network Service APP"""
 import os
+
 from social_network_service.app.app import app
 from social_network_service.common.routes import GTApis
 

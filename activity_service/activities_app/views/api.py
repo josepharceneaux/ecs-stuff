@@ -16,6 +16,7 @@ from flask.ext.cors import CORS
 # application specific
 from activity_service.activities_app import db
 from activity_service.common.models.user import User
+from activity_service.common.routes import ActivityApi
 from activity_service.common.models.misc import Activity
 from activity_service.common.utils.auth_utils import require_oauth
 from activity_service.common.utils.activity_utils import ActivityMessageIds
@@ -34,7 +35,7 @@ CORS(mod, resources={
 })
 
 
-@mod.route('/activities/<page>', methods=['GET'])
+@mod.route(ActivityApi.ACTIVITIES_PAGE, methods=['GET'])
 @require_oauth()
 def get_activities(page):
     """
@@ -62,7 +63,7 @@ def get_activities(page):
                                              end_datetime=request_end_time, page=request_page))
 
 
-@mod.route('/activities/', methods=['POST'])
+@mod.route(ActivityApi.ACTIVITIES, methods=['POST'])
 @require_oauth()
 def post_activity():
     valid_user_id = request.user.id

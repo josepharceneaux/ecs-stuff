@@ -1,4 +1,5 @@
 """Tests for the Widget Service API"""
+
 __author__ = 'erikfarmer'
 # Standard Library.
 import datetime
@@ -29,28 +30,27 @@ from widget_service.widget_app.views.utils import parse_city_and_state_ids_from_
 from widget_service.widget_app.views.utils import parse_interest_ids_from_form
 from widget_service.common.models.db import db
 from widget_service.widget_app import app
-
+from widget_service.common.routes import WidgetApiUrl
 
 db.init_app(app)
 db.app = app
-APP_URL = 'http://0.0.0.0:8006/v1'
 
 
 def test_api_returns_domain_filtered_aois(domain_fixture, request):
-    response = r.get('{}/domains/{}/interests'.format(APP_URL, gt_url_encrypt(domain_fixture.id)))
+    response = r.get(WidgetApiUrl.DOMAIN_INTERESTS % gt_url_encrypt(domain_fixture.id))
     assert response.status_code == 200
     assert len(json.loads(response.content)['primary_interests']) == 10
     assert len(json.loads(response.content)['secondary_interests']) == 2
 
 
 def test_api_returns_university_name_list(request):
-    response = r.get('{}/universities'.format(APP_URL))
+    response = r.get(WidgetApiUrl.UNIVERSITIES)
     assert response.status_code == 200
     assert len(json.loads(response.content)['universities_list']) == 5
 
 
 def test_api_returns_majors_name_list(domain_fixture, request):
-    response = r.get('{}/domains/{}/majors'.format(APP_URL, gt_url_encrypt(domain_fixture.id)))
+    response = r.get(WidgetApiUrl.DOMAIN_MAJORS % gt_url_encrypt(domain_fixture.id))
     assert response.status_code == 200
     assert len(json.loads(response.content)['majors']) == 5
 
@@ -70,8 +70,8 @@ def test_military_candidate(widget_page_fixture, request):
         'jobFrequency': 'Weekly'
     }
 
-    post_response = r.post('{}/domains/potato/widgets/{}'.format(
-        APP_URL, gt_url_encrypt(widget_page_fixture.id)), data=candidate_dict)
+    post_response = r.post(WidgetApiUrl.DOMAIN_WIDGETS
+                           % ('potato', gt_url_encrypt(widget_page_fixture.id)), data=candidate_dict)
     assert post_response.status_code == 201
     # TODO expand to check DB that our fields are there
     assert 'success' in post_response.content
@@ -93,8 +93,8 @@ def test_university_candidate(widget_page_fixture, request):
         'jobFrequency': 'Monthly'
     }
 
-    post_response = r.post('{}/domains/potato/widgets/{}'.format(
-        APP_URL, gt_url_encrypt(widget_page_fixture.id)), data=candidate_dict)
+    post_response = r.post(WidgetApiUrl.DOMAIN_WIDGETS
+                           % ('potato', gt_url_encrypt(widget_page_fixture.id)), data=candidate_dict)
     assert post_response.status_code == 201
     # TODO expand to check DB that our fields are there
     assert 'success' in post_response.content
@@ -111,8 +111,8 @@ def test_corporate_candidate(widget_page_fixture, request):
         'jobFrequency': 'Daily'
     }
 
-    post_response = r.post('{}/domains/potato/widgets/{}'.format(
-        APP_URL, gt_url_encrypt(widget_page_fixture.id)), data=candidate_dict)
+    post_response = r.post(WidgetApiUrl.DOMAIN_WIDGETS
+                           % ('potato', gt_url_encrypt(widget_page_fixture.id)), data=candidate_dict)
     assert post_response.status_code == 201
     # TODO expand to check DB that our fields are there
     assert 'success' in post_response.content
@@ -129,8 +129,8 @@ def test_expired_token_refreshes(widget_page_fixture, expired_oauth_credentials,
         'jobFrequency': 'Daily'
     }
 
-    post_response = r.post('{}/domains/potato/widgets/{}'.format(
-        APP_URL, gt_url_encrypt(widget_page_fixture.id)), data=candidate_dict)
+    post_response = r.post(WidgetApiUrl.DOMAIN_WIDGETS
+                           % ('potato',  gt_url_encrypt(widget_page_fixture.id)), data=candidate_dict)
     assert post_response.status_code == 201
     # TODO expand to check DB that our fields are there
     assert 'success' in post_response.content
@@ -165,7 +165,7 @@ def test_parse_location_ids_from_form(extra_field_fixtures, request):
 
 def test_health_check():
     import requests
-    response = requests.get('http://127.0.0.1:8007/healthcheck')
+    response = requests.get(WidgetApiUrl.HEALTH_CHECK)
     assert response.status_code == 200
 
 

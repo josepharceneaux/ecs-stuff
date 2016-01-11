@@ -99,7 +99,8 @@ def test_user_service_delete(access_token_first, user_first, user_second):
 # Test PUT operation of user API
 def test_user_service_put(access_token_first, user_first, user_second):
 
-    data = {'first_name': gen_salt(6), 'last_name': gen_salt(6), 'phone': '+1 226-581-1027', 'email': ''}
+    data = {'first_name': gen_salt(6), 'last_name': gen_salt(6), 'phone': '+1 226-581-1027', 'email': '',
+            'last_read_datetime': datetime.utcnow().replace(microsecond=0).isoformat()}
 
     # Logged-in user trying to update non-existing user
     response, status_code = user_api(access_token_first, user_first.id + 1000, data=data, action='PUT')
@@ -121,8 +122,14 @@ def test_user_service_put(access_token_first, user_first, user_second):
     response, status_code = user_api(access_token_first, user_second.id, data=data, action='PUT')
     assert status_code == 401
 
+    # Logged-in user trying to update user with invalid last_read_datetime
+    data['last_read_datetime'] = 'INVALID_DATE'
+    response, status_code = user_api(access_token_first, user_first.id, data=data, action='PUT')
+    assert status_code == 400
+
     # Logged-in user trying to update user with invalid email
     data['email'] = 'INVALID_EMAIL'
+    data['last_read_datetime'] = datetime.utcnow().replace(microsecond=0).isoformat()
     response, status_code = user_api(access_token_first, user_first.id, data=data, action='PUT')
     assert status_code == 400
 
@@ -145,6 +152,7 @@ def test_user_service_put(access_token_first, user_first, user_second):
     assert user_first.first_name == data['first_name']
     assert user_first.last_name == data['last_name']
     assert user_first.phone == data['phone']
+    assert user_first.last_read_datetime.isoformat() == data['last_read_datetime']
 
     # Adding 'CAN_EDIT_USERS' in user_first
     add_role_to_test_user(user_first, ['CAN_EDIT_USERS'])

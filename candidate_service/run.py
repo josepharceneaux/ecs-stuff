@@ -1,5 +1,5 @@
 from candidate_service.candidate_app import app
-from social_network_service.common.routes import GTApis
+from candidate_service.common.routes import GTApis
 
 
 if __name__ == '__main__':

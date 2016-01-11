@@ -1,3 +1,4 @@
+
 __author__ = 'zohaib'
 
 # Standard Library
@@ -20,7 +21,7 @@ from social_network_service.utilities import import_from_dist_packages
 from social_network_service.utilities import milliseconds_since_epoch
 from social_network_service.utilities import milliseconds_since_epoch_to_dt
 from social_network_service.utilities import milliseconds_since_epoch_local_time
-from conftest import APP_URL
+from social_network_service.common.routes import SocialNetworkApiUrl
 
 TEST_DATE = datetime(2015, 1, 1)
 UTC_TIMEZONE = timezone('UTC')
@@ -230,5 +231,5 @@ def test_milliseconds_since_epoch_to_dt():
 
 
 def test_health_check():
-    response = requests.get(APP_URL + '/healthcheck')
+    response = requests.get(SocialNetworkApiUrl.HEALTH_CHECK)
     assert response.status_code == 200
