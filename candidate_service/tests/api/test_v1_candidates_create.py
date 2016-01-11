@@ -29,6 +29,8 @@ from candidate_sample_data import (
     candidate_areas_of_interest, candidate_custom_fields, reset_all_data_except_param,
     complete_candidate_data_for_posting
 )
+from candidate_service.common.models.candidate import CandidateEmail
+
 
 # TODO: Implement server side custom error codes and add necessary assertions
 ######################## Candidate ########################
@@ -174,6 +176,28 @@ def test_create_candidate_with_invalid_fields(sample_user, user_auth):
     create_resp = post_to_candidate_resource(token, data)
     print response_info(create_resp)
     assert create_resp.status_code == 400
+
+
+def test_create_candidates_in_bulk_with_one_erroneous_data(sample_user, user_auth):
+    """
+    Test: Attempt to create few candidates, one of which will have bad data
+    Expect: 400, no record should be added to the db
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    email_1, email_2 = fake.safe_email(), fake.safe_email()
+    data = {'candidates': [
+        {'emails': [{'label': None, 'address': email_1}]},
+        {'emails': [{'label': None, 'address': email_2}]},
+        {'emails': [{'label': None, 'address': 'bad_email_at.com'}]}
+    ]}
+    create_resp = post_to_candidate_resource(token, data)
+    print response_info(create_resp)
+    assert create_resp.status_code == 400
+    assert CandidateEmail.get_by_address(email_address=email_1) == None
+    assert CandidateEmail.get_by_address(email_address=email_2) == None
 
 
 ######################## CandidateAddress ########################

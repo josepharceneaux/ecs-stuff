@@ -251,6 +251,10 @@ class CandidateEmail(db.Model):
         for email in cls.query.filter_by(candidate_id=candidate_id).all():
             email.is_default = False
 
+    @classmethod
+    def get_by_address(cls, email_address):
+        return cls.query.filter_by(address=email_address).first()
+
 
 class CandidatePhoto(db.Model):
     __tablename__ = 'candidate_photo'
