@@ -4,8 +4,12 @@ __author__ = 'erikfarmer'
 import re
 import random
 import string
+<<<<<<< HEAD
 from ..models.user import User, UserScopedRoles
 from itertools import izip_longest
+=======
+from ..models.user import User, UserScopedRoles, DomainRole
+>>>>>>> 3d5fd167d33af41992032f17745daedc3bbb1938
 
 
 def random_word(length):
@@ -25,6 +29,9 @@ def add_role_to_test_user(test_user, role_names):
     :param list[str] role_names: List of role names
     :return:
     """
+    for role_name in role_names:
+        if not DomainRole.get_by_name(role_name):
+            DomainRole.save(role_name)
     UserScopedRoles.add_roles(test_user, role_names)
 
 

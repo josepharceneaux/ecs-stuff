@@ -1,4 +1,5 @@
 """Test suite for Flask Resume Parsing MicroService."""
+
 __author__ = 'erik@getTalent.com'
 # Standard library
 import json
@@ -20,16 +21,13 @@ from resume_service.tests.test_fixtures import token_fixture
 from resume_service.tests.test_fixtures import user_fixture
 from resume_service.tests.test_fixtures import phone_label_fixture
 from resume_service.tests.test_fixtures import product_fixture
-
-APP_URL = 'http://0.0.0.0:8003/v1'
-API_URL = APP_URL + '/parse_resume'
-BATCH_URL = APP_URL + '/batch'
+from resume_service.common.routes import ResumeApiUrl, ResumeApi
 
 
 def test_base_url():
     """Test that the application root lists the endpoint."""
-    base_response = r.get(APP_URL)
-    assert '/parse_resume' in base_response.content
+    base_response = r.get(ResumeApiUrl.API_URL % '')
+    assert ResumeApi.PARSE in base_response.content
 
 
 def test_doc_from_fp_key(token_fixture):
@@ -98,7 +96,7 @@ def test_2448_3264_jpg_by_post(token_fixture):
 def test_no_token_fails():
     """Test that tokens are required."""
     filepicker_key = '0169173d35beaf1053e79fdf1b5db864.docx'
-    test_response = r.post(API_URL, data=dict(filepicker_key=filepicker_key))
+    test_response = r.post(ResumeApiUrl.PARSE, data=dict(filepicker_key=filepicker_key))
     json_obj = json.loads(test_response.content)
     assert 'error' in json_obj
 
@@ -106,7 +104,7 @@ def test_no_token_fails():
 def test_invalid_token_fails():
     """Test that VALID tokens are required."""
     filepicker_key = '0169173d35beaf1053e79fdf1b5db864.docx'
-    test_response = r.post(API_URL,
+    test_response = r.post(ResumeApiUrl.PARSE,
                            headers={'Authorization': 'Bearer %s' % 'invalidtokenzzzz'},
                            data=dict(filepicker_key=filepicker_key))
     json_obj = json.loads(test_response.content)
@@ -127,14 +125,14 @@ def test_batch_processing(user_fixture, token_fixture):
     unused_queue_status = add_fp_keys_to_queue(['e68b51ee1fd62db589d2669c4f63f381.pdf'], user_id)
     redis_client.expire(queue_string, 10)
     # mock hit from scheduler service.
-    response = r.get(BATCH_URL + '/{}'.format(user_id),
+    response = r.get(ResumeApiUrl.BATCH_URL + '/{}'.format(user_id),
                      headers={'Authorization': 'Bearer %s' % token_fixture.access_token})
     assert 'candidate' in response.content
 
 
 def test_health_check():
     """HealthCheck/PingDom test endpoint."""
-    response = r.get('http://127.0.0.1:8003/healthcheck')
+    response = r.get(ResumeApiUrl.HEALTH_CHECK)
     assert response.status_code == 200
 
 
@@ -142,20 +140,21 @@ def fetch_resume_post_response(token_fixture, file_name, create_mode=''):
     """Posts file to local test auth server for json formatted resumes."""
     current_dir = os.path.dirname(__file__)
     with open(os.path.join(current_dir, 'test_resumes/{}'.format(file_name)), 'rb') as resume_file:
-        response = r.post(API_URL,
-                          headers={'Authorization': 'Bearer %s' % token_fixture.access_token},
-                          data=dict(
-                              resume_file_name=file_name,
-                              create_candidate=create_mode,
-                          ),
-                          files=dict(resume_file=resume_file),
-                         )
+        response = r.post(ResumeApiUrl.PARSE,
+                            headers={'Authorization': 'Bearer %s' % token_fixture.access_token},
+                            data=dict(
+                                # files = dict(resume_file=raw_file),
+                                resume_file_name=file_name,
+                                create_candidate=create_mode,
+                            ),
+                          files = dict(resume_file=resume_file),
+                          )
     return json.loads(response.content)
 
 
 def fetch_resume_fp_key_response(token_fixture, fp_key):
     """Posts FilePicker key to local test auth server for json formatted resumes."""
-    test_response = r.post(API_URL,
-                           headers={'Authorization': 'Bearer %s' % token_fixture.access_token},
-                           data=dict(filepicker_key=fp_key))
+    test_response = r.post(ResumeApiUrl.PARSE, headers={
+        'Authorization': 'Bearer %s' % token_fixture.access_token},
+        data=dict(filepicker_key=fp_key))
     return json.loads(test_response.content)

@@ -1,4 +1,5 @@
 """API for the Resume Parsing App"""
+
 __author__ = 'erikfarmer'
 # Framework specific
 from flask import Blueprint
@@ -10,6 +11,8 @@ from resume_service.common.utils.auth_utils import require_oauth
 from resume_service.resume_parsing_app.views.parse_lib import process_resume
 from resume_service.resume_parsing_app.views.batch_lib import add_fp_keys_to_queue
 from resume_service.resume_parsing_app.views.batch_lib import _process_batch_item
+from resume_service.common.routes import ResumeApi
+
 
 PARSE_MOD = Blueprint('resume_api', __name__)
 
@@ -25,11 +28,11 @@ CORS(PARSE_MOD, resources={
 
 @PARSE_MOD.route('/')
 def index():
-    """Uptime checkable URL"""
-    return '/parse_resume'
+    """Uptime/version checkable URL"""
+    return '/' + ResumeApi.PARSE
 
 
-@PARSE_MOD.route('/parse_resume', methods=['POST'])
+@PARSE_MOD.route(ResumeApi.PARSE, methods=['POST'])
 @require_oauth()
 def resume_post_reciever():
     """
@@ -58,7 +61,7 @@ def resume_post_reciever():
     return jsonify(**(process_resume(parse_params)))
 
 
-@PARSE_MOD.route('/batch', methods=['POST'])
+@PARSE_MOD.route(ResumeApi.BATCH, methods=['POST'])
 @require_oauth()
 def post_files_to_queue():
     """
@@ -75,7 +78,7 @@ def post_files_to_queue():
         return jsonify(**{'error': {'message': 'No filenames provided'}}), 400
 
 
-@PARSE_MOD.route('/batch/<int:user_id>', methods=['GET'])
+@PARSE_MOD.route(ResumeApi.BATCH + '/<int:user_id>', methods=['GET'])
 @require_oauth()
 def process_batch_request(user_id):
     """

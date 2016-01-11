@@ -16,7 +16,8 @@
 
   margin: 0;
   text-decoration: none;
-  display: block;
+  display: inline-block;
+  width: 100%;
   text-align: center;
   margin-top: $padding--tiny;
   margin-bottom: $padding--tiny;
@@ -24,7 +25,6 @@
   @include helper--media($breakpoint--small) {
     margin-top: 0;
     margin-bottom: 0;
-    display: inline-block;
     width: auto;
   }
 
@@ -43,6 +43,14 @@
     outline: none;
     border-color: $color--teal;
     box-shadow: 0 0 0 2px $color--green;
+  }
+
+  .form__fieldset & {
+    margin-top: $margin--row;
+  }
+
+  .form__fieldset--footer & {
+    margin-top: 0;
   }
 }
 

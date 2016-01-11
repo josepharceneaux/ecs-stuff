@@ -1,3 +1,5 @@
+from candidate_pool_service.common.routes import CandidatePoolApi
+
 __author__ = 'ufarooqi'
 
 import json
@@ -9,6 +11,7 @@ from datetime import datetime, timedelta
 from flask_restful import Resource
 from candidate_pool_service.common.error_handling import *
 from candidate_pool_service.common.talent_api import TalentApi
+from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.common.models.talent_pools_pipelines import *
@@ -491,7 +494,7 @@ class TalentPipelineCandidates(Resource):
         return get_candidates_of_talent_pipeline(talent_pipeline)
 
 
-@talent_pipeline_blueprint.route('/talent-pipelines/stats', methods=['POST'])
+@talent_pipeline_blueprint.route(CandidatePoolApi.TALENT_PIPELINE_STATS, methods=['POST'])
 @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
 @require_all_roles('CAN_UPDATE_TALENT_PIPELINES_STATS')
 def update_talent_pipelines_stats():
@@ -499,13 +502,14 @@ def update_talent_pipelines_stats():
     This method will update the statistics of all talent-pipelines daily.
     :return: None
     """
-    try:
-        talent_pipelines = TalentPipeline.query.all()
+    talent_pipelines = TalentPipeline.query.all()
 
-        # 2 hours are added to account for scheduled job run time
-        yesterday_datetime = datetime.utcnow() - timedelta(days=1, hours=2)
+    # 2 hours are added to account for scheduled job run time
+    yesterday_datetime = datetime.utcnow() - timedelta(days=1, hours=2)
 
-        for talent_pipeline in talent_pipelines:
+    for talent_pipeline in talent_pipelines:
+
+        try:
             yesterday_stat = TalentPipelineStats.query.filter(
                     TalentPipelineStats.talent_pipeline_id == talent_pipeline.id,
                     TalentPipelineStats.added_datetime > yesterday_datetime).first()
@@ -537,18 +541,16 @@ def update_talent_pipelines_stats():
                                                            candidates_engagement=percentage_candidates_engagement
                                                            )
             db.session.add(talent_pipeline_stat)
+            db.session.commit()
 
-        db.session.commit()
-        return '', 204
+        except Exception as e:
+            db.session.rollback()
+            logger.exception("An exception occured update statistics of TalentPipelines because: %s" % e.message)
 
-    except Exception as e:
-        db.session.rollback()
-        email_error_to_admins("Couldn't update statistics of TalentPipelines because: %s" % e.message,
-                              subject="TalentPipeline Statistics")
-        raise InvalidUsage(error_message="Couldn't update statistics of TalentPools because: %s" % e.message)
+    return '', 204
 
 
-@talent_pipeline_blueprint.route('/talent-pipeline/<int:talent_pipeline_id>/stats', methods=['GET'])
+@talent_pipeline_blueprint.route(CandidatePoolApi.TALENT_PIPELINE_GET_STATS, methods=['GET'])
 @require_oauth()
 def get_talent_pipeline_stats(talent_pipeline_id):
     """
@@ -591,6 +593,6 @@ def get_talent_pipeline_stats(talent_pipeline_id):
     ]})
 
 api = TalentApi(talent_pipeline_blueprint)
-api.add_resource(TalentPipelineApi, '/talent-pipelines/<int:id>', '/talent-pipelines')
-api.add_resource(TalentPipelineSmartListApi, '/talent-pipeline/<int:id>/smart_lists')
-api.add_resource(TalentPipelineCandidates, '/talent-pipeline/<int:id>/candidates')
+api.add_resource(TalentPipelineApi,CandidatePoolApi.TALENT_PIPELINE, CandidatePoolApi.TALENT_PIPELINES)
+api.add_resource(TalentPipelineSmartListApi, CandidatePoolApi.TALENT_PIPELINE_SMARTLISTS)
+api.add_resource(TalentPipelineCandidates, CandidatePoolApi.TALENT_PIPELINE_CANDIDATES)
