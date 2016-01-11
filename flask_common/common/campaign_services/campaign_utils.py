@@ -2,6 +2,12 @@
 Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com
 
    This module contains functions used by campaign services. e.g. sms_campaign_service etc.
+Functions in this file are
+    - frequency_id_to_seconds()
+    - to_utc_str()
+    - unix_time()
+    - get_model()
+    - get_activity_message_name() etc.
 """
 
 # Standard Imports
@@ -12,18 +18,20 @@ from datetime import datetime
 from pytz import timezone
 from dateutil.tz import tzutc
 from flask import current_app
-from ska import sign_url, Signature
+from ska import (sign_url, Signature)
 
-# Application Specific
-from ..models.misc import UrlConversion
-from ..error_handling import InvalidUsage
+# Database Models
 from ..models.sms_campaign import SmsCampaign
-from sms_campaign_service.common.error_handling import InvalidUsage, ResourceNotFound
-from sms_campaign_service.common.routes import SchedulerApiUrl
-from sms_campaign_service.common.utils.handy_functions import http_request
+from ..models.email_marketing import EmailCampaign
+from ..models.misc import (UrlConversion, Frequency)
+
+# Common Utils
+from ..routes import SchedulerApiUrl
+from ..utils.handy_functions import http_request
 from ..talent_config_manager import TalentConfigKeys
 from ..utils.activity_utils import ActivityMessageIds
 from ..utils.handy_functions import snake_case_to_pascal_case
+from ..error_handling import (InvalidUsage, ResourceNotFound)
 
 
 class CampaignType(object):
@@ -31,7 +39,7 @@ class CampaignType(object):
     This is the class to avoid global variables for names of campaign
     """
     SMS = SmsCampaign.__tablename__
-    PUSH = 'push_campaign'  # TODO: remove hard code
+    EMAIL = EmailCampaign.__tablename__
 
 
 class FrequencyIds(object):
@@ -39,12 +47,13 @@ class FrequencyIds(object):
     This is the class to avoid global variables for following names.
     These variables show the frequency_id associated with type of schedule.
     """
-    ONCE = 1
-    DAILY = 2
-    WEEKLY = 3
-    BIWEEKLY = 4
-    MONTHLY = 5
-    YEARLY = 6
+    ONCE = Frequency.get_id_by_description('Once')
+    DAILY = Frequency.get_id_by_description('Daily')
+    WEEKLY = Frequency.get_id_by_description('Weekly')
+    BIWEEKLY = Frequency.get_id_by_description('Biweekly')
+    MONTHLY = Frequency.get_id_by_description('Monthly')
+    YEARLY = Frequency.get_id_by_description('Yearly')
+    CUSTOM = Frequency.get_id_by_description('Custom')
 
 
 def frequency_id_to_seconds(frequency_id):
@@ -110,15 +119,16 @@ def get_model(file_name, model_name):
     :param model_name: Name of model we want to import
     :return: import the required class and return it
     """
+    logger = current_app.config[TalentConfigKeys.LOGGER]
     module_name = file_name + '_service.common.models.' + file_name
     try:
         module = importlib.import_module(module_name)
         _class = getattr(module, model_name)
     except ImportError:
-        current_app.config['LOGGER'].exception('Error importing model %s' % model_name)
+        logger.exception('Error importing model %s' % model_name)
         raise
     except AttributeError:
-        current_app.config['LOGGER'].exception('%s has no attribute %s' % (file_name, model_name))
+        logger.exception('%s has no attribute %s' % (file_name, model_name))
         raise
     return _class
 
@@ -169,7 +179,7 @@ def get_activity_message_id_from_name(activity_name):
         _type = get_activity_message_id(activity_name)
         return _type
     except InvalidUsage:
-        current_app.config['LOGGER'].exception(
+        current_app.config[TalentConfigKeys.LOGGER].exception(
             'update_stats_and_create_click_activity: Activity type not found for %s. '
             'Cannot create click activity' % activity_name)
 
@@ -257,6 +267,7 @@ def processing_after_campaign_sent(base_class, sends_result, user_id, campaign_t
         .. see also:: callback_campaign_sent() method in SmsCampaignBase class inside
                         sms_campaign_service/sms_campaign_base.py
     """
+    logger = current_app.config[TalentConfigKeys.LOGGER]
     if isinstance(sends_result, list):
         total_sends = sends_result.count(True)
         blast_model = get_model(campaign_type, snake_case_to_pascal_case(campaign_type) + 'Blast')
@@ -265,19 +276,19 @@ def processing_after_campaign_sent(base_class, sends_result, user_id, campaign_t
         if total_sends:
             # update SMS campaign blast. i.e. update number of sends.
             try:
-                blast_obj.update(sends=blast_obj.sends+total_sends)
+                blast_obj.update(sends=blast_obj.sends + total_sends)
             except Exception:
-                current_app.config['LOGGER'].exception(
+                logger.exception(
                     'callback_campaign_sent: Error updating campaign(id:%s) blast(id:%s)'
                     % (campaign.id, blast_obj.id))
                 raise
             base_class.create_campaign_send_activity(user_id, campaign,
                                                      auth_header, total_sends)
-        current_app.config['LOGGER'].debug(
+        logger.debug(
             'process_send: %s(id:%s) has been sent to %s candidate(s).'
             '(User(id:%s))' % (campaign_type, campaign.id, total_sends, user_id))
     else:
-        current_app.config['LOGGER'].error('callback_campaign_sent: Result is not a list')
+        logger.error('callback_campaign_sent: Result is not a list')
 
 
 def delete_scheduled_task(scheduled_task_id, auth_header):
@@ -290,6 +301,7 @@ def delete_scheduled_task(scheduled_task_id, auth_header):
     :return: True if task is not present or has been unscheduled successfully, False otherwise
     :rtype: bool
     """
+    logger = current_app.config[TalentConfigKeys.LOGGER]
     if not auth_header:
         raise InvalidUsage('Auth header is required for deleting scheduled task.')
     if not scheduled_task_id:
@@ -297,10 +309,8 @@ def delete_scheduled_task(scheduled_task_id, auth_header):
     response = http_request('DELETE', SchedulerApiUrl.TASK % scheduled_task_id,
                             headers=auth_header)
     if response.ok or response.status_code == ResourceNotFound.http_status_code():
-        current_app.config['LOGGER'].info(
-            "delete_scheduled_task: Task(id:%s) has been removed from scheduler_service"
-            % scheduled_task_id)
+        logger.info("delete_scheduled_task: Task(id:%s) has been removed from scheduler_service"
+                    % scheduled_task_id)
         return True
-    current_app.config['LOGGER'].error(
-        "delete_scheduled_task: Task(id:%s) couldn't be deleted." % scheduled_task_id)
+    logger.error("delete_scheduled_task: Task(id:%s) couldn't be deleted." % scheduled_task_id)
     return False

@@ -2,13 +2,19 @@
 Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com
 
     Here we have validators for campaign services.
+
+Functions in this file are
+    - validate_headers()
+    - validate_datetime_format()
+    - is_datetime_in_future()
+    - validation_of_data_to_schedule_campaign() etc.
 """
 
 # Standard Imports
 import re
-from datetime import datetime, timedelta
 from dateutil.tz import tzutc
 from flask import current_app
+from datetime import (datetime, timedelta)
 from werkzeug.exceptions import BadRequest
 
 # Third Party
@@ -17,8 +23,9 @@ from dateutil.parser import parse
 # Common utils
 from ..models.smartlist import Smartlist
 from campaign_utils import frequency_id_to_seconds
-from ..error_handling import InvalidUsage, ResourceNotFound
-from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER, find_missing_items
+from ..talent_config_manager import TalentConfigKeys
+from ..error_handling import (InvalidUsage, ResourceNotFound)
+from ..utils.handy_functions import (JSON_CONTENT_TYPE_HEADER, find_missing_items)
 
 
 def validate_header(request):
@@ -78,7 +85,7 @@ def is_datetime_in_valid_format_and_in_future(datetime_str):
     :return:
     """
     if not is_datetime_in_future(if_str_datetime_in_valid_format_get_datetime_obj(datetime_str)):
-        current_app.config['LOGGER'].error('Datetime str should be in future. %s' % datetime_str)
+        current_app.config[TalentConfigKeys.LOGGER].error('Datetime str should be in future. %s' % datetime_str)
         raise InvalidUsage("Given datetime(%s) should be in future" % datetime_str)
 
 
@@ -244,9 +251,9 @@ def validate_form_data(form_data, required_fields):
                 not_found_smartlist_ids.append(smartlist_id)
                 raise ResourceNotFound
         except InvalidUsage:
-            current_app.config['LOGGER'].exception('validate_form_data: Invalid smartlist id')
+            current_app.config[TalentConfigKeys.LOGGER].exception('validate_form_data: Invalid smartlist id')
         except ResourceNotFound:
-            current_app.config['LOGGER'].exception(
+            current_app.config[TalentConfigKeys.LOGGER].exception(
                 'validate_form_data: Smartlist(id:%s) not found in database.' % str(smartlist_id))
     # If all provided smartlist ids are invalid, raise InvalidUsage
     if len(form_data.get('smartlist_ids')) == len(invalid_smartlist_ids):

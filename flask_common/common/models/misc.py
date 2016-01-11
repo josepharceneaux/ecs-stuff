@@ -178,6 +178,11 @@ class Frequency(db.Model):
     def __repr__(self):
         return "<Frequency (id = %r)>" % self.id
 
+    @classmethod
+    def get_id_by_description(cls, desc):
+        assert desc, 'No description given'
+        return cls.query.filter(cls.description.lower() == desc.lower()).first().id
+
 
 # Even though the table name is major I'm keeping the model class singular.
 class Major(db.Model):

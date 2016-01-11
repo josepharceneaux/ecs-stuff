@@ -233,8 +233,6 @@ class SmsCampaignApiUrl(object):
                                                       SmsCampaignWords.REDIRECT + '/%s')
 
 
-
-
 class CandidateApiUrl(object):
     """
     Rest URLs of candidate_service

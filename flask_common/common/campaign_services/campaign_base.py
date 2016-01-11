@@ -23,19 +23,19 @@ from abc import abstractmethod
 # Third Party
 from celery import chord
 from flask import current_app
-
+from requests import ConnectionError
 
 # Database Models
-from requests import ConnectionError
 from ..models.db import db
-from ..models.user import Token, User
+from ..models.user import (Token, User)
 from ..models.misc import UrlConversion
 from ..models.candidate import Candidate
 from ..models.email_marketing import EmailCampaignBlast
-from ...common.models.sms_campaign import (SmsCampaign, SmsCampaignBlast, SmsCampaignSmartlist)
+from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast, SmsCampaignSmartlist)
 
 # Common Utils
 from ..utils.scheduler_utils import SchedulerUtils
+from ..talent_config_manager import TalentConfigKeys
 from ..utils.activity_utils import ActivityMessageIds
 from ..utils.handy_functions import (http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER,
                                      snake_case_to_pascal_case)
@@ -290,7 +290,8 @@ class CampaignBase(object):
                 self.campaign_create_activity(campaign_obj)
             except ConnectionError:
                 # In case activity_service is not running, we proceed normally and log the error.
-                current_app.config['LOGGER'].error('Error creating activity for campaign creation')
+                current_app.config[TalentConfigKeys.LOGGER].error(
+                    'Error creating activity for campaign creation')
         return campaign_obj.id, invalid_smartlist_ids, not_found_smartlist_ids
 
     def create_or_update_campaign(self, campaign_data, campaign_id=None):
@@ -490,10 +491,10 @@ class CampaignBase(object):
         campaign_type = campaign_obj.__tablename__
         campaign_model = get_model(campaign_type, snake_case_to_pascal_case(campaign_type))
         if not campaign_model.delete(campaign_obj):
-            current_app.config['LOGGER'].error("%s(id:%s) couldn't be deleted."
+            current_app.config[TalentConfigKeys.LOGGER].error("%s(id:%s) couldn't be deleted."
                                                % (campaign_type, campaign_obj.id))
             return False
-        current_app.config['LOGGER'].info(
+        current_app.config[TalentConfigKeys.LOGGER].info(
             'process_delete_campaign: %s(id:%s) has been deleted successfully.'
             % (campaign_type, campaign_obj.id))
         return True
@@ -620,7 +621,7 @@ class CampaignBase(object):
                                 headers=self.oauth_header)
         # If any error occurs on POST call, we log the error inside http_request().
         if 'id' in response.json():
-            current_app.config['LOGGER'].info('%s(id:%s) has been scheduled.'
+            current_app.config[TalentConfigKeys.LOGGER].info('%s(id:%s) has been scheduled.'
                                               % (self.campaign.__tablename__, self.campaign.id))
             data_to_schedule.update({'scheduler_task_id': response.json()['id']})
             return data_to_schedule
@@ -786,7 +787,7 @@ class CampaignBase(object):
             if not unscheduled:
                 return None
         else:
-            current_app.config['LOGGER'].info(
+            current_app.config[TalentConfigKeys.LOGGER].info(
                 'Task(id:%s) is already scheduled with given data.' % scheduled_task['id'])
             return scheduled_task['id']
 
@@ -832,12 +833,12 @@ class CampaignBase(object):
             candidate_ids = [candidate['id'] for candidate in response.json()['candidates']]
             candidates = [Candidate.get_by_id(_id) for _id in candidate_ids]
         except Exception:
-            current_app.config['LOGGER'].exception('get_smartlist_candidates: Error while '
+            current_app.config[TalentConfigKeys.LOGGER].exception('get_smartlist_candidates: Error while '
                                                    'fetching candidates for smartlist(id:%s)'
                                                    % campaign_smartlist.smartlist_id)
             raise
         if not candidates:
-            current_app.config['LOGGER'].error('get_smartlist_candidates: '
+            current_app.config[TalentConfigKeys.LOGGER].error('get_smartlist_candidates: '
                                                'No Candidate found. smartlist id is %s. '
                                                '(User(id:%s))' % (campaign_smartlist.smartlist_id,
                                                                   self.user.id))
@@ -898,7 +899,7 @@ class CampaignBase(object):
             # results in failure status.
             chord(tasks)(callback)
         except Exception:
-            current_app.config['LOGGER'].exception(
+            current_app.config[TalentConfigKeys.LOGGER].exception(
                 'send_campaign_to_candidates: Error while sending tasks to Celery')
 
     @abstractmethod
@@ -997,7 +998,8 @@ class CampaignBase(object):
         if not result:
             raise InvalidUsage("request from URL %s was not verified." % requested_url,
                                error_code=InvalidUsage.http_status_code())
-        current_app.config['LOGGER'].info("Requested URL %s has been verified." % requested_url)
+        current_app.config[TalentConfigKeys.LOGGER].info("Requested URL %s has been verified."
+                                                         % requested_url)
 
     @classmethod
     def process_url_redirect(cls, url_conversion_id, campaign_type, verify_signature=False,
@@ -1069,7 +1071,7 @@ class CampaignBase(object):
         .. see also:: SmsCampaignUrlRedirection() class in
                     sms_campaign_service/sms_campaign_app/v1_sms_campaign_api.py
         """
-        current_app.config['LOGGER'].debug(
+        current_app.config[TalentConfigKeys.LOGGER].debug(
             'process_url_redirect: Processing for URL redirection(id:%s).' % url_conversion_id)
         if verify_signature:  # Need to validate the signed URL
             cls.pre_process_url_redirect(request_args, requested_url)
@@ -1170,7 +1172,7 @@ class CampaignBase(object):
                             source_table=source.__tablename__,
                             params=params,
                             headers=auth_header)
-        current_app.config['LOGGER'].info(
+        current_app.config[TalentConfigKeys.LOGGER].info(
             'create_campaign_clicked_activity: candidate(id:%s) clicked on %s(id:%s). '
             '(User(id:%s))' % (candidate.id, source.__tablename__, source.id, candidate.user_id))
 
