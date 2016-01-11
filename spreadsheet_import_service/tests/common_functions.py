@@ -18,11 +18,23 @@ from spreadsheet_import_service.common.routes import SpreadsheetImportApiUrl
 def import_spreadsheet_candidates(access_token, candidate_data=None, spreadsheet_file_name=None, is_csv=True,
                                   import_candidates=False):
 
+    from spreadsheet_import_service.common.models.user import User, Token
+    from spreadsheet_import_service.common.tests.conftest import custom_field_for_domain
+    current_user = Token.query.filter_by(access_token=access_token).first()
+    if current_user:
+        current_user_id = current_user.user_id
+        current_user_domain_id = User.query.get(current_user_id).domain_id
+        list_of_custom_fields = custom_field_for_domain(domain_id=current_user_domain_id)
+        custom_field_id = list_of_custom_fields[0].id
+        custom_field = 'custom_field.{}'.format(custom_field_id)
+    else:
+        custom_field = 'custom_field.3'
+
     header_row = ['candidate.formattedName', 'candidate_email.address', 'candidate_phone.value',
                   'candidate_experience.organization', 'candidate_experience.position',
                   'candidate_education.schoolName', 'student_year', 'candidate_address.city', 'candidate_address.state',
                   'candidate_education_degree_bullet.concentrationType', 'area_of_interest.description',
-                  'custom_field.3', 'area_of_interest.description', 'candidate_experience.organization',
+                  custom_field, 'area_of_interest.description', 'candidate_experience.organization',
                   'candidate_experience.position']
 
     headers = {'Authorization': 'Bearer %s' % access_token, 'Content-Type': 'application/json'}

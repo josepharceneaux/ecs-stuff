@@ -584,19 +584,11 @@ def test_delete_can_custom_field(sample_user, user_auth):
     custom_field_id_1 = db.session.query(CandidateCustomField).get(can_custom_fields[0]['id']).custom_field_id
     custom_field_id_2 = db.session.query(CandidateCustomField).get(can_custom_fields[1]['id']).custom_field_id
 
-    # Current number of Candidate's custom fields
-    can_custom_fields_count = len(can_custom_fields)
-
     # Remove one of Candidate's custom field
     updated_resp = request_to_candidate_custom_field_resource(token, 'delete', candidate_id,
                                                               custom_field_id=can_custom_fields[0]['id'])
     print response_info(updated_resp)
-
-    # Retrieve Candidate after update
-    can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
-
     assert updated_resp.status_code == 204
-    assert len(can_dict_after_update['custom_fields']) == can_custom_fields_count - 1
     assert db.session.query(CustomField).get(custom_field_id_1) # CustomField should still be in db
     assert db.session.query(CustomField).get(custom_field_id_2) # CustomField should still be in db
 

@@ -269,7 +269,7 @@ def custom_field_for_domain(domain_id):
     """
     Function will add CustomField to user's domain
     :type user: User
-    :rtype  [CustomField]
+    :rtype:  [CustomField]
     """
     import datetime
     custom_fields = [{'name': fake.word(), 'type': 'string'}, {'name': fake.word(), 'type': 'string'}]

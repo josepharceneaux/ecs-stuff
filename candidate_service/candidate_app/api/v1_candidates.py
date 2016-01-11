@@ -517,20 +517,17 @@ class CandidateCustomFieldResource(Resource):
         candidate_id, can_cf_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user_and_its_domain(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized',
-                                 error_code=custom_error.CANDIDATE_FORBIDDEN)
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         # Custom fields must belong to user's domain
         if not is_custom_field_authorized(authed_user.domain_id, [can_cf_id]):
-            raise ForbiddenError(error_message='Not authorized',
-                                 error_code=custom_error.CUSTOM_FIELD_FORBIDDEN)
+            raise ForbiddenError('Not authorized', custom_error.CUSTOM_FIELD_FORBIDDEN)
 
         if can_cf_id:  # Delete specified custom field
             candidate_custom_field = CandidateCustomField.get_by_id(_id=can_cf_id)
             if not candidate_custom_field:
-                raise NotFoundError(error_message='Candidate custom field not found',
-                                    error_code=custom_error.CUSTOM_FIELD_NOT_FOUND)
+                raise NotFoundError('Candidate custom field not found', custom_error.CUSTOM_FIELD_NOT_FOUND)
 
             db.session.delete(candidate_custom_field)
 
