@@ -42,16 +42,16 @@ def _get_host_name(service_name, port_number):
     """
     env = os.getenv(TalentConfigKeys.ENV_KEY) or 'dev'
     if env in ['dev', 'circle']:
+        # This looks like http://127.0.0.1:8001 (for auth service)
         return LOCAL_HOST + ':' + str(port_number) + '%s'
     elif env == 'qa':
-        # This looks like http://auth-service-webdev.gettalent.com (for auth service)
-        return 'http://' + service_name + '-staging' + TALENT_DOMAIN + '%s'
+        # This looks like https://auth-service-webdev.gettalent.com (for auth service)
+        return 'https://' + service_name + '-staging' + TALENT_DOMAIN + '%s'
     elif env == 'prod':
-        # This looks like http://auth-service.gettalent.com (for auth service)
-        # TODO: Verify this URL after deployment
-        return 'http://' + service_name + TALENT_DOMAIN + '%s'
+        # This looks like https://auth-service.gettalent.com (for auth service)
+        return 'https://' + service_name + TALENT_DOMAIN + '%s'
     else:
-        raise Exception("Environment variable GT_ENVIRONMENT not set correctly")
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly: Should be dev, circle, qa, or prod")
 
 
 def _get_api_relative_version(api_version):
