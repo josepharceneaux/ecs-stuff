@@ -9,12 +9,10 @@ from datetime import timedelta
 from scheduler_service import init_app
 from scheduler_service.common.tests.conftest import pytest, datetime, User, user_auth, sample_user, test_domain, \
     test_org, test_culture
-from scheduler_service.common.routes import AuthApiUrl, SchedulerApiUrl
 # Application Specific
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 
 APP, celery = init_app()
-APP_URL = SchedulerApiUrl.SCHEDULER_SERVICE_HOST_NAME
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 

@@ -20,7 +20,7 @@ from werkzeug.exceptions import BadRequest
 from scheduler_service import TalentConfigKeys, flask_app
 from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token
-from scheduler_service.common.routes import SchedulerApiUrl
+from scheduler_service.common.routes import SchedulerApiUrl, SchedulerApi
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse
 from scheduler_service.common.talent_api import TalentApi
 from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFound, ForbiddenError
@@ -36,14 +36,14 @@ api.route = types.MethodType(api_route, api)
 
 # Enable CORS
 CORS(scheduler_blueprint, resources={
-    SchedulerApiUrl.SCHEDULER_MULTIPLE_TASKS + '*': {
+    SchedulerApi.SCHEDULER_MULTIPLE_TASKS + '*': {
         'origins': '*',
         'allow_headers': ['Content-Type', 'Authorization']
     }
 })
 
 
-@api.route(SchedulerApiUrl.SCHEDULER_MULTIPLE_TASKS)
+@api.route(SchedulerApi.SCHEDULER_MULTIPLE_TASKS)
 class Tasks(Resource):
     """
         This resource returns a list of tasks or it can be used to create or schedule a task using POST.
@@ -247,7 +247,7 @@ class Tasks(Resource):
                         not_removed=not_removed), 207
 
 
-@api.route(SchedulerApiUrl.SCHEDULER_MULTIPLE_TASK_RESUME)
+@api.route(SchedulerApi.SCHEDULER_MULTIPLE_TASK_RESUME)
 class ResumeTasks(Resource):
     """
         This resource resumes a previously paused jobs/tasks
@@ -307,7 +307,7 @@ class ResumeTasks(Resource):
         raise InvalidUsage('Bad request, invalid data in request', error_code=400)
 
 
-@api.route(SchedulerApiUrl.SCHEDULER_MULTIPLE_TASK_PAUSE)
+@api.route(SchedulerApi.SCHEDULER_MULTIPLE_TASK_PAUSE)
 class PauseTasks(Resource):
     """
         This resource pauses jobs/tasks which can be resumed again
@@ -365,7 +365,7 @@ class PauseTasks(Resource):
         raise InvalidUsage('Bad request, invalid data in request', error_code=400)
 
 
-@api.route(SchedulerApiUrl.SCHEDULER_NAMED_TASK)
+@api.route(SchedulerApi.SCHEDULER_NAMED_TASK)
 class TaskByName(Resource):
     """
         This resource returns a specific task based on name
@@ -480,7 +480,7 @@ class TaskByName(Resource):
         raise ResourceNotFound(error_message="Task with name %s not found" % _name)
 
 
-@api.route(SchedulerApiUrl.SCHEDULER_ONE_TASK)
+@api.route(SchedulerApi.SCHEDULER_ONE_TASK)
 class TaskById(Resource):
     """
         This resource returns a specific task based on id or delete a task
@@ -602,7 +602,7 @@ class TaskById(Resource):
         raise ResourceNotFound(error_message="Task not found")
 
 
-@api.route(SchedulerApiUrl.SCHEDULER_SINGLE_TASK_RESUME)
+@api.route(SchedulerApi.SCHEDULER_SINGLE_TASK_RESUME)
 class ResumeTaskById(Resource):
     """
         This resource resumes a previously paused job/task
@@ -644,7 +644,7 @@ class ResumeTaskById(Resource):
         raise ResourceNotFound(error_message="Task not found")
 
 
-@api.route(SchedulerApiUrl.SCHEDULER_SINGLE_TASK_PAUSE)
+@api.route(SchedulerApi.SCHEDULER_SINGLE_TASK_PAUSE)
 class PauseTaskById(Resource):
     """
         This resource pauses job/task which can be resumed again
@@ -686,7 +686,7 @@ class PauseTaskById(Resource):
         raise ResourceNotFound(error_message="Task not found")
 
 
-@api.route(SchedulerApiUrl.SCHEDULER_TASKS_TEST)
+@api.route(SchedulerApi.SCHEDULER_TASKS_TEST)
 class SendRequestTest(Resource):
     """
         This resource is dummy endpoint which is used to call send_request method for testing
