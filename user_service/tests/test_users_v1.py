@@ -100,7 +100,7 @@ def test_user_service_delete(access_token_first, user_first, user_second):
 def test_user_service_put(access_token_first, user_first, user_second):
 
     data = {'first_name': gen_salt(6), 'last_name': gen_salt(6), 'phone': '+1 226-581-1027', 'email': '',
-            'last_read_datetime': str(datetime.utcnow().replace(microsecond=0))}
+            'last_read_datetime': datetime.utcnow().replace(microsecond=0).isoformat()}
 
     # Logged-in user trying to update non-existing user
     response, status_code = user_api(access_token_first, user_first.id + 1000, data=data, action='PUT')
@@ -129,7 +129,7 @@ def test_user_service_put(access_token_first, user_first, user_second):
 
     # Logged-in user trying to update user with invalid email
     data['email'] = 'INVALID_EMAIL'
-    data['last_read_datetime'] = str(datetime.utcnow().replace(microsecond=0))
+    data['last_read_datetime'] = datetime.utcnow().replace(microsecond=0).isoformat()
     response, status_code = user_api(access_token_first, user_first.id, data=data, action='PUT')
     assert status_code == 400
 
@@ -152,7 +152,7 @@ def test_user_service_put(access_token_first, user_first, user_second):
     assert user_first.first_name == data['first_name']
     assert user_first.last_name == data['last_name']
     assert user_first.phone == data['phone']
-    assert str(user_first.last_read_datetime)== str(data['last_read_datetime'])
+    assert user_first.last_read_datetime.isoformat() == data['last_read_datetime']
 
     # Adding 'CAN_EDIT_USERS' in user_first
     add_role_to_test_user(user_first, ['CAN_EDIT_USERS'])

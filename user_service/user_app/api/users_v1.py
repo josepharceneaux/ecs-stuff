@@ -47,7 +47,7 @@ class UserApi(Resource):
                         'phone': requested_user.phone,
                         'registration_id': requested_user.registration_id,
                         'dice_user_id': requested_user.dice_user_id,
-                        'last_read_datetime': str(requested_user.last_read_datetime)
+                        'last_read_datetime': requested_user.last_read_datetime.isoformat()
                         }}
 
         # User id is not provided so logged-in user wants to get all users of its domain
