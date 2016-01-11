@@ -30,9 +30,9 @@ def _get_host_name(service_name, port_number):
         http://127.0.0.1:8001%s
 
     For QA:
-            auth-service-staging.gettalent.com (for auth service)
+            http://auth-service-staging.gettalent.com (for auth service)
     For PROD:
-            auth-service.gettalent.com (for auth service)
+            http://auth-service.gettalent.com (for auth service)
     :param service_name: Name of service
     :param port_number: Port number of service
     :type service_name: str
@@ -43,13 +43,12 @@ def _get_host_name(service_name, port_number):
     if env in ['dev', 'circle']:
         return LOCAL_HOST + ':' + str(port_number) + '%s'
     elif env == 'qa':
-        # This looks like auth-service-webdev.gettalent.com (for auth service)
-        # TODO: Verify this URL after deployment
-        return service_name + '-staging' + TALENT_DOMAIN + '%s'
+        # This looks like http://auth-service-webdev.gettalent.com (for auth service)
+        return 'http://' + service_name + '-staging' + TALENT_DOMAIN + '%s'
     elif env == 'prod':
-        # This looks like auth-service.gettalent.com (for auth service)
+        # This looks like http://auth-service.gettalent.com (for auth service)
         # TODO: Verify this URL after deployment
-        return service_name + TALENT_DOMAIN + '%s'
+        return 'http://' + service_name + TALENT_DOMAIN + '%s'
     else:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly")
 
