@@ -1,4 +1,5 @@
 from flask import Flask
+from flask.ext.cors import CORS
 from candidate_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from candidate_service.common.routes import CandidateApi, HEALTH_CHECK
 
@@ -34,7 +35,13 @@ try:
 
     from candidate_service.common.talent_api import TalentApi
     api = TalentApi(app=app)
-
+    # Enable CORS
+    CORS(app, resources={
+        r'%s/*' % CandidateApi.CANDIDATES: {
+            'origins': '*',
+            'allow_headers': ['Content-Type', 'Authorization']
+        }
+    })
     # API RESOURCES
     ######################## CandidateResource ########################
     api.add_resource(
