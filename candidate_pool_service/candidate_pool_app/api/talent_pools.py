@@ -12,6 +12,7 @@ from candidate_pool_service.common.error_handling import *
 from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.routes import CandidateApiUrl
 from candidate_pool_service.common.routes import CandidatePoolApi
+from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
@@ -541,13 +542,14 @@ def update_talent_pools_stats():
     :return: None
     """
 
-    try:
-        talent_pools = TalentPool.query.all()
+    talent_pools = TalentPool.query.all()
 
-        # 2 hours are added to account for scheduled job run time
-        yesterday_datetime = datetime.utcnow() - timedelta(days=1, hours=2)
+    # 2 hours are added to account for scheduled job run time
+    yesterday_datetime = datetime.utcnow() - timedelta(days=1, hours=2)
 
-        for talent_pool in talent_pools:
+    for talent_pool in talent_pools:
+
+        try:
             yesterday_stat = TalentPoolStats.query.filter(TalentPoolStats.talent_pool_id == talent_pool.id,
                                                           TalentPoolStats.added_datetime > yesterday_datetime).first()
             talent_pool_candidate_ids =[talent_pool_candidate.candidate_id for talent_pool_candidate in
@@ -573,16 +575,13 @@ def update_talent_pools_stats():
                                                    number_of_candidates_removed_or_added=total_candidates,
                                                    candidates_engagement=percentage_candidates_engagement)
             db.session.add(talent_pool_stat)
-
-        if talent_pools:
             db.session.commit()
-        return '', 204
 
-    except Exception as e:
-        db.session.rollback()
-        email_error_to_admins("Couldn't update statistics of TalentPools because: %s" % e.message,
-                              subject="TalentPool Statistics")
-        raise InvalidUsage(error_message="Couldn't update statistics of TalentPools because: %s" % e.message)
+        except Exception as e:
+            db.session.rollback()
+            logger.exception("An exception occured update statistics of TalentPools because: %s" % e.message)
+
+    return '', 204
 
 
 @talent_pool_blueprint.route(CandidatePoolApi.TALENT_POOL_GET_STATS, methods=['GET'])

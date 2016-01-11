@@ -6,6 +6,72 @@ from candidate_pool_service.common.utils.handy_functions import add_role_to_test
 from common_functions import *
 
 
+def test_update_talent_pool_stats(access_token_first, user_first, talent_pool, candidate_first,
+                                  candidate_second):
+
+    data = {
+        'talent_pool_candidates': [candidate_first.id, candidate_second.id]
+    }
+
+    # Logged-in user trying to update statistics of all talent_pools in database
+    status_code = talent_pool_update_stats(access_token_first)
+    assert status_code == 401
+
+    # Adding 'CAN_UPDATE_TALENT_POOLS_STATS' role to user_first
+    add_role_to_test_user(user_first, ['CAN_UPDATE_TALENT_POOLS_STATS'])
+
+    # Logged-in user trying to add candidates to talent_pool
+    response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='POST')
+    assert status_code == 200
+
+    # Logged-in user trying to update statistics of all talent_pools in database
+    status_code = talent_pool_update_stats(access_token_first)
+    assert status_code == 204
+
+
+def test_get_talent_pool_stats(access_token_first, access_token_second, talent_pool):
+
+    # Emptying TalentPoolStats table
+    TalentPoolStats.query.delete()
+    talent_pool_stats = TalentPoolStats(talent_pool_id=talent_pool.id, total_candidates=10,
+                                        number_of_candidates_removed_or_added=3, candidates_engagement=40)
+
+    db.session.add(talent_pool_stats)
+    db.session.commit()
+
+    # Logged-in user trying to get statistics of a non-existing talent_pool
+    response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id + 1000)
+    assert status_code == 404
+
+    # Logged-in user trying to get statistics of a talent_pool of different user
+    response, status_code = talent_pool_get_stats(access_token_second, talent_pool.id)
+    assert status_code == 403
+
+    # Logged-in user trying to get statistics of a talent_pool but with empty params
+    response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id)
+    assert status_code == 400
+
+    from_date = str(datetime.utcnow() - timedelta(2))
+    to_date = str(datetime.utcnow() - timedelta(1))
+
+    # Logged-in user trying to get statistics of a talent_pipeline
+    response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id, {'from_date': from_date,
+                                                                                       'to_date': to_date})
+    assert status_code == 200
+    assert not response.get('talent_pool_data')
+
+    from_date = str(datetime.utcnow() - timedelta(1))
+    to_date = str(datetime.utcnow())
+
+    # Logged-in user trying to get statistics of a talent_pool
+    response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id, {'from_date': from_date,
+                                                                                       'to_date': to_date})
+    assert status_code == 200
+    assert len(response.get('talent_pool_data')) == 1
+    assert response.get('talent_pool_data')[0].get('total_number_of_candidates') == 10
+    assert response.get('talent_pool_data')[0].get('number_of_candidates_removed_or_added') == 3
+
+
 def test_talent_pool_api_post(access_token_first, user_first):
 
     data = {
@@ -432,64 +498,6 @@ def test_talent_pool_candidate_api_delete(access_token_first, user_first, talent
     # Logged-in user trying to delete existing candidates from a talent-pool
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='DELETE')
     assert status_code == 404
-
-
-def test_update_talent_pool_stats(access_token_first, access_token_second, user_first, talent_pool, candidate_first,
-                                  candidate_second):
-
-    data = {
-        'talent_pool_candidates': [candidate_first.id, candidate_second.id]
-    }
-
-    # Logged-in user trying to update statistics of all talent_pools in database
-    status_code = talent_pool_update_stats(access_token_first)
-    assert status_code == 401
-
-    # Adding 'CAN_UPDATE_TALENT_POOLS_STATS' role to user_first
-    add_role_to_test_user(user_first, ['CAN_UPDATE_TALENT_POOLS_STATS'])
-
-    # Logged-in user trying to add candidates to talent_pool
-    response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='POST')
-    assert status_code == 200
-
-    # Logged-in user trying to update statistics of all talent_pools in database
-    status_code = talent_pool_update_stats(access_token_first)
-    assert status_code == 204
-
-    # Logged-in user trying to get statistics of a non-existing talent_pool
-
-    response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id + 1000)
-    assert status_code == 404
-
-    # Logged-in user trying to get statistics of a talent_pool of different user
-    response, status_code = talent_pool_get_stats(access_token_second, talent_pool.id)
-    assert status_code == 403
-
-    # Logged-in user trying to get statistics of a talent_pool but with empty params
-    response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id)
-    assert status_code == 400
-
-    from_date = str(datetime.utcnow() - timedelta(2))
-    to_date = str(datetime.utcnow() - timedelta(1))
-
-    # Logged-in user trying to get statistics of a talent_pipeline
-    response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id, {'from_date': from_date,
-                                                                                       'to_date': to_date})
-    assert status_code == 200
-    assert not response.get('talent_pool_data')
-
-    from_date = str(datetime.utcnow() - timedelta(1))
-    to_date = str(datetime.utcnow())
-
-    # Logged-in user trying to get statistics of a talent_pool
-    response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id, {'from_date': from_date,
-                                                                                       'to_date': to_date})
-    assert status_code == 200
-    assert len(response.get('talent_pool_data')) >= 1
-    assert 2 in [talent_pool_data.get('number_of_candidates_removed_or_added') for talent_pool_data in
-                 response.get('talent_pool_data')]
-    assert 2 in [talent_pool_data.get('total_number_of_candidates') for talent_pool_data in
-                 response.get('talent_pool_data')]
 
 
 def test_health_check():

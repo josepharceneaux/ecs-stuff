@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from flask_restful import Resource
 from candidate_pool_service.common.error_handling import *
 from candidate_pool_service.common.talent_api import TalentApi
+from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.common.models.talent_pools_pipelines import *
@@ -501,13 +502,14 @@ def update_talent_pipelines_stats():
     This method will update the statistics of all talent-pipelines daily.
     :return: None
     """
-    try:
-        talent_pipelines = TalentPipeline.query.all()
+    talent_pipelines = TalentPipeline.query.all()
 
-        # 2 hours are added to account for scheduled job run time
-        yesterday_datetime = datetime.utcnow() - timedelta(days=1, hours=2)
+    # 2 hours are added to account for scheduled job run time
+    yesterday_datetime = datetime.utcnow() - timedelta(days=1, hours=2)
 
-        for talent_pipeline in talent_pipelines:
+    for talent_pipeline in talent_pipelines:
+
+        try:
             yesterday_stat = TalentPipelineStats.query.filter(
                     TalentPipelineStats.talent_pipeline_id == talent_pipeline.id,
                     TalentPipelineStats.added_datetime > yesterday_datetime).first()
@@ -539,16 +541,13 @@ def update_talent_pipelines_stats():
                                                            candidates_engagement=percentage_candidates_engagement
                                                            )
             db.session.add(talent_pipeline_stat)
-
-        if talent_pipelines:
             db.session.commit()
-        return '', 204
 
-    except Exception as e:
-        db.session.rollback()
-        email_error_to_admins("Couldn't update statistics of TalentPipelines because: %s" % e.message,
-                              subject="TalentPipeline Statistics")
-        raise InvalidUsage(error_message="Couldn't update statistics of TalentPools because: %s" % e.message)
+        except Exception as e:
+            db.session.rollback()
+            logger.exception("An exception occured update statistics of TalentPipelines because: %s" % e.message)
+
+    return '', 204
 
 
 @talent_pipeline_blueprint.route(CandidatePoolApi.TALENT_PIPELINE_GET_STATS, methods=['GET'])
