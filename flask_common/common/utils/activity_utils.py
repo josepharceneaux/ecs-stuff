@@ -49,3 +49,4 @@ class ActivityMessageIds(object):
     CAMPAIGN_SMS_CLICK = 25
     CAMPAIGN_SMS_REPLY = 26
     CAMPAIGN_SMS_CREATE = 27
+    CAMPAIGN_SCHEDULE = 28

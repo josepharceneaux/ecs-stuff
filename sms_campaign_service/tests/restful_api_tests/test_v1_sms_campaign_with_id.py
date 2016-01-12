@@ -21,7 +21,7 @@ from sms_campaign_service.common.error_handling import (UnauthorizedError, Resou
 from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
 
 
-class TestSmsCampaignWithIdHTTPGet(object):
+class TestSmsCampaignWithIdHTTPGET(object):
     """
     This class contains tests for endpoint /campaigns/:id and HTTP method GET.
 
@@ -82,7 +82,7 @@ class TestSmsCampaignWithIdHTTPGet(object):
             'Record should not be found (404)'
 
 
-class TestSmsCampaignWithIdHTTPPost(object):
+class TestSmsCampaignWithIdHTTPPUT(object):
     """
     This class contains tests for endpoint /campaigns/:id and HTTP method POST.
     """
@@ -92,8 +92,8 @@ class TestSmsCampaignWithIdHTTPPost(object):
         User auth token is invalid. It should get Unauthorized error.
         :return:
         """
-        response = requests.post(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
-                                 headers=dict(Authorization='Bearer %s' % 'invalid_token'))
+        response = requests.put(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
+                                headers=dict(Authorization='Bearer %s' % 'invalid_token'))
         assert response.status_code == UnauthorizedError.http_status_code(), \
             'It should be unauthorized (401)'
 
@@ -104,8 +104,8 @@ class TestSmsCampaignWithIdHTTPPost(object):
         :param auth_token: access token of current user
         :return:
         """
-        response = requests.post(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
-                                 headers=dict(Authorization='Bearer %s' % auth_token))
+        response = requests.put(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
+                                headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should be a bad request (400)'
 
@@ -123,7 +123,7 @@ class TestSmsCampaignWithIdHTTPPost(object):
         data.update({'name': modified_name})
         scheduler_data = generate_campaign_schedule_data()
         data.update(generate_campaign_schedule_data())
-        response_post = requests.post(
+        response_post = requests.put(
             SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
             headers=valid_header,
             data=json.dumps(data))
@@ -150,7 +150,7 @@ class TestSmsCampaignWithIdHTTPPost(object):
         """
         modified_name = 'Modified Name'
         campaign_valid_data.update({'name': modified_name})
-        response_post = requests.post(
+        response_post = requests.put(
             SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_other_user.id,
             headers=valid_header,
             data=json.dumps(campaign_valid_data))
@@ -169,7 +169,7 @@ class TestSmsCampaignWithIdHTTPPost(object):
             SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
             headers=valid_header)
         assert response_delete.status_code == 200, 'should get ok response (200)'
-        response_post = requests.post(
+        response_post = requests.put(
             SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
             headers=valid_header,
             data=json.dumps(campaign_valid_data))
@@ -182,8 +182,8 @@ class TestSmsCampaignWithIdHTTPPost(object):
         User auth token is valid but no data is provided. It should get bad request error.
         :return:
         """
-        response = requests.post(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
-                                 headers=valid_header)
+        response = requests.put(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
+                                headers=valid_header)
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should get bad request error (400)'
 
@@ -193,9 +193,9 @@ class TestSmsCampaignWithIdHTTPPost(object):
         This tries to update SMS campaign record (in sms_campaign table) providing data in dict
         format rather than JSON. It should get bad request error.
         """
-        response = requests.post(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
-                                 headers=valid_header,
-                                 data=campaign_valid_data)
+        response = requests.put(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
+                                headers=valid_header,
+                                data=campaign_valid_data)
         assert response.status_code == InvalidUsage.http_status_code(), \
             'Should be a bad request (400)'
 
@@ -211,9 +211,9 @@ class TestSmsCampaignWithIdHTTPPost(object):
                                             fo current user.
         :return:
         """
-        response = requests.post(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
-                                 headers=valid_header,
-                                 data=json.dumps(campaign_data_unknown_key_text))
+        response = requests.put(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
+                                headers=valid_header,
+                                data=json.dumps(campaign_data_unknown_key_text))
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should get bad request error'
 
@@ -228,9 +228,9 @@ class TestSmsCampaignWithIdHTTPPost(object):
         :return:
         """
         campaign_valid_data['body_text'] += 'http://' + fake.word()
-        response = requests.post(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
-                                 headers=valid_header,
-                                 data=json.dumps(campaign_valid_data))
+        response = requests.put(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
+                                headers=valid_header,
+                                data=json.dumps(campaign_valid_data))
         assert response.status_code == InternalServerError.http_status_code()
         assert response.json()['error']['code'] == SmsCampaignApiException.INVALID_URL_FORMAT
 

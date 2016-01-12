@@ -34,6 +34,7 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.utils.validators import format_phone_number
+from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from sms_campaign_service.common.error_handling import (ResourceNotFound, ForbiddenError,
@@ -43,7 +44,7 @@ from sms_campaign_service.common.utils.handy_functions import (find_missing_item
 # Service Specific
 from sms_campaign_service.sms_campaign_app import celery_app, app, logger
 from sms_campaign_service.common.campaign_services.campaign_utils import \
-(sign_redirect_url, CampaignType, processing_after_campaign_sent)
+    (sign_redirect_url, CampaignType, processing_after_campaign_sent)
 from sms_campaign_service.modules.validators import (validate_url_format, search_urls_in_text,
                                                      validate_urls_in_body_text)
 from sms_campaign_service.modules.handy_functions import (TwilioSMS, replace_localhost_with_ngrok)
@@ -221,6 +222,8 @@ class SmsCampaignBase(CampaignBase):
         :return: UserPhone obj
         :rtype: UserPhone
         """
+        if not self.user:
+            raise InvalidUsage('User can not be None to get user_phone record')
         # TWILIO is a name defined in config
         phone_label_id = PhoneLabel.phone_label_id_from_phone_label(TWILIO)
         user_phone = UserPhone.get_by_user_id_and_phone_label_id(self.user.id,
@@ -254,8 +257,10 @@ class SmsCampaignBase(CampaignBase):
         :return: UserPhone obj
         :rtype: UserPhone
         """
+        if not phone_label_id:
+            raise InvalidUsage('phone_label_id must be an integer.')
         twilio_obj = TwilioSMS()
-        if app.config['IS_DEV']:
+        if app.config[TalentConfigKeys.IS_DEV]:
             # Buy Twilio TEST number so that we won't be charged
             number_to_buy = TWILIO_TEST_NUMBER
         else:
@@ -292,6 +297,9 @@ class SmsCampaignBase(CampaignBase):
         data = {'user_id': user_id,
                 'phone_label_id': phone_label_id,
                 'value': phone_number}
+        empty_items = find_missing_items(data, verify_values_of_all_keys=True)
+        if empty_items:
+            raise InvalidUsage('Missing fields to save user_phone are %s.' % empty_items)
         user_phone_obj = UserPhone.get_by_user_id_and_phone_label_id(user_id,
                                                                      phone_label_id)
         if user_phone_obj:
@@ -365,14 +373,16 @@ class SmsCampaignBase(CampaignBase):
         **See Also**
         .. see also:: ScheduleSmsCampaign() method in v1_sms_campaign_api.py.
         """
+        if not data_to_schedule or not isinstance(data_to_schedule, dict):
+            raise InvalidUsage('Data to schedule a task cannot be empty. It should be a dict.')
         data_to_schedule.update(
             {'url_to_run_task': SmsCampaignApiUrl.SEND % self.campaign.id}
         )
         # get scheduler task_id created on scheduler_service
-        updated_data = super(SmsCampaignBase, self).schedule(data_to_schedule)
+        scheduler_task_id = super(SmsCampaignBase, self).schedule(data_to_schedule)
         # update sms_campaign record with task_id
-        self.create_or_update_campaign(updated_data, campaign_id=self.campaign.id)
-        return updated_data['scheduler_task_id']
+        self.campaign.update(scheduler_task_id=scheduler_task_id)
+        return scheduler_task_id
 
     @staticmethod
     def validate_ownership_of_campaign(campaign_id, current_user_id):
@@ -388,9 +398,9 @@ class SmsCampaignBase(CampaignBase):
         :rtype: SmsCampaign
         """
         if not isinstance(campaign_id, (int, long)):
-            raise InvalidUsage('Include campaign_id as int|long')
+            raise InvalidUsage('Include campaign_id as int|long.')
         if not isinstance(current_user_id, (int, long)):
-            raise InvalidUsage('Include current_user_id as int|long')
+            raise InvalidUsage('Include current_user_id as int|long.')
         campaign_obj = SmsCampaign.get_by_id(campaign_id)
         if not campaign_obj:
             raise ResourceNotFound('SMS Campaign(id=%s) not found.' % campaign_id)
@@ -711,11 +721,14 @@ class SmsCampaignBase(CampaignBase):
             logger.info("url_conversion: Shortened URL is: %s" % short_url)
             if error:
                 raise GoogleShortenUrlAPIError(error)
-            # update the source_url in "url_conversion" record
-            self.create_or_update_url_conversion(url_conversion_id=url_conversion_id,
-                                                 source_url=long_url)
             short_urls.append(short_url)
             url_conversion_ids.append(url_conversion_id)
+            if app.config[TalentConfigKeys.IS_DEV]:
+                # update the 'source_url' in "url_conversion" record.
+                # Source URL should not be saved in database. But we have tests written
+                # for Redirection endpoint. That's why in case of DEV, I am saving source URL here.
+                self.create_or_update_url_conversion(url_conversion_id=url_conversion_id,
+                                                     source_url=long_url)
         updated_text_body = self.transform_body_text(urls_in_body_text, short_urls)
         return updated_text_body, url_conversion_ids
 
@@ -817,7 +830,7 @@ class SmsCampaignBase(CampaignBase):
         """
         if not isinstance(candidate_phone_value, basestring):
             raise InvalidUsage('Include candidate_phone as str')
-        if app.config['IS_DEV']:
+        if app.config[TalentConfigKeys.IS_DEV]:
             # send SMS using Twilio Test Credentials
             sender_phone = TWILIO_TEST_NUMBER
         else:

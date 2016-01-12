@@ -27,12 +27,12 @@ def _get_host_name(service_name, port_number):
 
     For DEV, CIRCLE, In case of auth_service we'll get
 
-        http://127.0.0.1:8001%s
-
+            http://127.0.0.1:8001%s
     For QA:
             http://auth-service-staging.gettalent.com (for auth service)
     For PROD:
             http://auth-service.gettalent.com (for auth service)
+
     :param service_name: Name of service
     :param port_number: Port number of service
     :type service_name: str

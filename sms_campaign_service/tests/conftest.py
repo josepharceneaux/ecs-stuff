@@ -4,11 +4,11 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
     This file contains pyTest fixtures for tests of SMS Campaign Service.
 """
 # Standard Import
-from datetime import timedelta
 import time
+from datetime import timedelta
+
 # Application Specific
 # common conftest
-from sms_campaign_service.common.campaign_services.campaign_utils import FrequencyIds
 from sms_campaign_service.common.tests.conftest import *
 
 # Service specific
@@ -27,7 +27,9 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
                                                              SmsCampaignBlast, SmsCampaignSend,
                                                              SmsCampaignSendUrlConversion)
 # Common Utils
-from sms_campaign_service.common.utils.handy_functions import JSON_CONTENT_TYPE_HEADER, to_utc_str
+from sms_campaign_service.common.utils.handy_functions import (JSON_CONTENT_TYPE_HEADER,
+                                                               to_utc_str)
+from sms_campaign_service.common.campaign_services.campaign_utils import FrequencyIds
 
 SLEEP_TIME = 10  # needed to add this because tasks run on Celery
 

@@ -354,7 +354,7 @@ class CampaignBase(object):
             raise InvalidUsage('create_campaign_smartlist: Given campaign '
                                'is not instance of model sms_campaign.')
         campaign_smartlist_model = get_model(
-            campaign.__tablename__, snake_case_to_pascal_case(campaign.__tablename__)+'Smartlist')
+            campaign.__tablename__, snake_case_to_pascal_case(campaign.__tablename__) + 'Smartlist')
         for smartlist_id in smartlist_ids:
             data = {'smartlist_id': smartlist_id, 'sms_campaign_id': campaign.id}
             db_record = campaign_smartlist_model.get_by_campaign_id_and_smartlist_id(campaign.id,
@@ -478,6 +478,7 @@ class CampaignBase(object):
         if missing_required_fields:
             raise InvalidUsage('process_delete_campaign: Missing required fields are: %s'
                                % missing_required_fields)
+        logger = current_app.config[TalentConfigKeys.LOGGER]
         # get campaign_obj, scheduled_task data and auth_header
         campaign_obj, scheduled_task, auth_header = \
             cls.get_authorized_campaign_obj_and_scheduled_task(kwargs['campaign_id'],
@@ -491,12 +492,11 @@ class CampaignBase(object):
         campaign_type = campaign_obj.__tablename__
         campaign_model = get_model(campaign_type, snake_case_to_pascal_case(campaign_type))
         if not campaign_model.delete(campaign_obj):
-            current_app.config[TalentConfigKeys.LOGGER].error("%s(id:%s) couldn't be deleted."
-                                               % (campaign_type, campaign_obj.id))
+            logger.error("%s(id:%s) couldn't be deleted." % (campaign_type, campaign_obj.id))
             return False
-        current_app.config[TalentConfigKeys.LOGGER].info(
-            'process_delete_campaign: %s(id:%s) has been deleted successfully.'
-            % (campaign_type, campaign_obj.id))
+        logger.info(
+            'process_delete_campaign: %s(id:%s) has been deleted successfully.' % (campaign_type,
+                                                                                   campaign_obj.id))
         return True
 
     @classmethod
@@ -596,11 +596,13 @@ class CampaignBase(object):
                             'data_to_post': None
                             }
         The validation of data_to_schedule is done inside pre_process_schedule() class method.
+        Once campaign has been scheduled, we create an activity e.g.
+
 
         :param data_to_schedule: This contains the required data to schedule a particular job
         :type data_to_schedule: dict
-        :return: Dict containing newly created task id
-        :rtype: dict
+        :return: id of scheduled task
+        :rtype: str
         :exception: Invalid usage
 
         **See Also**
@@ -621,10 +623,12 @@ class CampaignBase(object):
                                 headers=self.oauth_header)
         # If any error occurs on POST call, we log the error inside http_request().
         if 'id' in response.json():
+            # create campaign scheduled activity
+            self.create_campaign_schedule_activity(self.user.id, self.campaign, self.oauth_header)
             current_app.config[TalentConfigKeys.LOGGER].info('%s(id:%s) has been scheduled.'
-                                              % (self.campaign.__tablename__, self.campaign.id))
-            data_to_schedule.update({'scheduler_task_id': response.json()['id']})
-            return data_to_schedule
+                                                             % (self.campaign.__tablename__,
+                                                                self.campaign.id))
+            return response.json()['id']
         else:
             raise InvalidUsage(
                 "Error occurred while scheduling a task. Error details are '%s'."
@@ -679,6 +683,42 @@ class CampaignBase(object):
         # set data to POST with above URL
         task['post_data'] = data_to_schedule.get('data_to_post', dict())
         return task
+
+    @classmethod
+    def create_campaign_schedule_activity(cls, user, source, auth_header):
+        """
+        - Here we set "params" and "type" of activity to be stored in db table "Activity"
+            when a user schedule a campaign.
+
+        - Activity will appear as " Michal has scheduled an SMS campaign 'Jobs at Oculus'.
+
+        - This method is called from schedule() method of class CampaignBase.
+
+        :param user: user obj
+        :param source: sms_campaign (or some other campaign) obj
+        :param auth_header: Authorization header
+        :type user: User
+        :type source: SmsCampaign
+        :type auth_header: dict
+        :exception: InvalidUsage
+
+        **See Also**
+        .. see also:: schedule() method in CampaignBase class.
+        """
+        # any other campaign will update this line
+        if not isinstance(source, SmsCampaign):
+            raise InvalidUsage('source should be an instance of model sms_campaign')
+        if not isinstance(user, User):
+            raise InvalidUsage('user should be instance of model User')
+        params = {'username': user.name,
+                  'campaign_type': source.__tablename__,
+                  'campaign_name': source.name}
+        cls.create_activity(user.id,
+                            _type=ActivityMessageIds.CAMPAIGN_SCHEDULE,
+                            source_id=source.id,
+                            source_table=source.__tablename__,
+                            params=params,
+                            headers=auth_header)
 
     @classmethod
     def unschedule(cls, campaign_id, request):
@@ -823,6 +863,7 @@ class CampaignBase(object):
         if not isinstance(campaign_smartlist, SmsCampaignSmartlist):
             raise InvalidUsage('campaign_smartlist obj should be an instance of models %s.'
                                % SmsCampaignSmartlist.__tablename__)
+        logger = current_app.config[TalentConfigKeys.LOGGER]
         params = {'return': 'all'}
         # HTTP GET call to candidate_service to get candidates associated with given smartlist id.
         response = http_request('GET', CandidatePoolApiUrl.SMARTLIST_CANDIDATES
@@ -833,15 +874,12 @@ class CampaignBase(object):
             candidate_ids = [candidate['id'] for candidate in response.json()['candidates']]
             candidates = [Candidate.get_by_id(_id) for _id in candidate_ids]
         except Exception:
-            current_app.config[TalentConfigKeys.LOGGER].exception('get_smartlist_candidates: Error while '
-                                                   'fetching candidates for smartlist(id:%s)'
-                                                   % campaign_smartlist.smartlist_id)
+            logger.exception('get_smartlist_candidates: Error while fetching candidates for '
+                             'smartlist(id:%s)' % campaign_smartlist.smartlist_id)
             raise
         if not candidates:
-            current_app.config[TalentConfigKeys.LOGGER].error('get_smartlist_candidates: '
-                                               'No Candidate found. smartlist id is %s. '
-                                               '(User(id:%s))' % (campaign_smartlist.smartlist_id,
-                                                                  self.user.id))
+            logger.error('get_smartlist_candidates: No Candidate found. smartlist id is %s. '
+                         '(User(id:%s))' % (campaign_smartlist.smartlist_id, self.user.id))
         return candidates
 
     def pre_process_celery_task(self, candidates):
@@ -1131,7 +1169,7 @@ class CampaignBase(object):
         # get auth_header
         auth_header = cls.get_authorization_header(candidate.user_id)
         # get activity type id to create activity
-        _type= get_activity_message_id_from_name(
+        _type = get_activity_message_id_from_name(
             get_activity_message_name(campaign_obj.__tablename__, 'CLICK'))
         # create_activity
         cls.create_campaign_clicked_activity(campaign_obj, candidate, _type, auth_header)
@@ -1312,6 +1350,8 @@ class CampaignBase(object):
         """
         if not isinstance(params, dict):
             raise InvalidUsage('params should be dictionary.')
+        if not isinstance(headers, dict) or not headers:
+            raise InvalidUsage('headers should be dictionary and cannot be empty.')
         try:
             json_data = json.dumps({'source_table': source_table,
                                     'source_id': source_id,
@@ -1322,5 +1362,5 @@ class CampaignBase(object):
                                  'into JSON. Error is: %s' % error.message)
         headers.update(JSON_CONTENT_TYPE_HEADER)  # Add content-type in header
         # POST call to activity_service to create activity
-        http_request('POST', ActivityApiUrl.CREATE_ACTIVITY, headers=headers,
+        http_request('POST', ActivityApiUrl.ACTIVITIES, headers=headers,
                      data=json_data, user_id=user_id)

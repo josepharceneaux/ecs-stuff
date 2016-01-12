@@ -25,8 +25,8 @@ from scheduler_service.common.models.user import User
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 from scheduler_service.common.error_handling import InvalidUsage, ForbiddenError
 from scheduler_service.apscheduler_config import executors, job_store, jobstores
-from flask.ext.common.common.campaign_services.validators import is_datetime_in_future
-from flask.ext.common.common.campaign_services.campaign_utils import to_utc_str
+from scheduler_service.common.campaign_services.validators import is_datetime_in_future
+from scheduler_service.common.campaign_services.campaign_utils import to_utc_str
 from scheduler_service.custom_exceptions import FieldRequiredError, TriggerTypeError, \
     JobNotCreatedError
 

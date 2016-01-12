@@ -195,6 +195,10 @@ class TalentActivityManager(object):
             "%(candidate_name)s replied <b>%(reply_text)s</b> on SMS campaign %(campaign_name)s.",
             "%(candidate_name)s replied '%(reply_text)s' on campaign %(campaign_name)s.",
             "campaign.png"),
+        ActivityMessageIds.CAMPAIGN_SCHEDULE: (
+            "%(username)s scheduled a %(campaign_type)s  <b>%(campaign_name)s</b>.",
+            "%(username)s scheduled a %(campaign_type)s  <b>%(campaign_name)s</b>.",
+            "campaign.png"),
     }
 
     def __init__(self):

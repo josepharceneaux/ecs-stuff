@@ -16,9 +16,9 @@ from twilio.rest import TwilioRestClient
 
 
 # Service specific
-from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
 from sms_campaign_service.sms_campaign_app import flask_app, logger, app
 from sms_campaign_service.modules.custom_exceptions import TwilioAPIError
+from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
 from sms_campaign_service.modules.sms_campaign_app_constants import NGROK_URL
 
 # Common utils
@@ -32,7 +32,7 @@ class TwilioSMS(object):
     """
 
     def __init__(self):
-        if flask_app.config['IS_DEV']:
+        if flask_app.config[TalentConfigKeys.IS_DEV]:
             # This client is created using test_credentials of Twilio
             self.client = twilio.rest.TwilioRestClient(
                 app.config[TalentConfigKeys.TWILIO_TEST_ACCOUNT_SID],

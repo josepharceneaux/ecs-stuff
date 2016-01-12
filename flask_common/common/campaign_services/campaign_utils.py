@@ -21,9 +21,9 @@ from flask import current_app
 from ska import (sign_url, Signature)
 
 # Database Models
+from ..models.misc import UrlConversion
 from ..models.sms_campaign import SmsCampaign
 from ..models.email_marketing import EmailCampaign
-from ..models.misc import (UrlConversion, Frequency)
 
 # Common Utils
 from ..routes import SchedulerApiUrl
@@ -47,13 +47,13 @@ class FrequencyIds(object):
     This is the class to avoid global variables for following names.
     These variables show the frequency_id associated with type of schedule.
     """
-    ONCE = Frequency.get_id_by_description('Once')
-    DAILY = Frequency.get_id_by_description('Daily')
-    WEEKLY = Frequency.get_id_by_description('Weekly')
-    BIWEEKLY = Frequency.get_id_by_description('Biweekly')
-    MONTHLY = Frequency.get_id_by_description('Monthly')
-    YEARLY = Frequency.get_id_by_description('Yearly')
-    CUSTOM = Frequency.get_id_by_description('Custom')
+    ONCE = 1
+    DAILY = 2
+    WEEKLY = 3
+    BIWEEKLY = 4
+    MONTHLY = 5
+    YEARLY = 6
+    CUSTOM = 7
 
 
 def frequency_id_to_seconds(frequency_id):
