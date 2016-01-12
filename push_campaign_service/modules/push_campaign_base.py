@@ -45,36 +45,36 @@ class PushCampaignBase(CampaignBase):
         """
         return PushCampaign.get_by_user_id(self.user_id)
 
-    @classmethod
-    def pre_process_schedule(cls, request, campaign_id):
-        """
-        This implements the base class method. Before making HTTP POST/GET call on
-        scheduler_service, we do the following.
-        1- Check if request has valid JSON content-type header
-        2- Check if current user is an owner of given campaign_id
-        :return: dictionary containing Campaign obj, data to schedule SMS campaign,
-                    scheduled_task and bearer access token
-        :rtype: dict
-        """
-        campaign_obj = cls.validate_ownership_of_campaign(campaign_id, request.user.id)
-        # check if campaign is already scheduled
-        scheduled_task = cls.is_already_scheduled(campaign_obj.scheduler_task_id,
-                                                  request.oauth_token)
-        # Updating scheduled task should not be allowed in POST request
-        if scheduled_task and request.method == 'POST':
-            raise ForbiddenError(error_message='Use PUT method to update task')
-        try:
-            data_to_schedule_campaign = request.get_json()
-        except BadRequest:
-            raise InvalidUsage(error_message='Given data should be in dict format')
-        if not data_to_schedule_campaign:
-            raise InvalidUsage(
-                error_message='No data provided to schedule %s (id:%s)'
-                              % (campaign_obj.__tablename__, campaign_id))
-        return {'campaign': campaign_obj,
-                'data_to_schedule': data_to_schedule_campaign,
-                'scheduled_task': scheduled_task,
-                'auth_header': {'Authorization': request.oauth_token}}
+    # @classmethod
+    # def pre_process_schedule(cls, request, campaign_id):
+    #     """
+    #     This implements the base class method. Before making HTTP POST/GET call on
+    #     scheduler_service, we do the following.
+    #     1- Check if request has valid JSON content-type header
+    #     2- Check if current user is an owner of given campaign_id
+    #     :return: dictionary containing Campaign obj, data to schedule SMS campaign,
+    #                 scheduled_task and bearer access token
+    #     :rtype: dict
+    #     """
+    #     campaign_obj = cls.validate_ownership_of_campaign(campaign_id, request.user.id)
+    #     # check if campaign is already scheduled
+    #     scheduled_task = cls.is_already_scheduled(campaign_obj.scheduler_task_id,
+    #                                               request.oauth_token)
+    #     # Updating scheduled task should not be allowed in POST request
+    #     if scheduled_task and request.method == 'POST':
+    #         raise ForbiddenError(error_message='Use PUT method to update task')
+    #     try:
+    #         data_to_schedule_campaign = request.get_json()
+    #     except BadRequest:
+    #         raise InvalidUsage(error_message='Given data should be in dict format')
+    #     if not data_to_schedule_campaign:
+    #         raise InvalidUsage(
+    #             error_message='No data provided to schedule %s (id:%s)'
+    #                           % (campaign_obj.__tablename__, campaign_id))
+    #     return {'campaign': campaign_obj,
+    #             'data_to_schedule': data_to_schedule_campaign,
+    #             'scheduled_task': scheduled_task,
+    #             'auth_header': {'Authorization': request.oauth_token}}
 
     @staticmethod
     def validate_ownership_of_campaign(campaign_id, current_user_id):
@@ -126,7 +126,7 @@ class PushCampaignBase(CampaignBase):
         smartlists = campaign.smartlists.all()
         if not smartlists:
             raise NoSmartlistAssociated('No smartlist is associated with Push Campaign (id:%s). '
-                                        '(User(id:%s))' % (campaign.id, self.user_id))
+                                        '(User(id:%s))' % (campaign.id, self.user.id))
         candidates = []
         for smartlist in smartlists:
             try:

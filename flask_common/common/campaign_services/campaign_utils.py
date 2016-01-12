@@ -49,13 +49,13 @@ class FrequencyIds(object):
     This is the class to avoid global variables for following names.
     These variables show the frequency_id associated with type of schedule.
     """
-    ONCE = Frequency.get_id_by_description('Once')
-    DAILY = Frequency.get_id_by_description('Daily')
-    WEEKLY = Frequency.get_id_by_description('Weekly')
-    BIWEEKLY = Frequency.get_id_by_description('Biweekly')
-    MONTHLY = Frequency.get_id_by_description('Monthly')
-    YEARLY = Frequency.get_id_by_description('Yearly')
-    CUSTOM = Frequency.get_id_by_description('Custom')
+    ONCE = 1
+    DAILY = 2
+    WEEKLY = 3
+    BIWEEKLY = 3
+    MONTHLY = 4
+    YEARLY = 5
+    CUSTOM = 6
 
 
 def frequency_id_to_seconds(frequency_id):

@@ -26,11 +26,11 @@ from flask import current_app
 from requests import ConnectionError
 
 # Database Models
-from ..models.db import db
+# from ..models.db import db
 from ..models.user import (Token, User)
 from ..models.misc import UrlConversion
 from ..models.candidate import Candidate
-from ..models.push_campaign import PushCampaign
+from ..models.push_campaign import PushCampaign, PushCampaignSmartlist
 from ..models.email_marketing import EmailCampaignBlast
 from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast, SmsCampaignSmartlist)
 
@@ -570,10 +570,9 @@ class CampaignBase(object):
             raise InvalidUsage('auth_header is required param')
         if not scheduler_task_id:  # campaign has no scheduler_task_id associated
             return None
-        headers = {'Authorization': auth_header}
         # HTTP GET request on scheduler_service to schedule campaign
         response = http_request('GET', SchedulerApiUrl.TASK % scheduler_task_id,
-                                headers=headers)
+                                headers=auth_header)
         # Task not found on APScheduler
         if response.status_code == ResourceNotFound.http_status_code():
             return None
@@ -626,7 +625,7 @@ class CampaignBase(object):
             current_app.config[TalentConfigKeys.LOGGER].info('%s(id:%s) has been scheduled.'
                                               % (self.campaign.__tablename__, self.campaign.id))
             data_to_schedule.update({'scheduler_task_id': response.json()['id']})
-            return data_to_schedule
+            return response.json()['id']
         else:
             raise InvalidUsage(
                 "Error occurred while scheduling a task. Error details are '%s'."
@@ -668,8 +667,6 @@ class CampaignBase(object):
             # end datetime should be in valid format and in future
             if not data_to_schedule.get('end_datetime'):
                 raise InvalidUsage('end_datetime is required field to create periodic task')
-            if not frequency:
-                raise InvalidUsage('Frequency cannot be 0 or None to create periodic task')
             task = {
                 "task_type": SchedulerUtils.PERIODIC,
                 "frequency": frequency,
@@ -822,9 +819,10 @@ class CampaignBase(object):
         .. see also:: process_send() method in SmsCampaignBase class.
         """
         # other campaigns need to update this
-        if not isinstance(campaign_smartlist, SmsCampaignSmartlist):
-            raise InvalidUsage('campaign_smartlist obj should be an instance of models %s.'
-                               % SmsCampaignSmartlist.__tablename__)
+        if not isinstance(campaign_smartlist, (SmsCampaignSmartlist, PushCampaignSmartlist)):
+            raise InvalidUsage('campaign_smartlist obj should be an instance of models %s or %s.'
+                               % (SmsCampaignSmartlist.__tablename__,
+                                  PushCampaignSmartlist.__tablename__))
         params = {'return': 'all'}
         # HTTP GET call to candidate_service to get candidates associated with given smartlist id.
         response = http_request('GET', CandidatePoolApiUrl.SMARTLIST_CANDIDATES
@@ -1230,7 +1228,7 @@ class CampaignBase(object):
         if kwargs:
             # Update the campaign_blast stats like sends, clicks
             campaign_blast_obj.query.filter_by(id=campaign_blast_obj.id).update(kwargs)
-            db.session.commit()
+            # db.session.commit()
 
     @staticmethod
     def create_or_update_url_conversion(destination_url=None, source_url=None, hit_count=0,

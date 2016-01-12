@@ -29,6 +29,7 @@ def random_word(length):
     # Creates a random lowercase string, useful for testing data.
     return ''.join(random.choice(string.lowercase) for i in xrange(length))
 
+
 def get_or_create(session, model, defaults=None, **kwargs):
     instance = session.query(model).filter_by(**kwargs).first()
     if instance:
@@ -164,6 +165,7 @@ def get_missing_keys(data_dict, required_fields=None):
     missing_keys = filter(lambda required_key: required_key not in data_dict,
                           required_fields if required_fields else data_dict.keys())
     return missing_keys
+
 
 def create_test_user(session, domain_id, password):
     random_email = ''.join(
@@ -342,9 +344,10 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                 # If we made a bad request (a 4XX client error or 5XX server
                 # error response),
                 # we can raise it with Response.raise_for_status():"""
-                response.raise_for_status()
+                # response.raise_for_status()
             except requests.exceptions.HTTPError as e:
-                if e.response.status_code in [UnauthorizedError.http_status_code(), ResourceNotFound.http_status_code()]:
+                if e.response.status_code in [UnauthorizedError.http_status_code(),
+                                               ResourceNotFound.http_status_code()]:
                     # 401 is the error code for Not Authorized user(Expired Token)
                     # 404 is the error code for Resource Not found
                     raise

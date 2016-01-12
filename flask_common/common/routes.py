@@ -582,7 +582,7 @@ class CandidateApiUrl(object):
     CANDIDATE_EDIT = CANDIDATE + CandidateApiWords.EDITS
 
 
-class SchedulerApiUrl(object):
+class SchedulerApi(object):
     """
     Rest URLs of scheduler_service
     """
@@ -597,6 +597,24 @@ class SchedulerApiUrl(object):
     PAUSE_TASKS = "/%s/%s" % (VERSION, "tasks/pause/")
     RESUME_TASK = "/%s/%s" % (VERSION, "tasks/<string:_id>/resume/")
     PAUSE_TASK = "/%s/%s" % (VERSION, "tasks/<string:_id>/pause/")
+
+
+class SchedulerApiUrl(object):
+    """
+    Rest URLs of scheduler_service
+    """
+    HOST_NAME = _get_host_name(GTApis.SCHEDULER_SERVICE_NAME,
+                               GTApis.SCHEDULER_SERVICE_PORT)
+    VERSION = 'v1'
+    API_URL = HOST_NAME % _get_api_relative_version('v1')
+    # URLs, in case of API
+    TASKS = API_URL % "tasks/"
+    TEST_TASK = API_URL % "tasks/test/"
+    TASK = API_URL % "tasks/id/%s"
+    RESUME_TASKS = API_URL % "tasks/resume/"
+    PAUSE_TASKS = API_URL % "tasks/pause/"
+    RESUME_TASK = API_URL % "tasks/%s/resume/"
+    PAUSE_TASK = API_URL % "tasks/%s/pause/"
 
 
 class PushCampaignApi(object):

@@ -181,7 +181,7 @@ class Frequency(db.Model):
     @classmethod
     def get_id_by_description(cls, desc):
         assert desc, 'No description given'
-        return cls.query.filter(cls.description.lower() == desc.lower()).first().id
+        return cls.query.filter(cls.description == desc.lower()).first().id
 
 
 # Even though the table name is major I'm keeping the model class singular.

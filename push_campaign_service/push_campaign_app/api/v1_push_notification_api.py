@@ -73,7 +73,8 @@ from flask.ext.restful import Resource
 # Application Specific
 from push_campaign_service.common.error_handling import *
 from push_campaign_service.common.talent_api import TalentApi
-from push_campaign_service.common.routes import PushCampaignApi
+from push_campaign_service.common.routes import (PushCampaignApi,
+                                                 PushCampaignApiUrl)
 from push_campaign_service.common.utils.auth_utils import require_oauth
 from push_campaign_service.common.utils.api_utils import api_route, ApiResponse
 
@@ -83,8 +84,10 @@ from push_campaign_service.common.models.candidate import *
 from push_campaign_service.common.models.push_campaign import *
 from push_campaign_service.modules.one_signal_sdk import OneSignalSdk
 from push_campaign_service.modules.push_campaign_base import PushCampaignBase
-from push_campaign_service.modules.constants import ONE_SIGNAL_REST_API_KEY, ONE_SIGNAL_APP_ID
-from push_campaign_service.modules.utilities import associate_smart_list_with_campaign, get_valid_json_data
+from push_campaign_service.modules.constants import (ONE_SIGNAL_REST_API_KEY,
+                                                     ONE_SIGNAL_APP_ID)
+from push_campaign_service.modules.utilities import (get_valid_json_data,
+                                                     associate_smart_list_with_campaign)
 from push_campaign_service.push_campaign_app import logger
 
 # creating blueprint
@@ -94,7 +97,7 @@ api.init_app(push_notification_blueprint)
 api.route = types.MethodType(api_route, api)
 # Enable CORS
 CORS(push_notification_blueprint, resources={
-    r'/%s/campaigns/*' % PushCampaignApi.VERSION: {
+    r'%s/*' % PushCampaignApiUrl.CAMPAIGNS: {
         'origins': '*',
         'allow_headers': ['Content-Type', 'Authorization']
     }
@@ -105,7 +108,7 @@ one_signal_client = OneSignalSdk(app_id=ONE_SIGNAL_APP_ID,
 
 
 @api.route(PushCampaignApi.CAMPAIGNS)
-class PushCampaigns(Resource):
+class PushCampaignsResource(Resource):
 
     decorators = [require_oauth()]
 
@@ -219,7 +222,7 @@ class PushCampaigns(Resource):
 
 
 @api.route(PushCampaignApi.CAMPAIGN)
-class CampaignById(Resource):
+class CampaignByIdResource(Resource):
 
     decorators = [require_oauth()]
 
@@ -342,7 +345,7 @@ class CampaignById(Resource):
 
 
 @api.route(PushCampaignApi.SCHEDULE)
-class SchedulePushCampaign(Resource):
+class SchedulePushCampaignResource(Resource):
 
     decorators = [require_oauth()]
 
@@ -389,7 +392,9 @@ class SchedulePushCampaign(Resource):
         :return: JSON containing message and task_id.
         """
         user = request.user
-
+        get_valid_json_data(request)
+        if not campaign_id:
+            raise InvalidUsage('campaign_id should be a positive number')
         pre_processed_data = PushCampaignBase.pre_process_schedule(request, campaign_id)
         campaign_obj = PushCampaignBase(user.id)
         campaign_obj.campaign = pre_processed_data['campaign']

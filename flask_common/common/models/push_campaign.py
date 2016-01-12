@@ -11,7 +11,7 @@ class PushCampaign(db.Model):
     name = db.Column(db.String(50))
     body_text = db.Column(db.String(255))
     url = db.Column(db.String(255))
-    scheduler_task_id = db.Column(db.Integer)
+    scheduler_task_id = db.Column(db.String(50))
     added_datetime = db.column(db.DateTime)
     start_datetime = db.column(db.DateTime)
     end_datetime = db.column(db.DateTime)

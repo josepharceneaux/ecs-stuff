@@ -19,7 +19,7 @@ from werkzeug.exceptions import BadRequest
 
 from scheduler_service import TalentConfigKeys, flask_app
 from scheduler_service.common.models.user import Token
-from scheduler_service.common.routes import SchedulerApiUrl
+from scheduler_service.common.routes import SchedulerApi, SchedulerApiUrl
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse
 from scheduler_service.common.talent_api import TalentApi
 from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFound, ForbiddenError
@@ -42,7 +42,7 @@ CORS(scheduler_blueprint, resources={
 })
 
 
-@api.route(SchedulerApiUrl.TASKS)
+@api.route(SchedulerApi.TASKS)
 class Tasks(Resource):
     """
         This resource returns a list of tasks or it can be used to create or schedule a task using POST.
@@ -244,7 +244,7 @@ class Tasks(Resource):
                         not_removed=not_removed), 207
 
 
-@api.route(SchedulerApiUrl.RESUME_TASKS)
+@api.route(SchedulerApi.RESUME_TASKS)
 class ResumeTasks(Resource):
     """
         This resource resumes a previously paused jobs/tasks
@@ -304,7 +304,7 @@ class ResumeTasks(Resource):
         raise InvalidUsage('Bad request, invalid data in request', error_code=400)
 
 
-@api.route(SchedulerApiUrl.PAUSE_TASKS)
+@api.route(SchedulerApi.PAUSE_TASKS)
 class PauseTasks(Resource):
     """
         This resource pauses jobs/tasks which can be resumed again
@@ -362,7 +362,7 @@ class PauseTasks(Resource):
         raise InvalidUsage('Bad request, invalid data in request', error_code=400)
 
 
-@api.route(SchedulerApiUrl.TASK)
+@api.route('/v1/tasks/id/<string:_id>')
 class TaskById(Resource):
     """
         This resource returns a specific task based on id or update a task
@@ -484,7 +484,7 @@ class TaskById(Resource):
         raise ResourceNotFound(error_message="Task not found")
 
 
-@api.route(SchedulerApiUrl.RESUME_TASK)
+@api.route(SchedulerApi.RESUME_TASK)
 class ResumeTaskById(Resource):
     """
         This resource resumes a previously paused job/task
@@ -526,7 +526,7 @@ class ResumeTaskById(Resource):
         raise ResourceNotFound(error_message="Task not found")
 
 
-@api.route(SchedulerApiUrl.PAUSE_TASK)
+@api.route(SchedulerApi.PAUSE_TASK)
 class PauseTaskById(Resource):
     """
         This resource pauses job/task which can be resumed again
@@ -568,7 +568,7 @@ class PauseTaskById(Resource):
         raise ResourceNotFound(error_message="Task not found")
 
 
-@api.route(SchedulerApiUrl.TEST_TASK)
+@api.route(SchedulerApi.TEST_TASK)
 class SendRequestTest(Resource):
     """
         This resource is dummy endpoint which is used to call send_request method for testing

@@ -1,8 +1,9 @@
 import json
-
+from datetime import datetime, timedelta
 import requests
 from faker import Faker
-from push_campaign_service.common.routes import PushCampaignApi, PushCampaignApiUrl
+from push_campaign_service.common.routes import  PushCampaignApiUrl
+from push_campaign_service.common.utils.handy_functions import to_utc_str
 
 fake = Faker()
 
@@ -21,7 +22,7 @@ def send_request(method, url, access_token, data=None, is_json=True):
 def unauthorize_test(method, url, access_token, data=None):
     # TODO: Use a hard coded token invalid
     response = send_request(method, url, access_token,  data)
-    assert response.status_code == 401, 'Access token is not valid'
+    assert response.status_code == 401
 
 
 def missing_key_test(data, key, token):
@@ -80,6 +81,22 @@ def generate_campaign_data():
         "name": fake.domain_name(),
         "body_text": fake.paragraph(1),
         "url": fake.url()
+    }
+    return data
+
+
+def generate_campaign_schedule_data():
+    """
+    This method generates data (dict) for scheduling a campaign.
+    This data contains start_date, end_datetime and frequency id
+    :return:
+    """
+    start = datetime.utcnow() + timedelta(seconds=10)
+    end = datetime.utcnow() + timedelta(days=10)
+    data = {
+        "frequency_id": 2,
+        "start_datetime": to_utc_str(start),
+        "end_datetime": to_utc_str(end)
     }
     return data
 

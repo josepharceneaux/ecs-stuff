@@ -11,6 +11,7 @@ from push_campaign_service.modules.custom_exceptions import *
 from push_campaign_service.tests.helper_methods import *
 from push_campaign_service.common.models.push_campaign import *
 from push_campaign_service.common.routes import PushCampaignApiUrl, PushCampaignApi
+from push_campaign_service.common.routes import SchedulerApiUrl
 # Constants
 API_URL = PushCampaignApi.HOST_NAME
 VERSION = PushCampaignApi.VERSION
@@ -23,15 +24,16 @@ FORBIDDEN = 403
 INTERNAL_SERVER_ERROR = 500
 
 
-class TestCreateCampaign:
+class TestCreateCampaign(object):
 
     # URL: /v1/campaigns [POST]
-    def test_create_campaign(self, auth_data, campaign_data, test_campaign, test_smartlist):
+    def test_create_campaign(self, auth_data, campaign_data, test_smartlist):
         """
         This method tests push campaign creation endpoint.
 
         :param auth_data: token, validity_status
-        :param campaign_data:
+        :param campaign_data: dict
+        :param test_smartlist: Smartlist
         :return:
         """
         token, is_valid = auth_data
@@ -77,10 +79,10 @@ class TestCreateCampaign:
             unauthorize_test('get', PushCampaignApiUrl.CAMPAIGNS, token)
 
     # URL: /v1/campaigns [GET]
-    def test_get_list_of_one_campaign(self, auth_data, test_campaign):
+    def test_get_list_of_one_campaign(self, auth_data, campaign_in_db):
         """
         This method tests get list of push campaign created by this user.
-        This time we will get one campaign in list that is created by `test_campaign` fixture
+        This time we will get one campaign in list that is created by `campaign_in_db` fixture
         :param auth_data: token, validity_status
         :type auth_data: tuple
         :param test_campaign: push campaign object
@@ -97,43 +99,43 @@ class TestCreateCampaign:
             assert json_response['count'] == 1, 'Campaign Count should be 1 this time'
             assert len(json_response['campaigns']) == 1, 'Got one campaign in list'
             campaign = json_response['campaigns'][0]
-            assert test_campaign.body_text == campaign['body_text']
-            assert test_campaign.name == campaign['name']
-            assert test_campaign.url == campaign['url']
+            assert campaign_in_db.body_text == campaign['body_text']
+            assert campaign_in_db.name == campaign['name']
+            assert campaign_in_db.url == campaign['url']
         else:
             unauthorize_test('get', PushCampaignApiUrl.CAMPAIGNS, token)
 
 
-class TestCampaignById:
+class TestCampaignById(object):
 
     # URL: /v1/campaigns/:id [GET]
-    def test_get_by_id(self, auth_data, test_campaign):
+    def test_get_by_id(self, auth_data, campaign_in_db):
         token, is_valid = auth_data
         if is_valid:
 
-            response = send_request('get', PushCampaignApiUrl.CAMPAIGN % test_campaign.id, token)
+            response = send_request('get', PushCampaignApiUrl.CAMPAIGN % campaign_in_db.id, token)
             assert response.status_code == OK, 'Status code is not 200'
             json_response = response.json()
             campaign = json_response['campaign']
-            assert test_campaign.id == campaign['id']
-            assert test_campaign.body_text == campaign['body_text']
-            assert test_campaign.name == campaign['name']
-            assert test_campaign.url == campaign['url']
+            assert campaign_in_db.id == campaign['id']
+            assert campaign_in_db.body_text == campaign['body_text']
+            assert campaign_in_db.name == campaign['name']
+            assert campaign_in_db.url == campaign['url']
         else:
-            unauthorize_test('get', PushCampaignApiUrl.CAMPAIGN % test_campaign.id, token)
+            unauthorize_test('get', PushCampaignApiUrl.CAMPAIGN % campaign_in_db.id, token)
 
     # update campaign test
     # URL: /v1/campaigns/:id [PUT]
-    def test_put_by_id(self, auth_data, test_campaign, campaign_data, test_smartlist):
+    def test_put_by_id(self, auth_data, campaign_in_db, campaign_data, test_smartlist):
         token, is_valid = auth_data
         if is_valid:
             # First get already created campaign
-            response = send_request('get', PushCampaignApiUrl.CAMPAIGN % test_campaign.id, token)
+            response = send_request('get', PushCampaignApiUrl.CAMPAIGN % campaign_in_db.id, token)
             assert response.status_code == OK, 'Status code is not 200'
             json_response = response.json()
             campaign = json_response['campaign']
-            compare_campaign_data(test_campaign, campaign)
-            invalid_data_test('put', PushCampaignApiUrl.CAMPAIGN % test_campaign.id, token)
+            compare_campaign_data(campaign_in_db, campaign)
+            invalid_data_test('put', PushCampaignApiUrl.CAMPAIGN % campaign_in_db.id, token)
 
             # Test `raise ResourceNotFound('Campaign not found with id %s' % campaign_id)`
             data = generate_campaign_data()
@@ -147,7 +149,7 @@ class TestCampaignById:
             # Test invalid field
             data.update(**generate_campaign_data())
             data['invalid_field_name'] = 'Any Value'
-            response = send_request('put', PushCampaignApiUrl.CAMPAIGN % test_campaign.id, token, data)
+            response = send_request('put', PushCampaignApiUrl.CAMPAIGN % campaign_in_db.id, token, data)
             assert response.status_code == INVALID_USAGE, 'InvalidUsage exception should be raised'
             error = response.json()['error']
             assert error['message'] == 'Invalid field in campaign data'
@@ -158,30 +160,30 @@ class TestCampaignById:
 
             # Test valid fields with invalid/ empty values
             for key in ['name', 'body_text', 'url', 'smartlist_ids']:
-                invalid_value_test(data, key, token, test_campaign.id)
+                invalid_value_test(data, key, token, campaign_in_db.id)
 
             # Test positive case with valid data
             data.update(**generate_campaign_data())
             data['smartlist_ids'] = smartlist_ids
-            response = send_request('put', PushCampaignApiUrl.CAMPAIGN % test_campaign.id, token, data)
+            response = send_request('put', PushCampaignApiUrl.CAMPAIGN % campaign_in_db.id, token, data)
             assert response.status_code == OK, 'Campaign was not updated successfully'
-            data['id'] = test_campaign.id
+            data['id'] = campaign_in_db.id
 
             # Now get campaign from API and compare data.
-            response = send_request('get', PushCampaignApiUrl.CAMPAIGN % test_campaign.id, token)
+            response = send_request('get', PushCampaignApiUrl.CAMPAIGN % campaign_in_db.id, token)
             assert response.status_code == OK, 'Status code is not 200'
             json_response = response.json()
             campaign = json_response['campaign']
             # Compare sent campaign dict and campaign dict returned by API.
             compare_campaign_data(data, campaign)
         else:
-            unauthorize_test('get', PushCampaignApiUrl.CAMPAIGN % test_campaign.id, token)
+            unauthorize_test('get', PushCampaignApiUrl.CAMPAIGN % campaign_in_db.id, token)
 
 
-class TestSendCmapign:
+class TestSendCmapign(object):
     # Send a campaign
     # URL: /v1/campaigns/<int:campaign_id>/send [POST]
-    def test_send_a_camapign(self, auth_data, test_campaign, test_smartlist):
+    def test_send_a_camapign(self, auth_data, campaign_in_db, test_smartlist):
         token, is_valid = auth_data
         if is_valid:
             # 404 case. Send a non existing campaign id
@@ -191,46 +193,48 @@ class TestSendCmapign:
             assert response.status_code == NOT_FOUND, 'Push campaign should not exists with this id'
 
             # 200 case: Campaign Sent successfully
-            response = send_request('post', PushCampaignApiUrl.SEND % test_campaign.id, token)
+            response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db.id, token)
             assert response.status_code == OK, 'Push campaign has not been sent'
             response = response.json()
-            assert response['message'] == 'Campaign(id:%s) is being sent to candidates' % test_campaign.id
+            assert response['message'] == 'Campaign(id:%s) is being sent to candidates' \
+                                          % campaign_in_db.id
 
             # Wait for 20 seconds to run celery which will send campaign and creates blast
             time.sleep(2 * SLEEP_TIME)
             # Update session to get latest changes in database. Celery has added some records
             db.session.commit()
             # There should be only one blast for this campaign
-            blasts = test_campaign.blasts.all()
+            blasts = campaign_in_db.blasts.all()
             assert len(blasts) == 1
             assert blasts[0].sends == 1, 'Campaign should have been sent to one candidate'
         else:
-            unauthorize_test('post', PushCampaignApiUrl.SEND % test_campaign.id, token)
+            unauthorize_test('post', PushCampaignApiUrl.SEND % campaign_in_db.id, token)
 
-    def test_send_campaign_without_smartlist(self, auth_data, test_campaign):
+    def test_send_campaign_without_smartlist(self, auth_data, campaign_in_db):
         token, is_valid = auth_data
         if is_valid:
-            response = send_request('post', PushCampaignApiUrl.SEND % test_campaign.id, token)
+            response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db.id, token)
             assert response.status_code == INTERNAL_SERVER_ERROR, 'Status code is not 500'
             error = response.json()['error']
             assert error['code'] == NO_SMARTLIST_ASSOCIATED
         # 404 status code has been tested in above test
 
-    def test_send_campaign_to_smartlist_with_no_candidates_associated(self, auth_data, test_campaign,
-                                                                      test_smartlist_with_no_candidates):
+    def test_send_campaign_to_smartlist_with_no_candidates(self, auth_data, campaign_in_db,
+                                                           test_smartlist_with_no_candidates):
         token, is_valid = auth_data
         if is_valid:
-            response = send_request('post', PushCampaignApiUrl.SEND % test_campaign.id, token)
+            response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db.id, token)
             assert response.status_code == INTERNAL_SERVER_ERROR, 'status code is not 500'
             error = response.json()['error']
             assert error['code'] == NO_CANDIDATE_ASSOCIATED
         # 404 status code has been tested in above test
 
 
-class TestCampaignBlasts:
+class TestCampaignBlasts(object):
 
     # Test URL: /v1/campaigns/<int:campaign_id>/blasts [GET]
-    def test_get_campaign_blasts(self, auth_data, test_campaign, test_smartlist, campaign_blasts_count):
+    def test_get_campaign_blasts(self, auth_data, campaign_in_db, test_smartlist,
+                                 campaign_blasts_count):
         token, is_valid = auth_data
         if is_valid:
             # Wait for campaigns to be sent
@@ -243,19 +247,20 @@ class TestCampaignBlasts:
             assert response.status_code == NOT_FOUND, 'Resource should not be found'
 
             # 200 case: Campaign Blast successfully
-            response = send_request('get', PushCampaignApiUrl.BLASTS % test_campaign.id, token)
+            response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_in_db.id, token)
             assert response.status_code == OK, 'Could not get campaign blasts info'
             response = response.json()
             assert response['count'] == campaign_blasts_count
             assert len(response['blasts']) == campaign_blasts_count
         else:
-            unauthorize_test('get', PushCampaignApiUrl.BLASTS % test_campaign.id, token)
+            unauthorize_test('get', PushCampaignApiUrl.BLASTS % campaign_in_db.id, token)
 
 
-class TestCampaignSends:
+class TestCampaignSends(object):
 
     # Test URL: /v1/campaigns/<int:campaign_id>/sends [GET]
-    def test_get_campaign_sends(self, auth_data, test_campaign, test_smartlist, campaign_blasts_count):
+    def test_get_campaign_sends(self, auth_data, campaign_in_db, test_smartlist,
+                                campaign_blasts_count):
         token, is_valid = auth_data
         if is_valid:
             # Wait for campaigns to be sent
@@ -267,7 +272,7 @@ class TestCampaignSends:
             response = send_request('get', PushCampaignApiUrl.SENDS % invalid_id, token)
             assert response.status_code == NOT_FOUND, 'Resource should not be found'
             # 200 case: Got Campaign Sends successfully
-            response = send_request('get', PushCampaignApiUrl.SENDS % test_campaign.id, token)
+            response = send_request('get', PushCampaignApiUrl.SENDS % campaign_in_db.id, token)
             assert response.status_code == OK, 'Could not get campaign sends info'
             response = response.json()
             # Since each blast have one send, so total sends will be equal to number of blasts
@@ -275,13 +280,13 @@ class TestCampaignSends:
             assert len(response['sends']) == campaign_blasts_count
 
         else:
-            unauthorize_test('get', PushCampaignApiUrl.SENDS % test_campaign.id, token)
+            unauthorize_test('get', PushCampaignApiUrl.SENDS % campaign_in_db.id, token)
 
 
-class TestCampaignBlastSends:
+class TestCampaignBlastSends(object):
 
     # Test URL: /v1/campaigns/<int:campaign_id>/blasts/<int:blast_id>/sends [GET]
-    def test_get_campaign_blast_sends(self, auth_data, test_campaign, test_smartlist,
+    def test_get_campaign_blast_sends(self, auth_data, campaign_in_db, test_smartlist,
                                       campaign_blasts_count):
         token, is_valid = auth_data
         if is_valid:
@@ -291,21 +296,21 @@ class TestCampaignBlastSends:
             last_blast = PushCampaignBlast.query.order_by(PushCampaignBlast.id.desc()).first()
             invalid_campaign_id = last_campaign.id + 100
             invalid_blast_id = last_blast.id + 100
-            for blast in test_campaign.blasts.all():
+            for blast in campaign_in_db.blasts.all():
                 # 404 Case, Campaign not found
                 # 404 with invalid campaign id and valid blast id
-                response = send_request('get', PushCampaignApiUrl.BLASTS_SENDS % (invalid_campaign_id,
-                                                                                  blast.id), token)
+                response = send_request('get', PushCampaignApiUrl.BLASTS_SENDS
+                                        % (invalid_campaign_id, blast.id), token)
                 assert response.status_code == NOT_FOUND, 'Resource should not be found'
 
                 # 404 with valid campaign id but invalid blast id
-                response = send_request('get', PushCampaignApiUrl.BLASTS_SENDS % (test_campaign.id,
-                                                                                  invalid_blast_id), token)
+                response = send_request('get', PushCampaignApiUrl.BLASTS_SENDS
+                                        % (campaign_in_db.id,invalid_blast_id), token)
                 assert response.status_code == NOT_FOUND, 'Resource should not be found'
 
                 # 200 case: Got Campaign Sends successfully
-                response = send_request('get', PushCampaignApiUrl.BLASTS_SENDS % (test_campaign.id,
-                                                                                  blast.id), token)
+                response = send_request('get', PushCampaignApiUrl.BLASTS_SENDS
+                                        % (campaign_in_db.id, blast.id), token)
                 assert response.status_code == OK, 'Could not get campaign sends info'
                 response = response.json()
                 # Since each blast have one send, so total sends will be equal to number of blasts
@@ -314,10 +319,10 @@ class TestCampaignBlastSends:
 
         else:
             # We are testing 401 here. so campaign and blast ids will not matter.
-            unauthorize_test('get',  PushCampaignApiUrl.BLASTS_SENDS % (test_campaign.id, 1), token)
+            unauthorize_test('get',  PushCampaignApiUrl.BLASTS_SENDS % (campaign_in_db.id, 1), token)
 
 
-class TestRegisterCandidateDevice:
+class TestRegisterCandidateDevice(object):
 
     # Test URL: /v1/devices [POST]
     def test_associate_a_device_to_candidate(self, auth_data, test_candidate):
@@ -337,7 +342,8 @@ class TestRegisterCandidateDevice:
             invalid_device_data = {
                 '': (INVALID_USAGE, 'device_id is not given in post data'),
                 0: (INVALID_USAGE, 'device_id is not given in post data'),
-                'invalid_id': (NOT_FOUND, 'Device is not registered with OneSignal with id invalid_id')
+                'invalid_id': (NOT_FOUND, 'Device is not registered with OneSignal '
+                                          'with id invalid_id')
             }
             for key in invalid_candidate_data:
                 data = dict(candidate_id=key, device_id=valid_device_id)
@@ -359,7 +365,8 @@ class TestRegisterCandidateDevice:
             response = send_request('post', PushCampaignApiUrl.DEVICES, token, data)
             assert response.status_code == OK, 'Could not associate device to candidate'
             response = response.json()
-            assert response['message'] == 'Device registered successfully with candidate (id: %s)' % test_candidate.id
+            assert response['message'] == 'Device registered successfully with candidate (id: %s)' \
+                                          % test_candidate.id
 
             # A device has been associated to test_candidate through API but in tests
             # we need to refresh our session to get those changes (using relationship)
@@ -372,3 +379,118 @@ class TestRegisterCandidateDevice:
         else:
             # We are testing 401 here. so campaign and blast ids will not matter.
             unauthorize_test('post',  PushCampaignApiUrl.DEVICES, token)
+
+
+class TestScheduleCampaignResource(object):
+
+    # Test URL: /v1/campaigns/{id}/schedule [POST]
+    def test_schedule_a_campaign(self, auth_data, campaign_in_db, test_smartlist):
+        token, is_valid = auth_data
+        if is_valid:
+            invalid_data_test('post', PushCampaignApiUrl.SCHEDULE % campaign_in_db.id, token)
+            data = generate_campaign_schedule_data()
+
+            # Test with invalid integer id
+            invalid_ids = [(0, INVALID_USAGE, 'campaign_id should be a positive number'),
+                           (-1, NOT_FOUND, None)]
+            for _id, status_code, message in invalid_ids:
+                response = send_request('post', PushCampaignApiUrl.SCHEDULE % _id, token, data)
+                assert response.status_code == status_code
+                # Test message when it is returned by Resource. in case of -1, URL will
+                # not be hit but service will return html response saying Not found
+                if message:
+                    error = response.json()['error']
+                    assert error['message'] == message
+
+            # Now test for 404, Schedule a campaign which does not exists
+            last_campaign = PushCampaign.query.order_by(PushCampaign.id.desc()).first()
+            non_existing_id = last_campaign.id + 100
+            response = send_request('post', PushCampaignApiUrl.SCHEDULE
+                                    % non_existing_id, token, data)
+            assert response.status_code == NOT_FOUND
+
+            # Test with a valid campaign but user is not owner of campaign
+            # Here we created campaign with user whose Auth token is "token"
+            # and we have a a test user token "test_auth_token" to test ownership
+            # response = send_request('post', PushCampaignApiUrl.SCHEDULE
+            #                         % campaign_in_db.id, test_auth_token, data)
+            # assert response.status_code == FORBIDDEN
+            # error = response.json['error']
+            # assert error['message'] == 'You are not the owner of Push campaign(id:%s)' \
+            #                            % campaign_in_db
+
+            # Test forbidden error. To schedule a task first time, we have to send POST,
+            # but we will send request using PUT which is for update and will validate error
+            response = send_request('put', PushCampaignApiUrl.SCHEDULE
+                                    % campaign_in_db.id, token, data)
+            assert response.status_code == FORBIDDEN
+            error = response.json()['error']
+            assert error['message'] == 'Use POST method instead to schedule campaign first time'
+
+            # Test missing start_datetime field which is mandatory to schedule a campaign
+            del data['start_datetime']
+            response = send_request('post', PushCampaignApiUrl.SCHEDULE
+                                    % campaign_in_db.id, token, data)
+            assert response.status_code == INVALID_USAGE
+            error = response.json()['error']
+            assert error['message'] == 'start_datetime is required field.'
+
+            # Test with start_datetime in past. It will raise an error. start_datetime
+            # should be in future
+            start = datetime.datetime.utcnow()
+            data['start_datetime'] = str(start)  # Invalid datetime format
+            response = send_request('post', PushCampaignApiUrl.SCHEDULE
+                                    % campaign_in_db.id, token, data)
+            assert response.status_code == INVALID_USAGE
+            error = response.json()['error']
+            assert error['message'] == 'Invalid DateTime: Kindly specify UTC datetime in ' \
+                                       'ISO-8601 format like 2015-10-08T06:16:55Z. ' \
+                                       'Given Date is %s' % data['start_datetime']
+
+            data = generate_campaign_schedule_data()
+            del data['end_datetime']
+            response = send_request('post', PushCampaignApiUrl.SCHEDULE
+                                    % campaign_in_db.id, token, data)
+            assert response.status_code == INVALID_USAGE
+            error = response.json()['error']
+            assert error['message'] == 'end_datetime is required field to create periodic task'
+
+            # start = datetime.datetime.utcnow() - datetime.timedelta(seconds=100)
+            # data['start_datetime'] = to_utc_str(start)
+            # response = send_request('post', PushCampaignApiUrl.SCHEDULE
+            #                         % campaign_in_db.id, token, data)
+            # assert response.status_code == INVALID_USAGE
+            # error = response.json()['error']
+            # assert error['message'] == "Given datetime(%s) should be in future" % start
+
+            data = generate_campaign_schedule_data()
+            response = send_request('post', PushCampaignApiUrl.SCHEDULE
+                                    % campaign_in_db.id, token, data)
+            assert response.status_code == OK
+            response = response.json()
+            assert 'task_id' in response
+            assert 'message' in response
+            task_id = response['task_id']
+            assert task_id
+            assert response['message'] == 'Campaign(id:%s) has been scheduled.' % campaign_in_db.id
+            time.sleep(SLEEP_TIME)
+            #
+            db.session.commit()
+
+            blasts = campaign_in_db.blasts.all()
+            assert len(blasts) == 1
+            blast = blasts[0]
+            # One send expected since only one candidate is associated with campaign
+            assert blast.sends == 1
+
+            # Now remove the task from scheduler
+            response = send_request('delete', SchedulerApiUrl.TASK % task_id, token)
+            assert response.status_code == OK, "Unable to remove task from scheduler with " \
+                                               "id %s" % task_id
+
+
+        else:
+            # data not needed here but just to be consistent with other requests of
+            # this resource test
+            data = generate_campaign_schedule_data()
+            unauthorize_test('post',  PushCampaignApiUrl.SCHEDULE % campaign_in_db.id, token, data)

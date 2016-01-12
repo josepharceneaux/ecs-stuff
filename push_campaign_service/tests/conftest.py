@@ -1,10 +1,19 @@
 """
 Author: Zohaib Ijaz <mzohaib.qc@gmail.com>
 """
-from push_campaign_service.common.tests.conftest import *
-from push_campaign_service.common.models.smartlist import *
-from push_campaign_service.common.models.candidate import *
-from push_campaign_service.common.models.push_campaign import *
+from datetime import datetime
+from push_campaign_service.common.models.db import db
+from push_campaign_service.common.tests.conftest import (user_auth, sample_user,
+                                                         test_domain, test_org, test_culture)
+from push_campaign_service.common.models.smartlist import Smartlist, SmartlistCandidate
+from push_campaign_service.common.models.candidate import (Candidate,
+                                                           CandidateDevice,
+                                                           CandidateEmail)
+
+
+from push_campaign_service.common.models.push_campaign import (PushCampaign,
+                                                               PushCampaignSmartlist)
+from push_campaign_service.common.utils.handy_functions import create_test_user
 
 from faker import Faker
 import pytest
@@ -40,8 +49,20 @@ def auth_data(request, user_auth, sample_user):
 
 
 @pytest.fixture()
-# TODO: rename it to campaihn_in_db
-def test_campaign(request, sample_user, campaign_data):
+def test_auth_token(request, user_auth):
+    """
+    returns the access token for a different user so that we can test forbidden error etc.
+    :param user_auth: fixture in common/tests/conftest.py
+    :param sample_user: fixture in common/tests/conftest.py
+    :return token
+    """
+    test_user = create_test_user(db.session, 1, 'secret')
+    auth_token_obj = user_auth.get_auth_token(test_user, get_bearer_token=True)
+    return auth_token_obj['access_token']
+
+
+@pytest.fixture()
+def campaign_in_db(request, sample_user, campaign_data):
     campaign_data['user_id'] = sample_user.id
     campaign = PushCampaign(**campaign_data)
     PushCampaign.save(campaign)
@@ -60,14 +81,14 @@ def campaign_data(request):
 
     def tear_down():
         if 'id' in data:
-            db.session.commit()
+            PushCampaign.session.commit()
             PushCampaign.delete(data['id'])
     request.addfinalizer(tear_down)
     return data
 
 
 @pytest.fixture(scope='function')
-def test_smartlist(request, sample_user, test_candidate, test_candidate_device, test_campaign):
+def test_smartlist(request, sample_user, test_candidate, test_candidate_device, campaign_in_db):
     """ TODO
     """
     smartlist = Smartlist(user_id=sample_user.id,
@@ -79,7 +100,7 @@ def test_smartlist(request, sample_user, test_candidate, test_candidate_device, 
     SmartlistCandidate.save(smartlist_candidate)
 
     push_smartlist = PushCampaignSmartlist(smartlist_id=smartlist.id,
-                                           campaign_id=test_campaign.id)
+                                           campaign_id=campaign_in_db.id)
     PushCampaignSmartlist.save(push_smartlist)
 
     def tear_down():
@@ -89,7 +110,7 @@ def test_smartlist(request, sample_user, test_candidate, test_candidate_device, 
 
 
 @pytest.fixture(scope='function')
-def test_smartlist_with_no_candidates(request, sample_user, test_campaign):
+def test_smartlist_with_no_candidates(request, sample_user, campaign_in_db):
     """ TODO
     """
     smartlist = Smartlist(user_id=sample_user.id,
@@ -97,7 +118,7 @@ def test_smartlist_with_no_candidates(request, sample_user, test_campaign):
     Smartlist.save(smartlist)
 
     push_smartlist = PushCampaignSmartlist(smartlist_id=smartlist.id,
-                                           campaign_id=test_campaign.id)
+                                           campaign_id=campaign_in_db.id)
     PushCampaignSmartlist.save(push_smartlist)
 
     def tear_down():
@@ -107,7 +128,7 @@ def test_smartlist_with_no_candidates(request, sample_user, test_campaign):
 
 
 @pytest.fixture()
-def campaign_blasts_count(request, sample_user, test_smartlist, test_campaign, auth_data):
+def campaign_blasts_count(request, sample_user, test_smartlist, campaign_in_db, auth_data):
     """ TODO
     """
     token, is_valid = auth_data
@@ -116,7 +137,7 @@ def campaign_blasts_count(request, sample_user, test_smartlist, test_campaign, a
     if is_valid:
         campaign_obj = PushCampaignBase(user_id=sample_user.id)
         for num in range(blasts_counts):
-            campaign_obj.process_send(test_campaign)
+            campaign_obj.process_send(campaign_in_db)
     return blasts_counts
 
 
@@ -147,7 +168,7 @@ def test_candidate_device(request, test_candidate):
     """
     device = CandidateDevice(candidate_id=test_candidate.id,
                              one_signal_device_id=TEST_DEVICE_ID,
-                             registered_at=datetime.datetime.utcnow())
+                             registered_at=datetime.utcnow())
     CandidateDevice.save(device)
 
     return device
