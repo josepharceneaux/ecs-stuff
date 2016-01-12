@@ -1,6 +1,7 @@
 """Activities API for getting activities for a user's domain or posting new activities
    to the database.
 """
+from activity_service.common.campaign_services.campaign_utils import CampaignType
 
 __author__ = 'erikfarmer'
 # stdlib
@@ -128,11 +129,11 @@ class TalentActivityManager(object):
             "%(username)s deleted %(count)s candidates",
             "candidate.png"),
         ActivityMessageIds.CAMPAIGN_CREATE: (
-            "%(username)s created a/an %(campaign_type)s campaign: %(campaign_name)s",
+            "%(username)s created an %(campaign_type)s campaign: %(campaign_name)s",
             "%(username)s created %(count)s campaigns",
             "campaign.png"),
         ActivityMessageIds.CAMPAIGN_DELETE: (
-            "%(username)s deleted a/an %(campaign_type)s campaign: %(name)s",
+            "%(username)s deleted an %(campaign_type)s campaign: %(name)s",
             "%(username)s deleted %(count)s campaigns",
             "campaign.png"),
         ActivityMessageIds.CAMPAIGN_SEND: (
@@ -193,8 +194,8 @@ class TalentActivityManager(object):
             "%(candidate_name)s replied '%(reply_text)s' on campaign %(campaign_name)s.",
             "campaign.png"),
         ActivityMessageIds.CAMPAIGN_SCHEDULE: (
-            "%(username)s scheduled a/an %(campaign_type)s campaign: <b>%(campaign_name)s</b>.",
-            "%(username)s scheduled a/an %(campaign_type)s campaign: <b>%(campaign_name)s</b>.",
+            "%(username)s scheduled an %(campaign_type)s campaign: <b>%(campaign_name)s</b>.",
+            "%(username)s scheduled an %(campaign_type)s campaign: <b>%(campaign_name)s</b>.",
             "campaign.png"),
     }
 
@@ -295,5 +296,7 @@ class TalentActivityManager(object):
         for param in re.findall(self._check_format_string_regexp, format_string):
             if not params.get(param):
                 params[param] = 'unknown'
+            if param == 'campaign_type' and params[param].lower() not in CampaignType.WITH_ARTICLE_AN:
+                format_string = format_string.replace("an", "a")
 
         return format_string % params

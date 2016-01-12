@@ -34,12 +34,26 @@ from ..utils.handy_functions import snake_case_to_pascal_case
 from ..error_handling import (InvalidUsage, ResourceNotFound)
 
 
+def get_campaign_type_prefix(campaign_type):
+    """
+    Campaign type can be sms_campaign, push_campaign etc. So this method checks if campaign
+    type is SMS, it returns SMS. Otherwise it returns prefix as lower case e.g push or email.
+    :param campaign_type:
+    :return:
+    """
+    prefix = "".join(campaign_type.split('_')[0])
+    if prefix in SmsCampaign.__tablename__:
+        return prefix.upper()
+    return prefix.lower()
+
+
 class CampaignType(object):
     """
     This is the class to avoid global variables for names of campaign
     """
     SMS = SmsCampaign.__tablename__
     EMAIL = EmailCampaign.__tablename__
+    WITH_ARTICLE_AN = [get_campaign_type_prefix(item).lower() for item in [SMS, EMAIL]]
 
 
 class FrequencyIds(object):
@@ -146,15 +160,6 @@ def get_activity_message_name(campaign_name, postfix):
     :rtype: str
     """
     return "_".join(campaign_name.split('_')[::-1]).upper() + '_' + postfix
-
-
-def get_campaign_type_prefix(campaign_type):
-    """
-    Campaign type can be sms_campaign, push_campaign etc. So this method returns SMS or PUSH.
-    :param campaign_type:
-    :return:
-    """
-    return "".join(campaign_type.split('_')[0]).upper()
 
 
 def get_activity_message_id(activity_name):
