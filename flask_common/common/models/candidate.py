@@ -869,6 +869,10 @@ class CandidateCustomField(db.Model):
         return cls.query.filter(db.and_(CandidateCustomField.candidate_id == candidate_id,
                                         CandidateCustomField.custom_field_id == custom_field_id)).first()
 
+    @classmethod
+    def get_candidate_custom_fields(cls, candidate_id):
+        return cls.query.filter_by(candidate_id=candidate_id).all()
+
 
 class ClassificationType(db.Model):
     __tablename__ = 'classification_type'

@@ -587,7 +587,7 @@ def test_delete_can_custom_field(sample_user, user_auth):
 
     # Remove one of Candidate's custom field
     updated_resp = request_to_candidate_custom_field_resource(token, 'delete', candidate_id,
-                                                              custom_field_id=can_custom_fields[0]['id'])
+                                                      custom_field_id=can_custom_fields[0]['id'])
     print "\ncandidate_id: {}".format(candidate_id)
     print "\nsample_user_id: {}".format(sample_user.id)
     print "\nsample_user_domain_id: {}".format(sample_user.domain_id)

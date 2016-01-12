@@ -524,29 +524,27 @@ class CandidateCustomFieldResource(Resource):
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
-        # Custom fields must belong to user's domain
-        if not is_custom_field_authorized(authed_user.domain_id, [can_cf_id]):
-            msg = "authed_user_id: {}, token: {}, can_id: {}, domain_id: {}, can_cf_id: {}".format(
+        msg = "\nauthed_user_id: {}, \ntoken: {}, \ncan_id: {}, \ndomain_id: {}, \ncan_cf_id: {}".format(
                     authed_user.id, token, candidate_id, authed_user.domain_id, can_cf_id)
-            raise ForbiddenError('Not authorized. {}'.format(msg), custom_error.CUSTOM_FIELD_FORBIDDEN)
+        print msg
 
         if can_cf_id:  # Delete specified custom field
             candidate_custom_field = CandidateCustomField.get_by_id(_id=can_cf_id)
             if not candidate_custom_field:
                 raise NotFoundError('Candidate custom field not found', custom_error.CUSTOM_FIELD_NOT_FOUND)
 
+            # Custom fields must belong to user's domain
+            custom_field_id = candidate_custom_field.custom_field_id
+            if not is_custom_field_authorized(authed_user.domain_id, [custom_field_id]):
+                msg = "authed_user_id: {}, token: {}, can_id: {}, domain_id: {}, can_cf_id: {}".format(
+                        authed_user.id, token, candidate_id, authed_user.domain_id, can_cf_id)
+                raise ForbiddenError('Not authorized. {}'.format(msg), custom_error.CUSTOM_FIELD_FORBIDDEN)
+
             db.session.delete(candidate_custom_field)
 
         else:  # Delete all of Candidate's custom fields
-            domain_custom_fields = CustomField.get_domain_custom_fields(domain_id=authed_user.domain_id)
-            custom_field_ids = [custom_field.id for custom_field in domain_custom_fields]
-            for cf_id in custom_field_ids:
-                candidate_custom_field = CandidateCustomField.get_custom_field(candidate_id, cf_id)
-                if not candidate_custom_field:
-                    raise NotFoundError(error_message='Candidate custom field not found',
-                                        error_code=custom_error.CUSTOM_FIELD_NOT_FOUND)
-
-                db.session.delete(candidate_custom_field)
+            for ccf in CandidateCustomField.get_candidate_custom_fields(candidate_id):
+                db.session.delete(ccf)
 
         db.session.commit()
         return '', 204
