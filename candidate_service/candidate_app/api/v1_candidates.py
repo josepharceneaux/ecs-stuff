@@ -526,13 +526,9 @@ class CandidateCustomFieldResource(Resource):
 
         # Custom fields must belong to user's domain
         if not is_custom_field_authorized(authed_user.domain_id, [can_cf_id]):
-            raise ForbiddenError('Not authorized', custom_error.CUSTOM_FIELD_FORBIDDEN,
-                                 additional_error_info={
-                                     'authed_user': authed_user,
-                                     'access_token': token,
-                                     'candidate_id': candidate_id,
-                                     'can_cf_id': can_cf_id
-                                 })
+            msg = "\nauthed_user: {} \ntoken: {} \ncan_id: {} \ncan_cf_id: {}".format(
+                    authed_user, token, candidate_id, can_cf_id)
+            raise ForbiddenError('Not authorized. {}'.format(msg), custom_error.CUSTOM_FIELD_FORBIDDEN)
 
         if can_cf_id:  # Delete specified custom field
             candidate_custom_field = CandidateCustomField.get_by_id(_id=can_cf_id)
