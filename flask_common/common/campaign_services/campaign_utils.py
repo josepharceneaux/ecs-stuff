@@ -150,6 +150,15 @@ def get_activity_message_name(campaign_name, postfix):
     return "_".join(campaign_name.split('_')[::-1]).upper() + '_' + postfix
 
 
+def get_campaign_type_prefix(campaign_type):
+    """
+    Campaign type can be sms_campaign, push_campaign etc. So this method returns SMS or PUSH.
+    :param campaign_type:
+    :return:
+    """
+    return "".join(campaign_type.split('_')[0]).upper()
+
+
 def get_activity_message_id(activity_name):
     """
     Activity messages have names and ids. e.g. CAMPAIGN_SEND = 6.
@@ -242,8 +251,8 @@ def validate_signed_url(request_args):
                                         secret_key=current_app.config[TalentConfigKeys.SECRET_KEY])
 
 
-def post_campaign_sent_processing(base_class, sends_result, user_id, campaign_type, blast_id,
-                                  auth_header):
+def processing_after_campaign_sent(base_class, sends_result, user_id, campaign_type, blast_id,
+                                   oauth_header):
     """
     Once SMS campaign has been sent to all candidates, this function is hit. This is
         a Celery task. Here we
@@ -257,13 +266,13 @@ def post_campaign_sent_processing(base_class, sends_result, user_id, campaign_ty
     :param user_id: id of user (owner of campaign)
     :param campaign_type: type of campaign. i.e. sms_campaign or push_campaign
     :param blast_id: id of blast object
-    :param auth_header: auth header of current user to make HTTP request to other services
+    :param oauth_header: auth header of current user to make HTTP request to other services
     :type base_class: CampaignBase
     :type sends_result: list
     :type user_id: int
     :type campaign_type: str
     :type blast_id: int
-    :type auth_header: dict
+    :type oauth_header: dict
 
     **See Also**
         .. see also:: callback_campaign_sent() method in SmsCampaignBase class inside
@@ -285,7 +294,7 @@ def post_campaign_sent_processing(base_class, sends_result, user_id, campaign_ty
                     % (campaign.id, blast_obj.id))
                 raise
             base_class.create_campaign_send_activity(user_id, campaign,
-                                                     auth_header, total_sends)
+                                                     oauth_header, total_sends)
         logger.debug(
             'process_send: %s(id:%s) has been sent to %s candidate(s).'
             '(User(id:%s))' % (campaign_type, campaign.id, total_sends, user_id))
@@ -293,7 +302,7 @@ def post_campaign_sent_processing(base_class, sends_result, user_id, campaign_ty
         logger.error('callback_campaign_sent: Result is not a list')
 
 
-def delete_scheduled_task(scheduled_task_id, auth_header):
+def delete_scheduled_task(scheduled_task_id, oauth_header):
     """
     Campaign (e.g. SMS campaign or Push Notification) has a field scheduler_task_id.
     If a campaign was scheduled and user wants to delete that campaign, system should remove
@@ -304,15 +313,21 @@ def delete_scheduled_task(scheduled_task_id, auth_header):
     :rtype: bool
     """
     logger = current_app.config[TalentConfigKeys.LOGGER]
-    if not auth_header:
+    if not oauth_header:
         raise InvalidUsage('Auth header is required for deleting scheduled task.')
     if not scheduled_task_id:
         raise InvalidUsage('Provide task id to delete scheduled task from scheduler_service.')
-    response = http_request('DELETE', SchedulerApiUrl.TASK % scheduled_task_id,
-                            headers=auth_header)
-    if response.ok or response.status_code == ResourceNotFound.http_status_code():
-        logger.info("delete_scheduled_task: Task(id:%s) has been removed from scheduler_service"
-                    % scheduled_task_id)
-        return True
-    logger.error("delete_scheduled_task: Task(id:%s) couldn't be deleted." % scheduled_task_id)
+    try:
+        response = http_request('DELETE', SchedulerApiUrl.TASK % scheduled_task_id,
+                                headers=oauth_header)
+        if response.ok:
+            logger.info("delete_scheduled_task: Task(id:%s) has been removed from "
+                        "scheduler_service" % scheduled_task_id)
+            return True
+    except ResourceNotFound:
+        logger.info("delete_scheduled_task: Task(id:%s)has already been removed from "
+                    "scheduler_service" % scheduled_task_id)
+        pass
+    logger.error("delete_scheduled_task: Task(id:%s) couldn't be deleted from scheduler_service."
+                % scheduled_task_id)
     return False

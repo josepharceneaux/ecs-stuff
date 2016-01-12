@@ -165,21 +165,6 @@ class TestCeleryTasks(object):
         assert_on_blasts_sends_url_conversion_and_activity(
             sample_user.id, 1, str(scheduled_sms_campaign_of_current_user.id))
 
-    def test_schedule_periodic_campaign_with_past_end_date(
-            self, valid_header, sample_user, scheduled_sms_campaign_of_current_user,
-            sms_campaign_smartlist, sample_sms_campaign_candidates, candidate_phone_1):
-        """
-        This is test to schedule SMS campaign with all valid parameters. This should get OK
-         response
-        """
-        data = generate_campaign_schedule_data()
-        data['frequency_id'] = FrequencyIds.DAILY  # for Periodic job
-        data['end_datetime'] = to_utc_str(datetime.utcnow() - timedelta(hours=SLEEP_TIME))
-        response = requests.post(
-            SmsCampaignApiUrl.SCHEDULE % scheduled_sms_campaign_of_current_user.id,
-            headers=valid_header, data=json.dumps(data))
-        assert response.status_code == InvalidUsage.http_status_code()
-
     def test_sms_receive_with_valid_data_and_one_campaign_sent(
             self, user_phone_1, scheduled_sms_campaign_of_current_user,
             candidate_phone_1, process_send_sms_campaign):
@@ -236,11 +221,13 @@ class TestCampaignSchedule(object):
         response = requests.post(
             SmsCampaignApiUrl.SCHEDULE % scheduled_sms_campaign_of_current_user.id,
             headers=valid_header, data=json.dumps(generate_campaign_schedule_data()))
-        task_id = assert_campaign_schedule(response)
+        task_id = assert_campaign_schedule(response, sample_user.id,
+                                           scheduled_sms_campaign_of_current_user.id)
         time.sleep(SLEEP_TIME)
         assert_on_blasts_sends_url_conversion_and_activity(
             sample_user.id, 1, str(scheduled_sms_campaign_of_current_user.id))
         _delete_scheduled_task(task_id, valid_header)
+
 
 # TODO: add test for periodic job as well when we have configurable frequency in scheduler_service
 

@@ -129,7 +129,7 @@ def assert_api_send_response(campaign, response, expected_status_code):
     time.sleep(SLEEP_TIME)
 
 
-def assert_campaign_schedule(response):
+def assert_campaign_schedule(response, user_id, campaign_id):
     """
     This asserts that campaign has scheduled successfully and we get 'task_id' in response
     :param response:
@@ -137,4 +137,15 @@ def assert_campaign_schedule(response):
     """
     assert response.status_code == 200, response.json()['error']['message']
     assert 'task_id' in response.json()
+    assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_SCHEDULE, campaign_id)
     return response.json()['task_id']
+
+
+def assert_campaign_delete(response, user_id, campaign_id):
+    """
+    This asserts the response of campaign deletion and asserts that activity has been
+    created successfully.
+    :return:
+    """
+    assert response.status_code == 200, 'should get ok response(200)'
+    assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_DELETE, campaign_id)

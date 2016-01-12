@@ -45,7 +45,7 @@ from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
 from campaign_utils import (get_model, validate_signed_url, delete_scheduled_task,
                             get_candidate_url_conversion_campaign_send_and_blast_obj,
                             get_activity_message_name, get_activity_message_id_from_name,
-                            FrequencyIds)
+                            FrequencyIds, get_campaign_type_prefix)
 from validators import (validate_header, validate_datetime_format, validate_form_data,
                         validation_of_data_to_schedule_campaign,
                         validate_blast_candidate_url_conversion_in_db)
@@ -85,7 +85,7 @@ class CampaignBase(object):
         table "sms_campaign_smartlist" for SMS campaign. (or some other table for
         other campaign)
 
-    * campaign_create_activity(self, source):
+    * create_activity_for_campaign_creation(self, source):
         This method is used to create an activity in database table "Activity" when user
         creates a campaign.
             e.g. in case of SMS campaign, activity will appear as
@@ -110,7 +110,7 @@ class CampaignBase(object):
         This class method is used before scheduling/re-scheduling a campaign. It
         does the validation part. Details are given in definition of this method.
 
-    * is_already_scheduled(scheduler_task_id, auth_header): [static]
+    * is_already_scheduled(scheduler_task_id, oauth_header): [static]
         For given task id, this method GETs the task object from scheduler_service.
         If task is not found there, it returns None. Otherwise it returns the task object
         received from scheduler_service.
@@ -153,13 +153,13 @@ class CampaignBase(object):
     * celery_error_handler(uuid):
         This method is used to catch any error of Celery task and log it.
 
-    * callback_campaign_sent(send_result, user_id, campaign, auth_header):
+    * callback_campaign_sent(send_result, user_id, campaign, oauth_header):
         Once a campaign has been sent to a list of candidates, Celery hits this method as
         a callback and we create an "Activity" in database table as
             SMS campaign 'We are hiring' has been sent to 500 candidates.
         We also update the number of sends in this method.
 
-    * create_campaign_send_activity(cls, user_id, source, auth_header, num_candidates):
+    * create_campaign_send_activity(cls, user_id, source, oauth_header, num_candidates):
         This method is used to create an activity in database table "Activity" when campaign
         has been sent to all of the candidates.
             e.g.
@@ -269,7 +269,7 @@ class CampaignBase(object):
             1- Validates the form data
             2- Sets the frequency_id to ONCE if frequency_id is not provided or 0
             3- Save campaign in database by calling create_or_update_campaign()
-            4- Create activity that by calling campaign_create_activity()
+            4- Create activity that by calling create_activity_for_campaign_creation()
                 (e,g)
                 "'Harvey Specter' created an SMS campaign: 'Hiring at getTalent'"
         :param form_data: data from UI
@@ -288,7 +288,8 @@ class CampaignBase(object):
         if not campaign_id:  # This means campaign is to be updated, not created
             # Create Activity, and If we get Connection error, we log the error
             try:
-                self.campaign_create_activity(campaign_obj)
+                self.create_activity_for_campaign_creation(campaign_obj, self.user,
+                                                           self.oauth_header)
             except ConnectionError:
                 # In case activity_service is not running, we proceed normally and log the error.
                 current_app.config[TalentConfigKeys.LOGGER].error(
@@ -310,7 +311,9 @@ class CampaignBase(object):
         :return: "sms_campaign" obj, invalid_smartlist_ids and not_found_smartlist_ids
         :rtype: tuple
         """
+        logger = current_app.config[TalentConfigKeys.LOGGER]
         invalid_smartlist_ids, not_found_smartlist_ids = self.validate_form_data(campaign_data)
+        logger.info('Campaign data has been validated.')
         campaign_model = get_model(self.campaign_type,
                                    snake_case_to_pascal_case(self.campaign_type))
         smartlist_ids = campaign_data['smartlist_ids']
@@ -364,7 +367,8 @@ class CampaignBase(object):
                 new_record = campaign_smartlist_model(**data)
                 campaign_smartlist_model.save(new_record)
 
-    def campaign_create_activity(self, source):
+    @classmethod
+    def create_activity_for_campaign_creation(cls, source, user, oauth_header):
         """
         - Here we set "params" and "type" of activity to be stored in db table "Activity"
             for created Campaign.
@@ -383,15 +387,17 @@ class CampaignBase(object):
         if not isinstance(source, SmsCampaign):
             raise InvalidUsage('source should be an instance of model %s.'
                                % SmsCampaign.__tablename__)
+        if not isinstance(user, User):
+            raise InvalidUsage('user should be instance of model User')
         # set params
-        params = {'user_name': self.user.name, 'campaign_name': source.name}
-        self.create_activity(self.user.id,
-                             _type=get_activity_message_id_from_name(
-                                 get_activity_message_name(source.__tablename__, 'CREATE')),
-                             source_id=source.id,
-                             source_table=SmsCampaign.__tablename__,
-                             params=params,
-                             headers=self.oauth_header)
+        params = {'user_name': user.name, 'campaign_name': source.name,
+                  'campaign_type': get_campaign_type_prefix(source.__tablename__)}
+        cls.create_activity(user.id,
+                            _type=ActivityMessageIds.CAMPAIGN_CREATE,
+                            source_id=source.id,
+                            source_table=SmsCampaign.__tablename__,
+                            params=params,
+                            headers=oauth_header)
 
     @classmethod
     def get_authorized_campaign_obj_and_scheduled_task(cls, campaign_id, user_id):
@@ -400,7 +406,7 @@ class CampaignBase(object):
         2) If campaign has scheduler_task_id, it gets the scheduled task data from scheduler_service
         :param campaign_id: id of campaign
         :param user_id: id of user
-        :return: This returns the campaign obj, scheduled task data and auth_header
+        :return: This returns the campaign obj, scheduled task data and oauth_header
         :rtype: tuple
         :exception: Invalid usage
         """
@@ -412,10 +418,10 @@ class CampaignBase(object):
         # Any campaign service will add the entry of respective model name here
         if not isinstance(campaign_obj, (SmsCampaign, PushCampaign)):
             raise InvalidUsage('Campaign must be an instance of SmsCampaign or PushCampaign etc.')
-        auth_header = cls.get_authorization_header(user_id)
+        oauth_header = cls.get_authorization_header(user_id)
         # check if campaign is already scheduled
-        scheduled_task = cls.is_already_scheduled(campaign_obj.scheduler_task_id, auth_header)
-        return campaign_obj, scheduled_task, auth_header
+        scheduled_task = cls.is_already_scheduled(campaign_obj.scheduler_task_id, oauth_header)
+        return campaign_obj, scheduled_task, oauth_header
 
     @staticmethod
     @abstractmethod
@@ -452,9 +458,9 @@ class CampaignBase(object):
         4- Deletes the campaign from database and returns True if campaign is deleted successfully.
             Otherwise it returns False.
 
-        kwargs contains data should be like this (e.g).
+        kwargs dict data looks like this (e.g).
                 campaign_id=1,
-                current_user_id=1,
+                current_user=User obj,
                 bearer_access_token='Bearer sklnvladvpewohf3re2ln'
 
         :Example:
@@ -480,14 +486,14 @@ class CampaignBase(object):
             raise InvalidUsage('process_delete_campaign: Missing required fields are: %s'
                                % missing_required_fields)
         logger = current_app.config[TalentConfigKeys.LOGGER]
-        # get campaign_obj, scheduled_task data and auth_header
-        campaign_obj, scheduled_task, auth_header = \
+        # get campaign_obj, scheduled_task data and oauth_header
+        campaign_obj, scheduled_task, oauth_header = \
             cls.get_authorized_campaign_obj_and_scheduled_task(kwargs['campaign_id'],
-                                                               kwargs['current_user_id'])
+                                                               kwargs['current_user'].id)
         # campaign object has scheduler_task_id assigned
         if scheduled_task:
             # campaign was scheduled, remove task from scheduler_service
-            unschedule = delete_scheduled_task(scheduled_task['id'], auth_header)
+            unschedule = delete_scheduled_task(scheduled_task['id'], oauth_header)
             if not unschedule:
                 raise False
         campaign_type = campaign_obj.__tablename__
@@ -495,10 +501,44 @@ class CampaignBase(object):
         if not campaign_model.delete(campaign_obj):
             logger.error("%s(id:%s) couldn't be deleted." % (campaign_type, campaign_obj.id))
             return False
-        logger.info(
-            'process_delete_campaign: %s(id:%s) has been deleted successfully.' % (campaign_type,
-                                                                                   campaign_obj.id))
+        cls.create_activity_for_campaign_delete(kwargs['current_user'], campaign_obj,
+                                                oauth_header)
+        logger.info('process_delete_campaign: %s(id:%s) has been deleted successfully.'
+                    % (campaign_type, campaign_obj.id))
         return True
+
+    @classmethod
+    def create_activity_for_campaign_delete(cls, user, source, oauth_header):
+        """
+        - when a user deletes a campaign, here we set "params" and "type" of activity to
+            be stored in db table "Activity" when a user deletes a campaign.
+        - Activity will appear as " Michal has deleted an SMS campaign 'Jobs at Oculus'.
+        - This method is called from process_campaign_delete() method of class CampaignBase.
+        :param user: user obj
+        :param source: sms_campaign (or some other campaign) obj
+        :param oauth_header: Authorization header
+        :type user: User
+        :type source: SmsCampaign
+        :type oauth_header: dict
+        :exception: InvalidUsage
+
+        **See Also**
+        .. see also:: schedule() method in CampaignBase class.
+        """
+        # any other campaign will update this line
+        if not isinstance(source, SmsCampaign):
+            raise InvalidUsage('source should be an instance of model sms_campaign')
+        if not isinstance(user, User):
+            raise InvalidUsage('user should be instance of model User')
+        # Activity message looks like %(username)s deleted a campaign: %(name)s"
+        params = {'username': user.name, 'name': source.name,
+                  'campaign_type': get_campaign_type_prefix(source.__tablename__)}
+        cls.create_activity(user.id,
+                            _type=ActivityMessageIds.CAMPAIGN_DELETE,
+                            source_id=source.id,
+                            source_table=source.__tablename__,
+                            params=params,
+                            headers=oauth_header)
 
     @classmethod
     def pre_process_schedule(cls, request, campaign_id):
@@ -533,8 +573,8 @@ class CampaignBase(object):
         .. see also:: endpoints /v1/campaigns/:id/schedule in v1_sms_campaign_api.py
         """
         validate_header(request)
-        # get campaign obj, scheduled task data and auth_header
-        campaign_obj, scheduled_task, auth_header = \
+        # get campaign obj, scheduled task data and oauth_header
+        campaign_obj, scheduled_task, oauth_header = \
             cls.get_authorized_campaign_obj_and_scheduled_task(campaign_id, request.user.id)
         # Updating scheduled task should not be allowed in POST request
         if scheduled_task and request.method == 'POST':
@@ -547,18 +587,18 @@ class CampaignBase(object):
         return {'campaign': campaign_obj,
                 'data_to_schedule': data_to_schedule_campaign,
                 'scheduled_task': scheduled_task,
-                'auth_header': auth_header}
+                'oauth_header': oauth_header}
 
     @staticmethod
-    def is_already_scheduled(scheduler_task_id, auth_header):
+    def is_already_scheduled(scheduler_task_id, oauth_header):
         """
         If the given task id  has already been scheduled on scheduler_service. It makes HTTP GET
         call on scheduler_service_api endpoint to check if given scheduler_task_id is already
         present in redis job store. If task is found, we return task obj, otherwise we return None.
         :param scheduler_task_id: Data provided from UI to schedule a campaign
-        :param auth_header: auth_header to make HTTP GET call on scheduler_service
+        :param oauth_header: oauth_header to make HTTP GET call on scheduler_service
         :type scheduler_task_id: str
-        :type auth_header: dict
+        :type oauth_header: dict
         :exception: InvalidUsage
         :return: task obj if task is already scheduled, None otherwise.
         :rtype: dict
@@ -566,15 +606,16 @@ class CampaignBase(object):
         **See Also**
         .. see also:: get_authorized_campaign_obj_and_scheduled_task() defined in this file.
         """
-        if not auth_header:
-            raise InvalidUsage('auth_header is required param')
+        if not oauth_header:
+            raise InvalidUsage('oauth_header is required param')
         if not scheduler_task_id:  # campaign has no scheduler_task_id associated
             return None
         # HTTP GET request on scheduler_service to schedule campaign
-        response = http_request('GET', SchedulerApiUrl.TASK % scheduler_task_id,
-                                headers=auth_header)
+        try:
+            response = http_request('GET', SchedulerApiUrl.TASK % scheduler_task_id,
+                                    headers=oauth_header)
         # Task not found on APScheduler
-        if response.status_code == ResourceNotFound.http_status_code():
+        except ResourceNotFound:
             return None
         # Task is present on APScheduler
         if response.ok:
@@ -683,7 +724,7 @@ class CampaignBase(object):
         return task
 
     @classmethod
-    def create_campaign_schedule_activity(cls, user, source, auth_header):
+    def create_campaign_schedule_activity(cls, user, source, oauth_header):
         """
         - Here we set "params" and "type" of activity to be stored in db table "Activity"
             when a user schedule a campaign.
@@ -694,10 +735,10 @@ class CampaignBase(object):
 
         :param user: user obj
         :param source: sms_campaign (or some other campaign) obj
-        :param auth_header: Authorization header
+        :param oauth_header: Authorization header
         :type user: User
         :type source: SmsCampaign
-        :type auth_header: dict
+        :type oauth_header: dict
         :exception: InvalidUsage
 
         **See Also**
@@ -709,14 +750,14 @@ class CampaignBase(object):
         if not isinstance(user, User):
             raise InvalidUsage('user should be instance of model User')
         params = {'username': user.name,
-                  'campaign_type': source.__tablename__,
+                  'campaign_type': get_campaign_type_prefix(source.__tablename__),
                   'campaign_name': source.name}
         cls.create_activity(user.id,
                             _type=ActivityMessageIds.CAMPAIGN_SCHEDULE,
                             source_id=source.id,
                             source_table=source.__tablename__,
                             params=params,
-                            headers=auth_header)
+                            headers=oauth_header)
 
     @classmethod
     def unschedule(cls, campaign_id, request):
@@ -732,10 +773,10 @@ class CampaignBase(object):
             raise InvalidUsage('Campaign id is required to unschedule it.')
         if not hasattr(request, 'user'):
             raise InvalidUsage('User cannot be None for un scheduling a campaign.')
-        campaign_obj, scheduled_task, auth_header = \
+        campaign_obj, scheduled_task, oauth_header = \
             cls.get_authorized_campaign_obj_and_scheduled_task(campaign_id, request.user.id)
         if scheduled_task:
-            delete_scheduled_task(scheduled_task['id'], auth_header)
+            delete_scheduled_task(scheduled_task['id'], oauth_header)
         campaign_obj.update(scheduler_task_id=None)
         return campaign_obj
 
@@ -821,7 +862,7 @@ class CampaignBase(object):
         if need_to_create_new_task:
             # First delete the old schedule of campaign
             unscheduled = delete_scheduled_task(scheduled_task['id'],
-                                                pre_processed_data['auth_header'])
+                                                pre_processed_data['oauth_header'])
             if not unscheduled:
                 return None
         else:
@@ -963,7 +1004,7 @@ class CampaignBase(object):
 
     @staticmethod
     @abstractmethod
-    def callback_campaign_sent(sends_result, user_id, campaign_type, blast_id, auth_header):
+    def callback_campaign_sent(sends_result, user_id, campaign_type, blast_id, oauth_header):
         """
         This is the callback function for campaign sent.
         Child classes will implement this.
@@ -971,18 +1012,18 @@ class CampaignBase(object):
         :param user_id: id of user (owner of campaign)
         :param campaign_type: type of campaign. i.e. sms_campaign or push_campaign
         :param blast_id: id of blast object
-        :param auth_header: auth header of current user to make HTTP request to other services
+        :param oauth_header: auth header of current user to make HTTP request to other services
         :type sends_result: list
         :type user_id: int
         :type campaign_type: str
         :type blast_id: int
-        :type auth_header: dict
+        :type oauth_header: dict
         :return:
         """
         pass
 
     @classmethod
-    def create_campaign_send_activity(cls, user_id, source, auth_header, num_candidates):
+    def create_campaign_send_activity(cls, user_id, source, oauth_header, num_candidates):
         """
         - Here we set "params" and "type" of activity to be stored in db table "Activity"
             for Campaign sent.
@@ -994,11 +1035,11 @@ class CampaignBase(object):
 
         :param user_id: id of user
         :param source: sms_campaign obj
-        :param auth_header: Authorization header
+        :param oauth_header: Authorization header
         :param num_candidates: number of candidates to which campaign is sent
         :type user_id: int
         :type source: SmsCampaign
-        :type auth_header: dict
+        :type oauth_header: dict
         :type num_candidates: int
         :exception: InvalidUsage
 
@@ -1014,7 +1055,7 @@ class CampaignBase(object):
                             source_id=source.id,
                             source_table=source.__tablename__,
                             params=params,
-                            headers=auth_header)
+                            headers=oauth_header)
 
     @classmethod
     def pre_process_url_redirect(cls, request_args, requested_url):
@@ -1167,16 +1208,16 @@ class CampaignBase(object):
                                             increment_hit_count=True)
         # update the number of clicks
         cls.update_campaign_blast(campaign_blast_obj, clicks=True)
-        # get auth_header
-        auth_header = cls.get_authorization_header(candidate.user_id)
+        # get oauth_header
+        oauth_header = cls.get_authorization_header(candidate.user_id)
         # get activity type id to create activity
         _type = get_activity_message_id_from_name(
             get_activity_message_name(campaign_obj.__tablename__, 'CLICK'))
         # create_activity
-        cls.create_campaign_clicked_activity(campaign_obj, candidate, _type, auth_header)
+        cls.create_campaign_clicked_activity(campaign_obj, candidate, _type, oauth_header)
 
     @classmethod
-    def create_campaign_clicked_activity(cls, source, candidate, _type, auth_header):
+    def create_campaign_clicked_activity(cls, source, candidate, _type, oauth_header):
         """
         - Here we set "params" and "type" of activity to be stored in db table "Activity"
             for Campaign URL click.
@@ -1187,11 +1228,11 @@ class CampaignBase(object):
         :param source: Campaign obj
         :param candidate: Candidate obj
         :param _type: id of activity message
-        :param auth_header: authorization header to make POST call to activity_service
+        :param oauth_header: authorization header to make POST call to activity_service
         :type source: SmsCampaign | PushCampaign etc
         :type candidate: Candidate
         :type _type: int
-        :type auth_header: dict
+        :type oauth_header: dict
         :exception: InvalidUsage
 
         **See Also**
@@ -1210,7 +1251,7 @@ class CampaignBase(object):
                             source_id=source.id,
                             source_table=source.__tablename__,
                             params=params,
-                            headers=auth_header)
+                            headers=oauth_header)
         current_app.config[TalentConfigKeys.LOGGER].info(
             'create_campaign_clicked_activity: candidate(id:%s) clicked on %s(id:%s). '
             '(User(id:%s))' % (candidate.id, source.__tablename__, source.id, candidate.user_id))

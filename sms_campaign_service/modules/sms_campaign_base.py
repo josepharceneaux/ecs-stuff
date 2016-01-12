@@ -127,7 +127,7 @@ class SmsCampaignBase(CampaignBase):
         This does the sending part and updates database tables "sms_campaign_blast" and
          "sms_campaign_send".
 
-    * callback_campaign_sent(send_result, user_id, campaign, auth_header, candidate)
+    * callback_campaign_sent(send_result, user_id, campaign, oauth_header, candidate)
         Once the campaign is sent to all candidates of a particular smartlists, we crate an
         activity in Activity table that (e.g)
                 " "Job opening at getTalent" campaign has been sent to "100" candidates"
@@ -347,6 +347,7 @@ class SmsCampaignBase(CampaignBase):
         if not form_data:
             raise InvalidUsage('save: No data received from UI. (User(id:%s))' % self.user.id)
         form_data['user_phone_id'] = self.user_phone.id
+        print 'in sms_base' + self.user.name
         return super(SmsCampaignBase, self).process_save_or_update(form_data,
                                                                    campaign_id=campaign_id)
 
@@ -623,7 +624,7 @@ class SmsCampaignBase(CampaignBase):
 
     @staticmethod
     @celery_app.task(name='callback_campaign_sent')
-    def callback_campaign_sent(sends_result, user_id, campaign_type, blast_id, auth_header):
+    def callback_campaign_sent(sends_result, user_id, campaign_type, blast_id, oauth_header):
         """
         Once SMS campaign has been sent to all candidates, this function is hit. This is
         a Celery task. Here we
@@ -638,12 +639,12 @@ class SmsCampaignBase(CampaignBase):
         :param user_id: id of user (owner of campaign)
         :param campaign_type: type of campaign. i.e. sms_campaign or push_campaign
         :param blast_id: id of blast object
-        :param auth_header: auth header of current user to make HTTP request to other services
+        :param oauth_header: auth header of current user to make HTTP request to other services
         :type sends_result: list
         :type user_id: int
         :type campaign_type: str
         :type blast_id: int
-        :type auth_header: dict
+        :type oauth_header: dict
 
         **See Also**
         .. see also:: send_campaign_to_candidates() method in CampaignBase class inside
@@ -651,7 +652,7 @@ class SmsCampaignBase(CampaignBase):
         """
         with app.app_context():
             processing_after_campaign_sent(CampaignBase, sends_result, user_id, campaign_type,
-                                           blast_id, auth_header)
+                                           blast_id, oauth_header)
 
     @staticmethod
     @celery_app.task(name='celery_error_handler')
