@@ -237,6 +237,19 @@ class Token(db.Model):
             return self._scopes.split()
         return []
 
+    @staticmethod
+    def get_token(access_token):
+        """
+        Filter Token based on access_token and return token object from db
+        :param access_token: User access_token
+        :return: Token object matched with access_token
+        """
+        assert access_token, "access_token is empty"
+        token = Token.query.filter_by(access_token=access_token).first()
+        if not token:
+            raise ResourceNotFound("Token not found")
+        return token
+
 
 class DomainRole(db.Model):
     __tablename__ = 'domain_role'

@@ -18,9 +18,8 @@ class SchedulerServiceApiException(scheduler_service.common.error_handling.Inter
     CODE_PENDING = 6052
     CODE_ALREADY_PAUSED = 6053
     CODE_ALREADY_RUNNING = 6054
-    CODE_FIELD_REQUIRED = 6055
-    CODE_TRIGGER_TYPE = 6056
-    CODE_NOT_CREATED_TYPE = 6057
+    CODE_TRIGGER_TYPE = 6055
+    CODE_NOT_CREATED_TYPE = 6056
 
     def to_dict(self):
         error_dict = super(SchedulerServiceApiException, self).to_dict()
@@ -47,10 +46,6 @@ class PendingJobError(SchedulerServiceApiException):
 
 class JobAlreadyRunningError(SchedulerServiceApiException):
     error_code = SchedulerServiceApiException.CODE_ALREADY_RUNNING
-
-
-class FieldRequiredError(SchedulerServiceApiException):
-    error_code = SchedulerServiceApiException.CODE_FIELD_REQUIRED
 
 
 class TriggerTypeError(SchedulerServiceApiException):
