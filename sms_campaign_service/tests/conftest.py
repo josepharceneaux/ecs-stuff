@@ -12,6 +12,7 @@ from datetime import timedelta
 from sms_campaign_service.common.tests.conftest import *
 
 # Service specific
+from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL,
                                                                      TWILIO_TEST_NUMBER,
@@ -403,11 +404,11 @@ def process_send_sms_campaign(sample_user, auth_token,
     This sends campaign to one candidate.
     :return:
     """
-
-    campaign_obj = SmsCampaignBase(sample_user.id)
-    # send campaign to candidates, which will be sent by a Celery task
-    campaign_obj.process_send(scheduled_sms_campaign_of_current_user)
-    time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
+    with app.app_context():
+        campaign_obj = SmsCampaignBase(sample_user.id)
+        # send campaign to candidates, which will be sent by a Celery task
+        campaign_obj.process_send(scheduled_sms_campaign_of_current_user)
+        time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
 
 
 @pytest.fixture()
