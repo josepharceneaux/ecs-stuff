@@ -5,7 +5,7 @@ WORKDIR /root/base_service_container
 ADD . candidate_service
 
 # Use appropriate tag name according to flask app
-RUN sed -i -e 's/TAG/CandidateService/g' /etc/syslog-ng/syslog-ng.conf
+RUN sed -i -e 's/TAG/CandidateService/g' /etc/rsyslog.d/*loggly.conf
 
 WORKDIR /root/base_service_container/candidate_service
 
@@ -23,10 +23,12 @@ ENV PYTHONPATH ../
 CMD\
     eval "$(pyenv init -)" && \
 
+    sed -i -e "s/APP_NAME/candidate_service_${GT_ENVIRONMENT}/g" /etc/rsyslog.d/*loggly.conf && \
+
     /etc/init.d/nginx restart && \
 
-    /etc/init.d/syslog-ng restart && \
+    /etc/init.d/rsyslog start && \
 
     export NEW_RELIC_ENVIRONMENT=$GT_ENVIRONMENT && export NEW_RELIC_CONFIG_FILE=newrelic.ini && \
 
-    newrelic-admin run-program uwsgi --env GT_ENVIRONMENT=$GT_ENVIRONMENT --env DB_STRING=$DB_STRING --ini ./talent-uwsgi.ini
+    newrelic-admin run-program uwsgi --ini ./talent-uwsgi.ini
