@@ -1,7 +1,6 @@
 FROM gettalent/base-service-container:latest
 
 # Install nginx stuff
-RUN rm /etc/nginx/sites-enabled/default
 ADD talent-nginx.conf /etc/nginx/conf.d/
 
 # Add auth service stuff
