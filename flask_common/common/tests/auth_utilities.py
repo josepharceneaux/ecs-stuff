@@ -41,7 +41,7 @@ def create_test_user(session, domain_id, password):
 
 def get_access_token(user, password, client_id, client_secret):
     params = dict(grant_type="password", username=user.email, password=password)
-    auth_service_token_response = requests.post(AuthApiUrl.AUTH_SERVICE_TOKEN_CREATE_URI,
+    auth_service_token_response = requests.post(AuthApiUrl.TOKEN_CREATE,
                                                 params=params, auth=(client_id, client_secret)).json()
     if not (auth_service_token_response.get(u'access_token') and auth_service_token_response.get(u'refresh_token')):
         raise Exception("Either Access Token or Refresh Token is missing")

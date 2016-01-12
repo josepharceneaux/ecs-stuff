@@ -39,6 +39,7 @@ class User(db.Model):
     updated_time = db.Column('updatedTime', db.DateTime)
     dice_user_id = db.Column('diceUserId', db.Integer)
     user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.id', ondelete='CASCADE'))
+    last_read_datetime  = db.Column('lastReadDateTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
     is_disabled = db.Column(TINYINT, default='0', nullable=False)
     # TODO: Set Nullable = False after setting user_group_id for existing data
 
@@ -235,6 +236,19 @@ class Token(db.Model):
         if self._scopes:
             return self._scopes.split()
         return []
+
+    @staticmethod
+    def get_token(access_token):
+        """
+        Filter Token based on access_token and return token object from db
+        :param access_token: User access_token
+        :return: Token object matched with access_token
+        """
+        assert access_token, "access_token is empty"
+        token = Token.query.filter_by(access_token=access_token).first()
+        if not token:
+            raise ResourceNotFound("Token not found")
+        return token
 
 
 class DomainRole(db.Model):

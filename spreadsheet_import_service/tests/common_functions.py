@@ -14,8 +14,6 @@ from spreadsheet_import_service.app import app
 from spreadsheet_import_service.common.utils.talent_s3 import upload_to_filepicker_s3
 from spreadsheet_import_service.common.routes import SpreadsheetImportApiUrl
 
-HEALTH_ENDPOINT = 'http://127.0.0.1:8009/healthcheck'
-
 
 def import_spreadsheet_candidates(access_token, candidate_data=None, spreadsheet_file_name=None, is_csv=True,
                                   import_candidates=False):

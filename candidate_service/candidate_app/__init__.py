@@ -1,5 +1,7 @@
 from flask import Flask
+from flask.ext.cors import CORS
 from candidate_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
+from candidate_service.common.routes import CandidateApi, HEALTH_CHECK
 
 app = Flask(__name__)
 load_gettalent_config(app.config)
@@ -19,7 +21,7 @@ try:
 
     # Wrap the flask app and give a healthcheck url
     from healthcheck import HealthCheck
-    health = HealthCheck(app, "/healthcheck")
+    health = HealthCheck(app, HEALTH_CHECK)
 
     from candidate_service.candidate_app.api.v1_candidates import (
         CandidateResource, CandidateAddressResource, CandidateAreaOfInterestResource,
@@ -33,188 +35,194 @@ try:
 
     from candidate_service.common.talent_api import TalentApi
     api = TalentApi(app=app)
-
+    # Enable CORS
+    CORS(app, resources={
+        r'%s/*' % CandidateApi.CANDIDATES: {
+            'origins': '*',
+            'allow_headers': ['Content-Type', 'Authorization']
+        }
+    })
     # API RESOURCES
     ######################## CandidateResource ########################
     api.add_resource(
         CandidateResource,
-        '/v1/candidates/<int:id>',
-        '/v1/candidates/<email>',
+        CandidateApi.CANDIDATE_ID,
+        CandidateApi.CANDIDATE_EMAIL,
         endpoint='candidate_resource'
     )
 
     ######################## CandidatesResource ########################
     api.add_resource(
         CandidatesResource,
-        '/v1/candidates',
+        CandidateApi.CANDIDATES,
         endpoint='candidates_resource'
     )
 
     ######################## CandidateAddressResource ########################
     api.add_resource(
         CandidateAddressResource,
-        '/v1/candidates/<int:candidate_id>/addresses',
+        CandidateApi.ADDRESSES,
         endpoint='candidate_address_1'
     )
     api.add_resource(
         CandidateAddressResource,
-        '/v1/candidates/<int:candidate_id>/addresses/<int:id>',
+        CandidateApi.ADDRESS,
         endpoint='candidate_address_2'
     )
 
     ######################## CandidateAreaOfInterestResource ########################
     api.add_resource(
         CandidateAreaOfInterestResource,
-        '/v1/candidates/<int:candidate_id>/areas_of_interest',
+        CandidateApi.AOIS,
         endpoint='candidate_area_of_interest_1'
     )
     api.add_resource(
         CandidateAreaOfInterestResource,
-        '/v1/candidates/<int:candidate_id>/areas_of_interest/<int:id>',
+        CandidateApi.AOI,
         endpoint='candidate_area_of_interest_2'
     )
 
     ######################## CandidateCustomFieldResource ########################
     api.add_resource(
         CandidateCustomFieldResource,
-        '/v1/candidates/<int:candidate_id>/custom_fields',
+        CandidateApi.CUSTOM_FIELDS,
         endpoint='candidate_custom_field_1'
     )
     api.add_resource(
         CandidateCustomFieldResource,
-        '/v1/candidates/<int:candidate_id>/custom_fields/<int:id>',
+        CandidateApi.CUSTOM_FIELD,
         endpoint='candidate_custom_field_2'
     )
 
     ######################## CandidateEducationResource ########################
     api.add_resource(
         CandidateEducationResource,
-        '/v1/candidates/<int:candidate_id>/educations',
+        CandidateApi.EDUCATIONS,
         endpoint='candidate_education_1'
     )
     api.add_resource(
         CandidateEducationResource,
-        '/v1/candidates/<int:candidate_id>/educations/<int:id>',
+        CandidateApi.EDUCATION,
         endpoint='candidate_education_2'
     )
 
     ######################## CandidateEducationDegreeResource ########################
     api.add_resource(
         CandidateEducationDegreeResource,
-        '/v1/candidates/<int:candidate_id>/educations/<int:education_id>/degrees',
+        CandidateApi.DEGREES,
         endpoint='candidate_education_degree_1'
     )
     api.add_resource(
         CandidateEducationDegreeResource,
-        '/v1/candidates/<int:candidate_id>/educations/<int:education_id>/degrees/<int:id>',
+        CandidateApi.DEGREE,
         endpoint='candidate_education_degree_2'
     )
 
     ######################## CandidateEducationDegreeBulletResource ########################
     api.add_resource(
         CandidateEducationDegreeBulletResource,
-        '/v1/candidates/<int:candidate_id>/educations/<int:education_id>/degrees/<int:degree_id>/bullets',
+        CandidateApi.DEGREE_BULLETS,
         endpoint='candidate_education_degree_bullet_1'
     )
     api.add_resource(
         CandidateEducationDegreeBulletResource,
-        '/v1/candidates/<int:candidate_id>/educations/<int:education_id>/degrees/<int:degree_id>/bullets/<int:id>',
+        CandidateApi.DEGREE_BULLET,
         endpoint='candidate_education_degree_bullet_2'
     )
 
     ######################## CandidateExperienceResource ########################
     api.add_resource(
         CandidateExperienceResource,
-        '/v1/candidates/<int:candidate_id>/experiences',
+        CandidateApi.EXPERIENCES,
         endpoint='candidate_experience_1'
     )
     api.add_resource(
         CandidateExperienceResource,
-        '/v1/candidates/<int:candidate_id>/experiences/<int:id>',
+        CandidateApi.EXPERIENCE,
         endpoint='candidate_experience_2'
     )
 
     ######################## CandidateExperienceBulletResource ########################
     api.add_resource(
         CandidateExperienceBulletResource,
-        '/v1/candidates/<int:candidate_id>/experiences/<int:experience_id>/bullets',
+        CandidateApi.EXPERIENCE_BULLETS,
         endpoint='candidate_experience_bullet_1'
     )
     api.add_resource(
         CandidateExperienceBulletResource,
-        '/v1/candidates/<int:candidate_id>/experiences/<int:experience_id>/bullets/<int:id>',
+        CandidateApi.EXPERIENCE_BULLET,
         endpoint='candidate_experience_bullet_2'
     )
 
     ######################## CandidateEmailResource ########################
     api.add_resource(
         CandidateEmailResource,
-        '/v1/candidates/<int:candidate_id>/emails',
+        CandidateApi.EMAILS,
         endpoint='candidate_email_1'
     )
     api.add_resource(
         CandidateEmailResource,
-        '/v1/candidates/<int:candidate_id>/emails/<int:id>',
+        CandidateApi.EMAIL,
         endpoint='candidate_email_2'
     )
 
     ######################## CandidateMilitaryServiceResource ########################
     api.add_resource(
         CandidateMilitaryServiceResource,
-        '/v1/candidates/<int:candidate_id>/military_services',
+        CandidateApi.MILITARY_SERVICES,
         endpoint='candidate_military_service_1'
     )
     api.add_resource(
         CandidateMilitaryServiceResource,
-        '/v1/candidates/<int:candidate_id>/military_services/<int:id>',
+        CandidateApi.MILITARY_SERVICE,
         endpoint='candidate_military_service_2'
     )
 
     ######################## CandidatePhoneResource ########################
     api.add_resource(
         CandidatePhoneResource,
-        '/v1/candidates/<int:candidate_id>/phones',
+        CandidateApi.PHONES,
         endpoint='candidate_phone_1'
     )
     api.add_resource(
         CandidatePhoneResource,
-        '/v1/candidates/<int:candidate_id>/phones/<int:id>',
+        CandidateApi.PHONE,
         endpoint='candidate_phone_2'
     )
 
     ######################## CandidatePreferredLocationResource ########################
     api.add_resource(
         CandidatePreferredLocationResource,
-        '/v1/candidates/<int:candidate_id>/preferred_locations',
+        CandidateApi.PREFERRED_LOCATIONS,
         endpoint='candidate_preferred_location_1'
     )
     api.add_resource(
         CandidatePreferredLocationResource,
-        '/v1/candidates/<int:candidate_id>/preferred_locations/<int:id>',
+        CandidateApi.PREFERRED_LOCATION,
         endpoint='candidate_preferred_location_2'
     )
 
     ######################## CandidateSkillResource ########################
     api.add_resource(
         CandidateSkillResource,
-        '/v1/candidates/<int:candidate_id>/skills',
+        CandidateApi.SKILLS,
         endpoint='candidate_skill_1'
     )
     api.add_resource(
         CandidateSkillResource,
-        '/v1/candidates/<int:candidate_id>/skills/<int:id>',
+        CandidateApi.SKILL,
         endpoint='candidate_skill_2'
     )
 
     ######################## CandidateSocialNetworkResource ########################
     api.add_resource(
         CandidateSocialNetworkResource,
-        '/v1/candidates/<int:candidate_id>/social_networks',
+        CandidateApi.SOCIAL_NETWORKS,
         endpoint='candidate_social_networks_1'
     )
     api.add_resource(
         CandidateSocialNetworkResource,
-        '/v1/candidates/<int:candidate_id>/social_networks/<int:id>',
+        CandidateApi.SOCIAL_NETWORK,
         endpoint='candidate_social_networks_2'
     )
 
@@ -238,14 +246,13 @@ try:
     #                  endpoint='candidates')
 
     # ****** Candidate Search *******
-    api.add_resource(CandidateSearch, '/v1/candidates/search')
-
+    api.add_resource(CandidateSearch, CandidateApi.CANDIDATE_SEARCH)
 
     # ****** Candidate Documents *******
-    api.add_resource(CandidateDocuments, '/v1/candidates/documents')
+    api.add_resource(CandidateDocuments, CandidateApi.CANDIDATES_DOCUMENTS)
 
     # ****** OPENWEB Request *******
-    api.add_resource(CandidateOpenWebResource, '/v1/candidates/openweb', endpoint='openweb')
+    api.add_resource(CandidateOpenWebResource, CandidateApi.OPENWEB, endpoint='openweb')
 
     db.create_all()
     db.session.commit()
