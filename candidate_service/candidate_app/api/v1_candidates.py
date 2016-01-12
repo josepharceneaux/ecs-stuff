@@ -512,6 +512,10 @@ class CandidateCustomFieldResource(Resource):
         """
         # Authenticated user
         authed_user = request.user
+        from candidate_service.common.models.user import Token
+        token = db.session.query(Token).filter_by(user_id=authed_user.id).first()
+        if token:
+            token = token.access_token
 
         # Get candidate_id and can_cf_id (candidate custom field ID, i.e. CandidateCustomField.id)
         candidate_id, can_cf_id = kwargs.get('candidate_id'), kwargs.get('id')
@@ -525,7 +529,7 @@ class CandidateCustomFieldResource(Resource):
             raise ForbiddenError('Not authorized', custom_error.CUSTOM_FIELD_FORBIDDEN,
                                  additional_error_info={
                                      'authed_user': authed_user,
-                                     'access_token': request.access_token,
+                                     'access_token': token,
                                      'candidate_id': candidate_id,
                                      'can_cf_id': can_cf_id
                                  })
