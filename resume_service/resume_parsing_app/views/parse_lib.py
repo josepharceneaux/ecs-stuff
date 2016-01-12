@@ -44,7 +44,7 @@ def process_resume(parse_params):
         resume_file = StringIO(resume_bin.read())
         filename_str = parse_params.get('filename')
     else:
-        raise InvalidUsage('Invalid query params')
+        raise InvalidUsage('Invalid query params for /parse_resume')
     # Parse the actual resume content.
     result_dict = parse_resume(file_obj=resume_file, filename_str=filename_str)
     # Emails are the ONLY thing required to create a candidate.

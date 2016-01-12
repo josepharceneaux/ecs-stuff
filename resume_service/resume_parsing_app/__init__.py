@@ -1,20 +1,21 @@
 """Initializer for Resume Parsing App"""
 
 __author__ = 'erikfarmer'
-import config
 from flask import Flask
+from flask.ext.redis import FlaskRedis
 from resume_service.common.routes import ResumeApi, HEALTH_CHECK
 from resume_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 
 app = Flask(__name__)
 load_gettalent_config(app.config)
-# app.config.from_object(config)
 logger = app.config[TalentConfigKeys.LOGGER]
 
 try:
     from resume_service.common.models.db import db
     db.init_app(app)
     db.app = app
+
+    redis_store = FlaskRedis(app)
 
     from views import api
     app.register_blueprint(api.PARSE_MOD, url_prefix=ResumeApi.URL_PREFIX)

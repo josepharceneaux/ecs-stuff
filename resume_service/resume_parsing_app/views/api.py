@@ -7,12 +7,12 @@ from flask import request
 from flask import jsonify
 from flask.ext.cors import CORS
 # Module Specific
-from resume_service.common.utils.auth_utils import require_oauth
-from resume_service.resume_parsing_app.views.parse_lib import process_resume
-from resume_service.resume_parsing_app.views.batch_lib import add_fp_keys_to_queue
-from resume_service.resume_parsing_app.views.batch_lib import _process_batch_item
-from resume_service.common.routes import ResumeApi
 from resume_service.common.error_handling import InvalidUsage
+from resume_service.common.routes import ResumeApi
+from resume_service.common.utils.auth_utils import require_oauth
+from resume_service.resume_parsing_app.views.batch_lib import _process_batch_item
+from resume_service.resume_parsing_app.views.batch_lib import add_fp_keys_to_queue
+from resume_service.resume_parsing_app.views.parse_lib import process_resume
 
 
 PARSE_MOD = Blueprint('resume_api', __name__)
@@ -79,7 +79,7 @@ def post_files_to_queue():
         queue_details = add_fp_keys_to_queue(filepicker_keys, user_id, oauth)
         return queue_details, 201
     else:
-        raise InvalidUsage("No filenames provided")
+        raise InvalidUsage("No filenames provided to /batch")
 
 
 @PARSE_MOD.route(ResumeApi.BATCH_PROCESS, methods=['GET'])

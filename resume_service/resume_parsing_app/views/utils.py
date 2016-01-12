@@ -1,8 +1,8 @@
 """Utilities related to the parsing of resumes."""
 __author__ = 'erikfarmer'
+from resume_service.common.routes import CandidateApiUrl
 import json
 import requests
-from resume_service.common.routes import CandidateApiUrl
 
 def create_candidate_from_parsed_resume(candidate_dict, token):
     """Sends candidate dict to candidate service and returns response. """

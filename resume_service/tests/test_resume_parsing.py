@@ -8,8 +8,8 @@ import random
 # Third party
 import requests as r
 # Module Specific.
-from resume_service.common.redis_conn import redis_client
 from resume_service.common.utils.handy_functions import random_word
+from resume_service.resume_parsing_app import redis_store
 from resume_service.resume_parsing_app.views.batch_lib import add_fp_keys_to_queue
 # Test fixtures, imports required even though not 'used'
 # TODO: Look into importing these once and use via namespacing.
@@ -128,7 +128,7 @@ def test_batch_processing(user_fixture, token_fixture):
     user_id = user_fixture.id
     queue_string = 'batch:{}:fp_keys'.format(user_id)
     unused_queue_status = add_fp_keys_to_queue([PDF15_FP_KEP], user_id, token_fixture.access_token)
-    redis_client.expire(queue_string, REDIS_EXPIRE_TIME)
+    redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
     # mock hit from scheduler service.
     response = r.get(ResumeApiUrl.BATCH_URL + '/{}'.format(user_id),
                      headers={'Authorization': 'Bearer %s' % token_fixture.access_token})
@@ -140,7 +140,7 @@ def test_add_single_queue_item(token_fixture):
     user_id = random_word(6)
     queue_string = 'batch:{}:fp_keys'.format(user_id)
     response = add_fp_keys_to_queue(['file1'], user_id, token_fixture.access_token)
-    redis_client.expire(queue_string, 20)
+    redis_store.expire(queue_string, 20)
     try:
         assert response == {'redis_key': queue_string, 'quantity': 1}
     except Exception as e:
@@ -155,7 +155,7 @@ def test_add_multiple_queue_items(token_fixture):
     filenames = ['file{}'.format(i) for i in xrange(file_count)]
     queue_string = 'batch:{}:fp_keys'.format(user_id)
     queue_status = add_fp_keys_to_queue(filenames, user_id, token_fixture.access_token)
-    redis_client.expire(queue_string, REDIS_EXPIRE_TIME)
+    redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
     try:
         assert queue_status == {'redis_key': queue_string, 'quantity': file_count}
     except Exception as e:

@@ -9,9 +9,9 @@ from flask import jsonify
 import requests
 # Module Specific
 from resume_service.common.models.user import Token
-from resume_service.common.redis_conn import redis_client
 from resume_service.common.routes import ResumeApiUrl, SchedulerApiUrl
 from resume_service.common.utils.handy_functions import grouper
+from resume_service.resume_parsing_app import redis_store
 from resume_service.resume_parsing_app.views.parse_lib import process_resume
 
 
@@ -25,11 +25,11 @@ def add_fp_keys_to_queue(filepicker_keys, user_id, token):
     :return str:
     """
     queue_string = 'batch:{}:fp_keys'.format(user_id)
-    list_length = redis_client.rpush(queue_string, *filepicker_keys)
+    list_length = redis_store.rpush(queue_string, *filepicker_keys)
     batches = grouper(filepicker_keys, 100)
     scheduled = datetime.now() + timedelta(seconds=15)
     for batch in batches:
-        for key in batch:
+        for unused_iter in batch:
             payload = json.dumps({
                 "task_type": "one_time",
                 "run_datetime": scheduled.strftime(DATE_FORMAT),
@@ -52,7 +52,7 @@ def _process_batch_item(user_id, create_candidate=True):
     :return: json dict in candidate object format.
     """
     queue_string = 'batch:{}:fp_keys'.format(user_id)
-    fp_key = redis_client.lpop(queue_string)
+    fp_key = redis_store.lpop(queue_string)
     # LPOP returns none if the list is empty so we should end our current batch.
     if fp_key is None:
         return jsonify(**{'error': {'message': 'Empty Queue for user: {}'.format(user_id)}})
