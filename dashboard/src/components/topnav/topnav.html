@@ -1,30 +1,66 @@
 <!-- Header -->
 <header class="header row--expanded">
-    <figure class="header__logo col--medium-4 col--large-12">
-        <a ui-sref="dashboard"></a>
-        <img src="./images/logo--main--white.svg" alt="getTalent">
-    </figure>
     <nav class="header__nav col--medium-8 col--large-12">
         <div class="row--expanded row--table header__inner">
-            <div class="col--tiny-4--cell col--vmiddle header__select">
-                <select ng-options="option.name for option in vm.dashboardScopeOptions track by option.id"
-                    ng-model="vm.selectedDashboardScope" id="dashboardScope" class="form__input--select" name="dashboardScope">
-                </select>
-            </div>
-            <div class="col--tiny-8--cell col--vmiddle header__actions">
-                <form class="header__search">
-                    <input class="header__search__input" type="text" name="query" autocomplete="off">
-                    <button class="header__search__submit">
-                        <span class="icon--search"></span>
-                    </button>
-                </form>
-                <a href="#" class="header__upload">
-                    <span class="icon--upload"></span>
-                </a>
-                <a href="#" class="header__profile">
-                    <img ng-src="{{vm.userProfilePicThumbSrc}}" alt="Change settings">
-                </a>
-                <a class="header__logout" ng-click="vm.logout()">Logout</a>
+            <div class="col--tiny-12--cell">
+                <ul class="list--sideBySide header__inner__nav" role="menu">
+                    <li>
+                        <span uib-dropdown on-toggle="toggled(open)">
+                            <a href="" uib-dropdown-toggle>
+                                {{vm.selectedTalentPool ? vm.selectedTalentPool.name : 'Select a Talent Pool'}} (change) <span class="caret"></span>
+                            </a>
+                            <ul uib-dropdown-menu aria-labelledby="simple-dropdown">
+                                <li ng-repeat="pool in vm.talentPools">
+                                    <a href="" ng-click="vm.selectedTalentPool = pool">{{pool.name}}</a>
+                                </li>
+                                <li><a href="">Create Talent Pool</a></li>
+                            </ul>
+                        </span>
+                    </li>
+                    <li>
+                        <a ui-sref="dashboard">Dashboard</a>
+                    </li>
+                    <li>
+                        <span uib-dropdown>
+                            <a href="" uib-dropdown-toggle>
+                                Pipelines <span class="caret"></span>
+                            </a>
+                            <ul uib-dropdown-menu aria-labelledby="simple-dropdown">
+                                <li><a href="">Add Pipeline</a></li>
+                                <li ng-repeat="pipeline in vm.pipelines">
+                                    <a href="">{{pipeline.name}}</a>
+                                </li>
+                                <li><a href="">Manage Pipelines</a></li>
+                            </ul>
+                        </span>
+                    </li>
+                    <li>
+                        <span uib-dropdown>
+                            <a href="" uib-dropdown-toggle>
+                                Campaigns <span class="caret"></span>
+                            </a>
+                            <ul uib-dropdown-menu aria-labelledby="simple-dropdown">
+                                <li><a href="">Add Campaign</a></li>
+                                <li ng-repeat="campaign in vm.campaigns">
+                                    <a href="">{{campaign.name}}</a>
+                                </li>
+                                <li><a href="">Manage Campaigns</a></li>
+                            </ul>
+                        </span>
+                    </li>
+                    <li>
+                        <span uib-dropdown>
+                            <a href="" uib-dropdown-toggle>
+                                + <span class="caret"></span>
+                            </a>
+                            <ul uib-dropdown-menu aria-labelledby="simple-dropdown">
+                                <li><a href="">Create Pipeline</a></li>
+                                <li><a href="">Create Campaign</a></li>
+                                <li><a href="">Add Candidate</a></li>
+                            </ul>
+                        </span>
+                    </li>
+                </ul>
             </div>
         </div>
     </nav>
