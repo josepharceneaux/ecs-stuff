@@ -178,5 +178,5 @@ class CandidateView(db.Model):
         return cls.query.filter_by(id=_id).first()
 
     @classmethod
-    def get_by_candidate_id(cls, candidate_id):
+    def get_all(cls, candidate_id):
         return cls.query.filter_by(candidate_id=candidate_id).all()

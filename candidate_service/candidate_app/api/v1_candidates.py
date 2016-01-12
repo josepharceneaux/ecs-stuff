@@ -14,9 +14,8 @@ from candidate_service.common.models.db import db
 # Validators
 from candidate_service.common.utils.validators import (is_valid_email)
 from candidate_service.modules.validators import (
-    does_candidate_belong_to_user_and_its_domain, is_custom_field_authorized,
-    is_area_of_interest_authorized, does_candidate_belong_to_users_domain,
-    do_candidates_belong_to_users_domain
+    does_candidate_belong_to_users_domain, is_custom_field_authorized,
+    is_area_of_interest_authorized, do_candidates_belong_to_users_domain
 )
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch,
@@ -38,7 +37,7 @@ from candidate_service.common.models.candidate import (
     CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField
 )
-from candidate_service.common.models.misc import AreaOfInterest, CustomField
+from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 
 # Module
@@ -425,7 +424,7 @@ class CandidateAddressResource(Resource):
         candidate_id, address_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user_and_its_domain(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
         if address_id:  # Delete specified address
@@ -466,7 +465,7 @@ class CandidateAreaOfInterestResource(Resource):
         candidate_id, area_of_interest_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user's domain
-        if not does_candidate_belong_to_user_and_its_domain(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         # Prevent user from deleting area_of_interest of candidates outside of its domain
@@ -556,7 +555,7 @@ class CandidateEducationResource(Resource):
         candidate_id, education_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user_and_its_domain(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -602,7 +601,7 @@ class CandidateEducationDegreeResource(Resource):
         degree_id = kwargs.get('id')
 
         # Candidate must belong to user's domain
-        if not does_candidate_belong_to_user_and_its_domain(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -655,7 +654,7 @@ class CandidateEducationDegreeBulletResource(Resource):
         degree_id, bullet_id = kwargs.get('degree_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user_and_its_domain(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -720,7 +719,7 @@ class CandidateExperienceResource(Resource):
         candidate_id, experience_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user_and_its_domain(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -766,7 +765,7 @@ class CandidateExperienceBulletResource(Resource):
         bullet_id = kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user_and_its_domain(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -823,7 +822,7 @@ class CandidateEmailResource(Resource):
         candidate_id, email_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user_and_its_domain(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -867,7 +866,7 @@ class CandidateMilitaryServiceResource(Resource):
         candidate_id, military_service_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user_and_its_domain(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -912,7 +911,7 @@ class CandidatePhoneResource(Resource):
         candidate_id, phone_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user_and_its_domain(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -956,7 +955,7 @@ class CandidatePreferredLocationResource(Resource):
         candidate_id, preferred_location_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user_and_its_domain(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -1001,7 +1000,7 @@ class CandidateSkillResource(Resource):
         candidate_id, skill_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user_and_its_domain(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -1046,7 +1045,7 @@ class CandidateSocialNetworkResource(Resource):
         candidate_id, social_networks_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user_and_its_domain(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -1090,7 +1089,7 @@ class CandidateWorkPreferenceResource(Resource):
         candidate_id, work_preference_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user_and_its_domain(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 

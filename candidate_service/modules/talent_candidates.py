@@ -532,7 +532,7 @@ def fetch_candidate_views(candidate_id):
     :rtype:  list[dict]
     """
     assert isinstance(candidate_id, (int, long))
-    candidate_views = CandidateView.get_by_candidate_id(candidate_id=candidate_id)
+    candidate_views = CandidateView.get_all(candidate_id=candidate_id)
     return [{'id': view.id,
              'candidate_id': view.candidate_id,
              'user_id': view.user_id,

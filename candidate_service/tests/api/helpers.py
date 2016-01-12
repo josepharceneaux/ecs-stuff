@@ -343,8 +343,8 @@ def request_to_candidate_edit_resource(access_token, request, candidate_id=''):
 
 def request_to_candidate_view_resource(access_token, request, candidate_id=''):
     """
-    :param access_token:
-    :param request: get
+    :type access_token: str
+    :type request: get  str
     """
     url = CandidateApiUrl.CANDIDATE_VIEW % candidate_id
     return define_and_send_request(access_token, request, url)

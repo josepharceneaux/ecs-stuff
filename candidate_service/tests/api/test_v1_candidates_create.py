@@ -191,7 +191,7 @@ def test_create_candidates_in_bulk_with_one_erroneous_data(sample_user, user_aut
     data = {'candidates': [
         {'emails': [{'label': None, 'address': email_1}]},
         {'emails': [{'label': None, 'address': email_2}]},
-        {'emails': [{'label': None, 'address': 'bad_email_at.com'}]}
+        {'emails': [{'label': None, 'address': 'bad_email_at_example.com'}]}
     ]}
     create_resp = post_to_candidate_resource(token, data)
     print response_info(create_resp)

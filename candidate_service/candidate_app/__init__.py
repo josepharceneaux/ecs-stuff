@@ -243,7 +243,7 @@ try:
 
     ######################## CandidateViewResource ########################
     api.add_resource(CandidateViewResource,
-                     '/v1/candidates/<int:id>/views',
+                     CandidateApi.CANDIDATE_VIEWS,
                      endpoint='candidate_views')
 
     # ****** Candidate Search *******

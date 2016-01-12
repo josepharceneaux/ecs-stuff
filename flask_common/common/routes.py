@@ -463,6 +463,7 @@ class CandidateApi(object):
     CANDIDATE_SEARCH = CANDIDATES + CandidateApiWords.SEARCH
     CANDIDATES_DOCUMENTS = CANDIDATES + CandidateApiWords.DOCUMENTS
     OPENWEB = CANDIDATES + CandidateApiWords.OPENWEB
+    CANDIDATE_VIEWS = CANDIDATE_ID + CandidateApiWords.VIEWS
 
 
 class CandidateApiUrl(object):
