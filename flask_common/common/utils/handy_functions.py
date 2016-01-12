@@ -95,10 +95,12 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
             # we can raise it with Response.raise_for_status():"""
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            if e.response.status_code in [UnauthorizedError.http_status_code(), ResourceNotFound.http_status_code()]:
-                # 401 is the error code for Not Authorized user(Expired Token)
+            if e.response.status_code == ResourceNotFound.http_status_code():
                 # 404 is the error code for Resource Not found
-                raise
+                raise ResourceNotFound(response.content)
+            elif e.response.status_code == UnauthorizedError.http_status_code():
+                # 401 is the error code for Not Authorized user(Expired Token)
+                raise UnauthorizedError(response.content)
             # checks if error occurred on "Server" or is it a bad request
             elif e.response.status_code < InternalServerError.http_status_code():
                 try:
