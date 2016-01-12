@@ -139,7 +139,7 @@ def test_edit_candidate_custom_field(sample_user, user_auth):
     assert candidate_edits[0]['new_value'] == new_custom_field_dict['value']
 
 
-def test_edit_candidate_education(sample_user, user_auth):
+def test_edit_cand_education(sample_user, user_auth):
     """
     Test:   Change Candidate's education records
     Expect: 200

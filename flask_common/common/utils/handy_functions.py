@@ -1,9 +1,12 @@
+
 __author__ = 'erikfarmer'
 
 import re
 import random
 import string
 from ..models.user import User, UserScopedRoles, DomainRole
+import user_service.user_app
+from user_service.common.models.db import db
 
 
 def random_word(length):
@@ -23,9 +26,12 @@ def add_role_to_test_user(test_user, role_names):
     :param list[str] role_names: List of role names
     :return:
     """
+    db.session.commit()  #  TODO We add these commits here because DomainRoles were being added by 2 different tests when running in parallel, raising a MySQL exception.  We should be able to insert DomainRoles atomically but we can't do that without adding additional test infra like Redis.
     for role_name in role_names:
         if not DomainRole.get_by_name(role_name):
             DomainRole.save(role_name)
+            db.session.commit()
+
     UserScopedRoles.add_roles(test_user, role_names)
 
 

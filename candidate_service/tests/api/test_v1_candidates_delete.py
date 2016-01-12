@@ -573,6 +573,7 @@ def test_delete_can_custom_field(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    print "\ntoken: {}".format(token)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
@@ -587,6 +588,10 @@ def test_delete_can_custom_field(sample_user, user_auth):
     # Remove one of Candidate's custom field
     updated_resp = request_to_candidate_custom_field_resource(token, 'delete', candidate_id,
                                                               custom_field_id=can_custom_fields[0]['id'])
+    print "\ncandidate_id: {}".format(candidate_id)
+    print "\nsample_user_id: {}".format(sample_user.id)
+    print "\nsample_user_domain_id: {}".format(sample_user.domain_id)
+    print "\ncustom_field_id_1: {}, custom_field_id_2: {}".format(custom_field_id_1, custom_field_id_2)
     print response_info(updated_resp)
     assert updated_resp.status_code == 204
     assert db.session.query(CustomField).get(custom_field_id_1) # CustomField should still be in db
