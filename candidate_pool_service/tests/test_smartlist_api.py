@@ -500,3 +500,4 @@ class TestSmartlistCandidatesApi(object):
         # Now try getting candidates from this deleted(hidden) smartlist, it should raise 404(not found)
         response = self.call_smartlist_candidates_get_api(smartlist.id, {'fields': 'all'}, access_token_first)
         assert response.status_code == 404
+

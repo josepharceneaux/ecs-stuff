@@ -48,6 +48,9 @@ test:
     - python scheduler_service/run.py:
         parallel: true
         background: true
+    - python scheduler_service/run_celery.py:
+        parallel: true
+        background: true
     - sleep 5
 
 

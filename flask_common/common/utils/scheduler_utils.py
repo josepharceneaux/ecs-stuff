@@ -7,3 +7,4 @@ class SchedulerUtils(object):
     """
     ONE_TIME = 'one_time'
     PERIODIC = 'periodic'
+    QUEUE = 'celery_scheduler'

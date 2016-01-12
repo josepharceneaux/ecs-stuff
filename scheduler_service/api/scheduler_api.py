@@ -1,6 +1,6 @@
 """
 Scheduler Restful-API which has endpoints to schedule, remove, delete, pause, resume single
-or multiple jobs
+or multiple jobs.
 This API also checks for authentication token
 """
 
@@ -9,18 +9,25 @@ import json
 import types
 
 # Third party imports
+from datetime import timedelta, datetime
 from flask import Blueprint, request
 from flask.ext.restful import Resource
 from flask.ext.cors import CORS
 
 # Application imports
+from werkzeug.exceptions import BadRequest
+
+from scheduler_service import TalentConfigKeys, flask_app
+from scheduler_service.common.models import db
+from scheduler_service.common.models.user import Token
+from scheduler_service.common.routes import SchedulerApiUrl, SchedulerApi
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse
 from scheduler_service.common.talent_api import TalentApi
-from scheduler_service.common.error_handling import *
+from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFound, ForbiddenError
 from scheduler_service.common.utils.auth_utils import require_oauth
 from scheduler_service.custom_exceptions import JobAlreadyPausedError, PendingJobError, JobAlreadyRunningError, \
     SchedulerNotRunningError, SchedulerServiceApiException
-from scheduler_service.scheduler import scheduler, schedule_job, serialize_task, remove_tasks
+from scheduler_service.scheduler import scheduler, schedule_job, serialize_task, remove_tasks, run_job
 
 api = TalentApi()
 scheduler_blueprint = Blueprint('scheduler_api', __name__)
@@ -29,19 +36,19 @@ api.route = types.MethodType(api_route, api)
 
 # Enable CORS
 CORS(scheduler_blueprint, resources={
-    r'/tasks/*': {
+    SchedulerApi.SCHEDULER_MULTIPLE_TASKS + '*': {
         'origins': '*',
         'allow_headers': ['Content-Type', 'Authorization']
     }
 })
 
 
-@api.route('/tasks/')
+@api.route(SchedulerApi.SCHEDULER_MULTIPLE_TASKS)
 class Tasks(Resource):
     """
         This resource returns a list of tasks or it can be used to create or schedule a task using POST.
     """
-    @require_oauth()
+    @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
     def get(self, **kwargs):
         """
         This action returns a list of user tasks and their count
@@ -51,8 +58,16 @@ class Tasks(Resource):
         :rtype json
 
         :Example:
+        In case of authenticated user
+
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/tasks/', headers=headers)
+            response = requests.get(API_URL + '/v1/tasks/', headers=headers)
+
+        In case of SECRET_KEY
+
+            headers = {'Authorization': 'Bearer <access_token>',
+                        'X-Talent-Server-Key-ID': '<secret_key>'}
+            response = requests.get(API_URL + '/v1/tasks/', headers=headers)
 
         .. Response::
 
@@ -69,7 +84,7 @@ class Tasks(Resource):
                             "some_other_kwarg": "abc",
                             "campaign_name": "SMS Campaign"
                         },
-                        "frequency": 3601,      #in seconds
+                        "frequency": 3601,      # in seconds
                         "start_datetime": "2015-11-05T08:00:00",
                         "end_datetime": "2015-12-05T08:00:00"
                         "next_run_datetime": "2015-11-05T08:20:30",
@@ -82,12 +97,12 @@ class Tasks(Resource):
                     500 (Internal Server Error)
 
         """
-        user_id = request.user.id
-        schedule_state_exceptions()
+        user_id = request.user.id if request.user else None
+        check_if_scheduler_is_running()
         tasks = scheduler.get_jobs()
         tasks = filter(lambda task: task.args[0] == user_id, tasks)
         tasks = [serialize_task(task) for task in tasks]
-        tasks = filter(lambda job: job is not None, tasks)
+        tasks = [task for task in tasks if task]
         return dict(tasks=tasks, count=len(tasks))
 
     @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
@@ -98,6 +113,7 @@ class Tasks(Resource):
         :Example:
             for interval or periodic schedule
             task = {
+                "task_name": "custom-task",     # Field required only in case of general task
                 "frequency": 3601,
                 "task_type": "periodic",
                 "start_datetime": "2015-12-05T08:00:00",
@@ -112,6 +128,7 @@ class Tasks(Resource):
             }
             for one_time schedule
             task = {
+                "task_name": "custom-task",     # Field required only in case of general task
                 "task_type": "one_time",
                 "run_datetime": "2015-12-05T08:00:00",
                 "url": "http://getTalent.com/email/send/",
@@ -123,13 +140,23 @@ class Tasks(Resource):
                 }
             }
 
+            In case of authenticated user
+
             headers = {
                         'Authorization': 'Bearer <access_token>',
                         'Content-Type': 'application/json'
                        }
+
+            In case of SECRET_KEY
+
+            headers = {'Authorization': 'Bearer <access_token>',
+                        'X-Talent-Server-Key-ID': '<secret_key>',
+                        'Content-Type': 'application/json'
+                        }
+
             data = json.dumps(task)
             response = requests.post(
-                                        API_URL + '/tasks/',
+                                        API_URL + '/v1/tasks/',
                                         data=data,
                                         headers=headers,
                                     )
@@ -146,8 +173,8 @@ class Tasks(Resource):
 
         :return: id of created task
         """
-        # get json post request data
-        schedule_state_exceptions()
+        # get JSON post request data
+        check_if_scheduler_is_running()
         try:
             task = request.get_json()
         except Exception:
@@ -155,7 +182,7 @@ class Tasks(Resource):
 
         task_id = schedule_job(task, request.user.id if request.user else None, request.oauth_token)
 
-        headers = {'Location': '/tasks/%s' % task_id}
+        headers = {'Location': '/v1/tasks/%s' % task_id}
         response = json.dumps(dict(id=task_id))
         return ApiResponse(response, status=201, headers=headers)
 
@@ -176,7 +203,7 @@ class Tasks(Resource):
                        }
             data = json.dumps(task_ids)
             response = requests.delete(
-                                        API_URL + '/tasks/',
+                                        API_URL + '/v1/tasks/',
                                         data=data,
                                         headers=headers,
                                     )
@@ -194,12 +221,12 @@ class Tasks(Resource):
         """
 
         user_id = request.user.id
-        schedule_state_exceptions()
+        check_if_scheduler_is_running()
         # get task_ids for tasks to be removed
         try:
             req_data = request.get_json()
         except Exception:
-            raise InvalidUsage("Bad Request, data should be in json",
+            raise InvalidUsage("Bad Request, data should be in JSON",
                                error_code=SchedulerServiceApiException.CODE_INVALID_USAGE)
         task_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else None
         if not task_ids:
@@ -220,7 +247,7 @@ class Tasks(Resource):
                         not_removed=not_removed), 207
 
 
-@api.route('/tasks/resume/')
+@api.route(SchedulerApi.SCHEDULER_MULTIPLE_TASK_RESUME)
 class ResumeTasks(Resource):
     """
         This resource resumes a previously paused jobs/tasks
@@ -241,7 +268,7 @@ class ResumeTasks(Resource):
                 'ids': [fasdff12n22m2jnr5n6skf,ascv3h5k1j43k6k8k32k345jmn,123n23n4n43m2kkcj53vdsxc]
             }
             headers = {'Authorization': 'Bearer <access_token>', 'Content-Type' : 'application/json'}
-            response = requests.post(API_URL + '/tasks/resume/', headers=headers, data=json.dumps(task_ids))
+            response = requests.post(API_URL + '/v1/tasks/resume/', headers=headers, data=json.dumps(task_ids))
 
         .. Response::
             {
@@ -255,17 +282,20 @@ class ResumeTasks(Resource):
 
         """
         user_id = request.user.id
-        schedule_state_exceptions()
+        check_if_scheduler_is_running()
         try:
             req_data = request.get_json()
         except Exception:
-            raise InvalidUsage("Bad Request, data should be in json")
+            raise InvalidUsage("Bad Request, data should be in JSON")
         task_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else None
         if not task_ids:
             raise InvalidUsage("Bad Request, No data in ids", error_code=400)
-        valid_tasks = filter(lambda task_id: scheduler.get_job(job_id=task_id) is not None, task_ids)
+        # Filter jobs that are not None
+        valid_tasks = [task for task in task_ids if scheduler.get_job(job_id=task)]
         if valid_tasks:
+            # Only keep jobs that belonged to the auth user
             valid_tasks = filter(lambda task_id: scheduler.get_job(job_id=task_id).args[0] == user_id, valid_tasks)
+            # Resume each job
             for _id in valid_tasks:
                 scheduler.resume_job(job_id=_id)
             if len(valid_tasks) != len(task_ids):
@@ -277,7 +307,7 @@ class ResumeTasks(Resource):
         raise InvalidUsage('Bad request, invalid data in request', error_code=400)
 
 
-@api.route('/tasks/pause/')
+@api.route(SchedulerApi.SCHEDULER_MULTIPLE_TASK_PAUSE)
 class PauseTasks(Resource):
     """
         This resource pauses jobs/tasks which can be resumed again
@@ -297,7 +327,7 @@ class PauseTasks(Resource):
                 'ids': [fasdff12n22m2jnr5n6skf,ascv3h5k1j43k6k8k32k345jmn,123n23n4n43m2kkcj53vdsxc]
             }
             headers = {'Authorization': 'Bearer <access_token>', 'Content-Type' : 'application/json'}
-            response = requests.post(API_URL + '/tasks/resume/', headers=headers, data=json.dumps(task_ids))
+            response = requests.post(API_URL + '/v1/tasks/resume/', headers=headers, data=json.dumps(task_ids))
 
         .. Response::
             {
@@ -311,7 +341,7 @@ class PauseTasks(Resource):
 
         """
         user_id = request.user.id
-        schedule_state_exceptions()
+        check_if_scheduler_is_running()
         try:
             req_data = request.get_json()
         except Exception:
@@ -320,7 +350,7 @@ class PauseTasks(Resource):
         if not task_ids:
             raise InvalidUsage("Bad request, No data in ids", error_code=400)
         # Filter tasks which are None and of the current user
-        valid_tasks = filter(lambda task_id: scheduler.get_job(job_id=task_id) is not None and
+        valid_tasks = filter(lambda task_id: scheduler.get_job(job_id=task_id) and
                                              scheduler.get_job(job_id=task_id).args[0] == user_id, task_ids)
         if valid_tasks:
             for _id in valid_tasks:
@@ -335,13 +365,128 @@ class PauseTasks(Resource):
         raise InvalidUsage('Bad request, invalid data in request', error_code=400)
 
 
-@api.route('/tasks/id/<string:_id>')
+@api.route(SchedulerApi.SCHEDULER_NAMED_TASK)
+class TaskByName(Resource):
+    """
+        This resource returns a specific task based on name
+    """
+
+    @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
+    def get(self, _name, **kwargs):
+        """
+        This action returns a task owned by other service
+        :param _name: name of task
+        :type _name: str
+        :return task: a dictionary containing a task data
+        :rtype json
+
+        :Example:
+
+        In case of SECRET_KEY
+
+            headers = {'Authorization': 'Bearer <access_token>',
+                        'X-Talent-Server-Key-ID': '<secret_key>'}
+            response = requests.get(API_URL + '/v1/tasks/name/custom_task', headers=headers)
+
+        .. Response::
+            {
+               for one time scheduled task
+               "task": {
+                         {
+                            "task_name": "custom_task",
+                            "id": "5das76nbv950nghg8j8-33ddd3kfdw2",
+                            "url": "http://getTalent.com/sms/send/",
+                            "post_data": {
+                                "campaign_name": "SMS Campaign",
+                                "phone_number": "09230862348",
+                                "smart_list_id": 123456,
+                                "content": "text to be sent as sms"
+                                "some_other_kwarg": "abc"
+                            },
+                            "frequency": 3601,
+                            "start_datetime": "2015-11-05T08:00:00",
+                            "end_datetime": "2015-12-05T08:00:00"
+                            "next_run_datetime": "2015-11-05T08:20:30",
+                            "task_type": "periodic"
+                         }
+                    }
+               for interval scheduled task
+               "task": {
+                         {
+                            "task_name": "custom_task",
+                            "id": "5das76nbv950nghg8j8-33ddd3kfdw2",
+                            "url": "http://getTalent.com/email/send/",
+                            "post_data": {
+                                "campaign_name": "Email Campaign",
+                                "phone_number": "09230862348",
+                                "smart_list_id": 123456,
+                                "content": "text to be sent as Email"
+                                "some_other_kwarg": "abc"
+                            },
+                            "run_datetime": "2015-11-05T08:00:00",
+                            "task_type": "one_time"
+                         }
+                    }
+        .. Status:: 200 (OK)
+                    404 (Task not found)
+                    500 (Internal Server Error)
+
+        """
+        user_id = request.user.id if request.user else None
+        check_if_scheduler_is_running()
+        tasks = scheduler.get_jobs()
+        task = [task for task in tasks if task.name == _name and task.args[0] is None]
+        # Make sure task is valid and belongs to non-logged-in user
+        if task and user_id is None:
+            task = serialize_task(task[0])
+            if task:
+                return dict(task=task)
+        raise ResourceNotFound(error_message="Task with name %s not found" % _name)
+
+    @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
+    def delete(self, _name, **kwargs):
+        """
+        Deletes/removes a tasks from scheduler jobstore
+        :param kwargs:
+        :param _name: name of general task
+        :return:
+
+        :Example:
+        In case of SECRET_KEY
+
+            headers = {'Authorization': 'Bearer <access_token>',
+                        'X-Talent-Server-Key-ID': '<secret_key>'}
+            response = requests.delete(API_URL + '/v1/tasks/name/custom_task', headers=headers)
+
+
+        .. Response::
+
+            {
+                'message': 'Task has been removed successfully'
+            }
+        .. Status:: 200 (Resource deleted)
+                    404 (Task Not found)
+                    500 (Internal Server Error)
+
+        """
+        user_id = request.user.id if request.user else None
+        check_if_scheduler_is_running()
+        tasks = scheduler.get_jobs()
+        task = [task for task in tasks if task.name == _name and task.args[0] is None]
+        # Check if task is valid and belongs to the logged-in user
+        if task and user_id is None:
+            scheduler.remove_job(task[0].id)
+            return dict(message="Task has been removed successfully")
+        raise ResourceNotFound(error_message="Task with name %s not found" % _name)
+
+
+@api.route(SchedulerApi.SCHEDULER_ONE_TASK)
 class TaskById(Resource):
     """
-        This resource returns a specific task based on id or update a task
+        This resource returns a specific task based on id or delete a task
     """
-    decorators = [require_oauth()]
 
+    @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
     def get(self, _id, **kwargs):
         """
         This action returns a task owned by a this user
@@ -353,8 +498,17 @@ class TaskById(Resource):
         :rtype json
 
         :Example:
+
+        In case of authenticated user
+
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/tasks/5das76nbv950nghg8j8-33ddd3kfdw2', headers=headers)
+            response = requests.get(API_URL + '/v1/tasks/id/5das76nbv950nghg8j8-33ddd3kfdw2', headers=headers)
+
+        In case of SECRET_KEY
+
+            headers = {'Authorization': 'Bearer <access_token>',
+                        'X-Talent-Server-Key-ID': '<secret_key>'}
+            response = requests.get(API_URL + '/v1/tasks/id/5das76nbv950nghg8j8-33ddd3kfdw2', headers=headers)
 
         .. Response::
             {
@@ -398,15 +552,17 @@ class TaskById(Resource):
                     500 (Internal Server Error)
 
         """
-        user_id = request.user.id
-        schedule_state_exceptions()
+        user_id = request.user.id if request.user else None
+        check_if_scheduler_is_running()
         task = scheduler.get_job(_id)
+        # Make sure task is valid and belongs to logged-in user
         if task and task.args[0] == user_id:
             task = serialize_task(task)
             if task:
                 return dict(task=task)
         raise ResourceNotFound(error_message="Task not found")
 
+    @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
     def delete(self, _id, **kwargs):
         """
         Deletes/removes a tasks from scheduler store
@@ -414,13 +570,17 @@ class TaskById(Resource):
         :return:
 
         :Example:
-            headers = {
-                        'Authorization': 'Bearer <access_token>'
-                       }
-            response = requests.delete(
-                                        API_URL + '/tasks/5das76nbv950nghg8j8-33ddd3kfdw2',
-                                        headers=headers,
-                                    )
+         In case of authenticated user
+
+            headers = {'Authorization': 'Bearer <access_token>'}
+            response = requests.delete(API_URL + '/v1/tasks/id/5das76nbv950nghg8j8-33ddd3kfdw2', headers=headers)
+
+        In case of SECRET_KEY
+
+            headers = {'Authorization': 'Bearer <access_token>',
+                        'X-Talent-Server-Key-ID': '<secret_key>'}
+            response = requests.delete(API_URL + '/v1/tasks/id/5das76nbv950nghg8j8-33ddd3kfdw2', headers=headers)
+
 
         .. Response::
 
@@ -432,16 +592,17 @@ class TaskById(Resource):
                     500 (Internal Server Error)
 
         """
-        user_id = request.user.id
-        schedule_state_exceptions()
+        user_id = request.user.id if request.user else None
+        check_if_scheduler_is_running()
         task = scheduler.get_job(_id)
+        # Check if task is valid and belongs to the logged-in user
         if task and task.args[0] == user_id:
             scheduler.remove_job(task.id)
             return dict(message="Task has been removed successfully")
         raise ResourceNotFound(error_message="Task not found")
 
 
-@api.route('/tasks/<string:_id>/resume/')
+@api.route(SchedulerApi.SCHEDULER_SINGLE_TASK_RESUME)
 class ResumeTaskById(Resource):
     """
         This resource resumes a previously paused job/task
@@ -459,7 +620,7 @@ class ResumeTaskById(Resource):
 
         :Example:
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.post(API_URL + '/tasks/5das76nbv950nghg8j8-33ddd3kfdw2/resume/', headers=headers)
+            response = requests.post(API_URL + '/v1/tasks/5das76nbv950nghg8j8-33ddd3kfdw2/resume/', headers=headers)
 
         .. Response::
             {
@@ -474,16 +635,16 @@ class ResumeTaskById(Resource):
 
         """
         user_id = request.user.id
-        schedule_state_exceptions()
+        check_if_scheduler_is_running()
         # check and raise exception if job is already paused or not present
-        task = job_state_exceptions(job_id=_id, func='running')
+        task = check_job_state(job_id=_id, job_state_to_check='running')
         if task and task.args[0] == user_id:
             scheduler.resume_job(job_id=_id)
             return dict(message="Task has been successfully resumed")
         raise ResourceNotFound(error_message="Task not found")
 
 
-@api.route('/tasks/<string:_id>/pause/')
+@api.route(SchedulerApi.SCHEDULER_SINGLE_TASK_PAUSE)
 class PauseTaskById(Resource):
     """
         This resource pauses job/task which can be resumed again
@@ -501,7 +662,7 @@ class PauseTaskById(Resource):
 
         :Example:
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.post(API_URL + '/tasks/5das76nbv950nghg8j8-33ddd3kfdw2/resume/', headers=headers)
+            response = requests.post(API_URL + '/v1/tasks/5das76nbv950nghg8j8-33ddd3kfdw2/resume/', headers=headers)
 
         .. Response::
             {
@@ -517,26 +678,73 @@ class PauseTaskById(Resource):
         """
         # check and raise exception if job is already paused or not present
         user_id = request.user.id
-        schedule_state_exceptions()
-        task = job_state_exceptions(job_id=_id, func='paused')
+        check_if_scheduler_is_running()
+        task = check_job_state(job_id=_id, job_state_to_check='paused')
         if task and task.args[0] == user_id:
             scheduler.pause_job(job_id=_id)
             return dict(message="Task has been successfully paused")
         raise ResourceNotFound(error_message="Task not found")
 
 
-def schedule_state_exceptions():
+@api.route(SchedulerApi.SCHEDULER_TASKS_TEST)
+class SendRequestTest(Resource):
+    """
+        This resource is dummy endpoint which is used to call send_request method for testing
+        This dummy endpoint serve two purposes.
+        1. To check if endpoint is working then send response 201 (run callback function directly)
+        2. To check if authentication token is refreshed after expiry.
+    """
+    decorators = [require_oauth()]
+
+    def post(self):
+
+        env_key = flask_app.config.get(TalentConfigKeys.ENV_KEY)
+        if not (env_key == 'dev' or env_key == 'circle'):
+            raise ForbiddenError("You are not authorized to access this endpoint.")
+
+        user_id = request.user.id
+        try:
+            task = request.get_json()
+        except BadRequest:
+            raise InvalidUsage('Given data is not JSON serializable')
+
+        # Post data param expired. If yes, then expire the token
+        expired = task.get('expired', False)
+
+        url = task.get('url', '')
+
+        if expired:
+            # Set the date in past to expire request oauth token.
+            # This is to test that run_job method refresh token or not
+            expiry = datetime.utcnow() - timedelta(days=5)
+            expiry = expiry.strftime('%Y-%m-%d %H:%M:%S')
+
+            # Expire oauth token and then pass it to run_job. And run_job should refresh token and send request to URL
+            db.db.session.commit()
+            token = Token.query.filter_by(user_id=request.user.id).first()
+            token.update(expires=expiry)
+
+        run_job(user_id, request.oauth_token, url, task.get('content_type', 'application/json'),
+                kwargs=task.get('post_data', dict()))
+
+        return dict(message="Request sent to url %s" % url)
+
+
+def check_if_scheduler_is_running():
     # if scheduler is not running
     if not scheduler.running:
         raise SchedulerNotRunningError("Scheduler is not running")
 
 
-def job_state_exceptions(job_id, func):
+def check_job_state(job_id, job_state_to_check):
     """
-    raise exception if condition matches
+    We retrieve a job and if it's pending we raise an error. If job_state_to_check
+    is 'paused' and job's next_run_time is None then we raise an error indicating job
+    is already in paused state. Likewise, if job_state_to_check is 'running' and
+    next_run_time is not None then we raise an error indicating job is already running.
     :param job_id: job_id of task which is in APScheduler
-    :param func: the state to check, if doesn't meet with requirement then raise exception,
-            func can be running, paused
+    :param job_state_to_check: the state to check, if doesn't meet requirement then raise exception.
+            'func' can be 'running' or 'paused'.
     :return:
     """
     # get job from scheduler by job_id
@@ -547,11 +755,11 @@ def job_state_exceptions(job_id, func):
         raise PendingJobError("Task with id '%s' is in pending state. Scheduler not running" % job_id)
 
     # if job has next_run_datetime none, then job is in paused state
-    if job.next_run_time is None and func == 'paused':
+    if not job.next_run_time and job_state_to_check == 'paused':
         raise JobAlreadyPausedError("Task with id '%s' is already in paused state" % job_id)
 
     # if job has_next_run_datetime is not None, then job is in running state
-    if job.next_run_time is not None and func == 'running':
+    if job.next_run_time and job_state_to_check == 'running':
         raise JobAlreadyRunningError("Task with id '%s' is already in running state" % job_id)
 
     return job
