@@ -1209,3 +1209,14 @@ class CandidatePreferenceResource(Resource):
         if not candidate or candidate.is_web_hidden:
             raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
                                 error_code=custom_error.CANDIDATE_NOT_FOUND)
+
+        from candidate_service.common.models.email_marketing import Frequency
+        from candidate_service.common.models.candidate import CandidateSubscriptionPreference
+        candidate_subscription_preferences = CandidateSubscriptionPreference.get_all(candidate_id)
+        if not candidate_subscription_preferences:
+            raise NotFoundError('Candidate {} has no subscription preferences'.format(candidate_id))
+
+        return {'candidate_subscription_preferences': [candidate_subscription_preference]
+                for candidate_subscription_preference in candidate_subscription_preferences}
+
+
