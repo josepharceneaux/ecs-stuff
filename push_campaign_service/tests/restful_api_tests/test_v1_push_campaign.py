@@ -419,10 +419,6 @@ class TestScheduleCampaignResource(object):
             # assert error['message'] == 'You are not the owner of Push campaign(id:%s)' \
             #                            % campaign_in_db
 
-
-
-
-
             # Test forbidden error. To schedule a task first time, we have to send POST,
             # but we will send request using PUT which is for update and will validate error
             response = send_request('put', PushCampaignApiUrl.SCHEDULE
@@ -492,9 +488,108 @@ class TestScheduleCampaignResource(object):
             assert response.status_code == OK, "Unable to remove task from scheduler with " \
                                                "id %s" % task_id
 
-
         else:
             # data not needed here but just to be consistent with other requests of
             # this resource test
             data = generate_campaign_schedule_data()
             unauthorize_test('post',  PushCampaignApiUrl.SCHEDULE % campaign_in_db.id, token, data)
+
+    # Test URL: /v1/campaigns/{id}/schedule [PUT]
+    def test_reschedule_a_campaign(self, auth_data, campaign_in_db, test_smartlist,
+                                   schedule_a_campaign):
+        token, is_valid = auth_data
+        if is_valid:
+            invalid_data_test('put', PushCampaignApiUrl.SCHEDULE % campaign_in_db.id, token)
+            # data = {
+            #     "start_datetime": to_utc_str(campaign_in_db.start_datetime),
+            #     "end_datetime": to_utc_str(campaign_in_db.end_datetime),
+            #     "frequency": campaign_in_db.frequency
+            # }
+            data = generate_campaign_schedule_data()
+
+            # Test with invalid integer id
+            invalid_ids = [(0, INVALID_USAGE, 'campaign_id should be a positive number'),
+                           (-1, NOT_FOUND, None)]
+            for _id, status_code, message in invalid_ids:
+                response = send_request('put', PushCampaignApiUrl.SCHEDULE % _id, token, data)
+                assert response.status_code == status_code
+                # Test message when it is returned by Resource. in case of -1, URL will
+                # not be hit but service will return html response saying Not found
+                if message:
+                    error = response.json()['error']
+                    assert error['message'] == message
+
+            # Now test for 404, Schedule a campaign which does not exists
+            last_campaign = PushCampaign.query.order_by(PushCampaign.id.desc()).first()
+            non_existing_id = last_campaign.id + 100
+            response = send_request('put', PushCampaignApiUrl.SCHEDULE
+                                    % non_existing_id, token, data)
+            assert response.status_code == NOT_FOUND
+
+            # Test forbidden error. To schedule a task first time, we have to send POST,
+            # but we will send request using PUT which is for update and will validate error
+            data = schedule_a_campaign
+            response = send_request('post', PushCampaignApiUrl.SCHEDULE
+                                    % campaign_in_db.id, token, data)
+            assert response.status_code == FORBIDDEN
+            error = response.json()['error']
+            assert error['message'] == 'Use PUT method instead to update already scheduled task'
+
+            # Test missing start_datetime field which is mandatory to schedule a campaign
+            del data['start_datetime']
+            response = send_request('put', PushCampaignApiUrl.SCHEDULE
+                                    % campaign_in_db.id, token, data)
+            assert response.status_code == INVALID_USAGE
+            error = response.json()['error']
+            assert error['message'] == 'start_datetime is required field.'
+
+            # Test with start_datetime in past. It will raise an error. start_datetime
+            # should be in future
+            start = datetime.datetime.utcnow()
+            data['start_datetime'] = str(start)  # Invalid datetime format
+            response = send_request('put', PushCampaignApiUrl.SCHEDULE
+                                    % campaign_in_db.id, token, data)
+            assert response.status_code == INVALID_USAGE
+            error = response.json()['error']
+            assert error['message'] == 'Invalid DateTime: Kindly specify UTC datetime in ' \
+                                       'ISO-8601 format like 2015-10-08T06:16:55Z. ' \
+                                       'Given Date is %s' % data['start_datetime']
+
+            data = generate_campaign_schedule_data()
+            del data['end_datetime']
+            response = send_request('put', PushCampaignApiUrl.SCHEDULE
+                                    % campaign_in_db.id, token, data)
+            assert response.status_code == INVALID_USAGE
+            error = response.json()['error']
+            assert error['message'] == 'end_datetime is required field to create periodic task'
+
+            data = generate_campaign_schedule_data()
+            response = send_request('put', PushCampaignApiUrl.SCHEDULE
+                                    % campaign_in_db.id, token, data)
+            assert response.status_code == OK
+            response = response.json()
+            assert 'task_id' in response
+            assert 'message' in response
+            task_id = response['task_id']
+            assert task_id
+            assert response['message'] == 'Campaign(id:%s) has been scheduled.' % campaign_in_db.id
+            time.sleep(3 * SLEEP_TIME)
+            #
+            db.session.commit()
+
+            blasts = campaign_in_db.blasts.all()
+            assert len(blasts) == 1
+            blast = blasts[0]
+            # One send expected since only one candidate is associated with campaign
+            assert blast.sends == 1
+
+            # Now remove the task from scheduler
+            response = send_request('delete', SchedulerApiUrl.TASK % task_id, token)
+            assert response.status_code == OK, "Unable to remove task from scheduler with " \
+                                               "id %s" % task_id
+
+        else:
+            # data not needed here but just to be consistent with other requests of
+            # this resource test
+            data = generate_campaign_schedule_data()
+            unauthorize_test('put',  PushCampaignApiUrl.SCHEDULE % campaign_in_db.id, token, data)

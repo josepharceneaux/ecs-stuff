@@ -285,20 +285,11 @@ def serialize_task(task):
             start_datetime=to_utc_str(task.trigger.start_date),
             end_datetime=to_utc_str(task.trigger.end_date),
             next_run_datetime=str(task.next_run_time),
-            # frequency=dict(seconds=task.trigger.interval.seconds),
             frequency=int(task.trigger.interval_length),
             post_data=task.kwargs,
             pending=task.pending,
             task_type=SchedulerUtils.PERIODIC
         )
-        if task_dict['start_datetime']:
-            task_dict['start_datetime'] = task_dict['start_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
-
-        if task_dict['end_datetime']:
-            task_dict['end_datetime'] = task_dict['end_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
-
-        if task_dict['next_run_datetime']:
-            task_dict['next_run_datetime'] = task_dict['next_run_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
 
     # Date Trigger is a one_time task_type
     elif isinstance(task.trigger, DateTrigger):

@@ -5,7 +5,7 @@ from datetime import datetime
 
 from push_campaign_service.common.tests.conftest import (user_auth, sample_user,
                                                          test_domain, test_org, test_culture)
-from push_campaign_service.common.routes import PushCampaignApiUrl
+from push_campaign_service.common.routes import PushCampaignApiUrl, SchedulerApiUrl
 from push_campaign_service.common.models.db import db
 from push_campaign_service.common.models.smartlist import Smartlist, SmartlistCandidate
 from push_campaign_service.common.models.candidate import (Candidate,
@@ -21,8 +21,8 @@ from faker import Faker
 import pytest
 
 from push_campaign_service.modules.constants import TEST_DEVICE_ID
-from push_campaign_service.modules.push_campaign_base import PushCampaignBase
-from push_campaign_service.tests.helper_methods import generate_campaign_data, send_request
+from push_campaign_service.tests.helper_methods import (generate_campaign_data, send_request,
+                                                        generate_campaign_schedule_data)
 
 fake = Faker()
 # Service specific
@@ -143,6 +143,27 @@ def campaign_blasts_count(request, sample_user, test_smartlist, campaign_in_db, 
             # campaign_obj.process_send(campaign_in_db)
             assert response.status_code == 200
     return blasts_counts
+
+
+@pytest.fixture()
+def schedule_a_campaign(request, sample_user, test_smartlist, campaign_in_db, auth_data):
+    """ TODO
+    """
+    token, is_valid = auth_data
+    task_id = None
+    data = {}
+    if is_valid:
+        data = generate_campaign_schedule_data()
+        response = send_request('post', PushCampaignApiUrl.SCHEDULE % campaign_in_db.id, token, data)
+        assert response.status_code == 200
+        response = response.json()
+        task_id = response['task_id']
+
+        def fin():
+            send_request('delete', SchedulerApiUrl.TASK % task_id, token)
+
+        request.addfinalizer(fin)
+    return data
 
 
 @pytest.fixture(scope='function')

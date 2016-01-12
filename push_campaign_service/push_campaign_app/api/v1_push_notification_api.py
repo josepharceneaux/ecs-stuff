@@ -441,6 +441,9 @@ class SchedulePushCampaignResource(Resource):
         :param campaign_id: integer, unique id representing campaign in GT database
         :return: JSON containing message and task_id.
         """
+        get_valid_json_data(request)
+        if not campaign_id:
+            raise InvalidUsage('campaign_id should be a positive number')
         pre_processed_data = PushCampaignBase.pre_process_schedule(request, campaign_id)
         PushCampaignBase.pre_process_re_schedule(pre_processed_data)
         campaign_obj = PushCampaignBase(request.user.id)
