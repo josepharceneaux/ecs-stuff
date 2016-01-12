@@ -9,6 +9,7 @@ from datetime import timedelta
 
 # Application Specific
 # common conftest
+from sms_campaign_service.common.error_handling import ResourceNotFound
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.tests.conftest import *
 
@@ -430,8 +431,7 @@ def url_conversion_by_send_test_sms_campaign(request,
      and returns the source URL from url_conversion database table.
     :return:
     """
-
-    time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
+    time.sleep(2*SLEEP_TIME)  # had to add this as sending process runs on celery
     # Need to commit the session because Celery has its own session, and our session does not
     # know about the changes that Celery session has made.
     db.session.commit()
@@ -441,6 +441,8 @@ def url_conversion_by_send_test_sms_campaign(request,
     # get campaign sends
     sms_campaign_sends = SmsCampaignSend.get_by_blast_id(str(sms_campaign_blast.id))
     # get if of record of sms_campaign_send_url_conversion for this campaign
+    if not sms_campaign_sends:
+        raise ResourceNotFound('sms_campaign_sends record is empty')
     campaign_send_url_conversions = SmsCampaignSendUrlConversion.get_by_campaign_send_id(
         sms_campaign_sends[0].id)
     # get URL conversion record from database table 'url_conversion'
