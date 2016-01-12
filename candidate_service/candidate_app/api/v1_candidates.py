@@ -1195,7 +1195,7 @@ class CandidatePreferenceResource(Resource):
         """
         Endpoint: GET /v1/candidates/:id/preferences
 
-        Function will return requested candidate's preferences
+        Function will return requested candidate's preference(s)
         """
         # Authenticated user & candidate ID
         authed_user, candidate_id = request.user, kwargs.get('id')
@@ -1219,4 +1219,22 @@ class CandidatePreferenceResource(Resource):
         return {'candidate_subscription_preferences': [candidate_subscription_preference]
                 for candidate_subscription_preference in candidate_subscription_preferences}
 
+    def post(self, **kwargs):
+        """
+        Endpoint:  POST /v1/candidates/:id/preferences
+
+        Function will create candidate's preference(s)
+        """
+        # Authenticated user & candidate ID
+        authed_user, candidate_id = request.user, kwargs.get('id')
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_user(authed_user, candidate_id): # TODO: replace with does_candidate_belong_to_users_domain()
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+
+def check_for_candidate(candidate_id):
+    candidate = Candidate.get_by_id(candidate_id=candidate_id)
+    if not candidate or candidate.is_web_hidden:
+        raise NotFoundError('Candidate: {} not found.', custom_error.CANDIDATE_NOT_FOUND)
 
