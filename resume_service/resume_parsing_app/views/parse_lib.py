@@ -21,6 +21,7 @@ import magic
 import requests
 # Module Specific
 from .utils import create_candidate_from_parsed_resume
+from resume_service.common.error_handling import ForbiddenError
 from resume_service.common.error_handling import InvalidUsage
 from resume_service.common.utils.talent_s3 import download_file
 from resume_service.common.utils.talent_s3 import get_s3_filepicker_bucket_and_conn
@@ -60,6 +61,8 @@ def process_resume(parse_params):
             #     "message": "Candidate already exists, creation failed."
             #   }
             # }'
+            if 'error' in candidate_response:
+                raise InvalidUsage(candidate_response['error']['message'])
             candidate_id = json.loads(candidate_response).get('candidates')
             result_dict['id'] = candidate_id[0]['id'] if candidate_id else None
         else:
@@ -184,8 +187,7 @@ def ocr_image(img_file_obj, export_format='pdfSearchable'):
                              data={'profile': 'documentConversion', 'exportFormat': export_format}
                             )
     if response.status_code != 200:
-        current_app.logger.error('ABBY OCR returned non 200 response code')
-        return 0
+        raise ForbiddenError('Error connecting to Abby OCR instance.')
 
     xml = BeautifulSoup(response.text)
     current_app.logger.info("ocr_image() - Abby response to processImage: %s", response.text)

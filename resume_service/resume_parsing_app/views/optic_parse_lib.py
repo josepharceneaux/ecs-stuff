@@ -9,11 +9,12 @@ import urllib2
 # Third Party
 from bs4 import BeautifulSoup as bs4
 from resume_service.resume_parsing_app.views.OauthClient import OAuthClient
-import phonenumbers
 import requests
 # Module Specific
 from flask import current_app
 from resume_service.common.utils.validators import format_phone_number
+from resume_service.common.error_handling import ForbiddenError
+
 
 def fetch_optic_response(resume):
     """
@@ -43,7 +44,8 @@ def fetch_optic_response(resume):
         'locale': 'en_us'
     }
     r = requests.post(BG_URL, headers=HEADERS, json=DATA)
-    #TODO add bad request handling.
+    if r.status_code != requests.codes.ok:
+        raise ForbiddenError('Error connecting to BG instance.')
     html_parser = HTMLParser.HTMLParser()
     unquoted = urllib2.unquote(r.content).decode('utf8')
     unescaped = html_parser.unescape(unquoted)

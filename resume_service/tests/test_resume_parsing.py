@@ -196,4 +196,4 @@ def assert_k_in_d(key, dict, name):
     try:
         assert key in dict
     except:
-        raise KeyError("'{}' not in {}").format(key, name)
+        raise KeyError("'{}' not in {}".format(key, name))
