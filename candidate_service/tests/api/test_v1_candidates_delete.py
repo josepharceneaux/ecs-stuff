@@ -818,7 +818,7 @@ def test_delete_edu_degree_of_a_candidate_belonging_to_a_diff_user(sample_user, 
     updated_resp = request_to_candidate_education_degree_resource(token_2, 'delete', candidate_1_id,
                                                                   education_id=can_1_edu_id, all_degrees=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403
+    assert updated_resp.status_code == 204
 
 
 def test_delete_education_degree_of_a_different_candidate(sample_user, user_auth):
