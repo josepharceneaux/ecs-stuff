@@ -670,8 +670,6 @@ class CampaignBase(object):
             # end datetime should be in valid format and in future
             if not data_to_schedule.get('end_datetime'):
                 raise InvalidUsage('end_datetime is required field to create periodic task')
-            if not frequency:
-                raise InvalidUsage('Frequency cannot be 0 or None to create periodic task')
             task = {
                 "task_type": SchedulerUtils.PERIODIC,
                 "frequency": frequency,
