@@ -8,7 +8,7 @@ from resume_service.common.talent_config_manager import load_gettalent_config, T
 
 app = Flask(__name__)
 load_gettalent_config(app.config)
-app.config.from_object(config)
+# app.config.from_object(config)
 logger = app.config[TalentConfigKeys.LOGGER]
 
 try:

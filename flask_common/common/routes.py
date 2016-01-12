@@ -180,6 +180,7 @@ class ResumeApiUrl(object):
     API_URL = HOST_NAME % ResumeApi.RELATIVE_VERSION
     PARSE = API_URL % ResumeApi.PARSE
     BATCH_URL = API_URL % ResumeApi.BATCH
+    BATCH_PROCESS = '{}/{}'.format(BATCH_URL, '<int:user_id>')
 
 
 class UserServiceApiWords(object):

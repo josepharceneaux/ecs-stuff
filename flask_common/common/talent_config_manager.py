@@ -68,23 +68,27 @@ def _set_environment_specific_configurations(app_config):
         app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_web:s!loc976892@127.0.0.1/talent_local'
         app_config['BACKEND_URL'] = app_config['REDIS_URL'] = 'redis://localhost:6379'
         app_config['LOGGER'] = logging.getLogger("flask_service.dev")
+        app_config['BG_URL'] = 'http://sandbox-lensapi.burning-glass.com/v1.7/parserservice/resume'
         app_config['DEBUG'] = True
     elif environment == 'circle':
         app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west' \
                                                      '-1.rds.amazonaws.com/talent_ci'
         app_config['BACKEND_URL'] = app_config['REDIS_URL'] = 'redis://localhost:6379'
         app_config['LOGGER'] = logging.getLogger("flask_service.ci")
+        app_config['BG_URL'] = 'http://sandbox-lensapi.burning-glass.com/v1.7/parserservice/resume'
         app_config['DEBUG'] = True
     elif environment == 'qa':
         app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_web:s!web976892@devdb.gettalent.' \
                                                      'com/talent_staging'
         app_config['BACKEND_URL'] = app_config['REDIS_URL'] = 'dev-redis-vpc.znj3iz.0001.usw1.cache.' \
                                                                         'amazonaws.com:6379'
+        app_config['BG_URL'] = 'http://sandbox-lensapi.burning-glass.com/v1.7/parserservice/resume'
         app_config['LOGGER'] = logging.getLogger("flask_service.qa")
     elif environment == 'prod':
         app_config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DB_STRING')
         app_config['BACKEND_URL'] = app_config['REDIS_URL'] = 'redis-prod.znj3iz.0001.' \
                                                                         'usw1.cache.amazonaws.com:6379'
+        app_config['BG_URL'] = 'http://sandbox-lensapi.burning-glass.com/v1.7/parserservice/resume'
         app_config['LOGGER'] = logging.getLogger("flask_service.prod")
     else:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")

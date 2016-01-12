@@ -12,6 +12,7 @@ from resume_service.resume_parsing_app.views.parse_lib import process_resume
 from resume_service.resume_parsing_app.views.batch_lib import add_fp_keys_to_queue
 from resume_service.resume_parsing_app.views.batch_lib import _process_batch_item
 from resume_service.common.routes import ResumeApi
+from resume_service.common.error_handling import InvalidUsage
 
 
 PARSE_MOD = Blueprint('resume_api', __name__)
@@ -19,7 +20,7 @@ PARSE_MOD = Blueprint('resume_api', __name__)
 
 # Enable CORS
 CORS(PARSE_MOD, resources={
-    r'/parse_resume': {
+    r'/v1/{}'.format(ResumeApi.PARSE): {
         'origins': '*',
         'allow_headers': ['Content-Type', 'Authorization']
     }
@@ -50,7 +51,7 @@ def resume_post_reciever():
         resume_file = request.files['resume_file']
         filename_str = request.form['resume_file_name']
     else:
-        return jsonify({'error': 'Invalid query params'}), 400
+        raise InvalidUsage("Invalid Query Params")
     parse_params = {
         'filepicker_key': filepicker_key,
         'resume_file': resume_file,
@@ -58,7 +59,7 @@ def resume_post_reciever():
         'create_candidate': create_candidate,
         'oauth': oauth
     }
-    return jsonify(**(process_resume(parse_params)))
+    return process_resume(parse_params)
 
 
 @PARSE_MOD.route(ResumeApi.BATCH, methods=['POST'])
@@ -71,15 +72,17 @@ def post_files_to_queue():
     user_id = request.user.id
     oauth = request.oauth_token
     request_json = request.get_json()
+    if not request_json:
+        raise InvalidUsage("Request headers have invalid content-type")
     filepicker_keys = request_json.get('filenames')
     if filepicker_keys:
         queue_details = add_fp_keys_to_queue(filepicker_keys, user_id, oauth)
         return queue_details, 201
     else:
-        return jsonify(**{'error': {'message': 'No filenames provided'}}), 400
+        raise InvalidUsage("No filenames provided")
 
 
-@PARSE_MOD.route(ResumeApi.BATCH + '/<int:user_id>', methods=['GET'])
+@PARSE_MOD.route(ResumeApi.BATCH_PROCESS, methods=['GET'])
 @require_oauth()
 def process_batch_request(user_id):
     """

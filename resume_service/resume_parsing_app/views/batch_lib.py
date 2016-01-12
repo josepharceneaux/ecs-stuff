@@ -6,13 +6,14 @@ from datetime import timedelta
 import json
 # Framework specific
 from flask import jsonify
-# Module Specific
-from resume_service.common.redis_conn import redis_client
-from resume_service.common.models.user import Token
-from resume_service.resume_parsing_app.views.parse_lib import process_resume
-from resume_service.common.utils.handy_functions import grouper
-from resume_service.common.routes import ResumeApiUrl, SchedulerApiUrl
 import requests
+# Module Specific
+from resume_service.common.models.user import Token
+from resume_service.common.redis_conn import redis_client
+from resume_service.common.routes import ResumeApiUrl, SchedulerApiUrl
+from resume_service.common.utils.handy_functions import grouper
+from resume_service.resume_parsing_app.views.parse_lib import process_resume
+
 
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 

@@ -132,25 +132,26 @@ def test_skill_parsing():
 
 def test_address_parsing():
     """Tests addresses are parsed and formatted properly"""
-    for j in XML_MAPS:
-        resume = j['tree_name']
+    for xml in XML_MAPS:
+        resume = xml['tree_name']
         contact_xml_list = bs4(resume, 'lxml').findAll('contact')
         addresses = parse_candidate_addresses(contact_xml_list)
-        assert len(addresses) == j['addresses_len']
+        assert len(addresses) == xml['addresses_len']
         for address in addresses:
             assert all(k in address for k in ADDRESS_KEYS if address)
 
 
 def test_626_experience_parsing():
     """Tests against specific KeyError reported in JIRA"""
-    experience_xml_list_a = bs4(GET_626a, 'lxml').findAll('experience')
-    experiences_a = parse_candidate_experiences(experience_xml_list_a)
-    experience_xml_list_b = bs4(GET_626b, 'lxml').findAll('experience')
-    experiences_b = parse_candidate_experiences(experience_xml_list_b)
-    for experience in experiences_a:
-        assert all(k in experience for k in WORK_EXPERIENCES_KEYS if experience)
-    for experience in experiences_b:
-        assert all(k in experience for k in WORK_EXPERIENCES_KEYS if experience)
+    XML_experiences_a = bs4(GET_626a, 'lxml').findAll('experience')
+    processed_experiences_a = parse_candidate_experiences(XML_experiences_a)
+    XML_experiences_b = bs4(GET_626b, 'lxml').findAll('experience')
+    processed_experiences_b = parse_candidate_experiences(XML_experiences_b)
+    for experience_dict in processed_experiences_a:
+        # Asserts that experience contains all keys inside WORK_EXPERIENCE_KEYS
+        assert all(k in experience_dict for k in WORK_EXPERIENCES_KEYS if experience_dict)
+    for experience_dict in processed_experiences_b:
+        assert all(k in experience_dict for k in WORK_EXPERIENCES_KEYS if experience_dict)
 
 
 # This could be useful for debugging but requires an application context (keys in .cfg) to run.

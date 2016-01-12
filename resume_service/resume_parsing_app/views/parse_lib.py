@@ -21,6 +21,7 @@ import magic
 import requests
 # Module Specific
 from .utils import create_candidate_from_parsed_resume
+from resume_service.common.error_handling import InvalidUsage
 from resume_service.common.utils.talent_s3 import download_file
 from resume_service.common.utils.talent_s3 import get_s3_filepicker_bucket_and_conn
 from resume_service.resume_parsing_app.views.optic_parse_lib import fetch_optic_response
@@ -43,7 +44,7 @@ def process_resume(parse_params):
         resume_file = StringIO(resume_bin.read())
         filename_str = parse_params.get('filename')
     else:
-        return {'error': 'Invalid query params'}, 400
+        raise InvalidUsage('Invalid query params')
     # Parse the actual resume content.
     result_dict = parse_resume(file_obj=resume_file, filename_str=filename_str)
     # Emails are the ONLY thing required to create a candidate.
@@ -62,8 +63,7 @@ def process_resume(parse_params):
             candidate_id = json.loads(candidate_response).get('candidates')
             result_dict['id'] = candidate_id[0]['id'] if candidate_id else None
         else:
-            return {'error': {'code': 3, 'message': 'Parsed resume did not have email',
-                              'candidate': result_dict}}, 400
+            raise InvalidUsage('Parsed Resume did not contain an email - failure to create')
     return {'candidate': result_dict}
 
 
