@@ -257,7 +257,7 @@ try:
     # ****** CandidatePreferenceResource *******
     api.add_resource(
             CandidatePreferenceResource,
-            CandidateApi.CANDIDATE_PREFERENCE,
+            CandidateApi.CANDIDATE_PREFERENCES,
             endpoint='candidate_preference'
     )
 
