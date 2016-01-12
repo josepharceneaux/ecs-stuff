@@ -39,7 +39,7 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
 
 # Service Specific
 from sms_campaign_service.common.models.db import db
-from sms_campaign_service.sms_campaign_app import app
+from sms_campaign_service.tests.conftest import app
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.handy_functions import replace_ngrok_link_with_localhost
 from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
