@@ -19,8 +19,8 @@
     <option name="USE_PATTERN" value="false" />
     <option name="testToRun" value="$PROJECT_DIR$/sms_campaign_service/tests" />
     <option name="keywords" value="" />
-    <option name="params" value="-k test_get_with_no_sigature" />
-    <option name="USE_PARAM" value="true" />
+    <option name="params" value="-k test_campaign_creation_with_no_user_phone_and_valid_data" />
+    <option name="USE_PARAM" value="false" />
     <option name="USE_KEYWORD" value="false" />
     <method />
   </configuration>

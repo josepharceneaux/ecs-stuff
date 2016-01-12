@@ -9,6 +9,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com
 from sms_campaign_service.modules.custom_exceptions import InvalidUrl
 
 # Common stuff
+from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.common.utils.handy_functions import http_request
 from sms_campaign_service.modules.handy_functions import search_urls_in_text
 from sms_campaign_service.common.campaign_services.validators import is_valid_url_format
@@ -36,7 +37,8 @@ def validate_url_by_http_request(url):
     :rtype: bool
     """
     try:
-        http_request('GET', url)
+        with app.app_context():
+            http_request('GET', url)
     except Exception:
         return False
     return True

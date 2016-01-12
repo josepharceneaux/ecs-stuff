@@ -187,3 +187,17 @@ class TestSmsCampaignSchedule(object):
                                  data=json.dumps(generate_campaign_schedule_data()))
         assert response.status_code == ResourceNotFound.http_status_code()
 
+    def test_campaign_periodic_schedule_with_past_end_date(
+            self, valid_header, sample_user, scheduled_sms_campaign_of_current_user,
+            sms_campaign_smartlist, sample_sms_campaign_candidates, candidate_phone_1):
+        """
+        This is test to schedule SMS campaign with all valid parameters. This should get OK
+         response
+        """
+        data = generate_campaign_schedule_data()
+        data['frequency_id'] = FrequencyIds.DAILY  # for Periodic job
+        data['end_datetime'] = to_utc_str(datetime.utcnow() - timedelta(hours=10))
+        response = requests.post(
+            SmsCampaignApiUrl.SCHEDULE % scheduled_sms_campaign_of_current_user.id,
+            headers=valid_header, data=json.dumps(data))
+        assert response.status_code == InvalidUsage.http_status_code()

@@ -347,6 +347,7 @@ class SmsCampaignBase(CampaignBase):
         if not form_data:
             raise InvalidUsage('save: No data received from UI. (User(id:%s))' % self.user.id)
         form_data['user_phone_id'] = self.user_phone.id
+        print 'in sms_base' + self.user.name
         return super(SmsCampaignBase, self).process_save_or_update(form_data,
                                                                    campaign_id=campaign_id)
 

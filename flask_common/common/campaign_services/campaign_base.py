@@ -287,7 +287,8 @@ class CampaignBase(object):
         if not campaign_id:  # This means campaign is to be updated, not created
             # Create Activity, and If we get Connection error, we log the error
             try:
-                self.campaign_create_activity(campaign_obj)
+                print 'create activity' + self.user.name
+                self.campaign_create_activity(campaign_obj, self.user)
             except ConnectionError:
                 # In case activity_service is not running, we proceed normally and log the error.
                 current_app.config[TalentConfigKeys.LOGGER].error(
@@ -363,7 +364,7 @@ class CampaignBase(object):
                 new_record = campaign_smartlist_model(**data)
                 campaign_smartlist_model.save(new_record)
 
-    def campaign_create_activity(self, source):
+    def campaign_create_activity(self, source, user):
         """
         - Here we set "params" and "type" of activity to be stored in db table "Activity"
             for created Campaign.
@@ -383,8 +384,8 @@ class CampaignBase(object):
             raise InvalidUsage('source should be an instance of model %s.'
                                % SmsCampaign.__tablename__)
         # set params
-        params = {'user_name': self.user.name, 'campaign_name': source.name}
-        self.create_activity(self.user.id,
+        params = {'user_name': user.name, 'campaign_name': source.name}
+        self.create_activity(user.id,
                              _type=get_activity_message_id_from_name(
                                  get_activity_message_name(source.__tablename__, 'CREATE')),
                              source_id=source.id,
@@ -570,11 +571,12 @@ class CampaignBase(object):
         if not scheduler_task_id:  # campaign has no scheduler_task_id associated
             return None
         # HTTP GET request on scheduler_service to schedule campaign
-        response = http_request('GET', SchedulerApiUrl.TASK % scheduler_task_id,
-                                headers=auth_header)
+        try:
+            response = http_request('GET', SchedulerApiUrl.TASK % scheduler_task_id,
+                                    headers=auth_header)
         # Task not found on APScheduler
-        if response.status_code == ResourceNotFound.http_status_code():
-            return None
+        except ResourceNotFound:
+                return None
         # Task is present on APScheduler
         if response.ok:
             return response.json()['task']
@@ -624,7 +626,7 @@ class CampaignBase(object):
         # If any error occurs on POST call, we log the error inside http_request().
         if 'id' in response.json():
             # create campaign scheduled activity
-            self.create_campaign_schedule_activity(self.user.id, self.campaign, self.oauth_header)
+            self.create_campaign_schedule_activity(self.user, self.campaign, self.oauth_header)
             current_app.config[TalentConfigKeys.LOGGER].info('%s(id:%s) has been scheduled.'
                                                              % (self.campaign.__tablename__,
                                                                 self.campaign.id))

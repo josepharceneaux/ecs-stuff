@@ -7,18 +7,19 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 import time
 from datetime import timedelta
 
+# Initialize app
+from sms_campaign_service.sms_campaign_app import init_sms_campaign_app_and_celery_app
+app, _ = init_sms_campaign_app_and_celery_app()
+
 # Application Specific
 # common conftest
-from sms_campaign_service.common.error_handling import ResourceNotFound
-from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.tests.conftest import *
 
 # Service specific
-from sms_campaign_service.sms_campaign_app import init_sms_campaign_app_and_celery_app
-from sms_campaign_service.tests.modules.common_functions import assert_api_send_response
-
-app, _ = init_sms_campaign_app_and_celery_app()
+from sms_campaign_service.common.routes import SmsCampaignApiUrl
+from sms_campaign_service.common.error_handling import ResourceNotFound
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
+from sms_campaign_service.tests.modules.common_functions import assert_api_send_response
 from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL,
                                                                      TWILIO_TEST_NUMBER,
                                                                      TWILIO_INVALID_TEST_NUMBER,
@@ -431,7 +432,7 @@ def url_conversion_by_send_test_sms_campaign(request,
      and returns the source URL from url_conversion database table.
     :return:
     """
-    time.sleep(2*SLEEP_TIME)  # had to add this as sending process runs on celery
+    time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
     # Need to commit the session because Celery has its own session, and our session does not
     # know about the changes that Celery session has made.
     db.session.commit()
