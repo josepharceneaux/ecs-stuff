@@ -475,8 +475,8 @@ def test_delete_candidate_custom_field_with_bad_input():
 
 def test_delete_custom_fields_of_a_candidate_belonging_to_a_diff_user(sample_user, sample_user_2, user_auth):
     """
-    Test:   Attempt to delete custom fields of a Candidate that belongs to a different user
-    Expect: 403, deletion must be prevented
+    Test:   Delete custom fields of a Candidate that belongs to a different user in the same domain
+    Expect: 204
     :type sample_user:  User
     :type sampl_user_2: User
     :type user_auth:   UserAuthentication
@@ -495,7 +495,7 @@ def test_delete_custom_fields_of_a_candidate_belonging_to_a_diff_user(sample_use
     updated_resp = request_to_candidate_custom_field_resource(token_2, 'delete', candidate_1_id,
                                                               all_custom_fields=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403
+    assert updated_resp.status_code == 204
 
 
 def test_delete_candidate_custom_fields_with_no_id(sample_user, user_auth):
