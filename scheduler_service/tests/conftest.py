@@ -7,11 +7,12 @@ from datetime import timedelta
 
 # Application imports
 from scheduler_service import init_app
-from scheduler_service.common.tests.conftest import *
+from scheduler_service.common.tests.conftest import pytest, datetime, User, user_auth, sample_user, test_domain, \
+    test_org, test_culture
 # Application Specific
+from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 
 APP, celery = init_app()
-APP_URL = 'http://0.0.0.0:8011'
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
@@ -20,7 +21,7 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 def job_config_periodic(request):
     return {
         "frequency": 3600,
-        'task_type': 'periodic',
+        'task_type': SchedulerUtils.PERIODIC,
         "content_type": "application/json",
         "url": "http://getTalent.com/sms/send/",
         "start_datetime": "2015-12-05T08:00:00",
@@ -37,7 +38,7 @@ def job_config_periodic(request):
 @pytest.fixture(scope='session')
 def job_config_one_time(request):
     return {
-        'task_type': 'one_time',
+        'task_type': SchedulerUtils.ONE_TIME,
         "content_type": "application/json",
         "url": "http://getTalent.com/email/send/",
         "run_datetime": "2017-05-05T08:00:00",
@@ -64,11 +65,25 @@ def auth_token(user_auth, sample_user):
 @pytest.fixture(scope='function')
 def auth_header(request, auth_token):
     """
-    returns the header which contains bearer token and content Type
+    returns the header which contains bearer token and content type
     :param auth_data: fixture to get access token
     :return: header dict object
     """
     header = {'Authorization': 'Bearer ' + auth_token,
+              'Content-Type': 'application/json'}
+    return header
+
+
+@pytest.fixture(scope='function')
+def auth_header_no_user(request):
+    """
+    returns the header which contains bearer token and content type
+    :param auth_data: fixture to get access token
+    :return: header dict object
+    """
+    secret_key_id, token = User.generate_jw_token()
+    header = {'Authorization': token,
+              'X-Talent-Secret-Key-ID': secret_key_id,
               'Content-Type': 'application/json'}
     return header
 
@@ -82,8 +97,8 @@ def job_config(request, job_config_periodic):
     :return:
     """
     temp_job_config = job_config_periodic.copy()
-    start_date = datetime.utcnow() - timedelta(seconds=15)
+    start_date = datetime.utcnow() + timedelta(minutes=15)
     end_date = start_date + timedelta(days=2)
-    temp_job_config['start_datetime'] = start_date.strftime('%Y-%m-%d %H:%M:%S')
-    temp_job_config['end_datetime'] = end_date.strftime('%Y-%m-%d %H:%M:%S')
+    temp_job_config['start_datetime'] = start_date.strftime('%Y-%m-%dT%H:%M:%SZ')
+    temp_job_config['end_datetime'] = end_date.strftime('%Y-%m-%dT%H:%M:%SZ')
     return temp_job_config

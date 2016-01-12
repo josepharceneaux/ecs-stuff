@@ -30,4 +30,3 @@ if __name__ == '__main__':
     scheduler_app()
     app.run(host='0.0.0.0', port=GTApis.SCHEDULER_SERVICE_PORT, debug=False)
 
-
