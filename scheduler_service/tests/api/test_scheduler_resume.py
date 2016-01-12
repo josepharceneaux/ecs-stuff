@@ -5,7 +5,6 @@ Also try to resume the jobs without using token and it should give 401 status co
 
 # Third party imports
 import json
-import pytest
 import requests
 
 # Application imports
@@ -15,7 +14,7 @@ from scheduler_service.custom_exceptions import SchedulerServiceApiException
 __author__ = 'saad'
 
 
-class TestSchedulerResume:
+class TestSchedulerResume(object):
 
     def test_single_job(self, auth_header, job_config):
         """
@@ -42,7 +41,7 @@ class TestSchedulerResume:
         assert response_stop.status_code == 200
 
         # Paused jobs have their next_run_datetime set to 'None'
-        response = requests.get(SchedulerApiUrl.SINGLE_TASK % job_id, headers=auth_header)
+        response = requests.get(SchedulerApiUrl.TASK % job_id, headers=auth_header)
         next_run_datetime = response.json()['task']['next_run_datetime']
         assert next_run_datetime is None
 
@@ -52,7 +51,7 @@ class TestSchedulerResume:
         assert response_resume.status_code == 200
 
         # Normal jobs don't have their next_run_datetime set to 'None'
-        response = requests.get(SchedulerApiUrl.SINGLE_TASK % job_id, headers=auth_header)
+        response = requests.get(SchedulerApiUrl.TASK % job_id, headers=auth_header)
         next_run_datetime = response.json()['task']['next_run_datetime']
         assert next_run_datetime != 'None'
 
@@ -63,7 +62,7 @@ class TestSchedulerResume:
                response_resume_again.json()['error']['code'] == SchedulerServiceApiException.CODE_ALREADY_RUNNING
 
         # Let's delete jobs now
-        response_remove = requests.delete(SchedulerApiUrl.SINGLE_TASK % job_id,
+        response_remove = requests.delete(SchedulerApiUrl.TASK % job_id,
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
@@ -72,7 +71,7 @@ class TestSchedulerResume:
 
         # Get all jobs except for the one which we just deleted
         for job_id in jobs:
-            response_get = requests.get(SchedulerApiUrl.SINGLE_TASK % job_id,
+            response_get = requests.get(SchedulerApiUrl.TASK % job_id,
                                         headers=auth_header)
             assert response_get.json()['task']['id'] == job_id and \
                    response_get.json()['task']['next_run_datetime']
@@ -114,7 +113,7 @@ class TestSchedulerResume:
         jobs = []
         # Resume jobs have their next_run_datetime set to not 'None'
         for job_id in jobs_id:
-            response_get = requests.get(SchedulerApiUrl.SINGLE_TASK % job_id,
+            response_get = requests.get(SchedulerApiUrl.TASK % job_id,
                                         headers=auth_header)
             jobs.append(response_get.json()['task'])
 
@@ -159,12 +158,12 @@ class TestSchedulerResume:
         assert response_get.status_code == 401
 
         # Let's delete jobs now
-        response_remove = requests.delete(SchedulerApiUrl.SINGLE_TASK % data['id'],
+        response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
         # There shouldn't be any more jobs now
-        response = requests.get(SchedulerApiUrl.SINGLE_TASK % data['id'], headers=auth_header)
+        response = requests.get(SchedulerApiUrl.TASK % data['id'], headers=auth_header)
         assert response.status_code == 404
 
     def test_multiple_resume_jobs_without_token(self, auth_header, job_config):
@@ -204,7 +203,7 @@ class TestSchedulerResume:
 
         # Get all jobs
         for job_id in jobs_id:
-            response_get = requests.get(SchedulerApiUrl.SINGLE_TASK % job_id, data=json.dumps(dict(ids=jobs_id)),
+            response_get = requests.get(SchedulerApiUrl.TASK % job_id, data=json.dumps(dict(ids=jobs_id)),
                                         headers=auth_header)
             jobs.append(response_get.json())
 

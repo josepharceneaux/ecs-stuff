@@ -21,10 +21,10 @@ from flask import current_app
 from ska import (sign_url, Signature)
 
 # Database Models
+from ..models.misc import UrlConversion
 from ..models.sms_campaign import SmsCampaign
 from ..models.push_campaign import PushCampaign
 from ..models.email_marketing import EmailCampaign
-from ..models.misc import (UrlConversion, Frequency)
 
 # Common Utils
 from ..routes import SchedulerApiUrl
@@ -52,10 +52,10 @@ class FrequencyIds(object):
     ONCE = 1
     DAILY = 2
     WEEKLY = 3
-    BIWEEKLY = 3
-    MONTHLY = 4
-    YEARLY = 5
-    CUSTOM = 6
+    BIWEEKLY = 4
+    MONTHLY = 5
+    YEARLY = 6
+    CUSTOM = 7
 
 
 def frequency_id_to_seconds(frequency_id):

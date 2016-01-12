@@ -43,8 +43,6 @@ def assert_url_conversion(sms_campaign_sends):
     for send_url_conversion in campaign_send_url_conversions:
         # get URL conversion record from database table 'url_conversion'
         url_conversion = UrlConversion.get_by_id(send_url_conversion.url_conversion_id)
-        # assert that url_conversion_id is in source URL
-        assert str(url_conversion.id) in url_conversion.source_url
         # delete url_conversion record
         UrlConversion.delete(url_conversion)
 

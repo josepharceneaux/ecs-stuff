@@ -18,8 +18,9 @@ from flask.ext.cors import CORS
 from werkzeug.exceptions import BadRequest
 
 from scheduler_service import TalentConfigKeys, flask_app
+from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token
-from scheduler_service.common.routes import SchedulerApi, SchedulerApiUrl
+from scheduler_service.common.routes import SchedulerApiUrl, SchedulerApi
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse
 from scheduler_service.common.talent_api import TalentApi
 from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFound, ForbiddenError
@@ -35,14 +36,14 @@ api.route = types.MethodType(api_route, api)
 
 # Enable CORS
 CORS(scheduler_blueprint, resources={
-    SchedulerApiUrl.TASKS + '*': {
+    SchedulerApi.SCHEDULER_MULTIPLE_TASKS + '*': {
         'origins': '*',
         'allow_headers': ['Content-Type', 'Authorization']
     }
 })
 
 
-@api.route(SchedulerApi.TASKS)
+@api.route(SchedulerApi.SCHEDULER_MULTIPLE_TASKS)
 class Tasks(Resource):
     """
         This resource returns a list of tasks or it can be used to create or schedule a task using POST.
@@ -60,13 +61,13 @@ class Tasks(Resource):
         In case of authenticated user
 
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/v1//tasks/', headers=headers)
+            response = requests.get(API_URL + '/v1/tasks/', headers=headers)
 
         In case of SECRET_KEY
 
-            headers = {'Authorization': 'Basic <access_token>',
+            headers = {'Authorization': 'Bearer <access_token>',
                         'X-Talent-Server-Key-ID': '<secret_key>'}
-            response = requests.get(API_URL + '/v1//tasks/', headers=headers)
+            response = requests.get(API_URL + '/v1/tasks/', headers=headers)
 
         .. Response::
 
@@ -112,6 +113,7 @@ class Tasks(Resource):
         :Example:
             for interval or periodic schedule
             task = {
+                "task_name": "custom-task",     # Field required only in case of general task
                 "frequency": 3601,
                 "task_type": "periodic",
                 "start_datetime": "2015-12-05T08:00:00",
@@ -126,6 +128,7 @@ class Tasks(Resource):
             }
             for one_time schedule
             task = {
+                "task_name": "custom-task",     # Field required only in case of general task
                 "task_type": "one_time",
                 "run_datetime": "2015-12-05T08:00:00",
                 "url": "http://getTalent.com/email/send/",
@@ -146,7 +149,7 @@ class Tasks(Resource):
 
             In case of SECRET_KEY
 
-            headers = {'Authorization': 'Basic <access_token>',
+            headers = {'Authorization': 'Bearer <access_token>',
                         'X-Talent-Server-Key-ID': '<secret_key>',
                         'Content-Type': 'application/json'
                         }
@@ -244,7 +247,7 @@ class Tasks(Resource):
                         not_removed=not_removed), 207
 
 
-@api.route(SchedulerApi.RESUME_TASKS)
+@api.route(SchedulerApi.SCHEDULER_MULTIPLE_TASK_RESUME)
 class ResumeTasks(Resource):
     """
         This resource resumes a previously paused jobs/tasks
@@ -304,7 +307,7 @@ class ResumeTasks(Resource):
         raise InvalidUsage('Bad request, invalid data in request', error_code=400)
 
 
-@api.route(SchedulerApi.PAUSE_TASKS)
+@api.route(SchedulerApi.SCHEDULER_MULTIPLE_TASK_PAUSE)
 class PauseTasks(Resource):
     """
         This resource pauses jobs/tasks which can be resumed again
@@ -362,10 +365,125 @@ class PauseTasks(Resource):
         raise InvalidUsage('Bad request, invalid data in request', error_code=400)
 
 
-@api.route('/v1/tasks/id/<string:_id>')
+@api.route(SchedulerApi.SCHEDULER_NAMED_TASK)
+class TaskByName(Resource):
+    """
+        This resource returns a specific task based on name
+    """
+
+    @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
+    def get(self, _name, **kwargs):
+        """
+        This action returns a task owned by other service
+        :param _name: name of task
+        :type _name: str
+        :return task: a dictionary containing a task data
+        :rtype json
+
+        :Example:
+
+        In case of SECRET_KEY
+
+            headers = {'Authorization': 'Bearer <access_token>',
+                        'X-Talent-Server-Key-ID': '<secret_key>'}
+            response = requests.get(API_URL + '/v1/tasks/name/custom_task', headers=headers)
+
+        .. Response::
+            {
+               for one time scheduled task
+               "task": {
+                         {
+                            "task_name": "custom_task",
+                            "id": "5das76nbv950nghg8j8-33ddd3kfdw2",
+                            "url": "http://getTalent.com/sms/send/",
+                            "post_data": {
+                                "campaign_name": "SMS Campaign",
+                                "phone_number": "09230862348",
+                                "smart_list_id": 123456,
+                                "content": "text to be sent as sms"
+                                "some_other_kwarg": "abc"
+                            },
+                            "frequency": 3601,
+                            "start_datetime": "2015-11-05T08:00:00",
+                            "end_datetime": "2015-12-05T08:00:00"
+                            "next_run_datetime": "2015-11-05T08:20:30",
+                            "task_type": "periodic"
+                         }
+                    }
+               for interval scheduled task
+               "task": {
+                         {
+                            "task_name": "custom_task",
+                            "id": "5das76nbv950nghg8j8-33ddd3kfdw2",
+                            "url": "http://getTalent.com/email/send/",
+                            "post_data": {
+                                "campaign_name": "Email Campaign",
+                                "phone_number": "09230862348",
+                                "smart_list_id": 123456,
+                                "content": "text to be sent as Email"
+                                "some_other_kwarg": "abc"
+                            },
+                            "run_datetime": "2015-11-05T08:00:00",
+                            "task_type": "one_time"
+                         }
+                    }
+        .. Status:: 200 (OK)
+                    404 (Task not found)
+                    500 (Internal Server Error)
+
+        """
+        user_id = request.user.id if request.user else None
+        check_if_scheduler_is_running()
+        tasks = scheduler.get_jobs()
+        task = [task for task in tasks if task.name == _name and task.args[0] is None]
+        # Make sure task is valid and belongs to non-logged-in user
+        if task and user_id is None:
+            task = serialize_task(task[0])
+            if task:
+                return dict(task=task)
+        raise ResourceNotFound(error_message="Task with name %s not found" % _name)
+
+    @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
+    def delete(self, _name, **kwargs):
+        """
+        Deletes/removes a tasks from scheduler jobstore
+        :param kwargs:
+        :param _name: name of general task
+        :return:
+
+        :Example:
+        In case of SECRET_KEY
+
+            headers = {'Authorization': 'Bearer <access_token>',
+                        'X-Talent-Server-Key-ID': '<secret_key>'}
+            response = requests.delete(API_URL + '/v1/tasks/name/custom_task', headers=headers)
+
+
+        .. Response::
+
+            {
+                'message': 'Task has been removed successfully'
+            }
+        .. Status:: 200 (Resource deleted)
+                    404 (Task Not found)
+                    500 (Internal Server Error)
+
+        """
+        user_id = request.user.id if request.user else None
+        check_if_scheduler_is_running()
+        tasks = scheduler.get_jobs()
+        task = [task for task in tasks if task.name == _name and task.args[0] is None]
+        # Check if task is valid and belongs to the logged-in user
+        if task and user_id is None:
+            scheduler.remove_job(task[0].id)
+            return dict(message="Task has been removed successfully")
+        raise ResourceNotFound(error_message="Task with name %s not found" % _name)
+
+
+@api.route(SchedulerApi.SCHEDULER_ONE_TASK)
 class TaskById(Resource):
     """
-        This resource returns a specific task based on id or update a task
+        This resource returns a specific task based on id or delete a task
     """
 
     @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
@@ -384,13 +502,13 @@ class TaskById(Resource):
         In case of authenticated user
 
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/v1//tasks/5das76nbv950nghg8j8-33ddd3kfdw2', headers=headers)
+            response = requests.get(API_URL + '/v1/tasks/id/5das76nbv950nghg8j8-33ddd3kfdw2', headers=headers)
 
         In case of SECRET_KEY
 
-            headers = {'Authorization': 'Basic <access_token>',
+            headers = {'Authorization': 'Bearer <access_token>',
                         'X-Talent-Server-Key-ID': '<secret_key>'}
-            response = requests.get(API_URL + '/v1//tasks/5das76nbv950nghg8j8-33ddd3kfdw2', headers=headers)
+            response = requests.get(API_URL + '/v1/tasks/id/5das76nbv950nghg8j8-33ddd3kfdw2', headers=headers)
 
         .. Response::
             {
@@ -455,13 +573,13 @@ class TaskById(Resource):
          In case of authenticated user
 
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.delete(API_URL + '/v1//tasks/5das76nbv950nghg8j8-33ddd3kfdw2', headers=headers)
+            response = requests.delete(API_URL + '/v1/tasks/id/5das76nbv950nghg8j8-33ddd3kfdw2', headers=headers)
 
         In case of SECRET_KEY
 
-            headers = {'Authorization': 'Basic <access_token>',
+            headers = {'Authorization': 'Bearer <access_token>',
                         'X-Talent-Server-Key-ID': '<secret_key>'}
-            response = requests.delete(API_URL + '/v1//tasks/5das76nbv950nghg8j8-33ddd3kfdw2', headers=headers)
+            response = requests.delete(API_URL + '/v1/tasks/id/5das76nbv950nghg8j8-33ddd3kfdw2', headers=headers)
 
 
         .. Response::
@@ -484,7 +602,7 @@ class TaskById(Resource):
         raise ResourceNotFound(error_message="Task not found")
 
 
-@api.route(SchedulerApi.RESUME_TASK)
+@api.route(SchedulerApi.SCHEDULER_SINGLE_TASK_RESUME)
 class ResumeTaskById(Resource):
     """
         This resource resumes a previously paused job/task
@@ -526,7 +644,7 @@ class ResumeTaskById(Resource):
         raise ResourceNotFound(error_message="Task not found")
 
 
-@api.route(SchedulerApi.PAUSE_TASK)
+@api.route(SchedulerApi.SCHEDULER_SINGLE_TASK_PAUSE)
 class PauseTaskById(Resource):
     """
         This resource pauses job/task which can be resumed again
@@ -568,7 +686,7 @@ class PauseTaskById(Resource):
         raise ResourceNotFound(error_message="Task not found")
 
 
-@api.route(SchedulerApi.TEST_TASK)
+@api.route(SchedulerApi.SCHEDULER_TASKS_TEST)
 class SendRequestTest(Resource):
     """
         This resource is dummy endpoint which is used to call send_request method for testing
@@ -580,8 +698,8 @@ class SendRequestTest(Resource):
 
     def post(self):
 
-        key = flask_app.config.get(TalentConfigKeys.ENV_KEY)
-        if not (key == 'dev' or key == 'circle'):
+        env_key = flask_app.config.get(TalentConfigKeys.ENV_KEY)
+        if not (env_key == 'dev' or env_key == 'circle'):
             raise ForbiddenError("You are not authorized to access this endpoint.")
 
         user_id = request.user.id
@@ -602,6 +720,7 @@ class SendRequestTest(Resource):
             expiry = expiry.strftime('%Y-%m-%d %H:%M:%S')
 
             # Expire oauth token and then pass it to run_job. And run_job should refresh token and send request to URL
+            db.db.session.commit()
             token = Token.query.filter_by(user_id=request.user.id).first()
             token.update(expires=expiry)
 

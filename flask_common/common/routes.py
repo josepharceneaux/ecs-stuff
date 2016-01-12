@@ -26,11 +26,11 @@ def _get_host_name(service_name, port_number):
 
     For DEV, CIRCLE, In case of auth_service we'll get
         http://127.0.0.1:8001%s
-
     For QA:
-            auth-service-staging.gettalent.com (for auth service)
+            http://auth-service-staging.gettalent.com (for auth service)
     For PROD:
-            auth-service.gettalent.com (for auth service)
+            http://auth-service.gettalent.com (for auth service)
+
     :param service_name: Name of service
     :param port_number: Port number of service
     :type service_name: str
@@ -39,17 +39,16 @@ def _get_host_name(service_name, port_number):
     """
     env = os.getenv(TalentConfigKeys.ENV_KEY) or 'dev'
     if env in ['dev', 'circle']:
+        # This looks like http://127.0.0.1:8001 (for auth service)
         return LOCAL_HOST + ':' + str(port_number) + '%s'
     elif env == 'qa':
-        # This looks like auth-service-webdev.gettalent.com (for auth service)
-        # TODO: Verify this URL after deployment
-        return service_name + '-staging' + TALENT_DOMAIN + '%s'
+        # This looks like https://auth-service-webdev.gettalent.com (for auth service)
+        return 'https://' + service_name + '-staging' + TALENT_DOMAIN + '%s'
     elif env == 'prod':
-        # This looks like auth-service.gettalent.com (for auth service)
-        # TODO: Verify this URL after deployment
-        return service_name + TALENT_DOMAIN + '%s'
+        # This looks like https://auth-service.gettalent.com (for auth service)
+        return 'https://' + service_name + TALENT_DOMAIN + '%s'
     else:
-        raise Exception("Environment variable GT_ENVIRONMENT not set correctly")
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly: Should be dev, circle, qa, or prod")
 
 
 def _get_api_relative_version(api_version):
@@ -590,13 +589,16 @@ class SchedulerApi(object):
                                GTApis.SCHEDULER_SERVICE_PORT)
     VERSION = 'v1'
     # URLs, in case of API
-    TASKS = "/%s/%s" % (VERSION, "tasks/")
-    TEST_TASK = "/%s/%s" % (VERSION, "tasks/test/")
-    TASK = "/%s/%s" % (VERSION, "tasks/id/<string:_id>")
-    RESUME_TASKS = "/%s/%s" % (VERSION, "tasks/resume/")
-    PAUSE_TASKS = "/%s/%s" % (VERSION, "tasks/pause/")
-    RESUME_TASK = "/%s/%s" % (VERSION, "tasks/<string:_id>/resume/")
-    PAUSE_TASK = "/%s/%s" % (VERSION, "tasks/<string:_id>/pause/")
+    RELATIVE_VERSION = _get_api_relative_version(VERSION)
+    SCHEDULER_MULTIPLE_TASKS = RELATIVE_VERSION % "tasks/"
+    SCHEDULER_TASKS_TEST = RELATIVE_VERSION % "tasks/test/"
+    SCHEDULER_ONE_TASK = RELATIVE_VERSION % "tasks/id/<string:_id>"
+    SCHEDULER_NAMED_TASK = RELATIVE_VERSION % "tasks/name/<string:_name>"
+    SCHEDULER_ONE_TASK_NAME = RELATIVE_VERSION % "tasks/name/<string:_name>"
+    SCHEDULER_MULTIPLE_TASK_RESUME = RELATIVE_VERSION % "tasks/resume/"
+    SCHEDULER_MULTIPLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/pause/"
+    SCHEDULER_SINGLE_TASK_RESUME = RELATIVE_VERSION % "tasks/<string:_id>/resume/"
+    SCHEDULER_SINGLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/<string:_id>/pause/"
 
 
 class SchedulerApiUrl(object):
@@ -606,15 +608,20 @@ class SchedulerApiUrl(object):
     HOST_NAME = _get_host_name(GTApis.SCHEDULER_SERVICE_NAME,
                                GTApis.SCHEDULER_SERVICE_PORT)
     VERSION = 'v1'
-    API_URL = HOST_NAME % _get_api_relative_version('v1')
-    # URLs, in case of API
-    TASKS = API_URL % "tasks/"
-    TEST_TASK = API_URL % "tasks/test/"
-    TASK = API_URL % "tasks/id/%s"
-    RESUME_TASKS = API_URL % "tasks/resume/"
-    PAUSE_TASKS = API_URL % "tasks/pause/"
-    RESUME_TASK = API_URL % "tasks/%s/resume/"
-    PAUSE_TASK = API_URL % "tasks/%s/pause/"
+
+    HOST_NAME %= _get_api_relative_version(VERSION)
+    # URLs, in case of test cases
+    TASKS = HOST_NAME % "tasks/"
+    TASK = HOST_NAME % 'tasks/id/%s'
+    TASK_NAME = HOST_NAME % 'tasks/name/%s'
+    PAUSE_TASK = HOST_NAME % 'tasks/%s/pause/'
+    RESUME_TASK = HOST_NAME % 'tasks/%s/resume/'
+    PAUSE_TASKS = HOST_NAME % 'tasks/pause/'
+    RESUME_TASKS = HOST_NAME % 'tasks/resume/'
+    TEST_TASK = HOST_NAME % 'tasks/test/'
+
+    # Use different port of scheduler service URL
+    FLOWER_MONITORING = '--port=5511'
 
 
 class PushCampaignApi(object):
@@ -664,3 +671,4 @@ class PushCampaignApiUrl(object):
     SCHEDULE = CAMPAIGN + '/schedule'
     DEVICES = PushCampaignApi.HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'devices')
     REDIRECT = PushCampaignApi.HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'redirect/%s')
+

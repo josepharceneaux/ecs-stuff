@@ -40,6 +40,7 @@ class TalentConfigKeys(object):
     TWILIO_ACCOUNT_SID = "TWILIO_ACCOUNT_SID"
     TWILIO_TEST_AUTH_TOKEN = "TWILIO_TEST_AUTH_TOKEN"
     TWILIO_TEST_ACCOUNT_SID = "TWILIO_TEST_ACCOUNT_SID"
+    IS_DEV = "IS_DEV"
 
 
 def load_gettalent_config(app_config):
@@ -59,7 +60,7 @@ def load_gettalent_config(app_config):
 
             # If a configuration variable is set in environment variables then it should be given preference
             app_config[value] = os.getenv(value) or app_config.get(value, '')
-            if not app_config[value] and value != 'LOGGER':
+            if not app_config[value] and value not in ['LOGGER', 'IS_DEV']:
                 raise Exception('Configuration variable: "%s" is missing' % value)
 
     _set_environment_specific_configurations(app_config)

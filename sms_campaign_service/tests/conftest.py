@@ -4,14 +4,19 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
     This file contains pyTest fixtures for tests of SMS Campaign Service.
 """
 # Standard Import
-from datetime import timedelta
 import time
+from datetime import timedelta
+
 # Application Specific
 # common conftest
-from sms_campaign_service.common.campaign_services.campaign_utils import FrequencyIds
+from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.tests.conftest import *
 
 # Service specific
+from sms_campaign_service.sms_campaign_app import init_sms_campaign_app_and_celery_app
+from sms_campaign_service.tests.modules.common_functions import assert_api_send_response
+
+app, _ = init_sms_campaign_app_and_celery_app()
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL,
                                                                      TWILIO_TEST_NUMBER,
@@ -27,7 +32,9 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
                                                              SmsCampaignBlast, SmsCampaignSend,
                                                              SmsCampaignSendUrlConversion)
 # Common Utils
-from sms_campaign_service.common.utils.handy_functions import JSON_CONTENT_TYPE_HEADER, to_utc_str
+from sms_campaign_service.common.utils.handy_functions import (JSON_CONTENT_TYPE_HEADER,
+                                                               to_utc_str)
+from sms_campaign_service.common.campaign_services.campaign_utils import FrequencyIds
 
 SLEEP_TIME = 10  # needed to add this because tasks run on Celery
 
@@ -254,10 +261,10 @@ def create_campaign_sends(candidate_first, candidate_second, create_sms_campaign
     :param candidate_second: fixture to create another test candidate
     :return:
     """
-    campaign_send_1 = SmsCampaignBase.create_or_update_sms_campaign_send(create_sms_campaign_blast,
+    SmsCampaignBase.create_or_update_sms_campaign_send(create_sms_campaign_blast,
                                                                          candidate_first.id,
                                                                          datetime.now())
-    campaign_send_2 = SmsCampaignBase.create_or_update_sms_campaign_send(create_sms_campaign_blast,
+    SmsCampaignBase.create_or_update_sms_campaign_send(create_sms_campaign_blast,
                                                                          candidate_second.id,
                                                                          datetime.now())
 
@@ -402,9 +409,15 @@ def process_send_sms_campaign(sample_user, auth_token,
     :return:
     """
 
-    campaign_obj = SmsCampaignBase(sample_user.id)
-    # send campaign to candidates, which will be sent by a Celery task
-    campaign_obj.process_send(scheduled_sms_campaign_of_current_user)
+    # campaign_obj = SmsCampaignBase(sample_user.id)
+    # # send campaign to candidates, which will be sent by a Celery task
+    # with app.app_context():
+    #     campaign_obj.process_send(scheduled_sms_campaign_of_current_user)
+    # time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
+    response_post = requests.post(SmsCampaignApiUrl.SEND
+                                  % scheduled_sms_campaign_of_current_user.id,
+                                  headers=dict(Authorization='Bearer %s' % auth_token))
+    assert_api_send_response(scheduled_sms_campaign_of_current_user, response_post, 200)
     time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
 
 
@@ -417,6 +430,7 @@ def url_conversion_by_send_test_sms_campaign(request,
      and returns the source URL from url_conversion database table.
     :return:
     """
+
     time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
     # Need to commit the session because Celery has its own session, and our session does not
     # know about the changes that Celery session has made.

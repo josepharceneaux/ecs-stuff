@@ -4,7 +4,6 @@ Test cases for creating schedule job with and without token.
 
 # Third party imports
 import json
-import pytest
 import requests
 
 # Application imports
@@ -13,7 +12,7 @@ from scheduler_service.common.routes import SchedulerApiUrl
 __author__ = 'saad'
 
 
-class TestSchedulerCreate:
+class TestSchedulerCreate(object):
 
     def test_single_scheduled_job_without_user(self, auth_header_no_user, job_config):
         """
@@ -31,7 +30,7 @@ class TestSchedulerCreate:
         assert response.status_code == 400
 
         # Assign task_name in job post data (general task)
-        job_config['task_name'] = 'Custom General Named Task'
+        job_config['task_name'] = 'Custom_General_Named_Task'
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header_no_user)
         assert response.status_code == 201
@@ -44,7 +43,7 @@ class TestSchedulerCreate:
         assert response.status_code == 400
 
         # Let's delete jobs now
-        response_remove = requests.delete(SchedulerApiUrl.SINGLE_TASK % data['id'],
+        response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
                                           headers=auth_header_no_user)
         assert response_remove.status_code == 200
 
@@ -76,7 +75,7 @@ class TestSchedulerCreate:
         assert data['id']
 
         # Let's delete jobs now
-        response_remove = requests.delete(SchedulerApiUrl.SINGLE_TASK % data['id'],
+        response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
                                           headers=auth_header)
         assert response_remove.status_code == 200
 

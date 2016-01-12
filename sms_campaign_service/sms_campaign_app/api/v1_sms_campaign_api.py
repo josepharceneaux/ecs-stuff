@@ -23,7 +23,7 @@ This file contains API endpoints related to sms_campaign_service.
         - SmsCampaigns: /v1/campaigns/:id
 
             GET     : Gets campaign data using given id
-            POST    : Updates existing campaign using given id
+            PUT    : Updates existing campaign using given id
             DELETE  : Deletes SMS campaign from db using given id
 
         - SmsCampaignSends:  /v1/campaigns/:id/sends
@@ -88,7 +88,7 @@ api.route = types.MethodType(api_route, api)
 
 # Enable CORS
 CORS(sms_campaign_blueprint, resources={
-    r'' + SmsCampaignApi.VERSION + '/(campaigns)/*': {
+    r'%s/*' + SmsCampaignApi.CAMPAIGNS + '/(campaigns)/*': {
         'origins': '*',
         'allow_headers': ['Content-Type', 'Authorization']
     }
@@ -348,7 +348,7 @@ class ScheduleSmsCampaign(Resource):
         sms_camp_obj.campaign = pre_processed_data['campaign']
         # call schedule() method to schedule the campaign and get the task_id
         task_id = sms_camp_obj.schedule(pre_processed_data['data_to_schedule'])
-        return dict(message='Campaign(id:%s) has been scheduled.' % campaign_id,
+        return dict(message='SMS Campaign(id:%s) has been scheduled.' % campaign_id,
                     task_id=task_id), 200
 
     def put(self, campaign_id):
@@ -498,7 +498,7 @@ class CampaignById(Resource):
         campaign = SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id)
         return dict(campaign=campaign.to_json()), 200
 
-    def post(self, campaign_id):
+    def put(self, campaign_id):
         """
         Updates campaign in getTalent's database
         :param campaign_id: id of campaign on getTalent database

@@ -574,3 +574,4 @@ class TestSmartlistStatsUpdateApi(object):
                      response.get('smartlist_data')]
         assert 3 in [smartlist_data.get('total_number_of_candidates') for smartlist_data in
                      response.get('smartlist_data')]
+
