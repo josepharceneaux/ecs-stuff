@@ -13,6 +13,7 @@ from resume_service.common.routes import ResumeApiUrl, SchedulerApiUrl
 from resume_service.common.utils.handy_functions import grouper
 from resume_service.resume_parsing_app import redis_store
 from resume_service.resume_parsing_app.views.parse_lib import process_resume
+from resume_service.common.error_handling import TalentError
 
 
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
@@ -35,10 +36,11 @@ def add_fp_keys_to_queue(filepicker_keys, user_id, token):
                 "run_datetime": scheduled.strftime(DATE_FORMAT),
                 "url": "{}/{}".format(ResumeApiUrl.BATCH_URL, user_id),
             })
-            # TODO Handle missed connections/http errors.
             scheduler_request = requests.post(SchedulerApiUrl.TASKS, data=payload,
                                               headers={'Authorization': 'bearer {}'.format(token),
                                                        'Content-Type': 'application/json'})
+            if scheduler_request.status_code != 201:
+                raise TalentError("Issue scheduling resume parsing")
         scheduled += timedelta(seconds=20)
 
     return {'redis_key': queue_string, 'quantity': list_length}

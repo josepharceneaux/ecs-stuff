@@ -1,7 +1,5 @@
 """Unit tests for formatting and accuracy for offline testing."""
 __author__ = 'erik@gettalent.com'
-# Standard Library
-import random
 # Third party.
 from bs4 import BeautifulSoup as bs4
 # JSON outputs.
