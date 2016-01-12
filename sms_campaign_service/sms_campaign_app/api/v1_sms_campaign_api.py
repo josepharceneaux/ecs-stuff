@@ -274,7 +274,7 @@ class SMSCampaigns(Resource):
         for campaign_id in campaign_ids:
             try:
                 deleted = SmsCampaignBase.process_delete_campaign(
-                    campaign_id=campaign_id, current_user_id=request.user.id,
+                    campaign_id=campaign_id, current_user=request.user,
                     bearer_access_token=request.oauth_token)
                 if not deleted:
                     # error has been logged inside process_delete_campaign()
@@ -587,9 +587,9 @@ class CampaignById(Resource):
         ..Error codes::
                     5010 (ErrorDeletingSMSCampaign)
         """
-        campaign_deleted = SmsCampaignBase.process_delete_campaign(campaign_id=campaign_id,
-                                                                   current_user_id=request.user.id,
-                                                                   bearer_access_token=request.oauth_token)
+        campaign_deleted = SmsCampaignBase.process_delete_campaign(
+            campaign_id=campaign_id, current_user=request.user,
+            bearer_access_token=request.oauth_token)
         if campaign_deleted:
             return dict(message='Campaign(id:%s) has been deleted successfully' % campaign_id), 200
         else:

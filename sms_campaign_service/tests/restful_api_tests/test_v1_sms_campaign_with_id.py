@@ -11,6 +11,7 @@ import requests
 
 # Service Specific
 from sms_campaign_service.common.tests.sample_data import fake
+from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 
 # Common Utils
@@ -19,6 +20,8 @@ from sms_campaign_service.common.error_handling import (UnauthorizedError, Resou
                                                         ForbiddenError, InternalServerError,
                                                         InvalidUsage)
 from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
+from sms_campaign_service.tests.modules.common_functions import assert_for_activity, \
+    assert_campaign_delete
 
 
 class TestSmsCampaignWithIdHTTPGET(object):
@@ -157,7 +160,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         assert response_post.status_code == ForbiddenError.http_status_code(), \
             'It should get forbidden error (403)'
 
-    def test_updating_deleted_record(self, valid_header,
+    def test_updating_deleted_record(self, valid_header, sample_user,
                                      sms_campaign_of_current_user,
                                      campaign_valid_data):
         """
@@ -165,14 +168,13 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         to update the record. It should get ResourceNotFound error.
         :return:
         """
+        campaign_id = sms_campaign_of_current_user.id
         response_delete = requests.delete(
-            SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
-            headers=valid_header)
-        assert response_delete.status_code == 200, 'should get ok response (200)'
-        response_post = requests.put(
-            SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
-            headers=valid_header,
-            data=json.dumps(campaign_valid_data))
+            SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id, headers=valid_header)
+        assert_campaign_delete(response_delete, sample_user.id, campaign_id)
+        response_post = requests.put(SmsCampaignApiUrl.CAMPAIGN % campaign_id,
+                                     headers=valid_header,
+                                     data=json.dumps(campaign_valid_data))
         assert response_post.status_code == ResourceNotFound.http_status_code(), \
             'Record should not be found (404)'
 
@@ -250,7 +252,7 @@ class TestSmsCampaignWithIdHTTPDelete(object):
         assert response.status_code == UnauthorizedError.http_status_code(), \
             'It should be unauthorized (401)'
 
-    def test_owned_sms_campaign(self, valid_header, sms_campaign_of_current_user):
+    def test_owned_sms_campaign(self, valid_header, sample_user, sms_campaign_of_current_user):
         """
         User auth token is valid. It deletes the campaign, belong to the user, from database.
         It should get OK response.
@@ -258,7 +260,7 @@ class TestSmsCampaignWithIdHTTPDelete(object):
         """
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
                                    headers=valid_header)
-        assert response.status_code == 200, 'should get ok response (200)'
+        assert_campaign_delete(response, sample_user.id, sms_campaign_of_current_user.id)
 
     def test_not_owned_sms_campaign(self, valid_header, sms_campaign_of_other_user):
         """
@@ -271,16 +273,17 @@ class TestSmsCampaignWithIdHTTPDelete(object):
         assert response.status_code == ForbiddenError.http_status_code(), \
             'it should get forbidden error (403)'
 
-    def test_with_deleted_campaign(self, valid_header, sms_campaign_of_current_user):
+    def test_with_deleted_campaign(self, valid_header, sample_user, sms_campaign_of_current_user):
         """
         We first delete an SMS campaign, and again try to delete it. It should get
         ResourceNotFound error.
         :return:
         """
-        response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
+        campaign_id = sms_campaign_of_current_user.id
+        response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % campaign_id,
                                    headers=valid_header)
-        assert response.status_code == 200
+        assert_campaign_delete(response, sample_user.id, campaign_id)
         response_after_delete = requests.delete(
-            SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.CAMPAIGN % campaign_id,
             headers=valid_header)
         assert response_after_delete.status_code == ResourceNotFound.http_status_code()

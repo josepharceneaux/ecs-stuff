@@ -15,7 +15,8 @@ from werkzeug.security import gen_salt
 from sms_campaign_service.common.tests.sample_data import fake
 from sms_campaign_service.tests.conftest import db, CREATE_CAMPAIGN_DATA
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
-from sms_campaign_service.tests.modules.common_functions import assert_for_activity
+from sms_campaign_service.tests.modules.common_functions import assert_for_activity, \
+    assert_campaign_delete
 
 # Models
 from sms_campaign_service.common.models.user import UserPhone
@@ -359,7 +360,8 @@ class TestSmsCampaignHTTPDelete(object):
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should be a bad request (400)'
 
-    def test_campaigns_delete_with_authorized_ids(self, valid_header, sms_campaign_of_current_user):
+    def test_campaigns_delete_with_authorized_ids(self, valid_header, sample_user,
+                                                  sms_campaign_of_current_user):
         """
         User auth token is valid, data type is valid and ids are valid
         (campaign corresponds to user). Response should be OK.
@@ -370,7 +372,7 @@ class TestSmsCampaignHTTPDelete(object):
                                    data=json.dumps({
                                        'ids': [sms_campaign_of_current_user.id]
                                    }))
-        assert response.status_code == 200, 'Response should be ok (200)'
+        assert_campaign_delete(response, sample_user.id, sms_campaign_of_current_user.id)
 
     def test_campaigns_delete_with_unauthorized_ids(self, valid_header,
                                                     sms_campaign_of_other_user):
@@ -387,7 +389,7 @@ class TestSmsCampaignHTTPDelete(object):
         assert response.status_code == ForbiddenError.http_status_code(), \
             'It should get forbidden error (403)'
 
-    def test_campaigns_delete_authorized_and_unauthorized_ids(self, valid_header,
+    def test_campaigns_delete_authorized_and_unauthorized_ids(self, valid_header, sample_user,
                                                               sms_campaign_of_other_user,
                                                               sms_campaign_of_current_user):
         """
@@ -403,23 +405,27 @@ class TestSmsCampaignHTTPDelete(object):
                                    }))
         assert response.status_code == 207
         assert sms_campaign_of_other_user.id in response.json()['not_deleted_ids']
+        assert_for_activity(sample_user.id, ActivityMessageIds.CAMPAIGN_DELETE,
+                            sms_campaign_of_current_user.id)
 
-    def test_campaigns_delete_with_deleted_record(self, valid_header, sms_campaign_of_current_user):
+    def test_campaigns_delete_with_deleted_record(self, valid_header, sample_user,
+                                                  sms_campaign_of_current_user):
         """
         We first delete an SMS campaign, and again try to delete it. It should get
         ResourceNotFound error.
         :return:
         """
+        campaign_id = sms_campaign_of_current_user.id
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header,
                                    data=json.dumps({
-                                       'ids': [sms_campaign_of_current_user.id]
+                                       'ids': [campaign_id]
                                    }))
-        assert response.status_code == 200
+        assert_campaign_delete(response, sample_user.id, campaign_id)
         response_after_delete = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                                 headers=valid_header,
                                                 data=json.dumps({
-                                                    'ids': [sms_campaign_of_current_user.id]
+                                                    'ids': [campaign_id]
                                                 }))
         assert response_after_delete.status_code == ResourceNotFound.http_status_code()
 
@@ -454,7 +460,7 @@ def _assert_campaign_creation(response, user_id, expected_status_code):
     resp = response.json()
     assert 'location' in response.headers
     assert 'sms_campaign_id' in resp
-    assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_SMS_CREATE, resp['sms_campaign_id'])
+    assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_CREATE, resp['sms_campaign_id'])
 
 
 def _delete_created_number_of_user(user):

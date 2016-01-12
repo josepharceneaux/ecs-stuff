@@ -221,7 +221,8 @@ class TestCampaignSchedule(object):
         response = requests.post(
             SmsCampaignApiUrl.SCHEDULE % scheduled_sms_campaign_of_current_user.id,
             headers=valid_header, data=json.dumps(generate_campaign_schedule_data()))
-        task_id = assert_campaign_schedule(response)
+        task_id = assert_campaign_schedule(response, sample_user.id,
+                                           scheduled_sms_campaign_of_current_user.id)
         time.sleep(SLEEP_TIME)
         assert_on_blasts_sends_url_conversion_and_activity(
             sample_user.id, 1, str(scheduled_sms_campaign_of_current_user.id))

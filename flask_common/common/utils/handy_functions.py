@@ -156,7 +156,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     :return: response from HTTP request or None
     :Example:
         If we are requesting scheduler_service to GET a task, we will use this method as
-            http_request('GET', SchedulerApiUrl.TASK % scheduler_task_id, headers=auth_header)
+            http_request('GET', SchedulerApiUrl.TASK % scheduler_task_id, headers=oauth_header)
     """
     logger = current_app.config[TalentConfigKeys.LOGGER]
     if not isinstance(method_type, basestring):

@@ -128,10 +128,12 @@ class TalentActivityManager(object):
             "%(username)s deleted %(count)s candidates",
             "candidate.png"),
         ActivityMessageIds.CAMPAIGN_CREATE: (
-            "%(username)s created a campaign: %(name)s", "%(username)s created %(count)s campaigns",
+            "%(username)s created a/an %(campaign_type)s campaign: %(campaign_name)s",
+            "%(username)s created %(count)s campaigns",
             "campaign.png"),
         ActivityMessageIds.CAMPAIGN_DELETE: (
-            "%(username)s deleted a campaign: %(name)s", "%(username)s deleted %(count)s campaigns",
+            "%(username)s deleted a/an %(campaign_type)s campaign: %(name)s",
+            "%(username)s deleted %(count)s campaigns",
             "campaign.png"),
         ActivityMessageIds.CAMPAIGN_SEND: (
             "Campaign %(name)s was sent to %(num_candidates)s candidates",
@@ -168,7 +170,6 @@ class TalentActivityManager(object):
         ActivityMessageIds.NOTIFICATION_CREATE: (
             "You received an update notification", "You received %(count)s update notifications",
             "notification.png"),
-
         ActivityMessageIds.CAMPAIGN_EMAIL_SEND: (
             "%(candidate_name)s received email of campaign %(campaign_name)s",
             "%(count)s candidates received email of campaign %(campaign_name)s", "campaign.png"),
@@ -178,10 +179,6 @@ class TalentActivityManager(object):
         ActivityMessageIds.CAMPAIGN_EMAIL_CLICK: (
             "%(candidate_name)s clicked email of campaign %(campaign_name)s",
             "Campaign %(campaign_name)s was clicked %(count)s times", "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_SMS_CREATE: (
-            "%(user_name)s created an SMS campaign: '%(campaign_name)s'",
-            "%(user_name)s created an SMS campaign: '%(campaign_name)s'",
-            "campaign.png"),
         ActivityMessageIds.CAMPAIGN_SMS_SEND: (
             "SMS Campaign <b>%(campaign_name)s</b> has been sent to %(candidate_name)s.",
             "SMS Campaign %(campaign_name)s has been sent to %(candidate_name)s.",
@@ -196,8 +193,8 @@ class TalentActivityManager(object):
             "%(candidate_name)s replied '%(reply_text)s' on campaign %(campaign_name)s.",
             "campaign.png"),
         ActivityMessageIds.CAMPAIGN_SCHEDULE: (
-            "%(username)s scheduled a %(campaign_type)s  <b>%(campaign_name)s</b>.",
-            "%(username)s scheduled a %(campaign_type)s  <b>%(campaign_name)s</b>.",
+            "%(username)s scheduled a/an %(campaign_type)s campaign: <b>%(campaign_name)s</b>.",
+            "%(username)s scheduled a/an %(campaign_type)s campaign: <b>%(campaign_name)s</b>.",
             "campaign.png"),
     }
 

@@ -15,7 +15,8 @@ from sms_campaign_service.common.campaign_services.campaign_utils import Frequen
 from sms_campaign_service.common.tests.auth_utilities import to_utc_str
 from sms_campaign_service.common.tests.sample_data import fake
 from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
-from sms_campaign_service.tests.modules.common_functions import assert_method_not_allowed
+from sms_campaign_service.tests.modules.common_functions import assert_method_not_allowed, \
+    assert_campaign_delete
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
@@ -171,18 +172,19 @@ class TestSmsCampaignSchedule(object):
                                  headers=valid_header)
         assert response.status_code == InvalidUsage.http_status_code()
 
-    def test_campaign_schedule_with_deleted_resource(self, valid_header,
+    def test_campaign_schedule_with_deleted_resource(self, valid_header, sample_user,
                                                      sms_campaign_of_current_user):
         """
         Here we first delete the campaign from database. Then we try to schedule it. It
         should get ResourceNotFound error,
         """
+        campaign_id = sms_campaign_of_current_user.id
         # Delete the campaign first
-        response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
+        response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % campaign_id,
                                    headers=valid_header)
-        assert response.status_code == 200
+        assert_campaign_delete(response, sample_user.id, campaign_id)
         # Try to schedule deleted campaign
-        response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
+        response = requests.post(SmsCampaignApiUrl.SCHEDULE % campaign_id,
                                  headers=valid_header,
                                  data=json.dumps(generate_campaign_schedule_data()))
         assert response.status_code == ResourceNotFound.http_status_code()
