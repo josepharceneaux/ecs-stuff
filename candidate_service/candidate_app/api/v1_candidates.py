@@ -1186,3 +1186,26 @@ class CandidateViewResource(Resource):
 
         candidate_views = fetch_candidate_views(candidate_id=candidate_id)
         return {'candidate_views': [candidate_view for candidate_view in candidate_views]}
+
+
+class CandidatePreferenceResource(Resource):
+    decorators = [require_oauth()]
+
+    def get(self, **kwargs):
+        """
+        Endpoint: GET /v1/candidates/:id/preferences
+
+        Function will return requested candidate's preferences
+        """
+        # Authenticated user & candidate ID
+        authed_user, candidate_id = request.user, kwargs.get('id')
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        # Ensure Candidate exists & is not web-hidden
+        candidate = Candidate.get_by_id(candidate_id=candidate_id)
+        if not candidate or candidate.is_web_hidden:
+            raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
+                                error_code=custom_error.CANDIDATE_NOT_FOUND)
