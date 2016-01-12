@@ -510,35 +510,23 @@ class CandidateCustomFieldResource(Resource):
         Depending on the endpoint requested, function will delete all of Candidate's
         custom fields or just a single one.
         """
-        # Authenticated user
-        authed_user = request.user
-        from candidate_service.common.models.user import Token
-        token = db.session.query(Token).filter_by(user_id=authed_user.id).first()
-        if token:
-            token = token.access_token
-
-        # Get candidate_id and can_cf_id (candidate custom field ID, i.e. CandidateCustomField.id)
-        candidate_id, can_cf_id = kwargs.get('candidate_id'), kwargs.get('id')
+        # Authenticated user, candidate_id, and can_cf_id (CandidateCustomField.id)
+        authed_user, candidate_id, can_cf_id = request.user, kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
-        msg = "\nauthed_user_id: {}, \ntoken: {}, \ncan_id: {}, \ndomain_id: {}, \ncan_cf_id: {}".format(
-                    authed_user.id, token, candidate_id, authed_user.domain_id, can_cf_id)
-        print msg
-
         if can_cf_id:  # Delete specified custom field
             candidate_custom_field = CandidateCustomField.get_by_id(_id=can_cf_id)
             if not candidate_custom_field:
-                raise NotFoundError('Candidate custom field not found', custom_error.CUSTOM_FIELD_NOT_FOUND)
+                raise NotFoundError('Candidate custom field not found: {}'.format(can_cf_id),
+                                    custom_error.CUSTOM_FIELD_NOT_FOUND)
 
             # Custom fields must belong to user's domain
             custom_field_id = candidate_custom_field.custom_field_id
             if not is_custom_field_authorized(authed_user.domain_id, [custom_field_id]):
-                msg = "authed_user_id: {}, token: {}, can_id: {}, domain_id: {}, can_cf_id: {}".format(
-                        authed_user.id, token, candidate_id, authed_user.domain_id, can_cf_id)
-                raise ForbiddenError('Not authorized. {}'.format(msg), custom_error.CUSTOM_FIELD_FORBIDDEN)
+                raise ForbiddenError('Not authorized', custom_error.CUSTOM_FIELD_FORBIDDEN)
 
             db.session.delete(candidate_custom_field)
 
