@@ -91,7 +91,7 @@ def generate_campaign_schedule_data():
     This data contains start_date, end_datetime and frequency id
     :return:
     """
-    start = datetime.utcnow() + timedelta(seconds=10)
+    start = datetime.utcnow() + timedelta(seconds=20)
     end = datetime.utcnow() + timedelta(days=10)
     data = {
         "frequency_id": 2,

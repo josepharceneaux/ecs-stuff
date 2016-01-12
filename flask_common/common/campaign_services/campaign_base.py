@@ -625,7 +625,7 @@ class CampaignBase(object):
         # If any error occurs on POST call, we log the error inside http_request().
         if 'id' in response.json():
             # create campaign scheduled activity
-            self.create_campaign_schedule_activity(self.user.id, self.campaign, self.oauth_header)
+            self.create_campaign_schedule_activity(self.user, self.campaign, self.oauth_header)
             current_app.config[TalentConfigKeys.LOGGER].info('%s(id:%s) has been scheduled.'
                                               % (self.campaign.__tablename__, self.campaign.id))
             return response.json()['id']
@@ -704,8 +704,8 @@ class CampaignBase(object):
         .. see also:: schedule() method in CampaignBase class.
         """
         # any other campaign will update this line
-        if not isinstance(source, SmsCampaign):
-            raise InvalidUsage('source should be an instance of model sms_campaign')
+        if not isinstance(source, (SmsCampaign, PushCampaign)):
+            raise InvalidUsage('source should be an instance of model sms_campaign or push_campaign')
         if not isinstance(user, User):
             raise InvalidUsage('user should be instance of model User')
         params = {'username': user.name,

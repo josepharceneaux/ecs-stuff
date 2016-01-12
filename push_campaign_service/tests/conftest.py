@@ -2,9 +2,11 @@
 Author: Zohaib Ijaz <mzohaib.qc@gmail.com>
 """
 from datetime import datetime
-from push_campaign_service.common.models.db import db
+
 from push_campaign_service.common.tests.conftest import (user_auth, sample_user,
                                                          test_domain, test_org, test_culture)
+from push_campaign_service.common.routes import PushCampaignApiUrl
+from push_campaign_service.common.models.db import db
 from push_campaign_service.common.models.smartlist import Smartlist, SmartlistCandidate
 from push_campaign_service.common.models.candidate import (Candidate,
                                                            CandidateDevice,
@@ -20,7 +22,7 @@ import pytest
 
 from push_campaign_service.modules.constants import TEST_DEVICE_ID
 from push_campaign_service.modules.push_campaign_base import PushCampaignBase
-from push_campaign_service.tests.helper_methods import generate_campaign_data
+from push_campaign_service.tests.helper_methods import generate_campaign_data, send_request
 
 fake = Faker()
 # Service specific
@@ -135,9 +137,11 @@ def campaign_blasts_count(request, sample_user, test_smartlist, campaign_in_db, 
 
     blasts_counts = 3
     if is_valid:
-        campaign_obj = PushCampaignBase(user_id=sample_user.id)
+        # campaign_obj = PushCampaignBase(user_id=sample_user.id)
         for num in range(blasts_counts):
-            campaign_obj.process_send(campaign_in_db)
+            response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db.id, token)
+            # campaign_obj.process_send(campaign_in_db)
+            assert response.status_code == 200
     return blasts_counts
 
 

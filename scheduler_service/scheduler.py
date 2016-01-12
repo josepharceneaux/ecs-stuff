@@ -227,6 +227,7 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
         secret_key_id, access_token = User.generate_jw_token(user_id=user_id)
     else:
         headers = {'content-type': 'application/x-www-form-urlencoded'}
+        Token.session.commit()
         token = Token.get_token(access_token=access_token.split(' ')[1])
         # If token has expired we refresh it
         past_datetime = token.expires - datetime.timedelta(seconds=REQUEST_TIMEOUT)

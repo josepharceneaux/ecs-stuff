@@ -419,6 +419,10 @@ class TestScheduleCampaignResource(object):
             # assert error['message'] == 'You are not the owner of Push campaign(id:%s)' \
             #                            % campaign_in_db
 
+
+
+
+
             # Test forbidden error. To schedule a task first time, we have to send POST,
             # but we will send request using PUT which is for update and will validate error
             response = send_request('put', PushCampaignApiUrl.SCHEDULE
@@ -473,7 +477,7 @@ class TestScheduleCampaignResource(object):
             task_id = response['task_id']
             assert task_id
             assert response['message'] == 'Campaign(id:%s) has been scheduled.' % campaign_in_db.id
-            time.sleep(SLEEP_TIME)
+            time.sleep(3 * SLEEP_TIME)
             #
             db.session.commit()
 
