@@ -101,7 +101,7 @@ class GTApis(object):
     # Names of flask micro services
     AUTH_SERVICE_NAME = 'auth-service'
     ACTIVITY_SERVICE_NAME = 'activity-service'
-    RESUME_PARSING_SERVICE_NAME = 'resume-service'
+    RESUME_PARSING_SERVICE_NAME = 'resume-parsing-service'
     USER_SERVICE_NAME = 'user-service'
     CANDIDATE_SERVICE_NAME = 'candidate-service'
     WIDGET_SERVICE_NAME = 'widget-service'
