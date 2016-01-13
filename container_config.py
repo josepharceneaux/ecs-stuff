@@ -8,8 +8,8 @@ from sys import exit, platform as _platform
 
 VM_NOT_RUNNING_ERROR_MESSAGE = 'Virtual Machine is not running. Please start it with docker-machine start VM_NAME'
 SERVICE_TO_DOCKERHUB_REPO = {'base_service_container': 'base-service-container',
-                             'auth_service': 'authservice',
-                             'activity_service': 'activities-service',
+                             'auth_service': 'auth-service',
+                             'activity_service': 'activity-service',
                              'resume_service': 'resume-parsing-service',
                              'user_service': 'user-service',
                              'candidate_service': 'candidate-service',

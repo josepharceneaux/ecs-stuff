@@ -21,12 +21,18 @@ RUN apt-get update
 RUN apt-get install -y nginx
 
 # Install syslog-ng
-RUN apt-get -y install syslog-ng syslog-ng-core
-RUN echo 'SYSLOGNG_OPTS="--no-caps"' >> /etc/default/syslog-ng
+RUN apt-get -y install rsyslog
 
-# Copy syslog conf file to syslog-ng/conf.d directory
-ADD syslog_loggly.conf /etc/syslog-ng/loggly.conf
-RUN mv /etc/syslog-ng/loggly.conf /etc/syslog-ng/syslog-ng.conf
+# Uncomment UDP related variables
+RUN sed -i '/$UDPServerRun/s/^#//g' /etc/rsyslog.conf
+RUN sed -i '/$ModLoad imudp/s/^#//g' /etc/rsyslog.conf
+
+RUN touch /etc/rsyslog.d/22-loggly.conf
+ADD python_loggly.conf /etc/rsyslog.d/22-loggly.conf
+
+RUN touch /etc/rsyslog.d/21-nginx-loggly.conf
+ADD nginx_loggly.conf /etc/rsyslog.d/21-nginx-loggly.conf
+
 
 # Install python pyenv and 2.7.9
 RUN curl -L https://raw.github.com/yyuu/pyenv-installer/master/bin/pyenv-installer | bash
