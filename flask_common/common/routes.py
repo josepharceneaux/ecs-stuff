@@ -377,27 +377,27 @@ class CandidateApiWords(object):
     """
     This class contains words used for endpoints of Candidate API.
     """
+    CANDIDATES = "candidates"
     ADDRESSES = "/addresses"
     AOIS = "/areas_of_interest"
-    BULLETS = "/bullets"
-    CANDIDATES = "candidates"
     CUSTOM_FIELD = "/custom_fields"
-    DEGREES = "/degrees"
-    DOCUMENTS = "/documents"
-    EDITS = "/edits"
     EDUCATIONS = "/educations"
-    EMAILS = "/emails"
+    DEGREES = "/degrees"
+    BULLETS = "/bullets"
     EXPERIENCES = "/experiences"
+    EMAILS = "/emails"
     MILITARY_SERVICES = "/military_services"
-    OPENWEB = '/openweb'
     PHONES = "/phones"
     PREFERRED_LOCATIONS = "/preferred_locations"
-    PREFERENCES = '/preferences'
-    SEARCH = "/search"
     SKILLS = "/skills"
     SOCIAL_NETWORKS = "/social_networks"
-    VIEWS = "/views"
     WORK_PREFERENCES = "/work_preference"
+    EDITS = "/edits"
+    SEARCH = "/search"
+    DOCUMENTS = "/documents"
+    OPENWEB = '/openweb'
+    VIEWS = "/views"
+    PREFERENCE = "/preferences"
 
 
 class CandidateApi(object):
@@ -464,11 +464,8 @@ class CandidateApi(object):
     CANDIDATE_SEARCH = CANDIDATES + CandidateApiWords.SEARCH
     CANDIDATES_DOCUMENTS = CANDIDATES + CandidateApiWords.DOCUMENTS
     OPENWEB = CANDIDATES + CandidateApiWords.OPENWEB
-
     CANDIDATE_VIEWS = CANDIDATE_ID + CandidateApiWords.VIEWS
-
-    CANDIDATE_PREFERENCES = CANDIDATE_ID + CandidateApiWords.PREFERENCES
-
+    CANDIDATE_PREFERENCES = CANDIDATE_ID + CandidateApiWords.PREFERENCE
 
 
 class CandidateApiUrl(object):
