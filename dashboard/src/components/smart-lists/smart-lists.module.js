@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    angular.module('app.forgotPassword', [
+    angular.module('app.smartLists', [
         'app.core'
     ]);
 })();
