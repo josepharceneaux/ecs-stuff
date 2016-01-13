@@ -255,11 +255,9 @@ try:
     api.add_resource(CandidateOpenWebResource, CandidateApi.OPENWEB, endpoint='openweb')
 
     # ****** CandidatePreferenceResource *******
-    api.add_resource(
-            CandidatePreferenceResource,
-            CandidateApi.CANDIDATE_PREFERENCES,
-            endpoint='candidate_preference'
-    )
+    api.add_resource(CandidatePreferenceResource,
+                     CandidateApi.CANDIDATE_PREFERENCES,
+                     endpoint='candidate_preference')
 
     db.create_all()
     db.session.commit()

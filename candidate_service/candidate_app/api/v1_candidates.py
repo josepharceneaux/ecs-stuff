@@ -1229,7 +1229,7 @@ class CandidatePreferenceResource(Resource):
         authed_user, candidate_id = request.user, kwargs.get('id')
 
         # Candidate must belong to user's domain
-        if not does_candidate_belong_to_user(authed_user, candidate_id): # TODO: replace with does_candidate_belong_to_users_domain()
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
 
