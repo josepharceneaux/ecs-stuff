@@ -51,15 +51,14 @@ def auth_data(request, user_auth, sample_user):
 
 
 @pytest.fixture()
-def test_auth_token(request, user_auth):
+def token(request, user_auth, sample_user):
     """
     returns the access token for a different user so that we can test forbidden error etc.
     :param user_auth: fixture in common/tests/conftest.py
     :param sample_user: fixture in common/tests/conftest.py
     :return token
     """
-    test_user = create_test_user(db.session, 1, 'secret')
-    auth_token_obj = user_auth.get_auth_token(test_user, get_bearer_token=True)
+    auth_token_obj = user_auth.get_auth_token(sample_user, get_bearer_token=True)
     return auth_token_obj['access_token']
 
 
@@ -130,39 +129,34 @@ def test_smartlist_with_no_candidates(request, sample_user, campaign_in_db):
 
 
 @pytest.fixture()
-def campaign_blasts_count(request, sample_user, test_smartlist, campaign_in_db, auth_data):
+def campaign_blasts_count(request, test_smartlist, campaign_in_db, token):
     """ TODO
     """
-    token, is_valid = auth_data
 
     blasts_counts = 3
-    if is_valid:
-        # campaign_obj = PushCampaignBase(user_id=sample_user.id)
-        for num in range(blasts_counts):
-            response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db.id, token)
-            # campaign_obj.process_send(campaign_in_db)
-            assert response.status_code == 200
+    # campaign_obj = PushCampaignBase(user_id=sample_user.id)
+    for num in range(blasts_counts):
+        response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db.id, token)
+        # campaign_obj.process_send(campaign_in_db)
+        assert response.status_code == 200
     return blasts_counts
 
 
 @pytest.fixture()
-def schedule_a_campaign(request, sample_user, test_smartlist, campaign_in_db, auth_data):
+def schedule_a_campaign(request, test_smartlist, campaign_in_db, token):
     """ TODO
     """
-    token, is_valid = auth_data
     task_id = None
-    data = {}
-    if is_valid:
-        data = generate_campaign_schedule_data()
-        response = send_request('post', PushCampaignApiUrl.SCHEDULE % campaign_in_db.id, token, data)
-        assert response.status_code == 200
-        response = response.json()
-        task_id = response['task_id']
+    data = generate_campaign_schedule_data()
+    response = send_request('post', PushCampaignApiUrl.SCHEDULE % campaign_in_db.id, token, data)
+    assert response.status_code == 200
+    response = response.json()
+    task_id = response['task_id']
 
-        def fin():
-            send_request('delete', SchedulerApiUrl.TASK % task_id, token)
+    def fin():
+        send_request('delete', SchedulerApiUrl.TASK % task_id, token)
 
-        request.addfinalizer(fin)
+    request.addfinalizer(fin)
     return data
 
 
