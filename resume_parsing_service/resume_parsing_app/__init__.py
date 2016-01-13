@@ -7,13 +7,12 @@ from resume_parsing_service.common.routes import ResumeApi, HEALTH_CHECK
 from resume_parsing_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 
 app = Flask(__name__)
-load_gettalent_config(app.config)
 app.config.from_object(config)
+load_gettalent_config(app.config)
 
 logger = app.config[TalentConfigKeys.LOGGER]
 
 try:
-
     from resume_parsing_service.common.models.db import db
     db.init_app(app)
     db.app = app
