@@ -20,13 +20,18 @@ from xhtml2pdf import pisa
 import magic
 import requests
 # Module Specific
-from .utils import create_candidate_from_parsed_resume
+from .utils import create_parsed_resume_candidate
 from resume_service.common.error_handling import ForbiddenError
 from resume_service.common.error_handling import InvalidUsage
 from resume_service.common.utils.talent_s3 import download_file
 from resume_service.common.utils.talent_s3 import get_s3_filepicker_bucket_and_conn
 from resume_service.resume_parsing_app.views.optic_parse_lib import fetch_optic_response
 from resume_service.resume_parsing_app.views.optic_parse_lib import parse_optic_json
+
+
+IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
+                 '.pcx', '.jp2', '.jpc', '.jb2', '.djvu', '.djv']
+DOC_FORMATS = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
 
 
 def process_resume(parse_params):
@@ -50,23 +55,14 @@ def process_resume(parse_params):
     result_dict = parse_resume(file_obj=resume_file, filename_str=filename_str)
     # Emails are the ONLY thing required to create a candidate.
     email_present = True if result_dict.get('emails') else False
-    if create_candidate:
-        if email_present:
-            candidate_response = create_candidate_from_parsed_resume(result_dict,
-                                                                     parse_params.get('oauth'))
-            # TODO: add handling for candidate exists case.
-            # Bad Response is:
-            #             '{
-            #   "error": {
-            #     "message": "Candidate already exists, creation failed."
-            #   }
-            # }'
-            if 'error' in candidate_response:
-                raise InvalidUsage(candidate_response['error']['message'])
-            candidate_id = json.loads(candidate_response).get('candidates')
-            result_dict['id'] = candidate_id[0]['id'] if candidate_id else None
-        else:
-            raise InvalidUsage('Parsed Resume did not contain an email - failure to create')
+    if create_candidate and email_present:
+        candidate_response = create_parsed_resume_candidate(result_dict,
+                                                            parse_params.get('oauth'))
+        response_dict = json.loads(candidate_response)
+        if 'error' in candidate_response:
+            raise InvalidUsage(response_dict['error']['message'])
+        candidate_id = response_dict.get('candidates')
+        result_dict['id'] = candidate_id[0]['id'] if candidate_id else None
     return {'candidate': result_dict}
 
 
@@ -77,25 +73,17 @@ def parse_resume(file_obj, filename_str):
     :param str filename_str: The file_obj file name.
     :return: A dictionary of processed candidate data or an appropriate error message.
     """
-
     current_app.logger.info("Beginning parse_resume(%s)", filename_str)
     file_ext = basename(splitext(filename_str.lower())[-1]) if filename_str else ""
-
     if not file_ext.startswith("."):
         file_ext = ".{}".format(file_ext)
-
-    image_formats = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
-                     '.pcx', '.jp2', '.jpc', '.jb2', '.djvu', '.djv']
-    doc_formats = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
-
-    if file_ext not in image_formats and file_ext not in doc_formats:
+    if file_ext not in IMAGE_FORMATS and file_ext not in DOC_FORMATS:
         current_app.logger.error(
             'file_ext {} not in image_formats and file_ext not in doc_formats'.format(file_ext))
         return dict(error='file_ext not in image_formats and file_ext not in doc_formats')
-
     # Find out if the file is an image
     is_resume_image = False
-    if file_ext in image_formats:
+    if file_ext in IMAGE_FORMATS:
         if file_ext == '.pdf':
             start_time = time()
             text = convert_pdf_to_text(file_obj)

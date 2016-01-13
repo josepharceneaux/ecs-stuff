@@ -12,8 +12,9 @@ from resume_service.resume_parsing_app.views.OauthClient import OAuthClient
 import requests
 # Module Specific
 from flask import current_app
-from resume_service.common.utils.validators import format_phone_number
 from resume_service.common.error_handling import ForbiddenError
+from resume_service.common.utils.validators import format_phone_number
+from resume_service.common.utils.validators import sanitize_zip_code
 
 
 def fetch_optic_response(resume):
@@ -129,9 +130,10 @@ def parse_candidate_phones(bs_contact_xml_list):
         #TODO: look into adding a type using p.attrs['type']
         for p in phones:
             raw_phone = p.text.strip()
-            formatted_phone = format_phone_number(raw_phone)
-            if formatted_phone:
-                output.append({'value': formatted_phone or raw_phone})
+            phone_and_extension_dict = format_phone_number(raw_phone)
+            if phone_and_extension_dict:
+                output.append(phone_and_extension_dict)
+
     return output
 
 
@@ -348,19 +350,3 @@ def is_experience_already_exists(candidate_experiences, organization, position_t
                          experience['end_date'] == end_date):
             return i + 1
     return False
-
-def sanitize_zip_code(zip_code):
-    """Folowing expression will validate US zip codes e.g 12345 and 12345-6789"""
-    zip_code = str(zip_code)
-    # Dashed and Space filtered Zip Code
-    zip_code = ''.join(char for char in zip_code if char not in ' -')
-    if zip_code and not ''.join(char for char in  zip_code if not char.isdigit()):
-        if len(zip_code) <= 5:
-            zip_code = zip_code.zfill(5)
-        elif len(zip_code) <= 9:
-            zip_code = zip_code.zfill(5)
-        else:
-            zip_code = ''
-        if zip_code:
-            return (zip_code[:5] + ' ' + zip_code[5:]).strip()
-    return None

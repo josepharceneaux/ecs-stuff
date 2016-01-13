@@ -1,5 +1,4 @@
 """API for the Resume Parsing App"""
-
 __author__ = 'erikfarmer'
 # Framework specific
 from flask import Blueprint
@@ -8,7 +7,7 @@ from flask import jsonify
 from flask.ext.cors import CORS
 # Module Specific
 from resume_service.common.error_handling import InvalidUsage
-from resume_service.common.routes import ResumeApi, ResumeApiUrl
+from resume_service.common.routes import ResumeApi#, ResumeApiUrl
 from resume_service.common.utils.auth_utils import require_oauth
 from resume_service.resume_parsing_app.views.batch_lib import _process_batch_item
 from resume_service.resume_parsing_app.views.batch_lib import add_fp_keys_to_queue
@@ -82,7 +81,7 @@ def post_files_to_queue():
         raise InvalidUsage("No filenames provided to /batch")
 
 
-@PARSE_MOD.route(ResumeApiUrl.BATCH_PROCESS, methods=['GET'])
+@PARSE_MOD.route('batch/<int:user_id>', methods=['GET'])
 @require_oauth()
 def process_batch_request(user_id):
     """

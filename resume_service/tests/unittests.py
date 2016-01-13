@@ -1,5 +1,6 @@
 """Unit tests for formatting and accuracy for offline testing."""
 __author__ = 'erik@gettalent.com'
+# pylint: disable=wrong-import-position
 # Third party.
 from bs4 import BeautifulSoup as bs4
 # JSON outputs.
@@ -46,13 +47,13 @@ XML_MAPS = [
 
 def test_name_parsing():
     """Basic name parsing test."""
-    for j in XML_MAPS:
-        resume = j['tree_name']
+    for xml in XML_MAPS:
+        resume = xml['tree_name']
         contact_xml_list = bs4(resume, 'lxml').findAll('contact')
         if contact_xml_list:
             name = parse_candidate_name(contact_xml_list)
-            assert name['first_name'] == j['name'].split()[0]
-            assert name['last_name'] == j['name'].split()[1]
+            assert name['first_name'] == xml['name'].split()[0]
+            assert name['last_name'] == xml['name'].split()[1]
 
 
 def test_email_parsing():
@@ -61,11 +62,11 @@ def test_email_parsing():
         1. Test proper count.
         2. Test that each item has the 'address' key (only needed key for candidate creation).
     """
-    for j in XML_MAPS:
-        resume = j['tree_name']
+    for xml in XML_MAPS:
+        resume = xml['tree_name']
         contact_xml_list = bs4(resume, 'lxml').findAll('contact')
         emails = parse_candidate_emails(contact_xml_list)
-        assert len(emails) == j['email_len']
+        assert len(emails) == xml['email_len']
         for email in emails:
             assert 'address' in email
 
@@ -76,13 +77,14 @@ def test_phone_parsing():
         1. Test proper count.
         2. Test that each item has the 'value' key.
     """
-    for j in XML_MAPS:
-        resume = j['tree_name']
+    for xml in XML_MAPS:
+        resume = xml['tree_name']
         contact_xml_list = bs4(resume, 'lxml').findAll('contact')
         phones = parse_candidate_phones(contact_xml_list)
-        assert len(phones) == j['phone_len']
+        assert len(phones) == xml['phone_len']
         for phone in phones:
-            assert 'value' in phone
+            assert 'formatted_number' in phone, 'Phone dict is missing formatted_number key'
+            assert 'extension' in phone, 'Phone dict is missing extension key, even if None'
 
 
 def test_experience_parsing():
@@ -91,13 +93,23 @@ def test_experience_parsing():
         1. Test proper count.
         2. Test that each item has the correct keys.
     """
-    for j in XML_MAPS:
-        resume = j['tree_name']
+    for xml in XML_MAPS:
+        resume = xml['tree_name']
         experience_xml_list = bs4(resume, 'lxml').findAll('experience')
         experiences = parse_candidate_experiences(experience_xml_list)
-        assert len(experiences) == j['experience_len']
+        assert len(experiences) == xml['experience_len']
         for experience in experiences:
+            # Asserts that experience contains all keys inside WORK_EXPERIENCE_KEYS
             assert all(k in experience for k in WORK_EXPERIENCES_KEYS if experience)
+    # Tests against specific KeyError reported in JIRA (GET-626)
+    xml_experiences_a = bs4(GET_626a, 'lxml').findAll('experience')
+    processed_experiences_a = parse_candidate_experiences(xml_experiences_a)
+    xml_experiences_b = bs4(GET_626b, 'lxml').findAll('experience')
+    processed_experiences_b = parse_candidate_experiences(xml_experiences_b)
+    for experience_dict in processed_experiences_a:
+        assert all(k in experience_dict for k in WORK_EXPERIENCES_KEYS if experience_dict)
+    for experience_dict in processed_experiences_b:
+        assert all(k in experience_dict for k in WORK_EXPERIENCES_KEYS if experience_dict)
 
 
 def test_education_parsing():
@@ -106,12 +118,12 @@ def test_education_parsing():
         1. Test proper count.
         2. Test that each item has the correct education keys.
     """
-    for j in XML_MAPS:
-        resume = j['tree_name']
+    for xml in XML_MAPS:
+        resume = xml['tree_name']
         educations_xml_list = bs4(resume, 'lxml').findAll('education')
         educations = parse_candidate_educations(educations_xml_list)
         # Verify Expected Length
-        assert len(educations) == j['education_len']
+        assert len(educations) == xml['education_len']
         # Very each dict in list has proper keys
         for education in educations:
             assert all(k in education for k in EDUCATIONS_KEYS if education)
@@ -119,11 +131,11 @@ def test_education_parsing():
 
 def test_skill_parsing():
     """Tests skills are parsed and formatted properly."""
-    for j in XML_MAPS:
-        resume = j['tree_name']
+    for xml in XML_MAPS:
+        resume = xml['tree_name']
         skill_xml_list = bs4(resume, 'lxml').findAll('canonskill')
         skills = parse_candidate_skills(skill_xml_list)
-        assert len(skills) == j['skills_len']
+        assert len(skills) == xml['skills_len']
         for skill in skills:
             assert 'name' in skill
 
@@ -139,17 +151,17 @@ def test_address_parsing():
             assert all(k in address for k in ADDRESS_KEYS if address)
 
 
-def test_626_experience_parsing():
-    """Tests against specific KeyError reported in JIRA"""
-    XML_experiences_a = bs4(GET_626a, 'lxml').findAll('experience')
-    processed_experiences_a = parse_candidate_experiences(XML_experiences_a)
-    XML_experiences_b = bs4(GET_626b, 'lxml').findAll('experience')
-    processed_experiences_b = parse_candidate_experiences(XML_experiences_b)
-    for experience_dict in processed_experiences_a:
-        # Asserts that experience contains all keys inside WORK_EXPERIENCE_KEYS
-        assert all(k in experience_dict for k in WORK_EXPERIENCES_KEYS if experience_dict)
-    for experience_dict in processed_experiences_b:
-        assert all(k in experience_dict for k in WORK_EXPERIENCES_KEYS if experience_dict)
+# def test_experience_bullet_parsing():
+#     """Tests against specific KeyError reported in JIRA (GET-626)"""
+#     XML_experiences_a = bs4(GET_626a, 'lxml').findAll('experience')
+#     processed_experiences_a = parse_candidate_experiences(XML_experiences_a)
+#     XML_experiences_b = bs4(GET_626b, 'lxml').findAll('experience')
+#     processed_experiences_b = parse_candidate_experiences(XML_experiences_b)
+#     for experience_dict in processed_experiences_a:
+#         # Asserts that experience contains all keys inside WORK_EXPERIENCE_KEYS
+#         assert all(k in experience_dict for k in WORK_EXPERIENCES_KEYS if experience_dict)
+#     for experience_dict in processed_experiences_b:
+#         assert all(k in experience_dict for k in WORK_EXPERIENCES_KEYS if experience_dict)
 
 
 # This could be useful for debugging but requires an application context (keys in .cfg) to run.
