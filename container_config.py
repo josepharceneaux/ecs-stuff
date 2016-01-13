@@ -93,7 +93,7 @@ if args.build:
 
 
 if args.run:
-    if 1 == 1:
+    if 1 == 1:  # To get past PyCharm's "Code unreachable" warning.  (Only temporary)
         raise Exception("This doesn't work yet! Need to get MySQL set up")
     # Set up Docker env
     service_name = args.run[0]
