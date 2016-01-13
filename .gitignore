@@ -49,7 +49,7 @@ crashlytics-build.properties
 
 
 ### talent-flask-services Specific Files to exclude
-resume_service/Dockertest
+resume_parsing_service/Dockertest
 
 
 ### Python template

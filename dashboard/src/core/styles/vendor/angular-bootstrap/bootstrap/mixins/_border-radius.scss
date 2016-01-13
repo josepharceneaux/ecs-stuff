@@ -1,0 +1,18 @@
+// Single side border-radius
+
+@mixin bs-border-top-radius($bs-radius) {
+  border-top-right-radius: $bs-radius;
+   border-top-left-radius: $bs-radius;
+}
+@mixin bs-border-right-radius($bs-radius) {
+  border-bottom-right-radius: $bs-radius;
+     border-top-right-radius: $bs-radius;
+}
+@mixin bs-border-bottom-radius($bs-radius) {
+  border-bottom-right-radius: $bs-radius;
+   border-bottom-left-radius: $bs-radius;
+}
+@mixin bs-border-left-radius($bs-radius) {
+  border-bottom-left-radius: $bs-radius;
+     border-top-left-radius: $bs-radius;
+}

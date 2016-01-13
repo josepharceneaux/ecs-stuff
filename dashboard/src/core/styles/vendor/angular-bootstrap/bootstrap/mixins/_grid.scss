@@ -1,0 +1,122 @@
+// Grid system
+//
+// Generate semantic grid columns with these mixins.
+
+// Centered container element
+@mixin bs-container-fixed($bs-gutter: $bs-grid-gutter-width) {
+  margin-right: auto;
+  margin-left: auto;
+  padding-left:  floor(($bs-gutter / 2));
+  padding-right: ceil(($bs-gutter / 2));
+  @include bs-clearfix;
+}
+
+// Creates a wrapper for a series of columns
+@mixin bs-make-row($bs-gutter: $bs-grid-gutter-width) {
+  margin-left:  ceil(($bs-gutter / -2));
+  margin-right: floor(($bs-gutter / -2));
+  @include bs-clearfix;
+}
+
+// Generate the extra small columns
+@mixin bs-make-xs-column($bs-columns, $bs-gutter: $bs-grid-gutter-width) {
+  position: relative;
+  float: left;
+  width: percentage(($bs-columns / $bs-grid-columns));
+  min-height: 1px;
+  padding-left:  ($bs-gutter / 2);
+  padding-right: ($bs-gutter / 2);
+}
+@mixin bs-make-xs-column-offset($bs-columns) {
+  margin-left: percentage(($bs-columns / $bs-grid-columns));
+}
+@mixin bs-make-xs-column-push($bs-columns) {
+  left: percentage(($bs-columns / $bs-grid-columns));
+}
+@mixin bs-make-xs-column-pull($bs-columns) {
+  right: percentage(($bs-columns / $bs-grid-columns));
+}
+
+// Generate the small columns
+@mixin bs-make-sm-column($bs-columns, $bs-gutter: $bs-grid-gutter-width) {
+  position: relative;
+  min-height: 1px;
+  padding-left:  ($bs-gutter / 2);
+  padding-right: ($bs-gutter / 2);
+
+  @media (min-width: $bs-screen-sm-min) {
+    float: left;
+    width: percentage(($bs-columns / $bs-grid-columns));
+  }
+}
+@mixin bs-make-sm-column-offset($bs-columns) {
+  @media (min-width: $bs-screen-sm-min) {
+    margin-left: percentage(($bs-columns / $bs-grid-columns));
+  }
+}
+@mixin bs-make-sm-column-push($bs-columns) {
+  @media (min-width: $bs-screen-sm-min) {
+    left: percentage(($bs-columns / $bs-grid-columns));
+  }
+}
+@mixin bs-make-sm-column-pull($bs-columns) {
+  @media (min-width: $bs-screen-sm-min) {
+    right: percentage(($bs-columns / $bs-grid-columns));
+  }
+}
+
+// Generate the medium columns
+@mixin bs-make-md-column($bs-columns, $bs-gutter: $bs-grid-gutter-width) {
+  position: relative;
+  min-height: 1px;
+  padding-left:  ($bs-gutter / 2);
+  padding-right: ($bs-gutter / 2);
+
+  @media (min-width: $bs-screen-md-min) {
+    float: left;
+    width: percentage(($bs-columns / $bs-grid-columns));
+  }
+}
+@mixin bs-make-md-column-offset($bs-columns) {
+  @media (min-width: $bs-screen-md-min) {
+    margin-left: percentage(($bs-columns / $bs-grid-columns));
+  }
+}
+@mixin bs-make-md-column-push($bs-columns) {
+  @media (min-width: $bs-screen-md-min) {
+    left: percentage(($bs-columns / $bs-grid-columns));
+  }
+}
+@mixin bs-make-md-column-pull($bs-columns) {
+  @media (min-width: $bs-screen-md-min) {
+    right: percentage(($bs-columns / $bs-grid-columns));
+  }
+}
+
+// Generate the large columns
+@mixin bs-make-lg-column($bs-columns, $bs-gutter: $bs-grid-gutter-width) {
+  position: relative;
+  min-height: 1px;
+  padding-left:  ($bs-gutter / 2);
+  padding-right: ($bs-gutter / 2);
+
+  @media (min-width: $bs-screen-lg-min) {
+    float: left;
+    width: percentage(($bs-columns / $bs-grid-columns));
+  }
+}
+@mixin bs-make-lg-column-offset($bs-columns) {
+  @media (min-width: $bs-screen-lg-min) {
+    margin-left: percentage(($bs-columns / $bs-grid-columns));
+  }
+}
+@mixin bs-make-lg-column-push($bs-columns) {
+  @media (min-width: $bs-screen-lg-min) {
+    left: percentage(($bs-columns / $bs-grid-columns));
+  }
+}
+@mixin bs-make-lg-column-pull($bs-columns) {
+  @media (min-width: $bs-screen-lg-min) {
+    right: percentage(($bs-columns / $bs-grid-columns));
+  }
+}
