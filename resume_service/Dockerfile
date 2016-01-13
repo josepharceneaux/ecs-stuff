@@ -2,7 +2,6 @@ FROM gettalent/base-service-container:latest
 MAINTAINER Erik Farmer <erik@gettalent.com>
 
 # Install nginx stuff
-RUN rm /etc/nginx/sites-enabled/default
 ADD talent-nginx.conf /etc/nginx/conf.d/
 
 # Install resume service into container
