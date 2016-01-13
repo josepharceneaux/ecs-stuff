@@ -17,6 +17,7 @@ from ..models.user import (Client, Domain, User, Token)
 from ..models.talent_pools_pipelines import (TalentPool, TalentPoolGroup, TalentPipeline)
 from ..models.misc import (Culture, Organization, AreaOfInterest, CustomField)
 
+
 fake = Faker()
 ISO_FORMAT = '%Y-%m-%d %H:%M'
 USER_HASHED_PASSWORD = 'pbkdf2(1000,64,sha512)$a97efdd8d6b0bf7f$55de0d7bafb29a88e7596542aa927ac0e1fbc30e94db2c5215851c72294ebe01fb6461b27f0c01b9bd7d3ce4a180707b6652ba2334c7a2b0fcb93c946aa8b4ec'
@@ -92,42 +93,74 @@ def revoke_token(user_logout_credentials):
 
 
 @pytest.fixture()
-def sample_user(test_domain):
-    from ..tests.auth_utilities import create_user
-    # user = create_test_user(db.session, test_domain.id, 'Talent15')
-    user = create_user(db.session, test_domain.id, 'Talent15')
+def sample_user(test_domain, request):
+    user = User.add_test_user(db.session, test_domain.id, 'Talent15')
+    def tear_down():
+        try:
+            db.session.delete(user)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
     return user
 
 
 @pytest.fixture()
-def sample_user_2(test_domain):
-    from ..tests.auth_utilities import create_user
-    # user = create_test_user(db.session, test_domain.id, 'Talent15')
-    user = create_user(db.session, test_domain.id, 'Talent15')
+def sample_user_2(test_domain, request):
+    user = User.add_test_user(db.session, test_domain.id, 'Talent15')
+    def tear_down():
+        try:
+            db.session.delete(user)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
     return user
 
 
 @pytest.fixture()
-def user_from_different_domain(test_domain_2):
-    from ..tests.auth_utilities import create_user
-    # user = create_test_user(db.session, test_domain_2.id, 'Talent15')
-    user = create_user(db.session, test_domain_2.id, 'Talent15')
+def user_from_different_domain(test_domain_2, request):
+    user = User.add_test_user(db.session, test_domain_2.id, 'Talent15')
+
+    def tear_down():
+        try:
+            db.session.delete(user)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
     return user
 
 
 @pytest.fixture()
-def test_domain():
+def test_domain(request):
     domain = Domain(name=gen_salt(20), expiration='0000-00-00 00:00:00')
     db.session.add(domain)
     db.session.commit()
+
+    def tear_down():
+        try:
+            db.session.delete(domain)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
     return domain
 
 
 @pytest.fixture()
-def test_domain_2():
+def test_domain_2(request):
     domain = Domain(name=gen_salt(20), expiration='0000-00-00 00:00:00')
     db.session.add(domain)
     db.session.commit()
+
+    def tear_down():
+        try:
+            db.session.delete(domain)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
     return domain
 
 

@@ -39,19 +39,6 @@ def create_test_user(session, domain_id, password):
     return test_user
 
 
-def create_user(session, domain_id, password):
-    import uuid
-    user = User(
-        email='{}@example.com'.format(uuid.uuid4().__str__()),
-        password=generate_password_hash(password, method='pbkdf2:sha512'),
-        domain_id=domain_id,
-        expiration=None
-    )
-    session.add(user)
-    session.commit()
-    return user
-
-
 def get_access_token(user, password, client_id, client_secret):
     params = dict(grant_type="password", username=user.email, password=password)
     auth_service_token_response = requests.post(AuthApiUrl.TOKEN_CREATE,
