@@ -12,12 +12,15 @@
         'app.candidates',
         'app.dashboard',
         'app.footer',
-        'app.forgot-password',
+        'app.forgotPassword',
         'app.login',
         'app.main',
         'app.pipelines',
+        'app.search',
         'app.sidenav',
+        'app.smartLists',
         'app.styleguide',
+        'app.talentPools',
         'app.topnav'
     ]);
 })();

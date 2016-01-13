@@ -1,0 +1,84 @@
+//
+// Grid system
+// --------------------------------------------------
+
+
+// Container widths
+//
+// Set the container width, and override it for fixed navbars in media queries.
+
+.container {
+  @include bs-container-fixed;
+
+  @media (min-width: $bs-screen-sm-min) {
+    width: $bs-container-sm;
+  }
+  @media (min-width: $bs-screen-md-min) {
+    width: $bs-container-md;
+  }
+  @media (min-width: $bs-screen-lg-min) {
+    width: $bs-container-lg;
+  }
+}
+
+
+// Fluid container
+//
+// Utilizes the mixin meant for fixed width containers, but without any defined
+// width for fluid, full width layouts.
+
+.container-fluid {
+  @include bs-container-fixed;
+}
+
+
+// Row
+//
+// Rows contain and clear the floats of your columns.
+
+.row {
+  @include bs-make-row;
+}
+
+
+// Columns
+//
+// Common styles for small and large grid columns
+
+@include bs-make-grid-columns;
+
+
+// Extra small grid
+//
+// Columns, offsets, pushes, and pulls for extra small devices like
+// smartphones.
+
+@include bs-make-grid(xs);
+
+
+// Small grid
+//
+// Columns, offsets, pushes, and pulls for the small device range, from phones
+// to tablets.
+
+@media (min-width: $bs-screen-sm-min) {
+  @include bs-make-grid(sm);
+}
+
+
+// Medium grid
+//
+// Columns, offsets, pushes, and pulls for the desktop device range.
+
+@media (min-width: $bs-screen-md-min) {
+  @include bs-make-grid(md);
+}
+
+
+// Large grid
+//
+// Columns, offsets, pushes, and pulls for the large desktop device range.
+
+@media (min-width: $bs-screen-lg-min) {
+  @include bs-make-grid(lg);
+}
