@@ -91,124 +91,154 @@ def revoke_token(user_logout_credentials):
     return
 
 
-@pytest.fixture(autouse=True)
-def sample_user(test_domain, request):
-    user_attrs = dict(
-        domain_id=test_domain.id, first_name='Jamtry', last_name='Jonas',
-        password=USER_HASHED_PASSWORD,
-        email='sample_user@{}.com'.format(randomword(7)), added_time=datetime(2050, 4, 26)
-    )
-    user, created = get_or_create(session=db.session, model=User, defaults=None, **user_attrs)
-    if created:
-        db.session.add(user)
-        db.session.commit()
+# @pytest.fixture(autouse=True)
+# def sample_user(test_domain, request):
+#     user_attrs = dict(
+#         domain_id=test_domain.id, first_name='Jamtry', last_name='Jonas',
+#         password=USER_HASHED_PASSWORD,
+#         email='sample_user@{}.com'.format(randomword(7)), added_time=datetime(2050, 4, 26)
+#     )
+#     user, created = get_or_create(session=db.session, model=User, defaults=None, **user_attrs)
+#     if created:
+#         db.session.add(user)
+#         db.session.commit()
+#
+#     def fin():
+#         try:
+#             db.session.delete(user)
+#             db.session.commit()
+#         except Exception:
+#             db.session.rollback()
+#             pass
+#
+#     request.addfinalizer(fin)
+#     return user
 
-    def fin():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-            pass
 
-    request.addfinalizer(fin)
+@pytest.fixture()
+def sample_user(test_domain):
+    user = create_test_user(db.session, test_domain.id, 'Talent15')
     return user
 
 
-@pytest.fixture(autouse=True)
-def sample_user_2(test_domain, request):
-    user_attrs = dict(
-        domain_id=test_domain.id, first_name='Jamtry', last_name='Jonas',
-        password=USER_HASHED_PASSWORD,
-        email='sample_user@{}.com'.format(randomword(7)), added_time=datetime(2050, 4, 26)
-    )
-    user, created = get_or_create(session=db.session, model=User, defaults=None, **user_attrs)
-    if created:
-        db.session.add(user)
-        db.session.commit()
-
-    def fin():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-            pass
-
-    request.addfinalizer(fin)
+@pytest.fixture()
+def sample_user_2(test_domain):
+    user = create_test_user(db.session, test_domain.id, 'Talent15')
     return user
 
 
-@pytest.fixture(autouse=True)
-def user_from_different_domain(test_domain_2, request):
-    user_attrs = dict(
-        domain_id=test_domain_2.id, first_name='Jamtry', last_name='Jonas',
-        password=USER_HASHED_PASSWORD,
-        email='sample_user@{}.com'.format(randomword(7)), added_time=datetime(2050, 4, 26)
-    )
-    user, created = get_or_create(session=db.session, model=User, defaults=None, **user_attrs)
-    if created:
-        db.session.add(user)
-        db.session.commit()
+# @pytest.fixture(autouse=True)
+# def sample_user_2(test_domain, request):
+#     user_attrs = dict(
+#         domain_id=test_domain.id, first_name='Jamtry', last_name='Jonas',
+#         password=USER_HASHED_PASSWORD,
+#         email='sample_user@{}.com'.format(randomword(7)), added_time=datetime(2050, 4, 26)
+#     )
+#     user, created = get_or_create(session=db.session, model=User, defaults=None, **user_attrs)
+#     if created:
+#         db.session.add(user)
+#         db.session.commit()
+#
+#     def fin():
+#         try:
+#             db.session.delete(user)
+#             db.session.commit()
+#         except Exception:
+#             db.session.rollback()
+#             pass
+#
+#     request.addfinalizer(fin)
+#     return user
 
-    def fin():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-            pass
-
-    request.addfinalizer(fin)
+@pytest.fixture()
+def user_from_different_domain(test_domain_2):
+    user = create_test_user(db.session, test_domain_2.id, 'Talent15')
     return user
 
 
-@pytest.fixture(autouse=True)
-def test_domain(test_org, test_culture, request):
-    domain_attrs = dict(
-        name=randomword(10).format(), usage_limitation=-1, added_time=datetime.today(),
-        organization_id=test_org.id, is_fair_check_on=0, is_active=1,
-        default_culture_id=test_culture.id, expiration=datetime(2050, 4, 26)
-    )
-    test_domain, created = get_or_create(session=db.session, model=Domain, defaults=None, **domain_attrs)
-    if created:
-        db.session.add(test_domain)
-        db.session.commit()
+# @pytest.fixture(autouse=True)
+# def user_from_different_domain(test_domain_2, request):
+#     user_attrs = dict(
+#         domain_id=test_domain_2.id, first_name='Jamtry', last_name='Jonas',
+#         password=USER_HASHED_PASSWORD,
+#         email='sample_user@{}.com'.format(randomword(7)), added_time=datetime(2050, 4, 26)
+#     )
+#     user, created = get_or_create(session=db.session, model=User, defaults=None, **user_attrs)
+#     if created:
+#         db.session.add(user)
+#         db.session.commit()
+#
+#     def fin():
+#         try:
+#             db.session.delete(user)
+#             db.session.commit()
+#         except Exception:
+#             db.session.rollback()
+#             pass
+#
+#     request.addfinalizer(fin)
+#     return user
 
-    def fin():
-        try:
-            db.session.delete(test_domain)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-            pass
 
-    request.addfinalizer(fin)
-    return test_domain
+@pytest.fixture()
+def test_domain():
+    domain = Domain(name=gen_salt(20), expiration='0000-00-00 00:00:00')
+    db.session.add(domain)
+    db.session.commit()
+    return domain
 
+# @pytest.fixture(autouse=True)
+# def test_domain(test_org, test_culture, request):
+#     domain_attrs = dict(
+#         name=randomword(10).format(), usage_limitation=-1, added_time=datetime.today(),
+#         organization_id=test_org.id, is_fair_check_on=0, is_active=1,
+#         default_culture_id=test_culture.id, expiration=datetime(2050, 4, 26)
+#     )
+#     test_domain, created = get_or_create(session=db.session, model=Domain, defaults=None, **domain_attrs)
+#     if created:
+#         db.session.add(test_domain)
+#         db.session.commit()
+#
+#     def fin():
+#         try:
+#             db.session.delete(test_domain)
+#             db.session.commit()
+#         except Exception:
+#             db.session.rollback()
+#             pass
+#
+#     request.addfinalizer(fin)
+#     return test_domain
 
-@pytest.fixture(autouse=True)
-def test_domain_2(test_org, test_culture, request):
-    domain_attrs = dict(
-        name=randomword(10).format(), usage_limitation=-1, added_time=datetime.today(),
-        organization_id=test_org.id, is_fair_check_on=0, is_active=1,
-        default_culture_id=test_culture.id, expiration=datetime(2050, 4, 26)
-    )
-    test_domain, created = get_or_create(session=db.session, model=Domain, defaults=None, **domain_attrs)
-    if created:
-        db.session.add(test_domain)
-        db.session.commit()
+@pytest.fixture()
+def test_domain_2():
+    domain = Domain(name=gen_salt(20), expiration='0000-00-00 00:00:00')
+    db.session.add(domain)
+    db.session.commit()
+    return domain
 
-    def fin():
-        try:
-            db.session.delete(test_domain)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-            pass
-
-    request.addfinalizer(fin)
-    return test_domain
+# @pytest.fixture(autouse=True)
+# def test_domain_2(test_org, test_culture, request):
+#     domain_attrs = dict(
+#         name=randomword(10).format(), usage_limitation=-1, added_time=datetime.today(),
+#         organization_id=test_org.id, is_fair_check_on=0, is_active=1,
+#         default_culture_id=test_culture.id, expiration=datetime(2050, 4, 26)
+#     )
+#     test_domain, created = get_or_create(session=db.session, model=Domain, defaults=None, **domain_attrs)
+#     if created:
+#         db.session.add(test_domain)
+#         db.session.commit()
+#
+#     def fin():
+#         try:
+#             db.session.delete(test_domain)
+#             db.session.commit()
+#         except Exception:
+#             db.session.rollback()
+#             pass
+#
+#     request.addfinalizer(fin)
+#     return test_domain
 
 
 @pytest.fixture(autouse=True)

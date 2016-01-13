@@ -176,32 +176,32 @@ class CandidatesResource(Resource):
                        'is_default': email.get('is_default')} for email in candidate_dict.get('emails')]
 
             resp_dict = create_or_update_candidate_from_params(
-                    user_id=authed_user.id,
-                    is_creating=True,
-                    first_name=candidate_dict.get('first_name'),
-                    middle_name=candidate_dict.get('middle_name'),
-                    last_name=candidate_dict.get('last_name'),
-                    formatted_name=candidate_dict.get('full_name'),
-                    status_id=candidate_dict.get('status_id'),
-                    emails=emails,
-                    phones=candidate_dict.get('phones'),
-                    addresses=candidate_dict.get('addresses'),
-                    educations=candidate_dict.get('educations'),
-                    military_services=candidate_dict.get('military_services'),
-                    areas_of_interest=candidate_dict.get('areas_of_interest'),
-                    custom_fields=candidate_dict.get('custom_fields'),
-                    social_networks=candidate_dict.get('social_networks'),
-                    work_experiences=candidate_dict.get('work_experiences'),
-                    work_preference=candidate_dict.get('work_preference'),
-                    preferred_locations=candidate_dict.get('preferred_locations'),
-                    skills=candidate_dict.get('skills'),
-                    dice_social_profile_id=candidate_dict.get('openweb_id'),
-                    dice_profile_id=candidate_dict.get('dice_profile_id'),
-                    added_time=candidate_dict.get('added_time'),
-                    source_id=candidate_dict.get('source_id'),
-                    objective=candidate_dict.get('objective'),
-                    summary=candidate_dict.get('summary'),
-                    talent_pool_ids=candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []})
+                user_id=authed_user.id,
+                is_creating=True,
+                first_name=candidate_dict.get('first_name'),
+                middle_name=candidate_dict.get('middle_name'),
+                last_name=candidate_dict.get('last_name'),
+                formatted_name=candidate_dict.get('full_name'),
+                status_id=candidate_dict.get('status_id'),
+                emails=emails,
+                phones=candidate_dict.get('phones'),
+                addresses=candidate_dict.get('addresses'),
+                educations=candidate_dict.get('educations'),
+                military_services=candidate_dict.get('military_services'),
+                areas_of_interest=candidate_dict.get('areas_of_interest'),
+                custom_fields=candidate_dict.get('custom_fields'),
+                social_networks=candidate_dict.get('social_networks'),
+                work_experiences=candidate_dict.get('work_experiences'),
+                work_preference=candidate_dict.get('work_preference'),
+                preferred_locations=candidate_dict.get('preferred_locations'),
+                skills=candidate_dict.get('skills'),
+                dice_social_profile_id=candidate_dict.get('openweb_id'),
+                dice_profile_id=candidate_dict.get('dice_profile_id'),
+                added_time=candidate_dict.get('added_time'),
+                source_id=candidate_dict.get('source_id'),
+                objective=candidate_dict.get('objective'),
+                summary=candidate_dict.get('summary'),
+                talent_pool_ids=candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []})
             )
             created_candidate_ids.append(resp_dict['candidate_id'])
 
@@ -266,7 +266,7 @@ class CandidatesResource(Resource):
 
         # Candidates must belong to user's domain
         candidates = body_dict.get('candidates')
-        list_of_candidate_ids = list(candidate['id'] for candidate in candidates)
+        list_of_candidate_ids = [candidate['id'] for candidate in candidates]
         if not do_candidates_belong_to_users_domain(authed_user, list_of_candidate_ids):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
@@ -281,33 +281,33 @@ class CandidatesResource(Resource):
                           for email in candidate_dict.get('emails')]
 
             resp_dict = create_or_update_candidate_from_params(
-                    user_id=authed_user.id,
-                    is_updating=True,
-                    candidate_id=candidate_dict.get('id'),
-                    first_name=candidate_dict.get('first_name'),
-                    middle_name=candidate_dict.get('middle_name'),
-                    last_name=candidate_dict.get('last_name'),
-                    formatted_name=candidate_dict.get('full_name'),
-                    status_id=candidate_dict.get('status_id'),
-                    emails=emails,
-                    phones=candidate_dict.get('phones'),
-                    addresses=candidate_dict.get('addresses'),
-                    educations=candidate_dict.get('educations'),
-                    military_services=candidate_dict.get('military_services'),
-                    areas_of_interest=candidate_dict.get('areas_of_interest'),
-                    custom_fields=candidate_dict.get('custom_fields'),
-                    social_networks=candidate_dict.get('social_networks'),
-                    work_experiences=candidate_dict.get('work_experiences'),
-                    work_preference=candidate_dict.get('work_preference'),
-                    preferred_locations=candidate_dict.get('preferred_locations'),
-                    skills=candidate_dict.get('skills'),
-                    dice_social_profile_id=candidate_dict.get('openweb_id'),
-                    dice_profile_id=candidate_dict.get('dice_profile_id'),
-                    added_time=candidate_dict.get('added_time'),
-                    source_id=candidate_dict.get('source_id'),
-                    objective=candidate_dict.get('objective'),
-                    summary=candidate_dict.get('summary'),
-                    talent_pool_ids=candidate_dict.get('talent_pool_id', {'add': [], 'delete': []})
+                user_id=authed_user.id,
+                is_updating=True,
+                candidate_id=candidate_dict.get('id'),
+                first_name=candidate_dict.get('first_name'),
+                middle_name=candidate_dict.get('middle_name'),
+                last_name=candidate_dict.get('last_name'),
+                formatted_name=candidate_dict.get('full_name'),
+                status_id=candidate_dict.get('status_id'),
+                emails=emails,
+                phones=candidate_dict.get('phones'),
+                addresses=candidate_dict.get('addresses'),
+                educations=candidate_dict.get('educations'),
+                military_services=candidate_dict.get('military_services'),
+                areas_of_interest=candidate_dict.get('areas_of_interest'),
+                custom_fields=candidate_dict.get('custom_fields'),
+                social_networks=candidate_dict.get('social_networks'),
+                work_experiences=candidate_dict.get('work_experiences'),
+                work_preference=candidate_dict.get('work_preference'),
+                preferred_locations=candidate_dict.get('preferred_locations'),
+                skills=candidate_dict.get('skills'),
+                dice_social_profile_id=candidate_dict.get('openweb_id'),
+                dice_profile_id=candidate_dict.get('dice_profile_id'),
+                added_time=candidate_dict.get('added_time'),
+                source_id=candidate_dict.get('source_id'),
+                objective=candidate_dict.get('objective'),
+                summary=candidate_dict.get('summary'),
+                talent_pool_ids=candidate_dict.get('talent_pool_id', {'add': [], 'delete': []})
             )
             updated_candidate_ids.append(resp_dict['candidate_id'])
 
