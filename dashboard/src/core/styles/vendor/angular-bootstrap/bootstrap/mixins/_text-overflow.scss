@@ -1,0 +1,8 @@
+// Text overflow
+// Requires inline-block or block for proper styling
+
+@mixin bs-text-overflow() {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

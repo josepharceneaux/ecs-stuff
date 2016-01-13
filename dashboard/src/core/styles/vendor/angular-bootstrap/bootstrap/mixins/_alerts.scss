@@ -1,0 +1,14 @@
+// Alerts
+
+@mixin bs-alert-variant($bs-background, $bs-border, $bs-text-color) {
+  background-color: $bs-background;
+  border-color: $bs-border;
+  color: $bs-text-color;
+
+  hr {
+    border-top-color: darken($bs-border, 5%);
+  }
+  .alert-link {
+    color: darken($bs-text-color, 10%);
+  }
+}

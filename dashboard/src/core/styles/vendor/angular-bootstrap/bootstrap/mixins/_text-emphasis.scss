@@ -1,0 +1,12 @@
+// Typography
+
+// [converter] $bs-parent hack
+@mixin bs-text-emphasis-variant($bs-parent, $bs-color) {
+  #{$bs-parent} {
+    color: $bs-color;
+  }
+  a#{$bs-parent}:hover,
+  a#{$bs-parent}:focus {
+    color: darken($bs-color, 10%);
+  }
+}

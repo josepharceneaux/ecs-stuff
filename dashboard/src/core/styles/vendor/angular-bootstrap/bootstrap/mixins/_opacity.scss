@@ -1,0 +1,8 @@
+// Opacity
+
+@mixin bs-opacity($bs-opacity) {
+  opacity: $bs-opacity;
+  // IE8 filter
+  $bs-opacity-ie: ($bs-opacity * 100);
+  filter: alpha(opacity=$bs-opacity-ie);
+}
