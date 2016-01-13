@@ -123,11 +123,10 @@ def validation_of_data_to_schedule_campaign(campaign_obj, request):
     This validates the data provided to schedule a campaign.
     1- Get JSON data from request and raise Invalid Usage exception if no data is found or
             data is not JSON serializable.
-    2- If start datetime is not provide/given in invalid format/is in past, we raise Invalid usage
+    2- If start datetime is not provide/given in valid format, we raise Invalid usage
         error as start_datetime is required field for both 'periodic' and 'one_time' schedule.
     3- Get number of seconds by validating given frequency_id
-    4- If end_datetime and frequency, both are provided then we validate same checks for
-        end_datetime as we did in step 2 for start_datetime.
+    4- If end_datetime is not given and frequency is for periodic task, we raise Invalid usage.
     5- Removes the frequency_id from given dict of data and put frequency (number of seconds) in it.
     6- Returns data_to_schedule
 
@@ -148,23 +147,13 @@ def validation_of_data_to_schedule_campaign(campaign_obj, request):
     # check if data has start_datetime
     if not data_to_schedule_campaign.get('start_datetime'):
         raise InvalidUsage('start_datetime is required field.')
-    # start datetime should be in valid format and in future
-    is_datetime_in_valid_format_and_in_future(data_to_schedule_campaign.get('start_datetime'))
-    # get start_datetime object
-    start_datetime = if_str_datetime_in_valid_format_get_datetime_obj(
-        data_to_schedule_campaign.get('start_datetime'))
-    end_datetime_str = data_to_schedule_campaign.get('end_datetime')
     # get number of seconds from frequency id
     frequency = frequency_id_to_seconds(data_to_schedule_campaign.get('frequency_id'))
     # check if task to be schedule is periodic
-    if end_datetime_str and frequency:
-        # check if end_datetime is greater than start_datetime
-        end_datetime_plus_frequency = \
-            if_str_datetime_in_valid_format_get_datetime_obj(end_datetime_str)\
-            + timedelta(seconds=frequency)
-        if end_datetime_plus_frequency < start_datetime:
-            raise InvalidUsage("end_datetime must be greater than start_datetime")
+    if frequency and not data_to_schedule_campaign.get('end_datetime'):
+        raise InvalidUsage("end_datetime is required to schedule a periodic task")
     data_to_schedule_campaign['frequency'] = frequency
+    # convert end_datetime_str in datetime obj
     return data_to_schedule_campaign
 
 

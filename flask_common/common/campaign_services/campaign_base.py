@@ -765,20 +765,21 @@ class CampaignBase(object):
         This function gets the campaign object, and checks if it is present on scheduler_service.
         If campaign is present on scheduler_service, we delete it there and on success we return
             campaign object, otherwise we return None.
-        :return: Campaign object
-        :rtype: SmsCampaign or some other campaign object
+        :return: status of deleting a task
+        :rtype: bool
         :exception: Invalid usage
         """
         if not campaign_id:
             raise InvalidUsage('Campaign id is required to unschedule it.')
         if not hasattr(request, 'user'):
             raise InvalidUsage('User cannot be None for un scheduling a campaign.')
+        delete_status = False
         campaign_obj, scheduled_task, oauth_header = \
             cls.get_authorized_campaign_obj_and_scheduled_task(campaign_id, request.user.id)
         if scheduled_task:
-            delete_scheduled_task(scheduled_task['id'], oauth_header)
-        campaign_obj.update(scheduler_task_id=None)
-        return campaign_obj
+            delete_status = delete_scheduled_task(scheduled_task['id'], oauth_header)
+            campaign_obj.update(scheduler_task_id=None) if delete_status else None
+        return delete_status
 
     @staticmethod
     def pre_process_re_schedule(pre_processed_data):

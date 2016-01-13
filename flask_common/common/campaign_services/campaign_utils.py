@@ -323,14 +323,14 @@ def delete_scheduled_task(scheduled_task_id, oauth_header):
     try:
         response = http_request('DELETE', SchedulerApiUrl.TASK % scheduled_task_id,
                                 headers=oauth_header)
-        if response.ok:
-            logger.info("delete_scheduled_task: Task(id:%s) has been removed from "
-                        "scheduler_service" % scheduled_task_id)
-            return True
+        if not response.ok:
+            logger.error("delete_scheduled_task: Task(id:%s) couldn't be deleted from "
+                         "scheduler_service." % scheduled_task_id)
+            return False
     except ResourceNotFound:
         logger.info("delete_scheduled_task: Task(id:%s)has already been removed from "
                     "scheduler_service" % scheduled_task_id)
-        pass
-    logger.error("delete_scheduled_task: Task(id:%s) couldn't be deleted from scheduler_service."
+        return True
+    logger.info("delete_scheduled_task: Task(id:%s) has been removed from scheduler_service"
                 % scheduled_task_id)
-    return False
+    return True
