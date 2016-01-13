@@ -42,16 +42,16 @@ def _get_host_name(service_name, port_number):
     """
     env = os.getenv(TalentConfigKeys.ENV_KEY) or 'dev'
     if env in ['dev', 'circle']:
+        # This looks like http://127.0.0.1:8001 (for auth service)
         return LOCAL_HOST + ':' + str(port_number) + '%s'
     elif env == 'qa':
-        # This looks like http://auth-service-webdev.gettalent.com (for auth service)
-        return 'http://' + service_name + '-staging' + TALENT_DOMAIN + '%s'
+        # This looks like https://auth-service-webdev.gettalent.com (for auth service)
+        return 'https://' + service_name + '-staging' + TALENT_DOMAIN + '%s'
     elif env == 'prod':
-        # This looks like http://auth-service.gettalent.com (for auth service)
-        # TODO: Verify this URL after deployment
-        return 'http://' + service_name + TALENT_DOMAIN + '%s'
+        # This looks like https://auth-service.gettalent.com (for auth service)
+        return 'https://' + service_name + TALENT_DOMAIN + '%s'
     else:
-        raise Exception("Environment variable GT_ENVIRONMENT not set correctly")
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly: Should be dev, circle, qa, or prod")
 
 
 def _get_api_relative_version(api_version):
@@ -87,7 +87,7 @@ class GTApis(object):
     # Port Numbers of flask micro services
     AUTH_SERVICE_PORT = 8001
     ACTIVITY_SERVICE_PORT = 8002
-    RESUME_SERVICE_PORT = 8003
+    RESUME_PARSING_SERVICE_PORT = 8003
     USER_SERVICE_PORT = 8004
     CANDIDATE_SERVICE_PORT = 8005
     WIDGET_SERVICE_PORT = 8006
@@ -101,7 +101,7 @@ class GTApis(object):
     # Names of flask micro services
     AUTH_SERVICE_NAME = 'auth-service'
     ACTIVITY_SERVICE_NAME = 'activity-service'
-    RESUME_SERVICE_NAME = 'resume-service'
+    RESUME_PARSING_SERVICE_NAME = 'resume-parsing-service'
     USER_SERVICE_NAME = 'user-service'
     CANDIDATE_SERVICE_NAME = 'candidate-service'
     WIDGET_SERVICE_NAME = 'widget-service'
@@ -161,7 +161,7 @@ class ActivityApiUrl(object):
 
 class ResumeApi(object):
     """
-    API relative URLs for resume_service. e.g. /v1/parse_resume
+    API relative URLs for resume_parsing_service. e.g. /v1/parse_resume
     """
     VERSION = 'v1'
     URL_PREFIX = _get_url_prefix(VERSION)
@@ -172,10 +172,10 @@ class ResumeApi(object):
 
 class ResumeApiUrl(object):
     """
-    Rest URLs of resume_service
+    Rest URLs of resume_parsing_service
     """
-    HOST_NAME = _get_host_name(GTApis.RESUME_SERVICE_NAME,
-                               GTApis.RESUME_SERVICE_PORT)
+    HOST_NAME = _get_host_name(GTApis.RESUME_PARSING_SERVICE_NAME,
+                               GTApis.RESUME_PARSING_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     API_URL = HOST_NAME % ResumeApi.RELATIVE_VERSION
     PARSE = API_URL % ResumeApi.PARSE
@@ -399,6 +399,7 @@ class CandidateApiWords(object):
     SEARCH = "/search"
     DOCUMENTS = "/documents"
     OPENWEB = '/openweb'
+    VIEWS = "/views"
 
 
 class CandidateApi(object):
@@ -465,6 +466,7 @@ class CandidateApi(object):
     CANDIDATE_SEARCH = CANDIDATES + CandidateApiWords.SEARCH
     CANDIDATES_DOCUMENTS = CANDIDATES + CandidateApiWords.DOCUMENTS
     OPENWEB = CANDIDATES + CandidateApiWords.OPENWEB
+    CANDIDATE_VIEWS = CANDIDATE_ID + CandidateApiWords.VIEWS
 
 
 class CandidateApiUrl(object):
@@ -524,7 +526,30 @@ class CandidateApiUrl(object):
     SOCIAL_NETWORK = SOCIAL_NETWORKS + "/%s"
 
     WORK_PREFERENCE = CANDIDATE + CandidateApiWords.WORK_PREFERENCES + "/%s"
+
     CANDIDATE_EDIT = CANDIDATE + CandidateApiWords.EDITS
+
+    CANDIDATE_VIEW = CANDIDATE + CandidateApiWords.VIEWS
+
+
+class SchedulerApi(object):
+    """
+    Rest Relative URLs of scheduler_service
+    """
+
+    VERSION = 'v1'
+
+    # URLs, in case of API
+    RELATIVE_VERSION = _get_api_relative_version(VERSION)
+    SCHEDULER_MULTIPLE_TASKS = RELATIVE_VERSION % "tasks/"
+    SCHEDULER_TASKS_TEST = RELATIVE_VERSION % "tasks/test/"
+    SCHEDULER_ONE_TASK = RELATIVE_VERSION % "tasks/id/<string:_id>"
+    SCHEDULER_NAMED_TASK = RELATIVE_VERSION % "tasks/name/<string:_name>"
+    SCHEDULER_ONE_TASK_NAME = RELATIVE_VERSION % "tasks/name/<string:_name>"
+    SCHEDULER_MULTIPLE_TASK_RESUME = RELATIVE_VERSION % "tasks/resume/"
+    SCHEDULER_MULTIPLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/pause/"
+    SCHEDULER_SINGLE_TASK_RESUME = RELATIVE_VERSION % "tasks/<string:_id>/resume/"
+    SCHEDULER_SINGLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/<string:_id>/pause/"
 
 
 class SchedulerApiUrl(object):
@@ -533,5 +558,19 @@ class SchedulerApiUrl(object):
     """
     HOST_NAME = _get_host_name(GTApis.SCHEDULER_SERVICE_NAME,
                                GTApis.SCHEDULER_SERVICE_PORT)
-    TASKS = HOST_NAME % '/tasks/'
-    TASK = HOST_NAME % '/tasks/id/%s'
+
+    VERSION = 'v1'
+
+    HOST_NAME %= _get_api_relative_version(VERSION)
+    # URLs, in case of test cases
+    TASKS = HOST_NAME % "tasks/"
+    TASK = HOST_NAME % 'tasks/id/%s'
+    TASK_NAME = HOST_NAME % 'tasks/name/%s'
+    PAUSE_TASK = HOST_NAME % 'tasks/%s/pause/'
+    RESUME_TASK = HOST_NAME % 'tasks/%s/resume/'
+    PAUSE_TASKS = HOST_NAME % 'tasks/pause/'
+    RESUME_TASKS = HOST_NAME % 'tasks/resume/'
+    TEST_TASK = HOST_NAME % 'tasks/test/'
+
+    # Use different port of scheduler service URL
+    FLOWER_MONITORING = '--port=5511'

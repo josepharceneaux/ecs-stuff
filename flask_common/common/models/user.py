@@ -15,6 +15,7 @@ from event_organizer import EventOrganizer
 from misc import AreaOfInterest
 from email_marketing import EmailCampaign
 from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
+from werkzeug.security import generate_password_hash
 
 
 class User(db.Model):
@@ -112,6 +113,23 @@ class User(db.Model):
         :rtype: list[User]
         """
         return User.query.filter_by(domain_id=domain_id).all()
+
+    # ***** Below function to be used for testing only *****
+    @staticmethod
+    def add_test_user(session, domain_id, password):
+        """
+        Function creates a unique user for testing
+        :rtype: User
+        """
+        user = User(
+            email='{}@example.com'.format(uuid.uuid4().__str__()),
+            password=generate_password_hash(password, method='pbkdf2:sha512'),
+            domain_id=domain_id,
+            expiration=None
+        )
+        session.add(user)
+        session.commit()
+        return user
 
 
 class Domain(db.Model):
@@ -236,6 +254,19 @@ class Token(db.Model):
         if self._scopes:
             return self._scopes.split()
         return []
+
+    @staticmethod
+    def get_token(access_token):
+        """
+        Filter Token based on access_token and return token object from db
+        :param access_token: User access_token
+        :return: Token object matched with access_token
+        """
+        assert access_token, "access_token is empty"
+        token = Token.query.filter_by(access_token=access_token).first()
+        if not token:
+            raise ResourceNotFound("Token not found")
+        return token
 
 
 class DomainRole(db.Model):

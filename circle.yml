@@ -21,7 +21,7 @@ test:
     - python user_service/run.py:
         parallel: true
         background: true
-    - python resume_service/run.py:
+    - python resume_parsing_service/run.py:
         parallel: true
         background: true
     - python activity_service/run.py:
@@ -42,6 +42,9 @@ test:
     - python scheduler_service/run.py:
         parallel: true
         background: true
+    - python scheduler_service/run_celery.py:
+        parallel: true
+        background: true
     - sleep 5
 
 
@@ -51,7 +54,7 @@ test:
           py.test
           auth_service/tests/
           user_service/tests/
-          resume_service/tests/
+          resume_parsing_service/tests/
           activity_service/tests/
           candidate_service/tests/
           candidate_pool_service/tests/

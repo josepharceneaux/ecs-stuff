@@ -10,15 +10,14 @@ These methods are called by run_job method asynchronously
 
     celery flower -A scheduler_service.run.celery
 
-default url for celery flower =>
+For Scheduler Service, celery flower is =>
 
-    localhost:5555
+    localhost:5511
 
 """
-from scheduler_service.run import celery
-
-# Third-Party imports
-import requests
+# Application imports
+from scheduler_service.common.utils.handy_functions import http_request
+from scheduler_service.run import celery, app
 
 
 @celery.task(name="send_request")
@@ -26,22 +25,25 @@ def send_request(access_token, secret_key_id, url, content_type, kwargs):
     """
     This method will be called by run_job asynchronously
     :param access_token: authorization token for user
-    :param url: the url where to send post request
+    :param url: the URL where to send post request
     :param content_type: the content type i.e json or xml
     :param secret_key_id: Redis key which have a corresponding secret value to decrypt data
     :param kwargs: post data i.e campaign name, smartlist ids
     :return:
     """
-    headers = {
-        'Content-Type': content_type,
-        'Authorization': access_token,
-        'X-Talent-Secret-Key-ID': secret_key_id
-    }
+    with app.app_context():
+        headers = {
+            'Content-Type': content_type,
+            'Authorization': access_token
+        }
+        if secret_key_id:
+            headers.update({'X-Talent-Secret-Key-ID': secret_key_id})
+        # Send request to URL with job post data
+        response = http_request(method_type='POST', url=url, data=kwargs, headers=headers)
 
-    response = requests.post(url, data=kwargs, headers=headers)
-    try:
-        return response.json()
-    except:
-        return {'message': "JSON object couldn't be decoded", 'status_code': response.status_code}
-
+        try:
+            return response.text
+        except Exception as e:
+            # This exception will be caught by flower
+            return {'message': e.message, 'status_code': response.status_code}
 

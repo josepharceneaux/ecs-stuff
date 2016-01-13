@@ -3,26 +3,35 @@ Scheduler - APScheduler initialization, set jobstore, threadpoolexecutor
 - Add task to APScheduler
 - run_job callback method, runs when times come
 - remove multiple tasks from APScheduler
-- get tasks from APScheduler and serialize tasks using json
+- get tasks from APScheduler and serialize tasks using JSON
 """
 
-import re
+# Standard imports
+import datetime
+import os
 
 # Third-party imports
+from dateutil.tz import tzutc
 from pytz import timezone
 from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.events import EVENT_JOB_EXECUTED
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.date import DateTrigger
 from apscheduler.schedulers.background import BackgroundScheduler
-from dateutil.parser import parse
+from urllib import urlencode
 
 # Application imports
-from scheduler_service import logger
-from scheduler_service.common.models.user import User
+from scheduler_service.common.models.user import Token
+from scheduler_service import logger, TalentConfigKeys, flask_app
 from scheduler_service.apscheduler_config import executors, job_store, jobstores
+from scheduler_service.common.models.user import User
 from scheduler_service.common.error_handling import InvalidUsage
-from scheduler_service.custom_exceptions import FieldRequiredError, TriggerTypeError, JobNotCreatedError
+from scheduler_service.common.routes import AuthApiUrl
+from scheduler_service.common.utils.handy_functions import http_request
+from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
+from scheduler_service.validators import get_valid_data_from_dict, get_valid_url_from_dict, \
+    get_valid_datetime_from_dict, get_valid_integer_from_dict, get_valid_task_name_from_dict
+from scheduler_service.custom_exceptions import TriggerTypeError, JobNotCreatedError
 from scheduler_service.tasks import send_request
 
 
@@ -31,24 +40,23 @@ scheduler = BackgroundScheduler(jobstore=jobstores, executors=executors,
                                 timezone='UTC')
 scheduler.add_jobstore(job_store)
 
+# Set the minimum frequency in seconds
+if flask_app.config.get(TalentConfigKeys.ENV_KEY) in ['dev', 'circle']:
+    MIN_ALLOWED_FREQUENCY = 4
+else:
+    # For qa and production minimum frequency would be one hour
+    MIN_ALLOWED_FREQUENCY = 3600
 
-def is_valid_url(url):
-    """
-    Reference: https://github.com/django/django-old/blob/1.3.X/django/core/validators.py#L42
-    """
-    regex = re.compile(
-        r'^https?://'  # http:// or https://
-        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
-        r'localhost|'  # localhost...
-        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
-        r'(?::\d+)?'  # optional port
-        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
-    return url is not None and regex.search(url)
+
+# Request timeout is 30 seconds.
+REQUEST_TIMEOUT = 30
 
 
 def apscheduler_listener(event):
     """
     APScheduler listener for logging on job crashed or job time expires
+    The method also checks if a job time is passed. If yes, then it remove job from apscheduler because there is no
+    use of expired job.
     :param event:
     :return:
     """
@@ -56,78 +64,84 @@ def apscheduler_listener(event):
         logger.error('The job crashed :(\n')
         logger.error(str(event.exception.message) + '\n')
     else:
-        logger.info('The job worked :)')
         job = scheduler.get_job(event.job_id)
-        if job.next_run_time is not None and job.next_run_time > job.trigger.end_date:
-            logger.info('Stopping job')
-            try:
+        if job:
+            logger.info('The job with id %s worked :)' % job.id)
+            # In case of periodic job, if next_run_time is greater than end_date. This mean job is expired and will
+            # not run in future. So, just simply delete.
+            if isinstance(job.trigger, IntervalTrigger) and job.next_run_time and job.next_run_time > job.trigger.end_date:
+                logger.info('Stopping job')
+                try:
+                    scheduler.remove_job(job_id=job.id)
+                    logger.info("apscheduler_listener: Job with id %s removed successfully" % job.id)
+                except Exception as e:
+                    logger.exception("apscheduler_listener: Error occurred while removing job")
+                    raise e
+            elif isinstance(job.trigger, DateTrigger) and not job.run_date:
                 scheduler.remove_job(job_id=job.id)
-                logger.info("APScheduler_listener: Job removed successfully")
-            except Exception as e:
-                logger.exception("apscheduler_listener: Error occurred while removing job")
-                raise e
+                logger.info("apscheduler_listener: Job with id %s removed successfully" % job.id)
 
 
 scheduler.add_listener(apscheduler_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 
 
 def validate_one_time_job(data):
+    """
+    Validate one time job POST data.
+    if run_datetime is already passed then raise error 500
+    :param data:
+    :return:
+    """
     valid_data = dict()
-    try:
-        run_datetime = data['run_datetime']
-    except KeyError:
-        raise FieldRequiredError(error_message="Field 'run_datetime' is missing")
-    try:
-        run_datetime = parse(run_datetime)
-        run_datetime = run_datetime.replace(tzinfo=timezone('UTC'))
-        valid_data.update({'run_datetime': run_datetime})
-        return valid_data
-    except Exception:
-        InvalidUsage(
-            error_message="Invalid value of run_datetime %s. run_datetime should be datetime format" % run_datetime)
+    run_datetime = get_valid_datetime_from_dict(data, 'run_datetime')
+    valid_data.update({'run_datetime': run_datetime})
+
+    current_datetime = datetime.datetime.utcnow()
+    current_datetime = current_datetime.replace(tzinfo=timezone('UTC'))
+    # If job is not in 0-30 seconds in past or greater than current datetime.
+    if run_datetime < current_datetime:
+        raise InvalidUsage("No need to schedule job of already passed time. run_datetime is in past")
+
+    return valid_data
 
 
 def validate_periodic_job(data):
+    """
+    Validate periodic job and check for missing or invalid data. if found then raise error
+    :param data: JSON job post data
+    :return:
+    """
     valid_data = dict()
-    try:
-        try:
-            frequency = data['frequency']
-        except KeyError:
-            raise FieldRequiredError("Missing key: frequency")
-        start_datetime = data['start_datetime']
-        try:
-            start_datetime = parse(start_datetime)
-            start_datetime = start_datetime.replace(tzinfo=timezone('UTC'))
-            valid_data.update({'start_datetime': start_datetime})
-        except Exception:
-            raise InvalidUsage(error_message="Invalid value of start_datetime %s" % start_datetime)
+    frequency = get_valid_integer_from_dict(data, 'frequency')
+    start_datetime = get_valid_datetime_from_dict(data, 'start_datetime')
+    end_datetime = get_valid_datetime_from_dict(data, 'end_datetime')
 
-        end_datetime = data['end_datetime']
-        try:
-            end_datetime = parse(end_datetime)
-            end_datetime = end_datetime.replace(tzinfo=timezone('UTC'))
-            valid_data.update({'end_datetime': end_datetime})
-        except Exception:
-            raise InvalidUsage(error_message="Invalid value of end_datetime %s" % end_datetime)
+    valid_data.update({'start_datetime': start_datetime})
+    valid_data.update({'end_datetime': end_datetime})
 
-        # If value of frequency is not integer or lesser than 1 hour then throw exception
-        if not str(frequency).isdigit():
-            raise InvalidUsage(error_message='Invalid value of frequency. It should be integer')
-        if int(frequency) < 3600:
-            raise InvalidUsage(error_message='Invalid value of frequency. Value should '
-                                             'be greater than or equal to 3600')
+    # If value of frequency is not integer or lesser than 1 hour then throw exception
+    if int(frequency) < MIN_ALLOWED_FREQUENCY:
+        raise InvalidUsage(error_message='Invalid value of frequency. Value should '
+                                         'be greater than or equal to %s' % MIN_ALLOWED_FREQUENCY)
 
-        frequency = int(frequency)
-        valid_data.update({'frequency': frequency})
-        return valid_data
+    frequency = int(frequency)
+    valid_data.update({'frequency': frequency})
 
-    except KeyError:
-        raise FieldRequiredError(error_message="Missing or invalid data.")
+    current_datetime = datetime.datetime.utcnow()
+    current_datetime = current_datetime.replace(tzinfo=timezone('UTC'))
+
+    # If job is not in 0-30 seconds in past or greater than current datetime.
+    past_datetime = current_datetime - datetime.timedelta(seconds=REQUEST_TIMEOUT)
+    future_datetime = end_datetime - datetime.timedelta(seconds=frequency)
+    if not past_datetime < start_datetime < future_datetime:
+        raise InvalidUsage("start_datetime and end_datetime should be in future.")
+
+    return valid_data
 
 
 def schedule_job(data, user_id=None, access_token=None):
     """
-    Schedule job using post data and add it to APScheduler. Which calls the callback method when job time comes
+    Schedule job using POST data and add it to APScheduler. Which calls the callback method when job time comes
     :param data: the data like url, frequency, post_data, start_datetime and end_datetime of job which is required
     for creating job of APScheduler
     :param user_id: the user_id of user who is creating job
@@ -137,40 +151,54 @@ def schedule_job(data, user_id=None, access_token=None):
     job_config = dict()
     job_config['post_data'] = data.get('post_data', dict())
     content_type = data.get('content_type', 'application/json')
-    # will return None if key not found. We also need to check for valid values not just keys
-    # in dict because a value can be '' and it can be valid or invalid
-    job_config['task_type'] = data.get('task_type')
-    job_config['url'] = data.get('url')
+    job_config['task_type'] = get_valid_data_from_dict(data, 'task_type')
+    job_config['url'] = get_valid_url_from_dict(data, 'url')
 
-    # Get missing keys
-    missing_keys = filter(lambda _key: job_config[_key] is None, job_config.keys())
-    if len(missing_keys) > 0:
-        raise FieldRequiredError(error_message="Missing keys: %s" % ', '.join(missing_keys))
-
-    if not is_valid_url(job_config['url']):
-        raise InvalidUsage("URL is not valid")
+    # Server to Server call. We check if a job with a certain 'task_name'
+    # is already running as we only allow one such task to run at a time.
+    # If there is already such task we raise an exception.
+    if user_id is None:
+        job_config['task_name'] = get_valid_task_name_from_dict(data, 'task_name')
+        jobs = scheduler.get_jobs()
+        jobs = filter(lambda task: task.name == job_config['task_name'], jobs)
+        # There should be a unique task named job. If a job already exist then it should raise error
+        if jobs and len(jobs) == 1:
+            raise InvalidUsage('Task name %s is already scheduled' % jobs[0].name)
+    else:
+        job_config['task_name'] = None
 
     trigger = str(job_config['task_type']).lower().strip()
 
-    if trigger == 'periodic':
+    if trigger == SchedulerUtils.PERIODIC:
         valid_data = validate_periodic_job(data)
 
         try:
             job = scheduler.add_job(run_job,
+                                    name=job_config['task_name'],
                                     trigger='interval',
                                     seconds=valid_data['frequency'],
                                     start_date=valid_data['start_datetime'],
                                     end_date=valid_data['end_datetime'],
                                     args=[user_id, access_token, job_config['url'], content_type],
                                     kwargs=job_config['post_data'])
+
+            current_datetime = datetime.datetime.utcnow()
+            current_datetime = current_datetime.replace(tzinfo=tzutc())
+            job_start_time = valid_data['start_datetime']
+
+            # Due to request timeout delay, there will be a delay in scheduling job sometimes.
+            # And if start time is passed due to this request delay, then job should be run
+            if job_start_time < current_datetime:
+                run_job(user_id, access_token, job_config['url'], content_type)
             logger.info('schedule_job: Task has been added and will start at %s ' % valid_data['start_datetime'])
         except Exception:
             raise JobNotCreatedError("Unable to create the job.")
         return job.id
-    elif trigger == 'one_time':
+    elif trigger == SchedulerUtils.ONE_TIME:
         valid_data = validate_one_time_job(data)
         try:
             job = scheduler.add_job(run_job,
+                                    name=job_config['task_name'],
                                     trigger='date',
                                     run_date=valid_data['run_datetime'],
                                     args=[user_id, access_token, job_config['url'], content_type],
@@ -193,12 +221,36 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
     :param kwargs: post data like campaign name, smartlist ids etc
     :return:
     """
+    # In case of global tasks there is no access_token and token expires in 600 seconds. So, a new token should be
+    # created because frequency can be set to minimum of 1 hour.
     secret_key_id = None
     if not access_token:
         secret_key_id, access_token = User.generate_jw_token(user_id=user_id)
+    else:
+        headers = {'content-type': 'application/x-www-form-urlencoded'}
+        token = Token.get_token(access_token=access_token.split(' ')[1])
+        # If token has expired we refresh it
+        past_datetime = token.expires - datetime.timedelta(seconds=REQUEST_TIMEOUT)
+        if token and past_datetime < datetime.datetime.utcnow():
+            data = {
+                'client_id': token.client_id,
+                'client_secret': token.client.client_secret,
+                'refresh_token': token.refresh_token,
+                'grant_type': u'refresh_token'
+            }
+            # We need to refresh token if token is expired. For that send request to auth service and request a
+            # refresh token.
+            with flask_app.app_context():
+                resp = http_request('POST', AuthApiUrl.TOKEN_CREATE, headers=headers,
+                                    data=urlencode(data))
+                logger.info('Token refreshed %s' % resp.json()['expires_at'])
+                access_token = "Bearer " + resp.json()['access_token']
+
     logger.info('User ID: %s, URL: %s, Content-Type: %s' % (user_id, url, content_type))
-    # Call celery task to send post_data to url
-    send_request.apply_async([access_token, secret_key_id, url, content_type, kwargs])
+    # Call celery task to send post_data to URL
+    send_request.apply_async([access_token, secret_key_id, url, content_type, kwargs],
+                             serializer='json',
+                             queue=SchedulerUtils.QUEUE)
 
 
 def remove_tasks(ids, user_id):
@@ -208,39 +260,60 @@ def remove_tasks(ids, user_id):
     :param user_id: tasks owned by user
     :return: tasks which are removed
     """
+    # Get all jobs from APScheduler
     jobs_aps = map(lambda job_id: scheduler.get_job(job_id=job_id), ids)
-    jobs_aps = filter(lambda job: job is not None and job.args[0] == user_id, jobs_aps)
-
+    # Now only keep those that belong to the user
+    jobs_aps = filter(lambda job: job and job.args[0] == user_id, jobs_aps)
+    # Finally remove all such jobs
     removed = map(lambda job: (scheduler.remove_job(job.id), job.id), jobs_aps)
     return removed
 
 
 def serialize_task(task):
     """
-    Serialize task data to json object
-    :param task: APScheduler task to convert to json dict
-    :return: json converted dict object
+    Serialize task data to JSON object
+    :param task: APScheduler task to convert to JSON dict
+                 task.args: user_id, access_token, url, content_type
+    :return: JSON converted dict object
     """
     task_dict = None
+    # Interval Trigger is periodic task_type
     if isinstance(task.trigger, IntervalTrigger):
         task_dict = dict(
             id=task.id,
-            url=task.args[1],
-            start_datetime=str(task.trigger.start_date),
-            end_datetime=str(task.trigger.end_date),
-            next_run_datetime=str(task.next_run_time),
-            frequency=dict(seconds=task.trigger.interval.seconds),
+            url=task.args[2],
+            start_datetime=task.trigger.start_date,
+            end_datetime=task.trigger.end_date,
+            next_run_datetime=task.next_run_time,
+            frequency=dict(seconds=task.trigger.interval_length),
             post_data=task.kwargs,
             pending=task.pending,
-            task_type='periodic'
+            task_type=SchedulerUtils.PERIODIC
         )
+        if task_dict['start_datetime']:
+            task_dict['start_datetime'] = task_dict['start_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        if task_dict['end_datetime']:
+            task_dict['end_datetime'] = task_dict['end_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        if task_dict['next_run_datetime']:
+            task_dict['next_run_datetime'] = task_dict['next_run_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    # Date Trigger is a one_time task_type
     elif isinstance(task.trigger, DateTrigger):
         task_dict = dict(
             id=task.id,
-            url=task.args[1],
-            run_datetime=str(task.trigger.run_date),
+            url=task.args[2],
+            run_datetime=task.trigger.run_date,
             post_data=task.kwargs,
             pending=task.pending,
-            task_type='one_time'
+            task_type=SchedulerUtils.ONE_TIME
         )
+
+        if task_dict['run_datetime']:
+            task_dict['run_datetime'] = task_dict['run_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    if task_dict and task.name and not task.args[0]:
+        task_dict['task_name'] = task.name
+
     return task_dict

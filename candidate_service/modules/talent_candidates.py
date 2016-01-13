@@ -23,7 +23,7 @@ from candidate_service.common.models.candidate import (
 )
 from candidate_service.common.models.candidate import EmailLabel
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
-from candidate_service.common.models.candidate_edit import CandidateEdit
+from candidate_service.common.models.candidate_edit import CandidateEdit, CandidateView
 from candidate_service.common.models.candidate import PhoneLabel
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.email_marketing import (EmailCampaign, EmailCampaignSend)
@@ -502,9 +502,9 @@ def retrieve_email_campaign_send(email_campaign, candidate_id):
              } for email_campaign_send_row in email_campaign_send_rows]
 
 
-###################################################
-# Helper Functions For Retrieving Candidate Edits #
-###################################################
+#################################################
+# Helper Functions For Retrieving Candidate Edits
+#################################################
 def fetch_candidate_edits(candidate_id):
     assert isinstance(candidate_id, (int, long))
     all_edits = []
@@ -523,9 +523,41 @@ def fetch_candidate_edits(candidate_id):
     return all_edits
 
 
-###########################################
-# Helper Functions For Creating Candidate #
-###########################################
+#################################################
+# Helper Functions For Retrieving Candidate Views
+#################################################
+def fetch_candidate_views(candidate_id):
+    """
+    :return: list of candidate view information
+    :rtype:  list[dict]
+    """
+    assert isinstance(candidate_id, (int, long))
+    candidate_views = CandidateView.get_all(candidate_id=candidate_id)
+    return [{'id': view.id,
+             'candidate_id': view.candidate_id,
+             'user_id': view.user_id,
+             'view_type': view.view_type,
+             'view_datetime': str(view.view_datetime)
+             } for view in candidate_views]
+
+
+def add_candidate_view(user_id, candidate_id, view_datetime=datetime.datetime.now(), view_type=3):
+    """
+    Once a Candidate has been viewed, this function should be invoked
+    and add a record to CandidateView
+    """
+    db.session.add(CandidateView(
+        user_id=user_id,
+        candidate_id=candidate_id,
+        view_type=view_type,
+        view_datetime=view_datetime
+    ))
+    db.session.commit()
+
+
+#########################################
+# Helper Functions For Creating Candidate
+#########################################
 def create_or_update_candidate_from_params(
         user_id,
         is_creating=False,
@@ -844,7 +876,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name,
     # Candidate ID must be recognized
     candidate_query = db.session.query(Candidate).filter_by(id=candidate_id)
     if not candidate_query.first():
-        raise NotFoundError(error_message='Candidate not found', error_code=custom_error.CANDIDATE_NOT_FOUND)
+        raise NotFoundError('Candidate not found', custom_error.CANDIDATE_NOT_FOUND)
 
     # Track all edits
     _track_candidate_edits(update_dict, candidate_query.first(), user_id, edited_time)

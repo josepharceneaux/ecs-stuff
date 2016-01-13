@@ -29,7 +29,8 @@ try:
         CandidateExperienceResource, CandidateExperienceBulletResource, CandidateWorkPreferenceResource,
         CandidateEmailResource, CandidatePhoneResource, CandidateMilitaryServiceResource,
         CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
-        CandidateCustomFieldResource, CandidateEditResource, CandidatesResource, CandidateOpenWebResource
+        CandidateCustomFieldResource, CandidateEditResource, CandidatesResource, CandidateOpenWebResource,
+        CandidateViewResource
     )
     from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
 
@@ -240,10 +241,10 @@ try:
         endpoint='candidate_edit'
     )
 
-    ######################## CandidateEmailCampaignResource ########################
-    # api.add_resource(CandidateEmailCampaignResource,
-    #                  '/v1/candidates/<int:id>/email_campaigns/<int:email_campaign_id>/email_campaign_sends',
-    #                  endpoint='candidates')
+    ######################## CandidateViewResource ########################
+    api.add_resource(CandidateViewResource,
+                     CandidateApi.CANDIDATE_VIEWS,
+                     endpoint='candidate_views')
 
     # ****** Candidate Search *******
     api.add_resource(CandidateSearch, CandidateApi.CANDIDATE_SEARCH)
