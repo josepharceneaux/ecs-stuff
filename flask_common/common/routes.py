@@ -41,7 +41,7 @@ def _get_host_name(service_name, port_number):
     :return:
     """
     env = os.getenv(TalentConfigKeys.ENV_KEY) or 'dev'
-    if env in ['dev', 'circle']:
+    if env in ['dev', 'jenkins']:
         # This looks like http://127.0.0.1:8001 (for auth service)
         return LOCAL_HOST + ':' + str(port_number) + '%s'
     elif env == 'qa':
@@ -51,7 +51,7 @@ def _get_host_name(service_name, port_number):
         # This looks like https://auth-service.gettalent.com (for auth service)
         return 'https://' + service_name + TALENT_DOMAIN + '%s'
     else:
-        raise Exception("Environment variable GT_ENVIRONMENT not set correctly: Should be dev, circle, qa, or prod")
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly: Should be dev, jenkins, qa, or prod")
 
 
 def _get_api_relative_version(api_version):

@@ -20,7 +20,7 @@ if GT_ENVIRONMENT == 'dev':
     REDIS_HOST = '127.0.0.1'
     REDIS_PORT = '6379'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@localhost/talent_local'
-elif GT_ENVIRONMENT == 'circle':
+elif GT_ENVIRONMENT == 'jenkins':
     BG_URL = 'http://sandbox-lensapi.burning-glass.com/v1.7/parserservice/resume'
     CANDIDATE_CREATION_URI = 'http://127.0.0.1:8005/v1/candidates'
     DEBUG = True
