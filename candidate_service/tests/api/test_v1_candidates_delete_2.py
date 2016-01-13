@@ -54,8 +54,9 @@ def test_delete_candidate_experience_with_bad_input():
 
 def test_delete_experience_of_a_candidate_belonging_to_a_diff_user(sample_user, sample_user_2, user_auth):
     """
-    Test:   Attempt to delete the experience of a Candidate that belongs to a different user
-    Expect: 403, deletion must be prevented
+    Test:   Attempt to delete the experience of a Candidate that belongs
+            to a different user in the same domain
+    Expect: 204
     :type sample_user:  User
     :type sampl_user_2: User
     :type user_auth:   UserAuthentication
@@ -71,10 +72,10 @@ def test_delete_experience_of_a_candidate_belonging_to_a_diff_user(sample_user, 
     candidate_1_id = create_resp_1.json()['candidates'][0]['id']
 
     # Delete candidate_1's experience with sample_user_2 logged in
-    updated_resp = request_to_candidate_experience_resource(token_2, 'delete',
-                                                            candidate_1_id, all_experiences=True)
+    updated_resp = request_to_candidate_experience_resource(
+            token_2, 'delete', candidate_1_id, all_experiences=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403
+    assert updated_resp.status_code == 204
 
 
 def test_delete_experience_of_a_different_candidate(sample_user, user_auth):
@@ -226,8 +227,9 @@ def test_delete_candidate_experience_bullet_with_bad_input():
 
 def test_delete_exp_bullets_of_a_candidate_belonging_to_a_diff_user(sample_user, sample_user_2, user_auth):
     """
-    Test:   Attempt to delete exp-bullets of a Candidate that belongs to a different user
-    Expect: 403, deletion must be prevented
+    Test:   Attempt to delete exp-bullets of a Candidate that belongs
+            to a different user in the same domain
+    Expect: 204
     :type sample_user:  User
     :type sampl_user_2: User
     :type user_auth:   UserAuthentication
@@ -244,11 +246,10 @@ def test_delete_exp_bullets_of_a_candidate_belonging_to_a_diff_user(sample_user,
     experience = get_from_candidate_resource(token_1, candidate_1_id).json()['candidate']['work_experiences'][0]
 
     # Delete candidate_1's exp-bullets with sample_user_2 logged in
-    updated_resp = request_to_candidate_experience_bullet_resource(token_2, 'delete', candidate_1_id,
-                                                                   experience_id=experience['id'],
-                                                                   all_bullets=True)
+    updated_resp = request_to_candidate_experience_bullet_resource(
+            token_2, 'delete', candidate_1_id, experience_id=experience['id'], all_bullets=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403
+    assert updated_resp.status_code == 204
 
 
 def test_delete_exp_bullets_of_a_different_candidate(sample_user, user_auth):
@@ -266,14 +267,16 @@ def test_delete_exp_bullets_of_a_different_candidate(sample_user, user_auth):
     candidate_2_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
 
     # Retrieve candidate_2's experiences
-    can_2_experiences = get_from_candidate_resource(token, candidate_2_id).json()['candidate']['work_experiences']
+    can_2_experiences = get_from_candidate_resource(token, candidate_2_id)\
+        .json()['candidate']['work_experiences']
 
     # Delete candidate_2's id using candidate_1_id
-    updated_resp = request_to_candidate_experience_bullet_resource(token, 'delete', candidate_1_id,
-                                                                   experience_id=can_2_experiences[0]['id'],
-                                                                   all_bullets=True)
+    updated_resp = request_to_candidate_experience_bullet_resource(
+            token, 'delete', candidate_1_id,
+            experience_id=can_2_experiences[0]['id'], all_bullets=True)
     print response_info(updated_resp)
     assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == 3060
 
 
 def test_delete_candidate_exp_bullets_with_no_id(sample_user, user_auth):
@@ -325,14 +328,15 @@ def test_delete_candidate_experience_bullets(sample_user, user_auth):
 
     # Retrieve Candidate Experiences
     candidate_id = create_resp.json()['candidates'][0]['id']
-    can_experiences = get_from_candidate_resource(token, candidate_id).json()['candidate']['work_experiences']
+    can_experiences = get_from_candidate_resource(token, candidate_id) \
+        .json()['candidate']['work_experiences']
 
     # Current Number of can_experiences
     experience_count_before_deleting_bullets = len(can_experiences)
 
     # Remove all of Candidate's experiences
-    updated_resp = request_to_candidate_experience_bullet_resource(token, 'delete', candidate_id,
-                                                                   can_experiences[0]['id'], True)
+    updated_resp = request_to_candidate_experience_bullet_resource(
+            token, 'delete', candidate_id, can_experiences[0]['id'], True)
     print response_info(updated_resp)
 
     # Retrieve Candidate after update
@@ -365,9 +369,9 @@ def test_delete_candidates_experience_bullet(sample_user, user_auth):
     experience_bullet_count_before_deleting = len(can_experiences[0]['bullets'])
 
     # Remove all of Candidate's experiences
-    updated_resp = request_to_candidate_experience_bullet_resource(token, 'delete', candidate_id,
-                                                                   can_experiences[0]['id'],
-                                                                   bullet_id=can_experiences[0]['bullets'][0]['id'])
+    updated_resp = request_to_candidate_experience_bullet_resource(
+            token, 'delete', candidate_id, can_experiences[0]['id'],
+            bullet_id=can_experiences[0]['bullets'][0]['id'])
     print response_info(updated_resp)
 
     # Retrieve Candidate after update
@@ -410,8 +414,9 @@ def test_delete_candidate_email_with_bad_input():
 
 def test_delete_email_of_a_candidate_belonging_to_a_diff_user(sample_user, sample_user_2, user_auth):
     """
-    Test:   Attempt to delete the email of a Candidate that belongs to a different user
-    Expect: 403, deletion must be prevented
+    Test:   Attempt to delete the email of a Candidate that belongs
+            to a different user in the same domain
+    Expect: 204
     :type sample_user:  User
     :type sampl_user_2: User
     :type user_auth:   UserAuthentication
@@ -429,7 +434,7 @@ def test_delete_email_of_a_candidate_belonging_to_a_diff_user(sample_user, sampl
     # Delete candidate_1's email with sample_user_2 logged in
     updated_resp = request_to_candidate_email_resource(token_2, 'delete', candidate_1_id, all_emails=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403
+    assert updated_resp.status_code == 204
 
 
 def test_delete_email_of_a_different_candidate(sample_user, user_auth):
@@ -577,10 +582,12 @@ def test_delete_candidate_military_service_with_bad_input():
     assert resp.status_code == 404
 
 
-def test_delete_military_service_of_a_candidate_belonging_to_a_diff_user(sample_user, sample_user_2, user_auth):
+def test_delete_military_service_of_a_candidate_belonging_to_a_diff_user(
+        sample_user, sample_user_2, user_auth):
     """
-    Test:   Attempt to delete the military_services of a Candidate that belongs to a different user
-    Expect: 403, deletion must be prevented
+    Test:   Attempt to delete the military_services of a Candidate that belongs
+            to a different user in the same domain
+    Expect: 204
     :type sample_user:  User
     :type sampl_user_2: User
     :type user_auth:   UserAuthentication
@@ -596,10 +603,10 @@ def test_delete_military_service_of_a_candidate_belonging_to_a_diff_user(sample_
     candidate_1_id = create_resp_1.json()['candidates'][0]['id']
 
     # Delete candidate_1's military_services with sample_user_2 logged in
-    updated_resp = request_to_candidate_military_service(token_2, 'delete', candidate_1_id,
-                                                         all_military_services=True)
+    updated_resp = request_to_candidate_military_service(
+            token_2, 'delete', candidate_1_id, all_military_services=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403
+    assert updated_resp.status_code == 204
 
 
 def test_delete_military_service_of_a_different_candidate(sample_user, user_auth):
@@ -621,10 +628,11 @@ def test_delete_military_service_of_a_different_candidate(sample_user, user_auth
         json()['candidate']['military_services']
 
     # Delete candidate_2's id using candidate_1_id
-    updated_resp = request_to_candidate_military_service(token, 'delete', candidate_1_id,
-                                                         military_service_id=can_2_military_services[0]['id'])
+    updated_resp = request_to_candidate_military_service(
+            token, 'delete', candidate_1_id, military_service_id=can_2_military_services[0]['id'])
     print response_info(updated_resp)
     assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == 3080
 
 
 def test_delete_candidate_military_service_with_no_id(sample_user, user_auth):
@@ -751,8 +759,9 @@ def test_delete_candidate_phone_with_bad_input():
 
 def test_delete_phone_of_a_candidate_belonging_to_a_diff_user(sample_user, sample_user_2, user_auth):
     """
-    Test:   Attempt to delete the phone of a Candidate that belongs to a different user
-    Expect: 403, deletion must be prevented
+    Test:   Attempt to delete the phone of a Candidate that belongs
+            to a different user in the same domain
+    Expect: 204
     :type sample_user:  User
     :type sampl_user_2: User
     :type user_auth:   UserAuthentication
@@ -768,9 +777,10 @@ def test_delete_phone_of_a_candidate_belonging_to_a_diff_user(sample_user, sampl
     candidate_1_id = create_resp_1.json()['candidates'][0]['id']
 
     # Delete candidate_1's phone with sample_user_2 logged in
-    updated_resp = request_to_candidate_phone_resource(token_2, 'delete', candidate_1_id, all_phones=True)
+    updated_resp = request_to_candidate_phone_resource(
+            token_2, 'delete', candidate_1_id, all_phones=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403
+    assert updated_resp.status_code == 204
 
 
 def test_delete_phone_of_a_different_candidate(sample_user, user_auth):
@@ -920,10 +930,12 @@ def test_delete_candidate_preferred_location_with_bad_input():
     assert resp.status_code == 404
 
 
-def test_delete_preferred_location_of_a_candidate_belonging_to_a_diff_user(sample_user, sample_user_2, user_auth):
+def test_delete_preferred_location_of_a_candidate_belonging_to_a_diff_user(
+        sample_user, sample_user_2, user_auth):
     """
-    Test:   Attempt to delete preferred locations of a Candidate that belongs to a different user
-    Expect: 403, deletion must be prevented
+    Test:   Attempt to delete preferred locations of a Candidate that belongs
+            to a different user in the same domain
+    Expect: 204
     :type sample_user:  User
     :type sampl_user_2: User
     :type user_auth:   UserAuthentication
@@ -939,10 +951,10 @@ def test_delete_preferred_location_of_a_candidate_belonging_to_a_diff_user(sampl
     candidate_1_id = create_resp_1.json()['candidates'][0]['id']
 
     # Delete candidate_1's preferred locations with sample_user_2 logged in
-    updated_resp = request_to_candidate_preferred_location_resource(token_2, 'delete', candidate_1_id,
-                                                                    all_preferred_locations=True)
+    updated_resp = request_to_candidate_preferred_location_resource(
+            token_2, 'delete', candidate_1_id, all_preferred_locations=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403
+    assert updated_resp.status_code == 204
 
 
 def test_delete_preferred_location_of_a_different_candidate(sample_user, user_auth):
@@ -1095,8 +1107,9 @@ def test_delete_candidate_skill_with_bad_input():
 
 def test_delete_skill_of_a_candidate_belonging_to_a_diff_user(sample_user, sample_user_2, user_auth):
     """
-    Test:   Attempt to delete the skill of a Candidate that belongs to a different user
-    Expect: 403, deletion must be prevented
+    Test:   Attempt to delete the skill of a Candidate that belongs
+            to a different user in the same domain
+    Expect: 204
     :type sample_user:  User
     :type sampl_user_2: User
     :type user_auth:   UserAuthentication
@@ -1112,9 +1125,10 @@ def test_delete_skill_of_a_candidate_belonging_to_a_diff_user(sample_user, sampl
     candidate_1_id = create_resp_1.json()['candidates'][0]['id']
 
     # Delete candidate_1's skills with sample_user_2 logged in
-    updated_resp = request_to_candidate_skill_resource(token_2, 'delete', candidate_1_id, all_skills=True)
+    updated_resp = request_to_candidate_skill_resource(
+            token_2, 'delete', candidate_1_id, all_skills=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403
+    assert updated_resp.status_code == 204
 
 
 def test_delete_skill_of_a_different_candidate(sample_user, user_auth):
@@ -1264,8 +1278,9 @@ def test_delete_candidate_social_network_with_bad_input():
 
 def test_delete_social_network_of_a_candidate_belonging_to_a_diff_user(sample_user, sample_user_2, user_auth):
     """
-    Test:   Attempt to delete the social networks of a Candidate that belongs to a different user
-    Expect: 403, deletion must be prevented
+    Test:   Attempt to delete the social networks of a Candidate that belongs
+            to a different user in the same domain
+    Expect: 204
     :type sample_user:  User
     :type sampl_user_2: User
     :type user_auth:   UserAuthentication
@@ -1281,9 +1296,10 @@ def test_delete_social_network_of_a_candidate_belonging_to_a_diff_user(sample_us
     candidate_1_id = create_resp_1.json()['candidates'][0]['id']
 
     # Delete candidate_1's social networks with sample_user_2 logged in
-    updated_resp = request_to_candidate_social_network_resource(token_2, 'delete', candidate_1_id, all_sn=True)
+    updated_resp = request_to_candidate_social_network_resource(
+            token_2, 'delete', candidate_1_id, all_sn=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403
+    assert updated_resp.status_code == 204
 
 
 def test_delete_social_network_of_a_different_candidate(sample_user, user_auth):
@@ -1436,8 +1452,9 @@ def test_delete_candidate_work_preference_with_bad_input():
 
 def test_delete_work_preference_of_a_candidate_belonging_to_a_diff_user(sample_user, sample_user_2, user_auth):
     """
-    Test:   Attempt to delete the work preference of a Candidate that belongs to a different user
-    Expect: 403, deletion must be prevented
+    Test:   Attempt to delete the work preference of a Candidate that belongs
+            to a different user in the same domain
+    Expect: 204
     :type sample_user:  User
     :type sampl_user_2: User
     :type user_auth:   UserAuthentication
@@ -1455,10 +1472,10 @@ def test_delete_work_preference_of_a_candidate_belonging_to_a_diff_user(sample_u
         json()['candidate']['work_preference']
 
     # Delete candidate_1's work preference with sample_user_2 logged in
-    updated_resp = request_to_candidate_work_preference_resource(token_2, 'delete', candidate_1_id,
-                                                                 can_1_work_preference['id'])
+    updated_resp = request_to_candidate_work_preference_resource(
+            token_2, 'delete', candidate_1_id, can_1_work_preference['id'])
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403
+    assert updated_resp.status_code == 204
 
 
 def test_delete_work_preference_of_a_different_candidate(sample_user, user_auth):
