@@ -10,9 +10,26 @@ from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
 from candidate_service.common.models.email_marketing import EmailCampaign
 from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH,
                                                      SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH)
-from candidate_service.common.error_handling import InvalidUsage
+from candidate_service.common.error_handling import InvalidUsage, NotFoundError
+from ..custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.common.utils.validators import is_number
 from datetime import datetime
+
+
+def check_for_candidate(candidate_id):
+    """
+    Function checks to see if candidate exists in the database and is not web-hidden
+    If candidate is hidden, or is not found, the appropriate exception will be raised.
+    :type candidate_id: int
+    """
+    assert isinstance(candidate_id, (int, long))
+    candidate = Candidate.get_by_id(candidate_id=candidate_id)
+    if not candidate:
+        raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
+                            error_code=custom_error.CANDIDATE_NOT_FOUND)
+    if candidate.is_web_hidden:
+        raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
+                            error_code=custom_error.CANDIDATE_IS_HIDDEN)
 
 
 def does_candidate_belong_to_user_and_its_domain(user_row, candidate_id):
