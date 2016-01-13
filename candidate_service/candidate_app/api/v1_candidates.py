@@ -35,16 +35,18 @@ from candidate_service.common.models.candidate import (
     Candidate, CandidateAddress, CandidateEducation, CandidateEducationDegree,
     CandidateEducationDegreeBullet, CandidateExperience, CandidateExperienceBullet,
     CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
-    CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField
+    CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField,
+    CandidateSubscriptionPreference
 )
 from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.models.associations import CandidateAreaOfInterest
+from candidate_service.common.models.email_marketing import Frequency
 
 # Module
 from candidate_service.modules.talent_candidates import (
     fetch_candidate_info, get_candidate_id_from_candidate_email,
     create_or_update_candidate_from_params, fetch_candidate_edits, fetch_candidate_views,
-    add_candidate_view
+    add_candidate_view, add_candidate_subscription_preference, fetch_candidate_subscription_preference
 )
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents, delete_candidate_documents
 
@@ -1187,14 +1189,14 @@ class CandidateViewResource(Resource):
         candidate_views = fetch_candidate_views(candidate_id=candidate_id)
         return {'candidate_views': [candidate_view for candidate_view in candidate_views]}
 
-
+from candidate_service.modules.validators import check_for_candidate  # TODO, import on top
 class CandidatePreferenceResource(Resource):
     decorators = [require_oauth()]
 
+    @require_all_roles('CAN_GET_PREFERENCES')
     def get(self, **kwargs):
         """
         Endpoint: GET /v1/candidates/:id/preferences
-
         Function will return requested candidate's preference(s)
         """
         # Authenticated user & candidate ID
@@ -1205,25 +1207,21 @@ class CandidatePreferenceResource(Resource):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         # Ensure Candidate exists & is not web-hidden
-        candidate = Candidate.get_by_id(candidate_id=candidate_id)
-        if not candidate or candidate.is_web_hidden:
-            raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
-                                error_code=custom_error.CANDIDATE_NOT_FOUND)
+        check_for_candidate(candidate_id=candidate_id)
 
-        from candidate_service.common.models.email_marketing import Frequency
-        from candidate_service.common.models.candidate import CandidateSubscriptionPreference
-        candidate_subscription_preferences = CandidateSubscriptionPreference.get_all(candidate_id)
-        if not candidate_subscription_preferences:
-            raise NotFoundError('Candidate {} has no subscription preferences'.format(candidate_id))
+        if not CandidateSubscriptionPreference.get_by_candidate_id(candidate_id):
+            raise NotFoundError('Candidate {} has no subscription preferences'.format(candidate_id),
+                                custom_error.NO_PREFERENCES)
 
-        return {'candidate_subscription_preferences': [candidate_subscription_preference]
-                for candidate_subscription_preference in candidate_subscription_preferences}
+        candidate_subs_pref = fetch_candidate_subscription_preference(candidate_id=candidate_id)
+        return {'candidate': {'id': candidate_id, 'subscription_preference': candidate_subs_pref}}
 
+    @require_all_roles('CAN_ADD_PREFERENCES')
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates/:id/preferences
-
         Function will create candidate's preference(s)
+        input: {'frequency_id': 1}
         """
         # Authenticated user & candidate ID
         authed_user, candidate_id = request.user, kwargs.get('id')
@@ -1232,9 +1230,17 @@ class CandidatePreferenceResource(Resource):
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
+        body_dict = request.get_json()
+        frequency_id = body_dict.get('frequency_id')
 
-def check_for_candidate(candidate_id):
-    candidate = Candidate.get_by_id(candidate_id=candidate_id)
-    if not candidate or candidate.is_web_hidden:
-        raise NotFoundError('Candidate: {} not found.', custom_error.CANDIDATE_NOT_FOUND)
+        frequency = Frequency.get_by_id(_id=frequency_id)
+        if not frequency:
+             raise NotFoundError('Frequency ID not recognized: {}'.format(frequency_id))
 
+        if CandidateSubscriptionPreference.get_by_candidate_id(candidate_id=candidate_id):
+            raise InvalidUsage('Candidate {} already has a subscription preference'.format(candidate_id),
+                               custom_error.PREFERENCE_EXISTS)
+
+        add_candidate_subscription_preference(candidate_id, frequency_id)
+
+        return {'candidate': {'id': candidate_id}}

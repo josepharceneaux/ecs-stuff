@@ -910,5 +910,5 @@ class CandidateSubscriptionPreference(db.Model):
         return "<CandidateSubscriptionPreference (candidate_id = %r)>" % self.candidate_id
 
     @classmethod
-    def get_all(cls, candidate_id):
-        return cls.query.filter_by(candidate_id=candidate_id).all()
+    def get_by_candidate_id(cls, candidate_id):
+        return cls.query.filter_by(candidate_id=candidate_id).first()

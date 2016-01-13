@@ -21,7 +21,7 @@ from candidate_service.common.models.candidate import (
     CandidateSocialNetwork, SocialNetwork, CandidateEducationDegreeBullet,
     CandidateExperienceBullet, ClassificationType
 )
-from candidate_service.common.models.candidate import EmailLabel
+from candidate_service.common.models.candidate import EmailLabel, CandidateSubscriptionPreference
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
 from candidate_service.common.models.candidate_edit import CandidateEdit, CandidateView
 from candidate_service.common.models.candidate import PhoneLabel
@@ -502,9 +502,9 @@ def retrieve_email_campaign_send(email_campaign, candidate_id):
              } for email_campaign_send_row in email_campaign_send_rows]
 
 
-#################################################
-# Helper Functions For Retrieving Candidate Edits
-#################################################
+######################################
+# Helper Functions For Candidate Edits
+######################################
 def fetch_candidate_edits(candidate_id):
     assert isinstance(candidate_id, (int, long))
     all_edits = []
@@ -523,9 +523,9 @@ def fetch_candidate_edits(candidate_id):
     return all_edits
 
 
-#################################################
-# Helper Functions For Retrieving Candidate Views
-#################################################
+######################################
+# Helper Functions For Candidate Views
+######################################
 def fetch_candidate_views(candidate_id):
     """
     :return: list of candidate view information
@@ -555,9 +555,34 @@ def add_candidate_view(user_id, candidate_id, view_datetime=datetime.datetime.no
     db.session.commit()
 
 
-#########################################
-# Helper Functions For Creating Candidate
-#########################################
+########################################################
+# Helper Functions For Candidate Subscription Preference
+########################################################
+def fetch_candidate_subscription_preference(candidate_id):
+    """
+    :type candidate_id: int|long
+    :return:
+    """
+    assert isinstance(candidate_id, (int, long))
+    candidate_subs_pref = CandidateSubscriptionPreference.get_by_candidate_id(candidate_id)
+    return {'id': candidate_subs_pref.id, 'frequency_id': candidate_subs_pref.frequency_id}
+
+
+def add_candidate_subscription_preference(candidate_id, frequency_id):
+    """
+    :type candidate_id: int|long
+    :type frequency_id: int|long
+    """
+    assert isinstance(candidate_id, (int, long)) and isinstance(frequency_id, (int, long))
+    db.session.add(CandidateSubscriptionPreference(
+            candidate_id=candidate_id, frequency_id=frequency_id
+    ))
+    db.session.commit()
+
+
+######################################################
+# Helper Functions For Creating and Updating Candidate
+######################################################
 def create_or_update_candidate_from_params(
         user_id,
         is_creating=False,

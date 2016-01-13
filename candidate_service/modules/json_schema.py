@@ -1266,3 +1266,21 @@ candidates_resource_schema_get = {
         }
     }
 }
+
+# resource_schema_preferences = {
+#     "$schema": "http://json-schema.org/draft-04/schema#",
+#     # "id": "http://jsonschema.net",
+#     "type": ["object", "null"],
+#     "additionalProperties": False,
+#     "properties": {
+#         "candidate_ids": {
+#             # "id": "http://jsonschema.net/candidate_ids",
+#             "type": "array",
+#             "minItems": 1,
+#             "items": {
+#                 # "id": "http://jsonschema.net/candidate_ids/0",
+#                 "type": "integer"
+#             }
+#         }
+#     }
+# }
