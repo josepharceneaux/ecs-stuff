@@ -15,6 +15,7 @@ from event_organizer import EventOrganizer
 from misc import AreaOfInterest
 from email_marketing import EmailCampaign
 from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
+from werkzeug.security import generate_password_hash
 
 
 class User(db.Model):
@@ -112,6 +113,23 @@ class User(db.Model):
         :rtype: list[User]
         """
         return User.query.filter_by(domain_id=domain_id).all()
+
+    # ***** Below function to be used for testing only *****
+    @staticmethod
+    def add_test_user(session, domain_id, password):
+        """
+        Function creates a unique user for testing
+        :rtype: User
+        """
+        user = User(
+            email='{}@example.com'.format(uuid.uuid4().__str__()),
+            password=generate_password_hash(password, method='pbkdf2:sha512'),
+            domain_id=domain_id,
+            expiration=None
+        )
+        session.add(user)
+        session.commit()
+        return user
 
 
 class Domain(db.Model):
