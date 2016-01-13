@@ -14,7 +14,7 @@ Auth Service
 
 Resume Service
 -------------
-[README](resume_service/README.md)
+[README](resume_parsing_service/README.md)
 
 
 Event Service

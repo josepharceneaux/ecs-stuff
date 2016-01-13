@@ -17,7 +17,7 @@ from test_fixtures import token_fixture
 from test_fixtures import user_fixture
 from test_fixtures import phone_label_fixture
 from test_fixtures import product_fixture
-from resume_service.common.routes import ResumeApiUrl, ResumeApi
+from resume_parsing_service.common.routes import ResumeApiUrl, ResumeApi
 
 
 def test_base_url():

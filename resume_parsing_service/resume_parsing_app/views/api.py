@@ -12,9 +12,9 @@ from flask.ext.cors import CORS
 # Module Specific
 from .parse_lib import parse_resume
 from .utils import create_candidate_from_parsed_resume
-from resume_service.common.utils.talent_s3 import download_file, get_s3_filepicker_bucket_and_conn
-from resume_service.common.utils.auth_utils import require_oauth
-from resume_service.common.routes import ResumeApi
+from resume_parsing_service.common.utils.talent_s3 import download_file, get_s3_filepicker_bucket_and_conn
+from resume_parsing_service.common.utils.auth_utils import require_oauth
+from resume_parsing_service.common.routes import ResumeApi
 
 
 mod = Blueprint('resume_api', __name__)

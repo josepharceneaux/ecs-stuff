@@ -5,19 +5,19 @@ import datetime
 from _mysql_exceptions import IntegrityError
 import pytest
 # Module Specific
-from resume_service.common.models.candidate import EmailLabel
-from resume_service.common.models.misc import Country
-from resume_service.common.models.misc import Culture
-from resume_service.common.models.misc import Organization
-from resume_service.common.models.misc import Product
-from resume_service.common.models.candidate import PhoneLabel
-from resume_service.common.models.user import Client
-from resume_service.common.models.user import Domain
-from resume_service.common.models.user import Token
-from resume_service.common.models.user import User
-from resume_service.common.utils.db_utils import get_or_create
-from resume_service.common.utils.handy_functions import random_word
-from resume_service.resume_parsing_app import db
+from resume_parsing_service.common.models.candidate import EmailLabel
+from resume_parsing_service.common.models.misc import Country
+from resume_parsing_service.common.models.misc import Culture
+from resume_parsing_service.common.models.misc import Organization
+from resume_parsing_service.common.models.misc import Product
+from resume_parsing_service.common.models.candidate import PhoneLabel
+from resume_parsing_service.common.models.user import Client
+from resume_parsing_service.common.models.user import Domain
+from resume_parsing_service.common.models.user import Token
+from resume_parsing_service.common.models.user import User
+from resume_parsing_service.common.utils.db_utils import get_or_create
+from resume_parsing_service.common.utils.handy_functions import random_word
+from resume_parsing_service.resume_parsing_app import db
 
 
 def require_integrity(func):

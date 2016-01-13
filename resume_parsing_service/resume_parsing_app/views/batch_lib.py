@@ -1,7 +1,7 @@
 """Functions used by batch processing endpoints."""
 __author__ = 'erik@getTalent'
 # Module Specific
-from resume_service.common.redis_conn import redis_client
+from resume_parsing_service.common.redis_conn import redis_client
 
 def add_fp_keys_to_queue(filepicker_keys, user_id):
     """

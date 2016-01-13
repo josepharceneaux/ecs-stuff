@@ -8,12 +8,12 @@ import string
 import urllib2
 # Third Party
 from bs4 import BeautifulSoup as bs4
-from resume_service.resume_parsing_app.views.OauthClient import OAuthClient
+from resume_parsing_service.resume_parsing_app.views.OauthClient import OAuthClient
 import phonenumbers
 import requests
 # Module Specific
 from flask import current_app
-from resume_service.common.utils.validators import format_phone_number
+from resume_parsing_service.common.utils.validators import format_phone_number
 
 def fetch_optic_response(resume):
     """

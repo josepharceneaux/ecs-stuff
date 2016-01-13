@@ -5,8 +5,8 @@ from flask import Blueprint
 from flask import request
 from flask import jsonify
 # Module specific.
-from resume_service.common.utils.auth_utils import require_oauth
-from resume_service.resume_parsing_app.views.batch_lib import add_fp_keys_to_queue
+from resume_parsing_service.common.utils.auth_utils import require_oauth
+from resume_parsing_service.resume_parsing_app.views.batch_lib import add_fp_keys_to_queue
 
 BATCH_MOD = Blueprint('batch_processing', __name__)
 

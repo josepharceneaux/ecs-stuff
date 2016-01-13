@@ -2,11 +2,11 @@ FROM gettalent/base-service-container:latest
 
 # Add files
 WORKDIR /root/base_service_container
-ADD . user_service
-WORKDIR /root/base_service_container/user_service
+ADD . resume_parsing_service
+WORKDIR /root/base_service_container/resume_parsing_service
 
 # Replace app name in config Loggly and NewRelic config files
-RUN sed -i -e 's/APP_NAME/user_service/g' newrelic.ini /etc/rsyslog.d/*loggly.conf
+RUN sed -i -e 's/APP_NAME/resume_parsing_service/g' newrelic.ini /etc/rsyslog.d/*loggly.conf
 
 EXPOSE 80
 

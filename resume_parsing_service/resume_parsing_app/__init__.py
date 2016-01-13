@@ -3,8 +3,8 @@
 __author__ = 'erikfarmer'
 import config
 from flask import Flask
-from resume_service.common.routes import ResumeApi, HEALTH_CHECK
-from resume_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
+from resume_parsing_service.common.routes import ResumeApi, HEALTH_CHECK
+from resume_parsing_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 
 app = Flask(__name__)
 load_gettalent_config(app.config)
@@ -14,7 +14,7 @@ logger = app.config[TalentConfigKeys.LOGGER]
 
 try:
 
-    from resume_service.common.models.db import db
+    from resume_parsing_service.common.models.db import db
     db.init_app(app)
     db.app = app
 
@@ -25,11 +25,11 @@ try:
     from healthcheck import HealthCheck
     health = HealthCheck(app, HEALTH_CHECK)
 
-    from resume_service.common.error_handling import register_error_handlers
+    from resume_parsing_service.common.error_handling import register_error_handlers
     register_error_handlers(app, logger)
 
-    logger.info("Starting resume_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
+    logger.info("Starting resume_parsing_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 
 except Exception as e:
-    logger.exception("Couldn't start resume_service in %s environment because: %s"
+    logger.exception("Couldn't start resume_parsing_service in %s environment because: %s"
                      % (app.config[TalentConfigKeys.ENV_KEY], e.message))

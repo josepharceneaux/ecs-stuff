@@ -19,8 +19,8 @@ from BeautifulSoup import BeautifulSoup
 import magic
 # Module Specific
 from flask import current_app
-from resume_service.resume_parsing_app.views.optic_parse_lib import parse_optic_json
-from resume_service.resume_parsing_app.views.optic_parse_lib import fetch_optic_response
+from resume_parsing_service.resume_parsing_app.views.optic_parse_lib import parse_optic_json
+from resume_parsing_service.resume_parsing_app.views.optic_parse_lib import fetch_optic_response
 
 
 def parse_resume(file_obj, filename_str):

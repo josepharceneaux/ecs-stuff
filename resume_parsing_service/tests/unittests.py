@@ -13,17 +13,17 @@ from .resume_xml import PDF
 from .resume_xml import PDF_13
 from .resume_xml import PDF_14
 # Dependencies
-from resume_service.common.utils.handy_functions import random_word
-from resume_service.common.redis_conn import redis_client
+from resume_parsing_service.common.utils.handy_functions import random_word
+from resume_parsing_service.common.redis_conn import redis_client
 # Modules being tested.
-from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_addresses
-from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_educations
-from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_emails
-from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_experiences
-from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_name
-from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_phones
-from resume_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_skills
-from resume_service.resume_parsing_app.views.batch_lib import add_fp_keys_to_queue
+from resume_parsing_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_addresses
+from resume_parsing_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_educations
+from resume_parsing_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_emails
+from resume_parsing_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_experiences
+from resume_parsing_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_name
+from resume_parsing_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_phones
+from resume_parsing_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_skills
+from resume_parsing_service.resume_parsing_app.views.batch_lib import add_fp_keys_to_queue
 
 EDUCATIONS_KEYS = ('city', 'degrees', 'state', 'country', 'school_name')
 WORK_EXPERIENCES_KEYS = ('city', 'state', 'end_date', 'country', 'company', 'role', 'is_current',
