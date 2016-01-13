@@ -87,7 +87,7 @@ class GTApis(object):
     # Port Numbers of flask micro services
     AUTH_SERVICE_PORT = 8001
     ACTIVITY_SERVICE_PORT = 8002
-    RESUME_SERVICE_PORT = 8003
+    RESUME_PARSING_SERVICE_PORT = 8003
     USER_SERVICE_PORT = 8004
     CANDIDATE_SERVICE_PORT = 8005
     WIDGET_SERVICE_PORT = 8006
@@ -101,7 +101,7 @@ class GTApis(object):
     # Names of flask micro services
     AUTH_SERVICE_NAME = 'auth-service'
     ACTIVITY_SERVICE_NAME = 'activity-service'
-    RESUME_SERVICE_NAME = 'resume-service'
+    RESUME_PARSING_SERVICE_NAME = 'resume-parsing-service'
     USER_SERVICE_NAME = 'user-service'
     CANDIDATE_SERVICE_NAME = 'candidate-service'
     WIDGET_SERVICE_NAME = 'widget-service'
@@ -161,7 +161,7 @@ class ActivityApiUrl(object):
 
 class ResumeApi(object):
     """
-    API relative URLs for resume_service. e.g. /v1/parse_resume
+    API relative URLs for resume_parsing_service. e.g. /v1/parse_resume
     """
     VERSION = 'v1'
     URL_PREFIX = _get_url_prefix(VERSION)
@@ -171,10 +171,10 @@ class ResumeApi(object):
 
 class ResumeApiUrl(object):
     """
-    Rest URLs of resume_service
+    Rest URLs of resume_parsing_service
     """
-    HOST_NAME = _get_host_name(GTApis.RESUME_SERVICE_NAME,
-                               GTApis.RESUME_SERVICE_PORT)
+    HOST_NAME = _get_host_name(GTApis.RESUME_PARSING_SERVICE_NAME,
+                               GTApis.RESUME_PARSING_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     API_URL = HOST_NAME % ResumeApi.RELATIVE_VERSION
     PARSE = API_URL % ResumeApi.PARSE
