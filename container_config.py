@@ -10,27 +10,25 @@ VM_NOT_RUNNING_ERROR_MESSAGE = 'Virtual Machine is not running. Please start it 
 SERVICE_TO_DOCKERHUB_REPO = {'base_service_container': 'base-service-container',
                              'auth_service': 'auth-service',
                              'activity_service': 'activity-service',
-                             'resume_service': 'resume-parsing-service',
+                             'resume_parsing_service': 'resume-parsing-service',
                              'user_service': 'user-service',
                              'candidate_service': 'candidate-service',
                              'social_network_service': 'social-network-service',
                              'widget_service': 'widget-service',
                              'candidate_pool_service': 'candidate-pool-service',
                              'spreadsheet_import_service': 'spreadsheet-import-service',
-                             'dashboard': 'frontend-service',
                              'scheduler_service': 'scheduler_service'
                              }
 
 SERVICE_TO_PORT_NUMBER = {'auth_service': 8001,
                           'activity_service': 8002,
-                          'resume_service': 8003,
+                          'resume_parsing_service': 8003,
                           'user_service': 8004,
                           'candidate_service': 8005,
                           'social_network_service': 8006,
                           'widget_service': 8007,
                           'candidate_pool_service': 8008,
                           'spreadsheet_import_service': 8009,
-                          'dashboard': 8010,
                           'scheduler_service': 8011}
 
 parser = argparse.ArgumentParser(description='Common files administrator for Docker building.')
@@ -76,6 +74,7 @@ def attach_bash_shell_to_vm_if_not_linux():
         except Exception as e:
             exit(e.message)
 
+
 if args.build:
     service_name = args.build[0]
     repo_name = "gettalent/%s" % SERVICE_TO_DOCKERHUB_REPO[service_name]
@@ -94,6 +93,8 @@ if args.build:
 
 
 if args.run:
+    if 1 == 1:  # To get past PyCharm's "Code unreachable" warning.  (Only temporary)
+        raise Exception("This doesn't work yet! Need to get MySQL set up")
     # Set up Docker env
     service_name = args.run[0]
     repo_name = "gettalent/%s" % SERVICE_TO_DOCKERHUB_REPO[service_name]
@@ -111,11 +112,6 @@ if args.run:
         SERVICE_TO_PORT_NUMBER[service_name],
         my_ip,
         repo_name)
-
-    # print 'Running Docker container: %s' % service_name
-    # os.chdir('../ansible-deploy')
-    # command = 'ansible-playbook --connection=local --extra-vars "service=%s" ansible-run-local.yml' % \
-    #           SERVICE_TO_DOCKERHUB_REPO[service_name]
     print ' > ', command
     call(command, shell=True)
 
@@ -133,14 +129,3 @@ if args.deploy:
     command = 'docker push %(repo_name)s:latest' % locals()
     print ' > ', command
     call(command, shell=True)
-
-    # Deploy to webdev via Ansible, unless building base service container
-    #if service_name == 'base_service_container':
-    #    print 'This is the base-service-container, so not deploying anywhere'
-    #else:
-    #    print 'Deploying docker container to staging'
-    #    os.chdir('../ansible-deploy')
-    #    command = 'ansible-playbook -i hosts --extra-vars "host=staging-%s" --extra-vars ' \
-    #              '"service=%s" ansible-deploy.yml' % (SERVICE_TO_DOCKERHUB_REPO[service_name], SERVICE_TO_DOCKERHUB_REPO[service_name])
-    #    print ' > ', command
-    #   call(command, shell=True)
