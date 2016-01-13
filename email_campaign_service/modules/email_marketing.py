@@ -13,14 +13,13 @@ from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.user import User, Domain
 from email_campaign_service.common.models.candidate import Candidate, CandidateEmail, CandidateSubscriptionPreference
 from email_campaign_service.common.error_handling import *
-from email_campaign_service.common.emails.admin_reporting import email_admins
-from email_campaign_service.common.emails.AWS_SES import send_email
+from email_campaign_service.common.utils.talent_reporting import email_notification_to_admins
+from email_campaign_service.common.utils.amazon_ses import send_email
 from email_campaign_service.modules.utils import create_email_campaign_url_conversions, do_mergetag_replacements, get_candidates_of_smartlist
+from email_campaign_service.common.inter_service_calls.activity_service_calls import add_activity, ActivityTypes
+from email_campaign_service.common.routes import SchedulerApiUrl, EmailCampaignUrl
 
 __author__ = 'jitesh'
-
-SCHEDULER_URL = 'http://localhost:8011/tasks/'
-EMAIL_CAMPAIGN_URL = 'http://localhost:8014/v1/send-campaign-emails'
 
 
 def create_email_campaign_smart_lists(smart_list_ids, email_campaign_id):
@@ -71,7 +70,12 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
     db.session.add(email_campaign)
     db.session.commit()
 
-    # TODO: Add activity
+    # Add activity
+    add_activity(user_id=user_id,
+                 access_token=oauth_token,
+                 activity_type=ActivityTypes.CAMPAIGN_CREATE,
+                 source_id=email_campaign.id, source_table=EmailCampaign.__tablename__,
+                 params=dict(id=email_campaign.id, name=email_campaign_name))
 
     # create email_campaign_smart_list record
     create_email_campaign_smart_lists(smart_list_ids=list_ids,
@@ -84,18 +88,11 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
         email_campaign.isTrackHtmlClicks = 1
         email_campaign.isTrackTextClicks = 1
         db.session.commit()
+        return dict(id=email_campaign.id)
 
-    # TODO: Schedule the sending of emails & update email_campaign_send fields
-    # else:
-    #     schedule_email_campaign_sends(campaign=campaign, user=user,
-    #                                   email_client_id=email_client_id)
-
-    # user = User.query.get(user_id)
-    # send_emails_to_campaign(oauth_token, email_campaign.id, email_client_id, list_ids)
-
+    # Schedule the sending of emails & update email_campaign scheduler fields
     schedule_task_params = {
-        "task_type": "one_time",
-        "url": EMAIL_CAMPAIGN_URL,
+        "url": EmailCampaignUrl.SEND_CAMPAIGNS,
         "post_data": {
             "campaign_id": email_campaign.id,
             "list_ids": list_ids,
@@ -104,21 +101,21 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
         }
     }
     if frequency_obj:
-        schedule_task_params['frequency'] = frequency_obj.in_seconds()
+        schedule_task_params["frequency"] = frequency_obj.in_seconds()
         schedule_task_params["task_type"] = "periodic"  # Change task_type to periodic
         schedule_task_params["start_datetime"] = send_time
         schedule_task_params["end_datetime"] = stop_time
     else:
-        schedule_task_params["run_datetime"] = datetime.datetime.strftime(datetime.datetime.utcnow()+ datetime.timedelta(seconds=10), "%Y-%m-%d %H:%M:%S")   # TODO: Check if this is needed.
+        schedule_task_params["task_type"] = "one_time"
+        schedule_task_params["run_datetime"] = datetime.datetime.strftime(datetime.datetime.utcnow(), "%Y-%m-%d %H:%M:%S")   # TODO: Check if this is really needed.
 
     # Schedule email campaign; call Scheduler API
     headers = {'Authorization': oauth_token, 'Content-Type': 'application/json'}
     try:
-        scheduler_response = requests.post(SCHEDULER_URL, headers=headers, data=json.dumps(schedule_task_params))
+        scheduler_response = requests.post(SchedulerApiUrl.TASKS, headers=headers, data=json.dumps(schedule_task_params))
     except Exception as ex:
-        # TODO: Ask if we need to throw exception or we just need to log it and then retry?
         current_app.logger.exception('Exception occurred while calling scheduler. Exception: %s' % ex)
-        raise InternalServerError("Error occurred while scheduling email campaign. Exception: %s" % ex)
+        raise
     if scheduler_response.status_code != 201:
         raise InternalServerError("Error occurred while scheduling email campaign. Status Code: %s, Response: %s" % (scheduler_response.status_code, scheduler_response.json()))
     scheduler_id = scheduler_response.json()['id']
@@ -145,8 +142,7 @@ def send_emails_to_campaign(oauth_token, campaign, list_ids=None, new_candidates
 
     # Check if the smart list has more than 0 candidates
     if len(candidate_ids_and_emails) > 0:
-        email_admins(
-                env=current_app.config['GT_ENVIRONMENT'],
+        email_notification_to_admins(
                 subject='Marketing batch about to send',
                 body="Marketing email batch about to send, campaign.name=%s, user=%s, \
         new_candidates_only=%s, address list size=%s" % (
@@ -157,7 +153,12 @@ def send_emails_to_campaign(oauth_token, campaign, list_ids=None, new_candidates
                                 "new_candidates_only=%s, address list size=%s" % (
                                     campaign.name, user.email, new_candidates_only, len(candidate_ids_and_emails)))
 
-        # TODO: Add activity
+        # Add activity
+        add_activity(user_id=user.id,
+                     access_token=oauth_token,
+                     activity_type=ActivityTypes.CAMPAIGN_SEND,
+                     source_id=campaign.id, source_table=EmailCampaign.__tablename__,
+                     params=dict(id=campaign.id, name=campaign.name, num_candidates=len(candidate_ids_and_emails)))
 
         # Create the email_campaign_blast for this blast
         blast_datetime = datetime.datetime.now()

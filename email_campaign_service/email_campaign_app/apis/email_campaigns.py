@@ -7,6 +7,7 @@ from email_campaign_service.common.utils.auth_utils import require_oauth
 from email_campaign_service.common.utils.validators import is_number
 from email_campaign_service.common.models.email_marketing import EmailCampaign
 from email_campaign_service.common.talent_api import TalentApi
+from email_campaign_service.common.routes import EmailCampaignEndpoints
 
 email_campaign_blueprint = Blueprint('email_campaign_api', __name__)
 
@@ -50,7 +51,7 @@ class EmailCampaignApi(Resource):
         return {'campaign': campaign_id}
 
 
-@email_campaign_blueprint.route('/v1/send-campaign-emails', methods=['POST'])
+@email_campaign_blueprint.route(EmailCampaignEndpoints.SEND_CAMPAIGNS, methods=['POST'])
 @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
 def send_campaign_emails():
     """
@@ -76,4 +77,4 @@ def send_campaign_emails():
 
 
 api = TalentApi(email_campaign_blueprint)
-api.add_resource(EmailCampaignApi, '/v1/email-campaigns/<int:id>', '/v1/email-campaigns/')
+api.add_resource(EmailCampaignApi, EmailCampaignEndpoints.EMAIL_CAMPAIGN, EmailCampaignEndpoints.EMAIL_CAMPAIGNS)

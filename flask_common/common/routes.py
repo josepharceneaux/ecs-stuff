@@ -97,6 +97,7 @@ class GTApis(object):
     DASHBOARD_SERVICE_PORT = 8010
     SCHEDULER_SERVICE_PORT = 8011
     SMS_CAMPAIGN_SERVICE_PORT = 8012
+    EMAIL_CAMPAIGN_SERVICE_PORT = 8014
 
     # Names of flask micro services
     AUTH_SERVICE_NAME = 'auth-service'
@@ -111,6 +112,7 @@ class GTApis(object):
     DASHBOARD_SERVICE_NAME = 'frontend-service'
     SCHEDULER_SERVICE_NAME = 'scheduler-service'
     SMS_CAMPAIGN_SERVICE_NAME = 'sms-campaign-service'
+    EMAIL_CAMPAIGN_SERVICE_NAME = 'email-campaign-service'
 
 
 class AuthApi(object):
@@ -566,3 +568,20 @@ class SchedulerApiUrl(object):
 
     # Use different port of scheduler service URL
     FLOWER_MONITORING = '--port=5511'
+
+
+class EmailCampaignEndpoints(object):
+    VERSION = 'v1'
+    RELATIVE_VERSION = _get_api_relative_version(VERSION)
+    EMAIL_CAMPAIGNS = RELATIVE_VERSION % 'email-campaigns'
+    EMAIL_CAMPAIGN = RELATIVE_VERSION % 'email-campaigns/<int:id>'
+    SEND_CAMPAIGNS = RELATIVE_VERSION % 'send-campaign-emails'
+
+
+class EmailCampaignUrl(object):
+    VERSION = 'v1'
+    HOST_NAME = _get_host_name(GTApis.EMAIL_CAMPAIGN_SERVICE_NAME,
+                               GTApis.EMAIL_CAMPAIGN_SERVICE_PORT)
+    EMAIL_CAMPAIGNS = HOST_NAME % EmailCampaignEndpoints.EMAIL_CAMPAIGNS
+    EMAIL_CAMPAIGN = HOST_NAME % EmailCampaignEndpoints.EMAIL_CAMPAIGNS + "/%s"
+    SEND_CAMPAIGNS = HOST_NAME % EmailCampaignEndpoints.SEND_CAMPAIGNS

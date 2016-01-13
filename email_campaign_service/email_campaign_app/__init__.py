@@ -3,6 +3,7 @@ from email_campaign_service.common.talent_config_manager import load_gettalent_c
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.error_handling import register_error_handlers
 from healthcheck import HealthCheck
+from email_campaign_service.common.routes import HEALTH_CHECK
 
 
 app = Flask(__name__)
@@ -11,14 +12,14 @@ load_gettalent_config(app.config)
 logger = app.config[TalentConfigKeys.LOGGER]
 
 try:
-    print "register error handlers"
+    logger.debug("Email campaign service: Register error handlers")
     register_error_handlers(app, logger)
 
     db.init_app(app)
     db.app = app
 
     # wrap the flask app and give a healthcheck url
-    health = HealthCheck(app, "/healthcheck")
+    health = HealthCheck(app, HEALTH_CHECK)
 
     from apis.email_campaigns import email_campaign_blueprint
     app.register_blueprint(email_campaign_blueprint)
