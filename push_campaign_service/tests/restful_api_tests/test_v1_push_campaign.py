@@ -391,16 +391,12 @@ class TestScheduleCampaignResource(object):
             data = generate_campaign_schedule_data()
 
             # Test with invalid integer id
-            invalid_ids = [(0, INVALID_USAGE, 'campaign_id should be a positive number'),
-                           (-1, NOT_FOUND, None)]
-            for _id, status_code, message in invalid_ids:
-                response = send_request('post', PushCampaignApiUrl.SCHEDULE % _id, token, data)
-                assert response.status_code == status_code
-                # Test message when it is returned by Resource. in case of -1, URL will
-                # not be hit but service will return html response saying Not found
-                if message:
-                    error = response.json()['error']
-                    assert error['message'] == message
+            invalid_id = 0
+            response = send_request('post', PushCampaignApiUrl.SCHEDULE % invalid_id, token, data)
+            assert response.status_code == INVALID_USAGE
+            # Test message when it is returned by Resource.
+            error = response.json()['error']
+            assert error['message'] == 'campaign_id should be a positive number'
 
             # Now test for 404, Schedule a campaign which does not exists
             last_campaign = PushCampaign.query.order_by(PushCampaign.id.desc()).first()
@@ -453,15 +449,7 @@ class TestScheduleCampaignResource(object):
                                     % campaign_in_db.id, token, data)
             assert response.status_code == INVALID_USAGE
             error = response.json()['error']
-            assert error['message'] == 'end_datetime is required field to create periodic task'
-
-            # start = datetime.datetime.utcnow() - datetime.timedelta(seconds=100)
-            # data['start_datetime'] = to_utc_str(start)
-            # response = send_request('post', PushCampaignApiUrl.SCHEDULE
-            #                         % campaign_in_db.id, token, data)
-            # assert response.status_code == INVALID_USAGE
-            # error = response.json()['error']
-            # assert error['message'] == "Given datetime(%s) should be in future" % start
+            assert 'end_datetime' in error['message']
 
             data = generate_campaign_schedule_data()
             response = send_request('post', PushCampaignApiUrl.SCHEDULE
@@ -555,13 +543,14 @@ class TestScheduleCampaignResource(object):
                                        'ISO-8601 format like 2015-10-08T06:16:55Z. ' \
                                        'Given Date is %s' % data['start_datetime']
 
+            # TODO: Need to fix this check
             data = generate_campaign_schedule_data()
             del data['end_datetime']
             response = send_request('put', PushCampaignApiUrl.SCHEDULE
                                     % campaign_in_db.id, token, data)
             assert response.status_code == INVALID_USAGE
             error = response.json()['error']
-            assert error['message'] == 'end_datetime is required field to create periodic task'
+            assert 'end_datetime' in error['message']
 
             data = generate_campaign_schedule_data()
             response = send_request('put', PushCampaignApiUrl.SCHEDULE
@@ -572,7 +561,8 @@ class TestScheduleCampaignResource(object):
             assert 'message' in response
             task_id = response['task_id']
             assert task_id
-            assert response['message'] == 'Campaign(id:%s) has been scheduled.' % campaign_in_db.id
+            assert response['message'] == 'Campaign(id:%s) has been re-scheduled.' \
+                                          % campaign_in_db.id
             time.sleep(3 * SLEEP_TIME)
             #
             db.session.commit()
@@ -593,3 +583,43 @@ class TestScheduleCampaignResource(object):
             # this resource test
             data = generate_campaign_schedule_data()
             unauthorize_test('put',  PushCampaignApiUrl.SCHEDULE % campaign_in_db.id, token, data)
+
+    # Test URL: /v1/campaigns/{id}/schedule [DELETE]
+    def test_unschedule_a_campaign(self, auth_data, campaign_in_db, test_smartlist,
+                                   schedule_a_campaign):
+        token, is_valid = auth_data
+        if is_valid:
+            # Test with invalid integer id
+            invalid_ids = [(0, INVALID_USAGE, 'campaign_id should be a positive number'),
+                           (-1, NOT_FOUND, None)]
+            for _id, status_code, message in invalid_ids:
+                response = send_request('delete', PushCampaignApiUrl.SCHEDULE % _id, token)
+                assert response.status_code == status_code
+                # Test message when it is returned by Resource. in case of -1, URL will
+                # not be hit but service will return html response saying Not found
+                if message:
+                    error = response.json()['error']
+                    assert error['message'] == message
+
+            # Now test for 404, Unschedule a campaign which does not exists
+            last_campaign = PushCampaign.query.order_by(PushCampaign.id.desc()).first()
+            non_existing_id = last_campaign.id + 100
+            response = send_request('delete', PushCampaignApiUrl.SCHEDULE
+                                    % non_existing_id, token)
+            assert response.status_code == NOT_FOUND
+
+            response = send_request('delete', PushCampaignApiUrl.SCHEDULE
+                                    % campaign_in_db.id, token)
+            assert response.status_code == OK
+            response = response.json()
+            assert response['message'] == 'Campaign(id:%s) has been unschedule.' \
+                                          % campaign_in_db.id
+
+            response = send_request('delete', PushCampaignApiUrl.SCHEDULE
+                                    % campaign_in_db.id, token)
+            assert response.status_code == OK
+            response = response.json()
+            assert 'unschedule' in response['message']
+        else:
+            unauthorize_test('delete',  PushCampaignApiUrl.SCHEDULE % campaign_in_db.id, token)
+

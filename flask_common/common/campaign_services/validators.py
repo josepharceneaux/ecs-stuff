@@ -164,6 +164,8 @@ def validation_of_data_to_schedule_campaign(campaign_obj, request):
             + timedelta(seconds=frequency)
         if end_datetime_plus_frequency < start_datetime:
             raise InvalidUsage("end_datetime must be greater than start_datetime")
+    elif frequency and not end_datetime_str:
+        raise InvalidUsage("end_datetime is required to schedule a periodic task")
     data_to_schedule_campaign['frequency'] = frequency
     return data_to_schedule_campaign
 

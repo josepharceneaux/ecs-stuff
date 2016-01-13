@@ -480,6 +480,8 @@ class SchedulePushCampaignResource(Resource):
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
+        if not campaign_id:
+            raise InvalidUsage('campaign_id should be a positive number')
         task_unscheduled = PushCampaignBase.unschedule(campaign_id, request)
         if task_unscheduled:
             return dict(message='Campaign(id:%s) has been unschedule.' % campaign_id), 200

@@ -776,9 +776,9 @@ class CampaignBase(object):
         campaign_obj, scheduled_task, oauth_header = \
             cls.get_authorized_campaign_obj_and_scheduled_task(campaign_id, request.user.id)
         if scheduled_task:
-            delete_scheduled_task(scheduled_task['id'], oauth_header)
+            return delete_scheduled_task(scheduled_task['id'], oauth_header)
         campaign_obj.update(scheduler_task_id=None)
-        return campaign_obj
+        return True
 
     @staticmethod
     def pre_process_re_schedule(pre_processed_data):
