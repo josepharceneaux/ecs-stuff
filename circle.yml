@@ -9,7 +9,12 @@ machine:
 dependencies:
   override:
     - pip install -r requirements.txt
-    
+
+general:
+  branches:
+    ignore:
+      - jenkins-test # list of branches to ignore
+
 test:
   pre:
     - sudo chown -R ubuntu /var/log:
