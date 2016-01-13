@@ -39,5 +39,6 @@ try:
     logger.info("Starting auth_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 
 except Exception as e:
+    print "Jenkins"
     logger.exception("Couldn't start auth_service in %s environment because: %s"
                      % (app.config[TalentConfigKeys.ENV_KEY], e.message))
