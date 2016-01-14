@@ -136,7 +136,7 @@ class CandidatesResource(Resource):
         """
         # Authenticate user
         authed_user = request.user
-        body_dict = request.get_json(force=True)
+        body_dict = request.get_json()
 
         # Validate json data
         try:
@@ -232,7 +232,7 @@ class CandidatesResource(Resource):
         """
         # Authenticated user
         authed_user = request.user
-        body_dict = request.get_json(force=True)
+        body_dict = request.get_json()
 
         # Validate json data
         try:

@@ -57,7 +57,7 @@ def post_to_candidate_resource(access_token, data=None, domain_id=None):
 
     resp = requests.post(
         url=CandidateApiUrl.CANDIDATES,
-        headers={'Authorization': 'Bearer %s' % access_token},
+        headers={'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'},
         data=json.dumps(data)
     )
     return resp
@@ -94,7 +94,7 @@ def patch_to_candidate_resource(access_token, data):
     """
     resp = requests.patch(
         url=CandidateApiUrl.CANDIDATES,
-        headers={'Authorization': 'Bearer %s' % access_token},
+        headers={'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'},
         data=json.dumps(data)
     )
     return resp
@@ -324,7 +324,8 @@ def request_to_candidate_social_network_resource(access_token, request, candidat
     return define_and_send_request(access_token, request, url)
 
 
-def request_to_candidate_work_preference_resource(access_token, request, candidate_id='', work_preference_id=''):
+def request_to_candidate_work_preference_resource(access_token, request, candidate_id='',
+                                                  work_preference_id=''):
     """
     Function sends a request to CandidateWorkPreferenceResource
     :param request: delete
