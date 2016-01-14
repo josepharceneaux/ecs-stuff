@@ -336,8 +336,9 @@ def schedule_spreadsheet_import(import_args):
     }
     headers = {'Authorization': request.oauth_token, 'Content-Type': 'application/json'}
     try:
+        print SchedulerApiUrl.TASKS
         response = requests.post(SchedulerApiUrl.TASKS, headers=headers, data=json.dumps(data))
-
+        print response
         if response.status_code != 201:
             raise Exception("Status Code: %s, Response: %s" % (response.status_code, response.json()))
 
