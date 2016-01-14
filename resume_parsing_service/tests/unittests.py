@@ -84,8 +84,7 @@ def test_phone_parsing():
         phones = parse_candidate_phones(contact_xml_list)
         assert len(phones) == xml['phone_len']
         for phone in phones:
-            assert 'formatted_number' in phone, 'Phone dict is missing formatted_number key'
-            assert 'extension' in phone, 'Phone dict is missing extension key, even if None'
+            assert 'value' in phone, 'Phone dict is missing value key'
 
 
 def test_experience_parsing():

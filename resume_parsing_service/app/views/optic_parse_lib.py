@@ -129,10 +129,11 @@ def parse_candidate_phones(bs_contact_xml_list):
         phones = contact.findAll('phone')
         #TODO: look into adding a type using p.attrs['type']
         for p in phones:
+            # CanidateService currently extractas extensions so we do not need to invoke that
+            # validator as long as we send a 'sane' string.
             raw_phone = p.text.strip()
-            phone_and_extension_dict = format_phone_number(raw_phone)
-            if phone_and_extension_dict:
-                output.append(phone_and_extension_dict)
+            if raw_phone:
+                output.append({'value': raw_phone})
 
     return output
 
