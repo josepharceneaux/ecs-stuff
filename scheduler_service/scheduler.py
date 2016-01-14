@@ -179,8 +179,8 @@ def schedule_job(data, user_id=None, access_token=None):
                                     seconds=valid_data['frequency'],
                                     start_date=valid_data['start_datetime'],
                                     end_date=valid_data['end_datetime'],
-                                    args=[user_id, access_token, job_config['url'], content_type],
-                                    kwargs=job_config['post_data'])
+                                    args=[user_id, access_token, job_config['url'], content_type, job_config['post_data']],
+                                    )
 
             current_datetime = datetime.datetime.utcnow()
             current_datetime = current_datetime.replace(tzinfo=tzutc())
@@ -189,7 +189,7 @@ def schedule_job(data, user_id=None, access_token=None):
             # Due to request timeout delay, there will be a delay in scheduling job sometimes.
             # And if start time is passed due to this request delay, then job should be run
             if job_start_time < current_datetime:
-                run_job(user_id, access_token, job_config['url'], content_type)
+                run_job(user_id, access_token, job_config['url'], content_type, job_config['post_data'])
             logger.info('schedule_job: Task has been added and will start at %s ' % valid_data['start_datetime'])
         except Exception:
             raise JobNotCreatedError("Unable to create the job.")
@@ -201,8 +201,8 @@ def schedule_job(data, user_id=None, access_token=None):
                                     name=job_config['task_name'],
                                     trigger='date',
                                     run_date=valid_data['run_datetime'],
-                                    args=[user_id, access_token, job_config['url'], content_type],
-                                    kwargs=job_config['post_data'])
+                                    args=[user_id, access_token, job_config['url'], content_type, job_config['post_data']]
+                                    )
             logger.info('schedule_job: Task has been added and will run at %s ' % valid_data['run_datetime'])
             return job.id
         except Exception:
@@ -211,7 +211,7 @@ def schedule_job(data, user_id=None, access_token=None):
         raise TriggerTypeError("Task type not correct. Please use either 'periodic' or 'one_time' as task type.")
 
 
-def run_job(user_id, access_token, url, content_type, **kwargs):
+def run_job(user_id, access_token, url, content_type, post_data, **kwargs):
     """
     Function callback to run when job time comes, this method is called by APScheduler
     :param user_id:
@@ -248,7 +248,7 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
 
     logger.info('User ID: %s, URL: %s, Content-Type: %s' % (user_id, url, content_type))
     # Call celery task to send post_data to URL
-    send_request.apply_async([access_token, secret_key_id, url, content_type, kwargs],
+    send_request.apply_async([access_token, secret_key_id, url, content_type, post_data, kwargs],
                              serializer='json',
                              queue=SchedulerUtils.QUEUE)
 
@@ -273,7 +273,7 @@ def serialize_task(task):
     """
     Serialize task data to JSON object
     :param task: APScheduler task to convert to JSON dict
-                 task.args: user_id, access_token, url, content_type
+                 task.args: user_id, access_token, url, content_type, post_data
     :return: JSON converted dict object
     """
     task_dict = None
@@ -286,7 +286,7 @@ def serialize_task(task):
             end_datetime=task.trigger.end_date,
             next_run_datetime=task.next_run_time,
             frequency=dict(seconds=task.trigger.interval_length),
-            post_data=task.kwargs,
+            post_data=task.args[4],
             pending=task.pending,
             task_type=SchedulerUtils.PERIODIC
         )
@@ -305,7 +305,7 @@ def serialize_task(task):
             id=task.id,
             url=task.args[2],
             run_datetime=task.trigger.run_date,
-            post_data=task.kwargs,
+            post_data=task.args[4],
             pending=task.pending,
             task_type=SchedulerUtils.ONE_TIME
         )
