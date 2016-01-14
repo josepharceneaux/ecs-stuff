@@ -525,10 +525,9 @@ class CandidateApiUrl(object):
     SOCIAL_NETWORK = SOCIAL_NETWORKS + "/%s"
 
     WORK_PREFERENCE = CANDIDATE + CandidateApiWords.WORK_PREFERENCES + "/%s"
-
     CANDIDATE_EDIT = CANDIDATE + CandidateApiWords.EDITS
-
     CANDIDATE_VIEW = CANDIDATE + CandidateApiWords.VIEWS
+    CANDIDATE_PREFERENCE = CANDIDATE + CandidateApiWords.PREFERENCE
 
 
 class SchedulerApi(object):

@@ -20,10 +20,11 @@ def define_and_send_request(access_token, request, url, data=None):
     request = request.lower()
     assert request in ['get', 'post', 'put', 'patch', 'delete']
     method = getattr(requests, request)
-    if not data:
+    if data is None:
         return method(url=url, headers={'Authorization': 'Bearer %s' % access_token})
     else:
-        return method(url=url, headers={'Authorization': 'Bearer %s' % access_token},
+        return method(url=url,
+                      headers={'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'},
                       data=json.dumps(data))
 
 
@@ -348,6 +349,17 @@ def request_to_candidate_view_resource(access_token, request, candidate_id=''):
     """
     url = CandidateApiUrl.CANDIDATE_VIEW % candidate_id
     return define_and_send_request(access_token, request, url)
+
+
+def request_to_candidate_preference_resource(token, request, candidate_id='', data=None):
+    """
+    Function sends request to CandidatePreferenceResource
+    :type token:  str
+    :type request: str
+    :type url: str
+    """
+    url = CandidateApiUrl.CANDIDATE_PREFERENCE % candidate_id
+    return define_and_send_request(token, request, url, data)
 
 
 def create_same_candidate(access_token):
