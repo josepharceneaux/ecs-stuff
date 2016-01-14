@@ -20,37 +20,35 @@ load_gettalent_config(flask_app.config)
 
 logger = flask_app.config[TalentConfigKeys.LOGGER]
 
+add_model_helpers(db.Model, logger=logger)
+db.init_app(flask_app)
+db.app = flask_app
 
-def init_app():
-    """
-    Call this method at the start of app
-    :return:
-    """
-    add_model_helpers(db.Model, logger=logger)
-    db.init_app(flask_app)
-    db.app = flask_app
-    # Initialize Redis Cache
-    redis_store.init_app(flask_app)
-    register_error_handlers(flask_app, logger)
-    logger.info("Starting scheduler service in %s environment",
-                flask_app.config[TalentConfigKeys.ENV_KEY])
+# Initialize Redis Cache
+redis_store.init_app(flask_app)
 
-    # Celery settings
-    default_queue = {'CELERY_DEFAULT_QUEUE': SchedulerUtils.QUEUE}
-    default_serializer = {'CELERY_RESULT_SERIALIZER': 'json'}
-    resultant_db_tables = {
-        'CELERY_RESULT_DB_TABLENAMES': {
-            'task': 'scheduler_taskmeta',
-            'group': 'scheduler_groupmeta'
-        }
+register_error_handlers(flask_app, logger)
+logger.info("Starting scheduler service in %s environment",
+            flask_app.config[TalentConfigKeys.ENV_KEY])
+
+# Celery settings
+default_queue = {'CELERY_DEFAULT_QUEUE': SchedulerUtils.QUEUE}
+default_serializer = {'CELERY_RESULT_SERIALIZER': 'json'}
+resultant_db_tables = {
+    'CELERY_RESULT_DB_TABLENAMES': {
+        'task': 'scheduler_taskmeta',
+        'group': 'scheduler_groupmeta'
     }
-    accept_content = {
-        'CELERY_ACCEPT_CONTENT': ['json', 'msgpack', 'yaml']
-    }
-    celery_app = Celery(flask_app, broker=flask_app.config['REDIS_URL'], backend=flask_app.config['BACKEND_URL'],
-                        include=['scheduler_service.tasks'])
-    celery_app.conf.update(default_queue)
-    celery_app.conf.update(resultant_db_tables)
-    celery_app.conf.update(default_serializer)
-    celery_app.conf.update(accept_content)
-    return flask_app, celery_app
+}
+accept_content = {
+    'CELERY_ACCEPT_CONTENT': ['json', 'msgpack', 'yaml']
+}
+celery_app = Celery(flask_app, broker=flask_app.config['REDIS_URL'], backend=flask_app.config['BACKEND_URL'],
+                    include=['scheduler_service.tasks'])
+celery_app.conf.update(default_queue)
+celery_app.conf.update(resultant_db_tables)
+celery_app.conf.update(default_serializer)
+celery_app.conf.update(accept_content)
+
+from scheduler_service.api.scheduler_api import scheduler_blueprint
+flask_app.register_blueprint(scheduler_blueprint)
