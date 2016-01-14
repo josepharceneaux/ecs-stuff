@@ -70,14 +70,19 @@
                 }
             })
             .state('pipelines', {
+                abstract: true,
                 parent: 'site',
                 url: '/pipelines',
-                redirectTo: 'pipelines.overview'
+                views: {
+                    '@site': {
+                        template: '<gt-pipelines></gt-pipelines>'
+                    }
+                }
             })
             .state('pipelines.overview', {
                 url: '',
                 views: {
-                    '@site': {
+                    '@pipelines': {
                         template: '<gt-pipelines-overview></gt-pipelines-overview>'
                     }
                 }
@@ -85,7 +90,7 @@
             .state('pipelines.manage', {
                 url: '/manage',
                 views: {
-                    '@site': {
+                    '@pipelines': {
                         template: '<gt-pipelines-manage></gt-pipelines-manage>'
                     }
                 }
@@ -93,7 +98,7 @@
             .state('pipelines.create', {
                 url: '/create',
                 views: {
-                    '@site': {
+                    '@pipelines': {
                         template: '<gt-pipeline-create></gt-pipeline-create>'
                     }
                 }
@@ -101,7 +106,7 @@
             .state('pipelines.detail', {
                 url: '/:pipelineId',
                 views: {
-                    '@site': {
+                    '@pipelines': {
                         template: '<gt-pipeline-detail></gt-pipeline-detail>'
                     }
                 }
@@ -109,7 +114,7 @@
             .state('pipelines.detail.settings', {
                 url: '/settings',
                 views: {
-                    '@site': {
+                    '@pipelines': {
                         template: '<gt-pipeline-settings></gt-pipeline-settings>'
                     }
                 }
@@ -117,7 +122,7 @@
             .state('pipelines.detail.team', {
                 url: '/team',
                 views: {
-                    '@site': {
+                    '@pipelines': {
                         template: '<gt-pipeline-team></gt-pipeline-team>'
                     }
                 }
@@ -125,7 +130,7 @@
             .state('pipelines.detail.smartLists', {
                 url: '/smart-lists',
                 views: {
-                    '@site': {
+                    '@pipelines': {
                         template: '<gt-smart-lists></gt-smart-lists>'
                     }
                 }
@@ -133,7 +138,7 @@
             .state('pipelines.detail.smartLists.create', {
                 url: '/create',
                 views: {
-                    '@site': {
+                    '@pipelines': {
                         template: '<gt-smart-list-create></gt-smart-list-create>'
                     }
                 }
@@ -141,7 +146,7 @@
             .state('pipelines.detail.smartLists.detail', {
                 url: '/:smartListId',
                 views: {
-                    '@site': {
+                    '@pipelines': {
                         template: '<gt-smart-list-details></gt-smart-list-details>'
                     }
                 }

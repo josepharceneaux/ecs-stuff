@@ -15,8 +15,7 @@
             restrict: 'E',
             templateUrl: 'components/pipelines/pipelines-overview/pipelines-overview.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'PipelinesOverviewController',
             controllerAs: 'vm'
         };

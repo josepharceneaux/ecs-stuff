@@ -16,8 +16,7 @@
             restrict: 'E',
             templateUrl: 'components/forgot-password/forgot-password.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'ForgotPasswordController',
             controllerAs: 'vm'
         };

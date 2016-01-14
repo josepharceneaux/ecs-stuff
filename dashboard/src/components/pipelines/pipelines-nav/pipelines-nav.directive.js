@@ -1,10 +1,9 @@
 (function () {
     'use strict';
 
-    angular
-        .module('app.sidenav')
-        .directive('gtSidenav', directiveFunction)
-        .controller('SidenavController', ControllerFunction);
+    angular.module('app.pipelines')
+        .directive('gtPipelinesNav', directiveFunction)
+        .controller('PipelinesNavController', ControllerFunction);
 
     // ----- directiveFunction -----
     directiveFunction.$inject = [];
@@ -14,10 +13,10 @@
 
         var directive = {
             restrict: 'E',
-            templateUrl: 'components/sidenav/sidenav.html',
+            templateUrl: 'components/pipelines/pipelines-nav/pipelines-nav.html',
             replace: true,
             scope: {},
-            controller: 'SidenavController',
+            controller: 'PipelinesNavController',
             controllerAs: 'vm',
             link: linkFunction
         };
@@ -26,14 +25,13 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['$cookies', '$state', 'logger'];
+    ControllerFunction.$inject = ['logger'];
 
     /* @ngInject */
-    function ControllerFunction($cookies, $state, logger) {
+    function ControllerFunction(logger) {
         var vm = this;
 
         vm.isCollapsed = true;
-        vm.state = $state;
         vm.menuItems = {
             dashboard: {
                 overview: 'Overview',
@@ -58,22 +56,10 @@
             }
         };
 
-        vm.setDemoModeCookie = setDemoModeCookie;
-
         activate();
 
         function activate() {
-            logger.log('Activated Sidenav View');
-
-            vm.demoMode = getDemoModeCookie();
-        }
-
-        function getDemoModeCookie() {
-            return $cookies.get('demoMode') === 'true';
-        }
-
-        function setDemoModeCookie(value) {
-            $cookies.put('demoMode', value === 'true' || value === true ? 'true' : 'false');
+            logger.log('Activated Pipelines Nav View');
         }
     }
 
