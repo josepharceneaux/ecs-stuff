@@ -195,7 +195,7 @@ class SMSCampaigns(Resource):
                     500 (Internal Server Error)
 
         ..Error Codes:: 5002 (MultipleTwilioNumbersFoundForUser)
-                        5003 (TwilioAPIError)
+                        5003 (TwilioApiError)
                         5017 (InvalidUrl)
         """
         validate_header(request)
@@ -689,7 +689,7 @@ class SendSmsCampaign(Resource):
 
         .. Error Codes:: 5001 (Empty message body to send)
                          5002 (User has MultipleTwilioNumbersFoundForUser)
-                         5003 (TwilioAPIError)
+                         5003 (TwilioApiError)
                          5004 (GoogleShortenUrlAPIError)
                          5014 (ErrorUpdatingBodyText)
 

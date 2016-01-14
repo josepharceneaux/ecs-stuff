@@ -66,7 +66,7 @@ class MultipleTwilioNumbersFoundForUser(SmsCampaignApiException):
     error_code = SmsCampaignApiException.MULTIPLE_TWILIO_NUMBERS
 
 
-class TwilioAPIError(SmsCampaignApiException):
+class TwilioApiError(SmsCampaignApiException):
     """
     This exception is raised if we get any error related to Twilio API like for sending SMS
     or purchasing new number etc.

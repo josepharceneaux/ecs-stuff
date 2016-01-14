@@ -71,10 +71,6 @@ def remove_any_user_phone_record_with_twilio_test_number():
         candidate_phones += CandidatePhone.get_by_phone_value(test_number)
     map(CandidatePhone.delete, candidate_phones)
 
-
-def remove_url_conversion_records_having_test_urls():
-    pass
-
 # clean database tables user_phone and candidate_phone first
 remove_any_user_phone_record_with_twilio_test_number()
 

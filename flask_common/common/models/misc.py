@@ -249,15 +249,6 @@ class UrlConversion(db.Model):
     def __repr__(self):
         return "<UrlConversion (id=' %r')>" % self.id
 
-    @classmethod
-    def get_by_destination_url(cls, destination_url):
-        assert destination_url
-        return cls.query.filter(
-            and_(
-                UrlConversion.destination_url == destination_url
-            )
-        ).first()
-
 
 class CustomField(db.Model):
     __tablename__ = 'custom_field'

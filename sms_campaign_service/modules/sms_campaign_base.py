@@ -65,7 +65,7 @@ from sms_campaign_service.modules.custom_exceptions import (EmptySmsBody,
                                                             NoCandidateFoundForPhoneNumber,
                                                             NoUserFoundForPhoneNumber,
                                                             GoogleShortenUrlAPIError,
-                                                            TwilioAPIError, InvalidUrl,
+                                                            TwilioApiError, InvalidUrl,
                                                             SmsCampaignApiException)
 
 
@@ -259,7 +259,7 @@ class SmsCampaignBase(CampaignBase):
 
         :param phone_label_id: id of phone label
         :type phone_label_id: int
-        :exception: TwilioAPIError
+        :exception: TwilioApiError
         :return: UserPhone obj
         :rtype: UserPhone
         """
@@ -422,7 +422,7 @@ class SmsCampaignBase(CampaignBase):
         """
         :param campaign: SMS campaign obj
         :type campaign: SmsCampaign
-        :exception: TwilioAPIError
+        :exception: TwilioApiError
         :exception: InvalidUsage
         :exception: EmptySmsBody
         :exception: NoSmartlistAssociatedWithCampaign
@@ -567,7 +567,7 @@ class SmsCampaignBase(CampaignBase):
         :param candidate_and_phone: candidate obj at index 0 and candidate phone value at index 1
         :type candidate_and_phone: tuple
         :exception: ErrorUpdatingBodyText
-        :exception: TwilioAPIError
+        :exception: TwilioApiError
         :exception: GoogleShortenUrlAPIError
         :return: True if SMS is sent otherwise False.
         :rtype: bool
@@ -590,7 +590,7 @@ class SmsCampaignBase(CampaignBase):
             try:
                 message_sent_datetime = self.send_sms(str(candidate_phone_value),
                                                       modified_body_text)
-            except TwilioAPIError or InvalidUsage:
+            except TwilioApiError or InvalidUsage:
                 logger.exception('send_campaign_to_candidate: Cannot send SMS.')
                 return False
             # Create sms_campaign_send i.e. it will record that an SMS has been sent
@@ -841,12 +841,11 @@ class SmsCampaignBase(CampaignBase):
             sender_phone = TWILIO_TEST_NUMBER
             candidate_phone_value = TWILIO_TEST_NUMBER
         else:
-            # format phone number of user and candidate
-            sender_phone = format_phone_number(self.user_phone.value)
+            sender_phone = self.user_phone.value
         twilio_obj = TwilioSMS()
-        message_response = twilio_obj.send_sms(body_text=message_body,
-                                               sender_phone=sender_phone,
-                                               receiver_phone=candidate_phone_value)
+        message_response = twilio_obj.send_sms(message_body,
+                                               sender_phone,
+                                               candidate_phone_value)
         return message_response.date_created
 
     @staticmethod
