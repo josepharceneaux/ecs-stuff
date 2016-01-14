@@ -1,6 +1,6 @@
 FROM gettalent/base-service-container:latest
 
-# Add auth_service stuff
+# Add files
 WORKDIR /root/base_service_container
 ADD . auth_service
 WORKDIR /root/base_service_container/auth_service
@@ -16,7 +16,7 @@ ENV PYTHONPATH ../
 CMD\
     eval "$(pyenv init -)" && \
 
-    sed -i -e 's/GT_ENVIRONMENT/$GT_ENVIRONMENT/g' /etc/rsyslog.d/*loggly.conf && \
+    sed -i -e s/GT_ENVIRONMENT/$GT_ENVIRONMENT/g /etc/rsyslog.d/*loggly.conf && \
 
     /etc/init.d/rsyslog start && \
 

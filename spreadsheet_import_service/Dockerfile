@@ -10,16 +10,13 @@ RUN sed -i -e 's/APP_NAME/spreadsheet_import_service/g' newrelic.ini /etc/rsyslo
 
 EXPOSE 80
 
-# Set DB connection string
-ENV DB_STRING mysql://talent_web:s!web976892@livedb.gettalent.com/talent_core
-
 # Set PYTHON PATH
 ENV PYTHONPATH ../
 
 CMD\
     eval "$(pyenv init -)" && \
 
-    sed -i -e 's/GT_ENVIRONMENT/$GT_ENVIRONMENT/g' /etc/rsyslog.d/*loggly.conf && \
+    sed -i -e s/GT_ENVIRONMENT/$GT_ENVIRONMENT/g /etc/rsyslog.d/*loggly.conf && \
 
     /etc/init.d/rsyslog start && \
 

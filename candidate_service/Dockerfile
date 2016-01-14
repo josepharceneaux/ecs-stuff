@@ -1,6 +1,6 @@
 FROM gettalent/base-service-container:latest
 
-# Add candidate service stuff
+# Add files
 WORKDIR /root/base_service_container
 ADD . candidate_service
 WORKDIR /root/base_service_container/candidate_service
@@ -10,16 +10,13 @@ RUN sed -i -e 's/APP_NAME/candidate_service/g' newrelic.ini /etc/rsyslog.d/*logg
 
 EXPOSE 80
 
-# Set DB connection string
-ENV DB_STRING mysql://talent_web:s!web976892@livedb.gettalent.com/talent_core
-
 # Set PYTHON PATH
 ENV PYTHONPATH ../
 
 CMD\
     eval "$(pyenv init -)" && \
 
-    sed -i -e 's/GT_ENVIRONMENT/$GT_ENVIRONMENT/g' /etc/rsyslog.d/*loggly.conf && \
+    sed -i -e s/GT_ENVIRONMENT/$GT_ENVIRONMENT/g /etc/rsyslog.d/*loggly.conf && \
 
     /etc/init.d/rsyslog start && \
 
