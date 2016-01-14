@@ -121,6 +121,8 @@ class TestSchedulerMisc(object):
             assert response.status_code == 201
             jobs.append(response.json()['id'])
 
+        import time
+        time.sleep(40)
         chunk_size = 200
 
         # Delete all created jobs in chunks specified above

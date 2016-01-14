@@ -8,7 +8,6 @@ Scheduler - APScheduler initialization, set jobstore, threadpoolexecutor
 
 # Standard imports
 import datetime
-import os
 
 # Third-party imports
 from dateutil.tz import tzutc
@@ -23,7 +22,7 @@ from urllib import urlencode
 # Application imports
 from scheduler_service.common.models.user import Token
 from scheduler_service import logger, TalentConfigKeys, flask_app
-from scheduler_service.apscheduler_config import executors, job_store, jobstores
+from scheduler_service.apscheduler_config import executors, job_store, jobstores, job_defaults
 from scheduler_service.common.models.user import User
 from scheduler_service.common.error_handling import InvalidUsage
 from scheduler_service.common.routes import AuthApiUrl
@@ -38,6 +37,7 @@ from scheduler_service.tasks import send_request
 # Set timezone to UTC
 scheduler = BackgroundScheduler(jobstore=jobstores, executors=executors,
                                 timezone='UTC')
+scheduler.configure(job_defaults=job_defaults)
 scheduler.add_jobstore(job_store)
 
 # Set the minimum frequency in seconds
@@ -100,7 +100,7 @@ def validate_one_time_job(data):
     current_datetime = current_datetime.replace(tzinfo=timezone('UTC'))
     # If job is not in 0-30 seconds in past or greater than current datetime.
     if run_datetime < current_datetime:
-        raise InvalidUsage("No need to schedule job of already passed time. run_datetime is in past")
+        raise InvalidUsage("Cannot schedule job of already passed time. run_datetime is in past")
 
     return valid_data
 
@@ -179,6 +179,7 @@ def schedule_job(data, user_id=None, access_token=None):
                                     seconds=valid_data['frequency'],
                                     start_date=valid_data['start_datetime'],
                                     end_date=valid_data['end_datetime'],
+                                    misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
                                     args=[user_id, access_token, job_config['url'], content_type, job_config['post_data']],
                                     )
 
@@ -201,6 +202,7 @@ def schedule_job(data, user_id=None, access_token=None):
                                     name=job_config['task_name'],
                                     trigger='date',
                                     run_date=valid_data['run_datetime'],
+                                    misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
                                     args=[user_id, access_token, job_config['url'], content_type, job_config['post_data']]
                                     )
             logger.info('schedule_job: Task has been added and will run at %s ' % valid_data['run_datetime'])
